@@ -7,6 +7,9 @@ This currently works on Windows (Intel 32 and 64 bit).
 - run the only .exe in the /Bin folder (HopperNET.exe)
 - some documentation is included in the PDF under /Docs
 
+Here is the TLDR walk though:
+https://docs.google.com/presentation/d/1ZfqbBSqEAHBDnZLWSe-3sygjJOas6WJYlS9MmkPlFR8/
+
 ## Notes
 
 This is an early release to experiment with the language. It isn't terribly useful yet since you can only write console-style apps so far.
