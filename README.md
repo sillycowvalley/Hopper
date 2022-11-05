@@ -11,6 +11,10 @@ Here is the TLDR walk though:
 
 https://docs.google.com/presentation/d/1ZfqbBSqEAHBDnZLWSe-3sygjJOas6WJYlS9MmkPlFR8/
 
+And another quick hit on how the editor / IDE deals with "projects":
+
+https://docs.google.com/presentation/d/1AP5HfBwkcK6xj-8Z5_-iPWaELDSroDuUKiATp3Y2iq4/
+
 ## Notes
 
 This is an early release to experiment with the language. It isn't terribly useful yet since you can only write console-style apps so far.
