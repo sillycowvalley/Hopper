@@ -42,4 +42,4 @@ Initially I'll have drivers for:
 
 I'm not sure what I'll do with the serial port yet. Depends if I use WiFi or serial for debugging and uploading programs.
 
-Contact me for more info: michael@sillycowvalley.com
+Contact me for more info: michael at sillycowvalley dot com
