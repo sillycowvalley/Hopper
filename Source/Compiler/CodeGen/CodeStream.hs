@@ -72,7 +72,13 @@ unit CodeStream
         return last;
     }
     
-    uint NextAddress { get { return currentStream.Length; } }
+    uint NextAddress 
+    { 
+        get 
+        { 
+            return currentStream.Length;
+        } 
+    }
         
     AppendCode(<byte> code)
     {

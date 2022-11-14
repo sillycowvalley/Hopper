@@ -69,6 +69,18 @@ program Edit
                             filePath = fullPathExt;
                             break;
                         }
+                        filePathExt = filePath + ".zs";
+                        if (File.Exists(filePathExt))
+                        {
+                            filePath = filePathExt;
+                            break;
+                        }
+                        fullPathExt = Path.Combine(System.CurrentDirectory, filePathExt);
+                        if (File.Exists(fullPathExt))
+                        {
+                            filePath = fullPathExt;
+                            break;
+                        }
                     }
                     if (!File.Exists(fullPath))
                     {

@@ -15,17 +15,23 @@ program Zopper
       <string> args = System.Arguments;
       if (args.Length != 1)
       {
-        PrintLn("Invalid arguments for ZOPPER:");
-        PrintLn("  ZOPPER <source file>");
-        break;
+          PrintLn("Invalid arguments for ZOPPER:");
+          PrintLn("  ZOPPER <source file>");
+          break;
       }
-      string sourcePath =args[0];
-      if (!File.Exists(sourcePath))
+      string sourcePath = args[0];
+      string extension = Path.GetExtension(sourcePath);
+      if (extension == ".")
       {
-        PrintLn("Source file not found for ZOPPER:");
-        PrintLn("  ZOPPER <source file>");
-        break;
+          sourcePath = sourcePath + ".zs";
       }
+      if (!File.Exists(sourcePath))    
+      {
+          PrintLn("Source file not found for ZOPPER:");
+          PrintLn("  ZOPPER <source file>");
+          break;
+      }
+      
       
       long startTime = Millis;
       

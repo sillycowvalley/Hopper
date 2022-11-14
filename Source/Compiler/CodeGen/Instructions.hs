@@ -392,6 +392,10 @@ unit Instructions
             {
                 result = "ENTER";
             }
+            case Instruction.NOP:
+            {
+                result = "NOP";
+            }
             case Instruction.CALLB:
             {
                 result = "CALLB";

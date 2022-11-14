@@ -18,6 +18,8 @@ program Show
     bool more = false;
     bool wide = false;
     
+    bool isZopper;
+    
     bool MorePrompt()
     {
         byte moreY = CursorY;
@@ -111,7 +113,7 @@ program Show
     HopperLinePrinter(string ln)
     {
         ln = ln.Pad(' ', Screen.Columns);
-        <uint> colours = Highlighter.Hopper(ln, backColor);
+        <uint> colours = Highlighter.Hopper(ln, backColor, isZopper);
         uint length = ln.Length;
         for (uint i=0; i < length; i++)
         {
@@ -186,8 +188,12 @@ program Show
             LinePrinter linePrinter = DefaultLinePrinter;
             string extension = Path.GetExtension(filePath);
             extension = extension.ToLower();
-            if (extension == ".hs")
+            if ((extension == ".hs") || (extension == ".zs"))
             {
+                if (extension == ".zs")
+                {
+                    isZopper = true;
+                }
                 linePrinter = HopperLinePrinter;
                 Token.Initialize();// inialize the tokenizer
             }

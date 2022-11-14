@@ -1,5 +1,7 @@
 unit String
 {
+    uses "/Source/System/Char"
+    
     string InsertChar(string this, uint index, char append) system; // just for simulation for now
 #ifndef ZOPPER
     uint Length { get system; }
@@ -15,6 +17,8 @@ unit String
     
     int Compare(string left, string right) system; // returns -1, 0, +1
     
+    Build(ref string build, string append) system;
+    Build(ref string build, char append) system;
     
 #endif
     char GetChar(string this, uint index)
@@ -65,7 +69,7 @@ unit String
                 index = pIndex;
                 break;
             }
-            pIndex = pIndex + 1;
+            pIndex++;
         }
         return found;
     }
@@ -96,7 +100,7 @@ unit String
         loop
         {
             uint length = this.Length;
-            if (length == 0)
+            if (0 == length)
             {
                 break;
             }
@@ -109,11 +113,11 @@ unit String
                     found = true;
                     break;
                 }
-                if (i == 0)
+                if (0 == i)
                 {
                     break;
                 }
-                i = i - 1;
+                i--;
             }
             break;
         }
@@ -135,11 +139,11 @@ unit String
                     found = true;
                     break;
                 }
-                if (i == 0)
+                if (0 == i)
                 {
                     break;
                 }
-                i = i - 1;
+                i--;
             }
         }
         return found;
@@ -158,17 +162,18 @@ unit String
     
     string Pad(string this, char append, uint width)
     {
+        string result = this;
         uint length = this.Length;
         if (width > length)
         {
             uint padding = width - length;
             while (padding > 0)
             {
-                this = this + append;
+                String.Build(ref result, append);
                 padding--;
             }
         }
-        return this;
+        return result;
     }
     
     string LeftPad(string this, char append, uint width)
@@ -191,7 +196,7 @@ unit String
         string result;
         foreach (var c in this)
         {
-            result = result + c.ToUpper();
+            Build(ref result, c.ToUpper());
         }
         return result;
     }
@@ -200,11 +205,10 @@ unit String
         string result;
         foreach (var c in this)
         {
-            result = result + c.ToLower();
+            Build(ref result, c.ToLower());
         }
         return result;
     }
-    
     
     bool StartsWith(string this, char pattern)
     {
@@ -303,7 +307,7 @@ unit String
             }
             else
             {
-                accumulator = accumulator + c;
+                Build(ref accumulator, c);
             }
         }
         if (accumulator.Length > 0)

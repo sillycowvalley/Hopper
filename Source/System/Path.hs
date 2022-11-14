@@ -34,7 +34,7 @@ unit Path
         string resultPath;
         loop
         {
-            if ((fullPath.Length == 0) || (fullPath == "/"))
+            if ((0 == fullPath.Length) || (fullPath == "/"))
             {
                 break;
             }
@@ -72,7 +72,7 @@ unit Path
         {
             resultPath = resultPath + '/'; // append trailing slash
         }
-        if ((partTwo.Length != 0) && (partTwo[0] == '/'))
+        if ((0 != partTwo.Length) && (partTwo[0] == '/'))
         {
             // has leading slash so skip it
             if (partTwo.Length > 1)

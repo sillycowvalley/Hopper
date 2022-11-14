@@ -26,7 +26,7 @@ unit Long
         {
             long digit = this % 2;
             char c = '0';
-            if (digit == 1)
+            if (1 == digit)
             {
                 c = '1';
             }

@@ -5,7 +5,7 @@ unit Highlighter
     
     string delimiters = ";,:?(){}[]<>=!&|~^+-*/%";
     
-    uint HopperWord(string word)
+    uint HopperWord(string word, bool isZopper)
     {
         uint colour;
         
@@ -18,6 +18,10 @@ unit Highlighter
             colour = Directive;
         }
         else if (IsTypeKeyword(word) || IsReservedIdentifier(word))
+        {
+            colour = Type;
+        }
+        else if (isZopper && IsReservedZopperIdentifier(word))
         {
             colour = Type;
         }
@@ -61,7 +65,7 @@ unit Highlighter
         return colour;
     }
     
-    <uint> Hopper(string ln, uint backColor)
+    <uint> Hopper(string ln, uint backColor, bool isZopper)
     {
         <uint> colours;
         uint colour;
@@ -93,7 +97,7 @@ unit Highlighter
                     {
                         if (word.Length > 0)
                         {
-                            colour = HopperWord(word);
+                            colour = HopperWord(word, isZopper);
                             foreach (var ch in word)
                             {
                                 colours.Append(colour);
@@ -110,7 +114,7 @@ unit Highlighter
                     word = word + c;
                     if (inString)
                     {
-                        colour = HopperWord(word);
+                        colour = HopperWord(word, isZopper);
                         foreach (var ch in word)
                         {
                             colours.Append(colour);
@@ -129,7 +133,7 @@ unit Highlighter
                     word = word + c;
                     if (inChar)
                     {
-                        colour = HopperWord(word);
+                        colour = HopperWord(word, isZopper);
                         foreach (var ch in word)
                         {
                             colours.Append(colour);
@@ -152,7 +156,7 @@ unit Highlighter
                     }
                     else
                     {
-                        colour = HopperWord(word);
+                        colour = HopperWord(word, isZopper);
                         foreach (var ch in word)
                         {
                             colours.Append(colour);
@@ -181,7 +185,7 @@ unit Highlighter
                         {
                             if (word.Length > 0)
                             {
-                                colour = HopperWord(word);
+                                colour = HopperWord(word, isZopper);
                                 foreach (var ch in word)
                                 {
                                     colours.Append(colour);
@@ -194,13 +198,13 @@ unit Highlighter
                     {
                         if (word.Length > 0)
                         {
-                            colour = HopperWord(word);
+                            colour = HopperWord(word, isZopper);
                             foreach (var ch in word)
                             {
                                 colours.Append(colour);
                             }
                         }
-                        colour = HopperWord(c.ToString());
+                        colour = HopperWord(c.ToString(), isZopper);
                         colours.Append(colour);
                         inString = false;
                         inChar = false;
@@ -215,7 +219,7 @@ unit Highlighter
         } // foreach
         if (word.Length > 0)
         {
-            colour = HopperWord(word);
+            colour = HopperWord(word, isZopper);
             foreach (var ch in word)
             {
                 colours.Append(colour);

@@ -39,6 +39,7 @@ unit Editor
     string currentPath;
     
     bool isHopperSource;
+    bool isZopperSource;
     
     bool ignoreNextClick;
     bool wasDown;
@@ -1303,7 +1304,14 @@ unit Editor
                     string extension = Path.GetExtension(candidate);
                     if (extension == ".")
                     {
-                        candidate = candidate + ".hs";
+                        if (isHopperSource)
+                        {
+                            candidate = candidate + ".hs";
+                        }
+                        if (isZopperSource)
+                        {
+                            candidate = candidate + ".zs";
+                        }
                     }
                     if (File.Exists(candidate))
                     {
@@ -1453,9 +1461,9 @@ unit Editor
             c = 0;
             if (lineIndex < lineCount)
             {
-                if (isHopperSource)
+                if (isHopperSource || isZopperSource)
                 {
-                    colours = Highlighter.Hopper(ln, background);
+                    colours = Highlighter.Hopper(ln, background, isZopperSource);
                 }
                 uint colourOffset = 0;
                 
@@ -1477,7 +1485,7 @@ unit Editor
                         bColor = Color.Gray;
                     }
                     uint textColor = Color.Black;
-                    if (isHopperSource)
+                    if (isHopperSource || isZopperSource)
                     {
                         textColor = colours[colourOffset + c];
                     }
@@ -1634,6 +1642,7 @@ unit Editor
         string extension = Path.GetExtension(currentPath);
         extension = extension.ToLower();
         isHopperSource = (extension == ".hs");
+        isZopperSource = (extension == ".zs");
 
         if (projectPath.Length == 0) // first load
         {
@@ -1823,7 +1832,14 @@ unit Editor
                     string extension = Path.GetExtension(candidate);
                     if (extension == ".")
                     {
-                        candidate = candidate + ".hs";
+                        if (isHopperSource)
+                        {
+                            candidate = candidate + ".hs";
+                        }
+                        if (isZopperSource)
+                        {
+                            candidate = candidate + ".zs";
+                        }
                     }
                     if (File.Exists(candidate))
                     {

@@ -90,7 +90,7 @@ unit Symbols
         fSysCallOverload.Clear();
         fSysCallCount.Clear();
             
-        iNextOverload = 0; 
+        iNextOverload = 1; 
         
         pdValues.Clear();
         cValues.Clear();
@@ -120,6 +120,7 @@ unit Symbols
         flMembers.Clear();
         
         overloadsCompiled.Clear();
+        
     }   
     
     string GetNamespace(uint oi)
@@ -993,12 +994,15 @@ unit Symbols
         //   <uint,uint> fSysCall;   
         
         uint index = 0;
+        
         if (!GetFunctionIndex(name, ref index))
         {
             fNames.Append(name);
             index = fNames.Length-1;
             fIndex[name] = index;
         }
+        bool isMain = name.EndsWith(".main");
+    
         <uint> overloads;
         
         if (fOverloads.Contains(index))
@@ -1014,18 +1018,29 @@ unit Symbols
                 {
                     if (fReturnTypes[overload] == returnType)
                     {
-                        Parser.Error("duplicate function definition");
+                        Parser.ErrorAtCurrent("duplicate function definition");
                     }
                     else
                     {
-                        Parser.Error("function definitions differ only by return type");
+                        Parser.ErrorAtCurrent("function definitions differ only by return type");
                     }
                     break;
                 }
             }    
-            overloads.Append(iNextOverload);
-            fArgumentNamesAndTypes[iNextOverload] = arguments;
-            fReturnTypes[iNextOverload] = returnType;
+            uint iCurrentOverload = 0;
+            if (!isMain)
+            {
+                if (iNextOverload == 0)
+                {
+                    iNextOverload = 1;
+                }
+                iCurrentOverload = iNextOverload;
+                iNextOverload++;
+            }
+            
+            overloads.Append(iCurrentOverload);
+            fArgumentNamesAndTypes[iCurrentOverload] = arguments;
+            fReturnTypes[iCurrentOverload] = returnType;
             
             if (blockPos.Length > 0) // not system
             {
@@ -1033,13 +1048,13 @@ unit Symbols
                 uint startLine;
                 if (Token.TryParseLong(blockPos[0], ref startPos))
                 {
-                    fStartPos[iNextOverload] = startPos; // location of method block '{'
+                    fStartPos[iCurrentOverload] = startPos; // location of method block '{'
                 }
                 if (Token.TryParseUInt(blockPos[1], ref startLine))
                 {
-                    fStartLine[iNextOverload] = startLine; // location of method block '{'
+                    fStartLine[iCurrentOverload] = startLine; // location of method block '{'
                 }
-                fSourcePath[iNextOverload] = blockPos[2];
+                fSourcePath[iCurrentOverload] = blockPos[2];
             }
             else
             {
@@ -1056,11 +1071,11 @@ unit Symbols
                 }
                 byte iSysCallOverload = fSysCallCount[name];
                 fSysCallCount[name] = iSysCallOverload+1;
-                fSysCall[iNextOverload] = iSysCall;
-                fSysCallOverload[iNextOverload] = iSysCallOverload;
+                fSysCall[iCurrentOverload] = iSysCall;
+                fSysCallOverload[iCurrentOverload] = iSysCallOverload;
             }
             fOverloads[index] = overloads;
-            iNextOverload++;
+            
             break;
         }
     }

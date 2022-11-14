@@ -163,6 +163,15 @@ unit SysCalls
         addEntry("Types", "BoxTypeOf");   // regular "TypeOf" except for boxed variants where the boxed value type is returned (used for "typeof")
         addEntry("Types", "VerifyValueTypes");
         
+        addEntry("String", "Build");
+        
+        addEntry("WebServer", "Method_Get");
+        addEntry("WebServer", "URL_Get");
+        addEntry("WebServer", "Arguments_Get");
+        addEntry("WebServer", "On");
+        addEntry("WebServer", "Send");
+        addEntry("WebServer", "ClearHandlers");
+        
         //addEntry("File", "ReadAllLines");
     }
     

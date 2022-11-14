@@ -99,6 +99,7 @@ unit Token
     }
     
     <string,bool> reservedIdentifiers;    // blue
+    <string,bool> reservedZopperIdentifiers;    // blue
     <string,bool> typeKeywords;           // blue
     <string,bool> statementKeywords;      // purple
     <string,bool> directiveKeywords;      // dark gray
@@ -109,6 +110,7 @@ unit Token
     Initialize()
     {
         reservedIdentifiers.Clear();
+        reservedZopperIdentifiers.Clear();
         typeKeywords.Clear();
         statementKeywords.Clear();
         
@@ -168,15 +170,15 @@ unit Token
             hopperTokenNames[kv.value] = kv.key;
         }
     
-        reservedIdentifiers["port"] = true;
-        reservedIdentifiers["memory"] = true;
-        reservedIdentifiers["memoryword"] = true;
         reservedIdentifiers["line"] = true;
         reservedIdentifiers["source"] = true;
-        reservedIdentifiers["sp"] = true;
-        reservedIdentifiers["pc"] = true;
-        reservedIdentifiers["iy"] = true;
-        reservedIdentifiers["main"] = true;
+        
+        reservedZopperIdentifiers["port"] = true;
+        reservedZopperIdentifiers["memory"] = true;
+        reservedZopperIdentifiers["memoryword"] = true;
+        reservedZopperIdentifiers["sp"] = true;
+        reservedZopperIdentifiers["pc"] = true;
+        reservedZopperIdentifiers["iy"] = true;
         
         // actual 'type' keywords
         typeKeywords["array"] = true;
@@ -242,6 +244,10 @@ unit Token
     {
         return reservedIdentifiers.Contains(candidate);
     }
+    bool IsReservedZopperIdentifier(string candidate)
+    {
+        return reservedZopperIdentifiers.Contains(candidate);
+    }
     bool IsTypeKeyword(string candidate)
     {
         return typeKeywords.Contains(candidate);
@@ -252,7 +258,9 @@ unit Token
     }
     bool IsReservedWord(string candidate)
     {
-        return typeKeywords.Contains(candidate) || statementKeywords.Contains(candidate)|| reservedIdentifiers.Contains(candidate);
+        return typeKeywords.Contains(candidate) 
+            || statementKeywords.Contains(candidate)
+            || reservedIdentifiers.Contains(candidate);
     }
     bool IsKeyword(string candidate)
     {

@@ -52,7 +52,7 @@ unit Scanner
                     {
                         break; // EOF
                     }
-                    ln = ln + char(b);
+                    Build(ref ln, char(b));
                     if (b == 0x0A)
                     {
                         break;

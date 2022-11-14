@@ -15,17 +15,17 @@ unit JSON
         return spaces;
     }
     
-    // Serialize dictionary to a string of .json
+    // Serialize list to a string of .json
     ExportList(file jsonFile, <variant> lst, uint indent)
     {
         string content;
         indent = indent + 2;
-        content = spaces(indent) + "[";
+        content = spaces(indent) + '[';
         string comma;
         uint entries = 0;
         foreach (var vv in lst)
         {
-            content = content + comma;
+            String.Build(ref content, comma);
             switch(typeof(vv))
             {
                 case byte:
@@ -37,62 +37,68 @@ unit JSON
                         jsonFile.Append(content + eol());
                         content = spaces(indent+1);
                     }
-                    content = content + "0x" + v.ToHexString(2);
+                    String.Build(ref content, "0x");
+                    String.Build(ref content, v.ToHexString(2));
                 }
                 case uint:
                 {
                     uint v = uint(vv);
-                    content = content + v.ToString();
+                    String.Build(ref content, v.ToString());
                 }
                 case int:
                 {
                     int v = int(vv);
-                    content = content + v.ToString();
+                    String.Build(ref content, v.ToString());
                 }
                 case long:
                 {
                     long v = long(vv);
-                    content = content + v.ToString();
+                    String.Build(ref content, v.ToString());
                 }
                 case float:
                 {
                     float v = float(vv);
-                    content = content + v.ToString();
+                    String.Build(ref content, v.ToString());
                 }
                 case string:
                 {
                     string v = vv;
-                    content = content + '"' + v + '"';
+                    String.Build(ref content, '"');
+                    String.Build(ref content, v);
+                    String.Build(ref content, '"');
                 }
                 case bool:
                 {
                     bool v = bool(vv);
                     if (v)
                     {
-                        content = content + "true";
+                        String.Build(ref content, "true");
                     }
                     else
                     {
-                        content = content + "false";
+                        String.Build(ref content, "false");
                     }
                 }
                 default:
                 {
                     type tt = typeof(vv);
                     string ts = tt.ToString();
-                    content = content + "unsupported '" + ts + "' in <variant>";
+                    String.Build(ref content, "unsupported '");
+                    String.Build(ref content, ts);
+                    String.Build(ref content, "' in <variant>");
                 }
             } 
             comma = ", ";
         }
-        content = content + "]";
-        jsonFile.Append(content + eol());
+        String.Build(ref content, ']');
+        String.Build(ref content, char(0x0A));
+        jsonFile.Append(content);
     }
     
     // Serialize dictionary to a string of .json
     ExportDictionary(file jsonFile, <string, variant> dict, uint indent)
     {
-        string content = spaces(indent) + "{";
+        string content = spaces(indent) + '{';
         jsonFile.Append(content + eol());
         content = "";
         
@@ -100,63 +106,71 @@ unit JSON
         string comma = "  ";
         foreach (var kv in dict)
         {
-            content = content + spaces(indent) + comma + '"' + kv.key + "\": ";
+            String.Build(ref content, spaces(indent));
+            String.Build(ref content, comma);
+            String.Build(ref content, '"');
+            String.Build(ref content, kv.key);
+            String.Build(ref content, "\": ");
             switch(typeof(kv.value))
             {
                 // Note: char is deliberately excluded
                 case int:
                 {
                     int v = int(kv.value);
-                    content = content + v.ToString();
+                    String.Build(ref content, v.ToString());
                 }
                 case uint:
                 {
                     uint v = uint(kv.value);
-                    content = content + v.ToString();
+                    String.Build(ref content, v.ToString());
                 }
                 case byte:
                 {
                     byte v = byte(kv.value);
-                    content = content + v.ToString();
+                    String.Build(ref content, v.ToString());
                 }
                 case long:
                 {
                     long v = long(kv.value);
-                    content = content + v.ToString();
+                    String.Build(ref content, v.ToString());
                 }
                 case float:
                 {
                     float v = float(kv.value);
-                    content = content + v.ToString();
+                    String.Build(ref content, v.ToString());
                 }
                 case string:
                 {
                     string v = kv.value;
-                    content = content + '"' + v + '"';
+                    String.Build(ref content, '"');
+                    String.Build(ref content, v);
+                    String.Build(ref content, '"');
                 }
                 case bool:
                 {
                     bool v = bool(kv.value);
                     if (v)
                     {
-                        content = content + "true";
+                        String.Build(ref content, "true");
                     }
                     else
                     {
-                        content = content + "false";
+                        String.Build(ref content, "false");
                     }
                 }
                 case list:
                 {
                     <variant> v = kv.value;
-                    jsonFile.Append(content + eol());
+                    String.Build(ref content, char(0x0A));
+                    jsonFile.Append(content);
                     content = "";
                     ExportList(jsonFile, v, indent);
                 }
                 case dictionary:
                 {
                     <string, variant> v = kv.value;
-                    jsonFile.Append(content + eol());
+                    String.Build(ref content, char(0x0A));
+                    jsonFile.Append(content);
                     content = "";
                     ExportDictionary(jsonFile, v, indent);
                 }
@@ -170,14 +184,17 @@ unit JSON
             }
             if (content.Length > 0)
             {
-                jsonFile.Append(content + eol());
+                String.Build(ref content, char(0x0A));
+                jsonFile.Append(content);
                 content = "";
             }
             comma = ", ";
         }
         indent = indent - 2;
-        content = content + spaces(indent) + "}";
-        jsonFile.Append(content + eol());
+        String.Build(ref content, spaces(indent));
+        String.Build(ref content, '}');
+        String.Build(ref content, char(0x0A));
+        jsonFile.Append(content);
     }
     
     // Export the dictionary (recursively) to the .json file format

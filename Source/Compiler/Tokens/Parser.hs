@@ -110,10 +110,14 @@ unit Parser
     {
         if (!hadError)
         {
-            string ln = token["line"];
-            string path = token["source"];
+            string errorMessage;
             string lexeme = token["lexeme"];
-            string errorMessage = "[" + path + ":" + ln + "]";
+            if (token.Contains("line"))
+            {
+                string ln = token["line"];
+                string path = token["source"];
+                errorMessage = "[" + path + ":" + ln + "]";
+            }
             HopperToken ttype = Token.GetType(token);
             if (ttype == HopperToken.EOF)
             {

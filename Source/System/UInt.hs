@@ -3,11 +3,11 @@ unit UInt
     string ToString(uint this)
     {
         string result;
-        if (this == 0)
+        if (0 == this)
         {
             result = "0";
         }
-        while (this != 0)
+        while (0 != this)
         {
             uint digit = this % 10;
             digit = digit + 48;
@@ -32,5 +32,4 @@ unit UInt
         return result;
     }
 #endif
-
 }

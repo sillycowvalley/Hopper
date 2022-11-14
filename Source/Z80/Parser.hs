@@ -768,9 +768,9 @@ unit Parser
             advance();
             string hsPath = previousToken["lexeme"];
             string hsPathLower = hsPath.ToLower();
-            if (!hsPathLower.EndsWith(".hs"))
+            if (!hsPathLower.EndsWith(".zs"))
             {
-                hsPath = hsPath + ".hs";
+                hsPath = hsPath + ".zs";
             }
             if (!File.Exists(hsPath))
             {

@@ -9,11 +9,11 @@ unit Int
             negative = true;
             this = 0 - this;
         }
-        else if (this == 0)
+        else if (0 == this)
         {
             result = "0";
         }
-        while (this != 0)
+        while (0 != this)
         {
             int digit = this % 10;
             char c = Char.ToDigit(byte(digit));

@@ -69,6 +69,12 @@ program DASM
         string srcName;
         string content;
         uint length = code.Length;
+
+#ifdef COMBINATIONS
+        string prevOpCode;
+        string prevPrevOpCode;
+        <string,uint> optimizer;
+#endif        
         for (uint address = 0; address < length; address++)
         {
             uint actualAddress = startAddress + address;
@@ -132,6 +138,26 @@ program DASM
             byte cd = code[address];
             Instruction instruction = Instruction(cd);
             string opcode = Instructions.ToString(instruction);
+
+#ifdef COMBINATIONS                        
+            if ((prevOpCode == "EQ") || (prevOpCode == "NE")  
+             || (prevOpCode == "LT") || (prevOpCode == "LE")
+             || (prevOpCode == "GT") || (prevOpCode == "GE")
+               )
+            {
+                if ((prevPrevOpCode == "PUSHI0") || (prevPrevOpCode == "PUSHI1"))
+                {
+                    string str = prevPrevOpCode + " -> " + prevOpCode + " -> " + opcode;
+                    if (!optimizer.Contains(str))
+                    {
+                        optimizer[str] = 0;
+                    }
+                    optimizer[str] = optimizer[str] + 1;
+                }
+            }
+            prevPrevOpCode = prevOpCode;
+            prevOpCode = opcode;
+#endif
             content = content + "  " + opcode;
             
             instructionCount++;
@@ -257,6 +283,14 @@ program DASM
             content = content + char(0x0A);
             hasmFile.Append(content);
         }
+#ifdef COMBINATIONS        
+        PrintLn();
+        foreach (var kv in optimizer)
+        {
+            uint count = kv.value;
+            PrintLn(kv.key + " : " + count.ToString());
+        }
+#endif
     }
     
     DisassembleData(file hasmFile, <byte> code, uint startAddress)

@@ -55,15 +55,15 @@ unit Screen
     {
         Print(s, Color.MatrixGreen, Color.Black);
     }
-    PrintLn(string s)
-    {  
-        Print(s, Color.MatrixGreen, Color.Black);
-        PrintLn();
-    } 
     PrintLn(char c)
     {  
         Print(c, Color.MatrixGreen, Color.Black);
         PrintLn();
     }
+    PrintLn(string s)
+    {  
+        Print(s, Color.MatrixGreen, Color.Black);
+        PrintLn();
+    } 
 
 }
