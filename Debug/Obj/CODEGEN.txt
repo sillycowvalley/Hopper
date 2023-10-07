@@ -1,0 +1,95 @@
+
+CODEGEN.main                                                   987 10832
+  Parser.ProgressDone                                           20    20 <-
+  Screen.PrintLn                                                12    12 <-
+  Color.ProgressHighlight_Get                                    5     5 <-
+  Color.ProgressFace_Get                                         5     5 <-
+  Color.ProgressText_Get                                         4     4 <-
+  Parser.IsInteractive                                           4     4 <-
+  CODEGEN.ConvertToIHex                                        187   726
+    CODEGEN.emitBuffer                                          69   460
+      CODEGEN.hexCheckSum                                       77   342
+        Token.TryParseHex                                      133   265
+          Char.IsHexDigit                                       61    61 <-
+          Char.IsDigit                                          21    21 <-
+          String.StartsWith                                     50    50 <-
+      UInt.ToHexString                                          49    49 <-
+    Byte.ToHexString                                            49    79
+      Char.ToHex                                                30    30 <-
+  Code.GetMethodCode                                             9     9 <-
+  CODEGEN.WriteCode                                             39    39 <-
+  Parser.ProgressTick                                           56    75
+    Color.ProgressBackground_Get                                 5     5 <-
+    Color.ProgressTick_Get                                       5     5 <-
+    Color.StatusFace_Get                                         5     5 <-
+    Color.StatusText_Get                                         4     4 <-
+  Code.GetMethodSizes                                            4     4 <-
+  Code.GetMethodSize                                             9     9 <-
+  Code.GetEntryIndex                                             4     4 <-
+  Code.GetConstantData                                           4     4 <-
+  Code.GetMethodCount                                            6     6 <-
+  Code.ParseCode                                               720  8185
+    Code.MapSource                                             253   253 <-
+    Code.ParseMethod                                          1830  2079
+      Parser.Error                                               9   249
+        Parser.ErrorAt                                         194   240
+          Parser.EmitError                                      46    46 <-
+    Parser.PreviousToken_Get                                     4     4 <-
+    Parser.Consume                                              11    11 <-
+    Parser.Check                                                 9   191
+      Parser.Check                                             182   182 <-
+    Parser.HadError_Get                                          4     4 <-
+    Parser.Consume                                              26   238
+      Parser.Consume                                           115   212
+        String.Contains                                         11    97
+          String.IndexOf                                        86    86 <-
+    Parser.Advance                                              48  3095
+      Parser.ErrorAtCurrent                                      9     9 <-
+      Token.GetType                                             48    48 <-
+      Parser.nextToken                                           7  2990
+        Scanner.Next                                           717  2983
+          Color.Red_Get                                          5     5 <-
+          Token.ToString                                       330   330 <-
+          Scanner.errorToken                                    22    22 <-
+          Scanner.scanChar                                      78    78 <-
+          Scanner.scanString                                   141   141 <-
+          Scanner.match                                         36    36 <-
+          Scanner.scanIdentifier                               157   187
+            Token.IsDirectiveKeyword                             9     9 <-
+            Token.IsKeyword                                     21    21 <-
+          Char.IsLetter                                         41    41 <-
+          Scanner.scanNumber                                   438   822
+            Token.TryParseFloat                                194   232
+              String.IndexOf                                    38    38 <-
+            Token.TryParseBinary                                84    84 <-
+            UInt.ToString                                       58    58 <-
+            Char.ToString                                       10    10 <-
+          Scanner.advance                                       21   210
+            Scanner.sourceGetFromPos                           189   189 <-
+          Scanner.skipWhitespace                               226   258
+            Scanner.peekNext                                    25    25 <-
+            Scanner.peek                                         7     7 <-
+          Scanner.isAtEnd                                        7     7 <-
+          Token.New                                             76   129
+            Token.HopperTokenToString                           53    53 <-
+    Scanner.Reset                                               58    58 <-
+    Scanner.Load                                               157   157 <-
+    Parser.Reset                                                20    20 <-
+    Scanner.New                                                  8  1355
+      Token.Initialize                                        1347  1347 <-
+  Screen.PrintLn                                                14    22
+    Color.Black_Get                                              3     3 <-
+    Color.MatrixGreen_Get                                        5     5 <-
+  Path.Combine                                                  98    98 <-
+  Path.GetFileName                                              27    27 <-
+  Path.GetExtension                                             60   119
+    String.LastIndexOf                                          59    59 <-
+  File.Exists                                                  107   107 <-
+  CODEGEN.BadArguments                                          34    34 <-
+  Parser.SetInteractive                                         39    39 <-
+  Token.TryParseUInt                                            46   202
+    Token.TryParseLong                                         133   156
+      String.StartsWith                                         23    23 <-
+  String.ToLower                                                40    86
+    Char.ToLower                                                25    46
+      Char.IsUpper                                              21    21 <-

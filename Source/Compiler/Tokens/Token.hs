@@ -69,13 +69,14 @@ unit Token
     {
         // <HopperToken, string> hopperTokenNames;
         string content;
+        uint i;
         if (hopperTokenNames.Contains(tokenType))
         {
             content = hopperTokenNames[tokenType];
         }
         else
         {
-            uint i = uint(tokenType);
+            i = uint(tokenType);
             content = "0x" + i.ToHexString(4);
             PrintLn("TODO : token not implemented in Token.HopperTokenToString");
         }
@@ -97,7 +98,8 @@ unit Token
         }
         return tokenType;
     }
-    
+
+#ifndef H6502        
     <string,bool> reservedIdentifiers;    // blue
     <string,bool> reservedZopperIdentifiers;    // blue
     <string,bool> typeKeywords;           // blue
@@ -266,13 +268,23 @@ unit Token
     {
         return typeKeywords.Contains(candidate) || statementKeywords.Contains(candidate);
     }
-    
+#endif    
     bool TryParseLong(string content, ref long returnValue)
     {
-        long result = 0;
+        long result;
+        bool makeNegative;
         if (content.Length < 1)
         {
             return false;
+        }
+        if (content.StartsWith('+'))
+        {
+            content = content.Substring(1);
+        }
+        else if (content.StartsWith('-'))
+        {
+            content = content.Substring(1);
+            makeNegative = true;
         }
         foreach (var c in content)
         {
@@ -283,12 +295,16 @@ unit Token
             }
             result = result + (byte(c) - 48); // 48 is ASCII for '0'
         }
+        if (makeNegative)
+        {
+            result = -result;
+        }
         returnValue = result;
         return true;
     }
     bool TryParseInt(string content, ref int returnValue)
     {
-        bool success = false;
+        bool success;
         long rv;
         if (TryParseLong(content, ref rv))
         {
@@ -302,7 +318,7 @@ unit Token
     }
     bool TryParseUInt(string content, ref uint returnValue)
     {
-        bool success = false;
+        bool success;
         long rv;
         if (TryParseLong(content, ref rv))
         {
@@ -316,74 +332,103 @@ unit Token
     }
     bool TryParseHex(string content, ref uint returnValue)
     {
-        returnValue = 0;
-        if (!content.StartsWith("0x"))
+        bool success;
+        uint length;
+        loop
         {
-            return false;
-        }
-        uint length = content.Length;
-        if (length < 3)
-        {
-            return false;
-        }
-        for (uint i=0; i < length-2; i++)
-        {
-            returnValue = returnValue * 16;
-            char c = content.GetChar(i+2);
-            if (c.IsDigit())
+            returnValue = 0;
+            if (!content.StartsWith("0x"))
             {
-                returnValue = returnValue + (byte(c) - 48); // 48 is ASCII for '0'
+                break;
             }
-            else if (c.IsHexDigit())
+            length = content.Length;
+            if (length < 3)
             {
-                returnValue = returnValue + (byte(c.ToLower()) - 87); // 97 is ASCII for 'a', -97+10 = -87
+                break;
             }
-        }
-        return true;
+            success = true;
+            for (uint i=0; i < length-2; i++)
+            {
+                returnValue = returnValue * 16;
+                char c = content.GetChar(i+2);
+                if (c.IsDigit())
+                {
+                    returnValue = returnValue + (byte(c) - 48); // 48 is ASCII for '0'
+                }
+                else if (c.IsHexDigit())
+                {
+                    returnValue = returnValue + (byte(c.ToLower()) - 87); // 97 is ASCII for 'a', -97+10 = -87
+                }
+                else
+                {
+                    success = false;
+                    break;
+                }
+            }
+            break;
+        } // loop
+        return success;
     }
     bool TryParseHex(string content, ref long returnValue)
     {
-        returnValue = 0;
-        if (!content.StartsWith("0x"))
+        bool success;
+        uint length;
+        uint i;
+        char c;
+        loop
         {
-            return false;
-        }
-        uint length = content.Length;
-        if (length < 3)
-        {
-            return false;
-        }
-        for (uint i=0; i < length-2; i++)
-        {
-            returnValue = returnValue * 16;
-            char c = content.GetChar(i+2);
-            if (c.IsDigit())
+            returnValue = 0;
+            if (!content.StartsWith("0x"))
             {
-                returnValue = returnValue + (byte(c) - 48); // 48 is ASCII for '0'
+                break;
             }
-            else if (c.IsHexDigit())
+            length = content.Length;
+            if (length < 3)
             {
-                returnValue = returnValue + (byte(c.ToLower()) - 87); // 97 is ASCII for 'a', -97+10 = -87
+                break;
             }
+            success = true;
+            for (i=0; i < length-2; i++)
+            {
+                returnValue = returnValue * 16;
+                c = content.GetChar(i+2);
+                if (c.IsDigit())
+                {
+                    returnValue = returnValue + (byte(c) - 48); // 48 is ASCII for '0'
+                }
+                else if (c.IsHexDigit())
+                {
+                    returnValue = returnValue + (byte(c.ToLower()) - 87); // 97 is ASCII for 'a', -97+10 = -87
+                }
+                else
+                {
+                    success = false;
+                    break;
+                }
+            }
+            break;
         }
-        return true;
+        return success;
     }
     bool TryParseBinary(string content, ref uint returnValue)
     {
+        char c;
+        uint length;
+        uint i;
         returnValue = 0;
         if (!content.StartsWith("0b"))
         {
             return false;
         }
-        uint length = content.Length;
+        length = content.Length;
         if (length < 3)
         {
             return false;
         }
-        for (uint i=0; i < length-2; i++)
+        for ( ; i < length-2; i++)
         {
             returnValue = returnValue * 2;
-            char c = content.GetChar(i+2);
+            c = content.GetChar(i+2);
             if (c == '1')
             {
                 returnValue = returnValue + 1;
@@ -393,10 +438,10 @@ unit Token
     }
     bool TryParseFloat(string content, ref float returnValue)
     {
-        bool success = false;
-        uint iDot = 0;
-        long longValue = 0;
-        float floatValue = 0;
+        bool success;
+        uint iDot;
+        long longValue;
+        float floatValue;
         string digits;
         loop
         {
@@ -469,11 +514,12 @@ unit Token
     }
     string ToString(<string, string> token)
     {
+        HopperToken tokenType;
         string content = "Undefined";
         if (token.Count > 0)
         {
             content = token["type"];
-            HopperToken tokenType = Token.GetType(token);
+            tokenType = Token.GetType(token);
             switch (tokenType)
             {
                 case HopperToken.Identifier:
@@ -482,7 +528,7 @@ unit Token
                 }
                 case HopperToken.StringConstant:
                 {
-                    content = content + " \"" + token["lexeme"] + "\"";
+                    content = content + " \"" + token["lexeme"] + '"';
                 }
                 case HopperToken.Char:
                 {

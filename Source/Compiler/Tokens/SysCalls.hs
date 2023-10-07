@@ -6,12 +6,10 @@ unit SysCalls
     {
         syscalls[unitName + '.' + methodName] = byte(syscalls.Count);
     }
+    
     New()
     {
-        byte index = 0;
-        //addEntry("RegisterObjectSlot");
-        //addEntry("RegisterObjectSlotRET");
-        //addEntry("DynamicCast");
+        syscalls.Clear(); // in case called a 2nd time
         
         addEntry("String", "NewFromConstant");
         addEntry("String", "NewFromChar");
@@ -96,7 +94,7 @@ unit SysCalls
         addEntry("Long", "GT");
         addEntry("Long", "GE");
         addEntry("Long", "Negate");
-     
+        
         addEntry("Float", "ToString");
         addEntry("Float", "ToBytes");
         addEntry("Float", "New");
@@ -172,10 +170,83 @@ unit SysCalls
         addEntry("WebServer", "Send");
         addEntry("WebServer", "ClearHandlers");
         
-        //addEntry("File", "ReadAllLines");
+        addEntry("HttpClient", "GetRequest");
+        
+        addEntry("Runtime", "Halted_Get");
+        addEntry("Runtime", "Halted_Set");
+        addEntry("Runtime", "Load");             // used by the windows shell debugger
+        addEntry("Runtime", "BytesLoaded_Get");  // used by the windows shell debugger
+        addEntry("Runtime", "Run");              // used by the windows shell debugger
+        addEntry("Runtime", "SetVisibility");    // Windows shell debugger: debug child window visible?
+        addEntry("Runtime", "SetStepping");
+        addEntry("Runtime", "StepInto");
+        addEntry("Runtime", "StepOver");
+        addEntry("Runtime", "StepRun");
+        addEntry("Runtime", "PC_Get");
+        addEntry("Runtime", "Waiting_Get");
+        addEntry("Runtime", "ClearBreakpoints");
+        addEntry("Runtime", "ClearStatements");
+        addEntry("Runtime", "SetBreakpoint");
+        addEntry("Runtime", "SetStatement");
+        addEntry("Runtime", "SP_Get");
+        addEntry("Runtime", "BP_Get");
+        addEntry("Runtime", "CSP_Get");
+        addEntry("Runtime", "GetStackWord");
+        addEntry("Runtime", "GetStackVariant");
+        addEntry("Runtime", "GetStackType");
+        addEntry("Runtime", "GetCallStackWord");
+        
+        addEntry("Serial", "Connect");
+        addEntry("Serial", "Close");
+        addEntry("Serial", "IsValid");
+        addEntry("Serial", "IsAvailable_Get");
+        addEntry("Serial", "ReadChar");
+        addEntry("Serial", "WriteChar");
+        
+        addEntry("Hardware", "LED_Set");
+        
+        addEntry("Memory", "ReadByte");
+        addEntry("Memory", "WriteByte");
+        addEntry("Memory", "Available");
+        addEntry("Memory", "Maximum");
+        addEntry("Memory", "Allocate");
+        addEntry("Memory", "Free");
+        
+        addEntry("System", "Trace_Set");
+        addEntry("System", "Trace_Get");
+        
+        addEntry("Dictionary", "HashKey");
+        
+        addEntry("Clipboard", "HasText_Get");
+        addEntry("Clipboard", "GetText");
+        addEntry("Clipboard", "SetText");
+        
+        addEntry("String", "BuildFront");
+        
+        addEntry("Memory", "ReadBit");
+        addEntry("Memory", "WriteBit");
+        
+        addEntry("Char", "ToUpper");
+        addEntry("Char", "IsUpper");
+        addEntry("Char", "IsDigit");
+        addEntry("Char", "IsLetterOrDigit");
+        addEntry("Char", "IsLower");
+        addEntry("Char", "ToDigit");
+        addEntry("Char", "ToHex");
+        addEntry("Char", "IsHexDigit");
+        addEntry("Char", "ToLower");
+        
+        addEntry("String", "StartsWith");
+        addEntry("String", "Contains");
+        addEntry("String", "IndexOf");
+        
+        addEntry("System", "Warp_Set");
+        addEntry("System", "Warp_Get");
+        
+        addEntry("Time", "Delay");
     }
     
-    bool TryParse(string name, ref byte index)
+    bool TryParseSysCall(string name, ref byte index)
     {
         bool success = false;
         if (syscalls.Contains(name))

@@ -68,6 +68,10 @@ unit Expression
             name = name.ToUpper();
             name = name + variableType.Substring(1);        
         }
+        else if (variableType == "variant")
+        {
+            CodeStream.AddInstruction(Instruction.PUSHI0); // null placeholder
+        }
         else
         {
             PrintLn(variableType);
@@ -88,9 +92,6 @@ unit Expression
                 switch (castToType)
                 {
                     case "byte":
-                    {
-                        // ok
-                    }
                     case "uint":
                     {
                         // ok
@@ -107,16 +108,14 @@ unit Expression
                 switch (castToType)
                 {
                     case "char":
-                    {
-                        // ok
-                    }
                     case "uint":
-                    {
-                        // ok
-                    }
                     case "int":
                     {
                         // ok
+                    }
+                    case "type":
+                    {
+                        Types.DynamicCastToType();
                     }
                     default:
                     {
@@ -130,13 +129,7 @@ unit Expression
                 switch (castToType)
                 {
                     case "byte":
-                    {
-                        // ok
-                    }
                     case "uint":
-                    {
-                        // ok
-                    }
                     case "int":
                     {
                         // ok
@@ -153,9 +146,6 @@ unit Expression
                 switch (castToType)
                 {
                     case "char":
-                    {
-                         Types.DynamicCastToByte();
-                    }
                     case "byte":
                     {
                          Types.DynamicCastToByte();
@@ -170,9 +160,16 @@ unit Expression
                     }
                     default:
                     {
-                        // CODEGEN : runtime cast from sourceType to castToType
-                        Print("'" + sourceType + "' -> '" + castToType + "'");
-                        Die(0x0A);
+                        //if (((castToType == "string") || (castToType == "array")) && DefineExists("H6502"))
+                        //{
+                        //    // simple 16 bit pointers
+                        //}
+                        //else
+                        //{
+                            // CODEGEN : runtime cast from sourceType to castToType
+                            Print("'" + sourceType + "' -> '" + castToType + "'");
+                            Die(0x0A);
+                        //}
                     }
                 }
             }
@@ -181,12 +178,13 @@ unit Expression
                 switch (castToType)
                 {
                     case "char":
-                    {
-                         Types.DynamicCastToByte();
-                    }
                     case "byte":
                     {
                          Types.DynamicCastToByte();
+                    }
+                    case "uint":
+                    {
+                         Types.DynamicCastIntToUInt();
                     }
                     case "float":
                     {
@@ -252,9 +250,6 @@ unit Expression
                             // ok
                         }
                         case "char":
-                        {
-                            Types.DynamicCastToByte();
-                        }
                         case "byte":
                         {
                             Types.DynamicCastToByte();
@@ -275,6 +270,13 @@ unit Expression
                         }
                     }
                 }
+                //else if (((sourceType == "string") || (sourceType == "array")|| (sourceType == "V[]")) 
+                //         && (castToType == "uint")
+                //         && DefineExists("H6502")
+                //        )
+                //{
+                //    // simple 16 bit pointers
+                //}
                 else
                 {
                     // CODEGEN : runtime cast from sourceType to castToType
@@ -414,9 +416,10 @@ unit Expression
                 break;
             }
             uint fIndex;
-            if (!isDelegateType && !GetFunctionIndex(methodName, ref fIndex))
+            if (!isDelegateType && !GetFunctionIndex(methodName, ref fIndex) && (methodName.Length > 0))
             {
-                if (methodName.Contains('.') && (thisVariable.Length == 0))
+                char fChar = methodName[0];
+                if (fChar.IsLower() && methodName.Contains('.') && (thisVariable.Length == 0))
                 {
                     // this?
                     <string> parts = methodName.Split('.');
@@ -449,7 +452,7 @@ unit Expression
                 }
             }
             
-            Parser.Consume(HopperToken.LParen, "'(' expected");
+            Parser.Consume(HopperToken.LParen, '(');
             if (Parser.HadError)
             {
                 break;
@@ -510,7 +513,7 @@ unit Expression
                 n++;
                 if (!Parser.Check(HopperToken.RParen))
                 {
-                    Parser.Consume(HopperToken.Comma, "',' expected");
+                    Parser.Consume(HopperToken.Comma, ',');
                 }
                 continue; // next argument
             }
@@ -540,9 +543,8 @@ unit Expression
                 break;
             }
             // !isDelegate: already added where the delegate method was assigned to a variable
-            Symbols.OverloadToCompile(iOverload);
-            Symbols.AddFunctionCall(iOverload);
-                                    
+            Symbols.OverloadToCompile(iOverload); // CompileMethodCall(methodName): Setters, function calls, actual method calls
+            Symbols.AddFunctionCall(iOverload);   // CompileMethodCall(methodName)
             if (Symbols.IsSysCall(iOverload))
             {
                 byte iSysCall = Symbols.GetSysCallIndex(iOverload);
@@ -551,7 +553,10 @@ unit Expression
                 {
                     case 0:
                     {
-                        CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
+                        if (!TryUserSysCall(methodName))
+                        {
+                            CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
+                        }
                     }
                     case 1:
                     {
@@ -566,7 +571,19 @@ unit Expression
             }
             else
             {
-                if (iOverload < 256)
+                if (DefineExists("H6502"))
+                {
+                    if (iOverload <= 0x3FFF)
+                    {
+                        uint beOverload = 0xC000 | iOverload;
+                        CodeStream.AddInstruction(Instruction.CALLW, beOverload);
+                    }
+                    else
+                    {
+                        Parser.Error("H6502 has a limit of 16383 for function indices, (was '" + iOverload.ToString() + "')");
+                    }
+                }
+                else if (iOverload < 256)
                 {
                     CodeStream.AddInstruction(Instruction.CALLB, byte(iOverload));
                 }
@@ -658,10 +675,7 @@ unit Expression
             }
             else
             {
-                uint constantAddress = CodeStream.CreateStringConstant(value);
-                CodeStream.AddInstructionPUSHI(constantAddress);
-                CodeStream.AddInstructionPUSHI(value.Length);
-                CodeStream.AddInstructionSysCall0("String", "NewFromConstant");
+                AddString(value);
                 actualType = "string";
             }
             break;
@@ -714,11 +728,7 @@ unit Expression
                 {
                     Parser.Advance();
                     actualType = "string";
-                    string stringValue = currentToken["lexeme"];
-                    uint constantAddress = CodeStream.CreateStringConstant(stringValue);
-                    CodeStream.AddInstructionPUSHI(constantAddress);
-                    CodeStream.AddInstructionPUSHI(stringValue.Length);
-                    CodeStream.AddInstructionSysCall0("String", "NewFromConstant");
+                    AddString(currentToken["lexeme"]);
                 }
                 case HopperToken.Float:
                 {
@@ -817,7 +827,7 @@ unit Expression
                                 //PrintLn();
                                 //Print("TODO: runtime check that this is a valid member: " + identifier + "(" + expressionType + ")");
                                 
-                                Parser.Consume(HopperToken.RParen, "')' expected");
+                                Parser.Consume(HopperToken.RParen, ')');
                                 if (Parser.HadError)
                                 {
                                     break;
@@ -863,7 +873,7 @@ unit Expression
                                     Parser.ErrorAtCurrent("array index type invalid");
                                     break;
                                 }
-                                Parser.Consume(HopperToken.RBracket, "']' expected");
+                                Parser.Consume(HopperToken.RBracket, ']');
                                 if (Parser.HadError)
                                 {
                                     break;
@@ -894,7 +904,7 @@ unit Expression
                                     Parser.ErrorAtCurrent("string index type invalid");
                                     break;
                                 }
-                                Parser.Consume(HopperToken.RBracket, "']' expected");
+                                Parser.Consume(HopperToken.RBracket, ']');
                                 if (Parser.HadError)
                                 {
                                     break;
@@ -935,7 +945,7 @@ unit Expression
                                         break;
                                     }
                                 }
-                                Parser.Consume(HopperToken.RBracket, "']' expected");
+                                Parser.Consume(HopperToken.RBracket, ']');
                                 if (Parser.HadError)
                                 {
                                     break;
@@ -970,7 +980,7 @@ unit Expression
                                     Parser.ErrorAtCurrent("list index type invalid");
                                     break;
                                 }
-                                Parser.Consume(HopperToken.RBracket, "']' expected");
+                                Parser.Consume(HopperToken.RBracket, ']');
                                 if (Parser.HadError)
                                 {
                                     break;
@@ -1050,7 +1060,7 @@ unit Expression
                         {
                             Parser.ErrorAtCurrent("no function matches for delegate type '" + expectedType + "'");
                         }
-                        Symbols.OverloadToCompile(wiOverload);
+                        Symbols.OverloadToCompile(wiOverload); // delegate pushed onto stack
                         // push function index to stack
                         CodeStream.AddInstructionPUSHI(wiOverload);
                         actualType = expectedType;
@@ -1238,7 +1248,7 @@ unit Expression
                             break;
                         }
                     }
-                    Parser.ErrorAtCurrent("'" + currentToken["lexeme"] + "' is not defined?");
+                    Parser.ErrorAtCurrent("'" + currentToken["lexeme"] + "' is not defined");
                 }
                 case HopperToken.Keyword:
                 {
@@ -1284,6 +1294,10 @@ unit Expression
                                 {
                                     // CompileDynamicCast(..) deals with these
                                 }
+                                //else if (((typeName == "string") || (typeName == "array")) && DefineExists("H6502"))
+                                //{
+                                //    // simple 16 bit pointers
+                                //}
                                 else
                                 {
                                     Parser.ErrorAtCurrent("'" + typeName + "' is an invalid type for simple cast");
@@ -1348,7 +1362,7 @@ unit Expression
                     {
                         break;
                     }
-                    Parser.Consume(HopperToken.RParen, "')' expected");
+                    Parser.Consume(HopperToken.RParen, ')');
                 }
                 default:
                 {
@@ -1462,7 +1476,7 @@ unit Expression
                     Parser.ErrorAt(operationToken, "type mismatch, 'bool' expected");
                     break;
                 }
-                CodeStream.AddInstruction(Instruction.BOOLEANNOT);
+                CodeStream.AddInstruction(Instruction.BOOLNOT);
             }
             else if (operation == HopperToken.BitNot)
             {
@@ -1522,7 +1536,7 @@ unit Expression
                         }
                         else
                         {
-                            Parser.ErrorAtCurrent("type mismatch, '" + actualType + "' expected (was '" + rightType + "') A");
+                            Parser.ErrorAtCurrent("type mismatch, '" + actualType + "' expected (was '" + rightType + "')");
                         }
                     }
                     if (Parser.HadError)
@@ -1632,9 +1646,14 @@ unit Expression
                 // TODO: ditch ShiftRight and ShiftLeft in favour of GT GT and LT LT
                 if (Parser.Check(HopperToken.ShiftRight) || Parser.Check(HopperToken.ShiftLeft))
                 {
-                    if ((actualType != "byte") && (actualType != "uint")  && (actualType != "+int"))
+                    if ((actualType != "byte") 
+                     && (actualType != "uint")  
+                     && (actualType != "int")
+                     && (actualType != "+int")
+                     && (actualType != "-int")
+                     )
                     {
-                        Parser.ErrorAtCurrent("shift operations only legal for unsigned integral types");
+                        Parser.ErrorAtCurrent("shift operations only legal for integral types");
                         break;
                     }
                     
@@ -1657,16 +1676,14 @@ unit Expression
                         Parser.ErrorAtCurrent("shift operand must be between 0 and 16");
                     }
                     CodeStream.AddInstructionPUSHI(byte(iShift));
-                    switch (operation)
+                    if (operation == HopperToken.ShiftRight)
                     {
-                        case HopperToken.ShiftRight:
-                        {
-                            CodeStream.AddInstruction(Instruction.BITSHR);
-                        }
-                        case HopperToken.ShiftLeft:
-                        {
-                            CodeStream.AddInstruction(Instruction.BITSHL);
-                        }
+                        CodeStream.AddInstruction(Instruction.BITSHR);
+                    }
+                    else
+                    {
+                        // HopperToken.ShiftLeft
+                        CodeStream.AddInstruction(Instruction.BITSHL);
                     } 
                 }
                 break;
@@ -1723,95 +1740,99 @@ unit Expression
                         }
                         else
                         {
-                            Parser.ErrorAtCurrent("type mismatch, '" + actualType + "' expected (was '" + rightType + "') B");
+                            Parser.ErrorAtCurrent("type mismatch, '" + actualType + "' expected (was '" + rightType + "')");
                         }
                     }
                     if (Parser.HadError)
                     {
                         break;
                     }
-                    switch (operation)
+                    if (operation == HopperToken.Add)
                     {
-                        case HopperToken.Add:
+                        switch (actualType)
                         {
-                            switch (actualType)
+                            case "string":
                             {
-                                case "string":
+                                byte iSysCall;
+                                if (!TryParseSysCall("String.Append", ref iSysCall))
                                 {
-                                    byte iSysCall;
-                                    if (!TryParse("String.Append", ref iSysCall))
+                                    Die(3); // key not found
+                                }
+                                if (rightType == "char")
+                                {
+                                    // string Append(string,char)
+                                    //PrintLn("B:String.Append " + iSysCall.ToString());
+                                    CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+                                    
+                                }
+                                else
+                                {
+                                    // string Append(string,string)
+                                    if (!TryUserSysCall("String.Append"))
                                     {
-                                        Die(3); // key not found
-                                    }
-                                    if (rightType == "char")
-                                    {
-                                        // string Append(string,char)
-                                        CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
-                                    }
-                                    else
-                                    {
-                                        // string Append(string,string)
                                         CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
                                     }
                                 }
-                                case "char":
+                            }
+                            case "char":
+                            {
+                                if (rightType == "string")
                                 {
-                                    if (rightType == "string")
-                                    {
-                                        CodeStream.AddInstruction(Instruction.SWAP);
-                                        CodeStream.AddInstruction(Instruction.PUSHI0);
-                                        CodeStream.AddInstruction(Instruction.SWAP);
-                                        CodeStream.AddInstructionSysCall0("String", "InsertChar");
-                                    }
-                                    else
-                                    {
-                                        Die(0x0A);
-                                    }
-                                    actualType = "string";
+                                    CodeStream.AddInstruction(Instruction.SWAP);
+                                    CodeStream.AddInstruction(Instruction.PUSHI0);
+                                    CodeStream.AddInstruction(Instruction.SWAP);
+                                    //PrintLn("D:String.InsertChar");
+                                    CodeStream.AddInstructionSysCall0("String", "InsertChar");
                                 }
-                                case "long":
+                                else
                                 {
-                                    CodeStream.AddInstructionSysCall0("Long", "Add");
+                                    Die(0x0A);
                                 }
-                                case "float":
+                                actualType = "string";
+                            }
+                            case "long":
+                            {
+                                CodeStream.AddInstructionSysCall0("Long", "Add");
+                            }
+                            case "float":
+                            {
+                                CodeStream.AddInstructionSysCall0("Float", "Add");
+                            }
+                            default:
+                            {
+                                if (Types.IsSignedIntType(actualType))
                                 {
-                                    CodeStream.AddInstructionSysCall0("Float", "Add");
+                                    CodeStream.AddInstruction(Instruction.ADDI);
                                 }
-                                default:
+                                else
                                 {
-                                    if (Types.IsSignedIntType(actualType))
-                                    {
-                                        CodeStream.AddInstruction(Instruction.ADDI);
-                                    }
-                                    else
-                                    {
-                                        CodeStream.AddInstruction(Instruction.ADD);
-                                    }
+                                    CodeStream.AddInstruction(Instruction.ADD);
                                 }
                             }
                         }
-                        case HopperToken.Subtract:
+                    }
+                    else
+                    {
+                        // HopperToken.Subtract:
+                        switch (actualType)
                         {
-                            switch (actualType)
+                            case "long":
                             {
-                                case "long":
+                                CodeStream.AddInstructionSysCall0("Long", "Sub");
+                            }
+                            case "float":
+                            {
+                                CodeStream.AddInstructionSysCall0("Float", "Sub");
+                            }
+                            default:
+                            {
+                                if (Types.IsSignedIntType(actualType))
                                 {
-                                    CodeStream.AddInstructionSysCall0("Long", "Sub");
+                                    CodeStream.AddInstruction(Instruction.SUBI);
                                 }
-                                case "float":
+                                else
                                 {
-                                    CodeStream.AddInstructionSysCall0("Float", "Sub");
-                                }
-                                default:
-                                {
-                                    if (Types.IsSignedIntType(actualType))
-                                    {
-                                        CodeStream.AddInstruction(Instruction.SUBI);
-                                    }
-                                    else
-                                    {
-                                        CodeStream.AddInstruction(Instruction.SUB);
-                                    }
+                                    CodeStream.AddInstruction(Instruction.SUB);
                                 }
                             }
                         }
@@ -1851,15 +1872,15 @@ unit Expression
                 {
                     if (Types.AutomaticUpCastTop(rightType, leftType))
                     {
-                        rightType = leftType;    
+                        rightType = leftType;
                     }
                     else if (Types.AutomaticUpCastNext(leftType, rightType))
                     {
-                        leftType = rightType;    
+                        leftType = rightType;
                     }
                     else
                     {
-                        Parser.ErrorAtCurrent("type mismatch, '" + leftType + "' expected (was '" + rightType + "') C");
+                        Parser.ErrorAtCurrent("type mismatch, '" + leftType + "' expected (was '" + rightType + "')");
                     }
                 }
                 if (Parser.HadError)
@@ -1870,45 +1891,42 @@ unit Expression
                 {
                     if (rightType != "string")
                     {
-                        Parser.ErrorAtCurrent("type mismatch, '" + leftType + "' expected (was '" + rightType + "') D");
+                       Parser.ErrorAtCurrent("type mismatch, '" + leftType + "' expected (was '" + rightType + "')");
                     }
+                    
                     CodeStream.AddInstructionSysCall0("String", "Compare"); //-1|0|1 -> [top]
                     //  1 : >  || >= -> true
                     // -1 : <  || <= -> true
                     //  0 : >= || <= -> true
-                    switch (operation)
+                    
+                    // HopperToken.GT
+                    // 1 -> true
+                    // else false       
+                    Instruction pushInstruction = Instruction.PUSHI1;
+                    Instruction compareInstruction = Instruction.EQ;
+                    if (operation == HopperToken.LT)
                     {
-                        case HopperToken.GT:
-                        {
-                            // 1 -> true
-                            // else false       
-                            CodeStream.AddInstruction(Instruction.PUSHI1);
-                            CodeStream.AddInstruction(Instruction.EQ);
-                        }
-                        case HopperToken.LT:
-                        {
-                            // -1 -> true
-                            // else false       
-                            CodeStream.AddInstruction(Instruction.PUSHIM1);
-                            CodeStream.AddInstruction(Instruction.EQ);
-                        }
-                        case HopperToken.GE:
-                        {
-                            //  0 -> true
-                            //  1 -> true
-                            // -1 -> false
-                            CodeStream.AddInstruction(Instruction.PUSHIM1);
-                            CodeStream.AddInstruction(Instruction.NE);
-                        }
-                        case HopperToken.LE:
-                        {
-                            //  0 -> true
-                            // -1 -> true
-                            //  1 -> false
-                            CodeStream.AddInstruction(Instruction.PUSHI1);
-                            CodeStream.AddInstruction(Instruction.NE);
-                        }
-                    }   
+                        // -1 -> true
+                        // else false
+                        pushInstruction = Instruction.PUSHIM1;
+                    }
+                    else if (operation == HopperToken.GE)
+                    {
+                        //  0 -> true
+                        //  1 -> true
+                        // -1 -> false
+                        pushInstruction    = Instruction.PUSHIM1;
+                        compareInstruction = Instruction.NE;
+                    }
+                    else if (operation == HopperToken.LE)
+                    {
+                        //  0 -> true
+                        // -1 -> true
+                        //  1 -> false
+                        compareInstruction = Instruction.NE;
+                    }
+                    CodeStream.AddInstruction(pushInstruction);
+                    CodeStream.AddInstruction(compareInstruction);
                 } // string
                 else
                 {
@@ -1919,10 +1937,6 @@ unit Expression
                         {
                             switch (leftType)
                             {
-                                case "string":
-                                {
-                                    Die(0x0A);
-                                }
                                 case "long":
                                 {
                                     CodeStream.AddInstructionSysCall0("Long", "LT");
@@ -1948,10 +1962,6 @@ unit Expression
                         {
                             switch (leftType)
                             {
-                                case "string":
-                                {
-                                    Die(0x0A);
-                                }
                                 case "long":
                                 {
                                     CodeStream.AddInstructionSysCall0("Long", "LE");
@@ -1977,10 +1987,6 @@ unit Expression
                         {
                             switch (leftType)
                             {
-                                case "string":
-                                {
-                                    Die(0x0A);
-                                }
                                 case "long":
                                 {
                                     CodeStream.AddInstructionSysCall0("Long", "GT");
@@ -2006,10 +2012,6 @@ unit Expression
                         {
                             switch (leftType)
                             {
-                                case "string":
-                                {
-                                    Die(0x0A);
-                                }
                                 case "long":
                                 {
                                     CodeStream.AddInstructionSysCall0("Long", "GE");
@@ -2030,10 +2032,6 @@ unit Expression
                                     }
                                 }
                             }
-                        }
-                        default:
-                        {
-                            Parser.ErrorAtCurrent("compileComparison: what's this?");
                         }
                     }
                 }
@@ -2058,17 +2056,9 @@ unit Expression
             {
                 if (Parser.Check(HopperToken.BitAnd))           
                 {
-                    if (Types.IsFlags(leftType))
+                    if (!IsBitwiseType(leftType))
                     {
-                        // ok
-                    }
-                    else if ((leftType != "uint") 
-                     && (leftType != "byte") 
-                     && (leftType != "+int")
-                     && (leftType != "flags")
-                     )
-                    {
-                        Parser.ErrorAtCurrent("bitwise operations only legal for 'uint', 'flags' and 'byte', (not '" + leftType + "')");
+                        Parser.ErrorAtCurrent("bitwise operations only legal for 'uint', 'int', 'flags' and 'byte', (not '" + leftType + "')");
                         break;
                     }
                     Parser.Advance(); // &
@@ -2085,7 +2075,7 @@ unit Expression
                         }
                         else
                         {
-                            Parser.ErrorAtCurrent("type mismatch, '" + actualType + "' expected (was '" + rightType + "') D");
+                            Parser.ErrorAtCurrent("type mismatch, '" + actualType + "' expected (was '" + rightType + "')");
                         }
                     }            
                     if (Parser.HadError)
@@ -2101,7 +2091,8 @@ unit Expression
         } // loop
         return actualType;
     }
-                  
+    
+#ifdef UNUSED
     string compileBitXor(string expectedType)
     {
         string actualType;
@@ -2123,13 +2114,14 @@ unit Expression
         }
         return actualType;
     }
-    
+#endif
     string compileBitOr(string expectedType)
     {
         string actualType;
         loop
         {
-            string leftType = compileBitXor(expectedType);
+            //string leftType = compileBitXor(expectedType);
+            string leftType = compileBitAnd(expectedType);
             if (Parser.HadError)
             {
                 break;
@@ -2139,21 +2131,14 @@ unit Expression
             {
                 if (Parser.Check(HopperToken.BitOr))           
                 {
-                    if (Types.IsFlags(leftType))
+                    if (!IsBitwiseType(leftType))
                     {
-                        // ok
-                    }
-                    else if ((leftType != "uint") 
-                     && (leftType != "byte") 
-                     && (leftType != "+int")
-                     && (leftType != "flags")
-                     )
-                    {
-                        Parser.ErrorAtCurrent("bitwise operations only legal for 'uint', 'flags' and 'byte', (not '" + leftType + "')");
+                        Parser.ErrorAtCurrent("bitwise operations only legal for 'uint', 'int', 'flags' and 'byte', (not '" + leftType + "')");
                         break;
                     }
                     Parser.Advance(); // |
-                    string rightType = compileBitXor(expectedType);
+                    //string rightType = compileBitXor(expectedType);
+                    string rightType = compileBitAnd(expectedType);
                     if (actualType != rightType)
                     {
                         if (Types.AutomaticUpCastTop(rightType, actualType))
@@ -2166,7 +2151,7 @@ unit Expression
                         }
                         else
                         {
-                            Parser.ErrorAtCurrent("type mismatch, '" + actualType + "' expected (was '" + rightType + "') E");
+                            Parser.ErrorAtCurrent("type mismatch, '" + actualType + "' expected (was '" + rightType + "')");
                         }
                     }            
                     if (Parser.HadError)
@@ -2201,22 +2186,22 @@ unit Expression
                 {
                     if (leftType != "bool")
                     {
-                        Parser.ErrorAtCurrent("boolean expression expected A");
+                        Parser.ErrorAtCurrent("boolean expression expected");
                         break;
                     }
                     
                     // short circuit check:                 
                     CodeStream.AddInstruction(Instruction.DUP, byte(0));
                     jumpShortCircuits.Append(CodeStream.NextAddress);
-                    CodeStream.AddInstruction(Instruction.JZW, uint(0));
+                    CodeStream.AddInstructionJump(Instruction.JZW);
                     
                     Parser.Advance(); // &&
                     string rightType = compileBitOr(expectedType);
                     if (rightType != "bool")
                     {
-                        Parser.ErrorAtCurrent("boolean expression expected B");
+                        Parser.ErrorAtCurrent("boolean expression expected");
                     }     
-                    CodeStream.AddInstruction(Instruction.BOOLEANAND);
+                    CodeStream.AddInstruction(Instruction.BOOLAND);
 
                     continue;                        
                 }
@@ -2251,22 +2236,22 @@ unit Expression
                 {
                     if (leftType != "bool")
                     {
-                        Parser.ErrorAtCurrent("boolean expression expected C");
+                        Parser.ErrorAtCurrent("boolean expression expected");
                         break;
                     }
                     
                     // short circuit check:                 
                     CodeStream.AddInstruction(Instruction.DUP, byte(0));
                     jumpShortCircuits.Append(CodeStream.NextAddress);
-                    CodeStream.AddInstruction(Instruction.JNZW, uint(0));
+                    CodeStream.AddInstructionJump(Instruction.JNZW);
                                             
                     Parser.Advance(); // ||
                     string rightType = compileBooleanAnd(expectedType);
                     if (rightType != "bool")
                     {
-                        Parser.ErrorAtCurrent("boolean expression expected D");
+                        Parser.ErrorAtCurrent("boolean expression expected");
                     }
-                    CodeStream.AddInstruction(Instruction.BOOLEANOR);
+                    CodeStream.AddInstruction(Instruction.BOOLOR);
                     continue;    
                 }
 // shortCircuit:                
@@ -2323,71 +2308,64 @@ unit Expression
                         }
                         else
                         {
-                            Parser.ErrorAtCurrent("type mismatch, '" + leftType + "' expected (was '" + rightType + "') F");
+                            Parser.ErrorAtCurrent("type mismatch, '" + leftType + "' expected (was '" + rightType + "')");
                         }
                     }
-                    
                     if (Parser.HadError)
                     {
                         break;
                     }
-                    switch (operation)
+                    if (operation == HopperToken.EQ)
                     {
-                        case HopperToken.EQ:
+                        switch (leftType)
                         {
-                            switch (leftType)
+                            case "long":
                             {
-                                case "long":
-                                {
-                                    CodeStream.AddInstructionSysCall0("Long", "EQ");
-                                }
-                                case "float":
-                                {
-                                    CodeStream.AddInstructionSysCall0("Float", "EQ");
-                                }
-                                case "string":
-                                {
-                                    CodeStream.AddInstructionSysCall0("String", "Compare");
-                                    CodeStream.AddInstruction(Instruction.PUSHI0);
-                                    CodeStream.AddInstruction(Instruction.EQ);
-                                }
-                                default:
-                                {
-                                    // bool, byte, char, enum, flags, int, uint, type
-                                    CodeStream.AddInstruction(Instruction.EQ);
-                                }
+                                CodeStream.AddInstructionSysCall0("Long", "EQ");
+                            }
+                            case "float":
+                            {
+                                CodeStream.AddInstructionSysCall0("Float", "EQ");
+                            }
+                            case "string":
+                            {
+                                CodeStream.AddInstructionSysCall0("String", "Compare");
+                                CodeStream.AddInstruction(Instruction.PUSHI0);
+                                CodeStream.AddInstruction(Instruction.EQ);
+                            }
+                            default:
+                            {
+                                // bool, byte, char, enum, flags, int, uint, type
+                                CodeStream.AddInstruction(Instruction.EQ);
                             }
                         }
-                        case HopperToken.NE:
+                    }
+                    else
+                    {
+                        // HopperToken.NE
+                        switch (leftType)
                         {
-                            switch (leftType)
+                            case "long":
                             {
-                                case "long":
-                                {
-                                    CodeStream.AddInstructionSysCall0("Long", "EQ");
-                                    CodeStream.AddInstruction(Instruction.BOOLEANNOT);
-                                }
-                                case "float":
-                                {
-                                    CodeStream.AddInstructionSysCall0("Float", "EQ");
-                                    CodeStream.AddInstruction(Instruction.BOOLEANNOT);
-                                }
-                                case "string":
-                                {
-                                    CodeStream.AddInstructionSysCall0("String", "Compare");
-                                    CodeStream.AddInstruction(Instruction.PUSHI0);
-                                    CodeStream.AddInstruction(Instruction.NE);
-                                }
-                                default:
-                                {
-                                    // bool, byte, char, enum, flags, int, uint, type
-                                    CodeStream.AddInstruction(Instruction.NE);
-                                }
+                                CodeStream.AddInstructionSysCall0("Long", "EQ");
+                                CodeStream.AddInstruction(Instruction.BOOLNOT);
                             }
-                        }
-                        default:
-                        {
-                            Parser.ErrorAtCurrent("compileEquality: what's this?");
+                            case "float":
+                            {
+                                CodeStream.AddInstructionSysCall0("Float", "EQ");
+                                CodeStream.AddInstruction(Instruction.BOOLNOT);
+                            }
+                            case "string":
+                            {
+                                CodeStream.AddInstructionSysCall0("String", "Compare");
+                                CodeStream.AddInstruction(Instruction.PUSHI0);
+                                CodeStream.AddInstruction(Instruction.NE);
+                            }
+                            default:
+                            {
+                                // bool, byte, char, enum, flags, int, uint, type
+                                CodeStream.AddInstruction(Instruction.NE);
+                            }
                         }
                     }
                 }

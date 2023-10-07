@@ -2,27 +2,29 @@ unit Int
 {
     string ToString(int this)
     {
+        int digit;
+        char c;
+        bool negative;
         string result;
-        bool negative = false;
         if (this < 0)
         {
             negative = true;
             this = 0 - this;
         }
-        else if (0 == this)
+        else if (this == 0)
         {
-            result = "0";
+            String.Build(ref result, '0');
         }
-        while (0 != this)
+        while (this != 0)
         {
-            int digit = this % 10;
-            char c = Char.ToDigit(byte(digit));
-            result = result.InsertChar(0,c);
+            digit = this % 10;
+            c = Char.ToDigit(byte(digit));
+            String.BuildFront(ref result, c);
             this = this / 10;
         }
         if (negative)
         {
-            result = result.InsertChar(0,'-');
+            String.BuildFront(ref result, '-');
         }
         return result;
     }
@@ -32,15 +34,17 @@ unit Int
 #endif
     string ToHexString(int this, byte digits)
     {
+        int digit;
+        char c;
+        int i;
         string result;
-        for (int i = digits; i > 0; i--)
+        for (i = digits; i > 0; i--)
         {
-            int digit = this % 16;
-            char c = Char.ToHex(byte(digit));
-            result = result.InsertChar(0, c);
+            digit = this % 16;
+            c = Char.ToHex(byte(digit));
+            String.BuildFront(ref result, c);
             this = this / 16;
         }
         return result;
     }
-    
 }

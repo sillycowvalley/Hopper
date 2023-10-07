@@ -20,8 +20,13 @@ unit Parser
     file errorFile;
     byte currentTick;
     
-    SetInteractive(bool value)
+    byte tickRow;
+    byte tickColumn;
+    
+    SetInteractive(byte column, byte row)
     {
+        tickColumn = column;
+        tickRow = row;
         interactive = true;
         File.Delete(errorPath);
         errorFile = File.Create(errorPath);
@@ -53,7 +58,7 @@ unit Parser
         if (IsInteractive())
         {
             char c = progressTicks[currentTick];
-            DrawChar(1, Screen.Rows-1, c, Color.ButtonText, Color.Button);
+            DrawChar(tickColumn, tickRow, c, Color.StatusText, Color.StatusFace);
             currentTick++;
             if (currentTick == progressTicks.Length)
             {
@@ -62,14 +67,14 @@ unit Parser
         }
         else
         {
-            Print(str, Color.MatrixBlue, Color.PaleBlue);
+            Print(str, Color.ProgressTick, Color.ProgressBackground);
         }
     }
     ProgressDone()
     {
         if (IsInteractive())
         {
-            DrawChar(1, Screen.Rows-1, ' ', Color.ButtonText, Color.Button);
+            DrawChar(tickColumn, tickRow, ' ', Color.ProgressText, Color.ProgressFace);
         }
     }
         
@@ -136,9 +141,17 @@ unit Parser
         }
         hadError = true;
     }
+    Error(char ch)
+    {
+        ErrorAt(previousToken, "'" + ch + "' expected");
+    }
     Error(string message)
     {
         ErrorAt(previousToken, message);
+    }
+    ErrorAtCurrent(char ch)
+    {
+        ErrorAt(currentToken, "'" + ch + "' expected");
     }
     ErrorAtCurrent(string message)
     {
@@ -159,6 +172,10 @@ unit Parser
             ErrorAtCurrent(currentToken["lexeme"]);
             break;
         }
+    }
+    Consume(HopperToken consumeType, char ch)
+    {
+        Consume(consumeType, "", "'" + ch + "' expected");
     }
     Consume(HopperToken consumeType, string message)
     {

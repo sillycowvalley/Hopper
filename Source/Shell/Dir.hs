@@ -10,12 +10,17 @@ program Dir
     
     DirectoryListing(<string> options, <string> arguments, bool firstCall)
     {
+        uint iFirstDot;
+        bool invalidArguments;
+        bool first;
+        uint directories;
+        uint files;
         bool recursive = false;
         bool fullpaths = false; 
+        directory dir;
         string currentFolder = CurrentDirectory;
         loop
         {
-            bool invalidArguments = false;
             foreach (var option in options)
             {
                 if (option == "-s")
@@ -41,7 +46,6 @@ program Dir
             {
                 currentFolder = arguments[0];
             }
-            uint iFirstDot;
             
             if (currentFolder.IndexOf('.', ref iFirstDot))
             {   
@@ -178,7 +182,7 @@ program Dir
                 PrintLn("  -s : this directory and all subdirectories");
                 break;
             }
-            directory dir = Directory.Open(currentFolder);
+            dir = Directory.Open(currentFolder);
             if (!dir.IsValid())
             {
                 if (!firstCall)
@@ -201,8 +205,8 @@ program Dir
                 PrintLn(currentFolder, Color.MatrixBlue, Color.Black);
             }
             
-            bool first = true;
-            uint directories =  dir.GetDirectoryCount();
+            first = true;
+            directories =  dir.GetDirectoryCount();
             if (!recursive && (wildcardEndsWith.Length == 0) && (wildcardStartsWith.Length == 0))
             {
                 for (uint i = 0; i < directories; i++)
@@ -211,7 +215,7 @@ program Dir
                     PrintLn(directoryname, Color.MatrixBlue, Color.Black);
                 }
             }
-            uint files =  dir.GetFileCount();
+            files =  dir.GetFileCount();
             for (uint i = 0; i < files; i++)
             {
                 string filepath = dir.GetFile(i);

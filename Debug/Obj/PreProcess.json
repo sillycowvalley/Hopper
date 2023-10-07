@@ -1,0 +1,7039 @@
+{
+    "units": 
+    ["PreProcess", "System", "Diagnostics", "Screen", "Keyboard", "Token", "Scanner", "Parser", "SysCalls", "Symbols", "Constant", "Directives", "Char", "Bool", "Byte", "Int", "UInt", "Long", "Float", "Time", "String", "List", "Dictionary", "Pair", "Array", "File", "Path", "Directory", "Type", "Color", "JSON", "Types", "Block", "CodeStream", "Instructions", "Peephole"]
+  , "symbols": 
+  {
+  }
+  , "constants": 
+  {
+      "hexeExtension": ".hexe"
+    , "hasmExtension": ".hasm"
+    , "errorPath": "/Temp/Errors.txt"
+  }
+  , "enums": 
+  {
+      "Token.HopperToken": 
+    {
+        "members": 
+      {
+          "Token.HopperToken.Undefined": 0
+        , "Token.HopperToken.Error": 1
+        , "Token.HopperToken.DottedIdentifier": 2
+        , "Token.HopperToken.Identifier": 3
+        , "Token.HopperToken.Dot": 4
+        , "Token.HopperToken.Keyword": 5
+        , "Token.HopperToken.Directive": 6
+        , "Token.HopperToken.Bool": 7
+        , "Token.HopperToken.Char": 8
+        , "Token.HopperToken.Integer": 9
+        , "Token.HopperToken.Float": 10
+        , "Token.HopperToken.StringConstant": 11
+        , "Token.HopperToken.SemiColon": 12
+        , "Token.HopperToken.Comma": 13
+        , "Token.HopperToken.Colon": 14
+        , "Token.HopperToken.Question": 15
+        , "Token.HopperToken.LParen": 16
+        , "Token.HopperToken.RParen": 17
+        , "Token.HopperToken.LBrace": 18
+        , "Token.HopperToken.RBrace": 19
+        , "Token.HopperToken.LBracket": 20
+        , "Token.HopperToken.RBracket": 21
+        , "Token.HopperToken.LT": 22
+        , "Token.HopperToken.GT": 23
+        , "Token.HopperToken.EQ": 24
+        , "Token.HopperToken.LE": 25
+        , "Token.HopperToken.GE": 26
+        , "Token.HopperToken.NE": 27
+        , "Token.HopperToken.ShiftLeft": 28
+        , "Token.HopperToken.ShiftRight": 29
+        , "Token.HopperToken.BooleanAnd": 30
+        , "Token.HopperToken.BooleanOr": 31
+        , "Token.HopperToken.BooleanNot": 32
+        , "Token.HopperToken.BitAnd": 33
+        , "Token.HopperToken.BitOr": 34
+        , "Token.HopperToken.BitNot": 35
+        , "Token.HopperToken.BitXor": 36
+        , "Token.HopperToken.Add": 37
+        , "Token.HopperToken.Subtract": 38
+        , "Token.HopperToken.Multiply": 39
+        , "Token.HopperToken.Divide": 40
+        , "Token.HopperToken.Modulus": 41
+        , "Token.HopperToken.Increment": 42
+        , "Token.HopperToken.Decrement": 43
+        , "Token.HopperToken.Assign": 44
+        , "Token.HopperToken.EOF": 45
+      }
+    }
+    , "Instructions.Instruction": 
+    {
+        "members": 
+      {
+          "Instructions.Instruction.ADD": 0
+        , "Instructions.Instruction.SUB": 1
+        , "Instructions.Instruction.DIV": 2
+        , "Instructions.Instruction.MUL": 3
+        , "Instructions.Instruction.MOD": 4
+        , "Instructions.Instruction.EQ": 5
+        , "Instructions.Instruction.NE": 6
+        , "Instructions.Instruction.GT": 7
+        , "Instructions.Instruction.LT": 8
+        , "Instructions.Instruction.GE": 9
+        , "Instructions.Instruction.LE": 10
+        , "Instructions.Instruction.BOOLOR": 11
+        , "Instructions.Instruction.BOOLAND": 12
+        , "Instructions.Instruction.BITOR": 13
+        , "Instructions.Instruction.BITAND": 14
+        , "Instructions.Instruction.BITSHL": 15
+        , "Instructions.Instruction.BITSHR": 16
+        , "Instructions.Instruction.ADDI": 17
+        , "Instructions.Instruction.SUBI": 18
+        , "Instructions.Instruction.DIVI": 19
+        , "Instructions.Instruction.MULI": 20
+        , "Instructions.Instruction.MODI": 21
+        , "Instructions.Instruction.GTI": 22
+        , "Instructions.Instruction.LTI": 23
+        , "Instructions.Instruction.GEI": 24
+        , "Instructions.Instruction.LEI": 25
+        , "Instructions.Instruction.PUSHIB": 26
+        , "Instructions.Instruction.POPLOCALB": 27
+        , "Instructions.Instruction.PUSHLOCALB": 28
+        , "Instructions.Instruction.POPRELB": 29
+        , "Instructions.Instruction.PUSHRELB": 30
+        , "Instructions.Instruction.POPGLOBALB": 31
+        , "Instructions.Instruction.PUSHGLOBALB": 32
+        , "Instructions.Instruction.PUSHSTACKADDRB": 33
+        , "Instructions.Instruction.INCLOCALB": 34
+        , "Instructions.Instruction.DECLOCALB": 35
+        , "Instructions.Instruction.SYSCALL0": 36
+        , "Instructions.Instruction.SYSCALL1": 37
+        , "Instructions.Instruction.SYSCALL": 38
+        , "Instructions.Instruction.DUP": 39
+        , "Instructions.Instruction.DECSP": 40
+        , "Instructions.Instruction.DIE": 41
+        , "Instructions.Instruction.RETB": 42
+        , "Instructions.Instruction.RETRETB": 43
+        , "Instructions.Instruction.CALLB": 44
+        , "Instructions.Instruction.TESTBPB": 45
+        , "Instructions.Instruction.JZB": 46
+        , "Instructions.Instruction.JNZB": 47
+        , "Instructions.Instruction.JB": 48
+        , "Instructions.Instruction.JZW": 49
+        , "Instructions.Instruction.JNZW": 50
+        , "Instructions.Instruction.JW": 51
+        , "Instructions.Instruction.CALLW": 52
+        , "Instructions.Instruction.RETW": 53
+        , "Instructions.Instruction.RETRETW": 54
+        , "Instructions.Instruction.PUSHIW": 55
+        , "Instructions.Instruction.POPLOCALW": 56
+        , "Instructions.Instruction.PUSHLOCALW": 57
+        , "Instructions.Instruction.POPRELW": 58
+        , "Instructions.Instruction.PUSHRELW": 59
+        , "Instructions.Instruction.POPGLOBALW": 60
+        , "Instructions.Instruction.PUSHGLOBALW": 61
+        , "Instructions.Instruction.PUSHSTACKADDRW": 62
+        , "Instructions.Instruction.INCLOCALBB": 63
+        , "Instructions.Instruction.PUSHIWLE": 64
+        , "Instructions.Instruction.BOOLNOT": 65
+        , "Instructions.Instruction.BITNOT": 66
+        , "Instructions.Instruction.SWAP": 67
+        , "Instructions.Instruction.PUSHI0": 68
+        , "Instructions.Instruction.PUSHI1": 69
+        , "Instructions.Instruction.PUSHIM1": 70
+        , "Instructions.Instruction.PUSHGP": 71
+        , "Instructions.Instruction.COPYNEXTPOP": 72
+        , "Instructions.Instruction.ENTER": 73
+        , "Instructions.Instruction.RET0": 74
+        , "Instructions.Instruction.CALLREL": 75
+        , "Instructions.Instruction.POPLOCALB00": 76
+        , "Instructions.Instruction.POPLOCALB02": 77
+        , "Instructions.Instruction.PUSHLOCALB00": 78
+        , "Instructions.Instruction.PUSHLOCALB02": 79
+        , "Instructions.Instruction.NOP": 80
+        , "Instructions.Instruction.CAST": 81
+        , "Instructions.Instruction.PUSHGLOBALBB": 82
+        , "Instructions.Instruction.INCGLOBALB": 83
+        , "Instructions.Instruction.DECGLOBALB": 84
+        , "Instructions.Instruction.PUSHIWLT": 85
+        , "Instructions.Instruction.PUSHLOCALBB": 86
+        , "Instructions.Instruction.POPCOPYLOCALB": 87
+        , "Instructions.Instruction.POPCOPYRELB": 88
+        , "Instructions.Instruction.POPCOPYGLOBALB": 89
+        , "Instructions.Instruction.POPCOPYLOCALW": 90
+        , "Instructions.Instruction.POPCOPYRELW": 91
+        , "Instructions.Instruction.POPCOPYGLOBALW": 92
+        , "Instructions.Instruction.POPCOPYLOCALB00": 93
+        , "Instructions.Instruction.POPCOPYLOCALB02": 94
+        , "Instructions.Instruction.ENTERB": 95
+      }
+    }
+  }
+  , "flags": 
+  {
+      "Keyboard.Key": 
+    {
+        "members": 
+      {
+          "Keyboard.Key.NoKey": 0
+        , "Keyboard.Key.Alt": 256
+        , "Keyboard.Key.Control": 512
+        , "Keyboard.Key.Shift": 1024
+        , "Keyboard.Key.Mask": 61695
+        , "Keyboard.Key.Click": 57599
+        , "Keyboard.Key.Scroll": 57598
+        , "Keyboard.Key.ClickRight": 57597
+        , "Keyboard.Key.Space": 32
+        , "Keyboard.Key.Delete": 57457
+        , "Keyboard.Key.Backspace": 8
+        , "Keyboard.Key.Tab": 57357
+        , "Keyboard.Key.Enter": 13
+        , "Keyboard.Key.Escape": 27
+        , "Keyboard.Key.ModSpace": 57385
+        , "Keyboard.Key.ModEscape": 57462
+        , "Keyboard.Key.ModInsert": 57456
+        , "Keyboard.Key.ModBackspace": 57446
+        , "Keyboard.Key.ModEnter": 57434
+        , "Keyboard.Key.ModEsc": 57462
+        , "Keyboard.Key.F1": 57349
+        , "Keyboard.Key.F2": 57350
+        , "Keyboard.Key.F3": 57348
+        , "Keyboard.Key.F4": 57356
+        , "Keyboard.Key.F5": 57347
+        , "Keyboard.Key.F6": 57355
+        , "Keyboard.Key.F7": 57475
+        , "Keyboard.Key.F8": 57354
+        , "Keyboard.Key.F9": 57345
+        , "Keyboard.Key.F10": 57353
+        , "Keyboard.Key.F11": 57464
+        , "Keyboard.Key.F12": 57351
+        , "Keyboard.Key.Left": 57451
+        , "Keyboard.Key.Right": 57460
+        , "Keyboard.Key.Up": 57461
+        , "Keyboard.Key.Down": 57458
+        , "Keyboard.Key.Home": 57452
+        , "Keyboard.Key.End": 57449
+        , "Keyboard.Key.PageDown": 57466
+        , "Keyboard.Key.PageUp": 57469
+        , "Keyboard.Key.ModPeriod": 57417
+        , "Keyboard.Key.Mod0": 57413
+        , "Keyboard.Key.Mod1": 57366
+        , "Keyboard.Key.Mod2": 57374
+        , "Keyboard.Key.Mod3": 57382
+        , "Keyboard.Key.Mod4": 57381
+        , "Keyboard.Key.Mod5": 57390
+        , "Keyboard.Key.Mod6": 57398
+        , "Keyboard.Key.Mod7": 57405
+        , "Keyboard.Key.Mod8": 57406
+        , "Keyboard.Key.Mod9": 57414
+        , "Keyboard.Key.ModA": 57372
+        , "Keyboard.Key.ModB": 57394
+        , "Keyboard.Key.ModC": 57377
+        , "Keyboard.Key.ModD": 57379
+        , "Keyboard.Key.ModE": 57364
+        , "Keyboard.Key.ModF": 57387
+        , "Keyboard.Key.ModG": 57396
+        , "Keyboard.Key.ModH": 57395
+        , "Keyboard.Key.ModI": 57411
+        , "Keyboard.Key.ModJ": 57403
+        , "Keyboard.Key.ModK": 57410
+        , "Keyboard.Key.ModL": 57419
+        , "Keyboard.Key.ModM": 57402
+        , "Keyboard.Key.ModN": 57393
+        , "Keyboard.Key.ModO": 57412
+        , "Keyboard.Key.ModP": 57421
+        , "Keyboard.Key.ModQ": 57365
+        , "Keyboard.Key.ModR": 57389
+        , "Keyboard.Key.ModS": 57371
+        , "Keyboard.Key.ModT": 57388
+        , "Keyboard.Key.ModU": 57404
+        , "Keyboard.Key.ModV": 57386
+        , "Keyboard.Key.ModW": 57373
+        , "Keyboard.Key.ModX": 57378
+        , "Keyboard.Key.ModY": 57397
+        , "Keyboard.Key.ModZ": 57370
+        , "Keyboard.Key.ControlA": 57884
+        , "Keyboard.Key.ControlC": 57889
+        , "Keyboard.Key.ControlV": 57898
+        , "Keyboard.Key.A": 65
+        , "Keyboard.Key.a": 97
+        , "Keyboard.Key.B": 66
+        , "Keyboard.Key.b": 98
+        , "Keyboard.Key.C": 67
+        , "Keyboard.Key.c": 99
+        , "Keyboard.Key.D": 68
+        , "Keyboard.Key.d": 100
+        , "Keyboard.Key.E": 69
+        , "Keyboard.Key.e": 101
+        , "Keyboard.Key.F": 70
+        , "Keyboard.Key.f": 102
+        , "Keyboard.Key.G": 71
+        , "Keyboard.Key.g": 103
+        , "Keyboard.Key.H": 72
+        , "Keyboard.Key.h": 104
+        , "Keyboard.Key.I": 73
+        , "Keyboard.Key.i": 105
+        , "Keyboard.Key.J": 74
+        , "Keyboard.Key.j": 106
+        , "Keyboard.Key.K": 75
+        , "Keyboard.Key.k": 107
+        , "Keyboard.Key.L": 76
+        , "Keyboard.Key.l": 108
+        , "Keyboard.Key.M": 77
+        , "Keyboard.Key.m": 109
+        , "Keyboard.Key.N": 78
+        , "Keyboard.Key.n": 110
+        , "Keyboard.Key.O": 79
+        , "Keyboard.Key.o": 111
+        , "Keyboard.Key.P": 80
+        , "Keyboard.Key.p": 112
+        , "Keyboard.Key.Q": 81
+        , "Keyboard.Key.q": 113
+        , "Keyboard.Key.R": 82
+        , "Keyboard.Key.r": 114
+        , "Keyboard.Key.S": 83
+        , "Keyboard.Key.s": 115
+        , "Keyboard.Key.T": 84
+        , "Keyboard.Key.t": 116
+        , "Keyboard.Key.U": 85
+        , "Keyboard.Key.u": 117
+        , "Keyboard.Key.V": 86
+        , "Keyboard.Key.v": 118
+        , "Keyboard.Key.W": 87
+        , "Keyboard.Key.w": 119
+        , "Keyboard.Key.X": 88
+        , "Keyboard.Key.x": 120
+        , "Keyboard.Key.Y": 89
+        , "Keyboard.Key.y": 121
+        , "Keyboard.Key.Z": 90
+        , "Keyboard.Key.z": 122
+        , "Keyboard.Key.N0": 48
+        , "Keyboard.Key.N1": 49
+        , "Keyboard.Key.N2": 50
+        , "Keyboard.Key.N3": 51
+        , "Keyboard.Key.N4": 52
+        , "Keyboard.Key.N5": 53
+        , "Keyboard.Key.N6": 54
+        , "Keyboard.Key.N7": 55
+        , "Keyboard.Key.N8": 56
+        , "Keyboard.Key.N9": 57
+      }
+    }
+  }
+  , "globals": 
+  {
+      "PreProcess.unitsParsed": 
+    {
+        "type": "<string,bool>"
+    }
+    , "PreProcess.currentUnit": 
+    {
+        "type": "string"
+    }
+    , "Token.reservedIdentifiers": 
+    {
+        "type": "<string,bool>"
+    }
+    , "Token.reservedZopperIdentifiers": 
+    {
+        "type": "<string,bool>"
+    }
+    , "Token.typeKeywords": 
+    {
+        "type": "<string,bool>"
+    }
+    , "Token.statementKeywords": 
+    {
+        "type": "<string,bool>"
+    }
+    , "Token.directiveKeywords": 
+    {
+        "type": "<string,bool>"
+    }
+    , "Token.hopperTokenTypes": 
+    {
+        "type": "<string,HopperToken>"
+    }
+    , "Token.hopperTokenNames": 
+    {
+        "type": "<HopperToken,string>"
+    }
+    , "Scanner.sourceLines": 
+    {
+        "type": "<string>"
+    }
+    , "Scanner.currentPos": 
+    {
+        "type": "long"
+    }
+    , "Scanner.currentLine": 
+    {
+        "type": "uint"
+    }
+    , "Scanner.sourceLength": 
+    {
+        "type": "long"
+    }
+    , "Scanner.iCurrentSourceLine": 
+    {
+        "type": "uint"
+    }
+    , "Scanner.currentStartPos": 
+    {
+        "type": "long"
+    }
+    , "Scanner.currentSourcePath": 
+    {
+        "type": "string"
+    }
+    , "Scanner.lastChar": 
+    {
+        "type": "char"
+    }
+    , "Scanner.lastPos": 
+    {
+        "type": "long"
+    }
+    , "Scanner.lastPosSet": 
+    {
+        "type": "bool"
+    }
+    , "Scanner.dumpTokens": 
+    {
+        "type": "bool"
+    }
+    , "Scanner.peekedToken": 
+    {
+        "type": "<string,string>"
+    }
+    , "Scanner.isPeekedToken": 
+    {
+        "type": "bool"
+      , "pos": 453
+      , "line": 22
+      , "source": "/source/compiler/tokens/scanner.hs"
+    }
+    , "Parser.previousToken": 
+    {
+        "type": "<string,string>"
+    }
+    , "Parser.currentToken": 
+    {
+        "type": "<string,string>"
+    }
+    , "Parser.hadError": 
+    {
+        "type": "bool"
+    }
+    , "Parser.interactive": 
+    {
+        "type": "bool"
+    }
+    , "Parser.progressTicks": 
+    {
+        "type": "string"
+      , "pos": 362
+      , "line": 17
+      , "source": "/source/compiler/tokens/parser.hs"
+    }
+    , "Parser.errorFile": 
+    {
+        "type": "file"
+    }
+    , "Parser.currentTick": 
+    {
+        "type": "byte"
+    }
+    , "Parser.tickRow": 
+    {
+        "type": "byte"
+    }
+    , "Parser.tickColumn": 
+    {
+        "type": "byte"
+    }
+    , "SysCalls.syscalls": 
+    {
+        "type": "<string,byte>"
+    }
+    , "Symbols.gNames": 
+    {
+        "type": "<string>"
+    }
+    , "Symbols.gIndex": 
+    {
+        "type": "<string,uint>"
+    }
+    , "Symbols.gTypes": 
+    {
+        "type": "<uint,string>"
+    }
+    , "Symbols.gStartPos": 
+    {
+        "type": "<uint,long>"
+    }
+    , "Symbols.gStartLine": 
+    {
+        "type": "<uint,uint>"
+    }
+    , "Symbols.gSourcePath": 
+    {
+        "type": "<uint,string>"
+    }
+    , "Symbols.fNames": 
+    {
+        "type": "<string>"
+    }
+    , "Symbols.fIndex": 
+    {
+        "type": "<string,uint>"
+    }
+    , "Symbols.fOverloads": 
+    {
+        "type": "<uint,<uint>>"
+    }
+    , "Symbols.fReturnTypes": 
+    {
+        "type": "<uint,string>"
+    }
+    , "Symbols.fArgumentNamesAndTypes": 
+    {
+        "type": "<uint,<<string>>>"
+    }
+    , "Symbols.fLocalNamesAndTypes": 
+    {
+        "type": "<uint,<<string>>>"
+    }
+    , "Symbols.fStartPos": 
+    {
+        "type": "<uint,long>"
+    }
+    , "Symbols.fStartLine": 
+    {
+        "type": "<uint,uint>"
+    }
+    , "Symbols.fSourcePath": 
+    {
+        "type": "<uint,string>"
+    }
+    , "Symbols.fSysCall": 
+    {
+        "type": "<uint,byte>"
+    }
+    , "Symbols.fSysCallOverload": 
+    {
+        "type": "<uint,byte>"
+    }
+    , "Symbols.fSysCallCount": 
+    {
+        "type": "<string,byte>"
+    }
+    , "Symbols.fCodeStream": 
+    {
+        "type": "<uint,<byte>>"
+    }
+    , "Symbols.fDebugInfo": 
+    {
+        "type": "<uint,<string,string>>"
+    }
+    , "Symbols.fCalls": 
+    {
+        "type": "<uint,uint>"
+    }
+    , "Symbols.iNextOverload": 
+    {
+        "type": "uint"
+    }
+    , "Symbols.fdNames": 
+    {
+        "type": "<string>"
+    }
+    , "Symbols.fdIndex": 
+    {
+        "type": "<string,uint>"
+    }
+    , "Symbols.fdOverloads": 
+    {
+        "type": "<uint,<uint>>"
+    }
+    , "Symbols.fdReturnTypes": 
+    {
+        "type": "<uint,string>"
+    }
+    , "Symbols.fdArgumentNamesAndTypes": 
+    {
+        "type": "<uint,<<string>>>"
+    }
+    , "Symbols.idNextOverload": 
+    {
+        "type": "uint"
+    }
+    , "Symbols.eValues": 
+    {
+        "type": "<string,<string,uint>>"
+    }
+    , "Symbols.eIndex": 
+    {
+        "type": "<string,uint>"
+    }
+    , "Symbols.eMembers": 
+    {
+        "type": "<uint,<string,uint>>"
+    }
+    , "Symbols.flValues": 
+    {
+        "type": "<string,<string,uint>>"
+    }
+    , "Symbols.flIndex": 
+    {
+        "type": "<string,uint>"
+    }
+    , "Symbols.flMembers": 
+    {
+        "type": "<uint,<string,uint>>"
+    }
+    , "Symbols.flMembersReversed": 
+    {
+        "type": "<uint,<uint,string>>"
+    }
+    , "Symbols.flMembersSorted": 
+    {
+        "type": "<uint,<uint>>"
+    }
+    , "Symbols.pdValues": 
+    {
+        "type": "<string,string>"
+    }
+    , "Symbols.cValues": 
+    {
+        "type": "<string,string>"
+    }
+    , "Symbols.nameSpaces": 
+    {
+        "type": "<string>"
+    }
+    , "Symbols.deferredTypes": 
+    {
+        "type": "<<string,string>>"
+    }
+    , "Symbols.iLastOverload": 
+    {
+        "type": "uint"
+    }
+    , "Symbols.overloadsCompiled": 
+    {
+        "type": "<uint,bool>"
+    }
+    , "Symbols.fTouches": 
+    {
+        "type": "<uint,<uint>>"
+    }
+    , "Directives.defineNesting": 
+    {
+        "type": "<bool>"
+    }
+    , "Types.iCurrentOverload": 
+    {
+        "type": "uint"
+    }
+    , "Types.currentNamespace": 
+    {
+        "type": "string"
+    }
+    , "Block.blockList": 
+    {
+        "type": "<<string,variant>>"
+    }
+    , "CodeStream.debugInfo": 
+    {
+        "type": "<string,string>"
+    }
+    , "CodeStream.debugInfoLineUsed": 
+    {
+        "type": "<string,bool>"
+    }
+    , "CodeStream.currentStream": 
+    {
+        "type": "<byte>"
+    }
+    , "CodeStream.constantStream": 
+    {
+        "type": "<byte>"
+    }
+    , "CodeStream.checkedBuild": 
+    {
+        "type": "bool"
+    }
+    , "Peephole.lastInstruction0": 
+    {
+        "type": "uint"
+    }
+    , "Peephole.lastInstruction1": 
+    {
+        "type": "uint"
+    }
+    , "Peephole.lastInstruction2": 
+    {
+        "type": "uint"
+    }
+    , "Peephole.lastInstruction3": 
+    {
+        "type": "uint"
+    }
+    , "Peephole.lastInstruction4": 
+    {
+        "type": "uint"
+    }
+    , "Peephole.peephholeBoundary": 
+    {
+        "type": "uint"
+    }
+  }
+  , "functions": 
+  {
+      "PreProcess.normalizeIdentifier": 
+    {
+        "1": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:idToken": "<string,string>"
+          , "1:identifier": "ref string"
+          , "2:public": "ref bool"
+          , "3:noDuplicates": "bool"
+        }
+        , "pos": 916
+        , "line": 30
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.isValueType": 
+    {
+        "2": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeName": "string"
+        }
+        , "pos": 1930
+        , "line": 62
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.tryParseTypeString": 
+    {
+        "3": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "ref string"
+        }
+        , "pos": 2348
+        , "line": 79
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.walkBlock": 
+    {
+        "4": 
+      {
+          "returntype": "<string>"
+        , "pos": 6592
+        , "line": 190
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.constDeclaration": 
+    {
+        "5": 
+      {
+          "pos": 8387
+        , "line": 256
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.enumDeclaration": 
+    {
+        "6": 
+      {
+          "arguments": 
+        {
+            "0:isFlags": "bool"
+        }
+        , "pos": 9785
+        , "line": 297
+        , "source": "PreProcess.hs"
+      }
+      , "7": 
+      {
+          "pos": 13661
+        , "line": 411
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.flagsDeclaration": 
+    {
+        "8": 
+      {
+          "pos": 13735
+        , "line": 415
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.usesDeclaration": 
+    {
+        "9": 
+      {
+          "pos": 13813
+        , "line": 420
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.mainMethodDeclaration": 
+    {
+        "10": 
+      {
+          "pos": 14824
+        , "line": 452
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.argumentsDeclaration": 
+    {
+        "11": 
+      {
+          "returntype": "<<string>>"
+        , "pos": 15187
+        , "line": 467
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.methodDeclaration": 
+    {
+        "12": 
+      {
+          "arguments": 
+        {
+            "0:idToken": "<string,string>"
+          , "1:isDelegate": "bool"
+        }
+        , "pos": 17352
+        , "line": 532
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.functionDeclaration": 
+    {
+        "13": 
+      {
+          "arguments": 
+        {
+            "0:idToken": "<string,string>"
+          , "1:returnTypeString": "string"
+          , "2:isDelegate": "bool"
+        }
+        , "pos": 18377
+        , "line": 567
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.isThisType": 
+    {
+        "14": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeName": "string"
+        }
+        , "pos": 19404
+        , "line": 603
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.propertyDeclaration": 
+    {
+        "15": 
+      {
+          "arguments": 
+        {
+            "0:idToken": "<string,string>"
+          , "1:typeString": "string"
+        }
+        , "pos": 19900
+        , "line": 621
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.globalDeclaration": 
+    {
+        "16": 
+      {
+          "arguments": 
+        {
+            "0:idToken": "<string,string>"
+          , "1:typeString": "string"
+        }
+        , "pos": 25413
+        , "line": 765
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.declaration": 
+    {
+        "17": 
+      {
+          "pos": 27156
+        , "line": 819
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.buildSymbols": 
+    {
+        "18": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:sourcePath": "string"
+        }
+        , "pos": 34946
+        , "line": 1005
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.BadArguments": 
+    {
+        "19": 
+      {
+          "pos": 38362
+        , "line": 1120
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "PreProcess.main": 
+    {
+        "0": 
+      {
+          "pos": 38557
+        , "line": 1125
+        , "source": "PreProcess.hs"
+      }
+    }
+    , "System.Trace_Get": 
+    {
+        "20": 
+      {
+          "returntype": "bool"
+        , "pos": 243
+        , "line": 10
+        , "source": "/source/system/system.hs"
+      }
+    }
+    , "System.Trace_Set": 
+    {
+        "21": 
+      {
+          "arguments": 
+        {
+            "0:value": "bool"
+        }
+        , "pos": 266
+        , "line": 10
+        , "source": "/source/system/system.hs"
+      }
+    }
+    , "System.Warp_Get": 
+    {
+        "22": 
+      {
+          "returntype": "bool"
+        , "pos": 294
+        , "line": 11
+        , "source": "/source/system/system.hs"
+      }
+    }
+    , "System.Warp_Set": 
+    {
+        "23": 
+      {
+          "arguments": 
+        {
+            "0:value": "bool"
+        }
+        , "pos": 317
+        , "line": 11
+        , "source": "/source/system/system.hs"
+      }
+    }
+    , "System.Arguments_Get": 
+    {
+        "24": 
+      {
+          "returntype": "<string>"
+        , "syscall": 89
+        , "overload": 0
+      }
+    }
+    , "System.CurrentDirectory_Get": 
+    {
+        "25": 
+      {
+          "returntype": "string"
+        , "syscall": 90
+        , "overload": 0
+      }
+    }
+    , "System.CurrentDirectory_Set": 
+    {
+        "26": 
+      {
+          "arguments": 
+        {
+            "0:value": "string"
+        }
+        , "syscall": 91
+        , "overload": 0
+      }
+    }
+    , "System.Beep": 
+    {
+        "27": 
+      {
+          "syscall": 92
+        , "overload": 0
+      }
+    }
+    , "System.Execute": 
+    {
+        "28": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:programPath": "string"
+          , "1:arguments": "<string>"
+        }
+        , "syscall": 93
+        , "overload": 0
+      }
+    }
+    , "Diagnostics.Assert": 
+    {
+        "29": 
+      {
+          "arguments": 
+        {
+            "0:assertion": "bool"
+          , "1:message": "string"
+        }
+        , "syscall": 123
+        , "overload": 0
+      }
+      , "30": 
+      {
+          "arguments": 
+        {
+            "0:assertion": "bool"
+          , "1:message": "string"
+          , "2:src": "string"
+          , "3:ln": "uint"
+        }
+        , "syscall": 123
+        , "overload": 1
+      }
+    }
+    , "Diagnostics.SetError": 
+    {
+        "31": 
+      {
+          "arguments": 
+        {
+            "0:error": "uint"
+        }
+        , "syscall": 125
+        , "overload": 0
+      }
+    }
+    , "Diagnostics.Die": 
+    {
+        "32": 
+      {
+          "arguments": 
+        {
+            "0:error": "uint"
+        }
+        , "syscall": 124
+        , "overload": 0
+      }
+    }
+    , "Diagnostics.OutputDebug": 
+    {
+        "33": 
+      {
+          "arguments": 
+        {
+            "0:output": "string"
+        }
+        , "syscall": 122
+        , "overload": 0
+      }
+      , "34": 
+      {
+          "arguments": 
+        {
+            "0:output": "<string,string>"
+        }
+        , "syscall": 122
+        , "overload": 1
+      }
+      , "35": 
+      {
+          "arguments": 
+        {
+            "0:output": "<string>"
+        }
+        , "syscall": 122
+        , "overload": 2
+      }
+      , "36": 
+      {
+          "arguments": 
+        {
+            "0:output": "<<string>>"
+        }
+        , "syscall": 122
+        , "overload": 3
+      }
+      , "37": 
+      {
+          "arguments": 
+        {
+            "0:output": "<<uint>>"
+        }
+        , "syscall": 122
+        , "overload": 4
+      }
+      , "38": 
+      {
+          "arguments": 
+        {
+            "0:output": "<uint>"
+        }
+        , "syscall": 122
+        , "overload": 5
+      }
+    }
+    , "Screen.CursorX_Get": 
+    {
+        "39": 
+      {
+          "returntype": "byte"
+        , "syscall": 47
+        , "overload": 0
+      }
+    }
+    , "Screen.CursorY_Get": 
+    {
+        "40": 
+      {
+          "returntype": "byte"
+        , "syscall": 48
+        , "overload": 0
+      }
+    }
+    , "Screen.Columns_Get": 
+    {
+        "41": 
+      {
+          "returntype": "byte"
+        , "syscall": 45
+        , "overload": 0
+      }
+    }
+    , "Screen.Rows_Get": 
+    {
+        "42": 
+      {
+          "returntype": "byte"
+        , "syscall": 46
+        , "overload": 0
+      }
+    }
+    , "Screen.Suspend": 
+    {
+        "43": 
+      {
+          "syscall": 49
+        , "overload": 0
+      }
+    }
+    , "Screen.Resume": 
+    {
+        "44": 
+      {
+          "arguments": 
+        {
+            "0:isInteractive": "bool"
+        }
+        , "syscall": 50
+        , "overload": 0
+      }
+    }
+    , "Screen.Clear": 
+    {
+        "45": 
+      {
+          "syscall": 43
+        , "overload": 0
+      }
+    }
+    , "Screen.SetCursor": 
+    {
+        "46": 
+      {
+          "arguments": 
+        {
+            "0:x": "uint"
+          , "1:y": "uint"
+        }
+        , "syscall": 44
+        , "overload": 0
+      }
+    }
+    , "Screen.DrawChar": 
+    {
+        "47": 
+      {
+          "arguments": 
+        {
+            "0:x": "uint"
+          , "1:y": "uint"
+          , "2:c": "char"
+          , "3:foreColour": "uint"
+          , "4:backColour": "uint"
+        }
+        , "syscall": 51
+        , "overload": 0
+      }
+    }
+    , "Screen.Print": 
+    {
+        "48": 
+      {
+          "arguments": 
+        {
+            "0:c": "char"
+          , "1:foreColour": "uint"
+          , "2:backColour": "uint"
+        }
+        , "syscall": 41
+        , "overload": 0
+      }
+      , "49": 
+      {
+          "arguments": 
+        {
+            "0:s": "string"
+          , "1:foreColour": "uint"
+          , "2:backColour": "uint"
+        }
+        , "syscall": 41
+        , "overload": 1
+      }
+      , "53": 
+      {
+          "arguments": 
+        {
+            "0:c": "char"
+        }
+        , "pos": 1054
+        , "line": 47
+        , "source": "/source/system/screen.hs"
+      }
+      , "54": 
+      {
+          "arguments": 
+        {
+            "0:s": "string"
+        }
+        , "pos": 1136
+        , "line": 51
+        , "source": "/source/system/screen.hs"
+      }
+    }
+    , "Screen.PrintLn": 
+    {
+        "50": 
+      {
+          "syscall": 42
+        , "overload": 0
+      }
+      , "51": 
+      {
+          "arguments": 
+        {
+            "0:c": "char"
+          , "1:foreColour": "uint"
+          , "2:backColour": "uint"
+        }
+        , "pos": 823
+        , "line": 34
+        , "source": "/source/system/screen.hs"
+      }
+      , "52": 
+      {
+          "arguments": 
+        {
+            "0:s": "string"
+          , "1:foreColour": "uint"
+          , "2:backColour": "uint"
+        }
+        , "pos": 952
+        , "line": 39
+        , "source": "/source/system/screen.hs"
+      }
+      , "55": 
+      {
+          "arguments": 
+        {
+            "0:c": "char"
+        }
+        , "pos": 1218
+        , "line": 55
+        , "source": "/source/system/screen.hs"
+      }
+      , "56": 
+      {
+          "arguments": 
+        {
+            "0:s": "string"
+        }
+        , "pos": 1323
+        , "line": 60
+        , "source": "/source/system/screen.hs"
+      }
+    }
+    , "Keyboard.ModifiersToString": 
+    {
+        "57": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "Key"
+        }
+        , "pos": 3536
+        , "line": 169
+        , "source": "/source/system/keyboard.hs"
+      }
+    }
+    , "Keyboard.KeyToString": 
+    {
+        "58": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "Key"
+        }
+        , "pos": 4331
+        , "line": 199
+        , "source": "/source/system/keyboard.hs"
+      }
+    }
+    , "Keyboard.ToClickString": 
+    {
+        "59": 
+      {
+          "returntype": "string"
+        , "pos": 11608
+        , "line": 503
+        , "source": "/source/system/keyboard.hs"
+      }
+    }
+    , "Keyboard.ClickX_Get": 
+    {
+        "60": 
+      {
+          "returntype": "uint"
+        , "syscall": 117
+        , "overload": 0
+      }
+    }
+    , "Keyboard.ClickY_Get": 
+    {
+        "61": 
+      {
+          "returntype": "uint"
+        , "syscall": 118
+        , "overload": 0
+      }
+    }
+    , "Keyboard.ClickUp_Get": 
+    {
+        "62": 
+      {
+          "returntype": "bool"
+        , "syscall": 119
+        , "overload": 0
+      }
+    }
+    , "Keyboard.ClickDouble_Get": 
+    {
+        "63": 
+      {
+          "returntype": "bool"
+        , "syscall": 120
+        , "overload": 0
+      }
+    }
+    , "Keyboard.ScrollDelta_Get": 
+    {
+        "64": 
+      {
+          "returntype": "int"
+        , "syscall": 121
+        , "overload": 0
+      }
+    }
+    , "Keyboard.IsAvailable_Get": 
+    {
+        "65": 
+      {
+          "returntype": "bool"
+        , "syscall": 115
+        , "overload": 0
+      }
+    }
+    , "Keyboard.ReadKey": 
+    {
+        "66": 
+      {
+          "returntype": "Key"
+        , "syscall": 114
+        , "overload": 0
+      }
+    }
+    , "Keyboard.ToKey": 
+    {
+        "67": 
+      {
+          "returntype": "Key"
+        , "arguments": 
+        {
+            "0:c": "char"
+        }
+        , "syscall": 116
+        , "overload": 0
+      }
+    }
+    , "Keyboard.ToChar": 
+    {
+        "68": 
+      {
+          "returntype": "char"
+        , "arguments": 
+        {
+            "0:this": "Key"
+        }
+        , "pos": 12530
+        , "line": 532
+        , "source": "/source/system/keyboard.hs"
+      }
+    }
+    , "Token.HopperTokenToString": 
+    {
+        "69": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:tokenType": "HopperToken"
+        }
+        , "pos": 1394
+        , "line": 69
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.GetType": 
+    {
+        "70": 
+      {
+          "returntype": "HopperToken"
+        , "arguments": 
+        {
+            "0:token": "<string,string>"
+        }
+        , "pos": 1908
+        , "line": 87
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.Initialize": 
+    {
+        "71": 
+      {
+          "pos": 2732
+        , "line": 113
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.IsDirectiveKeyword": 
+    {
+        "72": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:candidate": "string"
+        }
+        , "pos": 8520
+        , "line": 242
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.IsReservedIdentifier": 
+    {
+        "73": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:candidate": "string"
+        }
+        , "pos": 8638
+        , "line": 246
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.IsReservedZopperIdentifier": 
+    {
+        "74": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:candidate": "string"
+        }
+        , "pos": 8764
+        , "line": 250
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.IsTypeKeyword": 
+    {
+        "75": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:candidate": "string"
+        }
+        , "pos": 8883
+        , "line": 254
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.IsStatementKeyword": 
+    {
+        "76": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:candidate": "string"
+        }
+        , "pos": 8994
+        , "line": 258
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.IsReservedWord": 
+    {
+        "77": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:candidate": "string"
+        }
+        , "pos": 9106
+        , "line": 262
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.IsKeyword": 
+    {
+        "78": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:candidate": "string"
+        }
+        , "pos": 9319
+        , "line": 268
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.TryParseLong": 
+    {
+        "79": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:content": "string"
+          , "1:returnValue": "ref long"
+        }
+        , "pos": 9497
+        , "line": 273
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.TryParseInt": 
+    {
+        "80": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:content": "string"
+          , "1:returnValue": "ref int"
+        }
+        , "pos": 10339
+        , "line": 306
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.TryParseUInt": 
+    {
+        "81": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:content": "string"
+          , "1:returnValue": "ref uint"
+        }
+        , "pos": 10699
+        , "line": 320
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.TryParseHex": 
+    {
+        "82": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:content": "string"
+          , "1:returnValue": "ref uint"
+        }
+        , "pos": 11054
+        , "line": 334
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+      , "83": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:content": "string"
+          , "1:returnValue": "ref long"
+        }
+        , "pos": 12192
+        , "line": 373
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.TryParseBinary": 
+    {
+        "84": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:content": "string"
+          , "1:returnValue": "ref uint"
+        }
+        , "pos": 13349
+        , "line": 414
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.TryParseFloat": 
+    {
+        "85": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:content": "string"
+          , "1:returnValue": "ref float"
+        }
+        , "pos": 13973
+        , "line": 440
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.New": 
+    {
+        "86": 
+      {
+          "returntype": "<string,string>"
+        , "arguments": 
+        {
+            "0:tokenType": "HopperToken"
+          , "1:lexeme": "string"
+          , "2:ln": "uint"
+          , "3:pos": "long"
+          , "4:sourcePath": "string"
+        }
+        , "pos": 16020
+        , "line": 506
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Token.ToString": 
+    {
+        "87": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:token": "<string,string>"
+        }
+        , "pos": 16345
+        , "line": 516
+        , "source": "/source/compiler/tokens/token.hs"
+      }
+    }
+    , "Scanner.New": 
+    {
+        "88": 
+      {
+          "pos": 678
+        , "line": 32
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.Load": 
+    {
+        "89": 
+      {
+          "arguments": 
+        {
+            "0:sourcePath": "string"
+        }
+        , "pos": 780
+        , "line": 38
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.Reset": 
+    {
+        "90": 
+      {
+          "arguments": 
+        {
+            "0:pos": "long"
+          , "1:ln": "uint"
+          , "2:sourcePath": "string"
+        }
+        , "pos": 2154
+        , "line": 86
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+      , "91": 
+      {
+          "arguments": 
+        {
+            "0:startToken": "<string,string>"
+        }
+        , "pos": 2603
+        , "line": 104
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.DumpTokens": 
+    {
+        "92": 
+      {
+          "arguments": 
+        {
+            "0:dump": "bool"
+        }
+        , "pos": 3143
+        , "line": 123
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.isAtEnd": 
+    {
+        "93": 
+      {
+          "returntype": "bool"
+        , "pos": 3201
+        , "line": 127
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.errorToken": 
+    {
+        "94": 
+      {
+          "returntype": "<string,string>"
+        , "arguments": 
+        {
+            "0:message": "string"
+        }
+        , "pos": 3418
+        , "line": 132
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.sourceGetFromPos": 
+    {
+        "95": 
+      {
+          "returntype": "char"
+        , "arguments": 
+        {
+            "0:pos": "long"
+          , "1:updateCache": "bool"
+        }
+        , "pos": 3621
+        , "line": 137
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.advance": 
+    {
+        "96": 
+      {
+          "returntype": "char"
+        , "pos": 5211
+        , "line": 199
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.peek": 
+    {
+        "97": 
+      {
+          "returntype": "char"
+        , "pos": 5347
+        , "line": 205
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.peekNext": 
+    {
+        "98": 
+      {
+          "returntype": "char"
+        , "pos": 5430
+        , "line": 209
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.match": 
+    {
+        "99": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:expected": "char"
+        }
+        , "pos": 5643
+        , "line": 218
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.skipWhitespace": 
+    {
+        "100": 
+      {
+          "pos": 5909
+        , "line": 231
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.scanString": 
+    {
+        "101": 
+      {
+          "returntype": "<string,string>"
+        , "pos": 8152
+        , "line": 304
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.scanChar": 
+    {
+        "102": 
+      {
+          "returntype": "<string,string>"
+        , "pos": 9133
+        , "line": 336
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.scanNumber": 
+    {
+        "103": 
+      {
+          "returntype": "<string,string>"
+        , "arguments": 
+        {
+            "0:c": "char"
+        }
+        , "pos": 9703
+        , "line": 355
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.scanIdentifier": 
+    {
+        "104": 
+      {
+          "returntype": "<string,string>"
+        , "arguments": 
+        {
+            "0:c": "char"
+        }
+        , "pos": 12839
+        , "line": 456
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.Next": 
+    {
+        "105": 
+      {
+          "returntype": "<string,string>"
+        , "pos": 14077
+        , "line": 505
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Scanner.Peek": 
+    {
+        "106": 
+      {
+          "returntype": "<string,string>"
+        , "pos": 19136
+        , "line": 641
+        , "source": "/source/compiler/tokens/scanner.hs"
+      }
+    }
+    , "Parser.SetInteractive": 
+    {
+        "107": 
+      {
+          "arguments": 
+        {
+            "0:column": "byte"
+          , "1:row": "byte"
+        }
+        , "pos": 568
+        , "line": 27
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.IsInteractive": 
+    {
+        "108": 
+      {
+          "returntype": "bool"
+        , "pos": 823
+        , "line": 37
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.EmitError": 
+    {
+        "109": 
+      {
+          "arguments": 
+        {
+            "0:errorMessage": "string"
+        }
+        , "pos": 905
+        , "line": 42
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.ProgressTick": 
+    {
+        "110": 
+      {
+          "arguments": 
+        {
+            "0:str": "string"
+        }
+        , "pos": 1254
+        , "line": 57
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.ProgressDone": 
+    {
+        "111": 
+      {
+          "pos": 1709
+        , "line": 74
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.HadError_Get": 
+    {
+        "112": 
+      {
+          "returntype": "bool"
+        , "pos": 1887
+        , "line": 81
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.CurrentToken_Get": 
+    {
+        "113": 
+      {
+          "returntype": "<string,string>"
+        , "pos": 1955
+        , "line": 83
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.PreviousToken_Get": 
+    {
+        "114": 
+      {
+          "returntype": "<string,string>"
+        , "pos": 2026
+        , "line": 84
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.DumpCurrent": 
+    {
+        "115": 
+      {
+          "pos": 2080
+        , "line": 87
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.DumpPrevious": 
+    {
+        "116": 
+      {
+          "pos": 2272
+        , "line": 95
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.Reset": 
+    {
+        "117": 
+      {
+          "pos": 2459
+        , "line": 103
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.nextToken": 
+    {
+        "118": 
+      {
+          "pos": 2615
+        , "line": 111
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.ErrorAt": 
+    {
+        "119": 
+      {
+          "arguments": 
+        {
+            "0:token": "<string,string>"
+          , "1:message": "string"
+        }
+        , "pos": 2721
+        , "line": 115
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.Error": 
+    {
+        "120": 
+      {
+          "arguments": 
+        {
+            "0:ch": "char"
+        }
+        , "pos": 3646
+        , "line": 145
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+      , "121": 
+      {
+          "arguments": 
+        {
+            "0:message": "string"
+        }
+        , "pos": 3741
+        , "line": 149
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.ErrorAtCurrent": 
+    {
+        "122": 
+      {
+          "arguments": 
+        {
+            "0:ch": "char"
+        }
+        , "pos": 3822
+        , "line": 153
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+      , "123": 
+      {
+          "arguments": 
+        {
+            "0:message": "string"
+        }
+        , "pos": 3925
+        , "line": 157
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.Advance": 
+    {
+        "124": 
+      {
+          "pos": 3996
+        , "line": 162
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.Consume": 
+    {
+        "125": 
+      {
+          "arguments": 
+        {
+            "0:consumeType": "HopperToken"
+          , "1:ch": "char"
+        }
+        , "pos": 4377
+        , "line": 177
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+      , "126": 
+      {
+          "arguments": 
+        {
+            "0:consumeType": "HopperToken"
+          , "1:message": "string"
+        }
+        , "pos": 4501
+        , "line": 181
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+      , "127": 
+      {
+          "arguments": 
+        {
+            "0:consumeType": "HopperToken"
+          , "1:keyword": "string"
+          , "2:message": "string"
+        }
+        , "pos": 4627
+        , "line": 185
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.Check": 
+    {
+        "128": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:checkType": "HopperToken"
+        }
+        , "pos": 5467
+        , "line": 216
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+      , "129": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:checkType": "HopperToken"
+          , "1:keyword": "string"
+        }
+        , "pos": 5570
+        , "line": 220
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.Peek": 
+    {
+        "130": 
+      {
+          "returntype": "<string,string>"
+        , "pos": 6502
+        , "line": 250
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "Parser.PeekNext": 
+    {
+        "131": 
+      {
+          "returntype": "<string,string>"
+        , "pos": 6613
+        , "line": 255
+        , "source": "/source/compiler/tokens/parser.hs"
+      }
+    }
+    , "SysCalls.addEntry": 
+    {
+        "132": 
+      {
+          "arguments": 
+        {
+            "0:unitName": "string"
+          , "1:methodName": "string"
+        }
+        , "pos": 99
+        , "line": 6
+        , "source": "/source/compiler/tokens/syscalls.hs"
+      }
+    }
+    , "SysCalls.New": 
+    {
+        "133": 
+      {
+          "pos": 196
+        , "line": 11
+        , "source": "/source/compiler/tokens/syscalls.hs"
+      }
+    }
+    , "SysCalls.TryParseSysCall": 
+    {
+        "134": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:index": "ref byte"
+        }
+        , "pos": 9047
+        , "line": 250
+        , "source": "/source/compiler/tokens/syscalls.hs"
+      }
+    }
+    , "SysCalls.GetSysCallName": 
+    {
+        "135": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:iSysCall": "byte"
+        }
+        , "pos": 9280
+        , "line": 261
+        , "source": "/source/compiler/tokens/syscalls.hs"
+      }
+    }
+    , "SysCalls.GetSysCalls": 
+    {
+        "136": 
+      {
+          "returntype": "<string,byte>"
+        , "pos": 9543
+        , "line": 274
+        , "source": "/source/compiler/tokens/syscalls.hs"
+      }
+    }
+    , "Symbols.New": 
+    {
+        "137": 
+      {
+          "pos": 2077
+        , "line": 80
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetNamedTypesCount": 
+    {
+        "138": 
+      {
+          "returntype": "uint"
+        , "pos": 3505
+        , "line": 135
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetNamespace": 
+    {
+        "139": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:oi": "uint"
+        }
+        , "pos": 3714
+        , "line": 144
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetFunctionName": 
+    {
+        "140": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:oi": "uint"
+        }
+        , "pos": 4586
+        , "line": 176
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.DecodeEnum": 
+    {
+        "141": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:enumName": "string"
+          , "1:value": "uint"
+        }
+        , "pos": 5254
+        , "line": 203
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.FindEnum": 
+    {
+        "142": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:enumName": "string"
+          , "1:memberName": "string"
+          , "2:value": "ref uint"
+        }
+        , "pos": 5803
+        , "line": 222
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.DecodeFlags": 
+    {
+        "143": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:flagsName": "string"
+          , "1:value": "uint"
+        }
+        , "pos": 6239
+        , "line": 238
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.FindFlags": 
+    {
+        "144": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:flagsName": "string"
+          , "1:memberName": "string"
+          , "2:value": "ref uint"
+        }
+        , "pos": 7344
+        , "line": 272
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddNameSpace": 
+    {
+        "145": 
+      {
+          "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 7762
+        , "line": 288
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.DefineExists": 
+    {
+        "146": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 7911
+        , "line": 296
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetDefineValue": 
+    {
+        "147": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 8098
+        , "line": 305
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddDefine": 
+    {
+        "148": 
+      {
+          "arguments": 
+        {
+            "0:name": "string"
+          , "1:value": "string"
+        }
+        , "pos": 8283
+        , "line": 314
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.ConstantExists": 
+    {
+        "149": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 8369
+        , "line": 319
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetConstantValue": 
+    {
+        "150": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 8557
+        , "line": 328
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddConstant": 
+    {
+        "151": 
+      {
+          "arguments": 
+        {
+            "0:name": "string"
+          , "1:value": "string"
+        }
+        , "pos": 8745
+        , "line": 337
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GlobalExists": 
+    {
+        "152": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 8828
+        , "line": 342
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GlobalMemberExists": 
+    {
+        "153": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 9483
+        , "line": 372
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetGlobalMemberIndex": 
+    {
+        "154": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 9576
+        , "line": 376
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetGlobalAddress": 
+    {
+        "155": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 9656
+        , "line": 380
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetGlobalCount": 
+    {
+        "156": 
+      {
+          "returntype": "uint"
+        , "pos": 9784
+        , "line": 386
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetGlobalName": 
+    {
+        "157": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:index": "uint"
+        }
+        , "pos": 9863
+        , "line": 390
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetGlobalType": 
+    {
+        "158": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:index": "uint"
+        }
+        , "pos": 9942
+        , "line": 394
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetNameSpaces": 
+    {
+        "159": 
+      {
+          "returntype": "<string>"
+        , "pos": 10013
+        , "line": 398
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetGlobalStart": 
+    {
+        "160": 
+      {
+          "returntype": "<string,string>"
+        , "arguments": 
+        {
+            "0:iGlobal": "uint"
+        }
+        , "pos": 10107
+        , "line": 403
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.IsEnumType": 
+    {
+        "161": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:currentNamespace": "string"
+        }
+        , "pos": 10639
+        , "line": 418
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.IsFlagsType": 
+    {
+        "162": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:currentNamespace": "string"
+        }
+        , "pos": 12909
+        , "line": 493
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.QualifyMethodName": 
+    {
+        "163": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:currentNamespace": "string"
+        }
+        , "pos": 15216
+        , "line": 570
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.QualifyDelegate": 
+    {
+        "164": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:currentNamespace": "string"
+        }
+        , "pos": 16497
+        , "line": 610
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.QualifyEnum": 
+    {
+        "165": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:currentNamespace": "string"
+        }
+        , "pos": 17550
+        , "line": 645
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.QualifyFlags": 
+    {
+        "166": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:currentNamespace": "string"
+        }
+        , "pos": 18602
+        , "line": 680
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.IsDelegateType": 
+    {
+        "167": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:currentNamespace": "string"
+        }
+        , "pos": 19656
+        , "line": 715
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.IsNamedType": 
+    {
+        "168": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:token": "<string,string>"
+        }
+        , "pos": 21965
+        , "line": 792
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.DeferValidation": 
+    {
+        "169": 
+      {
+          "arguments": 
+        {
+            "0:token": "<string,string>"
+        }
+        , "pos": 23323
+        , "line": 844
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.DeferredValidation": 
+    {
+        "170": 
+      {
+          "returntype": "bool"
+        , "pos": 23407
+        , "line": 849
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetFunctionIndex": 
+    {
+        "171": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:index": "ref uint"
+        }
+        , "pos": 23723
+        , "line": 863
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetFunctionOverloads": 
+    {
+        "172": 
+      {
+          "returntype": "<uint>"
+        , "arguments": 
+        {
+            "0:fIndex": "uint"
+        }
+        , "pos": 24557
+        , "line": 894
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.SetCodeStream": 
+    {
+        "173": 
+      {
+          "arguments": 
+        {
+            "0:iOverload": "uint"
+          , "1:codeStream": "<byte>"
+          , "2:debugInfo": "<string,string>"
+        }
+        , "pos": 24723
+        , "line": 900
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddFunctionCall": 
+    {
+        "174": 
+      {
+          "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 24859
+        , "line": 905
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.IsSysCall": 
+    {
+        "175": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 25058
+        , "line": 914
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetSysCallIndex": 
+    {
+        "176": 
+      {
+          "returntype": "byte"
+        , "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 25156
+        , "line": 918
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetSysCallOverload": 
+    {
+        "177": 
+      {
+          "returntype": "byte"
+        , "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 25248
+        , "line": 922
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.SetSysCall": 
+    {
+        "178": 
+      {
+          "arguments": 
+        {
+            "0:iOverload": "uint"
+          , "1:iSysCall": "byte"
+          , "2:iSysCallOverload": "byte"
+        }
+        , "pos": 25373
+        , "line": 926
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetOverloadStart": 
+    {
+        "179": 
+      {
+          "returntype": "<string,string>"
+        , "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 25549
+        , "line": 933
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetOverloadReturnType": 
+    {
+        "180": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 26010
+        , "line": 946
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetOverloadArguments": 
+    {
+        "181": 
+      {
+          "returntype": "<<string>>"
+        , "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 26166
+        , "line": 952
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetDelegateReturnType": 
+    {
+        "182": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 26328
+        , "line": 958
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetDelegateArguments": 
+    {
+        "183": 
+      {
+          "returntype": "<<string>>"
+        , "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 26485
+        , "line": 964
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetFunctionDelegateIndex": 
+    {
+        "184": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+          , "1:index": "ref uint"
+        }
+        , "pos": 26662
+        , "line": 970
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.GetFunctionDelegateOverloads": 
+    {
+        "185": 
+      {
+          "returntype": "<uint>"
+        , "arguments": 
+        {
+            "0:fdIndex": "uint"
+        }
+        , "pos": 27527
+        , "line": 1001
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddGlobalMember": 
+    {
+        "186": 
+      {
+          "arguments": 
+        {
+            "0:name": "string"
+          , "1:typeString": "string"
+          , "2:blockPos": "<string>"
+        }
+        , "pos": 27686
+        , "line": 1007
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddFunction": 
+    {
+        "187": 
+      {
+          "arguments": 
+        {
+            "0:name": "string"
+          , "1:arguments": "<<string>>"
+          , "2:returnType": "string"
+          , "3:blockPos": "<string>"
+        }
+        , "pos": 29082
+        , "line": 1046
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddMethod": 
+    {
+        "188": 
+      {
+          "arguments": 
+        {
+            "0:methodName": "string"
+          , "1:arguments": "<<string>>"
+          , "2:blockPos": "<string>"
+        }
+        , "pos": 32536
+        , "line": 1150
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddEnum": 
+    {
+        "189": 
+      {
+          "arguments": 
+        {
+            "0:identifier": "string"
+          , "1:members": "<string,uint>"
+        }
+        , "pos": 32701
+        , "line": 1155
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddFlags": 
+    {
+        "190": 
+      {
+          "arguments": 
+        {
+            "0:identifier": "string"
+          , "1:members": "<string,uint>"
+        }
+        , "pos": 32998
+        , "line": 1165
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddFunctionDelegate": 
+    {
+        "191": 
+      {
+          "arguments": 
+        {
+            "0:name": "string"
+          , "1:arguments": "<<string>>"
+          , "2:returnType": "string"
+        }
+        , "pos": 34142
+        , "line": 1203
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AddMethodDelegate": 
+    {
+        "192": 
+      {
+          "arguments": 
+        {
+            "0:methodName": "string"
+          , "1:arguments": "<<string>>"
+        }
+        , "pos": 35791
+        , "line": 1256
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.AppendLocalNamesAndTypes": 
+    {
+        "193": 
+      {
+          "arguments": 
+        {
+            "0:iOverload": "uint"
+          , "1:localNamesAndTypes": "<<string>>"
+        }
+        , "pos": 35980
+        , "line": 1261
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.ExportCode": 
+    {
+        "194": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:codePath": "string"
+          , "1:experimental": "bool"
+        }
+        , "pos": 36409
+        , "line": 1276
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.Export": 
+    {
+        "195": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:jsonPath": "string"
+        }
+        , "pos": 41729
+        , "line": 1419
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.Import": 
+    {
+        "196": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:jsonPath": "string"
+        }
+        , "pos": 48069
+        , "line": 1596
+        , "source": "/source/compiler/symbols.hs"
+      }
+      , "197": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:jsonPath": "string"
+          , "1:onlyNamedTypes": "bool"
+        }
+        , "pos": 48175
+        , "line": 1600
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.OverloadToCompile": 
+    {
+        "198": 
+      {
+          "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 62527
+        , "line": 1891
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.OverloadWasCompiled": 
+    {
+        "199": 
+      {
+          "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 63687
+        , "line": 1925
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.OverloadNextToCompile": 
+    {
+        "200": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:iOverload": "ref uint"
+        }
+        , "pos": 63795
+        , "line": 1929
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.getMethodName": 
+    {
+        "201": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 64928
+        , "line": 1966
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Symbols.ExportTouchTree": 
+    {
+        "202": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:contentLines": "ref <string>"
+          , "1:iFrom": "uint"
+          , "2:indent": "uint"
+          , "3:touchesDone": "ref <uint>"
+        }
+        , "pos": 65567
+        , "line": 1989
+        , "source": "/source/compiler/symbols.hs"
+      }
+      , "203": 
+      {
+          "arguments": 
+        {
+            "0:path": "string"
+        }
+        , "pos": 66893
+        , "line": 2032
+        , "source": "/source/compiler/symbols.hs"
+      }
+    }
+    , "Constant.parseConstantPrimary": 
+    {
+        "204": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:typeExpected": "string"
+        }
+        , "pos": 387
+        , "line": 13
+        , "source": "/source/compiler/constant.hs"
+      }
+    }
+    , "Constant.ParseConstantExpression": 
+    {
+        "205": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:typeExpected": "string"
+        }
+        , "pos": 9994
+        , "line": 252
+        , "source": "/source/compiler/constant.hs"
+      }
+    }
+    , "Directives.New": 
+    {
+        "206": 
+      {
+          "pos": 245
+        , "line": 12
+        , "source": "/source/compiler/directives.hs"
+      }
+    }
+    , "Directives.IsStillOpen_Get": 
+    {
+        "207": 
+      {
+          "returntype": "bool"
+        , "pos": 320
+        , "line": 16
+        , "source": "/source/compiler/directives.hs"
+      }
+    }
+    , "Directives.IsAllDefined": 
+    {
+        "208": 
+      {
+          "returntype": "bool"
+        , "pos": 396
+        , "line": 19
+        , "source": "/source/compiler/directives.hs"
+      }
+    }
+    , "Directives.defined": 
+    {
+        "209": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:ln": "string"
+        }
+        , "pos": 791
+        , "line": 36
+        , "source": "/source/compiler/directives.hs"
+      }
+    }
+    , "Directives.expression": 
+    {
+        "210": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:ln": "string"
+        }
+        , "pos": 1363
+        , "line": 58
+        , "source": "/source/compiler/directives.hs"
+      }
+    }
+    , "Directives.Declaration": 
+    {
+        "211": 
+      {
+          "pos": 1580
+        , "line": 68
+        , "source": "/source/compiler/directives.hs"
+      }
+    }
+    , "Directives.Directive": 
+    {
+        "212": 
+      {
+          "pos": 2899
+        , "line": 108
+        , "source": "/source/compiler/directives.hs"
+      }
+    }
+    , "Char.IsUpper": 
+    {
+        "213": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "char"
+        }
+        , "pos": 395
+        , "line": 15
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.IsLower": 
+    {
+        "214": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "char"
+        }
+        , "pos": 525
+        , "line": 21
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.ToUpper": 
+    {
+        "215": 
+      {
+          "returntype": "char"
+        , "arguments": 
+        {
+            "0:this": "char"
+        }
+        , "pos": 656
+        , "line": 27
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.ToDigit": 
+    {
+        "216": 
+      {
+          "returntype": "char"
+        , "arguments": 
+        {
+            "0:d": "byte"
+        }
+        , "pos": 854
+        , "line": 37
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.IsDigit": 
+    {
+        "217": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "char"
+        }
+        , "pos": 944
+        , "line": 42
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.IsLetterOrDigit": 
+    {
+        "218": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "char"
+        }
+        , "pos": 1081
+        , "line": 48
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.ToHex": 
+    {
+        "219": 
+      {
+          "returntype": "char"
+        , "arguments": 
+        {
+            "0:h": "byte"
+        }
+        , "pos": 1309
+        , "line": 56
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.ToLower": 
+    {
+        "220": 
+      {
+          "returntype": "char"
+        , "arguments": 
+        {
+            "0:this": "char"
+        }
+        , "pos": 1512
+        , "line": 68
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.IsHexDigit": 
+    {
+        "221": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "char"
+        }
+        , "pos": 1717
+        , "line": 78
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.IsLetter": 
+    {
+        "222": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "char"
+        }
+        , "pos": 1968
+        , "line": 89
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Char.ToString": 
+    {
+        "223": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "char"
+        }
+        , "pos": 2166
+        , "line": 99
+        , "source": "/source/system/char.hs"
+      }
+    }
+    , "Bool.ToString": 
+    {
+        "224": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "bool"
+        }
+        , "pos": 51
+        , "line": 4
+        , "source": "/source/system/bool.hs"
+      }
+    }
+    , "Byte.ToString": 
+    {
+        "225": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "byte"
+        }
+        , "pos": 48
+        , "line": 4
+        , "source": "/source/system/byte.hs"
+      }
+    }
+    , "Byte.ToHexString": 
+    {
+        "226": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "byte"
+          , "1:digits": "byte"
+        }
+        , "pos": 186
+        , "line": 10
+        , "source": "/source/system/byte.hs"
+      }
+    }
+    , "Int.ToString": 
+    {
+        "227": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "int"
+        }
+        , "pos": 46
+        , "line": 4
+        , "source": "/source/system/int.hs"
+      }
+    }
+    , "Int.ToFloat": 
+    {
+        "228": 
+      {
+          "returntype": "float"
+        , "arguments": 
+        {
+            "0:this": "int"
+        }
+        , "syscall": 52
+        , "overload": 0
+      }
+    }
+    , "Int.ToLong": 
+    {
+        "229": 
+      {
+          "returntype": "long"
+        , "arguments": 
+        {
+            "0:this": "int"
+        }
+        , "syscall": 53
+        , "overload": 0
+      }
+    }
+    , "Int.ToHexString": 
+    {
+        "230": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "int"
+          , "1:digits": "byte"
+        }
+        , "pos": 781
+        , "line": 36
+        , "source": "/source/system/int.hs"
+      }
+    }
+    , "UInt.ToString": 
+    {
+        "231": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "uint"
+        }
+        , "pos": 48
+        , "line": 4
+        , "source": "/source/system/uint.hs"
+      }
+      , "232": 
+      {
+          "arguments": 
+        {
+            "0:this": "uint"
+          , "1:result": "ref string"
+        }
+        , "pos": 485
+        , "line": 23
+        , "source": "/source/system/uint.hs"
+      }
+    }
+    , "UInt.ToLong": 
+    {
+        "233": 
+      {
+          "returntype": "long"
+        , "arguments": 
+        {
+            "0:this": "uint"
+        }
+        , "syscall": 54
+        , "overload": 0
+      }
+    }
+    , "UInt.ToHexString": 
+    {
+        "234": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "uint"
+          , "1:digits": "byte"
+        }
+        , "pos": 964
+        , "line": 43
+        , "source": "/source/system/uint.hs"
+      }
+    }
+    , "Long.ToString": 
+    {
+        "235": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "long"
+        }
+        , "syscall": 56
+        , "overload": 0
+      }
+    }
+    , "Long.ToBytes": 
+    {
+        "236": 
+      {
+          "returntype": "<byte>"
+        , "arguments": 
+        {
+            "0:this": "long"
+        }
+        , "syscall": 57
+        , "overload": 0
+      }
+    }
+    , "Long.ToFloat": 
+    {
+        "237": 
+      {
+          "returntype": "float"
+        , "arguments": 
+        {
+            "0:this": "long"
+        }
+        , "syscall": 58
+        , "overload": 0
+      }
+    }
+    , "Long.ToHexString": 
+    {
+        "238": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "long"
+          , "1:digits": "byte"
+        }
+        , "pos": 933
+        , "line": 44
+        , "source": "/source/system/long.hs"
+      }
+    }
+    , "Long.ToBinaryString": 
+    {
+        "239": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "long"
+          , "1:digits": "byte"
+        }
+        , "pos": 1351
+        , "line": 61
+        , "source": "/source/system/long.hs"
+      }
+    }
+    , "Float.ToString": 
+    {
+        "240": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "float"
+        }
+        , "syscall": 74
+        , "overload": 0
+      }
+    }
+    , "Float.ToBytes": 
+    {
+        "241": 
+      {
+          "returntype": "<byte>"
+        , "arguments": 
+        {
+            "0:this": "float"
+        }
+        , "syscall": 75
+        , "overload": 0
+      }
+    }
+    , "Time.Micros_Get": 
+    {
+        "242": 
+      {
+          "returntype": "long"
+        , "syscall": 88
+        , "overload": 0
+      }
+    }
+    , "Time.Millis_Get": 
+    {
+        "243": 
+      {
+          "returntype": "long"
+        , "syscall": 87
+        , "overload": 0
+      }
+    }
+    , "Time.Delay": 
+    {
+        "244": 
+      {
+          "arguments": 
+        {
+            "0:ms": "uint"
+        }
+        , "pos": 177
+        , "line": 11
+        , "source": "/source/system/time.hs"
+      }
+    }
+    , "String.InsertChar": 
+    {
+        "245": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:index": "uint"
+          , "2:append": "char"
+        }
+        , "syscall": 4
+        , "overload": 0
+      }
+    }
+    , "String.Append": 
+    {
+        "246": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:append": "string"
+        }
+        , "syscall": 3
+        , "overload": 0
+      }
+      , "247": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:append": "char"
+        }
+        , "syscall": 3
+        , "overload": 1
+      }
+    }
+    , "String.Length_Get": 
+    {
+        "248": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:this": "string"
+        }
+        , "syscall": 6
+        , "overload": 0
+      }
+    }
+    , "String.Build": 
+    {
+        "249": 
+      {
+          "arguments": 
+        {
+            "0:build": "ref string"
+          , "1:append": "string"
+        }
+        , "syscall": 131
+        , "overload": 0
+      }
+      , "250": 
+      {
+          "arguments": 
+        {
+            "0:build": "ref string"
+          , "1:append": "char"
+        }
+        , "syscall": 131
+        , "overload": 1
+      }
+      , "251": 
+      {
+          "arguments": 
+        {
+            "0:build": "ref string"
+        }
+        , "syscall": 131
+        , "overload": 2
+      }
+    }
+    , "String.Replace": 
+    {
+        "252": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "string"
+          , "2:replace": "string"
+        }
+        , "syscall": 9
+        , "overload": 0
+      }
+      , "253": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "char"
+          , "2:replace": "char"
+        }
+        , "syscall": 9
+        , "overload": 1
+      }
+    }
+    , "String.EndsWith": 
+    {
+        "254": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "char"
+        }
+        , "syscall": 7
+        , "overload": 0
+      }
+      , "255": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "string"
+        }
+        , "syscall": 7
+        , "overload": 1
+      }
+    }
+    , "String.Substring": 
+    {
+        "256": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:start": "uint"
+        }
+        , "syscall": 8
+        , "overload": 0
+      }
+      , "257": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:start": "uint"
+          , "2:length": "uint"
+        }
+        , "syscall": 8
+        , "overload": 1
+      }
+    }
+    , "String.Compare": 
+    {
+        "258": 
+      {
+          "returntype": "int"
+        , "arguments": 
+        {
+            "0:left": "string"
+          , "1:right": "string"
+        }
+        , "syscall": 5
+        , "overload": 0
+      }
+    }
+    , "String.Contains": 
+    {
+        "259": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:needle": "char"
+        }
+        , "pos": 6466
+        , "line": 237
+        , "source": "/source/system/string.hs"
+      }
+      , "260": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:needle": "string"
+        }
+        , "pos": 6819
+        , "line": 254
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.StartsWith": 
+    {
+        "261": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "char"
+        }
+        , "pos": 6947
+        , "line": 259
+        , "source": "/source/system/string.hs"
+      }
+      , "262": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "string"
+        }
+        , "pos": 7066
+        , "line": 263
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.IndexOf": 
+    {
+        "263": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "char"
+          , "2:index": "ref uint"
+        }
+        , "pos": 7488
+        , "line": 281
+        , "source": "/source/system/string.hs"
+      }
+      , "264": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "char"
+          , "2:searchIndex": "uint"
+          , "3:index": "ref uint"
+        }
+        , "pos": 7840
+        , "line": 296
+        , "source": "/source/system/string.hs"
+      }
+      , "268": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "string"
+          , "2:index": "ref uint"
+        }
+        , "pos": 8529
+        , "line": 326
+        , "source": "/source/system/string.hs"
+      }
+      , "269": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "string"
+          , "2:startIndex": "uint"
+          , "3:index": "ref uint"
+        }
+        , "pos": 9304
+        , "line": 360
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.BuildFront": 
+    {
+        "265": 
+      {
+          "arguments": 
+        {
+            "0:build": "ref string"
+          , "1:insert": "char"
+        }
+        , "syscall": 181
+        , "overload": 0
+      }
+    }
+    , "String.GetChar": 
+    {
+        "266": 
+      {
+          "returntype": "char"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:index": "uint"
+        }
+        , "syscall": 10
+        , "overload": 0
+      }
+    }
+    , "String.IsEmpty_Get": 
+    {
+        "267": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+        }
+        , "pos": 8422
+        , "line": 322
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.LastIndexOf": 
+    {
+        "270": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "char"
+          , "2:index": "ref uint"
+        }
+        , "pos": 9838
+        , "line": 383
+        , "source": "/source/system/string.hs"
+      }
+      , "271": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:pattern": "char"
+          , "2:startIndex": "uint"
+          , "3:index": "ref uint"
+        }
+        , "pos": 10484
+        , "line": 413
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.Pad": 
+    {
+        "272": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:append": "char"
+          , "2:width": "uint"
+        }
+        , "pos": 11021
+        , "line": 438
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.LeftPad": 
+    {
+        "273": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:append": "char"
+          , "2:width": "uint"
+        }
+        , "pos": 11460
+        , "line": 457
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.ToUpper": 
+    {
+        "274": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+        }
+        , "pos": 11882
+        , "line": 475
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.ToLower": 
+    {
+        "275": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+        }
+        , "pos": 12181
+        , "line": 489
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.Trim": 
+    {
+        "276": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+        }
+        , "pos": 12477
+        , "line": 504
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.TrimLeft": 
+    {
+        "277": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "string"
+        }
+        , "pos": 13923
+        , "line": 557
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "String.Split": 
+    {
+        "278": 
+      {
+          "returntype": "<string>"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:delimiters": "string"
+        }
+        , "pos": 14864
+        , "line": 595
+        , "source": "/source/system/string.hs"
+      }
+      , "279": 
+      {
+          "returntype": "<string>"
+        , "arguments": 
+        {
+            "0:this": "string"
+          , "1:delimiter": "char"
+        }
+        , "pos": 15939
+        , "line": 640
+        , "source": "/source/system/string.hs"
+      }
+    }
+    , "List.Length_Get": 
+    {
+        "280": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:this": "<V>"
+        }
+        , "syscall": 16
+        , "overload": 0
+      }
+    }
+    , "List.Append": 
+    {
+        "281": 
+      {
+          "arguments": 
+        {
+            "0:this": "<V>"
+          , "1:value": "V"
+        }
+        , "syscall": 17
+        , "overload": 0
+      }
+    }
+    , "List.Remove": 
+    {
+        "282": 
+      {
+          "arguments": 
+        {
+            "0:this": "<V>"
+          , "1:index": "uint"
+        }
+        , "syscall": 23
+        , "overload": 0
+      }
+    }
+    , "List.GetItem": 
+    {
+        "283": 
+      {
+          "returntype": "V"
+        , "arguments": 
+        {
+            "0:this": "<V>"
+          , "1:index": "uint"
+        }
+        , "syscall": 19
+        , "overload": 0
+      }
+    }
+    , "List.SetItem": 
+    {
+        "284": 
+      {
+          "arguments": 
+        {
+            "0:this": "<V>"
+          , "1:index": "uint"
+          , "2:value": "V"
+        }
+        , "syscall": 21
+        , "overload": 0
+      }
+    }
+    , "List.Insert": 
+    {
+        "285": 
+      {
+          "arguments": 
+        {
+            "0:this": "<V>"
+          , "1:index": "uint"
+          , "2:value": "V"
+        }
+        , "syscall": 18
+        , "overload": 0
+      }
+    }
+    , "List.Clear": 
+    {
+        "286": 
+      {
+          "arguments": 
+        {
+            "0:this": "<V>"
+        }
+        , "syscall": 22
+        , "overload": 0
+      }
+    }
+    , "List.Contains": 
+    {
+        "287": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "<V>"
+          , "1:value": "V"
+        }
+        , "syscall": 24
+        , "overload": 0
+      }
+    }
+    , "Dictionary.Count_Get": 
+    {
+        "288": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:this": "<K,V>"
+        }
+        , "syscall": 26
+        , "overload": 0
+      }
+    }
+    , "Dictionary.Set": 
+    {
+        "289": 
+      {
+          "arguments": 
+        {
+            "0:this": "<K,V>"
+          , "1:key": "K"
+          , "2:value": "V"
+        }
+        , "syscall": 27
+        , "overload": 0
+      }
+    }
+    , "Dictionary.Contains": 
+    {
+        "290": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "<K,V>"
+          , "1:key": "K"
+        }
+        , "syscall": 28
+        , "overload": 0
+      }
+    }
+    , "Dictionary.Get": 
+    {
+        "291": 
+      {
+          "returntype": "V"
+        , "arguments": 
+        {
+            "0:this": "<K,V>"
+          , "1:key": "K"
+        }
+        , "syscall": 29
+        , "overload": 0
+      }
+    }
+    , "Dictionary.Clear": 
+    {
+        "292": 
+      {
+          "arguments": 
+        {
+            "0:this": "<K,V>"
+        }
+        , "syscall": 31
+        , "overload": 0
+      }
+    }
+    , "Pair.Set": 
+    {
+        "293": 
+      {
+          "arguments": 
+        {
+            "0:this": "<K,V>"
+          , "1:key": "K"
+          , "2:value": "V"
+        }
+        , "syscall": 33
+        , "overload": 0
+      }
+    }
+    , "Pair.Value": 
+    {
+        "294": 
+      {
+          "returntype": "V"
+        , "arguments": 
+        {
+            "0:this": "<K,V>"
+        }
+        , "syscall": 36
+        , "overload": 0
+      }
+    }
+    , "Pair.Key": 
+    {
+        "295": 
+      {
+          "returntype": "K"
+        , "arguments": 
+        {
+            "0:this": "<K,V>"
+        }
+        , "syscall": 34
+        , "overload": 0
+      }
+    }
+    , "Array.Count_Get": 
+    {
+        "296": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:this": "V[]"
+        }
+        , "syscall": 12
+        , "overload": 0
+      }
+    }
+    , "Array.SetItem": 
+    {
+        "297": 
+      {
+          "arguments": 
+        {
+            "0:this": "V[]"
+          , "1:index": "uint"
+          , "2:value": "V"
+        }
+        , "syscall": 14
+        , "overload": 0
+      }
+    }
+    , "Array.GetItem": 
+    {
+        "298": 
+      {
+          "returntype": "V"
+        , "arguments": 
+        {
+            "0:this": "V[]"
+          , "1:index": "uint"
+        }
+        , "syscall": 13
+        , "overload": 0
+      }
+    }
+    , "File.Exists": 
+    {
+        "299": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:path": "string"
+        }
+        , "syscall": 95
+        , "overload": 0
+      }
+      , "311": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:filePath": "ref string"
+          , "1:extension": "ref string"
+          , "2:searchFolder": "string"
+        }
+        , "pos": 590
+        , "line": 18
+        , "source": "/source/system/file.hs"
+      }
+    }
+    , "File.Delete": 
+    {
+        "300": 
+      {
+          "arguments": 
+        {
+            "0:path": "string"
+        }
+        , "syscall": 104
+        , "overload": 0
+      }
+    }
+    , "File.IsValid": 
+    {
+        "301": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "file"
+        }
+        , "syscall": 101
+        , "overload": 0
+      }
+    }
+    , "File.Open": 
+    {
+        "302": 
+      {
+          "returntype": "file"
+        , "arguments": 
+        {
+            "0:fullpath": "string"
+        }
+        , "syscall": 97
+        , "overload": 0
+      }
+    }
+    , "File.Create": 
+    {
+        "303": 
+      {
+          "returntype": "file"
+        , "arguments": 
+        {
+            "0:fullpath": "string"
+        }
+        , "syscall": 98
+        , "overload": 0
+      }
+    }
+    , "File.ReadLine": 
+    {
+        "304": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "file"
+        }
+        , "syscall": 99
+        , "overload": 0
+      }
+    }
+    , "File.Read": 
+    {
+        "305": 
+      {
+          "returntype": "byte"
+        , "arguments": 
+        {
+            "0:this": "file"
+        }
+        , "syscall": 100
+        , "overload": 0
+      }
+      , "306": 
+      {
+          "returntype": "byte"
+        , "arguments": 
+        {
+            "0:this": "file"
+          , "1:seekPosition": "long"
+        }
+        , "syscall": 100
+        , "overload": 1
+      }
+    }
+    , "File.Append": 
+    {
+        "307": 
+      {
+          "arguments": 
+        {
+            "0:this": "file"
+          , "1:content": "byte"
+        }
+        , "syscall": 102
+        , "overload": 0
+      }
+      , "308": 
+      {
+          "arguments": 
+        {
+            "0:this": "file"
+          , "1:content": "string"
+        }
+        , "syscall": 102
+        , "overload": 1
+      }
+    }
+    , "File.Flush": 
+    {
+        "309": 
+      {
+          "arguments": 
+        {
+            "0:this": "file"
+        }
+        , "syscall": 103
+        , "overload": 0
+      }
+    }
+    , "File.GetSize": 
+    {
+        "310": 
+      {
+          "returntype": "long"
+        , "arguments": 
+        {
+            "0:path": "string"
+        }
+        , "syscall": 105
+        , "overload": 0
+      }
+    }
+    , "Path.IsValidPathCharacter": 
+    {
+        "312": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:c": "char"
+        }
+        , "pos": 55
+        , "line": 4
+        , "source": "/source/system/path.hs"
+      }
+    }
+    , "Path.GetFileName": 
+    {
+        "313": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:path": "string"
+        }
+        , "pos": 464
+        , "line": 24
+        , "source": "/source/system/path.hs"
+      }
+    }
+    , "Path.GetDirectoryName": 
+    {
+        "314": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:fullPath": "string"
+        }
+        , "pos": 680
+        , "line": 34
+        , "source": "/source/system/path.hs"
+      }
+    }
+    , "Path.Combine": 
+    {
+        "315": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:partOne": "string"
+          , "1:partTwo": "string"
+        }
+        , "pos": 1593
+        , "line": 66
+        , "source": "/source/system/path.hs"
+      }
+    }
+    , "Path.GetExtension": 
+    {
+        "316": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:path": "string"
+        }
+        , "pos": 2337
+        , "line": 94
+        , "source": "/source/system/path.hs"
+      }
+    }
+    , "Path.GetFullPath": 
+    {
+        "317": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:path": "string"
+        }
+        , "pos": 3059
+        , "line": 119
+        , "source": "/source/system/path.hs"
+      }
+    }
+    , "Directory.Exists": 
+    {
+        "318": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:path": "string"
+        }
+        , "syscall": 106
+        , "overload": 0
+      }
+    }
+    , "Directory.IsValid": 
+    {
+        "319": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:this": "directory"
+        }
+        , "syscall": 108
+        , "overload": 0
+      }
+    }
+    , "Directory.Open": 
+    {
+        "320": 
+      {
+          "returntype": "directory"
+        , "arguments": 
+        {
+            "0:fullpath": "string"
+        }
+        , "syscall": 109
+        , "overload": 0
+      }
+    }
+    , "Directory.GetDirectoryCount": 
+    {
+        "321": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:this": "directory"
+        }
+        , "syscall": 110
+        , "overload": 0
+      }
+    }
+    , "Directory.GetFileCount": 
+    {
+        "322": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:this": "directory"
+        }
+        , "syscall": 111
+        , "overload": 0
+      }
+    }
+    , "Directory.GetDirectory": 
+    {
+        "323": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "directory"
+          , "1:index": "uint"
+        }
+        , "syscall": 113
+        , "overload": 0
+      }
+    }
+    , "Directory.GetFile": 
+    {
+        "324": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "directory"
+          , "1:index": "uint"
+        }
+        , "syscall": 112
+        , "overload": 0
+      }
+    }
+    , "Type.ToString": 
+    {
+        "325": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:this": "type"
+        }
+        , "pos": 48
+        , "line": 4
+        , "source": "/source/system/type.hs"
+      }
+    }
+    , "Color.Black_Get": 
+    {
+        "326": 
+      {
+          "returntype": "uint"
+        , "pos": 64
+        , "line": 4
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.DarkGray_Get": 
+    {
+        "327": 
+      {
+          "returntype": "uint"
+        , "pos": 112
+        , "line": 5
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Gray_Get": 
+    {
+        "328": 
+      {
+          "returntype": "uint"
+        , "pos": 160
+        , "line": 6
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.LightGray_Get": 
+    {
+        "329": 
+      {
+          "returntype": "uint"
+        , "pos": 208
+        , "line": 7
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.LightestGray_Get": 
+    {
+        "330": 
+      {
+          "returntype": "uint"
+        , "pos": 256
+        , "line": 8
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.White_Get": 
+    {
+        "331": 
+      {
+          "returntype": "uint"
+        , "pos": 303
+        , "line": 9
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.DarkBlue_Get": 
+    {
+        "332": 
+      {
+          "returntype": "uint"
+        , "pos": 384
+        , "line": 12
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.DarkGreen_Get": 
+    {
+        "333": 
+      {
+          "returntype": "uint"
+        , "pos": 430
+        , "line": 13
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.DarkCyan_Get": 
+    {
+        "334": 
+      {
+          "returntype": "uint"
+        , "pos": 476
+        , "line": 14
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.DarkRed_Get": 
+    {
+        "335": 
+      {
+          "returntype": "uint"
+        , "pos": 522
+        , "line": 15
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.DarkMagenta_Get": 
+    {
+        "336": 
+      {
+          "returntype": "uint"
+        , "pos": 568
+        , "line": 16
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.DarkYellow_Get": 
+    {
+        "337": 
+      {
+          "returntype": "uint"
+        , "pos": 614
+        , "line": 17
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Blue_Get": 
+    {
+        "338": 
+      {
+          "returntype": "uint"
+        , "pos": 660
+        , "line": 18
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Green_Get": 
+    {
+        "339": 
+      {
+          "returntype": "uint"
+        , "pos": 706
+        , "line": 19
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Cyan_Get": 
+    {
+        "340": 
+      {
+          "returntype": "uint"
+        , "pos": 752
+        , "line": 20
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Red_Get": 
+    {
+        "341": 
+      {
+          "returntype": "uint"
+        , "pos": 798
+        , "line": 21
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Magenta_Get": 
+    {
+        "342": 
+      {
+          "returntype": "uint"
+        , "pos": 844
+        , "line": 22
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Yellow_Get": 
+    {
+        "343": 
+      {
+          "returntype": "uint"
+        , "pos": 890
+        , "line": 23
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Viridian_Get": 
+    {
+        "344": 
+      {
+          "returntype": "uint"
+        , "pos": 941
+        , "line": 25
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Avocado_Get": 
+    {
+        "345": 
+      {
+          "returntype": "uint"
+        , "pos": 1003
+        , "line": 26
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.JuneBud_Get": 
+    {
+        "346": 
+      {
+          "returntype": "uint"
+        , "pos": 1064
+        , "line": 27
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Denim_Get": 
+    {
+        "347": 
+      {
+          "returntype": "uint"
+        , "pos": 1133
+        , "line": 29
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.DustyTeal_Get": 
+    {
+        "348": 
+      {
+          "returntype": "uint"
+        , "pos": 1194
+        , "line": 30
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.HippieBlue_Get": 
+    {
+        "349": 
+      {
+          "returntype": "uint"
+        , "pos": 1240
+        , "line": 31
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MatrixGreen_Get": 
+    {
+        "350": 
+      {
+          "returntype": "uint"
+        , "pos": 1391
+        , "line": 34
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MatrixBlue_Get": 
+    {
+        "351": 
+      {
+          "returntype": "uint"
+        , "pos": 1446
+        , "line": 35
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MatrixCyan_Get": 
+    {
+        "352": 
+      {
+          "returntype": "uint"
+        , "pos": 1501
+        , "line": 36
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MatrixRed_Get": 
+    {
+        "353": 
+      {
+          "returntype": "uint"
+        , "pos": 1556
+        , "line": 37
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ProgressTick_Get": 
+    {
+        "354": 
+      {
+          "returntype": "uint"
+        , "pos": 1665
+        , "line": 40
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ProgressBackground_Get": 
+    {
+        "355": 
+      {
+          "returntype": "uint"
+        , "pos": 1720
+        , "line": 41
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ProgressText_Get": 
+    {
+        "356": 
+      {
+          "returntype": "uint"
+        , "pos": 1775
+        , "line": 42
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ProgressFace_Get": 
+    {
+        "357": 
+      {
+          "returntype": "uint"
+        , "pos": 1830
+        , "line": 43
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ProgressHighlight_Get": 
+    {
+        "358": 
+      {
+          "returntype": "uint"
+        , "pos": 1885
+        , "line": 44
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MenuBlue_Get": 
+    {
+        "359": 
+      {
+          "returntype": "uint"
+        , "pos": 1983
+        , "line": 47
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MenuGreen_Get": 
+    {
+        "360": 
+      {
+          "returntype": "uint"
+        , "pos": 2077
+        , "line": 48
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MenuTextBlue_Get": 
+    {
+        "361": 
+      {
+          "returntype": "uint"
+        , "pos": 2173
+        , "line": 49
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MenuTextGreen_Get": 
+    {
+        "362": 
+      {
+          "returntype": "uint"
+        , "pos": 2262
+        , "line": 50
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.TitlePath_Get": 
+    {
+        "363": 
+      {
+          "returntype": "uint"
+        , "pos": 2356
+        , "line": 53
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ModifiedPath_Get": 
+    {
+        "364": 
+      {
+          "returntype": "uint"
+        , "pos": 2442
+        , "line": 54
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.AltKey_Get": 
+    {
+        "365": 
+      {
+          "returntype": "uint"
+        , "pos": 2558
+        , "line": 55
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ButtonFace_Get": 
+    {
+        "366": 
+      {
+          "returntype": "uint"
+        , "pos": 2611
+        , "line": 57
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ButtonText_Get": 
+    {
+        "367": 
+      {
+          "returntype": "uint"
+        , "pos": 2659
+        , "line": 58
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.PopupText_Get": 
+    {
+        "368": 
+      {
+          "returntype": "uint"
+        , "pos": 2707
+        , "line": 59
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.PopupFace_Get": 
+    {
+        "369": 
+      {
+          "returntype": "uint"
+        , "pos": 2810
+        , "line": 60
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.LabelText_Get": 
+    {
+        "370": 
+      {
+          "returntype": "uint"
+        , "pos": 2885
+        , "line": 61
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.EditText_Get": 
+    {
+        "371": 
+      {
+          "returntype": "uint"
+        , "pos": 2967
+        , "line": 62
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.EditFace_Get": 
+    {
+        "372": 
+      {
+          "returntype": "uint"
+        , "pos": 3047
+        , "line": 63
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.StatusFace_Get": 
+    {
+        "373": 
+      {
+          "returntype": "uint"
+        , "pos": 3138
+        , "line": 65
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.StatusText_Get": 
+    {
+        "374": 
+      {
+          "returntype": "uint"
+        , "pos": 3186
+        , "line": 66
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MarginText_Get": 
+    {
+        "375": 
+      {
+          "returntype": "uint"
+        , "pos": 3234
+        , "line": 67
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.MarginFace_Get": 
+    {
+        "376": 
+      {
+          "returntype": "uint"
+        , "pos": 3313
+        , "line": 68
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ActiveRed_Get": 
+    {
+        "377": 
+      {
+          "returntype": "uint"
+        , "pos": 3417
+        , "line": 71
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ActiveGray_Get": 
+    {
+        "378": 
+      {
+          "returntype": "uint"
+        , "pos": 3508
+        , "line": 72
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ListGray_Get": 
+    {
+        "379": 
+      {
+          "returntype": "uint"
+        , "pos": 3589
+        , "line": 73
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.ActiveListGray_Get": 
+    {
+        "380": 
+      {
+          "returntype": "uint"
+        , "pos": 3664
+        , "line": 74
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Comment_Get": 
+    {
+        "381": 
+      {
+          "returntype": "uint"
+        , "pos": 3821
+        , "line": 78
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Statement_Get": 
+    {
+        "382": 
+      {
+          "returntype": "uint"
+        , "pos": 3867
+        , "line": 79
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Type_Get": 
+    {
+        "383": 
+      {
+          "returntype": "uint"
+        , "pos": 3913
+        , "line": 80
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Delimiter_Get": 
+    {
+        "384": 
+      {
+          "returntype": "uint"
+        , "pos": 3959
+        , "line": 81
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Constant_Get": 
+    {
+        "385": 
+      {
+          "returntype": "uint"
+        , "pos": 4005
+        , "line": 82
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Private_Get": 
+    {
+        "386": 
+      {
+          "returntype": "uint"
+        , "pos": 4051
+        , "line": 83
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Public_Get": 
+    {
+        "387": 
+      {
+          "returntype": "uint"
+        , "pos": 4097
+        , "line": 84
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "Color.Directive_Get": 
+    {
+        "388": 
+      {
+          "returntype": "uint"
+        , "pos": 4143
+        , "line": 85
+        , "source": "/source/system/color.hs"
+      }
+    }
+    , "JSON.eol": 
+    {
+        "389": 
+      {
+          "returntype": "string"
+        , "pos": 163
+        , "line": 8
+        , "source": "/source/compiler/json/json.hs"
+      }
+    }
+    , "JSON.spaces": 
+    {
+        "390": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:count": "uint"
+        }
+        , "pos": 241
+        , "line": 12
+        , "source": "/source/compiler/json/json.hs"
+      }
+    }
+    , "JSON.ExportList": 
+    {
+        "391": 
+      {
+          "arguments": 
+        {
+            "0:jsonFile": "file"
+          , "1:lst": "<variant>"
+          , "2:indent": "uint"
+        }
+        , "pos": 454
+        , "line": 20
+        , "source": "/source/compiler/json/json.hs"
+      }
+    }
+    , "JSON.ExportDictionary": 
+    {
+        "392": 
+      {
+          "arguments": 
+        {
+            "0:jsonFile": "file"
+          , "1:dict": "<string,variant>"
+          , "2:indent": "uint"
+        }
+        , "pos": 3191
+        , "line": 102
+        , "source": "/source/compiler/json/json.hs"
+      }
+    }
+    , "JSON.Write": 
+    {
+        "393": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:path": "string"
+          , "1:dict": "<string,variant>"
+        }
+        , "pos": 6894
+        , "line": 206
+        , "source": "/source/compiler/json/json.hs"
+      }
+    }
+    , "JSON.ReadList": 
+    {
+        "394": 
+      {
+          "returntype": "<string>"
+        , "pos": 7164
+        , "line": 218
+        , "source": "/source/compiler/json/json.hs"
+      }
+    }
+    , "JSON.ReadDictionary": 
+    {
+        "395": 
+      {
+          "returntype": "<string,variant>"
+        , "pos": 8214
+        , "line": 257
+        , "source": "/source/compiler/json/json.hs"
+      }
+    }
+    , "JSON.Read": 
+    {
+        "396": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:path": "string"
+          , "1:dict": "ref <string,variant>"
+        }
+        , "pos": 10600
+        , "line": 338
+        , "source": "/source/compiler/json/json.hs"
+      }
+    }
+    , "Types.SetCurrentMethod": 
+    {
+        "397": 
+      {
+          "arguments": 
+        {
+            "0:iOverload": "uint"
+        }
+        , "pos": 485
+        , "line": 18
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.GetCurrentMethod": 
+    {
+        "398": 
+      {
+          "returntype": "uint"
+        , "pos": 628
+        , "line": 23
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.EnumValue": 
+    {
+        "399": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:candidate": "string"
+          , "1:typeName": "ref string"
+          , "2:valueName": "ref string"
+          , "3:value": "ref uint"
+        }
+        , "pos": 779
+        , "line": 28
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.FlagsValue": 
+    {
+        "400": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:candidate": "string"
+          , "1:typeName": "ref string"
+          , "2:valueName": "ref string"
+          , "3:value": "ref uint"
+        }
+        , "pos": 2022
+        , "line": 66
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.AutomaticUpCast": 
+    {
+        "401": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:actualType": "string"
+          , "1:desiredType": "string"
+          , "2:codeGenTop": "bool"
+          , "3:codeGenNext": "bool"
+        }
+        , "pos": 3286
+        , "line": 104
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.AutomaticUpCastTop": 
+    {
+        "402": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:actualType": "string"
+          , "1:desiredType": "string"
+        }
+        , "pos": 10428
+        , "line": 306
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.AutomaticUpCastNext": 
+    {
+        "403": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:actualType": "string"
+          , "1:desiredType": "string"
+        }
+        , "pos": 10582
+        , "line": 310
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsNumericType": 
+    {
+        "404": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 10716
+        , "line": 315
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsSignedIntType": 
+    {
+        "405": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 10911
+        , "line": 321
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsOrdinalType": 
+    {
+        "406": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 11077
+        , "line": 326
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsBitwiseType": 
+    {
+        "407": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 11277
+        , "line": 331
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsEqualityType": 
+    {
+        "408": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 11689
+        , "line": 343
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsValueType": 
+    {
+        "409": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 12237
+        , "line": 365
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsSimpleType": 
+    {
+        "410": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 12789
+        , "line": 379
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.ToByte": 
+    {
+        "411": 
+      {
+          "returntype": "byte"
+        , "arguments": 
+        {
+            "0:typeName": "string"
+        }
+        , "pos": 13095
+        , "line": 387
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.tryParseTypeString": 
+    {
+        "412": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "ref string"
+        }
+        , "pos": 16208
+        , "line": 514
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.ParseType": 
+    {
+        "413": 
+      {
+          "returntype": "string"
+        , "pos": 19552
+        , "line": 601
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.GetArraySizeFromCollection": 
+    {
+        "414": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:collectionType": "string"
+        }
+        , "pos": 19771
+        , "line": 610
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.GetKeyFromCollection": 
+    {
+        "415": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:collectionType": "string"
+        }
+        , "pos": 20465
+        , "line": 632
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.GetValueFromCollection": 
+    {
+        "416": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:collectionType": "string"
+        }
+        , "pos": 21004
+        , "line": 648
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.GetIteratorFromCollection": 
+    {
+        "417": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:collectionType": "string"
+        }
+        , "pos": 22198
+        , "line": 682
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsDictionary": 
+    {
+        "418": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 23277
+        , "line": 713
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsList": 
+    {
+        "419": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 24214
+        , "line": 751
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsArray": 
+    {
+        "420": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:typeString": "string"
+        }
+        , "pos": 25130
+        , "line": 788
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.QualifyFlags": 
+    {
+        "421": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:identifier": "string"
+        }
+        , "pos": 25342
+        , "line": 798
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.QualifyEnum": 
+    {
+        "422": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:identifier": "string"
+        }
+        , "pos": 25467
+        , "line": 802
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.QualifyMethodName": 
+    {
+        "423": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:identifier": "string"
+        }
+        , "pos": 25603
+        , "line": 807
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.QualifyDelegateName": 
+    {
+        "424": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:identifier": "string"
+        }
+        , "pos": 25741
+        , "line": 811
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsEnum": 
+    {
+        "425": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:identifier": "string"
+        }
+        , "pos": 25868
+        , "line": 816
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsFlags": 
+    {
+        "426": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:identifier": "string"
+        }
+        , "pos": 25991
+        , "line": 821
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.IsDelegate": 
+    {
+        "427": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:identifier": "string"
+        }
+        , "pos": 26112
+        , "line": 825
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.ArgumentsEqual": 
+    {
+        "428": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:actual": "<<string>>"
+          , "1:target": "<<string>>"
+        }
+        , "pos": 26281
+        , "line": 831
+        , "source": "/source/compiler/types.hs"
+      }
+      , "429": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:actual": "<<string>>"
+          , "1:target": "<<string>>"
+          , "2:upCastAllowed": "bool"
+          , "3:nameCastAllowed": "bool"
+        }
+        , "pos": 26464
+        , "line": 835
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.FindOverload": 
+    {
+        "430": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:functionName": "string"
+          , "1:arguments": "<<string>>"
+          , "2:returnType": "ref string"
+        }
+        , "pos": 31060
+        , "line": 955
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.GetTypeString": 
+    {
+        "431": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:variableName": "string"
+          , "1:mustExist": "bool"
+          , "2:fullName": "ref string"
+        }
+        , "pos": 35211
+        , "line": 1052
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.RuntimeValueCast": 
+    {
+        "432": 
+      {
+          "arguments": 
+        {
+            "0:castToType": "string"
+        }
+        , "pos": 37149
+        , "line": 1103
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.VerifyTopValueType": 
+    {
+        "433": 
+      {
+          "arguments": 
+        {
+            "0:variableType": "string"
+          , "1:typeName": "string"
+        }
+        , "pos": 39071
+        , "line": 1142
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.DynamicCastIntToUInt": 
+    {
+        "434": 
+      {
+          "pos": 40944
+        , "line": 1177
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.DynamicCastToByte": 
+    {
+        "435": 
+      {
+          "pos": 41649
+        , "line": 1195
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.DynamicCastToType": 
+    {
+        "436": 
+      {
+          "pos": 42333
+        , "line": 1212
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Types.VerifyTopType": 
+    {
+        "437": 
+      {
+          "arguments": 
+        {
+            "0:variableType": "string"
+          , "1:prefix": "string"
+        }
+        , "pos": 43026
+        , "line": 1230
+        , "source": "/source/compiler/types.hs"
+      }
+    }
+    , "Block.BlockDepth": 
+    {
+        "438": 
+      {
+          "returntype": "uint"
+        , "pos": 445
+        , "line": 17
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.Top": 
+    {
+        "439": 
+      {
+          "returntype": "<string,variant>"
+        , "pos": 510
+        , "line": 20
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.GetMethodBlock": 
+    {
+        "440": 
+      {
+          "returntype": "<string,variant>"
+        , "pos": 703
+        , "line": 27
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.AddLocal": 
+    {
+        "441": 
+      {
+          "arguments": 
+        {
+            "0:variableType": "string"
+          , "1:identifier": "string"
+        }
+        , "pos": 1227
+        , "line": 48
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.ReplaceTop": 
+    {
+        "442": 
+      {
+          "arguments": 
+        {
+            "0:blockContext": "<string,variant>"
+        }
+        , "pos": 1712
+        , "line": 65
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.AddBreakPatch": 
+    {
+        "443": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:address": "uint"
+        }
+        , "pos": 1870
+        , "line": 72
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.AddContinuePatch": 
+    {
+        "444": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:address": "uint"
+        }
+        , "pos": 2570
+        , "line": 97
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.PushBlock": 
+    {
+        "445": 
+      {
+          "arguments": 
+        {
+            "0:isLoopBlock": "bool"
+        }
+        , "pos": 3280
+        , "line": 122
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.PopBlock": 
+    {
+        "446": 
+      {
+          "pos": 3840
+        , "line": 143
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+      , "447": 
+      {
+          "arguments": 
+        {
+            "0:continueTarget": "uint"
+          , "1:breakTarget": "uint"
+        }
+        , "pos": 3928
+        , "line": 147
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.GetBytesToPop": 
+    {
+        "448": 
+      {
+          "returntype": "uint"
+        , "pos": 7361
+        , "line": 243
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+      , "449": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:toLoop": "bool"
+          , "1:isContinue": "bool"
+        }
+        , "pos": 7470
+        , "line": 247
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.GetLocalsToPop": 
+    {
+        "450": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:andArguments": "bool"
+          , "1:andGlobals": "bool"
+        }
+        , "pos": 8947
+        , "line": 293
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.GetOffset": 
+    {
+        "451": 
+      {
+          "returntype": "int"
+        , "arguments": 
+        {
+            "0:identifier": "string"
+          , "1:isRef": "ref bool"
+        }
+        , "pos": 10092
+        , "line": 326
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.GetType": 
+    {
+        "452": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:identifier": "string"
+        }
+        , "pos": 13379
+        , "line": 425
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "Block.Export": 
+    {
+        "453": 
+      {
+          "arguments": 
+        {
+            "0:iBlock": "uint"
+        }
+        , "pos": 15279
+        , "line": 487
+        , "source": "/source/compiler/codegen/block.hs"
+      }
+    }
+    , "CodeStream.CheckedBuild_Get": 
+    {
+        "454": 
+      {
+          "returntype": "bool"
+        , "pos": 397
+        , "line": 18
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.CheckedBuild_Set": 
+    {
+        "455": 
+      {
+          "arguments": 
+        {
+            "0:value": "bool"
+        }
+        , "pos": 434
+        , "line": 19
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.GetLastInstruction": 
+    {
+        "456": 
+      {
+          "returntype": "Instruction"
+        , "pos": 508
+        , "line": 23
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.GetSecondLastInstruction": 
+    {
+        "457": 
+      {
+          "returntype": "Instruction"
+        , "pos": 809
+        , "line": 33
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.NextAddress_Get": 
+    {
+        "458": 
+      {
+          "returntype": "uint"
+        , "pos": 1375
+        , "line": 53
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AppendCode": 
+    {
+        "459": 
+      {
+          "arguments": 
+        {
+            "0:code": "<byte>"
+        }
+        , "pos": 1477
+        , "line": 59
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.IntToByte": 
+    {
+        "460": 
+      {
+          "returntype": "byte"
+        , "arguments": 
+        {
+            "0:offset": "int"
+        }
+        , "pos": 1676
+        , "line": 68
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.IntToUInt": 
+    {
+        "461": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:offset": "int"
+        }
+        , "pos": 1960
+        , "line": 81
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.New": 
+    {
+        "462": 
+      {
+          "pos": 2181
+        , "line": 92
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+      , "463": 
+      {
+          "arguments": 
+        {
+            "0:starterStream": "<byte>"
+        }
+        , "pos": 2285
+        , "line": 97
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.GetCurrentStream": 
+    {
+        "464": 
+      {
+          "arguments": 
+        {
+            "0:rCurrentStream": "ref <byte>"
+        }
+        , "pos": 2415
+        , "line": 102
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.CurrentStream_Get": 
+    {
+        "465": 
+      {
+          "returntype": "<byte>"
+        , "pos": 2494
+        , "line": 105
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.DebugInfo_Get": 
+    {
+        "466": 
+      {
+          "returntype": "<string,string>"
+        , "pos": 2558
+        , "line": 106
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.ClearDebugInfo": 
+    {
+        "467": 
+      {
+          "pos": 2607
+        , "line": 108
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AppendConstant": 
+    {
+        "468": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:data": "<byte>"
+        }
+        , "pos": 2724
+        , "line": 114
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.CreateFloatConstant": 
+    {
+        "469": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:value": "float"
+        }
+        , "pos": 3984
+        , "line": 161
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.CreateLongConstant": 
+    {
+        "470": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:value": "long"
+        }
+        , "pos": 4114
+        , "line": 166
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.CreateStringConstant": 
+    {
+        "471": 
+      {
+          "returntype": "uint"
+        , "arguments": 
+        {
+            "0:value": "string"
+        }
+        , "pos": 4248
+        , "line": 171
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.GetConstantStream": 
+    {
+        "472": 
+      {
+          "returntype": "<byte>"
+        , "pos": 4439
+        , "line": 180
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.PopTail": 
+    {
+        "473": 
+      {
+          "arguments": 
+        {
+            "0:pops": "uint"
+        }
+        , "pos": 4515
+        , "line": 186
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.PatchJump": 
+    {
+        "474": 
+      {
+          "arguments": 
+        {
+            "0:jumpAddress": "uint"
+          , "1:jumpToAddress": "uint"
+        }
+        , "pos": 4807
+        , "line": 200
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.TryUserSysCall": 
+    {
+        "475": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:name": "string"
+        }
+        , "pos": 6834
+        , "line": 267
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AddInstructionSysCall0": 
+    {
+        "476": 
+      {
+          "arguments": 
+        {
+            "0:sysCallUnit": "string"
+          , "1:sysCallMethod": "string"
+        }
+        , "pos": 8866
+        , "line": 317
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AddInstructionJump": 
+    {
+        "477": 
+      {
+          "arguments": 
+        {
+            "0:jumpInstruction": "Instruction"
+        }
+        , "pos": 9406
+        , "line": 336
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+      , "479": 
+      {
+          "arguments": 
+        {
+            "0:jumpInstruction": "Instruction"
+          , "1:jumpToAddress": "uint"
+        }
+        , "pos": 10389
+        , "line": 367
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AddInstructionJumpOffset": 
+    {
+        "478": 
+      {
+          "arguments": 
+        {
+            "0:jumpInstruction": "Instruction"
+          , "1:offset": "byte"
+        }
+        , "pos": 10202
+        , "line": 362
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.internalAddInstruction": 
+    {
+        "480": 
+      {
+          "arguments": 
+        {
+            "0:instruction": "Instruction"
+        }
+        , "pos": 11810
+        , "line": 415
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AddInstruction": 
+    {
+        "481": 
+      {
+          "arguments": 
+        {
+            "0:instruction": "Instruction"
+        }
+        , "pos": 12003
+        , "line": 422
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+      , "482": 
+      {
+          "arguments": 
+        {
+            "0:instruction": "Instruction"
+          , "1:operand": "byte"
+        }
+        , "pos": 12526
+        , "line": 439
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+      , "483": 
+      {
+          "arguments": 
+        {
+            "0:instruction": "Instruction"
+          , "1:operand": "uint"
+        }
+        , "pos": 12725
+        , "line": 445
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AddInstructionPUSHI": 
+    {
+        "484": 
+      {
+          "arguments": 
+        {
+            "0:operand": "uint"
+        }
+        , "pos": 13015
+        , "line": 454
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AddInstructionPushVariable": 
+    {
+        "485": 
+      {
+          "arguments": 
+        {
+            "0:variableName": "string"
+        }
+        , "pos": 13640
+        , "line": 476
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AddInstructionPopVariable": 
+    {
+        "486": 
+      {
+          "arguments": 
+        {
+            "0:variableType": "string"
+          , "1:variableName": "string"
+        }
+        , "pos": 15205
+        , "line": 523
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.AddString": 
+    {
+        "487": 
+      {
+          "arguments": 
+        {
+            "0:value": "string"
+        }
+        , "pos": 16991
+        , "line": 576
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "CodeStream.InsertDebugInfo": 
+    {
+        "488": 
+      {
+          "arguments": 
+        {
+            "0:usePreviousToken": "bool"
+        }
+        , "pos": 18207
+        , "line": 611
+        , "source": "/source/compiler/codegen/codestream.hs"
+      }
+    }
+    , "Instructions.IsRET": 
+    {
+        "489": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:instruction": "Instruction"
+        }
+        , "pos": 5005
+        , "line": 161
+        , "source": "/source/compiler/codegen/instructions.hs"
+      }
+    }
+    , "Instructions.OperandIsStackOffset": 
+    {
+        "490": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:instruction": "Instruction"
+        }
+        , "pos": 5404
+        , "line": 177
+        , "source": "/source/compiler/codegen/instructions.hs"
+      }
+    }
+    , "Instructions.OperandIsAddressOffset": 
+    {
+        "491": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:instruction": "Instruction"
+        }
+        , "pos": 6293
+        , "line": 204
+        , "source": "/source/compiler/codegen/instructions.hs"
+      }
+    }
+    , "Instructions.OperandWidth": 
+    {
+        "492": 
+      {
+          "returntype": "byte"
+        , "arguments": 
+        {
+            "0:instruction": "Instruction"
+        }
+        , "pos": 6718
+        , "line": 221
+        , "source": "/source/compiler/codegen/instructions.hs"
+      }
+    }
+    , "Instructions.ToString": 
+    {
+        "493": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:instruction": "Instruction"
+        }
+        , "pos": 9029
+        , "line": 290
+        , "source": "/source/compiler/codegen/instructions.hs"
+      }
+    }
+    , "Instructions.Disassemble": 
+    {
+        "494": 
+      {
+          "returntype": "Instruction"
+        , "arguments": 
+        {
+            "0:code": "<byte>"
+          , "1:address": "ref uint"
+          , "2:operand": "ref uint"
+        }
+        , "pos": 19453
+        , "line": 707
+        , "source": "/source/compiler/codegen/instructions.hs"
+      }
+      , "495": 
+      {
+          "returntype": "string"
+        , "arguments": 
+        {
+            "0:code": "<byte>"
+          , "1:address": "ref uint"
+          , "2:entryPointAddress": "uint"
+        }
+        , "pos": 20061
+        , "line": 728
+        , "source": "/source/compiler/codegen/instructions.hs"
+      }
+    }
+    , "Peephole.Initialize": 
+    {
+        "496": 
+      {
+          "pos": 341
+        , "line": 16
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.UpdatePeepholeBoundary": 
+    {
+        "497": 
+      {
+          "arguments": 
+        {
+            "0:codeLength": "uint"
+        }
+        , "pos": 581
+        , "line": 21
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.PeepholeBoundary_Get": 
+    {
+        "498": 
+      {
+          "returntype": "uint"
+        , "pos": 811
+        , "line": 31
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.LastInstructionIndex_Get": 
+    {
+        "499": 
+      {
+          "returntype": "uint"
+        , "pos": 925
+        , "line": 39
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.LastInstructionIndex_Set": 
+    {
+        "500": 
+      {
+          "arguments": 
+        {
+            "0:value": "uint"
+        }
+        , "pos": 992
+        , "line": 43
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.TrimTail": 
+    {
+        "501": 
+      {
+          "arguments": 
+        {
+            "0:currentStream": "ref <byte>"
+          , "1:remove": "uint"
+        }
+        , "pos": 1299
+        , "line": 53
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.PeepholeOptimize": 
+    {
+        "502": 
+      {
+          "arguments": 
+        {
+            "0:currentStream": "ref <byte>"
+        }
+        , "pos": 1490
+        , "line": 62
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.IsPushGlobalB": 
+    {
+        "503": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:currentStream": "ref <byte>"
+          , "1:index": "uint"
+          , "2:offset": "ref byte"
+          , "3:length": "ref byte"
+        }
+        , "pos": 3072
+        , "line": 106
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.IsPopGlobalB": 
+    {
+        "504": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:currentStream": "ref <byte>"
+          , "1:index": "uint"
+          , "2:offset": "ref byte"
+          , "3:length": "ref byte"
+        }
+        , "pos": 3437
+        , "line": 118
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.IsPushLocalB": 
+    {
+        "505": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:currentStream": "ref <byte>"
+          , "1:index": "uint"
+          , "2:offset": "ref byte"
+          , "3:length": "ref byte"
+        }
+        , "pos": 3801
+        , "line": 130
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.IsPopLocalB": 
+    {
+        "506": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:currentStream": "ref <byte>"
+          , "1:index": "uint"
+          , "2:offset": "ref byte"
+          , "3:length": "ref byte"
+        }
+        , "pos": 4549
+        , "line": 157
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.peepholeOptimize4": 
+    {
+        "507": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:currentStream": "ref <byte>"
+        }
+        , "pos": 5236
+        , "line": 184
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.peepholeOptimize1": 
+    {
+        "508": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:currentStream": "ref <byte>"
+        }
+        , "pos": 10190
+        , "line": 294
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+    , "Peephole.peepholeOptimize2": 
+    {
+        "509": 
+      {
+          "returntype": "bool"
+        , "arguments": 
+        {
+            "0:currentStream": "ref <byte>"
+        }
+        , "pos": 11845
+        , "line": 339
+        , "source": "/source/compiler/codegen/peephole.hs"
+      }
+    }
+  }
+}

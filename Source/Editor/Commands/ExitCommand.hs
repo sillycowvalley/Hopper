@@ -29,7 +29,11 @@ unit ExitCommand
             exiting = true;
             Screen.Clear();
             SetCursor(0,0);
+#ifdef DEBUGGER
+            PrintLn("Hopper Debugger exited.", Color.MatrixGreen, Color.Black);
+#else
             PrintLn("Hopper Editor exited.", Color.MatrixGreen, Color.Black);
+#endif
             break;
         }
     }

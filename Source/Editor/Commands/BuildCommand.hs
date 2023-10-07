@@ -2,24 +2,46 @@ unit BuildCommand
 {
     uses "/Source/System/System"
     uses "/Source/System/Screen"
+    uses "/Source/System/Serial"
     uses "/Source/Editor/Commands"
     uses "/Source/Editor/Editor"
-    uses "/Source/Editor/Debugger"
     
-    const string hexeExtension = ".hexe2";
-    const string hasmExtension = ".hasm2";
+    // for DefineExists to see which platform to CODEGEN for
+    uses "/Source/Compiler/JSON/JSON"
+    
+    // built successfully this session?
+    bool buildSuccess = false;
+    
+    // reset during compile : checks for H6502 in compilation target symbols
+    bool target6502 = false;
+    bool Target6502 
+    { 
+        get { return target6502; }
+    }
+    
+    // set when updating the title bar text to orange, reset after compile
+    bool wasModified = false;
+    bool WasModified
+    {
+        get { return wasModified; }
+        set { wasModified = value; }
+    }
         
     Register()
     {
         Commands.CommandExecuteDelegate buildCommand = BuildCommand.Execute;
         Commands.CommandEnabledDelegate buildEnabled = BuildCommand.Enabled;
         Commands.CommandExecuteDelegate runCommand = BuildCommand.Run;
+        Commands.CommandExecuteDelegate debugCommand = BuildCommand.Debug;
         Commands.CommandEnabledDelegate runEnabled = BuildCommand.CanRun;
+        Commands.CommandEnabledDelegate debugEnabled = BuildCommand.CanDebug;
         
         Key key = (Key.F7);
         InstallCommand("Build", "&Build", buildCommand, buildEnabled, key);
+        key = (Key.F5 | Key.Control);
+        InstallCommand("Run", "&Start Without Debugger", runCommand, runEnabled, key);
         key = (Key.F5);
-        InstallCommand("Run", "&Run", runCommand, runEnabled, key);
+        InstallCommand("Debug", "Launch &Debugger", debugCommand, debugEnabled, key);
     }
     
     DisplayError(string message, uint error)
@@ -39,6 +61,36 @@ unit BuildCommand
         }
         Editor.SetStatusBarText(message);
     }
+    
+    
+    CheckTarget(string symbolsPath)
+    {
+        target6502 = false;
+        if (File.Exists(symbolsPath))
+        {
+            <string,variant> dict;
+            if (JSON.Read(symbolsPath, ref dict))
+            {
+                foreach (var kv in dict)
+                {
+                    switch (kv.key)
+                    {
+                        case "symbols":
+                        {
+                            // preprocessor symbols
+                            <string,string> pdValues = kv.value;
+                            if (pdValues.Contains("H6502"))
+                            {
+                                target6502 = true;
+                            }
+                            break;
+                        }
+                    }
+                } // kv
+            }    
+        }
+    }
+    
     Execute()
     {
         loop
@@ -52,6 +104,8 @@ unit BuildCommand
                     break;
                 }
             }
+            buildSuccess = false;
+            
             string binaryPath ="/Bin/PreProcess" + hexeExtension;
             if (!File.Exists(binaryPath))
             {
@@ -68,16 +122,16 @@ unit BuildCommand
             string hexePath = "/Bin/" + fileName + hexeExtension;
             string hasmPath = "/Debug/Obj/" + fileName + hasmExtension;
             
-            //File.Delete(jsonPath);
-            //File.Delete(codePath);
-            //File.Delete(hexePath);
-            //File.Delete(hasmPath);
-            
             Editor.SetStatusBarText("Preprocessing '" + sourcePath + "' -> '" + jsonPath + "'");
+            
+            byte col = Editor.Left + 1;
+            byte row = Editor.Top + Editor.Height - 1;
             
             <string> arguments;
             arguments.Append(sourcePath);
             arguments.Append("-g");
+            arguments.Append(col.ToString());
+            arguments.Append(row.ToString());
             uint error = System.Execute(binaryPath, arguments);
             if (error != 0)
             {
@@ -92,15 +146,44 @@ unit BuildCommand
                 break;
             }
             
+            CheckTarget(jsonPath);
             Editor.SetStatusBarText("Compiling '" + jsonPath + "' -> '" + codePath + "'");
             
             arguments.Clear();
             arguments.Append(jsonPath);
+            arguments.Append("-o"); // 'o'ptimized, not checked build (release)
             arguments.Append("-g");
+            arguments.Append(col.ToString());
+            arguments.Append(row.ToString());
             error = System.Execute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError("Compile", error);
+                break;
+            }
+            
+            binaryPath ="/Bin/Optimize" + hexeExtension;
+            if (!File.Exists(binaryPath))
+            {
+                Editor.SetStatusBarText("No Optimize: '" + binaryPath + "'");
+                break;
+            }
+            string target = "";
+            if (target6502)
+            {
+                target = " for 6502";
+            }
+            Editor.SetStatusBarText("Optimizing Code '" + codePath + "' -> '" + codePath + "'" + target);
+            
+            arguments.Clear();
+            arguments.Append(codePath);
+            arguments.Append("-g");
+            arguments.Append(col.ToString());
+            arguments.Append(row.ToString());
+            error = System.Execute(binaryPath, arguments);
+            if (error != 0)
+            {
+                DisplayError("Optimize", error);
                 break;
             }
             
@@ -110,11 +193,17 @@ unit BuildCommand
                 Editor.SetStatusBarText("No CODEGEN: '" + binaryPath + "'");
                 break;
             }
-            Editor.SetStatusBarText("Generating Code '" + codePath + "' -> '" + hexePath + "'");
+            Editor.SetStatusBarText("Generating Code '" + codePath + "' -> '" + hexePath + "'" + target);
             
             arguments.Clear();
             arguments.Append(codePath);
             arguments.Append("-g");
+            arguments.Append(col.ToString());
+            arguments.Append(row.ToString());
+            if (target6502)
+            {
+                arguments.Append("-ihex");
+            }
             error = System.Execute(binaryPath, arguments);
             if (error != 0)
             {
@@ -134,13 +223,17 @@ unit BuildCommand
             arguments.Clear();
             arguments.Append(hexePath);
             arguments.Append("-g");
+            arguments.Append(col.ToString());
+            arguments.Append(row.ToString());
             error = System.Execute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError("DASM", error);
                 break;
             }
-            Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'");
+            Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'" + target);
+            buildSuccess = true;
+            wasModified  = false;
             break;   
         }
     }
@@ -157,12 +250,33 @@ unit BuildCommand
         }
         return path;
     }
+    Debug()
+    {
+        Screen.Clear();
+        if (!Target6502)
+        {
+            Die(0x0B); // assume we only arrive here for H6502
+        }
+        <string> arguments;
+        string path = Editor.GetProjectPath();
+        string ihexPath = path.Replace(hexeExtension, ".hex");
+        arguments.Append(path);
+        uint error = System.Execute("Debug", arguments);
+        Editor.DrawAll();
+    }
     Run()
     {
-        string path = GetBinaryPath();
-        
-        InitializeSymbols();
+        Screen.Clear();
         <string> arguments;
+        string path = GetBinaryPath();
+        if (Target6502) // target was checked during the successful build
+        {
+            string ihexPath = path.Replace(hexeExtension, ".hex");
+            arguments.Append("-x"); // <ctrl><F5>
+            arguments.Append("-l");
+            arguments.Append(ihexPath);
+            path = "hm";
+        }
         uint error = System.Execute(path, arguments);
         Editor.DrawAll();
     }
@@ -174,13 +288,30 @@ unit BuildCommand
         extension = extension.ToLower();
         return extension == ".hs";
     }
+    
+    // Conditions for when we need to rebuild:
+    // - we can only run if we successfully built the project during this session
+    // - if we modify a file, we need to rebuild (does not matter if we undo the modification)
+    // Not ideal but Hopper does not have file timestamps and I figure it is better
+    // to be strict than to unwittingly run/debug a stale build.
+    
     bool CanRun()
     {
         string path = GetBinaryPath();
         bool canRun = File.Exists(path);
         if (canRun)
         {
-            canRun = !Editor.CanUndo();
+            canRun = !wasModified && buildSuccess;
+        }
+        return canRun;
+    }
+    bool CanDebug()
+    {
+        string path = GetBinaryPath();
+        bool canRun = File.Exists(path);
+        if (canRun)
+        {
+            canRun = !wasModified && buildSuccess && Target6502;
         }
         return canRun;
     }

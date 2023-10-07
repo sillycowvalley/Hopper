@@ -1,6 +1,6 @@
 program Shell
 {
-    
+        
 //#define TINYHOPPER  
 
     uses "/Source/System/System"
@@ -8,10 +8,10 @@ program Shell
     uses "/Source/System/Keyboard"
     uses "/Source/System/Diagnostics"
     uses "/Source/System/EditControl"
-    
-    const string hexeExtension = ".hexe2";
+    uses "/Source/System/Runtime"
     
     bool exiting;
+    bool loaded = false;
     
     string ExtendPath(string command)
     {
@@ -64,6 +64,26 @@ program Shell
         return command;        
     }
     
+    bool Load(string command, <string> arguments)
+    {
+        bool success = false;
+        command = ExtendPath(command);
+        string extension = Path.GetExtension(command);
+        extension = extension.ToLower();
+        loaded = false;
+        if (extension == hexeExtension)
+        {
+            success = Runtime.Load(command, arguments);
+            if (success)
+            {
+                uint bytesLoaded = Runtime.BytesLoaded;
+                PrintLn(bytesLoaded.ToString() + " bytes loaded.");
+                loaded = true;
+            }
+        }
+        return success;
+    }
+    
     bool Run(string command, <string> arguments)
     {
         bool success = false;
@@ -81,7 +101,7 @@ program Shell
                 string content = result.ToString() + " " + command;
                 OutputDebug(content); 
             }
-            success = (0 == result);
+            success = (result == 0);
             break;
         }
         return success;
@@ -115,6 +135,14 @@ program Shell
             loop
             {
                 string commandLine = cmdFile.ReadLine();
+                
+                uint iComment;
+                if (commandLine.IndexOf("//", ref iComment))
+                {
+                    commandLine = commandLine.Substring(0, iComment);
+                }
+                commandLine = commandLine.Trim();
+                
                 string args;
                 if (commandLine.Length == 0)
                 {
@@ -181,6 +209,39 @@ program Shell
             {
                 ChangeDirectory(options, args);
             }
+            case "RUN":
+            {
+                if (!loaded)
+                {
+                    PrintLn("Nothing is loaded.");
+                }
+                else
+                {
+                    Runtime.SetVisibility(true);
+                    Runtime.Run();
+                }    
+            }
+            case "LOAD":
+            {
+                if (rawargs.Length == 0)
+                {
+                    
+                }
+                else
+                {
+                    command = rawargs[0];
+                    args.Clear();
+                    for (uint i=1; i < rawargs.Length; i++)
+                    {
+                        args.Append(rawargs[i]);
+                    }
+                    if (!Load(command, args))
+                    {
+                        PrintLn("Failed to load '" + command + "'");
+                        success = false;
+                    }
+                }
+            }
             
             // hexes and cmds:
             default:
@@ -192,7 +253,7 @@ program Shell
                 {
                     if (!Run(command, rawargs))
                     {
-                        PrintLn("Failed to run '" + command + "' A");
+                        PrintLn("Failed to run '" + command + "'");
                         success = false;
                     }
                 }
@@ -200,7 +261,7 @@ program Shell
                 {
                     if (!RunBatch(command, options, args))
                     {
-                        PrintLn("Failed to run '" + command + "' B");
+                        PrintLn("Failed to run '" + command + "'");
                         success = false;
                     }
                 }

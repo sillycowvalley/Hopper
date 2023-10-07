@@ -9,6 +9,8 @@ unit MessageBox
     uses "/Source/System/Diagnostics"
     uses "/Source/Compiler/Tokens/Token"
     
+    uses "/Source/Editor/Highlighter"
+    
     delegate bool ValidationDelegate(string content);
     
     // Panel 
@@ -30,8 +32,19 @@ unit MessageBox
     }
     <string, variant> New(string title, string message, string extra, <string> buttons, uint editfields, uint editwidth)
     {
-        uint height = 6;
+        uint height = 5;
         uint width = 1;
+        
+        // center on Editor:
+        uint x = Editor.Left + Editor.Width / 2;
+        uint y = Editor.Top + Editor.Height / 2;
+        
+        bool doHighlight = false;
+        if (message.StartsWith(".hs:"))
+        {
+            message = message.Substring(4);
+            doHighlight = true;
+        }
         
         foreach (var button in buttons)
         {
@@ -42,11 +55,33 @@ unit MessageBox
             }
             width = width + buttonWidth + 1;
         }
-        
+        if (title.Length + 2 > width)
+        {
+            width = title.Length + 2;
+        }
+        uint messageRows = 1;
         if (message.Length + 2 > width)
         {
-            width = message.Length + 2;
+            uint fractionWidth = Editor.Width  / 10;
+            if (message.Length + 2 + fractionWidth > Editor.Width)
+            {
+                width = Editor.Width - fractionWidth;
+                messageRows = message.Length / (width - 2);
+                if (message.Length % (width - 2) != 0)
+                {
+                    messageRows++; // fractional row
+                }
+                if (messageRows+8 > Editor.Height)
+                {
+                    messageRows = Editor.Height - 8;
+                }
+            }
+            else
+            {
+                width = message.Length + 2;
+            }
         }
+        height = height + messageRows;
         if (extra.Length + 2 > width)
         {
             width = extra.Length + 2;
@@ -60,18 +95,23 @@ unit MessageBox
         {
             width = editwidth + 2;
         }
+        x = x - width / 2;
+        y = y - height / 2;
         
-        uint x = Screen.Columns / 2 - width / 2;
-        uint y = Screen.Rows / 2 - height / 2;
+        
         <string, variant> instance = Panel.New(byte(x), byte(y), byte(width), byte(height));
-        
-        Panel.SetBackground(instance, Color.LightGray);
+        Panel.SetBackground(instance, Color.PopupFace);
         
         
         instance["title"] = title;
         instance["message"] = message;
+        instance["messageRows"] = messageRows.ToString();
         instance["extra"] = extra;
         instance["buttons"] = buttons;
+        if (doHighlight)
+        {
+            instance["doHighlight"] = "yes";
+        }
         
         < <uint> > listOfAreas;
         instance["buttonareas"] = listOfAreas;
@@ -128,7 +168,7 @@ unit MessageBox
         }
         foreach (var c in buttonText)
         {
-            DrawChar(x, y, c, forecolor, Color.Button);
+            DrawChar(x, y, c, forecolor, Color.ButtonFace);
             x++;
         }
         Resume(true); // interactive
@@ -252,6 +292,11 @@ unit MessageBox
                     if (buttons.Contains("Cancel"))
                     {
                         result = "Cancel";
+                        break;
+                    }
+                    else if (buttons.Contains("OK") && (buttons.Length == 1)) // <esc> should close trivial MessageBoxes
+                    {
+                        result = "OK";
                         break;
                     }
                 }
@@ -388,7 +433,7 @@ unit MessageBox
                                 // Paste from Clipboard
                                 if (HasClipboardText())
                                 {
-                                    string ctext = GetClipboardText();
+                                    string ctext = Clipboard.GetText();
                                     bool ok = true;
                                     foreach (var cc in ctext)
                                     {
@@ -503,9 +548,17 @@ unit MessageBox
         uint y = y0;
         for (x = x0; x < x0+w; x++)
         {
-            DrawChar(x, y0, ' ', Color.MenuBlue, Color.MenuBlue);
+            DrawChar(x, y0, ' ', Editor.TitleColor, Editor.TitleColor);
         }
         x = x0+1;
+        uint messageRows = 1;
+        if (this.Contains("messageRows"))
+        {
+            string smessageRows = this["messageRows"];
+            if (TryParseUInt(smessageRows, ref messageRows))
+            {
+            }
+        }
         string message = this["message"];
         string extra = this["extra"];
         string title = this["title"];
@@ -520,16 +573,14 @@ unit MessageBox
         
         foreach (var c in title)
         {
-            DrawChar(x, y0, c, Color.White, Color.MenuBlue);
+            DrawChar(x, y0, c, Color.PopupText, Editor.TitleColor);
             x++;
         }
         x = x0 + 1;
         y = y0 + 2;
-        foreach (var c in message)
-        {
-            DrawChar(x, y, c, Color.Black, backcolor);
-            x++;
-        }
+        DrawMessage(this, x, y, message, backcolor);
+        y = y + messageRows - 1;
+        
         <string,string> fieldvalues = this["fields"];
         
         if ((extra.Length > 0) && (fieldvalues.Count == 0))
@@ -538,7 +589,7 @@ unit MessageBox
             x = x0 + w - extra.Length - 1;
             foreach (var c in extra)
             {
-                DrawChar(x, y, c, Color.Black, backcolor);
+                DrawChar(x, y, c, Color.LabelText, backcolor);
                 x++;
             }
         }
@@ -552,7 +603,7 @@ unit MessageBox
             // field background area
             for (uint xb = 0; xb < editwidth; xb++)
             {
-                DrawChar(x+xb, y, ' ', Color.LightestGray, Color.LightestGray); 
+                DrawChar(x+xb, y, ' ', Color.EditFace, Color.EditFace); 
             }
             
             // field value
@@ -563,7 +614,7 @@ unit MessageBox
                 x = x0 + 1;
                 foreach (var c in extra)
                 {
-                    DrawChar(x, y, c, Color.Black, backcolor);
+                    DrawChar(x, y, c, Color.LabelText, backcolor);
                     x++;
                 }
             }
@@ -609,11 +660,65 @@ unit MessageBox
             }
             foreach (var c in buttonText)
             {
-                DrawChar(x, y, c, Color.Black, Color.Button);
+                DrawChar(x, y, c, Color.ButtonText, Color.ButtonFace);
                 x++;
             }
         }
         this["buttonareas"] = listOfAreas;
         Resume(true); // interactive
     }
+    
+    DrawMessage(<string, variant> this, uint xLeft, uint yTop, string message, uint backcolor)
+    {
+        uint x0 = Panel.GetX0(this);
+        uint y0 = Panel.GetY0(this);
+        uint w = Panel.GetWidth(this) - 2;
+        
+        uint messageRows = 1;
+        if (this.Contains("messageRows"))
+        {
+            string smessageRows = this["messageRows"];
+            if (TryParseUInt(smessageRows, ref messageRows))
+            {
+            }
+        }
+        uint ml = message.Length;
+        uint padding = w * messageRows - ml;
+        string padString;
+        padString = padString.Pad(' ', padding);
+        message = message + padString;
+        
+        <uint> colors;
+        bool doHighlight = this.Contains("doHighlight");
+        if (doHighlight)
+        {
+            backcolor = LightestGray;
+            colors = Highlighter.Hopper(message, backcolor, false);
+        }
+        
+        uint x = xLeft;
+        uint y = yTop;   
+        uint index = 0; 
+        uint fColor = Color.Black;
+        foreach (var c in message)
+        {
+            if (doHighlight)
+            {
+                fColor = colors[index];
+                index++;
+            }
+            DrawChar(x, y, c, fColor, backcolor);
+            
+            x++;
+            if (x > x0 + w)
+            {
+                y++;
+                x = xLeft;
+                if (y - yTop >= messageRows)
+                {
+                    break;
+                }
+            }
+        }
+    }       
 }

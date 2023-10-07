@@ -1,7 +1,18 @@
 unit System
 {
+    
+    //const string hexeExtension = ".hexe2";
+    //const string hasmExtension = ".hasm2";
+    const string hexeExtension = ".hexe";
+   	const string hasmExtension = ".hasm";
+    
+#ifndef H6502
+    bool Trace { get { return false; }  set { } }
+    bool Warp  { get { return false; }  set { } }
+#endif
+    
     uses "/Source/System/Char"
-    uses "/Source/System/Boolean"
+    uses "/Source/System/Bool"
     uses "/Source/System/Byte"
     uses "/Source/System/Int"
     uses "/Source/System/UInt"

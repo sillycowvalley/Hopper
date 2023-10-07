@@ -19,6 +19,10 @@ unit Types
         iCurrentOverload = iOverload;
         currentNamespace = Symbols.GetNamespace(iOverload);
     }
+    uint GetCurrentMethod()
+    {
+        return iCurrentOverload;
+    }
     
     bool EnumValue(string candidate, ref string typeName, ref string valueName, ref uint value)
     {
@@ -98,7 +102,7 @@ unit Types
     
     bool AutomaticUpCast(string actualType, string desiredType, bool codeGenTop, bool codeGenNext)
     {
-        // codeGenTop: if the cast is not a NOP, CODEGen for [top]
+        // codeGenTop:  if the cast is not a NOP, CODEGen for [top]
         // codeGenNext: if the cast is not a NOP, CODEGen for [next]
         bool ok = false;
         bool nop = false;
@@ -309,35 +313,26 @@ unit Types
     
     bool IsNumericType(string typeString)
     {
-        bool isNumeric;
         string valueTypes = "|byte|uint|int|+int|-int|long|float|";
-        string keyString = "|" + typeString + "|";
-        isNumeric = valueTypes.Contains(keyString);
-        return isNumeric;
+        return valueTypes.Contains("|" + typeString + "|");
     }
     
     bool IsSignedIntType(string typeString)
     {
-        bool isSigned;
         string valueTypes = "|int|+int|-int|";
-        string keyString = "|" + typeString + "|";
-        isSigned = valueTypes.Contains(keyString);
-        return isSigned;
+        return valueTypes.Contains("|" + typeString + "|");
     }
     bool IsOrdinalType(string typeString)
     {
-        bool isOrdinal;
         string valueTypes = "|byte|char|uint|int|+int|-int|string|long|float|";
-        string keyString = "|" + typeString + "|";
-        isOrdinal = valueTypes.Contains(keyString);
-        return isOrdinal;
+        return valueTypes.Contains("|" + typeString + "|");
     }
-    bool IsBitwiseType(string typeString)
+    bool IsBitwiseType(string typeString) 
     {
+        // used by '&' (bitwise and), '|' (bitwise or), '==' and '!=' (below)
         bool isBitwise;
-        string valueTypes = "|byte|uint|flags|";
-        string keyString = "|" + typeString + "|";
-        isBitwise = valueTypes.Contains(keyString);
+        string valueTypes = "|byte|uint|int|+int|-int|flags|";
+        isBitwise = valueTypes.Contains("|" + typeString + "|");
         if (!isBitwise)
         {
             isBitwise = IsFlags(typeString);
@@ -383,9 +378,9 @@ unit Types
     bool IsSimpleType(string typeString) // not compound like list, array, dictionary, pair or potentially variant
     {
         bool isValue;
-        string valueTypes = "|bool|byte|char|uint|int|long|float|string|type|file|directory|delegate|";
+        string simpleTypes = "|bool|byte|char|uint|int|long|float|string|type|file|directory|delegate|";
         string keyString = "|" + typeString + "|";
-        isValue = valueTypes.Contains(keyString);
+        isValue = simpleTypes.Contains(keyString);
         return isValue;
     }
     byte ToByte(string typeName)
@@ -558,7 +553,7 @@ unit Types
                     typeString = typeString + size;
                     if (!Parser.Check(HopperToken.RBracket))
                     {
-                        Parser.ErrorAtCurrent("']' expected");    
+                        Parser.ErrorAtCurrent(']');    
                         success = false;
                         break;
                     }
@@ -591,7 +586,7 @@ unit Types
                 }
                 if (!Parser.Check(HopperToken.GT))
                 {
-                    Parser.ErrorAtCurrent("'>' expected");    
+                    Parser.ErrorAtCurrent('>');    
                     success = false;
                     break;
                 }
@@ -754,9 +749,9 @@ unit Types
     
     bool IsList(string typeString)
     {
-        bool isList= true;
         // <<string,int>> vs <string,int>
         uint length = typeString.Length;
+        bool isList = (length > 2);
         uint i = 0;
         uint nesting = 0;
         loop
@@ -867,6 +862,7 @@ unit Types
                     equal = false;
                     break;
                 }
+
                 bool localUpCastAllowed = upCastAllowed;
                 if (!localUpCastAllowed && nameCastAllowed)
                 {
@@ -883,6 +879,14 @@ unit Types
                 }
                 if (actualList[1] != targetList[1]) // type
                 {
+#ifdef DEBUGGER
+                    if (localUpCastAllowed)
+                    {
+                        Die(0x0B);
+                    }
+                    equal = false;
+                    break;
+#else
                     if (!localUpCastAllowed)
                     {
                         equal = false;
@@ -939,6 +943,7 @@ unit Types
                             break;
                         }
                     }
+#endif
                 }
             }
             break;
@@ -954,8 +959,10 @@ unit Types
         {
             uint fIndex;
             bool found = false;
+            bool foundName = false;
             if (Symbols.GetFunctionIndex(functionName, ref fIndex))
             {
+                foundName = true;
                 <uint> overloads = Symbols.GetFunctionOverloads(fIndex);
                 for (uint pass = 0; pass < 3; pass++)
                 {
@@ -1024,14 +1031,16 @@ unit Types
                     {
                         break;
                     }
-                    Parser.Error("no matching delegate '"+ variableType +"'overload found for '" + functionName + "'");
+                    Parser.Error("no matching delegate '"+ variableType +"' overload found for '" + functionName + "'");
+                }
+                else if (foundName)
+                {
+                    Parser.Error("no matching overload found for '" + functionName + "'");
+                    //Die(0x0A);
                 }
                 else
                 {
-                    OutputDebug(functionName);
-                    OutputDebug(arguments);
-                    Parser.Error("no matching overload found for '" + functionName + "'");
-                    //Die(0x0A);
+                    Parser.Error("'" + functionName + "' is not defined");
                 }
             }
             break;   
@@ -1047,7 +1056,7 @@ unit Types
         {
             fullName = variableName; // local? 
         }
-        if ((variableType.Length == 0) && !variableName.Contains('.'))
+        if ((variableType.Length == 0) && !variableName.Contains('.') && (variableName.Length > 0))
         {
             char f = variableName[0];
             bool private = f.IsLower();
@@ -1095,31 +1104,35 @@ unit Types
         byte vt = Types.ToByte(castToType);
                         
         CodeStream.AddInstruction(Instruction.DUP, byte(0)); // copy of expression result
+#ifndef JSONEXPRESS
         CodeStream.AddInstruction(Instruction.DUP, byte(0)); // 2nd copy
+#endif
         CodeStream.AddInstructionSysCall0("Types", "TypeOf");
         CodeStream.AddInstructionPUSHI(byte(variant));
         CodeStream.AddInstruction(Instruction.EQ);           // is it a variant?
         uint jumpValue = CodeStream.NextAddress;
-        CodeStream.AddInstruction(Instruction.JZB, 0); // if not, jump past to valuetype
-        
+        CodeStream.AddInstructionJump(Instruction.JZB); // if not, jump past to valuetype
+#ifndef JSONEXPRESS
         CodeStream.AddInstructionSysCall0("Types", "ValueTypeOf");// get the type of the variant value
         CodeStream.AddInstructionPUSHI(vt);
         CodeStream.AddInstruction(Instruction.EQ);
-        CodeStream.AddInstruction(Instruction.JNZB, byte(4)); 
+        CodeStream.AddInstructionJumpOffset(Instruction.JNZB, byte(4)); 
         CodeStream.AddInstruction(Instruction.DIE, byte(0x09)); // invalid variant type (incorrect boxed type)
-        
+#endif
         CodeStream.AddInstructionSysCall0("Variant", "UnBox");
         uint jumpEnd = CodeStream.NextAddress;
-        CodeStream.AddInstruction(Instruction.JB, 0);
+        CodeStream.AddInstructionJump(Instruction.JB);
         
 // valuetype: 
         uint valueAddress = CodeStream.NextAddress;
-        CodeStream.PatchJump(jumpValue, valueAddress);       
+        CodeStream.PatchJump(jumpValue, valueAddress);
+#ifndef JSONEXPRESS
         CodeStream.AddInstructionSysCall0("Types", "TypeOf");
         CodeStream.AddInstructionPUSHI(vt);
         CodeStream.AddInstruction(Instruction.EQ);
-        CodeStream.AddInstruction(Instruction.JNZB, byte(4)); 
+        CodeStream.AddInstructionJumpOffset(Instruction.JNZB, byte(4)); 
         CodeStream.AddInstruction(Instruction.DIE, byte(0x08)); // failed dynamic cast       
+#endif
 // end        
         uint endAddress = CodeStream.NextAddress;
         CodeStream.PatchJump(jumpEnd, endAddress);
@@ -1137,12 +1150,12 @@ unit Types
             CodeStream.AddInstructionPUSHI(byte(variant));
             CodeStream.AddInstruction(Instruction.EQ);           // is it a variant?
             uint jumpValue = CodeStream.NextAddress;
-            CodeStream.AddInstruction(Instruction.JZB, 0); // if not, jump past to valuetype
+            CodeStream.AddInstructionJump(Instruction.JZB); // if not, jump past to valuetype
             
             CodeStream.AddInstructionPUSHI(vt);
             CodeStream.AddInstructionSysCall0("Types", "VerifyValueTypes");
             uint jumpEnd = CodeStream.NextAddress;
-            CodeStream.AddInstruction(Instruction.JNZB, 0); 
+            CodeStream.AddInstructionJump(Instruction.JNZB); 
             CodeStream.AddInstruction(Instruction.DIE, byte(0x09)); // invalid value type/s
                                         
             // TODO : support trivial automatic upcasts like 'byte' -> 'uint'
@@ -1152,7 +1165,7 @@ unit Types
             CodeStream.AddInstructionSysCall0("Types", "ValueTypeOf");            
             CodeStream.AddInstructionPUSHI(vt);
             CodeStream.AddInstruction(Instruction.EQ);
-            CodeStream.AddInstruction(Instruction.JNZB, byte(4)); 
+            CodeStream.AddInstructionJumpOffset(Instruction.JNZB, byte(4)); 
             CodeStream.AddInstruction(Instruction.DIE, byte(0x09)); // invalid variant type
 // end        
             uint endAddress = CodeStream.NextAddress;
@@ -1172,10 +1185,10 @@ unit Types
             CodeStream.AddInstruction(Instruction.BITSHR); 
             
             // MSB == 0 -> ok
-            CodeStream.AddInstruction(Instruction.JZB, byte(4)); 
-            // failed dynamic cast
-            CodeStream.AddInstruction(Instruction.DIE, byte(0x08));
+            CodeStream.AddInstructionJumpOffset(Instruction.JZB, byte(4)); 
+            CodeStream.AddInstruction(Instruction.DIE, byte(0x08)); // failed dynamic cast
         }
+		CodeStream.AddInstruction(Instruction.CAST, byte(uint)); // cast top of stack to UInt
     }
     
     DynamicCastToByte() // works for 'uint' -> 'byte' and 'int' -> 'byte'
@@ -1190,10 +1203,27 @@ unit Types
             CodeStream.AddInstruction(Instruction.BITSHR); 
             
             // MSB == 0 -> ok
-            CodeStream.AddInstruction(Instruction.JZB, byte(4)); 
-            // failed dynamic cast
-            CodeStream.AddInstruction(Instruction.DIE, byte(0x08));
+            CodeStream.AddInstructionJumpOffset(Instruction.JZB, byte(4)); 
+            CodeStream.AddInstruction(Instruction.DIE, byte(0x08)); // failed dynamic cast
         }
+        CodeStream.AddInstruction(Instruction.CAST, byte(byte)); // cast top of stack to byte
+    }
+    DynamicCastToType() // works for 'byte' -> 'type'
+    {
+        if (CodeStream.CheckedBuild)
+        {
+            // DUP [top]
+            CodeStream.AddInstruction(Instruction.DUP, byte(0)); 
+            
+            // byte > 25?
+            CodeStream.AddInstructionPUSHI(0x19); // tList = 25
+            CodeStream.AddInstruction(Instruction.GT); 
+            
+            // 0 -> ok
+            CodeStream.AddInstructionJumpOffset(Instruction.JZB, byte(4)); 
+            CodeStream.AddInstruction(Instruction.DIE, byte(0x08)); // failed dynamic cast
+        }
+        CodeStream.AddInstruction(Instruction.CAST, byte(byte)); // cast top of stack to byte
     }
     
     VerifyTopType(string variableType, string prefix)
@@ -1207,7 +1237,7 @@ unit Types
             byte vt = Types.ToByte(variableType);
             CodeStream.AddInstructionPUSHI(vt);
             CodeStream.AddInstruction(Instruction.EQ);
-            CodeStream.AddInstruction(Instruction.JNZB, byte(4)); 
+            CodeStream.AddInstructionJumpOffset(Instruction.JNZB, byte(4)); 
             CodeStream.AddInstruction(Instruction.DIE, byte(0x09)); // invalid variant type
         }
     }

@@ -19,9 +19,9 @@ unit StatusBar
        
     <string, variant> New()
     {
-        <string, variant> instance = Panel.New(0, Screen.Rows-1, Screen.Columns, 1);
+        <string, variant> instance = Panel.New(Editor.Left, Editor.Top + Editor.Height-1, Editor.Width, 1);
         
-        SetBackground(instance, Color.Button);
+        SetBackground(instance, Color.StatusFace);
         return instance;
     }
     
@@ -119,32 +119,37 @@ unit StatusBar
         Panel.Draw(this);
         
         clickAreas.Clear();
-        
+        uint panelWidth = Panel.GetWidth(this);
+        uint panelX0 = Panel.GetX0(this);
         if ((row != 0) || (col != 0))
         {   
             uint backColour = Panel.GetBackground(this);
             string content = "Ln: " + row.ToString() + "  Ch: " + col.ToString();
-            uint x = Panel.GetX0(this) + Panel.GetWidth(this) - content.Length - 2;
+            uint x = panelX0 + panelWidth - content.Length - 2;
             uint y = Panel.GetY0(this);
             foreach (var c in content)
             {
-                DrawChar(x, y, c, Color.ButtonText, backColour);
+                DrawChar(x, y, c, Color.StatusText, backColour);
                 x++;
             }
         }
         if (textContent.Length != 0)
         {
             uint backColour = Panel.GetBackground(this);
-            uint x = Panel.GetX0(this) + 3;
+            uint x = panelX0 + 3;
             uint y = Panel.GetY0(this);
             
             <uint> area;
             uint cw = 0;
             bool foundPath = false;
             clickPath = "";
+            uint xLimit = panelX0 + panelWidth;
             foreach (var c in textContent)
             {
-                DrawChar(x, y, c, Color.ButtonText, backColour);
+                if (x < xLimit)
+                {
+                    DrawChar(x, y, c, Color.StatusText, backColour);
+                }
                 x++;
                 if (c == '[')
                 {

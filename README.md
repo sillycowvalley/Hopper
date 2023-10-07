@@ -17,37 +17,41 @@ https://docs.google.com/presentation/d/1AP5HfBwkcK6xj-8Z5_-iPWaELDSroDuUKiATp3Y2
 
 ## Notes
 
-This is an early release to experiment with the language. It isn't terribly useful yet since you can only write console-style apps so far.
+This is an early release to experiment with the language. It runs on Windows and on 6502.
 
 From a security point of view, Hopper is:
 - unable to escape from the root folder of the repo (Hopper thinks that subtree is your entire disc)
 - aside from files in the repro tree, Hopper can only access the console, keyboard and mouse
 
+## Current State
+
+The primary target for Hopper is small devices. Currently it is running well on 6502 and there
+are drivers for the following functionality:
+
+1. LCD (using 65C22 VIA)
+2. Timer (using 65C22 VIA)
+3. Serial (using either the Motorola 6850 or the WDC/Rockwell 6551)
+4. mimimal GPIO (built-in LED using 65C22)
+5. PS/2 keyboard (using 65C22 VIA)
+
+Developing for the 6502 is a first class IDE experience: source for both the editor (with syntax highlighting)
+and the full symbolic source-level debugger are included (written in Hopper, of course).
+
+The compilation toolchain is broken into 5 applications, all written in Hopper:
+- Preprocess: first compilation phase which walks the entire project to collect definitions
+- Compile:    second compilation phase compiles the code within the methods
+- Optimize:   optional phase that makes obvious optimizations to the intermediate output from the compiler
+- Codegen:    compiles the intermediate output into Hopper VM byte code
+- Dasm:       disassembles Hopper binaries (.hexe) into assembler listings (.hasm)
+
 ## What's Next?
 
-An earlier version of Hopper has been ported to:
-- microcontrollers (ESP-8266 - Wemos D1 Mini)
-- Z80 (see the Z80 subfolder under /Source)
-
-My plan is to port this latest iteration to ESP-8266 again and to make it really easy to develop and debug in that environment (first class IDE experience).
-
-Initially I'll have drivers for:
-1. Screen
-- 20x4 LCD
-- 68x48 pixel OLED
-2. Microcontroller IO
-- GPIO pins
-- I2C
-- SPI
-3. Disc storage
-- Flash (LittleFS)
-- SD card
-4. Keyboard
-- PS/2
-- matrix
-5. Web / WiFi
-- HTTP GET requests
-
-I'm not sure what I'll do with the serial port yet. Depends if I use WiFi or serial for debugging and uploading programs.
+1. Port to ESP-2866 and ESP-32 (again)
+- implement interface for GPIO pins, I2C and SPI
+- driver (in Hopper) for SD cards (probably using LittleFS) then port File and Directory
+2. Web / WiFi
+- HTTP client and server drivers (in Hopper)
+3. Port to RP240
+4. Port to Z80 again
 
 Contact me for more info: michael at sillycowvalley dot com

@@ -2,31 +2,54 @@ unit UInt
 {
     string ToString(uint this)
     {
+        uint digit;
+        char c;
         string result;
-        if (0 == this)
+        if (this == 0)
         {
-            result = "0";
+            String.Build(ref result, '0');
         }
-        while (0 != this)
+        while (this != 0)
         {
-            uint digit = this % 10;
+            digit = this % 10;
             digit = digit + 48;
-            char c = char(digit);
-            result = result.InsertChar(0,c);
+            c = char(digit);
+            String.BuildFront(ref result, c);
             this = this / 10;
         }
         return result;
+    }
+    ToString(uint this, ref string result)
+    {
+        uint digit;
+        char c;
+        String.Build(ref result);
+        if (this == 0)
+        {
+            String.Build(ref result, '0');
+        }
+        while (this != 0)
+        {
+            digit = this % 10;
+            digit = digit + 48;
+            c = char(digit);
+            String.BuildFront(ref result, c);
+            this = this / 10;
+        }
     }
 #ifndef ZOPPER
     long ToLong(uint this) system;
     string ToHexString(uint this, byte digits)
     {
+        uint digit;
+        char c;
+        uint i;
         string result;
-        for (uint i = digits; i > 0; i--)
+        for (i = digits; i > 0; i--)
         {
-            uint digit = this % 16;
-            char c = Char.ToHex(byte(digit));
-            result = result.InsertChar(0, c);
+            digit = this % 16;
+            c = Char.ToHex(byte(digit));
+            String.BuildFront(ref result, c);
             this = this / 16;
         }
         return result;

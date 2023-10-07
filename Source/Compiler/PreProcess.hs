@@ -143,7 +143,7 @@ program PreProcess
                     typeString = typeString + value;   
                     if (!Parser.Check(HopperToken.RBracket))
                     {
-                        Parser.ErrorAtCurrent("']' expected");
+                        Parser.ErrorAtCurrent(']');
                         success = false;
                         break;
                     }
@@ -173,7 +173,7 @@ program PreProcess
                 {
                     if (!Parser.Check(HopperToken.GT))
                     {
-                        Parser.ErrorAtCurrent("'>' expected");
+                        Parser.ErrorAtCurrent('>');
                         success = false;
                         break;
                     }
@@ -198,7 +198,7 @@ program PreProcess
           }
           else if (!Parser.Check(HopperToken.LBrace))
           {
-              Parser.ErrorAtCurrent("'{' expected");
+              Parser.ErrorAtCurrent('{');
               break;
           }
           <string,string> currentToken = Parser.CurrentToken;
@@ -227,7 +227,7 @@ program PreProcess
           {
               if (HadError)
               {
-                  Parser.ErrorAtCurrent("'}' expected");
+                  Parser.ErrorAtCurrent('}');
                   break;
               }
               if (Parser.Check(HopperToken.RBrace))
@@ -301,7 +301,7 @@ program PreProcess
             
             if (!Parser.Check(HopperToken.Identifier) || Parser.Check(HopperToken.DottedIdentifier))
             {
-                Parser.ErrorAtCurrent("identifier expected A");       
+                Parser.ErrorAtCurrent("identifier expected");       
                 break;
             }
             <string,string> idToken = Parser.CurrentToken;
@@ -317,7 +317,7 @@ program PreProcess
             
             if (!Parser.Check(HopperToken.LBrace))
             {
-                Parser.ErrorAtCurrent("'{' expected");
+                Parser.ErrorAtCurrent('{');
                 break;
             }
             Parser.Advance(); // {
@@ -338,7 +338,7 @@ program PreProcess
                 
                 if (!Parser.Check(HopperToken.Identifier))
                 {
-                    Parser.ErrorAtCurrent("identifier expected B");       
+                    Parser.ErrorAtCurrent("identifier expected");       
                     break;
                 }
                 
@@ -388,7 +388,7 @@ program PreProcess
                 }
                 else if (expectComma)
                 {
-                    Parser.ErrorAtCurrent("',' expected");       
+                    Parser.ErrorAtCurrent(',');       
                 }
             }
                     
@@ -480,7 +480,7 @@ program PreProcess
             {
                 if (!Parser.Check(HopperToken.Comma))
                 {
-                    Parser.ErrorAtCurrent("',' expected");       
+                    Parser.ErrorAtCurrent(',');       
                     break;
                 }
                 Parser.Advance();
@@ -502,7 +502,7 @@ program PreProcess
             }
             if (!Parser.Check(HopperToken.Identifier))
             {
-                Parser.ErrorAtCurrent("identifier expected C");   
+                Parser.ErrorAtCurrent("identifier expected");   
                 break;
             }  
             <string,string> currentToken = CurrentToken;
@@ -806,7 +806,7 @@ program PreProcess
                 }
                 if (Parser.Check(HopperToken.EOF))
                 {
-                    Parser.ErrorAtCurrent("';' expected");
+                    Parser.ErrorAtCurrent(';');
                     break;
                 }
                 Parser.Advance(); // gobble gobble
@@ -961,7 +961,7 @@ program PreProcess
                             // single identifier implies method name
                             if (!Parser.Check(HopperToken.LParen))
                             {
-                                Parser.ErrorAtCurrent("'(' expected");
+                                Parser.ErrorAtCurrent('(');
                                 break;
                             }
                             isMethod = true;
@@ -1041,7 +1041,7 @@ program PreProcess
           currentUnit = previousToken["lexeme"];
           AddNameSpace(currentUnit);
           
-          Parser.Consume(HopperToken.LBrace, "'{' expected");
+          Parser.Consume(HopperToken.LBrace, '{');
           if (Parser.HadError)
           {
               success = false;
@@ -1078,7 +1078,7 @@ program PreProcess
           else if (!endedProperly)
           {
               // can't "Consume" at the end of the file
-              Parser.Error("'}' expected");
+              Parser.Error('}');
               success = false;
           }
           else
@@ -1120,7 +1120,7 @@ program PreProcess
     {
         PrintLn("Invalid arguments for PREPROCESS:");
         PrintLn("  PREPROCESS [args] <source file>");    
-        PrintLn("    -g : called from GUI, not console");
+        PrintLn("    -g <c> <r> : called from GUI, not console");
     }
     {  
         loop
@@ -1128,8 +1128,9 @@ program PreProcess
           <string> rawArgs = System.Arguments;
           <string> args;
           
-          foreach (var arg in rawArgs)
+          for (uint iArg = 0; iArg < rawArgs.Length; iArg++)
           {
+              string arg = rawArgs[iArg];
               if ((arg.Length == 2) && (arg[0] == '-'))
               {
                   arg = arg.ToLower();
@@ -1137,7 +1138,17 @@ program PreProcess
                   {
                       case "-g":
                       {
-                          Parser.SetInteractive(true);    
+                          uint col;
+                            uint row;
+                            iArg++;
+                            if (TryParseUInt(rawArgs[iArg], ref col))
+                            {
+                            }
+                            iArg++;
+                            if (TryParseUInt(rawArgs[iArg], ref row))
+                            {
+                            }
+                            Parser.SetInteractive(byte(col), byte(row));
                       }
                       default:
                       {
@@ -1157,19 +1168,27 @@ program PreProcess
             BadArguments();
             break;
           }
+          bool sourceFound;
           string sourcePath = args[0];
-          if (!File.Exists(sourcePath))
+          string ext = ".hs";
+          string codePath = args[0];
+          <string> sourceFolders;
+          sourceFolders.Append("/Source/Compiler/");
+          sourceFolders.Append("/Source/Debugger/");
+          sourceFolders.Append("/Source/Editor/");
+          sourceFolders.Append("/Source/Shell/");
+          sourceFolders.Append("/Source/Testing/");
+          foreach (var sourceFolder in sourceFolders)
           {
-            string ext = Path.GetExtension(sourcePath);
-            if (ext == ".")
-            {
-                sourcePath = sourcePath + ".hs";
-            }
-            if (!File.Exists(sourcePath))
-            {
-                BadArguments();
-                break;
-            }
+              if (File.Exists(ref sourcePath, ref ext, sourceFolder))
+              {
+                  sourceFound = true;
+                  break;
+              }
+          }
+          if (!sourceFound)
+          {
+              BadArguments();
           }
           long startTime = Millis;
           loop
@@ -1183,7 +1202,6 @@ program PreProcess
                   // delete previous so no output on error
                   File.Delete(jsonPath); 
               }
-              
               if (!buildSymbols(sourcePath))
               {
                  // error!
@@ -1206,10 +1224,10 @@ program PreProcess
               }
               if (!Parser.IsInteractive())
               {
-                  Print("Success. ", Color.DarkGreen, Color.LightGray);
+                  Print("Success. ", Color.ProgressText, Color.ProgressFace);
                   long elapsedTime = Millis - startTime;
                   float seconds = elapsedTime / 1000.0;
-                  PrintLn("  " +seconds.ToString() + "s", Color.MatrixBlue, Color.LightGray); 
+                  PrintLn("  " +seconds.ToString() + "s", Color.ProgressHighlight, Color.ProgressFace); 
               }
               else
               {

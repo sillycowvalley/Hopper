@@ -3,13 +3,13 @@ unit CodeStream
     uses "/Source/Compiler/CodeGen/Instructions"
     uses "/Source/Compiler/CodeGen/Block"
     uses "/Source/Compiler/Symbols"
+    uses "/Source/Compiler/CodeGen/Peephole"
     
     
     <string,string> debugInfo;
     <string,bool> debugInfoLineUsed;
     <byte> currentStream;
     <byte> constantStream;
-    uint lastInstruction;
     
     bool checkedBuild;
     
@@ -17,6 +17,51 @@ unit CodeStream
     { 
         get { return checkedBuild; }
         set { checkedBuild = value; }
+    }
+
+    Instruction GetLastInstruction()
+    { 
+        Instruction last = Instruction.NOP;
+        if (LastInstructionIndex < currentStream.Length)
+        {
+            byte instr = currentStream[LastInstructionIndex];
+            last = Instruction(instr); 
+        }
+        return last;
+    }
+    Instruction GetSecondLastInstruction() 
+    { 
+        Instruction secondLast = Instruction.NOP;
+        if (LastInstructionIndex-1 < currentStream.Length)
+        {
+            Instruction last = GetLastInstruction();
+            // only works if last instruction is single byte
+            if (Instructions.OperandWidth(last) != 0)
+            {
+                Die(0x0B);
+            }
+            
+            byte instr = currentStream[LastInstructionIndex-1];
+            secondLast = Instruction(instr); 
+        }
+        return secondLast;
+    }
+    
+    uint NextAddress 
+    { 
+        get 
+        { 
+            return currentStream.Length;
+        } 
+    }
+        
+    AppendCode(<byte> code)
+    {
+        foreach (var b in code)
+        {
+            currentStream.Append(b);        
+        }
+        UpdatePeepholeBoundary(currentStream.Length);
     }
     
     byte IntToByte(int offset)
@@ -46,12 +91,16 @@ unit CodeStream
     New()
     {
         currentStream.Clear();
-        lastInstruction = 0; // not really ..
+        Peephole.Initialize();
     }
     New(<byte> starterStream)
     {
         currentStream = starterStream;
-        lastInstruction = 0; // not really ..
+        Peephole.Initialize();
+    }
+    GetCurrentStream(ref <byte> rCurrentStream)
+    {
+        rCurrentStream = currentStream;
     }
     <byte> CurrentStream { get { return currentStream; } }
     <string,string> DebugInfo { get { return debugInfo; } }
@@ -60,34 +109,7 @@ unit CodeStream
         debugInfo.Clear();
         debugInfoLineUsed.Clear();
     }
-    
-    Instruction GetLastInstruction()
-    { 
-        Instruction last = Instruction.NOP;
-        if (lastInstruction < currentStream.Length)
-        {
-            byte instr = currentStream[lastInstruction];
-            last = Instruction(instr); 
-        }
-        return last;
-    }
-    
-    uint NextAddress 
-    { 
-        get 
-        { 
-            return currentStream.Length;
-        } 
-    }
-        
-    AppendCode(<byte> code)
-    {
-        foreach (var b in code)
-        {
-            currentStream.Append(b);        
-        }
-    }
-    
+     
     uint AppendConstant(<byte> data)
     {
         uint constantAddress;
@@ -179,6 +201,7 @@ unit CodeStream
         byte jumpInstr = currentStream[jumpAddress];
         Instruction jumpInstruction = Instruction(jumpInstr);
         bool isLong; 
+        Instruction shortInstruction;
         switch (jumpInstruction)
         {
             case Instruction.JB:
@@ -193,14 +216,17 @@ unit CodeStream
             case Instruction.JW:
             {
                 isLong = true;
+                shortInstruction = Instruction.JB;
             }
             case Instruction.JZW:
             {
                 isLong = true;
+                shortInstruction = Instruction.JZB;
             }
             case Instruction.JNZW:
             {
                 isLong = true;
+                shortInstruction = Instruction.JNZB;
             }
             default:
             {
@@ -211,11 +237,24 @@ unit CodeStream
         if (isLong)
         {
             uint op = IntToUInt(offset);
-            
             uint lsb = op & 0xFF;
             uint msb = op >> 8;
-            currentStream.SetItem(jumpAddress+1, byte(lsb));
-            currentStream.SetItem(jumpAddress+2, byte(msb));
+            if ((shortInstruction == Instruction.JB) && (offset >= 0) && (offset <= 127))
+            {
+                uint phb = PeepholeBoundary;
+                if (jumpAddress > phb)
+                {
+                  UpdatePeepholeBoundary(currentStream.Length);
+                }
+                currentStream.SetItem(jumpAddress+0, byte(shortInstruction));
+                currentStream.SetItem(jumpAddress+1, byte(lsb));
+                currentStream.SetItem(jumpAddress+2, byte(Instruction.NOP));
+            }
+            else
+            {
+                currentStream.SetItem(jumpAddress+1, byte(lsb));
+                currentStream.SetItem(jumpAddress+2, byte(msb));
+            }
         }
         else
         {
@@ -224,18 +263,106 @@ unit CodeStream
         }
     }
     
+    bool TryUserSysCall(string name)
+    {
+        bool userSupplied = false;
+        // Are we targetting an 8 bit platform?
+        // Is there a user supplied alternative to the SysCall with only one overload?
+        //  (we're not checking arguments or return type : shooting from the hip ..)
+        uint fIndex;
+        if (DefineExists("H6502"))
+        {
+            //Print("Try:" + name);
+            if (GetFunctionIndex(name, ref fIndex))
+            {
+                <uint> iOverloads = GetFunctionOverloads(fIndex);
+                if (iOverloads.Length == 1)
+                {
+                    uint iOverload = iOverloads[0];
+                    if (!IsSysCall(iOverload))
+                    {
+                        Symbols.OverloadToCompile(iOverload); // User supplied SysCall as Hopper source
+
+                        if (DefineExists("H6502"))
+                        {
+                            if (iOverload <= 0x3FFF)
+                            {
+                                uint beOverload = 0xC000 | iOverload;
+                                CodeStream.AddInstruction(Instruction.CALLW, beOverload);
+                            }
+                            else
+                            {
+                                Parser.Error("H6502 has a limit of 16383 for function indices, (was '" + iOverload.ToString() + "')");
+                            }
+                        }
+                        else if (iOverload < 256)
+                        {
+                            CodeStream.AddInstruction(Instruction.CALLB, byte(iOverload));
+                        }
+                        else
+                        {
+                            CodeStream.AddInstruction(Instruction.CALLW, iOverload);
+                        }
+                        //Print(" Found");
+                        userSupplied = true;
+                    }
+                }
+            }
+            //PrintLn();
+        }
+        return userSupplied;
+    }
+    
     AddInstructionSysCall0(string sysCallUnit, string sysCallMethod)
     {
-        byte iSysCall;
-        string name = sysCallUnit + '.' + sysCallMethod;
-        if (!TryParse(name, ref iSysCall))
+        loop
         {
-            PrintLn("'" + name + "' not found");
-            Die(3); // key not found
+            byte iSysCall;
+            string name = sysCallUnit + '.' + sysCallMethod;
+            if (TryUserSysCall(name))
+            {
+                break;
+            }
+            if (!TryParseSysCall(name, ref iSysCall))
+            {
+                PrintLn("'" + name + "' not found");
+                Die(3); // key not found
+            }
+            CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
+            break;
         }
-        CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
+    }
+    AddInstructionJump(Instruction jumpInstruction)
+    {
+        // before jump (since this placeholder patch location is locked in already)
+        UpdatePeepholeBoundary(currentStream.Length);
+        
+        switch (jumpInstruction)
+        {
+            case Instruction.JW:
+            case Instruction.JZW:
+            case Instruction.JNZW:
+            {
+                AddInstruction(jumpInstruction, uint(0)); // place holder
+            }
+            case Instruction.JB:
+            case Instruction.JZB:
+            case Instruction.JNZB:
+            {
+                AddInstruction(jumpInstruction, byte(0)); // place holder
+            }
+            default:
+            {
+                Die(0x0B); // what's this?
+            }
+        }
+        
     }    
-    
+    AddInstructionJumpOffset(Instruction jumpInstruction, byte offset)
+    {
+        AddInstruction(jumpInstruction, offset);
+        UpdatePeepholeBoundary(currentStream.Length);
+    }
     AddInstructionJump(Instruction jumpInstruction, uint jumpToAddress)
     {
         uint jumpAddress = NextAddress;
@@ -258,7 +385,7 @@ unit CodeStream
                     jumpInstruction = Instruction.JNZB;
                 }
             }
-            AddInstruction(jumpInstruction, op);        
+            AddInstruction(jumpInstruction, op);    
         }
         else
         {
@@ -280,37 +407,60 @@ unit CodeStream
             }
             AddInstruction(jumpInstruction, op);   
         }
+        UpdatePeepholeBoundary(currentStream.Length);
     }
     
     
-    AddInstruction(Instruction instruction)
+    internalAddInstruction(Instruction instruction)
     {
         byte instr = byte(instruction);
         currentStream.Append(instr);
-        lastInstruction = currentStream.Length-1;
+        LastInstructionIndex = currentStream.Length-1;
+    }
+    
+    AddInstruction(Instruction instruction)
+    {
+        switch (instruction)
+        {
+            case Instruction.JB:
+            case Instruction.JZB:
+            case Instruction.JNZB:
+            case Instruction.JW:
+            case Instruction.JZW:
+            case Instruction.JNZW:
+            {
+                Die(0x0B); // illegal to not use th Jump-specific AddInstructions
+            }
+        }
+        internalAddInstruction(instruction);
+        PeepholeOptimize(ref currentStream);
     }
     AddInstruction(Instruction instruction, byte operand)
     {
-        AddInstruction(instruction);
+        internalAddInstruction(instruction);
         currentStream.Append(operand);
+        PeepholeOptimize(ref currentStream);
     }
     AddInstruction(Instruction instruction, uint operand)
     {
-        AddInstruction(instruction);
+        internalAddInstruction(instruction);
         uint lsb = operand & 0xFF;
         currentStream.Append(byte(lsb));
         uint msb = operand >> 8;
         currentStream.Append(byte(msb));
+        PeepholeOptimize(ref currentStream);
     }
     AddInstructionPUSHI(uint operand)
     {
         if (operand == 0)
         {
-            CodeStream.AddInstruction(Instruction.PUSHI0);
+            CodeStream.internalAddInstruction(Instruction.PUSHI0);
+            PeepholeOptimize(ref currentStream);
         }
         else if (operand == 1)
         {
-            CodeStream.AddInstruction(Instruction.PUSHI1);
+            CodeStream.internalAddInstruction(Instruction.PUSHI1);
+            PeepholeOptimize(ref currentStream);
         }
         else if (operand < 256)
         {
@@ -374,7 +524,8 @@ unit CodeStream
         if (!IsValueType(variableType))
         {
             // what follows is a pop of a reference into a variable - should we make a copy?
-            CodeStream.AddInstruction(Instruction.COPYNEXTPOP);
+            CodeStream.internalAddInstruction(Instruction.COPYNEXTPOP);
+            PeepholeOptimize(ref currentStream);
         }
         string fullName;
         string variableType2 = Types.GetTypeString(variableName, true, ref fullName);
@@ -421,6 +572,40 @@ unit CodeStream
             }
         }
     }
+    AddString(string value)
+    {
+        if (value.Length == 0)
+        {
+            CodeStream.AddInstructionSysCall0("String", "New");
+        }
+        else if (value.Length == 1)
+        {
+            CodeStream.AddInstructionPUSHI(byte(value[0]));
+            byte iSysCall;
+            if (!TryParseSysCall("String.NewFromConstant", ref iSysCall))
+            {
+                Die(3); // key not found
+            }
+            CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+        }
+        else if (value.Length == 2)
+        {
+            CodeStream.AddInstructionPUSHI(byte(value[0]) + (byte(value[1]) << 8));
+            byte iSysCall;
+            if (!TryParseSysCall("String.NewFromConstant", ref iSysCall))
+            {
+                Die(3); // key not found
+            }
+            CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+        }
+        else
+        {
+            uint constantAddress = CodeStream.CreateStringConstant(value);
+            CodeStream.AddInstructionPUSHI(constantAddress);
+            CodeStream.AddInstructionPUSHI(value.Length);
+            CodeStream.AddInstructionSysCall0("String", "NewFromConstant");
+        }
+    }
     
     InsertDebugInfo(bool usePreviousToken)
     {
@@ -442,5 +627,4 @@ unit CodeStream
             debugInfoLineUsed[ln] = true;
         }
     }
-    
 }

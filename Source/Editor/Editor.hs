@@ -2,6 +2,7 @@ unit Editor
 {
     uses "/Source/System/Keyboard"
     uses "/Source/System/Screen"
+    uses "/Source/System/Clipboard"
     uses "/Source/Editor/TextBuffer"
     uses "/Source/Compiler/Tokens/Token"
     uses "/Source/Editor/StatusBar"
@@ -9,9 +10,13 @@ unit Editor
     uses "/Source/Editor/MessageBox"
     uses "/Source/Editor/Highlighter"
     uses "/Source/System/Diagnostics"
-    
-    uses "/Source/Editor/Debugger"
-    
+
+#ifdef DEBUGGER
+    const bool isEditor = false;
+#else
+    const bool isEditor = true;
+#endif    
+
     // '/' excluded  on purpose to make path selection easier
     string wordDelimiters = ";,.:?(){}[]<>=!&|~^+-*% '\""; 
     
@@ -21,8 +26,6 @@ unit Editor
     uint selectionX;
     uint selectionY;
     bool selectionActive;
-    
-    string clipboard;
     
     uint bufferTopLeftX;
     uint bufferTopLeftY;
@@ -39,7 +42,7 @@ unit Editor
     string currentPath;
     
     bool isHopperSource;
-    bool isZopperSource;
+    
     
     bool ignoreNextClick;
     bool wasDown;
@@ -59,15 +62,44 @@ unit Editor
     <string, variant> statusbar;
     <string, variant> menubar;
     
+    // for Debugger
+    uint activeLine; 
+    string activePath;
+    
+    byte editorLeft;
+    byte editorTop;
+    byte editorWidth;
+    byte editorHeight;
+    
+#ifdef DEBUGGER        
+    uint TitleColor { get { return Color.MenuGreen; } }
+    uint MenuTextColor { get { return Color.MenuTextGreen; } }
+#else
+    uint TitleColor { get { return Color.MenuBlue; } }
+    uint MenuTextColor { get { return Color.MenuTextBlue; } }
+#endif
+    
+    Locate(byte left, byte top, byte width, byte height)
+    {
+        editorLeft   = left;
+        editorTop    = top;
+        editorWidth  = width;
+        editorHeight = height;
+    }
+    byte Left   { get { return editorLeft; } }
+    byte Top    { get { return editorTop; } }
+    byte Width  { get { return editorWidth; } }
+    byte Height { get { return editorHeight; } }
+    
     New(<string, variant> sb, <string, variant> mb)
     {
         Token.Initialize();
         statusbar = sb;
         menubar = mb;
-        x0 = 0;
-        y0 = 1;
-        width  = Screen.Columns;
-        height = (Screen.Rows-2);
+        x0 = Editor.Left;
+        y0 = Editor.Top+1;
+        width  = Editor.Width;
+        height = (Editor.Height-2);
         background = Color.LightestGray;
         
         TextBuffer.Initialize();
@@ -84,13 +116,14 @@ unit Editor
         CalculateLineNumberWidth();
     }
     
-    
-    
     bool IsWordDelimiter(char c)
     {
         return wordDelimiters.Contains(c);
     }
-    
+    bool HasClipboardText()
+    {
+        return Clipboard.HasText;
+    }
     DisplayCursor(bool show)
     {
         Suspend();
@@ -280,18 +313,6 @@ unit Editor
     {
         return selectionActive && ((selectionY != cursorY) || (selectionX != cursorX));
     }
-    bool HasClipboardText() 
-    {
-        return clipboard.Length > 0;
-    }
-    string GetClipboardText() 
-    { 
-        return clipboard; 
-    }
-    SetClipboardText(string text)
-    {
-        clipboard = text;
-    }
     string GetSelectedText()
     {
         string text = "";
@@ -426,9 +447,8 @@ unit Editor
     }
     Copy()
     {
-        clipboard = "";
-
         bool wasSelected = false;
+        string clipboardText;
         uint lineCount = TextBuffer.GetLineCount();
         for (uint row = 0; row < lineCount; row++)
         {
@@ -441,12 +461,16 @@ unit Editor
                     if ((column == 0) && wasSelected)
                     {
                         // first character on new line isSelected and last character on previous line wasSelected so
-                        clipboard = clipboard + char(0x0A);
+                        clipboardText = clipboardText + char(0x0A);
                     }
-                    clipboard = clipboard + ln[column];
+                    clipboardText = clipboardText + ln[column];
                 }
                 wasSelected = isSelected;
             }
+        }
+        if (clipboardText.Length > 0)
+        {
+            Clipboard.SetText(clipboardText);
         }
     }
     Cut()
@@ -467,9 +491,14 @@ unit Editor
         uint y = cursorY;
         selectionX = x;
         selectionY = y;
-        for (uint i=0; i < clipboard.Length; i++)
+        string clipboardText;
+        if (Clipboard.HasText)
         {
-            TextBuffer.Insert(ref x, ref y, clipboard[i]);
+            clipboardText = Clipboard.GetText();
+        }
+        for (uint i=0; i < clipboardText.Length; i++)
+        {
+            TextBuffer.Insert(ref x, ref y, clipboardText[i]);
         }
         selectionActive = false;
         TextBuffer.EndJournal();
@@ -495,6 +524,24 @@ unit Editor
     uint GetCurrentLineNumber() 
     { 
         return cursorY+1; 
+    }
+    
+    SetActiveLine(uint gotoLine, string path, bool setActive)
+    {
+        if (setActive)
+        {
+            activeLine = gotoLine;
+            activePath = path.ToLower();
+        }
+        if (gotoLine != 0)
+        {
+            // -1 means first non-space
+            bool success = GotoLineNumber(gotoLine, 0, false, true);
+        }
+        else
+        {
+            TextBufferUpdated(cursorX, cursorY, true);
+        }
     }
     
     bool GotoLineNumber()
@@ -527,20 +574,6 @@ unit Editor
             y = gotoLine-1;
             if (defaultColumn)
             {
-                x = gotoColumn-1;
-                if (x  > TextBuffer.GetLineLength(gotoLine-1))
-                {
-                    x = TextBuffer.GetLineLength(gotoLine-1);
-                }
-                DisplayCursor(false);
-                bufferTopLeftY = y - (height / 2);
-                if (bufferTopLeftY < 0)
-                {
-                    bufferTopLeftY = 0;
-                }
-            }
-            else
-            {
                 // -1 means first non-space
                 string ln = TextBuffer.GetLine(gotoLine-1);
                 x = 0;
@@ -553,7 +586,26 @@ unit Editor
                     x++;
                 }
             }
-            
+            else
+            {
+                x = gotoColumn-1;
+                if (x  > TextBuffer.GetLineLength(gotoLine-1))
+                {
+                    x = TextBuffer.GetLineLength(gotoLine-1);
+                }
+            }
+            DisplayCursor(false);
+            if (!defaultLine)
+            {
+                if ((height / 2) > y)
+                {
+                    bufferTopLeftY = 0;
+                }
+                else
+                {
+                    bufferTopLeftY = y - (height / 2);
+                }
+            }
             TextBufferUpdated(x, y, true);
             return true;
         }
@@ -783,105 +835,109 @@ unit Editor
             }
         case Key.Tab:
             {
-                TextBuffer.StartJournal();
-                if (hasSelection)
+                if (isEditor)
                 {
-                    // TODO: Tab should probably never delete
-                    //     - <Tab> : indent selection by 4 spaces - all selected lines
-                    //     - <Shift><Tab> : remove 4 spaces on left side of selection (if they exist) - all selected lines
-                    uint ymin = y;
-                    uint ymax = y;
-                    if (selectionY < ymin)
+                    TextBuffer.StartJournal();
+                    if (hasSelection)
                     {
-                        ymin = selectionY;
-                    }
-                    if (selectionY > ymax)
-                    {
-                        ymax = selectionY;
-                    }
-                    uint yt = ymin;
-                    if (!isShifted)
-                    {
-                        // <Tab> : block indent
-                        loop
+                        // TODO: Tab should probably never delete
+                        //     - <Tab> : indent selection by 4 spaces - all selected lines
+                        //     - <Shift><Tab> : remove 4 spaces on left side of selection (if they exist) - all selected lines
+                        uint ymin = y;
+                        uint ymax = y;
+                        if (selectionY < ymin)
                         {
-                            uint xt = 0;
-                            uint ytr = yt;
+                            ymin = selectionY;
+                        }
+                        if (selectionY > ymax)
+                        {
+                            ymax = selectionY;
+                        }
+                        uint yt = ymin;
+                        if (!isShifted)
+                        {
+                            // <Tab> : block indent
+                            loop
+                            {
+                                uint xt = 0;
+                                uint ytr = yt;
+                                for (uint i=0; i < 4; i++)
+                                {
+                                    TextBuffer.Insert(ref xt, ref ytr, ' ');
+                                }
+                                if (yt == ymax)
+                                {
+                                    break;
+                                }
+                                yt++;
+                            }
+                            selectionX = selectionX + 4;
+                            x = x + 4; // to cause update below
+                        }
+                        else
+                        {
+                            // <Shift><Tab>
+                            loop
+                            {
+                                uint xt = 0;
+                                uint ytr = yt;
+                                for (uint i=0; i < 4; i++)
+                                {
+                                   string indentLine = TextBuffer.GetLine(ytr);
+                                   if ((indentLine.Length > 0) && (indentLine[0] == ' '))
+                                   {
+                                       xt = 0;
+                                       bool success = TextBuffer.Delete(ref xt, ref ytr);
+                                   }
+                                }
+                                if (yt == ymax)
+                                {
+                                    break;
+                                }
+                                yt++;
+                            }
                             for (uint i=0; i < 4; i++)
                             {
-                                TextBuffer.Insert(ref xt, ref ytr, ' ');
+                                if (x > 0)
+                                {
+                                    x--;
+                                }
+                                if (selectionX > 0)
+                                {
+                                    selectionX--;
+                                }
                             }
-                            if (yt == ymax)
-                            {
-                                break;
-                            }
-                            yt++;
                         }
-                        selectionX = selectionX + 4;
-                        x = x + 4; // to cause update below
+                        selectionActive = true;
+                    } // hasSelection
+                    
+                    else if (!isShifted)
+                    {
+                        for (uint i=0; i < 4; i++)
+                        {
+                            TextBuffer.Insert(ref x, ref y, ' ');
+                        }
                     }
                     else
                     {
-                        // <Shift><Tab>
-                        loop
-                        {
-                            uint xt = 0;
-                            uint ytr = yt;
-                            for (uint i=0; i < 4; i++)
-                            {
-                               string indentLine = TextBuffer.GetLine(ytr);
-                               if ((indentLine.Length > 0) && (indentLine[0] == ' '))
-                               {
-                                   xt = 0;
-                                   bool success = TextBuffer.Delete(ref xt, ref ytr);
-                               }
-                            }
-                            if (yt == ymax)
-                            {
-                                break;
-                            }
-                            yt++;
-                        }
                         for (uint i=0; i < 4; i++)
                         {
-                            if (x > 0)
+                            uint xt = 0;
+                            uint yt = y;
+                            string indentLine = TextBuffer.GetLine(y);
+                            if ((indentLine.Length > 0) && (indentLine[0] == ' '))
                             {
-                                x--;
-                            }
-                            if (selectionX > 0)
-                            {
-                                selectionX--;
-                            }
-                        }
-                    }
-                    selectionActive = true;
-                }
-                else if (!isShifted)
-                {
-                    for (uint i=0; i < 4; i++)
-                    {
-                        TextBuffer.Insert(ref x, ref y, ' ');
-                    }
-                }
-                else
-                {
-                    for (uint i=0; i < 4; i++)
-                    {
-                        uint xt = 0;
-                        uint yt = y;
-                        string indentLine = TextBuffer.GetLine(y);
-                        if ((indentLine.Length > 0) && (indentLine[0] == ' '))
-                        {
-                            bool success = TextBuffer.Delete(ref xt, ref yt);
-                            if (x > 0)
-                            {
-                                x--;
+                                bool success = TextBuffer.Delete(ref xt, ref yt);
+                                if (x > 0)
+                                {
+                                    x--;
+                                }
                             }
                         }
                     }
-                }
-                TextBuffer.EndJournal();
-                draw = true;
+                    TextBuffer.EndJournal();
+                    draw = true;
+                } // isEditor
             }
         case Key.Home:
             {
@@ -1130,92 +1186,131 @@ unit Editor
             }
         case Key.Enter:
             {
-                if (hasSelection)
+                if (isEditor)
                 {
-                    DeleteSelection();
-                    x = cursorX;
-                    y = cursorY;
-                }
-                uint spaceCount;
-                if (y > 0)
-                {
-                    string spaceLine = currentLine;
-                    uint slen = spaceLine.Length;
-                    uint xs = x;
-                    bool usePrevious = false;
-                    char rc;
-                    while (xs < slen)
+                    if (hasSelection)
                     {
-                        rc = spaceLine[xs];
-                        if (rc != ' ')
-                        {
-                            usePrevious = true;
-                            break;                        
-                        }
-                        xs++;
+                        DeleteSelection();
+                        x = cursorX;
+                        y = cursorY;
                     }
-                    if ((xs == x) && ((rc == '}') || (rc == '{')))
+                    uint spaceCount;
+                    if (y > 0)
                     {
-                        // if we are sitting just left of '{' or '}' then
-                        // maintain their position
-                        spaceCount = x; 
-                    }
-                    else
-                    {
-                        if (usePrevious)
+                        string spaceLine = currentLine;
+                        uint slen = spaceLine.Length;
+                        uint xs = x;
+                        bool usePrevious = false;
+                        char rc;
+                        while (xs < slen)
                         {
-                            spaceLine = TextBuffer.GetLine(y-1);
-                        }
-                        foreach (var cp in spaceLine)
-                        {
-                            if (cp == ' ')
+                            rc = spaceLine[xs];
+                            if (rc != ' ')
                             {
-                                spaceCount++;
+                                usePrevious = true;
+                                break;                        
                             }
-                            else
+                            xs++;
+                        }
+                        if ((xs == x) && ((rc == '}') || (rc == '{')))
+                        {
+                            // if we are sitting just left of '{' or '}' then
+                            // maintain their position
+                            spaceCount = x; 
+                        }
+                        else
+                        {
+                            if (usePrevious)
                             {
-                                if (cp == '{')
+                                spaceLine = TextBuffer.GetLine(y-1);
+                            }
+                            foreach (var cp in spaceLine)
+                            {
+                                if (cp == ' ')
                                 {
-                                    spaceCount = spaceCount + 4;
+                                    spaceCount++;
                                 }
-                                break;                         
+                                else
+                                {
+                                    if (cp == '{')
+                                    {
+                                        spaceCount = spaceCount + 4;
+                                    }
+                                    break;                         
+                                }
                             }
                         }
                     }
-                }
-                uint length = currentLine.Length;
-                char c = char(0x0A);
-                TextBuffer.StartJournal();
-                TextBuffer.Insert(ref x, ref y, c);
-                x = x + spaceCount;
-                loop
-                {
-                    // the above insert incremented y
-                    if (spaceCount == 0)
+                    uint length = currentLine.Length;
+                    char c = char(0x0A);
+                    TextBuffer.StartJournal();
+                    TextBuffer.Insert(ref x, ref y, c);
+                    x = x + spaceCount;
+                    loop
                     {
-                        break;
+                        // the above insert incremented y
+                        if (spaceCount == 0)
+                        {
+                            break;
+                        }
+                        spaceCount--;
+                        uint xi = 0;
+                        TextBuffer.Insert(ref xi, ref y, ' ');
                     }
-                    spaceCount--;
-                    uint xi = 0;
-                    TextBuffer.Insert(ref xi, ref y, ' ');
-                }
-                TextBuffer.EndJournal();
-                draw = true;
+                    TextBuffer.EndJournal();
+                    draw = true;
+                } // isEditor
             }
         case Key.Backspace:
             {
-                if (hasSelection)
+                if (isEditor)
                 {
-                    DeleteSelection();
-                    x = cursorX;
-                    y = cursorY;
-                }
-                else
-                {
-                    // delete the character before the cursor - move the cursor back one, then delete what is at the cursor
-                    if (x > 0)
+                    if (hasSelection)
                     {
-                        x--;
+                        DeleteSelection();
+                        x = cursorX;
+                        y = cursorY;
+                    }
+                    else
+                    {
+                        // delete the character before the cursor - move the cursor back one, then delete what is at the cursor
+                        if (x > 0)
+                        {
+                            x--;
+                            TextBuffer.StartJournal();
+                            if (TextBuffer.Delete(ref x, ref y))
+                            {
+                                draw = true;
+                            }
+                            TextBuffer.EndJournal();
+                        }
+                        else if (y > 0)
+                        {
+                            y--;
+                            x = TextBuffer.GetLineLength(y);
+                            TextBuffer.StartJournal();
+                            if (TextBuffer.Delete(ref x,ref y))
+                            {
+                                draw = true;
+                            }
+                            TextBuffer.EndJournal();
+                        }
+                    }
+                } // isEditor
+            }
+        case Key.Delete:
+            {
+                if (isEditor)
+                {
+                    if (hasSelection)
+                    {
+                        DeleteSelection();
+                        x = cursorX;
+                        y = cursorY;
+                    }
+                    else
+                    {
+                        // delete what is at the cursor
                         TextBuffer.StartJournal();
                         if (TextBuffer.Delete(ref x, ref y))
                         {
@@ -1223,67 +1318,40 @@ unit Editor
                         }
                         TextBuffer.EndJournal();
                     }
-                    else if (y > 0)
-                    {
-                        y--;
-                        x = TextBuffer.GetLineLength(y);
-                        TextBuffer.StartJournal();
-                        if (TextBuffer.Delete(ref x,ref y))
-                        {
-                            draw = true;
-                        }
-                        TextBuffer.EndJournal();
-                    }
-                }
-            }
-        case Key.Delete:
-            {
-                if (hasSelection)
-                {
-                    DeleteSelection();
-                    x = cursorX;
-                    y = cursorY;
-                }
-                else
-                {
-                    // delete what is at the cursor
-                    TextBuffer.StartJournal();
-                    if (TextBuffer.Delete(ref x, ref y))
-                    {
-                        draw = true;
-                    }
-                    TextBuffer.EndJournal();
                 }
             }
         default:
             {
-                if (isAlted || isControlled)
+                if (isEditor)
                 {
-                    // ignore here (don't allow <ctrl><a> ->'a', etc)
-                }
-                else
-                {
-                    if (key == (Key.ModSpace | Key.Shift))
+                    if (isAlted || isControlled)
                     {
-                        // must be shifted (see above)
-                        key = Key.Space;
+                        // ignore here (don't allow <ctrl><a> ->'a', etc)
                     }
-                    uint ik = uint(key);
-                    if ((ik > 31) && (ik < 255))
+                    else
                     {
-                        char character = char(ik);
-                        if (hasSelection)
+                        if (key == (Key.ModSpace | Key.Shift))
                         {
-                            DeleteSelection();
-                            x = cursorX;
-                            y = cursorY;
+                            // must be shifted (see above)
+                            key = Key.Space;
                         }
-                        TextBuffer.StartJournal();
-                        TextBuffer.Insert(ref x, ref y, character);
-                        TextBuffer.EndJournal();
-                        draw = true;
+                        uint ik = uint(key);
+                        if ((ik > 31) && (ik < 255))
+                        {
+                            char character = char(ik);
+                            if (hasSelection)
+                            {
+                                DeleteSelection();
+                                x = cursorX;
+                                y = cursorY;
+                            }
+                            TextBuffer.StartJournal();
+                            TextBuffer.Insert(ref x, ref y, character);
+                            TextBuffer.EndJournal();
+                            draw = true;
+                        }
                     }
-                }
+                } // isEditor
             } // default
         } // switch
         if (selectionActive)
@@ -1307,10 +1375,6 @@ unit Editor
                         if (isHopperSource)
                         {
                             candidate = candidate + ".hs";
-                        }
-                        if (isZopperSource)
-                        {
-                            candidate = candidate + ".zs";
                         }
                     }
                     if (File.Exists(candidate))
@@ -1369,6 +1433,9 @@ unit Editor
         
         Suspend();
         
+        string currentLower = currentPath.ToLower();
+        bool currentIsActive = (activePath == currentLower);
+        
         // render the text buffer
         uint lineCount = TextBuffer.GetLineCount();
         for (uint r=0; r < h; r++)
@@ -1379,7 +1446,14 @@ unit Editor
             uint lineNumber = lineIndex+1;
             char bp = ' ';
             uint breakColor = Color.Red;
-            uint runColor = Color.MarginGray;
+            uint runColor = Color.MarginFace;
+#ifdef DEBUGGER            
+            bool isBreak = DebugCommand.IsBreakpoint(currentLower, lineNumber);
+            if (isBreak)
+            {
+                bp = char(0x95);
+            }
+#endif
             
             // draw line number column on left
             uint c = lineNumberWidth-1;
@@ -1404,9 +1478,12 @@ unit Editor
                     uint digit = (lineNumber % 10) + 48; // '0'
                     character = char(digit);
                 }
-                Screen.DrawChar(x0+c, r+y0, character, Color.SlateBlue, Color.MarginGray); 
+                Screen.DrawChar(x0+c, r+y0, character, Color.MarginText, Color.MarginFace); 
                 lineNumber = lineNumber / 10;
             }
+            
+            
+            
 #ifdef PROFILER            
             if (isProfiler && (ln.Length >= 6) && ln.StartsWith("0x"))
             {
@@ -1450,7 +1527,7 @@ unit Editor
                     
                     foreach (var ch in perf)
                     {
-                        Screen.DrawChar(x0+xx, r+y0, ch, perfColor, Color.MarginGray); 
+                        Screen.DrawChar(x0+xx, r+y0, ch, perfColor, Color.MarginFace); 
                         xx++;
                     }
                 }
@@ -1461,9 +1538,9 @@ unit Editor
             c = 0;
             if (lineIndex < lineCount)
             {
-                if (isHopperSource || isZopperSource)
+                if (isHopperSource)
                 {
-                    colours = Highlighter.Hopper(ln, background, isZopperSource);
+                    colours = Highlighter.Hopper(ln, background, false);
                 }
                 uint colourOffset = 0;
                 
@@ -1485,9 +1562,19 @@ unit Editor
                         bColor = Color.Gray;
                     }
                     uint textColor = Color.Black;
-                    if (isHopperSource || isZopperSource)
+                    if (isHopperSource)
                     {
                         textColor = colours[colourOffset + c];
+                    }
+#ifdef DEBUGGER
+                    if (isBreak)
+                    {
+                        bColor = Color.ActiveRed;
+                    }
+#endif
+                    if (currentIsActive && (lineIndex+1 == activeLine))
+                    {
+                        bColor = Color.ActiveGray;
                     }
                     Screen.DrawChar(c+x0+lineNumberWidth, r+y0, ln[c], textColor, bColor); 
                     c++;
@@ -1495,8 +1582,19 @@ unit Editor
             }
             while (c < width- lineNumberWidth)
             {
-                // pad the rest of the line with blacks
-                Screen.DrawChar(c+x0+lineNumberWidth, r+y0, ' ', Color.Black, background); 
+                uint bColor = background;
+#ifdef DEBUGGER            
+                if (isBreak)
+                {
+                    bColor = Color.ActiveRed;
+                }
+#endif
+                if (currentIsActive && (lineIndex+1 == activeLine))
+                {
+                    bColor = Color.ActiveGray;
+                }
+                // pad the rest of the line with blanks
+                Screen.DrawChar(c+x0+lineNumberWidth, r+y0, ' ', Color.Black, bColor); 
                 c++;
             }
         }
@@ -1642,8 +1740,7 @@ unit Editor
         string extension = Path.GetExtension(currentPath);
         extension = extension.ToLower();
         isHopperSource = (extension == ".hs");
-        isZopperSource = (extension == ".zs");
-
+        
         if (projectPath.Length == 0) // first load
         {
             projectPath = currentPath;
@@ -1835,10 +1932,6 @@ unit Editor
                         if (isHopperSource)
                         {
                             candidate = candidate + ".hs";
-                        }
-                        if (isZopperSource)
-                        {
-                            candidate = candidate + ".zs";
                         }
                     }
                     if (File.Exists(candidate))
@@ -2093,17 +2186,18 @@ unit Editor
     
     RegisterCommands()
     {   
-    
-        Commands.CommandExecuteDelegate saveCommand = Editor.Save;
-        Commands.CommandEnabledDelegate saveEnabled = Editor.CanUndo;
-        Key key = (Key.Control | Key.ModS);
-        InstallCommand("Save", "&Save", saveCommand, saveEnabled, key);
-
+        Key key;
+        
         Commands.CommandExecuteDelegate openCommand = Editor.Open;
         Commands.CommandEnabledDelegate openEnabled = Editor.Always;
         key = (Key.Control | Key.ModO);
         InstallCommand("Open", "&Open..", openCommand, openEnabled, key);
 
+#ifndef DEBUGGER
+        Commands.CommandExecuteDelegate saveCommand = Editor.Save;
+        Commands.CommandEnabledDelegate saveEnabled = Editor.CanUndo;
+        key = (Key.Control | Key.ModS);
+        InstallCommand("Save", "&Save", saveCommand, saveEnabled, key);
         Commands.CommandExecuteDelegate saveAsCommand = Editor.SaveAs;
         Commands.CommandEnabledDelegate saveAsEnabled = Editor.HasText;
         key = Key.NoKey;
@@ -2113,7 +2207,7 @@ unit Editor
         Commands.CommandEnabledDelegate newEnabled = Editor.Always;
         key = (Key.Control | Key.ModN);
         InstallCommand("New", "&New..", newCommand, newEnabled, key);
-
+#endif
 
         Commands.CommandExecuteDelegate selectAllCommand = Editor.SelectAll;
         Commands.CommandEnabledDelegate selectAllEnabled = Editor.HasText;
@@ -2135,6 +2229,7 @@ unit Editor
         key = Key.F3;
         InstallCommand("FindNext", "", findNext, findAgainEnabled, key);
                 
+#ifndef DEBUGGER
         Commands.CommandExecuteDelegate undoCommand = Editor.Undo;
         Commands.CommandEnabledDelegate undoEnabled = Editor.CanUndo;
         key = (Key.Control | Key.ModZ);
@@ -2155,14 +2250,17 @@ unit Editor
         key = (Key.Control | Key.ModX);
         InstallCommand("Cut", "Cu&t", cutCommand, cutEnabled, key);
         
+        Commands.CommandExecuteDelegate pasteCommand = Editor.Paste;
+        Commands.CommandEnabledDelegate pasteEnabled = Editor.HasClipboardText;
+        key = (Key.Control | Key.ModV);
+        InstallCommand("Paste", "&Paste", pasteCommand, pasteEnabled, key);
+#endif
+
         Commands.CommandExecuteDelegate copyCommand = Editor.Copy;
         Commands.CommandEnabledDelegate copyEnabled = Editor.HasSelection;
         key = (Key.Control | Key.ModC);
         InstallCommand("Copy", "&Copy", copyCommand, copyEnabled, key);
         
-        Commands.CommandExecuteDelegate pasteCommand = Editor.Paste;
-        Commands.CommandEnabledDelegate pasteEnabled = Editor.HasClipboardText;
-        key = (Key.Control | Key.ModV);
-        InstallCommand("Paste", "&Paste", pasteCommand, pasteEnabled, key);
+        
     }
 }

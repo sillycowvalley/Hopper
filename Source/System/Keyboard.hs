@@ -9,8 +9,9 @@ unit Keyboard
         Shift   = 0x0400,
         Mask    = 0xF0FF,
         
-        Click     = 0xE0FF, // pointer click event
-        Scroll    = 0xE0FE, // pointer scroll event
+        Click      = 0xE0FF, // pointer click event
+        Scroll     = 0xE0FE, // pointer scroll event
+        ClickRight = 0xE0FD, // pointer right click event
         
         Space     = 0x0020,
         Delete    = 0xE071,
@@ -92,9 +93,9 @@ unit Keyboard
         ModY = 0xE035,
         ModZ = 0xE01A,
         
-        ControlA = 0xE21C,
-        ControlC = 0xE221,
-        ControlV = 0xE22A,
+        ControlA = 0xE21C, // Control | ModA
+        ControlC = 0xE221, // Control | ModC
+        ControlV = 0xE22A, // Control | ModV
         
         A = 0x41,
         a = 0x61,
@@ -148,6 +149,18 @@ unit Keyboard
         y = 0x79,
         Z = 0x5A,
         z = 0x7A,
+        
+        N0 = 0x30,
+        N1 = 0x31,
+        N2 = 0x32,
+        N3 = 0x33,
+        N4 = 0x34,
+        N5 = 0x35,
+        N6 = 0x36,
+        N7 = 0x37,
+        N8 = 0x38,
+        N9 = 0x39,
+        
     }
     
     // TODO : how to make this prettier in terms of syntax? 
@@ -362,7 +375,6 @@ unit Keyboard
                 output = "9";
             }
             
-            
             case Keyboard.Key.ModA:
             {
                 output = "A";
@@ -476,6 +488,7 @@ unit Keyboard
                     char c;
                     c = char(i);
                     output = "'" + c + "'";
+                    output = output + " 0x" + i.ToHexString(2);
                 }
                 else
                 {

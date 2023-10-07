@@ -2,17 +2,21 @@ unit Byte
 {
     string ToString(byte this)
     {
-        int value = int(this);
+        int value;
+        value = int(this);
         return value.ToString();
     }
     string ToHexString(byte this, byte digits)
     {
+        int digit;
+        char c;
+        int i;
         string result;
-        for (int i = digits; i > 0; i--)
+        for (i = digits; i > 0; i--)
         {
-            int digit = this % 16;
-            char c = Char.ToHex(byte(digit));
-            result = result.InsertChar(0, c);
+            digit = this % 16;
+            c = Char.ToHex(byte(digit));
+            String.BuildFront(ref result, c);
             this = this / 16;
         }
         return result;

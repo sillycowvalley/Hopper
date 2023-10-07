@@ -4,7 +4,11 @@ unit Commands
     uses "/Source/System/Keyboard"
 
     uses "/Source/Editor/Commands/ExitCommand"
+#ifdef DEBUGGER
+    uses "/Source/Debugger/DebugCommand"
+#else
     uses "/Source/Editor/Commands/BuildCommand"
+#endif
     
     delegate CommandExecuteDelegate();
     delegate bool CommandEnabledDelegate();
@@ -18,7 +22,11 @@ unit Commands
     Initialize()
     {
         ExitCommand.Register();
+#ifdef DEBUGGER        
+        DebugCommand.Register();
+#else
         BuildCommand.Register();
+#endif        
         Editor.RegisterCommands();
         
         // TODO : these should all eventually be Commands.Register() calls

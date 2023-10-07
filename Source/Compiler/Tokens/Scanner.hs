@@ -36,6 +36,9 @@ unit Scanner
     
     Load(string sourcePath)
     {
+        byte b;
+        string ln;
+                
         sourceLines.Clear();
         sourceLength = 0;
         file sourceFile = File.Open(sourcePath);
@@ -44,10 +47,10 @@ unit Scanner
         {
             loop
             {
-                string ln;
+                String.Build(ref ln); // clear
                 loop
                 {
-                    byte b = sourceFile.Read();
+                    b = sourceFile.Read();
                     if (b == 0)
                     {
                         break; // EOF
@@ -133,6 +136,15 @@ unit Scanner
     char sourceGetFromPos(long pos, bool updateCache)
     {
         char c;
+        uint iLine;
+        uint maxLines;
+        uint length;
+        uint uindex;
+        string ln;
+        long current;
+        long limit;
+        long index;
+        
         loop
         {
             if (lastPosSet)
@@ -149,18 +161,18 @@ unit Scanner
                 iCurrentSourceLine = 0;
             }
             
-            long current = currentStartPos;
-            uint iLine = iCurrentSourceLine;
-            uint maxLines = sourceLines.Length;
+            current = currentStartPos;
+            iLine = iCurrentSourceLine;
+            maxLines = sourceLines.Length;
             loop
             {
-                string ln = sourceLines[iLine];
-                uint length = ln.Length;
-                long limit = current+length;
+                ln = sourceLines[iLine];
+                length = ln.Length;
+                limit = current+length;
                 if ((pos >= current) && (pos < limit))
                 {
-                    long index = pos - current;
-                    uint uindex = uint(index);
+                    index = pos - current;
+                    uindex = uint(index);
                     c = ln[uindex];
                     break;
                 }
@@ -295,7 +307,7 @@ unit Scanner
         {
             if (peek() == char(0x0A))
             {
-                currentLine++;
+                return errorToken("unexpected EOL in string");
             }
             char c = advance();
             if (c == char(0x5C)) // \

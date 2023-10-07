@@ -22,6 +22,7 @@ unit Symbols
     // for each overload uint:
     <uint, string> fReturnTypes;
     <uint, < < string > > > fArgumentNamesAndTypes;
+    <uint, < < string > > > fLocalNamesAndTypes; // and offsets
     // code location of function bodies
     <uint, long> fStartPos;
     <uint, uint> fStartLine;
@@ -56,6 +57,8 @@ unit Symbols
     <string, <string, uint> > flValues;
     <string, uint> flIndex;
     <uint, <string,uint> > flMembers;
+    <uint, <uint,string> > flMembersReversed;
+    <uint, <uint> > flMembersSorted;
     
     // preprocessor symbols
     <string, string> pdValues;
@@ -70,6 +73,8 @@ unit Symbols
          
     uint iLastOverload;
     <uint, bool> overloadsCompiled;
+    
+    <uint, <uint> > fTouches;
          
     New()
     {
@@ -79,12 +84,14 @@ unit Symbols
         fOverloads.Clear();
         fReturnTypes.Clear();
         fArgumentNamesAndTypes.Clear();
+        fLocalNamesAndTypes.Clear();
         fStartPos.Clear();
         fStartLine.Clear();             
         fSourcePath.Clear();  
         fCodeStream.Clear();
         fDebugInfo.Clear();
         fCalls.Clear();
+        fTouches.Clear();
         
         fSysCall.Clear();
         fSysCallOverload.Clear();
@@ -118,10 +125,20 @@ unit Symbols
         flValues.Clear();
         flIndex.Clear();
         flMembers.Clear();
+        flMembersReversed.Clear();
+        flMembersSorted.Clear();
         
         overloadsCompiled.Clear();
         
     }   
+    uint GetNamedTypesCount()
+    {
+        uint count;
+        count = count + fdNames.Length;
+        count = count + eIndex.Count;
+        count = count + flIndex.Count;
+        return count;
+    }
     
     string GetNamespace(uint oi)
     {
@@ -182,6 +199,25 @@ unit Symbols
         return name;
     }
     
+    string DecodeEnum(string enumName, uint value)
+    {
+        string result = enumName + "(" + value.ToString() + ")"; // fallback
+        if (eIndex.Contains(enumName))
+        {
+            uint index = eIndex[enumName];
+            <string,uint> members = eMembers[index];
+            foreach (var kv in members)
+            {
+                if (kv.value == value)
+                {
+                    result = kv.key;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+    
     bool FindEnum(string enumName, string memberName, ref uint value)
     {
         bool found = false;
@@ -197,6 +233,41 @@ unit Symbols
         }            
         return found;
     }
+    
+    string DecodeFlags(string flagsName, uint value)
+    {
+        string fallback = flagsName + "(0x" + value.ToHexString(4) + ")"; // fallback
+        string result;
+        if (flIndex.Contains(flagsName))
+        {
+            uint index = flIndex[flagsName];
+            <uint> membersSorted = flMembersSorted[index];
+            <uint, string> membersReversed = flMembersReversed[index];
+            foreach (var key in membersSorted)
+            {
+                uint flagValue = key;
+                if (flagValue == (value & flagValue))
+                {
+                    value = value - flagValue;
+                    if (result.Length > 0)
+                    {
+                        result = result + " | ";
+                    }
+                    result = result + membersReversed[key];
+                    if (value == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+            if (value != 0)
+            {
+                result = fallback;
+            }
+        }
+        return result;
+    }
+    
     bool FindFlags(string flagsName, string memberName, ref uint value)
     {
         bool found = false;
@@ -576,11 +647,6 @@ unit Symbols
         {
             loop
             {
-                // flags
-                <string, <string, uint> > flValues;
-                <string, uint> flIndex;
-                <uint, <string,uint> > flMembers;
-                
                 string candidate = currentNamespace + "." + name;
                 if (eIndex.Contains(candidate))
                 {
@@ -1059,7 +1125,7 @@ unit Symbols
             else
             {
                 byte iSysCall;
-                if (!SysCalls.TryParse(name, ref iSysCall))
+                if (!SysCalls.TryParseSysCall(name, ref iSysCall))
                 {
                     Parser.Error("undefined 'system' method '" + name + "'");
                     break;    
@@ -1103,6 +1169,33 @@ unit Symbols
         uint iNext = flIndex.Count;
         flIndex[identifier] = iNext;
         flMembers[iNext] = members;
+        <uint, string> membersReversed;
+        <uint> membersSorted;
+        foreach (var kv in members)
+        {
+            uint   key = kv.value;
+            string value = kv.key;
+            membersReversed[key] = value;
+            uint slength = membersSorted.Length;
+            
+            bool inserted = false;
+            for (uint i=0; i < slength; i++)
+            {
+                if (membersSorted[i] < key)
+                {
+                    membersSorted.Insert(i, key);
+                    inserted = true;
+                    break;
+                }
+            }
+            if (!inserted)
+            {
+                membersSorted.Append(key);
+            }
+        }
+        
+        flMembersReversed[iNext] = membersReversed;
+        flMembersSorted[iNext] = membersSorted;
      }     
     
     
@@ -1164,7 +1257,22 @@ unit Symbols
         AddFunctionDelegate(methodName, arguments, "void"); // 'void' is only used internally
     }
     
-    bool ExportCode(string codePath)
+    AppendLocalNamesAndTypes(uint iOverload, < <string> > localNamesAndTypes)
+    {
+        < <string> >  appendList;
+        if (fLocalNamesAndTypes.Contains(iOverload))
+        {
+            appendList = fLocalNamesAndTypes[iOverload];
+        }
+        
+        foreach (var localNameAndType in localNamesAndTypes)
+        {
+            appendList.Append(localNameAndType);
+        }
+        fLocalNamesAndTypes[iOverload] = appendList;
+    }
+    
+    bool ExportCode(string codePath, bool experimental)
     {
         // <uint,<byte> > fCodeStream;
         // <uint, <string,string> > fDebugInfo;
@@ -1197,19 +1305,28 @@ unit Symbols
                 dict["const"] = cdict;
             }
             
-            //<string> gNames;
-            uint count;
-            <string,string> globals;
-            foreach (var glb in gNames)
+            // <string> gNames;
+            // <uint,string> gTypes;
+            
+            <string, <string,string> > globals;
+            uint gNamesCount = gNames.Length;
+            for (uint i = 0; i < gNamesCount; i++)
             {
-                globals[count.ToString()] = glb;
-                count = count + 2;
+                uint offset = i * 2;
+                <string,string> gDict;
+                gDict["name"] = gNames[i];
+                
+                byte typeByte = Types.ToByte(gTypes[i]);
+                type typeType = type(typeByte);
+                
+                gDict["type"] = typeType.ToString();
+                globals[offset.ToString()] = gDict;
             }
             if (globals.Count > 0)
             {
                 dict["globals"] = globals;
             }
-            
+        
             
             foreach (var iUsedOverload in usedOverloads)
             {
@@ -1228,18 +1345,57 @@ unit Symbols
                 {
                     < < string > > argsAndTypes = fArgumentNamesAndTypes[iUsedOverload];
                     uint argCount = argsAndTypes.Length;
-                    uint acount;
-                    <string,string> locals;
+                    int acount;
+                    
+                    <string, <string, string> > argdicts;
                     foreach (var argument in argsAndTypes)
                     {
+                        <string, string> argdict;
                         string name = argument[2];
+                        string aref = argument[0];
+                        if (aref == "ref")
+                        {
+                            aref = "true";
+                        }
+                        else
+                        {
+                           aref = "false";
+                        }
+                        byte typeByte = Types.ToByte(argument[1]);
+                        type typeType = type(typeByte);
+                        
+                        argdict["name"] = name;
+                        argdict["type"] = typeType.ToString();
+                        argdict["ref"] = aref;
+                        
+                        int offset = 0 - (int(argCount)-acount)*2;
+                        argdicts[offset.ToString()] = argdict;
                         acount++;
-                        uint offset = (argCount-acount)*2;
-                        locals[offset.ToString()] = name;
                     }
-                    if (locals.Count > 0)
+                    if (argdicts.Count > 0)
                     {
-                        mdict["locals"]   = locals;
+                        mdict["arguments"]   = argdicts;
+                    }
+                    if (DefineExists("H6502") && fLocalNamesAndTypes.Contains(iUsedOverload))
+                    {
+                        < < string > > localsAndTypes = fLocalNamesAndTypes[iUsedOverload];
+                        <string, <string, string> > localdicts;
+                        foreach (var local in localsAndTypes)
+                        {
+                            <string, string> localdict;
+                            string lrange  = local[0];
+                            string lname   = local[1];
+                            string ltype   = local[2];
+                            string loffset = local[3];
+                            localdict["name"] = lname;
+                            localdict["type"] = ltype;
+                            localdict["offset"] = loffset;
+                            localdicts[lrange] = localdict;
+                        }
+                        if (localdicts.Count > 0)
+                        {
+                            mdict["locals"]   = localdicts;
+                        }
                     }
                     mdict["code"]   = fCodeStream[iUsedOverload];
                     mdict["debug"]   = fDebugInfo[iUsedOverload];
@@ -1438,6 +1594,10 @@ unit Symbols
     
     bool Import(string jsonPath)
     {
+        return Import(jsonPath, false);
+    }
+    bool Import(string jsonPath, bool onlyNamedTypes)
+    {
         bool success = true;
         loop
         {
@@ -1458,11 +1618,17 @@ unit Symbols
                 {
                     case "constants":
                     {
-                        cValues = kv.value;
+                        if (!onlyNamedTypes)
+                        {
+                            cValues = kv.value;
+                        }
                     }
-                    case "symbols":
+                    case "symbols": // #define symbols
                     {
-                        pdValues = kv.value;
+                        if (!onlyNamedTypes)
+                        {
+                            pdValues = kv.value;
+                        }
                     }
                     case "enums":
                     {
@@ -1508,29 +1674,32 @@ unit Symbols
                     }
                     case "globals":
                     {
-                        // globals
-                        //   <string> gNames;
-                        //   <string,uint> gIndex;
-                        //   <uint,string> gTypes;
-                        // code location of initialization code:
-                        //   <uint, long> gStartPos;
-                        //   <uint, uint> gStartLine;
-                        //   <uint, string> gSourcePath;
-                        <string, variant> gdict = kv.value;
-                        foreach (var kv2 in gdict)
+                        if (!onlyNamedTypes)
                         {
-                            string name = kv2.key;
-                            <string, string> values = kv2.value;
-                            string typeString = values["type"];
-                            <string> blockPos;
-                            if (values.Contains("line"))
+                            // globals
+                            //   <string> gNames;
+                            //   <string,uint> gIndex;
+                            //   <uint,string> gTypes;
+                            // code location of initialization code:
+                            //   <uint, long> gStartPos;
+                            //   <uint, uint> gStartLine;
+                            //   <uint, string> gSourcePath;
+                            <string, variant> gdict = kv.value;
+                            foreach (var kv2 in gdict)
                             {
-                                blockPos.Append(values["pos"]);
-                                blockPos.Append(values["line"]);
-                                blockPos.Append(values["source"]);
+                                string name = kv2.key;
+                                <string, string> values = kv2.value;
+                                string typeString = values["type"];
+                                <string> blockPos;
+                                if (values.Contains("line"))
+                                {
+                                    blockPos.Append(values["pos"]);
+                                    blockPos.Append(values["line"]);
+                                    blockPos.Append(values["source"]);
+                                }
+                                AddGlobalMember(name, typeString, blockPos);    
                             }
-                            AddGlobalMember(name, typeString, blockPos);    
-                        }
+                        } // !onlyNamedTypes
                     }
                     case "delegates":
                     {
@@ -1588,7 +1757,6 @@ unit Symbols
                                             }
                                         } // kv4
                                     }
-                                    
                                 }
                                 AddFunctionDelegate(name, arguments, returnType);
                             } // kv3
@@ -1596,104 +1764,107 @@ unit Symbols
                     }
                     case "functions":
                     {
-                        // functions, arguments, return types
-                        //  <string> fNames;
-                        //  <string,uint> fIndex;
-                        //  <uint, <uint> > fOverloads;
-                        // for each overload uint:
-                        //  <uint, string> fReturnTypes;
-                        //  <uint, < < string > > > fArgumentNamesAndTypes;
-                        // code location of function bodies
-                        //  <uint, long> fStartPos;
-                        //  <uint, uint> fStartLine;
-                        //  <uint, string> fSourcePath;
-                        <string, variant> fdict = kv.value;
-                        foreach (var kv2 in fdict)
+                        if (!onlyNamedTypes)
                         {
-                            string name = kv2.key;
-                            <string, variant> overloads = kv2.value;
-                            foreach (var kv3 in overloads)
+                            // functions, arguments, return types
+                            //  <string> fNames;
+                            //  <string,uint> fIndex;
+                            //  <uint, <uint> > fOverloads;
+                            // for each overload uint:
+                            //  <uint, string> fReturnTypes;
+                            //  <uint, < < string > > > fArgumentNamesAndTypes;
+                            // code location of function bodies
+                            //  <uint, long> fStartPos;
+                            //  <uint, uint> fStartLine;
+                            //  <uint, string> fSourcePath;
+                            <string, variant> fdict = kv.value;
+                            foreach (var kv2 in fdict)
                             {
-                                if (!Token.TryParseUInt(kv3.key, ref iNextOverload))
+                                string name = kv2.key;
+                                <string, variant> overloads = kv2.value;
+                                foreach (var kv3 in overloads)
                                 {
-                                    PrintLn("bad iNextOverload");
-                                }
-                                
-                                <string, variant> odict = kv3.value;
-                                string returnType = "void";
-                                if (odict.Contains("returntype"))
-                                {
-                                    returnType = odict["returntype"];
-                                }
-                                <string> blockPos;
-                                
-                                if (odict.Contains("line"))
-                                {
-                                    string ln  = odict["line"];
-                                    string pos = odict["pos"];
-                                    string src = odict["source"];
-                                    blockPos.Append(pos);
-                                    blockPos.Append(ln);
-                                    blockPos.Append(src);
-                                }
-                                byte iSysCall;
-                                byte iSysCallOverload;
-                                bool isSysCall;
-                                if (odict.Contains("syscall"))
-                                {
-                                    string sc = odict["syscall"];
-                                    string ov = odict["overload"];
-                                    uint scui;
-                                    if (Token.TryParseUInt(sc, ref scui))
+                                    if (!Token.TryParseUInt(kv3.key, ref iNextOverload))
                                     {
-                                        iSysCall = byte(scui);
+                                        PrintLn("bad iNextOverload");
                                     }
-                                    uint ovui;
-                                    if (Token.TryParseUInt(ov, ref ovui))
+                                    
+                                    <string, variant> odict = kv3.value;
+                                    string returnType = "void";
+                                    if (odict.Contains("returntype"))
                                     {
-                                        iSysCallOverload = byte(ovui);
+                                        returnType = odict["returntype"];
                                     }
-                                    isSysCall = true;
-                                }
-                                < <string> > arguments;
-                                if (odict.Contains("arguments"))
-                                {
-                                    <string,string> adict = odict["arguments"];
-                                    uint argCount = adict.Count;
-                                    for (uint ai = 0; ai < argCount; ai++)
+                                    <string> blockPos;
+                                    
+                                    if (odict.Contains("line"))
                                     {
-                                        foreach (var kv4 in adict)
+                                        string ln  = odict["line"];
+                                        string pos = odict["pos"];
+                                        string src = odict["source"];
+                                        blockPos.Append(pos);
+                                        blockPos.Append(ln);
+                                        blockPos.Append(src);
+                                    }
+                                    byte iSysCall;
+                                    byte iSysCallOverload;
+                                    bool isSysCall;
+                                    if (odict.Contains("syscall"))
+                                    {
+                                        string sc = odict["syscall"];
+                                        string ov = odict["overload"];
+                                        uint scui;
+                                        if (Token.TryParseUInt(sc, ref scui))
                                         {
-                                            //<ref, type, name>
-                                            string argName = kv4.key;
-                                            string argOrder = ai.ToString() + ":";
-                                            if (argName.StartsWith(argOrder))
-                                            {
-                                                argName = argName.Substring(argOrder.Length);
-                                                <string> alist;
-                                                string rf;
-                                                string tn = kv4.value;
-                                                if (tn.StartsWith("ref "))
-                                                {
-                                                    rf = "ref";
-                                                    tn = tn.Substring(4);
-                                                }
-                                                alist.Append(rf);
-                                                alist.Append(tn);
-                                                alist.Append(argName);       
-                                                arguments.Append(alist);
-                                            }
-                                        } // kv4
+                                            iSysCall = byte(scui);
+                                        }
+                                        uint ovui;
+                                        if (Token.TryParseUInt(ov, ref ovui))
+                                        {
+                                            iSysCallOverload = byte(ovui);
+                                        }
+                                        isSysCall = true;
                                     }
-                                }
-                                uint iOverload = iNextOverload;
-                                AddFunction(name, arguments, returnType, blockPos);
-                                if (isSysCall)
-                                {
-                                    SetSysCall(iOverload, iSysCall, iSysCallOverload);
-                                }
-                            } // kv3
-                        } // kv2  
+                                    < <string> > arguments;
+                                    if (odict.Contains("arguments"))
+                                    {
+                                        <string,string> adict = odict["arguments"];
+                                        uint argCount = adict.Count;
+                                        for (uint ai = 0; ai < argCount; ai++)
+                                        {
+                                            foreach (var kv4 in adict)
+                                            {
+                                                //<ref, type, name>
+                                                string argName = kv4.key;
+                                                string argOrder = ai.ToString() + ":";
+                                                if (argName.StartsWith(argOrder))
+                                                {
+                                                    argName = argName.Substring(argOrder.Length);
+                                                    <string> alist;
+                                                    string rf;
+                                                    string tn = kv4.value;
+                                                    if (tn.StartsWith("ref "))
+                                                    {
+                                                        rf = "ref";
+                                                        tn = tn.Substring(4);
+                                                    }
+                                                    alist.Append(rf);
+                                                    alist.Append(tn);
+                                                    alist.Append(argName);       
+                                                    arguments.Append(alist);
+                                                }
+                                            } // kv4
+                                        }
+                                    }
+                                    uint iOverload = iNextOverload;
+                                    AddFunction(name, arguments, returnType, blockPos);
+                                    if (isSysCall)
+                                    {
+                                        SetSysCall(iOverload, iSysCall, iSysCallOverload);
+                                    }
+                                } // kv3
+                            } // kv2  
+                        } // !onlyNamedTypes
                     }
                     case "units":
                     {
@@ -1705,7 +1876,9 @@ unit Symbols
                     }
                     default:
                     {
+#ifndef JSONEXPRESS
                         PrintLn("case '" + kv.key + "' not supported in Symbols.Import");
+#endif
                     }
                 }
             }
@@ -1725,9 +1898,28 @@ unit Symbols
             else
             {
                 overloadsCompiled[iOverload] = false;
+                
+                <string,variant> methodBlock = Block.GetMethodBlock();
+                uint iCaller;
+                if (methodBlock.Contains("iOverload"))
+                {
+                    string sCaller = methodBlock["iOverload"];
+                    if (TryParseUInt(sCaller, ref iCaller))
+                    {
+                        if (!fTouches.Contains(iCaller))
+                        {
+                            <uint> empty;
+                            fTouches[iCaller] = empty;
+                        }
+                        <uint> touchesList = fTouches[iCaller];
+                        touchesList.Append(iOverload);
+                        fTouches[iCaller] = touchesList;
+                    }
+                }
             }
         }
     }
+    
           
     OverloadWasCompiled(uint iOverload)
     {
@@ -1768,5 +1960,96 @@ unit Symbols
             }
         }
         return oneMore;
-    }   
+    }
+    
+    string getMethodName(uint iOverload)
+    {
+        string name;
+        foreach (var f in fIndex)
+        {
+            <string, variant> fentry;
+            uint index = f.value;
+            <uint> overloads = fOverloads[index];
+            foreach (var overload in overloads)
+            {
+                if (iOverload == overload)
+                {
+                    name = fNames[index];
+                    break;
+                }
+            }
+            if (name.Length > 0)
+            {
+                break;
+            }
+        }
+        return name;
+    }
+    uint ExportTouchTree(ref <string> contentLines, uint iFrom, uint indent, ref <uint> touchesDone)
+    {
+        string pad;
+        pad = pad.Pad(' ', indent);
+        string fromName = getMethodName(iFrom);
+        
+        uint cSize = 0;
+        touchesDone.Append(iFrom);
+        bool isLeaf = true;
+        if (fTouches.Contains(iFrom))
+        {
+            <uint> calls = fTouches[iFrom];
+            foreach (var t in calls)
+            {
+                uint iTo = t;
+                if (!touchesDone.Contains(iTo))
+                {
+                    cSize = cSize + ExportTouchTree(ref contentLines, iTo, indent+2, ref touchesDone);
+                    isLeaf = false;
+                }
+            }
+        }
+        uint cSizeSelf;
+        if (fCodeStream.Contains(iFrom))
+        {
+            <byte> codeStream = fCodeStream[iFrom];
+            cSizeSelf = codeStream.Length;
+        }
+        cSize = cSize + cSizeSelf;
+        string content = pad + fromName;
+        content = content.Pad(' ', 60);
+        string sSizeSelf = cSizeSelf.ToString();
+        sSizeSelf = sSizeSelf.LeftPad(' ', 6);
+        string sSize = cSize.ToString();
+        sSize = sSize.LeftPad(' ', 6);
+        content = content + sSizeSelf + sSize;
+        if (isLeaf)
+        {
+            content = content + " <-";
+        }
+        contentLines.Insert(0, content);
+        return cSize;
+    }
+    ExportTouchTree(string path)
+    {
+        <string> contentLines;
+        <uint> touchesDone;
+        uint cSize = 0;
+        foreach (var kv in fTouches)
+        {
+            uint iFrom = kv.key;
+            if (!touchesDone.Contains(iFrom))
+            {
+                cSize = cSize + ExportTouchTree(ref contentLines, iFrom, 0, ref touchesDone);
+            }
+        }
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+        file touchesFile = File.Create(path);
+        foreach (var line in contentLines)
+        {
+            touchesFile.Append(char(0x0A) + line);
+        }
+        touchesFile.Flush();
+    }
 }

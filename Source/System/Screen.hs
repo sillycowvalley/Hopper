@@ -2,31 +2,28 @@ unit Screen
 {
     uses "/Source/System/Color"
 
-
-#ifndef ZOPPER
     byte CursorX { get system; }
     byte CursorY { get system; }
     byte Columns { get system; }
     byte Rows    { get system; }
 
+#ifndef H6502
     Suspend() system;
     
     // if !isInteractive then Resume will pump messages (not needed if we are processing keystrokes)
     Resume(bool isInteractive) system;
-    
 #endif
+    
+
 
     Clear() system;
 
-#ifndef ZOPPER    
     SetCursor(uint x, uint y) system;
     //SetForeColour(uint foreColour) system;
     //SetBackColour(uint backColour) system;
-#endif    
     
-#ifndef ZOPPER
     DrawChar(uint x, uint y, char c, uint foreColour, uint backColour) system;
-#endif    
+
     Print(char c,     uint foreColour, uint backColour) system;
     Print(string s,   uint foreColour, uint backColour) system;
     PrintLn() system;
@@ -45,7 +42,6 @@ unit Screen
     }
 
     
-    // use current colours, TinyHopper ignores colours
     
     Print(char c)
     {
@@ -65,5 +61,4 @@ unit Screen
         Print(s, Color.MatrixGreen, Color.Black);
         PrintLn();
     } 
-
 }

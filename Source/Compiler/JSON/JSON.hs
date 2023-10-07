@@ -18,11 +18,11 @@ unit JSON
     // Serialize list to a string of .json
     ExportList(file jsonFile, <variant> lst, uint indent)
     {
+        uint entries;
         string content;
+        string comma;
         indent = indent + 2;
         content = spaces(indent) + '[';
-        string comma;
-        uint entries = 0;
         foreach (var vv in lst)
         {
             String.Build(ref content, comma);
@@ -81,11 +81,13 @@ unit JSON
                 }
                 default:
                 {
+#ifndef JSONEXPRESS
                     type tt = typeof(vv);
                     string ts = tt.ToString();
                     String.Build(ref content, "unsupported '");
                     String.Build(ref content, ts);
                     String.Build(ref content, "' in <variant>");
+#endif
                 }
             } 
             comma = ", ";
@@ -176,10 +178,12 @@ unit JSON
                 }
                 default:
                 {
+#ifndef JSONEXPRESS
                     type tt = typeof(kv.value);
                     uint ut = uint(tt);
                     string ts = tt.ToString();
                     content = content + "unsupported '" + ts + "' (0x" + ut.ToHexString(2) + ") in <string, variant>, (key=" + kv.key + ")";
+#endif
                 }
             }
             if (content.Length > 0)
@@ -213,14 +217,16 @@ unit JSON
     <string> ReadList()
     {
         <string> lst;
-        Parser.Consume(HopperToken.LBracket, "'[' expected");
+        Parser.Consume(HopperToken.LBracket, '[');
         bool first = true;
         loop
         {
+#ifndef JSONEXPRESS
             if (Parser.HadError)
             {
                 break;
             }
+#endif
             if (Parser.Check(HopperToken.RBracket))
             {
                 Parser.Advance(); // ]
@@ -228,7 +234,7 @@ unit JSON
             }
             if (!first)
             {
-                Parser.Consume(HopperToken.Comma, "',' expected");
+                Parser.Consume(HopperToken.Comma, ',');
             }
             first = false;
             <string,string> currentToken = CurrentToken;
@@ -240,7 +246,9 @@ unit JSON
             }
             else
             {
+#ifndef JSONEXPRESS
                 Parser.ErrorAt(currentToken, "value type not implemented in ReadList");
+#endif
             }
         }
         return lst;
@@ -248,14 +256,16 @@ unit JSON
     <string, variant> ReadDictionary()
     {
         <string, variant> dict;
-        Parser.Consume(HopperToken.LBrace, "'{' expected");
+        Parser.Consume(HopperToken.LBrace, '{');
         bool first = true;
         loop
         {
+#ifndef JSONEXPRESS
             if (Parser.HadError)
             {
                 break;
             }
+#endif
             if (Parser.Check(HopperToken.RBrace))
             {
                 Parser.Advance(); // }
@@ -263,21 +273,25 @@ unit JSON
             }
             if (!first)
             {
-                Parser.Consume(HopperToken.Comma, "',' expected");
+                Parser.Consume(HopperToken.Comma, ',');
             }
             first = false;
             Parser.Consume(HopperToken.StringConstant, "key string expected");
+#ifndef JSONEXPRESS
             if (Parser.HadError)
             {
                 break;
             }
+#endif
             <string,string> previousToken = PreviousToken;
             string name = previousToken["lexeme"];
-            Parser.Consume(HopperToken.Colon, "':' expected");
+            Parser.Consume(HopperToken.Colon, ':');
+#ifndef JSONEXPRESS
             if (Parser.HadError)
             {
                 break;
             }
+#endif
             <string,string> currentToken = CurrentToken;
             if (Parser.Check(HopperToken.StringConstant))
             {
@@ -294,7 +308,9 @@ unit JSON
                 }
                 else
                 {
+#ifndef JSONEXPRESS
                     Parser.ErrorAt(currentToken, "integer expected");
+#endif
                 }
             }
             else if (Parser.Check(HopperToken.LBracket))
@@ -309,7 +325,9 @@ unit JSON
             }
             else
             {
+#ifndef JSONEXPRESS
                 Parser.ErrorAt(currentToken, "value type not implemented in ReadDictionary");
+#endif
             }
         }
         return dict;
@@ -325,35 +343,41 @@ unit JSON
         Scanner.Reset(pos, 1, path);
         
         Parser.Advance(); // load up first token
-        Parser.Consume(HopperToken.LBrace, "'{' expected");
+        Parser.Consume(HopperToken.LBrace, '{');
         bool first = true;
         loop
         {
+#ifndef JSONEXPRESS
             if (Parser.HadError)
             {
                 break;
             }
+#endif
             if (Parser.Check(HopperToken.RBrace))
             {
                 break;
             }
             if (!first)
             {
-                Parser.Consume(HopperToken.Comma, "',' expected");
+                Parser.Consume(HopperToken.Comma, ',');
             }
             first = false;
             Parser.Consume(HopperToken.StringConstant, "section name expected");
+#ifndef JSONEXPRESS
             if (Parser.HadError)
             {
                 break;
             }
+#endif
             <string,string> previousToken = PreviousToken;
             string sectionName = previousToken["lexeme"];
-            Parser.Consume(HopperToken.Colon, "':' expected");
+            Parser.Consume(HopperToken.Colon, ':');
+#ifndef JSONEXPRESS
             if (Parser.HadError)
             {
                 break;
             }
+#endif
             <string,string> currentToken = CurrentToken;
             if (Parser.Check(HopperToken.LBrace))
             {
@@ -364,18 +388,23 @@ unit JSON
             {
                 <string> section = ReadList();
                 dict[sectionName] = section;
-            }           
+            }
             else
             {
+#ifndef JSONEXPRESS
                 Parser.ErrorAt(currentToken, "value type not implemented in Read");
+#endif
             }
+
         }   
         bool success = !Parser.HadError;
+#ifndef JSONEXPRESS
         if (Parser.HadError)
         {
             DumpPrevious();
             DumpCurrent();
         }
+#endif
         return success;
     }
 }

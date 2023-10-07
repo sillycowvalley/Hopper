@@ -1,0 +1,1 @@
+VASM\vasm6502_oldstyle.exe -dotdir -wdc02 -Fbin %1\%2.asm -I .\Firmware -L Output\Listings\%2.lst  -o Output\Binary\%2.out

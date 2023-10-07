@@ -9,13 +9,16 @@ program Edit
     uses "/Source/Editor/Editor"
     uses "/Source/Editor/Commands"
     
-    const string clipboardPath = "/Temp/Clipboard.txt";
-
+    uses "/Source/Compiler/Tokens/Parser"
+    
     {
         <string> arguments = System.Arguments;
         
         string filePath;
         bool showHelp;
+        
+        Editor.Locate(0, 0, Screen.Columns, Screen.Rows);
+        Parser.SetInteractive(Editor.Left+1, Editor.Top + Editor.Height-1);
         
         foreach (var argument in arguments)
         {
@@ -69,18 +72,6 @@ program Edit
                             filePath = fullPathExt;
                             break;
                         }
-                        filePathExt = filePath + ".zs";
-                        if (File.Exists(filePathExt))
-                        {
-                            filePath = filePathExt;
-                            break;
-                        }
-                        fullPathExt = Path.Combine(System.CurrentDirectory, filePathExt);
-                        if (File.Exists(fullPathExt))
-                        {
-                            filePath = fullPathExt;
-                            break;
-                        }
                     }
                     if (!File.Exists(fullPath))
                     {
@@ -102,7 +93,7 @@ program Edit
             Screen.Clear();
             Commands.Initialize();
            
-            <string, variant> menubar = MenuBar.New(); 
+            <string, variant> menubar   = MenuBar.New(); 
             <string, variant> statusbar = StatusBar.New(); 
             
             Editor.New(statusbar, menubar); 
@@ -125,23 +116,6 @@ program Edit
                     ExitCommand.Execute();
                     break;
                 }
-            }
-            
-            if (File.Exists(clipboardPath))
-            {
-                file clipFile = File.Open(clipboardPath);
-                string cliptext;
-                loop
-                {
-                    byte b = clipFile.Read();
-                    if (!clipFile.IsValid())
-                    {
-                        break;
-                    }
-                    cliptext = cliptext + char(b);
-                }
-                SetClipboardText(cliptext);
-                File.Delete(clipboardPath);
             }
             
             loop
@@ -171,22 +145,10 @@ program Edit
                 }
                 if (ExitCommand.IsExiting())
                 {
-                    if (HasClipboardText())
-                    {
-                        string clipboard = GetClipboardText();
-                        File.Delete(clipboardPath);
-                        if (clipboard.Length > 0)
-                        {
-                            file clipFile = File.Create(clipboardPath);
-                            clipFile.Append(clipboard);
-                            clipFile.Flush();
-                        }
-                    }
                     break;
                 }
             } // loop
             break;
         } // loop
     }
-
 }

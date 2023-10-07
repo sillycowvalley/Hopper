@@ -2,6 +2,8 @@ unit Instructions
 {
     uses "/Source/System/System"
     
+    uses "/Source/Compiler/Tokens/SysCalls"
+    
     enum Instruction
     {
         // unsigned
@@ -17,18 +19,21 @@ unit Instructions
         GE,
         LE,
         
-        BOOLEANOR,
-        BOOLEANAND,
+        BOOLOR,
+        BOOLAND,
         BITOR,
         BITAND,
-        BITXOR,
+
+        //BITXOR, // OLDOPS
+
         BITSHL,
         BITSHR,
         
         // instructions before here have
         // - no immediate operands, 
         // - pop 2 and push 1
-        POP2PUSH1UNSIGNED = 0x20,    // ####
+
+        //POP2PUSH1UNSIGNED = 0x20,    // OLDOPS
         
         // signed:
         ADDI,
@@ -45,8 +50,8 @@ unit Instructions
         // - no immediate operands, 
         // - pop 2 and push 1
         // - are signed operations
-        POP2PUSH1SIGNED = 0x30,    // ####
 
+        //POP2PUSH1SIGNED = 0x30,    // OLDOPS
         
         PUSHIB,       // operand is byte
         POPLOCALB,    // operand is the location to pop to: BP + offset
@@ -57,8 +62,8 @@ unit Instructions
         PUSHGLOBALB,  // operand is the absolute address to push from
         PUSHSTACKADDRB, // operand is the offset from BP of the variable - convert to absolute stack address and push that
         
-        INCLOCAL,
-        DECLOCAL,
+        INCLOCALB,
+        DECLOCALB,
         
         SYSCALL0,     // syscall <byte operand>, overload 0
         SYSCALL1,     // syscall <byte operand>, overload 1
@@ -80,7 +85,7 @@ unit Instructions
         JNZB,      // <signed byte offset>
         JB,        // <signed byte offset>
         
-        BYTEOPERAND = 0x60,  // ####
+        //BYTEOPERAND = 0x60,  // OLDOPS
         
         // jump offsets: -1 means address of J instruction - 1, 0 means address after J instruction
         JZW,       // <signed int offset>
@@ -101,10 +106,12 @@ unit Instructions
         PUSHGLOBALW,  // operand is the absolute address to push from
         PUSHSTACKADDRW, // operand is the offset from BP of the variable - convert to absolute stack address and push that
         
+        INCLOCALBB,
+        PUSHIWLE,
+
+        //WORDOPERAND = 0x80,  // OLDOPS
         
-        WORDOPERAND = 0x80,  // ####
-        
-        BOOLEANNOT,   // ![top] -> [top]
+        BOOLNOT,      // ![top] -> [top]
         BITNOT,       // ~[top] -> [top]
         
         SWAP,         // swap [top] and [next] (consider object manager stack slots?)
@@ -120,263 +127,159 @@ unit Instructions
         
         CALLREL,   // call delegate based on <index> in [top]
         
+        POPLOCALB00,
+        POPLOCALB02,
+        PUSHLOCALB00,
+        PUSHLOCALB02,
+        
         NOP,
-                    
-        // instructions before here have no immediate operands
-        NOOPERAND = 0xA0,  // ####
+        
+        CAST, // operand is value type (byte) - change top of stack to this type
+
+        PUSHGLOBALBB,  // operand is the absolute address to push from, x2
+        INCGLOBALB,
+        DECGLOBALB,
+        
+        PUSHIWLT,
+        
+        PUSHLOCALBB,
+        
+        POPCOPYLOCALB,
+        POPCOPYRELB,
+        POPCOPYGLOBALB,
+        POPCOPYLOCALW,   // unused?
+        POPCOPYRELW,     // unused?
+        POPCOPYGLOBALW,
+        
+        POPCOPYLOCALB00,
+        POPCOPYLOCALB02,
+        
+        ENTERB,
+        
+    }
+    bool IsRET(Instruction instruction)
+    {
+        switch(instruction)
+        {
+            case Instruction.RET0:
+            case Instruction.RETB:
+            case Instruction.RETRETB:
+            case Instruction.RETW:
+            case Instruction.RETRETW:
+            {
+                return true;   
+            }
+        }
+        return false;
     }
     
-    bool OperandIsStackOffset(Instruction instruction)
+    bool OperandIsStackOffset(Instruction instruction) // used by DASM
     {
-        bool isOffset = false;
+        bool isOffset;
         switch (instruction)
         {
-            case Instruction.INCLOCAL:
-            {
-                isOffset = true;
-            }
-            case Instruction.DECLOCAL:
-            {
-                isOffset = true;
-            }
-            
+            case Instruction.INCLOCALB:
+            case Instruction.DECLOCALB:
             case Instruction.POPLOCALB:
-            {
-                isOffset = true;
-            }
             case Instruction.POPLOCALW:
-            {
-                isOffset = true;
-            }
-            case Instruction.PUSHLOCALB:
-            {
-                isOffset = true;
-            }
-            case Instruction.PUSHLOCALW:
-            {
-                isOffset = true;
-            }
-            case Instruction.PUSHSTACKADDRW:
-            {
-                isOffset = true;
-            }
-            
-            
             case Instruction.POPRELB:
-            {
-                isOffset = true;
-            }
             case Instruction.POPRELW:
-            {
-                isOffset = true;
-            }
+            case Instruction.POPCOPYLOCALB:
+            case Instruction.POPCOPYLOCALW:
+            case Instruction.POPCOPYRELB:
+            case Instruction.POPCOPYRELW:
+            case Instruction.PUSHLOCALB:
+            case Instruction.PUSHLOCALW:
+            case Instruction.PUSHSTACKADDRW:
             case Instruction.PUSHRELB:
-            {
-                isOffset = true;
-            }
             case Instruction.PUSHRELW:
-            {
-                isOffset = true;
-            }
             case Instruction.PUSHSTACKADDRB:
             {
                 isOffset = true;
             }
-            
         }    
         return isOffset;
     }
     bool OperandIsAddressOffset(Instruction instruction)
     {
-        bool isOffset = false;
+        bool isOffset;
         switch (instruction)
         {
             case Instruction.JB:
-            {
-                isOffset = true;
-            }
             case Instruction.JZB:
-            {
-                isOffset = true;
-            }
             case Instruction.JNZB:
-            {
-                isOffset = true;
-            }
             case Instruction.JW:
-            {
-                isOffset = true;
-            }
             case Instruction.JZW:
-            {
-                isOffset = true;
-            }
             case Instruction.JNZW:
             {
                 isOffset = true;
             }
-            
         }    
         return isOffset;
     }
     byte OperandWidth(Instruction instruction)
     {
-        byte result = 0;
+        byte result;
         switch (instruction)
         {
+            case Instruction.CAST:
             case Instruction.CALLB:
-            {
-                result = 1;
-            }
             case Instruction.TESTBPB:
-            {
-                result = 1;
-            }
-            case Instruction.CALLW:
-            {
-                result = 2;
-            }
             case Instruction.RETB:
-            {
-                result = 1;
-            }
-            case Instruction.RETW:
-            {
-                result = 2;
-            }
             case Instruction.RETRETB:
-            {
-                result = 1;
-            }
-            case Instruction.RETRETW:
-            {
-                result = 2;
-            }
             case Instruction.PUSHIB:
-            {
-                result = 1;
-            }
-            case Instruction.PUSHIW:
-            {
-                result = 2;
-            }
-            
             case Instruction.POPGLOBALB:
-            {
-                result = 1;
-            }
-            case Instruction.POPGLOBALW:
-            {
-                result = 2;
-            }
-            case Instruction.PUSHGLOBALB:
-            {
-                result = 1;
-            }
-            case Instruction.PUSHGLOBALW:
-            {
-                result = 2;
-            }
-            
             case Instruction.POPLOCALB:
-            {
-                result = 1;
-            }
-            case Instruction.POPLOCALW:
-            {
-                result = 2;
-            }
-            case Instruction.PUSHLOCALB:
-            {
-                result = 1;
-            }
-            case Instruction.PUSHLOCALW:
-            {
-                result = 2;
-            }
-            
             case Instruction.POPRELB:
-            {
-                result = 1;
-            }
-            case Instruction.POPRELW:
-            {
-                result = 2;
-            }
+            case Instruction.POPCOPYGLOBALB:
+            case Instruction.POPCOPYLOCALB:
+            case Instruction.POPCOPYRELB:
+            case Instruction.PUSHGLOBALB:
+            case Instruction.PUSHLOCALB:
             case Instruction.PUSHRELB:
-            {
-                result = 1;
-            }
-            case Instruction.PUSHRELW:
-            {
-                result = 2;
-            }
-            case Instruction.PUSHSTACKADDRW:
-            {
-                result = 2;
-            }
             case Instruction.PUSHSTACKADDRB:
-            {
-                result = 1;
-            }
-            
-            
             case Instruction.SYSCALL:
-            {
-                result = 2;
-            }
             case Instruction.SYSCALL0:
-            {
-                result = 1;
-            }
             case Instruction.SYSCALL1:
-            {
-                result = 1;
-            }
             case Instruction.JB:
-            {
-                result = 1;
-            }
             case Instruction.JZB:
-            {
-                result = 1;
-            }
             case Instruction.JNZB:
+            case Instruction.INCGLOBALB:
+            case Instruction.DECGLOBALB:
+            case Instruction.INCLOCALB:
+            case Instruction.DECLOCALB:
+            case Instruction.DUP:
+            case Instruction.DECSP:
+            case Instruction.DIE:
+            case Instruction.ENTERB:
             {
                 result = 1;
-            }
-            case Instruction.JW:
-            {
-                result = 2;
-            }
-            case Instruction.JZW:
-            {
-                result = 2;
-            }
-            case Instruction.JNZW:
-            {
-                result = 2;
             }
             
-            case Instruction.INCLOCAL:
+            case Instruction.CALLW:
+            case Instruction.RETW:
+            case Instruction.RETRETW:
+            case Instruction.PUSHIW:
+            case Instruction.PUSHIWLE:
+            case Instruction.PUSHIWLT:
+            case Instruction.POPGLOBALW:
+            case Instruction.POPLOCALW:
+            case Instruction.POPRELW:
+            case Instruction.POPCOPYGLOBALW:
+            case Instruction.POPCOPYLOCALW:
+            case Instruction.POPCOPYRELW:
+            case Instruction.PUSHGLOBALBB:
+            case Instruction.PUSHLOCALBB:
+            case Instruction.PUSHGLOBALW:
+            case Instruction.PUSHLOCALW:
+            case Instruction.PUSHRELW:
+            case Instruction.PUSHSTACKADDRW:
+            case Instruction.JW:
+            case Instruction.JZW:
+            case Instruction.JNZW:
+            case Instruction.INCLOCALBB:
             {
-                result = 1;
-            }
-            case Instruction.DECLOCAL:
-            {
-                result = 1;
-            }
-            case Instruction.DUP:
-            {
-                result = 1;
-            }
-            case Instruction.DECSP:
-            {
-                result = 1;
-            }
-            case Instruction.DIE:
-            {
-                result = 1;
+                result = 2;
             }
         }
         return result;
@@ -388,9 +291,17 @@ unit Instructions
         string result;
         switch (instruction)
         {
+            case Instruction.CAST:
+            {
+                result = "CAST";
+            }
             case Instruction.ENTER:
             {
                 result = "ENTER";
+            }
+            case Instruction.ENTERB:
+            {
+                result = "ENTERB";
             }
             case Instruction.NOP:
             {
@@ -407,6 +318,10 @@ unit Instructions
             case Instruction.CALLW:
             {
                 result = "CALLW";
+            }
+            case Instruction.CALLREL:
+            {
+                result = "CALLREL";
             }
             case Instruction.RET0:
             {
@@ -464,14 +379,34 @@ unit Instructions
             {
                 result = "PUSHIW";
             }
-            
-            case Instruction.INCLOCAL:
+            case Instruction.PUSHIWLE:
             {
-                result = "INCLOCAL";
+                result = "PUSHIWLE";
             }
-            case Instruction.DECLOCAL:
+            case Instruction.PUSHIWLT:
             {
-                result = "DECLOCAL";
+                result = "PUSHIWLT";
+            }
+            
+            case Instruction.INCGLOBALB:
+            {
+                result = "INCGLOBALB";
+            }
+            case Instruction.DECGLOBALB:
+            {
+                result = "DECGLOBALB";
+            }
+            case Instruction.INCLOCALB:
+            {
+                result = "INCLOCALB";
+            }
+            case Instruction.INCLOCALBB:
+            {
+                result = "INCLOCALBB";
+            }
+            case Instruction.DECLOCALB:
+            {
+                result = "DECLOCALB";
             }
             
             case Instruction.POPGLOBALB:
@@ -482,9 +417,78 @@ unit Instructions
             {
                 result = "POPGLOBALW";
             }
+            case Instruction.POPLOCALB:
+            {
+                result = "POPLOCALB";
+            }
+            case Instruction.POPLOCALW:
+            {
+                result = "POPLOCALW";
+            }
+            case Instruction.POPRELB:
+            {
+                result = "POPRELB";
+            }
+            case Instruction.POPRELW:
+            {
+                result = "POPRELW";
+            }
+            
+            case Instruction.POPCOPYGLOBALB:
+            {
+                result = "POPCOPYGLOBALB";
+            }
+            case Instruction.POPCOPYGLOBALW:
+            {
+                result = "POPCOPYGLOBALW";
+            }
+            case Instruction.POPCOPYLOCALB:
+            {
+                result = "POPCOPYLOCALB";
+            }
+            case Instruction.POPCOPYLOCALW:
+            {
+                result = "POPCOPYLOCALW";
+            }
+            case Instruction.POPCOPYRELB:
+            {
+                result = "POPCOPYRELB";
+            }
+            case Instruction.POPCOPYRELW:
+            {
+                result = "POPCOPYRELW";
+            }
+            
+            
+            case Instruction.POPLOCALB02:
+            {
+                result = "POPLOCALB02";
+            }
+            case Instruction.POPLOCALB00:
+            {
+                result = "POPLOCALB00";
+            }
+            case Instruction.POPCOPYLOCALB02:
+            {
+                result = "POPCOPYLOCALB02";
+            }
+            case Instruction.POPCOPYLOCALB00:
+            {
+                result = "POPCOPYLOCALB00";
+            }
+            
+            
             case Instruction.PUSHGLOBALB:
             {
                 result = "PUSHGLOBALB";
+            }
+            case Instruction.PUSHGLOBALBB:
+            {
+                result = "PUSHGLOBALBB";
+            }
+            case Instruction.PUSHLOCALBB:
+            {
+                result = "PUSHLOCALBB";
             }
             case Instruction.PUSHGLOBALW:
             {
@@ -499,31 +503,24 @@ unit Instructions
                 result = "PUSHSTACKADDRW";
             }      
                           
-            case Instruction.POPLOCALB:
-            {
-                result = "POPLOCALB";
-            }
-            case Instruction.POPLOCALW:
-            {
-                result = "POPLOCALW";
-            }
+            
             case Instruction.PUSHLOCALB:
             {
                 result = "PUSHLOCALB";
+            }
+            case Instruction.PUSHLOCALB00:
+            {
+                result = "PUSHLOCALB00";
+            }
+            case Instruction.PUSHLOCALB02:
+            {
+                result = "PUSHLOCALB02";
             }
             case Instruction.PUSHLOCALW:
             {
                 result = "PUSHLOCALW";
             }
             
-            case Instruction.POPRELB:
-            {
-                result = "POPRELB";
-            }
-            case Instruction.POPRELW:
-            {
-                result = "POPRELW";
-            }
             case Instruction.PUSHRELB:
             {
                 result = "PUSHRELB";
@@ -533,17 +530,17 @@ unit Instructions
                 result = "PUSHRELW";
             }
             
-            case Instruction.BOOLEANNOT:
+            case Instruction.BOOLNOT:
             {
-                result = "BOOLEANNOT";
+                result = "BOOLNOT";
             }
-            case Instruction.BOOLEANAND:
+            case Instruction.BOOLAND:
             {
-                result = "BOOLEANAND";
+                result = "BOOLAND";
             }
-            case Instruction.BOOLEANOR:
+            case Instruction.BOOLOR:
             {
-                result = "BOOLEANOR";
+                result = "BOOLOR";
             }
             case Instruction.BITAND:
             {
@@ -694,6 +691,10 @@ unit Instructions
             {
                 result = "BITSHL";
             }
+            case Instruction.NOP:
+            {
+                result = "NOP";
+            }
             default:
             {
                 byte op = byte(instruction);
@@ -701,5 +702,168 @@ unit Instructions
             }
         }
         return result;
-    }   
+    }
+    Instruction Disassemble(<byte> code, ref uint address, ref uint operand)
+    {
+        byte cd = code[address];
+        Instruction instruction = Instruction(cd);
+        address++;
+        byte operandWidth = Instructions.OperandWidth(instruction);
+        switch (operandWidth)
+        {
+            case 1:
+            {
+                operand = code[address];
+                address++;
+            }
+            case 2:
+            {
+                operand = code[address] + (code[address+1] << 8);
+                address = address + 2;
+            }
+        }
+        return instruction;
+    }
+    string Disassemble(<byte> code, ref uint address, uint entryPointAddress)
+    {
+        uint actualAddress = entryPointAddress + address;
+        string addressContent = "0x" + actualAddress.ToHexString(4) + "  ";
+        
+        byte cd = code[address];
+        Instruction instruction = Instruction(cd);
+        string opcode = Instructions.ToString(instruction);
+        string content = opcode;
+        
+        addressContent = addressContent + "0x" + cd.ToHexString(2) + " ";
+        
+        byte operandWidth = Instructions.OperandWidth(instruction);
+        byte iSysCall;
+        
+        string methodKey;
+        bool isStackOffset = Instructions.OperandIsStackOffset(instruction);
+        bool isJumpOffset  = Instructions.OperandIsAddressOffset(instruction);
+        
+        switch (operandWidth)
+        {
+            case 0:
+            {
+                addressContent = addressContent + "           ";
+            }
+            case 1:
+            {
+                long jumpTarget = address;
+                address++;
+                byte op = code[address];
+                
+                addressContent = addressContent + "0x" + op.ToHexString(2) + "       ";
+                
+                iSysCall = op;
+                string offsetString;
+                if (isStackOffset || isJumpOffset)
+                {
+                    int offset = op;
+                    if (offset > 127)
+                    {
+                        offset = offset - 256; // 255 -> -1
+                    }
+                    string sign;
+                    if (offset >= 0)
+                    {
+                        offsetString = "+";
+                    }
+                    offsetString = offsetString + offset.ToString();
+                    jumpTarget = jumpTarget + offset + long(entryPointAddress);
+                }
+                if (isJumpOffset)
+                {
+                    content = content + " 0x" + jumpTarget.ToHexString(4);
+                    content = content + " (" + offsetString + ")";
+                }
+                else if (isStackOffset)
+                {
+                    content = content + " 0x" + op.ToHexString(2);
+                    content = content + " (BP" + offsetString + ")";
+                }
+                else
+                {
+                    methodKey = "0x" + op.ToHexString(4);
+                    content = content + " 0x" + op.ToHexString(2);
+                }
+            }
+            case 2:
+            {
+                long jumpTarget = address;
+                address++;
+                byte lsb = code[address];
+                addressContent = addressContent + "0x" + lsb.ToHexString(2) + " ";
+                address++;
+                byte msb = code[address];
+                addressContent = addressContent + "0x" + msb.ToHexString(2) + "  ";
+                uint op = lsb + (msb << 8);
+                string offsetString;
+                if (isStackOffset || isJumpOffset)
+                {
+                    long offset = op;
+                    if (offset > 32767)
+                    {
+                        offset = offset - 65536; // 0x10000 -> -1
+                    }
+                    string sign;
+                    if (offset >= 0)
+                    {
+                        offsetString = "+";
+                    }
+                    offsetString = offsetString + offset.ToString();
+                    jumpTarget = jumpTarget + offset + long(entryPointAddress);
+                }
+                if (isJumpOffset)
+                {
+                    content = content + " 0x" + jumpTarget.ToHexString(4);
+                    content = content + " (" + offsetString + ")";
+                }
+                else if (isStackOffset)
+                {
+                    content = content + " 0x" + op.ToHexString(4);
+                    content = content + " (BP" + offsetString  + ")";
+                }
+                else
+                {
+                    methodKey = "0x" + op.ToHexString(4);
+                    content = content + " " + methodKey;
+                }
+            }
+        }
+        
+        if ((instruction == Instruction.SYSCALL)
+         || (instruction == Instruction.SYSCALL0)
+         || (instruction == Instruction.SYSCALL1)
+           )
+        {
+            string syscallName = SysCalls.GetSysCallName(iSysCall);
+            content = content + "  // " + syscallName;
+        }
+        if ((instruction == Instruction.CALLB)
+         || (instruction == Instruction.CALLW)
+           )
+        {
+            <string,variant> methodSymbols =  Code.GetMethodSymbols(methodKey);
+            if ((methodSymbols.Count == 0) && methodKey.StartsWith("0xC"))
+            {
+                // H6502 method indices marked with 0xCnnn before replaced with addresses
+                methodKey = methodKey.Replace("0xC", "0x0");
+                methodSymbols =  Code.GetMethodSymbols(methodKey);
+            }
+            if (methodSymbols.Count > 0)
+            {
+                string name = methodSymbols["name"];
+                if (instruction == Instruction.CALLB)
+                {
+                    content = content + "  ";
+                }
+                content = content + "   // " + name;
+            }
+        }
+        content = addressContent + content;
+        return content;
+    }
 }

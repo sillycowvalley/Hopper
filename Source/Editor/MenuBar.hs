@@ -19,22 +19,28 @@ unit MenuBar
        
     <string, variant> New()
     {
-        <string, variant> instance = Panel.New(0, 0, Screen.Columns, 1);
-        
-        Panel.SetBackground(instance, Color.MenuBlue);
+        <string, variant> instance = Panel.New(Editor.Left, Editor.Top, Editor.Width, 1);
+
+        Panel.SetBackground(instance, Editor.TitleColor);
         
         // globals
         menuOrder.Append("&File");
         menuOrder.Append("&Edit");
-        //menuOrder.Append("&Debug");
+#ifdef DEBUGGER
+        menuOrder.Append("&Debug");
+#else
         menuOrder.Append("&Build");
+#endif
         
         <string, Key > keys;
         
         keys["&File"] = (Key.Alt | Key.ModF);
         keys["&Edit"] = (Key.Alt | Key.ModE);
-        //keys["&Debug"] = (Key.Alt | Key.ModD);
+#ifdef DEBUGGER        
+        keys["&Debug"] = (Key.Alt | Key.ModD);
+#else
         keys["&Build"] = (Key.Alt | Key.ModB);
+#endif
         
         instance["keys"] = keys;
         
@@ -44,10 +50,11 @@ unit MenuBar
         string menunames = " File ";
         xpos["&Edit"]  = menunames.Length;
         menunames = menunames + " Edit ";
-        //xpos["&Debug"] = menunames.Length;
-        //menunames = menunames + " Debug ";
+#ifdef DEBUGGER        
+        xpos["&Debug"] = menunames.Length;
+#else
         xpos["&Build"] = menunames.Length;
-        
+#endif   
         instance["xpos"] = xpos;
 
         < < uint > > listOfAreas;
@@ -80,6 +87,11 @@ unit MenuBar
         {
             case "&File":
             {
+#ifdef DEBUGGER             
+                menuitems.Append("Open");
+                menuitems.Append("");
+                menuitems.Append("Exit");                             
+#else
                 menuitems.Append("New");
                 menuitems.Append("Open");
                 menuitems.Append("");
@@ -87,9 +99,18 @@ unit MenuBar
                 menuitems.Append("SaveAs");
                 menuitems.Append("");
                 menuitems.Append("Exit");
+#endif
             }
             case "&Edit":
             {
+#ifdef DEBUGGER
+                menuitems.Append("Goto");
+                menuitems.Append("Find");
+                menuitems.Append("");
+                menuitems.Append("Copy");
+                menuitems.Append("");
+                menuitems.Append("SelectAll");
+#else
                 menuitems.Append("Undo");
                 menuitems.Append("Redo");
                 menuitems.Append("");
@@ -103,16 +124,19 @@ unit MenuBar
                 menuitems.Append("Delete");
                 menuitems.Append("");
                 menuitems.Append("SelectAll");
+#endif
             }
             case "&Debug":
             {
-                menuitems.Append("StartDebugging");
-                menuitems.Append("StartWithoutDebugging");
-                menuitems.Append("StopDebugging");
+                menuitems.Append("Debug");
+                menuitems.Append("Run");
+                menuitems.Append("");
+                menuitems.Append("Reload");
+                menuitems.Append("");
+                menuitems.Append("Break");
                 menuitems.Append("");
                 menuitems.Append("StepInto");
                 menuitems.Append("StepOver");
-                menuitems.Append("StepOut");
                 menuitems.Append("");
                 menuitems.Append("ToggleBreakpoint");
                 menuitems.Append("DeleteAllBreakpoints");
@@ -120,11 +144,13 @@ unit MenuBar
             case "&Build":
             {
                 menuitems.Append("Build");
+                menuitems.Append("");
                 menuitems.Append("Run");
+                menuitems.Append("Debug");
             }
         }
         
-        <string, variant> popup = PopupMenu.New(xp, 1, menuitems);
+        <string, variant> popup = PopupMenu.New(Editor.Left + xp, Editor.Top + 1, menuitems);
         PopupMenu.Execute(popup, this, key);
     }
         
@@ -227,19 +253,19 @@ unit MenuBar
             area.Append(x);
             area.Append(y);
             
-            uint textcolor = Color.Black;
+            uint textcolor = Editor.MenuTextColor;
             uint cw = 0;
             foreach (var c in name)
             {
                 if (c == '&')
                 {
-                    textcolor = Color.White;
+                    textcolor = Color.PopupText;
                 }
                 else
                 {
                     DrawChar(x, y, c, textcolor, backcolor);
                     x++;
-                    textcolor = Color.Black;
+                    textcolor = Editor.MenuTextColor;
                     cw++;        
                 }
             }
@@ -250,10 +276,13 @@ unit MenuBar
             listOfAreas.Append(area);
         }
         
-        uint pathColor = 0x9F6;
+        uint pathColor = Color.TitlePath;
         if (Editor.CanUndo())
         {
-            pathColor = 0xF99; // file has been modified
+            pathColor = Color.ModifiedPath; // file has been modified
+#ifndef DEBUGGER            
+            BuildCommand.WasModified = true;
+#endif
         }
         string content = "'" + titleText + "'";
         uint len = content.Length;
@@ -272,7 +301,7 @@ unit MenuBar
             content = " ['" + titleText2 + "']";
             foreach (var c in content)
             {
-                DrawChar(x, y, c, 0x9F6, backcolor);
+                DrawChar(x, y, c, Color.TitlePath, backcolor);
                 x++;
             }   
         }

@@ -1,10 +1,12 @@
 unit Time
 {
-    long Millis { get system; }
 #ifndef TINYHOPPER    
     long Micros { get system; }
+    long Millis  { get system; }
 #endif
-
+#ifdef H6502
+    Delay(uint ms) system;
+#else
     Delay(uint ms)
     {
         long endTime = Millis + ms;
@@ -16,4 +18,5 @@ unit Time
             }
         }
     }
+#endif
 }

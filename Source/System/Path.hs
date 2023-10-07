@@ -2,7 +2,8 @@ unit Path
 {
     bool IsValidPathCharacter(char c)
     {
-        bool valid = IsLetterOrDigit(c);
+        bool valid;
+        valid = IsLetterOrDigit(c);
         if (!valid)
         {
             switch (c)
@@ -31,20 +32,21 @@ unit Path
     
     string GetDirectoryName(string fullPath)
     {
+        uint startPosition;
+        uint iLastSlash;
         string resultPath;
         loop
         {
-            if ((0 == fullPath.Length) || (fullPath == "/"))
+            if ((fullPath.Length == 0) || (fullPath == "/"))
             {
                 break;
             }
-            uint startPosition = fullPath.Length - 1;
+            startPosition = fullPath.Length - 1;
             if (fullPath[startPosition] == '/')
             {
                 startPosition--; // ignore trailing slash
             }
             
-            uint iLastSlash;
             if (!fullPath.LastIndexOf('/', startPosition, ref iLastSlash))
             {
                 // there is no slash (except for a possible trailing one) so the entire string is the tail
@@ -62,8 +64,10 @@ unit Path
     
     string Combine(string partOne, string partTwo)
     {
-        string resultPath = partOne;
-        uint length = resultPath.Length;
+        uint length;
+        string resultPath;
+        resultPath = partOne;
+        length = resultPath.Length;
         if ((length > 0) && (resultPath[length - 1] == '/'))
         {
             // already has trailing slash
@@ -88,14 +92,15 @@ unit Path
     }
     string GetExtension(string path)
     {
+        uint iDot;
+        uint iSlash;
+                
         string extension;
         loop
         {
             extension = "."; // empty "."
-            uint iDot;
             if (path.LastIndexOf('.', ref iDot))
             {
-                uint iSlash;
                 if (path.LastIndexOf('/', ref iSlash))
                 {
                     if (iSlash > iDot)
@@ -112,20 +117,27 @@ unit Path
     // Returns the full path for a valid file (including correct case)
     string GetFullPath(string path)
     {
-        string dir = GetDirectoryName(path);
+        uint fCount;
+        uint iFile;
+        string dir;
+        directory dr;
+        string name;
+        string correctCaseName;
+        string fpath;
+        dir = GetDirectoryName(path);
         if (dir == "")
         {
             dir = CurrentDirectory;
         }
-        directory dr = Directory.Open(dir);
+        dr = Directory.Open(dir);
         if (dr.IsValid())
         {
-            string name = Path.GetFileName(path);
-            uint fCount = dr.GetFileCount();
-            for (uint iFile = 0; iFile < fCount; iFile++)
+            name = Path.GetFileName(path);
+            fCount = dr.GetFileCount();
+            for (iFile = 0; iFile < fCount; iFile++)
             {
-                string fpath = dr.GetFile(iFile);
-                string correctCaseName = Path.GetFileName(fpath);
+                fpath = dr.GetFile(iFile);
+                correctCaseName = Path.GetFileName(fpath);
                 if (correctCaseName.ToLower() == name.ToLower())
                 {
                     path = fpath;

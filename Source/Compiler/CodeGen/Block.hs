@@ -51,6 +51,11 @@ unit Block
         <string> local;
         local.Append(variableType);
         local.Append(identifier);
+        if (DefineExists("H6502"))
+        {
+            uint fromAddress = LastInstructionIndex;
+            local.Append(fromAddress.ToString());
+        }
         locals.Append(local);
         top["locals"] = locals;
         ReplaceTop(top);
@@ -132,6 +137,8 @@ unit Block
         }
         blockList.Append(blockContext);        
     }    
+    
+        
     PopBlock()
     {
         PopBlock(0, 0);
@@ -140,15 +147,11 @@ unit Block
     {
         uint iLast = blockList.Length;
         iLast--;
+        Export(iLast);
         
         uint bytesToPop = GetBytesToPop();
         if (bytesToPop > 0)
         {
-            if (bytesToPop > 255)
-            {
-                Die(0x0B); // need a DECSPW
-            }
-            
             Instruction previousInstruction = CodeStream.GetLastInstruction();
             if ((previousInstruction != Instruction.RETB) 
              && (previousInstruction != Instruction.RETW)
@@ -169,11 +172,36 @@ unit Block
                 }               
                 CodeStream.InsertDebugInfo(true); // PreviousToken is '{'
                 
+                if (bytesToPop > 255)
+                {
+                    Die(0x0B); // need multiple calls to DECSP (see untested code below)
+                }
+                
                 CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
                 if (breakTarget != 0)
                 {
                     breakTarget = breakTarget + 2; // break past the above DECSP
                 }
+                
+                //uint breakOffset = 0;
+                //while (bytesToPop > 0)
+                //{
+                //    if (bytesToPop > 254)
+                //    {
+                //        CodeStream.AddInstruction(Instruction.DECSP, 254);
+                //        bytesToPop = bytesToPop - 254;
+                //    }
+                //    else
+                //    {
+                //        CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
+                //        bytesToPop = 0;
+                //    }
+                //    breakOffset = breakOffset + 2;
+                //}
+                //if (breakTarget != 0)
+                //{
+                //    breakTarget = breakTarget + breakOffset; // break past the above DECSP's
+                //}
             }
         }
         
@@ -292,11 +320,14 @@ unit Block
         return localsToPop;
     }
     
+    
+    
     int GetOffset(string identifier, ref bool isRef)
     {
         int offset;
         bool found;
         uint iCurrent = blockList.Length;
+        < < string > > members;
         isRef = false;
         loop
         {
@@ -308,11 +339,11 @@ unit Block
             <string,variant> blockContext = blockList[iCurrent];
             if (blockContext.Contains("locals"))
             {
-                < < string > > locals = blockContext["locals"];        
-                uint nlocals = locals.Length;   
+                members = blockContext["locals"];        
+                uint nlocals = members.Length;   
                 for (uint i=0; i < nlocals; i++)
                 {
-                    <string> local = locals[i];
+                    <string> local = members[i];
                     string name = local[1];
                     if (name == identifier)
                     {
@@ -324,11 +355,11 @@ unit Block
             }
             if (blockContext.Contains("arguments"))
             {
-                < < string > > arguments = blockContext["arguments"];
-                uint narguments = arguments.Length;
+                members = blockContext["arguments"];
+                uint narguments = members.Length;
                 for (uint i=0; i < narguments; i++)
                 {
-                    <string> argument = arguments[i];
+                    <string> argument = members[i];
                     string reference = argument[0];
                     string name = argument[2];
                     if (name == identifier)
@@ -372,8 +403,8 @@ unit Block
                 <string,variant> blockContext = blockList[iCurrent];
                 if (blockContext.Contains("locals"))
                 {
-                    < < string > > locals = blockContext["locals"];
-                    uint nlocals = locals.Length;
+                    members = blockContext["locals"];
+                    uint nlocals = members.Length;
                     offset = offset + int(nlocals) * 2;
                 }
             }
@@ -393,6 +424,9 @@ unit Block
     string GetType(string identifier)
     {
         string typeString;
+        string name;
+        <string,variant> blockContext;
+        < <string> > members;
         uint iCurrent = blockList.Length;
         loop
         {
@@ -402,14 +436,14 @@ unit Block
             }
             iCurrent--;
             // TODO : namespaces?
-            <string,variant> blockContext = blockList[iCurrent];
+            blockContext = blockList[iCurrent];
             if (blockContext.Contains("arguments"))
             {
                 // arguments: < <ref,type,name> >
-                < <string> > arguments = blockContext["arguments"];
-                foreach (var argument in arguments)
+                members = blockContext["arguments"];
+                foreach (var argument in members)
                 {
-                    string name = argument[2];
+                    name = argument[2];
                     if (name == identifier)
                     {
                         typeString = argument[1];
@@ -420,10 +454,10 @@ unit Block
             if (blockContext.Contains("locals"))
             {
                 // locals: < <type,name> >
-                < <string> > locals = blockContext["locals"];
-                foreach (var local in locals)
+                members = blockContext["locals"];
+                foreach (var local in members)
                 {
-                    string name = local[1];
+                    name = local[1];
                     if (name == identifier)
                     {
                         typeString = local[0];
@@ -434,10 +468,10 @@ unit Block
             if (blockContext.Contains("globals"))
             {
                 // globals: < <type,name> >
-                < <string> > globals = blockContext["globals"];
-                foreach (var global in globals)
+                members = blockContext["globals"];
+                foreach (var global in members)
                 {
-                    string name = global[1];
+                    name = global[1];
                     if (name == identifier)
                     {
                         typeString = global[0];
@@ -447,5 +481,48 @@ unit Block
             }       
         }
         return typeString;
+    }
+    
+    Export(uint iBlock)
+    {
+        if (DefineExists("H6502"))
+        {
+            <string,variant> blockContext = blockList[iBlock]; 
+            < <string> > locals;
+            if (blockContext.Contains("locals"))
+            {
+                locals = blockContext["locals"];
+            }
+            if (locals.Length > 0)
+            {
+                < <string> > localNamesAndTypes;
+                
+                uint toAddress = LastInstructionIndex;
+                foreach (var local in locals)
+                {
+                    <string> lstring = local;
+                    string ltype    = lstring[0];
+                    string lname    = lstring[1];
+                    string laddress = lstring[2];
+                    bool isRef;
+                    int loffset = GetOffset(lname, ref isRef); // always positive for locals (BP+offset)
+                    
+                    uint fromAddress;
+                    if (TryParseUInt(laddress, ref fromAddress))
+                    {
+                    }
+                    <string> localNameAndType;
+                    // address range is unique because location of definition is unique
+                    localNameAndType.Append("0x" + fromAddress.ToHexString(4) + "-0x" + toAddress.ToHexString(4)); 
+                    localNameAndType.Append(lname);
+                    localNameAndType.Append(ltype);
+                    localNameAndType.Append(loffset.ToString()); // in theory, could be -ve (but never)
+                    
+                    localNamesAndTypes.Append(localNameAndType);
+                }
+                uint iOverload = Types.GetCurrentMethod();
+                Symbols.AppendLocalNamesAndTypes(iOverload, localNamesAndTypes);
+            }
+        } // H6502
     }
 }

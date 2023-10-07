@@ -21,6 +21,10 @@ unit Type
             {
                 result = "byte";
             }
+            case bool:
+            {
+                result = "bool";
+            }
             case long:
             {
                 result = "long";
@@ -69,9 +73,14 @@ unit Type
             {
                 result = "variant";
             }
+            case delegate:
+            {
+                result = "delegate";
+            }
             default:
             {
-                result = "unknown type in Type.ToString()";
+                byte b = byte(this);
+                result = "unknown type 0x" + b.ToHexString(2) +"in Type.ToString()";
             }
         }
         return result;

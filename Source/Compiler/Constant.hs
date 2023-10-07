@@ -151,7 +151,7 @@ unit Constant
                     
                     if (!Symbols.ConstantExists(name))
                     {
-                        Parser.ErrorAtCurrent("undefined identifier A");           
+                        Parser.ErrorAtCurrent("undefined identifier");
                         break;
                     }
                     value = Symbols.GetConstantValue(name);
@@ -162,7 +162,7 @@ unit Constant
                             uint ui;
                             if (!Token.TryParseUInt(value, ref ui) || (ui > 255))   
                             {
-                                Parser.ErrorAtCurrent("invalid identifier B");           
+                                Parser.ErrorAtCurrent("invalid identifier");           
                                 break;
                             }
                             actualType = "byte";
@@ -173,7 +173,7 @@ unit Constant
                             uint ui;
                             if (!Token.TryParseUInt(value, ref ui))   
                             {
-                                Parser.ErrorAtCurrent("invalid identifier C");           
+                                Parser.ErrorAtCurrent("invalid identifier");           
                                 break;
                             }
                             actualType = "uint";
@@ -184,7 +184,7 @@ unit Constant
                             int i;
                             if (!Token.TryParseInt(value, ref i))   
                             {
-                                Parser.ErrorAtCurrent("invalid identifier D");           
+                                Parser.ErrorAtCurrent("invalid identifier");           
                                 break;
                             }
                             actualType = "int";
@@ -208,13 +208,13 @@ unit Constant
                     }
                     else
                     {    
-                        Parser.ErrorAtCurrent("constant expected A");
+                        Parser.ErrorAtCurrent("constant expected");
                         break;           
                     }
                 }
                 default:
                 {
-                    Parser.ErrorAtCurrent("constant expected A");
+                    Parser.ErrorAtCurrent("constant expected");
                     break;           
                 }
             } // switch
