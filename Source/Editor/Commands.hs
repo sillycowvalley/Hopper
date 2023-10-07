@@ -8,15 +8,18 @@ unit Commands
     uses "/Source/Debugger/DebugCommand"
 #else
     uses "/Source/Editor/Commands/BuildCommand"
+    uses "/Source/Editor/Commands/OptionsCommand"
 #endif
     
     delegate CommandExecuteDelegate();
     delegate bool CommandEnabledDelegate();
+    delegate bool CommandCheckedDelegate();
     
     <string, Key> acceleratorKey;
     <string, string> menuText;
     <string, CommandExecuteDelegate> commandsExecute;
     <string, CommandEnabledDelegate> commandsEnabled;
+    <string, CommandCheckedDelegate> commandsChecked;
     
     
     Initialize()
@@ -26,6 +29,7 @@ unit Commands
         DebugCommand.Register();
 #else
         BuildCommand.Register();
+        OptionsCommand.Register();
 #endif        
         Editor.RegisterCommands();
         
@@ -77,7 +81,21 @@ unit Commands
             acceleratorKey[name] = key;
         }
     }
-    
+    InstallChecked(string name, CommandCheckedDelegate checked)
+    {
+        commandsChecked[name] = checked;
+    }
+    bool IsChecked(string name)
+    {
+        bool checked = false;
+        name = cleanName(name);
+        if (commandsChecked.Contains(name))
+        {
+            CommandCheckedDelegate command = commandsChecked[name];
+            checked = command();
+        }
+        return checked;
+    }
     bool IsEnabled(string name)
     {
         bool enabled = false;

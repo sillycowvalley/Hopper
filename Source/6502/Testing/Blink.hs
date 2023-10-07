@@ -2,7 +2,7 @@ program Blink
 {
     #define TINYHOPPER
     
-    uses "/Source/6502/Firmware/System"
+    uses "/Source/6502/System"
     
     {
         loop

@@ -25,6 +25,8 @@ From a security point of view, Hopper is:
 
 ## Current State
 
+**Note:** This project is incomplete with plenty of work still to be done. Treat this as a *beta release*.
+
 The primary target for Hopper is small devices. Currently it is running well on 6502 and there
 are drivers for the following functionality:
 

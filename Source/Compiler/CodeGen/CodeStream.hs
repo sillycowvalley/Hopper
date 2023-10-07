@@ -326,7 +326,7 @@ unit CodeStream
             if (!TryParseSysCall(name, ref iSysCall))
             {
                 PrintLn("'" + name + "' not found");
-                Die(3); // key not found
+                Die(0x03); // key not found
             }
             CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
             break;
@@ -584,7 +584,7 @@ unit CodeStream
             byte iSysCall;
             if (!TryParseSysCall("String.NewFromConstant", ref iSysCall))
             {
-                Die(3); // key not found
+                Die(0x03); // key not found
             }
             CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
         }
@@ -594,7 +594,7 @@ unit CodeStream
             byte iSysCall;
             if (!TryParseSysCall("String.NewFromConstant", ref iSysCall))
             {
-                Die(3); // key not found
+                Die(0x03); // key not found
             }
             CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
         }

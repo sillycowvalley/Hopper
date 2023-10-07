@@ -911,14 +911,14 @@ unit Types
                         else if (Types.IsEnum(actualList[1]) && Types.IsEnum(targetList[1]))
                         {
                             // TODO: compare fully qualified
-                            Die(10);
+                            Die(0x0A);
                             equal = false;
                             break;
                         }
                         else if (Types.IsFlags(actualList[1]) && Types.IsFlags(targetList[1]))
                         {
                             // TODO: compare fully qualified
-                            Die(10);
+                            Die(0x0A);
                             equal = false;
                             break;
                         }

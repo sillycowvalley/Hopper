@@ -919,7 +919,7 @@ program PreProcess
                         }
                         else
                         {
-                            Parser.ErrorAtCurrent("identifier expected D, " + typeString);
+                            Parser.ErrorAtCurrent("identifier expected, " + typeString);
                             break;
                         }
                     } // isType

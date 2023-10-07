@@ -1,6 +1,6 @@
 program Sieve
 {
-    uses "/Source/6502/Firmware/System"
+    uses "/Source/6502/System"
     
     const uint size = 8191;
     const uint iterations = 1;

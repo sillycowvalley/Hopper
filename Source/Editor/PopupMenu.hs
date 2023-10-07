@@ -174,6 +174,11 @@ unit PopupMenu
                 label = label.Pad(' ', (w - 2 - accelerator.Length));
                 label = label + accelerator;
                 bool enabled = Commands.IsEnabled(name);
+                bool checked = Commands.IsChecked(name);
+                if (checked)
+                {
+                    label = label.Replace("[ ]", "[x]");
+                }
                 if (enabled)
                 {
                     uint keyIndex;

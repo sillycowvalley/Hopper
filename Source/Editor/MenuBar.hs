@@ -30,6 +30,7 @@ unit MenuBar
         menuOrder.Append("&Debug");
 #else
         menuOrder.Append("&Build");
+        menuOrder.Append("&Options");
 #endif
         
         <string, Key > keys;
@@ -39,7 +40,8 @@ unit MenuBar
 #ifdef DEBUGGER        
         keys["&Debug"] = (Key.Alt | Key.ModD);
 #else
-        keys["&Build"] = (Key.Alt | Key.ModB);
+        keys["&Build"]   = (Key.Alt | Key.ModB);
+        keys["&Options"] = (Key.Alt | Key.ModO);
 #endif
         
         instance["keys"] = keys;
@@ -54,6 +56,9 @@ unit MenuBar
         xpos["&Debug"] = menunames.Length;
 #else
         xpos["&Build"] = menunames.Length;
+        menunames = menunames + " Build ";
+        xpos["&Options"] = menunames.Length;
+        
 #endif   
         instance["xpos"] = xpos;
 
@@ -147,6 +152,12 @@ unit MenuBar
                 menuitems.Append("");
                 menuitems.Append("Run");
                 menuitems.Append("Debug");
+            }
+            case "&Options":
+            {
+                menuitems.Append("Checked");
+                menuitems.Append("Optimize");
+                menuitems.Append("Disassemble");
             }
         }
         

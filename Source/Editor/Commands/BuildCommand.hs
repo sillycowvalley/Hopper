@@ -147,44 +147,59 @@ unit BuildCommand
             }
             
             CheckTarget(jsonPath);
-            Editor.SetStatusBarText("Compiling '" + jsonPath + "' -> '" + codePath + "'");
+            string target = "";
+            if (target6502)
+            {
+                target = " for 6502";
+            }
+            
+            
             
             arguments.Clear();
             arguments.Append(jsonPath);
-            arguments.Append("-o"); // 'o'ptimized, not checked build (release)
+            string checkedBuild;
+            if (OptionsCommand.IsCheckedEnabled())
+            {
+                checkedBuild = " (checked build)";
+            }
+            else
+            {
+                arguments.Append("-o"); // 'o'ptimized, not checked build (release)
+            }
+            
             arguments.Append("-g");
             arguments.Append(col.ToString());
             arguments.Append(row.ToString());
+            
+            Editor.SetStatusBarText("Compiling '" + jsonPath + "' -> '" + codePath + "'" + checkedBuild);
             error = System.Execute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError("Compile", error);
                 break;
             }
-            
-            binaryPath ="/Bin/Optimize" + hexeExtension;
-            if (!File.Exists(binaryPath))
-            {
-                Editor.SetStatusBarText("No Optimize: '" + binaryPath + "'");
-                break;
-            }
-            string target = "";
-            if (target6502)
-            {
-                target = " for 6502";
-            }
-            Editor.SetStatusBarText("Optimizing Code '" + codePath + "' -> '" + codePath + "'" + target);
-            
-            arguments.Clear();
-            arguments.Append(codePath);
-            arguments.Append("-g");
-            arguments.Append(col.ToString());
-            arguments.Append(row.ToString());
-            error = System.Execute(binaryPath, arguments);
-            if (error != 0)
-            {
-                DisplayError("Optimize", error);
-                break;
+    
+            if (OptionsCommand.IsOptimizeEnabled())
+            {        
+                binaryPath ="/Bin/Optimize" + hexeExtension;
+                if (!File.Exists(binaryPath))
+                {
+                    Editor.SetStatusBarText("No Optimize: '" + binaryPath + "'");
+                    break;
+                }
+                Editor.SetStatusBarText("Optimizing Code '" + codePath + "' -> '" + codePath + "'" + target);
+                
+                arguments.Clear();
+                arguments.Append(codePath);
+                arguments.Append("-g");
+                arguments.Append(col.ToString());
+                arguments.Append(row.ToString());
+                error = System.Execute(binaryPath, arguments);
+                if (error != 0)
+                {
+                    DisplayError("Optimize", error);
+                    break;
+                }
             }
             
             binaryPath ="/Bin/CODEGEN" + hexeExtension;
@@ -210,26 +225,29 @@ unit BuildCommand
                 DisplayError("CODEGEN", error);
                 break;
             }
-                        
-            binaryPath ="/Bin/DASM" + hexeExtension;
-            if (!File.Exists(binaryPath))
-            {
-                Editor.SetStatusBarText("No DASM: '" + binaryPath + "'");
-                break;
-            }
             
-            Editor.SetStatusBarText("Disassembling '" + hexePath + "' -> '" + hasmPath + "'");
-            
-            arguments.Clear();
-            arguments.Append(hexePath);
-            arguments.Append("-g");
-            arguments.Append(col.ToString());
-            arguments.Append(row.ToString());
-            error = System.Execute(binaryPath, arguments);
-            if (error != 0)
-            {
-                DisplayError("DASM", error);
-                break;
+            if (OptionsCommand.IsDisassembleEnabled())
+            {       
+                binaryPath ="/Bin/DASM" + hexeExtension;
+                if (!File.Exists(binaryPath))
+                {
+                    Editor.SetStatusBarText("No DASM: '" + binaryPath + "'");
+                    break;
+                }
+                
+                Editor.SetStatusBarText("Disassembling '" + hexePath + "' -> '" + hasmPath + "'");
+                
+                arguments.Clear();
+                arguments.Append(hexePath);
+                arguments.Append("-g");
+                arguments.Append(col.ToString());
+                arguments.Append(row.ToString());
+                error = System.Execute(binaryPath, arguments);
+                if (error != 0)
+                {
+                    DisplayError("DASM", error);
+                    break;
+                }
             }
             Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'" + target);
             buildSuccess = true;

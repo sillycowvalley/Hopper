@@ -5,7 +5,7 @@ program Basic
     //#define COMPACT
     #define PROMPT
     
-    uses "/Source/6502/Firmware/System"
+    uses "/Source/6502/System"
     //uses "/Source/System/System"
     
     // IO:
