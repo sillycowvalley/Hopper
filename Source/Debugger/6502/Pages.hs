@@ -60,7 +60,7 @@ unit Pages
                     uint index = address + i;
                     string countString = "0x" + ln.Substring(i*2, 2);
                     uint value;
-                    if (!TryParseHex(countString, ref value)) 
+                    if (!UInt.TryParse(countString, ref value)) 
                     {   
                         ok = false;
                         break;

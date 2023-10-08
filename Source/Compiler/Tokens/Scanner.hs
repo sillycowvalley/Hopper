@@ -105,12 +105,12 @@ unit Scanner
         loop
         {
             long pos;
-            if (!Token.TryParseLong(startToken["pos"], ref pos))
+            if (!Long.TryParse(startToken["pos"], ref pos))
             {
                 Parser.Error("invalid pos: '" + startToken["pos"] + "'");
             }
             uint ln;
-            if (!Token.TryParseUInt(startToken["line"], ref ln))
+            if (!UInt.TryParse(startToken["line"], ref ln))
             {
                 Parser.Error("invalid line: '" + startToken["line"] + "'");
             }
@@ -126,7 +126,7 @@ unit Scanner
     bool isAtEnd()
     {
         //PrintLn("isAtEnd: currentPos=" + currentPos.ToString() + ", sourceLength=" + sourceLength.ToString());
-        return (currentPos == sourceLength);
+        return (currentPos >= sourceLength);
     }
     <string,string> errorToken(string message)
     {
@@ -403,7 +403,7 @@ unit Scanner
                     break;
                 }
                 uint hexValue = 0;
-                if (!Token.TryParseHex(value, ref hexValue))
+                if (!UInt.TryParse(value, ref hexValue))
                 {
                     token = errorToken("invalid hex integer literal");
                     break;
@@ -418,7 +418,7 @@ unit Scanner
                     break;
                 }
                 uint binaryValue = 0;
-                if (!Token.TryParseBinary(value, ref binaryValue))
+                if (!UInt.TryParse(value, ref binaryValue))
                 {
                     token = errorToken("invalid binary integer literal");
                     break;
@@ -428,7 +428,7 @@ unit Scanner
             else if (floatOk)
             {
                 float f;
-                if (!Token.TryParseFloat(value, ref f))
+                if (!Float.TryParse(value, ref f))
                 {
                     token = errorToken("invalid float literal");
                     break;       
@@ -439,7 +439,7 @@ unit Scanner
             else // just Integer
             {
                 long l;
-                if (!Token.TryParseLong(value, ref l))
+                if (!Long.TryParse(value, ref l))
                 {
                     token = errorToken("invalid integer literal");
                     break;       
@@ -620,7 +620,14 @@ unit Scanner
                     default:
                     {
                         uint ui = uint(c);
-                        token = errorToken("unexpected character: '" + c + "' (0x" + ui.ToHexString(2) + ")");
+                        if ((ui == 0) && isAtEnd())
+                        {
+                            token = Token.New(HopperToken.EOF, "", currentLine, currentPos, currentSourcePath);
+                        }
+                        else
+                        {
+                            token = errorToken("unexpected character: '" + c + "' (0x" + ui.ToHexString(2) + ")");
+                        }
                     }
                 }
                 if (htoken != HopperToken.Undefined)

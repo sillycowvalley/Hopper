@@ -1540,7 +1540,7 @@ unit Editor
             {
                 if (isHopperSource)
                 {
-                    colours = Highlighter.Hopper(ln, background, false);
+                    colours = Highlighter.Hopper(ln, background);
                 }
                 uint colourOffset = 0;
                 
@@ -1704,12 +1704,12 @@ unit Editor
                         <string> parts = ln.Split(' ');
                         long hits = 0;
                         long us = 0;
-                        if (Token.TryParseLong(parts[1], ref us))
+                        if (Long.TryParse(parts[1], ref us))
                         {
                             profileTime[parts[0]] = us;
                             perfTotal = perfTotal + us;
                         }
-                        if (Token.TryParseLong(parts[2], ref hits))
+                        if (Long.TryParse(parts[2], ref hits))
                         {
                             profileHits[parts[0]] = hits;
                         }
@@ -1762,7 +1762,7 @@ unit Editor
     {
         bool ok = false;
         uint gotoLine = 0;
-        if (TryParseUInt(candidate, ref gotoLine))
+        if (UInt.TryParse(candidate, ref gotoLine))
         {
             uint maxLines = TextBuffer.GetLineCount();
             if ((gotoLine >= 1) && (gotoLine <= maxLines))
@@ -1797,7 +1797,7 @@ unit Editor
             <string, string> fieldsAfter = mb["fields"];
             string gotoString = fieldsAfter["0"];
             uint gotoLine = 0;
-            if (TryParseUInt(gotoString, ref gotoLine))
+            if (UInt.TryParse(gotoString, ref gotoLine))
             {
                 selectionActive = false;
                 if (Editor.GotoLineNumber(gotoLine))
@@ -2169,7 +2169,7 @@ unit Editor
             <string, string> fieldsAfter = mb["fields"];
             string gotoString = fieldsAfter["0"];
             uint gotoLine = 0;
-            if (TryParseUInt(gotoString, ref gotoLine))
+            if (UInt.TryParse(gotoString, ref gotoLine))
             {
                 if (Editor.GotoLineNumber(gotoLine))
                 {

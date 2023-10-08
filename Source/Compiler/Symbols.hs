@@ -1028,11 +1028,11 @@ unit Symbols
             {
                 long startPos;
                 uint startLine;
-                if (Token.TryParseLong(blockPos[0], ref startPos))
+                if (Long.TryParse(blockPos[0], ref startPos))
                 {
                     gStartPos[iGlobal] = startPos; // location of method block '{'
                 }
-                if (Token.TryParseUInt(blockPos[1], ref startLine))
+                if (UInt.TryParse(blockPos[1], ref startLine))
                 {
                     gStartLine[iGlobal] = startLine; // location of method block '{'
                 }
@@ -1112,11 +1112,11 @@ unit Symbols
             {
                 long startPos;
                 uint startLine;
-                if (Token.TryParseLong(blockPos[0], ref startPos))
+                if (Long.TryParse(blockPos[0], ref startPos))
                 {
                     fStartPos[iCurrentOverload] = startPos; // location of method block '{'
                 }
-                if (Token.TryParseUInt(blockPos[1], ref startLine))
+                if (UInt.TryParse(blockPos[1], ref startLine))
                 {
                     fStartLine[iCurrentOverload] = startLine; // location of method block '{'
                 }
@@ -1643,7 +1643,7 @@ unit Symbols
                             {
                                 string l = kv6.value;
                                 uint ui;
-                                if (Token.TryParseUInt(l, ref ui))
+                                if (UInt.TryParse(l, ref ui))
                                 {
                                     members[kv6.key] = ui;
                                 }
@@ -1664,7 +1664,7 @@ unit Symbols
                             {
                                 string l = kv6.value;
                                 uint ui;
-                                if (Token.TryParseUInt(l, ref ui))
+                                if (UInt.TryParse(l, ref ui))
                                 {
                                     members[kv6.key] = ui;
                                 }
@@ -1718,7 +1718,7 @@ unit Symbols
                             <string, variant> overloads = kv2.value;
                             foreach (var kv3 in overloads)
                             {
-                                if (Token.TryParseUInt(kv3.key, ref idNextOverload))
+                                if (UInt.TryParse(kv3.key, ref idNextOverload))
                                 {
                                 }
                                 <string, variant> odict = kv3.value;
@@ -1784,7 +1784,7 @@ unit Symbols
                                 <string, variant> overloads = kv2.value;
                                 foreach (var kv3 in overloads)
                                 {
-                                    if (!Token.TryParseUInt(kv3.key, ref iNextOverload))
+                                    if (!UInt.TryParse(kv3.key, ref iNextOverload))
                                     {
                                         PrintLn("bad iNextOverload");
                                     }
@@ -1814,12 +1814,12 @@ unit Symbols
                                         string sc = odict["syscall"];
                                         string ov = odict["overload"];
                                         uint scui;
-                                        if (Token.TryParseUInt(sc, ref scui))
+                                        if (UInt.TryParse(sc, ref scui))
                                         {
                                             iSysCall = byte(scui);
                                         }
                                         uint ovui;
-                                        if (Token.TryParseUInt(ov, ref ovui))
+                                        if (UInt.TryParse(ov, ref ovui))
                                         {
                                             iSysCallOverload = byte(ovui);
                                         }
@@ -1904,7 +1904,7 @@ unit Symbols
                 if (methodBlock.Contains("iOverload"))
                 {
                     string sCaller = methodBlock["iOverload"];
-                    if (TryParseUInt(sCaller, ref iCaller))
+                    if (UInt.TryParse(sCaller, ref iCaller))
                     {
                         if (!fTouches.Contains(iCaller))
                         {

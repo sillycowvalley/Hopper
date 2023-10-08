@@ -185,7 +185,7 @@ unit MessageBox
         uint editwidth = 0;
         string editWidthText = this["editwidth"];
         string extra = this["extra"];
-        if (Token.TryParseUInt(editWidthText, ref editwidth))
+        if (UInt.TryParse(editWidthText, ref editwidth))
         {
         
         }
@@ -216,11 +216,11 @@ unit MessageBox
         {
             currentValue = fieldvalues[currentField.ToString()];
             string okx = this["ok-x"];
-            if (Token.TryParseUInt(okx, ref xOK))
+            if (UInt.TryParse(okx, ref xOK))
             {
             }
             string oky = this["ok-y"];
-            if (Token.TryParseUInt(oky, ref yOK))
+            if (UInt.TryParse(oky, ref yOK))
             {
             }
             cursorX = xf + currentValue.Length;
@@ -555,7 +555,7 @@ unit MessageBox
         if (this.Contains("messageRows"))
         {
             string smessageRows = this["messageRows"];
-            if (TryParseUInt(smessageRows, ref messageRows))
+            if (UInt.TryParse(smessageRows, ref messageRows))
             {
             }
         }
@@ -564,7 +564,7 @@ unit MessageBox
         string title = this["title"];
         uint editwidth = 0;
         string editWidthText = this["editwidth"];
-        if (Token.TryParseUInt(editWidthText, ref editwidth))
+        if (UInt.TryParse(editWidthText, ref editwidth))
         {
         
         }
@@ -678,7 +678,7 @@ unit MessageBox
         if (this.Contains("messageRows"))
         {
             string smessageRows = this["messageRows"];
-            if (TryParseUInt(smessageRows, ref messageRows))
+            if (UInt.TryParse(smessageRows, ref messageRows))
             {
             }
         }
@@ -693,7 +693,7 @@ unit MessageBox
         if (doHighlight)
         {
             backcolor = LightestGray;
-            colors = Highlighter.Hopper(message, backcolor, false);
+            colors = Highlighter.Hopper(message, backcolor);
         }
         
         uint x = xLeft;

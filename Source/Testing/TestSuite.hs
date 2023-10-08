@@ -1,8 +1,8 @@
 program TestSuite
 {
 
-    uses "/Source/6502/Firmware/System"
-    //uses "/Source/System/System"
+    //uses "/Source/6502/System"
+    uses "/Source/System/System"
     
 #ifndef H6502
 //#define TESTFLOATS
@@ -699,7 +699,7 @@ program TestSuite
         foreach (var kv in expandReferenceValue)
         {
             uint k;
-            if (TryParseUInt(kv.key, ref k))
+            if (UInt.TryParse(kv.key, ref k))
             {
                 totalk = totalk + k;
             }
@@ -734,7 +734,7 @@ program TestSuite
         {
             totalk = totalk + kv.key;
             uint v;
-            if (TryParseUInt(kv.value, ref v))
+            if (UInt.TryParse(kv.value, ref v))
             {
                 totalv = totalv + v;
             }
@@ -768,11 +768,11 @@ program TestSuite
         {
             uint k;
             uint v;
-            if (TryParseUInt(kv.key, ref k))
+            if (UInt.TryParse(kv.key, ref k))
             {
                 totalk = totalk + k;
             }
-            if (TryParseUInt(kv.value, ref v))
+            if (UInt.TryParse(kv.value, ref v))
             {
                 totalv = totalv + v;
             }
@@ -2336,21 +2336,21 @@ program TestSuite
         
         uint hex = 0;
         string word = "0x002A";
-        if (Token.TryParseHex(word, ref hex))
+        if (UInt.TryParse(word, ref hex))
         {
         }
         if (hex != 42)
         {
-            PrintFailed("TryParseHex ref failed (value type)");
+            PrintFailed("TryParse ref failed (hex value type)");
         }
         long l = 0;
         word = "100000";
-        if (Token.TryParseLong(word, ref l))
+        if (Long.TryParse(word, ref l))
         {
         }
         if (l != 100000)
         {
-            PrintFailed("TryParseLong ref failed (reference type)");
+            PrintFailed("Long.TryParse ref failed (reference type)");
         }
         
         

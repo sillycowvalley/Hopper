@@ -203,7 +203,7 @@ program PreProcess
           }
           <string,string> currentToken = Parser.CurrentToken;
           long pos;
-          if (Token.TryParseLong(currentToken["pos"], ref pos))
+          if (Long.TryParse(currentToken["pos"], ref pos))
           {
           }
           if (isSystem)
@@ -356,15 +356,7 @@ program PreProcess
                     }
                     <string,string> valueToken = Parser.CurrentToken;
                     valueString = valueToken["lexeme"];
-                    if (Token.TryParseUInt(valueString, ref currentValue))
-                    {
-                        
-                    }
-                    else if (Token.TryParseHex(valueString, ref currentValue))
-                    {
-                        
-                    }
-                    else if (Token.TryParseBinary(valueString, ref currentValue))
+                    if (UInt.TryParse(valueString, ref currentValue))
                     {
                         
                     }
@@ -781,7 +773,7 @@ program PreProcess
             {
                 <string,string> currentToken = Parser.CurrentToken;
                 long pos;
-                if (Token.TryParseLong(currentToken["pos"], ref pos))
+                if (Long.TryParse(currentToken["pos"], ref pos))
                 {
                     
                 }
@@ -1141,11 +1133,11 @@ program PreProcess
                           uint col;
                             uint row;
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref col))
+                            if (UInt.TryParse(rawArgs[iArg], ref col))
                             {
                             }
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref row))
+                            if (UInt.TryParse(rawArgs[iArg], ref row))
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));

@@ -47,7 +47,7 @@ program DASM
         }
         string sourceLine;
         uint iline;
-        if (Token.TryParseUInt(lnum, ref iline))
+        if (UInt.TryParse(lnum, ref iline))
         {
             if (iline > 0)
             {
@@ -245,11 +245,11 @@ program DASM
                             uint col;
                             uint row;
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref col))
+                            if (UInt.TryParse(rawArgs[iArg], ref col))
                             {
                             }
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref row))
+                            if (UInt.TryParse(rawArgs[iArg], ref row))
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));

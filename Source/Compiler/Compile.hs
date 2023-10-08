@@ -906,7 +906,7 @@ program Compile
                         else
                         {
                             uint cc;
-                            if (Token.TryParseUInt(caseConstant, ref cc))
+                            if (UInt.TryParse(caseConstant, ref cc))
                             {
                                 CodeStream.AddInstructionPUSHI(cc);
                             }
@@ -1261,6 +1261,10 @@ program Compile
             {
                 // call setter method with expression result on stack as argument
                 string returnType = CompileMethodCall(variableName + "_Set", "");
+                if (Parser.HadError)
+                {
+                    break;
+                }
                 if (returnType != "void")
                 {
                     Die(0x0B);
@@ -1981,11 +1985,11 @@ program Compile
                             uint col;
                             uint row;
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref col))
+                            if (UInt.TryParse(rawArgs[iArg], ref col))
                             {
                             }
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref row))
+                            if (UInt.TryParse(rawArgs[iArg], ref row))
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));

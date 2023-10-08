@@ -302,7 +302,7 @@ unit JSON
             {
                 Parser.Advance();
                 long l;
-                if (Token.TryParseLong(currentToken["lexeme"], ref l))
+                if (Long.TryParse(currentToken["lexeme"], ref l))
                 {
                     dict[name] = l.ToString();
                 }

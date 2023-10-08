@@ -1039,7 +1039,7 @@ program Optimize
             {
                 string saddress = kv.key;
                 uint address;
-                if (TryParseUInt(saddress, ref address))
+                if (UInt.TryParse(saddress, ref address))
                 {
                 }
                 uint index = GetInstructionIndex(address, ref instructions);
@@ -1187,11 +1187,11 @@ program Optimize
                             uint col;
                             uint row;
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref col))
+                            if (UInt.TryParse(rawArgs[iArg], ref col))
                             {
                             }
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref row))
+                            if (UInt.TryParse(rawArgs[iArg], ref row))
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));

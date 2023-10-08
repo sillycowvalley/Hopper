@@ -303,7 +303,7 @@ unit Code
         }
         string sourceLine;
         uint iLine;
-        if (Token.TryParseUInt(lnum, ref iLine))
+        if (UInt.TryParse(lnum, ref iLine))
         {
             if (iLine > 0)
             {
@@ -351,7 +351,7 @@ unit Code
             
             string hex = kv.key;
             uint index;
-            if (!TryParseHex(hex, ref index))
+            if (!UInt.TryParse(hex, ref index))
             {
                 Diagnostics.Die(0x03);
             }
@@ -369,10 +369,10 @@ unit Code
             {
                 uint offset;
                 uint ln;
-                if (Token.TryParseUInt(kv2.key, ref offset))
+                if (UInt.TryParse(kv2.key, ref offset))
                 {
                 }
-                if (Token.TryParseUInt(kv2.value, ref ln))
+                if (UInt.TryParse(kv2.value, ref ln))
                 {
                 }
                 uint address = start + offset;
@@ -451,7 +451,7 @@ unit Code
         {
             string key = kv.key;
             uint index;
-            if (TryParseHex(key, ref index))
+            if (UInt.TryParse(key, ref index))
             {
                 indices.Append(index);
             }
@@ -562,7 +562,7 @@ unit Code
                     }
                     previousToken = PreviousToken;
                     uint hits;
-                    if (TryParseUInt(previousToken["lexeme"], ref hits))
+                    if (UInt.TryParse(previousToken["lexeme"], ref hits))
                     {
                     }
                     methodDictionary["hits"] = hits;
@@ -909,7 +909,7 @@ unit Code
                             uint hc;
                             previousToken = PreviousToken;
                             string hexcode = previousToken["lexeme"];
-                            if (Token.TryParseUInt(hexcode, ref hc))
+                            if (UInt.TryParse(hexcode, ref hc))
                             {
                             }
                             code.Append(byte(hc));
@@ -930,7 +930,7 @@ unit Code
         if (!isData && keepSymbols)
         {
             uint iMethod;
-            if (Token.TryParseUInt(methodIndex, ref iMethod))
+            if (UInt.TryParse(methodIndex, ref iMethod))
             {
             }
             string name = "0x" + iMethod.ToHexString(4);
@@ -1112,7 +1112,7 @@ unit Code
                     else
                     {
                         uint index;
-                        if (Token.TryParseUInt(methodIndex, ref index))
+                        if (UInt.TryParse(methodIndex, ref index))
                         {
                         }
                         if (name.EndsWith(".main"))
@@ -1164,7 +1164,7 @@ unit Code
         foreach (var kv in debugSymbols)
         {
             uint index;
-            if (TryParseHex(kv.key, ref index))
+            if (UInt.TryParse(kv.key, ref index))
             {
                 <string,variant> methodDictionary;
                 foreach (var mkv in kv.value) // just to get the order the same as the original .code
@@ -1203,7 +1203,7 @@ unit Code
                     {
                         uint ln;
                         string sln = mkv.value;
-                        if (TryParseUInt(sln, ref ln))
+                        if (UInt.TryParse(sln, ref ln))
                         {
                             methodDictionary[mkv.key] = ln;
                         }

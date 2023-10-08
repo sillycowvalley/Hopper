@@ -621,7 +621,7 @@ unit Types
             Parser.ErrorAtCurrent("invalid array type '" + collectionType + "'");
         }
         szs = szs.Substring(0, lb);
-        if (!Token.TryParseUInt(szs, ref sz))
+        if (!UInt.TryParse(szs, ref sz))
         {
             Parser.ErrorAtCurrent("invalid array type '" + collectionType + "'");
         }
@@ -950,6 +950,35 @@ unit Types
         }
         return equal;
     }
+    uint FindVisibleOverload(string functionName, < <string> > arguments, ref string returnType)
+    {
+        uint iOverloadFound;
+        uint iDot;
+        char ch;
+        loop
+        {
+            if (!functionName.Contains('.'))
+            {
+                functionName = currentNamespace + "." + functionName;
+            }
+            if (functionName.IndexOf('.', ref iDot))
+            {
+                ch = functionName[iDot+1];
+                if (ch.IsLower())
+                {
+                    if (!functionName.StartsWith(currentNamespace + "."))
+                    {
+                        Parser.Error("'" + functionName + "' is private"); 
+                        break;
+                    }
+                }
+            }
+            iOverloadFound = FindOverload(functionName, arguments, ref returnType);
+            break;
+        }
+        return iOverloadFound;
+    }
+    
     
     uint FindOverload(string functionName, < <string> > arguments, ref string returnType)
     {

@@ -423,6 +423,12 @@ unit Block
     
     string GetType(string identifier)
     {
+        bool isLocal;
+        return GetType(identifier, ref isLocal);
+    }
+    string GetType(string identifier, ref bool isLocal)
+    {
+        isLocal = false;
         string typeString;
         string name;
         <string,variant> blockContext;
@@ -447,6 +453,7 @@ unit Block
                     if (name == identifier)
                     {
                         typeString = argument[1];
+                        isLocal = true;
                         break;
                     }        
                 }
@@ -461,6 +468,7 @@ unit Block
                     if (name == identifier)
                     {
                         typeString = local[0];
+                        isLocal = true;
                         break;
                     }            
                 }   
@@ -508,7 +516,7 @@ unit Block
                     int loffset = GetOffset(lname, ref isRef); // always positive for locals (BP+offset)
                     
                     uint fromAddress;
-                    if (TryParseUInt(laddress, ref fromAddress))
+                    if (UInt.TryParse(laddress, ref fromAddress))
                     {
                     }
                     <string> localNameAndType;

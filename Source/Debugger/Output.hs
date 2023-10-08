@@ -246,7 +246,7 @@ unit Output
         if (row < outputTop + outputHeight)
         {
             content = content.Replace('`', ',');
-            <uint> colors = Highlighter.Hopper(content, backColor, false);
+            <uint> colors = Highlighter.Hopper(content, backColor);
             
             for (byte i = 0; i < content.Length; i++)
             {
@@ -293,7 +293,7 @@ unit Output
                 <string> argumentList = kv.value;
                 
                 int delta;
-                if (TryParseInt(kv.key, ref delta))
+                if (Int.TryParse(kv.key, ref delta))
                 {
                 }
                 uint voffset = uint(int(bp) +  delta);
@@ -440,7 +440,7 @@ unit Output
             <string> parts = range.Split('-');
             uint fromRange;
             uint toRange;
-            if (TryParseHex(parts[0], ref fromRange) && TryParseHex(parts[1], ref toRange))
+            if (UInt.TryParse(parts[0], ref fromRange) && UInt.TryParse(parts[1], ref toRange))
             {
                 fromRange = fromRange + startAddress;
                 toRange   = toRange + startAddress;
@@ -465,7 +465,7 @@ unit Output
             string loffset = localList[2];
             
             uint offset;
-            if (!TryParseUInt(loffset, ref offset))
+            if (!UInt.TryParse(loffset, ref offset))
             {
                 Die(0x0B);
             }
@@ -484,7 +484,7 @@ unit Output
                 iLocal++;
                 string ioffsets = ilocalList[2];
                 uint ioffset;
-                if (!TryParseUInt(ioffsets, ref ioffset))
+                if (!UInt.TryParse(ioffsets, ref ioffset))
                 {
                     Die(0x0B);
                 }
@@ -506,7 +506,7 @@ unit Output
                 iLocal++;
                 string ioffsets = ilocalList[2];
                 uint ioffset;
-                if (!TryParseUInt(ioffsets, ref ioffset))
+                if (!UInt.TryParse(ioffsets, ref ioffset))
                 {
                     Die(0x0B);
                 }
@@ -530,7 +530,7 @@ unit Output
                 iLocal++;
                 string ioffsets = ilocalList[2];
                 uint ioffset;
-                if (!TryParseUInt(ioffsets, ref ioffset))
+                if (!UInt.TryParse(ioffsets, ref ioffset))
                 {
                     Die(0x0B);
                 }
@@ -555,7 +555,7 @@ unit Output
                 iLocal++;
                 string ioffsets = ilocalList[2];
                 uint ioffset;
-                if (!TryParseUInt(ioffsets, ref ioffset))
+                if (!UInt.TryParse(ioffsets, ref ioffset))
                 {
                     Die(0x0B);
                 }
@@ -665,7 +665,7 @@ unit Output
             <string> parts = sourceIndex.Split(':');
             string hsPath = parts[0];
             uint gotoLine;
-            if (TryParseUInt(parts[1], ref gotoLine))
+            if (UInt.TryParse(parts[1], ref gotoLine))
             {
                 if (Editor.GetCurrentPath() != hsPath)
                 {
@@ -681,7 +681,7 @@ unit Output
         string ctype = parts[0];
         string cname = parts[1];
         uint cvalue;
-        if (TryParseUInt(parts[2], ref cvalue))
+        if (UInt.TryParse(parts[2], ref cvalue))
         {
             string gcontent = TypeToString(cvalue, ctype, false, 2048);
             <string> buttons;

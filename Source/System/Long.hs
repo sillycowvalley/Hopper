@@ -1,5 +1,84 @@
 unit Long
 {
+    bool TryParse(string content, ref long returnValue)
+    {
+        long result;
+        bool makeNegative;
+        if (content.Length < 1)
+        {
+            return false;
+        }
+        if (content.StartsWith("0x"))
+        {
+            return tryParseHex(content, ref returnValue);
+        }
+        if (content.StartsWith('+'))
+        {
+            content = content.Substring(1);
+        }
+        else if (content.StartsWith('-'))
+        {
+            content = content.Substring(1);
+            makeNegative = true;
+        }
+        foreach (var c in content)
+        {
+            result = result * 10;
+            if (!c.IsDigit())
+            {
+                return false;
+            }
+            result = result + (byte(c) - 48); // 48 is ASCII for '0'
+        }
+        if (makeNegative)
+        {
+            result = -result;
+        }
+        returnValue = result;
+        return true;
+    }
+    bool tryParseHex(string content, ref long returnValue)
+    {
+        bool success;
+        uint length;
+        uint i;
+        char c;
+        loop
+        {
+            returnValue = 0;
+            if (!content.StartsWith("0x"))
+            {
+                break;
+            }
+            length = content.Length;
+            if (length < 3)
+            {
+                break;
+            }
+            success = true;
+            for (i=0; i < length-2; i++)
+            {
+                returnValue = returnValue * 16;
+                c = content.GetChar(i+2);
+                if (c.IsDigit())
+                {
+                    returnValue = returnValue + (byte(c) - 48); // 48 is ASCII for '0'
+                }
+                else if (c.IsHexDigit())
+                {
+                    returnValue = returnValue + (byte(c.ToLower()) - 87); // 97 is ASCII for 'a', -97+10 = -87
+                }
+                else
+                {
+                    success = false;
+                    break;
+                }
+            }
+            break;
+        }
+        return success;
+    }
+    
 #ifndef H6502    
     string ToString(long this) system;
 #else    

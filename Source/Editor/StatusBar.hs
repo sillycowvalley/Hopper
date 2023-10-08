@@ -65,7 +65,7 @@ unit StatusBar
                             string currentPath = Editor.GetCurrentPath();
                             uint ln;
                             bool gotoLine = false;
-                            if (Token.TryParseUInt(parts[1], ref ln))
+                            if (UInt.TryParse(parts[1], ref ln))
                             {
                                 gotoLine = true;
                             }

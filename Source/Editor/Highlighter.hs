@@ -5,7 +5,7 @@ unit Highlighter
     
     string delimiters = ";,:?(){}[]<>=!&|~^+-*/%";
     
-    uint HopperWord(string word, bool isZopper)
+    uint HopperWord(string word)
     {
         uint colour;
         
@@ -17,11 +17,7 @@ unit Highlighter
         {
             colour = Directive;
         }
-        else if (IsTypeKeyword(word) || IsReservedIdentifier(word))
-        {
-            colour = Type;
-        }
-        else if (isZopper && IsReservedZopperIdentifier(word))
+        else if (IsTypeKeyword(word))
         {
             colour = Type;
         }
@@ -41,11 +37,7 @@ unit Highlighter
             {
                 colour = Delimiter;
             }
-            else if (Token.TryParseLong(word, ref l))
-            {
-                colour = Constant;
-            }
-            else if (Token.TryParseHex(word, ref h))
+            else if (Long.TryParse(word, ref l))
             {
                 colour = Constant;
             }
@@ -65,7 +57,7 @@ unit Highlighter
         return colour;
     }
     
-    <uint> Hopper(string ln, uint backColor, bool isZopper)
+    <uint> Hopper(string ln, uint backColor)
     {
         <uint> colours;
         uint colour;
@@ -97,7 +89,7 @@ unit Highlighter
                     {
                         if (word.Length > 0)
                         {
-                            colour = HopperWord(word, isZopper);
+                            colour = HopperWord(word);
                             foreach (var ch in word)
                             {
                                 colours.Append(colour);
@@ -114,7 +106,7 @@ unit Highlighter
                     word = word + c;
                     if (inString)
                     {
-                        colour = HopperWord(word, isZopper);
+                        colour = HopperWord(word);
                         foreach (var ch in word)
                         {
                             colours.Append(colour);
@@ -133,7 +125,7 @@ unit Highlighter
                     word = word + c;
                     if (inChar)
                     {
-                        colour = HopperWord(word, isZopper);
+                        colour = HopperWord(word);
                         foreach (var ch in word)
                         {
                             colours.Append(colour);
@@ -156,7 +148,7 @@ unit Highlighter
                     }
                     else
                     {
-                        colour = HopperWord(word, isZopper);
+                        colour = HopperWord(word);
                         foreach (var ch in word)
                         {
                             colours.Append(colour);
@@ -185,7 +177,7 @@ unit Highlighter
                         {
                             if (word.Length > 0)
                             {
-                                colour = HopperWord(word, isZopper);
+                                colour = HopperWord(word);
                                 foreach (var ch in word)
                                 {
                                     colours.Append(colour);
@@ -198,13 +190,13 @@ unit Highlighter
                     {
                         if (word.Length > 0)
                         {
-                            colour = HopperWord(word, isZopper);
+                            colour = HopperWord(word);
                             foreach (var ch in word)
                             {
                                 colours.Append(colour);
                             }
                         }
-                        colour = HopperWord(c.ToString(), isZopper);
+                        colour = HopperWord(c.ToString());
                         colours.Append(colour);
                         inString = false;
                         inChar = false;
@@ -219,7 +211,7 @@ unit Highlighter
         } // foreach
         if (word.Length > 0)
         {
-            colour = HopperWord(word, isZopper);
+            colour = HopperWord(word);
             foreach (var ch in word)
             {
                 colours.Append(colour);

@@ -5,8 +5,8 @@ program Basic
     //#define COMPACT
     #define PROMPT
     
-    uses "/Source/6502/System"
-    //uses "/Source/System/System"
+    //uses "/Source/6502/System"
+    uses "/Source/System/System"
     
     // IO:
     //   - write either to Screen or Screen and Serial,

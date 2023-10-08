@@ -52,7 +52,7 @@ unit Constant
                 case HopperToken.Float:
                 {
                     float f;
-                    if (!Token.TryParseFloat(currentToken["lexeme"], ref f))
+                    if (!Float.TryParse(currentToken["lexeme"], ref f))
                     {
                         Parser.ErrorAtCurrent("invalid float literal");
                         break;           
@@ -64,7 +64,7 @@ unit Constant
                 case HopperToken.Integer:
                 {
                     long l;
-                    if (!Token.TryParseLong(currentToken["lexeme"], ref l))
+                    if (!Long.TryParse(currentToken["lexeme"], ref l))
                     {
                         Parser.ErrorAtCurrent("invalid integer literal");
                         break;           
@@ -160,7 +160,7 @@ unit Constant
                         case "byte":
                         {
                             uint ui;
-                            if (!Token.TryParseUInt(value, ref ui) || (ui > 255))   
+                            if (!UInt.TryParse(value, ref ui) || (ui > 255))   
                             {
                                 Parser.ErrorAtCurrent("invalid identifier");           
                                 break;
@@ -171,7 +171,7 @@ unit Constant
                         case "uint":
                         {
                             uint ui;
-                            if (!Token.TryParseUInt(value, ref ui))   
+                            if (!UInt.TryParse(value, ref ui))   
                             {
                                 Parser.ErrorAtCurrent("invalid identifier");           
                                 break;
@@ -182,7 +182,7 @@ unit Constant
                         case "int":
                         {
                             int i;
-                            if (!Token.TryParseInt(value, ref i))   
+                            if (!Int.TryParse(value, ref i))   
                             {
                                 Parser.ErrorAtCurrent("invalid identifier");           
                                 break;

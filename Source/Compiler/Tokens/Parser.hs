@@ -50,7 +50,8 @@ unit Parser
         }
         else
         {
-            PrintLn(errorMessage);
+            PrintLn();
+            PrintLn(errorMessage, Color.MatrixRed, Color.Black);
         }
     }
     ProgressTick(string str)

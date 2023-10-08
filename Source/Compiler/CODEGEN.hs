@@ -38,7 +38,7 @@ program CODEGEN
         {
             string substr = values.Substring(i * 2, 2);
             uint b = 0;
-            if (Token.TryParseHex("0x" + substr, ref b))
+            if (UInt.TryParse("0x" + substr, ref b))
             {
             }
             sum = sum + b;
@@ -129,11 +129,11 @@ program CODEGEN
                             uint col;
                             uint row;
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref col))
+                            if (UInt.TryParse(rawArgs[iArg], ref col))
                             {
                             }
                             iArg++;
-                            if (TryParseUInt(rawArgs[iArg], ref row))
+                            if (UInt.TryParse(rawArgs[iArg], ref row))
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));

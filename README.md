@@ -56,4 +56,4 @@ The compilation toolchain is broken into 5 applications, all written in Hopper:
 3. Port to RP240
 4. Port to Z80 again
 
-Contact me for more info: michael at sillycowvalley dot com
+Contact me for more info: BiggerTigger at sillycowvalley dot com

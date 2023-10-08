@@ -358,6 +358,7 @@ unit Expression
         string returnType;
         < <string > > arguments;
         bool isDelegateType = false;
+        bool isLocal = false;
         loop
         {
             // consider delegates (variables, not methods)
@@ -368,6 +369,7 @@ unit Expression
                 if (Types.IsDelegate(variableType))
                 {
                     isDelegateType = true;
+                    string delegateType = Block.GetType(methodName, ref isLocal);
                 }
             }
             if (!methodName.Contains('.'))
@@ -381,6 +383,7 @@ unit Expression
                     methodName = Types.QualifyDelegateName(methodName);
                 }
             }
+            
             if (methodName.EndsWith("_Get"))
             {
                 if (thisVariable.Length > 0)
@@ -523,7 +526,15 @@ unit Expression
         {
             if (isDelegateType)
             {
-                uint iOverload = Types.FindOverload(methodName, arguments, ref returnType);
+                uint iOverload;
+                if (isLocal) // Tricksy! Method call with lowercase name.
+                {
+                    iOverload = Types.FindOverload(methodName, arguments, ref returnType);
+                }
+                else
+                {
+                    iOverload = Types.FindVisibleOverload(methodName, arguments, ref returnType);
+                }
                 if (Parser.HadError)
                 {
                     break;
@@ -536,8 +547,7 @@ unit Expression
             {
                 break;
             }
-            
-            uint iOverload = Types.FindOverload(methodName, arguments, ref returnType);
+            uint iOverload = Types.FindVisibleOverload(methodName, arguments, ref returnType);
             if (Parser.HadError)
             {
                 break;
@@ -616,7 +626,7 @@ unit Expression
             string value = Symbols.GetConstantValue(constantName);
             long l;
             float f;
-            if (Token.TryParseLong(value, ref l))
+            if (Long.TryParse(value, ref l))
             {
                 if (l < -32768)
                 {
@@ -666,7 +676,7 @@ unit Expression
                 CodeStream.AddInstruction(Instruction.PUSHI0);
                 actualType = "bool";
             }
-            else if (Token.TryParseFloat(value, ref f))
+            else if (Float.TryParse(value, ref f))
             {
                 uint constantAddress = CodeStream.CreateFloatConstant(f);
                 CodeStream.AddInstructionPUSHI(constantAddress);
@@ -734,7 +744,7 @@ unit Expression
                 {
                     Parser.Advance();
                     float f;
-                    if (!Token.TryParseFloat(currentToken["lexeme"], ref f))
+                    if (!Float.TryParse(currentToken["lexeme"], ref f))
                     {
                         Parser.ErrorAtCurrent("invalid float token " + currentToken["type"]);
                     }
@@ -747,7 +757,7 @@ unit Expression
                 {
                     Parser.Advance();
                     long l;
-                    if (!Token.TryParseLong(currentToken["lexeme"], ref l))
+                    if (!Long.TryParse(currentToken["lexeme"], ref l))
                     {
                         Parser.ErrorAtCurrent("invalid integer token " + currentToken["type"]);
                     }
@@ -1668,7 +1678,7 @@ unit Expression
                         break;
                     }
                     uint iShift;
-                    if (Token.TryParseUInt(shiftValue, ref iShift))
+                    if (UInt.TryParse(shiftValue, ref iShift))
                     {
                     }
                     if ((iShift < 0) || (iShift > 16))

@@ -95,7 +95,7 @@ program HopperMonitor
                     string addressString = "0x" + ln.Substring(0, 4);
                     uint address;
                     ln = ln.Substring(4);
-                    if (TryParseHex(addressString, ref address))
+                    if (UInt.TryParse(addressString, ref address))
                     {
                         address = address - 0x0800;
                         address = address / 2;
@@ -110,7 +110,7 @@ program HopperMonitor
                         uint index = address + i;
                         string countString = "0x" + ln.Substring(i*4 + 2, 2) + ln.Substring(i*4, 2);
                         uint count;
-                        if (TryParseHex(countString, ref count)) 
+                        if (UInt.TryParse(countString, ref count)) 
                         {   
                             if (count > 0)
                             {
@@ -175,7 +175,7 @@ program HopperMonitor
                 <string> argumentList = kv.value;
                 content = content + argumentList[2] + "=";
                 int delta;
-                if (TryParseInt(kv.key, ref delta))
+                if (Int.TryParse(kv.key, ref delta))
                 {
                 }
                 uint voffset = uint(int(bp) +  delta);
@@ -435,7 +435,7 @@ program HopperMonitor
         string serialOutput = Monitor.GetSerialOutput();
         serialOutput = "0x" + serialOutput.Substring(1);
         uint pc;
-        if (TryParseHex(serialOutput, ref pc))
+        if (UInt.TryParse(serialOutput, ref pc))
         {
             ShowDisassembly(pc, instructions);
         }
@@ -444,7 +444,7 @@ program HopperMonitor
     HopperLinePrinter(string ln, uint backColor)
     {
         ln = ln.Pad(' ', Screen.Columns);
-        <uint> colours = Highlighter.Hopper(ln, backColor, false);
+        <uint> colours = Highlighter.Hopper(ln, backColor);
         uint length = ln.Length;
         for (uint i=0; i < length; i++)
         {
@@ -466,7 +466,7 @@ program HopperMonitor
                 <string> parts = sourceIndex.Split(':');
                 string lNum = parts[1];
                 uint iLine;
-                if (Token.TryParseUInt(lNum, ref iLine))
+                if (UInt.TryParse(lNum, ref iLine))
                 {
                     Screen.SetCursor(0,1);
                     uint iCurrent = iLine;
@@ -515,7 +515,7 @@ program HopperMonitor
         hexpage = hexpage.ToUpper();
     
         uint returnValue = 0;
-        if (TryParseHex("0x" + hexpage, ref returnValue))
+        if (UInt.TryParse("0x" + hexpage, ref returnValue))
         {
             if ((returnValue >= 0x00) && (returnValue <= 0xFF))
             {
@@ -716,11 +716,11 @@ program HopperMonitor
                     {
                         string hex = "0x" + commandLine.Substring(2,1);
                         uint breakpoint;
-                        if (TryParseHex(hex, ref breakpoint) && (breakpoint > 0))
+                        if (UInt.TryParse(hex, ref breakpoint) && (breakpoint > 0))
                         {
                             hex = "0x" + commandLine.Substring(4);
                             uint address;
-                            if (TryParseHex(hex, ref address) && (address > 0) && (address < 0x8000))
+                            if (UInt.TryParse(hex, ref address) && (address > 0) && (address < 0x8000))
                             {
                                 commandLine = "B" + breakpoint.ToHexString(1) + address.ToHexString(4);
                                 Monitor.Command(commandLine, false, false);

@@ -343,7 +343,7 @@ unit Monitor
         serialOutput = "0x" + serialOutput.Substring(1);
         //Print(" " + serialOutput, MatrixRed, Black);
         uint pc;
-        if (TryParseHex(serialOutput, ref pc))
+        if (UInt.TryParse(serialOutput, ref pc))
         {
             pc = pc - (GetZeroPage("CODESTART") << 8);
         }

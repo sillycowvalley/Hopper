@@ -1,8 +1,5 @@
 unit System
 {
-    
-    //const string hexeExtension = ".hexe2";
-    //const string hasmExtension = ".hasm2";
     const string hexeExtension = ".hexe";
    	const string hasmExtension = ".hasm";
     

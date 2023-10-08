@@ -1418,12 +1418,12 @@ unit Instructions
                 string numberString = gCurrentContent.Substring(0, iEnd);
                 <string> parts = numberString.Split(':');
                 
-                if (!TryParseUInt(parts[0], ref uIndex))
+                if (!UInt.TryParse(parts[0], ref uIndex))
                 {
                     CompileError(15); // internal error (should never happen)
                     break;
                 }
-                if (!TryParseUInt(parts[1], ref uLength))
+                if (!UInt.TryParse(parts[1], ref uLength))
                 {
                     CompileError(15); // internal error (should never happen)
                     break;
@@ -1452,7 +1452,7 @@ unit Instructions
                 }
                 string numberString = token + gCurrentContent.Substring(0, iEnd);
                 int integer;
-                if (!TryParseInt(numberString, ref integer))
+                if (!Int.TryParse(numberString, ref integer))
                 {
                     CompileError(15); // integer expected
                     break;
