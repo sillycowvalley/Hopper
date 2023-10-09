@@ -298,6 +298,7 @@ utilityMULITOPIsPositive:
   rts
 
 utilityMULI:
+
   jsr utilityDoSigns
   jsr utilityMUL
   
@@ -331,7 +332,7 @@ utilityMODI
   ;
   
   jsr utilityDoSigns
-  jsr utilityDIV
+  jsr utilityDIVMOD
 
   ; always leave remainder ACC as positive
   rts

@@ -21,6 +21,9 @@ LISTS = 1
 DICTIONARIES = 1 ; Dictionaries are kinda pointless without Strings
   .endif
   .endif
+FASTINTS = 1     ; faster 'int' and 'uint' multiply and divide (at a cost of 360 bytes)
+                 ; - multiply optimized for: 0, 1, 2, 4, 8, 16
+                 ; - divide optimized for:   1, 2, 4, 10, 50, 100
 
 ;PROFILE = 1     ; count opCode and sysCall hits
 ;CHECKED = 1     ; checked build (stack range checks, ..)
@@ -48,6 +51,7 @@ STACK8 = 1       ; 8 bit value stack pointer
 
 ; ######################## Hopper source code ########################
   .include Defines.asm
+  
   .ifdef HEAP
   .include Memory.asm
   .include GC.asm

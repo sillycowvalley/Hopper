@@ -305,16 +305,14 @@ syscall0JumpTableHigher:
   .word syscall0Undefined ; A7
   .endif
   .word syscallHardwareLEDSet       ; A8
-  .ifdef HEAP
   .word syscallMemoryReadByte; A9
   .word syscallMemoryWriteByte; AA
+  .ifdef HEAP
   .word syscallMemoryAvailable; AB
   .word syscallMemoryMaximum; AC
   .word syscallMemoryAllocate; AD
   .word syscallMemoryFree; AE
   .else
-  .word syscall0Undefined; A9
-  .word syscall0Undefined; AA
   .word syscall0Undefined; AB
   .word syscall0Undefined; AC
   .word syscall0Undefined; AD
@@ -341,13 +339,8 @@ syscall0JumpTableHigher:
   .else
   .word syscall0Undefined; B5
   .endif
-  .ifdef HEAP
   .word syscallMemoryReadBit ; B6
   .word syscallMemoryWriteBit ; B7
-  .else
-  .word syscall0Undefined;
-  .word syscall0Undefined;
-  .endif
   .word syscallCharToUpper
   .word syscallCharIsUpper
   .word syscallCharIsDigit
@@ -767,7 +760,7 @@ notWarp:
   
   jmp nextInstruction
   
-  .ifdef HEAP
+  
   
 BitMaskTable:
   .byte %00000001, %00000010, %00000100, %00001000, %00010000, %00100000, %01000000, %10000000
@@ -1081,6 +1074,76 @@ syscallMemoryReadByte:
   .endif
   
   jmp nextInstruction
+  
+  syscallMemoryWriteByte:
+  
+  .ifdef STACK8
+  
+  ldx SP8
+  ; value byte from stack but as a uint
+  dex
+  lda HopperValueStack, X ; MSB
+  dex
+  lda HopperValueStack, X ; LSB
+  sta ACCL
+  
+  ; address
+  
+  dex
+  lda HopperValueStack, X
+  sta IDXH
+  dex
+  lda HopperValueStack, X
+  sta IDXL
+  stx SP8
+  
+  .else
+  
+  jsr decTSP
+  .ifdef CHECKED
+  lda (TSP)
+  jsr assertUInt
+  .endif
+  
+  ; value byte from stack but as a uint
+  ; MSB
+  jsr decSP
+  
+  .ifdef CHECKED
+  ; verify that the MSB is zero
+  lda (SP)
+  beq writeByteOk
+  lda #tUInt
+  jsr assertUInt
+writeByteOk:
+  .endif
+  
+  ; LSB
+  jsr decSP          
+  lda (SP)
+  sta ACCL
+  
+  jsr decTSP
+  .ifdef CHECKED
+  lda (TSP)
+  jsr assertUInt
+  .endif
+  
+  ; address
+  jsr decSP          ; MSB
+  lda (SP)
+  sta IDXH
+  jsr decSP          ; LSB
+  lda (SP)
+  sta IDXL
+  .endif
+  
+  lda ACCL
+  sta (IDX)
+  
+  jmp nextInstruction
+
+  .ifdef HEAP
 
 syscallMemoryAllocate:
 
@@ -1260,73 +1323,7 @@ syscallMemoryMaximum:
   jmp nextInstruction
   
 
-syscallMemoryWriteByte:
-  
-  .ifdef STACK8
-  
-  ldx SP8
-  ; value byte from stack but as a uint
-  dex
-  lda HopperValueStack, X ; MSB
-  dex
-  lda HopperValueStack, X ; LSB
-  sta ACCL
-  
-  ; address
-  
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  stx SP8
-  
-  .else
-  
-  jsr decTSP
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
-  
-  ; value byte from stack but as a uint
-  ; MSB
-  jsr decSP
-  
-  .ifdef CHECKED
-  ; verify that the MSB is zero
-  lda (SP)
-  beq writeByteOk
-  lda #tUInt
-  jsr assertUInt
-writeByteOk:
-  .endif
-  
-  ; LSB
-  jsr decSP          
-  lda (SP)
-  sta ACCL
-  
-  jsr decTSP
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
-  
-  ; address
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  .endif
-  
-  lda ACCL
-  sta (IDX)
-  
-  jmp nextInstruction
+
   .endif
   
 syscallScreenPrint:

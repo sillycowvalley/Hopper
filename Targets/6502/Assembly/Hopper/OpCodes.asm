@@ -116,8 +116,13 @@ opCodeJumpTable:
   .word unknownOpCode      ; 5B opcodePOPCOPYRELW     // unused?
   .word unknownOpCode      ; 5C opcodePOPCOPYGLOBALW
 
+  .ifdef HEAP
   .word opcodePOPCOPYLOCALB00 ; 5D
   .word opcodePOPCOPYLOCALB02 ; 5E
+  .else
+  .word unknownOpCode
+  .word unknownOpCode
+  .endif
   
   .word opcodeENTERB          ; 5F
 
@@ -557,6 +562,35 @@ opcodeMULI:
   sta NEXTL
   stx SP8
   
+  .ifdef FASTINTS
+  lda TOPH
+  bne utilityMULITryNEXT
+
+  ; try TOPL  
+  lda TOPL
+  bne utilityMULITOPLNotZero
+  ; * 0 optimization
+  ; TOP is already zero
+  lda #tInt
+  jmp pushTOPExit
+  
+utilityMULITOPLNotZero:
+
+utilityMULITryNEXT:
+  ; try NEXTL
+  
+  lda NEXTL
+  bne utilityMULINEXTLNotZero
+  ; * 0 optimization
+  stz TOPL
+  stz TOPH
+  lda #tInt
+  jmp pushTOPExit
+utilityMULINEXTLNotZero:
+  
+utilityMULIRegular:
+  .endif
+  
   jsr utilityMULI
   
   lda #tInt
@@ -589,6 +623,35 @@ opcodeMUL:
   sta NEXTL
   stx SP8
   
+  .ifdef FASTINTS
+  lda TOPH
+  bne utilityMULTryNEXT
+
+  ; try TOPL  
+  lda TOPL
+  bne utilityMULTOPLNotZero
+  ; * 0 optimization
+  ; TOP is already zero
+  lda #tInt
+  jmp pushTOPExit
+  
+utilityMULTOPLNotZero:
+
+utilityMULTryNEXT:
+  ; try NEXTL
+  
+  lda NEXTL
+  bne utilityMULNEXTLNotZero
+  ; * 0 optimization
+  stz TOPL
+  stz TOPH
+  lda #tInt
+  jmp pushTOPExit
+utilityMULNEXTLNotZero:
+  
+utilityMULRegular:
+  .endif
+  
   jsr utilityMUL
   
   lda #tUInt
@@ -657,7 +720,7 @@ opcodeMOD:
   
   ; TOP = NEXT (dividend=result) / TOP (divisor)
   ; ACC (remainder)
-  jsr utilityDIV
+  jsr utilityDIVMOD
   
   ldx SP8
   lda ACCL
@@ -679,7 +742,7 @@ opcodeMOD:
   .else
   
 opcodeMOD:
-  jsr utilityDIV
+  jsr utilityDIVMOD
   
   lda ACCL
   sta (SP)
