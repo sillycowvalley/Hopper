@@ -5,12 +5,12 @@ preprocess /source/debugger/hm
 preprocess /source/debugger/debug
 preprocess /source/editor/edit
 
-compile /debug/obj/show -o -t
-compile /debug/obj/shell -o -t
-compile /debug/obj/dir -o -t
-compile /debug/obj/hm -o -t
-compile /debug/obj/debug -o -t
-compile /debug/obj/edit -o -t
+compile /debug/obj/show -o
+compile /debug/obj/shell -o
+compile /debug/obj/dir -o
+compile /debug/obj/hm -o
+compile /debug/obj/debug -o
+compile /debug/obj/edit -o
 
 optimize /debug/obj/show
 optimize /debug/obj/shell

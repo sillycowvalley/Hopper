@@ -1,28 +1,30 @@
-cls
 cd /source/compiler
 PreProcess CODEGEN
-Compile /Debug/Obj/CODEGEN -o -t
-Optimize /Debug/Obj/CODEGEN
-CODEGEN /Debug/Obj/CODEGEN
-DASM /Bin/CODEGEN
-PreProcess DASM
-Compile /Debug/Obj/DASM -o -t
-Optimize /Debug/Obj/DASM
-CODEGEN /Debug/Obj/DASM
-DASM /Bin/DASM
-PreProcess PreProcess
-Compile /Debug/Obj/PreProcess -o -t
-Optimize /Debug/Obj/PreProcess
-CODEGEN /Debug/Obj/PreProcess
-DASM /Bin/PreProcess
-PreProcess Compile
-Compile /Debug/Obj/Compile -o -t
-Optimize /Debug/Obj/Compile
-CODEGEN /Debug/Obj/Compile
-DASM /Bin/Compile
-PreProcess Optimize
-Compile /Debug/Obj/Optimize -o -t
-Optimize /Debug/Obj/Optimize
-CODEGEN /Debug/Obj/Optimize
-DASM /Bin/Optimize
+Compile CODEGEN -o
+Optimize CODEGEN
+CODEGEN CODEGEN
+DASM CODEGEN
 
+PreProcess DASM
+Compile DASM -o
+Optimize DASM
+CODEGEN DASM
+DASM DASM
+
+PreProcess PreProcess
+Compile PreProcess -o
+Optimize PreProcess
+CODEGEN PreProcess
+DASM PreProcess
+
+PreProcess Compile
+Compile Compile -o
+Optimize Compile
+CODEGEN Compile
+DASM Compile
+
+PreProcess optimize
+Compile optimize -o
+optimize optimize
+CODEGEN optimize
+DASM optimize
