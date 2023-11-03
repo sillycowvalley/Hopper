@@ -1,13 +1,9 @@
 unit Commands
 {
-    uses "/Source/Basic/Parse"
     uses "/Source/Basic/Errors"
     uses "/Source/Basic/Instructions"
     
-    // 12 bytes of globals:
     
-    <uint, string>  sourceCode;
-    uint lastLine;
     bool exit;
     bool ended = false;
     
@@ -17,9 +13,6 @@ unit Commands
 #ifdef CHECKED
     bool traceOn = false;
 #endif        
-
-
-    uint LastLine { get { return lastLine; } set { lastLine = value; } }
     
     
     bool Ended { get { return ended; } set { ended = value; } }
@@ -77,13 +70,8 @@ unit Commands
     }
     Clear()
     {
-        sourceCode.Clear();
-        LastLine = 0;
+        Instructions.ClearSource();
         Instructions.Reset(true);
-    }
-    bool LineExists(uint lineNumber)
-    {
-        return sourceCode.Contains(lineNumber);
     }
     bool ExpectNoArgument(string content)
     {
@@ -145,7 +133,7 @@ unit Commands
         }
         uint lineNumber;
         string lineNumberString;
-        while (GetNextLine(ref lineNumber))
+        while (ScanToLineNext(ref lineNumber, true))
         {
             UInt.ToString(lineNumber, ref lineNumberString);
             uint len = lineNumberString.Length;
@@ -157,7 +145,7 @@ unit Commands
             }
             Write(lineNumberString);
             Write(' ');
-            WriteLn(sourceCode[lineNumber]);
+            WriteLn(Instructions.GetSource(lineNumber));
 #ifdef CHECKED
 #ifndef H6502
             Instructions.DASM(lineNumber);
@@ -175,30 +163,6 @@ unit Commands
         exit = true;
     }
     
-    bool GetNextLine(ref uint lineNumber)
-    {
-        bool result = false;
-        uint lastLine = LastLine;
-        loop
-        {
-            lineNumber++;
-            if (sourceCode.Contains(lineNumber))
-            {
-                string currentLine = sourceCode[lineNumber];
-                if (currentLine.Length != 0) // ignore empty lines
-                {
-                    result = true;
-                    break;
-                }
-            }
-            if (lineNumber > lastLine)
-            {
-                break;
-            }
-        }
-        return result;
-    }
-    
     Run(string content)
     {
         if (!ExpectNoArgument(content))
@@ -208,7 +172,7 @@ unit Commands
         Commands.Ended = false;
         
         Instructions.Reset(false);
-        Instructions.Run(ref sourceCode);
+        Instructions.Run();
     }
     
     bool Execute(string currentLine)
@@ -249,11 +213,7 @@ unit Commands
             if (TryParseLineNumber(command, ref lineNumber))
             {
                 Instructions.Reset(true);
-                sourceCode[lineNumber] = content;
-                if (lineNumber > LastLine)
-                {
-                    LastLine = lineNumber;
-                }
+                Instructions.SetSource(lineNumber, content);
                 break;
             }
             

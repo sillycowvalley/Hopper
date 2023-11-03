@@ -26,23 +26,29 @@ unit MenuBar
         // globals
         menuOrder.Append("&File");
         menuOrder.Append("&Edit");
-#ifdef DEBUGGER
-        menuOrder.Append("&Debug");
-#else
-        menuOrder.Append("&Build");
+        if (IsDebugger)
+        {
+            menuOrder.Append("&Debug");
+        }
+        else
+        {
+            menuOrder.Append("&Build");
+        }
         menuOrder.Append("&Options");
-#endif
         
         <string, Key > keys;
         
         keys["&File"] = (Key.Alt | Key.ModF);
         keys["&Edit"] = (Key.Alt | Key.ModE);
-#ifdef DEBUGGER        
-        keys["&Debug"] = (Key.Alt | Key.ModD);
-#else
-        keys["&Build"]   = (Key.Alt | Key.ModB);
-        keys["&Options"] = (Key.Alt | Key.ModO);
-#endif
+        if (IsDebugger)
+        {
+            keys["&Debug"] = (Key.Alt | Key.ModD);
+        }
+        else
+        {
+            keys["&Build"]   = (Key.Alt | Key.ModB);
+            keys["&Options"] = (Key.Alt | Key.ModO);
+        }
         
         instance["keys"] = keys;
         
@@ -52,14 +58,18 @@ unit MenuBar
         string menunames = " File ";
         xpos["&Edit"]  = menunames.Length;
         menunames = menunames + " Edit ";
-#ifdef DEBUGGER        
-        xpos["&Debug"] = menunames.Length;
-#else
-        xpos["&Build"] = menunames.Length;
-        menunames = menunames + " Build ";
+        if (IsDebugger)
+        {
+            xpos["&Debug"] = menunames.Length;
+        }
+        else
+        {
+            xpos["&Build"] = menunames.Length;
+            menunames = menunames + " Build ";
+        }
         xpos["&Options"] = menunames.Length;
         
-#endif   
+   
         instance["xpos"] = xpos;
 
         < < uint > > listOfAreas;
@@ -92,44 +102,50 @@ unit MenuBar
         {
             case "&File":
             {
-#ifdef DEBUGGER             
-                menuitems.Append("Open");
-                menuitems.Append("");
-                menuitems.Append("Exit");                             
-#else
-                menuitems.Append("New");
-                menuitems.Append("Open");
-                menuitems.Append("");
-                menuitems.Append("Save");
-                menuitems.Append("SaveAs");
-                menuitems.Append("");
-                menuitems.Append("Exit");
-#endif
+                if (IsDebugger)
+                {
+                    menuitems.Append("Open");
+                    menuitems.Append("");
+                    menuitems.Append("Exit");                             
+                }
+                else
+                {
+                    menuitems.Append("New");
+                    menuitems.Append("Open");
+                    menuitems.Append("");
+                    menuitems.Append("Save");
+                    menuitems.Append("SaveAs");
+                    menuitems.Append("");
+                    menuitems.Append("Exit");
+                }
             }
             case "&Edit":
             {
-#ifdef DEBUGGER
-                menuitems.Append("Goto");
-                menuitems.Append("Find");
-                menuitems.Append("");
-                menuitems.Append("Copy");
-                menuitems.Append("");
-                menuitems.Append("SelectAll");
-#else
-                menuitems.Append("Undo");
-                menuitems.Append("Redo");
-                menuitems.Append("");
-                menuitems.Append("Goto");
-                menuitems.Append("Find");
-                menuitems.Append("Replace");
-                menuitems.Append("");
-                menuitems.Append("Cut");
-                menuitems.Append("Copy");
-                menuitems.Append("Paste");
-                menuitems.Append("Delete");
-                menuitems.Append("");
-                menuitems.Append("SelectAll");
-#endif
+                if (IsDebugger)
+                {
+                    menuitems.Append("Goto");
+                    menuitems.Append("Find");
+                    menuitems.Append("");
+                    menuitems.Append("Copy");
+                    menuitems.Append("");
+                    menuitems.Append("SelectAll");
+                }
+                else
+                {
+                    menuitems.Append("Undo");
+                    menuitems.Append("Redo");
+                    menuitems.Append("");
+                    menuitems.Append("Goto");
+                    menuitems.Append("Find");
+                    menuitems.Append("Replace");
+                    menuitems.Append("");
+                    menuitems.Append("Cut");
+                    menuitems.Append("Copy");
+                    menuitems.Append("Paste");
+                    menuitems.Append("Delete");
+                    menuitems.Append("");
+                    menuitems.Append("SelectAll");
+                }
             }
             case "&Debug":
             {
@@ -143,6 +159,9 @@ unit MenuBar
                 menuitems.Append("StepInto");
                 menuitems.Append("StepOver");
                 menuitems.Append("");
+                menuitems.Append("Profile");
+                menuitems.Append("Memory");
+                menuitems.Append("");
                 menuitems.Append("ToggleBreakpoint");
                 menuitems.Append("DeleteAllBreakpoints");
             }
@@ -155,9 +174,19 @@ unit MenuBar
             }
             case "&Options":
             {
-                menuitems.Append("Checked");
-                menuitems.Append("Optimize");
-                menuitems.Append("Disassemble");
+                if (IsDebugger)
+                {
+                    menuitems.Append("HexDisplay");
+                    menuitems.Append("CaptureConsole");
+                }
+                else
+                {
+                    menuitems.Append("Checked");
+                    menuitems.Append("Optimize");
+                    menuitems.Append("GenerateIHex");
+                    menuitems.Append("Disassemble");
+                    menuitems.Append("AutoSave");
+                }
             }
         }
         
@@ -292,7 +321,7 @@ unit MenuBar
         {
             pathColor = Color.ModifiedPath; // file has been modified
 #ifndef DEBUGGER            
-            BuildCommand.WasModified = true;
+            //BuildCommand.WasModified = true;
 #endif
         }
         string content = "'" + titleText + "'";

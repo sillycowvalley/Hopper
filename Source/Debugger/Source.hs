@@ -34,37 +34,43 @@ unit Source
             codegenPath = Path.Combine("/Debug/Obj", codegenPath);
             if (File.Exists(codegenPath))
             {
-#ifdef DEBUGGER
-                Editor.SetStatusBarText("Loading symbols '" + codegenPath + "' ..");
-#else
-                Output.Print(char(0x0D));
-#endif
-                if (Code.ParseCode(codegenPath, false, true, false))
+                if (IsDebugger)
+                {
+                    Editor.SetStatusBarText("Loading symbols '" + codegenPath + "' ..");
+                }
+                else
+                {
+                    Output.Print(char(0x0D));
+                }
+                if (Code.ParseCode(codegenPath, false, true))
                 {
                     uint methods = Code.GetMethodSymbolsCount();
-#ifdef DEBUGGER
-                    Editor.SetStatusBarText("Symbols loaded for " + methods.ToString() + " methods.");
-#else
-                    Output.Print(char(0x0D) + "Symbols loaded for " + methods.ToString() + " methods.");
-#endif
+                    if (IsDebugger)
+                    {
+                        Editor.SetStatusBarText("Symbols loaded for " + methods.ToString() + " methods.");
+                    }
+                    else
+                    {
+                        Output.Print(char(0x0D) + "Symbols loaded for " + methods.ToString() + " methods.");
+                    }
                     symbolsLoaded = true;
                 }
             }
-#ifdef DEBUGGER
-            string symbolsPath  = ihexPath.Replace(extension, ".json");
-            symbolsPath = Path.GetFileName(symbolsPath);
-            symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
-            if (File.Exists(symbolsPath))
+            if (IsDebugger)
             {
-                Editor.SetStatusBarText("Loading types '" + symbolsPath + "' ..");
-                if (Symbols.Import(symbolsPath, true))
+                string symbolsPath  = ihexPath.Replace(extension, ".json");
+                symbolsPath = Path.GetFileName(symbolsPath);
+                symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
+                if (File.Exists(symbolsPath))
                 {
-                    uint namedTypes = Symbols.GetNamedTypesCount();
-                    Editor.SetStatusBarText("Types loaded for " + namedTypes.ToString() + " named types.");
+                    Editor.SetStatusBarText("Loading types '" + symbolsPath + "' ..");
+                    if (Symbols.Import(symbolsPath, true))
+                    {
+                        uint namedTypes = Symbols.GetNamedTypesCount();
+                        Editor.SetStatusBarText("Types loaded for " + namedTypes.ToString() + " named types.");
+                    }
                 }
             }
-#endif
-            
         }
     }
     <string, <string> > GetLocals(uint methodIndex, ref uint startAddress)
@@ -88,7 +94,7 @@ unit Source
             //   0F91: 0F5F->0F95
             //   0F91: 0F5F->0F95
             //   16A4: 164E->17B7
-            if (usedGlobals.Count >= 5)
+            if (usedGlobals.Count >= 8)
             {
                 break;
             }
@@ -110,7 +116,9 @@ unit Source
     }
     string Disassemble(ref uint address)
     {
-       return Instructions.Disassemble(code, ref address, 0);
+       <uint> currentTargets;
+       <uint> currentJixLabels;
+       return Instructions.Disassemble(code, ref address, 0, ref currentTargets, ref currentJixLabels, false);
     }
     
     uint CallAddressFromReturnToAddress(uint methodIndex, uint returnToAddress)
@@ -143,7 +151,7 @@ unit Source
         {
             return true;
         }
-        else if (Types.IsDictionary(typeString))
+        else if (Types.IsDictionaryOrPair(typeString))
         {
             keyType   = Types.GetKeyFromCollection(typeString);
             valueType = Types.GetValueFromCollection(typeString);
@@ -174,8 +182,8 @@ unit Source
     
     uint ListGetNextItem(ref uint pCurrent)
     {
-        uint pItem = Pages.GetPageWord(pCurrent + 2);
-        pCurrent = Pages.GetPageWord(pCurrent + 4);
+        uint pItem = Pages.GetPageWord(pCurrent + 0);
+        pCurrent   = Pages.GetPageWord(pCurrent + 2);
         return pItem;   
     }
     
@@ -192,10 +200,10 @@ unit Source
             item = ListGetNextItem(ref pCurrent);
             if (index == 0)
             {
-                if (iValueType)
-                {
-                    item = Pages.GetPageWord(item + 3); // variant box for value type
-                }
+                //if (iValueType)
+                //{
+                //    item = Pages.GetPageWord(item + 3); // variant box for value type
+                //}
                 break;
             }
             index--;
@@ -221,19 +229,7 @@ unit Source
         uint capacity = Pages.GetPageWord(dPtr+6);
         uint pEntries = Pages.GetPageWord(dPtr+8);
         
-        //byte tp = Pages.GetPageByte(dPtr+0);
-        //byte rf = Pages.GetPageByte(dPtr+1);
-        //byte kt = Pages.GetPageByte(dPtr+2);
-        //byte vt = Pages.GetPageByte(dPtr+3);
-        //OutputDebug("type=" + tp.ToString());
-        //OutputDebug("ref=" + rf.ToString());
-        //OutputDebug("kt=" + kt.ToString());
-        //OutputDebug("vt=" + vt.ToString());
-        //OutputDebug("count=" + count.ToString());
-        //OutputDebug("capacity=" +capacity.ToString());
-        //OutputDebug("pEntries=" +pEntries.ToHexString(4));
-        
-        if (count == 0)
+        if ((count == 0) || (capacity == 0))
         {
             return false;
         }
@@ -279,15 +275,6 @@ unit Source
             {
                 success = false;
                 break;
-            }
-        }
-        if (success)
-        {
-            string dvtypes = dvtype.ToString();
-            bool iValueType = Types.IsValueType(dvtypes);
-            if (iValueType)
-            {
-                vValue = Pages.GetPageWord(vValue + 3); // variant box for value type
             }
         }
         return success;
@@ -376,6 +363,7 @@ unit Source
             string vType;
             string kType;
             string tname = vtype;
+            
             if (IsListType(vtype, ref vType))
             {
                 vtype = "list";
@@ -407,9 +395,26 @@ unit Source
                     content = "'" + char(value) + "'";
                 }
                 case "byte":
+                {
+                    if (IsHexDisplayMode)
+                    {
+                        content = "0x" + value.ToHexString(2);
+                    }
+                    else
+                    {
+                        content = value.ToString();
+                    }
+                }
                 case "uint":
                 {
-                    content = value.ToString();
+                    if (IsHexDisplayMode)
+                    {
+                        content = "0x" + value.ToHexString(4);
+                    }
+                    else
+                    {
+                        content = value.ToString();
+                    }
                 }
                 case "bool":
                 {
@@ -491,7 +496,7 @@ unit Source
                         uint pItem = ListGetNextItem(ref pCurrent);
                         if (iValueType)
                         {
-                            uint vValue = Pages.GetPageWord(pItem + 3); // variant box for value type
+                            uint vValue = pItem; //Pages.GetPageWord(pItem + 3); // variant box for value type
                             content = content + TypeToString(vValue, lvtypes, false, limit);
                         }
                         else
@@ -529,12 +534,14 @@ unit Source
                 }
                 case "int":
                 {
-                    if ((value & 0x8000) != 0) // sign bit set?
+                    if (IsHexDisplayMode)
                     {
-                        // two's complement
-                        value = ~value; // 0xFFFF -> 0x0000, 0xFFFE -> 0x0001
-                        long lvalue = 0 - long(value) - 1;
-                        content = lvalue.ToString();
+                        content = "0x" + value.ToHexString(4); // easy since 'value' is a uint
+                    }
+                    else if ((value & 0x8000) != 0) // sign bit set?
+                    {
+                        int ivalue = Types.UIntToInt(value);
+                        content = ivalue.ToString();
                     }
                     else
                     {
@@ -545,7 +552,12 @@ unit Source
                 {
                     uint lsw = Pages.GetPageWord(value+2);
                     uint msw = Pages.GetPageWord(value+4);
-                    if ((msw & 0x8000) != 0) // sign bit set?
+
+                    if (IsHexDisplayMode)
+                    {
+                        content = "0x" + msw.ToHexString(4) + lsw.ToHexString(4);
+                    }
+                    else if ((msw & 0x8000) != 0) // sign bit set?
                     {
                         // two's complement
                         lsw = ~lsw; // 0xFFFFFFFF -> 0x00000000, 0xFFFFFFFE -> 0x00000001
@@ -559,6 +571,7 @@ unit Source
                         long lvalue = long(msw) * 0x10000 + lsw;
                         content = lvalue.ToString();
                     }
+
                 }
                 case "enum":
                 {
@@ -573,8 +586,30 @@ unit Source
                 case "delegate":
                 {
                     tname = Types.QualifyDelegateName(tname);
-                    string methodName = Code.GetMethodName(value);
-                    content = methodName + "(..)";
+                    if (value == 0)
+                    {
+                        content = "null"; // illegal delegate value
+                    }
+                    else 
+                    {
+                        uint codeStart = (Pages.GetZeroPage("CODESTART") << 8);
+                        if (!Code.MethodExists(value) && (value >= codeStart))
+                        {
+                            // probably a method address, not an index
+                            uint address = value - codeStart;
+                            value = Code.LocationToIndex(address);
+                        }
+                        string methodName;
+                        if (Code.MethodExists(value))
+                        {
+                            methodName = Code.GetMethodName(value);
+                        }
+                        else
+                        {
+                            methodName = "0x" + value.ToHexString(4);
+                        }
+                        content = methodName + "(..)";
+                    }
                 }
                 default:
                 {

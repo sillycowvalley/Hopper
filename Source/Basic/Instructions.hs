@@ -7,25 +7,27 @@ unit Instructions
     uses "/Source/Basic/Commands"
     uses "/Source/Basic/BasicArrays"
     
+    
+    
     <string,bool> reservedWords;
     
     // Tigger BASIC configurable limits:
-    const uint byteCodeLimit = 512;    // maximum number of byte code instructions for BASIC to JIT to
-    const uint returnStackLimit = 32;  // maximum depth of GOSUB calls
-    const uint valueStackLimit = 32;   // maximum stack depth for expressions
-    const uint variableLimit = 32;     // maximum number of variable names
+    const uint byteCodeLimit    = 512;    // maximum number of byte code instructions for BASIC to JIT to
+    const uint returnStackLimit =  32;    // maximum depth of GOSUB calls
+    const uint valueStackLimit  =  32;    // maximum stack depth for expressions
+    const uint variableLimit    =  32;    // maximum number of variable names
     
     // 62 bytes of globals:
     
     int[byteCodeLimit] byteCode; 
     
     uint[returnStackLimit] returnStack;
-    int [valueStackLimit] valueStack;
-    byte[valueStackLimit] typeStack;
+    int [valueStackLimit]  valueStack;
+    byte[valueStackLimit]  typeStack;
     
     byte[variableLimit]      variableTypes;
     int[variableLimit]       variableValues; // integer values, boolean values, array addresses
-    <byte,string> variableStringValues;
+    <byte,string>            variableStringValues;
     
     // only used by compilation and array identification
     <string,bool> variableExists; 
@@ -68,6 +70,76 @@ unit Instructions
     uint gTronCount;
     <byte,uint> gTronCounts;
 #endif    
+
+    const uint LineLimit = 9999;
+    
+    <uint, string> gSourceCode;
+    uint gLastLine;
+    uint LastLine { get { return gLastLine; } set { gLastLine = value; } }
+
+    bool TryParseLineNumber(string content, ref uint lineNumber)
+    {
+        // variation on UInt.TryParse(..) that does a lot less (faster)
+        uint length;
+        byte b;
+        loop
+        {
+            lineNumber = 0;
+            length = content.Length;
+            if (length == 0)
+            {
+                break;
+            }
+            if (length < 5) // 0..9999
+            {
+                for (uint i=0; i < length; i++)
+                {
+                    b = byte(content[i]);
+                    lineNumber = lineNumber * 10;
+                    if (b < 48)
+                    {
+                        lineNumber = 0;
+                        break;
+                    }
+                    b = b - 48; // 48 is ASCII for '0'
+                    if (b > 9)
+                    {
+                        lineNumber = 0;
+                        break;
+                    }
+                    lineNumber = lineNumber + b; 
+                }
+            }
+            break;
+        } // loop
+        if ((lineNumber < 1) || (lineNumber > LineLimit))
+        {
+            //Error(3, content); // Illegal line number
+            return false;
+        }
+        return true;
+    }
+    SetSource(uint lineNumber, string content)
+    {
+        gSourceCode[lineNumber] = content;
+        if (lineNumber > LastLine)
+        {
+            LastLine = lineNumber;
+        }
+    }
+    string GetSource(uint lineNumber)
+    {
+        return gSourceCode[lineNumber];
+    }
+    ClearSource()
+    {
+        LastLine = 0;
+        gSourceCode.Clear();
+    }
+    bool SourceLineExists(uint lineNumber)
+    {
+        return gSourceCode.Contains(lineNumber);
+    }
     
     enum OpCode
     {
@@ -89,6 +161,7 @@ unit Instructions
         END,   
         REM,   
         DIM,   
+        CLS,
     
         PushImmediateInteger = 32,
         PushImmediateString,  
@@ -104,6 +177,7 @@ unit Instructions
         Multiply,
         Divide,
         Modulus,
+        Negate,
         
         EQ,
         NE,
@@ -116,6 +190,7 @@ unit Instructions
         GetSeconds,
         SetLED,
         DELAY,
+        MID,
     }
     enum BasicType
     {
@@ -124,9 +199,47 @@ unit Instructions
         Integer,
         Boolean,
         BasicArray,
+        // for Parser
+        Runtime, // unknown until runtime
         // for DASM
         LineNumber,
         Identifier
+    }
+    
+    string BasicTypeToString(BasicType bt)
+    {
+        switch (bt)
+        {
+            case BasicType.Undefined:
+            {
+                return "Undefined";
+            }
+            case BasicType.String:
+            {
+                return "String";
+            }
+            case BasicType.Integer:
+            {
+                return "Integer";
+            }
+            case BasicType.Boolean:
+            {
+                return "Boolean";
+            }
+            case BasicType.BasicArray:
+            {
+                return "BasicArray";
+            }
+            case BasicType.LineNumber:
+            {
+                return "LineNumber";
+            }
+            case BasicType.Identifier:
+            {
+                return "Identifier";
+            }
+        }
+        return "BasicTypeToString not implemented";
     }
     
 
@@ -253,6 +366,7 @@ unit Instructions
             case OpCode.END:    { result = "END"; }
             //case REM,   
             case OpCode.DIM:    { result = "DIM"; }
+            case OpCode.CLS:    { result = "CLS"; }
     
             case OpCode.PushImmediateInteger:    { result = "PUSH"; }
             case OpCode.PushImmediateString:     { result = "PUSH"; }
@@ -268,6 +382,7 @@ unit Instructions
             case OpCode.Multiply: { result = "MUL"; }
             case OpCode.Divide:   { result = "DIV"; }
             case OpCode.Modulus:  { result = "MOD"; }
+            case OpCode.Negate:   { result = "NEGATE"; }
         
             case OpCode.EQ:       { result = "EQ"; }
             case OpCode.NE:       { result = "NE"; }
@@ -276,8 +391,9 @@ unit Instructions
             case OpCode.GT:       { result = "GT"; }
             case OpCode.GE:       { result = "GE"; }
             
-            case OpCode.GetMillis:   { result = "GETMILLIS"; }
-            case OpCode.GetSeconds:  { result = "GETSECONDS"; }
+            case OpCode.MID:        { result = "MID$"; }
+            case OpCode.GetMillis:  { result = "GETMILLIS"; }
+            case OpCode.GetSeconds: { result = "GETSECONDS"; }
             case OpCode.SetLED:  { result = "SETLED"; }
             default:
             {
@@ -323,12 +439,14 @@ unit Instructions
                     case OpCode.DELAY:
                     case OpCode.RETURN:
                     case OpCode.END:
+                    case OpCode.CLS:
                     case OpCode.Nop:
                     case OpCode.Add:
                     case OpCode.Subtract:
                     case OpCode.Multiply:
                     case OpCode.Divide:
                     case OpCode.Modulus:
+                    case OpCode.Negate:
                     case OpCode.LT:
                     case OpCode.GT:
                     case OpCode.EQ:
@@ -336,10 +454,11 @@ unit Instructions
                     case OpCode.GE:
                     case OpCode.NE:
                     case OpCode.SetLED: // behave like a function
+                    case OpCode.MID:
                     {
                         Print(name, Color.MatrixBlue, Color.Black);
                     }
-                    case OpCode.GetMillis:
+                    case OpCode.GetMillis: // behave link a variable
                     case OpCode.GetSeconds:
                     {
                         Print(name, Color.MatrixCyan, Color.Black);
@@ -422,6 +541,7 @@ unit Instructions
                         int length = byteCode[iCurrent];
                         iCurrent++;
                         string str = allStrings.Substring(uint(index), uint(length));
+                        str = str.Replace("" + char(0x0D), "<newline>");
                         Print('"' + str + '"' + ' ', Color.MatrixRed, Color.Black);
                     }
                     case BasicType.Identifier:
@@ -506,19 +626,31 @@ unit Instructions
         typeStack[sp] = byte(basicType);
         sp++;
     }
-    bool ScanToNextSourceLine(ref <uint, string> sourceCode, ref uint lineNumber)
+    bool ScanToLineNext(ref uint lineNumber, bool skipBlanks)
     {
-        bool nextLineFound = false;
-        uint lastLine = Commands.LastLine;
+        bool nextLineFound;
+        string currentLine;
         loop
         {
             lineNumber++;
-            if (sourceCode.Contains(lineNumber))
+            if (SourceLineExists(lineNumber))
             {
-                nextLineFound = true;
-           					break;
+                if (skipBlanks)
+                {
+                    currentLine = gSourceCode[lineNumber];
+                    if (currentLine.Length != 0) // ignore empty lines
+                    {
+                        nextLineFound = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    nextLineFound = true;
+                    break;
+                }
             }
-            if (lineNumber > lastLine)
+            if (lineNumber > gLastLine)
             {
                 break;
             }
@@ -526,18 +658,17 @@ unit Instructions
         return nextLineFound;
     }
      
-    bool ScanToMatchingWendLine(ref <uint, string> sourceCode, ref uint lineNumber)
+    bool ScanToLineMatchingWend(ref uint lineNumber)
     {
         bool nextLineFound = false;
-        uint lastLine = Commands.LastLine;
         int match = 1;
         loop
         {
             lineNumber++;
-            if (sourceCode.Contains(lineNumber))
+            if (SourceLineExists(lineNumber))
             {
                 string currentLine;
-                TrimAndUpper(sourceCode[lineNumber], ref currentLine);
+                TrimAndUpper(gSourceCode[lineNumber], ref currentLine);
                 if (currentLine.Length != 0) // ignore empty lines
                 {
                     if (currentLine.StartsWith("WHILE"))
@@ -555,17 +686,16 @@ unit Instructions
                     }
             				}
             }
-            if (lineNumber > lastLine)
+            if (lineNumber > gLastLine)
             {
                 break;
             }
         } // loop: scan for next line
         return nextLineFound;
     }
-    bool ScanToMatchingNextLine(ref <uint, string> sourceCode, ref uint lineNumber, string variableName)
+    bool ScanToLineMatchingNext(ref uint lineNumber, string variableName)
     {
         bool nextLineFound = false;
-        uint lastLine = Commands.LastLine;
         // at this point variableName is always:
         //  - uppercase
         //  - trimmed
@@ -573,10 +703,10 @@ unit Instructions
         loop
         {
             lineNumber++;
-            if (sourceCode.Contains(lineNumber))
+            if (SourceLineExists(lineNumber))
             {
                 string currentLine;
-                TrimAndUpper(sourceCode[lineNumber], ref currentLine);
+                TrimAndUpper(gSourceCode[lineNumber], ref currentLine);
                 if (currentLine.Length != 0) // ignore empty lines
                 {
                     while (currentLine.Contains("  "))
@@ -590,21 +720,21 @@ unit Instructions
                     }
             				}
             }
-            if (lineNumber > lastLine)
+            if (lineNumber > gLastLine)
             {
                 break;
             }
         } // loop: scan for next line
         return nextLineFound;
     }
-    Run(ref <uint, string> sourceCode)
+    Run()
     {
         startTime = Time.Millis;
         uint currentLineNumber = 0;
         uint lastGoodLineNumber = 0;
         loop // next line
         {
-            bool nextLineFound = ScanToNextSourceLine(ref sourceCode, ref currentLineNumber);
+            bool nextLineFound = ScanToLineNext(ref currentLineNumber, false);
             if (!nextLineFound)
             {
                 break;
@@ -612,7 +742,7 @@ unit Instructions
             lastGoodLineNumber = currentLineNumber;
             uint jumpLine;
             OpCode jumpInstruction;
-            if (Instructions.RunLine(ref sourceCode, ref jumpLine, ref currentLineNumber))
+            if (Instructions.RunLine(ref jumpLine, ref currentLineNumber))
             {
                 // stopped at END
                 break;
@@ -623,9 +753,9 @@ unit Instructions
             }
             if (jumpLine != 0)
             {
-                if (!sourceCode.Contains(jumpLine))
+                if (!SourceLineExists(jumpLine))
                 {
-                    Error(11, sourceCode[lastGoodLineNumber], lastGoodLineNumber); // destination line does not exist
+                    Error(11, gSourceCode[lastGoodLineNumber], lastGoodLineNumber); // destination line does not exist
                     break;
                 }
                 currentLineNumber = jumpLine-1; // GOTO, GOSUB and RETURN (see GetNextLine)
@@ -636,7 +766,7 @@ unit Instructions
         {
             if (!Commands.Ended && (lastGoodLineNumber != 0))
             {
-                //Error(9, sourceCode[lastGoodLineNumber], lastGoodLineNumber); // 'END' expected
+                //Error(9, gSourceCode[lastGoodLineNumber], lastGoodLineNumber); // 'END' expected
             }
 #ifdef CHECKED
             if (Commands.Ended && gTronState && false)
@@ -698,6 +828,10 @@ unit Instructions
         reservedWords["REM"] = true;
         reservedWords["DIM"] = true;
         reservedWords["DELAY"] = true;
+        reservedWords["CLS"] = true;
+        reservedWords["MILLIS"] = true;
+        reservedWords["SECONDS"] = true;
+        reservedWords["MID$"] = true;
         
         OpCodeDelegate opCodeDelegate = Instructions.OpCodeJMP;
         opCodeDelegates[byte(OpCode.JMP)] = opCodeDelegate;
@@ -715,6 +849,8 @@ unit Instructions
         opCodeDelegates[byte(OpCode.RETURN)] = opCodeDelegate;
         opCodeDelegate = Instructions.OpCodeEND;
         opCodeDelegates[byte(OpCode.END)] = opCodeDelegate;
+        opCodeDelegate = Instructions.OpCodeCLS;
+        opCodeDelegates[byte(OpCode.CLS)] = opCodeDelegate;
         opCodeDelegate = Instructions.OpCodeNop;
         opCodeDelegates[byte(OpCode.Nop)] = opCodeDelegate;
         opCodeDelegate = Instructions.OpCodeDIM;
@@ -769,10 +905,12 @@ unit Instructions
         opCodeDelegates[byte(OpCode.Divide)] = opCodeDelegate;
         opCodeDelegate = Instructions.OpCodeModulus;
         opCodeDelegates[byte(OpCode.Modulus)] = opCodeDelegate;
+        opCodeDelegate = Instructions.OpCodeNegate;
+        opCodeDelegates[byte(OpCode.Negate)] = opCodeDelegate;
+        opCodeDelegate = Instructions.OpCodeMID;
+        opCodeDelegates[byte(OpCode.MID)] = opCodeDelegate;
+        
     }
-    
-    
-    
     
     OpCodeGOSUB()
     {
@@ -844,6 +982,10 @@ unit Instructions
         Commands.Ended = true;
         goodEND = true;
     }
+    OpCodeCLS()
+    {
+        IO.Clear();    
+    }
     
     OpCodeNop()
     {
@@ -891,8 +1033,9 @@ unit Instructions
         variableTypes[gVariable] = byte(basicType);
         if (basicType == BasicType.String)
         {
-            int length = Pop(ref basicType);
-            BuildString(integer, length);
+            int length = integer;
+            int index = Pop(ref basicType);
+            BuildString(index, length);
             variableStringValues[gVariable] = sharedString;
         }
         else
@@ -907,7 +1050,38 @@ unit Instructions
         }
 #endif
     }
-    
+    OpCodeMID()
+    {
+        BasicType basicType;
+        int len = Pop(ref basicType);
+        if ((basicType != BasicType.Integer) || (len < 0))
+        {
+            Error(29, gCurrentLineNumber); // Positive integer expression expected.
+            return;
+        }
+        int start = Pop(ref basicType);
+        if ((basicType != BasicType.Integer) || (start < 0))
+        {
+            Error(29, gCurrentLineNumber); // Positive integer expression expected.
+            return;
+        }
+        
+        int length = Pop(ref basicType);
+        if (basicType != BasicType.String)
+        {
+            Error(38, gCurrentLineNumber); // String expression expected.
+            return;
+        }
+        int index = Pop(ref basicType);
+        BuildString(index, length);
+        
+        sharedString = sharedString.Substring(uint(start), uint(len));
+        
+        index = int(ToStringIndex(sharedString));
+        length = int(sharedString.Length);
+        Push(index,  BasicType.String);
+        Push(length, BasicType.String);
+    }
     OpCodePRINT()
     {
         if (gWasPrint)
@@ -924,8 +1098,9 @@ unit Instructions
             }
             case BasicType.String:
             {
+                int length = integer;
                 int index = Pop(ref basicType);
-                BuildString(index, integer);
+                BuildString(index, length);
                 WriteBoth(sharedString, true);
             }
             case BasicType.Boolean:
@@ -1096,12 +1271,21 @@ unit Instructions
     OpCodePushImmediateString()
     {
         int 
-        integer = byteCode[gCurrent];
+        index = byteCode[gCurrent];
         gCurrent++;
-        Push(integer, BasicType.String);
-        integer = byteCode[gCurrent];
+        Push(index, BasicType.String);
+        int 
+        length = byteCode[gCurrent];
         gCurrent++;
-        Push(integer, BasicType.String);
+        Push(length, BasicType.String);
+#ifdef CHECKED
+        if (gTronState)
+        {
+            string str = allStrings.Substring(uint(index), uint(length));
+            str = str.Replace("" + char(0x0D), "<newline>");
+            Trace(" " + '"' + str + '"', Color.MatrixRed);
+        }
+#endif
     }
     
     
@@ -1140,9 +1324,9 @@ unit Instructions
         int result = 0;
         if (topType == BasicType.String)
         {
-            int topl = Pop(ref topType);
-            int nextl = Pop(ref nextType);
-            if ((top == next) && (topl == nextl))
+            int topi = Pop(ref topType);
+            int nexti = Pop(ref nextType);
+            if ((top == next) && (topi == nexti))
             {
                 result = 1;
             }
@@ -1168,9 +1352,9 @@ unit Instructions
         int result = 1;
         if (topType == BasicType.String)
         {
-            int topl = Pop(ref topType);
-            int nextl = Pop(ref nextType);
-            if ((top == next) && (topl == nextl))
+            int topi = Pop(ref topType);
+            int nexti = Pop(ref nextType);
+            if ((top == next) && (topi == nexti))
             {
                 result = 0;
             }
@@ -1242,57 +1426,152 @@ unit Instructions
     }
     
     
+    OpCodeAdd()
+    {
+        int top;
+        int next;
+        BasicType iType;
+        loop
+        {
+            top = Pop(ref iType);
+            if (iType != BasicType.Integer)
+            {
+                Error(16, gCurrentLineNumber); // Integers expected for operation.
+                break;
+            }
+            next = Pop(ref iType);
+            if (iType != BasicType.Integer)
+            {
+                Error(16, gCurrentLineNumber); // Integers expected for operation.
+                break;
+            }
+#ifdef CHECKED
+            Push(next + top, BasicType.Integer);
+#else
+            valueStack[sp] = next + top;
+            //typeStack[sp] = byte(BasicType.Integer); // unchanged
+            sp++;
+#endif
+            break;
+        }
+    }
     
+    OpCodeNegate()
+    {
+#ifdef CHECKED
+        BasicType topType;
+        int top = Pop(ref topType);
+        if (topType != BasicType.Integer)
+        {
+            Error(16, gCurrentLineNumber); // Integer expected for operation.
+            return;
+        }
+        top = -top;
+        Push(top, BasicType.Integer);
+#else
+        if (typeStack[sp-1] != byte(BasicType.Integer))
+        {
+            Error(16, gCurrentLineNumber); // Integers expected for operation.
+            return;
+        }
+        valueStack[sp-1] = -valueStack[sp-1];
+#endif
+    }
     
     
     OpCodeSubtract()
     {
-        BasicType topType;
-        int top = Pop(ref topType);
-        BasicType nextType;
-        int next = Pop(ref nextType);
-        if ((topType != BasicType.Integer) || (nextType != BasicType.Integer))
+        int top;
+        int next;
+        BasicType iType;
+        loop
         {
-            Error(16, gCurrentLineNumber); // Integers expected for operation.
-            return;
+            top = Pop(ref iType);
+            if (iType != BasicType.Integer)
+            {
+                Error(16, gCurrentLineNumber); // Integers expected for operation.
+                break;
+            }
+            next = Pop(ref iType);
+            if (iType != BasicType.Integer)
+            {
+                Error(16, gCurrentLineNumber); // Integers expected for operation.
+                break;
+            }
+#ifdef CHECKED
+            Push(next - top, BasicType.Integer);
+#else
+            valueStack[sp] = next - top;
+            //typeStack[sp] = byte(BasicType.Integer); // unchanged
+            sp++;
+#endif
+            break;
         }
-        top = next - top;
-        Push(top, BasicType.Integer);
     }
     
     OpCodeMultiply()
     {
-        BasicType topType;
-        int top = Pop(ref topType);
-        BasicType nextType;
-        int next = Pop(ref nextType);
-        if ((topType != BasicType.Integer) || (nextType != BasicType.Integer))
+        int top;
+        int next;
+        BasicType iType;
+        loop
         {
-            Error(16, gCurrentLineNumber); // Integers expected for operation.
-            return;
+            top = Pop(ref iType);
+            if (iType != BasicType.Integer)
+            {
+                Error(16, gCurrentLineNumber); // Integers expected for operation.
+                break;
+            }
+            next = Pop(ref iType);
+            if (iType != BasicType.Integer)
+            {
+                Error(16, gCurrentLineNumber); // Integers expected for operation.
+                break;
+            }
+#ifdef CHECKED
+            Push(next * top, BasicType.Integer);
+#else
+            valueStack[sp] = next * top;
+            //typeStack[sp] = byte(BasicType.Integer); // unchanged
+            sp++;
+#endif
+            break;
         }
-        top = next * top;
-        Push(top, BasicType.Integer);
     }
     
     OpCodeDivide()
     {
-        BasicType topType;
-        int top = Pop(ref topType);
-        BasicType nextType;
-        int next = Pop(ref nextType);
-        if ((topType != BasicType.Integer) || (nextType != BasicType.Integer))
+        int top;
+        int next;
+        BasicType iType;
+        loop
         {
-            Error(16, gCurrentLineNumber); // Integers expected for operation.
-            return;
+            top = Pop(ref iType);
+            if (iType != BasicType.Integer)
+            {
+                Error(16, gCurrentLineNumber); // Integers expected for operation.
+                break;
+            }
+            next = Pop(ref iType);
+            if (iType != BasicType.Integer)
+            {
+                Error(16, gCurrentLineNumber); // Integers expected for operation.
+                break;
+            }
+            if (top == 0)
+            {
+                Error(17, gCurrentLineNumber);
+                break;
+            }
+#ifdef CHECKED            
+            Push(next / top, BasicType.Integer);
+#else
+            valueStack[sp] = next / top;
+            // typeStack[sp] = byte(BasicType.Integer); // unchanged
+            sp++;
+#endif
+            break;
         }
-        if (top == 0)
-        {
-            Error(17, gCurrentLineNumber);
-            return;
-        }
-        top = next / top;
-        Push(top, BasicType.Integer);
     }
     
     OpCodeModulus()
@@ -1323,26 +1602,39 @@ unit Instructions
     
     bool VerifyIdentifier(string identifierName, bool mustExist, ref bool isArray)
     {
-        bool result = false;
+        bool result;
+        char ch;
+        char fc;
+        uint length;
+        uint i;
         isArray = false;
         loop
         {
-            if (identifierName.Length == 0)
+            length = identifierName.Length;
+            if (length == 0)
             {
                 break;
             }   
-            char fc = identifierName[0];
+            fc = identifierName[0];
             if (!fc.IsUpper())
             {
                 break;
             }
             result = true;
-            foreach (var ch in identifierName)
+            for (i=0; i < length; i++)
             {
+                ch = identifierName[i];
                 if (!ch.IsLetterOrDigit())
                 {
-                    result = false;
-                    break;       
+                    if ((i == length-1) && (ch == '$')) 
+                    {
+                        // string identifier
+                    }
+                    else
+                    {
+                        result = false;
+                        break;       
+                    }
                 }
             }
             break;
@@ -1474,10 +1766,11 @@ unit Instructions
                 string identifierName = token + gCurrentContent.Substring(0, iEnd);
                 bool isArray;
                 byte nVariable;
-                if ((identifierName != "MILLIS") 
+                if ((identifierName != "MILLIS") // TODO : use a dictionary
                  && (identifierName != "SECONDS")
                  && (identifierName != "TRUE")
                  && (identifierName != "FALSE")
+                 && (identifierName != "MID$")
                    )
                 {
                     if (!VerifyIdentifier(identifierName, true, ref isArray))
@@ -1491,22 +1784,82 @@ unit Instructions
                 if (identifierName == "TRUE")
                 {
                     code.Append(OpCode.PushImmediateBoolean);   
+                    compileTimeType = BasicType.Boolean;
                     code.Append(1);
                 }
                 else if (identifierName == "FALSE")
                 {
-                    code.Append(OpCode.PushImmediateBoolean);   
+                    code.Append(OpCode.PushImmediateBoolean);
+                    compileTimeType = BasicType.Boolean;
                     code.Append(0);
                 }
                 else if (identifierName == "MILLIS")
                 {
                     // built-in 'special' variables
-                    code.Append(OpCode.GetMillis);   
+                    code.Append(OpCode.GetMillis);
+                    compileTimeType = BasicType.Integer;
                 }
                 else if (identifierName == "SECONDS")
                 {
                     // built-in 'special' variables
-                    code.Append(OpCode.GetSeconds);   
+                    code.Append(OpCode.GetSeconds);
+                    compileTimeType = BasicType.Integer;
+                }
+                else if (identifierName == "MID$")
+                {
+                    uint arguments = 0;
+                    if (identifierName == "MID$")
+                    {
+                        arguments = 3;
+                    }
+                    // built-in functions with arguments
+                    if (!gCurrentContent.StartsWith("( "))
+                    {
+                        CompileError(22); // "'(' expected.";
+                        break;
+                    }
+                    gCurrentContent = gCurrentContent.Substring(2);
+                    if (!gCurrentContent.EndsWith(") "))
+                    {
+                        CompileError(26); // "')' expected.";
+                        break;
+                    }
+                    gCurrentContent = gCurrentContent.Substring(0, gCurrentContent.Length-2);
+                    <string> parts = gCurrentContent.Split(',');
+                    if (parts.Length != arguments)
+                    {
+                        CompileError(30); // Incorrect number of arguments for function.
+                    }
+                    for (uint iArg=0; iArg < arguments; iArg++)
+                    {
+                        string part = parts[iArg];
+                        gCurrentContent = part.TrimLeft();
+                        BasicType compileTimeType;
+                        if (!CompileExpression(ref code, ref compileTimeType))
+                        {
+                            break;
+                        }
+                        if (iArg == 0)
+                        {
+                            if ((compileTimeType != BasicType.String) && (compileTimeType != BasicType.Runtime))
+                            {
+                                CompileError(38); // String expression expected
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            if ((compileTimeType != BasicType.Integer) && (compileTimeType != BasicType.Runtime))
+                            {
+                                CompileError(40); // Integer expression expected
+                                break;
+                            }
+                        }
+                    }
+                    
+                    code.Append(OpCode.MID);   
+                    String.Build(ref gCurrentContent);
+                    compileTimeType = BasicType.String;
                 }
                 else if (isArray)
                 {
@@ -1524,19 +1877,60 @@ unit Instructions
                 {
                     code.Append(OpCode.PushVariable);
                     code.Append(nVariable);
+                    if (identifierName.EndsWith('$'))
+                    {
+                        compileTimeType = BasicType.String;
+                    }
+                    else
+                    {
+                        compileTimeType = BasicType.Runtime; // could be Integer, Boolean, Array ..
+                    }
                 }
             } // identifier
             else
             {
-                CompileError(14, token); // unexpected character in expressions            
+                CompileError(14, token); // unexpected character in expressions
             }
             break;
         } // loop
     }
-	
+    CompileUnary(ref <int> code, ref BasicType compileTimeType)
+    {
+        loop
+        {
+            if (gCurrentContent.Length == 0)
+            {
+                break;
+            }
+            char operator;
+            if ((gCurrentContent[0] == '-') || (gCurrentContent[0] == '+'))
+            {
+                operator = gCurrentContent[0];
+                loop
+                {
+                    gCurrentContent = gCurrentContent.Substring(1);
+                    if (!gCurrentContent.StartsWith(' '))
+                    {
+                        break;
+                    }
+                }
+            }
+            CompilePrimary(ref code, ref compileTimeType);
+            if (operator == '-')
+            {
+                if ((compileTimeType != BasicType.Integer) && (compileTimeType != BasicType.Runtime))
+                {
+                    CompileError(40); // Integer expression expected
+                    break;
+                }
+                code.Append(OpCode.Negate);
+            }
+            break;
+        } // loop
+    }
    	CompileFactor(ref <int> code, ref BasicType compileTimeType)
     {
-        CompilePrimary(ref code, ref compileTimeType);
+        CompileUnary(ref code, ref compileTimeType);
         loop
         {
             if (gWasError)
@@ -1550,6 +1944,11 @@ unit Instructions
             char operator = gCurrentContent[0];
             if ((operator == '*') || (operator == '/') || (operator == '%'))
             {
+                if ((compileTimeType != BasicType.Integer) && (compileTimeType != BasicType.Runtime))
+                {
+                    CompileError(40); // Integer expression expected
+                    break;
+                }
                 loop
                 {
                     gCurrentContent = gCurrentContent.Substring(1);
@@ -1559,10 +1958,15 @@ unit Instructions
                     }
                 }
                 BasicType compileTimeType2;
-                CompilePrimary(ref code, ref compileTimeType2);
+                CompileUnary(ref code, ref compileTimeType2);
+                if ((compileTimeType2 != BasicType.Integer) && (compileTimeType2 != BasicType.Runtime))
+                {
+                    CompileError(40); // Integer expression expected
+                    break;
+                }
                 if (compileTimeType != compileTimeType2)
                 {
-                    compileTimeType = BasicType.Undefined;
+                    compileTimeType = BasicType.Runtime; // at least one must be Runtime so the result is Runtime
                 }
                 if (gWasError)
                 {
@@ -1585,7 +1989,7 @@ unit Instructions
             break;
         } // loop
     }
-	
+
     CompileTerm(ref <int> code, ref BasicType compileTimeType)
     {
         CompileFactor(ref code, ref compileTimeType);
@@ -1602,6 +2006,11 @@ unit Instructions
             char operator = gCurrentContent[0];
             if ((operator == '+') || (operator == '-'))
             {
+                if ((compileTimeType != BasicType.Integer) && (compileTimeType != BasicType.Runtime))
+                {
+                    CompileError(40); // Integer expression expected
+                    break;
+                }
                 loop
                 {
                     gCurrentContent = gCurrentContent.Substring(1);
@@ -1612,9 +2021,14 @@ unit Instructions
                 }
                 BasicType compileTimeType2;
                 CompileFactor(ref code, ref compileTimeType2);
+                if ((compileTimeType2 != BasicType.Integer) && (compileTimeType2 != BasicType.Runtime))
+                {
+                    CompileError(40); // Integer expression expected
+                    break;
+                }
                 if (compileTimeType != compileTimeType2)
                 {
-                    compileTimeType = BasicType.Undefined;
+                    compileTimeType = BasicType.Runtime; // at least one must be Runtime so the result is Runtime
                 }
                 if (gWasError)
                 {
@@ -1650,6 +2064,14 @@ unit Instructions
             if (   (operator == '<') || (operator == '>') || (operator == '=')
                 || (operator == '{') || (operator == '}') || (operator == '#'))
             {
+                if ((operator != '=') && (operator != '#'))
+                {
+                    if ((compileTimeType != BasicType.Integer) && (compileTimeType != BasicType.Runtime))
+                    {
+                        CompileError(40); // Integer expression expected
+                        break;
+                    }
+                }
                 loop
                 {
                     gCurrentContent = gCurrentContent.Substring(1);
@@ -1660,13 +2082,22 @@ unit Instructions
                 }
                 BasicType compileTimeType2;
                 CompileTerm(ref code, ref compileTimeType2);
+                if ((operator != '=') && (operator != '#'))
+                {
+                    if ((compileTimeType2 != BasicType.Integer) && (compileTimeType2 != BasicType.Runtime))
+                    {
+                        CompileError(40); // Integer expression expected
+                        break;
+                    }
+                }
                 if (gWasError)
                 {
                     break;
                 }
                 if (compileTimeType != compileTimeType2)
                 {
-                    compileTimeType = BasicType.Undefined;
+                    // TODO : deal with Integer = String, Integer = Boolean, Integer = ..
+                    compileTimeType = BasicType.Runtime; // if one was runtime, both become runtime
                 }
                 switch (operator)
                 {
@@ -1709,6 +2140,7 @@ unit Instructions
     
     bool CompileExpression(ref <int> code, ref BasicType compileTimeType)
     {
+        
 #ifdef CHECKED
         // some assertions / assumptions:
         if (gCurrentContent.Length == 0)
@@ -1802,7 +2234,7 @@ unit Instructions
                 buffer = buffer.Replace(strFrom, strTo);
             }
         }
-        if (buffer.Contains('$'))
+        if (buffer.Contains('$') && false)
         {
             String.Build(ref strFrom);
             String.Build(ref strFrom, '$');
@@ -1839,13 +2271,13 @@ unit Instructions
         Error(number, gOriginalLine, gCurrentLineNumber, token);
     }
     
-    Compile(ref <uint, string> sourceCode)
+    Compile()
     {
         <int> code;
         loop
         {
             
-            gOriginalLine = sourceCode[gCurrentLineNumber];
+            gOriginalLine = gSourceCode[gCurrentLineNumber];
             gCurrentContent = gOriginalLine.ToUpper();
             
             loop
@@ -1866,10 +2298,10 @@ unit Instructions
                    uint iStringIndex = ToStringIndex(stringContent);
                    uint stringLength = stringContent.Length;
                    mixedLineContent = mixedLineContent.Substring(0, iQuote1) + 
-                                 "$" + iStringIndex.ToString() + ":" + stringLength.ToString() +
+                                 " $" + iStringIndex.ToString() + ":" + stringLength.ToString() +
                                  mixedLineContent.Substring(iQuote2+1);
                    gCurrentContent = gCurrentContent.Substring(0, iQuote1) + 
-                                      "$" + iStringIndex.ToString()  + ":" + stringLength.ToString() +
+                                      " $" + iStringIndex.ToString()  + ":" + stringLength.ToString() +
                                       gCurrentContent.Substring(iQuote2+1);
                 }
                 break;
@@ -1912,7 +2344,7 @@ unit Instructions
             if (isEmptyLine)
             {
                 code.Append(OpCode.Nop);
-                AppendTailJumpNext(ref sourceCode, ref code);
+                AppendTailJumpNext(ref code);
             }
             else if (!reservedWords.Contains(word))
             {
@@ -1939,7 +2371,6 @@ unit Instructions
                         CompileError(33); // Array variable identifier expected.
                         break;
                     }
-                    
                     BasicType compileTimeType;
                     CompilePrimary(ref setIndexCode, ref compileTimeType);
                     if (gWasError)
@@ -2002,14 +2433,17 @@ unit Instructions
                 
                 if (!gWasError)
                 {
-                    AppendTailJumpNext(ref sourceCode, ref code);
+                    AppendTailJumpNext(ref code);
                 }
             }
             else 
             {   // word is reserved word
-                // "~GOTO~GOSUB~RETURN~LET~PRINT~IF~FOR~NEXT~WHILE~WEND~END~REM~DIM~"
                 switch (word[0])
                 {
+                    case 'C': // CLS
+                    {
+                        code.Append(OpCode.CLS);
+                    }
                     case 'D': // DIM
                     {
                         if (word[1] == 'I')
@@ -2081,7 +2515,7 @@ unit Instructions
                             
                             if (!gWasError)
                             {
-                                AppendTailJumpNext(ref sourceCode, ref code);
+                                AppendTailJumpNext(ref code);
                             }
                         } // DIM
                         if (word[1] == 'E')
@@ -2092,12 +2526,17 @@ unit Instructions
                             {
                                 break;
                             }
+                            if ((compileTimeType != BasicType.Integer) && (compileTimeType != BasicType.Runtime))
+                            {
+                                CompileError(40); // Integer expression expected
+                                break;
+                            }
                             code.Append(OpCode.DELAY);
                         
                             String.Build(ref gCurrentContent);
                             if (!gWasError)
                             {
-                                AppendTailJumpNext(ref sourceCode, ref code);
+                                AppendTailJumpNext(ref code);
                             }
                         } // DELAY
                     }
@@ -2135,7 +2574,11 @@ unit Instructions
                         {
                             break;
                         }
-                        
+                        if ((compileTimeType != BasicType.Integer) && (compileTimeType != BasicType.Runtime))
+                        {
+                            CompileError(40); // Integer expression expected
+                            break;
+                        }
                         byte nVariable;
                         code.Append(OpCode.LET);
                         if (variableIndices.Contains(letVariable))
@@ -2166,14 +2609,14 @@ unit Instructions
                         
                         
                         uint blockLineNumber = gCurrentLineNumber;
-                        if (!ScanToNextSourceLine(ref sourceCode, ref blockLineNumber))
+                        if (!ScanToLineNext(ref blockLineNumber, false))
                         {
                             CompileError(25); // NEXT expected.
                             break;
                         }
                         
                         uint nextLineNumber = gCurrentLineNumber;
-                        if (!ScanToMatchingNextLine(ref sourceCode, ref nextLineNumber, letVariable))
+                        if (!ScanToLineMatchingNext(ref nextLineNumber, letVariable))
                         {
                             CompileError(25); // NEXT expected.
                             break;
@@ -2199,6 +2642,11 @@ unit Instructions
                         {
                             break;
                         }
+                        if ((compileTimeType != BasicType.Integer) && (compileTimeType != BasicType.Runtime))
+                        {
+                            CompileError(40); // Integer expression expected
+                            break;
+                        }
                         if (gCurrentContent.Length > 0)
                         {
                             CompileError(10); // End of line expected.
@@ -2208,7 +2656,7 @@ unit Instructions
                         nextCode.Append(OpCode.JLE); // LE + JNZ
                         nextCode.Append(blockLineNumber);
                         
-                        AppendTailJumpNext(ref sourceCode, ref nextCode, nextLineNumber);
+                        AppendTailJumpNext(ref nextCode, nextLineNumber);
                         
                         AssignCode(nextLineNumber, ref nextCode);
                     }
@@ -2222,7 +2670,7 @@ unit Instructions
                             break;
                         }
                         String.Build(ref gCurrentContent);
-                        if (!LineExists(lineNumber))
+                        if (!SourceLineExists(lineNumber))
                         {
                             CompileError(13);
                             break;
@@ -2244,6 +2692,11 @@ unit Instructions
                         {
                             break;
                         }
+                        if ((compileTimeType != BasicType.Boolean) && (compileTimeType != BasicType.Runtime))
+                        {
+                            CompileError(20); // Boolean expression expected
+                            break;
+                        }
                         if (!gCurrentContent.StartsWith("THEN "))
                         {
                             CompileError(19); // THEN expected.
@@ -2260,7 +2713,7 @@ unit Instructions
                             break;
                         }
                         String.Build(ref gCurrentContent);
-                        if (!LineExists(lineNumber))
+                        if (!SourceLineExists(lineNumber))
                         {
                             CompileError(13);
                             break;
@@ -2269,7 +2722,7 @@ unit Instructions
                         code.Append(lineNumber);
                         if (!gWasError)
                         {
-                            AppendTailJumpNext(ref sourceCode, ref code);
+                            AppendTailJumpNext(ref code);
                         }
                     }
                     case 'N': // NEXT
@@ -2280,6 +2733,16 @@ unit Instructions
                     }
                     case 'P': // PRINT
                     {
+                        if (gCurrentContent.EndsWith("; "))
+                        {
+                            gCurrentContent = gCurrentContent.Substring(0, gCurrentContent.Length-2) + " ";
+                        }
+                        else
+                        {
+                            uint iStringIndex = ToStringIndex("" + char(0x0D));
+                            uint stringLength = 1;
+                            gCurrentContent = gCurrentContent + ", "+ "$" + iStringIndex.ToString() + ":" + stringLength.ToString() + " ";
+                        }
                         <string> parts = gCurrentContent.Split(',');
                         foreach (var part in parts)
                         {
@@ -2294,7 +2757,7 @@ unit Instructions
                         String.Build(ref gCurrentContent);
                         if (!gWasError)
                         {
-                            AppendTailJumpNext(ref sourceCode, ref code);
+                            AppendTailJumpNext(ref code);
                         }
                     }
                     case 'R': // RETURN or REM
@@ -2307,7 +2770,7 @@ unit Instructions
                         {
                             code.Append(OpCode.Nop);
                             String.Build(ref gCurrentContent);
-                            AppendTailJumpNext(ref sourceCode, ref code);
+                            AppendTailJumpNext(ref code);
                         }
                     }
                     case 'W':
@@ -2325,19 +2788,24 @@ unit Instructions
                         {
                             break;
                         }
+                        if ((compileTimeType != BasicType.Boolean) && (compileTimeType != BasicType.Runtime))
+                        {
+                            CompileError(20); // Boolean expression expected
+                            break;
+                        }
                         if (gCurrentContent.Length > 0)
                         {
                             CompileError(10); // End of line expected.
                             break;
                         }
                         uint blockLineNumber = gCurrentLineNumber;
-                        if (!ScanToNextSourceLine(ref sourceCode, ref blockLineNumber))
+                        if (!ScanToLineNext(ref blockLineNumber, false))
                         {
                             CompileError(23); // WEND expected.
                             break;
                         }
                         uint wendLineNumber = gCurrentLineNumber;
-                        if (!ScanToMatchingWendLine(ref sourceCode, ref wendLineNumber))
+                        if (!ScanToLineMatchingWend(ref wendLineNumber))
                         {
                             CompileError(23); // WEND expected.
                             break;
@@ -2348,7 +2816,7 @@ unit Instructions
                         wendCode.Append(OpCode.JNZ);
                         wendCode.Append(blockLineNumber);
                         
-                        AppendTailJumpNext(ref sourceCode, ref wendCode, wendLineNumber);
+                        AppendTailJumpNext(ref wendCode, wendLineNumber);
                         
                         AssignCode(wendLineNumber, ref wendCode);
                     }
@@ -2523,13 +2991,13 @@ unit Instructions
         byteCodeLength[currentLineNumber] = iLength;
     }
 	
-    AppendTailJumpNext(ref <uint,string> sourceCode, ref <int> code)
+    AppendTailJumpNext(ref <int> code)
     {
-        AppendTailJumpNext(ref sourceCode, ref code, gCurrentLineNumber);
+        AppendTailJumpNext(ref code, gCurrentLineNumber);
     }
-    AppendTailJumpNext(ref <uint,string> sourceCode, ref <int> code, uint lineNumber)
+    AppendTailJumpNext(ref <int> code, uint lineNumber)
     {
-        bool foundNextLine = ScanToNextSourceLine(ref sourceCode, ref lineNumber);
+        bool foundNextLine = ScanToLineNext(ref lineNumber, false);
         if (foundNextLine)
         {
             code.Append(OpCode.JMP);
@@ -2816,33 +3284,7 @@ unit Instructions
 #endif     
     }
     
-    OpCodeAdd()
-    {
-#ifdef CHECKED
-        BasicType topType;
-        int top = Pop(ref topType);
-        BasicType nextType;
-        int next = Pop(ref nextType);
-        if ((topType != BasicType.Integer) || (nextType != BasicType.Integer))
-        {
-            Error(16, gCurrentLineNumber); // Integers expected for operation.
-            return;
-        }
-        top = next + top;
-        Push(top, BasicType.Integer);
-#else
-        sp--;
-        if ((typeStack[sp] != byte(BasicType.Integer)) || (typeStack[sp-1] != byte(BasicType.Integer)))
-        {
-            Error(16, gCurrentLineNumber); // Integers expected for operation.
-            return;
-        }
-        int top = valueStack[sp];
-        valueStack[sp-1] = valueStack[sp-1] + top;
-#endif
-    }
-    
-    bool RunLine(ref <uint, string> sourceCode, ref uint argJumpLine, ref uint argCurrentLineNumber)
+    bool RunLine(ref uint argJumpLine, ref uint argCurrentLineNumber)
     {
         goodEND = false;
 #ifdef CHECKED
@@ -2874,7 +3316,7 @@ unit Instructions
                     Trace("JIT:", LightestGray);
                 }
 #endif                
-                Compile(ref sourceCode);
+                Compile();
                 if (gWasError)
                 {
                     break;
@@ -2969,11 +3411,7 @@ unit Instructions
                     // jump to byteCode of next line without exiting RunLine(..) back to Run(..)
                     if (!gWasError)
                     {
-                        if (gWasPrint)
-                        {
-                            WriteLnBoth(true);
-                            gWasPrint = false;
-                        }
+                        gWasPrint = false;
                         if (IsBreak()) // check for <ctrl><X>
                         {
                             WriteLn();
@@ -3011,11 +3449,7 @@ unit Instructions
             
             if (!gWasError)
             {
-                if (gWasPrint)
-                {
-                    WriteLnBoth(true);
-                    gWasPrint = false;
-                }
+                gWasPrint = false;
                 if (IsBreak()) // check for <ctrl><X>
                 {
                     WriteLn();
@@ -3081,6 +3515,4 @@ unit Instructions
             }
         } // loop
     }
-        
-	
 }

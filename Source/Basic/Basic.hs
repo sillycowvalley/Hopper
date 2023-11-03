@@ -2,11 +2,10 @@ program Basic
 {
     
     #define CHECKED
-    //#define COMPACT
-    #define PROMPT
+    #define TERSE // errors are numbers only, no text messages
     
-    //uses "/Source/6502/System"
-    uses "/Source/System/System"
+    uses "/Source/6502/System"
+    //uses "/Source/System/System"
     
     // IO:
     //   - write either to Screen or Screen and Serial,
@@ -14,7 +13,6 @@ program Basic
     uses "/Source/System/IO" 
 
     uses "/Source/Basic/Errors"
-    uses "/Source/Basic/Parse"
     uses "/Source/Basic/Commands"
     uses "/Source/Basic/Instructions"
     
@@ -35,9 +33,7 @@ program Basic
         String.Build(ref currentLine);
         uint clength = 0;
         bool refresh = true;
-#ifdef PROMPT
         Write('>');
-#endif
         loop
         {
             char ch = Read();
@@ -92,8 +88,6 @@ program Basic
     }
     
     {
-        //Warp = true; // no checks for <ctrl><C> in Hopper VM
-        
         Welcome();
         string inputLine;
         loop

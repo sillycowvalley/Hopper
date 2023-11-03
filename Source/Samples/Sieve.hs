@@ -18,12 +18,12 @@ program Sieve
         uint count;
         uint iter;
 
-        Screen.Clear();
-        PrintLn("100 iterations");
+        IO.Clear();
+        IO.WriteLn("1 iterations");
 
         long start  = Millis;
         
-        for (iter = 1; iter <= 100; iter ++)
+        for (iter = 1; iter <= 1; iter ++)
         {
             count=0 ; 
             for (i = 0; i < sizepl; i++)
@@ -45,12 +45,10 @@ program Sieve
                 }
             }
         }
-        PrintLn("Done.");
-        PrintLn(count.ToString() + " primes");
+        IO.WriteLn("Done.");
+        IO.WriteLn(count.ToString() + " primes");
 
         float ms = ((Millis - start) / 100.0); 
-        PrintLn(ms.ToString() + " " + " ms");
-        Print("Press any key");        
-        Key key = ReadKey();
+        IO.WriteLn(ms.ToString() + " " + " ms");
     }
 }

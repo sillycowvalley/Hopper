@@ -358,13 +358,71 @@ unit Types
         {
             isEquality = true;
         }
+        else if (IsDelegate(typeString))
+        {
+            isEquality = true;
+        }
         return isEquality;
+    }
+    bool IsByteRange(string typeString, ref byte upperBound)
+    {
+        upperBound = 0;
+        if (typeString == "byte")
+        {
+            upperBound = 255;
+        }  
+        else if (typeString == "char")
+        {
+            upperBound = 255;
+        }  
+        else if (typeString == "type")
+        {
+            upperBound = 25; // nasty limit but probably won't change much ("list" type)
+        }
+        else if (typeString == "bool")
+        {
+            upperBound = 1;
+        }
+        else
+        {
+            if (Types.IsEnum(typeString))
+            {
+                uint limit = Symbols.GetEnumUpperBound(typeString, currentNamespace);
+                if (limit < 256)
+                {
+                    upperBound = byte(limit);
+                }
+            }
+            else if (Types.IsFlags(typeString))
+            {
+                uint limit = Symbols.GetFlagsUpperBound(typeString, currentNamespace);
+                if (limit < 256)
+                {
+                    upperBound = byte(limit);
+                }
+            }
+        }
+        return upperBound != 0;
     }
     
     bool IsValueType(string typeString)
     {
         bool isValue;
         string valueTypes = "|bool|byte|char|uint|int|type|delegate|";
+        string keyString = "|" + typeString + "|";
+        isValue = valueTypes.Contains(keyString);
+        if (!isValue)
+        {
+            isValue = Types.IsEnum(typeString) 
+                   || Types.IsFlags(typeString)
+                   || Types.IsDelegate(typeString);
+        }   
+        return isValue;
+    }
+    bool IsWordValueType(string typeString)
+    {
+        bool isValue;
+        string valueTypes = "|uint|int|delegate|";
         string keyString = "|" + typeString + "|";
         isValue = valueTypes.Contains(keyString);
         if (!isValue)
@@ -475,7 +533,7 @@ unit Types
                 {
                     b = byte(array);
                 }
-                else if (Types.IsDictionary(typeName))
+                else if (Types.IsDictionaryOrPair(typeName))
                 {
                     b = byte(dictionary);
                 }
@@ -633,7 +691,7 @@ unit Types
         // collectionType could be dictionary or pair (they look the same
         string keyType;
         uint cIndex;    
-        if (IsDictionary(collectionType) && collectionType.IndexOf(',', ref cIndex))
+        if (IsDictionaryOrPair(collectionType) && collectionType.IndexOf(',', ref cIndex))
         {
             keyType = collectionType.Substring(1, cIndex-1);        
         }
@@ -649,7 +707,7 @@ unit Types
         // collectionType could be dictionary or pair (they look the same)
         string valueType;
         uint cIndex;    
-        if (IsDictionary(collectionType) && collectionType.IndexOf(',', ref cIndex))
+        if (IsDictionaryOrPair(collectionType) && collectionType.IndexOf(',', ref cIndex))
         {
             valueType = collectionType.Substring(cIndex+1);
             valueType = valueType.Substring(0, valueType.Length-1);     
@@ -692,7 +750,7 @@ unit Types
             // 'byte[uint]' -> 'byte'
             iteratorType = collectionType.Substring(0, bIndex);    
         }
-        else if (IsDictionary(collectionType) && collectionType.IndexOf(',', ref bIndex))
+        else if (IsDictionaryOrPair(collectionType) && collectionType.IndexOf(',', ref bIndex))
         {
             // '<string,string>' -> '<string,string>' (pair type looks the same as dictionary type)
             iteratorType = collectionType;        
@@ -709,7 +767,7 @@ unit Types
         return iteratorType;
     }
     
-    bool IsDictionary(string typeString)
+    bool IsDictionaryOrPair(string typeString)
     {
         bool isDictionary = false;
         // <<string,int>> vs <string,int>
@@ -879,71 +937,85 @@ unit Types
                 }
                 if (actualList[1] != targetList[1]) // type
                 {
-#ifdef DEBUGGER
-                    if (localUpCastAllowed)
+                    if (IsDebugger)
                     {
-                        Die(0x0B);
-                    }
-                    equal = false;
-                    break;
-#else
-                    if (!localUpCastAllowed)
-                    {
+                        if (localUpCastAllowed)
+                        {
+                            Die(0x0B);
+                        }
                         equal = false;
-                        break;          
-                    }
-                    else if (AutomaticUpCast(actualList[1], targetList[1], false, false))
-                    {
-                        // match
+                        break;
                     }
                     else
                     {
-                        string targetString = targetList[1];
-                        if ( (targetString == "K") 
-                          || (targetString == "V")
-                          || (targetString == "<K,V>")
-                          || (targetString == "<V>")
-                          || (targetString == "V[]")
-                           )
+                        if (!localUpCastAllowed)
                         {
-                            // generics : TODO : better matching?
-                        }
-                        else if (Types.IsEnum(actualList[1]) && Types.IsEnum(targetList[1]))
-                        {
-                            // TODO: compare fully qualified
-                            Die(0x0A);
                             equal = false;
-                            break;
+                            break;          
                         }
-                        else if (Types.IsFlags(actualList[1]) && Types.IsFlags(targetList[1]))
+                        else if (AutomaticUpCast(actualList[1], targetList[1], false, false))
                         {
-                            // TODO: compare fully qualified
-                            Die(0x0A);
-                            equal = false;
-                            break;
+                            // match
                         }
-                        else if (Types.IsDelegate(actualList[1]) && Types.IsDelegate(targetList[1]))
+                        else
                         {
-                            // compare fully qualified
-                            string leftType  = Symbols.QualifyDelegate(actualList[1], currentNamespace);
-                            string rightType = Symbols.QualifyDelegate(targetList[1], currentNamespace);
-                            if (leftType == rightType)
+                            string targetString = targetList[1];
+                            if ( (targetString == "K") 
+                              || (targetString == "V")
+                              || (targetString == "<K,V>")
+                              || (targetString == "<V>")
+                              || (targetString == "V[]")
+                               )
                             {
-                                // match
+                                // generics : TODO : better matching?
                             }
-                            else
+                            else if (targetString == "byte[]")
+                            {
+                                // for System.Call(byte[] code)
+                                string actualString = actualList[1];
+                                if (!actualString.StartsWith("byte["))
+                                {
+                                    equal = false;
+                                    break;
+                                }
+                            }
+                            else if (Types.IsEnum(actualList[1]) && Types.IsEnum(targetList[1]))
+                            {
+                                // TODO: compare fully qualified
+                                Die(0x0A);
+                                equal = false;
+                                break;
+                            }
+                            else if (Types.IsFlags(actualList[1]) && Types.IsFlags(targetList[1]))
+                            {
+                                // TODO: compare fully qualified
+                                Die(0x0A);
+                                equal = false;
+                                break;
+                            }
+                            else if (Types.IsDelegate(actualList[1]) && Types.IsDelegate(targetList[1]))
+                            {
+                                // compare fully qualified
+                                string leftType  = Symbols.QualifyDelegate(actualList[1], currentNamespace);
+                                string rightType = Symbols.QualifyDelegate(targetList[1], currentNamespace);
+                                if (leftType == rightType)
+                                {
+                                    // match
+                                }
+                                else
+                                {
+                                    equal = false;
+                                    break;
+                                }
+                            }
+                            else 
                             {
                                 equal = false;
                                 break;
                             }
                         }
-                        else 
-                        {
-                            equal = false;
-                            break;
-                        }
-                    }
-#endif
+                    } // !IsDebugger
+
                 }
             }
             break;
@@ -1217,7 +1289,7 @@ unit Types
             CodeStream.AddInstructionJumpOffset(Instruction.JZB, byte(4)); 
             CodeStream.AddInstruction(Instruction.DIE, byte(0x08)); // failed dynamic cast
         }
-		CodeStream.AddInstruction(Instruction.CAST, byte(uint)); // cast top of stack to UInt
+        CodeStream.AddInstruction(Instruction.CAST, byte(uint)); // cast top of stack to UInt
     }
     
     DynamicCastToByte() // works for 'uint' -> 'byte' and 'int' -> 'byte'
@@ -1271,7 +1343,26 @@ unit Types
         }
     }
     
+    uint IntToUInt(int value)
+    {
+        <byte> bytes = value.ToBytes();
+        return uint(bytes[0]) + uint(bytes[1]) << 8;
+    }
     
+    int UIntToInt(uint value)
+    {
+        if ((value & 0x8000) != 0) // sign bit set?
+        {
+            // two's complement
+            value = ~value; // 0xFFFF -> 0x0000, 0xFFFE -> 0x0001
+            long lvalue = 0 - long(value) - 1;
+            return int(lvalue);
+        }
+        else
+        {
+            return int(value); // '+int'
+        }
+    }
     
     
 }

@@ -2,8 +2,6 @@ unit System
 {
     #define H6502
     
-    bool Trace { get system; set system; }
-    bool Warp { get system; set system; }
     
     uses "/Source/6502/Firmware/Hardware"
     uses "/Source/6502/Firmware/Memory"
@@ -31,4 +29,16 @@ unit System
     uses "/Source/System/Serial"
     uses "/Source/System/IO"
     
+    bool Trace { get system; set system; }
+    bool Warp { get system; set system; }
+
+#ifdef TINYHOPPER    
+    // execute Hopper opCodes inline starting at 'address'
+    //   (use & operator to determine offsets of locals and globals)
+    uint Inline(uint address) system;
+#else    
+    // execute an array of Hopper opCodes inline (starting at the opcode at 'index')
+    //   (use & operator to determine offsets of locals and globals)
+    uint Inline(byte[] code, uint index) system;
+#endif 
 }

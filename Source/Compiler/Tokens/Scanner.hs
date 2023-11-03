@@ -462,7 +462,7 @@ unit Scanner
             c = peek();
             if (!c.IsLetter() && !c.IsDigit())
             {
-                if (c == '.')
+                if ((c == '.') && (dotSeen == 0))
                 {
                     dotSeen++;
                 }
@@ -521,26 +521,89 @@ unit Scanner
             {
                 skipWhitespace();
                 char c = advance();
-                if (c.IsDigit())
-                {
-                    token = scanNumber(c);
-                    break;
-                }
-                if (c.IsLetter() || (c == '#'))
-                {
-                    token = scanIdentifier(c);
-                    break;
-                }
                 HopperToken htoken = HopperToken.Undefined;
                 switch (c)
                 {
-                    case '(': { htoken = HopperToken.LParen; }
-                    case ')': { htoken = HopperToken.RParen; }
+                    case '#':
+                    case 'a':
+                    case 'b':
+                    case 'c':
+                    case 'd':
+                    case 'e':
+                    case 'f':
+                    case 'g':
+                    case 'h':
+                    case 'i':
+                    case 'j':
+                    case 'k':
+                    case 'l':
+                    case 'm':
+                    case 'n':
+                    case 'o':
+                    case 'p':
+                    case 'q':
+                    case 'r':
+                    case 's':
+                    case 't':
+                    case 'u':
+                    case 'v':
+                    case 'w':
+                    case 'x':
+                    case 'y':
+                    case 'z':
+                    case 'A':
+                    case 'B':
+                    case 'C':
+                    case 'D':
+                    case 'E':
+                    case 'F':
+                    case 'G':
+                    case 'H':
+                    case 'I':
+                    case 'J':
+                    case 'K':
+                    case 'L':
+                    case 'M':
+                    case 'N':
+                    case 'O':
+                    case 'P':
+                    case 'Q':
+                    case 'R':
+                    case 'S':
+                    case 'T':
+                    case 'U':
+                    case 'V':
+                    case 'W':
+                    case 'X':
+                    case 'Y':
+                    case 'Z':
+                    {
+                        token = scanIdentifier(c);
+                        break;
+                    }
+                
+                    
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
+                    {
+                        token = scanNumber(c);
+                        break;
+                    }
                     case '{': { htoken = HopperToken.LBrace; }
                     case '}': { htoken = HopperToken.RBrace; }
+                    case ';': { htoken = HopperToken.SemiColon; }
+                    case '(': { htoken = HopperToken.LParen; }
+                    case ')': { htoken = HopperToken.RParen; }
                     case '[': { htoken = HopperToken.LBracket; }
                     case ']': { htoken = HopperToken.RBracket; }
-                    case ';': { htoken = HopperToken.SemiColon; }
                     case ':': { htoken = HopperToken.Colon; }
                     case ',': { htoken = HopperToken.Comma; }
                     case '.': { htoken = HopperToken.Dot; }
@@ -548,6 +611,8 @@ unit Scanner
                     case '/': { htoken = HopperToken.Divide; }
                     case '%': { htoken = HopperToken.Modulus; }
                     case '~': { htoken = HopperToken.BitNot; }
+                    case '^': { htoken = HopperToken.BitXor; }
+                    case '?': { htoken = HopperToken.Question; }
                     
                     case '-':
                     {
@@ -629,7 +694,7 @@ unit Scanner
                             token = errorToken("unexpected character: '" + c + "' (0x" + ui.ToHexString(2) + ")");
                         }
                     }
-                }
+                } // switch
                 if (htoken != HopperToken.Undefined)
                 {
                     token = Token.New(htoken, "", currentLine, currentPos, currentSourcePath);

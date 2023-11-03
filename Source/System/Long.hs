@@ -14,11 +14,11 @@ unit Long
         }
         if (content.StartsWith('+'))
         {
-            content = content.Substring(1);
+            String.Substring(ref content, 1);
         }
         else if (content.StartsWith('-'))
         {
-            content = content.Substring(1);
+            String.Substring(ref content, 1);
             makeNegative = true;
         }
         foreach (var c in content)
@@ -79,8 +79,43 @@ unit Long
         return success;
     }
     
-#ifndef H6502    
+#ifndef H6502  
+  
+#ifdef PORTABLE
+    string ToString(long this)
+    {
+        bool negative;
+        uint udigit;
+        char c;
+        long digit;
+        string result;
+        if (this < 0)
+        {
+            negative = true;
+            this = 0 - this;
+        }
+        else if (this == 0)
+        {
+            String.Build(ref result, '0');
+        }
+        while (this != 0)
+        {
+            digit = this % 10;
+            udigit = uint(digit);
+            c = Char.ToDigit(byte(udigit));
+            String.BuildFront(ref result, c);
+            this = this / 10;
+        }
+        if (negative)
+        {
+            String.BuildFront(ref result, '-');
+        }
+        return result;
+    }
+#else
     string ToString(long this) system;
+#endif
+
 #else    
     string ToString(long this)
     {

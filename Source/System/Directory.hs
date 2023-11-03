@@ -7,4 +7,5 @@ unit Directory
     uint GetFileCount(directory this) system;
     string GetDirectory(directory this, uint index) system;
     string GetFile(directory this, uint index) system;
+    long GetTime(string path) system;
 }

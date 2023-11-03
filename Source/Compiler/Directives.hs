@@ -32,28 +32,6 @@ unit Directives
         return allDefined;
     }
     
-    bool defined(string ln)
-    {
-        bool value;
-        loop
-        {
-            <string,string> idToken = Parser.CurrentToken;
-            if (idToken["line"] != ln)
-            {
-                Parser.ErrorAtCurrent("preprocessor directive must be on one line");
-                break;
-            }
-            value = false;
-            if (Symbols.DefineExists(idToken["lexeme"]))
-            {
-                value = true;
-            }
-            Parser.Advance();
-            break;
-        }
-        return value;
-    }
-    
     string expression(string ln)
     {
         string value;
@@ -64,6 +42,7 @@ unit Directives
         }
         return value;
     }
+    
     Declaration()
     {
         <string,string> currentToken = Parser.CurrentToken;
@@ -87,12 +66,15 @@ unit Directives
             <string,string> nextToken = Parser.CurrentToken;
             if (nextToken["line"] == ln)
             {
+                Parser.ErrorAtCurrent("unexpected content on same line as directive declaration");
+                break;
+                
                 // is there an expression following the identifier on the same line?
-                value = expression(ln);
-                if (Parser.HadError)
-                {
-                    break;
-                }
+                //value = expression(ln);
+                //if (Parser.HadError)
+                //{
+                //    break;
+                //}
             }
             if (Symbols.DefineExists(idToken["lexeme"]))
             {
@@ -102,6 +84,35 @@ unit Directives
             Symbols.AddDefine(idToken["lexeme"], value);
             break;
         }
+    }
+    NestingAppend(string symbol, bool positive)
+    {
+        if (positive) // #ifdef
+        {
+            defineNesting.Append(Symbols.DefineExists(symbol));
+        }
+        else // #ifdef
+        {
+            defineNesting.Append(!Symbols.DefineExists(symbol));
+        }
+    }
+    bool NestingPopTail()
+    {
+        if (defineNesting.Length != 0)
+        {
+            defineNesting.Remove(defineNesting.Length-1);
+            return true;
+        }
+        return false;
+    }
+    bool NestingFlipTail()
+    {
+        if (defineNesting.Length != 0)
+        {
+            defineNesting.SetItem(defineNesting.Length-1, !defineNesting[defineNesting.Length-1]);
+            return true;
+        }
+        return false;
     }
     
     Directive()
@@ -114,13 +125,25 @@ unit Directives
             Parser.Advance(); // #ifdef, etc
             if (directive == "#ifdef")
             {
-                bool value = defined(ln);
-                defineNesting.Append(value);
+                <string,string> idToken = Parser.CurrentToken;
+                if (idToken["line"] != ln)
+                {
+                    Parser.ErrorAtCurrent("preprocessor directive must be on one line");
+                    break;
+                }
+                Parser.Advance();
+                NestingAppend(idToken["lexeme"], true);
             }
             else if (directive == "#ifndef")
             {
-                bool value = !defined(ln);
-                defineNesting.Append(value);
+                <string,string> idToken = Parser.CurrentToken;
+                if (idToken["line"] != ln)
+                {
+                    Parser.ErrorAtCurrent("preprocessor directive must be on one line");
+                    break;
+                }
+                Parser.Advance();
+                NestingAppend(idToken["lexeme"], false);
             }
             else if (directive == "#if")
             {
@@ -130,21 +153,24 @@ unit Directives
             }
             else if (directive == "#else")
             {
-                if (defineNesting.Length == 0)
+                if (!NestingFlipTail())
                 {
                     Parser.ErrorAtCurrent("unexpected '#else'");
                     break;
                 }
-                defineNesting.SetItem(defineNesting.Length-1, !defineNesting[defineNesting.Length-1]);
             }
             else if (directive == "#endif")
             {
-               if (defineNesting.Length == 0)
+               if (!NestingPopTail())
                {
                    Parser.ErrorAtCurrent("unexpected '#endif'");
                    break;
                }
-               defineNesting.Remove(defineNesting.Length-1);
+            }
+            <string,string> currentToken = Parser.CurrentToken;
+            if (currentToken["line"] == ln)
+            {
+                Parser.ErrorAtCurrent("unexpected content after directive");
             }
             break;
         }

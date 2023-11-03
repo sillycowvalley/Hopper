@@ -1,13 +1,12 @@
 program Dir
 {
-
     uses "/Source/System/System"
     uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
     
     string wildcardStartsWith;
     string wildcardEndsWith;
-    
+
     DirectoryListing(<string> options, <string> arguments, bool firstCall)
     {
         uint iFirstDot;
@@ -17,6 +16,7 @@ program Dir
         uint files;
         bool recursive = false;
         bool fullpaths = false; 
+        bool showtime = false;
         directory dir;
         string currentFolder = CurrentDirectory;
         loop
@@ -30,6 +30,10 @@ program Dir
                 else if (option == "-f")
                 {
                     fullpaths = true;
+                }
+                else if (option == "-t")
+                {
+                    showtime = true;
                 }
                 else
                 {
@@ -179,6 +183,7 @@ program Dir
             {
                 PrintLn("Invalid arguments for DIR:");
                 PrintLn("  -f : full paths for each file");
+                PrintLn("  -t : include unix time stamp");
                 PrintLn("  -s : this directory and all subdirectories");
                 break;
             }
@@ -221,6 +226,8 @@ program Dir
                 string filepath = dir.GetFile(i);
                 string filename = Path.GetFileName(filepath);
                 string filenameLower = filename.ToLower();
+                long ft = File.GetTime(filepath);
+                string filetime = "0x" + ft.ToHexString(8);
                 if (wildcardEndsWith.Length > 0)
                 {
                     if (!filenameLower.EndsWith(wildcardEndsWith))
@@ -238,6 +245,10 @@ program Dir
                 if (!fullpaths)
                 {
                     filepath = filename;
+                }
+                if (showtime)
+                {
+                    filepath = filepath + " " + filetime;
                 }
                 if (first && !fullpaths && !firstCall)
                 {

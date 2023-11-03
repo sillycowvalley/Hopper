@@ -26,7 +26,7 @@ unit UInt
                 }
                 if (content[0] == '+')
                 {
-                    content = content.Substring(1);
+                    String.Substring(ref content, 1);
                     length--;
                 }
                 if (length < 1)
@@ -144,8 +144,6 @@ unit UInt
 
     string ToString(uint this)
     {
-        uint digit;
-        char c;
         string result;
         if (this == 0)
         {
@@ -153,18 +151,13 @@ unit UInt
         }
         while (this != 0)
         {
-            digit = this % 10;
-            digit = digit + 48;
-            c = char(digit);
-            String.BuildFront(ref result, c);
+            String.BuildFront(ref result, char((this % 10) + 48));
             this = this / 10;
         }
         return result;
     }
     ToString(uint this, ref string result)
     {
-        uint digit;
-        char c;
         String.Build(ref result);
         if (this == 0)
         {
@@ -172,27 +165,27 @@ unit UInt
         }
         while (this != 0)
         {
-            digit = this % 10;
-            digit = digit + 48;
-            c = char(digit);
-            String.BuildFront(ref result, c);
+            String.BuildFront(ref result, char((this % 10) + 48));
             this = this / 10;
         }
     }
     long ToLong(uint this) system;
     string ToHexString(uint this, byte digits)
     {
-        uint digit;
-        char c;
-        uint i;
         string result;
-        for (i = digits; i > 0; i--)
+        for (; digits > 0; digits--)
         {
-            digit = this % 16;
-            c = Char.ToHex(byte(digit));
-            String.BuildFront(ref result, c);
+            String.BuildFront(ref result, Char.ToHex(byte(this % 16)));
             this = this / 16;
         }
         return result;
     }
+    <byte> ToBytes(uint this)
+    {
+        <byte> list;
+        list.Append(byte(this & 0xFF));
+        list.Append(byte(this >> 8));
+        return list;
+    }
+    
 }

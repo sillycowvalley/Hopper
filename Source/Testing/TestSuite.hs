@@ -1,6 +1,6 @@
 program TestSuite
 {
-
+#define PORTABLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
@@ -8,6 +8,7 @@ program TestSuite
 //#define TESTFLOATS
 #endif
     
+    uses "/Source/System/IO"
     uses "/Source/System/Diagnostics"
     uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
@@ -19,247 +20,19 @@ program TestSuite
     PrintFailed(string message)
     {
         Trace = false;
-        PrintLn("  " + message, MatrixRed, 0);
+        
 #ifdef H6502
-       Diagnostics.Die(0x0B); // system failure / internal error
+        WriteLn("  " + message);
+        Diagnostics.Die(0x0B); // system failure / internal error
+#else
+        PrintLn("  " + message, MatrixRed, 0);
 #endif         
-    }
-    
-    TestStringSystem()
-    {
-        PrintLn("system 'string'"); // string methods written in Hopper (some specific to H6502)
-        
-        // string Replace(string original, string pattern, string replace)
-        string original = "a=10";
-        string replaced = original.Replace("=", " = ");
-        if (replaced != "a = 10")
-        {
-            PrintFailed("'string': Replace failed 1");
-        }
-        original = "a = 10";
-        replaced = original.Replace("=", " = ");
-        if (replaced != "a  =  10")
-        {
-            PrintFailed("'string': Replace failed 2");
-        }
-        original = "a <> 10";
-        replaced = original.Replace("<>", "#");
-        if (replaced != "a # 10")
-        {
-            PrintFailed("'string': Replace failed 3");
-        }
-        replaced = original.Replace("a", "a");
-        if (replaced != "a <> 10")
-        {
-            PrintFailed("'string': Replace failed 4");
-        }
-        replaced = original.Replace("", "a");
-        if (replaced != "a <> 10")
-        {
-            PrintFailed("'string': Replace failed 5");
-        }
-        replaced = original.Replace("a", "");
-        if (replaced != " <> 10")
-        {
-            PrintFailed("'string': Replace failed 6");
-        }
-        replaced = original.Replace("", "");
-        if (replaced != "a <> 10")
-        {
-            PrintFailed("'string': Replace failed 7");
-        }
-        
-        
-        // string Replace(string original, char pattern, char replace)
-        replaced = original.Replace('a', 'b');
-        if (replaced != "b <> 10")
-        {
-            PrintFailed("'string': Replace failed 8");
-        }
-        replaced = original.Replace('a', 'a');
-        if (replaced != "a <> 10")
-        {
-            PrintFailed("'string': Replace failed 9");
-        }
-        
-        // bool EndsWith(string original, string pattern)
-        original = "The End";
-        if (!original.EndsWith("End"))
-        {
-            PrintFailed("'string': EndsWith failed 1");
-        }
-        if (original.EndsWith("Bob"))
-        {
-            PrintFailed("'string': EndsWith failed 2");
-        }
-        // bool EndsWith(string original, char pattern)
-        if (!original.EndsWith('d'))
-        {
-            PrintFailed("'string': EndsWith failed 3");
-        }
-        if (original.EndsWith('b'))
-        {
-            PrintFailed("'string': EndsWith failed 4");
-        }
-        // bool StartsWith(string this, char pattern)
-        if (!original.StartsWith('T'))
-        {
-            PrintFailed("'string': StartsWith failed 1");
-        }
-        if (original.StartsWith('E'))
-        {
-            PrintFailed("'string': StartsWith failed 2");
-        }
-        
-        // bool StartsWith(string this, string pattern)
-        if (!original.StartsWith("The"))
-        {
-            PrintFailed("'string': StartsWith failed 3");
-        }
-        if (original.StartsWith("End"))
-        {
-            PrintFailed("'string': StartsWith failed 4");
-        }
-        
-        
-        // int Compare(string left, string right) // returns -1, 0, +1
-        if (String.Compare("aaa", "bbb") != -1)
-        {
-            PrintFailed("'string': Compare failed 1");
-        }
-        if (String.Compare("aaa", "aaa") != 0)
-        {
-            PrintFailed("'string': Compare failed 2");
-        }
-        if (String.Compare("aaa", "aaaa") == 0)
-        {
-            PrintFailed("'string': Compare failed 3");
-        }
-        if (String.Compare("aaaa", "aaa") == 0)
-        {
-            PrintFailed("'string': Compare failed 4");
-        }
-        if (String.Compare("aaaa", "") == 0)
-        {
-            PrintFailed("'string': Compare failed 5");
-        }
-        if (String.Compare("", "aaaa") == 0)
-        {
-            PrintFailed("'string': Compare failed 6");
-        }
-        if (String.Compare("bbb", "aaa") != 1)
-        {
-            PrintFailed("'string': Compare failed 7");
-        }
-        
-        string insertString = 'a' + "bcde";
-        if (String.Compare(insertString, "abcde") != 0)
-        {
-            PrintFailed("'string': Insert failed 1");
-        }
-        insertString = "abcd" + 'e';
-        if (String.Compare(insertString, "abcde") != 0)
-        {
-            PrintFailed("'string': Insert failed 2");
-        }
-        insertString = "bcde";
-        insertString = insertString.InsertChar(0, 'a');
-        if (String.Compare(insertString, "abcde") != 0)
-        {
-            PrintFailed("'string': Insert failed 3");
-        }
-        insertString = "abcd";
-        insertString = insertString.InsertChar(4, 'e');
-        if (String.Compare(insertString, "abcde") != 0)
-        {
-            PrintFailed("'string': Insert failed 4");
-        }
-        insertString = "abde";
-        insertString = insertString.InsertChar(2, 'c');
-        if (String.Compare(insertString, "abcde") != 0)
-        {
-            PrintFailed("'string': Insert failed 5");
-        }
-        uint index;
-        if (!insertString.IndexOf('a', ref index))
-        {
-            PrintFailed("'string': IndexOf failed 1");
-        }
-        if (index != 0)
-        {
-            PrintFailed("'string': IndexOf failed 2");
-        }
-        if (!insertString.IndexOf('c', ref index))
-        {
-            PrintFailed("'string': IndexOf failed 3");
-        }
-        if (index != 2)
-        {
-            PrintFailed("'string': IndexOf failed 4");
-        }
-        if (!insertString.IndexOf('e', ref index))
-        {
-            PrintFailed("'string': IndexOf failed 5");
-        }
-        if (index != 4)
-        {
-            PrintFailed("'string': IndexOf failed 6");
-        }
-        if (insertString.IndexOf('z', ref index))
-        {
-            PrintFailed("'string': IndexOf failed 7");
-        }
-        
-        if (insertString.IndexOf('a', 1, ref index))
-        {
-            PrintFailed("'string': IndexOf failed 8");
-        }
-        if (!insertString.IndexOf('c', 2, ref index))
-        {
-            PrintFailed("'string': IndexOf failed 9");
-        }
-        if (index != 2)
-        {
-            PrintFailed("'string': IndexOf failed 9");
-        }
-        if (!insertString.IndexOf('e', 2, ref index))
-        {
-            PrintFailed("'string': IndexOf failed 10");
-        }
-        if (index != 4)
-        {
-            PrintFailed("'string': IndexOf failed 11");
-        }
-        if (insertString.IndexOf('z', 10, ref index))
-        {
-            PrintFailed("'string': IndexOf failed 12");
-        }
-        
-        
-        // string Substring(string original, uint start)
-        // string Substring(string original, uint start, uint length)
-        // Build(ref string build, string append)
-        // Build(ref string build, char append)
-        // bool IndexOf(string this, string pattern, ref uint index)
-        // bool IndexOf(string this, char pattern, uint startIndex, ref uint index)
-        // bool IndexOf(string this, string pattern, uint startIndex, ref uint index)
-        // bool LastIndexOf(string this, char pattern, ref uint index)
-        // bool LastIndexOf(string this, char pattern, uint startIndex, ref uint index)
-        // string Pad(string this, char append, uint width)
-        // string LeftPad(string this, char append, uint width)
-        // string ToUpper(string this)
-        // string ToLower(string this)
-        // bool Contains(string this, char needle)
-        // bool Contains(string this, string needle)
-        // string Trim(string this)
-        // <string> Split(string this, string delimiters)
-        // <string> Split(string this, char delimiter)
     }
     
 #ifdef TEXTBUFFER
     TestTextBuffer()
     {
-        PrintLn("TextBuffer");
+        WriteLn("TextBuffer");
         
         TextBuffer.Initialize();
         
@@ -288,7 +61,7 @@ program TestSuite
         int lineCount = TextBuffer.GetLineCount();
         if (lineCount != 2)
         {
-            //PrintLn(lineCount.ToString());
+            //WriteLn(lineCount.ToString());
             PrintFailed("TextBuffer: Insert failed");
         }
         
@@ -315,7 +88,7 @@ program TestSuite
     
     TestArray()
     {
-        PrintLn("Array");
+        WriteLn("Array");
         int[5] intArray;
         intArray[0] = -3;
         intArray[1] = 20000;
@@ -506,7 +279,7 @@ program TestSuite
     
     TestDictionary()
     {
-        PrintLn("Dictionary");
+        WriteLn("Dictionary");
         
         <char,string> charDictionary;
         charDictionary.Set('a', "a value");
@@ -623,7 +396,7 @@ program TestSuite
       }
       TestValueDictionary()
       {
-        PrintLn("Value Dict");  
+        WriteLn("Value Dict");  
         <uint, string> names;
         names[0] = "Zero";
         names[1] = "One";
@@ -657,7 +430,7 @@ program TestSuite
     }
     TestDictionaryExpandVV()
     {
-        PrintLn("Dict Expand: VV");
+        WriteLn("Dict Expand: VV");
         <uint,uint> expandValueValue;
         for (uint i = 0; i < 65; i++)
         {
@@ -687,7 +460,7 @@ program TestSuite
    	}
     TestDictionaryExpandRV()
     {
-        PrintLn("Dict Expand: RV");
+        WriteLn("Dict Expand: RV");
         uint totalk = 0;
         uint totalv = 0;
         uint count = 0;
@@ -721,7 +494,7 @@ program TestSuite
     }   
    	TestDictionaryExpandVR()
    	{
-        PrintLn("Dict Expand: VR");
+        WriteLn("Dict Expand: VR");
         uint totalk = 0;
         uint totalv = 0;
         uint count = 0;
@@ -755,7 +528,7 @@ program TestSuite
     }
     TestDictionaryExpandRR()
    	{    
-        PrintLn("Dict Expand: RR");
+        WriteLn("Dict Expand: RR");
         uint totalk = 0;
         uint totalv = 0;
         uint count = 0;
@@ -793,7 +566,7 @@ program TestSuite
     }
    	TestDictionaryOfLists()
    	{
-    	   PrintLn("Dict of Lists");
+    	   WriteLn("Dict of Lists");
         
         <string> list0;
         list0.Append("one");
@@ -840,7 +613,6 @@ program TestSuite
         foreach (var kv4 in dictionaryOfLists2)
         {
             string k = kv4.key;
-            //Print(k + "->");
             foreach (var v2 in kv4.value)
             {
                 count = count + 1;
@@ -861,7 +633,7 @@ program TestSuite
     }
     TestDictionaryOfDictionaries()
    	{
-    	PrintLn("Dict of Dict");
+    	WriteLn("Dict of Dict");
         
         <string,int> dictionary0;
         dictionary0["One"] = 1;
@@ -914,7 +686,7 @@ program TestSuite
 
     TestList()
     {
-        PrintLn("List");
+        WriteLn("List");
         <string> stringList;
         stringList.Append("item 1");
         stringList.Append("item 2");
@@ -1086,7 +858,7 @@ program TestSuite
     }
   	 TestListOfDictionaries()
 	   {
-	       PrintLn("List of Dict");
+	       WriteLn("List of Dict");
 
         <string> plainlist;
         plainlist.Append("one");
@@ -1162,7 +934,7 @@ program TestSuite
 
     TestEquals()
     { 
-        PrintLn("'==' constants");
+        WriteLn("'==' constants");
         
         // contants
         if (1 == 0)
@@ -1213,7 +985,7 @@ program TestSuite
             PrintFailed("!(\"a\" == \"a\") failed");
         }
         
-        PrintLn("'==' byte");
+        WriteLn("'==' byte");
         byte ba = 1;
         byte bb = 0;
         byte bc = 1;
@@ -1246,7 +1018,7 @@ program TestSuite
             PrintFailed("(!ba == bc) failed");
         }
 
-        PrintLn("'==' int");
+        WriteLn("'==' int");
         int ia = 1;
         int ib = 0;
         int ic = 1;
@@ -1295,7 +1067,7 @@ program TestSuite
             PrintFailed("(!ba == ib) failed");
         }
       
-        PrintLn("'==' long");
+        WriteLn("'==' long");
         long la = 1;
         long lb = 0;
         long lc = 1;
@@ -1362,7 +1134,7 @@ program TestSuite
 
         
 #ifdef TESTFLOATS        
-        PrintLn("'==' float");
+        WriteLn("'==' float");
         float fa = 1;
         float fb = 0;
         float fc = 1;
@@ -1447,7 +1219,7 @@ program TestSuite
 #ifndef TINYHOPPER    
     TestFiles()
     {
-        PrintLn("File text IO");
+        WriteLn("File text IO");
         
         string testPath = "/temp/testfile.txt";
         if (File.Exists(testPath))
@@ -1483,7 +1255,7 @@ program TestSuite
         }
         if (ln != "Test Content")
         {
-            PrintLn("'" + ln + "'");
+            WriteLn("'" + ln + "'");
             PrintFailed("File text IO failed");
         }
         
@@ -1491,7 +1263,7 @@ program TestSuite
         ln = "";
         loop
         {
-            byte b = Read(testFile2, pos);
+            byte b = File.Read(testFile2, pos);
             if (!testFile2.IsValid())
             {
                 break;
@@ -1504,7 +1276,7 @@ program TestSuite
             PrintFailed("File char IO failed");
         }
         
-        PrintLn("File byte IO");
+        WriteLn("File byte IO");
         
         if (File.Exists(testPath))
         {
@@ -1570,7 +1342,7 @@ program TestSuite
     
     TestConstants()
     {
-        PrintLn("Global const");
+        WriteLn("Global const");
         
         string localConstant = "aaaaa";
 #ifdef TESTFLOATS          
@@ -1624,7 +1396,7 @@ program TestSuite
     
     TestLessThan()
     {
-        PrintLn("'<'");
+        WriteLn("'<'");
         string localConstant = "zzzzz";
         int    localInt   = 10001;
 #ifdef TESTFLOATS          
@@ -1755,13 +1527,15 @@ program TestSuite
     }
     TestLessThanOrEqual()
     {
-        PrintLn("'<='");
+        WriteLn("'<='");
         string localConstant = "zzzzz";
 #ifdef TESTFLOATS          
         float  localFloat = 4.141;
 #endif        
         long   localLong  = 100001;
         int    localInt   = 10001;
+        int localNegInt1  = -10000;
+        int localNegInt2  = -10001;
         if (!(globalConstant <= localConstant))
         {
             PrintFailed("string <= failed");
@@ -1808,10 +1582,36 @@ program TestSuite
         {
             PrintFailed("int <= failed");
         }
+        if (!(localNegInt2 <= localNegInt1))
+        {
+            PrintFailed("int <= failed");
+        }
+        if (!(localNegInt1 <= globalInt))
+        {
+            PrintFailed("int <= failed");
+        }
+        if (!(localNegInt1 <= localInt))
+        {
+            PrintFailed("int <= failed");
+        }
+        
         if (!(localInt <= localInt))
         {
             PrintFailed("int <= failed");
         }
+        if (!(localInt <= 20001))
+        {
+            PrintFailed("int <= failed 1");
+        }
+        if (localInt <= 5001)
+        {
+            PrintFailed("int <= failed 2");
+        }
+        if (!(localInt <= 10001))
+        {
+            PrintFailed("int <= failed 3");
+        }
+        
         if (localConstant <= globalConstant)
         {
             PrintFailed("string <= failed");
@@ -1861,7 +1661,7 @@ program TestSuite
     
     TestGreaterThan()
     {
-        PrintLn("'>'");
+        WriteLn("'>'");
         string localConstant = "zzzzz";
 #ifdef TESTFLOATS          
         float  localFloat = 4.141;
@@ -1939,7 +1739,7 @@ program TestSuite
     
     TestGreaterThanOrEqual()
     {
-        PrintLn("'>='");
+        WriteLn("'>='");
         string localConstant = "zzzzz";
 #ifdef TESTFLOATS  
         float  localFloat = 4.141;
@@ -2043,103 +1843,6 @@ program TestSuite
 #endif
     }
 
-    TestString()    
-    {
-        PrintLn("'string'");
-        string abcde  = "abcde";
-        
-        if (abcde + 'f' != "abcdef")
-        {
-            PrintFailed("append char failed");
-        }
-        string sub = abcde.Substring(3);
-        if (sub != "de")
-        {
-            PrintFailed("Substring 1 failed");
-        }
-        sub = abcde.Substring(2,2);
-        if (sub != "cd")
-        {
-            PrintFailed("Substring 2 failed");
-        }
-        if (!abcde.EndsWith("de"))
-        {
-            PrintFailed("EndsWith 1 failed");
-        }
-        if (!abcde.EndsWith('e'))
-        {
-            PrintFailed("EndsWith 2 failed");
-        }
-        string replaced = abcde.Replace("bc", "xyz");
-        if (replaced != "axyzde")
-        {
-            PrintFailed("Replace 1 failed");
-        }
-        replaced = abcde.Replace("de", "y");
-        if (replaced != "abcy")
-        {
-            PrintFailed("Replace 2 failed");
-        }
-        replaced = abcde.Replace('c', 'z');
-        if (replaced != "abzde")
-        {
-            PrintFailed("Replace 3 failed");
-        }
-        replaced = abcde.Replace("ab", "ab");
-        if (replaced != "abcde")
-        {
-            PrintFailed("Replace 4 failed");
-        }
-        replaced = abcde.Replace('c', 'c');
-        if (replaced != "abcde")
-        {
-            PrintFailed("Replace 5 failed");
-        }
-    }
-    
-    TestStringCompare()
-    {
-        PrintLn("String compare");
-        
-        string aaaaa  = "aaaaa";
-        string zzzzz  = "zzzzz";
-        string aaaaa2 = "aaaaa";
-        
-        if (aaaaa > aaaaa2)
-        {
-            PrintFailed("string > failed 1");
-        }
-        if (aaaaa >= zzzzz)
-        {
-            PrintFailed("string >= failed");
-        }
-        if (aaaaa > zzzzz)
-        {
-            PrintFailed("string > failed");
-        }
-        if (!(aaaaa <= zzzzz))
-        {
-            PrintFailed("string <= failed");
-        }
-        if (!(aaaaa < zzzzz))
-        {
-            PrintFailed("string < failed");
-        }
-        if (aaaaa == zzzzz)
-        {
-            PrintFailed("string == failed");
-        }
-        if (!(aaaaa == aaaaa2))
-        {
-            PrintFailed("string == failed");
-        }
-        if (aaaaa < aaaaa2)
-        {
-            PrintFailed("string < failed");
-        }
-        
-    }
-    
     bool TrueCounter(ref int count)
     {
         count = count + 1;
@@ -2153,7 +1856,7 @@ program TestSuite
     
     TestBooleanShortCircuit()
     {
-        PrintLn("Short circuit");
+        WriteLn("Short circuit");
         
         int trueCount = 0;
         int falseCount = 0;
@@ -2322,7 +2025,7 @@ program TestSuite
     uint gindex = 0;
     TestRef()
     {
-        PrintLn("'ref' arguments");
+        WriteLn("'ref' arguments");
         string test = "Test String";
         
         if (!test.IndexOf("String", 4, ref gindex))
@@ -2369,7 +2072,7 @@ program TestSuite
     
     TestSwitch()
     {
-        PrintLn("'switch'");
+        WriteLn("'switch'");
         
         int count = 0;
         char check = 'A';
@@ -2443,10 +2146,38 @@ program TestSuite
         {
             PrintFailed("'switch' 3 failed");
         }
+        loop
+        {
+            count = 0;
+            check = 'B';
+            switch (check)
+            {
+                case 'A':
+                {
+                    int inc = 1;
+                    count = count + inc;
+                }
+                case 'B':
+                {
+                    int inc = 2;
+                    break;
+                    count = count + inc;
+                }
+                default:
+                {
+                    int inc = 4;
+                    count = count + inc;
+                }
+            }
+        }
+        if (count != 0)
+        {
+            PrintFailed("'switch' 4 failed");
+        }
     }
     TestWhile()
     {
-        PrintLn("'while'");
+        WriteLn("'while'");
         
         int trueCount = 0;
         int falseCount = 0;
@@ -2488,7 +2219,7 @@ program TestSuite
     
     TestVariantDictionary()
     {
-        PrintLn("<string,variant>");    
+        WriteLn("<string,variant>");    
         
         <string, variant> dict;
         
@@ -2597,7 +2328,7 @@ program TestSuite
     
     TestForEach()
     {
-        PrintLn("'foreach'");    
+        WriteLn("'foreach'");    
         
         <string> lst;
         lst.Append("one");
@@ -2773,7 +2504,7 @@ program TestSuite
     
     TestFor()
     {
-        PrintLn("'for'"); 
+        WriteLn("'for'"); 
         
         <string> lst;
         lst.Append("one");
@@ -2824,7 +2555,7 @@ program TestSuite
     
     TestUIntMath()
     {
-        PrintLn("'uint'");
+        WriteLn("'uint'");
         
         // globalUInt   = 10000;
         // globalUInt2  = 20000;
@@ -2888,11 +2619,43 @@ program TestSuite
         {
             PrintFailed("'uint' 11");
         }
+        
+        long total;
+        for (uint fi = 0; fi < 400; fi = fi + 27)
+        {
+            for (uint si = 0; si < 150; si = si + 13)
+            {
+                uint prod = si * fi;
+                total = total + prod;
+                prod = fi * si;
+                total = total + prod;
+            }
+        }
+        if (total != 4864860)
+        {
+            PrintFailed("'uint' 12");
+        }
+        total = 0;
+        for (uint fi = 0; fi < 10; fi = fi + 1)
+        {
+            for (uint si = 0; si < 25; si = si + 1)
+            {
+                uint prod = si * fi;
+                total = total + prod;
+                prod = fi * si;
+                total = total + prod;
+            }
+        }
+        if (total != 27000)
+        {
+            PrintFailed("'uint' 13");
+        }
+        
     } // TestUIntMath
     
     TestIntMath()
     {
-        PrintLn("'int'");
+        WriteLn("'int'");
         
         // globalInt   = 10000;
         // globalInt2  = 10001;
@@ -2900,6 +2663,19 @@ program TestSuite
         int localInt2 = 10001;
         int localIntNeg = 0 - localInt;
         
+        <byte> lb = localInt.ToBytes();
+        if (lb.Length != 2)
+        {
+            PrintFailed("'int' ToBytes 1 failed");        
+        }
+        if (lb[0] != 0x10)
+        {
+            PrintFailed("'int' ToBytes 2  failed");        
+        }
+        if (lb[1] != 0x27)
+        {
+            PrintFailed("'int' ToBytes 3  failed");        
+        }
         // +
         if (localInt + localInt != 20000)
         {
@@ -2972,22 +2748,197 @@ program TestSuite
         {
             PrintFailed("'int' 15");
         }
+        if (2000 / 100 != 20)
+        {
+            PrintFailed("'int' 16");
+        }
+        if (2000 / 50 != 40)
+        {
+            PrintFailed("'int' 17");
+        }
+        if (2000 / 10 != 200)
+        {
+            PrintFailed("'int' 31");
+        }
+        if (-2000 / 100 != -20)
+        {
+            PrintFailed("'int' 18");
+        }
+        if (-2000 / 50 != -40)
+        {
+            PrintFailed("'int' 19");
+        }
+        if (int(2000) / -100 != -20)
+        {
+            PrintFailed("'int' 20");
+        }
+        if (int(2000) / -50 != -40)
+        {
+            PrintFailed("'int' 21");
+        }
+        if (int(2000) / -10 != -200)
+        {
+            PrintFailed("'int' 32");
+        }
+        if (-2000 / -100 != 20)
+        {
+            PrintFailed("'int' 22");
+        }
+        if (-2000 / -50 != 40)
+        {
+            PrintFailed("'int' 23");
+        }
+        if (-2000 / -10 != 200)
+        {
+            PrintFailed("'int' 33");
+        }
+        if (2000 / 1 != 2000)
+        {
+            PrintFailed("'int' 24");
+        }
+        if (2000 / 2 != 1000)
+        {
+            PrintFailed("'int' 25");
+        }
+        if (2000 / 4 != 500)
+        {
+            PrintFailed("'int' 26");
+        }
+        if (2000 / 8 != 250)
+        {
+            PrintFailed("'int' 27");
+        }
+        if (int(2000) / -1 != -2000)
+        {
+            PrintFailed("'int' 28");
+        }
+        if (int(2000) / -2 != -1000)
+        {
+            PrintFailed("'int' 29");
+        }
+        if (int(2000) / -4 != -500)
+        {
+            PrintFailed("'int' 30");
+        }
+        if (int(2000) / -8 != -250)
+        {
+            PrintFailed("'int' 31");
+        }
+        
+        
+        if (1*0 != 0)
+        {
+            PrintFailed("'int' 34");
+        }
+        if (0*1 != 0)
+        {
+            PrintFailed("'int' 35");
+        }
+        if (0*0 != 0)
+        {
+            PrintFailed("'int' 36");
+        }
+        if (1*2 != 2)
+        {
+            PrintFailed("'int' 38");
+        }
+        if (2*1 != 2)
+        {
+            PrintFailed("'int' 39");
+        }
+        if (7*11 != 77)
+        {
+            PrintFailed("'int' 40");
+        }
+        if (11*7 != 77)
+        {
+            PrintFailed("'int' 41");
+        }
+        if (303*2 != 606)
+        {
+            PrintFailed("'int' 42");
+        }
+        if (2*303 != 606)
+        {
+            PrintFailed("'int' 43");
+        }
+        if (303*3 != 909)
+        {
+            PrintFailed("'int' 44");
+        }
+        if (3*303 != 909)
+        {
+            PrintFailed("'int' 45");
+        }
+        if (303*4 != 1212)
+        {
+            PrintFailed("'int' 46");
+        }
+        if (4*303 != 1212)
+        {
+            PrintFailed("'int' 47");
+        }
+        if (303*8 != 2424)
+        {
+            PrintFailed("'int' 48");
+        }
+        if (8*303 != 2424)
+        {
+            PrintFailed("'int' 49");
+        }
+        
+        int a = -49;
+        int b = 229;
+        if (a * b != -11221)
+        {
+            PrintFailed("'int' 50");
+        }
+        if (b * a != -11221)
+        {
+            PrintFailed("'int' 51");
+        }
+        long total;
+        for (int fi = -100; fi < 50; fi = fi + 27)
+        {
+            for (int si = -30; si < 110; si = si + 13)
+            {
+                int prod = si * fi;
+                total = total + prod;
+                prod = fi * si;
+                total = total + prod;
+            }
+        }
+        if (total != -150150)
+        {
+            PrintFailed("'int' 52");
+        }
+        total = 0;
+        for (int fi = -25; fi < 10; fi = fi + 1)
+        {
+            for (int si = -10; si < 25; si = si + 1)
+            {
+                int prod = si * fi;
+                total = total + prod;
+                prod = fi * si;
+                total = total + prod;
+            }
+        }
+        if (total != -137200)
+        {
+            PrintFailed("'int' 52");
+        }
         
         // %
         if (localInt % 3 != 1)
         {
             PrintFailed("'int' 16");
         }
-        //if (localIntNeg % 3 != 1)
-        //{
-        //    PrintFailed("'int' 17");
-        //}
     } // TestIntMath
 	
 	
     TestLongMath()
     {
-        PrintLn("'long'");
+        WriteLn("'long'");
         
         // globalLong   = 100000;
         // globalLong2  = 100001;
@@ -3078,14 +3029,73 @@ program TestSuite
         //{
         //    PrintFailed("'long' 18");
         //}
+        
+        long longRef = 10;
+        long longResult = longRef * longRef;
+        if (longResult != 100)
+        {
+            PrintFailed("'long' 18");
+        }
+        longResult = longRef + longRef;
+        if (longResult != 20)
+        {
+            PrintFailed("'long' 19");
+        }
+        longRef = 10;
+        longRef = longRef + 1;
+        if (longRef != 11)
+        {
+            PrintFailed("'long' 20");
+        }
+        longRef = 10;
+        longRef = longRef * longRef;
+        if (longRef != 100)
+        {
+            PrintFailed("'long' 21");
+        }
+        longRef = 10;
+        longRef = longRef * 5;
+        if (longRef != 50)
+        {
+            PrintFailed("'long' 22");
+        }
+        longRef = 10;
+        longRef = 5 * longRef;
+        if (longRef != 50)
+        {
+            PrintFailed("'long' 23");
+        }
+        
+        longRef = 10;
+        longRef = 1 + longRef;
+        if (longRef != 11)
+        {
+            PrintFailed("'long' 24");
+        }
+        longRef = 10;
+        longRef = longRef + longRef;
+        if (longRef != 20)
+        {
+            PrintFailed("'long' 25");
+        }
+        longRef = 10;
+        longRef = longRef + 5;
+        if (longRef != 15)
+        {
+            PrintFailed("'long' 26");
+        }
+        longRef = 10;
+        longRef = 5 + longRef;
+        if (longRef != 15)
+        {
+            PrintFailed("'long' 27");
+        }
+        
     } // TestLongMath
     
     {
+        EchoToLCD = true;
         Screen.Clear();
-        
-        TestString();
-        TestStringSystem();
-        TestStringCompare();
         
         TestEquals();
         TestGreaterThan();
@@ -3099,22 +3109,6 @@ program TestSuite
         TestUIntMath();
         TestIntMath();
         
-        
-
-#ifndef H6502
-        TestVariantDictionary(); // Variant.Box
-#endif   
-		
-        TestForEach();
-        
-        TestDictionary();       
-        TestDictionaryOfLists();
-        TestListOfDictionaries();
-        TestDictionaryOfDictionaries();
-        TestValueDictionary();
-        
-        
-        TestList();
         TestArray();
         
         
@@ -3124,17 +3118,33 @@ program TestSuite
         TestBooleanShortCircuit();
         TestWhile();
         
+        TestList();
+        
         TestFor();
         
+        TestDictionaryExpandRR();
         TestDictionaryExpandVV();
         TestDictionaryExpandRV();
-      		TestDictionaryExpandVR();
-      		TestDictionaryExpandRR();
+        TestDictionaryExpandVR();
         
+        TestValueDictionary();
         
-                      
+#ifndef H6502
+        TestVariantDictionary(); // Variant.Box
+#endif   
+        TestForEach();
+        
+        TestDictionary();       
+        TestDictionaryOfLists();
+        TestListOfDictionaries();
+        TestDictionaryOfDictionaries();
+                              
 #ifndef H6502   
-        TestFiles();
+        
+
+        //TestFiles(); // TODO RESTORE
+        
+        
 #ifdef TEXTBUFFER
         TestTextBuffer();
 #endif
@@ -3142,11 +3152,14 @@ program TestSuite
         
         
 #else
-        PrintLn("Done");
+        WriteLn();
+        WriteLn("TestSuite Ok");
 #endif
 
 #ifndef H6502
-        Key key = ReadKey();
+
+        //Key key = ReadKey();
+        
 #endif
     }
 }

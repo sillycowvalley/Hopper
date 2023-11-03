@@ -130,28 +130,55 @@ unit Constant
                     string typeName;
                     string valueName;
                     uint ivalue;
-                    if (Types.EnumValue(name, ref typeName, ref valueName, ref ivalue))
+                    byte pass = 0;
+                    bool outerLoopBreak = false;
+                    loop
                     {
-                        Parser.Advance();
-                        actualType = typeName;
-                        value = ivalue.ToString();
+                        if (Types.EnumValue(name, ref typeName, ref valueName, ref ivalue))
+                        {
+                            Parser.Advance();
+                            actualType = typeName;
+                            value = ivalue.ToString();
+                            outerLoopBreak = true;
+                            break;
+                        }
+                        if (Types.FlagsValue(name, ref typeName, ref valueName, ref ivalue))
+                        {
+                            // Key
+                            // Keyboard.Key
+                            // Key.Escape
+                            // Keyboard.Key.Escape
+                            Parser.Advance();
+                            actualType = typeName;
+                            value = ivalue.ToString();
+                            outerLoopBreak = true;
+                            break;
+                        }
+                        
+                        if (!Symbols.ConstantExists(name))
+                        {
+                            if (pass == 0)
+                            {
+                                //  Keyboard.Key ->  Keyboard.Key.Escape
+                                <string,string> peekToken = Parser.Peek();
+                                if (peekToken["type"] == "Dot")
+                                {
+                                    Parser.Advance(); // name
+                                    Parser.Advance(); // dot
+                                    <string, string> current = Parser.CurrentToken;
+                                    name = name + "." + current["lexeme"];
+                                    pass++;
+                                    continue;
+                                }
+                            }
+                            Parser.ErrorAtCurrent("undefined constant identifier");
+                            outerLoopBreak = true;
+                            break;
+                        }
                         break;
-                    }
-                    if (Types.FlagsValue(name, ref typeName, ref valueName, ref ivalue))
+                    } // loop
+                    if (outerLoopBreak)
                     {
-                        // Key
-                        // Keyboard.Key
-                        // Key.Escape
-                        // Keyboard.Key.Escape
-                        Parser.Advance();
-                        actualType = typeName;
-                        value = ivalue.ToString();
-                        break;
-                    }
-                    
-                    if (!Symbols.ConstantExists(name))
-                    {
-                        Parser.ErrorAtCurrent("undefined identifier");
                         break;
                     }
                     value = Symbols.GetConstantValue(name);
@@ -162,7 +189,7 @@ unit Constant
                             uint ui;
                             if (!UInt.TryParse(value, ref ui) || (ui > 255))   
                             {
-                                Parser.ErrorAtCurrent("invalid identifier");           
+                                Parser.ErrorAtCurrent("invalid identifier");
                                 break;
                             }
                             actualType = "byte";

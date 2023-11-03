@@ -5,6 +5,19 @@ unit Pages
     
     <string,uint> zeroPage;
     
+    // Zero Page FLAGS:
+    flags HopperFlags
+    {
+        TraceOn        = 0x01,
+        WarpSpeed      = 0x02,
+        CheckedBuild   = 0x04,
+        Stack8Bit      = 0x08,
+        ProfileBuild   = 0x10,
+        BreakpointsSet = 0x20,
+        SingleStep     = 0x40,
+        MCUPlatform    = 0x80,
+    }
+    
     bool IsPageLoaded(byte page)
     {
         return pageLoaded[page];
@@ -21,11 +34,12 @@ unit Pages
     {
         if (!pageLoaded[page])
         {
+            //OutputDebug("Loading: 0x"+page.ToHexString(2));
             Monitor.Command("F" + page.ToHexString(2), true, true);
             if (Pages.ParseHexPage(page))
             {
                 pageLoaded[page] = true;
-                //OutputDebug("LoadPageData(0x"+page.ToHexString(2)+")");
+                //OutputDebug("Loaded: 0x"+page.ToHexString(2));
             }
         }
     }
@@ -80,7 +94,7 @@ unit Pages
         uint address = page << 8;
         foreach (var c in serialOutput)
         {
-            if (c == char(0x0D))
+            if ((c == char(0x0D)) || (c == char(0x0A)))
             {
                 if (ln.Length == 0)
                 {
@@ -145,6 +159,11 @@ unit Pages
             zeroPage["HEAPSIZE"] = Pages.GetPageByte(0xEB);
             zeroPage["FREELIST"] = Pages.GetPageWord(0xE8);
             zeroPage["CODESTART"] = Pages.GetPageByte(0xCA);
+            
+            foreach (var kv in zeroPage)
+            {
+                OutputDebug(kv.key + " = 0x" + kv.value.ToHexString(4));
+            }
         }
     }
     bool ZeroPageContains(string key)

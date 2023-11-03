@@ -1,7 +1,5 @@
 unit Instructions
 {
-    uses "/Source/System/System"
-    
     uses "/Source/Compiler/Tokens/SysCalls"
     
     enum Instruction
@@ -23,8 +21,6 @@ unit Instructions
         BOOLAND,
         BITOR,
         BITAND,
-
-        //BITXOR, // OLDOPS
 
         BITSHL,
         BITSHR,
@@ -156,12 +152,26 @@ unit Instructions
         
         ENTERB,
         
+        PUSHDW, // operand uint, gets resolved at runtime from delegate index to delegate pointer
+        RETFAST,
+        PUSHDB,
+        EXIT, // NOP, only used by inline code
+        
+        BITXOR, // for 'flags'
+        
+        PUSHIWLEI,
+        INCGLOBALBB,
+        
+        JREL,
+        JIXB,
+        JIXW,
     }
     bool IsRET(Instruction instruction)
     {
         switch(instruction)
         {
             case Instruction.RET0:
+            case Instruction.RETFAST:
             case Instruction.RETB:
             case Instruction.RETRETB:
             case Instruction.RETW:
@@ -171,6 +181,116 @@ unit Instructions
             }
         }
         return false;
+    }
+    
+    byte GetKitchenSinkWidth(Instruction instruction, ref bool isStackOffset, ref bool isAddressOffset, ref bool isRET)
+    {
+        byte width;
+        isStackOffset = false;
+        isAddressOffset = false;
+        isRET = false;
+        switch (instruction)
+        {
+            case Instruction.INCLOCALB:
+            case Instruction.DECLOCALB:
+            case Instruction.POPLOCALB:
+            case Instruction.POPRELB:
+            case Instruction.POPCOPYLOCALB:
+            case Instruction.POPCOPYRELB:
+            case Instruction.PUSHLOCALB:
+            case Instruction.PUSHRELB:
+            case Instruction.PUSHSTACKADDRB:
+            {
+                width = 1;
+                isStackOffset = true;
+            }
+            case Instruction.POPRELW:
+            case Instruction.POPLOCALW:
+            case Instruction.POPCOPYLOCALW:
+            case Instruction.POPCOPYRELW:
+            case Instruction.PUSHLOCALW:
+            case Instruction.PUSHSTACKADDRW:
+            case Instruction.PUSHRELW:
+            {
+                width = 2;
+                isStackOffset = true;
+            }
+            
+            case Instruction.RET0:
+            case Instruction.RETFAST:
+            {
+                isRET = true;
+            }
+            case Instruction.RETB:
+            case Instruction.RETRETB:
+            {
+                isRET = true;
+                width = 1;
+            }
+            case Instruction.RETW:
+            case Instruction.RETRETW:
+            {
+                width = 2;
+                isRET = true;
+            }
+            
+            case Instruction.JB:
+            case Instruction.JZB:
+            case Instruction.JNZB:
+            {
+                isAddressOffset = true;
+                width = 1;
+            }
+            case Instruction.JW:
+            case Instruction.JZW:
+            case Instruction.JNZW:
+            {
+                isAddressOffset = true;
+                width = 2;
+            }
+            
+            
+            case Instruction.CAST:
+            case Instruction.CALLB:
+            case Instruction.TESTBPB:
+            case Instruction.PUSHIB:
+            case Instruction.PUSHDB:
+            case Instruction.POPGLOBALB:
+            case Instruction.POPCOPYGLOBALB:
+            case Instruction.PUSHGLOBALB:
+            case Instruction.SYSCALL:
+            case Instruction.SYSCALL0:
+            case Instruction.SYSCALL1:
+            case Instruction.INCGLOBALB:
+            case Instruction.DECGLOBALB:
+            case Instruction.DUP:
+            case Instruction.DECSP:
+            case Instruction.DIE:
+            case Instruction.ENTERB:
+            {
+                width = 1;
+            }
+            
+            case Instruction.CALLW:
+            case Instruction.PUSHIW:
+            case Instruction.PUSHDW:
+            case Instruction.PUSHIWLE:
+            case Instruction.PUSHIWLEI:
+            case Instruction.PUSHIWLT:
+            case Instruction.POPGLOBALW:
+            case Instruction.POPCOPYGLOBALW:
+            case Instruction.PUSHGLOBALBB:
+            case Instruction.PUSHLOCALBB:
+            case Instruction.PUSHGLOBALW:
+            case Instruction.INCLOCALBB:
+            case Instruction.INCGLOBALBB:
+            case Instruction.JIXB:
+            case Instruction.JIXW:
+            {
+                width = 2;
+            }
+        }
+        return width;
     }
     
     bool OperandIsStackOffset(Instruction instruction) // used by DASM
@@ -217,7 +337,7 @@ unit Instructions
         }    
         return isOffset;
     }
-    byte OperandWidth(Instruction instruction)
+    byte GetSimpleOperandWidth(Instruction instruction)
     {
         byte result;
         switch (instruction)
@@ -228,6 +348,7 @@ unit Instructions
             case Instruction.RETB:
             case Instruction.RETRETB:
             case Instruction.PUSHIB:
+            case Instruction.PUSHDB:
             case Instruction.POPGLOBALB:
             case Instruction.POPLOCALB:
             case Instruction.POPRELB:
@@ -260,7 +381,9 @@ unit Instructions
             case Instruction.RETW:
             case Instruction.RETRETW:
             case Instruction.PUSHIW:
+            case Instruction.PUSHDW:
             case Instruction.PUSHIWLE:
+            case Instruction.PUSHIWLEI:
             case Instruction.PUSHIWLT:
             case Instruction.POPGLOBALW:
             case Instruction.POPLOCALW:
@@ -278,6 +401,9 @@ unit Instructions
             case Instruction.JZW:
             case Instruction.JNZW:
             case Instruction.INCLOCALBB:
+            case Instruction.INCGLOBALBB:
+            case Instruction.JIXB:
+            case Instruction.JIXW:
             {
                 result = 2;
             }
@@ -307,6 +433,10 @@ unit Instructions
             {
                 result = "NOP";
             }
+            case Instruction.EXIT:
+            {
+                result = "EXIT";
+            }
             case Instruction.CALLB:
             {
                 result = "CALLB";
@@ -323,9 +453,17 @@ unit Instructions
             {
                 result = "CALLREL";
             }
+            case Instruction.JREL:
+            {
+                result = "JREL";
+            }
             case Instruction.RET0:
             {
                 result = "RET0";
+            }
+            case Instruction.RETFAST:
+            {
+                result = "RETFAST";
             }
             case Instruction.RETB:
             {
@@ -379,9 +517,21 @@ unit Instructions
             {
                 result = "PUSHIW";
             }
+            case Instruction.PUSHDW:
+            {
+                result = "PUSHDW";
+            }
+            case Instruction.PUSHDB:
+            {
+                result = "PUSHDB";
+            }
             case Instruction.PUSHIWLE:
             {
                 result = "PUSHIWLE";
+            }
+            case Instruction.PUSHIWLEI:
+            {
+                result = "PUSHIWLEI";
             }
             case Instruction.PUSHIWLT:
             {
@@ -403,6 +553,10 @@ unit Instructions
             case Instruction.INCLOCALBB:
             {
                 result = "INCLOCALBB";
+            }
+            case Instruction.INCGLOBALBB:
+            {
+                result = "INCGLOBALBB";
             }
             case Instruction.DECLOCALB:
             {
@@ -550,6 +704,10 @@ unit Instructions
             {
                 result = "BITOR";
             }
+            case Instruction.BITXOR:
+            {
+                result = "BITXOR";
+            }
             case Instruction.BITNOT:
             {
                 result = "BITNOT";
@@ -578,6 +736,14 @@ unit Instructions
             case Instruction.JNZW:
             {
                 result = "JNZW";
+            }
+            case Instruction.JIXB:
+            {
+                result = "JIXB";
+            }
+            case Instruction.JIXW:
+            {
+                result = "JIXW";
             }
             case Instruction.COPYNEXTPOP:
             {
@@ -691,10 +857,6 @@ unit Instructions
             {
                 result = "BITSHL";
             }
-            case Instruction.NOP:
-            {
-                result = "NOP";
-            }
             default:
             {
                 byte op = byte(instruction);
@@ -703,12 +865,30 @@ unit Instructions
         }
         return result;
     }
-    Instruction Disassemble(<byte> code, ref uint address, ref uint operand)
+    uint AddJIXTableSize(Instruction instruction, uint operand)
+    {
+        uint tableSize;
+        switch (instruction)
+        {
+            case Instruction.JIXW:
+            {
+                uint entries = (operand >> 8) - (operand & 0xFF) + 1;
+                tableSize = entries * 2 + 2; // +2 for the start offset
+            }
+            case Instruction.JIXB:
+            {
+                uint entries = (operand >> 8) - (operand & 0xFF) + 1;
+                tableSize = entries + 2; // +2 for the start offset
+            }
+        }
+        return tableSize;
+    }
+    Instruction GetOperandAndNextAddress(<byte> code, ref uint address, ref uint operand)
     {
         byte cd = code[address];
         Instruction instruction = Instruction(cd);
         address++;
-        byte operandWidth = Instructions.OperandWidth(instruction);
+        byte operandWidth = Instructions.GetSimpleOperandWidth(instruction);
         switch (operandWidth)
         {
             case 1:
@@ -722,9 +902,134 @@ unit Instructions
                 address = address + 2;
             }
         }
+        address = address + AddJIXTableSize(instruction, operand);
         return instruction;
     }
-    string Disassemble(<byte> code, ref uint address, uint entryPointAddress)
+    
+    string Disassemble(<byte> code, ref uint address, uint entryPointAddress, ref <uint> jumpLabels, ref <uint> jixLabels, bool doLabels)
+    {
+        string disassembledContent;
+        byte cd = code[address];
+        Instruction instruction = Instruction(cd);
+        if ((instruction == Instruction.JIXB) || (instruction == Instruction.JIXW))
+        {
+            uint actualAddress = entryPointAddress + address;
+            string addressContent = "0x" + actualAddress.ToHexString(4) + "  ";
+            string opcode = Instructions.ToString(instruction);
+            string opcontent = opcode;
+            addressContent = addressContent + "0x" + cd.ToHexString(2) + " ";
+
+            // table range
+            address++;
+            byte lsb = code[address];
+            addressContent = addressContent + "0x" + lsb.ToHexString(2) + " ";
+            address++;
+            byte msb = code[address];
+            uint operand = lsb + (msb << 8);
+            addressContent = addressContent + "0x" + msb.ToHexString(2) + "  ";
+            opcontent = opcontent + " [0x" + lsb.ToHexString(2) + ".." + "0x" + msb.ToHexString(2) +"]"; // range
+            
+            // jump back offset
+            address++;
+            byte lsb = code[address];
+            address++;
+            byte msb = code[address];
+            opcontent = opcontent + " -0x" +msb.ToHexString(2) + lsb.ToHexString(2);
+            
+            uint backJump = (msb << 8) + lsb;
+            
+            string content = addressContent + opcontent;
+            String.Build(ref content, char(0x0A));
+            String.Build(ref disassembledContent, content);
+            
+            uint tableSize = Instructions.AddJIXTableSize(instruction, operand) - 2;
+            String.Build(ref content);
+            string widePadding = "                        ";
+            byte count = 0;
+            if (instruction == Instruction.JIXW)
+            {
+                for (uint it = 0; it < tableSize/2; it++)
+                {
+                    address++;
+                    byte lsb = code[address];
+                    address++;
+                    byte msb = code[address];
+                    uint offset = (lsb + msb << 8);
+                    if (doLabels)
+                    {
+                        if (offset == 0)
+                        {
+                            jixLabels.Append(0);
+                        }
+                        else
+                        {
+                            uint labelAddress = actualAddress - backJump + offset;
+                            jixLabels.Append(labelAddress);
+                        }
+                    }
+                    else
+                    {
+                        content = content + "0x" + offset.ToHexString(4) + " ";
+                        count++;
+                        if (count == 8)
+                        {
+                            String.Build(ref content, char(0x0A));
+                            String.Build(ref disassembledContent, widePadding);
+                            String.Build(ref disassembledContent, content);
+                            String.Build(ref content);
+                            count = 0;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (uint it = 0; it < tableSize; it++)
+                {
+                    address++;
+                    byte offset = code[address];
+                    if (doLabels)
+                    {
+                        if (offset == 0)
+                        {
+                            jixLabels.Append(0);
+                        }
+                        else
+                        {
+                            uint labelAddress = actualAddress - backJump + offset;
+                            jixLabels.Append(labelAddress);
+                        }
+                    }
+                    else
+                    {
+                        content = content + "0x" + offset.ToHexString(2) + " ";
+                        count++;
+                        if (count == 16)
+                        {
+                            String.Build(ref content, char(0x0A));
+                            String.Build(ref disassembledContent, widePadding);
+                            String.Build(ref disassembledContent, content);
+                            String.Build(ref content);
+                            count = 0;
+                        }
+                    }
+                }
+            }
+            if (content.Length > 0)
+            {
+                String.Build(ref content, char(0x0A));
+                String.Build(ref disassembledContent, widePadding);
+                String.Build(ref disassembledContent, content);
+            }
+        }
+        else
+        {
+            String.Build(ref disassembledContent, disassembleSingle(code, ref address, entryPointAddress, ref jumpLabels));
+        }
+        return disassembledContent;
+    }
+    
+    string disassembleSingle(<byte> code, ref uint address, uint entryPointAddress, ref <uint> jumpLabels)
     {
         uint actualAddress = entryPointAddress + address;
         string addressContent = "0x" + actualAddress.ToHexString(4) + "  ";
@@ -736,7 +1041,7 @@ unit Instructions
         
         addressContent = addressContent + "0x" + cd.ToHexString(2) + " ";
         
-        byte operandWidth = Instructions.OperandWidth(instruction);
+        byte operandWidth = Instructions.GetSimpleOperandWidth(instruction); // JIX never gets here
         byte iSysCall;
         
         string methodKey;
@@ -778,6 +1083,7 @@ unit Instructions
                 {
                     content = content + " 0x" + jumpTarget.ToHexString(4);
                     content = content + " (" + offsetString + ")";
+                    jumpLabels.Append(uint(jumpTarget));
                 }
                 else if (isStackOffset)
                 {
@@ -820,6 +1126,7 @@ unit Instructions
                 {
                     content = content + " 0x" + jumpTarget.ToHexString(4);
                     content = content + " (" + offsetString + ")";
+                    jumpLabels.Append(uint(jumpTarget));
                 }
                 else if (isStackOffset)
                 {

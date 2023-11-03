@@ -64,26 +64,6 @@ program Shell
         return command;        
     }
     
-    bool Load(string command, <string> arguments)
-    {
-        bool success = false;
-        command = ExtendPath(command);
-        string extension = Path.GetExtension(command);
-        extension = extension.ToLower();
-        loaded = false;
-        if (extension == hexeExtension)
-        {
-            success = Runtime.Load(command, arguments);
-            if (success)
-            {
-                uint bytesLoaded = Runtime.BytesLoaded;
-                PrintLn(bytesLoaded.ToString() + " bytes loaded.");
-                loaded = true;
-            }
-        }
-        return success;
-    }
-    
     bool Run(string command, <string> arguments)
     {
         bool success = false;
@@ -94,7 +74,6 @@ program Shell
                 break;
             }
             uint result = System.Execute(command, arguments);
-            
             // TODO REMOVE
             if (result != 0)
             {
@@ -114,12 +93,12 @@ program Shell
         {
             if (options.Length > 0)
             {
-                PrintLn("Batch scripts don't support options.");
+                PrintLn("Batch scripts don't support options.", MatrixRed, Black);
                 break;
             }
             if (arguments.Length > 0)
             {
-                PrintLn("Batch scripts don't support arguments.");
+                PrintLn("Batch scripts don't support arguments.", MatrixRed, Black);
                 break;
             }
             if (!File.Exists(command))
@@ -155,10 +134,10 @@ program Shell
                 string currentDirectory = CurrentDirectory;
                 Print(currentDirectory + ">", Color.MatrixBlue, Color.Black); // colour just to help with testing for now
                 Print(commandLine);
-                if (!RunCommandLine(commandLine))
+                if (!RunCommandLine(commandLine, true))
                 {
-                    PrintLn("Failure in batch script:");
-                    PrintLn("  '" + commandLine + "' ");
+                    PrintLn("Failure in batch script '" + command + "':", MatrixRed, Black);
+                    PrintLn("  '" + commandLine + "' ", MatrixRed, Black);
                     break;    
                 }
             }
@@ -167,7 +146,7 @@ program Shell
         return success;
     }    
     
-    bool RunCommandLine(string commandLine)
+    bool RunCommandLine(string commandLine, bool inBatch)
     {
         bool success = true;
         PrintLn();
@@ -209,39 +188,6 @@ program Shell
             {
                 ChangeDirectory(options, args);
             }
-            case "RUN":
-            {
-                if (!loaded)
-                {
-                    PrintLn("Nothing is loaded.");
-                }
-                else
-                {
-                    Runtime.SetVisibility(true);
-                    Runtime.Run();
-                }    
-            }
-            case "LOAD":
-            {
-                if (rawargs.Length == 0)
-                {
-                    
-                }
-                else
-                {
-                    command = rawargs[0];
-                    args.Clear();
-                    for (uint i=1; i < rawargs.Length; i++)
-                    {
-                        args.Append(rawargs[i]);
-                    }
-                    if (!Load(command, args))
-                    {
-                        PrintLn("Failed to load '" + command + "'");
-                        success = false;
-                    }
-                }
-            }
             
             // hexes and cmds:
             default:
@@ -253,7 +199,10 @@ program Shell
                 {
                     if (!Run(command, rawargs))
                     {
-                        PrintLn("Failed to run '" + command + "'");
+                        if (!inBatch)
+                        {
+                            PrintLn("Failed to run '" + command + "'", MatrixRed, Black);
+                        }
                         success = false;
                     }
                 }
@@ -261,13 +210,19 @@ program Shell
                 {
                     if (!RunBatch(command, options, args))
                     {
-                        PrintLn("Failed to run '" + command + "'");
+                        if (!inBatch)
+                        {
+                            PrintLn("Failed to run '" + command + "'", MatrixRed, Black);
+                        }
                         success = false;
                     }
                 }
                 else
                 {
-                    PrintLn("Unknown command '" + command + "'");
+                    if (!inBatch)
+                    {
+                        PrintLn("Unknown command '" + command + "'", MatrixRed, Black);
+                    }
                     success = false;
                 }
             }
@@ -283,7 +238,7 @@ program Shell
             if ((arguments.Length != 1) || (options.Length != 0))
             {
                 // zero arguments or spaces between more than one part
-                PrintLn("Invalid arguments for CD.");
+                PrintLn("Invalid arguments for CD.", MatrixRed, Black);
                 break;
             }
             string path = arguments[0];
@@ -333,7 +288,7 @@ program Shell
             }
             else
             {
-                PrintLn("Invalid arguments for CD."); // System.Beep();
+                PrintLn("Invalid arguments for CD.", MatrixRed, Black); // System.Beep();
             }
             break;
         }
@@ -344,7 +299,7 @@ program Shell
     {
         if ((arguments.Length != 0) || (options.Length != 0))
         {
-            PrintLn("Invalid arguments.");
+            PrintLn("Invalid arguments.", MatrixRed, Black);
         }
         else
         {
@@ -425,7 +380,7 @@ program Shell
                     
                     if (commandLine.Length != 0)
                     {
-                        if (RunCommandLine(commandLine))
+                        if (RunCommandLine(commandLine, false))
                         {
                         }
                         if (exiting)

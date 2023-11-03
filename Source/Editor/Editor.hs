@@ -10,11 +10,14 @@ unit Editor
     uses "/Source/Editor/MessageBox"
     uses "/Source/Editor/Highlighter"
     uses "/Source/System/Diagnostics"
+    
+    uses "/Source/Compiler/Tokens/Dependencies"
 
 #ifdef DEBUGGER
-    const bool isEditor = false;
+    bool IsEditor   { get { return false; } }
 #else
-    const bool isEditor = true;
+    bool IsEditor   { get { return true; } }
+    bool IsDebugger { get { return false; } }
 #endif    
 
     // '/' excluded  on purpose to make path selection easier
@@ -41,8 +44,10 @@ unit Editor
     string projectPath;
     string currentPath;
     
-    bool isHopperSource;
-    
+    bool   isHopperSource;
+    string youngestSourcePath;
+    long   youngestSourceTime;
+    string youngestSourceTimeHex;
     
     bool ignoreNextClick;
     bool wasDown;
@@ -71,13 +76,33 @@ unit Editor
     byte editorWidth;
     byte editorHeight;
     
-#ifdef DEBUGGER        
-    uint TitleColor { get { return Color.MenuGreen; } }
-    uint MenuTextColor { get { return Color.MenuTextGreen; } }
-#else
-    uint TitleColor { get { return Color.MenuBlue; } }
-    uint MenuTextColor { get { return Color.MenuTextBlue; } }
-#endif
+
+    uint TitleColor 
+    {   get 
+        { 
+            if (IsDebugger)
+            {
+                return Color.MenuGreen;
+            }
+            else
+            {
+                return Color.MenuBlue; 
+            }
+        } 
+    }
+    uint MenuTextColor 
+    {   get 
+        { 
+            if (IsDebugger)
+            {
+                return Color.MenuTextGreen;
+            }
+            else
+            {
+                return Color.MenuTextBlue; 
+            }
+        } 
+    }
     
     Locate(byte left, byte top, byte width, byte height)
     {
@@ -650,6 +675,11 @@ unit Editor
         
     bool OnKey(Key key)
     {
+        if ((key & (Key.Mask | Key.Alt)) == Key.ModSpace) // mask away Key.Shift and Key.Control but not Key.Alt
+        {
+            key = Key.Space;
+        }
+        
         bool isShifted = (Key.Shift == (key & Key.Shift));
         bool isControlled = (Key.Control == (key & Key.Control));
         bool isAlted = (Key.Alt == (key & Key.Alt));
@@ -835,7 +865,7 @@ unit Editor
             }
         case Key.Tab:
             {
-                if (isEditor)
+                if (IsEditor)
                 {
                     TextBuffer.StartJournal();
                     if (hasSelection)
@@ -937,7 +967,7 @@ unit Editor
                     }
                     TextBuffer.EndJournal();
                     draw = true;
-                } // isEditor
+                } // IsEditor
             }
         case Key.Home:
             {
@@ -1186,7 +1216,7 @@ unit Editor
             }
         case Key.Enter:
             {
-                if (isEditor)
+                if (IsEditor)
                 {
                     if (hasSelection)
                     {
@@ -1259,11 +1289,11 @@ unit Editor
                     }
                     TextBuffer.EndJournal();
                     draw = true;
-                } // isEditor
+                } // IsEditor
             }
         case Key.Backspace:
             {
-                if (isEditor)
+                if (IsEditor)
                 {
                     if (hasSelection)
                     {
@@ -1296,11 +1326,11 @@ unit Editor
                             TextBuffer.EndJournal();
                         }
                     }
-                } // isEditor
+                } // IsEditor
             }
         case Key.Delete:
             {
-                if (isEditor)
+                if (IsEditor)
                 {
                     if (hasSelection)
                     {
@@ -1322,7 +1352,7 @@ unit Editor
             }
         default:
             {
-                if (isEditor)
+                if (IsEditor)
                 {
                     if (isAlted || isControlled)
                     {
@@ -1330,11 +1360,6 @@ unit Editor
                     }
                     else
                     {
-                        if (key == (Key.ModSpace | Key.Shift))
-                        {
-                            // must be shifted (see above)
-                            key = Key.Space;
-                        }
                         uint ik = uint(key);
                         if ((ik > 31) && (ik < 255))
                         {
@@ -1351,7 +1376,7 @@ unit Editor
                             draw = true;
                         }
                     }
-                } // isEditor
+                } // IsEditor
             } // default
         } // switch
         if (selectionActive)
@@ -1429,6 +1454,7 @@ unit Editor
     }
     Draw(uint h)
     {
+        bool isBreak;
         <uint> colours;
         
         Suspend();
@@ -1566,12 +1592,14 @@ unit Editor
                     {
                         textColor = colours[colourOffset + c];
                     }
-#ifdef DEBUGGER
-                    if (isBreak)
+                    if (IsDebugger)
                     {
-                        bColor = Color.ActiveRed;
+                        if (isBreak)
+                        {
+                            bColor = Color.ActiveRed;
+                        }
                     }
-#endif
+
                     if (currentIsActive && (lineIndex+1 == activeLine))
                     {
                         bColor = Color.ActiveGray;
@@ -1583,12 +1611,12 @@ unit Editor
             while (c < width- lineNumberWidth)
             {
                 uint bColor = background;
-#ifdef DEBUGGER            
-                if (isBreak)
+
+                if (IsDebugger && isBreak)
                 {
                     bColor = Color.ActiveRed;
                 }
-#endif
+
                 if (currentIsActive && (lineIndex+1 == activeLine))
                 {
                     bColor = Color.ActiveGray;
@@ -1642,6 +1670,7 @@ unit Editor
             textFile.Flush();
             TextBuffer.ClearUndo();
             Editor.UpdateTitle(); // file is no longer modified
+            UpdateYoungestFile();
             StatusBar.SetText(statusbar, "Saved");
         }
     }
@@ -1744,6 +1773,7 @@ unit Editor
         if (projectPath.Length == 0) // first load
         {
             projectPath = currentPath;
+            UpdateYoungestFile();
         }
         CalculateLineNumberWidth();
         cursorX = 0;
@@ -2132,6 +2162,7 @@ unit Editor
                 if (projectPath.Length == 0) // first load
                 {
                     projectPath = currentPath;
+                    UpdateYoungestFile();
                 }
                 CalculateLineNumberWidth();
                 cursorX = 0;
@@ -2193,21 +2224,22 @@ unit Editor
         key = (Key.Control | Key.ModO);
         InstallCommand("Open", "&Open..", openCommand, openEnabled, key);
 
-#ifndef DEBUGGER
-        Commands.CommandExecuteDelegate saveCommand = Editor.Save;
-        Commands.CommandEnabledDelegate saveEnabled = Editor.CanUndo;
-        key = (Key.Control | Key.ModS);
-        InstallCommand("Save", "&Save", saveCommand, saveEnabled, key);
-        Commands.CommandExecuteDelegate saveAsCommand = Editor.SaveAs;
-        Commands.CommandEnabledDelegate saveAsEnabled = Editor.HasText;
-        key = Key.NoKey;
-        InstallCommand("SaveAs", "Save &As..", saveAsCommand, saveAsEnabled, key);
+        if (!IsDebugger)
+        {
+            Commands.CommandExecuteDelegate saveCommand = Editor.Save;
+            Commands.CommandEnabledDelegate saveEnabled = Editor.CanUndo;
+            key = (Key.Control | Key.ModS);
+            InstallCommand("Save", "&Save", saveCommand, saveEnabled, key);
+            Commands.CommandExecuteDelegate saveAsCommand = Editor.SaveAs;
+            Commands.CommandEnabledDelegate saveAsEnabled = Editor.HasText;
+            key = Key.NoKey;
+            InstallCommand("SaveAs", "Save &As..", saveAsCommand, saveAsEnabled, key);
 
-        Commands.CommandExecuteDelegate newCommand = Editor.FileNew;
-        Commands.CommandEnabledDelegate newEnabled = Editor.Always;
-        key = (Key.Control | Key.ModN);
-        InstallCommand("New", "&New..", newCommand, newEnabled, key);
-#endif
+            Commands.CommandExecuteDelegate newCommand = Editor.FileNew;
+            Commands.CommandEnabledDelegate newEnabled = Editor.Always;
+            key = (Key.Control | Key.ModN);
+            InstallCommand("New", "&New..", newCommand, newEnabled, key);
+        }
 
         Commands.CommandExecuteDelegate selectAllCommand = Editor.SelectAll;
         Commands.CommandEnabledDelegate selectAllEnabled = Editor.HasText;
@@ -2229,38 +2261,76 @@ unit Editor
         key = Key.F3;
         InstallCommand("FindNext", "", findNext, findAgainEnabled, key);
                 
-#ifndef DEBUGGER
-        Commands.CommandExecuteDelegate undoCommand = Editor.Undo;
-        Commands.CommandEnabledDelegate undoEnabled = Editor.CanUndo;
-        key = (Key.Control | Key.ModZ);
-        InstallCommand("Undo", "&Undo", undoCommand, undoEnabled, key);
-        
-        Commands.CommandExecuteDelegate redoCommand = Editor.Redo;
-        Commands.CommandEnabledDelegate redoEnabled = Editor.CanRedo;
-        key = (Key.Control | Key.ModY);
-        InstallCommand("Redo", "&Redo", redoCommand, redoEnabled, key);
+        if (!IsDebugger)
+        {
+            Commands.CommandExecuteDelegate undoCommand = Editor.Undo;
+            Commands.CommandEnabledDelegate undoEnabled = Editor.CanUndo;
+            key = (Key.Control | Key.ModZ);
+            InstallCommand("Undo", "&Undo", undoCommand, undoEnabled, key);
+            
+            Commands.CommandExecuteDelegate redoCommand = Editor.Redo;
+            Commands.CommandEnabledDelegate redoEnabled = Editor.CanRedo;
+            key = (Key.Control | Key.ModY);
+            InstallCommand("Redo", "&Redo", redoCommand, redoEnabled, key);
 
-        Commands.CommandExecuteDelegate deleteCommand = Editor.DeleteSelection;
-        Commands.CommandEnabledDelegate deleteEnabled = Editor.HasSelection;
-        key = Key.Delete;
-        InstallCommand("Delete", "&Delete", deleteCommand, deleteEnabled, key);
-        
-        Commands.CommandExecuteDelegate cutCommand = Editor.Cut;
-        Commands.CommandEnabledDelegate cutEnabled = Editor.HasSelection;
-        key = (Key.Control | Key.ModX);
-        InstallCommand("Cut", "Cu&t", cutCommand, cutEnabled, key);
-        
-        Commands.CommandExecuteDelegate pasteCommand = Editor.Paste;
-        Commands.CommandEnabledDelegate pasteEnabled = Editor.HasClipboardText;
-        key = (Key.Control | Key.ModV);
-        InstallCommand("Paste", "&Paste", pasteCommand, pasteEnabled, key);
-#endif
+            Commands.CommandExecuteDelegate deleteCommand = Editor.DeleteSelection;
+            Commands.CommandEnabledDelegate deleteEnabled = Editor.HasSelection;
+            key = Key.Delete;
+            InstallCommand("Delete", "&Delete", deleteCommand, deleteEnabled, key);
+            
+            Commands.CommandExecuteDelegate cutCommand = Editor.Cut;
+            Commands.CommandEnabledDelegate cutEnabled = Editor.HasSelection;
+            key = (Key.Control | Key.ModX);
+            InstallCommand("Cut", "Cu&t", cutCommand, cutEnabled, key);
+            
+            Commands.CommandExecuteDelegate pasteCommand = Editor.Paste;
+            Commands.CommandEnabledDelegate pasteEnabled = Editor.HasClipboardText;
+            key = (Key.Control | Key.ModV);
+            InstallCommand("Paste", "&Paste", pasteCommand, pasteEnabled, key);
+        }
 
         Commands.CommandExecuteDelegate copyCommand = Editor.Copy;
         Commands.CommandEnabledDelegate copyEnabled = Editor.HasSelection;
         key = (Key.Control | Key.ModC);
         InstallCommand("Copy", "&Copy", copyCommand, copyEnabled, key);
-        
-        
+    }
+    
+    bool IsYoungerThanSource(string candidatePath)
+    {
+        long fileTime = File.GetTime(candidatePath);
+        if (fileTime == 0)
+        {
+            return false;
+        }
+        string fileTimeHex = fileTime.ToHexString(8);
+        if  (fileTimeHex > youngestSourceTimeHex)
+        {
+            OutputDebug("IsYoungerThanSource: '" + candidatePath + "' 0x" + fileTimeHex + " YES");
+            OutputDebug("       YoungestFile: '" + youngestSourcePath + "' 0x" + youngestSourceTimeHex);
+        }
+        else
+        {
+            OutputDebug("IsYoungerThanSource: '" + candidatePath + "' 0x" + fileTimeHex + " NO");
+            OutputDebug("       YoungestFile: '" + youngestSourcePath + "' 0x" + youngestSourceTimeHex);
+        }
+        return (fileTimeHex > youngestSourceTimeHex);
+    }
+    
+    UpdateYoungestFile()
+    {
+        youngestSourcePath = "";
+        youngestSourceTime = 0;
+        if (isHopperSource)
+        {
+            <string> sources;
+            if (Dependencies.TryGetSources(GetProjectPath(), ref sources))
+            {
+                if (Dependencies.TryGetYoungest(sources, ref youngestSourcePath, ref youngestSourceTime))
+                {
+                    youngestSourceTimeHex = youngestSourceTime.ToHexString(8);
+                    OutputDebug("UpdateYoungestFile: '" + youngestSourcePath + "' 0x" + youngestSourceTimeHex);
+                }
+            }
+        }
     }
 }

@@ -46,7 +46,7 @@ unit Expression
             PushTypeFromString(valueType);
             name = "List";            
         }
-        else if (Types.IsDictionary(variableType))
+        else if (Types.IsDictionaryOrPair(variableType))
         {
             // push key type
             string keyType = Types.GetKeyFromCollection(variableType);
@@ -124,6 +124,28 @@ unit Expression
                     }
                 }
             }
+            case "bool":
+            {
+                switch (castToType)
+                {
+                    case "char":
+                    case "uint":
+                    case "int":
+                    case "byte":
+                    {
+                        // ok
+                    }
+                    case "type":
+                    {
+                        Types.DynamicCastToType();
+                    }
+                    default:
+                    {
+                        Print("'" + sourceType + "' -> '" + castToType + "'");
+                        Die(0x0A);
+                    }
+                }
+            }
             case "char":
             {
                 switch (castToType)
@@ -160,16 +182,16 @@ unit Expression
                     }
                     default:
                     {
-                        //if (((castToType == "string") || (castToType == "array")) && DefineExists("H6502"))
-                        //{
-                        //    // simple 16 bit pointers
-                        //}
-                        //else
-                        //{
+                        if (Types.IsDelegate(castToType))
+                        {
+                            // ok - 16 bits wide for pointer type
+                        }
+                        else
+                        {
                             // CODEGEN : runtime cast from sourceType to castToType
                             Print("'" + sourceType + "' -> '" + castToType + "'");
                             Die(0x0A);
-                        //}
+                        }
                     }
                 }
             }
@@ -196,9 +218,16 @@ unit Expression
                     }
                     default:
                     {
-                        // CODEGEN : runtime cast from sourceType to castToType
-                        Print("'" + sourceType + "' -> '" + castToType + "'");
-                        Die(0x0A);
+                        if (Types.IsDelegate(castToType))
+                        {
+                            // ok - 16 bits wide for pointer type
+                        }
+                        else
+                        {
+                            // CODEGEN : runtime cast from sourceType to castToType
+                            Print("'" + sourceType + "' -> '" + castToType + "'");
+                            Die(0x0A);
+                        }
                     }
                 }
             }
@@ -270,13 +299,23 @@ unit Expression
                         }
                     }
                 }
-                //else if (((sourceType == "string") || (sourceType == "array")|| (sourceType == "V[]")) 
-                //         && (castToType == "uint")
-                //         && DefineExists("H6502")
-                //        )
-                //{
-                //    // simple 16 bit pointers
-                //}
+                else if (Types.IsDelegate(sourceType))
+                {
+                    switch (castToType)
+                    {
+                        case "uint":
+                        case "int":
+                        {
+                            // ok - 16 bits wide for pointer type
+                        }
+                        default:
+                        {
+                            Print("'" + sourceType + "' -> '" + castToType + "'");
+                            Parser.ErrorAtCurrent("delegate cast not implemented");
+                            Die(0x0A);
+                        }
+                    }
+                }
                 else
                 {
                     // CODEGEN : runtime cast from sourceType to castToType
@@ -328,7 +367,7 @@ unit Expression
                     }
                     else
                     {
-                        uint operand =  CodeStream.IntToUInt(offset);  
+                        uint operand =  Types.IntToUInt(offset);  
                         CodeStream.AddInstruction(Instruction.PUSHLOCALW, operand);
                     }
                 }
@@ -342,7 +381,7 @@ unit Expression
                     }
                     else
                     {
-                        uint operand =  CodeStream.IntToUInt(offset);  
+                        uint operand =  Types.IntToUInt(offset);  
                         CodeStream.AddInstruction(Instruction.PUSHSTACKADDRW, operand);
                     }
                 }
@@ -353,7 +392,7 @@ unit Expression
         return argumentType;
     }
     
-    string CompileMethodCall(string methodName, string thisVariable)
+    string CompileMethodCall(string methodName, string thisVariable, string dotThisType)
     {
         string returnType;
         < <string > > arguments;
@@ -386,12 +425,15 @@ unit Expression
             
             if (methodName.EndsWith("_Get"))
             {
-                if (thisVariable.Length > 0)
+                if ((thisVariable.Length > 0) || (dotThisType.Length > 0))
                 {
                     
-                    string qualifiedThis;
-                    string thisType = Types.GetTypeString(thisVariable, true, ref qualifiedThis);
-                    CodeStream.AddInstructionPushVariable(qualifiedThis); // push this
+                    if (thisVariable.Length > 0) 
+                    {
+                        string qualifiedThis;
+                        string thisType = Types.GetTypeString(thisVariable, true, ref qualifiedThis);
+                        CodeStream.AddInstructionPushVariable(qualifiedThis); // push this
+                    }
                     
                     uint fIndex;
                     if (!Symbols.GetFunctionIndex(methodName, ref fIndex))
@@ -433,7 +475,7 @@ unit Expression
                     {
                         break;
                     }
-                    if (Types.IsDictionary(typeString))
+                    if (Types.IsDictionaryOrPair(typeString))
                     {
                         methodName = "Dictionary." + parts[1];
                     }
@@ -462,11 +504,15 @@ unit Expression
             }
         
             uint n = 0;
-            if (thisVariable.Length > 0)
+            if ( (thisVariable.Length > 0) || (dotThisType.Length > 0))
             {
-                string qualifiedThis;
-                string thisType = Types.GetTypeString(thisVariable, true, ref qualifiedThis);
-                CodeStream.AddInstructionPushVariable(qualifiedThis); // push this
+                string thisType = dotThisType;
+                if (thisVariable.Length > 0)
+                {
+                    string qualifiedThis;
+                    thisType = Types.GetTypeString(thisVariable, true, ref qualifiedThis);
+                    CodeStream.AddInstructionPushVariable(qualifiedThis); // push this
+                }
                 <string> argument;
                 argument.Append(""); // no "ref"
                 argument.Append(thisType);
@@ -522,6 +568,7 @@ unit Expression
             }
             break;
         } // argumentLoop
+        
         loop
         {
             if (isDelegateType)
@@ -612,7 +659,8 @@ unit Expression
         string actualType;
         loop
         {
-            actualType = CompileMethodCall(functionName, thisVariable);
+            //PrintLn(); Print("C:" + functionName); // Method Call
+            actualType = CompileMethodCall(functionName, thisVariable, "");
             break;
         } // loop
         return actualType;            
@@ -691,6 +739,800 @@ unit Expression
             break;
         }
         
+        return actualType;
+    }
+    
+    string compileKeywordPrimary(string expectedType)
+    {
+        string actualType;
+        loop
+        {
+            <string,string> currentToken = Parser.CurrentToken;
+            string typeName = currentToken["lexeme"];
+            bool doTypeOf;
+            bool typeId = Token.IsTypeKeyword(typeName); // array|bool|byte|char|delegate|dictionary|directory|enum|file|flags|float|int|uint|list|long|pair|string|type|variant|const|ref|var
+            Parser.Advance();
+            if (!IsSimpleType(typeName)) // bool|byte|char|uint|int|long|float|string|type|file|directory|delegate
+            {
+                if (Parser.Check(HopperToken.LParen))
+                {
+                   if (typeName == "typeof")
+                    {
+                        // built-in
+                        doTypeOf = true;
+                    }
+                    else
+                    {
+                        Parser.ErrorAt(currentToken, "compilePrimary not implemented");
+                    }            
+                }
+                else
+                {
+                    if (typeId)
+                    {
+                        // stand-alone type keyword that is not a simple type: array|dictionary|enum|flags|list|pair|variant|const|ref|var
+                    }
+                    else
+                    {
+                        Parser.ErrorAt(currentToken, "compilePrimary not implemented");
+                    }
+                }
+            }
+            
+            // either:
+            //    typeof(..) 
+            // or stand-alone type keyword that is one of these:
+            //    array|bool|byte|char|const|directory|delegate|dictionary|enum|file|flags|float|int|list|long|pair|ref|string|type|uint|variant|var
+            
+            string sourceType;
+            if (Parser.Check(HopperToken.LParen, "'(' expected"))
+            {
+                if (!IsValueType(typeName)) // bool|byte|char|uint|int|type|delegate|<enum-type-name>|<flags-type-name>|<delegate-type-name>
+                {
+                    // array|const|directory|dictionary|enum|file|flags|float|list|long|pair|ref|string|type|variant|var
+                    
+                    if (!doTypeOf)
+                    {
+                        if ((typeName == "long") || (typeName == "float"))
+                        {
+                            // CompileDynamicCast(..) deals with these
+                        }
+                        else
+                        {
+                            Parser.ErrorAtCurrent("'" + typeName + "' is an invalid type for simple cast");
+                        }
+                    }
+                }
+                Parser.Advance(); // (
+                
+                // typeof(<expression>)  or bool|byte|char|delegate|uint|int|type (<expression>)
+                sourceType = CompileExpression(expectedType);
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (!Parser.Check(HopperToken.RParen, "')' expected"))
+                {
+                    break;
+                }
+                Parser.Advance(); // )
+                typeId = false;
+            }
+            else if (typeId)
+            {
+                PushTypeFromString(typeName);
+                actualType = "type";
+            }
+            
+            
+            if (typeId)
+            {
+                // done already
+            }
+            else if (doTypeOf)
+            {
+                // push the type of what's on the stack
+                CodeStream.AddInstructionSysCall0("Types", "BoxTypeOf");
+                actualType = "type";
+            }
+            else if (typeName != sourceType)
+            {
+                if (Types.AutomaticUpCastTop(sourceType, typeName))
+                {
+                    // trivial   
+                }
+                else
+                {
+                    // runtime cast from sourceType to castToType
+                    CompileDynamicCast(sourceType, typeName);
+                }
+                actualType = typeName; // simple cast
+            }
+            else
+            {
+                actualType = typeName; // nop
+            }
+            break;
+        } // loop
+        return actualType;
+    }
+    
+    string compileNamedTypeCast(string identifier)
+    {
+        string actualType;
+        loop
+        {
+            Parser.Advance(); // (
+            string expressionType = CompileExpression("uint");
+            if (Parser.HadError)
+            {
+                break;
+            }
+            if (expressionType == "int")
+            {
+                CompileDynamicCast(expressionType, "uint");
+                expressionType = "uint";
+            }
+            if (expressionType != "uint")
+            {
+                if (Types.IsDelegate(identifier) || !Types.AutomaticUpCastTop(expressionType, "uint"))
+                {
+                    Parser.ErrorAtCurrent("cannot cast '" 
+                    + expressionType + "' to '" 
+                    + identifier + "'");
+                }
+            }
+            // CODEGEN: confirm that uint is a valid member of the enum or flags
+            // "Instruction(byte)"
+            //PrintLn();
+            //Print("TODO: runtime check that this is a valid member: " + identifier + "(" + expressionType + ")");
+            
+            Parser.Consume(HopperToken.RParen, ')');
+            if (Parser.HadError)
+            {
+                break;
+            }
+            actualType = identifier;
+            break;
+        } // loop
+        return actualType;
+    }
+    
+    string compileCollectionAccessor(string identifier, string typeString, string qualifiedName, string expectedType)
+    {
+        string actualType;
+        loop
+        {
+            // array/list/dictionary GetItem
+            Parser.Advance(); // [
+            if (Types.IsArray(typeString)) 
+            {
+                uint bIndex;
+                if (typeString.IndexOf('[', ref bIndex))
+                {
+                }
+                // array GetItem
+                typeString = typeString.Substring(0, bIndex);
+                // push first argument: the array
+                CodeStream.AddInstructionPushVariable(qualifiedName);
+            
+                // second argument: the index
+                string indexType = CompileExpression("uint");
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (indexType != "uint")
+                {
+                    if (Types.AutomaticUpCastTop(indexType, "uint"))
+                    {
+                        indexType = "uint";
+                    }
+                }
+                if (indexType == "int")
+                {
+                    CompileDynamicCast(indexType, "uint");
+                    indexType = "uint";
+                }
+                if (indexType != "uint")
+                {
+                    Parser.ErrorAtCurrent("array index type invalid");
+                    break;
+                }
+                Parser.Consume(HopperToken.RBracket, ']');
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (DefineExists("H6502") && IsWordValueType(typeString))
+                {
+                    CodeStream.AddInstructionSysCall0("Array", "GetItemUInt");
+                }
+                else
+                {
+                    CodeStream.AddInstructionSysCall0("Array", "GetItem");
+                }
+                actualType = typeString;
+            }
+            else if (typeString == "string")
+            {
+                // push first argument: the string
+                CodeStream.AddInstructionPushVariable(qualifiedName);
+            
+                // second argument: the index
+                string indexType = CompileExpression("uint");
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (indexType != "uint")
+                {
+                    if (Types.AutomaticUpCastTop(indexType, "uint"))
+                    {
+                        indexType = "uint";
+                    }
+                }
+                if (indexType != "uint")
+                {
+                    Parser.ErrorAtCurrent("string index type invalid");
+                    break;
+                }
+                Parser.Consume(HopperToken.RBracket, ']');
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                CodeStream.AddInstructionSysCall0("String", "GetChar");
+                actualType = "char";    
+            }
+            else if (Types.IsDictionaryOrPair(typeString)) 
+            {
+                // dictionary GetItem
+                
+                // push first argument: the dictionary
+                CodeStream.AddInstructionPushVariable(qualifiedName);
+                
+                string keyType = Types.GetKeyFromCollection(typeString);
+                string valueType = Types.GetValueFromCollection(typeString);
+                
+                // second argument, they key
+                string actualKeyType = CompileExpression(keyType);
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (keyType != actualKeyType)
+                {
+                    if (keyType == "string")
+                    {
+                        Parser.ErrorAtCurrent("dictionary key type should be 'string', (not '" + actualKeyType + "')");    
+                        break;
+                    }
+                    if (Types.AutomaticUpCastTop(actualKeyType, keyType))
+                    {
+                        actualKeyType = "uint";
+                    }
+                    if ((actualKeyType == "int") && (keyType == "uint"))
+                    {
+                        CompileDynamicCast(actualKeyType, keyType);
+                        actualKeyType = keyType;
+                    }
+                    if (actualKeyType != "uint")
+                    {
+                        Parser.ErrorAtCurrent("dictionary key type should be '"+keyType+"', (not '" + actualKeyType + "')");
+                        break;
+                    }
+                }
+                Parser.Consume(HopperToken.RBracket, ']');
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                CodeStream.AddInstructionSysCall0("Dictionary", "Get");
+                actualType = valueType;
+            }
+            else if (Types.IsList(typeString)) 
+            {
+                // list GetItem
+                
+                // push first argument: the list
+                CodeStream.AddInstructionPushVariable(qualifiedName);
+                                               
+                string valueType = Types.GetValueFromCollection(typeString);
+                
+                // second argument: the index
+                string indexType = CompileExpression("uint");
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (indexType != "uint")
+                {
+                    if (Types.AutomaticUpCastTop(indexType, "uint"))
+                    {
+                        indexType = "uint";
+                    }
+                }
+                if (indexType != "uint")
+                {
+                    Parser.ErrorAtCurrent("list index type invalid");
+                    break;
+                }
+                Parser.Consume(HopperToken.RBracket, ']');
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                CodeStream.AddInstructionSysCall0("List", "GetItem");
+                actualType = valueType;
+            }
+            else
+            {
+                Parser.ErrorAtCurrent("identifier not array, list or dictionary type");
+            }
+            
+            if (Parser.HadError)
+            {
+                break;
+            }
+            
+            if (Parser.Check(HopperToken.Dot))
+            {
+                actualType = compileDotFunctionCall(actualType, expectedType);
+            }
+            
+            break;
+        } // loop
+        return actualType;
+    }
+    
+    string compileVariableIdentifier(string identifier, string typeString, string qualifiedName, string expectedType)
+    {
+        string actualType;
+        loop
+        {
+            uint fdIndex;
+            if (Symbols.GetFunctionDelegateIndex(typeString, ref fdIndex))
+            {
+                if (Parser.Check(HopperToken.LParen))
+                {
+                    // delegate method call
+                    actualType = compileFunctionCall(identifier, expectedType, "");
+                    break;
+                }
+            }
+            // regular variable identifier (including delegate variable with no (..))
+            CodeStream.AddInstructionPushVariable(qualifiedName);
+            actualType = typeString;
+
+            break;
+        } // loop
+        return actualType;
+    }
+    
+    string compileDelegateExpression(string identifier, uint fdIndex, string expectedType)
+    {
+        string actualType;
+        loop
+        {
+            // - if 'expectedType' is a delegate type, match the method 'identifier' arguments
+            //   and returntype
+            // - then push address of method on to stack
+            
+            <uint> doverloads = Symbols.GetFunctionDelegateOverloads(fdIndex);
+            uint winner = 0;
+            uint wiOverload;
+            string returnType;
+            foreach (var doverload in doverloads)
+            {
+                < <string> > darguments = Symbols.GetDelegateArguments(doverload);
+                string dReturnType = Symbols.GetDelegateReturnType(doverload);
+                uint iOverload = Types.FindOverload(identifier, darguments, ref returnType);
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (returnType == dReturnType)
+                {
+                    wiOverload = iOverload;
+                    winner++;
+                }
+            }
+            if (Parser.HadError)
+            {
+                break;
+            }
+            if (winner > 1)
+            {
+                Parser.ErrorAtCurrent("ambiguous function matches for delegate type '" + expectedType + "'");
+                break;        
+            }
+            if (winner == 0)
+            {
+                Parser.ErrorAtCurrent("no function matches for delegate type '" + expectedType + "'");
+            }
+            
+            // delegate was pushed onto stack so we need to compile it
+            Symbols.OverloadToCompile(wiOverload); 
+            
+            // push function index to stack
+            if (DefineExists("H6502"))
+            {
+                if (wiOverload <= 0x3FFF)
+                {
+                    uint beOverload = 0xC000 | wiOverload;
+                    CodeStream.AddInstruction(Instruction.PUSHDW, beOverload);
+                }
+                else
+                {
+                    Parser.Error("H6502 has a limit of 16383 for function indices, (was '" + wiOverload.ToString() + "')");
+                }
+            }
+            else if (wiOverload < 256)
+            {
+                CodeStream.AddInstruction(Instruction.PUSHDB, byte(wiOverload));
+            }
+            else
+            {
+                CodeStream.AddInstruction(Instruction.PUSHDW, wiOverload);
+            }
+            actualType = expectedType;
+            break;
+        } // loop
+        return actualType;
+    }
+    
+    string compileDotFunctionCall(string thisForDotCallType, string expectedType)
+    {
+        string actualType;
+        loop
+        {
+            if (thisForDotCallType == "variant")
+            {
+                Parser.ErrorAtCurrent("'.' function calls don't work on variant types");
+                break;
+            }
+            
+            Parser.Advance(); // consume '.'
+            <string,string> currentToken = Parser.CurrentToken;
+            string identifier = currentToken["lexeme"];
+            HopperToken tokenType = Token.GetType(currentToken);
+            if (tokenType != HopperToken.Identifier)
+            {
+                Parser.ErrorAtCurrent("function identifier expected");
+                break;
+            }
+            Parser.Advance();
+            
+            string thisTypeString;
+            if (Types.IsDictionaryOrPair(thisForDotCallType))
+            {
+                thisTypeString = "Dictionary";
+            }
+            else if (Types.IsList(thisForDotCallType))
+            {
+                thisTypeString = "List";
+            }
+            else if (Types.IsArray(thisForDotCallType))
+            {
+                thisTypeString = "Array";
+            }
+            else
+            {
+                <string> nameSpaces = Symbols.GetNameSpaces();
+                foreach (var nameSpace in nameSpaces)
+                {
+                    if (thisForDotCallType == nameSpace.ToLower())
+                    {
+                        thisTypeString = nameSpace;
+                        break;
+                    }
+                }
+            }
+            string qualifiedFunctionName = thisTypeString + "." + identifier;
+            //PrintLn(); Print("D:" + qualifiedFunctionName); // Method Call
+            actualType = CompileMethodCall(qualifiedFunctionName, "", thisForDotCallType);
+            
+            if (Parser.HadError)
+            {
+                break;
+            }
+            if (Parser.Check(HopperToken.Dot))
+            {
+                actualType = compileDotFunctionCall(actualType, expectedType);
+            }
+            
+            break;
+        } // loop
+        return actualType;
+    }
+    
+    string compileIdentifierPrimary(string expectedType, bool isDotted)
+    {
+        string actualType;
+        loop
+        {
+            <string,string> currentToken = Parser.CurrentToken;
+    
+            Parser.Advance();
+            string identifier = currentToken["lexeme"];
+            
+            string qualifiedName;
+            string identifierTypeString = Types.GetTypeString(identifier, false, ref qualifiedName);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            
+            if (identifierTypeString.Length != 0)
+            {
+                if (Parser.Check(HopperToken.LBracket))
+                {
+                    // <identifier> [ <expression> ]
+                    actualType = compileCollectionAccessor(identifier, identifierTypeString, qualifiedName, expectedType);
+                    break;
+                }
+                else
+                {
+                    // <identifier>  or <delegate-identifier> (...)
+                    actualType = compileVariableIdentifier(identifier, identifierTypeString, qualifiedName, expectedType);
+                    break;
+                }
+            } // (identifierTypeString.Length != 0)
+            
+            else // (identifierTypeString.Length == 0)
+            {
+                // named type casts
+                
+                if (Types.IsEnum(identifier) || Types.IsFlags(identifier) || Types.IsDelegate(identifier))
+                {
+                    if (Parser.Check(HopperToken.LParen))
+                    {
+                        actualType = compileNamedTypeCast(identifier);
+                        break;
+                    }        
+                }
+            }
+            
+            if (Symbols.ConstantExists(identifier))
+            {
+                actualType = compileConstant(expectedType, identifier);
+                break;
+            }
+            
+            uint fdIndex;
+            if (Symbols.GetFunctionDelegateIndex(expectedType, ref fdIndex))
+            {
+                actualType = compileDelegateExpression(identifier, fdIndex, expectedType);
+                break;
+            }
+            
+            <string> nameSpaces = Symbols.GetNameSpaces();
+            if (isDotted)
+            {
+                // this?
+                <string> parts = identifier.Split('.');
+                string thisVariable = parts[0];
+                string qualifiedThis;
+                string thisTypeString = Types.GetTypeString(thisVariable, false, ref qualifiedThis);
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                string functionName = parts[1];
+                if ( Types.IsDictionaryOrPair(thisTypeString) && ((functionName == "key") || (functionName == "value")) )
+                {
+                    // honorary getters for dictionary iterator pairs:
+                    CodeStream.AddInstructionPushVariable(qualifiedThis);
+                    if (functionName == "key")
+                    {
+                        CodeStream.AddInstructionSysCall0("Pair", "Key");
+                        actualType = Types.GetKeyFromCollection(thisTypeString);
+                    }
+                    else if (functionName == "value")
+                    {
+                        CodeStream.AddInstructionSysCall0("Pair", "Value");
+                        actualType = Types.GetValueFromCollection(thisTypeString);
+                    }
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    if (Parser.Check(HopperToken.Dot))
+                    {
+                        actualType = compileDotFunctionCall(actualType, expectedType);
+                    }
+                    break;
+                }
+                
+                if (!Parser.Check(HopperToken.LParen))
+                {
+                    // no '(' : getter?
+                    functionName = functionName + "_Get";
+                }
+                if (thisTypeString.Length > 0)
+                {
+                    // "this" case
+                    if (Types.IsDictionaryOrPair(thisTypeString))
+                    {
+                        thisTypeString = "Dictionary";
+                    }
+                    else if (Types.IsList(thisTypeString))
+                    {
+                        thisTypeString = "List";
+                    }
+                    else if (Types.IsArray(thisTypeString))
+                    {
+                        thisTypeString = "Array";
+                    }
+                    else if (Types.IsEnum(thisTypeString) || Types.IsFlags(thisTypeString))
+                    {
+                        // like key.ToChar()
+                        uint iDot;
+                        if (identifier.IndexOf('.', ref iDot))
+                        {
+                            thisVariable = identifier.Substring(0, iDot);
+                            functionName = identifier.Substring(iDot+1);
+                            qualifiedName = Types.QualifyMethodName(functionName);
+                        }
+                    }
+                    
+                    if (qualifiedName.Length == 0)
+                    {
+                        foreach (var nameSpace in nameSpaces)
+                        {
+                            if (nameSpace == thisTypeString)
+                            {
+                                qualifiedName = nameSpace + "." + functionName;
+                                break;
+                            }
+                            string lowerNameSpace = nameSpace.ToLower();
+                            if (lowerNameSpace == thisTypeString)
+                            {
+                                qualifiedName = nameSpace + "." + functionName;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (qualifiedName.Length > 0)
+                    {
+                        // "this": method qualified by the type/namespace of the variable
+                        actualType = compileFunctionCall(qualifiedName, expectedType, thisVariable);
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        if (Parser.Check(HopperToken.Dot))
+                        {
+                            actualType = compileDotFunctionCall(actualType, expectedType);
+                        }
+                        break;
+                    }
+                    break;
+                } // "this" case
+                
+                else
+                {
+                    // getter?
+                    
+                    string namespaceAsTypeString = parts[0];
+                    qualifiedName = "";
+                    foreach (var nameSpace in nameSpaces)
+                    {
+                        if (nameSpace == namespaceAsTypeString)
+                        {
+                            qualifiedName = nameSpace + "." + functionName;
+                            break;
+                        }
+                    }
+                    if (qualifiedName.Length > 0)
+                    {
+                        uint fIndex;
+                        if (GetFunctionIndex(qualifiedName, ref fIndex))
+                        {
+                            // qualified by namespace name rather than by variable name:
+                            actualType = compileFunctionCall(qualifiedName, expectedType, "");
+                            if (Parser.HadError)
+                            {
+                                break;
+                            }
+                            if (Parser.Check(HopperToken.Dot))
+                            {
+                                actualType = compileDotFunctionCall(actualType, expectedType);
+                            }
+                            break;
+                        }
+                    }
+                    
+                    // enums and flags
+                    bool oneDot = true;
+                    if (Parser.Check(HopperToken.Dot)) // next token is another '.'
+                    {
+                        // 2 dot enums like "Keyboard.Key.Delete"
+                        oneDot = false;
+                        Parser.Advance(); // consume '.'
+                        
+                        <string,string> currentToken = Parser.CurrentToken;
+                        identifier = currentToken["lexeme"];
+                        
+                        HopperToken tokenType = Token.GetType(currentToken);
+                        if (tokenType != HopperToken.Identifier)
+                        {
+                            Parser.ErrorAtCurrent("member name identifier expected");
+                            break;
+                        }
+                        Parser.Advance();
+                        
+                        string typeName = parts[0] + "." + parts[1];
+                        identifier = typeName + "." + identifier;
+                        uint value;
+                        if (Symbols.FindEnum(typeName, identifier, ref value))
+                        {
+                            CodeStream.AddInstructionPUSHI(value);
+                            actualType = "enum";    
+                            break;
+                        }
+                        if (Symbols.FindFlags(typeName, identifier, ref value))
+                        {
+                            CodeStream.AddInstructionPUSHI(value);
+                            actualType = "flags";    
+                            break;
+                        }             
+                    }
+                    if (oneDot)
+                    {
+                        actualType = "";
+                        
+                        foreach (var nameSpace in nameSpaces)
+                        {
+                            string typeName = nameSpace + "." + parts[0];
+                            string memberName = nameSpace + "." + identifier;
+                            uint value;
+                            if (Symbols.FindEnum(typeName, memberName, ref value))
+                            {
+                                CodeStream.AddInstructionPUSHI(value);
+                                actualType = "enum";    
+                                break;
+                            }
+                            if (Symbols.FindFlags(typeName, memberName, ref value))
+                            {
+                                CodeStream.AddInstructionPUSHI(value);
+                                actualType = "flags";    
+                                break;
+                            }
+                        }    
+                        if (actualType.Length > 0)
+                        {
+                            break;
+                        }
+                    }
+                    
+                    
+                }
+            } // isDotted
+            else
+            {
+                // not isDotted
+                if (!Parser.Check(HopperToken.LParen))
+                {
+                    // no '(' : getter?
+                    identifier = identifier + "_Get";
+                }
+                string qualifiedIdentifier = Types.QualifyMethodName(identifier);
+                bool success = false;
+                uint fIndex;
+                if (GetFunctionIndex(qualifiedIdentifier, ref fIndex))
+                {
+                    // unqualified method call: we qualify using namespace scope rules
+                    actualType = compileFunctionCall(qualifiedIdentifier, expectedType, "");
+                    success = !Parser.HadError;
+                    break;
+                }
+            }
+            Parser.ErrorAtCurrent("'" + currentToken["lexeme"] + "' is not defined");
+            break;
+        } // loop
         return actualType;
     }
     
@@ -802,567 +1644,11 @@ unit Expression
                 }
                 case HopperToken.Identifier:
                 {
-                    Parser.Advance();
-                    string identifier = currentToken["lexeme"];
-                    string qualifiedName;
-                    string typeString = Types.GetTypeString(identifier, false, ref qualifiedName);
-                    if (Parser.HadError)
-                    {
-                        break;
-                    }
-                    
-                    if (typeString.Length == 0)
-                    {
-                        if (Types.IsEnum(identifier) || Types.IsFlags(identifier))
-                        {
-                            if (Parser.Check(HopperToken.LParen))
-                            {
-                                Parser.Advance(); // (
-                                string expressionType = CompileExpression("uint");
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }        
-                                if (expressionType != "uint")
-                                {
-                                    if (!Types.AutomaticUpCastTop(expressionType, "uint"))
-                                    {
-                                        Parser.ErrorAtCurrent("cannot cast '" 
-                                        + expressionType + "' to '" 
-                                        + identifier + "'");
-                                    }
-                                }
-                                // CODEGEN: confirm that uint is a valid member of the enum or flags
-                                // "Instruction(byte)"
-                                //PrintLn();
-                                //Print("TODO: runtime check that this is a valid member: " + identifier + "(" + expressionType + ")");
-                                
-                                Parser.Consume(HopperToken.RParen, ')');
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }
-                                actualType = identifier;
-                                break;
-                            }
-                        }        
-                    }
-                    
-                    if (typeString.Length != 0)
-                    {
-                        if (Parser.Check(HopperToken.LBracket))
-                        {
-                            // array/list/dictionary GetItem
-                            Parser.Advance(); // [
-                            if (Types.IsArray(typeString)) 
-                            {
-                                uint bIndex;
-                                if (typeString.IndexOf('[', ref bIndex))
-                                {
-                                }
-                                // array GetItem
-                                typeString = typeString.Substring(0, bIndex);
-                                // push first argument: the array
-                                CodeStream.AddInstructionPushVariable(qualifiedName);
-                            
-                                // second argument: the index
-                                string indexType = CompileExpression("uint");
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }
-                                if (indexType != "uint")
-                                {
-                                    if (Types.AutomaticUpCastTop(indexType, "uint"))
-                                    {
-                                        indexType = "uint";
-                                    }
-                                }
-                                if (indexType != "uint")
-                                {
-                                    Parser.ErrorAtCurrent("array index type invalid");
-                                    break;
-                                }
-                                Parser.Consume(HopperToken.RBracket, ']');
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }
-                                CodeStream.AddInstructionSysCall0("Array", "GetItem");
-                                actualType = typeString;
-                            }
-                            else if (typeString == "string")
-                            {
-                                // push first argument: the string
-                                CodeStream.AddInstructionPushVariable(qualifiedName);
-                            
-                                // second argument: the index
-                                string indexType = CompileExpression("uint");
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }
-                                if (indexType != "uint")
-                                {
-                                    if (Types.AutomaticUpCastTop(indexType, "uint"))
-                                    {
-                                        indexType = "uint";
-                                    }
-                                }
-                                if (indexType != "uint")
-                                {
-                                    Parser.ErrorAtCurrent("string index type invalid");
-                                    break;
-                                }
-                                Parser.Consume(HopperToken.RBracket, ']');
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }
-                                CodeStream.AddInstructionSysCall0("String", "GetChar");
-                                actualType = "char";    
-                            }
-                            else if (Types.IsDictionary(typeString)) 
-                            {
-                                // dictionary GetItem
-                                
-                                // push first argument: the dictionary
-                                CodeStream.AddInstructionPushVariable(qualifiedName);
-                                
-                                string keyType = Types.GetKeyFromCollection(typeString);
-                                string valueType = Types.GetValueFromCollection(typeString);
-                                
-                                // second argument, they key
-                                string actualKeyType = CompileExpression(keyType);
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }
-                                if (keyType != actualKeyType)
-                                {
-                                    if (keyType == "string")
-                                    {
-                                        Parser.ErrorAtCurrent("dictionary key type should be 'string', (not '" + actualKeyType + "')");    
-                                        break;
-                                    }
-                                    if (Types.AutomaticUpCastTop(actualKeyType, keyType))
-                                    {
-                                        actualKeyType = "uint";
-                                    }
-                                    if (actualKeyType != "uint")
-                                    {
-                                        Parser.ErrorAtCurrent("dictionary key type should be '"+keyType+"', (not '" + actualKeyType + "')");
-                                        break;
-                                    }
-                                }
-                                Parser.Consume(HopperToken.RBracket, ']');
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }
-                                CodeStream.AddInstructionSysCall0("Dictionary", "Get");
-                                actualType = valueType;
-                            }
-                            else if (Types.IsList(typeString)) 
-                            {
-                                // list GetItem
-                                
-                                // push first argument: the list
-                                CodeStream.AddInstructionPushVariable(qualifiedName);
-                                                               
-                                string valueType = Types.GetValueFromCollection(typeString);
-                                
-                                // second argument: the index
-                                string indexType = CompileExpression("uint");
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }
-                                if (indexType != "uint")
-                                {
-                                    if (Types.AutomaticUpCastTop(indexType, "uint"))
-                                    {
-                                        indexType = "uint";
-                                    }
-                                }
-                                if (indexType != "uint")
-                                {
-                                    Parser.ErrorAtCurrent("list index type invalid");
-                                    break;
-                                }
-                                Parser.Consume(HopperToken.RBracket, ']');
-                                if (Parser.HadError)
-                                {
-                                    break;
-                                }
-                                CodeStream.AddInstructionSysCall0("List", "GetItem");
-                                actualType = valueType;
-                            }
-                            else
-                            {
-                                Parser.ErrorAtCurrent("identifier not array, list or dictionary type");
-                            }
-                            break;
-                        } // array GetItem
-                        
-                        else
-                        {
-                            uint fdIndex;
-                            if (Symbols.GetFunctionDelegateIndex(typeString, ref fdIndex))
-                            {
-                                if (Parser.Check(HopperToken.LParen))
-                                {
-                                    // delegate method call
-                                    actualType = compileFunctionCall(identifier, expectedType, "");
-                                    break;
-                                }
-                            }
-                            // regular variable identifier
-                            CodeStream.AddInstructionPushVariable(qualifiedName);
-                            actualType = typeString;
-                            break;
-                        }                     
-                        
-                    } // (typeString.Length != 0)
-                    
-                    if (Symbols.ConstantExists(identifier))
-                    {
-                        actualType = compileConstant(expectedType, identifier);
-                        break;
-                    }
-                    
-                    // Resolve delegate methods: "ValidateFilePathExists"
-                    // - if 'expectedType' is a delegate type, match the method 'identifier' arguments
-                    //   and returntype
-                    // - then push address of method on to stack
-                    uint fdIndex;
-                    if (Symbols.GetFunctionDelegateIndex(expectedType, ref fdIndex))
-                    {
-                        <uint> doverloads = Symbols.GetFunctionDelegateOverloads(fdIndex);
-                        uint winner = 0;
-                        uint wiOverload;
-                        string returnType;
-                        foreach (var doverload in doverloads)
-                        {
-                            < <string> > darguments = Symbols.GetDelegateArguments(doverload);
-                            string dReturnType = Symbols.GetDelegateReturnType(doverload);
-                            uint iOverload = Types.FindOverload(identifier, darguments, ref returnType);
-                            if (Parser.HadError)
-                            {
-                                break;
-                            }
-                            if (returnType == dReturnType)
-                            {
-                                wiOverload = iOverload;
-                                winner++;
-                            }
-                        }
-                        if (Parser.HadError)
-                        {
-                            break;
-                        }
-                        if (winner > 1)
-                        {
-                            Parser.ErrorAtCurrent("ambiguous function matches for delegate type '" + expectedType + "'");
-                            break;        
-                        }
-                        if (winner == 0)
-                        {
-                            Parser.ErrorAtCurrent("no function matches for delegate type '" + expectedType + "'");
-                        }
-                        Symbols.OverloadToCompile(wiOverload); // delegate pushed onto stack
-                        // push function index to stack
-                        CodeStream.AddInstructionPUSHI(wiOverload);
-                        actualType = expectedType;
-                        break;
-                    }
-                    
-                    <string> nameSpaces = Symbols.GetNameSpaces();
-                    if (isDotted)
-                    {
-                        // this?
-                        <string> parts = identifier.Split('.');
-                        string thisVariable = parts[0];
-                        string qualifiedThis;
-                        typeString = Types.GetTypeString(thisVariable, false, ref qualifiedThis);
-                        if (Parser.HadError)
-                        {
-                            break;
-                        }
-                        string functionName = parts[1];
-                        uint cIndex;
-                        if (((functionName == "key") || (functionName == "value")) &&
-                            (thisVariable.Length > 0) && typeString.IndexOf(',', ref cIndex))
-                        {
-                            CodeStream.AddInstructionPushVariable(qualifiedThis);
-                            if (functionName == "key")
-                            {
-                                CodeStream.AddInstructionSysCall0("Pair", "Key");
-                                actualType = Types.GetKeyFromCollection(typeString);
-                            }
-                            else if (functionName == "value")
-                            {
-                                CodeStream.AddInstructionSysCall0("Pair", "Value");
-                                actualType = Types.GetValueFromCollection(typeString);
-                            }
-                            break;
-                        }
-                        
-                        
-                        if (!Parser.Check(HopperToken.LParen))
-                        {
-                            // no '(' : getter?
-                            functionName = functionName + "_Get";
-                        }
-                        
-                        if (typeString.Length > 0)
-                        {
-                            // "this" case
-                            if (Types.IsDictionary(typeString))
-                            {
-                                typeString = "Dictionary";
-                            }
-                            else if (Types.IsList(typeString))
-                            {
-                                typeString = "List";
-                            }
-                            else if (Types.IsArray(typeString))
-                            {
-                                typeString = "Array";
-                            }
-                            else if (Types.IsEnum(typeString) || Types.IsFlags(typeString))
-                            {
-                                // like key.ToChar()
-                                uint iDot;
-                                if (identifier.IndexOf('.', ref iDot))
-                                {
-                                    thisVariable = identifier.Substring(0, iDot);
-                                    functionName = identifier.Substring(iDot+1);
-                                    qualifiedName = Types.QualifyMethodName(functionName);
-                                }
-                            }                           
-                            if (qualifiedName.Length == 0)
-                            {
-                                foreach (var nameSpace in nameSpaces)
-                                {
-                                    if (nameSpace == typeString)
-                                    {
-                                        qualifiedName = nameSpace + "." + functionName;
-                                        break;
-                                    }
-                                    string lowerNameSpace = nameSpace.ToLower();
-                                    if (lowerNameSpace == typeString)
-                                    {
-                                        qualifiedName = nameSpace + "." + functionName;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (qualifiedName.Length > 0)
-                            {
-                                actualType = compileFunctionCall(qualifiedName, expectedType, thisVariable);
-                                break;
-                            }
-                        } // this case
-                        
-                        else
-                        {
-                            // enums and flags
-                            uint fDot;
-                            uint lDot;
-                            bool oneDot = false;
-                            if (identifier.IndexOf('.', ref fDot))
-                            {
-                                oneDot = true;
-                                if (identifier.LastIndexOf('.', ref lDot))
-                                {
-                                    if (fDot != lDot) // 2 dots
-                                    {
-                                        oneDot = false;
-                                        // 2 dot enums like "Keyboard.Key.Delete"
-                                        string typeName = identifier.Substring(0, lDot);
-                                        uint value;
-                                        if (Symbols.FindEnum(typeName, identifier, ref value))
-                                        {
-                                            CodeStream.AddInstructionPUSHI(value);
-                                            actualType = "enum";    
-                                            break;
-                                        }
-                                        if (Symbols.FindFlags(typeName, identifier, ref value))
-                                        {
-                                            CodeStream.AddInstructionPUSHI(value);
-                                            actualType = "flags";    
-                                            break;
-                                        }             
-                                    }
-                                }
-                                if (oneDot)
-                                {
-                                    actualType = "";
-                                    foreach (var nameSpace in nameSpaces)
-                                    {
-                                        string typeName = nameSpace + "." + identifier.Substring(0, fDot);
-                                        string memberName = nameSpace + "." + identifier;
-                                        uint value;
-                                        if (Symbols.FindEnum(typeName, memberName, ref value))
-                                        {
-                                            CodeStream.AddInstructionPUSHI(value);
-                                            actualType = "enum";    
-                                            break;
-                                        }
-                                        if (Symbols.FindFlags(typeName, memberName, ref value))
-                                        {
-                                            CodeStream.AddInstructionPUSHI(value);
-                                            actualType = "flags";    
-                                            break;
-                                        }
-                                    }    
-                                    if (actualType.Length > 0)
-                                    {
-                                        break;
-                                    }
-                                }
-                            }
-                            typeString = parts[0];
-                            qualifiedName = "";
-                            foreach (var nameSpace in nameSpaces)
-                            {
-                                if (nameSpace == typeString)
-                                {
-                                    qualifiedName = nameSpace + "." + functionName;
-                                    break;
-                                }
-                            }
-                            if (qualifiedName.Length > 0)
-                            {
-                                actualType = compileFunctionCall(qualifiedName, expectedType, "");
-                                break;
-                            }     
-                        }
-                    } // isDotted
-                    else
-                    {
-                        // not isDotted
-                        if (!Parser.Check(HopperToken.LParen))
-                        {
-                            // no '(' : getter?
-                            identifier = identifier + "_Get";
-                        }
-                        string qualifiedIdentifier = Types.QualifyMethodName(identifier);
-                        bool success = false;
-                        uint fIndex;
-                        if (GetFunctionIndex(qualifiedIdentifier, ref fIndex))
-                        {
-                            actualType = compileFunctionCall(qualifiedIdentifier, expectedType, "");
-                            success = !Parser.HadError;
-                            break;
-                        }
-                    }
-                    Parser.ErrorAtCurrent("'" + currentToken["lexeme"] + "' is not defined");
+                    actualType = compileIdentifierPrimary(expectedType, isDotted);
                 }
                 case HopperToken.Keyword:
                 {
-                    string typeName = currentToken["lexeme"];
-                    bool doTypeOf;
-                    bool typeId = Token.IsTypeKeyword(typeName);
-                    Parser.Advance();
-                    if (!IsSimpleType(typeName))
-                    {
-                        if (Parser.Check(HopperToken.LParen))
-                        {
-                           if (typeName == "typeof")
-                            {
-                                // built-in
-                                doTypeOf = true;
-                            }
-                            else
-                            {
-                                Parser.ErrorAt(currentToken, "compilePrimary not implemented");
-                            }            
-                        }
-                        else
-                        {
-                            if (typeId)
-                            {
-                                // stand alone type keyword
-                            }
-                            else
-                            {
-                                Parser.ErrorAt(currentToken, "compilePrimary not implemented");
-                            }
-                        }
-                    }
-                    
-                    string sourceType;
-                    if (Parser.Check(HopperToken.LParen, "'(' expected"))
-                    {
-                        if (!IsValueType(typeName))
-                        {
-                            if (!doTypeOf)
-                            {
-                                if ((typeName == "long") || (typeName == "float"))
-                                {
-                                    // CompileDynamicCast(..) deals with these
-                                }
-                                //else if (((typeName == "string") || (typeName == "array")) && DefineExists("H6502"))
-                                //{
-                                //    // simple 16 bit pointers
-                                //}
-                                else
-                                {
-                                    Parser.ErrorAtCurrent("'" + typeName + "' is an invalid type for simple cast");
-                                }
-                            }
-                        }
-                        Parser.Advance(); // (
-                        sourceType = CompileExpression(expectedType);
-                        if (Parser.HadError)
-                        {
-                            break;
-                        }
-                        if (!Parser.Check(HopperToken.RParen, "')' expected"))
-                        {
-                            break;
-                        }
-                        Parser.Advance(); // )
-                        typeId = false;
-                    }
-                    else if (typeId)
-                    {
-                        PushTypeFromString(typeName);
-                        actualType = "type";
-                    }
-                    if (typeId)
-                    {
-                        // done already
-                    }
-                    else if (doTypeOf)
-                    {
-                        // push the type of what's on the stack
-                        CodeStream.AddInstructionSysCall0("Types", "BoxTypeOf");
-                        actualType = "type";
-                    }
-                    else if (typeName != sourceType)
-                    {
-                        if (Types.AutomaticUpCastTop(sourceType, typeName))
-                        {
-                            // trivial   
-                        }
-                        else
-                        {
-                            // runtime cast from sourceType to castToType
-                            CompileDynamicCast(sourceType, typeName);
-                        }
-                        actualType = typeName; // simple cast
-                    }
-                    else
-                    {
-                        actualType = typeName; // nop
-                    }
-                    if (Parser.HadError)
-                    {
-                        break;
-                    }
+                    actualType = compileKeywordPrimary(expectedType);
                 }
                 case HopperToken.LParen:
                 {
@@ -1373,6 +1659,14 @@ unit Expression
                         break;
                     }
                     Parser.Consume(HopperToken.RParen, ')');
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    if (Parser.Check(HopperToken.Dot))
+                    {
+                        actualType = compileDotFunctionCall(actualType, expectedType);
+                    }
                 }
                 default:
                 {
@@ -1381,7 +1675,7 @@ unit Expression
             }
             break;
         } // loop
-        return actualType;            
+        return actualType;
     }
     
     string compileUnary(string expectedType)
@@ -1410,6 +1704,84 @@ unit Expression
             {
                 Parser.Advance();
                 operation = HopperToken.BitNot;
+            }
+            else if (Parser.Check(HopperToken.BitAnd))
+            {
+                Parser.Advance();
+                <string,string> currentToken = Parser.CurrentToken;
+                HopperToken tokenType = Token.GetType(currentToken);
+                if ((tokenType != HopperToken.Identifier) && (tokenType != HopperToken.DottedIdentifier))
+                {
+                    Parser.ErrorAtCurrent("variable or method identifier expected");
+                    break;
+                }
+                
+                // borrowed from AddInstructionPushVariable(..) :
+                string variableName = currentToken["lexeme"];
+                string fullName;
+                string variableType = Types.GetTypeString(variableName, false, ref fullName);
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (false && (variableType.Length == 0)) // don't allow & with method for now (delegates suffice)
+                {
+                    string methodName = Types.QualifyMethodName(variableName);
+                    uint fIndex;
+                    if (GetFunctionIndex(methodName, ref fIndex))
+                    {
+                        Parser.Advance();
+                        <uint> overloads = GetFunctionOverloads(fIndex);
+                        if (overloads.Length != 1)
+                        {
+                            Parser.ErrorAtCurrent("'&' not implemented for overloaded methods");
+                            break;
+                        }
+                        uint methodIndex = overloads[0];
+                        CodeStream.AddInstructionPUSHI(methodIndex);
+                        actualType = "uint";
+                        break;
+                    }
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    Parser.ErrorAtCurrent("variable or method identifier expected");
+                    break;
+                }
+                
+                // we found a variable, global or local:
+                Parser.Advance();
+                
+                if (Symbols.GlobalMemberExists(fullName))
+                {
+                    uint globalAddress = Symbols.GetGlobalAddress(fullName);
+                    CodeStream.AddInstructionPUSHI(globalAddress);
+                    actualType = "uint";
+                }
+                
+                else
+                {
+                    bool isRef;
+                    int offset = Block.GetOffset(variableName, ref isRef);
+                    if (isRef)
+                    {
+                        Parser.ErrorAtCurrent("'&' not implemented for 'ref' arguments");
+                        break;
+                    }
+                    uint localOffset;
+                    if ((offset > -129) && (offset < 128))
+                    {
+                        localOffset =  CodeStream.IntToByte(offset);
+                    }
+                    else
+                    {
+                        localOffset =  Types.IntToUInt(offset);
+                    }
+                    CodeStream.AddInstructionPUSHI(localOffset);
+                    actualType = "uint";
+                }
+                break;
             }
             actualType = compilePrimary(expectedType);
             if (Parser.HadError)
@@ -1771,7 +2143,6 @@ unit Expression
                                 if (rightType == "char")
                                 {
                                     // string Append(string,char)
-                                    //PrintLn("B:String.Append " + iSysCall.ToString());
                                     CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
                                     
                                 }
@@ -1791,7 +2162,15 @@ unit Expression
                                     CodeStream.AddInstruction(Instruction.SWAP);
                                     CodeStream.AddInstruction(Instruction.PUSHI0);
                                     CodeStream.AddInstruction(Instruction.SWAP);
-                                    //PrintLn("D:String.InsertChar");
+                                    CodeStream.AddInstructionSysCall0("String", "InsertChar");
+                                }
+                                else if (rightType == "char")
+                                {
+                                    // str = ch + ch
+                                    CodeStream.AddInstructionSysCall0("Char", "ToString");
+                                    CodeStream.AddInstruction(Instruction.SWAP);
+                                    CodeStream.AddInstruction(Instruction.PUSHI0);
+                                    CodeStream.AddInstruction(Instruction.SWAP);
                                     CodeStream.AddInstructionSysCall0("String", "InsertChar");
                                 }
                                 else
@@ -2102,36 +2481,13 @@ unit Expression
         return actualType;
     }
     
-#ifdef UNUSED
-    string compileBitXor(string expectedType)
-    {
-        string actualType;
-        loop
-        {
-            string leftType = compileBitAnd(expectedType);
-            if (Parser.HadError)
-            {
-                break;
-            }
-            actualType = leftType;
-            
-            if (Parser.Check(HopperToken.BitXor))           
-            {
-                Parser.ErrorAtCurrent("compileBitXor not implemented");
-                Die(0x0A);
-            }
-            break;
-        }
-        return actualType;
-    }
-#endif
+
     string compileBitOr(string expectedType)
     {
         string actualType;
         loop
         {
-            //string leftType = compileBitXor(expectedType);
-            string leftType = compileBitAnd(expectedType);
+            string leftType = compileBitXor(expectedType);
             if (Parser.HadError)
             {
                 break;
@@ -2147,8 +2503,7 @@ unit Expression
                         break;
                     }
                     Parser.Advance(); // |
-                    //string rightType = compileBitXor(expectedType);
-                    string rightType = compileBitAnd(expectedType);
+                    string rightType = compileBitXor(expectedType);
                     if (actualType != rightType)
                     {
                         if (Types.AutomaticUpCastTop(rightType, actualType))
@@ -2169,6 +2524,57 @@ unit Expression
                         break;
                     }       
                     CodeStream.AddInstruction(Instruction.BITOR);
+                    continue;
+                }
+                break;
+            } // loop
+            break;
+        } // loop
+        return actualType;
+    }
+    
+    string compileBitXor(string expectedType)
+    {
+        string actualType;
+        loop
+        {
+            string leftType = compileBitAnd(expectedType);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            actualType = leftType;
+            loop
+            {
+                if (Parser.Check(HopperToken.BitXor))           
+                {
+                    if (!IsBitwiseType(leftType))
+                    {
+                        Parser.ErrorAtCurrent("bitwise operations only legal for 'uint', 'int', 'flags' and 'byte', (not '" + leftType + "')");
+                        break;
+                    }
+                    Parser.Advance(); // ^
+                    string rightType = compileBitAnd(expectedType);
+                    if (actualType != rightType)
+                    {
+                        if (Types.AutomaticUpCastTop(rightType, actualType))
+                        {
+                            rightType = actualType;    
+                        }
+                        else if (Types.AutomaticUpCastNext(actualType, rightType))
+                        {
+                            actualType = rightType;    
+                        }
+                        else
+                        {
+                            Parser.ErrorAtCurrent("type mismatch, '" + actualType + "' expected (was '" + rightType + "')");
+                        }
+                    }            
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }       
+                    CodeStream.AddInstruction(Instruction.BITXOR);
                     continue;
                 }
                 break;
@@ -2386,11 +2792,84 @@ unit Expression
         return actualType; 
     }
     
+    string compileTernary(string expectedType)
+    {
+        string actualType;
+        loop
+        {
+            actualType = compileEquality(expectedType);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            if (Parser.Check(HopperToken.Question)) // ?
+            {
+                if (actualType != "bool")
+                {
+                    Parser.ErrorAtCurrent("ternary test expression must be boolean");
+                    break;
+                }
+                
+                // if false jump past
+                uint jumpPast = CodeStream.NextAddress;
+                CodeStream.AddInstructionJump(Instruction.JZW);
+            
+                Parser.Advance(); // ?
+                string trueExpressionType = CompileExpression(expectedType);
+                Parser.Consume(HopperToken.Colon, ':');
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                
+                // jump end (past a potential "else" block)
+                uint jumpEnd = CodeStream.NextAddress;
+                CodeStream.AddInstructionJump(Instruction.JW);
+// past:
+                uint pastAddress = CodeStream.NextAddress;
+                CodeStream.PatchJump(jumpPast, pastAddress); 
+                
+                string falseExpressionType = CompileExpression(expectedType);
+                if (Parser.HadError)
+                {
+                    break;
+                }
+// end:
+                uint endAddress = CodeStream.NextAddress;
+                CodeStream.PatchJump(jumpEnd, endAddress);
+               
+                actualType = falseExpressionType;
+                if (trueExpressionType != falseExpressionType)
+                {
+                    if (Types.AutomaticUpCastTop(falseExpressionType, trueExpressionType))
+                    {
+                        actualType = trueExpressionType;  
+                    }
+                    else if (Types.AutomaticUpCastNext(trueExpressionType, falseExpressionType))
+                    {
+                        actualType = falseExpressionType;    
+                    }
+                    else
+                    {
+                        Parser.ErrorAtCurrent("expected 'true' and 'false' expressions to be of the same type");
+                    }
+                }
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                
+            } // ?
+            break;
+        }
+        return actualType;
+    }
+    
     string CompileExpression(string expectedType)
     {
         string actualType;
         
-        actualType = compileEquality(expectedType);
+        actualType = compileTernary(expectedType);
         
         return actualType;
     }

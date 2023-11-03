@@ -1,10 +1,20 @@
 unit IO
 {
+    // #### globals at the top of the file so we can keep track of them:
+    
+    bool echoToLCD;
+    // #### end of globals
+    
+    
     uses "/Source/System/Screen"
     uses "/Source/System/Serial"
     uses "/Source/System/Keyboard"
     uses "/Source/System/Clipboard"
-    
+
+#ifndef RUNTIME    
+    uses  "/Source/System/String" // for keyboard buffer
+#endif
+   
     // Maximum width of lines on screen or serial console:
     //   uint LineMax
     //
@@ -32,62 +42,112 @@ unit IO
     //   WriteLn()          | WriteLnBoth(bool both)
     //   WriteLn(int value) | WriteLnBoth(int value, bool both)
     
-#ifndef TINYHOPPER    
-    string keyboardBuffer; // used by Read(..)
-    string integerString;  // re-used by WriteBoth(int value, bool both)
-#endif
+    bool EchoToLCD { set { echoToLCD = value; } }
+
     uint LineMax
     {
         get 
         { 
-#ifdef H6502
-            return 80;
+#ifdef SERIALCONSOLE
+            return 120;
 #else            
+    #ifdef H6502
+            return 120;
+    #else            
             return Screen.Columns-1;
+    #endif
 #endif
         }
     }
     Clear()
     {
-        Screen.Clear();
-#ifdef H6502
+#ifdef SERIALCONSOLE
         Serial.WriteChar(char(0x0C)); // form feed
+#else        
+    #ifdef H6502
+        if (echoToLCD)
+        {
+            Screen.Clear();
+        }
+        Serial.WriteChar(char(0x0C)); // form feed
+    #else
+        Screen.Clear();
+    #endif
 #endif
     }
+    writeDigit(uint uthis)
+    {
+        uint digit = uthis % 10;
+        char c = Char.ToDigit(byte(digit));
+        uthis = uthis / 10;
+        if (uthis != 0)
+        {
+            writeDigit(uthis);
+        }
+        Write(c);
+    }
+    WriteInt(int this)
+    {
+        uint uthis;
+        if (this < 0)
+        {
+            Write('-');
+            this = 0 - this;
+        }
+        uint uthis = uint(this);
+        writeDigit(uthis);
+    }
+    WriteUInt(uint this)
+    {
+        writeDigit(this);
+    }
     
+    WriteHex(byte b)
+    {
+        byte msn = ((b >> 4) & 0xF);
+        Write(ToHex(msn));
+        byte lsn = b & 0xF;
+        Write(ToHex(lsn));
+    }
+    WriteHex(uint u)
+    {
+        byte msb = byte(u >> 8);
+        WriteHex(msb);
+        byte lsb = byte(u & 0xFF);
+        WriteHex(lsb);
+    }
+    
+#ifdef SERIALCONSOLE
     Write(char c)
     {
-        WriteBoth(c, false);
-    }
-    WriteBoth(char c, bool both)
-    {
-#ifdef H6502
         Serial.WriteChar(c);
-        if (both)
-        {
-            if (c == char(0x0D))
-            {
-                Screen.PrintLn(); // PLATFORM
-            }
-            else
-            {
-                Screen.Print(c); // PLATFORM
-            }
-        }
-#else
-        if (c == char(0x0D))
-        {
-            Screen.PrintLn(); // PLATFORM
-        }
-        else
-        {
-            Screen.Print(c); // PLATFORM
-        }
-#endif        
     }
     Write(string s)
     {
-        WriteBoth(s, false);
+        foreach (var c in s)
+        {
+            Write(c);
+        }
+    }
+    WriteLn()
+    {
+        Write(char(0x0D));
+    }
+    WriteLn(string s)
+    {
+        Write(s);
+        WriteLn();
+    }
+#else
+
+    Write(char c)
+    {
+        WriteBoth(c, echoToLCD);
+    }
+
+    Write(string s)
+    {
+        WriteBoth(s, echoToLCD);
     }
     WriteBoth(string s, bool both)
     {
@@ -98,54 +158,67 @@ unit IO
     }
     WriteLn(string s)
     {
-        WriteLnBoth(s, false);
+        WriteLnBoth(s, echoToLCD);
     }
     WriteLnBoth(string s, bool both)
     {
         WriteBoth(s, both);
         WriteLnBoth(both);
     }
+
     WriteLn()
     {
-        WriteLnBoth(false);
+        WriteLnBoth(echoToLCD);
     }
     WriteLnBoth(bool both)
     {
         WriteBoth(char(0x0D), both);
     }
-    Write(int value)
-    {
-        WriteBoth(value, false);
-    }
     
-    WriteBoth(int value, bool both)
+#ifdef H6502    
+    WriteBoth(char c, bool both)
     {
-        String.Build(ref integerString);
-        
-        bool negative = false;
-        if (value < 0)
+
+        Serial.WriteChar(c);
+        if (both)
         {
-            negative = true;
-            value = 0 - value;
+            if (c == char(0x0D))
+            {
+                Screen.PrintLn(); // PLATFORM
+            }
+            else if (c == char(0x0C))
+            {
+                Screen.Clear();
+            }
+            else
+            {
+                Screen.Print(c); // PLATFORM
+            }
         }
-        else if (value == 0)
-        {
-            String.Build(ref integerString, '0');
-        }
-        while (value != 0)
-        {
-            int digit = value % 10;
-            char c = Char.ToDigit(byte(digit));
-            String.BuildFront(ref integerString, c);
-            value = value / 10;
-        }
-        if (negative)
-        {
-            String.BuildFront(ref integerString, '-');
-        }
-        WriteBoth(integerString, both);
     }
+#else
+    WriteBoth(char c, bool both)
+    {
+        if (c == char(0x0D))
+        {
+            Screen.PrintLn(); // PLATFORM
+        }
+        else if (c == char(0x0C))
+        {
+            Screen.Clear();
+        }
+        else
+        {
+            Screen.Print(c); // PLATFORM
+        }
+    }
+#endif        
     
+    
+#endif
+
+
+ 
     char TransformKey(Key key)
     {
         char ch = key.ToChar();
@@ -185,30 +258,63 @@ unit IO
         char ch;
         loop
         {
-            if (keyboardBuffer.Length != 0)
+            if (HaveKey())
             {
-                ch = keyboardBuffer[0];
-                keyboardBuffer = keyboardBuffer.Substring(1);
+                ch = PopKey();
             }
             else
             {
-#ifdef H6502
+#ifdef SERIALCONSOLE
                 ch = Serial.ReadChar();
-#else                
+#else
+    #ifdef H6502
+                ch = Serial.ReadChar();
+    #else                
                 Key key = Keyboard.ReadKey();
                 if (key == Key.ControlV)
                 {
                     if (Clipboard.HasText)
                     {
-                        string clipboardText = Clipboard.GetText(); // PLATFORM
-                        keyboardBuffer = keyboardBuffer + clipboardText;
+                        char pc = char(0);
+                        loop
+                        {
+                            char cch = Clipboard.GetChar();
+                            if (cch == char(0))
+                            {
+                                break;
+                            }
+                            
+                            if ((cch == char(0x0A)) && (pc == char(0x0D)))      // 0x0D 0x0A -> 0x0D
+                            {
+                                pc = cch;
+                                continue;
+                            }
+                            else if ((cch == char(0x0D)) && (pc == char(0x0A))) // 0x0A 0x0D -> 0x0A
+                            {
+                                pc = cch;
+                                continue;
+                            }
+                            else
+                            {
+                                pc = cch;
+                                if (cch == char(0x0A))
+                                {
+                                    PushKey(char(0x0D));
+                                }
+                                else
+                                {
+                                    PushKey(cch);
+                                }        
+                            }
+                        }
                         continue; // get the first ch from the keyboardBuffer above
                     }
                 }
                 ch = TransformKey(key);
+    #endif
 #endif                
             }
-            
+            byte b = byte(ch);
             if ((ch == char(0x08)) || (ch == char(0x0D)) || (ch == char(0x1B)))
             {
                 // from above : ok
@@ -225,36 +331,123 @@ unit IO
         }
         return ch;    
     }
-    
-    bool IsBreak() // only used by Tigger BASIC
+    bool IsAvailable
     {
-        bool result;
-#ifdef H6502
+        get
+        {
+#ifdef SERIALCONSOLE
+            return (HasKey()) || Serial.IsAvailable;
+#else            
+    #ifdef H6502
+            return (HasKey()) || Serial.IsAvailable;
+    #else
+            return Keyboard.IsAvailable;
+    #endif
+#endif            
+        }
+    }
+    bool IsBreak()
+    {
+#ifdef SERIALCONSOLE
         while (Serial.IsAvailable)
         {
             char ch = Serial.ReadChar();
             if (ch == char(0x18)) // <ctrl><X>?
             {
-                result = true;
-                break;
+                return true;
             }
             // buffer all the non <ctrl><X> characters seen here
-            keyboardBuffer = keyboardBuffer.Append(ch);
+            PushKey(ch);
         }
-#else        
+#else
+    #ifdef H6502
+        while (Serial.IsAvailable)
+        {
+            char ch = Serial.ReadChar();
+            if (ch == char(0x18)) // <ctrl><X>?
+            {
+                return true;
+            }
+            // buffer all the non <ctrl><X> characters seen here
+            PushKey(ch);
+        }
+    #else        
         while (Keyboard.IsAvailable)
         {
             Key key = Keyboard.ReadKey();
             if (key == (Key.Control | Key.ModX)) // <ctrl><X>?
             {
-                result = true;
-                break;
+                return true;
             } 
             // buffer all the non <ctrl><X> characters seen here
             char ch = IO.TransformKey(key);
-            keyboardBuffer = keyboardBuffer.Append(ch);
+            PushKey(ch);
         }
+    #endif
 #endif
-        return result;
+        return false;
     }
+    
+#ifdef RUNTIME
+
+    // top 4K of 64K 'memory' reserved for circular string-less keyboard buffer
+    const uint keyboardBufferBase = 0xF000; // 0xF000..0xFFFF
+    uint  keyboardInPointer;
+    uint  keyboardOutPointer;
+    
+    PushKey(char c)
+    {
+        byte k = byte(c);
+        Memory.WriteByte(keyboardBufferBase + keyboardInPointer, k);
+        if (keyboardInPointer == 0x0FFF)
+        {
+            keyboardInPointer = 0;
+        }
+        else
+        {
+            keyboardInPointer++;
+        }
+    }
+    char PopKey()
+    {
+        char c = char(Memory.ReadByte(keyboardBufferBase + keyboardOutPointer));
+        if (keyboardOutPointer == 0x0FFF)
+        {
+            keyboardOutPointer = 0;
+        }
+        else
+        {
+            keyboardOutPointer++;
+        }   
+        return c;  
+    }
+    bool HaveKey()
+    {
+        return keyboardInPointer != keyboardOutPointer;
+    }
+    
+    
+    
+#else        
+    
+#ifndef TINYHOPPER    
+    string keyboardBuffer; // used by Read(..)
+#endif        
+    PushKey(char c)
+    {
+        keyboardBuffer = keyboardBuffer + c;
+    }
+    char PopKey()
+    {
+        char c = keyboardBuffer[0];
+        keyboardBuffer = keyboardBuffer.Substring(1);  
+        return c;  
+    }
+    bool HaveKey()
+    {
+        return keyboardBuffer.Length > 0;
+    }    
+#endif    
+    
+    
 }

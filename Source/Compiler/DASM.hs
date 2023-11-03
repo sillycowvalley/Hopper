@@ -130,12 +130,13 @@ program DASM
                 
                 hasmFile.Append("" + char(0x0A)); 
             }
-
-            content = Instructions.Disassemble(code, ref address, startAddress);
+            <uint> jumpTargets;
+            <uint> jixLabels;
+            content = Instructions.Disassemble(code, ref address, startAddress, ref jumpTargets, ref jixLabels, false);
             instructionCount++;
-            
             String.Build(ref content, char(0x0A));
             hasmFile.Append(content);
+            
         }
     }
     
@@ -227,7 +228,7 @@ program DASM
         SysCalls.New();
         
         //EmitC();
-        
+        bool success = false;
         loop
         {
             <string> rawArgs = System.Arguments;
@@ -301,7 +302,7 @@ program DASM
                 
                 if (File.Exists(symbolsPath))
                 {
-                    if (!ParseCode(symbolsPath, false, true, false))
+                    if (!ParseCode(symbolsPath, false, true))
                     {
                         break;
                     }
@@ -461,9 +462,14 @@ program DASM
                 {
                     Parser.ProgressDone();
                 }
+                success = true;
                 break;
             }
             break;
+        }
+        if (!success)
+        {
+            Diagnostics.SetError(0x0E);
         }
     }
 }

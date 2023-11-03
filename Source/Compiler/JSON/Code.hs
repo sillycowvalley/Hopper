@@ -10,6 +10,16 @@ unit Code
     uses "/Source/Compiler/Tokens/Scanner"
     uses "/Source/Compiler/Tokens/Parser"
     
+#ifdef DEBUGGER
+    bool IsDebugger { get { return true; } }
+#else
+    bool IsDebugger { get { return false; } }
+    
+    // placeholders for functionality in the debugger only
+    bool IsHexDisplayMode { get { return false; } }
+    DeleteBreakpoints() {}
+#endif    
+    
     uint entryIndex;
     <uint, <byte> > methodCode;
     <uint, uint>    methodSize;
@@ -40,10 +50,11 @@ unit Code
     
     <byte> LoadRawCode(string codePath)
     {
-#ifdef DEBUGGER
-        Editor.SetStatusBarText("Loading code '" + codePath + "' ..");
-        uint counter = 0;
-#endif                            
+        uint counter;
+        if (IsDebugger)
+        {
+            Editor.SetStatusBarText("Loading code '" + codePath + "' ..");
+        }
         <byte> code;    
         file binFile = File.Open(codePath);
         loop
@@ -54,13 +65,14 @@ unit Code
                 break;
             }
             code.Append(b);
-#ifdef DEBUGGER
-            counter++;
-            if (counter % 1024 == 0)
+            if (IsDebugger)
             {
-                Parser.ProgressTick(".");
+                counter++;
+                if (counter % 1024 == 0)
+                {
+                    Parser.ProgressTick(".");
+                }
             }
-#endif
         }
         
         uint methodCount = code[2] + (code[3] << 8);
@@ -113,6 +125,14 @@ unit Code
         return sourceLine;
     }
     
+    <string, <string,variant> > GetDebugSymbols()
+    {
+        return debugSymbols;
+    }
+    SetDebugSymbols(ref <string, <string,variant> > newDebugSymbols)
+    {
+        debugSymbols = newDebugSymbols;
+    }
     <string, <string> > GetLocals(<byte> code, uint methodIndex, ref uint startAddress)
     {
         string index = "0x" + methodIndex.ToHexString(4);
@@ -138,7 +158,7 @@ unit Code
         loop
         {
             uint operand;
-            Instruction instruction = Instructions.Disassemble(code, ref aCurrent, ref operand);
+            Instruction instruction = Instructions.GetOperandAndNextAddress(code, ref aCurrent, ref operand);
             
             // if pc != 0, prune the results based on proximity to current pc
             if (pc != 0)
@@ -412,6 +432,10 @@ unit Code
     {
         return methodSize[methodIndex];
     }
+    bool MethodExists(uint methodIndex)
+    {
+        return methodName.Contains(methodIndex);
+    }
     string GetMethodName(uint methodIndex)
     {
         return methodName[methodIndex];
@@ -478,7 +502,7 @@ unit Code
         return methodSymbols;
     }
         
-    bool ParseMethod(string methodIndex, bool keepCode, bool keepSymbols, bool experimental, ref string methodName, ref <byte> code, ref uint codeLength)
+    bool ParseMethod(string methodIndex, bool keepCode, bool keepSymbols, ref string methodName, ref <byte> code, ref uint codeLength)
     {
         <string,variant> methodDictionary;
         
@@ -939,7 +963,7 @@ unit Code
         return !Parser.HadError;
     }
     
-    bool ParseCode(string codePath, bool keepCode, bool keepSymbols, bool experimental)
+    bool ParseCode(string codePath, bool keepCode, bool keepSymbols)
     {
         bool success;
         long pos;
@@ -1033,6 +1057,7 @@ unit Code
                         bool fg = true;
                         string globalName;
                         string globalType;
+                        string globalDefinition;
                         loop
                         {
                             if (Parser.Check(HopperToken.RBrace))
@@ -1078,12 +1103,17 @@ unit Code
                                 {
                                     globalType = membervalue;
                                 }
+                                case "definition":
+                                {
+                                    globalDefinition = membervalue;
+                                }
                             }
                             fg = false;
                         }
                         <string> globalList;
                         globalList.Append(globalType);
                         globalList.Append(globalName);
+                        globalList.Append(globalDefinition);
                         globalLists[offset] = globalList;
                     
                         fc = false;
@@ -1098,7 +1128,7 @@ unit Code
                     string name;
                     <byte> code;
                     uint codeLength;
-                    if (!ParseMethod(methodIndex, keepCode, keepSymbols, experimental, ref name, ref code, ref codeLength))
+                    if (!ParseMethod(methodIndex, keepCode, keepSymbols, ref name, ref code, ref codeLength))
                     {
                         break;
                     }
@@ -1148,7 +1178,7 @@ unit Code
         return success;
     }
     
-    bool ExportCode(string codePath, bool experimental)
+    bool ExportCode(string codePath)
     {
         bool success = true;
         
@@ -1224,10 +1254,15 @@ unit Code
                 <string,variant> globalsDictionary;
                 foreach (var gkv in kv.value)
                 {
+                    // <type, name, definition> like <enum, opCode, OpCode);
                     <string> glist = gkv.value;
                     <string,string> gdict;
                     gdict["name"] = glist[1];
                     gdict["type"] = glist[0];
+                    if (glist.Length > 2)
+                    {
+                        gdict["definition"] = glist[2];
+                    }
                     globalsDictionary[gkv.key] = gdict;
                 }
                 dict[kv.key] = globalsDictionary;

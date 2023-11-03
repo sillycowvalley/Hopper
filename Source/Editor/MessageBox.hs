@@ -426,6 +426,11 @@ unit MessageBox
                     
                     if (hasEdit)
                     {
+                        if ((key & (Key.Mask | Key.Alt)) == Key.ModSpace) // mask away Key.Shift and Key.Control but not Key.Alt
+                        {
+                            key = Key.Space;
+                            c = key.ToChar();
+                        }
                         switch (key)
                         {
                             case Key.ControlV:

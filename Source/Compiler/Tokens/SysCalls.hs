@@ -12,7 +12,7 @@ unit SysCalls
         syscalls.Clear(); // in case called a 2nd time
         
         addEntry("String", "NewFromConstant");
-        addEntry("String", "NewFromChar");
+        addEntry("Char",   "ToString");
         addEntry("String", "New");
         addEntry("String", "Append");
         addEntry("String", "InsertChar");
@@ -244,6 +244,35 @@ unit SysCalls
         addEntry("System", "Warp_Get");
         
         addEntry("Time", "Delay");
+        
+        addEntry("Long", "Inc");
+        addEntry("Long", "AddRef");
+        addEntry("Long", "MulRef");
+        
+        addEntry("Array", "GetItemUInt");
+        addEntry("Array", "SetItemUInt");
+        
+        addEntry("System", "Inline");
+        addEntry("Int", "ToBytes");
+        
+        addEntry("File", "GetTime");
+        addEntry("Directory", "GetTime");
+        
+        addEntry("String", "Trim");
+        addEntry("String", "TrimLeft");
+        addEntry("String", "TrimRight");
+        addEntry("String", "PushImmediate");
+        addEntry("String", "ToUpper");
+        addEntry("String", "ToLower");
+        
+        addEntry("Clipboard", "GetChar");
+        
+        addEntry("Memory", "ReadWord");
+        addEntry("Memory", "WriteWord");
+        
+        addEntry("MCU", "PinMode");
+        addEntry("MCU", "DigitalRead");
+        addEntry("MCU", "DigitalWrite");
     }
     
     bool TryParseSysCall(string name, ref byte index)

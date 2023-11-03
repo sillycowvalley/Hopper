@@ -9,6 +9,8 @@ unit DebugCommand
     uses "/Source/Debugger/Output"
     uses "/Source/Debugger/6502/Monitor"
     
+    uses "/Source/Debugger/ConsoleCapture"
+    
     <string> breakpoints;
     <uint>   breakpointAddresses;
     
@@ -25,6 +27,11 @@ unit DebugCommand
         Commands.CommandEnabledDelegate stepOverEnabled = DebugCommand.AlwaysCan;
         Commands.CommandExecuteDelegate stepIntoCommand = DebugCommand.StepInto;
         Commands.CommandEnabledDelegate stepIntoEnabled = DebugCommand.AlwaysCan;
+        
+        Commands.CommandExecuteDelegate profileCommand = DebugCommand.Profile;
+        Commands.CommandEnabledDelegate profileEnabled = DebugCommand.AlwaysCan;
+        Commands.CommandExecuteDelegate memoryCommand = DebugCommand.Memory;
+        Commands.CommandEnabledDelegate memoryEnabled = DebugCommand.AlwaysCan;
         
         Commands.CommandExecuteDelegate breakCommand = DebugCommand.Break;
         Commands.CommandEnabledDelegate breakEnabled = DebugCommand.CanBreak;
@@ -46,6 +53,9 @@ unit DebugCommand
         InstallCommand("StepOver", "Step &Over", stepOverCommand, stepOverEnabled, key);
         key = (Key.F11);
         InstallCommand("StepInto", "Step &Into", stepIntoCommand, stepIntoEnabled, key);
+        key = (Key.F2);
+        InstallCommand("Profile", "Run in &Profiler", profileCommand, profileEnabled, key);
+        InstallCommand("Memory", "Dump &Memory", memoryCommand, memoryEnabled, key);
         key = (Key.ControlC);
         InstallCommand("Break", "&Break", breakCommand, breakEnabled, key);
         
@@ -159,18 +169,20 @@ unit DebugCommand
         return false; // we never see this menu item when program is running
     }
     
+    RefreshWatch()
+    {
+        if (Pages.IsPageLoaded(0))
+        {
+            // good chance we are running the debugger
+            watchWindow();
+        }
+    }
+    
     watchWindow()
     {
         Pages.ClearPageData();
         Pages.LoadZeroPage(false); // for CSP and PC
-        //Pages.LoadPageData(0x04);
-        //Pages.LoadPageData(0x05);
-        //Pages.LoadPageData(0x06);
         bool stack8 = ZeroPageContains("BP8");
-        if (!stack8)
-        {
-            //LoadPageData(0x07);
-        }
         if (   ZeroPageContains("PC") 
             && ZeroPageContains("CSP") 
             && ZeroPageContains("CODESTART")
@@ -190,14 +202,15 @@ unit DebugCommand
         Source.LoadSymbols();
         Editor.SetActiveLine(0, "", false);
         Editor.SetStatusBarText("Running in debugger..");
-        //OutputDebug("");
-        //OutputDebug("Running..");
         Monitor.RunCommand(c);
         uint pc = ReturnToDebugger(c);
+        if (DebugOptions.IsCaptureConsoleMode)
+        {
+            ConsoleCapture.FlushLog();
+        }
         if (pc != 0)
         {
             Editor.SetStatusBarText("");
-            //OutputDebug("Waiting..");
             string sourceIndex = Code.GetSourceIndex(pc);
             Output.GotoSourceIndex(sourceIndex, true);
             watchWindow();
@@ -209,6 +222,8 @@ unit DebugCommand
             Editor.SetStatusBarText("Program exited, session reset.");
         }
     }
+    
+    
     Debug()
     {
         debugCommand('D');
@@ -219,6 +234,10 @@ unit DebugCommand
         Monitor.RunCommand("X");
         Editor.SetActiveLine(0, "", false);
         Editor.SetStatusBarText("Program exited, session reset.");
+        if (DebugOptions.IsCaptureConsoleMode)
+        {
+            ConsoleCapture.FlushLog();
+        }
     }
     StepOver()
     {
@@ -236,8 +255,91 @@ unit DebugCommand
     {
         // load the ihex to the H6502
         Monitor.UploadHex(Monitor.GetCurrentHexPath());
+        Output.Clear();
+        ConsoleCapture.ClearLog();
     }
-    
+    Memory()
+    {
+        Editor.SetStatusBarText("Dumping memory stats..");
+        if (Output.DumpMemory())
+        {
+            Editor.SetStatusBarText("Memory dump completed.");
+        }
+        else
+        {
+            Editor.SetStatusBarText("Memory dump failed.");
+        }
+    }
+    Profile() // like manually pressing <F11> until either the end of the program run or until <ctrl><C> is pressed
+    {
+        Source.LoadSymbols();
+        Editor.SetActiveLine(0, "", false);
+        Editor.SetStatusBarText("Running in profiler..");
+        watchWindow();   
+        
+        <uint,long> lineTimes;
+        <uint,long> lineHits;
+        string sourceIndex;
+        uint ppc;
+        uint minpc = 32000;
+        uint maxpc = 0;
+        long start;
+        long elapsed;
+        loop
+        {
+            ppc = Monitor.GetCurrentPC();
+            if (ppc < minpc)
+            {
+                minpc = ppc;
+            }
+            if (ppc > maxpc)
+            {
+                maxpc = ppc;
+            }
+            start = Time.Millis;   
+            Monitor.RunCommand('I');
+            uint pc = ReturnToDebugger('I');
+            
+            elapsed = Time.Millis - start;
+            if (!lineTimes.Contains(ppc))
+            {
+                lineTimes[ppc] = elapsed;
+                lineHits[ppc]  = 1;
+            }
+            else
+            {
+                lineTimes[ppc] = lineTimes[ppc] + elapsed;
+                lineHits[ppc]  = lineHits[ppc] + 1;
+            }
+            
+            if (pc == 0)
+            {
+                break;
+            }
+        } // loop
+        
+        if (DebugOptions.IsCaptureConsoleMode)
+        {
+            ConsoleCapture.AppendLineToLog("");
+            ConsoleCapture.AppendLineToLog("Profiler Run:");
+            for (uint pc = minpc; pc <= maxpc; pc++)
+            {
+                if (lineTimes.Contains(pc))
+                {
+                    long time = lineTimes[pc];
+                    long hits = lineHits[pc];
+                    float avg = 1.0 * time / hits;
+                    string sourceIndex = Code.GetSourceIndex(pc);
+                    ConsoleCapture.AppendLineToLog("0x" + pc.ToHexString(4) + "," + time.ToString()+ "," + hits.ToString()+ "," + avg.ToString() + "," + sourceIndex);
+                }
+            }
+            ConsoleCapture.FlushLog();
+        }
+        
+        watchWindow();
+        Editor.SetActiveLine(0, "", false);
+        Editor.SetStatusBarText("Program exited, session reset.");
+    }    
     
 }
 

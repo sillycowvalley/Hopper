@@ -131,6 +131,7 @@ unit Symbols
         overloadsCompiled.Clear();
         
     }   
+    
     uint GetNamedTypesCount()
     {
         uint count;
@@ -199,6 +200,7 @@ unit Symbols
         return name;
     }
     
+    
     string DecodeEnum(string enumName, uint value)
     {
         string result = enumName + "(" + value.ToString() + ")"; // fallback
@@ -217,7 +219,39 @@ unit Symbols
         }
         return result;
     }
-    
+    uint GetEnumUpperBound(string enumName, string currentNamespace)
+    {
+        uint upperBound = 0;
+        enumName = Symbols.QualifyEnum(enumName, currentNamespace);
+        if (eIndex.Contains(enumName))
+        {
+            uint index = eIndex[enumName];
+            <string,uint> members = eMembers[index];
+            foreach (var kv in members)
+            {
+                if (kv.value > upperBound)
+                {
+                    upperBound = kv.value;
+                }
+            }
+        }
+        return upperBound;
+    }
+    uint GetFlagsUpperBound(string flagsName, string currentNamespace)
+    {
+        uint upperBound = 0;
+        flagsName = Symbols.QualifyFlags(flagsName, currentNamespace);
+        if (flIndex.Contains(flagsName))
+        {
+            uint index = flIndex[flagsName];
+            <string,uint> members = flMembers[index];
+            foreach (var kv in members)
+            {
+                upperBound = upperBound | kv.value;
+            }
+        }
+        return upperBound;
+    }
     bool FindEnum(string enumName, string memberName, ref uint value)
     {
         bool found = false;
@@ -243,9 +277,15 @@ unit Symbols
             uint index = flIndex[flagsName];
             <uint> membersSorted = flMembersSorted[index];
             <uint, string> membersReversed = flMembersReversed[index];
+            bool useZero = (value == 0);
+            string zeroValue;
             foreach (var key in membersSorted)
             {
                 uint flagValue = key;
+                if (flagValue == 0)
+                {
+                    zeroValue = membersReversed[key];
+                }
                 if (flagValue == (value & flagValue))
                 {
                     value = value - flagValue;
@@ -260,10 +300,18 @@ unit Symbols
                     }
                 }
             }
-            if (value != 0)
+            if (useZero && (zeroValue.Length > 0))
+            {
+                result = zeroValue;
+            }
+            else if (value != 0)
             {
                 result = fallback;
             }
+        }
+        if (result.Length == 0)
+        {
+            result = fallback;
         }
         return result;
     }
@@ -579,7 +627,7 @@ unit Symbols
                     break;
                 }
                 char f = name[0];
-                if (f.IsUpper())
+                if (f.IsUpper()) // public method names only
                 {
                     uint winner = 0;
                     foreach (var nameSpace in nameSpaces)
@@ -707,6 +755,22 @@ unit Symbols
                 }
                 break;
             }
+        }
+        return name;
+    }
+    string QualifiedNamedType(string name, string currentNamespace)
+    {
+        if (IsEnumType(name, currentNamespace))
+        {
+            name = QualifyEnum(name, currentNamespace);
+        }
+        else if (IsFlagsType(name, currentNamespace))
+        {
+            name = QualifyFlags(name, currentNamespace);
+        }
+        else if (IsDelegateType(name, currentNamespace))
+        {
+            name = QualifyDelegate(name, currentNamespace);
         }
         return name;
     }
@@ -1272,7 +1336,7 @@ unit Symbols
         fLocalNamesAndTypes[iOverload] = appendList;
     }
     
-    bool ExportCode(string codePath, bool experimental)
+    bool ExportCode(string codePath)
     {
         // <uint,<byte> > fCodeStream;
         // <uint, <string,string> > fDebugInfo;
@@ -1307,19 +1371,30 @@ unit Symbols
             
             // <string> gNames;
             // <uint,string> gTypes;
-            
+
             <string, <string,string> > globals;
             uint gNamesCount = gNames.Length;
             for (uint i = 0; i < gNamesCount; i++)
             {
                 uint offset = i * 2;
                 <string,string> gDict;
-                gDict["name"] = gNames[i];
+                string gName = gNames[i];
+                gDict["name"] = gName;
                 
-                byte typeByte = Types.ToByte(gTypes[i]);
+                string gTypeName = gTypes[i];
+                byte typeByte = Types.ToByte(gTypeName);
                 type typeType = type(typeByte);
                 
                 gDict["type"] = typeType.ToString();
+                
+                uint iDot;
+                if (gName.IndexOf('.', ref iDot))
+                {
+                    gName = gName.Substring(0, iDot);
+                    gTypeName = QualifiedNamedType(gTypeName, gName);
+                }
+                gDict["definition"] = gTypeName;
+                
                 globals[offset.ToString()] = gDict;
             }
             if (globals.Count > 0)
@@ -1376,7 +1451,7 @@ unit Symbols
                     {
                         mdict["arguments"]   = argdicts;
                     }
-                    if (DefineExists("H6502") && fLocalNamesAndTypes.Contains(iUsedOverload))
+                    if (fLocalNamesAndTypes.Contains(iUsedOverload))
                     {
                         < < string > > localsAndTypes = fLocalNamesAndTypes[iUsedOverload];
                         <string, <string, string> > localdicts;

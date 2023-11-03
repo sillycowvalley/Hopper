@@ -111,6 +111,7 @@ program CODEGEN
     }
     
     {
+        bool success = false;
         loop
         {
             bool doIHex = false;
@@ -185,7 +186,7 @@ program CODEGEN
                     break;
                 }
                 
-                if (!ParseCode(codePath, true, false, false))
+                if (!ParseCode(codePath, true, false))
                 {
                     break;
                 }
@@ -282,9 +283,15 @@ program CODEGEN
                 {
                     Parser.ProgressDone();
                 }
+                success = true;
                 break;
             }
             break;
         }
+        if (!success)
+        {
+            Diagnostics.SetError(0x0E);
+        }
+
     }
 }

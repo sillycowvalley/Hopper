@@ -1,13 +1,10 @@
 unit System
 {
+
     const string hexeExtension = ".hexe";
    	const string hasmExtension = ".hasm";
-    
-#ifndef H6502
-    bool Trace { get { return false; }  set { } }
-    bool Warp  { get { return false; }  set { } }
-#endif
-    
+
+
     uses "/Source/System/Char"
     uses "/Source/System/Bool"
     uses "/Source/System/Byte"
@@ -25,12 +22,25 @@ unit System
     uses "/Source/System/Path"
     uses "/Source/System/Directory"
     uses "/Source/System/Type"
+
+#ifndef H6502
+    bool Trace { get { return false; }  set { } }
+    bool Warp  { get { return false; }  set { } }
+#endif        
     
     <string> Arguments { get system; }
     string CurrentDirectory { get system; set system; }
     Beep() system;
     
-    // launch another application (on exit, restore the currently running one)
+    // launch another application 
+    //    (on exit, restore the currently running one)
     uint Execute(string programPath, <string> arguments) system;
     
+#ifndef TINYHOPPER // on 6502 this can be a point to a block of memory rather than an array (for TINYHOPPER)
+
+    // execute an array of Hopper opCodes inline
+    //   (use & operator to determine offsets of locals and globals)
+    uint Inline(byte[] code) system;
+    
+#endif 
 }

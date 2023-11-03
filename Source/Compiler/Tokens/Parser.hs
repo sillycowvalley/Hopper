@@ -84,22 +84,27 @@ unit Parser
     <string, string> CurrentToken { get { return currentToken; }}    
     <string, string> PreviousToken { get { return previousToken; }}    
 
-    DumpCurrent()
+    DumpToken(string name, <string,string> token)
     {
-        OutputDebug("CurrentToken:");
-        foreach (var kv in currentToken)
+        OutputDebug(name + ":");
+        foreach (var kv in token)
         {
             OutputDebug("  " + kv.key + "->" + kv.value);
         }
+    }
+    DumpCurrent()
+    {
+        DumpToken("CurrentToken", currentToken);
     }    
     DumpPrevious()
     {
-        OutputDebug("PreviousToken:");
-        foreach (var kv in previousToken)
-        {
-            OutputDebug("  " + kv.key + "->" + kv.value);
-        }
+        DumpToken("PreviousToken", previousToken);
     }    
+    DumpPeek()
+    {
+        <string, string> token = Peek();
+        DumpToken("PeekToken", token);
+    }
     Reset()
     {
         <string, string> empty;

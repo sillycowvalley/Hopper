@@ -137,6 +137,7 @@ unit Token
         hopperTokenTypes["RBracket"] = HopperToken.RBracket;
         hopperTokenTypes["SemiColon"] = HopperToken.SemiColon;
         hopperTokenTypes["Colon"] = HopperToken.Colon;
+        hopperTokenTypes["Question"] = HopperToken.Question;
         hopperTokenTypes["Comma"] = HopperToken.Comma;
         hopperTokenTypes["Dot"] = HopperToken.Dot;
         hopperTokenTypes["Add"] = HopperToken.Add;
@@ -219,6 +220,7 @@ unit Token
         statementKeywords["switch"] = true;
         statementKeywords["system"] = true;
         statementKeywords["typeof"] = true;
+        statementKeywords["addrof"] = true;
         statementKeywords["unit"] = true;
         statementKeywords["uses"] = true;
         statementKeywords["while"] = true;

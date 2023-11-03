@@ -29,23 +29,6 @@ unit CodeStream
         }
         return last;
     }
-    Instruction GetSecondLastInstruction() 
-    { 
-        Instruction secondLast = Instruction.NOP;
-        if (LastInstructionIndex-1 < currentStream.Length)
-        {
-            Instruction last = GetLastInstruction();
-            // only works if last instruction is single byte
-            if (Instructions.OperandWidth(last) != 0)
-            {
-                Die(0x0B);
-            }
-            
-            byte instr = currentStream[LastInstructionIndex-1];
-            secondLast = Instruction(instr); 
-        }
-        return secondLast;
-    }
     
     uint NextAddress 
     { 
@@ -76,16 +59,6 @@ unit CodeStream
         }
         byte result = byte(offset);
         return result;
-    }
-    uint IntToUInt(int offset)
-    {
-        long loffset = offset;
-        if (loffset < 0)
-        {
-            loffset = 65536 + offset; // -1 -> 0xFFFF
-        }
-        uint result = uint(loffset);
-        return result;    
     }
     
     New()
@@ -230,13 +203,16 @@ unit CodeStream
             }
             default:
             {
+                uint inst = uint(jumpInstruction);
+                PrintLn("jumpInstruction=" + inst.ToHexString(2));
                 Die(0x0B); // what's this?
             }
         }
+        
         int offset = int(jumpToAddress) - int(jumpAddress);
         if (isLong)
         {
-            uint op = IntToUInt(offset);
+            uint op = Types.IntToUInt(offset);
             uint lsb = op & 0xFF;
             uint msb = op >> 8;
             if ((shortInstruction == Instruction.JB) && (offset >= 0) && (offset <= 127))
@@ -261,6 +237,7 @@ unit CodeStream
             byte op = IntToByte(offset);
             currentStream.SetItem(jumpAddress+1, op);
         }
+        
     }
     
     bool TryUserSysCall(string name)
@@ -270,9 +247,8 @@ unit CodeStream
         // Is there a user supplied alternative to the SysCall with only one overload?
         //  (we're not checking arguments or return type : shooting from the hip ..)
         uint fIndex;
-        if (DefineExists("H6502"))
+        if (DefineExists("H6502") || DefineExists("PORTABLE"))
         {
-            //Print("Try:" + name);
             if (GetFunctionIndex(name, ref fIndex))
             {
                 <uint> iOverloads = GetFunctionOverloads(fIndex);
@@ -287,8 +263,8 @@ unit CodeStream
                         {
                             if (iOverload <= 0x3FFF)
                             {
-                                uint beOverload = 0xC000 | iOverload;
-                                CodeStream.AddInstruction(Instruction.CALLW, beOverload);
+                                uint hOverload = 0xC000 | iOverload;
+                                CodeStream.AddInstruction(Instruction.CALLW, hOverload);
                             }
                             else
                             {
@@ -303,7 +279,6 @@ unit CodeStream
                         {
                             CodeStream.AddInstruction(Instruction.CALLW, iOverload);
                         }
-                        //Print(" Found");
                         userSupplied = true;
                     }
                 }
@@ -365,47 +340,54 @@ unit CodeStream
     }
     AddInstructionJump(Instruction jumpInstruction, uint jumpToAddress)
     {
-        uint jumpAddress = NextAddress;
-        int offset = int(jumpToAddress) - int(jumpAddress);
-        if ((offset >= -128) && (offset <= 127))
+        if ((jumpInstruction == Instruction.JIXW) || (jumpInstruction == Instruction.JIXB))
         {
-            byte op = IntToByte(offset);
-            switch (jumpInstruction)
-            {
-                case Instruction.JW:
-                {
-                    jumpInstruction = Instruction.JB;
-                }
-                case Instruction.JZW:
-                {
-                    jumpInstruction = Instruction.JZB;
-                }
-                case Instruction.JNZW:
-                {
-                    jumpInstruction = Instruction.JNZB;
-                }
-            }
-            AddInstruction(jumpInstruction, op);    
+            AddInstruction(jumpInstruction, jumpToAddress); // operand is not really an address, always a uint
         }
         else
         {
-            uint op = IntToUInt(offset);
-            switch (jumpInstruction)
+            uint jumpAddress = NextAddress;
+            int offset = int(jumpToAddress) - int(jumpAddress);
+            if ((offset >= -128) && (offset <= 127))
             {
-                case Instruction.JB:
+                byte op = IntToByte(offset);
+                switch (jumpInstruction)
                 {
-                    jumpInstruction = Instruction.JW;
+                    case Instruction.JW:
+                    {
+                        jumpInstruction = Instruction.JB;
+                    }
+                    case Instruction.JZW:
+                    {
+                        jumpInstruction = Instruction.JZB;
+                    }
+                    case Instruction.JNZW:
+                    {
+                        jumpInstruction = Instruction.JNZB;
+                    }
                 }
-                case Instruction.JZB:
-                {
-                    jumpInstruction = Instruction.JZW;
-                }
-                case Instruction.JNZB:
-                {
-                    jumpInstruction = Instruction.JNZW;
-                }
+                AddInstruction(jumpInstruction, op);
             }
-            AddInstruction(jumpInstruction, op);   
+            else
+            {
+                uint op = Types.IntToUInt(offset);
+                switch (jumpInstruction)
+                {
+                    case Instruction.JB:
+                    {
+                        jumpInstruction = Instruction.JW;
+                    }
+                    case Instruction.JZB:
+                    {
+                        jumpInstruction = Instruction.JZW;
+                    }
+                    case Instruction.JNZB:
+                    {
+                        jumpInstruction = Instruction.JNZW;
+                    }
+                }
+                AddInstruction(jumpInstruction, op);
+            }
         }
         UpdatePeepholeBoundary(currentStream.Length);
     }
@@ -428,8 +410,10 @@ unit CodeStream
             case Instruction.JW:
             case Instruction.JZW:
             case Instruction.JNZW:
+            case Instruction.JIXB:
+            case Instruction.JIXW:
             {
-                Die(0x0B); // illegal to not use th Jump-specific AddInstructions
+                Die(0x0B); // illegal to not use th Jump-specific AddInstructions (to update peephole boundary)
             }
         }
         internalAddInstruction(instruction);
@@ -476,7 +460,6 @@ unit CodeStream
     {
         string fullName;
         string variableType = Types.GetTypeString(variableName, true, ref fullName);
-            
         if (Symbols.GlobalMemberExists(fullName))
         {
             uint globalAddress = Symbols.GetGlobalAddress(fullName);
@@ -507,7 +490,7 @@ unit CodeStream
             }
             else
             {
-                uint operand =  CodeStream.IntToUInt(offset);  
+                uint operand = Types.IntToUInt(offset);
                 if (isRef)
                 {
                     CodeStream.AddInstruction(Instruction.PUSHRELW, operand);
@@ -560,7 +543,7 @@ unit CodeStream
             }
             else
             {
-                uint operand =  CodeStream.IntToUInt(offset);  
+                uint operand = Types.IntToUInt(offset);
                 if (isRef)
                 {
                     CodeStream.AddInstruction(Instruction.POPRELW, operand);

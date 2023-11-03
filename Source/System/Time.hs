@@ -4,9 +4,12 @@ unit Time
     long Micros { get system; }
     long Millis  { get system; }
 #endif
-#ifdef H6502
+#ifdef MCU
     Delay(uint ms) system;
 #else
+  #ifdef H6502
+    Delay(uint ms) system;
+  #else
     Delay(uint ms)
     {
         long endTime = Millis + ms;
@@ -18,5 +21,6 @@ unit Time
             }
         }
     }
+  #endif
 #endif
 }

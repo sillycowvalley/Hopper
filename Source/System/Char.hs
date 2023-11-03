@@ -1,16 +1,7 @@
 unit Char
 {
-#ifdef H6502
-    bool IsUpper(char this) system;
-    bool IsLower(char this) system;
-    char ToUpper(char this) system;
-    bool IsDigit(char this) system;
-    bool IsLetterOrDigit(char this) system;
-    char ToDigit(byte d) system;
-    char ToHex(byte h) system;
-    char ToLower(char this) system;
-    bool IsHexDigit(char this) system;
-#else    
+    
+#ifdef PORTABLE
     bool IsUpper(char this)
     {
         byte b;
@@ -33,7 +24,7 @@ unit Char
         }
         return this;
     }
-    char ToDigit(byte d)
+    char ToDigit(byte d) // TODO : should be in Byte
     {
         d = d + 48; // +0
         return char(d);
@@ -52,7 +43,7 @@ unit Char
                ((b >= 65) && (b <= 90)) || // A..Z
                ((b >= 97) && (b <= 122));  // a..z
     }
-    char ToHex(byte h)
+    char ToHex(byte h) // TODO : should be in Byte
     {
         if (h < 10)
         {
@@ -82,9 +73,36 @@ unit Char
                ((b >= 65) && (b <= 70)) || // A..F
                ((b >= 97) && (b <= 102));  // a..f
     }
+    string ToString(char this)
+    {
+        string result;
+        String.Build(ref result, this);
+        return result;
+    }
+#else
+    char ToUpper(char this) system;
+    bool IsDigit(char this) system;
+    bool IsHexDigit(char this) system;
+    bool IsLetterOrDigit(char this) system;
+    bool IsLower(char this) system;
+    bool IsUpper(char this) system;
+    char ToLower(char this) system;
+    char ToDigit(byte d) system; // TODO : should be in Byte
+    char ToHex(byte h) system;   // TODO : should be in Byte
     
+#ifdef H6502
+    string ToString(char this)
+    {
+        string result;
+        String.Build(ref result, this);
+        return result;
+    }
+#else
+    string ToString(char this) system;
 #endif
-    
+
+#endif
+
     bool IsLetter(char this)
     {
         byte b;
@@ -92,16 +110,5 @@ unit Char
         return ((b >= 65) && (b <= 90))   // A..Z
             || ((b >= 97) && (b <= 122)); // a..z
     }
-    
-    
-    
-    string ToString(char this)
-    {
-        string result;
-        return result.Append(this);
-    }
-        
-    
-    
-    
+
 }

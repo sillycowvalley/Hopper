@@ -1,7 +1,6 @@
 unit Errors
 {
-#ifndef COMPACT
-    
+#ifndef TERSE
     string GetMessage(uint number)
     {
         string message;
@@ -19,9 +18,9 @@ unit Errors
             case 10: { message = "Unexpected trailing content."; }
             case 11: { message = "Destination line does not exist."; }
             case 12: { message = "Closing '\"' expected."; }
-      		    case 13: { message = "Target line does not exist."; }
-       	    case 14: { message = "Unexpected character in expression:"; }
-      	     case 15: { message = "Integer expected."; }
+            case 13: { message = "Target line does not exist."; }
+            case 14: { message = "Unexpected character in expression:"; }
+            case 15: { message = "Integer expected."; }
             case 16: { message = "Integers expected for operation."; }
             case 17: { message = "Divide by zero."; }
             case 18: { message = "Type mismatch."; }
@@ -42,8 +41,11 @@ unit Errors
             case 33: { message = "Array variable identifier expected."; }
             case 34: { message = "Out of memory for code."; }
             case 35: { message = "Out of memory for variables."; }
-			         case 36: { message = "Internal error."; }
-			         case 37: { message = "Line number expected."; }
+            case 36: { message = "Internal error."; }
+            case 37: { message = "Line number expected."; }
+            case 38: { message = "String expression expected."; }
+            case 39: { message = "Incorrect number of arguments for function."; }
+            case 40: { message = "Integer expression expected."; }
         }
         return message;
     }
@@ -52,13 +54,13 @@ unit Errors
     Error(uint number, string content, uint ln, char token)
     {
         Write("Error " + number.ToString() + ":");
-#ifndef COMPACT
+#ifndef TERSE
         string message = GetMessage(number);
         if (message.Length > 0)
         {
             Write(" " + message);
-			if (token != char(0))
-			{
+		          if (token != char(0))
+         			{
          	    Write(" '" + token + "'.");
             }
         }
@@ -81,9 +83,8 @@ unit Errors
     }
    	Error(uint number, string content, uint ln)
     {
-	    Error(number, content, ln, char(0));
+	       Error(number, content, ln, char(0));
     }
-    
     Error(uint number)
     {
         Error(number, "", 0);

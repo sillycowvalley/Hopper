@@ -104,7 +104,10 @@ unit Highlighter
             case '"':
                 {
                     word = word + c;
-                    if (inString)
+                    if (inChar)
+                    {
+                    }
+                    else if (inString)
                     {
                         colour = HopperWord(word);
                         foreach (var ch in word)
@@ -123,7 +126,10 @@ unit Highlighter
             case '\'':
                 {
                     word = word + c;
-                    if (inChar)
+                    if (inString)
+                    {
+                    }
+                    else if (inChar)
                     {
                         colour = HopperWord(word);
                         foreach (var ch in word)

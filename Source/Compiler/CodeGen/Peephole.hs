@@ -3,7 +3,6 @@ unit Peephole
     uses "/Source/Compiler/CodeGen/Instructions"
     uses "/Source/Compiler/CodeGen/CodeStream"
     
-    
     uint lastInstruction0;
     uint lastInstruction1; // -1
     uint lastInstruction2; // -2
@@ -345,6 +344,22 @@ unit Peephole
             // PUSHIW LE -> PUSHIWLE
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIWLE));
+            TrimTail(ref currentStream, 1);
+            lastInstruction0 = lastInstruction1;
+            lastInstruction1 = lastInstruction2;
+            lastInstruction2 = lastInstruction3;
+            lastInstruction3 = lastInstruction4;
+            lastInstruction4 = 0;
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == uint(Instruction.PUSHIW)) 
+         && (currentStream[lastInstruction0] == uint(Instruction.LEI))
+           )
+        {
+            // PUSHIW LEI -> PUSHIWLEI
+            // i1     i0 -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIWLEI));
             TrimTail(ref currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;

@@ -16,12 +16,12 @@ unit Int
             }
             if (content[0] == '+')
             {
-                content = content.Substring(1);
+                String.Substring(ref content, 1);
                 length--;
             }
             else if (content[0] == '-')
             {
-                content = content.Substring(1);
+                String.Substring(ref content, 1);
                 length--;
                 makeNegative = true;
             }
@@ -76,7 +76,8 @@ unit Int
 
     string ToString(int this)
     {
-        int digit;
+        uint digit;
+        uint uthis;
         char c;
         bool negative;
         string result;
@@ -89,12 +90,13 @@ unit Int
         {
             String.Build(ref result, '0');
         }
-        while (this != 0)
+        uthis = uint(this);
+        while (uthis != 0)
         {
-            digit = this % 10;
+            digit = uthis % 10;
             c = Char.ToDigit(byte(digit));
             String.BuildFront(ref result, c);
-            this = this / 10;
+            uthis = uthis / 10;
         }
         if (negative)
         {
@@ -104,6 +106,7 @@ unit Int
     }
     float ToFloat(int this) system;
     long ToLong(int this) system;
+    
     string ToHexString(int this, byte digits)
     {
         int digit;
@@ -119,4 +122,5 @@ unit Int
         }
         return result;
     }
+    <byte> ToBytes(int this) system;
 }

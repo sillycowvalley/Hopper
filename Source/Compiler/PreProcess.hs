@@ -13,7 +13,9 @@ program PreProcess
    
   uses "/Source/Compiler/Constant"
   
-  uses "/Source/Compiler/Directives"
+  uses "/Source/Compiler/Directives" 
+  
+  bool IsDebugger { get { return false; } }
   
   // Documentation:
   // - documentation comments
@@ -24,8 +26,7 @@ program PreProcess
     
     <string, bool> unitsParsed;
     string currentUnit;
-    
-    
+        
     bool normalizeIdentifier(<string,string> idToken, ref string identifier, ref bool public, bool noDuplicates)
     {
         bool success = false;
@@ -112,10 +113,11 @@ program PreProcess
                 typeString = typeString + typeToken["lexeme"];
                 Parser.Advance();
                 bool arrayUnitV = false;
+                bool systemByteArray = false;
                 if (Parser.Check(HopperToken.LBracket))
                 {
                     // like byte[8192]
-                    if (!isValueType(typeString))
+                    if (!IsValueType(typeString))
                     {
                         if ((currentUnit == "Array") && (typeString == "V"))
                         {
@@ -129,12 +131,18 @@ program PreProcess
                             break;   
                         }
                     }
+                    else if ((currentUnit == "System") && (typeString == "byte"))
+                    {
+                        systemByteArray = true;
+                    }
                     Parser.Advance(); // [
                     typeString = typeString + "[";
                     string value;
-                    if (arrayUnitV && Parser.Check(HopperToken.RBracket))
+                    if ((arrayUnitV || systemByteArray) && Parser.Check(HopperToken.RBracket))
                     {
-                        // empty range: 'V[]'
+                        // empty range: 
+                        //   'V[]' for Array system methods
+                        //   'byte[]' for System.Call(..)
                     }
                     else
                     {
@@ -258,16 +266,13 @@ program PreProcess
         loop
         {
             Parser.Advance(); // const
-            if (!tryParseTypeString(ref typeString))
+            if (   !tryParseTypeString(ref typeString)
+                || (!IsValueType(typeString) && (typeString != "float") && (typeString != "long") && (typeString != "string"))
+                || (typeString == "delegate")) 
             {
                 Parser.ErrorAtCurrent("simple type expected");
                 break;
             }        
-            if (!isValueType(typeString) && (typeString != "float") && (typeString != "long") && (typeString != "string"))
-            {
-                Parser.ErrorAtCurrent("simple type expected");
-                break;
-            }
             <string,string> idToken = Parser.CurrentToken;
             string identifier;
             bool public;
@@ -412,6 +417,14 @@ program PreProcess
     {
         loop
         {
+          <string,string> prevToken = Parser.PreviousToken;
+          <string,string> usesToken = Parser.CurrentToken;
+          
+          if (usesToken["line"] == prevToken["line"])
+          {
+              Parser.ErrorAtCurrent("'uses' must be first token on line");
+              break;
+          }
           Parser.Advance(); // uses
           if (!Parser.Check(HopperToken.StringConstant))
           {
@@ -419,8 +432,8 @@ program PreProcess
               break;
           }
           Parser.Advance();
-          <string, string> previousToken = Parser.PreviousToken;
-          string hsPath = previousToken["lexeme"];
+          <string, string> pathToken = Parser.PreviousToken;
+          string hsPath = pathToken["lexeme"];
           string hsPathLower = hsPath.ToLower();
           if (!hsPathLower.EndsWith(".hs"))
           {
@@ -431,10 +444,29 @@ program PreProcess
               Parser.ErrorAtCurrent("'" + hsPath + "' not found");
               break;
           }
+          
+          if (pathToken["line"] != usesToken["line"])
+          {
+              Parser.ErrorAtCurrent("'uses' and path must appear on one line");
+              break;
+          }
+          
           hsPathLower = hsPath.ToLower();
           if (!unitsParsed.Contains(hsPathLower))
           {
               unitsParsed[hsPathLower] = false; // false means we're aware of it but we haven't parsed it yet
+          }
+          <string, string> nextToken = Parser.CurrentToken;
+          // ["type"]    - HopperToken
+          // ["lexeme"]  - string
+          // ["line"]    - uint
+          // ["source"]  - string
+          // ["pos"]     - uint - index in current parsed content string
+          // ["literal"] - depends
+          if (nextToken["line"] == pathToken["line"])
+          {
+              Parser.ErrorAtCurrent("'uses' declaration must be alone on line");
+              break;
           }
           break;
         }
@@ -807,7 +839,7 @@ program PreProcess
         } // loop
     }
     
-    declaration()
+    declaration(ref uint curlyDeclarations)
     {
         bool isDelegate;
         if (Parser.Check(HopperToken.Keyword, "delegate"))
@@ -828,7 +860,6 @@ program PreProcess
         {
             // not directive
             bool allDefined = Directives.IsAllDefined();
-                      
             if (!allDefined)
             {                                  
                 loop
@@ -847,6 +878,7 @@ program PreProcess
             else if (Parser.Check(HopperToken.LBrace))
             {
                 mainMethodDeclaration();
+                curlyDeclarations++;
             }
             else if (Parser.Check(HopperToken.Keyword, "const"))
             {
@@ -855,14 +887,23 @@ program PreProcess
             else if (Parser.Check(HopperToken.Keyword, "enum"))
             {
                 enumDeclaration();
+                curlyDeclarations++;
             }
             else if (Parser.Check(HopperToken.Keyword, "flags"))
             {
                 flagsDeclaration();
+                curlyDeclarations++;
             }
             else if (Parser.Check(HopperToken.Keyword, "uses"))
             {
-                usesDeclaration();
+                if (curlyDeclarations > 0)
+                {
+                    Parser.ErrorAtCurrent("must appear before function, method, property, enum or flags declarations");
+                }
+                else
+                {
+                    usesDeclaration();
+                }
             }
             else
             {   // global, method or function
@@ -964,15 +1005,18 @@ program PreProcess
                     {
                         functionDeclaration(idToken, typeString, isDelegate);
                         isDelegate = false;
+                        curlyDeclarations++;
                     }          
                     else if (isProperty)
                     {
                         propertyDeclaration(idToken, typeString);
+                        curlyDeclarations++;
                     }
                     else if (isMethod)
                     {
                         methodDeclaration(idToken, isDelegate);
                         isDelegate = false;
+                        curlyDeclarations++;
                     }
                     else if (isGlobal)
                     {
@@ -1006,6 +1050,7 @@ program PreProcess
       bool firstUnit = true;
       loop
       {
+          uint curlyDeclarations;
           Parser.Reset();
           
           Directives.New();
@@ -1041,6 +1086,7 @@ program PreProcess
           }
           firstUnit = false;
           bool endedProperly = false;
+          uint curlyDeclarations;
           loop
           {
               if (Parser.Check(HopperToken.EOF))
@@ -1057,9 +1103,12 @@ program PreProcess
                   success = false;
                   break;
               }
-              //<string,string> currentToken = CurrentToken;
-              //OutputDebug(currentToken);
-              declaration();
+              declaration(ref curlyDeclarations);
+              if (Parser.HadError)
+              {
+                  success = false;
+                  break;
+              }
               Parser.ProgressTick(".");
           }   
           if (Parser.HadError)
@@ -1081,12 +1130,16 @@ program PreProcess
                   Parser.Error("program requires entry point");
                   success = false;
               }
-              
-              if (Directives.IsStillOpen)
+              else if (Directives.IsStillOpen)
               {
                   Parser.ErrorAtCurrent("'#endif' expected before end of file");
-                  break;
+                  success = false;
               }
+          }
+          if (Parser.HadError)
+          {
+              success = false;
+              break;
           }
           // any more units to parse?
           sourcePath = "";
@@ -1115,6 +1168,7 @@ program PreProcess
         PrintLn("    -g <c> <r> : called from GUI, not console");
     }
     {  
+        bool success = false;
         loop
         {
           <string> rawArgs = System.Arguments;
@@ -1183,6 +1237,7 @@ program PreProcess
               BadArguments();
           }
           long startTime = Millis;
+          
           loop
           {
               string extension = Path.GetExtension(sourcePath);
@@ -1225,9 +1280,15 @@ program PreProcess
               {
                   Parser.ProgressDone();
               }
+              success = true;
               break;
-          }
+          } // main loop
           break;
+        } // arguments loop
+        if (!success)
+        {
+            Diagnostics.SetError(0x0E);
         }
+      
     }
 }

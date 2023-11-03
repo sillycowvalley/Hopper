@@ -8,8 +8,7 @@ program Edit
     uses "/Source/Editor/StatusBar"
     uses "/Source/Editor/Editor"
     uses "/Source/Editor/Commands"
-    
-    uses "/Source/Compiler/Tokens/Parser"
+    uses "/Source/Compiler/Tokens/Parser" // SetInteractive
     
     {
         <string> arguments = System.Arguments;

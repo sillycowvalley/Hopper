@@ -13,6 +13,7 @@ unit File
     Append(file this, string content) system;
     Flush(file this) system;
     long GetSize(string path) system;
+    long GetTime(string path) system;
     
     bool Exists(ref string filePath, ref string extension, string searchFolder)
     {

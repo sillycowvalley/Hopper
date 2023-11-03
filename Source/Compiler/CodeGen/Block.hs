@@ -51,11 +51,8 @@ unit Block
         <string> local;
         local.Append(variableType);
         local.Append(identifier);
-        if (DefineExists("H6502"))
-        {
-            uint fromAddress = LastInstructionIndex;
-            local.Append(fromAddress.ToString());
-        }
+        uint fromAddress = LastInstructionIndex;
+        local.Append(fromAddress.ToString());
         locals.Append(local);
         top["locals"] = locals;
         ReplaceTop(top);
@@ -493,44 +490,41 @@ unit Block
     
     Export(uint iBlock)
     {
-        if (DefineExists("H6502"))
+        <string,variant> blockContext = blockList[iBlock]; 
+        < <string> > locals;
+        if (blockContext.Contains("locals"))
         {
-            <string,variant> blockContext = blockList[iBlock]; 
-            < <string> > locals;
-            if (blockContext.Contains("locals"))
+            locals = blockContext["locals"];
+        }
+        if (locals.Length > 0)
+        {
+            < <string> > localNamesAndTypes;
+            
+            uint toAddress = LastInstructionIndex;
+            foreach (var local in locals)
             {
-                locals = blockContext["locals"];
-            }
-            if (locals.Length > 0)
-            {
-                < <string> > localNamesAndTypes;
+                <string> lstring = local;
+                string ltype    = lstring[0];
+                string lname    = lstring[1];
+                string laddress = lstring[2];
+                bool isRef;
+                int loffset = GetOffset(lname, ref isRef); // always positive for locals (BP+offset)
                 
-                uint toAddress = LastInstructionIndex;
-                foreach (var local in locals)
+                uint fromAddress;
+                if (UInt.TryParse(laddress, ref fromAddress))
                 {
-                    <string> lstring = local;
-                    string ltype    = lstring[0];
-                    string lname    = lstring[1];
-                    string laddress = lstring[2];
-                    bool isRef;
-                    int loffset = GetOffset(lname, ref isRef); // always positive for locals (BP+offset)
-                    
-                    uint fromAddress;
-                    if (UInt.TryParse(laddress, ref fromAddress))
-                    {
-                    }
-                    <string> localNameAndType;
-                    // address range is unique because location of definition is unique
-                    localNameAndType.Append("0x" + fromAddress.ToHexString(4) + "-0x" + toAddress.ToHexString(4)); 
-                    localNameAndType.Append(lname);
-                    localNameAndType.Append(ltype);
-                    localNameAndType.Append(loffset.ToString()); // in theory, could be -ve (but never)
-                    
-                    localNamesAndTypes.Append(localNameAndType);
                 }
-                uint iOverload = Types.GetCurrentMethod();
-                Symbols.AppendLocalNamesAndTypes(iOverload, localNamesAndTypes);
+                <string> localNameAndType;
+                // address range is unique because location of definition is unique
+                localNameAndType.Append("0x" + fromAddress.ToHexString(4) + "-0x" + toAddress.ToHexString(4)); 
+                localNameAndType.Append(lname);
+                localNameAndType.Append(ltype);
+                localNameAndType.Append(loffset.ToString()); // in theory, could be -ve (but never)
+                
+                localNamesAndTypes.Append(localNameAndType);
             }
-        } // H6502
+            uint iOverload = Types.GetCurrentMethod();
+            Symbols.AppendLocalNamesAndTypes(iOverload, localNamesAndTypes);
+        }
     }
 }

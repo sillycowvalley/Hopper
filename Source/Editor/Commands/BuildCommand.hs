@@ -9,59 +9,66 @@ unit BuildCommand
     // for DefineExists to see which platform to CODEGEN for
     uses "/Source/Compiler/JSON/JSON"
     
-    // built successfully this session?
-    bool buildSuccess = false;
+    uses "/Source/Compiler/Tokens/Dependencies"
     
-    // reset during compile : checks for H6502 in compilation target symbols
+    // reset during compile : 
+    //   -  checks for H6502 in compilation target symbols using CheckTarget(..) after preprocess step
+    // or, failing that, in GetBinaryPath()
+    //   - checks if a ".hex" exists when a ".hexe" is not found
+    
     bool target6502 = false;
     bool Target6502 
     { 
         get { return target6502; }
     }
-    
-    // set when updating the title bar text to orange, reset after compile
-    bool wasModified = false;
-    bool WasModified
+    string GetBinaryPath() // used in Run(..), Debug(..), CanRun(..) and CanDebug(..)
     {
-        get { return wasModified; }
-        set { wasModified = value; }
-    }
-        
-    Register()
-    {
-        Commands.CommandExecuteDelegate buildCommand = BuildCommand.Execute;
-        Commands.CommandEnabledDelegate buildEnabled = BuildCommand.Enabled;
-        Commands.CommandExecuteDelegate runCommand = BuildCommand.Run;
-        Commands.CommandExecuteDelegate debugCommand = BuildCommand.Debug;
-        Commands.CommandEnabledDelegate runEnabled = BuildCommand.CanRun;
-        Commands.CommandEnabledDelegate debugEnabled = BuildCommand.CanDebug;
-        
-        Key key = (Key.F7);
-        InstallCommand("Build", "&Build", buildCommand, buildEnabled, key);
-        key = (Key.F5 | Key.Control);
-        InstallCommand("Run", "&Start Without Debugger", runCommand, runEnabled, key);
-        key = (Key.F5);
-        InstallCommand("Debug", "Launch &Debugger", debugCommand, debugEnabled, key);
-    }
-    
-    DisplayError(string message, uint error)
-    {
-        if (File.Exists("/Temp/Errors.txt"))
+        string path;
+        if (Enabled())
         {
-            file errorFile = File.Open("/Temp/Errors.txt");
-            string errorText = errorFile.ReadLine();
-            if (errorText.Length > 0)
+            path = Editor.GetProjectPath();
+            path = Path.GetFileName(path);
+            string extension = Path.GetExtension(path);
+            path = path.Replace(extension, hexeExtension);
+            path = Path.Combine("/Bin", path);
+            target6502 = false;
+            string ihexPath = path.Replace(hexeExtension, ".hex");   
+            if (File.Exists(ihexPath))
             {
-                message = message + ": " + errorText;
+                if (File.Exists(path)) 
+                {
+                    // both .hexe and .hex exist    
+                    long hexeFileTime = File.GetTime(path);
+                    long hexFileTime  = File.GetTime(ihexPath);
+                    string hexeFileTimeHex = hexeFileTime.ToHexString(8);
+                    string hexFileTimeHex  = hexFileTime.ToHexString(8);
+                    if (hexFileTimeHex >= hexeFileTimeHex)
+                    {
+                        // .hex is younger than .hexe
+                        OutputDebug("HEX 1 " + path + " " + ihexPath + " " + hexeFileTimeHex + " " + hexFileTimeHex);
+                        path = ihexPath;
+                        target6502 = true;
+                    }
+                    else
+                    {
+                        OutputDebug("HEXE 2 " + path + " " + ihexPath + " " + hexeFileTimeHex + " " + hexFileTimeHex);
+                    }
+                }
+                else
+                {
+                    // only .hex exists
+                    OutputDebug("HEX 2 " + path + " " + ihexPath);
+                    path = ihexPath;
+                    target6502 = true;
+                }
+            }
+            else
+            {
+                OutputDebug("HEXE 1 " + path + " " + ihexPath);
             }
         }
-        if (error != 0x0E)
-        {
-            message = "0x" + error.ToHexString(2) + " " + message;
-        }
-        Editor.SetStatusBarText(message);
+        return path;
     }
-    
     
     CheckTarget(string symbolsPath)
     {
@@ -91,20 +98,64 @@ unit BuildCommand
         }
     }
     
+        
+    Register()
+    {
+        Commands.CommandExecuteDelegate buildCommand = BuildCommand.Execute;
+        Commands.CommandEnabledDelegate buildEnabled = BuildCommand.Enabled;
+        
+        Commands.CommandExecuteDelegate runCommand   = BuildCommand.Run;
+        Commands.CommandEnabledDelegate runEnabled   = BuildCommand.CanRun;
+        
+        Commands.CommandExecuteDelegate debugCommand = BuildCommand.Debug;
+        Commands.CommandEnabledDelegate debugEnabled = BuildCommand.CanDebug;
+        
+        Key key = (Key.F7);
+        InstallCommand("Build", "&Build", buildCommand, buildEnabled, key);
+        key = (Key.F5 | Key.Control);
+        InstallCommand("Run", "&Start Without Debugger", runCommand, runEnabled, key);
+        key = (Key.F5);
+        InstallCommand("Debug", "Launch &Debugger", debugCommand, debugEnabled, key);
+    }
+    
+    DisplayError(string message, uint error)
+    {
+        if (File.Exists("/Temp/Errors.txt"))
+        {
+            file errorFile = File.Open("/Temp/Errors.txt");
+            string errorText = errorFile.ReadLine();
+            if (errorText.Length > 0)
+            {
+                message = message + ": " + errorText;
+            }
+        }
+        if (error != 0x0E)
+        {
+            message = "0x" + error.ToHexString(2) + " " + message;
+        }
+        Editor.SetStatusBarText(message);
+    }
+    
     Execute()
     {
         loop
         {
             if (Editor.CanUndo())
             {
-                string result = Editor.OfferSave();
-                if (result == "Cancel")
+                if (BuildOptions.IsAutoSaveEnabled())
                 {
-                    Editor.SetStatusBarText("Build Cancelled");
-                    break;
+                    Editor.Save();
+                }
+                else
+                {
+                    string result = Editor.OfferSave();
+                    if (result == "Cancel")
+                    {
+                        Editor.SetStatusBarText("Build Cancelled");
+                        break;
+                    }
                 }
             }
-            buildSuccess = false;
             
             string binaryPath ="/Bin/PreProcess" + hexeExtension;
             if (!File.Exists(binaryPath))
@@ -148,17 +199,15 @@ unit BuildCommand
             
             CheckTarget(jsonPath);
             string target = "";
-            if (target6502)
+            if (Target6502)
             {
                 target = " for 6502";
             }
             
-            
-            
             arguments.Clear();
             arguments.Append(jsonPath);
             string checkedBuild;
-            if (OptionsCommand.IsCheckedEnabled())
+            if (BuildOptions.IsCheckedEnabled())
             {
                 checkedBuild = " (checked build)";
             }
@@ -179,7 +228,7 @@ unit BuildCommand
                 break;
             }
     
-            if (OptionsCommand.IsOptimizeEnabled())
+            if (BuildOptions.IsOptimizeEnabled())
             {        
                 binaryPath ="/Bin/Optimize" + hexeExtension;
                 if (!File.Exists(binaryPath))
@@ -215,7 +264,7 @@ unit BuildCommand
             arguments.Append("-g");
             arguments.Append(col.ToString());
             arguments.Append(row.ToString());
-            if (target6502)
+            if (Target6502 || BuildOptions.IsGenerateIHexEnabled())
             {
                 arguments.Append("-ihex");
             }
@@ -226,7 +275,7 @@ unit BuildCommand
                 break;
             }
             
-            if (OptionsCommand.IsDisassembleEnabled())
+            if (BuildOptions.IsDisassembleEnabled())
             {       
                 binaryPath ="/Bin/DASM" + hexeExtension;
                 if (!File.Exists(binaryPath))
@@ -249,24 +298,15 @@ unit BuildCommand
                     break;
                 }
             }
+            // debugger needs .hexe file, even for 6502
+            //if (!Target6502)
+            //{
+            //    string ihexPath = hexePath.Replace(hexeExtension, ".hex");
+            //    File.Delete(ihexPath);   // don't leave a stale .hex lying around (if we didn't just build it)
+            //}
             Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'" + target);
-            buildSuccess = true;
-            wasModified  = false;
             break;   
         }
-    }
-    string GetBinaryPath()
-    {
-        string path;
-        if (Enabled())
-        {
-            path = Editor.GetProjectPath();
-            path = Path.GetFileName(path);
-            string extension = Path.GetExtension(path);
-            path = path.Replace(extension, hexeExtension);
-            path = Path.Combine("/Bin", path);
-        }
-        return path;
     }
     Debug()
     {
@@ -276,9 +316,8 @@ unit BuildCommand
             Die(0x0B); // assume we only arrive here for H6502
         }
         <string> arguments;
-        string path = Editor.GetProjectPath();
-        string ihexPath = path.Replace(hexeExtension, ".hex");
-        arguments.Append(path);
+        string sourcePath = Editor.GetProjectPath(); 
+        arguments.Append(sourcePath); // Debugger takes the .hs source path
         uint error = System.Execute("Debug", arguments);
         Editor.DrawAll();
     }
@@ -289,10 +328,9 @@ unit BuildCommand
         string path = GetBinaryPath();
         if (Target6502) // target was checked during the successful build
         {
-            string ihexPath = path.Replace(hexeExtension, ".hex");
             arguments.Append("-x"); // <ctrl><F5>
             arguments.Append("-l");
-            arguments.Append(ihexPath);
+            arguments.Append(path); // HopperMon takes IHex path
             path = "hm";
         }
         uint error = System.Execute(path, arguments);
@@ -308,10 +346,9 @@ unit BuildCommand
     }
     
     // Conditions for when we need to rebuild:
-    // - we can only run if we successfully built the project during this session
-    // - if we modify a file, we need to rebuild (does not matter if we undo the modification)
-    // Not ideal but Hopper does not have file timestamps and I figure it is better
-    // to be strict than to unwittingly run/debug a stale build.
+    // - if we have an unsaved modified file in the editor, then we need to build or save first
+    // - if no file is modified in the editor, we need to build if the binary file is not younger 
+    //   than all the source files of the project
     
     bool CanRun()
     {
@@ -319,7 +356,11 @@ unit BuildCommand
         bool canRun = File.Exists(path);
         if (canRun)
         {
-            canRun = !wasModified && buildSuccess;
+            canRun = !Editor.CanUndo();
+            if (canRun)
+            {
+                canRun = Editor.IsYoungerThanSource(path);
+            }
         }
         return canRun;
     }
@@ -329,7 +370,11 @@ unit BuildCommand
         bool canRun = File.Exists(path);
         if (canRun)
         {
-            canRun = !wasModified && buildSuccess && Target6502;
+            canRun = !Editor.CanUndo() && Target6502;
+            if (canRun)
+            {
+                canRun = Editor.IsYoungerThanSource(path);
+            }
         }
         return canRun;
     }

@@ -2,13 +2,41 @@ unit String
 {
     uses "/Source/System/Char"
     
-    string InsertChar(string this, uint index, char append) system;
+    // used for: strc = stra + strb;
     string Append(string this, string append) system;
+    
+    // used for: strb = stra + ch;
     string Append(string this, char append) system;
-    uint Length { get system; }
+    
+    // optimizer for: this = this.Append(str) or this = this + str
     Build(ref string build, string append) system;
+    
+    // optimizer for: this = this.Append(ch);
     Build(ref string build, char append) system;
+    
+    // optimizer for: this = "";
     Build(ref string build) system;
+
+#ifdef PORTABLE
+    BuildFront(ref string build, char insert)
+    {
+        string result = build.InsertChar(0, insert);
+        build = result;
+    }
+#else    
+    // optimizer for: this = this.InsertChar(0, ch);
+    BuildFront(ref string build, char insert) system;
+#endif
+    
+    
+    // used for:  str[n] accesss
+    char GetChar(string this, uint index) system;
+    
+    bool IsEmpty { get { return this.Length == 0; } }
+        
+    string InsertChar(string this, uint index, char append) system;
+    
+    uint Length { get system; }
     
 #ifdef H6502
     string Replace(string original, string pattern, string replace)
@@ -108,95 +136,7 @@ unit String
         substring = original.Substring(originalLength-length, length);
         return substring == pattern;
     }
-    string Substring(string original, uint start)
-    {
-      uint i ;
-      string result;
-      for (i = start; i < original.Length; i++)
-      {
-          String.Build(ref result, original[i]);
-      }    
-      return result;
-    }
-    string Substring(string original, uint start, uint length)
-    {
-        uint originalLength;
-        uint i;
-        string result;
-        if (length > 0)
-        {
-          originalLength = original.Length;
-          for (i = start; i < originalLength; i++)
-          {
-            String.Build(ref result, original[i]);
-            if (result.Length == length)
-            {
-                break;
-            }
-          }    
-        }
-        return result;
-    }
-    int Compare(string left, string right) // returns -1, 0, +1
-    {
-        uint ll;
-        uint rl;
-        uint i;
-        int result;
-        ll = left.Length;
-        rl = right.Length;
-        loop
-        {
-            if (i >= ll)
-            {
-                break;
-            }
-            if (i >= rl)
-            {
-                break;
-            }
-            if (left[i] != right[i])
-            {
-                break;
-            }
-            i++;
-        }
-        loop
-        {
-            if ((ll == 0) && (rl == 0))
-            {
-                break; // "" == ""
-            }
-            
-            // at this point the strings are identical up to left[i-1] == right[i-1]
-            if ((i < ll) && (i < rl))
-            {
-                // [i-1] is the first difference
-                if (int(left[i]) > int(right[i]))
-                {
-                    result = 1;
-                }
-                else
-                {
-                    result = -1;
-                }
-                break;
-            }
-            if (i >= ll)
-            {
-                if (i >= rl)
-                {
-                    break; // they were equal to this point
-                }
-                // left string is shorter but they are equal to [i-1]
-                result = -1;
-                break;
-            }
-            result = 1;
-            break;
-        }
-        return result;
-    }
+    
     bool Contains(string this, char needle) system;
     bool Contains(string this, string needle)
     {
@@ -229,21 +169,14 @@ unit String
     string Replace(string this, char pattern, char replace) system;
     bool EndsWith(string this, char pattern) system;
     bool EndsWith(string this, string pattern) system;
-    string Substring(string this, uint start) system;
-    string Substring(string this, uint start, uint length) system;
-    int Compare(string left, string right) system; // returns -1, 0, +1
     
     bool Contains(string this, char needle)
     {
-        string result;
-        char ch;
         uint i;
-        uint length;
-        length = this.Length;
+        uint length = this.Length;
         for ( ; i < length; i++)
         {
-            ch = this[i];
-            if (ch == needle)
+            if (this[i] == needle)
             {
                 return true;
             }
@@ -280,8 +213,7 @@ unit String
     bool IndexOf(string this, char pattern, ref uint index)
     {
         uint i;
-        uint length;
-        length = this.Length;
+        uint length = this.Length;
         for ( ; i < length; i++)
         {
             if (this[i] == pattern)
@@ -294,8 +226,7 @@ unit String
     }
     bool IndexOf(string this, char pattern, uint searchIndex, ref uint index)
     {
-        uint length;
-        length = this.Length;
+        uint length = this.Length;
         loop
         {
             if (searchIndex >= length)
@@ -312,24 +243,14 @@ unit String
         return false;
     }
 #endif    
-    BuildFront(ref string build, char insert) system;
-    
-    char GetChar(string this, uint index) system;
-    //{
-    //    char c = this[index];
-    //    return c;
-    //}
-    bool IsEmpty { get { return this.Length == 0; } }
-    
     
     bool IndexOf(string this, string pattern, ref uint index)
     {
         bool found;
         uint pLength;
         uint pIndex;
-        uint length;
         uint i;
-        length = this.Length;
+        uint length = this.Length;
         pLength = pattern.Length;
         loop
         {
@@ -470,126 +391,6 @@ unit String
         }
         return this;
     }
-    
-    string ToUpper(string this)
-    {
-        uint i;
-        char c;
-        uint length;
-        string result;
-        uint length = this.Length;
-        for (; i < length; i++)
-        {
-            c = this[i];
-            Build(ref result, c.ToUpper());
-        }
-        return result;
-    }
-    string ToLower(string this)
-    {
-        uint i;
-        char c;
-        uint length;
-        string result;
-        length = this.Length;
-        for (; i < length; i++)
-        {
-            c = this[i];
-            Build(ref result, c.ToLower());
-        }
-        return result;
-    }
-    
-    string Trim(string this)
-    {
-        uint thisLength;
-        uint iFirstNonSpace;
-        uint iLastNonSpace;
-        uint i;
-        uint count;
-        bool firstFound;   
-        string result;
-        thisLength = this.Length;
-        if (thisLength > 0)
-        {
-            for (; i < thisLength; i++)
-            {
-                if (this[i] != ' ')
-                {
-                    iFirstNonSpace = i;
-                    firstFound = true;
-                    break;
-                }
-            }
-            if (firstFound)
-            {
-                for ( i=thisLength-1; i > 0; i--)
-                {
-                    if (this[i] != ' ')
-                    {
-                        iLastNonSpace = i;
-                        // if there was a firstFound, there will always be a lastFound
-                        break;
-                    }
-                }
-                count = iLastNonSpace-iFirstNonSpace+1;
-                i = iFirstNonSpace;
-                loop
-                {
-                    if (i == thisLength)
-                    {
-                        break;
-                    }    
-                    if (count == 0)
-                    {
-                        break;
-                    }
-                    String.Build(ref result, this[i]);
-                    i++;
-                    count--;
-                }
-            }
-        }
-        return result;
-    }
-    
-    string TrimLeft(string this)
-    {
-        uint i;
-        uint thisLength;
-        uint iFirstNonSpace;
-        uint iLastNonSpace;
-        bool firstFound;
-        string result;
-         thisLength = this.Length;
-        if (thisLength > 0)
-        {
-            firstFound = false;
-            for ( ; i < thisLength; i++)
-            {
-                if (this[i] != ' ')
-                {
-                    iFirstNonSpace = i;
-                    firstFound = true;
-                    break;
-                }
-            }
-            if (firstFound)
-            {
-                i = iFirstNonSpace;
-                loop
-                {
-                    if (i == thisLength)
-                    {
-                        break;
-                    }
-                    String.Build(ref result, this[i]);
-                    i++;
-                }
-            }
-        }
-        return result;
-    }
  
     <string> Split(string this, string delimiters)
     {
@@ -666,4 +467,150 @@ unit String
         }
         return stringList;
     }
+
+    string Substring(string this, uint start) system;
+    string Substring(string this, uint start, uint length) system;
+
+    // optimizer for: str = str.Substring(n);
+    Substring(ref string build, uint start) system;
+    
+    string Trim(string this) system;
+
+    // optimizer for: str = str.Trim();
+    Trim(ref string build) system;
+
+    string TrimLeft(string this) system;
+
+    // optimizer for: str = str.TrimLeft();
+    TrimLeft(ref string build) system;
+    
+    TrimRight(ref string build) system;
+    
+    
+#ifdef PORTABLE
+    string ToUpper(string this)
+    {
+        uint i;
+        char c;
+        uint length;
+        string result;
+        uint length = this.Length;
+        for (; i < length; i++)
+        {
+            c = this[i];
+            Build(ref result, c.ToUpper());
+        }
+        return result;
+    }
+    string ToLower(string this)
+    {
+        uint i;
+        char c;
+        uint length;
+        string result;
+        length = this.Length;
+        for (; i < length; i++)
+        {
+            c = this[i];
+            Build(ref result, c.ToLower());
+        }
+        return result;
+    }
+    ToUpper(ref string this)
+    {
+        uint i;
+        char c;
+        uint length;
+        length = this.Length;
+        
+        string other = this.ToUpper();
+        Build(ref this);
+        for ( ;i < length; i++)
+        {
+            Build(ref this, other[i]);
+        }
+    }
+    ToLower(ref string this)
+    {
+        uint i;
+        char c;
+        uint length;
+        length = this.Length;
+        
+        string other = this.ToLower();
+        Build(ref this);
+        for ( ;i < length; i++)
+        {
+            Build(ref this, other[i]);
+        }
+    }
+    int Compare(string left, string right) // returns -1, 0, +1
+    {
+        uint ll;
+        uint rl;
+        uint i;
+        int result;
+        ll = left.Length;
+        rl = right.Length;
+        loop
+        {
+            if (i >= ll)
+            {
+                break;
+            }
+            if (i >= rl)
+            {
+                break;
+            }
+            if (left[i] != right[i])
+            {
+                break;
+            }
+            i++;
+        }
+        loop
+        {
+            if ((ll == 0) && (rl == 0))
+            {
+                break; // " == "
+            }
+            
+            // at this point the strings are identical up to left[i-1] == right[i-1]
+            if ((i < ll) && (i < rl))
+            {
+                if (int(left[i]) > int(right[i]))
+                {
+                    result = 1;
+                }
+                else
+                {
+                    result = -1;
+                }
+                break;
+            }
+            if (i >= ll)
+            {
+                if (i >= rl)
+                {
+                    break; // they were equal to this point
+                }
+                // left string is shorter but they are equal to [i-1]
+                result = -1;
+                break;
+            }
+            result = 1;
+            break;
+        }
+        return result;
+    }
+#else
+    string ToUpper(string this) system;
+    ToUpper(ref string this) system;
+    string ToLower(string this) system;
+    ToLower(ref string this) system;
+    
+    // returns -1, 0, +1
+    int Compare(string left, string right) system; 
+#endif
+    
 }

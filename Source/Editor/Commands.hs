@@ -6,10 +6,11 @@ unit Commands
     uses "/Source/Editor/Commands/ExitCommand"
 #ifdef DEBUGGER
     uses "/Source/Debugger/DebugCommand"
+    uses "/Source/Debugger/DebugOptions"
 #else
     uses "/Source/Editor/Commands/BuildCommand"
-    uses "/Source/Editor/Commands/OptionsCommand"
-#endif
+    uses "/Source/Editor/Commands/BuildOptions"
+#endif    
     
     delegate CommandExecuteDelegate();
     delegate bool CommandEnabledDelegate();
@@ -25,11 +26,13 @@ unit Commands
     Initialize()
     {
         ExitCommand.Register();
-#ifdef DEBUGGER        
-        DebugCommand.Register();
-#else
+#ifndef DEBUGGER        
         BuildCommand.Register();
-        OptionsCommand.Register();
+        BuildOptions.Register();   
+#else
+        DebugCommand.Register();
+        DebugOptions.Register();
+        
 #endif        
         Editor.RegisterCommands();
         

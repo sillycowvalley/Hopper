@@ -27,6 +27,93 @@ unit Monitor
     {
         serialOutput = "";
     }
+#ifdef CAPTURESERIAL
+
+    file captureFile;
+    
+    InitializeCapture()
+    {
+        string capturePath = "/Debug/SerialCapture.log";
+        File.Delete(capturePath);
+        captureFile = File.Create(capturePath);
+    }
+    SerialWriteChar(char ch)
+    {
+        Serial.WriteChar(ch);
+        byte b = byte(ch);
+        string logLine = "Desktop:" + b.ToHexString(2);
+        if (b > 31)
+        {
+            logLine = logLine + " " + ch;
+        }
+        captureFile.Append(logLine + char(0x0A));
+        captureFile.Flush();
+    }
+    char SerialReadChar()
+    {
+        char ch = Serial.ReadChar();
+        
+        byte b = byte(ch);
+        string logLine ="Device: " + b.ToHexString(2);
+        if (b > 31)
+        {
+            logLine = logLine + " " + ch;
+        }
+        captureFile.Append(logLine + char(0x0A));
+        captureFile.Flush();
+        
+        return ch;
+    }
+#else    
+    SerialWriteChar(char ch)
+    {
+        Serial.WriteChar(ch);
+    }
+    char SerialReadChar()
+    {
+        char ch = Serial.ReadChar();
+        return ch;
+    }
+#endif
+
+    WaitForDeviceReady()
+    {
+        return;
+#ifdef CAPTURESERIAL        
+        captureFile.Append("WaitForDeviceReady" + char(0x0A));
+        captureFile.Flush();        
+#endif
+        char c;
+        loop
+        {
+            SerialWriteChar(char(0x1B)); // to break VM if it is running
+            while (Serial.IsAvailable)
+            {
+                c = SerialReadChar();
+                if (c == '\\')
+                {
+                    break;
+                }
+            }
+            if (c == '\\')
+            {
+                break;
+            }
+            Delay(100);
+            if (IsDebugger)
+            {
+                Parser.ProgressTick(".");
+            }
+            else
+            {
+                Print('.');
+            }
+        }
+#ifdef CAPTURESERIAL                
+        captureFile.Append("Done" + char(0x0A));
+        captureFile.Flush();        
+#endif
+    }
     
     bool checkEcho(bool waitForSlash)
     {
@@ -42,8 +129,8 @@ unit Monitor
                 }
                 continue;
             }
-            char c = Serial.ReadChar();
-            if (c == char(0x0D))
+            char c = SerialReadChar();
+            if ((c == char(0x0D)) || (c == char(0x0A)))
             {
                 if (collectOutput)
                 {
@@ -89,8 +176,8 @@ unit Monitor
                     keyboardBuffer = keyboardBuffer.Substring(1);
                     if (ch != char(0x0A)) // only do the 0x0D's
                     {
-                        Serial.WriteChar(ch);
-                        Delay(10);
+                        SerialWriteChar(ch);
+                        Delay(1);
                         if (ch == char (0x0D))
                         {
                             waitingForPrompt = true;
@@ -100,16 +187,18 @@ unit Monitor
                 else if (Keyboard.IsAvailable)
                 {
                     Key key = Keyboard.ReadKey();
-#ifdef DEBUGGER
-                    // convert <right><click> in console area to <ctrl><V>
-                    if ((key == Key.ClickRight) && Keyboard.ClickUp)
+                    if (IsDebugger)
                     {
-                        if (Output.ConsoleHitTest(Keyboard.ClickX, Keyboard.ClickY))
+                        // convert <right><click> in console area to <ctrl><V>
+                        if ((key == Key.ClickRight) && Keyboard.ClickUp)
                         {
-                            key = Key.ControlV;
+                            if (Output.ConsoleHitTest(Keyboard.ClickX, Keyboard.ClickY))
+                            {
+                                key = Key.ControlV;
+                            }
                         }
                     }
-#endif                                    
+                      
                     if ((key == Key.ControlV) && Clipboard.HasText)
                     {
                         string clipboardText = Clipboard.GetText();
@@ -119,13 +208,13 @@ unit Monitor
                     char ch = IO.TransformKey(key);
                     if (ch != char(0x00))
                     {
-                        Serial.WriteChar(ch);
+                        SerialWriteChar(ch);
                     }
                 }
                 continue;
             }
-            char c = Serial.ReadChar();
-            if (c == char(0x0D))
+            char c = SerialReadChar();
+            if ((c == char(0x0D)) || (c == char(0x0A)))
             {
                 Output.Print(c);
             }
@@ -145,7 +234,7 @@ unit Monitor
                     if (c == '>')
                     {
                         waitingForPrompt = false;
-                        Delay(100);
+                        Delay(10);
                     }
                 }
             }
@@ -154,15 +243,15 @@ unit Monitor
     
     sendCommand(string commandLine)
     {
-        Serial.WriteChar(char(0x1B)); // to break VM if it is running
+        SerialWriteChar(char(0x1B)); // to break VM if it is running
         if (checkEcho(true))  { }
         if (commandLine.Length > 0)
         {
             foreach (var ch in commandLine)
             {
-                Serial.WriteChar(ch);
+                SerialWriteChar(ch);
             }
-            Serial.WriteChar(char(0x0D));
+            SerialWriteChar(char(0x0D));
             if (checkEcho(true)) { }
         }
     }
@@ -252,47 +341,58 @@ unit Monitor
         lastHexPath = "";
         sendCommand("L"); // waits for \ confirmation  
         file iFile = File.Open(ihexPath);
-#ifdef DEBUGGER
-        Editor.SetStatusBarText("Uploading '" + ihexPath + "' ..");
-#endif    
+        if (IsDebugger)
+        {
+            Editor.SetStatusBarText("Uploading '" + ihexPath + "' ..");
+        }
+
         collectOutput = true; // just to toss it away    
         while (iFile.IsValid())
         {
             string ln = iFile.ReadLine();
             foreach (var c in ln)
             {
-                Serial.WriteChar(c); 
+                SerialWriteChar(c); 
                 if (checkEcho(false)) { }
             }
-            Serial.WriteChar(char(0x0D));
+            SerialWriteChar(char(0x0D));
             if (checkEcho(false)) { }
-#ifdef DEBUGGER            
-            Parser.ProgressTick(".");
-#endif
+            if (IsDebugger)
+            {
+                Parser.ProgressTick(".");
+            }
         }
-        Serial.WriteChar('*'); // arbitrary terminator to get a \ back
+        SerialWriteChar('*'); // arbitrary terminator to get a \ back
         if (checkEcho(true)) // waits for \ confirmation    
         {
-#ifdef DEBUGGER
-            Editor.SetStatusBarText("Successfully uploaded '" + ihexPath + "'");
-#else
-            Output.Print("  Successfully uploaded '" + ihexPath + "'");
-#endif
+            if (IsDebugger)
+            {
+                Editor.SetStatusBarText("Successfully uploaded '" + ihexPath + "'");
+            }
+            else
+            {
+                Output.Print("  Successfully uploaded '" + ihexPath + "'");
+            }
             lastHexPath = ihexPath;
         }
         else
         {
-#ifdef DEBUGGER
-            Editor.SetStatusBarText("Failed to upload '" + ihexPath + "'");
-#else            
-            Output.Print("  Failed to upload '" + ihexPath + "'");
-#endif
+            if (IsDebugger)
+            {
+                Editor.SetStatusBarText("Failed to upload '" + ihexPath + "'");
+            }
+            else
+            {
+                Output.Print("  Failed to upload '" + ihexPath + "'");
+            }
         }
         ClearSerialOutput(); // toss it
         Source.ClearSymbols();
-#ifdef DEBUGGER        
-        DebugCommand.DeleteBreakpoints();
-#endif
+        if (IsDebugger)
+        {
+            DeleteBreakpoints();
+        }
+        collectOutput = false;
     }
     string GetCurrentHexPath()
     {
