@@ -61,7 +61,7 @@ syscallArrayNew:
   jsr decTSP
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   .endif
   .endif
   
@@ -143,6 +143,77 @@ arraySizeCalculated:
   lda #tArray
   jmp pushIDXExit
 
+
+syscallArraySetItemUInt:  
+  .ifdef CHECKED
+  jmp syscallArraySetItem
+  .endif
+  .ifndef STACK8
+  jmp syscallArraySetItem
+  .else
+
+  ; value
+  ldx SP8
+  dex
+  lda HopperValueStack, X
+  sta ACCH
+  dex
+  lda HopperValueStack, X
+  sta ACCL
+  
+  ; index -> IDY
+  dex
+  lda HopperValueStack, X
+  sta IDYH
+  dex
+  lda HopperValueStack, X
+  sta IDYL
+  
+  ; this -> IDX
+  dex
+  lda HopperValueStack, X
+  sta IDXH
+  dex
+  lda HopperValueStack, X
+  stx SP8
+  sta IDXL
+  
+  
+  ; two byte elements : IDY << 1
+  asl IDYL
+  rol IDYH
+  
+  clc
+  lda IDXL  ; LSB
+  adc IDYL
+  sta IDYL
+  lda IDXH  ; MSB
+  adc IDYH
+  sta IDYH
+  
+  lda ACCL
+  ldy #5
+  sta (IDY), Y
+  lda ACCH
+  iny
+  sta (IDY), Y
+
+  ; inline version of rawReleaseSP since we know:
+  ;    - this is an Array (reference type)
+  ;    - it is in IDX (as well as (SP)
+  ldy #1
+  lda (IDX), Y ; reference count
+  dec
+  sta (IDX), Y
+  ; if zero, free
+  ;bne syscallArraySetItemNoRelease
+  ;jsr memoryFree
+;syscallArraySetItemNoRelease:
+  
+  jmp nextInstruction
+  .endif ; STACK8
+
+
 ; SetItem(V[] this, uint index, V value) system;
 syscallArraySetItem:
 
@@ -187,7 +258,7 @@ syscallArraySetItemSkipMSB:
   dey
   lda (SP), Y       ; LSB
   .endif
-  pha
+   
   sta ACCL
   
   .ifndef STACK8
@@ -220,7 +291,7 @@ syscallArraySetItemSkipMSB:
   .ifdef CHECKED
   jsr decTSP
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   .endif
   .endif
   
@@ -279,9 +350,9 @@ syscallArraySetItemSkipMSB2:
   lda TOPL
   ;cmp #0
   bne syscallArraySetItemRangeOk
-  stz ACCH
   lda #$02 ; array index out of range
   sta ACCL
+  stz ACCH
   jmp utilityDiagnosticsDie
 syscallArraySetItemRangeOk:
   .endif
@@ -398,7 +469,73 @@ syscallArraySetItemNoRelease:
   .endif
   
   jmp nextInstruction
+
+
+syscallArrayGetItemUInt:  
+  .ifdef CHECKED
+  jmp syscallArrayGetItem
+  .endif
+  .ifndef STACK8
+  jmp syscallArrayGetItem
+  .else
   
+  ; index -> IDY
+  ldx SP8
+  dex
+  lda HopperValueStack, X
+  sta IDYH
+  dex
+  lda HopperValueStack, X
+  sta IDYL
+  
+  ; this -> IDX
+  dex
+  lda HopperValueStack, X
+  sta IDXH
+  dex
+  lda HopperValueStack, X
+  sta IDXL
+  ;stx SP8
+
+  ; two byte elements : IDY << 1
+  asl IDYL
+  rol IDYH
+  
+  clc
+  lda IDXL  ; LSB
+  adc IDYL
+  sta IDYL
+  lda IDXH  ; MSB
+  adc IDYH
+  sta IDYH
+
+  ;ldx SP8
+  ldy #5
+  lda (IDY), Y       ; MSB
+  sta HopperValueStack, X
+  lda #tUInt
+  sta HopperTypeStack, X
+  iny
+  inx
+  lda (IDY), Y       ; LSB
+  sta HopperValueStack, X
+  inx
+  stx SP8
+  
+  ; inline version of rawReleaseSP since we know:
+  ;    - this is an Array (reference type)
+  ;    - it is in IDX (as well as (SP)
+  ldy #1
+  lda (IDX), Y ; reference count
+  dec
+  sta (IDX), Y
+  ; if zero, free
+;  bne syscallArrayGetItemNoReleaseUInt
+;  jsr memoryFree
+;syscallArrayGetItemNoReleaseUInt:
+  
+  jmp nextInstruction
+  .endif
   
 ; V GetItem(V[] this, uint index) system;
 syscallArrayGetItem:
@@ -445,7 +582,7 @@ syscallArrayGetItemSkipMSB:
   .ifdef CHECKED
   jsr decTSP
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   .endif
   .endif
   
@@ -504,9 +641,9 @@ syscallArrayGetItemSkipMSB2:
   lda TOPL
   ;cmp #0
   bne syscallArrayGetItemRangeOk
-  stz ACCH
   lda #$02 ; array index out of range
   sta ACCL
+  stz ACCH
   jmp utilityDiagnosticsDie
 syscallArrayGetItemRangeOk:
   .endif

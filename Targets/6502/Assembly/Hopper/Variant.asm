@@ -7,6 +7,8 @@
 ;   xx   actual type for item
 ;   xxxx data for value types, pData for reference types
 
+variantTypeOffset  = 2
+variantpDataOffset = 3
 
 createValueVariant:
   ; type in A

@@ -73,6 +73,8 @@ plrbEnd:
   
   jmp regularPOPLOCALB
 
+
+
   .ifdef STACK8
 
  .ifdef HEAP
@@ -194,7 +196,7 @@ opcodePOPLOCALBReferenceType:
   lda (PC) ; reload the offset
   bra opcodePOPLOCALBShared
   
-  .else
+  .else ; STACK8
   
   .ifdef HEAP
 opcodePOPCOPYLOCALB00:
@@ -330,7 +332,6 @@ opcodePOPLOCALBValueType:
 copyNeededPOPLOCALB:
   jsr cloneSP ; preserves IDX and Y
   
-
 noCopyNeededPOPLOCALB:  
   stz COPYNEXTPOP
   

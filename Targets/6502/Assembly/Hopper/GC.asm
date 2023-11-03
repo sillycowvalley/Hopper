@@ -13,30 +13,45 @@ gcCreate:
   lda IDYH
   pha
   
-  ; allocate enough space for type and reference count (2 more bytes)
+  lda ACCL
+  pha
+  lda ACCH
+  pha
+  
+  .ifdef MEMDEBUG
+  lda #"A"
+  jsr diagnosticOutChar
+  lda fSIZEH
+  jsr diagnosticOutHex
+  lda fSIZEL
+  jsr diagnosticOutHex
+  .endif
+  
   clc
   lda fSIZEL  ; LSB
-  ;adc #2
-  ;adc #$11 ; 16 + 1
-  adc #$09 ; 8 + 1
+  ;adc #2  ; allocate enough space for type and reference count (2 more bytes)
+  ;adc #$09 ; 8 + 1, ok do that, but also round up to the nearest 8 byte boundary to reduce fragmentation
+  adc #$05 ; 4 + 1, ok do that, but also round up to the nearest 4 byte boundary to reduce fragmentation
   sta ACCL
   lda fSIZEH  ; MSB
   adc #0
   sta ACCH
   
   lda ACCL
-  and #$F8
+  ;and #$F8
+  and #$FC
   sta ACCL
   
   .ifdef MEMDEBUG
-  jsr diagnosticOutNewLine
-  lda #"A"
+  ;jsr diagnosticOutNewLine
+  lda #":"
   jsr diagnosticOutChar
-  ;jsr memoryHeapWalk
   lda ACCH
   jsr diagnosticOutHex
   lda ACCL
   jsr diagnosticOutHex
+  lda #" "
+  jsr diagnosticOutChar
   .endif
   
   .ifdef MEMDEBUG
@@ -74,6 +89,11 @@ gcCreateMSBZero:
   ;jsr diagnosticOutChar
   ;jsr memoryHeapWalk
   .endif
+  
+  pla
+  sta ACCH
+  pla
+  sta ACCL
   
   pla
   sta IDYH
@@ -408,7 +428,7 @@ notNoReleaseFree:
   cmp #tList
   bne gcReleaseNotList
 
-  jsr utilityListClear
+  jsr listUtilityClear
   bra gcReleaseCompoundDone
   
 gcReleaseNotList:
@@ -483,10 +503,9 @@ noReleaseFree:
 
 
 
-  
 cloneIDY:
   ; type is in A
-  ; reference type to clone is at IDY
+  ; reference type to clone is at IDY, resulting clone in IDX
   tax
   
   ; cloneList can go recursive:       preserve lCURRENT, lNEXT, IDY
@@ -516,7 +535,7 @@ notCloneLong:
   .ifdef STRINGS
   cmp #tString
   bne notCloneString
-  jsr cloneString
+  jsr stringUtilityClone
   bra cloneSuccess
 notCloneString:
   .endif
@@ -532,7 +551,7 @@ notCloneArray:
   .ifdef LISTS
   cmp #tList
   bne notCloneList
-  jsr cloneList
+  jsr listUtilityClone
   bra cloneSuccess
 notCloneList:
   .endif
@@ -572,7 +591,7 @@ cloneSuccess:
   sta lCURRENTL
 
   rts
-  
+
 cloneSP:
   phy
   phx

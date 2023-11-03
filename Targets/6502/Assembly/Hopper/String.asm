@@ -1,5 +1,7 @@
 ; ######################## String syscalls ########################
 
+  .include StringUtilities.asm
+
 ; String memory map:
 ;   0000 heap allocator size
 ;   0F   type = tString
@@ -11,2116 +13,60 @@
 
 ; APIs:
 ;
-;   string String.New()
-;syscallStringNew:
+; syscallCharToString:               string ToString(char this)
 ;
-;   string String.NewFromConstant(uint constantOffset, uint length)
-;syscallStringNewFromConstant:
+; syscallStringAppend:               string Append(string this, string appendString)
+; syscall_1_StringAppend:            string Append(string this, char appendChar)
+; syscallStringBuild:                String.Build(ref string build, string appendString) : build = build + append
+; syscall_1_StringBuild:             String.Build(ref string build, char appendChar) : build = build + appendChar
+; syscall_2_StringBuild:             String.Build(ref string build) : set length = 0
+; syscallStringBuildFront:           String.BuildFront(ref string build, char insertChar) : build = insertChar + build
+; syscallStringCompare:              int Compare(string left, string right) // returns -1, 0, +1
+; syscallStringContains:             bool Contains(string this, char needle) system;
+; syscallStringGetChar:              char GetChar(string this, uint index) system;
+; syscallStringIndexOf:              bool IndexOf(string this, char needle, ref uint index)
+; syscall_1_StringIndexOf:           bool IndexOf(string this, char needle, uint searchIndex, ref uint index)
+; syscallStringInsertChar:           string InsertChar(string this, uint index, char append)
+; syscallStringLengthGet:            uint Length { get system; }
+; syscallStringNew:                  string New()
+; syscall_1_StringNewFromConstant:   string NewFromConstant(uint twinChar)
+; syscallStringNewFromConstant:      string NewFromConstant(uint constantOffset, uint length)
+; syscallStringPushImmediate:        pops uints from the stack until LSB or MSB is null, builds a string and pushes it
+; syscallStringStartsWith:           bool StartsWith(string this, char pattern) system;
+; syscall_1_StringSubstring:         string Substring(string original, uint start)
+; syscall_2_StringSubstring:         Substring(ref string build, uint start) system;
+; syscall_1_StringToLower:           ToLower(ref string build) system;
+; syscallStringToLower:              string ToLower(string this) system;
+; syscallStringToUpper:              string ToUpper(string this) system;
+; syscall_1_StringToUpper:           ToUpper(ref string build) system;
+; syscallStringTrim:                 string Trim(string this) system;
+; syscall_1_StringTrim:              Trim(ref string build) system;
+; syscallStringTrimLeft:             string TrimLeft(string this) system;
+; syscall_1_StringTrimLeft:          TrimLeft(ref string build) system;
+; syscallStringTrimRight:            TrimRight(ref string build) system;
 ;
-;   uint String.LengthGet(string this)
-;syscallStringLengthGet:
-;
-;   string InsertChar(string this, uint index, char append)
-;syscallStringInsertChar:
-;
-;   string Append(string this, char appendChar)
-;syscallStringAppend1:
-;
-;   String.Build(ref string build, string appendString) : build = build + append
-;syscallStringBuild: --- not implemented?!
-;
-;   String.BuildFront(ref string build, char insertChar) : build = insertChar + build
-;syscallStringBuildFront:
-;
-;   String.Build(ref string build, char appendChar) : build = build + appendChar
-;syscallStringBuild1:
-;
-;   String.Build(ref string build) : set length = 0
-;syscallStringBuild2:
-;
-;   string Append(string this, string appendString)
-;syscallStringAppend:
-;  
-;    char GetChar(string this, uint index) system;
-;syscallStringGetChar:
 ;
 ;
-; Utility:
-;
-;   compare strings TOP and NEXT
-;   result Z set if equal
-;     uses ACC
-;stringsEqual:
-;
-;   string in IDX, munts fITEM
-;     return capacity in fSIZE
-;getStringCapacity:
-;
-;cloneString:
 
-
-
-; compare strings TOP and NEXT
-; result Z set if equal
-;   uses ACC
-stringsEqual:
-
-  ; skip past types and reference counts
-  jsr incTOP   ; TODO PERF
-  jsr incTOP
-  jsr incNEXT
-  jsr incNEXT
-  
-  ; length of TOP == length of NEXT?
-  lda (TOP)
-  cmp (NEXT)
-  bne stringsEqualExit ; not equal
-  sta ACCL
-  jsr incTOP   ; TODO PERF
-  jsr incNEXT
-  lda (TOP)
-  cmp (NEXT)
-  bne stringsEqualExit ; not equal
-  sta ACCH
-  
-  jsr incTOP   ; TODO PERF
-  jsr incNEXT
-  
-  ;lda #"L"
-  ;jsr diagnosticOutChar
-  ;lda ACCH
-  ;jsr diagnosticOutHex
-  ;lda ACCL
-  ;jsr diagnosticOutHex
-  ;lda #" "
-  ;jsr diagnosticOutChar
-  
-stringsEqualLoop
-  lda ACCL
-  bne stringsEqualNext
-  lda ACCH
-  bne stringsEqualNext
-  
-  ; must have been equal, Z set
-  bra stringsEqualExit
-stringsEqualNext:
-  lda (TOP)
-  cmp (NEXT)
-  bne stringsEqualExit ; not equal
-  
-  ;lda (TOP)
-  ;jsr diagnosticOutChar
-  ;lda (NEXT)
-  ;jsr diagnosticOutChar
-  
-  jsr incTOP
-  jsr incNEXT
-  jsr decACC
-  bra stringsEqualLoop
-  
-stringsEqualExit:
-  rts
-
-; string New()
-syscallStringNew:
-
-  stz ACCL
-  stz ACCH
-  stz IDXL
-  stz IDXH
-  jmp stringNewFromConstant
-
-; string NewFromConstant(uint constantOffset, uint length)
-syscallStringNewFromConstant:
-  
-  ; length  
-  .ifndef STACK8
-  jsr decTSP
-  .endif
-  
-  .ifdef CHECKED
-  .ifndef STACK8
-  lda (TSP)
-  jsr assertUInt
-  .endif
-  .endif
-
-  .ifdef STACK8 
-  ldx SP8
-  dex
-  lda HopperValueStack, X
-  .else
-  jsr decSP          ; MSB
-  lda (SP)
-  .endif
-  
-  sta ACCH
-  
-  
-  .ifdef STACK8 
-  dex
-  lda HopperValueStack, X
-  .else
-  jsr decSP          ; LSB
-  lda (SP)
-  .endif
-  
-  sta ACCL
-  
-  ; offset
-  .ifndef STACK8
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
-  .endif
-  
-  .ifdef STACK8 
-  dex
-  lda HopperValueStack, X
-  .else
-  jsr decSP          ; MSB
-  lda (SP)
-  .endif
-  sta IDXH
-  
-  .ifdef STACK8 
-  dex
-  lda HopperValueStack, X
-  stx SP8
-  .else
-  jsr decSP          ; LSB
-  lda (SP)
-  .endif
-  sta IDXL
-  
-stringNewFromConstant:
-  ; ACC: constant length
-  ; IDX: constant offset
-  lda ACCL
-  sta fSIZEL
-  lda ACCH
-  sta fSIZEH
-  
-  ;uint constantStart = ReadWord(hopperStart + uint(2));
-  clc
-  lda #<HopperData  ; LSB
-  adc #2
-  sta IDYL
-  lda #>HopperData  ; MSB
-  adc #0
-  sta IDYH
-  
-  ldy #0
-  lda (IDY), Y
-  sta fSOURCEADDRESSL
-  iny
-  lda (IDY), Y
-  sta fSOURCEADDRESSH
-    
-  ;uint constantAddress = constantStart + constantOffset + hopperStart;
-  clc
-  lda #<HopperData  ; LSB
-  adc fSOURCEADDRESSL
-  sta fSOURCEADDRESSL
-  lda #>HopperData  ; MSB
-  adc fSOURCEADDRESSH
-  sta fSOURCEADDRESSH
-  
-  clc
-  lda IDXL  ; LSB
-  adc fSOURCEADDRESSL
-  sta fSOURCEADDRESSL
-  lda IDXH  ; MSB
-  adc fSOURCEADDRESSH
-  sta fSOURCEADDRESSH
-  
-  ; store the absolute address of the constant
-  lda fSOURCEADDRESSL ; LSB
-  pha
-  lda fSOURCEADDRESSH ; MSB
-  pha
-
-  ; store the string length  
-  lda fSIZEL  ; LSB
-  pha
-  lda fSIZEH  ; MSB
-  pha
-  
-  ; add 2 bytes for string length field
-  clc
-  lda fSIZEL  ; LSB
-  adc #2
-  sta fSIZEL
-  lda fSIZEH  ; MSB
-  adc #0
-  sta fSIZEH
-  
-  ; type in A
-  ; size is in fSIZE
-  ; return address in IDX
-  lda #tString
-  jsr gcCreate
-  
-  ; length
-  pla 
-  sta IDYH
-  pla
-  sta IDYL
-  
-  ; constant start address
-  pla 
-  sta fSOURCEADDRESSH
-  pla 
-  sta fSOURCEADDRESSL
-  
-  ;WriteWord(stringAddress+2, length);
-  ldy #2
-  lda IDYL
-  sta (IDX), Y
-  iny
-  lda IDYH
-  sta (IDX), Y
-  iny
-  
-  ;uint destination = stringAddress + 4;
-  clc
-  lda IDXL  ; LSB
-  adc #4
-  sta fDESTINATIONADDRESSL
-  lda IDXH  ; MSB
-  adc #0
-  sta fDESTINATIONADDRESSH
-  
-  ; SOURCEADDRESS -> DESTINATIONADDRESS
-copyCharacters:
-  lda #0
-  cmp IDYL
-  bne nextCharacterToCopy
-  cmp IDYH
-  beq stringInitialized
-nextCharacterToCopy:  
-  lda (fSOURCEADDRESS)
-  sta (fDESTINATIONADDRESS)
-  
-  jsr incDESTINATIONADDRESS
-  jsr incSOURCEADDRESS;
-  jsr decIDY
-  
-  bra copyCharacters
-stringInitialized:
-  
-  lda #tString
-  jmp pushIDXExit
-  
-  
-; string NewFromConstant(char single)
-syscallStringNewFromConstant1:
-  
-  ; single  
-  .ifndef STACK8
-  jsr decTSP
-  .endif
-  
-  .ifdef CHECKED
-  .ifndef STACK8
-  lda (TSP)
-  jsr assertUInt
-  .endif
-  .endif
-
-  .ifdef STACK8 
-  ldx SP8
-  dex
-  lda HopperValueStack, X
-  .else
-  jsr decSP          ; MSB
-  lda (SP)
-  .endif
-  
-  sta fVALUEH
-  
-  .ifdef STACK8 
-  dex
-  lda HopperValueStack, X
-  stx SP8
-  .else
-  jsr decSP          ; LSB
-  lda (SP)
-  .endif
-  
-  sta fVALUEL
-  
-  ; ACCL: single char
-  
-  ; add 2 bytes for string length field
-  lda fVALUEH
-  beq singleChar
-  lda #4
-  bra doubleChar
-singleChar:
-  lda #3
-doubleChar:
-  sta fSIZEL  ; LSB
-  stz fSIZEH  ; MSB
-  
-  dec
-  dec
-  pha
-  
-  ; type in A
-  ; size is in fSIZE
-  ; return address in IDX
-  lda #tString
-  jsr gcCreate
-  
-  ;WriteWord(stringAddress+2, length);
-  ldy #2
-  pla
-  sta (IDX), Y
-  iny
-  lda #0
-  sta (IDX), Y
-  iny
-  
-  lda fVALUEL
-  sta (IDX), Y
-  lda fVALUEH
-  beq singleChar2
-  iny
-  sta (IDX), Y
-singleChar2:
-
-  
-  lda #tString
-  jmp pushIDXExit
-  
-syscallStringLengthGet:
-  
-  .ifdef STACK8
-  
-  ; this -> IDX
-  ldx SP8
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertString
-  .endif
-  stx SP8
-  
-  .else
-  
-  ; this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
-  .endif
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  ; skip past block header (type and reference count)
-  jsr incIDX ; TODO PERF
-  jsr incIDX
-  
-  ldy #0
-  lda (IDX), Y       ; LSB of length
-  sta TOPL
-  iny
-  lda (IDX), Y       ; MSB of length
-  sta TOPH
-  
-  jsr releaseSP ; we popped 'this', decrease reference count
-  
-  lda #tUInt
-  jmp pushTOPExit
-  
-; string InsertChar(string this, uint index, char append)
-syscallStringInsertChar:
-
-  .ifdef STACK8
-  
-  ; append
-  ldx SP8
-  dex
-  dex
-  lda HopperValueStack, X ; LSB
-  pha
-  
-  ; index -> IDY
-  dex
-  lda HopperValueStack, X ; MSB
-  sta IDYH
-  dex
-  lda HopperValueStack, X ; LSB
-  sta IDYL
-  
-  ; this -> IDX
-  
-  dex
-  lda HopperValueStack, X ; MSB
-  sta IDXH
-  dex
-  lda HopperValueStack, X ; LSB
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertString
-  .endif
-  stx SP8
-  
-  .else
-
-  ; append
-  jsr decSP          ; MSB
-  jsr decSP          ; LSB
-  lda (SP)
-  pha
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
-  
-  ; index -> IDY
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDYH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDYL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
-  
-  ; this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
-  .endif
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  ; skip past block header (type and reference count)
-  jsr incIDX  ; TODO PERF
-  jsr incIDX
-  
-  ldy #0
-  lda (IDX), Y       ; LSB of length
-  sta fSIZEL
-  iny
-  lda (IDX), Y       ; MSB of length
-  sta fSIZEH
-  
-  ; skip past length
-  jsr incIDX ; TODO PERF
-  jsr incIDX
-  
-  .ifdef CHECKED
-  
-  ; make sure index <= length (IDY <= LENGTH)
-  lda fSIZEL
-  sta TOPL
-  lda fSIZEH
-  sta TOPH
-  lda IDYL
-  sta NEXTL
-  lda IDYH
-  sta NEXTH
-  jsr utilityUIntLE ; TOPL = (NEXT <= TOP)
-  lda TOPL
-  ;cmp #0
-  bne syscallStringInsertCharRangeOk
-  
-  stz ACCH
-  lda #$05 ; string index out of range
-  sta ACCL
-  jmp utilityDiagnosticsDie
-syscallStringInsertCharRangeOk:
-  .endif
-  
-  ; push source address
-  lda IDXL
-  pha
-  lda IDXH
-  pha
-  
-  ; add 1 byte for the inserted character, push new length
-  clc
-  lda fSIZEL  ; LSB
-  adc #1
-  sta fSIZEL
-  pha
-  lda fSIZEH  ; MSB
-  adc #0
-  sta fSIZEH
-  pha
-  
-  ; add 2 bytes for string length field
-  clc
-  lda fSIZEL  ; LSB
-  adc #2
-  sta fSIZEL
-  lda fSIZEH  ; MSB
-  adc #0
-  sta fSIZEH
-  
-  lda IDYL
-  pha
-  lda IDYH
-  pha
-  
-  ; type in A
-  ; size is in fSIZE
-  ; return address in IDX
-  lda #tString
-  jsr gcCreate ; destroys Nx variables in memoryAllocate
-  
-  pla
-  sta IDYH
-  pla
-  sta IDYL
-  
-  pla
-  sta fLENGTHH
-  pla
-  sta fLENGTHL
-  
-  pla
-  sta fSOURCEADDRESSH
-  pla
-  sta fSOURCEADDRESSL
-  pla
-  sta ACCL
-  stz ACCH
-  
-  ; push new string memory address to return
-  lda IDXL
-  pha
-  lda IDXH
-  pha
-  
-  ; skip past type and reference
-  jsr incIDX ; TODO PERF
-  jsr incIDX
-  
-  lda IDXL
-  sta fDESTINATIONADDRESSL
-  lda IDXH
-  sta fDESTINATIONADDRESSH
-  
-  ; set length field
-  ldy #0
-  lda fLENGTHL
-  sta (fDESTINATIONADDRESS), Y
-  iny
-  lda fLENGTHH
-  sta (fDESTINATIONADDRESS), Y
-  
-  ; skip past length field
-  jsr incDESTINATIONADDRESS
-  jsr incDESTINATIONADDRESS
-  
-  ; counter
-  stz IDXL
-  stz IDXH
-  
-  ; while IDX != LENGTH
-nextInsertLoop:  
-
-  lda IDXL
-  cmp fLENGTHL
-  bne nextInsertChar
-  lda IDXH
-  cmp fLENGTHH
-  beq doneInsertingChar
-nextInsertChar:
-
-  ; IDX == IDY
-  lda IDXL
-  cmp IDYL
-  bne copyInsertChar
-  lda IDXH
-  cmp IDYH
-  bne copyInsertChar
-  ; CHAR -> (DESTINATIONADDRESS)
-  
-  lda ACCL
-  bra doCharInsert
-copyInsertChar:
-  
-  ; (SOURCEADDRESS) -> (DESTINATIONADDRESS)
-  lda (fSOURCEADDRESS)
-  jsr incSOURCEADDRESS
-doCharInsert:  
-  sta (fDESTINATIONADDRESS)
-  
-  jsr incDESTINATIONADDRESS
-  jsr incIDX
-  bra nextInsertLoop
-  
-doneInsertingChar:
-
-  jsr releaseSP ; we popped 'this', decrease reference count (munts all Nx variables if memoryFree is called)
-  
-  ; push result string object onto stack
-  pla
-  sta IDXH
-  pla
-  sta IDXL
-  
-  lda #tString
-  jmp pushIDXExit
-
-; string Append(string this, char appendChar)
-syscallStringAppend1:
-
-  .ifdef STACK8
-  
-  ; appendChar -> IDY
-  ldx SP8
-  dex
-  lda HopperValueStack, X
-  sta IDYH
-  dex
-  lda HopperValueStack, X
-  sta IDYL
-  
-  ; this -> IDX
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertString
-  .endif
-  stx SP8
-  .else
-  
-  ; appendChar -> IDY
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDYH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDYL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
-  
-  ; this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
-  .endif
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  ; skip type and reference
-  jsr incIDX ; TODO PERF
-  jsr incIDX
-  
-  ; length of 'this'
-  ldy #0
-  lda (IDX), Y
-  sta fSIZEL
-  iny
-  lda (IDX), Y
-  sta fSIZEH
-  
-  ; add length of 'appendChar'
-  jsr incSIZE
-  
-  ; 'appendChar'
-  lda IDYL
-  pha
-  
-  ; 'this' (pointing at length)
-  lda IDXH
-  pha
-  lda IDXL
-  pha
-  
-  ; 'length'
-  lda fSIZEH
-  pha
-  lda fSIZEL
-  pha
-  
-  ; add 2 bytes for string length field
-  clc
-  lda fSIZEL  ; LSB
-  adc #2
-  sta fSIZEL
-  lda fSIZEH  ; MSB
-  adc #0
-  sta fSIZEH
-  
-  
-  ; type in A
-  ; size is in fSIZE
-  ; return address in IDX
-  lda #tString
-  jsr gcCreate ; destroys Nx variables in memoryAllocate
-  
-  ;jsr diagnosticOutNewLine
-  
-  ;jsr diagnosticOutNewLine
-  
-  lda IDXL
-  sta fDESTINATIONADDRESSL
-  lda IDXH
-  sta fDESTINATIONADDRESSH
-  
-  ; skip past type and reference
-  jsr incDESTINATIONADDRESS
-  jsr incDESTINATIONADDRESS
-  
-  
-  pla
-  sta fLENGTHL
-  pla
-  sta fLENGTHH
-  
-  ; set length field
-  ldy #0
-  lda fLENGTHL
-  sta (fDESTINATIONADDRESS), Y
-  iny
-  lda fLENGTHH
-  sta (fDESTINATIONADDRESS), Y
-  
-  ; skip past length field
-  jsr incDESTINATIONADDRESS
-  jsr incDESTINATIONADDRESS
-
-  ; 'this' (pointing at length)  
-  pla
-  sta fSOURCEADDRESSL
-  pla
-  sta fSOURCEADDRESSH
-  
-  ldy #0
-  lda (fSOURCEADDRESS), Y
-  sta IDYL
-  iny
-  lda (fSOURCEADDRESS), Y
-  sta IDYH
-  
-  ; skip past length field
-  jsr incSOURCEADDRESS
-  jsr incSOURCEADDRESS
-
-nextAppendChar3  
-  lda #0
-  cmp IDYL
-  bne nextAppendChar1
-  cmp IDYH
-  beq nextAppendChar2
-nextAppendChar1:  
-  lda (fSOURCEADDRESS)
-  sta (fDESTINATIONADDRESS)
-  jsr incSOURCEADDRESS
-  jsr incDESTINATIONADDRESS
-  jsr decIDY
-  bra nextAppendChar3
-nextAppendChar2:
-  ; 'appendChar'
-  pla
-  sta ACCL
-  
-  sta (fDESTINATIONADDRESS)
-  
-  jsr releaseSP ; we popped 'this', decrease reference count (munts all Nx variables if memoryFree is called)
-  
-  lda #tString
-  jmp pushIDXExit
-  
-getStringCapacity:
-  ; string in IDX, munts fITEM
-  ;   return capacity in fSIZE
-  
-  sec
-  lda IDXL
-  sbc #2
-  sta fITEML
-  lda IDXH
-  sbc #0
-  sta fITEMH
-
-  ldy #1
-  lda (fITEM)
-  sta fSIZEL
-  lda (fITEM), Y
-  sta fSIZEH
-  
-  ; subtract 6
-  ;   0000 heap allocator size
-  ;   0F   type = tString
-  ;   00   GC reference count
-  ;   0000 string length n
-
-  sec
-  lda fSIZEL
-  sbc #6
-  sta fSIZEL
-  lda fSIZEH
-  sbc #0
-  sta fSIZEH
-  
-  rts
-
-  .ifdef STACK8
-; String.Build(ref string build, string appendString) : build = build + append
-syscallStringBuild:
-  .ifndef NODIAGNOSTICS
-  jsr diagnosticOutString
-  .byte "?String.Build", 0
-  .endif
-  jmp throwToysNoStack ; also not implemented/tested for 16 bit stack pointer (see below)
-  
-  jsr releaseSPNEXT ; appendString
-  jsr throwToys
-  jmp nextInstruction
-  
-  .else
-; String.Build(ref string build, string appendString) : build = build + append
-syscallStringBuild:
-
-  ; appendString -> IDY
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDYH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDYL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
-  
-  ; ref this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertReference
-  .endif
-  
-  ; ref string -> IDX
-  ldy #1
-  lda (IDX)
-  tax
-  lda (IDX), Y
-  sta IDXH
-  stx IDXL
-  
-  lda #"S"
-  jsr diagnosticOutChar
-  lda IDXH
-  jsr diagnosticOutHex
-  lda IDXL
-  jsr diagnosticOutHex
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  jsr getStringCapacity
-  
-  
-  ldy #2
-  lda (IDX), Y
-  sta fLENGTHL
-  iny
-  lda (IDX), Y
-  sta fLENGTHH
-  
-  lda #"C"
-  jsr diagnosticOutChar
-  lda fSIZEH
-  jsr diagnosticOutHex
-  lda fSIZEL
-  jsr diagnosticOutHex
-  lda #"L"
-  jsr diagnosticOutChar
-  lda fLENGTHH
-  jsr diagnosticOutHex
-  lda fLENGTHL
-  jsr diagnosticOutHex
-  
-  
-  jsr releaseSPNEXT ; appendString
-  
-  
-  jsr throwToys
-  jmp nextInstruction
-  .endif
-  
-; String.BuildFront(ref string build, char insertChar) : build = insertChar + build
-syscallStringBuildFront:
-
-  ; insertChar -> fVALUE
-  .ifdef STACK8
-  
-  ldx SP8
-  dex
-  lda HopperValueStack, X
-  sta fVALUEH
-  dex
-  lda HopperValueStack, X
-  sta fVALUEL
-  
-  .else
-  jsr decSP          ; MSB
-  lda (SP)
-  sta fVALUEH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta fVALUEL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
-  .endif
-
-  ; ref this -> IDX
-  .ifdef STACK8
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  stx SP8
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertReference
-  .endif
-  .else
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertReference
-  .endif
-  .endif
-  
-  ; ref string -> IDX
-  ldy #1
-  lda (IDX)
-  tax
-  lda (IDX), Y
-  sta IDXH
-  stx IDXL
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  jsr getStringCapacity
-  
-  ldy #2
-  lda (IDX), Y
-  sta fLENGTHL
-  iny
-  lda (IDX), Y
-  sta fLENGTHH
-  
-  ;jsr diagnosticOutNewLine
-  ;lda #"S"
-  ;jsr diagnosticOutChar
-  ;lda IDXH
-  ;jsr diagnosticOutHex
-  ;lda IDXL
-  ;jsr diagnosticOutHex
-  ;lda #"C"
-  ;jsr diagnosticOutChar
-  ;lda fSIZEH
-  ;jsr diagnosticOutHex
-  ;lda fSIZEL
-  ;jsr diagnosticOutHex
-  ;lda #"L"
-  ;jsr diagnosticOutChar
-  ;lda fLENGTHH
-  ;jsr diagnosticOutHex
-  ;lda fLENGTHL
-  ;jsr diagnosticOutHex
-  ;lda #"A"
-  ;jsr diagnosticOutChar
-  ;lda fVALUEL
-  ;jsr diagnosticOutHex
-  
-  ; fLENGTH >= fSIZE?
-  lda fLENGTHH
-  cmp fSIZEH
-  bne donesyscallStringBuildFrontGE
-  lda fLENGTHL
-  cmp fSIZEL
-donesyscallStringBuildFrontGE:
-  bcs syscallStringBuildFrontLT 
-  jmp syscallStringBuildFrontGE ; fLENGTH < fSIZE
-  
-syscallStringBuildFrontLT:
-  ; fLENGTH >= fSIZE
-  
-  
-  
-  ;lda #"+"
-  ;jsr diagnosticOutChar
-  
-  ; add 2 bytes for string length field and 1 for the extra character (bumps block size up by 16)
-  clc
-  lda fLENGTHL  ; LSB
-  adc #3
-  sta fSIZEL
-  lda fLENGTHH  ; MSB
-  adc #0
-  sta fSIZEH
-  
-  lda IDXH
-  sta IDYH
-  lda IDXL
-  sta IDYL
-  
-  ; type in A
-  ; size is in fSIZE
-  ; return address in IDX
-  lda #tString
-  jsr gcCreate
-  
-  ; clone size: string length + 2 bytes for length field + 2 bytes for type and reference count
-  jsr incSIZE 
-  
-  ;lda #"S"
-  ;jsr diagnosticOutChar
-  ;lda fSIZEH
-  ;jsr diagnosticOutHex
-  ;lda fSIZEL
-  ;jsr diagnosticOutHex
-  
-  lda IDYL
-  sta fSOURCEADDRESSL
-  lda IDYH
-  sta fSOURCEADDRESSH
-  
-  lda IDXL
-  sta fDESTINATIONADDRESSL
-  lda IDXH
-  sta fDESTINATIONADDRESSH
-
-syscallStringBuildFrontNext:  
-
-  lda (fSOURCEADDRESS);
-  sta (fDESTINATIONADDRESS)
-
-  jsr decSIZE
-  jsr incDESTINATIONADDRESS
-  jsr incSOURCEADDRESS
-  
-  lda fSIZEL
-  bne syscallStringBuildFrontNext
-  lda fSIZEH
-  bne syscallStringBuildFrontNext
-  
-  ; IDY -> IDX
-  lda #tString
-  sta fTYPE
-  jsr replaceStackReferences
-  
-  lda IDXH
-  pha
-  lda IDXL
-  pha
-  
-  lda IDYL
-  sta IDXL
-  lda IDYH
-  sta IDXH
-  jsr memoryFree ; free the original from under the nose of the GC
-  
-  pla
-  sta IDXL
-  pla
-  sta IDXH
-  
-syscallStringBuildFrontGE:
-  
-  ; shift string forward by one in reverse
-  
-  lda IDXL
-  sta fSOURCEADDRESSL
-  lda IDXH
-  sta fSOURCEADDRESSH
-  
-  ; first character
-  clc
-  lda IDXL
-  adc #4
-  sta fSOURCEADDRESSL
-  lda IDXH
-  adc #0
-  sta fSOURCEADDRESSH
-  
-  clc
-  lda fSOURCEADDRESSL
-  adc fLENGTHL
-  sta fSOURCEADDRESSL
-  sta fDESTINATIONADDRESSL
-  lda fSOURCEADDRESSH
-  adc fLENGTHH
-  sta fSOURCEADDRESSH
-  sta fDESTINATIONADDRESSH
-  
-  jsr decSOURCEADDRESS
-  
-  lda fLENGTHL
-  sta fSIZEL
-  lda fLENGTHH
-  sta fSIZEH
-  
-syscallStringBuildFrontCopyLoop:
-  lda fSIZEL
-  bne syscallStringBuildFrontCopyNext
-  lda fSIZEH
-  bne syscallStringBuildFrontCopyNext
-  bra syscallStringBuildFrontCopyDone
-syscallStringBuildFrontCopyNext:
-
-  lda (fSOURCEADDRESS)
-  sta (fDESTINATIONADDRESS)
-  
-  jsr decSOURCEADDRESS
-  jsr decDESTINATIONADDRESS
-  jsr decSIZE
-  bra syscallStringBuildFrontCopyLoop
-  
-syscallStringBuildFrontCopyDone:
-  
-  ; build[0] = insertChar
-  lda fVALUEL
-  sta (fDESTINATIONADDRESS)
-  
-  ; length++
-  jsr incLENGTH
-  
-  ldy #2
-  lda fLENGTHL
-  sta (IDX), Y
-  iny
-  lda fLENGTHH
-  sta (IDX), Y
-  
-  jmp nextInstruction
-  
-; String.Build(ref string build, char appendChar) : build = build + appendChar
-syscallStringBuild1:
-
-  .ifdef STACK8
-  
-  ; appendChar -> fVALUE
-  ldx SP8
-  dex
-  lda HopperValueStack, X
-  sta fVALUEH
-  dex
-  lda HopperValueStack, X
-  sta fVALUEL
-  
-  ; ref this -> IDX
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertReference
-  .endif
-  stx SP8
-  
-  .else
-  
-  ; appendChar -> fVALUE
-  jsr decSP          ; MSB
-  lda (SP)
-  sta fVALUEH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta fVALUEL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
-
-  ; ref this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertReference
-  .endif
-  .endif
-  
-  ; ref string -> IDX
-  ldy #1
-  lda (IDX)
-  tax
-  lda (IDX), Y
-  sta IDXH
-  stx IDXL
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  
-  ; string in IDX, munts fITEM
-  ;   return capacity in fSIZE (heap allocator size - 6)
-  jsr getStringCapacity
-  
-  ldy #2
-  lda (IDX), Y
-  sta fLENGTHL
-  iny
-  lda (IDX), Y
-  sta fLENGTHH
-  
-  ;jsr diagnosticOutNewLine
-  ;lda #"S"
-  ;jsr diagnosticOutChar
-  ;lda IDXH
-  ;jsr diagnosticOutHex
-  ;lda IDXL
-  ;jsr diagnosticOutHex
-  ;lda #"C"
-  ;jsr diagnosticOutChar
-  ;lda fSIZEH
-  ;jsr diagnosticOutHex
-  ;lda fSIZEL
-  ;jsr diagnosticOutHex
-  ;lda #"L"
-  ;jsr diagnosticOutChar
-  ;lda fLENGTHH
-  ;jsr diagnosticOutHex
-  ;lda fLENGTHL
-  ;jsr diagnosticOutHex
-  ;lda #"A"
-  ;jsr diagnosticOutChar
-  ;lda fVALUEL
-  ;jsr diagnosticOutHex
-  
-  ; fLENGTH >= fSIZE?
-  lda fLENGTHH
-  cmp fSIZEH
-  bne donesyscallStringBuild1GE
-  lda fLENGTHL
-  cmp fSIZEL
-donesyscallStringBuild1GE:
-  bcs syscallStringBuild1LT 
-  jmp syscallStringBuild1GE ; fLENGTH < fSIZE
-  
-syscallStringBuild1LT:
-  ; fLENGTH >= fSIZE
-  
-  ; add 2 bytes for string length field and 1 for the extra character (bumps to next block size)
-  clc
-  lda fLENGTHL  ; LSB
-  adc #3
-  sta fSIZEL
-  lda fLENGTHH  ; MSB
-  adc #0
-  sta fSIZEH
-  
-  lda IDXH
-  sta IDYH
-  lda IDXL
-  sta IDYL
-  
-  ; type in A
-  ; size is in fSIZE
-  ; return address in IDX
-  lda #tString
-  jsr gcCreate
-  
-  ; clone size: string length + 2 bytes for length field + 2 bytes for type and reference count
-  jsr incSIZE 
-  
-  ;lda #"S"
-  ;jsr diagnosticOutChar
-  ;lda fSIZEH
-  ;jsr diagnosticOutHex
-  ;lda fSIZEL
-  ;jsr diagnosticOutHex
-  
-  lda IDYL
-  sta fSOURCEADDRESSL
-  lda IDYH
-  sta fSOURCEADDRESSH
-  
-  lda IDXL
-  sta fDESTINATIONADDRESSL
-  lda IDXH
-  sta fDESTINATIONADDRESSH
-
-syscallStringBuild1Next:
-
-  lda (fSOURCEADDRESS);
-  sta (fDESTINATIONADDRESS)
-
-  jsr decSIZE
-  jsr incDESTINATIONADDRESS
-  jsr incSOURCEADDRESS
-  
-  lda fSIZEL
-  bne syscallStringBuild1Next
-  lda fSIZEH
-  bne syscallStringBuild1Next
-  
-  ; IDY -> IDX
-  lda #tString
-  sta fTYPE
-  jsr replaceStackReferences
-  
-  lda IDXH
-  pha
-  lda IDXL
-  pha
-  
-  lda IDYL
-  sta IDXL
-  lda IDYH
-  sta IDXH
-  jsr memoryFree ; free the original from under the nose of the GC
-  
-  pla
-  sta IDXL
-  pla
-  sta IDXH
-  
-syscallStringBuild1GE:
-  
-  ; build[length] = appendChar
-  clc
-  lda IDXL
-  adc #4
-  sta fDESTINATIONADDRESSL
-  lda IDXH
-  adc #0
-  sta fDESTINATIONADDRESSH
-  
-  clc
-  lda fDESTINATIONADDRESSL
-  adc fLENGTHL
-  sta fDESTINATIONADDRESSL
-  lda fDESTINATIONADDRESSH
-  adc fLENGTHH
-  sta fDESTINATIONADDRESSH
-  
-  lda fVALUEL
-  sta (fDESTINATIONADDRESS)
-  
-  ; length++
-  jsr incLENGTH
-  
-  ldy #2
-  lda fLENGTHL
-  sta (IDX), Y
-  iny
-  lda fLENGTHH
-  sta (IDX), Y
-  
-  jmp nextInstruction
-  
-; String.Build(ref string build) : set length = 0
-syscallStringBuild2:
-
-  .ifdef STACK8
-  
-  ldx SP8
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertReference
-  .endif
-  stx SP8
-  
-  .else
-  
-  ; ref this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertReference
-  .endif
-  .endif
-  
-  ; ref string -> IDX
-  ldy #1
-  lda (IDX)
-  tax
-  lda (IDX), Y
-  sta IDXH
-  stx IDXL
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  ; set length = 0
-  ldy #2
-  lda #0
-  sta (IDX), Y
-  iny
-  sta (IDX), Y
-  
-  jmp nextInstruction
-  
-; string Append(string this, string appendString)
-syscallStringAppend:
-
-  ; appendString -> IDY
-  .ifdef STACK8
-  ldx SP8
-  dex
-  lda HopperValueStack, X
-  sta IDYH
-  dex
-  lda HopperValueStack, X
-  sta IDYL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertString
-  .endif
-  .else
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDYH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDYL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
-  .endif
-  
-  ; this -> IDX
-  .ifdef STACK8
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertString
-  .endif
-  stx SP8
-  .else
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
-  .endif
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  lda (IDY)
-  jsr assertString
-  .endif
-  ; skip type and reference
-  jsr incIDX ; TODO PERF
-  jsr incIDX
-  jsr incIDY
-  jsr incIDY
-  
-  ; length of 'this'
-  ldy #0
-  lda (IDX), Y
-  sta fSIZEL
-  iny
-  lda (IDX), Y
-  sta fSIZEH
-  
-  ; add length of 'appendString'
-  ldy #0
-  lda (IDY), Y
-  clc
-  adc fSIZEL
-  sta fSIZEL
-  iny
-  lda (IDY), Y
-  adc fSIZEH
-  sta fSIZEH
-  
-  ; 'appendString' (pointing at length)
-  lda IDYH
-  pha
-  lda IDYL
-  pha
-  
-  ; 'this' (pointing at length)
-  lda IDXH
-  pha
-  lda IDXL
-  pha
-  
-  ; 'length'
-  lda fSIZEH
-  pha
-  lda fSIZEL
-  pha
-  
-  ; add 2 bytes for string length field
-  clc
-  lda fSIZEL  ; LSB
-  adc #2
-  sta fSIZEL
-  lda fSIZEH  ; MSB
-  adc #0
-  sta fSIZEH
-  
-  
-  ; type in A
-  ; size is in fSIZE
-  ; return address in IDX
-  lda #tString
-  jsr gcCreate ; destroys Nx variables in memoryAllocate
-  
-  ;jsr diagnosticOutNewLine
-  
-  ;jsr diagnosticOutNewLine
-  
-  lda IDXL
-  sta fDESTINATIONADDRESSL
-  lda IDXH
-  sta fDESTINATIONADDRESSH
-  
-  ; skip past type and reference
-  jsr incDESTINATIONADDRESS
-  jsr incDESTINATIONADDRESS
-  
-  
-  pla
-  sta fLENGTHL
-  pla
-  sta fLENGTHH
-  
-  ; set length field
-  ldy #0
-  lda fLENGTHL
-  sta (fDESTINATIONADDRESS), Y
-  iny
-  lda fLENGTHH
-  sta (fDESTINATIONADDRESS), Y
-  
-  ; skip past length field
-  jsr incDESTINATIONADDRESS
-  jsr incDESTINATIONADDRESS
-
-  ; 'this' (pointing at length)  
-  pla
-  sta fSOURCEADDRESSL
-  pla
-  sta fSOURCEADDRESSH
-  
-  ldy #0
-  lda (fSOURCEADDRESS), Y
-  sta IDYL
-  iny
-  lda (fSOURCEADDRESS), Y
-  sta IDYH
-  
-  ; skip past length field
-  jsr incSOURCEADDRESS
-  jsr incSOURCEADDRESS
-
-nextAppend3  
-  lda #0
-  cmp IDYL
-  bne nextAppend1
-  cmp IDYH
-  beq nextAppend2
-nextAppend1:  
-  lda (fSOURCEADDRESS)
-  sta (fDESTINATIONADDRESS)
-  jsr incSOURCEADDRESS
-  jsr incDESTINATIONADDRESS
-  jsr decIDY
-  bra nextAppend3
-nextAppend2:
-  ; 'appendString' (pointing at length)
-  pla
-  sta fSOURCEADDRESSL
-  pla
-  sta fSOURCEADDRESSH
-  
-  ldy #0
-  lda (fSOURCEADDRESS), Y
-  sta IDYL
-  iny
-  lda (fSOURCEADDRESS), Y
-  sta IDYH
-  
-  ; skip past length field
-  jsr incSOURCEADDRESS
-  jsr incSOURCEADDRESS
-nextAppend6
-  lda #0
-  cmp IDYL
-  bne nextAppend4
-  cmp IDYH
-  beq nextAppend5
-nextAppend4:  
-  lda (fSOURCEADDRESS)
-  sta (fDESTINATIONADDRESS)
-  jsr incSOURCEADDRESS
-  jsr incDESTINATIONADDRESS
-  jsr decIDY
-  bra nextAppend6
-nextAppend5:
-  
-  
-   ; we popped 'appendString', decrease reference count (munts all Nx variables if memoryFree is called)
-  ; we popped 'this', decrease reference count (munts all Nx variables if memoryFree is called)
-  jsr releaseSPandSPNEXT
-  
-  lda #tString
-  jmp pushIDXExit
-  
-  
-; char GetChar(string this, uint index) system;
-syscallStringGetChar:
-
-  .ifdef STACK8
-  
-  ldx SP8
-  ; index -> IDY
-  dex
-  lda HopperValueStack, X
-  sta IDYH
-  dex
-  lda HopperValueStack, X
-  sta IDYL
-  
-  ; this -> IDX
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertString
-  .endif
-  stx SP8
-  
-  .else
-  
-  ; index -> IDY
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDYH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDYL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
-
-  ; this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
-  .endif
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  ; length of 'this'
-  ldy #2
-  lda (IDX), Y
-  sta fLENGTHL
-  iny
-  lda (IDX), Y
-  sta fLENGTHH
-  
-  ; skip type, reference and length fields
-  clc
-  lda #4
-  adc IDXL
-  sta IDXL
-  lda #0
-  adc IDXH
-  sta IDXH
-  
-  .ifdef CHECKED
-  ; make sure index < length (IDY < LENGTH)
-  lda fLENGTHL
-  sta TOPL
-  lda fLENGTHH
-  sta TOPH
-  lda IDYL
-  sta NEXTL
-  lda IDYH
-  sta NEXTH
-  jsr utilityUIntLT ; TOPL = (NEXT < TOP)
-  lda TOPL
-  ;cmp #0
-  bne syscallStringGetCharRangeOk
-  stz ACCH
-  lda #$05 ; string index out of range
-  sta ACCL
-  jmp utilityDiagnosticsDie
-syscallStringGetCharRangeOk:
-  .endif
-  
-  ; index <= 255 ?
-  lda IDYH                      ;  +3
-  bne syscallStringGetCharLong  ;  +3
-  ldy IDYL                      ;  3
-  lda (IDX), Y                  ;  5
-  bra syscallStringGetCharShort ;  3
-                                ; 17
-syscallStringGetCharLong:
-  clc                           ;  2
-  lda IDXL                      ;  3
-  adc IDYL                      ;  3
-  sta IDXL
-  lda IDXH                      ;  3
-  adc IDYH                      ;  3
-  sta IDXH
-  lda (IDX)                     ;  5
-                                ; 19 + 6
-syscallStringGetCharShort:
-  pha
-  
-  jsr releaseSP ; we popped 'this', decrease reference count
-  
-  .ifdef STACK8
-  
-  ldx SP8
-  pla
-  sta HopperValueStack, X
-  lda #tUInt
-  sta HopperTypeStack, X
-  inx
-  stz HopperValueStack, X
-  .ifdef CHECKED
-  lda #$AA
-  sta HopperTypeStack, X ; error marker
-  .endif
-  inx
-  stx SP8
-  
-  .else
-  
-  pla
-  sta (SP)
-  jsr incSP          ; LSB
-  lda #0
-  sta (SP)
-  jsr incSP          ; MSB
-  lda #tUInt
-  sta (TSP)
-  jsr incTSP
-  
-  .endif
-  
-  jmp nextInstruction
-
-
-cloneString:
-
-  ; used by cloneDictionary, cloneString and cloneLong
-  lda fSOURCEADDRESSH
-  pha
-  lda fSOURCEADDRESSL
-  pha
-  
-  ; initialized from string at IDY
-  ldy #1
-  lda IDYH
-  sta fSOURCEADDRESSH
-  lda IDYL
-  sta fSOURCEADDRESSL
-  
-  ldy #2
-  lda (fSOURCEADDRESS), Y
-  sta fSIZEL
-  iny
-  lda (fSOURCEADDRESS), Y
-  sta fSIZEH
-  
-  ; store the string length  
-  lda fSIZEL  ; LSB
-  sta fLENGTHL
-  lda fSIZEH  ; MSB
-  sta fLENGTHH
-  
-  ; add 2 bytes for string length field
-  clc
-  lda fSIZEL  ; LSB
-  adc #2
-  sta fSIZEL
-  lda fSIZEH  ; MSB
-  adc #0
-  sta fSIZEH
-  
-  ; type in A
-  ; size is in fSIZE = length in characters + 2 bytes for string length field
-  ; return address in IDX
-  lda #tString
-  jsr gcCreate
-  
-  ;WriteWord(stringAddress+2, length);
-  ldy #2
-  lda fLENGTHL
-  sta (IDX), Y
-  iny
-  lda fLENGTHH
-  sta (IDX), Y
-  iny
-  
-  jsr incSOURCEADDRESS
-  jsr incSOURCEADDRESS
-  jsr incSOURCEADDRESS
-  jsr incSOURCEADDRESS
-  
-  clc
-  lda IDXL  ; LSB
-  adc #4
-  sta fDESTINATIONADDRESSL
-  lda IDXH  ; MSB
-  adc #0
-  sta fDESTINATIONADDRESSH
-  
-  ; SOURCEADDRESS -> DESTINATIONADDRESS
-copyCharactersClone:
-  lda #0
-  cmp fLENGTHL
-  bne nextCharacterToCopyClone
-  cmp fLENGTHH
-  beq stringInitializedClone
-nextCharacterToCopyClone:  
-  lda (fSOURCEADDRESS)
-  sta (fDESTINATIONADDRESS)
-  
-  jsr incDESTINATIONADDRESS
-  jsr incSOURCEADDRESS;
-  jsr decLENGTH
-  
-  bra copyCharactersClone
-stringInitializedClone:
-
-  pla
-  sta fSOURCEADDRESSL
-  pla
-  sta fSOURCEADDRESSH
-  
-  rts
 
 ; bool StartsWith(string this, char pattern)
 syscallStringStartsWith:
-  .ifdef STACK8
+  jsr stringUtilityPopCharToACCL
+  jsr stringUtilityPopStringToIDX
   
-  ldx SP8
-  ; pattern -> ACCL
-  dex
-  dex
-  lda HopperValueStack, X
-  sta ACCL
-  
-  ; this -> IDX
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertString
-  .endif
-  stx SP8
-  
-  .else
-  
-  ; pattern -> ACCL
-  jsr decSP          ; MSB
-  jsr decSP          ; LSB
-  lda (SP)
-  sta ACCL
-  jsr decTSP
-  
-  ; this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
-  .endif
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  ldy #2
-  lda (IDX), Y       ; LSB of length
-  sta fLENGTHL
-  iny
-  lda (IDX), Y       ; MSB of length
-  sta fLENGTHH
-  
-  ; skip past type, reference count and length
-  clc
-  lda #4
-  adc IDXL
-  sta IDXL
-  lda #0
-  adc IDXH
-  sta IDXH
+  jsr stringUtilityLoadLengthFromIDX
+  jsr stringUtilityAdvanceIDXToFirstChar
   
   jsr releaseSP ; we popped 'this', decrease reference count
   
-  stz TOPL
-  stz TOPH
+  ldx #0 ; false result
   
   lda fLENGTHL
   bne syscallStringStartsWithNotEmpty
   lda fLENGTHH
   bne syscallStringStartsWithNotEmpty
+  
   ; empty string
-  lda #tBool
   bra syscallStringStartsWithDone
   
 syscallStringStartsWithNotEmpty:
@@ -2129,96 +75,34 @@ syscallStringStartsWithNotEmpty:
   cmp ACCL
   bne syscallStringStartsWithDone
   
-  lda #1
-  sta TOPL
+  ldx #1 ; true result
   
 syscallStringStartsWithDone:
-  lda #tBool
-  jmp pushTOPExit
-  
+  jmp pushXBoolExit
+
+
 ; bool Contains(string this, char needle)
 syscallStringContains:
-  .ifdef STACK8
+
+  jsr stringUtilityPopCharToACCL
+  jsr stringUtilityPopStringToIDX
   
-  ldx SP8
-  
-  ; needle -> ACCL
-  dex
-  dex
-  lda HopperValueStack, X
-  sta ACCL
-  
-  ; this -> IDX
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertString
-  .endif
-  stx SP8
-  
-  .else
-  ; needle -> ACCL
-  jsr decSP          ; MSB
-  jsr decSP          ; LSB
-  lda (SP)
-  sta ACCL
-  jsr decTSP
-  
-  ; this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
-  .endif
-  
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  ldy #2
-  lda (IDX), Y       ; LSB of length
-  sta fSIZEL
-  iny
-  lda (IDX), Y       ; MSB of length
-  sta fSIZEH
-  
-  ; skip past type, reference count and length
-  clc
-  lda #4
-  adc IDXL
-  sta IDXL
-  lda #0
-  adc IDXH
-  sta IDXH
+  jsr stringUtilityLoadLengthFromIDX
+  jsr stringUtilityAdvanceIDXToFirstChar
   
   jsr releaseSP ; we popped 'this', decrease reference count
   
-  stz TOPL
-  stz TOPH
+  ldx #0 ; false result
   
-; length <= 255 ?
-  lda fSIZEH
+  ; length <= 255 ?
+  lda fLENGTH
   bne syscallStringContainsLong
   
   ; length <= 255
   
   ldy #0
 syscallStringContainsNextShort:
-  cpy fSIZEL ; index == length?
+  cpy fLENGTHL ; index == length?
   beq syscallStringContainsDone
   lda (IDX), Y
   cmp ACCL
@@ -2229,9 +113,9 @@ syscallStringContainsNextShort:
 syscallStringContainsLong:
   
 syscallStringContainsNext:
-  lda fSIZEL
+  lda fLENGTHL
   bne syscallStringContainsCompare
-  lda fSIZEH
+  lda fLENGTHH
   bne syscallStringContainsCompare
   ; empty string
   bra syscallStringContainsDone
@@ -2243,189 +127,100 @@ syscallStringContainsCompare:
   beq syscallStringContainsFound
   
   jsr incIDX
-  jsr decSIZE
+  jsr decLENGTH
   bra syscallStringContainsNext
   
 syscallStringContainsFound:
-  lda #1
-  sta TOPL
+  ldx #1 ; true result
   
 syscallStringContainsDone:
-  lda #tBool
-  jmp pushTOPExit
-  
-; bool IndexOf(string this, char needle, ref uint index)
-syscallStringIndexOf:
-  .ifdef STACK8
-  
-  ldx SP8
-  
-  ; ref index -> IDY
-  dex
-  lda HopperValueStack, X
-  sta IDYH
-  dex
-  lda HopperValueStack, X
-  sta IDYL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertReference
-  .endif
-  
-  .else
-  
-  ; ref index -> IDY
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDYH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDYL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertReference
-  .endif
-  .endif
-  
-  stz fVALUEL
-  stz fVALUEH
-  jmp syscallStringIndexOfShared
-  
-; bool IndexOf(string this, char pattern, uint searchIndex, ref uint index)
-syscallStringIndexOf1:
-  .ifdef STACK8
-  
-  ldx SP8
-  
-  ; ref index -> IDY
-  dex
-  lda HopperValueStack, X
-  sta IDYH
-  dex
-  lda HopperValueStack, X
-  sta IDYL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertReference
-  .endif
-  
-  ; searchIndex -> fVALUE
-  dex
-  lda HopperValueStack, X
-  sta fVALUEH
-  dex
-  lda HopperValueStack, X
-  sta fVALUEL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertUInt
-  .endif
+  jmp pushXBoolExit
 
-syscallStringIndexOfShared:
 
-  ; pattern -> ACCL
-  dex
-  dex
-  lda HopperValueStack, X
-  sta ACCL
-  
-  ; this -> IDX
-  dex
-  lda HopperValueStack, X
-  sta IDXH
-  dex
-  lda HopperValueStack, X
-  sta IDXL
-  .ifdef CHECKED
-  lda HopperTypeStack, X
-  jsr assertString
-  .endif
-  stx SP8
-  
-  .else
-  
-  ; ref index -> IDY
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDYH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDYL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertReference
-  .endif
-  
-  ; searchIndex -> fVALUE
-  jsr decSP          ; MSB
-  lda (SP)
-  sta fVALUEH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta fVALUEL
-  jsr decTSP
-  
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
+; char GetChar(string this, uint index) system;
+syscallStringGetChar:
 
-syscallStringIndexOfShared:
+  jsr stringUtilityPopUIntToIndex
+  jsr stringUtilityPopStringToIDX
   
-  ; needle -> ACCL
-  jsr decSP          ; MSB
-  jsr decSP          ; LSB
-  lda (SP)
-  sta ACCL
-  jsr decTSP
-  
-  ; this -> IDX
-  jsr decSP          ; MSB
-  lda (SP)
-  sta IDXH
-  jsr decSP          ; LSB
-  lda (SP)
-  sta IDXL
-  jsr decTSP
+  jsr stringUtilityLoadLengthFromIDX
+  jsr stringUtilityAdvanceIDXToFirstChar
   
   .ifdef CHECKED
-  lda (TSP)
-  jsr assertString
-  .endif
+  jsr stringUtilityVerifyIndexLTLength
   .endif
   
-  .ifdef CHECKED
-  lda (IDX)
-  jsr assertString
-  .endif
-  
-  ldy #2
-  lda (IDX), Y       ; LSB of length
-  sta fSIZEL
-  iny
-  lda (IDX), Y       ; MSB of length
-  sta fSIZEH
-  
-  ; skip past type, reference count and length
   clc
-  lda #4
-  adc IDXL
+  lda IDXL
+  adc IDYL
   sta IDXL
-  lda #0
-  adc IDXH
+  lda IDXH
+  adc IDYH
   sta IDXH
+  lda (IDX)
+
+  pha
+  jsr releaseSP ; we popped 'this', decrease reference count
+  pla
+  
+  ; push A as UInt
+  sta TOPL
+  stz TOPH
+  
+  lda #tUInt
+  jmp pushTOPExit
+
+
+; uint Length
+syscallStringLengthGet:
+  jsr stringUtilityPopStringToIDX
+  jsr stringUtilityLoadLengthFromIDX
+  lda fLENGTHL
+  sta TOPL
+  lda fLENGTHH
+  sta TOPH
   
   jsr releaseSP ; we popped 'this', decrease reference count
   
+  lda #tUInt
+  jmp pushTOPExit
+
+
+; bool IndexOf(string this, char needle, ref uint index)
+syscallStringIndexOf:
+  ; index
+  jsr stringUtilityPopRefToIndex
+  ; searchIndex = 0
+  stz fVALUEL
+  stz fVALUEH
+  jmp syscallStringIndexOfShared
+
+
+; bool IndexOf(string this, char needle, uint searchIndex, ref uint index)
+syscall_1_StringIndexOf:
+  ; index
+  jsr stringUtilityPopRefToIndex
+  ; searchIndex -> fVALUE
+  jsr stringUtilityPopUIntToValue
+  ; fall through
+syscallStringIndexOfShared:
+
+  ; needle -> ACCL
+  jsr stringUtilityPopCharToACCL
+  ; this -> IDX
+  jsr stringUtilityPopStringToIDX
   
-  ; make sure searchIndex < length (fVALUE < fSIZE)
-  lda fSIZEL
+  jsr stringUtilityLoadLengthFromIDX
+  jsr stringUtilityAdvanceIDXToFirstChar
+  
+  jsr releaseSP ; we popped 'this', decrease reference count
+  
+  ldx #0 ; false result
+  
+  ; make sure searchIndex < length (fVALUE < fLENGTH)
+  lda fLENGTHL
   sta TOPL
-  lda fSIZEH
+  lda fLENGTHH
   sta TOPH
   lda fVALUEL
   sta NEXTL
@@ -2436,76 +231,693 @@ syscallStringIndexOfShared:
   ;cmp #0
   bne syscallStringIndexOfRangeOk
   
-  ; result = false
-  stz TOPL
-  stz TOPH
-  
   ; searchIndex >= length
-  bra syscallStringIndexOfDone2
+  bra syscallStringIndexOfDoneShort
   
 syscallStringIndexOfRangeOk:
 
-  ; result = false
-  stz TOPL
-  stz TOPH
-  
   stz lCOUNTH
   
   ; length <= 255 ?
-  lda fSIZEH
-  bne syscallStringIndexOfLong2
+  lda fLENGTHH
+  bne syscallStringIndexOfLong
   
   ; length <= 255
-  
   ldy fVALUEL
-syscallStringIndexOfNextShort2:
-  cpy fSIZEL ; index == length?
-  beq syscallStringIndexOfDone2
+syscallStringIndexOfNextShort:
+  cpy fLENGTHL ; index == length?
+  beq syscallStringIndexOfDoneShort
   lda (IDX), Y
   cmp ACCL
-  beq syscallStringIndexOfFoundShort2
+  beq syscallStringIndexOfFoundShort
   iny
-  bra syscallStringIndexOfNextShort2
+  bra syscallStringIndexOfNextShort
   
-syscallStringIndexOfLong2:
+syscallStringIndexOfFoundShort:
+  ; lCOUNT to ref index: lCOUNT -> (IDY)
+  sty lCOUNTL
+  ldy #1
+  lda lCOUNTL
+  sta (IDY)
+  lda lCOUNTH
+  sta (IDY), Y
+  ldx #1 ; true result
   
+syscallStringIndexOfDoneShort:
+  jmp pushXBoolExit
+
+
+syscallStringIndexOfLong:
   lda fVALUEL
   sta lCOUNTL
-  
-syscallStringIndexOfNext2:
-  lda fSIZEL
-  bne syscallStringIndexOfCompare2
-  lda fSIZEH
-  bne syscallStringIndexOfCompare2
+syscallStringIndexOfNext:
+  lda fLENGTHL
+  bne syscallStringIndexOfCompare
+  lda fLENGTHH
+  bne syscallStringIndexOfCompare
   ; empty string
-  bra syscallStringIndexOfDone2
+  bra syscallStringIndexOfDone
   
-syscallStringIndexOfCompare2:
-  
+syscallStringIndexOfCompare:
   lda (IDX) ; first character
   cmp ACCL
-  beq syscallStringIndexOfFound2
-  
+  beq syscallStringIndexOfFound
   jsr incIDX
-  jsr decSIZE
+  jsr decLENGTH
   jsr incCOUNT
-  bra syscallStringIndexOfNext2
+  bra syscallStringIndexOfNext
   
-syscallStringIndexOfFoundShort2:
-  sty lCOUNTL
-  
-syscallStringIndexOfFound2:
-  
+syscallStringIndexOfFound:
+  ; lCOUNT to ref index: lCOUNT -> (IDY)
   ldy #1
   lda lCOUNTL
   sta (IDY)
   lda lCOUNTH
   sta (IDY), Y
   
+  ldx #1 ; true result
+
+syscallStringIndexOfDone:
+  jmp pushXBoolExit
+
+
+
+; TODO: merge String.New(), Char.ToString(char this) and String.NewFromConstant(uint twinChar) into a single syscall in future
+
+; string New()
+syscallStringNew:
+  stz fVALUEL
+  stz fVALUEH
+  lda #0
+  bra zeroCharNewString
+
+; string ToString(char this)
+syscallCharToString:
+  ; exactly the same as syscall_1_StringNewFromConstant (with MSB = 0)
+
+  ; fall through
+  
+; string NewFromConstant(uint twinChar)
+syscall_1_StringNewFromConstant:
+  jsr stringUtilityPopUIntToValue
+
+  ; add 2 bytes for string length field
+  lda fVALUEH
+  beq singleChar
+  lda #2
+  bra doubleChar
+singleChar:
+  lda #1
+doubleChar:
+zeroCharNewString:
+  sta fSIZEL  ; LSB
+  stz fSIZEH  ; MSB
+  
+  jsr stringUtilityCreateString                 ; fSIZE is number of characters needed in string, returns string as IDX (sets default length value)
+  
+  lda fVALUEL
+  beq singleChar2
+  ldy #4
+  sta (IDX), Y
+  lda fVALUEH
+  beq singleChar2
+  iny
+  sta (IDX), Y
+singleChar2:
+
+  lda #tString
+  jmp pushIDXExit
+
+
+; string NewFromConstant(uint constantOffset, uint length)
+syscallStringNewFromConstant:
+  
+  ; length -> fCOUNT
+  jsr stringUtilityPopUIntToCount
+  
+  ; offset -> IDY
+  jsr stringUtilityPopUIntToIndex
+  
+  ;uint constantStart = ReadWord(hopperStart + uint(2));
+  clc
+  lda #<HopperData  ; LSB
+  adc #2
+  sta IDXL
+  lda #>HopperData  ; MSB
+  adc #0
+  sta IDXH
+  
+  ldy #0
+  lda (IDX), Y
+  sta fSOURCEADDRESSL
+  iny
+  lda (IDX), Y
+  sta fSOURCEADDRESSH
+    
+  ; constantAddress = constantStart + hopperStart;
+  clc
+  lda #<HopperData  ; LSB
+  adc fSOURCEADDRESSL
+  sta fSOURCEADDRESSL
+  lda #>HopperData  ; MSB
+  adc fSOURCEADDRESSH
+  sta fSOURCEADDRESSH
+  
+  ; constantAddress = constantAddress + constantOffset
+  clc
+  lda IDYL  ; LSB
+  adc fSOURCEADDRESSL
+  sta fSOURCEADDRESSL
+  lda IDYH  ; MSB
+  adc fSOURCEADDRESSH
+  sta fSOURCEADDRESSH
+  
+  lda lCOUNTL  ; LSB
+  sta fSIZEL
+  lda lCOUNTH  ; MSB
+  sta fSIZEH
+  jsr stringUtilityCreateString                 ; fSIZE is number of characters needed in string, returns string as IDX (sets default length value)
+  
+  ; copy lCOUNT chars from fSOURCEADDRESS to string at IDY
+  jsr stringUtilityCopyCharsToIDX
+  
+  lda #tString
+  jmp pushIDXExit
+
+
+; String.Build(ref string build, string appendString) : build = build + append
+syscallStringBuild:
+  ; appendString
+  jsr stringUtilityPopStringToIDX    ; appendString -> IDX
+  jsr stringUtilityLoadLengthFromIDX ; (IDX), 2 -> fLENGTH
+  lda fLENGTHL                       ; number of characters to append -> lCOUNT
+  sta lCOUNTL
+  lda fLENGTHH
+  sta lCOUNTH
+  jsr stringUtilityLoadSourceFromIDX ; (IDX), 4 -> fSOURCEADDRESS
+  
+  ; build
+  jsr stringUtilityPopRefToIndex     ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX       ; ref string IDY -> IDX
+  jsr stringUtilityGetCapacity       ; IDX -> string, returns capacity in fSIZE
+  jsr stringUtilityLoadLengthFromIDX ; (IDX), 2 -> fLENGTH
+  
+  clc                                ; fVALUE = fLENGTH (length of build) + lCOUNT (length of appendString)
+  lda fLENGTHL 
+  adc lCOUNTL
+  sta fVALUEL
+  lda fLENGTHH
+  adc lCOUNTH
+  sta fVALUEH
+  
+  ; fVALUE >= fSIZE?
+  lda fVALUEH
+  cmp fSIZEH
+  bne donesyscallStringBuild1CheckGT1
+  lda fVALUEL
+  cmp fSIZEL
+donesyscallStringBuild1CheckGT1:
+  bcs syscallStringBuild1Resize1 
+  jmp syscallStringBuild1LengthOk1 ; fVALUE < fSIZE
+
+syscallStringBuild1Resize1:
+
+  ; fVALUE >= fSIZE
+  lda fVALUEL
+  sta fSIZEL
+  lda fVALUEH
+  sta fSIZEH
+  
+  ; string in IDX, required new length in fSIZE - new string returned in IDX (stack references updated)
+  jsr utilityStringEnlarge
+  
+syscallStringBuild1LengthOk1:
+
+  jsr stringUtilityLoadDestFromIDX
+  clc
+  lda fDESTINATIONADDRESSL
+  adc fLENGTHL
+  sta fDESTINATIONADDRESSL
+  lda fDESTINATIONADDRESSH
+  adc fLENGTHH
+  sta fDESTINATIONADDRESSH
+  
+  jsr stringUtilityCopyChars   ; copy lCOUNT chars from fSOURCEADDRESS to fDESTINATIONADDRESS
+  
+  lda fVALUEL
+  sta fLENGTHL
+  lda fVALUEH
+  sta fLENGTHH
+  jsr stringUtilityStoreLengthToIDX
+  
+  jsr releaseSPNEXT            ; release appendString
+  
+  jmp nextInstruction
+
+
+; String.Build(ref string build) : set length = 0
+syscall_2_StringBuild:
+  jsr stringUtilityPopRefToIndex     ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX       ; ref string IDY -> IDX
+  
+  stz fLENGTHL                       ; set length = 0
+  stz fLENGTHH
+  jsr stringUtilityStoreLengthToIDX  ; fLENGTH -> (IDX), 2
+  jmp nextInstruction
+
+; String.Build(ref string build, char appendChar) : build = build + appendChar
+syscall_1_StringBuild:
+  jsr stringUtilityPopCharToACCL     ; appendChar -> ACCL
+  jsr stringUtilityPopRefToIndex     ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX       ; ref string IDY -> IDX
+  
+  jsr stringUtilityAppendChar        ; string in IDX, appendChar in ACCL, returned IDX may have changed
+  jmp nextInstruction
+
+
+; String.BuildFront(ref string build, char insertChar) : build = insertChar + build
+syscallStringBuildFront:
+  jsr stringUtilityPopCharToACCL     ; appendChar -> ACCL
+  jsr stringUtilityPopRefToIndex     ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX       ; ref string IDY -> IDX
+  
+  jsr stringUtilityInsertCharFront   ; string in IDX, insertChar in ACCL, returned IDX may have changed
+  jmp nextInstruction
+
+
+; string InsertChar(string this, uint index, char append)
+syscallStringInsertChar:
+  jsr stringUtilityPopCharToACCL      ; appendChar -> ACCL
+  jsr stringUtilityPopUIntToIndex     ; pop uint argument -> IDY
+  jsr stringUtilityPopStringToIDX     ; pop string argument -> IDX
+  
+  jsr stringUtilityLoadLengthFromIDX  ; (IDX), 2 -> fLENGTH
+  jsr stringUtilityLoadSourceFromIDX  ; string IDX, 4 -> fSOURCEADDRESS
+  
+  lda fLENGTHL                        ; how many characters for stringUtilityCopyChars to copy
+  sta lCOUNTL
+  lda fLENGTHH
+  sta lCOUNTH
+  
+  jsr incLENGTH                       ; one more for 'appendChar'
+  lda fLENGTHL
+  sta fSIZEL
+  lda fLENGTHH
+  sta fSIZEH
+  jsr stringUtilityCreateString       ; fSIZE is number of characters needed in string, returns string as IDX (sets default length value)
+  
+  jsr stringUtilityLoadDestFromIDX    ; string IDX, 4 -> fDESTINATIONADDRESS
+  jsr stringUtilityCopyCharsWithInsert; copy lCOUNT chars from fSOURCEADDRESS to fDESTINATIONADDRESS, but insert ACCL at position IDY
+  
+  jsr releaseSP ; we popped 'this', decrease reference count
+  lda #tString
+  jmp pushIDXExit
+
+
+; string Append(string this, char appendChar)
+syscall_1_StringAppend:
+  jsr stringUtilityPopCharToACCL      ; appendChar -> ACCL
+  jsr stringUtilityPopStringToIDX     ; pop string argument -> IDX
+  
+  jsr stringUtilityLoadLengthFromIDX  ; (IDX), 2 -> fLENGTH
+  jsr stringUtilityLoadSourceFromIDX  ; string IDX, 4 -> fSOURCEADDRESS
+  
+  lda fLENGTHL                        ; how many characters for stringUtilityCopyChars to copy
+  sta lCOUNTL
+  lda fLENGTHH
+  sta lCOUNTH
+  
+  jsr incLENGTH                       ; one more for 'appendChar'
+  lda fLENGTHL
+  sta fSIZEL
+  lda fLENGTHH
+  sta fSIZEH
+  jsr stringUtilityCreateString       ; fSIZE is number of characters needed in string, returns string as IDX (sets default length value)
+  
+  jsr stringUtilityLoadDestFromIDX    ; string IDX, 4 -> fDESTINATIONADDRESS
+  jsr stringUtilityCopyChars          ; copy lCOUNT chars from fSOURCEADDRESS to fDESTINATIONADDRESS
+  lda ACCL
+  sta (fDESTINATIONADDRESS)           ; after stringUtilityCopyChars, fDESTINATIONADDRESS points to correct location to write appendChar
+  
+  jsr releaseSP ; we popped 'this', decrease reference count
+  lda #tString
+  jmp pushIDXExit
+
+
+; string Append(string this, string appendString)
+syscallStringAppend:
+  ; appendString
+  jsr stringUtilityPopStringToIDX     ; appendString -> IDX
+  jsr stringUtilityLoadLengthFromIDX  ; (IDX), 2 -> fLENGTH
+  lda fLENGTHL                        ; number of characters to append -> lCOUNT
+  sta lCOUNTL
+  lda fLENGTHH
+  sta lCOUNTH
+  jsr stringUtilityLoadSourceFromIDX  ; (IDX), 4 -> fSOURCEADDRESS
+  lda fSOURCEADDRESSL
+  pha
+  lda fSOURCEADDRESSH
+  pha
+  
+  ; this
+  jsr stringUtilityPopStringToIDX     ; pop string argument -> IDX
+  jsr stringUtilityLoadLengthFromIDX  ; (IDX), 2 -> fLENGTH
+  jsr stringUtilityLoadSourceFromIDX  ; string IDX, 4 -> fSOURCEADDRESS
+  
+  ; add length of 'appendString':  SIZE = LENGTH(this) + COUNT(append)
+  clc
+  lda lCOUNTL
+  pha
+  adc fLENGTHL
+  sta fSIZEL
+  iny
+  lda lCOUNTH
+  pha
+  adc fLENGTHH
+  sta fSIZEH
+  
+  lda fLENGTHL
+  sta lCOUNTL
+  lda fLENGTHH
+  sta lCOUNTH
+  
+  jsr stringUtilityCreateString                 ; fSIZE is number of characters needed in string, returns string as IDX (sets default length value)
+
+  jsr stringUtilityLoadDestFromIDX    ; string IDX, 4 -> fDESTINATIONADDRESS
+  jsr stringUtilityCopyChars          ; copy lCOUNT chars from fSOURCEADDRESS to fDESTINATIONADDRESS
+  
+  pla
+  sta lCOUNTH
+  pla
+  sta lCOUNTL
+  pla
+  sta fSOURCEADDRESSH
+  pla
+  sta fSOURCEADDRESSL
+  jsr stringUtilityCopyChars          ; copy lCOUNT chars from fSOURCEADDRESS to fDESTINATIONADDRESS
+  
+   ; we popped 'appendString', decrease reference count (munts all Nx variables if memoryFree is called)
+  ; we popped 'this', decrease reference count (munts all Nx variables if memoryFree is called)
+  jsr releaseSPandSPNEXT
+  
+  lda #tString
+  jmp pushIDXExit
+
+
+syscallStringPushImmediate:
+  ; create and empty string
+  stz fSIZEL
+  stz fSIZEH
+  jsr stringUtilityCreateString         ; fSIZE is number of characters needed in string, returns string as IDX (sets default length value)
+
+syscallStringPushImmediateNotNull:
+  jsr stringUtilityPopUIntToValue        ; appendChars -> fVALUE
+  
+  lda fVALUEL
+  beq syscallStringPushImmediateTryMSB
+  sta ACCL
+  jsr stringUtilityAppendChar
+  
+syscallStringPushImmediateTryMSB:
+  lda fVALUEH
+  beq syscallStringPushImmediateExit
+  sta ACCL
+  jsr stringUtilityAppendChar
+  
+  bra syscallStringPushImmediateNotNull
+syscallStringPushImmediateExit:
+  
+  lda #tString                         ; push resulting string
+  jmp pushIDXExit
+
+
+
+
+; string TrimLeft(string this) system;
+syscallStringTrimLeft:
+  jsr stringUtilityPopStringToIDY     ; this -> IDY
+  
+  ; IDY -> sourceString, returns cloned string in IDX
+  jsr stringUtilityClone
+  jsr stringUtilityTrimLeft
+  
+  jsr releaseSP
+  lda #tString                         ; push resulting string
+  jmp pushIDXExit
+
+
+; TrimLeft(ref string build) system;
+syscall_1_StringTrimLeft:
+  jsr stringUtilityPopRefToIndex      ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX        ; ref string IDY -> IDX
+  jsr stringUtilityTrimLeft
+  jmp nextInstruction
+
+
+; TrimRight(ref string build) system;
+syscallStringTrimRight:
+  jsr stringUtilityPopRefToIndex      ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX        ; ref string IDY -> IDX
+  jsr stringUtilityTrimRight
+  jmp nextInstruction
+
+
+; Trim(ref string build) system;
+syscall_1_StringTrim:
+  jsr stringUtilityPopRefToIndex      ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX        ; ref string IDY -> IDX
+  
+  jsr stringUtilityTrimRight
+  jsr stringUtilityTrimLeft
+  jmp nextInstruction
+
+
+; string Trim(string this) system;
+syscallStringTrim:
+  jsr stringUtilityPopStringToIDY     ; this -> IDY
+  
+  ; IDY -> sourceString, returns cloned string in IDX
+  jsr stringUtilityClone
+
+  jsr stringUtilityTrimRight
+  jsr stringUtilityTrimLeft
+  
+  jsr releaseSP
+  lda #tString                         ; push resulting string
+  jmp pushIDXExit
+
+
+; string Substring(string original, uint start)
+syscallStringSubstring:
+  jsr stringUtilityPopUIntToValue     ; start -> fVALUE
+  jsr stringUtilityPopStringToIDY     ; this -> IDY
+  
+  ; IDY -> sourceString, returns cloned string in IDX
+  jsr stringUtilityClone
+
+  ; IDX source string, start position in fVALUE
+  jsr stringUtilitySubstringStart
+  
+  jsr releaseSP
+  lda #tString                         ; push resulting string
+  jmp pushIDXExit
+
+
+; Substring(ref string build, uint start) system;
+syscall_2_StringSubstring:
+  jsr stringUtilityPopUIntToValue     ; start -> fVALUE
+  jsr stringUtilityPopRefToIndex      ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX        ; ref string IDY -> IDX
+  
+  ; IDX source string, start position in fVALUE
+  jsr stringUtilitySubstringStart
+  jmp nextInstruction
+
+
+; string Substring(string original, uint start, uint length)
+syscall_1_StringSubstring:
+  jsr stringUtilityPopUIntToCount     ; length -> lCOUNT
+  jsr stringUtilityPopUIntToValue     ; start -> fVALUE
+  jsr stringUtilityPopStringToIDY     ; this -> IDY
+  
+  lda lCOUNTL
+  pha
+  lda lCOUNTH
+  pha
+  
+  ; IDY -> sourceString, returns cloned string in IDX
+  jsr stringUtilityClone
+
+  ; IDX source string, start position in fVALUE
+  jsr stringUtilitySubstringStart
+  jsr stringUtilityLoadLengthFromIDX
+  
+  pla
+  sta lCOUNTH
+  pla
+  sta lCOUNTL
+
+  sec                                  ; fLENGTH = fLENGTH - lCOUNT
+  lda fLENGTHL
+  sbc lCOUNTL
+  sta fLENGTHL
+  lda fLENGTHH
+  sbc lCOUNTH
+  sta fLENGTHH
+  bmi syscall_2_StringSubstringExit  ; -ve means the string length is already shorter than requested (so leave it unchanged)
+  
+  ; +ve means lCOUNT >= fLENGTH so take lCOUNT
+  lda lCOUNTL
+  sta fLENGTHL
+  lda lCOUNTH
+  sta fLENGTHH
+  jsr stringUtilityStoreLengthToIDX
+  
+syscall_2_StringSubstringExit:
+  
+  jsr releaseSP
+  lda #tString                         ; push resulting string
+  jmp pushIDXExit
+
+
+; ToUpper(ref string build) system;
+syscall_1_StringToUpper:
+  jsr stringUtilityPopRefToIndex      ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX        ; ref string IDY -> IDX
+  
+  jsr stringUtilityToUpper
+  jmp nextInstruction
+
+
+; string ToUpper(string this) system;
+syscallStringToUpper:
+  jsr stringUtilityPopStringToIDY     ; this -> IDY
+  
+  ; IDY -> sourceString, returns cloned string in IDX
+  jsr stringUtilityClone
+
+  jsr stringUtilityToUpper
+  
+  jsr releaseSP
+  lda #tString                         ; push resulting string
+  jmp pushIDXExit
+
+
+; ToLower(ref string build) system;
+syscall_1_StringToLower:
+  jsr stringUtilityPopRefToIndex      ; ref build -> IDY
+  jsr stringUtilityRefIDYtoIDX        ; ref string IDY -> IDX
+  
+  jsr stringUtilityToLower
+  jmp nextInstruction
+
+
+; string ToLower(string this) system;
+syscallStringToLower:
+  jsr stringUtilityPopStringToIDY     ; this -> IDY
+  
+  ; IDY -> sourceString, returns cloned string in IDX
+  jsr stringUtilityClone
+
+  jsr stringUtilityToLower
+  
+  jsr releaseSP
+  lda #tString                         ; push resulting string
+  jmp pushIDXExit
+
+; int Compare(string left, string right) // returns -1, 0, +1
+syscallStringCompare:
+  ;
+  ; int __cdecl strcmp (
+  ;         const char * src,
+  ;         const char * dst
+  ;         )
+  ; {
+  ;         int ret = 0 ;
+  ; 
+  ;         while((ret = *(unsigned char *)src - *(unsigned char *)dst) == 0 && *dst)
+  ;                 {
+  ;                 ++src, ++dst;
+  ;                 }
+  ; 
+  ;         return ((-ret) < 0) - (ret < 0); // (if positive) - (if negative) generates branchless code
+  ; }
+  jsr stringUtilityPopStringToIDY     ; right -> IDY
+  jsr stringUtilityPopStringToIDX     ; left  -> IDX
+  jsr stringUtilityLoadLengthFromIDX  ; IDX -> string, load fLENGTH
+  lda fLENGTHL
+  sta lCOUNTL
+  lda fLENGTHH
+  sta lCOUNTH
+  jsr stringUtilityLoadLengthFromIDY  ; IDY -> string, load fLENGTH
+  
+  stz TOPL
+  stz TOPH
+  
+  jsr stringUtilityLoadSourceFromIDX  ; string IDX, 4 -> fSOURCEADDRESS
+  jsr stringUtilityLoadDestFromIDY    ; string IDY, 4 -> fDESTINATIONADDRESS
+
+syscallStringCompareLoop:
+  
+  stz ACCL
+  lda #0
+  cmp lCOUNTL
+  bne syscallStringCompareLeftNotNull
+  cmp lCOUNTH
+  beq syscallStringCompareLeftNull 
+syscallStringCompareLeftNotNull:
+  lda (fSOURCEADDRESS)
+  sta ACCL
+syscallStringCompareLeftNull:
+  
+  stz ACCH
+  lda #0
+  cmp fLENGTHL
+  bne syscallStringCompareRightNotNull
+  cmp fLENGTHH
+  beq syscallStringCompareRightNull 
+syscallStringCompareRightNotNull:
+  lda (fDESTINATIONADDRESS)
+  sta ACCH
+syscallStringCompareRightNull:
+  
+  sec
+  lda ACCL
+  sbc ACCH
+  sta TOPL
+  bne syscallStringCompareLoopDone ; != 0
+  ; == 0
+  
+  jsr decCOUNT
+  jsr decLENGTH
+  
+  lda ACCH
+  beq syscallStringCompareLoopDone 
+
+  jsr incSOURCEADDRESS
+  jsr incDESTINATIONADDRESS
+  
+  bra syscallStringCompareLoop
+
+syscallStringCompareLoopDone:
+  lda TOPL
+  beq syscallStringCompareExit ; == 0
+  bmi syscallStringCompareNeg  ; < 0
+  
+syscallStringComparePos:
+  ; > 0 = 1
   lda #1
   sta TOPL
-  
-syscallStringIndexOfDone2:
-  lda #tBool
+  bra syscallStringCompareExit
+
+syscallStringCompareNeg:
+  ; < 0 = -1
+  lda #$FF
+  sta TOPL
+  sta TOPH
+
+syscallStringCompareExit:
+  jsr releaseSPandSPNEXT
+  lda #tInt
   jmp pushTOPExit
   

@@ -156,9 +156,44 @@ diagnosticOut:
   jsr diagnosticOutHex
   .endif
   
+  lda #" "
+  jsr diagnosticOutChar
+  lda #"s"
+  jsr diagnosticOutChar
+  lda #"p"
+  jsr diagnosticOutChar
+  lda #"="
+  jsr diagnosticOutChar
+  
+  phx
+  tsx
+  txa
+  jsr diagnosticOutHex
+  plx
+  
   pla
   rts
 
+  .ifdef VERIFYSTACK
+  
+diagnosticsVerifyStack:
+  pha
+  phx
+  tsx
+  cpx DIAGSP
+  beq diagnosticsVerifyStackSame
+  
+  lda DIAGSP
+  jsr diagnosticOutHex
+  stx DIAGSP ; update it so we get one message after the opCode where there was a change
+  jsr diagnosticOut
+  
+diagnosticsVerifyStackSame
+  
+  plx
+  pla
+  rts
+  .endif
   
 diagnosticOutNewLine:
   ;jsr LCDNewLine
@@ -357,8 +392,8 @@ emitCallStackItem:
   ; RET: emit call stack stack item at IDX
   inx
   LDA HopperCallStack, X
-  ;sec
-  ;sbc #>HopperData
+  sec
+  sbc #>HopperData
   jsr diagnosticOutHex ; MSB
   dex
   LDA HopperCallStack, X
@@ -1019,6 +1054,12 @@ assertByteOk:
 assertDelegate:
   cmp #tDelegate
   beq assertDelegateOk
+  
+  .ifdef PERMISSIVE
+  cmp #tUInt ; also ok under PERMISSIVE
+  beq assertDelegateOk
+  .endif
+  
   .ifndef NODIAGNOSTICS
   jsr diagnosticOutHex
   jsr diagnosticOutString
@@ -1026,6 +1067,34 @@ assertDelegate:
   .endif
   jmp throwToys
 assertDelegateOk:
+  rts
+
+
+assertUIntOrPlusInt
+  ; assumes type is in A and MSB for tInt is in X
+  cmp #tUInt
+  beq assertUIntOrPlusIntOk
+  cmp #tByte
+  beq assertUIntOrPlusIntOk
+  cmp #tChar
+  beq assertUIntOrPlusIntOk
+  cmp #tBool
+  beq assertUIntOrPlusIntOk
+  cmp #tInt
+  bne assertUIntOrPlusIntNotOk
+  pha
+  txa
+  bmi assertUIntOrPlusIntNotOk
+  pla
+  bra assertUIntOrPlusIntOk
+assertUIntOrPlusIntNotOk:
+  .ifndef NODIAGNOSTICS
+  jsr diagnosticOutHex
+  jsr diagnosticOutString
+  .byte $0D, "?uint or +int", 0
+  .endif
+  jmp throwToys
+assertUIntOrPlusIntOk:
   rts
 
 assertUInt:
@@ -1065,6 +1134,8 @@ assertUIntOrInt:
   jmp throwToys
 assertUIntOrIntOk:
   rts
+
+
 
 assertInt:
   cmp #tInt

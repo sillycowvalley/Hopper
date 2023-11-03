@@ -619,7 +619,7 @@ hashTableFindEntryKeyNotNull:
   ; compare strings TOP and NEXT
   ; result Z set if equal
   ;   uses ACC
-  jsr stringsEqual
+  jsr stringUtilityEqual
   beq hashTableFindEntryExit
 
 hashTableFindEntryNextIndex:
@@ -931,6 +931,11 @@ hashValueTableFindEntryExit:
 ; dictionary New(type kType, type vType)
 syscallDictionaryNew:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<New", 0
+  .endif
+  
   .ifdef STACK8
   
   ; value type -> stack
@@ -994,6 +999,11 @@ syscallDictionaryNewKeyTypeOk
   .endif
   
   jsr utilityDictionaryNew
+  
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "New>", 0
+  .endif
     
   lda #tDictionary
   jmp pushIDXExit
@@ -1034,6 +1044,11 @@ utilityDictionaryNew:
 ; uint Count { get system; }
 syscallDictionaryCountGet:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<Count", 0
+  .endif
+  
   .ifdef STACK8
   
   ldx SP8
@@ -1071,12 +1086,22 @@ syscallDictionaryCountGet:
   
   jsr rawReleaseSP ; we popped 'this', decrease reference count
   
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "Count>", 0
+  .endif
+  
   lda #tUInt
   jmp pushTOPExit
   
 ; V Get(<K,V> this, K key) system;
 syscallDictionaryGet:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<Get", 0
+  .endif
+  
   .ifdef STACK8
   
   ; key -> fKEY
@@ -1167,11 +1192,13 @@ syscallDictionaryGetSkipMSB:
 syscallDictionaryGetKTypeMatches:
   .endif
   
+  
   lda dKTYPE
   cmp #tString
   beq syscallDictionaryGetValueString
   jmp syscallDictionaryGetValue
-syscallDictionaryGetValueString:  
+syscallDictionaryGetValueString:
+
   ; kType = tString
   
   ; dictionary is in IDX
@@ -1182,9 +1209,9 @@ syscallDictionaryGetValueString:
   txa ; bool result
   bne syscallDictionaryGetFound
   
-  stz ACCH
   lda #$03 ; no entry for key in dictionary
   sta ACCL
+  stz ACCH
   jmp utilityDiagnosticsDie
   
 syscallDictionaryGetFound:
@@ -1192,6 +1219,28 @@ syscallDictionaryGetFound:
   jsr releaseSPandSPNEXT ; release 'this' and 'key' string
   
 syscallDictionaryGetProcessResult:
+
+  .ifdef VALUES
+  
+  ldy #3
+  lda (IDX), Y
+  sta dVTYPE
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcs syscallDictionaryGetNotAValue
+  
+  ; load the value into IDX
+  lda fVALUEL
+  sta IDXL
+  lda fVALUEH
+  sta IDXH
+  
+  ldy #3
+  lda (IDX), Y ; dVTYPE
+  jmp syscallDictionaryGetExit
+syscallDictionaryGetNotAValue:
+  .endif
+  
+  
   ; clone fVALUE
   lda fVALUEL
   sta IDYL
@@ -1232,6 +1281,7 @@ syscallDictionaryGetCloneReference:
   ; type is in A
   ; reference type to clone is at IDY
   
+  
   lda dVTYPE
   jsr cloneIDY
   
@@ -1239,6 +1289,7 @@ syscallDictionaryGetCloneReference:
   
   
 syscallDictionaryGetValue:
+
   ; kType = value type
   
   ; dictionary is in IDX
@@ -1250,12 +1301,14 @@ syscallDictionaryGetValue:
   txa ; bool result
   bne syscallDictionaryGetValueFound
   
-  stz ACCH
+  
   lda #$03 ; no entry for key in dictionary
   sta ACCL
+  stz ACCH
   jmp utilityDiagnosticsDie
   
 syscallDictionaryGetValueFound:  
+
   
   .ifdef CHECKED
   jsr rawReleaseSP ; we popped 'this', decrease reference count
@@ -1269,20 +1322,42 @@ syscallDictionaryGetValueFound:
   sta (IDX), Y
   ; if zero, free
   bne syscallDictionaryGetNoRelease
+  
+  
   jsr memoryFree
 syscallDictionaryGetNoRelease:
   .endif
+  
   
   jmp syscallDictionaryGetProcessResult
   
 syscallDictionaryGetExit:
 
+
+  .ifdef DICTDIAG
+  lda dVTYPE
+  jsr diagnosticOutHex
+  lda #":"
+  jsr diagnosticOutChar
+  lda IDXH
+  jsr diagnosticOutHex
+  lda IDXL
+  jsr diagnosticOutHex
+  jsr diagnosticOutString
+  .byte "Get>", 0
+  .endif
+  
   lda dVTYPE
   jmp pushIDXExit
   
 ; bool Contains(<K,V> this, K key) system;
 syscallDictionaryContains:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<Contains", 0
+  .endif
+  
   .ifdef STACK8
   
   ; key -> dKEY
@@ -1489,11 +1564,21 @@ syscallDictionaryContainsExit:
   .ifdef CHECKED
   jsr verifyBoolStackTop
   .endif
+  
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "Contains>", 0
+  .endif
+  
   jmp nextInstruction
 
 ; Set (<K, V> this, K key, V value)
 syscallDictionarySet:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<Set", 0
+  .endif
   .ifdef STACK8
   
   ; value -> fVALUE
@@ -1678,6 +1763,11 @@ syscallDictionarySetDontReleaseValue2:
   
 syscallDictionarySetExit:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "Set>", 0
+  .endif
+  
   jmp nextInstruction
   
 checkCapacity:
@@ -1991,7 +2081,8 @@ hashTableAddEntryKeyNotNull:
   jsr diagnosticOutChar
   lda #"k"
   jsr diagnosticOutChar
-  
+  lda dKTYPE
+  jsr diagnosticOutHex
   .endif
   
   ; munt IDX (dictionary) here:
@@ -2009,7 +2100,7 @@ hashTableAddEntryAfterKeyFree:
   sta IDYL
   lda dKEYH
   sta IDYH
-  jsr cloneString
+  jsr stringUtilityClone
   ldy #0
   lda IDXL
   sta (dHASHENTRY), Y
@@ -2048,6 +2139,8 @@ hashTableAddEntryValueNotNull:
   jsr diagnosticOutChar
   lda #"v"
   jsr diagnosticOutChar
+  lda dVTYPE
+  jsr diagnosticOutHex
   
   .endif
   
@@ -2057,6 +2150,15 @@ hashTableAddEntryValueNotNull:
   iny
   lda (dHASHENTRY), Y
   sta IDXH
+  
+  .ifdef VALUES
+  
+  lda dVTYPE
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcc hashTableAddEntryValueAfterFree
+  
+  .endif
+  
   jsr gcRelease
 
 hashTableAddEntryValueAfterFree:
@@ -2081,14 +2183,27 @@ hashTableAddEntryValueAfterFree:
   bra hashTableAddEntryStoreValue  
 hashTableAddEntryValueType:
 
+  .ifdef VALUES
+  
+  ; store value directly in dHASHENTRY
+  lda fVALUEL
+  sta IDXL
+  lda fVALUEH
+  sta IDXH
+  
+  .else
+  
   ; type in A
   ; value in fVALUE
   ; uses fSIZE
   ; return tVariant in IDX
+  
   lda dVTYPE
   jsr createValueVariant
   
-hashTableAddEntryStoreValue:  
+  .endif
+  
+hashTableAddEntryStoreValue:
 
   ldy #6
   lda IDXL
@@ -2215,6 +2330,8 @@ hashValueTableAddEntryValueNotNull:
   jsr diagnosticOutChar
   lda #"v"
   jsr diagnosticOutChar
+  lda dVTYPE
+  jsr diagnosticOutHex
   
   .endif
   
@@ -2224,6 +2341,13 @@ hashValueTableAddEntryValueNotNull:
   iny
   lda (dHASHENTRY), Y
   sta IDXH
+  
+  .ifdef VALUES
+  lda dVTYPE
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcc hashValueTableAddEntryValueAfterNotNull
+  .endif
+  
   jsr gcRelease
   
 hashValueTableAddEntryValueAfterNotNull:
@@ -2267,12 +2391,24 @@ hashValueTableAddEntryValueAfterNotNull:
   bra hashValueTableAddEntryStoreValue  
 hashValueTableAddEntryValueType:
 
+  .ifdef VALUES
+  
+  ; store value directly in dHASHENTRY
+  lda fVALUEL
+  sta IDXL
+  lda fVALUEH
+  sta IDXH
+  
+  .else
+  
   ; type in A
   ; value in fVALUE
   ; uses fSIZE
   ; return tVariant in IDX
   lda dVTYPE
   jsr createValueVariant
+  
+  .endif
   
 hashValueTableAddEntryStoreValue:  
 
@@ -2762,6 +2898,11 @@ afterFreePreviousEntries2:
   
 syscallDictionaryClear:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<Clear", 0
+  .endif
+  
   .ifdef STACK8
   
   ; this -> IDX
@@ -2796,10 +2937,20 @@ syscallDictionaryClear:
   
   jsr releaseSP ; release 'this'
   
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "Clear>", 0
+  .endif
+  
   jmp nextInstruction
   
 syscallDictionaryNext:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<Next", 0
+  .endif
+  
   .ifdef STACK8
   
   ; iterator
@@ -2900,6 +3051,8 @@ syscallDictionaryNextSkipMSB:
   sta dHASHENTRIESH
 
   ;Pair* pair = Pair_New(_TYPE_(dictionary->kType), _TYPE_(dictionary->vType));  
+  ; dKTYPE and dVType
+  ;   result in IDX
   jsr utilityPairNew
   
   jsr dictionaryNext
@@ -2988,6 +3141,11 @@ syscallDictionaryNextSkipMSB:
   sta (TSP)
   jsr incTSP
   
+  .endif
+  
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "Next>", 0
   .endif
   
   jmp nextInstruction
@@ -3133,7 +3291,7 @@ dictionaryNextFoundNotDone
   lda (dHASHENTRY), Y
   sta IDYH
   
-  jsr cloneString  ; IDY -> IDX
+  jsr stringUtilityClone  ; IDY -> IDX
   
   bra dictionaryNextProcessResult
 dictionaryNextKeyNotString:
@@ -3150,12 +3308,24 @@ dictionaryNextKeyNotString:
   lda (dHASHENTRY), Y
   sta fVALUEH
   
+  .ifdef VALUES
+  
+  ; take value directly from dHASHENTRY
+  lda fVALUEL
+  sta IDXL
+  lda fVALUEH
+  sta IDXH
+  
+  .else
+
   lda dKTYPE
   jsr createValueVariant
   ; type in A
   ; value in fVALUE
   ; uses fSIZE
   ;   return tVariant in IDX
+  
+  .endif
   
 dictionaryNextProcessResult:
 
@@ -3200,12 +3370,26 @@ dictionaryNextProcessResult:
   lda IDYH
   sta (IDX), Y
   
+  
   ldy #6
   lda (dHASHENTRY), Y
   sta IDYL
   iny
   lda (dHASHENTRY), Y
   sta IDYH
+  
+  .ifdef VALUES
+  
+  ; if dictionary vType is reference type, clone it
+  ;        if not, just copy the value
+  
+  
+  lda dVTYPE
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcc dictionaryNextProcessResultValue
+  
+  .endif
+  
   
   lda (IDY)
   sta dVTYPE
@@ -3237,6 +3421,10 @@ dictionaryNextProcessResult:
   sta IDXH
   pla
   sta IDXL
+  
+  .ifdef VALUES
+dictionaryNextProcessResultValue:
+  .endif
   
   ; pair->Value = IDY
   ldy #3
@@ -3426,6 +3614,12 @@ utilityDictionaryClearFound:
   
 utilityDictionaryClearKeyNotString:
 
+  .ifdef VALUES
+  lda dVTYPE
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcc utilityDictionaryClearCheckZero
+  .endif
+  
   ; release the value
   ldy #6
   lda (dHASHENTRY), Y
@@ -3442,6 +3636,7 @@ utilityDictionaryClearKeyNotString:
   jsr diagnosticOutChar
   
   .endif
+  
   
   jsr gcRelease ; IDX
   
@@ -3640,7 +3835,9 @@ cloneDictionaryNextNotZero:
   ; value keys : check isOccupied
   ldy #2
   lda (fSOURCEADDRESS), Y
-  beq cloneDictionarySkipEntry
+  bne cloneDictionarySkipSkipEntry
+  jmp cloneDictionarySkipEntry
+cloneDictionarySkipSkipEntry:
   
   ; copy the key and isOccupied
   ldy #0
@@ -3680,7 +3877,7 @@ cloneDictionaryString:
   iny
   lda (fSOURCEADDRESS), Y
   sta IDYH
-  jsr cloneString  ; IDY -> IDX (preserves fSOURCEADDRESS)
+  jsr stringUtilityClone  ; IDY -> IDX (preserves fSOURCEADDRESS)
   
   ldy #0
   lda IDXL
@@ -3709,6 +3906,14 @@ cloneDictionaryCloneData:
   iny
   lda (fSOURCEADDRESS), Y
   sta IDYH
+  
+  .ifdef VALUES
+  lda dVTYPE
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcc cloneDictionaryCloneValueType
+  
+  .endif
+  
   lda (IDY) ; type in A
   jsr cloneIDY  ; IDY -> IDX
   
@@ -3718,7 +3923,19 @@ cloneDictionaryCloneData:
   iny
   lda IDXH
   sta (dHASHENTRIES), Y
-
+  
+  .ifdef VALUES
+  bra cloneDictionarySkipEntry
+cloneDictionaryCloneValueType:
+  
+  ldy #6
+  lda IDYL
+  sta (dHASHENTRIES), Y
+  iny
+  lda IDYH
+  sta (dHASHENTRIES), Y
+  
+  .endif
 cloneDictionarySkipEntry:  
 
   ; dHASHENTRIES += 8

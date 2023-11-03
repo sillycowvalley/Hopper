@@ -6,8 +6,8 @@
 ;   00   reference count
 ;   xx   kType
 ;   xx   vType
-;   xxxx pKey   - always a variant
-;   xxxx pData  - always a variant
+;   xxxx pKey
+;   xxxx pData
 
 
 utilityPairNew:
@@ -43,6 +43,11 @@ utilityPairNew:
   
 syscallPairNew:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<PNew", 0
+  .endif
+  
   .ifdef STACK8
   
   ; value type -> stack
@@ -88,6 +93,11 @@ syscallPairNew:
   
   jsr utilityPairNew
   
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "PNew>", 0
+  .endif
+  
   lda #tPair  
   jmp pushIDXExit
   
@@ -100,6 +110,18 @@ utilityPairClear:
   pha
   lda IDXH
   pha
+  
+  .ifdef VALUES
+  
+  ldy #2
+  lda (IDX), Y
+  sta dKTYPE
+  
+  ldy #3
+  lda (IDX), Y
+  sta dVTYPE
+  
+  .endif
   
   ldy #4 ; key value
   lda (IDX), Y
@@ -123,6 +145,17 @@ utilityPairClearKey:
   jsr diagnosticOutChar
   lda #"k"
   jsr diagnosticOutChar
+  
+  lda dKTYPE
+  jsr diagnosticOutHex
+  
+  .endif
+  
+  .ifdef VALUES
+  
+  lda dKTYPE
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcc utilityPairKeyNull
   
   .endif
   
@@ -168,6 +201,16 @@ utilityPairClearValue:
   jsr diagnosticOutChar
   lda #"v"
   jsr diagnosticOutChar
+  lda dVTYPE
+  jsr diagnosticOutHex
+  
+  .endif
+  
+  .ifdef VALUES
+  
+  lda dVTYPE
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcc utilityPairValueNull
   
   .endif
   
@@ -189,6 +232,11 @@ utilityPairValueNull:
   rts
   
 syscallPairKey:
+
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<Key", 0
+  .endif
 
   .ifdef STACK8
   
@@ -254,10 +302,20 @@ syscallPairKey:
   
   .endif
   
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "Key>", 0
+  .endif
+  
   jmp nextInstruction
   
 syscallPairValue:
 
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "<Value", 0
+  .endif
+  
   .ifdef STACK8
   
   ldx SP8
@@ -332,6 +390,11 @@ syscallPairValue:
   jsr incTSP
   
   .endif
+  
+  .ifdef DICTDIAG
+  jsr diagnosticOutString
+  .byte "Value>", 0
+  .endif
   jmp nextInstruction
   
 utilityPairKey:
@@ -372,6 +435,9 @@ utilityPairKeyNotVariant:
   bra utilityPairKeyExit
   
 utilityPairKeyValueType:
+  
+  .ifndef VALUES
+  
   ; get the value from the variant
   ldy #3
   lda (IDY), Y
@@ -380,6 +446,8 @@ utilityPairKeyValueType:
   lda (IDY), Y
   sta IDYH
   stx IDYL
+  
+  .endif
   
 utilityPairKeyExit:
   rts
@@ -423,6 +491,8 @@ utilityPairValueNotVariant:
   bra utilityPairValueExit
   
 utilityPairValueValueType:
+  
+  .ifndef VALUES
   ; get the value from the variant
   ldy #3
   lda (IDY), Y
@@ -431,6 +501,7 @@ utilityPairValueValueType:
   lda (IDY), Y
   sta IDYH
   stx IDYL
+  .endif
   
 utilityPairValueExit:
   rts

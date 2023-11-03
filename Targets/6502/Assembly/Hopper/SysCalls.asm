@@ -1,21 +1,24 @@
 ; ######################## SysCall lookups ########################
-  
+
+; 6502 floating point:
+; https://github.com/ekuester/SCMP-INS8060-NIBL-FloatingPoint-TinyBASIC-Interpreter/blob/main/NIBLFP/6502FP.asm
+; 
 syscall0JumpTableLower:
   .ifdef STRINGS
   .word syscallStringNewFromConstant ; 00
-  .word syscall0Undefined            ; 01 StringNewFromChar - unused
+  .word syscallCharToString          ; 01
   .word syscallStringNew             ; 02
   .word syscallStringAppend          ; 03
   .word syscallStringInsertChar      ; 04
-  .word syscall0Undefined            ; 05 StringCompare (.hs)
+  .word syscallStringCompare         ; 05
   .word syscallStringLengthGet       ; 06
   .word syscall0Undefined            ; 07 StringEndsWith  (.hs)
-  .word syscall0Undefined            ; 08 StringSubstring (.hs)
+  .word syscallStringSubstring       ; 08 StringSubstring (.hs)
   .word syscall0Undefined            ; 09 StringReplace   (.hs)
   .word syscallStringGetChar         ; 0A
   .else
   .word syscall0Undefined ; 00
-  .word syscall0Undefined            ; 01 StringNewFromChar - unused
+  .word syscall0Undefined            ; 01 StringNewFromChar
   .word syscall0Undefined             ; 02
   .word syscall0Undefined          ; 03
   .word syscall0Undefined      ; 04
@@ -363,28 +366,46 @@ syscall0JumpTableHigher:
   .word syscallWarpSet    ; 0xC4
   .word syscallWarpGet    ; 0xC5
   .word syscallTimeDelay  ; 0xC6
+  .word syscallLongInc    ; 0xC7
+  .word syscallLongAddRef ; 0xC8
+  .word syscallLongMulRef ; 0xC9
+  .ifdef ARRAYS
+  .word syscallArrayGetItemUInt          ; 0xCA
+  .word syscallArraySetItemUInt          ; 0xCB
+  .else
   .word syscall0Undefined
   .word syscall0Undefined
+  .endif
+  .word syscallSystemInline ; 0xCC
+  .ifdef LISTS
+  .word syscallIntToBytes   ; 0xCD
+  .else
   .word syscall0Undefined
-  .word syscall0Undefined
-  .word syscall0Undefined
-  .word syscall0Undefined
-  .word syscall0Undefined
-  .word syscall0Undefined
-  .word syscall0Undefined ; CF
+  .endif
+  .word syscall0Undefined   ; CE File.GetTime
+  .word syscall0Undefined   ; CF Directory.GetTime
   
-  .word syscall0Undefined ; D0
+  .ifdef STRINGS
+  .word syscallStringTrim          ; 0xD0 StringTrim
+  .word syscallStringTrimLeft      ; 0xD1 StringTrimLeft
+  .word syscallStringTrimRight     ; 0xD2 StringTrimRight
+  .word syscallStringPushImmediate ; 0xD3 
+  .word syscallStringToUpper       ; 0xD4
+  .word syscallStringToLower       ; 0xD5
+  .else
   .word syscall0Undefined
   .word syscall0Undefined
   .word syscall0Undefined
   .word syscall0Undefined
   .word syscall0Undefined
   .word syscall0Undefined
-  .word syscall0Undefined
-  .word syscall0Undefined
-  .word syscall0Undefined
-  .word syscall0Undefined
-  .word syscall0Undefined
+  .endif
+  .word syscall0Undefined          
+  .word syscall0Undefined          ; 0xD7 MemoryReadWord 
+  .word syscall0Undefined          ; 0xD8 MemoryWriteWord 
+  .word syscall0Undefined          ; 0xD9 MCUPinMode
+  .word syscall0Undefined          ; 0xDA MCUDigitalRead
+  .word syscall0Undefined          ; 0xDB MCUDigitalWrite
   .word syscall0Undefined
   .word syscall0Undefined
   .word syscall0Undefined
@@ -466,24 +487,44 @@ opcodeSYSCALL1:
   .ifdef STRINGS
   cmp #$0
   bne notSyscallStringNewFromConstant1
-  jmp syscallStringNewFromConstant1
+  jmp syscall_1_StringNewFromConstant
 notSyscallStringNewFromConstant1:
   cmp #$3
   bne notSyscallStringAppend1
-  jmp syscallStringAppend1
+  jmp syscall_1_StringAppend
 notSyscallStringAppend1:
+  cmp #$8
+  bne notSyscall_1_StringSubstring
+  jmp syscall_1_StringSubstring
+notSyscall_1_StringSubstring:
   cmp #$29
   bne notSyscallScreenPrint1
-  jmp syscallScreenPrint1
+  jmp syscall_1_ScreenPrint
 notSyscallScreenPrint1:
   cmp #$83
   bne notSyscallStringBuild1
-  jmp syscallStringBuild1
+  jmp syscall_1_StringBuild
 notSyscallStringBuild1:
   cmp #$C3
   bne notsyscallStringIndexOf1
-  jmp syscallStringIndexOf1
+  jmp syscall_1_StringIndexOf
 notsyscallStringIndexOf1:
+  cmp #$D0
+  bne notsyscall_1_StringTrim
+  jmp syscall_1_StringTrim
+notsyscall_1_StringTrim:
+  cmp #$D1
+  bne notsyscall_1_StringTrimLeft
+  jmp syscall_1_StringTrimLeft
+notsyscall_1_StringTrimLeft:
+  cmp #$D4
+  bne notsyscall_1_StringToUpper
+  jmp syscall_1_StringToUpper
+notsyscall_1_StringToUpper:
+  cmp #$D5
+  bne notsyscall_1_StringToLower
+  jmp syscall_1_StringToLower
+notsyscall_1_StringToLower:
   .endif
   
   .ifndef NODIAGNOSTICS
@@ -514,7 +555,7 @@ opcodeSYSCALL:
   
   jsr decTSP
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   
   jsr decSP
   jsr decSP
@@ -558,9 +599,13 @@ syscall2:
   .endif
   
   .ifdef STRINGS
+  cpx #$8
+  bne notSyscall_2_StringSubstring
+  jmp syscall_2_StringSubstring
+notSyscall_2_StringSubstring:
   cpx #$83
   bne notSyscallStringBuild2
-  jmp syscallStringBuild2
+  jmp syscall_2_StringBuild
 notSyscallStringBuild2:
   .endif
   .ifndef NODIAGNOSTICS
@@ -596,7 +641,7 @@ syscallDiagnosticsDie:
   .ifdef CHECKED
   lda (TSP)
   jsr diagnosticOutHex
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   .endif
   
   jsr decSP          ; MSB
@@ -793,7 +838,7 @@ syscallMemoryReadBit:
   jsr decTSP
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusInt
   .endif
   
   ; index
@@ -807,7 +852,7 @@ syscallMemoryReadBit:
   jsr decTSP
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusInt
   .endif
   
   ; address
@@ -923,7 +968,7 @@ syscallMemoryWriteBit:
   jsr decTSP
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusInt
   .endif
   
   ; value
@@ -937,7 +982,7 @@ syscallMemoryWriteBit:
   jsr decTSP
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusInt
   .endif
   
   ; index
@@ -951,7 +996,7 @@ syscallMemoryWriteBit:
   jsr decTSP
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   .endif
   
   ; address
@@ -1023,13 +1068,9 @@ syscallMemoryReadByte:
   sta IDXL
   stx SP8
   
-  .else
+  .else ; STACK8
   
   jsr decTSP
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
   
   ; address
   jsr decSP          ; MSB
@@ -1038,10 +1079,14 @@ syscallMemoryReadByte:
   jsr decSP          ; LSB
   lda (SP)
   sta IDXL
+  
+  .ifdef CHECKED
+  ldx IDXH
+  lda (TSP)
+  jsr assertUIntOrPlusInt ; allow tUInt (or tByte) and tInt if '+int'
   .endif
   
-  
-  
+  .endif ; !STACK8
   
   ; resulting byte but as a uint on the stack
   .ifdef STACK8
@@ -1075,7 +1120,7 @@ syscallMemoryReadByte:
   
   jmp nextInstruction
   
-  syscallMemoryWriteByte:
+syscallMemoryWriteByte:
   
   .ifdef STACK8
   
@@ -1088,7 +1133,6 @@ syscallMemoryReadByte:
   sta ACCL
   
   ; address
-  
   dex
   lda HopperValueStack, X
   sta IDXH
@@ -1097,13 +1141,14 @@ syscallMemoryReadByte:
   sta IDXL
   stx SP8
   
-  .else
+  .else ; STACK8
   
   jsr decTSP
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   .endif
+  
   
   ; value byte from stack but as a uint
   ; MSB
@@ -1114,9 +1159,9 @@ syscallMemoryReadByte:
   lda (SP)
   beq writeByteOk
   lda #tUInt
-  jsr assertUInt
+  jsr assertUIntOrPlusInt
 writeByteOk:
-  .endif
+  .endif 
   
   ; LSB
   jsr decSP          
@@ -1124,10 +1169,6 @@ writeByteOk:
   sta ACCL
   
   jsr decTSP
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertUInt
-  .endif
   
   ; address
   jsr decSP          ; MSB
@@ -1136,7 +1177,14 @@ writeByteOk:
   jsr decSP          ; LSB
   lda (SP)
   sta IDXL
+  
+  .ifdef CHECKED
+  ldx IDXH
+  lda (TSP)
+  jsr assertUIntOrPlusInt ; allow tUInt (or tByte) and tInt if '+int'
   .endif
+  
+  .endif ; !STACK8
   
   lda ACCL
   sta (IDX)
@@ -1161,7 +1209,7 @@ syscallMemoryAllocate:
   jsr decTSP
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   .endif
   
   ; size
@@ -1229,7 +1277,7 @@ syscallMemoryFree:
   jsr decTSP
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   .endif
   
   ; address
@@ -1362,7 +1410,7 @@ syscallScreenPrint:
   jmp nextInstruction
   
   .ifdef STRINGS
-syscallScreenPrint1:
+syscall_1_ScreenPrint:
 
   .ifdef STACK8
   ldx SP8
@@ -1908,3 +1956,123 @@ syscallTimeDelay:
   jsr TimerDelay
   
   jmp nextInstruction
+  
+syscallSystemInline:
+
+
+  .ifndef HEAP
+
+  ; TODO : for TINYHOPPER, this should work with a memory pointer
+  .ifndef NODIAGNOSTICS
+  jsr decPC
+  jsr diagnosticOutString
+  .byte $0D, "?System.Inline not implemented", 0
+  .endif
+  jmp throwToys
+  
+  .endif
+
+  .ifdef STACK8
+  
+  ldx SP8
+  
+  ; index
+  dex
+  lda HopperValueStack, X
+  sta IDYH
+  dex
+  lda HopperValueStack, X
+  sta IDYL
+  
+  ; array
+  dex
+  lda HopperValueStack, X
+  sta IDXH
+  dex
+  lda HopperValueStack, X
+  sta IDXL
+  
+  stx SP8
+  
+  .else
+  
+  ; index -> IDY
+  jsr decSP          ; MSB
+  lda (SP)
+  sta IDYH
+  jsr decSP          ; LSB
+  lda (SP)
+  sta IDYL
+  jsr decTSP
+  
+  .ifdef CHECKED
+  lda (TSP)
+  jsr assertUIntOrPlusIntOk
+  .endif
+  
+  ; array -> IDX
+  jsr decSP          ; MSB
+  lda (SP)
+  sta IDXH
+  jsr decSP          ; LSB
+  lda (SP)
+  sta IDXL
+  jsr decTSP
+  
+  .ifdef CHECKED
+  lda (TSP)
+  jsr assertArray
+  .endif
+  .endif
+  
+  ; store system PC
+  lda PCL
+  sta SPCL
+  lda PCH
+  sta SPCH
+  
+  
+  ; add: 2 bytes for number of elements field
+  ;      1 byte for type of element field
+  ;      1 byte for the reference count
+  ;      1 byte for the array type
+  clc
+  lda IDXL  ; LSB
+  adc #5
+  sta IDXL
+  lda IDXH  ; MSB
+  adc #0
+  sta IDXH
+  
+  ; add the index
+  clc
+  lda IDXL  ; LSB
+  adc IDYL
+  sta IDXL
+  lda IDXH  ; MSB
+  adc IDYH
+  sta IDXH
+  
+  ; point the PC at the first byte of the user code
+  lda IDXL
+  sta PCL
+  lda IDXH
+  sta PCH
+  
+  jsr rawReleaseSP ; we popped 'this', decrease reference count
+  jmp nextInstructionNoInc
+  
+  
+opcodeEXIT:
+  ; restore system PC
+  lda SPCL
+  sta PCL
+  lda SPCH
+  sta PCH
+    
+  ; strictly speaking, this is the result from System.Inline(..)
+  stz TOPL
+  stz TOPH
+  
+  lda #tUInt
+  jmp pushTOPExit 

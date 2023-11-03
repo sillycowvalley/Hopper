@@ -167,7 +167,93 @@ syscallLongNewFromAddress:
   lda #tLong
   jmp pushIDXExit
   
+  
+syscallUIntToLong:
+  jsr popTOPUInt
+  
+  lda #4
+  sta fSIZEL
+  stz fSIZEH
+  
+  ; type in A
+  ; size is in fSIZE
+  ; return address in IDX
+  lda #tLong
+  jsr gcCreate ; destroys Nx variables in memoryAllocate
+  
+  ldy #2
+  lda TOPL
+  sta (IDX), Y
+  iny
+  lda TOPH
+  sta (IDX), Y
+  iny
+  lda #0
+  sta (IDX), Y
+  iny
+  sta (IDX), Y
+  
+  lda #tLong  
+  jmp pushIDXExit
 
+syscallLongInc:
+  jsr commonLongTOP
+
+  ; signed 32 bit addition (https://forums.nesdev.org/viewtopic.php?t=17804)
+  ldy #0
+  clc
+  lda (TOP), Y
+  adc #1
+  sta (TOP), Y
+  iny
+  lda (TOP), Y
+  adc #0
+  sta (TOP), Y
+  iny
+  lda (TOP), Y
+  adc #0
+  sta (TOP), Y
+  iny
+  lda (TOP), Y
+  adc #0
+  sta (TOP), Y
+  
+syscallLongIncDone:
+
+  jsr releaseSP
+
+  jmp nextInstruction
+
+syscallLongAddRef:
+
+  jsr commonLongNEXTTOP
+  
+  ; (NEXT) = (TOP) + (NEXT)
+  
+  ; signed 32 bit addition (https://forums.nesdev.org/viewtopic.php?t=17804)
+  ldy #0
+  clc
+  lda (NEXT), Y
+  adc (TOP), Y
+  sta (NEXT), Y
+  iny
+  lda (NEXT), Y
+  adc (TOP), Y
+  sta (NEXT), Y
+  iny
+  lda (NEXT), Y
+  adc (TOP), Y
+  sta (NEXT), Y
+  iny
+  lda (NEXT), Y
+  adc (TOP), Y
+  sta (NEXT), Y
+
+  ; we popped 'top', decrease reference count
+  ; we popped 'next', decrease reference count
+  jsr releaseSPandSPNEXT
+  
+  jmp nextInstruction
   
 syscallLongAdd:
 
@@ -188,8 +274,6 @@ syscallLongAdd:
   lda #0
   adc IDXH
   sta IDYH
-  
-  
   
   ; signed 32 bit addition (https://forums.nesdev.org/viewtopic.php?t=17804)
   ldy #0
@@ -335,7 +419,51 @@ utilityLongTOPIsPositive:
   plx
   rts
 
+syscallLongMulRef:  
 
+  jsr commonLongNEXTTOP
+  
+  ; transfer to N
+  ldy #0
+  lda (TOP), Y
+  sta lTOP0
+  lda (NEXT), Y
+  sta lNEXT0
+  iny
+  lda (TOP), Y
+  sta lTOP1
+  lda (NEXT), Y
+  sta lNEXT1
+  iny
+  lda (TOP), Y
+  sta lTOP2
+  lda (NEXT), Y
+  sta lNEXT2
+  iny
+  lda (TOP), Y
+  sta lTOP3
+  lda (NEXT), Y
+  sta lNEXT3
+  
+  jsr utilityDoLongSigns
+  
+  ; (NEXT) = (NEXT) * (TOP)
+  
+  lda NEXTL
+  sta IDYL
+  lda NEXTH
+  sta IDYH
+ 
+  ; #### https://llx.com/Neil/a2/mult.html ####
+  ; http://www.6502.org/source/integers/32muldiv.htm
+  
+  jsr utilityLongMUL
+
+  ; we popped 'top', decrease reference count
+  ; we popped 'next', decrease reference count
+  jsr releaseSPandSPNEXT
+  
+  jmp nextInstruction
 
 syscallLongMul:
 
@@ -371,7 +499,7 @@ syscallLongMul:
   
   jsr utilityDoLongSigns
   
-  ; (IDX) = (NEXT) * (TOP)
+  ; (IDY) = (NEXT) * (TOP)
   
   clc
   lda #2
@@ -508,6 +636,7 @@ commonLongNEXTTOPSkipMSB
   ;sta NEXTH
   
   rts
+  
   
 commonLongCompareExit:  
   ; we popped 'top', decrease reference count
@@ -811,10 +940,10 @@ syscallLongToBytes:
   lda IDXH
   sta fDESTINATIONADDRESSH
   
-  ; 5x incDESTINATIONADDRESS
+  ; pFirst offset in tList
   clc
   lda fDESTINATIONADDRESSL  ; LSB
-  adc #5
+  adc #listpFirstOffset
   sta fDESTINATIONADDRESSL
   lda fDESTINATIONADDRESSH  ; MSB
   adc #0
@@ -829,20 +958,8 @@ syscallLongToBytesNext:
   lda (fSOURCEADDRESS)
   sta fVALUEL
   stz fVALUEH
-  
   lda #tByte
-  
-  ; type in A
-  ; value in fVALUE
-  ; uses fSIZE
-  jsr createValueVariant
-  ; return tVariant in IDX
-
-  ; pData value is in IDX
-  ; uses fSIZE
-  ; sets pNext = 0
-  jsr listitemCreate
-  ; returns tListItem in fITEM
+  jsr listUtilityCreateValueItem
   
   jsr incSOURCEADDRESS
   
@@ -858,11 +975,11 @@ syscallLongToBytesNext:
   lda fITEMH
   sta fDESTINATIONADDRESSH
   
-  ; pNext is at offset 4 in tListItem:
+  ; pNext offset in tListItem:
   ; 4x incDESTINATIONADDRESS
   clc
   lda fDESTINATIONADDRESSL  ; LSB
-  adc #4
+  adc #listItempNextOffset
   sta fDESTINATIONADDRESSL
   lda fDESTINATIONADDRESSH  ; MSB
   adc #0
@@ -915,9 +1032,10 @@ syscallLongToInt:
   bra syscallLongToIntInRange
 syscallLongToIntOverflow:
 
-  sta ACCH
   lda #$0D ; numeric type out of range / overflow
   sta ACCL
+  stz ACCH
+  
   jmp utilityDiagnosticsDie
   
 syscallLongToIntInRange:
@@ -965,9 +1083,9 @@ syscallLongToUInt:
   
   cmp #1
   bne syscallLongToUIntEven
-  sta ACCH
   lda #$0D
   sta ACCL
+  stz ACCH
   jmp utilityDiagnosticsDie
   
 syscallLongToUIntEven:
@@ -1198,7 +1316,7 @@ longDivModNextNo:
 
 
 cloneLong:
-  ; used by cloneDictionary, cloneString and cloneLong
+  ; used by cloneDictionary, stringUtilityClone and cloneLong
   lda fSOURCEADDRESSH
   pha
   lda fSOURCEADDRESSL

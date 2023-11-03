@@ -21,17 +21,23 @@ LISTS = 1
 DICTIONARIES = 1 ; Dictionaries are kinda pointless without Strings
   .endif
   .endif
-FASTINTS = 1     ; faster 'int' and 'uint' multiply and divide (at a cost of 360 bytes)
-                 ; - multiply optimized for: 0, 1, 2, 4, 8, 16
-                 ; - divide optimized for:   1, 2, 4, 10, 50, 100
+  
+FASTINTS = 1    ; faster 'int' and 'uint' multiply and divide (at a cost of 438 bytes)
+                ; - multiply optimized for: 0, 1, 2, 4, 8, 16
+                ; - divide optimized for:   1, 2, 4, 10, 50, 100
 
 ;PROFILE = 1     ; count opCode and sysCall hits
 ;CHECKED = 1     ; checked build (stack range checks, ..)
+PERMISSIVE=1    ; additional level of CHECKED: allows uint for int or delegates
 ;MEMDEBUG = 1    ; memoryAllocate and memoryFree diagnostics
 ;MEMDEBUG2 = 1   ; for debugging gcRelease
-;NODIAGNOSTICS=1  ; selective removal of diagnostic code (for reduced size)
+;DICTDIAG = 1;
+;VERIFYSTACK = 1 ; diagnostics for the 6502 SP
+;NODIAGNOSTICS=1 ; selective removal of diagnostic code (for reduced size) - use for smaller builds!
 ;TESTINGHWM = 1  ; debugging maxing out the value stack
-STACK8 = 1       ; 8 bit value stack pointer
+STACK8 = 1      ; 8 bit value stack pointer
+
+VALUES = 1 ; testing value type direct storage in dictionaries and pairs
 
 ; .org $8000  ; physical ROM starts at $8000
 ; .org $A000  ; addressable ROM starts at $A000
@@ -40,11 +46,7 @@ STACK8 = 1       ; 8 bit value stack pointer
   ;.org $E000  ; 8K EEPROM starts at $E000
                ; firmware is at $E000
 
-  .org $E800    ; Hopper code, Hopper VM and Monitor is at $E800           
-;HopperEntryPoint2:
-  jmp HopperStart
-
-  .org $8800    ; Hopper code, Hopper VM and Monitor is at $8800           
+  .org $8400    ; Hopper code, Hopper VM and Monitor is at $8800           
 
 ;HopperEntryPoint:
   jmp HopperStart
@@ -135,6 +137,10 @@ nextInstruction:
 incPCnextInstructionEnd:
   
 nextInstructionNoInc:
+
+  .ifdef VERIFYSTACK
+  jsr diagnosticsVerifyStack
+  .endif
 
   bbr1 FLAGS, breakCheck       ; 5 - warp speed - ignore <ctrl><C> and trace, don't check for illegal opcodes, ignore breakpoints
 
@@ -227,8 +233,8 @@ traceFlagOff:
 
   ; http://6502.org/tutorials/compare_instructions.html
   .ifdef CHECKED
-  cmp #$60                     ; C will be set if A >= $60 (unknown OpCode)
-  bcs unknownOpCode            ; 0x60..0xFF
+  cmp #$6A                     ; C will be set if A >= $6A (unknown OpCode)
+  bcs unknownOpCode            ; 0x6A..0xFF
   .endif
   
   .ifdef STACK8
@@ -241,7 +247,7 @@ traceFlagOff:
   
   
   cmp #$1A                 ; 2 -   C will be set if A >= $1A
-  bcs jumpOpCode           ; 2-4 - 0x1A..0x5F: byteOperand, wordOperand & noOperand 
+  bcs jumpOpCode           ; 2-4 - 0x1A..0x69: byteOperand, wordOperand & noOperand 
   cmp #$11                 ; 2 -   C will be clear if A < $11
   bcc pop2Push1Unsigned    ; 2-4 - 0x00..0x10
   ; bra pop2Push1Signed    ;       0x11..0x19
@@ -251,7 +257,7 @@ traceFlagOff:
 ;pop2Push1Signed:   ; A = $11..$19
   asl
   tax
-  
+
   ; top
   jsr popTOPInt
   

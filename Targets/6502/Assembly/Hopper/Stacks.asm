@@ -544,7 +544,6 @@ pushTOPExitNotBool:
   sta (SP)
   jsr incSP          ; MSB
   .endif
-
   jmp nextInstruction
   
 pushNEXTExit:
@@ -578,7 +577,7 @@ pushNEXTExitNotBool:
   .endif
   inx
   stx SP8
-  .else
+  .else ; STACK8
   sta (TSP)
   jsr incTSP
   lda NEXTL
@@ -587,8 +586,48 @@ pushNEXTExitNotBool:
   lda NEXTH
   sta (SP)
   jsr incSP          ; MSB
-  .endif
+  .endif ; !STACK8
 
+  jmp nextInstruction
+  
+  
+pushXBoolExit:
+  ; X : 'true' (1) or 'false' (0) return result to push
+  
+  .ifdef CHECKED
+  lda #tBool
+  sta fTYPE
+  stx fVALUEL
+  stz fVALUEH
+  jsr verifyBool
+  .endif
+  
+  .ifdef STACK8
+  txa
+  ldx SP8
+  sta HopperValueStack, X
+  lda #tBool
+  sta HopperTypeStack, X
+  inx
+  lda #0
+  sta HopperValueStack, X
+  .ifdef CHECKED
+  lda #$AA
+  sta HopperTypeStack, X ; error marker
+  .endif
+  inx
+  stx SP8
+  .else
+  lda #tBool
+  sta (TSP)
+  jsr incTSP
+  txa
+  sta (SP)
+  jsr incSP          ; LSB
+  lda #0
+  sta (SP)
+  jsr incSP          ; MSB
+  .endif
   jmp nextInstruction
   
 

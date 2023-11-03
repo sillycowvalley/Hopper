@@ -224,12 +224,12 @@ notFreeBlock:
   ldy #2
   lda (uCURRENT), Y
   pha
-  jsr diagnosticOutHex
+  jsr diagnosticOutHex ; type
   iny
   lda #":"
   jsr diagnosticOutChar
   lda (uCURRENT), Y
-  jsr diagnosticOutHex
+  jsr diagnosticOutHex ; reference count
   pla
   
   .ifdef LONGS
@@ -255,13 +255,6 @@ notMemoryHeapWalkString
 notMemoryHeapWalkArray:
   .endif
  
-  .ifdef LISTS
-  cmp #tListItem
-  bne notMemoryHeapWalkListItem
-  jmp memoryHeapWalkListItem
-notMemoryHeapWalkListItem:
-  .endif
-  
   cmp #tVariant
   bne notMemoryHeapWalkVariant
   jsr memoryHeapWalkVariant
@@ -288,6 +281,27 @@ notMemoryHeapWalkDictionary:
   jmp skipFreeBlock
 notMemoryHeapWalkPair:
   .endif
+  
+  ; not a known type
+  lda #" "
+  jsr diagnosticOutChar
+  jsr diagnosticOutChar
+  jsr diagnosticOutChar
+  ldy #3
+  lda (uCURRENT), Y
+  jsr diagnosticOutHex
+  ldy #2
+  lda (uCURRENT), Y
+  jsr diagnosticOutHex
+  lda #" "
+  jsr diagnosticOutChar
+  ldy #5
+  lda (uCURRENT), Y
+  jsr diagnosticOutHex
+  ldy #4
+  lda (uCURRENT), Y
+  jsr diagnosticOutHex
+  
   
   jmp skipFreeBlock
   

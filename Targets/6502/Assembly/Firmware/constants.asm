@@ -20,7 +20,7 @@ ScratchPointerH     = $DD ; local: low byte of data pointer currently only used 
 
   .else
   .ifdef VIALED  
-LEDState            = $C2 ; global: current state of the built-in LED (actually only need bit 0 but LEDWrite would need to be improved to not stomp the other bits)
+LEDState            = $D7 ; global: current state of the built-in LED (actually only need bit 0 but LEDWrite would need to be improved to not stomp the other bits)
   .endif
   .endif
 

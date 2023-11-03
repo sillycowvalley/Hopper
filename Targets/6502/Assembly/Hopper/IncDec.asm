@@ -93,6 +93,17 @@ decLENGTHSkip:
   dec fLENGTHL
   pla
   rts
+
+decCOUNT:
+  pha
+  lda lCOUNTL
+  bne decCOUNTSkip
+  dec lCOUNTH
+decCOUNTSkip:
+  dec lCOUNTL
+  pla
+  rts
+
   
 decACC:
   pha

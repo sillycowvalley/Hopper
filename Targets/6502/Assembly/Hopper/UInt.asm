@@ -170,36 +170,6 @@ syscallUIntToIntInRange
   lda #tInt  
   jmp pushTOPExit
 
-  .ifdef LONGS
-syscallUIntToLong:
-  jsr popTOPUInt
-  
-  lda #4
-  sta fSIZEL
-  stz fSIZEH
-  
-  ; type in A
-  ; size is in fSIZE
-  ; return address in IDX
-  lda #tLong
-  jsr gcCreate ; destroys Nx variables in memoryAllocate
-  
-  ldy #2
-  lda TOPL
-  sta (IDX), Y
-  iny
-  lda TOPH
-  sta (IDX), Y
-  iny
-  lda #0
-  sta (IDX), Y
-  iny
-  sta (IDX), Y
-  
-  lda #tLong  
-  jmp pushIDXExit
-  
-  .endif
   .ifdef FASTINTS
 utilityMULTOP16:
   asl TOPL
@@ -592,7 +562,7 @@ popTOPUInt:
   
   .ifdef CHECKED
   lda (TSP)
-  jsr assertUInt
+  jsr assertUIntOrPlusIntOk
   .endif ; CHECKED
   
   .endif ; !STACK8

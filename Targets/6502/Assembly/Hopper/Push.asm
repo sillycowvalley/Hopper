@@ -183,6 +183,115 @@ phPUSHIWLE:
   lda #tBool
   jmp pushTOPExit
 
+
+
+opcodePUSHIWLEI:
+  
+  ; top
+  .ifdef CHECKED
+  jsr incPC ; PC++
+  .else
+  inc PCL
+  bne incPCopcodePUSHIWLEIEnd
+  inc PCH
+incPCopcodePUSHIWLEIEnd:
+  .endif
+
+  lda (PC)  ; LSB
+  sta TOPL
+  
+  .ifdef CHECKED
+  jsr incPC ; PC++
+  .else
+  inc PCL
+  bne incPCopcodePUSHIWLEIEnd2
+  inc PCH
+incPCopcodePUSHIWLEIEnd2:
+  .endif
+  lda (PC)  ; MSB
+  sta TOPH
+  
+  ; next
+  .ifdef STACK8
+  ldx SP8
+  dex
+  lda HopperValueStack, X
+  sta NEXTH
+  .else
+  .ifdef CHECKED
+  jsr decSPnoA       ; MSB
+  .else
+  lda SPL
+  bne decSPopcodePUSHIWLEI
+  dec SPH
+decSPopcodePUSHIWLEI:
+  dec SPL
+  .endif
+  
+  lda (SP)
+  sta NEXTH
+  .endif
+  
+  .ifdef STACK8
+  dex
+  lda HopperValueStack, X
+  sta NEXTL
+  stx SP8
+  .else
+  .ifdef CHECKED
+  jsr decSPnoA       ; LSB
+  .else
+  lda SPL
+  bne decSPopcodePUSHIWLEI2
+  dec SPH
+decSPopcodePUSHIWLEI2:
+  dec SPL
+  .endif
+  
+  lda (SP)
+  sta NEXTL
+  .ifdef CHECKED
+  jsr decTSPnoA
+  .else
+  
+  lda TSPL
+  bne decTSPopcodePUSHIWLEI
+  dec TSPH
+decTSPopcodePUSHIWLEI:
+  dec TSPL
+  
+  .endif
+  .endif
+  
+  ; opcodeLEI : utilityIntLE
+
+  ; TOP - NEXT >= 0
+  sec
+  lda TOPL
+  sbc NEXTL
+  sta TOPL
+  lda TOPH
+  sbc NEXTH
+  sta TOPH
+  
+  asl           ; sign bit into carry
+  
+  ; false
+  stz TOPL
+  stz TOPH
+  
+  bcs opcodePUSHIWLEINegative
+  ; 0 or positive
+  ;true
+  lda #1
+  sta TOPL
+opcodePUSHIWLEINegative: 
+
+  lda #tBool
+  jmp pushTOPExit
+
+
+
 opcodePUSHIWLT:
   
   ; top
@@ -280,8 +389,90 @@ phPUSHIWLT:
   jmp pushTOPExit
 
 
+opcodePUSHDW:
+  ; PC++
+  inc PCL
+  bne incPCopcodePUSHDW
+  inc PCH
+incPCopcodePUSHDW:
 
+  lda (PC)  ; LSB
+  sta ACCL
   
+  ; PC++
+  inc PCL
+  bne incPCopcodePUSHDW2
+  inc PCH
+incPCopcodePUSHDW2:
+  
+  lda (PC)  ; MSB
+  sta ACCH
+  
+  bit ACCH
+  bmi delegateLookup
+  bra sharedPUSHIW
+delegateLookup:
+  bvc sharedPUSHIW ; only lookup if both bits set
+
+  ; method table index is in bottom 14 bits of ACC
+  lda ACCH
+  and #$3F
+  sta ACCH
+  
+  lda #<HopperMethodTable
+  sta IDXL
+  lda #>HopperMethodTable
+  sta IDXH
+  
+delegateHunt:
+  ldy #1
+  
+  lda (IDX)
+  cmp ACCL
+  bne nextDelegate
+  lda (IDX), Y
+  cmp ACCH
+  bne nextDelegate
+  
+  ; we have a winner: load actual address from method table to ACC
+  iny
+  lda (IDX), Y
+  sta ACCL
+  iny
+  lda (IDX), Y
+  sta ACCH
+  
+  ; modify this PUSHDW's operand:
+  lda PCL
+  sta IDYL
+  lda PCH
+  sta IDYH
+  jsr decIDY
+  
+  ; don't forget relocation offset
+  ldy #1
+  clc
+  lda ACCL
+  adc #<HopperData
+  sta ACCL
+  sta (IDY)
+  lda ACCH
+  adc #>HopperData
+  sta ACCH
+  sta (IDY), Y
+  
+  bra sharedPUSHIW
+  
+nextDelegate:
+  clc
+  lda IDXL
+  adc #4
+  sta IDXL
+  bcc jumpDelegateHunt
+  inc IDXH
+jumpDelegateHunt:
+  bra delegateHunt
+
   
 opcodePUSHIW:
   ; PC++
@@ -291,22 +482,7 @@ opcodePUSHIW:
 incPCopcodePUSHIW:
 
   lda (PC)  ; LSB
-  .ifdef STACK8
-  ldx SP8
-  sta HopperValueStack, X
-  .else
-  sta (SP)
-  .endif
-  
-  lda #tUInt
-  .ifdef STACK8
-  sta HopperTypeStack, X
-  inc SP8
-  .else
-  sta (TSP)
-  jsr incTSP
-  jsr incSP ; SP++
-  .endif
+  sta ACCL
   
   ; PC++
   inc PCL
@@ -315,18 +491,43 @@ incPCopcodePUSHIW:
 incPCopcodePUSHIW2:
   
   lda (PC)  ; MSB
+  sta ACCH
+  
+sharedPUSHIW:
+  
   .ifdef STACK8
+  
   ldx SP8
+  lda ACCL
   sta HopperValueStack, X
+  lda #tUInt
+  sta HopperTypeStack, X
+  inx
+  lda ACCH
+  sta HopperValueStack, X
+  
   .ifdef CHECKED
   lda #$AA
   sta HopperTypeStack, X ; error marker
   .endif
-  inc SP8
-  .else
+  
+  inx
+  stx SP8
+  
+  .else ; STACK8
+  
+  lda ACCL
+  sta (SP)
+  lda #tUInt
+  sta (TSP)
+  jsr incTSP
+  jsr incSP ; SP++
+  
+  lda ACCH
   sta (SP)
   jsr incSP ; SP++
-  .endif
+  
+  .endif ; !STACK8
   
   jmp nextInstruction
 
@@ -481,6 +682,130 @@ pushByteEnd3:
 
 
 
+
+  .ifdef STACK8
+
+opcodePUSHGLOBALBB:
+  ; exact 2nd copy of the code below from opcodePUSHGLOBALB (without the jmp nextInstruction)
+  ; PC++
+  inc PCL
+  bne incPCutilityPUSHGLOBALBB
+  inc PCH
+incPCutilityPUSHGLOBALBB:
+
+  ; IDX = HopperValueStack
+  ; IDY = HopperTypeStack
+  lda #>HopperValueStack
+  sta IDXH
+  lda #>HopperTypeStack
+  sta IDYH
+  
+  lda (PC)  ; offset 0..255
+  sta IDXL
+  sta IDYL
+  
+  ; push from valueStack[IDX] (IDX is the absolute globalAddress in the stack)
+  ldx SP8
+  lda (IDX)
+  sta HopperValueStack, X
+  lda (IDY)
+  sta HopperTypeStack, X
+  inx
+  ldy #1
+  lda (IDX), Y
+  sta HopperValueStack, X
+  inx
+  stx SP8
+  
+  lda (IDY)
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcc opcodePUSHGLOBALBValueType2
+  
+  .ifdef CHECKED
+  jsr addReference
+  .else
+  
+  ; (IDX) -> IDX
+  ldy #0
+  lda (IDX), Y
+  tax
+  iny
+  lda (IDX), Y
+  sta IDXH
+  stx IDXL
+  ; address in IDX
+  ldy #1
+  lda (IDX), Y ; reference count
+  inc
+  sta (IDX), Y
+  
+  .endif
+opcodePUSHGLOBALBValueType2:
+  
+
+  
+  
+opcodePUSHGLOBALB:
+  ; PC++
+  inc PCL
+  bne incPCutilityPUSHGLOBALB
+  inc PCH
+incPCutilityPUSHGLOBALB:
+
+  ; IDX = HopperValueStack
+  ; IDY = HopperTypeStack
+  lda #>HopperValueStack
+  sta IDXH
+  lda #>HopperTypeStack
+  sta IDYH
+  
+  lda (PC)  ; offset 0..255
+  sta IDXL
+  sta IDYL
+  
+  ; push from valueStack[IDX] (IDX is the absolute globalAddress in the stack)
+  ldx SP8
+  lda (IDX)
+  sta HopperValueStack, X
+  lda (IDY)
+  sta HopperTypeStack, X
+  inx
+  ldy #1
+  lda (IDX), Y
+  sta HopperValueStack, X
+  inx
+  stx SP8
+  
+  lda (IDY)
+  cmp #tHeapTypes ; C set if heap type, C clear if value type
+  bcc opcodePUSHGLOBALBValueType
+  
+  .ifdef CHECKED
+  jsr addReference
+  .else
+  
+  ; (IDX) -> IDX
+  ldy #0
+  lda (IDX), Y
+  tax
+  iny
+  lda (IDX), Y
+  sta IDXH
+  stx IDXL
+  ; address in IDX
+  ldy #1
+  lda (IDX), Y ; reference count
+  inc
+  sta (IDX), Y
+  
+  .endif
+opcodePUSHGLOBALBValueType:
+  jmp nextInstruction
+  
+  
+  .else ; STACK8
+
+
 opcodePUSHGLOBALBB:
 
   jsr utilityPUSHGLOBALB
@@ -511,21 +836,6 @@ incPCutilityPUSHGLOBALB:
   jsr convertSPtoTSP ; IDX -> IDY
 
   ; push from valueStack[IDX] (IDX is the absolute globalAddress in the stack)
-  
-  .ifdef STACK8
-  
-  ldx SP8
-  lda (IDX)
-  sta HopperValueStack, X
-  inx
-  ldy #1
-  lda (IDX), Y
-  sta HopperValueStack, X
-  inx
-  stx SP8
-  
-  .else
-  
   lda (IDX)
   sta (SP)
   jsr incSP
@@ -533,15 +843,15 @@ incPCutilityPUSHGLOBALB:
   lda (IDX), Y
   sta (SP)
   jsr incSP
-  
-  .endif
   
   lda (IDY)
   cmp #tHeapTypes ; C set if heap type, C clear if value type
   bcc opcodePUSHGLOBALBValueType
   
   .ifdef CHECKED
+  
   jsr addReference
+  
   .else
   ; inline: munts X,Y and A
   ; (IDX) -> IDX
@@ -564,19 +874,12 @@ incPCutilityPUSHGLOBALB:
 opcodePUSHGLOBALBValueType:
   
   lda (IDY)
-  .ifdef STACK8
-  ldx SP8
-  dex
-  dex
-  sta HopperTypeStack, X
-  .else
   sta (TSP)
   jsr incTSP
-  .endif
   rts
   
 
-
+  .endif ; !STACK8
 
 
 opcodePUSHRELB:

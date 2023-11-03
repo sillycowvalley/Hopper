@@ -76,7 +76,7 @@ opCodeJumpTable:
   
   ; noOperand:             ; $41..$50
   .word opcodeBOOLNOT      ; 41
-  .word unknownOpCode      ; 42 BITNOT
+  .word opcodeBITNOT       ; 42 BITNOT
   .word opcodeSWAP         ; 43
   .word opcodePUSHI0       ; 44
   .word opcodePUSHI1       ; 45
@@ -125,117 +125,17 @@ opCodeJumpTable:
   .endif
   
   .word opcodeENTERB          ; 5F
+  .word opcodePUSHDW          ; 60
+  .word opcodeRETFAST         ; 61
+  .word unknownOpCode         ; 62 - PUSHDB unused on the 6502
+  .word opcodeEXIT            ; 63
+  .word opcodeBITXOR          ; 64
+  .word opcodePUSHIWLEI       ; 65
+  .word opcodeINCGLOBALBB     ; 66
+  .word opcodeJREL            ; 67
+  .word opcodeJIXB            ; 68
+  .word opcodeJIXW            ; 69
 
-  .ifdef UNUSED
-  
-operandSizeTable:
-  .byte 0 ; ADD
-  .byte 0 ; SUB
-  .byte 0 ; DIV
-  .byte 0 ; MUL
-  .byte 0 ; MOD
-  .byte 0 ; EQ
-  .byte 0 ; NE
-  .byte 0 ; GT
-  .byte 0 ; LT
-  .byte 0 ; GE
-  .byte 0 ; LE
-  .byte 0 ; BOOLOR
-  .byte 0 ; BOOLAND
-  .byte 0 ; BITOR
-  .byte 0 ; BITAND
-  .byte 0 ; BITSHL
-  .byte 0 ; BITSHR
-  
-  .byte 0 ; ADDI
-  .byte 0 ; SUBI
-  .byte 0 ; DIVI
-  .byte 0 ; MULI
-  .byte 0 ; MODI
-  .byte 0 ; GTI
-  .byte 0 ; LTI
-  .byte 0 ; GEI
-  .byte 0 ; LEI
-  
-  .byte 1 ; PUSHIB
-  .byte 1 ; POPLOCALB
-  .byte 1 ; PUSHLOCALB
-  .byte 1 ; POPRELB
-  .byte 1 ; PUSHRELB
-  .byte 1 ; POPGLOBALB
-  .byte 1 ; PUSHGLOBALB
-  .byte 1 ; PUSHSTACKADDRB
-  .byte 1 ; INCLOCALB
-  .byte 1 ; DECLOCAL
-  .byte 1 ; SYSCALL0
-  .byte 1 ; SYSCALL1
-  .byte 1 ; SYSCALL
-  .byte 1 ; DUP
-  .byte 1 ; DECSP
-  .byte 1 ; DIE
-  .byte 1 ; RETB
-  .byte 1 ; RETRETB
-  .byte 1 ; CALLB
-  .byte 1 ; TESTBPB
-  .byte 1 ; JZB
-  .byte 1 ; JNZB
-  .byte 1 ; JB
-  
-  .byte 2 ; JZW
-  .byte 2 ; JNZW
-  .byte 2 ; JW
-  .byte 2 ; CALLW
-  .byte 2 ; RETW
-  .byte 2 ; RETRETW
-  .byte 2 ; PUSHIW
-  .byte 2 ; POPLOCALW
-  .byte 2 ; PUSHLOCALW
-  .byte 2 ; POPRELW
-  .byte 2 ; PUSHRELW
-  .byte 2 ; POPGLOBALW
-  .byte 2 ; PUSHGLOBALW
-  .byte 2 ; PUSHSTACKADDRW
-  .byte 2 ; INCLOCALBB
-  .byte 2 ; PUSHIWLE
-  
-  .byte 0 ; BOOLNOT
-  .byte 0 ; BITNOT
-  .byte 0 ; SWAP
-  .byte 0 ; PUSHI0
-  .byte 0 ; PUSHI1
-  .byte 0 ; PUSHIM1
-  .byte 0 ; PUSHGP
-  .byte 0 ; COPYNEXTPOP
-  .byte 0 ; ENTER
-  .byte 0 ; RET0
-  .byte 0 ; CALLREL
-  .byte 0 ; POPLOCALB00
-  .byte 0 ; POPLOCALB02
-  .byte 0 ; PUSHLOCALB00
-  .byte 0 ; PUSHLOCALB02
-  .byte 0 ; NOP
-  
-  .byte 1 ; CAST
-  .byte 2 ; PUSHGLOBALBB
-  .byte 1 ; INCGLOBALB
-  .byte 1 ; DECGLOBALB
-  
-  .byte 2 ; PUSHIWLT
-  
-  .byte 2 ; PUSHLOCALBB
-  
-  .byte 1 ; POPCOPYLOCALB
-  .byte 1 ; POPCOPYRELB
-  .byte 1 ; POPCOPYGLOBALB
-  .byte 2 ; POPCOPYLOCALW
-  .byte 2 ; POPCOPYRELW
-  .byte 2 ; POPCOPYGLOBALW
-
-  .byte 0 ; POPCOPYLOCALB00
-  .byte 0 ; POPCOPYLOCALB02
-  
-  .byte 1 ; opcodeENTERB
-  .endif
   
 ; ######################## OpCode subroutines ######################## 
 
@@ -509,7 +409,7 @@ opcodeSUB:
   ldy SP8
   dey
   dey
-  lda #tInt
+  lda #tUInt
   sta HopperTypeStack, Y
   sec
   lda HopperValueStack, Y
@@ -543,10 +443,11 @@ opcodeSUB:
   jmp pushNEXTExit
   
   .endif
+
+  
+opcodeMULI:
   
   .ifdef STACK8
-opcodeMULI:
-
   ldx SP8
   dex
   lda HopperValueStack, X ; TOP MSB
@@ -561,53 +462,44 @@ opcodeMULI:
   lda HopperValueStack, X ; NEXT LSB
   sta NEXTL
   stx SP8
+  .endif
   
   .ifdef FASTINTS
   lda TOPH
-  bne utilityMULITryNEXT
+  bne utilityMULITOPNotZero
 
   ; try TOPL  
   lda TOPL
-  bne utilityMULITOPLNotZero
+  bne utilityMULITOPNotZero
   ; * 0 optimization
   ; TOP is already zero
+  
   lda #tInt
   jmp pushTOPExit
   
-utilityMULITOPLNotZero:
-
-utilityMULITryNEXT:
-  ; try NEXTL
+utilityMULITOPNotZero:
+  lda NEXTH
+  bne utilityMULINEXTNotZero
   
+  ; try NEXTL
   lda NEXTL
-  bne utilityMULINEXTLNotZero
+  bne utilityMULINEXTNotZero
   ; * 0 optimization
   stz TOPL
   stz TOPH
+  
   lda #tInt
   jmp pushTOPExit
-utilityMULINEXTLNotZero:
-  
-utilityMULIRegular:
+utilityMULINEXTNotZero:
   .endif
-  
-  jsr utilityMULI
-  
-  lda #tInt
-  jmp pushTOPExit
-  
-  .else
 
-opcodeMULI:
   jsr utilityMULI
+  
   lda #tInt
   jmp pushTOPExit
-  .endif
-  
+
+opcodeMUL:  
   .ifdef STACK8
-  
-opcodeMUL:
-  
   ldx SP8
   dex
   lda HopperValueStack, X ; TOP MSB
@@ -622,52 +514,40 @@ opcodeMUL:
   lda HopperValueStack, X ; NEXT LSB
   sta NEXTL
   stx SP8
+  .endif
   
   .ifdef FASTINTS
   lda TOPH
-  bne utilityMULTryNEXT
+  bne utilityMULTOPNotZero
 
   ; try TOPL  
   lda TOPL
-  bne utilityMULTOPLNotZero
+  bne utilityMULTOPNotZero
   ; * 0 optimization
   ; TOP is already zero
-  lda #tInt
+  lda #tUInt
   jmp pushTOPExit
   
-utilityMULTOPLNotZero:
-
-utilityMULTryNEXT:
-  ; try NEXTL
+utilityMULTOPNotZero:
+  lda NEXTH
+  bne utilityMULNEXTNotZero
   
+  ; try NEXTL
   lda NEXTL
-  bne utilityMULNEXTLNotZero
+  bne utilityMULNEXTNotZero
   ; * 0 optimization
   stz TOPL
   stz TOPH
-  lda #tInt
+  lda #tUInt
   jmp pushTOPExit
-utilityMULNEXTLNotZero:
-  
-utilityMULRegular:
+utilityMULNEXTNotZero:
   .endif
   
   jsr utilityMUL
-  
   lda #tUInt
   jmp pushTOPExit
   
-  .else
-  
-opcodeMUL:
-  jsr utilityMUL
-  lda #tUInt
-  jmp pushTOPExit
-
-  .endif
-
   .ifdef STACK8
-  
 opcodeDIV:
   ldx SP8
   dex
@@ -1058,6 +938,75 @@ opcodeBITAND:
   
   .ifdef STACK8
 
+opcodeBITXOR:
+  dec SP8
+  dec SP8
+  ldx SP8
+  ldy SP8
+  dey
+  dey
+  lda #tUInt
+  sta HopperTypeStack,  Y
+  lda HopperValueStack, X
+  eor HopperValueStack, Y
+  sta HopperValueStack, Y
+  inx
+  iny
+  lda HopperValueStack, X
+  eor HopperValueStack, Y
+  sta HopperValueStack, Y
+  .ifdef CHECKED
+  lda #$AA
+  sta HopperTypeStack, Y ; error marker
+  .endif
+
+  jmp nextInstruction
+   
+  .else ; STACK8
+  
+opcodeBITXOR:
+
+  jsr decTSP 
+  
+  jsr decSP          ; MSB
+  lda (SP)
+  sta TOPH
+  
+  jsr decSP          ; LSB
+  lda (SP)
+  sta TOPL
+    
+  ; next
+  jsr decTSP
+
+  jsr decSP          ; MSB
+  lda (SP)
+  sta NEXTH
+  jsr decSP          ; LSB
+  lda (SP)
+  sta NEXTL
+  
+  ; LSB
+  lda NEXTL
+  eor TOPL
+  sta (SP)
+  jsr incSP
+  ; MSB
+  lda NEXTH
+  eor TOPH
+  sta (SP)
+  jsr incSP
+  
+  lda #tUInt
+  sta (TSP)
+  jsr incTSP
+  jmp nextInstruction
+  
+  .endif ; !STACK8
+  
+  
+  .ifdef STACK8
+
 opcodeBITOR:
   dec SP8
   dec SP8
@@ -1362,22 +1311,22 @@ opcodeENTERBNext:
   
   sta (SP)           ; LSB
   inc SPL
-  bne pushByteEnd
+  bne pushByteEndB
   inc SPH
-pushByteEnd:  
+pushByteEndB:  
   
   lda #0
   sta (SP)           ; MSB
   inc SPL
-  bne pushByteEnd2
+  bne pushByteEnd2B
   inc SPH
-pushByteEnd2:
+pushByteEnd2B:
   lda #tUInt
   sta (TSP)
   inc TSPL
-  bne pushByteEnd3
+  bne pushByteEnd3B
   inc TSPH
-pushByteEnd3:
+pushByteEnd3B:
   
   .endif
   
@@ -1882,6 +1831,24 @@ opcodeTESTBPB:
   jmp nextInstruction
 badBP:
   .ifndef NODIAGNOSTICS
+  
+  jsr diagnosticOutNewLine
+  
+  lda SP8
+  jsr diagnosticOutHex
+  lda #":"
+  jsr diagnosticOutChar
+  
+  sec
+  lda SP8
+  sbc (PC) 
+  jsr diagnosticOutHex
+  lda #":"
+  jsr diagnosticOutChar
+  
+  lda BP8
+  jsr diagnosticOutHex
+  
   jsr diagnosticOutString
   .byte $0D, "?Bad SP", 0
   jmp monitorReEntry
@@ -1919,103 +1886,6 @@ badBP:
   .endif
   .endif
   
-opcodeCALLREL:
-
-  .ifdef STACK8
-  
-  ldx SP8
-  dex
-  lda HopperValueStack, X
-  sta ACCH
-  dex
-  lda HopperValueStack, X
-  sta ACCL
-  stx SP8
-  
-  .else
-
-  jsr decSP
-  lda (SP)
-  sta ACCH
-  jsr decSP
-  lda (SP)
-  sta ACCL
-  
-  jsr decTSP
-  .ifdef CHECKED
-  lda (TSP)
-  jsr assertDelegate
-  .endif
-  .endif
-  
-  ; PC++ - return address is next instruction
-  inc PCL
-  bne incPCopcodeCALLREL
-  inc PCH
-incPCopcodeCALLREL:
-  
-  ; method table index is in ACC
-  
-  ; push PC to CALL STACK
-  ldx CSP
-  lda PCL
-  sta HopperCallStack, X ; LSB
-  .ifdef CHECKED
-  jsr incCSP
-  ldx CSP
-  .else
-  inx
-  .endif
-  lda PCH
-  sta HopperCallStack, X  ; MSB
-  .ifdef CHECKED
-  jsr incCSP
-  ldx CSP
-  .else
-  inx
-  .endif
-  stx CSP
-  
-  lda #<HopperMethodTable
-  sta IDXL
-  lda #>HopperMethodTable
-  sta IDXH
-  
-methodHunt2:
-  ldy #1
-  
-  lda (IDX)
-  cmp ACCL
-  bne nextMethod2
-  lda (IDX), Y
-  bne nextMethod2
-  
-  ; we have a winner
-  iny
-  lda (IDX), Y
-  sta PCL
-  iny
-  lda (IDX), Y
-  sta PCH
-  
-  clc
-  lda PCL
-  adc #<HopperData
-  sta PCL
-  lda PCH
-  adc #>HopperData
-  sta PCH
-  
-  jmp nextInstructionNoInc
-nextMethod2:
-  clc
-  lda IDXL
-  adc #4
-  sta IDXL
-  bcc jumpMethodHunt2
-  inc IDXH
-jumpMethodHunt2:
-  jmp methodHunt2
 
   
 opcodeCALLW:
@@ -2061,9 +1931,6 @@ incPCopcodeCALLW2:
   stx CSP
   
   lda ACCH
-  ;and #$C0
-  ;cmp #$C0
-  ;beq opcodeCALLWlookupMethod
   bit ACCH
   bmi opcodeCALLWlookupMethod
   
@@ -2131,10 +1998,9 @@ nextMethod:
   lda IDXL
   adc #4
   sta IDXL
-  bcc jumpMethodHunt
+  bcc methodHunt
   inc IDXH
-jumpMethodHunt:
-  jmp methodHunt
+  bra methodHunt
 
   .ifndef STACK8
 nextConditionalJCleanupC: ; used by B conditional jumps
@@ -2424,8 +2290,32 @@ opcodeJW:
   
   jmp nextInstructionNoInc
   
+opcodeBITNOT:
+   .ifdef STACK8
+  lda SP8
+  sta IDXL
+  lda #>HopperValueStack
+  sta IDXH
+  .else
+  lda SPL
+  sta IDXL
+  lda SPH
+  sta IDXH
+  .endif
   
-
+  jsr decIDX ; SP-1
+  jsr decIDX ; SP-2
+  
+  lda (IDX)
+  eor #$FF
+  sta (IDX)
+  ldy #1
+  lda (IDX), Y
+  eor #$FF
+  sta (IDX), Y
+  
+  jmp nextInstruction
+  
 opcodeBOOLNOT:
 
   ; BOOL: this works for all integer values: 0 -> 1,  (!0) -> 0
@@ -2746,6 +2636,40 @@ incPCopcodeINCGLOBALB:
 opcodeINCGLOBALBDone:
 
   jmp nextInstruction
+
+
+opcodeINCGLOBALBB:
+  
+  ; PC++
+  inc PCL
+  bne incPCopcodeINCGLOBALBB0
+  inc PCH
+incPCopcodeINCGLOBALBB0:
+  lda (PC)  ; offset 0..255
+  tax
+  
+  ; PC++
+  inc PCL
+  bne incPCopcodeINCGLOBALBB1
+  inc PCH
+incPCopcodeINCGLOBALBB1:
+  lda (PC)  ; offset 0..255
+  tay
+  
+  clc
+  lda HopperValueStack, X
+  adc HopperValueStack, Y
+  sta HopperValueStack, X
+  inx
+  iny
+  lda HopperValueStack, X
+  adc HopperValueStack, Y
+  sta HopperValueStack, X
+  
+  jmp nextInstruction
+
+
+
   
   
 opcodeDECGLOBALB:
@@ -2767,7 +2691,7 @@ opcodeDECGLOBALSkipMSB:
 
   jmp nextInstruction
  
-opcodeINCLOCALB:  
+opcodeINCLOCALB:
   ; PC++
   inc PCL
   bne incPCopcodeINCLOCALB
@@ -2858,6 +2782,53 @@ incgbEnd:
 incgbDone:
 
   jmp nextInstruction
+
+
+opcodeINCGLOBALBB:
+  
+  lda #<HopperValueStack
+  sta IDXL
+  lda #>HopperValueStack
+  sta IDXH
+  
+  jsr incPC ; PC++
+  lda (PC)  ; offset 0..255
+  
+  ; += offset
+  clc
+  adc IDXL
+  sta IDXL
+  bcc incgbbEnd0
+  inc IDXH
+incgbbEnd0:
+
+  lda #<HopperValueStack
+  sta IDYL
+  lda #>HopperValueStack
+  sta IDYH
+  
+  jsr incPC ; PC++
+  lda (PC)  ; offset 0..255
+  
+  ; += offset
+  clc
+  adc IDYL
+  sta IDYL
+  bcc incgbbEnd1
+  inc IDYH
+incgbbEnd1:
+
+  clc
+  lda (IDX)
+  adc (IDY)
+  sta (IDX)
+  ldy #1
+  lda (IDX), Y
+  adc (IDY), Y
+  sta (IDX), Y
+
+  jmp nextInstruction
+
 
 opcodeDECGLOBALB:
   
@@ -3432,7 +3403,8 @@ utilityIntGTNegativeOrZero8:
   
   jmp nextInstruction
   
-  .else
+  .else ; STACK8
+  
 opcodeGTI:
   jsr utilityIntGT
   lda #tBool
@@ -3696,3 +3668,424 @@ phUIntLT8:
   
   .endif
   
+  
+
+opcodeCALLREL:
+
+  .ifdef STACK8
+  
+  ldx SP8
+  dex
+  lda HopperValueStack, X
+  sta ACCH
+  dex
+  lda HopperValueStack, X
+  sta ACCL
+  stx SP8
+  
+  .else
+
+  jsr decSP
+  lda (SP)
+  sta ACCH
+  jsr decSP
+  lda (SP)
+  sta ACCL
+  
+  jsr decTSP
+  .ifdef CHECKED
+  lda (TSP)
+  jsr assertDelegate
+  .endif
+  .endif
+  
+  ; PC++ - return address is next instruction
+  inc PCL
+  bne incPCopcodeCALLREL
+  inc PCH
+incPCopcodeCALLREL:
+  
+  ; push PC to CALL STACK
+  ldx CSP
+  lda PCL
+  sta HopperCallStack, X ; LSB
+  .ifdef CHECKED
+  jsr incCSP
+  ldx CSP
+  .else
+  inx
+  .endif
+  lda PCH
+  sta HopperCallStack, X  ; MSB
+  .ifdef CHECKED
+  jsr incCSP
+  ldx CSP
+  .else
+  inx
+  .endif
+  stx CSP
+  
+  .ifdef CHECKED
+  lda ACCL
+  bne opcodeCALLRELNotNull
+  lda ACCH
+  bne opcodeCALLRELNotNull
+  
+  .ifndef NODIAGNOSTICS
+  jsr diagnosticOutString
+  .byte $0D, "?Null Delegate", 0
+  .endif
+  jmp throwToys
+  
+opcodeCALLRELNotNull:
+  .endif
+  
+  
+  lda ACCL
+  sta PCL
+  lda ACCH
+  sta PCH
+  
+  jmp nextInstructionNoInc
+  
+  
+  
+  
+  
+  .ifdef STACK8
+  
+opcodeRETFAST:
+  
+  ; pop PC from CALL STACK
+  ldx CSP
+  dex
+  lda HopperCallStack, X  ; return address MSB
+  sta PCH
+  dex
+  lda HopperCallStack, X  ; return address LSB
+  sta PCL
+  stx CSP
+  jmp nextInstructionNoInc
+  
+  .else ; STACK8
+  
+opcodeRETFAST:
+  
+  ; pop PC from CALL STACK
+  ldx CSP
+  .ifdef CHECKED
+  jsr decCSP
+  ldx CSP
+  .else
+  dex
+  .endif
+  lda HopperCallStack, X  ; return address MSB
+  sta PCH
+  .ifdef CHECKED
+  jsr decCSP
+  ldx CSP
+  .else
+  dex
+  .endif
+  lda HopperCallStack, X  ; return address LSB
+  sta PCL
+  stx CSP
+  jmp nextInstructionNoInc
+  .endif ; !STACK8
+  
+
+
+opcodeJREL:
+  .ifdef STACK8
+  
+  ldx SP8
+  dex
+  lda HopperValueStack, X
+  sta PCH
+  dex
+  lda HopperValueStack, X
+  sta PCL
+  stx SP8
+  
+  .else
+
+  jsr decSP
+  lda (SP)
+  sta PCH
+  jsr decSP
+  lda (SP)
+  sta PCL
+  
+  jsr decTSP
+  .ifdef CHECKED
+  lda (TSP)
+  jsr assertUIntOrPlusIntOk
+  .endif
+  .endif
+  jmp nextInstructionNoInc
+
+
+jixArguments:
+  .ifdef STACK8
+  
+  ldx SP8
+  dex
+  lda HopperValueStack, X
+  dex
+  lda HopperValueStack, X
+  sta ACCL
+  stx SP8
+  
+  .else
+
+  jsr decSP
+  lda (SP)
+  sta ACCH
+  jsr decSP
+  lda (SP)
+  sta ACCL
+  
+  jsr decTSP
+  .ifdef CHECKED
+  lda (TSP)
+  jsr assertUIntOrPlusIntOk
+  .endif
+  .endif
+  
+  ; PC++
+  inc PCL
+  bne incPCJIX
+  inc PCH
+incPCJIX:
+
+  lda (PC) 
+  sta TOPL
+  
+  ; PC++
+  inc PCL
+  bne incPCJIX2
+  inc PCH
+incPCJIX2:
+
+  lda (PC) 
+  sta TOPH
+  
+  ; PC++
+  inc PCL
+  bne incPCJIX3
+  inc PCH
+incPCJIX3:
+
+  lda (PC) 
+  sta NEXTL
+  
+  ; PC++
+  inc PCL
+  bne incPCJIX4
+  inc PCH
+incPCJIX4:
+
+  lda (PC) 
+  sta NEXTH
+
+  ; PC++
+  inc PCL
+  bne incPCJIX5
+  inc PCH
+incPCJIX5:
+  rts
+
+
+opcodeJIXB:
+  jsr jixArguments
+  
+  lda ACCL
+  cmp TOPL
+  bcc opcodeJIXBDefault      ; switchCase < minRange
+  
+  cmp TOPH
+  beq opcodeJIXBUseTable     ; switchCase == maxRange
+  bcc opcodeJIXBUseTable     ; switchCase < maxRange
+  
+opcodeJIXBDefault:           ; simple add PC to tableSize
+  ; tableSize = (maxRange + 1 - minRange)
+  lda TOPH
+  inc
+  sec
+  sbc TOPL
+  
+  sta ACCH ; tableSize
+  
+  clc
+  lda PCL
+  adc ACCH
+  sta PCL
+  lda PCH
+  adc #0
+  sta PCH
+  
+  jmp nextInstructionNoInc
+  
+opcodeJIXBUseTable:
+  ; index = pc + switchCase
+  clc
+  lda PCL
+  adc ACCL
+  sta IDXL
+  lda PCH
+  adc #0
+  sta IDXH
+  
+  ; index = index - minRange
+  sec
+  lda IDXL
+  sbc TOPL
+  sta IDXL
+  lda IDXH
+  sbc #0
+  sta IDXH
+  
+  ; offset = code[index]
+  lda (IDX)
+  sta IDYL
+  
+  ; zero offset?
+  beq opcodeJIXBDefault
+  
+  ; pc = pc - jumpBackOffset - 5 + offset
+  sec
+  lda PCL
+  sbc NEXT
+  sta PCL
+  lda PCH
+  sbc NEXTH
+  sta PCH
+  
+  sec
+  lda PCL
+  sbc #5
+  sta PCL
+  lda PCH
+  sbc #0
+  sta PCH
+  
+  clc
+  lda PCL
+  adc IDYL
+  sta PCL
+  lda PCH
+  adc #0
+  sta PCH
+  
+  jmp nextInstructionNoInc
+
+
+opcodeJIXW:
+  jsr jixArguments
+  
+  lda ACCL
+  cmp TOPL
+  bcc opcodeJIXWDefault      ; switchCase < minRange
+  
+  cmp TOPH
+  beq opcodeJIXWUseTable     ; switchCase == maxRange
+  bcc opcodeJIXWUseTable     ; switchCase < maxRange
+  
+opcodeJIXWDefault:           ; simple add PC to tableSize
+  ; tableSize = (maxRange + 1 - minRange)
+  lda TOPH
+  inc
+  sec
+  sbc TOPL
+  
+  sta ACCH ; tableSize in slots (2 byte slots for JIXW)
+  
+  ; + tableSize x 2
+  clc
+  lda PCL
+  adc ACCH
+  sta PCL
+  lda PCH
+  adc #0
+  sta PCH
+  
+  clc
+  lda PCL
+  adc ACCH
+  sta PCL
+  lda PCH
+  adc #0
+  sta PCH
+  
+  jmp nextInstructionNoInc
+  
+opcodeJIXWUseTable:
+
+  ; index = pc + switchCase x 2
+  clc
+  lda PCL
+  adc ACCL
+  sta IDXL
+  lda PCH
+  adc #0
+  sta IDXH
+  
+  clc
+  lda IDXL
+  adc ACCL
+  sta IDXL
+  lda IDXH
+  adc #0
+  sta IDXH
+  
+  ; index = index - minRange
+  sec
+  lda IDXL
+  sbc TOPL
+  sta IDXL
+  lda IDXH
+  sbc #0
+  sta IDXH
+  
+  ; offset = code[index]
+  ldy #1
+  lda (IDX)
+  sta IDYL
+  lda (IDX), Y
+  sta IDYH
+  
+  ; zero offset?
+  bne opcodeJIXWUseTable2
+  lda IDYL
+  bne opcodeJIXWUseTable2
+  
+  jmp opcodeJIXWDefault
+  
+  ; pc = pc - jumpBackOffset - 5 + offset
+  
+opcodeJIXWUseTable2:
+  sec
+  lda PCL
+  sbc NEXT
+  sta PCL
+  lda PCH
+  sbc NEXTH
+  sta PCH
+  
+  sec
+  lda PCL
+  sbc #5
+  sta PCL
+  lda PCH
+  sbc #0
+  sta PCH
+  
+  clc
+  lda PCL
+  adc IDYL
+  sta PCL
+  lda PCH
+  adc IDYH
+  sta PCH
+  
+  jmp nextInstructionNoInc

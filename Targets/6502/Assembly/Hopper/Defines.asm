@@ -107,6 +107,8 @@ CSP  = $B8
   .ifdef HEAP
 COPYNEXTPOP  = $BA
   .endif
+  
+
 
 ; breakpoints (0..15)
 BRKL = $50 ; 0x50..0x5F
@@ -120,7 +122,13 @@ BRKH = $60 ; 0x60..0x6F
 ; bit 4 = this is a PROFILE build
 ; bit 5 = breakpoints exist
 ; bit 6 = single step mode
+; bit 7 = MCU device
 FLAGS  = $BB 
+
+; location to store PC to when running user code on the VM
+SPC   = $BC
+SPCL  = $BD
+SPCH  = $BE
 
 ; 16 bit accumulator
 ACC  = $C0
@@ -156,6 +164,10 @@ CODESTART = $CA
 HWM  = $CB
 HWML = $CB
 HWMH = $CC
+  .endif
+  
+  .ifdef VERIFYSTACK
+DIAGSP = $DF ; only used for diagnostics on the 6502 SP
   .endif
   
   .ifdef HEAP
@@ -197,9 +209,7 @@ tString = 15     ; 0x0F
   .ifdef DICTIONARIES
 tPair = 16       ; 0x10
   .endif
-  .ifdef LISTS
-tListItem = 17   ; 0x11 internal
-  .endif
+
   .ifdef ARRAYS
 tArray = 18      ; 0x12
   .endif

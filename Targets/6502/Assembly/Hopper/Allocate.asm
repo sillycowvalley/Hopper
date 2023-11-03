@@ -37,19 +37,8 @@ memoryAllocate:
   jsr diagnosticOutChar
   .endif
   
-  ;lda #"a"
-  ;jsr diagnosticOutChar
-  ;lda ACCH
-  ;beq memoryAllocateMSBZero
-  ;jsr diagnosticOutHex
-;memoryAllocateMSBZero:  
-  ;lda ACCL
-  ;jsr diagnosticOutHex
-  
-  ;stz IDXL
-  ;stz IDXH
-  
   .ifdef CHECKED
+  lda #0
   cmp ACCL
   bne memoryAllocateNonZero
   cmp ACCH
@@ -81,6 +70,7 @@ memoryAllocateNonZero:
   jsr incACC
   
   
+  
   stz maBESTL
   stz maBESTH
   stz maBESTSIZEL
@@ -97,6 +87,8 @@ memoryAllocateNonZero:
   bcc availableBlockSearch ; size >= 6
   ; minimum size for participation in free list
   sta ACCL
+  
+  
   
   .ifdef MEMDEBUG
   lda #"c"

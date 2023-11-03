@@ -23,7 +23,7 @@ popTOPInt:
   sta TOPL
   stx SP8
   
-  .else
+  .else ; STACK8
   
   jsr decSP          ; MSB
   lda (SP)
@@ -33,6 +33,7 @@ popTOPInt:
   sta TOPL
   jsr decTSP
   
+  
   .ifdef CHECKED
   lda (TSP)
   cmp #tByte
@@ -40,25 +41,42 @@ popTOPInt:
   cmp #tUInt
   bne popTOPIntAssetType
   
-  ; check in UInt is in range
   pha
+  
+  ; check in UInt is in range
+  .ifndef PERMISSIVE
   lda TOPH
   asl           ; sign bit into carry
   bcc popTOPIntUIntFits
   pla
+  
+  lda (TSP)
+  jsr diagnosticOutHex
+  lda #":"
+  jsr diagnosticOutChar
+  lda NEXTH
+  jsr diagnosticOutHex
+  lda NEXTL
+  jsr diagnosticOutHex
+  
   lda #$0D ; numeric type out of range / overflow
+  sta ACCL
+  stz ACCH
   jmp utilityDiagnosticsDie
+  .endif ; PERMISSIVE
+  
 popTOPIntUIntFits:
   pla
   bra popTOPIntAlwaysFits
 popTOPIntAssetType:  
   jsr assertInt
 popTOPIntAlwaysFits:  
-  .endif
-  .endif
+  .endif ; CHECKED
+  
+  .endif ; !STACK8
   
   rts
-  .endif
+  .endif ; NEEDPOPTOPINT
 
   .ifndef STACK8
 popNEXTInt:
@@ -78,14 +96,29 @@ popNEXTInt:
   cmp #tUInt
   bne popNEXTIntAssetType
   
-  ; check in UInt is in range
   pha
+  
+  ; check in UInt is in range
+  .ifndef PERMISSIVE
   lda NEXTH
   asl           ; sign bit into carry
   bcc popNEXTIntUIntFits
   pla
+  
+  lda (TSP)
+  jsr diagnosticOutHex
+  lda #":"
+  jsr diagnosticOutChar
+  lda NEXTH
+  jsr diagnosticOutHex
+  lda NEXTL
+  jsr diagnosticOutHex
+  
   lda #$0D ; numeric type out of range / overflow
+  sta ACCL
+  stz ACCH
   jmp utilityDiagnosticsDie
+  .endif
 popNEXTIntUIntFits:
   pla
   bra popNEXTIntAlwaysFits
@@ -309,7 +342,7 @@ utilityMULI:
 utilityMULISignsEven:
   rts
   
-utilityDIVI
+utilityDIVI:
   jsr utilityDoSigns
   jsr utilityDIV
   
@@ -336,3 +369,112 @@ utilityMODI
 
   ; always leave remainder ACC as positive
   rts
+  
+  
+
+  .ifdef LISTS
+syscallIntToBytes:
+
+  jsr popTOPInt
+  jsr listUtilityCreateList ; returns new list as IDX (zeroes fields too)
+  
+  stz lLENGTHH
+  lda #2
+  sta lLENGTHL
+  jsr listUtilityStoreLengthToIDX
+  
+  lda #tByte
+  ldy #4
+  sta (IDX), Y ; list item type
+  
+  ; save pointer to list
+  lda IDXL
+  pha
+  lda IDXH
+  pha
+  
+  ; save the pFirst pointer
+  lda IDXL
+  sta fDESTINATIONADDRESSL
+  lda IDXH
+  sta fDESTINATIONADDRESSH
+  
+  ; pFirst offset in tList
+  clc
+  lda fDESTINATIONADDRESSL  ; LSB
+  adc #listpFirstOffset
+  sta fDESTINATIONADDRESSL
+  lda fDESTINATIONADDRESSH  ; MSB
+  adc #0
+  sta fDESTINATIONADDRESSH
+  
+  ; create 2x list items using the data from TOP
+  lda TOPL
+  sta fVALUEL
+  stz fVALUEH
+  
+  lda #tByte
+  jsr listUtilityCreateValueItem
+  
+  ldy #1
+  lda fITEML
+  sta (fDESTINATIONADDRESS)
+  lda fITEMH
+  sta (fDESTINATIONADDRESS), Y
+  
+  ; save the pNext pointer
+  lda fITEML
+  sta fDESTINATIONADDRESSL
+  lda fITEMH
+  sta fDESTINATIONADDRESSH
+  
+  ; pNext offset tListItem:
+  ; 4x incDESTINATIONADDRESS
+  clc
+  lda fDESTINATIONADDRESSL  ; LSB
+  adc #listItempNextOffset
+  sta fDESTINATIONADDRESSL
+  lda fDESTINATIONADDRESSH  ; MSB
+  adc #0
+  sta fDESTINATIONADDRESSH
+  
+  
+  
+  lda TOPH
+  sta fVALUEL
+  stz fVALUEH
+  lda #tByte
+  jsr listUtilityCreateValueItem
+  
+  ldy #1
+  lda fITEML
+  sta (fDESTINATIONADDRESS)
+  lda fITEMH
+  sta (fDESTINATIONADDRESS), Y
+  
+  ; save the pNext pointer
+  lda fITEML
+  sta fDESTINATIONADDRESSL
+  lda fITEMH
+  sta fDESTINATIONADDRESSH
+  
+  ; pNext offset tListItem:
+  ; 4x incDESTINATIONADDRESS
+  clc
+  lda fDESTINATIONADDRESSL  ; LSB
+  adc #listItempNextOffset
+  sta fDESTINATIONADDRESSL
+  lda fDESTINATIONADDRESSH  ; MSB
+  adc #0
+  sta fDESTINATIONADDRESSH
+  
+  ; IDX points to list
+  pla
+  sta IDXH
+  pla
+  sta IDXL
+
+  lda #tList
+  jmp pushIDXExit
+  .endif  
+  
