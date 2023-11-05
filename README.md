@@ -21,11 +21,11 @@ https://docs.google.com/presentation/d/1AP5HfBwkcK6xj-8Z5_-iPWaELDSroDuUKiATp3Y2
 
 ## Notes
 
-This is an early release to experiment with the language. It runs on Windows and on 6502.
+This is an early release to experiment with the language. It runs on Windows, 6502 and RP2040 (Raspberry Pi Pico).
 
 From a security point of view, Hopper is:
 - unable to escape from the root folder of the repo (Hopper thinks that subtree is your entire disc)
-- aside from files in the repro tree, Hopper can only access the console, keyboard and mouse
+- aside from files in the repro tree, Hopper can only access the console, keyboard, mouse and serial port.
 
 ## Current State
 
