@@ -7,6 +7,10 @@ This currently works on Windows (Intel 32 and 64 bit).
 - run the only .exe in the /Bin folder (HopperNET.exe)
 - some documentation is included in the PDF under /Docs
 
+The Hopper Language playlist on YouTube:
+
+https://www.youtube.com/playlist?list=PLriDPC-IsO2mIq_u9_mh_GN6wfX59X-wY
+
 Here is the TLDR walk though:
 
 https://docs.google.com/presentation/d/1ZfqbBSqEAHBDnZLWSe-3sygjJOas6WJYlS9MmkPlFR8/
