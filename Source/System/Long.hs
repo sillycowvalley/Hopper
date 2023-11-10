@@ -148,8 +148,24 @@ unit Long
         return result;
     }
 #endif    
-    
+
+#ifdef PORTABLE    
+    <byte> ToBytes(long this)
+    {
+        <byte> lst;
+        lst.Append(GetByte(this, 0));
+        lst.Append(GetByte(this, 1));
+        lst.Append(GetByte(this, 2));
+        lst.Append(GetByte(this, 3));
+        return lst;
+    }
+#else    
     <byte> ToBytes(long this) system;
+#endif
+    
+    byte GetByte(long this, byte index) system;
+    long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
+    
 #ifndef H6502    
     float ToFloat(long this) system;
 #endif    

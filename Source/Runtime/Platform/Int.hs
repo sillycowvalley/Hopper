@@ -25,4 +25,13 @@ unit HRInt
         return lst;
     }
     
+    uint FromBytes(byte b0, byte b1)
+    {
+        return b0 + (b1 << 8);
+    }
+    byte GetByte(uint ichunk, uint i)
+    {
+        return (i == 0) ? byte(ichunk & 0xFF) : byte(ichunk >> 8);
+    }
+    
 }

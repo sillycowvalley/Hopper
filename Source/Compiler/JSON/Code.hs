@@ -57,6 +57,7 @@ unit Code
         }
         <byte> code;    
         file binFile = File.Open(codePath);
+        //PrintLn(codePath);
         loop
         {
             byte b = binFile.Read();

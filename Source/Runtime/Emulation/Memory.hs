@@ -3,24 +3,19 @@ unit Memory
     byte ReadByte(uint address) system;
     WriteByte(uint address, byte value) system;
     
+    byte ReadCodeByte(uint address) system;
+    WriteCodeByte(uint address, byte value) system;
+    
+    // defaults don't matter, set in Initialize(..) below
+    uint heapStart = 0x8000; // 32K
+    uint heapSize  = 0x4000; // 32K-48K    
     
 #ifdef SERIALCONSOLE
-
-    // defaults don't matter, set in Initialize(..) below
-    //uint heapStart = 0x2000; // 8K
-    //uint heapSize  = 0x2000; // 8K-16K
-    uint heapStart = 0x8000; // 32K
-    uint heapSize  = 0x4000; // 32K-48K
-      
     uint ReadWord(uint address) system;
     WriteWord(uint address, uint value) system;
-    
+    uint ReadCodeWord(uint address) system;
+    WriteCodeWord(uint address, uint value) system;
 #else
-
-    // defaults don't matter, set in Initialize(..) below
-    uint heapStart = 0x8000;
-    uint heapSize  = 0x7000; // top 4K used for keyboard buffer
-    
     uint ReadWord(uint address)
     {
         return (ReadByte(address+1) << 8) + ReadByte(address);
@@ -30,7 +25,15 @@ unit Memory
         WriteByte(address,   byte(word & 0xFF));
         WriteByte(address+1, byte(word >> 8));
     }
-    
+    uint ReadCodeWord(uint address)
+    {
+        return (ReadCodeByte(address+1) << 8) + ReadCodeByte(address);
+    }
+    WriteCodeWord(uint address, uint word)
+    {
+        WriteCodeByte(address,   byte(word & 0xFF));
+        WriteCodeByte(address+1, byte(word >> 8));
+    }
 #endif
     
     uint freeList;
@@ -44,9 +47,9 @@ unit Memory
     Initialize(uint start, uint size)
     {
         heapStart = start;
-        heapSize = size;
+        heapSize  = size;
         
-        freeList = heapStart;
+        freeList  = heapStart;
         
         // Zero initialize
         Memory.Set(freeList, 0, heapSize); 

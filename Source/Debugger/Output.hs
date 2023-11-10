@@ -338,17 +338,23 @@ unit Output
     {
         if (csp > 0)
         {
+            OutputDebug("");
             OutputDebug("Call Stack: csp=" + csp.ToHexString(4) + ", currentMethodIndex=" + currentMethodIndex.ToHexString(4));
             uint icsp = csp+2;
             loop
             {
                 uint address = Pages.GetPageWord(0x0400+icsp);
-                string prefix = "    ";
+                string prefix = "      ";
                 if (icsp == csp)
                 {
-                    prefix = "CSP ";
+                    prefix = "CSP-> ";
                 }
-                OutputDebug("    " + icsp.ToHexString(4) + " " + address.ToHexString(4));
+                string suffix;
+                if (icsp % 4 == 0)
+                {
+                    suffix = " " + (address + 0x0600).ToHexString(4);
+                }
+                OutputDebug(prefix + icsp.ToHexString(4) + " " + address.ToHexString(4) + suffix);
                 if (icsp == 0)
                 {
                     break;
@@ -416,7 +422,7 @@ unit Output
             namespacePlusDot = currentMethodName.Substring(0, iDot+1);
         }
         
-        DebugDump(csp, currentMethodIndex);
+        //DebugDump(csp, currentMethodIndex);
         
         uint bp;
         uint tsp;
@@ -468,6 +474,7 @@ unit Output
                     trimming = true;
                 }
                 PrintWatch(0, yCurrent, methodString.Pad(' ', outputWidth), Black, Color.ListGray);
+                //OutputDebug(bp.ToHexString(4) + " " + icsp.ToHexString(4) + " " + methodString);
                 yCurrent++;
             }
             icsp = icsp + 4;
@@ -490,6 +497,9 @@ unit Output
             trimming = true;
         }
         codeClickFirstCurrent = yCurrent;
+        
+        //OutputDebug(bp.ToHexString(4) + " " + icsp.ToHexString(4) + " " + methodString);
+        
         if ((methodString.Length > outputWidth) && methodString.Contains('`'))
         {
             bool fa = true;

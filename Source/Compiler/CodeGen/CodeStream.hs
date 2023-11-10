@@ -12,13 +12,26 @@ unit CodeStream
     <byte> constantStream;
     
     bool checkedBuild;
+    bool shortCallsDefined;
+    bool portableDefined;
+    bool h6053Defined;
     
     bool CheckedBuild 
     { 
         get { return checkedBuild; }
         set { checkedBuild = value; }
     }
-
+    bool IsShortCalls { get { return shortCallsDefined; } }
+    bool IsPortable   { get { return portableDefined; } }
+    bool Target6502   { get { return h6053Defined; } }
+    
+    InitializeSymbolShortcuts()
+    {
+        shortCallsDefined = DefineExists("SHORTCALLS");
+        portableDefined = DefineExists("PORTABLE");
+        h6053Defined = DefineExists("H6502");
+    }
+    
     Instruction GetLastInstruction()
     { 
         Instruction last = Instruction.NOP;
@@ -247,7 +260,7 @@ unit CodeStream
         // Is there a user supplied alternative to the SysCall with only one overload?
         //  (we're not checking arguments or return type : shooting from the hip ..)
         uint fIndex;
-        if (DefineExists("H6502") || DefineExists("PORTABLE"))
+        if (CodeStream.Target6502 || CodeStream.IsPortable)
         {
             if (GetFunctionIndex(name, ref fIndex))
             {
@@ -259,7 +272,7 @@ unit CodeStream
                     {
                         Symbols.OverloadToCompile(iOverload); // User supplied SysCall as Hopper source
 
-                        if (DefineExists("H6502"))
+                        if (CodeStream.Target6502)
                         {
                             if (iOverload <= 0x3FFF)
                             {
@@ -271,7 +284,7 @@ unit CodeStream
                                 Parser.Error("H6502 has a limit of 16383 for function indices, (was '" + iOverload.ToString() + "')");
                             }
                         }
-                        else if (iOverload < 256)
+                        else if (CodeStream.IsShortCalls && (iOverload < 256))
                         {
                             CodeStream.AddInstruction(Instruction.CALLB, byte(iOverload));
                         }

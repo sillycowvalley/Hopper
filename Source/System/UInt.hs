@@ -169,7 +169,9 @@ unit UInt
             this = this / 10;
         }
     }
-    long ToLong(uint this) system;
+    long  ToLong(uint this) system;
+    float ToFloat(uint this) system;
+    
     string ToHexString(uint this, byte digits)
     {
         string result;
@@ -182,10 +184,33 @@ unit UInt
     }
     <byte> ToBytes(uint this)
     {
-        <byte> list;
-        list.Append(byte(this & 0xFF));
-        list.Append(byte(this >> 8));
-        return list;
+        <byte> lst;
+        lst.Append(byte(this & 0xFF));
+        lst.Append(byte(this >> 8));
+        return lst;
+    }
+    byte GetByte(uint this, byte index)
+    {
+        switch (index)
+        {
+            case 0:
+            {
+                return byte(this & 0xFF);
+            }
+            case 1:
+            {
+                return byte(this >> 8);
+            }
+            default:
+            {
+                Diagnostics.SetError(0x02); // array index out of range
+            }
+        }
+        return 0;
+    }
+    uint FromBytes(byte b0, byte b1)
+    {
+        return b0 + b1 << 8;
     }
     
 }

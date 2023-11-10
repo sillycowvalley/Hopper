@@ -172,13 +172,27 @@ program CODEGEN
                 <uint, string> resolvedMethodNames;
                 <uint, string> externalMethods;
                 <uint, uint> methodSizes = Code.GetMethodSizes();
+                uint maxIndex;
+                uint functionCallIndex;
                 foreach (var kv in methodSizes)
                 {  
                     uint methodIndex = kv.key;
+                    if (methodIndex > maxIndex)
+                    {
+                        maxIndex = methodIndex;
+                    }
                     string name = Code.GetMethodName(methodIndex).Replace('.', '_');
-                    
+                    if (name == "External_FunctionCall")
+                    {
+                        functionCallIndex = methodIndex;
+                        continue;
+                    }
                     string nameUnique = name;
-                    if (!name.Contains("_New"))
+                    if (!name.Contains("_New") 
+                     && !name.StartsWith("GC_") 
+                     && !name.Contains("ExecuteWarp")
+                     && !name.Contains("_Restart")
+                       )
                     {
                         nameUnique = nameUnique + "_0x" + methodIndex.ToHexString(4);
                     }
@@ -196,9 +210,61 @@ program CODEGEN
                             //externalMethods[methodIndex] = name;
                             //continue;
                         }
+                        case "Instructions_Add":
+                        case "Instructions_Sub":
+                        case "Instructions_Mul":
+                        case "Instructions_Div":
+                        case "Instructions_Mod":
+                        case "Instructions_AddI":
+                        case "Instructions_SubI":
+                        case "Instructions_MulI":
+                        case "Instructions_DivI":
+                        case "Instructions_ModI":
+                        case "Instructions_LE":
+                        case "Instructions_PushI0":
+                        case "Instructions_PushI1":
+                        case "Instructions_PushIB":
+                        case "Instructions_PushIW":
+                        case "Instructions_CallIW":
+                        case "Instructions_PushLocalB":
+                        case "Instructions_PushLocalB00":
+                        case "Instructions_PushLocalB02":
+                        case "Instructions_Enter":
+                        case "Instructions_JZB":
+                        case "Instructions_RetRetB":
+                        case "HopperVM_ExecuteWarp":
+                        {
+                            externalMethods[methodIndex] = name;
+                            continue;
+                        }
                     }
                     cFile.Append("void " + nameUnique + "();" + eol);
                 }
+                cFile.Append(eol);
+                cFile.Append("FunctionPtr functionPointers[] = {" + eol);
+                
+                for (uint index=0; index <= maxIndex; index++)
+                {
+                    string functionName = "nullptr";
+                    
+                    if (externalMethods.Contains(index))
+                    {
+                        functionName = externalMethods[index];
+                    }
+                    else if (resolvedMethodNames.Contains(index))
+                    {
+                        functionName = resolvedMethodNames[index];
+                    }
+                    
+                    if (   (functionName == "External_hopperLongFromNativeLong")
+                        || (functionName == "External_nativeLongFromHopperLong")
+                       )
+                    {
+                        functionName = "nullptr";
+                    }
+                    cFile.Append("    " + functionName +", // 0x" + index.ToHexString(4) + eol);
+                }
+                cFile.Append("};" + eol);
                 
                 uint entryIndex = Code.GetEntryIndex();
                 string mainName = Code.GetMethodName(entryIndex).Replace('.', '_');
@@ -208,6 +274,8 @@ program CODEGEN
                 cFile.Append("    PushBP(); // place holder push for final return"+ eol);
                 cFile.Append("    " + mainName + "_0x" + entryIndex.ToHexString(4)  + "();"+ eol);
                 cFile.Append("}" + eol);
+                
+                uint recentDelegate;
                 
                 foreach (var kv in methodSizes)
                 {  
@@ -222,7 +290,11 @@ program CODEGEN
                     cFile.Append(eol);
                     
                     string nameUnique = name;
-                    if (!name.Contains("_New"))
+                    if (!name.Contains("_New") 
+                     && !name.StartsWith("GC_") 
+                     && !name.Contains("ExecuteWarp")
+                     && !name.Contains("_Restart")
+                       )
                     {
                         nameUnique = nameUnique + "_0x" + methodIndex.ToHexString(4);
                     }
@@ -475,7 +547,11 @@ program CODEGEN
                             case Instruction.CALLW:
                             case Instruction.CALLB:
                             {
-                                if (externalMethods.Contains(operand))
+                                if (operand == functionCallIndex)
+                                {
+                                    content = "    sp--; FunctionPtr fn = functionPointers[valuestack[sp]]; fn();";   
+                                }
+                                else if (externalMethods.Contains(operand))
                                 {
                                     content = "    " + externalMethods[operand] + "();";
                                 }
@@ -491,11 +567,11 @@ program CODEGEN
                                 {
                                     case 0xA9: // Memory.ReadByte
                                     {
-                                        content = "    valuestack[sp-1] = memoryBlock[valuestack[sp-1]]; typestack [sp-1] = Type::tByte;";
+                                        content = "    valuestack[sp-1] = dataMemoryBlock[valuestack[sp-1]]; typestack [sp-1] = Type::tByte;";
                                     }
                                     case 0xAA: // Memory.WriteByte
                                     {
-                                        content = "    sp--; sp--; memoryBlock[valuestack[sp]] = (Byte)valuestack[sp+1];";
+                                        content = "    sp--; sp--; dataMemoryBlock[valuestack[sp]] = (Byte)valuestack[sp+1];";
                                     }
                                     
                                     //case 0xC6: // Time.Delay
@@ -504,12 +580,33 @@ program CODEGEN
                                     //}
                                     case 0xD7: // Memory.ReadWord
                                     {
-                                        content = "    valuestack[sp-1] = (memoryBlock[valuestack[sp-1]] + (memoryBlock[valuestack[sp-1]+1] << 8)); typestack [sp-1] = Type::tUInt;";
+                                        content = "    valuestack[sp-1] = (dataMemoryBlock[valuestack[sp-1]] + (dataMemoryBlock[valuestack[sp-1]+1] << 8)); typestack [sp-1] = Type::tUInt;";
                                     }
                                     case 0xD8: // Memory.WriteWord
                                     {
-                                        content = "    sp--; sp--; memoryBlock[valuestack[sp]] = (Byte)(valuestack[sp+1] & 0xFF); memoryBlock[valuestack[sp]+1] = (Byte)(valuestack[sp+1] >> 8);";
+                                        content = "    sp--; sp--; dataMemoryBlock[valuestack[sp]] = (Byte)(valuestack[sp+1] & 0xFF); dataMemoryBlock[valuestack[sp]+1] = (Byte)(valuestack[sp+1] >> 8);";
                                     }
+                                    
+                                    case 0xDC: // Memory.ReadCodeByte
+                                    {
+                                        content = "    valuestack[sp-1] = codeMemoryBlock[valuestack[sp-1]]; typestack [sp-1] = Type::tByte;";
+                                    }
+                                    
+                                    case 0xDD: // Memory.WriteCodeByte
+                                    {
+                                        content = "    sp--; sp--; codeMemoryBlock[valuestack[sp]] = (Byte)valuestack[sp+1];";
+                                    }
+                                    
+                                    case 0xDE: // Memory.ReadCodeWord
+                                    {
+                                        content = "    valuestack[sp-1] = (codeMemoryBlock[valuestack[sp-1]] + (codeMemoryBlock[valuestack[sp-1]+1] << 8)); typestack [sp-1] = Type::tUInt;";
+                                    }
+                                    
+                                    case 0xDF: // Memory.WriteCodeWord
+                                    {
+                                        content = "    sp--; sp--; codeMemoryBlock[valuestack[sp]] = (Byte)(valuestack[sp+1] & 0xFF); codeMemoryBlock[valuestack[sp]+1] = (Byte)(valuestack[sp+1] >> 8);";
+                                    }
+                                    
                                     
                                     case 0x37:  // UInt.ToInt
                                     {
@@ -676,6 +773,7 @@ program CODEGEN
                             case Instruction.PUSHDB:
                             case Instruction.PUSHIB:
                             {
+                                recentDelegate = operand;
 #ifdef UNUSED
                                 content = "    typestack[sp] = Type::tByte; valuestack[sp] = 0x" + operand.ToHexString(2) + "; sp++;";
 #else         

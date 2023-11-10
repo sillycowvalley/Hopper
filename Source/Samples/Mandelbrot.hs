@@ -9,7 +9,7 @@ program Mandelbrot
         IO.Clear();
         IO.WriteLn();
         IO.WriteLn(" Mandelbrot - ported from Gordon's TinyBasic - Integers");
-        IO.WriteLn("    Ported to Hopper, running on RP2040 on a VM/Runtime written in Hopper.");
+        IO.WriteLn("    Ported to Hopper, running a VM/Runtime written in Hopper.");
         IO.WriteLn();
         IO.Write(' ');
         

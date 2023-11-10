@@ -16,6 +16,10 @@ unit GC
             {
                 return HRLong.Clone(original);
             }
+            case Type.Float:
+            {
+                return HRFloat.Clone(original);
+            }
             case Type.String:
             {
                 return HRString.Clone(original);
@@ -81,6 +85,7 @@ unit GC
             {
                 case Type.Array:
                 case Type.Long:
+                case Type.Float:
                 case Type.String:
                 {
                     Memory.Free(address); // easy : nothing to walk

@@ -28,6 +28,7 @@ unit System
     bool Warp  { get { return false; }  set { } }
 #endif        
     
+    uint     HexeVersion { get system ; }
     <string> Arguments { get system; }
     string CurrentDirectory { get system; set system; }
     Beep() system;

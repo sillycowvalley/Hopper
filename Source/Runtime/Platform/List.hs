@@ -72,7 +72,7 @@ unit HRList
         byte referenceCount = ReadByte(pCurrent+1);
         if (referenceCount == 0)
         {
-            ErrorDump(93);
+            ErrorDump(94);
             Error = 0x0B;
             return;
         }
@@ -409,7 +409,7 @@ unit HRList
             WriteWord(pPrevious+liNext, ReadWord(pCurrent+liNext));
             clearItem(pCurrent, etype);
         }
-        uint length = ReadWord(this+lsLength)-1;
+        length = ReadWord(this+lsLength)-1;
         WriteWord(this+lsLength,   length);  // number of items
         WriteWord(this+lsRecent,   0);       // pRecent
         WriteWord(this+lsRecent+2, 0);       // iRecent   

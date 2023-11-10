@@ -33,16 +33,13 @@ unit OpCodes
         LEI = 0x19,
         
         PUSHIB      = 0x1A,
-        
         POPLOCALB   = 0x1B,
         PUSHLOCALB  = 0x1C,
         POPRELB     = 0x1D,
-        
         PUSHRELB    = 0x1E,
         POPGLOBALB  = 0x1F,
         PUSHGLOBALB = 0x20,        
         PUSHSTACKADDRB = 0x21,
-        
         INCLOCALB   = 0x22,
         DECLOCALB   = 0x23,
         
@@ -116,7 +113,15 @@ unit OpCodes
         JIXB      = 0x68,
         JIXW      = 0x69,
         
+        CALLIW    = 0x6A,
+        
+        PUSHIBLE  = 0x6B,
+        PUSHIBEQ  = 0x6C,
+        
+        ADDB      = 0x6D,
+        SUBB      = 0x6E,      
     }
+    
     
 }
 

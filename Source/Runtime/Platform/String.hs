@@ -24,7 +24,7 @@ unit HRString
         WriteWord(address+2, length);
         for (uint i = 0; i < length; i++)
         {
-            WriteByte(address+4+i, ReadByte(location+i));
+            WriteByte(address+4+i, ReadCodeByte(location+i));
         }
         return address;
     }

@@ -1,5 +1,12 @@
 unit External
 {
+    uses "/Source/Runtime/Emulation/Long.hs"
+    uses "/Source/Runtime/Emulation/Float.hs"
+    
+    uint GetSegmentSizes()
+    {
+        return 0x8000; // size in Words: 0x8000 for Pi Pico, 0x4000 for Wemos D1 Mini
+    }
     
     uint GetMillis()
     {
@@ -21,138 +28,31 @@ unit External
     }
     
     
-    uint IntToUInt(int value) // RUNTIME
+    uint IntToUInt(int value)
     {
-        <byte> bytes = value.ToBytes();
-        uint result = uint(bytes[0]) + uint(bytes[1]) << 8;
+        uint result = UInt.FromBytes(value.GetByte(0), value.GetByte(1));
         return result;
     }
     
-    int UIntToInt(uint value) // RUNTIME
+    int UIntToInt(uint value)
     {
-        int result;
-        if ((value & 0x8000) != 0) // sign bit set?
-        {
-            // two's complement
-            value = ~value; // 0xFFFF -> 0x0000, 0xFFFE -> 0x0001
-            long lvalue = 0 - long(value) - 1;
-            result = int(lvalue);
-        }
-        else
-        {
-            result = int(value); // '+int'
-        }
+        int result = Int.FromBytes(value.GetByte(0), value.GetByte(1));
         return result;
     }
     
     uint hopperLongFromNativeLong(long ln)
     {
         uint this = HRLong.New();    
-        <byte> b = ln.ToBytes();
-        WriteByte(this+2, b[0]);
-        WriteByte(this+3, b[1]);
-        WriteByte(this+4, b[2]);
-        WriteByte(this+5, b[3]);
+        WriteByte(this+2, ln.GetByte(0));
+        WriteByte(this+3, ln.GetByte(1));
+        WriteByte(this+4, ln.GetByte(2));
+        WriteByte(this+5, ln.GetByte(3));
         return this;
     }
     
-    HashKey(uint key, ref uint hashLSW, ref uint hashMSW)
-    {
-        uint length = ReadWord(key+2);
-        
-        // https://github.com/laubzega/sha256_6502/blob/master/sha256.s
-        
-        // 0x811C9DC5
-        uint hash0 = 0xC5;
-        uint hash1 = 0x9D;
-        uint hash2 = 0x1C;
-        uint hash3 = 0x81;
-        
-        uint a0;
-        uint a1;
-        uint a2;
-        uint a3;
-        uint b0;
-        uint b1;
-        uint b2;
-        uint c0;
-        uint c1;
-        uint d0;
-        for (uint i = 0; i < length; i++)
-        {
-            uint ch = ReadByte(key+4+i);
-            
-            // hash ^= ch
-            hash0 = hash0 ^ ch;
-          
-            // hash *= 0x01000193;
-            
-            a0 = hash0 * 0x93;
-            a1 = hash0 + (a0 >> 8);
-            a2 = (a1 >> 8);
-            a3 = (hash0 + (a2 >> 8));
-            
-            a0 = (a0 & 0xFF);
-            a1 = (a1 & 0xFF);
-            a2 = (a2 & 0xFF);
-            a3 = (a3 & 0xFF);
-            
-            b0 = hash1 * 0x93;
-            b1 = hash1 + (b0 >> 8);
-            b2 = (b1 >> 8); 
-            
-            b0 = (b0 & 0xFF);
-            b1 = (b1 & 0xFF);
-            b2 = (b2 & 0xFF);
-            
-            c0 = hash2 * 0x93;
-            c1 = (hash2 + (c0 >> 8)); 
-            
-            c0 = (c0 & 0xFF);
-            c1 = (c1 & 0xFF);
-            
-            d0 = (hash3 * 0x93);
-            d0 = (d0 & 0xFF);
-            
-            hash0 = a0;
-            hash1 = a1 + b0 + (hash0 >> 8);
-            hash2 = a2 + b1 + c0 + (hash1 >> 8);
-            hash3 = a3 + b2 + c1 + d0 + + (hash2 >> 8);
-            hash0 = hash0 & 0xFF;
-            hash1 = hash1 & 0xFF;
-            hash2 = hash2 & 0xFF;
-            hash3 = hash3 & 0xFF;
-        }
-        
-        hashLSW = hash0 + hash1 << 8;
-        hashMSW = hash2 + hash3 << 8;
-    }
-    
-    
-    
     long nativeLongFromHopperLong(uint hrlong)
     {
-        uint lsw = ReadWord(hrlong+2);
-        uint msw = ReadWord(hrlong+4);
-        
-        long result;
-        if (msw & 0x8000 != 0)
-        {
-            // two's complement
-            msw = ~msw; lsw = ~lsw; // 0xFFFFFFFF -> 0x0000000, 0xFFFFFFFE -> 0x0000001
-            lsw = lsw + 1;          //               0x0000000 -> 1           0x0000001 -> 2
-            if (lsw == 0) // carry ...
-            {
-                msw++;
-            }
-            result = long(lsw) + long(msw) * 256 * 256; // << 16
-            result = - result;   
-        }
-        else
-        {
-            result = long(lsw) + long(msw) * 256 * 256; // << 16
-        }
-        return result;
+        return Long.FromBytes(ReadByte(hrlong+2), ReadByte(hrlong+3), ReadByte(hrlong+4), ReadByte(hrlong+5));
     }
     
     uint LongAdd(uint next, uint top)
@@ -207,6 +107,91 @@ unit External
     {
         return (nativeLongFromHopperLong(next) >= nativeLongFromHopperLong(top)) ? 1 : 0; 
     }
+    
+    uint LongToFloat(uint hrlong)
+    {
+        long ln = nativeLongFromHopperLong(hrlong);
+        return hopperFloatFromNativeFloat(float(ln));
+    }
+    uint IntToFloat(int i)
+    {
+        return hopperFloatFromNativeFloat(float(i));
+    }
+    uint UIntToFloat(uint ui)
+    {
+        return hopperFloatFromNativeFloat(float(ui));
+    }
+    uint FloatToString(uint hrfloat)
+    {
+        float fl = nativeFloatFromHopperFloat(hrfloat);
+        string str = fl.ToString();
+        uint result = HRString.New(); 
+        foreach (var c in str)
+        {
+            HRString.Build(ref result, c);
+        }
+        return result;
+    }
+    
+    
+    uint hopperFloatFromNativeFloat(float fl)
+    {
+        uint this = HRFloat.New(); 
+        WriteByte(this+2, fl.GetByte(0));
+        WriteByte(this+3, fl.GetByte(1));
+        WriteByte(this+4, fl.GetByte(2));
+        WriteByte(this+5, fl.GetByte(3));
+        return this;
+    }
+    
+    float nativeFloatFromHopperFloat(uint hrfloat)
+    {
+        return Float.FromBytes(ReadByte(hrfloat+2), ReadByte(hrfloat+3), ReadByte(hrfloat+4), ReadByte(hrfloat+5));
+    }
+    
+    uint FloatAdd(uint next, uint top)
+    {
+        return hopperFloatFromNativeFloat(nativeFloatFromHopperFloat(next) + nativeFloatFromHopperFloat(top)); 
+    }
+    uint FloatSub(uint next, uint top)
+    {
+        return hopperFloatFromNativeFloat(nativeFloatFromHopperFloat(next) - nativeFloatFromHopperFloat(top)); 
+    }
+    
+    uint FloatDiv(uint next, uint top)
+    {
+        float ltop = nativeFloatFromHopperFloat(top);
+        if (ltop == 0)
+        {
+            Error = 0x04; // division by zero attempted
+        }
+        return hopperFloatFromNativeFloat(nativeFloatFromHopperFloat(next) / ltop); 
+    }
+    uint FloatMul(uint next, uint top)
+    {
+        return hopperFloatFromNativeFloat(nativeFloatFromHopperFloat(next) * nativeFloatFromHopperFloat(top)); 
+    }
+    
+    uint FloatEQ(uint next, uint top)
+    {
+        return (nativeFloatFromHopperFloat(next) == nativeFloatFromHopperFloat(top)) ? 1 : 0; 
+    }
+    uint FloatLT(uint next, uint top)
+    {
+        return (nativeFloatFromHopperFloat(next) < nativeFloatFromHopperFloat(top)) ? 1 : 0; 
+    }
+    uint FloatLE(uint next, uint top)
+    {
+        return (nativeFloatFromHopperFloat(next) <= nativeFloatFromHopperFloat(top)) ? 1 : 0; 
+    }
+    uint FloatGT(uint next, uint top)
+    {
+        return (nativeFloatFromHopperFloat(next) > nativeFloatFromHopperFloat(top)) ? 1 : 0; 
+    }
+    uint FloatGE(uint next, uint top)
+    {
+        return (nativeFloatFromHopperFloat(next) >= nativeFloatFromHopperFloat(top)) ? 1 : 0; 
+    }
     WatchDog()
     {
         // ping the MCU watchdog so it knows we are still alive
@@ -216,5 +201,13 @@ unit External
         {
         }
 #endif
+    }
+    bool FunctionCall(uint address, byte opCode)
+    {
+        return false;    
+    }
+    WriteToJumpTable(uint jumpTable, byte opCode, InstructionDelegate instructionDelegate)
+    {
+        WriteWord(jumpTable + (byte(opCode) << 1), uint(instructionDelegate));
     }
 }

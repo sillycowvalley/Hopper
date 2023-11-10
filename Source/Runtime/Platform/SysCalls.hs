@@ -46,12 +46,12 @@ unit SysCalls
         ScreenPrint        = 0x29,
         ScreenPrintLn      = 0x2A,
         ScreenClear        = 0x2B,
-        
+        IntToFloat         = 0x34,
         IntToLong          = 0x35,
         UIntToLong         = 0x36,
         
-        LongToBytes        = 0x39,
-        
+        LongToBytes          = 0x39,
+        LongToFloat          = 0x3A,
         LongToUInt           = 0x3C,
         LongNew              = 0x3D,
         LongNewFromConstant  = 0x3E,
@@ -104,5 +104,13 @@ unit SysCalls
         MCUPinMode       = 0xD9,
         MCUDigitalRead   = 0xDA,
         MCUDigitalWrite  = 0xDB,
+        
+        LongGetByte      = 0xE0,
+        IntGetByte       = 0xE1,
+        FloatGetByte     = 0xE2,
+        LongFromBytes    = 0xE3,
+        IntFromBytes     = 0xE4,
+        FloatFromBytes   = 0xE5,
+        UIntToFloat      = 0xE6,
     }
 }

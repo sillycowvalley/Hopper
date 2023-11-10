@@ -132,12 +132,12 @@ program DASM
             }
             <uint> jumpTargets;
             <uint> jixLabels;
+            
             content = Instructions.Disassemble(code, ref address, startAddress, ref jumpTargets, ref jixLabels, false);
             instructionCount++;
             String.Build(ref content, char(0x0A));
             hasmFile.Append(content);
-            
-        }
+        } // for (address..
     }
     
     DisassembleData(file hasmFile, <byte> code, uint startAddress)

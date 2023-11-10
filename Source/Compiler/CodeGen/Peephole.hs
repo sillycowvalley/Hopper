@@ -353,6 +353,70 @@ unit Peephole
             return true; // hunt for more
         }
         if (
+            (currentStream[lastInstruction1] == uint(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == uint(Instruction.LE))
+           )
+        {
+            // PUSHIB LE -> PUSHIBLE
+            // i1     i0 -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIBLE));
+            TrimTail(ref currentStream, 1);
+            lastInstruction0 = lastInstruction1;
+            lastInstruction1 = lastInstruction2;
+            lastInstruction2 = lastInstruction3;
+            lastInstruction3 = lastInstruction4;
+            lastInstruction4 = 0;
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == uint(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == uint(Instruction.EQ))
+           )
+        {
+            // PUSHIB EQ -> PUSHIBEQ
+            // i1     i0 -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIBEQ));
+            TrimTail(ref currentStream, 1);
+            lastInstruction0 = lastInstruction1;
+            lastInstruction1 = lastInstruction2;
+            lastInstruction2 = lastInstruction3;
+            lastInstruction3 = lastInstruction4;
+            lastInstruction4 = 0;
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == uint(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == uint(Instruction.ADD))
+           )
+        {
+            // PUSHIB ADD -> ADDB
+            // i1     i0  -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.ADDB));
+            TrimTail(ref currentStream, 1);
+            lastInstruction0 = lastInstruction1;
+            lastInstruction1 = lastInstruction2;
+            lastInstruction2 = lastInstruction3;
+            lastInstruction3 = lastInstruction4;
+            lastInstruction4 = 0;
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == uint(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == uint(Instruction.SUB))
+           )
+        {
+            // PUSHIB ADD -> ADDB
+            // i1     i0  -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.SUBB));
+            TrimTail(ref currentStream, 1);
+            lastInstruction0 = lastInstruction1;
+            lastInstruction1 = lastInstruction2;
+            lastInstruction2 = lastInstruction3;
+            lastInstruction3 = lastInstruction4;
+            lastInstruction4 = 0;
+            return true; // hunt for more
+        }
+        if (
             (currentStream[lastInstruction1] == uint(Instruction.PUSHIW)) 
          && (currentStream[lastInstruction0] == uint(Instruction.LEI))
            )

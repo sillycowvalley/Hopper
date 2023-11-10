@@ -165,7 +165,18 @@ unit Instructions
         JREL,
         JIXB,
         JIXW,
+        
+        CALLIW,
+        
+        PUSHIBLE,
+        PUSHIBEQ,
+        
+        ADDB,
+        SUBB,
+        
+        UNDEFINED,
     }
+    
     bool IsRET(Instruction instruction)
     {
         switch(instruction)
@@ -254,6 +265,8 @@ unit Instructions
             case Instruction.CALLB:
             case Instruction.TESTBPB:
             case Instruction.PUSHIB:
+            case Instruction.ADDB:
+            case Instruction.SUBB:
             case Instruction.PUSHDB:
             case Instruction.POPGLOBALB:
             case Instruction.POPCOPYGLOBALB:
@@ -267,6 +280,8 @@ unit Instructions
             case Instruction.DECSP:
             case Instruction.DIE:
             case Instruction.ENTERB:
+            case Instruction.PUSHIBLE:
+            case Instruction.PUSHIBEQ:
             {
                 width = 1;
             }
@@ -286,6 +301,7 @@ unit Instructions
             case Instruction.INCGLOBALBB:
             case Instruction.JIXB:
             case Instruction.JIXW:
+            case Instruction.CALLIW:
             {
                 width = 2;
             }
@@ -348,6 +364,8 @@ unit Instructions
             case Instruction.RETB:
             case Instruction.RETRETB:
             case Instruction.PUSHIB:
+            case Instruction.ADDB:
+            case Instruction.SUBB:
             case Instruction.PUSHDB:
             case Instruction.POPGLOBALB:
             case Instruction.POPLOCALB:
@@ -373,6 +391,8 @@ unit Instructions
             case Instruction.DECSP:
             case Instruction.DIE:
             case Instruction.ENTERB:
+            case Instruction.PUSHIBLE:
+            case Instruction.PUSHIBEQ:
             {
                 result = 1;
             }
@@ -404,6 +424,7 @@ unit Instructions
             case Instruction.INCGLOBALBB:
             case Instruction.JIXB:
             case Instruction.JIXW:
+            case Instruction.CALLIW:
             {
                 result = 2;
             }
@@ -448,6 +469,10 @@ unit Instructions
             case Instruction.CALLW:
             {
                 result = "CALLW";
+            }
+            case Instruction.CALLIW:
+            {
+                result = "CALLIW";
             }
             case Instruction.CALLREL:
             {
@@ -513,6 +538,14 @@ unit Instructions
             {
                 result = "PUSHIB";
             }
+            case Instruction.ADDB:
+            {
+                result = "ADDB";
+            }
+            case Instruction.SUBB:
+            {
+                result = "SUBB";
+            }
             case Instruction.PUSHIW:
             {
                 result = "PUSHIW";
@@ -524,6 +557,14 @@ unit Instructions
             case Instruction.PUSHDB:
             {
                 result = "PUSHDB";
+            }
+            case Instruction.PUSHIBLE:
+            {
+                result = "PUSHIBLE";
+            }
+            case Instruction.PUSHIBEQ:
+            {
+                result = "PUSHIBEQ";
             }
             case Instruction.PUSHIWLE:
             {
@@ -911,6 +952,7 @@ unit Instructions
         string disassembledContent;
         byte cd = code[address];
         Instruction instruction = Instruction(cd);
+  
         if ((instruction == Instruction.JIXB) || (instruction == Instruction.JIXW))
         {
             uint actualAddress = entryPointAddress + address;
@@ -1028,7 +1070,6 @@ unit Instructions
         }
         return disassembledContent;
     }
-    
     string disassembleSingle(<byte> code, ref uint address, uint entryPointAddress, ref <uint> jumpLabels)
     {
         uint actualAddress = entryPointAddress + address;
@@ -1036,6 +1077,7 @@ unit Instructions
         
         byte cd = code[address];
         Instruction instruction = Instruction(cd);
+        
         string opcode = Instructions.ToString(instruction);
         string content = opcode;
         
@@ -1169,6 +1211,10 @@ unit Instructions
                 }
                 content = content + "   // " + name;
             }
+        }
+        if (instruction == Instruction.CALLIW)
+        {
+            // TODO : reverse lookup of method from address to index to add name to comment
         }
         content = addressContent + content;
         return content;

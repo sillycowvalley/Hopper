@@ -21,8 +21,18 @@ unit HRFloat
     uint NewFromConstant(uint location)
     {
         uint address = GC.New(4, Type.Float);
-        WriteWord(address+2, ReadWord(location));
-        WriteWord(address+4, ReadWord(location+2));
+        WriteWord(address+2, ReadCodeWord(location));
+        WriteWord(address+4, ReadCodeWord(location+2));
+        return address;
+    }
+    
+    uint FromBytes(byte b0, byte b1, byte b2, byte b3)
+    {
+        uint address = GC.New(4, Type.Float);
+        WriteByte(address+2, b0);
+        WriteByte(address+3, b1);
+        WriteByte(address+4, b2);
+        WriteByte(address+5, b3);
         return address;
     }
     
@@ -41,7 +51,6 @@ unit HRFloat
         uint address = GC.New(4, Type.Float);
         WriteWord(address+2, ReadWord(original+2));
         WriteWord(address+4, ReadWord(original+4));
-        
         return address;    
     }
     
@@ -54,6 +63,10 @@ unit HRFloat
             HRList.Append(lst, b, Type.Byte);
         }
         return lst;
+    }
+    byte GetByte(uint ichunk, uint i)
+    {
+        return ReadByte(ichunk+2+i);    
     }
     
     

@@ -1,4 +1,5 @@
 unit Long
 {
-    <byte> ToBytes(long this) system;
+    byte GetByte(long this, byte index) system;
+    long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
 }

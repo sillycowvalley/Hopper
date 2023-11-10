@@ -207,7 +207,11 @@ program Optimize
             {
                 modified = true;
             }
-            if (CodePoints.OptimizeUnconditionalJumps(experimental))
+            if (CodePoints.OptimizePUSHRETRET())
+            {
+                modified = true;
+            }
+            if (CodePoints.OptimizeUnconditionalJumps())
             {
                 modified = true;
             }
@@ -224,6 +228,10 @@ program Optimize
                 modified = true;
             }
             if (OptimizeCommutativeSWAP())
+            {
+                modified = true;
+            }
+            if (CodePoints.OptimizePUSH01LEEQ())
             {
                 modified = true;
             }

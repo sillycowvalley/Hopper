@@ -273,6 +273,22 @@ unit SysCalls
         addEntry("MCU", "PinMode");
         addEntry("MCU", "DigitalRead");
         addEntry("MCU", "DigitalWrite");
+        
+        addEntry("Memory", "ReadCodeByte");
+        addEntry("Memory", "WriteCodeByte");
+        addEntry("Memory", "ReadCodeWord");
+        addEntry("Memory", "WriteCodeWord");
+        
+        addEntry("Long",   "GetByte");
+        addEntry("Int",    "GetByte");
+        addEntry("Float",  "GetByte");
+        addEntry("Long",   "FromBytes");
+        addEntry("Int",    "FromBytes");
+        addEntry("Float",  "FromBytes");
+        addEntry("UInt",   "ToFloat");
+        addEntry("Serial", "Ports_Get");
+        
+        addEntry("System", "HexeVersion_Get");
     }
     
     bool TryParseSysCall(string name, ref byte index)

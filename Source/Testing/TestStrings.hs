@@ -1,4 +1,4 @@
-program TestSuite
+program TestStrings
 {
 
 #define PORTABLE
@@ -852,12 +852,8 @@ program TestSuite
         // bool Contains(string this, string needle)
         // <string> Split(string this, string delimiters)
         // <string> Split(string this, char delimiter)                      
-#ifndef H6502   
-        
-#else
         WriteLn();
         WriteLn("TestStrings Ok");
-#endif
 
 #ifndef H6502
         //Key key = ReadKey();

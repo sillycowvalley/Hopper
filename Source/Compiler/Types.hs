@@ -981,8 +981,10 @@ unit Types
                             }
                             else if (Types.IsEnum(actualList[1]) && Types.IsEnum(targetList[1]))
                             {
+                                PrintLn(actualList[1] + " " + targetList[1]);
+                                Parser.Error("Not Implemented"); 
                                 // TODO: compare fully qualified
-                                Die(0x0A);
+                                //Die(0x0A);
                                 equal = false;
                                 break;
                             }

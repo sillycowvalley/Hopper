@@ -1224,6 +1224,26 @@ unit Symbols
         eIndex[identifier] = iNext;
         eMembers[iNext] = members;
     }   
+    <string, <string, uint> > GetEnums()
+    {
+        return eValues;
+    }
+    <string, uint> GetEnumMembers(string name)
+    {
+        uint index = eIndex[name];
+        return eMembers[index];
+    }
+    
+    <string, <string, uint> > GetFlags()
+    {
+        return flValues;
+    }
+    <string, uint> GetFlagMembers(string name)
+    {
+        uint index = flIndex[name];
+        return flMembers[index];
+    }
+    
     
     AddFlags(string identifier, <string, uint> members)
     {
@@ -2037,7 +2057,7 @@ unit Symbols
         return oneMore;
     }
     
-    string getMethodName(uint iOverload)
+    string GetMethodNameFromOverload(uint iOverload)
     {
         string name;
         foreach (var f in fIndex)
@@ -2064,7 +2084,7 @@ unit Symbols
     {
         string pad;
         pad = pad.Pad(' ', indent);
-        string fromName = getMethodName(iFrom);
+        string fromName = GetMethodNameFromOverload(iFrom);
         
         uint cSize = 0;
         touchesDone.Append(iFrom);

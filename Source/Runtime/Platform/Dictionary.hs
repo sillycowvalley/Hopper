@@ -622,7 +622,7 @@ unit HRDictionary
         }
         
         uint pEntries = ReadWord(this+idEntries);
-        uint capacity = ReadWord(this+idCapacity);
+        capacity = ReadWord(this+idCapacity);
         
         uint hash;
         if (!valueKeys)

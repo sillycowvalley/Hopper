@@ -628,7 +628,7 @@ unit Expression
             }
             else
             {
-                if (DefineExists("H6502"))
+                if (CodeStream.Target6502)
                 {
                     if (iOverload <= 0x3FFF)
                     {
@@ -640,7 +640,7 @@ unit Expression
                         Parser.Error("H6502 has a limit of 16383 for function indices, (was '" + iOverload.ToString() + "')");
                     }
                 }
-                else if (iOverload < 256)
+                else if (CodeStream.IsShortCalls && (iOverload < 256))
                 {
                     CodeStream.AddInstruction(Instruction.CALLB, byte(iOverload));
                 }
@@ -944,7 +944,7 @@ unit Expression
                 {
                     break;
                 }
-                if (DefineExists("H6502") && IsWordValueType(typeString))
+                if (CodeStream.Target6502 && IsWordValueType(typeString))
                 {
                     CodeStream.AddInstructionSysCall0("Array", "GetItemUInt");
                 }
@@ -1156,7 +1156,7 @@ unit Expression
             Symbols.OverloadToCompile(wiOverload); 
             
             // push function index to stack
-            if (DefineExists("H6502"))
+            if (CodeStream.Target6502)
             {
                 if (wiOverload <= 0x3FFF)
                 {

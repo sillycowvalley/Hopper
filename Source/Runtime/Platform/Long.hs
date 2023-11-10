@@ -1,6 +1,5 @@
 unit HRLong
 {
-    uses "/Source/Runtime/Emulation/Long"
     
     // Long memory map:
     //   0000 heap allocator size
@@ -22,8 +21,18 @@ unit HRLong
     uint NewFromConstant(uint location)
     {
         uint address = GC.New(4, Type.Long);
-        WriteWord(address+2, ReadWord(location));
-        WriteWord(address+4, ReadWord(location+2));
+        WriteWord(address+2, ReadCodeWord(location));
+        WriteWord(address+4, ReadCodeWord(location+2));
+        return address;
+    }
+    
+    uint FromBytes(byte b0, byte b1, byte b2, byte b3)
+    {
+        uint address = GC.New(4, Type.Long);
+        WriteByte(address+2, b0);
+        WriteByte(address+2+1, b1);
+        WriteByte(address+2+2, b2);
+        WriteByte(address+2+3, b3);
         return address;
     }
     
@@ -74,6 +83,10 @@ unit HRLong
             HRList.Append(lst, b, Type.Byte);
         }
         return lst;
+    }
+    byte GetByte(uint ichunk, uint i)
+    {
+        return ReadByte(ichunk+2+i);    
     }
     
     

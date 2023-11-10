@@ -10,6 +10,7 @@ unit Minimal
     uses "/Source/Runtime/Emulation/Diagnostics"
     uses "/Source/Runtime/Emulation/Time"
     uses "/Source/Runtime/Emulation/Long"
+    uses "/Source/Runtime/Emulation/Float"
     
     byte error;
     byte Error 

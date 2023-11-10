@@ -160,10 +160,10 @@ unit Pages
             zeroPage["FREELIST"] = Pages.GetPageWord(0xE8);
             zeroPage["CODESTART"] = Pages.GetPageByte(0xCA);
             
-            foreach (var kv in zeroPage)
-            {
-                OutputDebug(kv.key + " = 0x" + kv.value.ToHexString(4));
-            }
+            //foreach (var kv in zeroPage)
+            //{
+            //    OutputDebug(kv.key + " = 0x" + kv.value.ToHexString(4));
+            //}
         }
     }
     bool ZeroPageContains(string key)

@@ -18,9 +18,21 @@ unit HopperVM
     uses "/Source/Runtime/Platform/UInt"
     uses "/Source/Runtime/Platform/Variant"
     
+    uses "/Source/Runtime/Platform/External"
+    uses "/Source/Runtime/Platform/Instructions"
+    
     
     const uint stackSize     = 512; // size of value stack in byte (each stack slot is 2 bytes)
     const uint callStackSize = 512; // size of callstack in bytes (4 bytes per call)
+    
+    const uint dataMemoryStart = 0x0000; // data memory magically exists from 0x0000 to 0xFFFF
+    
+    
+#ifdef SERIALCONSOLE
+    const uint jumpTableSize   = 512; // 4 byte function pointer slots on Pi Pico
+#else    
+    const uint jumpTableSize   = 256; // 2 byte delegate slots, highest OpCode is currently 0x6A (256 will do until 0x7F)
+#endif
     
     uint binaryAddress;
     uint constAddress;
@@ -41,12 +53,22 @@ unit HopperVM
     uint csp;
     bool cnp;
     
-    uint PC  { get { return pc; } }
-    uint SP  { get { return sp; } }
-    uint CSP { get { return csp; } }
-    uint BP  { get { return bp; } }
+    uint PC  { get { return pc; }  set { pc = value; } }
+    uint SP  { get { return sp; }  set { sp = value; } }
+    uint CSP { get { return csp; } set { csp = value; } }
+    bool CNP { get { return cnp; } set { cnp = value; } }
+    uint BP  { get { return bp; }  set { bp = value; } }
+    
+    OpCode opCode;
+    OpCode CurrentOpCode { get { return opCode; } }
+    
+    uint ValueStack { get { return valueStack; } }
+    uint TypeStack  { get { return typeStack; } }
+    uint CallStack  { get { return callStack; } }
     
     bool BreakpointExists { get { return breakpointExists; } }
+    
+    uint jumpTable; // 2 byte delegate slots for Instruction jumps
     
     
     ClearBreakpoints(bool includingZero)
@@ -94,10 +116,15 @@ unit HopperVM
     Initialize(uint loadedAddress, uint codeLength)
     {
         binaryAddress      = loadedAddress;
-        constAddress       = ReadWord(binaryAddress + 0x0002);
+        constAddress       = ReadCodeWord(binaryAddress + 0x0002);
         methodTable        = binaryAddress + 0x0006;
+    }
+    
+    DataMemoryReset()
+    {
+        HRArray.Release();  // in case we were already called
         
-        uint nextAddress   = binaryAddress + codeLength;
+        uint nextAddress   = dataMemoryStart;
         callStack          = nextAddress;
         nextAddress        = nextAddress + callStackSize;
         
@@ -105,32 +132,31 @@ unit HopperVM
         nextAddress        = nextAddress + stackSize;
         
         typeStack          = nextAddress;
-        nextAddress        = nextAddress + valueStack;
+        nextAddress        = nextAddress + stackSize;
+        
+        jumpTable          = nextAddress;
+        nextAddress        = nextAddress + jumpTableSize;
+        
+        Instructions.PopulateJumpTable(jumpTable);
         
         dataMemory         = nextAddress;
+        
 #ifdef SERIALCONSOLE        
         if (dataMemory < 0x0800)
         {
             dataMemory = 0x0800; // after our 'fake' stack pages
         }
 #endif
-     
-        MemoryReset();
-    }
-    MemoryReset()
-    {
-        // assumes dataMemory has been set after loading program
-        HRArray.Release();  
+        
 #ifdef SERIALCONSOLE
-        // currently we have 16K on the MCU
-        Memory.Initialize(dataMemory, 0x4000 - dataMemory);
+        // currently we have 64K on the Pi Pico (0xFFFC is 64K (0x10000) - 4 
+        // to avoid any boundary condition issues in the heap allocator)
+        // For Wemos D1 Mini, 32K segments so 0x7FFC
+        Memory.Initialize(dataMemory, ((External.GetSegmentSizes()-2) << 1) - dataMemory);
 #else
-        if (dataMemory < 0x1000)
-        {
-            dataMemory = 0x1000; // TODO REMOVE to make debugging easier for now
-        }
-        Memory.Initialize(dataMemory, 0xC000 - dataMemory);
+        Memory.Initialize(dataMemory, 0xFFFC - dataMemory);
 #endif
+
         breakpoints   = Memory.Allocate(32);
         ClearBreakpoints(true);
         HRArray.Initialize();
@@ -144,12 +170,14 @@ unit HopperVM
     
     Restart()
     {
+        DataMemoryReset();
+        
         sp = 0;
         bp = 0;
         csp = 0;
         Error = 0;
         cnp = false;
-        pc = ReadWord(binaryAddress + 0x0004);   
+        pc = ReadCodeWord(binaryAddress + 0x0004);   
     }
     
     
@@ -159,10 +187,10 @@ unit HopperVM
         uint address = methodTable;
         loop
         {
-            uint entry = ReadWord(address);
+            uint entry = ReadCodeWord(address);
             if (entry == methodIndex)
             {
-                address = ReadWord(address+2);
+                address = ReadCodeWord(address+2);
                 break;
             }
             address = address + 4;
@@ -209,6 +237,14 @@ unit HopperVM
         if (htype != Type.Long)
         {
             ErrorDump(74);
+            Error = 0x0B; // system failure (internal error)
+        }
+    }
+    AssertFloat(Type htype)
+    {
+        if (htype != Type.Float)
+        {
+            ErrorDump(99);
             Error = 0x0B; // system failure (internal error)
         }
     }
@@ -284,7 +320,7 @@ unit HopperVM
         }
     }
 #endif    
-    ExecuteSysCall(byte iSysCall, uint iOverload)
+    bool ExecuteSysCall(byte iSysCall, uint iOverload)
     {
         switch (SysCall(iSysCall))
         {
@@ -1230,7 +1266,7 @@ unit HopperVM
                 {
                     ErrorDump(82);
                     Error = 0x0B; // system failure (internal error)
-                    return;
+                    return false;
                 }
 #endif                    
                 HRDictionary.Set(this, key, ktype, value, vtype);
@@ -1372,6 +1408,23 @@ unit HopperVM
                 uint lng = HRInt.ToLong(ichunk);
                 Push(lng, Type.Long);
             }
+            case SysCall.IntToFloat:
+            {
+                Type htype;
+                int ichunk = PopI(ref htype);
+                uint f = External.IntToFloat(ichunk);
+                Push(f, Type.Float);
+            }
+            case SysCall.UIntToFloat:
+            {
+                Type htype;
+                uint ichunk = Pop(ref htype);
+#ifdef CHECKED
+                AssertUInt(htype, ichunk);
+#endif
+                uint f = External.UIntToFloat(ichunk);
+                Push(f, Type.Float);
+            }
             case SysCall.IntToBytes:
             {
                 Type htype;
@@ -1392,18 +1445,85 @@ unit HopperVM
                 uint lst = HRLong.ToBytes(l);
                 Push(lst, Type.List);                
             }
+            case SysCall.LongGetByte:
+            {
+                uint index = Pop();
+                Type htype;
+                uint l = Pop(ref htype);
+#ifdef CHECKED
+                AssertLong(htype);
+#endif
+                byte b = HRLong.GetByte(l, index);
+                Push(b, Type.Byte);                
+            }
+            case SysCall.LongFromBytes:
+            {
+                byte b3 = byte(Pop());
+                byte b2 = byte(Pop());
+                byte b1 = byte(Pop());
+                byte b0 = byte(Pop());
+                
+                uint l = HRLong.FromBytes(b0, b1, b2, b3);
+                Push(l, Type.Long);                
+            }
+            case SysCall.IntGetByte:
+            {
+                uint index = Pop();
+                Type htype;
+                uint i = Pop();
+                byte b = HRInt.GetByte(i, index);
+                Push(b, Type.Byte);                
+            }
+            case SysCall.IntFromBytes:
+            {
+                byte b1 = byte(Pop());
+                byte b0 = byte(Pop());
+                
+                uint i = HRInt.FromBytes(b0, b1);
+                Push(i, Type.Int);  
+            }
             
             case SysCall.FloatToBytes:
             {
                 Type htype;
                 uint l = Pop(ref htype);
 #ifdef CHECKED
-                AssertLong(htype);
+                AssertFloat(htype);
 #endif
                 uint lst = HRFloat.ToBytes(l);
-                Push(lst, Type.Float);                
+                Push(lst, Type.List);                
             }
-            
+            case SysCall.FloatToString:
+            {
+                Type htype;
+                uint l = Pop(ref htype);
+#ifdef CHECKED
+                AssertFloat(htype);
+#endif
+                uint str = External.FloatToString(l);
+                Push(str, Type.String);                
+            }
+            case SysCall.FloatGetByte:
+            {
+                uint index = Pop();
+                Type htype;
+                uint f = Pop(ref htype);
+#ifdef CHECKED
+                AssertFloat(htype);
+#endif
+                byte b = HRFloat.GetByte(f, index);
+                Push(b, Type.Byte);                
+            }
+            case SysCall.FloatFromBytes:
+            {
+                byte b3 = byte(Pop());
+                byte b2 = byte(Pop());
+                byte b1 = byte(Pop());
+                byte b0 = byte(Pop());
+                
+                uint f = HRFloat.FromBytes(b0, b1, b2, b3);
+                Push(f, Type.Float);                
+            }
             case SysCall.LongToUInt:
             {
                 Type htype;
@@ -1417,6 +1537,21 @@ unit HopperVM
 #endif
                 uint ui = HRLong.ToUInt(this);
                 Push(ui, Type.UInt);
+                GC.Release(this);
+            }
+            case SysCall.LongToFloat:
+            {
+                Type htype;
+                uint this = Pop(ref htype);
+#ifdef CHECKED
+                if (htype != Type.Long)
+                {
+                    ErrorDump(7);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                uint f = External.LongToFloat(this);
+                Push(f, Type.Float);
                 GC.Release(this);
             }
             
@@ -1516,7 +1651,79 @@ unit HopperVM
                 GC.Release(top);
                 GC.Release(next);
             }
-        
+            
+            case SysCall.FloatAdd:
+            case SysCall.FloatSub:
+            case SysCall.FloatDiv:
+            case SysCall.FloatMul:
+            case SysCall.FloatEQ:
+            case SysCall.FloatLT:
+            case SysCall.FloatLE:
+            case SysCall.FloatGT:
+            case SysCall.FloatGE:
+            {
+                Type ttype;
+                uint top = Pop(ref ttype);
+                Type ntype;
+                uint next = Pop(ref ntype);
+#ifdef CHECKED
+                if ((ttype != Type.Float) || (ntype != Type.Float))
+                {
+                    ErrorDump(6);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                uint result;
+                Type rtype = Type.Float;
+                switch (SysCall(iSysCall))
+                {
+                    case SysCall.FloatAdd:
+                    {
+                        result = External.FloatAdd(next, top);
+                    }
+                    case SysCall.FloatSub:
+                    {
+                        result = External.FloatSub(next, top);
+                    }
+                    case SysCall.FloatDiv:
+                    {
+                        result = External.FloatDiv(next, top);
+                    }
+                    case SysCall.FloatMul:
+                    {
+                        result = External.FloatMul(next, top);
+                    }
+                    case SysCall.FloatEQ:
+                    {
+                        result = External.FloatEQ(next, top);
+                        rtype = Type.Bool;
+                    }   
+                    case SysCall.FloatLT:
+                    {
+                        result = External.FloatLT(next, top);
+                        rtype = Type.Bool;
+                    }   
+                    case SysCall.FloatLE:
+                    {
+                        result = External.FloatLE(next, top);
+                        rtype = Type.Bool;
+                    }   
+                    case SysCall.FloatGT:
+                    {
+                        result = External.FloatGT(next, top);
+                        rtype = Type.Bool;
+                    }   
+                    case SysCall.FloatGE:
+                    {
+                        result = External.FloatGE(next, top);
+                        rtype = Type.Bool;
+                    }   
+                    
+                }
+                Push(result, rtype);        
+                GC.Release(top);
+                GC.Release(next);
+            }
             case SysCall.LongNew:
             {
                 uint address = HRLong.New();
@@ -1524,7 +1731,7 @@ unit HopperVM
             }
             case SysCall.FloatNew:
             {
-                uint address = HRLong.New();
+                uint address = HRFloat.New();
                 Push(address, Type.Float);
             }
             
@@ -1568,6 +1775,7 @@ unit HopperVM
                 Error = 0x0A; // not implemented
             }
         }
+        return Error == 0;
     }
     Put(uint address, uint value, Type htype)
     {
@@ -1580,7 +1788,10 @@ unit HopperVM
         htype  = Type(ReadWord(typeStack + address));
         return value;
     }
-    
+    uint Get(uint address)
+    {
+        return ReadWord(valueStack + address);
+    }
     PushI(int ivalue)
     {
         uint value = External.IntToUInt(ivalue);
@@ -1593,7 +1804,7 @@ unit HopperVM
 #endif
         WriteWord(valueStack + sp, value);
         WriteWord(typeStack + sp, byte(Type.Int));
-        sp++; sp++;
+        sp = sp + 2;
     }
     PutI(uint address, int ivalue, Type htype)
     {
@@ -1611,7 +1822,7 @@ unit HopperVM
             return 0;
         }
 #endif
-        sp--;sp--;
+        sp = sp - 2;
         uint value  = ReadWord(valueStack + sp);
         htype  = Type(ReadWord(typeStack + sp));
         return External.UIntToInt(value);
@@ -1625,7 +1836,7 @@ unit HopperVM
             return 0;
         }
 #endif
-        sp--;sp--;
+        sp = sp - 2;
         return External.UIntToInt(ReadWord(valueStack + sp));
     }
     int GetI(uint address, ref Type htype)
@@ -1647,7 +1858,7 @@ unit HopperVM
 #endif
         WriteWord(valueStack + sp, value);
         WriteWord(typeStack + sp, byte(htype));
-        sp++; sp++;
+        sp = sp + 2;
     }
     uint Pop(ref Type htype)
     {
@@ -1658,7 +1869,7 @@ unit HopperVM
             return 0;
         }
 #endif
-        sp--;sp--;
+        sp = sp - 2;
         uint value  = ReadWord(valueStack + sp);
         htype  = Type(ReadWord(typeStack + sp));
         return value;
@@ -1672,7 +1883,7 @@ unit HopperVM
             return 0;
         }
 #endif
-        sp--;sp--;
+        sp = sp - 2;
         return ReadWord(valueStack + sp);
     }
     uint GetCS(uint address)
@@ -1689,7 +1900,7 @@ unit HopperVM
         }
 #endif
         WriteWord(callStack + csp, value);
-        csp++; csp++;
+        csp = csp + 2;
     }
     uint PopCS()
     {
@@ -1700,26 +1911,26 @@ unit HopperVM
             return 0;
         }
 #endif
-        csp--;csp--;
+        csp = csp - 2;
         return ReadWord(callStack + csp);
     }
     
     
     uint ReadWordOperand()
     {
-        uint operand = ReadWord(pc); 
+        uint operand = ReadCodeWord(pc); 
         pc++; pc++;
         return operand;
     }
     byte ReadByteOperand()
     {
-        byte operand = ReadByte(pc); 
+        byte operand = ReadCodeByte(pc); 
         pc++;
         return operand;
     }
     int ReadByteOffsetOperand()
     {
-        int offset = int(ReadByte(pc)); 
+        int offset = int(ReadCodeByte(pc)); 
         pc++;
         if (offset > 127)
         {
@@ -1729,13 +1940,13 @@ unit HopperVM
     }
     int ReadWordOffsetOperand()
     {
-        int offset = External.UIntToInt(ReadWord(pc)); 
+        int offset = External.UIntToInt(ReadCodeWord(pc)); 
         pc++; pc++;
         return offset;
     }
     ShowCurrent()
     {
-        IO.WriteHex(pc); IO.Write(' ');  IO.WriteHex(ReadByte(pc)); IO.Write(' ');
+        IO.WriteHex(pc); IO.Write(' ');  IO.WriteHex(ReadCodeByte(pc)); IO.Write(' ');
         IO.WriteLn();
     }
     
@@ -1809,11 +2020,11 @@ unit HopperVM
         loop
         {
             count ++;
-            uint size  = ReadWord(pCurrent);    
             if (pCurrent >= pLimit)
             {
                 break;
             }
+            uint size  = ReadWord(pCurrent);    
             if (count > 50)
             {
                 break;
@@ -1843,7 +2054,7 @@ unit HopperVM
             {
                 break;
             }
-            pCurrent = pCurrent + size;    
+            pCurrent = pCurrent + size; // this is why we limit ourselves to 0xFFFC (not 0x10000, actual 64K)
         }
         bool reportAndStop = (HeapSize != (allocatedSize + freeSize));
         if (!reportAndStop && (accountedFor > 0))
@@ -1943,1071 +2154,11 @@ unit HopperVM
             
         }
     }  
-    ExecuteOpCode()
-    {
-#ifdef CHECKED        
-        //DumpHeap(false, 0);
-#endif
-        OpCode opCode = OpCode(ReadByte(pc));
-        pc++;
-        loop
-        {
-            switch (opCode)
-            {
-                case OpCode.BOOLNOT:
-                {
-#ifdef CHECKED                
-                    Type ttype;
-                    uint top = Pop(ref ttype);
-                    AssertBool(ttype, top);
-#else
-                    uint top = Pop();
-#endif              
-                    Push((top == 0) ? 1 : 0, Type.Bool); 
-                }
-                case OpCode.BITNOT:
-                {
-#ifdef CHECKED                
-                    Type ttype;
-                    uint top = Pop(ref ttype);
-                    AssertUInt(ttype, top);
-#else
-                    uint top = Pop();
-#endif              
-                    Push(~top, Type.UInt); 
-                }
-                case OpCode.BOOLAND:
-                case OpCode.BOOLOR:
-                case OpCode.BITAND:
-                case OpCode.BITOR:
-                case OpCode.BITXOR:
-                case OpCode.BITSHL:
-                case OpCode.BITSHR:
-                {
-    #ifdef CHECKED                
-                    Type ttype;
-                    uint top = Pop(ref ttype);
-                    Type ntype;
-                    uint next = Pop(ref ntype);
-                    switch (opCode)
-                    {
-                        case OpCode.BOOLAND:
-                        case OpCode.BOOLOR:
-                        {
-                            AssertBool(ttype, top);
-                            AssertBool(ntype, next);
-                        }
-                        case OpCode.BITAND:
-                        case OpCode.BITOR:
-                        case OpCode.BITXOR:
-                        case OpCode.BITSHL:
-                        case OpCode.BITSHR:
-                        {
-                            AssertUInt(ttype, top);
-                            AssertUInt(ntype, next);
-                        }
-                    }
-    #else
-                    uint top = Pop();
-                    uint next = Pop();
-    #endif              
-                    uint result;
-                    Type rtype = Type.UInt;
-                    switch (opCode)
-                    {
-                        case OpCode.BOOLAND:
-                        {
-                            result = ((next != 0) && (top != 0)) ? 1 : 0;
-                            rtype = Type.Bool;
-                        }
-                        case OpCode.BOOLOR:
-                        {
-                            result = ((next != 0) || (top != 0)) ? 1 : 0;
-                            rtype = Type.Bool;
-                        }
-                        case OpCode.BITAND:
-                        {
-                            result = (next & top);
-                        }
-                        case OpCode.BITOR:
-                        {
-                            result = (next | top);
-                        }
-                        case OpCode.BITXOR:
-                        {
-                            result = (next | top) & (~(next & top));
-                        }
-                        case OpCode.BITSHL:
-                        {
-                            switch (top)
-                            {
-                                case 1:  {result = (next << 1); }
-                                case 2:  {result = (next << 2); }
-                                case 3:  {result = (next << 3); }
-                                case 4:  {result = (next << 4); }
-                                case 5:  {result = (next << 5); }
-                                case 6:  {result = (next << 6); }
-                                case 7:  {result = (next << 7); }
-                                case 8:  {result = (next << 8); }
-                                case 9:  {result = (next << 9); }
-                                case 10: {result = (next << 10); }
-                                case 11: {result = (next << 11); }
-                                case 12: {result = (next << 12); }
-                                case 13: {result = (next << 13); }
-                                case 14: {result = (next << 14); }
-                                case 15: {result = (next << 15); }
-                                default: { Error = 0x0B; ErrorDump(79); }
-                            }
-                            
-                        }
-                        case OpCode.BITSHR:
-                        {
-                            switch (top)
-                            {
-                                case 1:  {result = (next >> 1); }
-                                case 2:  {result = (next >> 2); }
-                                case 3:  {result = (next >> 3); }
-                                case 4:  {result = (next >> 4); }
-                                case 5:  {result = (next >> 5); }
-                                case 6:  {result = (next >> 6); }
-                                case 7:  {result = (next >> 7); }
-                                case 8:  {result = (next >> 8); }
-                                case 9:  {result = (next >> 9); }
-                                case 10: {result = (next >> 10); }
-                                case 11: {result = (next >> 11); }
-                                case 12: {result = (next >> 12); }
-                                case 13: {result = (next >> 13); }
-                                case 14: {result = (next >> 14); }
-                                case 15: {result = (next >> 15); }
-                                default: { Error = 0x0B; ErrorDump(80); }
-                            }
-                        }
-                    }
-                    Push(result, rtype); 
-                }
-                case OpCode.ADD:
-                case OpCode.SUB:
-                case OpCode.DIV:
-                case OpCode.MUL:
-                case OpCode.MOD:
-                {
-    #ifdef CHECKED                
-                    Type ttype;
-                    uint top = Pop(ref ttype);
-                    Type ntype;
-                    uint next = Pop(ref ntype);
-                    AssertUInt(ttype, top);
-                    AssertUInt(ntype, next);
-    #else
-                    uint top = Pop();
-                    uint next = Pop();
-    #endif
-                    uint result;
-                    switch (opCode)
-                    {
-                        case OpCode.ADD:
-                        {
-                            result = next + top;
-                        }
-                        case OpCode.SUB:
-                        {
-                            result = next - top;
-                        }
-                        case OpCode.DIV:
-                        {
-                            if (top == 0)
-                            {
-                                Error = 0x04; // division by zero attempted
-                            }
-                            else
-                            {
-                                result = next / top;
-                            }
-                        }
-                        case OpCode.MUL:
-                        {
-                            result = next * top;
-                        }
-                        case OpCode.MOD:
-                        {
-                            if (top == 0)
-                            {
-                                Error = 0x04; // division by zero attempted
-                            }
-                            else
-                            {
-                                result = next % top;
-                            }
-                        }   
-                    }
-                    Push(result, Type.UInt); 
-                }
-                case OpCode.ADDI:
-                case OpCode.SUBI:
-                case OpCode.DIVI:
-                case OpCode.MULI:
-                case OpCode.MODI:
-                {
-    #ifdef CHECKED                
-                    Type ttype;
-                    int top = PopI(ref ttype);
-                    Type ntype;
-                    int next = PopI(ref ntype);
-                    AssertInt(ttype);
-                    AssertInt(ntype);
-    #else
-                    int top = PopI();
-                    int next = PopI();
-    #endif
-                    int result;
-                    switch (opCode)
-                    {
-                        case OpCode.ADDI:
-                        {
-                            result = next + top;
-                        }
-                        case OpCode.SUBI:
-                        {
-                            result = next - top;
-                        }
-                        case OpCode.DIVI:
-                        {
-                            if (top == 0)
-                            {
-                                Error = 0x04; // division by zero attempted
-                            }
-                            else
-                            {
-                                result = next / top;
-                            }
-                        }
-                        case OpCode.MULI:
-                        {
-                            result = next * top;
-                        }
-                        case OpCode.MODI:
-                        {
-                            if (top == 0)
-                            {
-                                Error = 0x04; // division by zero attempted
-                            }
-                            else
-                            {
-                                result = next % top;
-                            }
-                        }   
-                    }
-                    
-                    PushI(result); 
-                }
-                
-                case OpCode.PUSHDW:
-                case OpCode.PUSHIW:
-                {
-                    Push(ReadWordOperand(), Type.UInt);
-                }
-                case OpCode.PUSHDB:
-                case OpCode.PUSHIB:
-                {
-                    Push(ReadByteOperand(), Type.Byte);
-                }
-                case OpCode.PUSHGP:
-                {
-                    Push(0, Type.UInt);
-                }
-                case OpCode.PUSHI0:
-                {
-                    Push(0, Type.Byte);
-                }
-                case OpCode.PUSHI1:
-                {
-                    Push(1, Type.Byte);
-                }
-                case OpCode.PUSHIM1:
-                {
-                    PushI(-1);
-                }
-                case OpCode.INCLOCALB:
-                {
-                    int offset     = ReadByteOffsetOperand();
-                    
-                    // INCLOCALB is an optimization of "i = i + 1":
-                    // If it were done using ADDI or ADD, then the result pushed on the stack
-                    // would be tInt or tUInt, even if i was a tByte.
-                    // POPLOCALB would then supply the type for the resulting expression.
-                    //
-                    // So, we need to choose between tUInt and tInt for the "pop" if it was tByte .. I choose tUInt
-                    // (we need to avoid munting the type if it is currently a -ve tInt)
-                    
-                    Type itype;
-                    uint address = uint(int(bp) + offset);
-                    uint value = Get(address, ref itype);
-                    if (itype == Type.Byte)
-                    {
-                        itype = Type.UInt;
-                    }
-                    Put(address, value+1, itype);
-                }
-                case OpCode.DECLOCALB:
-                {
-                    int offset     = ReadByteOffsetOperand();
-                    Type itype;
-                    uint address = uint(int(bp) + offset);
-                    uint value = Get(address, ref itype);
-                    Put(address, value-1, itype);
-                }
-                case OpCode.INCLOCALBB:
-                {
-                    int offset0    = ReadByteOffsetOperand();
-                    int offset1    = ReadByteOffsetOperand();
-                    uint address0 = uint(int(valueStack) + int(bp) + offset0);
-                    uint address1 = uint(int(valueStack) + int(bp) + offset1);
-                    WriteWord(address0, ReadWord(address0) + ReadWord(address1));
-                }
-                
-                case OpCode.CAST:
-                {
-                    uint operand = ReadByteOperand();
-                    Type htype;
-                    Put(sp-2, Get(sp-2, ref htype), Type(operand));
-                }
-                
-                
-                
-                
-                
-                case OpCode.JZB:
-                {
-    #ifdef CHECKED  
-                    int offset = ReadByteOffsetOperand();              
-                    Type htype;
-                    uint choice = Pop(ref htype);
-                    if (IsReferenceType(htype)) // != 0 is not the same as UInt
-                    {
-                        ErrorDump(40);
-                        Error = 0x0B;
-                    }
-                    
-                    if (choice == 0)
-                    {
-                        pc = uint(int(pc-2) + offset);
-                    }
-    #else
-                    if (Pop() == 0)
-                    {
-                        pc = uint(ReadByteOffsetOperand() + int(pc-2));
-                    }
-                    else
-                    {
-                        pc++;
-                    }
-    #endif   
-                    
-                }
-                case OpCode.JNZB:
-                {
-                    
-    #ifdef CHECKED
-                    int offset = ReadByteOffsetOperand();
-                    Type htype;
-                    uint choice = Pop(ref htype);
-                    if (IsReferenceType(htype)) // != 0 is not the same as UInt
-                    {
-                        ErrorDump(38);
-                        Error = 0x0B;
-                    }
-                    if (choice != 0)
-                    {
-                        pc = uint(int(pc-2) + offset);
-                    }
-    #else
-                    if (Pop() != 0)
-                    {
-                        pc = uint(ReadByteOffsetOperand() + int(pc-2));
-                    }
-                    else
-                    {
-                        pc++;
-                    }
-    #endif   
-                    
-                }
-                case OpCode.JB:
-                {
-                    pc = uint(ReadByteOffsetOperand() + int(pc-2));
-                }
-                case OpCode.JZW:
-                {
-                    
-    #ifdef CHECKED
-                    int offset = ReadWordOffsetOperand();
-                    Type htype;
-                    uint choice = Pop(ref htype);
-                    if (IsReferenceType(htype)) // != 0 is not the same as UInt
-                    {
-                        ErrorDump(39);
-                        Error = 0x0B;
-                    }
-                    
-                    if (choice == 0)
-                    {
-                        pc = uint(int(pc-3) + offset);
-                    }
-    #else
-                    if (Pop() == 0)
-                    {
-                        pc = uint(ReadWordOffsetOperand() + int(pc-3));
-                    }
-                    else
-                    {
-                        pc++;pc++;
-                    }
-    #endif   
-                    
-                }
-                case OpCode.JNZW:
-                {
-    #ifdef CHECKED
-                    int offset = ReadWordOffsetOperand();
-                    Type htype;
-                    uint choice = Pop(ref htype);
-                    if (IsReferenceType(htype)) // != 0 is not the same as UInt
-                    {
-                        ErrorDump(41);
-                        Error = 0x0B;
-                    }
-                    
-                    if (choice != 0)
-                    {
-                        pc = uint(int(pc-3) + offset);
-                    }
-    #else
-                    if (Pop() != 0)
-                    {
-                        pc = uint(ReadWordOffsetOperand() + int(pc-3));
-                    }
-                    else
-                    {
-                        pc++;pc++;
-                    }
-    #endif   
-                    
-                }
-                case OpCode.JW:
-                {
-                    pc = uint(ReadWordOffsetOperand() + int(pc-3));
-                }
-                
-                case OpCode.PUSHIWLT:
-                {
-                    uint top = ReadWordOperand();    
-                    Type ntype;
-                    uint next = Pop(ref ntype);
-    #ifdef CHECKED
-                    AssertUInt(ntype, next);
-    #endif  
-                    Push((next < top) ? 1 : 0, Type.Bool);
-                }
-                
-                case OpCode.PUSHIWLE:
-                {
-                    uint top = ReadWordOperand();    
-                    Type ntype;
-                    uint next = Pop(ref ntype);
-    #ifdef CHECKED
-                    AssertUInt(ntype, next);
-    #endif  
-                    Push((next <= top) ? 1 : 0, Type.Bool);
-                }
-                
-                
-                case OpCode.EQ:
-                case OpCode.NE:
-                case OpCode.GT:
-                case OpCode.LT:
-                case OpCode.GE:
-                case OpCode.LE:
-                {
-                    Type ttype;
-                    uint top  = Pop(ref ttype);
-                    Type ntype;
-                    uint next = Pop(ref ntype);
-    #ifdef CHECKED
-                    if ((OpCode.EQ != opCode) && (OpCode.NE != opCode))
-                    {
-                        AssertUInt(ttype, top);
-                        AssertUInt(ntype, next);
-                    }
-    #endif                
-                    switch (opCode)
-                    {
-                        case OpCode.EQ:
-                        {    
-                            Push((next == top) ? 1 : 0, Type.Bool);
-                        }
-                        case OpCode.NE:
-                        {    
-                            Push((next != top) ? 1 : 0, Type.Bool);
-                        }
-                        case OpCode.GT:
-                        {    
-                            Push((next > top) ? 1 : 0, Type.Bool);
-                        }
-                        case OpCode.LT:
-                        {    
-                            Push((next < top) ? 1 : 0, Type.Bool);
-                        }
-                        case OpCode.GE:
-                        {    
-                            Push((next >= top) ? 1 : 0, Type.Bool);
-                        }
-                        case OpCode.LE:
-                        {    
-                            Push((next <= top) ? 1 : 0, Type.Bool);
-                        }
-                        default:
-                        {
-                            ErrorDump(5);
-                            Error = 0x0B;
-                        }
-                    }
-                }
-                case OpCode.PUSHIWLEI:
-                {
-                    Push(ReadWordOperand(), Type.UInt);    
-                    Type ntype;
-                    Type ttype;
-                    int top  = PopI(ref ttype);
-                    Type ntype;
-                    int next = PopI(ref ntype);
-    #ifdef CHECKED
-                    AssertInt(ttype);
-                    AssertInt(ntype);
-    #endif  
-                    Push((next <= top) ? 1 : 0, Type.Bool);
-                }
-                case OpCode.GTI:
-                case OpCode.LTI:
-                case OpCode.GEI:
-                case OpCode.LEI:
-                {
-                    Type ttype;
-                    int top  = PopI(ref ttype);
-                    Type ntype;
-                    int next = PopI(ref ntype);
-    #ifdef CHECKED
-                    AssertInt(ttype);
-                    AssertInt(ntype);
-    #endif                
-                    switch (opCode)
-                    {
-                        case OpCode.GTI:
-                        {    
-                            Push((next > top) ? 1 : 0, Type.Bool);
-                        }
-                        case OpCode.LTI:
-                        {    
-                            Push((next < top) ? 1 : 0, Type.Bool);
-                        }
-                        case OpCode.GEI:
-                        {    
-                            Push((next >= top) ? 1 : 0, Type.Bool);
-                        }
-                        case OpCode.LEI:
-                        {    
-                            Push((next <= top) ? 1 : 0, Type.Bool);
-                        }
-                        default:
-                        {
-                            ErrorDump(4);
-                            Error = 0x0B;
-                        }
-                    }
-                }
-                
-                
-                
-                case OpCode.PUSHRELB:
-                {
-                    int  offset = ReadByteOffsetOperand();
-                    uint referenceAddress = uint(int(bp) + offset);
-                    Type rtype;
-                    uint localAddress = Get(referenceAddress, ref rtype);
-    #ifdef CHECKED
-                    AssertReference(rtype, localAddress);
-    #endif
-                    uint value = Get(localAddress, ref rtype);
-                    Push(value, rtype);
-                    if (IsReferenceType(rtype))
-                    {
-                        GC.AddReference(value);
-                    }
-                }
-                case OpCode.PUSHSTACKADDRB:
-                {
-                    int  offset = ReadByteOffsetOperand();
-                    uint address = uint(int(bp) + offset);
-                    Push(address, Type.Reference);
-                }
-                
-                case OpCode.SWAP:
-                {
-                    uint topValue  = ReadWord(valueStack + sp - 2);
-                    uint nextValue = ReadWord(valueStack + sp - 4);
-                    WriteWord(valueStack + sp - 2, nextValue);
-                    WriteWord(valueStack + sp - 4, topValue);
-                    uint topType  = ReadWord(typeStack + sp - 2);
-                    uint nextType = ReadWord(typeStack + sp - 4);
-                    WriteWord(typeStack + sp - 2, nextType);
-                    WriteWord(typeStack + sp - 4, topType);
-                }
-                case OpCode.DUP: // operand is offset 0..255 into stack where 0=[top], 1=[next], etc
-                {
-                    byte  offset  = ReadByteOperand();
-                    uint address = sp - 2 - offset;
-                    uint value = ReadWord(valueStack     + address);
-                    Type htype = Type(ReadWord(typeStack + address));
-                    Push(value, htype);
-                    if (IsReferenceType(htype))
-                    {
-                        GC.AddReference(value);
-                    }
-                }
-                case OpCode.PUSHLOCALB00:
-                case OpCode.PUSHLOCALB02:
-                case OpCode.PUSHLOCALB:
-                {
-                    int offset;
-                    switch (opCode)
-                    {
-                        case OpCode.PUSHLOCALB00:
-                        {
-                            offset = 0;
-                        }
-                        case OpCode.PUSHLOCALB02:
-                        {
-                            offset = 2;
-                        }
-                        case OpCode.PUSHLOCALB:
-                        {
-                            offset     = ReadByteOffsetOperand();
-                        }
-                    }
-                    uint value = ReadWord(uint(int(valueStack)     + int(bp) + offset));
-                    Type htype = Type(ReadWord(uint(int(typeStack) + int(bp) + offset)));
-                    Push(value, htype);
-                    if (IsReferenceType(htype))
-                    {
-                        GC.AddReference(value);
-                    }
-                }
-                case OpCode.PUSHLOCALBB:
-                {
-                    // LSB
-                    int offset     = ReadByteOffsetOperand();
-                    uint value = ReadWord(uint(int(valueStack)     + int(bp) + offset));
-                    Type htype = Type(ReadWord(uint(int(typeStack) + int(bp) + offset)));
-                    Push(value, htype);
-                    if (IsReferenceType(htype))
-                    {
-                        GC.AddReference(value);
-                    }
-                    
-                    // MSB
-                    offset     = ReadByteOffsetOperand();
-                    value = ReadWord(uint(int(valueStack)     + int(bp) + offset));
-                    htype = Type(ReadWord(uint(int(typeStack) + int(bp) + offset)));
-                    Push(value, htype);
-                    if (IsReferenceType(htype))
-                    {
-                        GC.AddReference(value);
-                    }
-                }
-                case OpCode.PUSHGLOBALB:
-                {
-                    byte offset     = ReadByteOperand();
-                    uint value = ReadWord(valueStack + offset);
-                    Type htype = Type(ReadWord(typeStack + offset));
-                    Push(value, htype);
-                    if (IsReferenceType(htype))
-                    {
-                        GC.AddReference(value);
-                    }
-                }
-                
-                
-                
-                case OpCode.SYSCALL0:
-                {
-                    byte iSysCall = ReadByteOperand();  
-                    ExecuteSysCall(iSysCall, 0);
-                }
-                case OpCode.SYSCALL1:
-                {
-                    byte iSysCall = ReadByteOperand();  
-                    ExecuteSysCall(iSysCall, 1);
-                }
-                case OpCode.SYSCALL:
-                {
-                    Type htype;
-                    uint iOverload = Pop(ref htype);
-                    byte iSysCall  = ReadByteOperand();  
-                    ExecuteSysCall(iSysCall, iOverload);
-                }
-                case OpCode.CALLB:
-                {
-                    uint methodIndex = ReadByteOperand();
-                    PushCS(pc);
-                    pc = LookupMethod(methodIndex);
-                }
-                case OpCode.CALLW:
-                {
-                    uint methodIndex = ReadWordOperand();
-                    PushCS(pc);
-                    pc = LookupMethod(methodIndex);
-                }
-                case OpCode.CALLREL:
-                {
-    #ifdef CHECKED
-                    Type rtype;
-                    uint methodIndex = Pop(ref rtype);
-                    AssertUInt(rtype, methodIndex);
-                    if (methodIndex == 0)
-                    {
-                        Error = 0x0D; // invalid or uninitialized delegate
-                    }
-    #else
-                    uint methodIndex = Pop();                
-    #endif          
-                    PushCS(pc);
-                    pc = LookupMethod(methodIndex);
-                }
-                
-                case OpCode.DECSP:
-                {
-                    uint popBytes = ReadByteOperand();
-                    while (popBytes != 0)
-                    {
-                        Type htype;
-                        uint address = Pop(ref htype);
-                        if (IsReferenceType(htype))
-                        {
-                            GC.Release(address);
-                        }
-                        popBytes = popBytes - 2;
-                    }
-                }
-                case OpCode.RETFAST:
-                {
-                    pc = PopCS();
-                }
-                case OpCode.RET0:
-                case OpCode.RETB:
-                case OpCode.RETRETB:
-                {
-                    uint value;
-                    Type rtype;
-                    if (opCode == OpCode.RETRETB)
-                    {
-                        value = Pop(ref rtype);
-                    }
-                    uint popBytes;
-                    if (opCode != OpCode.RET0)
-                    {
-                        popBytes = ReadByteOperand();
-                    }
-                    while (popBytes != 0)
-                    {
-                        Type htype;
-                        uint address = Pop(ref htype);
-                        if (IsReferenceType(htype))
-                        {
-                            GC.Release(address);
-                        }
-                        popBytes = popBytes - 2;
-                    }
-                    if (opCode == OpCode.RETRETB)
-                    {
-                        Push(value, rtype);
-                    }
-                    bp = PopCS();
-                    if (csp == 0)
-                    {
-                        pc = 0; // exit program
-                    }
-                    else
-                    {
-                        pc = PopCS();
-                    }
-                }
-                
-                case OpCode.ENTER:
-                case OpCode.ENTERB:
-                {
-                    PushCS(bp);
-                    bp = sp;
-                    
-                    uint zeros = 0;
-                    Type htype;
-                    if (opCode == OpCode.ENTERB)
-                    {
-                        zeros = ReadByteOperand();
-                    }
-                    for (uint i = 0; i < zeros; i++)
-                    {
-                        Push(0, Type.Byte);
-                    }
-                }
-                
-                case OpCode.COPYNEXTPOP:
-                {
-                    cnp = true;
-                }
-                
-                
-                case OpCode.POPLOCALB00:
-                case OpCode.POPLOCALB02:
-                case OpCode.POPLOCALB:
-                {
-                    int offset;
-                    switch (opCode)
-                    {
-                        case OpCode.POPLOCALB00:
-                        {
-                            if (cnp) { opCode = OpCode.POPCOPYLOCALB00; cnp=false; continue; }
-                            offset = 0;
-                        }
-                        case OpCode.POPLOCALB02:
-                        {
-                            if (cnp) { opCode = OpCode.POPCOPYLOCALB02; cnp=false; continue; }
-                            offset = 2;
-                        }
-                        case OpCode.POPLOCALB:
-                        {
-                            if (cnp) { opCode = OpCode.POPCOPYLOCALB; cnp=false; continue; }
-                            offset     = ReadByteOffsetOperand();
-                        }
-                    }
-                
-                    // this is the slot we are about to overwrite: decrease reference count if reference type
-                    Type htype = Type(ReadWord(uint(int(typeStack) + int(bp) + offset)));
-                    uint value;
-                    if (IsReferenceType(htype))
-                    {
-                        value = ReadWord(uint(int(valueStack)     + int(bp) + offset));
-                        GC.Release(value);
-                    }
-                    
-                    value = Pop(ref htype);
-                    WriteWord(uint(int(valueStack) + int(bp) + offset), value);
-                    WriteWord(uint(int(typeStack)  + int(bp) + offset), uint(htype));
-                }
-                
-                case OpCode.POPGLOBALB:
-                {
-                    if (cnp) { opCode = OpCode.POPCOPYGLOBALB; cnp=false; continue; }
-                    byte offset     = ReadByteOperand();
-                    
-                    // this is the slot we are about to overwrite: decrease reference count if reference type
-                    Type htype = Type(ReadWord(typeStack  + offset));
-                    uint value;
-                    if (IsReferenceType(htype))
-                    {
-                        value = ReadWord(valueStack  + offset);
-                        GC.Release(value);
-                    }
-                    
-                    value = Pop(ref htype);
-                    WriteWord(valueStack + offset, value);
-                    WriteWord(typeStack  + offset, uint(htype));
-                }
-                case OpCode.POPRELB:
-                {
-                    if (cnp) { opCode = OpCode.POPCOPYRELB; cnp=false; continue; }
-                    
-                    int offset = ReadByteOffsetOperand();
-                    uint referenceAddress = uint(int(bp) + offset);
-                    
-                    Type rtype;
-                    uint localAddress = Get(referenceAddress, ref rtype);
-                    
-                    uint existing = Get(localAddress, ref rtype);
-                    if (IsReferenceType(rtype))
-                    {
-                        GC.Release(existing);
-                    }
-                    
-                    Type vtype;
-                    uint value = Pop(ref vtype);
-                    Put(localAddress, value, vtype);
-                }
-                
-                case OpCode.POPCOPYRELB:
-                {
-                    int  offset = ReadByteOffsetOperand();
-                    uint referenceAddress = uint(int(bp) + offset);
-                    Type rtype;
-                    uint localAddress = Get(referenceAddress, ref rtype);
-    #ifdef CHECKED
-                    AssertReference(rtype, localAddress);
-    #endif
-                    // this is the slot we are about to overwrite: decrease reference count if reference type
-                    uint oldvalue = Get(localAddress, ref rtype);
-                    if (IsReferenceType(rtype))
-                    {
-                        GC.Release(oldvalue);
-                    }
-                    uint value = Pop(ref rtype);
-                    if (value == oldvalue)
-                    {
-                        // nothing more to do
-                    }
-                    else
-                    {
-                        // clone self, release the original
-                        uint newvalue = GC.Clone(value);
-                        GC.Release(value);
-                        Put(localAddress, newvalue, rtype);
-                    }
-                }
-                
-                case OpCode.POPCOPYLOCALB00:
-                case OpCode.POPCOPYLOCALB02:
-                case OpCode.POPCOPYLOCALB:
-                {
-                    int offset;
-                    switch (opCode)
-                    {
-                        case OpCode.POPCOPYLOCALB00:
-                        {
-                            offset = 0;
-                        }
-                        case OpCode.POPCOPYLOCALB02:
-                        {
-                            offset = 2;
-                        }
-                        case OpCode.POPCOPYLOCALB:
-                        {
-                            offset     = ReadByteOffsetOperand();
-                        }
-                    }
-                    // this is the slot we are about to overwrite: decrease reference count if reference type
-                    Type htype;
-                    uint localAddress = uint(int(bp) + offset);
-                    uint oldvalue = Get(localAddress, ref htype);
-                    if (IsReferenceType(htype))
-                    {
-                        GC.Release(oldvalue);
-                    }
-                    uint value = Pop(ref htype);
-                    if (value == oldvalue)
-                    {
-                        // overwriting self - no more to do
-                    }
-                    else
-                    {
-                        // clone self, release the original
-                        uint newvalue = GC.Clone(value);
-                        GC.Release(value);
-                        Put(localAddress, newvalue, htype); 
-                    }
-                }
-                
-                case OpCode.POPCOPYGLOBALB:
-                {
-                    byte offset     = ReadByteOperand();
-                    
-                    // this is the slot we are about to overwrite: decrease reference count if reference type
-                    
-                    Type htype;
-                    uint oldvalue = Get(offset, ref htype);
-                    if (IsReferenceType(htype))
-                    {
-                        GC.Release(oldvalue);
-                    }
-                    uint value = Pop(ref htype);
-                    if (value == oldvalue)
-                    {
-                        // overwriting self - no more to do
-                    }
-                    else
-                    {
-                        // clone self, release the original
-                        uint newvalue = GC.Clone(value);
-                        GC.Release(value);
-                        Put(offset, newvalue, htype); 
-                    }
-                }
-                case OpCode.JIXB:
-                case OpCode.JIXW:
-                {
-                    uint switchCase = Pop();
-
-                    byte minRange = ReadByteOperand();
-                    byte maxRange = ReadByteOperand();
-                    
-                    byte lsb = ReadByteOperand();
-                    byte msb = ReadByteOperand();
-                    
-                    int jumpBackOffset = int(lsb + (msb << 8));
-                    
-                    uint tpc = pc;
-                    
-                    pc = uint(int(pc) - jumpBackOffset - 5);
-                    
-                    uint tableSize = uint(maxRange) - uint(minRange) + 1;
-                    if (opCode == OpCode.JIXW)
-                    {
-                        tableSize = tableSize << 1;
-                    }
-                    
-                    uint offset = 0;
-                    if ((switchCase >= minRange) && (switchCase <= maxRange))
-                    {
-                        // in the table
-                        if (opCode == OpCode.JIXW)
-                        {
-                            uint index = tpc + (switchCase - minRange)*2;
-                            offset = ReadByte(index) + ReadByte(index+1) << 8;
-                        }
-                        else
-                        {
-                            uint index = tpc + switchCase - minRange;
-                            offset = ReadByte(index);
-                        }
-                    }
-                    
-                    if (offset == 0)
-                    {
-                        // default
-                        pc = tpc + tableSize;
-                    }
-                    else
-                    {
-                        pc = pc + offset;
-                    }
-                }
-                
-                
-                default:
-                {
-                    Runtime.Out4Hex(PC);
-                    Serial.WriteChar(':');
-                    Serial.WriteChar('O');
-                    Runtime.Out2Hex(byte(opCode));
-                    Serial.WriteChar(' ');
-                    ErrorDump(1);
-                    Error = 0x0A; // not implemented
-                }   
-            } // switch (opCode)
-            break;
-        } // loop
-    } 
     
     ExecuteStepTo()
     {
         uint messagePC = pc;
-        ExecuteOpCode();
+        bool doNext = ExecuteOpCode();
         if (Error != 0)
         {
 #ifndef SERIALCONSOLE                
@@ -3026,41 +2177,14 @@ unit HopperVM
         }
     }
     
-    ExecuteWarp()
-    {
-        uint messagePC;
-        loop
-        {
-            messagePC = pc;
-            ExecuteOpCode();
-            if (Error != 0)
-            {
-#ifndef SERIALCONSOLE                
-                DumpStack();
-                IO.WriteLn();
-                IO.WriteHex(messagePC);
-                IO.Write(' '); IO.Write('E'); IO.Write('r'); IO.Write('r'); IO.Write('o'); IO.Write('r'); IO.Write(':'); 
-                byte berror = Error;
-                IO.WriteHex(berror);
-                IO.WriteLn();
-#endif
-                break;
-            }
-            if (pc == 0) // returned from "main"
-            {
-                Restart(); // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
-                break;     // clean exit of "main"
-            }
-            WatchDog();
-        } // loop
-    }
+    
     Execute()
     {
         uint messagePC;
         loop
         {
             messagePC = pc;
-            ExecuteOpCode();
+            bool doNext = ExecuteOpCode();
             if (Error != 0)
             {
 #ifndef SERIALCONSOLE                
@@ -3104,4 +2228,93 @@ unit HopperVM
             WatchDog();
         } // loop
     }
+    
+    bool ExecuteOpCode()
+    {
+        bool doNext;
+        opCode = OpCode(ReadCodeByte(pc));
+        pc++;
+
+#ifndef SERIALCONSOLE                
+        uint jump = ReadWord(jumpTable + (byte(opCode) << 1));
+#endif        
+#ifdef CHECKED
+        if (0 == jump)
+        {
+            if (Instructions.Undefined()) {}
+            return false;
+        }
+#endif
+#ifdef SERIALCONSOLE // on MCU
+        doNext = External.FunctionCall(jumpTable, byte(opCode));
+#else
+        InstructionDelegate instructionDelegate = InstructionDelegate(jump);
+        doNext = instructionDelegate();
+#endif
+        return doNext;
+    }
+    
+    ExecuteWarp()
+    {
+#ifdef CHECKED
+        uint messagePC;
+#endif
+        bool doNext;
+        uint watchDog = 2500;
+        loop
+        {
+#ifdef CHECKED
+            messagePC = PC;
+#endif
+            opCode = OpCode(ReadCodeByte(pc));
+#ifndef SERIALCONSOLE            
+            uint jump = ReadWord(jumpTable + (byte(opCode) << 1));
+#endif
+            pc++;
+            
+#ifdef CHECKED
+            if (0 == jump)
+            {
+                if (Instructions.Undefined()) {}
+                return;
+            }
+#endif
+#ifdef SERIALCONSOLE // on MCU
+            doNext = External.FunctionCall(jumpTable, byte(opCode));
+#else
+            InstructionDelegate instructionDelegate = InstructionDelegate(jump);
+            doNext = instructionDelegate();
+#endif
+            watchDog--;
+            if (watchDog == 0)
+            {
+                WatchDog(); // yield() on devices like Wemos D1 Mini so WDT is not tripped
+                watchDog = 2500;
+            }
+            if (doNext) { continue; }
+            
+            if (Error != 0)
+            {
+#ifndef SERIALCONSOLE                
+                DumpStack();
+                IO.WriteLn();
+#ifdef CHECKED                
+                IO.WriteHex(messagePC);
+#endif
+                IO.Write(' '); IO.Write('E'); IO.Write('r'); IO.Write('r'); IO.Write('o'); IO.Write('r'); IO.Write(':'); 
+                byte berror = Error;
+                IO.WriteHex(berror);
+                IO.WriteLn();
+#endif
+                break;
+            }
+            if (PC == 0) // returned from "main"
+            {
+                Restart(); // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
+                break;     // clean exit of "main"
+            }
+            
+        } // loop
+    }
+
 }

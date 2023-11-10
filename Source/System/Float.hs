@@ -9,7 +9,43 @@ unit Float
         string digits;
         loop
         {
-            if (content.IndexOf('.', ref iDot))
+            if (content.Contains('E') || content.Contains('e'))
+            {
+                String.ToUpper(ref content);
+                <string> parts = content.Split('E');
+                if (parts.Length == 2)
+                {
+                    int exponent;
+                    if (Float.TryParse(parts[0], ref returnValue) && Int.TryParse(parts[1], ref exponent))
+                    {
+                        // 4E+07
+                        if (exponent == 0)
+                        {
+                        }
+                        else if (exponent < 0)
+                        {
+                            exponent = -exponent;
+                            while (exponent != 0)
+                            {
+                                returnValue = returnValue / 10;
+                                exponent--;
+                            }    
+                        }
+                        else
+                        {
+                            while (exponent != 0)
+                            {
+                                returnValue = returnValue * 10;
+                                exponent--;
+                            }    
+                        }
+                        success = true;
+                        break;
+                    }
+                }
+                break;
+            }
+            else if (content.IndexOf('.', ref iDot))
             {
                 digits = content.Substring(0, iDot);
                 if (!Long.TryParse(digits, ref longValue))
@@ -59,5 +95,21 @@ unit Float
         return success;
     }
     string ToString(float this) system;
+    
+#ifdef PORTABLE    
+    <byte> ToBytes(float this)
+    {
+        <byte> lst;
+        lst.Append(GetByte(this, 0));
+        lst.Append(GetByte(this, 1));
+        lst.Append(GetByte(this, 2));
+        lst.Append(GetByte(this, 3));
+        return lst;
+    }
+#else 
     <byte> ToBytes(float this) system;
+#endif
+    
+    byte GetByte(float this, byte index) system;
+    float FromBytes(byte b0, byte b1, byte b2, byte b3) system;
 }

@@ -18,11 +18,12 @@ unit GPIO
     
 #else
 
-#ifdef RP2040
+  #ifdef RP2040
     const byte builtInLED = 32; // GP25 is pin 2 on Pi Pico W
-#else
+  #else
     A specific MCU board must be defined to use the built-in LED: RP2040, WEMOSD1MINI, etc.
-#endif
+  #endif
+    
 #endif
 
     bool LED 

@@ -6,5 +6,7 @@ unit Serial
   bool IsValid() system;
   bool IsAvailable { get system; }
   char ReadChar() system;
-  WriteChar(char ch) system;    
+  WriteChar(char ch) system;   
+  
+  <string> Ports { get system ; }
 }

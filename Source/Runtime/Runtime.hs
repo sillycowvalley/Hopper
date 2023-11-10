@@ -26,6 +26,7 @@ program Runtime
     uses "/Source/Runtime/Platform/Variant"
     
     uses "/Source/Runtime/Platform/External"
+    uses "/Source/Runtime/Platform/Instructions"
     
     uses "/Source/Runtime/HopperVM"
     
@@ -38,7 +39,8 @@ program Runtime
         Stack8Bit      = 0x08,
         ProfileBuild   = 0x10,
         BreakpointsSet = 0x20,
-        MPUPlatform    = 0x40,
+        SingleStep     = 0x40,
+        MCUPlatform    = 0x80,
     }
     
     byte FromHex(char ch)
@@ -77,12 +79,12 @@ program Runtime
     }
     
     bool loaded = false;
-    const uint codeStart = 0x0000; // memory magically exists from 0x0000 to 0xFFFF
+    const uint codeMemoryStart = 0x0000; // code memory magically exists from 0x0000 to 0xFFFF
     
     bool LoadIHex(ref uint loadedAddress, ref uint codeLength)
     {
         bool success = true;
-        loadedAddress = codeStart;
+        loadedAddress = codeMemoryStart;
         
         codeLength = 0;
         loop
@@ -111,7 +113,7 @@ program Runtime
                     {
                         byte dataByte;
                         if (!TryReadByte(ref dataByte)) { success = false; break; }
-                        Memory.WriteByte(codeStart + recordAddress, dataByte);
+                        WriteCodeByte(codeMemoryStart + recordAddress, dataByte);
                         codeLength++;
                         recordAddress++;
                     }
@@ -312,7 +314,7 @@ program Runtime
     bool SerialLoadIHex(ref uint loadedAddress, ref uint codeLength)
     {
         bool success = true;
-        loadedAddress = codeStart;
+        loadedAddress = codeMemoryStart;
         
         codeLength = 0;
         loop
@@ -340,7 +342,7 @@ program Runtime
                     {
                         byte dataByte;
                         if (!TryReadSerialByte(ref dataByte)) { success = false; break; }
-                        Memory.WriteByte(codeStart + recordAddress, dataByte);
+                        WriteCodeByte(codeMemoryStart + recordAddress, dataByte);
                         codeLength++;
                         recordAddress++;
                     }
@@ -466,7 +468,7 @@ program Runtime
                         }
                         case 0xBB: // flags
                         {
-                            data = byte(HopperFlags.MPUPlatform); // 0x08 would imply 8 bit SP
+                            data = byte(HopperFlags.MCUPlatform); // 0x08 would imply 8 bit SP
                             if (HopperVM.BreakpointExists)
                             {
                                 data = data | byte(HopperFlags.BreakpointsSet);
@@ -815,7 +817,7 @@ program Runtime
                                     WaitForEnter();
                                     
                                     uint pc = HopperVM.PC;
-                                    OpCode opCode = OpCode(ReadByte(pc));
+                                    OpCode opCode = OpCode(ReadCodeByte(pc));
                                     
                                     if (opCode == OpCode.CALLW)
                                     {

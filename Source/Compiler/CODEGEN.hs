@@ -8,6 +8,8 @@ program CODEGEN
     uses "/Source/Compiler/JSON/JSON"
     uses "/Source/Compiler/JSON/Code"
     
+    uses "/Source/Compiler/CodeGen/Instructions"
+    
     uses "/Source/Compiler/Tokens/Token"
     uses "/Source/Compiler/Tokens/Scanner"
     uses "/Source/Compiler/Tokens/Parser"
@@ -191,9 +193,8 @@ program CODEGEN
                     break;
                 }
                                 
-                
-                // binary format version number
-                hexeFile.Append(byte(0));
+                byte versionLSB = 0;
+                hexeFile.Append(versionLSB);
                 hexeFile.Append(byte(0));
                 
                 // figure out header table

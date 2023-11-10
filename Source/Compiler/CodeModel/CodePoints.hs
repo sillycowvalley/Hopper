@@ -1164,7 +1164,7 @@ unit CodePoints
         return modified;
     }
     
-    bool OptimizeUnconditionalJumps(bool experimental)
+    bool OptimizeUnconditionalJumps()
     {
         uint iCodesLength = iCodes.Length;
         if (iCodesLength < 2)
@@ -1585,6 +1585,91 @@ unit CodePoints
                         }
                     }
                 }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    bool OptimizePUSHRETRET()
+    {
+        if (iCodes.Length < 3)
+        {
+            return false;
+        }
+        bool modified = false;
+        uint iIndex = 2;
+        loop
+        {
+            if (iIndex >= iCodes.Length)
+            {
+                break;
+            }
+            Instruction opCode0  = iCodes   [iIndex];
+            uint        operand0 = iOperands[iIndex];
+            if ((opCode0 == Instruction.RETRETB) && (operand0 == 2)) // RETRETB 0x02
+            {
+                Instruction opCode1  = iCodes   [iIndex-1];
+                uint        operand1 = iOperands[iIndex-1];
+                if (opCode1 == Instruction.PUSHLOCALB00)
+                {
+                    // single local
+                    iCodes.SetItem   (iIndex-1, Instruction.RET0);
+                    iLengths.SetItem (iIndex-1, 1);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                }      
+                else if ((opCode1 == Instruction.PUSHLOCALB) && (operand1 == 0xFE)) // PUSHLOCALB 0xFE
+                {
+                    // single local, simple value argument
+                    iCodes.SetItem   (iIndex-1, Instruction.RET0);
+                    iLengths.SetItem (iIndex-1, 1);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    bool OptimizePUSH01LEEQ()
+    {
+        if (iCodes.Length < 3)
+        {
+            return false;
+        }
+        bool modified = false;
+        uint iIndex = 2;
+        loop
+        {
+            if (iIndex >= iCodes.Length)
+            {
+                break;
+            }
+            Instruction opCode1  = iCodes   [iIndex-1];
+            Instruction opCode0  = iCodes   [iIndex];
+            if (   ((opCode1 == Instruction.PUSHI0) || (opCode1 == Instruction.PUSHI1))
+                && ((opCode0 == Instruction.LE)     || (opCode0 == Instruction.EQ))
+               )
+            {
+                byte       operand = ((opCode1 == Instruction.PUSHI0) ? 0 : 1);
+                Instruction opCode = ((opCode0 == Instruction.LE) ? Instruction.PUSHIBLE : Instruction.PUSHIBEQ);
+                iCodes.SetItem   (iIndex-1, opCode);
+                iOperands.SetItem(iIndex-1, operand);
+                iLengths.SetItem (iIndex-1, 2);
+                RemoveInstruction(iIndex);
+                modified = true;
+            }
+            if (   ((opCode1 == Instruction.PUSHI0) || (opCode1 == Instruction.PUSHI1))
+                && ((opCode0 == Instruction.ADD)    || (opCode0 == Instruction.SUB))
+               )
+            {
+                byte       operand = ((opCode1 == Instruction.PUSHI0) ? 0 : 1);
+                Instruction opCode = ((opCode0 == Instruction.ADD) ? Instruction.ADDB : Instruction.SUBB);
+                iCodes.SetItem   (iIndex-1, opCode);
+                iOperands.SetItem(iIndex-1, operand);
+                iLengths.SetItem (iIndex-1, 2);
+                RemoveInstruction(iIndex);
+                modified = true;
             }
             iIndex++;
         } // loop

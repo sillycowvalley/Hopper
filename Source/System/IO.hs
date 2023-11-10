@@ -222,11 +222,7 @@ unit IO
     char TransformKey(Key key)
     {
         char ch = key.ToChar();
-        if (key == (Key.Control | Key.ModX))
-        {
-            ch = char(0x18);
-        }
-        else if (key == (Key.ControlC))
+        if (key == (Key.Control | Key.ModC))
         {
             ch = char(0x03); // for the debugger (on Windows)
         }
@@ -352,11 +348,11 @@ unit IO
         while (Serial.IsAvailable)
         {
             char ch = Serial.ReadChar();
-            if (ch == char(0x18)) // <ctrl><X>?
+            if (ch == char(0x03)) // <ctrl><C>?
             {
                 return true;
             }
-            // buffer all the non <ctrl><X> characters seen here
+            // buffer all the non <ctrl><C> characters seen here
             PushKey(ch);
         }
 #else
@@ -364,22 +360,22 @@ unit IO
         while (Serial.IsAvailable)
         {
             char ch = Serial.ReadChar();
-            if (ch == char(0x18)) // <ctrl><X>?
+            if (ch == char(0x03)) // <ctrl><C>?
             {
                 return true;
             }
-            // buffer all the non <ctrl><X> characters seen here
+            // buffer all the non <ctrl><C> characters seen here
             PushKey(ch);
         }
     #else        
         while (Keyboard.IsAvailable)
         {
             Key key = Keyboard.ReadKey();
-            if (key == (Key.Control | Key.ModX)) // <ctrl><X>?
+            if (key == (Key.Control | Key.ModC)) // <ctrl><C>?
             {
                 return true;
             } 
-            // buffer all the non <ctrl><X> characters seen here
+            // buffer all the non <ctrl><C> characters seen here
             char ch = IO.TransformKey(key);
             PushKey(ch);
         }
