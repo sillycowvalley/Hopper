@@ -2,7 +2,9 @@ unit EditControl
 {
     uses "/Source/System/System"
     uses "/Source/System/Screen"
+#ifndef SERIALCONSOLE    
     uses "/Source/System/Keyboard"
+#endif    
     
     delegate bool ValidEditCharacter(char c);
     uint foreColor = Color.MatrixGreen;
@@ -20,11 +22,11 @@ unit EditControl
         backColor = back;
     }
 
-#ifdef TINYHOPPER
-    bool OnKey(Key key, uint leftX, uint fieldWidth, ref string textContent, ref uint currentX)
+#ifdef SERIALCONSOLE
+    bool OnKey(char ch, uint leftX, uint fieldWidth, ref string textContent, ref uint currentX)
     {
         bool consumed = false;
-        if (key == Key.Backspace)
+        if (ch == char(0x08))
         {
             if (currentX > leftX)
             {
@@ -39,15 +41,13 @@ unit EditControl
             uint currentWidth = currentX - leftX;
             if (currentWidth+1 < fieldWidth)
             {
-                uint  k = uint(key);
-                if ((k > 31) && (k < 128))
+                if ((ch > char(31)) && (ch < char(128)))
                 {
-                    char c = char(key);   
-                    if (validate(c))
+                    if (validate(ch))
                     {
-                        Print(c);
+                        Print(ch);
                         currentX++;
-                        textContent = textContent +  c;
+                        textContent = textContent +  ch;
                         consumed = true;
                     }
                 }

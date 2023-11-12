@@ -215,17 +215,22 @@ program HopperMonitor
         }
         Print(contentBuffer);
     }
-    OutputMethodLine(uint address, uint methodIndex, uint bp, bool sourceLevel)
+    OutputMethodLine(uint address, uint methodIndex, uint bp, bool sourceLevel, bool symbolsLoaded)
     {
+        if (!sourceLevel)
+        {
+            Print("  0x" + address.ToHexString(4), LightestGray, Black);
+            if (!symbolsLoaded)
+            {
+                PrintLn();
+                return;
+            }
+        }
         <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
         string methodName = methodSymbols["name"];
         string methodSource = methodSymbols["source"];
         string methodLine   = methodSymbols["line"];
                             
-        if (!sourceLevel)
-        {
-            Print("  0x" + address.ToHexString(4), LightestGray, Black);
-        }
         Print("  ");
         string sLine = Code.GetSourceIndex(address, methodIndex);
         uint iColon;
@@ -260,7 +265,7 @@ program HopperMonitor
         }
     }
     
-    ShowCallStack(bool sourceLevel)
+    ShowCallStack(bool sourceLevel, bool symbolsLoaded)
     {
         ClearPageData();
         Pages.LoadZeroPage(false); // for CSP and PC
@@ -299,7 +304,7 @@ program HopperMonitor
                     }
                     address = address - (GetZeroPage("CODESTART") << 8);
                     methodIndex = LocationToIndex(address);
-                    OutputMethodLine(address - 3, methodIndex, bp, sourceLevel);
+                    OutputMethodLine(address - 3, methodIndex, bp, sourceLevel, symbolsLoaded);
                     icsp = icsp + 4;
                 }
                 
@@ -314,24 +319,26 @@ program HopperMonitor
                 {
                     bp  = GetZeroPage("BP");
                 }
-                OutputMethodLine(pc, methodIndex, bp, sourceLevel);
-                
-                <uint, <string> > usedGlobals = Source.GetGlobals(methodIndex, 0);
-                foreach (var kv in usedGlobals)
+                OutputMethodLine(pc, methodIndex, bp, sourceLevel, symbolsLoaded);
+                if (symbolsLoaded)
                 {
-                    uint goffset = kv.key;
-                    <string> globalList = kv.value;
-                    uint gaddress = goffset + 0x0600;
-                    uint toffset = TypeAddressFromValueAddress(gaddress);
-                    uint gvalue = GetPageWord(gaddress);
-                    
-                    string gtype = globalList[0];
-                    // TODO : validate against pageData[toffset];
-                    
-                    string gcontent = char(2) + Source.TypeToString(gvalue, gtype, false, 255) + char(3);
-                    
-                    PrintLn();
-                    PrintColors("    " + globalList[1] + "=" + gcontent);
+                    <uint, <string> > usedGlobals = Source.GetGlobals(methodIndex, 0);
+                    foreach (var kv in usedGlobals)
+                    {
+                        uint goffset = kv.key;
+                        <string> globalList = kv.value;
+                        uint gaddress = goffset + 0x0600;
+                        uint toffset = TypeAddressFromValueAddress(gaddress);
+                        uint gvalue = GetPageWord(gaddress);
+                        
+                        string gtype = globalList[0];
+                        // TODO : validate against pageData[toffset];
+                        
+                        string gcontent = char(2) + Source.TypeToString(gvalue, gtype, false, 255) + char(3);
+                        
+                        PrintLn();
+                        PrintColors("    " + globalList[1] + "=" + gcontent);
+                    }
                 }
             }
         }
@@ -578,9 +585,13 @@ program HopperMonitor
         Screen.Clear();
         Serial.Connect(); // use the serial port with the highest number
         
+        // send a <ctrl><C> in case there is a program running
+        Serial.WriteChar(char(0x03));
+        
         Welcome();
         
         bool sourceLevel = false; // Hopper source code level debugging
+        bool symbolsLoaded = false; // running auto.hexe or was L used?
         
         char currentCommand = ' ';
         string commandLine = "";
@@ -666,7 +677,7 @@ program HopperMonitor
                 }
                 else if (currentCommand == 'C') // show call stack
                 {
-                    ShowCallStack(sourceLevel);
+                    ShowCallStack(sourceLevel, symbolsLoaded);
                     refresh = true;
                 }
                 else if (currentCommand == 'L') // ihex load
@@ -676,6 +687,7 @@ program HopperMonitor
                     {
                         UploadHex(ihexPath);
                         refresh = true;
+                        symbolsLoaded = true;
                     }
                 } // case 'L'
                 

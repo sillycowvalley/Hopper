@@ -48,6 +48,10 @@ unit HRList
         uint pCurrentItem  = ReadWord(original+lsFirst);
         loop
         {
+            if (pCurrentItem == 0)
+            {
+                break;
+            }
             uint itemData = ReadWord(pCurrentItem+liData);
             Type itype = etype;
             if (IsReferenceType(etype))
@@ -56,10 +60,6 @@ unit HRList
             }
             Append(clone, itemData, itype); // Append clones the item
             pCurrentItem = ReadWord(pCurrentItem+liNext);
-            if (pCurrentItem == 0)
-            {
-                break;
-            }
         }
         return clone;
     }

@@ -932,113 +932,6 @@ program TestSuite
         }
    	}
 
-#ifndef TINYHOPPER    
-    TestFiles()
-    {
-        WriteLn("File text IO");
-        
-        string testPath = "/temp/testfile.txt";
-        if (File.Exists(testPath))
-        {
-            File.Delete(testPath);
-        }
-        
-        file testFile = File.Create(testPath);
-        if (!testFile.IsValid())
-        {
-            PrintFailed("File.Create(..) failed");
-        }
-        File.Append(testFile, "Test Content");
-        if (!testFile.IsValid())
-        {
-            PrintFailed("File.Append(..) failed");
-        }
-        File.Flush(testFile);
-        if (!testFile.IsValid())
-        {
-            PrintFailed("File.Flush(..) failed");
-        }
-        
-        file testFile2 = File.Open(testPath);
-        if (!testFile2.IsValid())
-        {
-            PrintFailed("File.Open(..) failed");
-        }
-        string ln = testFile2.ReadLine();
-        if (!testFile2.IsValid())
-        {
-            PrintFailed("File.ReadLine(..) failed");
-        }
-        if (ln != "Test Content")
-        {
-            WriteLn("'" + ln + "'");
-            PrintFailed("File text IO failed");
-        }
-        
-        long pos = 0;
-        ln = "";
-        loop
-        {
-            byte b = File.Read(testFile2, pos);
-            if (!testFile2.IsValid())
-            {
-                break;
-            }
-            ln = ln + char(b);
-            pos = pos + 1;
-        }
-        if (ln != "Test Content")
-        {
-            PrintFailed("File char IO failed");
-        }
-        
-        WriteLn("File byte IO");
-        
-        if (File.Exists(testPath))
-        {
-            File.Delete(testPath);
-        }
-        
-        testFile = File.Create(testPath);
-        if (!testFile.IsValid())
-        {
-            PrintFailed("File.Create(..) failed");
-        }
-        byte content = 42;
-        File.Append(testFile, content);
-        if (!testFile.IsValid())
-        {
-            PrintFailed("File.Append(..) failed");
-        }
-        File.Flush(testFile);
-        if (!testFile.IsValid())
-        {
-            PrintFailed("File.Flush(..) failed");
-        }
-        
-        testFile2 = File.Open(testPath);
-        if (!testFile2.IsValid())
-        {
-            PrintFailed("File.Open(..) failed");
-        }
-        content = testFile2.Read();
-        if (!testFile2.IsValid())
-        {
-            PrintFailed("File.Read(..) failed");
-        }
-        if (content != 42)
-        {
-            PrintFailed("File byte IO failed");
-        }
-        
-        if (File.Exists(testPath))
-        {
-            File.Delete(testPath);
-        }
-    }
-#endif
-
-
     bool TrueCounter(ref int count)
     {
         count = count + 1;
@@ -1786,18 +1679,10 @@ program TestSuite
         TestDictionaryOfDictionaries();
                               
 #ifndef H6502   
-        
 
-        //TestFiles(); // TODO RESTORE
-        
-        
 #ifdef TEXTBUFFER
         TestTextBuffer();
 #endif
-        
-        
-        
-#else
         
 #endif
         WriteLn();

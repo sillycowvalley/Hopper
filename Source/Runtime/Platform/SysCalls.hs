@@ -46,6 +46,8 @@ unit SysCalls
         ScreenPrint        = 0x29,
         ScreenPrintLn      = 0x2A,
         ScreenClear        = 0x2B,
+        
+        
         IntToFloat         = 0x34,
         IntToLong          = 0x35,
         UIntToLong         = 0x36,
@@ -83,11 +85,38 @@ unit SysCalls
         
         TimeMillis       = 0x57,
         
+        SystemArgumentsGet = 0x59,
+        SystemCurrentDirectoryGet = 0x5A,
+        SystemCurrentDirectorySet = 0x5B,
+        
+        FileExists   = 0x5F,
+        FileNew      = 0x60,
+        FileOpen     = 0x61,
+        FileCreate   = 0x62,
+        FileReadLine = 0x63,
+        FileRead     = 0x64,
+        FileIsValid  = 0x65,
+        FileAppend   = 0x66,
+        FileFlush    = 0x67,
+        FileDelete   = 0x68,
+        FileGetSize  = 0x69,
+        
+        DirectoryExists            = 0x6A,
+        DirectoryNew               = 0x6B,
+        DirectoryIsValid           = 0x6C,
+        DirectoryOpen              = 0x6D,
+        DirectoryGetDirectoryCount = 0x6E,
+        DirectoryGetFileCount      = 0x6F,
+        DirectoryGetFile           = 0x70,
+        DirectoryGetDirectory      = 0x71,
+        
         TypesTypeOf      = 0x7E,
         
         StringBuild      = 0x83,
         
-        SerialWriteChar  = 0xA7,
+        SerialIsAvailableGet = 0xA5,
+        SerialReadChar       = 0xA6,
+        SerialWriteChar      = 0xA7,
         
         StringBuildFront = 0xB5,
         
@@ -96,6 +125,9 @@ unit SysCalls
         TimeDelay        = 0xC6,
         
         IntToBytes       = 0xCD,
+        
+        FileGetTime = 0xCE,
+        DirectoryGetTime = 0xCF,
         
         StringTrim       = 0xD0,
         StringTrimLeft   = 0xD1,
@@ -112,5 +144,8 @@ unit SysCalls
         IntFromBytes     = 0xE4,
         FloatFromBytes   = 0xE5,
         UIntToFloat      = 0xE6,
+        
+        DirectoryCreate  = 0xE9,
+        DirectoryDelete  = 0xEA,
     }
 }

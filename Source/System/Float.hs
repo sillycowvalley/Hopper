@@ -11,8 +11,15 @@ unit Float
         {
             if (content.Contains('E') || content.Contains('e'))
             {
-                String.ToUpper(ref content);
-                <string> parts = content.Split('E');
+                <string> parts;
+                if (content.Contains('E'))
+                {
+                    parts = content.Split('E');
+                }
+                else if (content.Contains('e'))
+                {
+                    parts = content.Split('e');
+                }
                 if (parts.Length == 2)
                 {
                     int exponent;
@@ -21,6 +28,7 @@ unit Float
                         // 4E+07
                         if (exponent == 0)
                         {
+                            // 3.141E+00
                         }
                         else if (exponent < 0)
                         {
@@ -42,10 +50,9 @@ unit Float
                         success = true;
                         break;
                     }
-                }
-                break;
+                }    
             }
-            else if (content.IndexOf('.', ref iDot))
+            if (content.IndexOf('.', ref iDot))
             {
                 digits = content.Substring(0, iDot);
                 if (!Long.TryParse(digits, ref longValue))

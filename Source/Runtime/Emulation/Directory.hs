@@ -5,9 +5,9 @@ unit Directory
     bool IsValid(directory this) system;
     directory Open(string fullpath) system;
     Create(string path) system;
+    long GetTime(string path) system;
     uint GetDirectoryCount(directory this) system;
     uint GetFileCount(directory this) system;
     string GetDirectory(directory this, uint index) system;
     string GetFile(directory this, uint index) system;
-    long GetTime(string path) system;
 }

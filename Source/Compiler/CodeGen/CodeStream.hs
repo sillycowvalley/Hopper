@@ -31,6 +31,7 @@ unit CodeStream
         portableDefined = DefineExists("PORTABLE");
         h6053Defined = DefineExists("H6502");
     }
+    bool InUse { get { return currentStream.Length > 0; } } 
     
     Instruction GetLastInstruction()
     { 

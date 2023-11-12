@@ -289,6 +289,9 @@ unit SysCalls
         addEntry("Serial", "Ports_Get");
         
         addEntry("System", "HexeVersion_Get");
+        
+        addEntry("Directory", "Create");
+        addEntry("Directory", "Delete");
     }
     
     bool TryParseSysCall(string name, ref byte index)

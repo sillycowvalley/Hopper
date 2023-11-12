@@ -1,7 +1,145 @@
 unit External
 {
-    uses "/Source/Runtime/Emulation/Long.hs"
+    uses "/Source/Runtime/Emulation/Directory.hs"
+    uses "/Source/Runtime/Emulation/File.hs"
     uses "/Source/Runtime/Emulation/Float.hs"
+    uses "/Source/Runtime/Emulation/Long.hs"
+    
+    bool LoadAuto { get { return true; } }
+    uint hopperStringFromNativeString(string str)
+    {
+        uint hrstring = HRString.New();    
+        foreach (var ch in str)
+        {
+            HRString.Build(ref hrstring, ch);
+        }
+        return hrstring;
+    }
+    string nativeStringFromHopperString(uint hrstring)
+    {
+        string str;
+        uint length = HRString.GetLength(hrstring);
+        for (uint i = 0; i < length; i++)
+        {
+            str = str + HRString.GetChar(hrstring, i);
+        }
+        return str;
+    }
+    
+    uint DirectoryGetFileCount(uint hrpath) 
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        directory dir = Directory.Open(path);
+        if (dir.IsValid())
+        {
+            return dir.GetFileCount();
+        }
+        return 0;
+    }
+    uint DirectoryGetDirectoryCount(uint hrpath) 
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        directory dir = Directory.Open(path);
+        if (dir.IsValid())
+        {
+            return dir.GetDirectoryCount();
+        }
+        return 0;
+    }
+    uint DirectoryGetFile(uint hrpath, uint index) 
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        directory dir = Directory.Open(path);
+        if (dir.IsValid())
+        {
+            return hopperStringFromNativeString(dir.GetFile(index));
+        }
+        return HRString.New();
+    }
+    uint DirectoryGetDirectory(uint hrpath, uint index) 
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        directory dir = Directory.Open(path);
+        if (dir.IsValid())
+        {
+            return hopperStringFromNativeString(dir.GetDirectory(index));
+        }
+        return HRString.New();
+    }
+    
+    bool DirectoryExists(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        return Directory.Exists(path);
+    }
+    DirectoryDelete(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        Directory.Delete(path);
+    }
+    DirectoryCreate(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        Directory.Create(path);
+    }
+    uint DirectoryGetTime(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        return hopperLongFromNativeLong(Directory.GetTime(path));
+    }
+    bool FileExists(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        return File.Exists(path);
+    }
+    
+    FileDelete(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        File.Delete(path);
+    }
+    uint FileGetSize(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        long nativeSize = File.GetSize(path);
+        uint size = hopperLongFromNativeLong(nativeSize);
+        return size;
+    }
+    uint FileGetTime(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        long nativeTime = File.GetTime(path);
+        uint time = hopperLongFromNativeLong(nativeTime);
+        return time;
+    }
+    FileWriteAllBytes(uint hrpath, uint buffer)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        file f = File.Create(path);
+        uint length = HRList.GetLength(buffer);
+        for (uint i=0; i < length; i++)
+        {
+            Type itype;
+            byte b = byte(HRList.GetItem(buffer, i, ref itype));
+            f.Append(b);
+        }
+        f.Flush();
+    }
+    FileReadAllBytes(uint hrpath, uint buffer)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        file f = File.Open(path);
+        loop
+        {
+            byte b = f.Read();
+            if (!f.IsValid())
+            {
+                break;
+            }
+            HRList.Append(buffer, b, Type.Byte);
+        }
+    }
+    
     
     uint GetSegmentSizes()
     {

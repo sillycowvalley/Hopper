@@ -16,6 +16,14 @@ unit GC
             {
                 return HRLong.Clone(original);
             }
+            case Type.Directory:
+            {
+                return HRDirectory.Clone(original);
+            }
+            case Type.File:
+            {
+                return HRFile.Clone(original);
+            }
             case Type.Float:
             {
                 return HRFloat.Clone(original);
@@ -89,6 +97,16 @@ unit GC
                 case Type.String:
                 {
                     Memory.Free(address); // easy : nothing to walk
+                }
+                case Type.Directory:
+                {
+                    HRDirectory.Clear(address);
+                    Memory.Free(address);
+                }
+                case Type.File:
+                {
+                    HRFile.Clear(address);
+                    Memory.Free(address);
                 }
                 case Type.List:
                 {

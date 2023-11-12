@@ -10,6 +10,9 @@ unit HopperVM
     uses "/Source/Runtime/Platform/GC"
     uses "/Source/Runtime/Platform/Array"
     uses "/Source/Runtime/Platform/Dictionary"
+    uses "/Source/Runtime/Platform/Directory"
+    uses "/Source/Runtime/Platform/File"
+    uses "/Source/Runtime/Platform/Float"
     uses "/Source/Runtime/Platform/Int"
     uses "/Source/Runtime/Platform/List"
     uses "/Source/Runtime/Platform/Long"
@@ -46,6 +49,8 @@ unit HopperVM
     
     uint breakpoints;
     bool breakpointExists;
+    
+    uint currentDirectory;
     
     uint pc;
     uint sp;
@@ -113,7 +118,7 @@ unit HopperVM
         }
     }
     
-    Initialize(uint loadedAddress, uint codeLength)
+    Initialize(uint loadedAddress)
     {
         binaryAddress      = loadedAddress;
         constAddress       = ReadCodeWord(binaryAddress + 0x0002);
@@ -160,17 +165,78 @@ unit HopperVM
         breakpoints   = Memory.Allocate(32);
         ClearBreakpoints(true);
         HRArray.Initialize();
+        currentDirectory = HRString.New();
     }
     Release()
     {
         HRArray.Release();
         Memory.Free(breakpoints);
         breakpoints = 0;
+        if (currentDirectory != 0)
+        {
+            GC.Release(currentDirectory);
+            currentDirectory = 0;
+        }
     }
-    
+
+    uint GetAppName()
+    {
+        uint path = HRString.New();
+        HRString.Build(ref path, char('/'));
+        HRString.Build(ref path, char('B'));
+        HRString.Build(ref path, char('i'));
+        HRString.Build(ref path, char('n'));
+        HRString.Build(ref path, char('/'));
+        HRString.Build(ref path, char('A'));
+        HRString.Build(ref path, char('u'));
+        HRString.Build(ref path, char('t'));
+        HRString.Build(ref path, char('o'));
+        HRString.Build(ref path, char('.'));
+        HRString.Build(ref path, char('h'));
+        HRString.Build(ref path, char('e'));
+        HRString.Build(ref path, char('x'));
+        HRString.Build(ref path, char('e'));
+        return path;
+    }
+
+    DiskSetup()
+    {
+        uint path = HRString.New();
+        HRString.Build(ref path, char('/'));
+        HRString.Build(ref path, char('B'));
+        HRString.Build(ref path, char('i'));
+        HRString.Build(ref path, char('n'));
+        if (!HRDirectory.Exists(path))
+        {
+            HRDirectory.Create(path);
+        }
+        HRString.Build(ref path);
+        HRString.Build(ref path, char('/'));
+        HRString.Build(ref path, char('T'));
+        HRString.Build(ref path, char('e'));
+        HRString.Build(ref path, char('m'));
+        HRString.Build(ref path, char('p'));
+        if (!HRDirectory.Exists(path))
+        {
+            HRDirectory.Create(path);
+        }
+        GC.Release(path);
+    }
+    FlashProgram(uint codeLocation, uint codeLength)
+    {
+        uint path = GetAppName();
+        uint appFile = HRFile.Create(path);
+        for (uint i = 0; i < codeLength; i++)
+        {
+            HRFile.Append(appFile, ReadCodeByte(codeLocation+i));
+        }
+        HRFile.Flush(appFile);
+        GC.Release(path);    
+    }
     Restart()
     {
         DataMemoryReset();
+        DiskSetup();
         
         sp = 0;
         bp = 0;
@@ -322,8 +388,415 @@ unit HopperVM
 #endif    
     bool ExecuteSysCall(byte iSysCall, uint iOverload)
     {
+        bool doNext = true;
         switch (SysCall(iSysCall))
         {
+            case SysCall.SystemCurrentDirectoryGet:
+            {
+                Push(GC.Clone(currentDirectory), Type.String);
+            }
+            case SysCall.SystemCurrentDirectorySet:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif     
+                GC.Release(currentDirectory);
+                currentDirectory = GC.Clone(str);
+                GC.Release(str);
+            }
+            case SysCall.FileNew:
+            {
+                uint result = HRFile.New();
+                Push(result, Type.File);        
+            }
+            case SysCall.FileExists:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                bool result = HRFile.Exists(str);
+                Push(result ? 1 : 0, Type.Bool);        
+                GC.Release(str);         
+            }
+            case SysCall.FileIsValid:
+            {
+                Type stype;
+                uint hrfile = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.File)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                bool result = HRFile.IsValid(hrfile);
+                Push(result ? 1 : 0, Type.Bool);        
+                GC.Release(hrfile);         
+            }
+            case SysCall.FileFlush:
+            {
+                Type stype;
+                uint hrfile = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.File)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                HRFile.Flush(hrfile);
+                GC.Release(hrfile);         
+            }
+            
+            case SysCall.FileReadLine:
+            {
+                Type stype;
+                uint hrfile = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.File)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint str = HRFile.ReadLine(hrfile);
+                GC.Release(hrfile);       
+                Push(str, Type.String);  
+            }
+            case SysCall.FileRead:
+            {
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        Type stype;
+                        uint hrfile = Pop(ref stype);
+#ifdef CHECKED
+                        if (stype != Type.File)
+                        {
+                            ErrorDump(31);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif       
+                        uint b = HRFile.Read(hrfile);
+                        GC.Release(hrfile);       
+                        Push(b, Type.Byte);  
+                    }
+                    case 1:
+                    {
+                        Type ltype;
+                        uint hrlong = Pop(ref ltype);
+                        Type stype;
+                        uint hrfile = Pop(ref stype);
+#ifdef CHECKED
+                        if (ltype != Type.Long)
+                        {
+                            ErrorDump(31);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+                        if (stype != Type.File)
+                        {
+                            ErrorDump(31);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif       
+                        uint b = HRFile.Read(hrfile, hrlong);
+                        GC.Release(hrfile);       
+                        GC.Release(hrlong);       
+                        Push(b, Type.Byte);  
+                    }
+                }
+            }
+            case SysCall.FileAppend:
+            {
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        uint top = Pop();
+                        Type stype;
+                        uint hrfile = Pop(ref stype);
+#ifdef CHECKED
+                        if (stype != Type.File)
+                        {
+                            ErrorDump(31);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif       
+                        HRFile.Append(hrfile, byte(top));
+                        GC.Release(hrfile);
+                    }
+                    case 1:
+                    {
+                        Type stype;
+                        uint str = Pop(ref stype);
+                        Type ftype;
+                        uint hrfile = Pop(ref stype);
+#ifdef CHECKED
+                        if (stype != Type.String)
+                        {
+                            ErrorDump(31);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+                        if (ftype != Type.File)
+                        {
+                            ErrorDump(31);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif       
+                        HRFile.Append(hrfile, str);
+                        GC.Release(str);
+                        GC.Release(hrfile);
+                    }
+                }
+            }
+            
+            case SysCall.FileCreate:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRFile.Create(str);
+                Push(result, Type.File);        
+                GC.Release(str);         
+            }
+            case SysCall.FileOpen:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRFile.Open(str);
+                Push(result, Type.File);        
+                GC.Release(str);         
+            }
+            case SysCall.FileDelete:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                HRFile.Delete(str);
+                GC.Release(str);         
+            }
+            case SysCall.FileGetTime:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRFile.GetTime(str);
+                Push(result, Type.Long);        
+                GC.Release(str);         
+            }
+            case SysCall.FileGetSize:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRFile.GetSize(str);
+                Push(result, Type.Long);        
+                GC.Release(str);         
+            }
+            
+            case SysCall.DirectoryNew:
+            {
+                uint result = HRDirectory.New();
+                Push(result, Type.Directory);        
+            }
+            case SysCall.DirectoryExists:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                bool result = HRDirectory.Exists(str);
+                Push(result ? 1 : 0, Type.Bool);        
+                GC.Release(str);         
+            }
+            case SysCall.DirectoryOpen:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRDirectory.Open(str);
+                Push(result, Type.Directory);        
+                GC.Release(str);         
+            }
+            case SysCall.DirectoryIsValid:
+            {
+                Type stype;
+                uint hrdir = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.Directory)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                bool result = HRDirectory.IsValid(hrdir);
+                Push(result ? 1 : 0, Type.Bool);        
+                GC.Release(hrdir);         
+            }
+            case SysCall.DirectoryGetFileCount:
+            {
+                Type stype;
+                uint hrdir = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.Directory)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRDirectory.GetFileCount(hrdir);
+                Push(result, Type.UInt);        
+                GC.Release(hrdir);         
+            }
+            case SysCall.DirectoryGetDirectoryCount:
+            {
+                Type stype;
+                uint hrdir = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.Directory)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRDirectory.GetDirectoryCount(hrdir);
+                Push(result, Type.UInt);        
+                GC.Release(hrdir);         
+            }
+            case SysCall.DirectoryGetFile:
+            {
+                Type itype;
+                uint index = Pop(ref itype);
+                Type stype;
+                uint hrdir = Pop(ref stype);
+#ifdef CHECKED
+                AssertUInt(itype, index);
+                if (stype != Type.Directory)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRDirectory.GetFile(hrdir, index);
+                Push(result, Type.String);        
+                GC.Release(hrdir);         
+            }
+            case SysCall.DirectoryGetDirectory:
+            {
+                Type itype;
+                uint index = Pop(ref itype);
+                Type stype;
+                uint hrdir = Pop(ref stype);
+#ifdef CHECKED
+                AssertUInt(itype, index);
+                if (stype != Type.Directory)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRDirectory.GetDirectory(hrdir, index);
+                Push(result, Type.String);        
+                GC.Release(hrdir);         
+            }
+            case SysCall.DirectoryDelete:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                HRDirectory.Delete(str);
+                GC.Release(str);         
+            }
+            case SysCall.DirectoryCreate:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                HRDirectory.Create(str);
+                GC.Release(str);         
+            }
+            case SysCall.DirectoryGetTime:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(31);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRDirectory.GetTime(str);
+                Push(result, Type.Long);        
+                GC.Release(str);         
+            }
             case SysCall.ScreenPrintLn:
             {
                 IO.WriteLn();
@@ -383,7 +856,16 @@ unit HopperVM
                     }
                 }
             }
-                  
+            case SysCall.SerialIsAvailableGet:
+            {
+                bool avail = Serial.IsAvailable;
+                Push(uint(avail), Type.Bool);
+            }
+            case SysCall.SerialReadChar:
+            {
+                char ch = Serial.ReadChar();
+                Push(uint(ch), Type.Char);
+            }
             case SysCall.SerialWriteChar:
             {
                 Type atype;
@@ -1744,6 +2226,7 @@ unit HopperVM
             case SysCall.TimeDelay:
             {
                 External.Delay(Pop());
+                doNext = false;
             }
             case SysCall.MCUPinMode:
             {
@@ -1775,7 +2258,7 @@ unit HopperVM
                 Error = 0x0A; // not implemented
             }
         }
-        return Error == 0;
+        return doNext && (Error == 0);
     }
     Put(uint address, uint value, Type htype)
     {
@@ -2290,9 +2773,13 @@ unit HopperVM
             {
                 WatchDog(); // yield() on devices like Wemos D1 Mini so WDT is not tripped
                 watchDog = 2500;
+                if (IsBreak()) // adding this check slowed down the FiboUInt benchmark from 1094ms to 1220ms (~10%)
+                {
+                    IO.WriteLn();IO.Write('B');IO.Write('R');IO.Write('E');IO.Write('A');IO.Write('K');IO.WriteLn();
+                    break;
+                }
             }
             if (doNext) { continue; }
-            
             if (Error != 0)
             {
 #ifndef SERIALCONSOLE                
@@ -2313,8 +2800,11 @@ unit HopperVM
                 Restart(); // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
                 break;     // clean exit of "main"
             }
-            
+            if (IsBreak())
+            {
+                IO.WriteLn();IO.Write('B');IO.Write('R');IO.Write('E');IO.Write('A');IO.Write('K');IO.WriteLn();
+                break;
+            }
         } // loop
     }
-
 }

@@ -132,7 +132,8 @@ unit Block
             < <string> > globals;
             blockContext["globals"] = globals;
         }
-        blockList.Append(blockContext);        
+        blockList.Append(blockContext);  
+        
     }    
     
         
@@ -146,91 +147,94 @@ unit Block
         iLast--;
         Export(iLast);
         
-        uint bytesToPop = GetBytesToPop();
-        if (bytesToPop > 0)
+        if (CodeStream.InUse)
         {
-            Instruction previousInstruction = CodeStream.GetLastInstruction();
-            if ((previousInstruction != Instruction.RETB) 
-             && (previousInstruction != Instruction.RETW)
-             && (previousInstruction != Instruction.RETRETB) 
-             && (previousInstruction != Instruction.RETRETW)
-             && (previousInstruction != Instruction.RET0)
-               )
+            uint bytesToPop = GetBytesToPop();
+            if (bytesToPop > 0)
             {
-                <string,string> previousToken = Parser.PreviousToken;
-                HopperToken tokenType = Token.GetType(previousToken);
-                if (tokenType != HopperToken.RBrace)
+                Instruction previousInstruction = CodeStream.GetLastInstruction();
+                if ((previousInstruction != Instruction.RETB) 
+                 && (previousInstruction != Instruction.RETW)
+                 && (previousInstruction != Instruction.RETRETB) 
+                 && (previousInstruction != Instruction.RETRETW)
+                 && (previousInstruction != Instruction.RET0)
+                   )
+                {
+                    <string,string> previousToken = Parser.PreviousToken;
+                    HopperToken tokenType = Token.GetType(previousToken);
+                    if (tokenType != HopperToken.RBrace)
+                    {
+                        if (!Parser.HadError)
+                        {
+                            Parser.ErrorAt(previousToken, "'}' expected in PopBlock(..)!!");
+                            Die(0x0B);
+                        }
+                    }               
+                    CodeStream.InsertDebugInfo(true); // PreviousToken is '{'
+                    
+                    if (bytesToPop > 255)
+                    {
+                        Die(0x0B); // need multiple calls to DECSP (see untested code below)
+                    }
+                    
+                    CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
+                    if (breakTarget != 0)
+                    {
+                        breakTarget = breakTarget + 2; // break past the above DECSP
+                    }
+                    
+                    //uint breakOffset = 0;
+                    //while (bytesToPop > 0)
+                    //{
+                    //    if (bytesToPop > 254)
+                    //    {
+                    //        CodeStream.AddInstruction(Instruction.DECSP, 254);
+                    //        bytesToPop = bytesToPop - 254;
+                    //    }
+                    //    else
+                    //    {
+                    //        CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
+                    //        bytesToPop = 0;
+                    //    }
+                    //    breakOffset = breakOffset + 2;
+                    //}
+                    //if (breakTarget != 0)
+                    //{
+                    //    breakTarget = breakTarget + breakOffset; // break past the above DECSP's
+                    //}
+                }
+            }
+            
+            <string,variant> blockContext = blockList[iLast];   
+            if (blockContext.Contains("breaks"))
+            {
+                if ((continueTarget == 0) && (breakTarget == 0))
                 {
                     if (!Parser.HadError)
                     {
-                        Parser.ErrorAt(previousToken, "'}' expected in PopBlock(..)!!");
                         Die(0x0B);
                     }
-                }               
-                CodeStream.InsertDebugInfo(true); // PreviousToken is '{'
-                
-                if (bytesToPop > 255)
-                {
-                    Die(0x0B); // need multiple calls to DECSP (see untested code below)
                 }
-                
-                CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
-                if (breakTarget != 0)
+                <uint> breakPatches = blockContext["breaks"];
+                foreach (var breakJump in breakPatches)
                 {
-                    breakTarget = breakTarget + 2; // break past the above DECSP
-                }
-                
-                //uint breakOffset = 0;
-                //while (bytesToPop > 0)
-                //{
-                //    if (bytesToPop > 254)
-                //    {
-                //        CodeStream.AddInstruction(Instruction.DECSP, 254);
-                //        bytesToPop = bytesToPop - 254;
-                //    }
-                //    else
-                //    {
-                //        CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
-                //        bytesToPop = 0;
-                //    }
-                //    breakOffset = breakOffset + 2;
-                //}
-                //if (breakTarget != 0)
-                //{
-                //    breakTarget = breakTarget + breakOffset; // break past the above DECSP's
-                //}
-            }
-        }
-        
-        <string,variant> blockContext = blockList[iLast];   
-        if (blockContext.Contains("breaks"))
-        {
-            if ((continueTarget == 0) && (breakTarget == 0))
-            {
-                if (!Parser.HadError)
-                {
-                    Die(0x0B);
+                    CodeStream.PatchJump(breakJump, breakTarget);
                 }
             }
-            <uint> breakPatches = blockContext["breaks"];
-            foreach (var breakJump in breakPatches)
+            if (blockContext.Contains("continues"))
             {
-                CodeStream.PatchJump(breakJump, breakTarget);
-            }
-        }
-        if (blockContext.Contains("continues"))
-        {
-            if ((continueTarget == 0) && (breakTarget == 0))
-            {
-                if (!Parser.HadError)
+                if ((continueTarget == 0) && (breakTarget == 0))
                 {
-                    Die(0x0B);
+                    if (!Parser.HadError)
+                    {
+                        Die(0x0B);
+                    }
                 }
-            }
-            <uint> continuePatches = blockContext["continues"];
-            foreach (var continueJump in continuePatches)
-            {
-                PatchJump(continueJump, continueTarget);
+                <uint> continuePatches = blockContext["continues"];
+                foreach (var continueJump in continuePatches)
+                {
+                    PatchJump(continueJump, continueTarget);
+                }
             }
         }
         blockList.Remove(iLast);

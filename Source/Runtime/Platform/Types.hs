@@ -19,6 +19,8 @@ unit Types
         Array      = 0x12,
         Dictionary = 0x13,
         Variant    = 0x14,
+        File       = 0x15,
+        Directory  = 0x16,
         List       = 0x19,
         ListItem   = 0x1A, /// testing only
     }

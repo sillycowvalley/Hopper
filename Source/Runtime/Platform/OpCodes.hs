@@ -49,6 +49,7 @@ unit OpCodes
         RETB        = 0x2A,
         RETRETB     = 0x2B,
         CALLB       = 0x2C,
+        TESTBPB     = 0x2D,
         
         JZB  = 0x2E,
         JNZB = 0x2F,

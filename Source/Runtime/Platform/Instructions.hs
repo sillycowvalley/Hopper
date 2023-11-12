@@ -97,6 +97,9 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.RETRETB), instructionDelegate);
         instructionDelegate = Instructions.CallB;
         WriteToJumpTable(jumpTable, byte(OpCode.CALLB), instructionDelegate);
+        instructionDelegate = Instructions.TestBPB;
+        WriteToJumpTable(jumpTable, byte(OpCode.TESTBPB), instructionDelegate);
+        
         
         instructionDelegate = Instructions.JZB;
         WriteToJumpTable(jumpTable, byte(OpCode.JZB), instructionDelegate);
@@ -1360,6 +1363,17 @@ unit Instructions
         if (IsReferenceType(htype))
         {
             GC.AddReference(value);
+        }
+        return true;
+    }
+    bool TestBPB()
+    {
+        byte  operand  = ReadByteOperand();
+        uint bpExpected = uint(SP - operand);
+        if (bpExpected != BP)
+        {
+            Error = 0x0B;
+            return false;
         }
         return true;
     }

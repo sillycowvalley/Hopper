@@ -115,6 +115,8 @@ program Debug
             Screen.Clear();
             Serial.Connect(); // use the serial port with the highest number
             
+            // send a <ctrl><C> in case there is a program running
+            Serial.WriteChar(char(0x03));
                 
             Commands.Initialize();
            

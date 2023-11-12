@@ -16,6 +16,8 @@ program Runtime
     uses "/Source/Runtime/Platform/GC"
     uses "/Source/Runtime/Platform/Array"
     uses "/Source/Runtime/Platform/Dictionary"
+    uses "/Source/Runtime/Platform/Directory"
+    uses "/Source/Runtime/Platform/File"
     uses "/Source/Runtime/Platform/Float"
     uses "/Source/Runtime/Platform/Int"
     uses "/Source/Runtime/Platform/List"
@@ -80,6 +82,34 @@ program Runtime
     
     bool loaded = false;
     const uint codeMemoryStart = 0x0000; // code memory magically exists from 0x0000 to 0xFFFF
+    
+    bool LoadAuto(ref uint loadedAddress)
+    {
+        bool success;
+        
+        loadedAddress = codeMemoryStart;
+        uint address = 0;
+        
+        uint path = HopperVM.GetAppName();
+        if (HRFile.Exists(path))
+        {
+            uint autoHexe = HRFile.Open(path);
+            if (HRFile.IsValid(autoHexe))
+            {
+                while (HRFile.IsValid(autoHexe))
+                {
+                    byte dataByte = HRFile.Read(autoHexe);
+                    WriteCodeByte(codeMemoryStart + address, dataByte);
+                    address++;
+                }
+                success = true;
+                GC.Release(autoHexe);
+            }
+        }
+        
+        GC.Release(path);
+        return success;
+    }
     
     bool LoadIHex(ref uint loadedAddress, ref uint codeLength)
     {
@@ -152,7 +182,7 @@ program Runtime
     Windows()
     {
         loaded = false;
-        HopperVM.Restart();
+        HopperVM.Restart(false);
         bool refresh = true;
         loop
         {
@@ -193,7 +223,7 @@ program Runtime
                         IO.Write('L');IO.Write('o');IO.Write('a');IO.Write('d');IO.Write('e');IO.Write('d');
                         IO.WriteLn();
                         HopperVM.Initialize(loadedAddress, codeLength);
-                        HopperVM.Restart();
+                        HopperVM.Restart(false);
                     }
                     else
                     {
@@ -228,7 +258,7 @@ program Runtime
                                 uint pc = HopperVM.PC;
                                 OpCode opCode = OpCode(ReadByte(pc));
                                 
-                                if (opCode == OpCode.CALLW)
+                                if ((opCode == OpCode.CALLW) || (opCode == OpCode.CALLIW))
                                 {
                                     
                                     // set breakpoint[0] to PC+3
@@ -271,7 +301,7 @@ program Runtime
                             }
                             case 'W':
                             {
-                                HopperVM.Restart();
+                                HopperVM.Restart(false);
                                 refresh = true;
                             }
                             default:
@@ -668,10 +698,25 @@ program Runtime
         loaded = false;
         HopperVM.Restart();
         bool refresh = true;
+        
+        // load 'auto.hexe' if it exists
+        uint loadedAddress;
+        if (External.LoadAuto && Runtime.LoadAuto(ref loadedAddress))
+        {
+            HopperVM.Initialize(loadedAddress);
+            HopperVM.Restart();
+            loaded = true;
+            HopperVM.ExecuteWarp();
+        }
+
         Serial.WriteChar(char(slash)); // ready
         loop
         {
-            char ch = Serial.ReadChar();
+            char ch;
+            if (Serial.IsAvailable)
+            {
+                ch = Serial.ReadChar();
+            }
             if (ch == char(escape)) // <esc> from Debugger
             {
                 Serial.WriteChar(char(slash)); // '\' response -> ready for command
@@ -767,14 +812,14 @@ program Runtime
                     {
                         WaitForEnter();
                         
-                        uint loadedAddress;
+                        loadedAddress = 0;
                         uint codeLength;
                     
                         loaded = SerialLoadIHex(ref loadedAddress, ref codeLength);
                         Serial.WriteChar(char(enter));
                         if (loaded)
                         {
-                            HopperVM.Initialize(loadedAddress, codeLength);
+                            HopperVM.Initialize(loadedAddress);
                             HopperVM.Restart();
                             
                             // codeLength
@@ -805,6 +850,11 @@ program Runtime
                         Serial.WriteChar(loaded ? '*' : '!');
                         
                         Serial.WriteChar(char(slash)); // confirm the data
+                        
+                        if (loaded)
+                        {
+                            FlashProgram(loadedAddress, codeLength);
+                        }
                     } // L
                     default:
                     {
@@ -819,7 +869,7 @@ program Runtime
                                     uint pc = HopperVM.PC;
                                     OpCode opCode = OpCode(ReadCodeByte(pc));
                                     
-                                    if (opCode == OpCode.CALLW)
+                                    if ((opCode == OpCode.CALLW) || (opCode == OpCode.CALLIW))
                                     {
                                         
                                         // set breakpoint[0] to PC+3
@@ -866,7 +916,7 @@ program Runtime
                         } // loaded
                     } // default
                 } // switch
-            }
+            } // <esc> from Debugger
         } // loop
         HopperVM.Release();
     }
