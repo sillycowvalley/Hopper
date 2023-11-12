@@ -290,13 +290,13 @@ namespace HopperNET
         FloatGT = 0x55,
         FloatGE = 0x56,
         TimeMillisGet = 0x57,
-        //TimeMicrosGet = 0x58, unused?
+        //TimeMicrosGet = 0x58, unused
         SystemArgumentsGet = 0x59,
         SystemCurrentDirectoryGet = 0x5A,
         SystemCurrentDirectorySet = 0x5B,
         SystemBeep = 0x5C,
         SystemExecute = 0x5D,
-        SystemRegisterObject = 0x5E,
+        //SystemRegisterObject = 0x5E, unused
         FileExists = 0x5F,
         FileNew = 0x60,
         FileOpen = 0x61,
@@ -433,6 +433,9 @@ namespace HopperNET
 
         SerialPortsGet    = 0xE7,
         SystemHexeVersionGet = 0xE8,
+
+        DirectoryCreate = 0xE9,
+        DirectoryDelete = 0xEA,
 
     };
 
@@ -5010,6 +5013,20 @@ namespace HopperNET
                         PushLong(HopperDirectory.GetTime(path.Value));
                     }
                     break;
+
+                case SysCall.DirectoryDelete:
+                    {
+                        HopperString path = (HopperString)PopVariant(HopperType.tString);
+                        HopperDirectory.Delete(path.Value);
+                    }
+                    break;
+                case SysCall.DirectoryCreate:
+                    {
+                        HopperString path = (HopperString)PopVariant(HopperType.tString);
+                        HopperDirectory.Create(path.Value);
+                    }
+                    break;
+
 
                 case SysCall.TimeMillisGet:
                     Int32 millis = HopperTime.Millis;

@@ -289,7 +289,7 @@ namespace HopperNET
         {
             long filetime = 0;
             path = HopperPath.ToWindowsPath(path);
-            if (File.Exists(path))
+            if (Directory.Exists(path))
             {
                 FileInfo fi = new FileInfo(path);
                 DateTime dt = fi.LastWriteTime;
@@ -341,6 +341,44 @@ namespace HopperNET
         public bool IsValid()
         {
             return isValid;
+        }
+        public static void Create(string path)
+        {
+            path = HopperPath.ToWindowsPath(path);
+            HopperDirectory directory = new HopperDirectory();
+            if (Directory.Exists(path))
+            {
+                directory.isValid = true;
+                directory.path = path;
+            }
+            else
+            {
+                try
+                {
+                    DirectoryInfo info = Directory.CreateDirectory(path);
+                    directory.path = path;
+                    directory.isValid = true;
+                }
+                catch (IOException)
+                {
+                    // something went wrong so !isValid
+                }
+            }
+        }
+        public static void Delete(string path)
+        {
+            path = HopperPath.ToWindowsPath(path);
+            if (Directory.Exists(path))
+            {
+                try
+                {
+                    Directory.Delete(path);
+                }
+                catch (IOException)
+                {
+                    // something went wrong
+                }
+            }
         }
 
         public ushort GetDirectoryCount()
