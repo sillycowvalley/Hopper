@@ -2,7 +2,7 @@ program GIBL
 {
     // User knobs and dials:
     #define TERSE        // errors are numbers only, no text messages
-    #define CHECKED      // runtime checks like stack overflow/underflow and division by zero (also <ctrl><X> functionality)
+    //#define CHECKED      // runtime checks like stack overflow/underflow and division by zero (also <ctrl><X> functionality)
     #define OPTIMIZER    // peephole optimizer for the byte code generator (slower compile times, smaller faster code)
     #define DYNAMICSTACK // <uint> vs [uint] for GOSUB call stack (use dynamic/list if you don't need extreme GOSUB call depth)
     

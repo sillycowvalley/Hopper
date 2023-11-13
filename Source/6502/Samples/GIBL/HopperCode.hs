@@ -347,7 +347,7 @@ unit HopperCode
             appendCode(Instruction.DUP, 0);     //  // DUP 0 implies duplicating [top]
             appendCode(Instruction.JNZB, 8);
             appendCode(Instruction.PUSHIB, 16); // Division by zero
-            appendCode(Instruction.CALLW, uint(Runtime.ErrorPtr));   
+            appendCode(Instruction.CALLIW, uint(Runtime.ErrorPtr));   
             appendCode(Instruction.EXIT);   
         }
     }
@@ -475,7 +475,7 @@ unit HopperCode
                     uint address = gCodeSize+3+gUserCode;
                     address = address + 9; // plus myself
                     appendCode(Instruction.PUSHIW, address);
-                    appendCode(Instruction.CALLW, uint(Runtime.PushReturnPtr));
+                    appendCode(Instruction.CALLIW, uint(Runtime.PushReturnPtr));
                     appendCode(Instruction.JNZB, 3); // return stack overflow?
                     appendCode(Instruction.EXIT);
                 }
@@ -490,17 +490,17 @@ unit HopperCode
             {
                 if (basicInstruction == Basic.Gosub)
                 {
-                    // Push return address: gCodeSize+6 (gCodeSize after CALLW <addr>, JW <line> below)
+                    // Push return address: gCodeSize+6 (gCodeSize after CALLIW <addr>, JW <line> below)
                     uint address = gCodeSize+6+gUserCode;
                     address = address + 9; // plus myself
                     appendCode(Instruction.PUSHIW, address);
-                    appendCode(Instruction.CALLW, uint(Runtime.PushReturnPtr));
+                    appendCode(Instruction.CALLIW, uint(Runtime.PushReturnPtr));
                     appendCode(Instruction.JNZB, 3); // return stack overflow?
                     appendCode(Instruction.EXIT);
                 }
                 
                 // runtime lineNumber fixup if line came from variable or expression
-                appendCode(Instruction.CALLW, uint(Runtime.HopperCodePatchPtr));
+                appendCode(Instruction.CALLIW, uint(Runtime.HopperCodePatchPtr));
                 // this offset will be patched at runtime by Fixup(..)
                 appendCode(jumpOpCode, 0); 
                 gRuntimeFixups = true;
@@ -521,22 +521,22 @@ unit HopperCode
     {
         if (Memory.ReadByte(zeroPageBrkChk) != 0)
         {
-            appendCode(Instruction.CALLW, uint(Runtime.IsBreakPtr));
+            appendCode(Instruction.CALLIW, uint(Runtime.IsBreakPtr));
             appendCode(Instruction.JZB, 3);
             appendCode(Instruction.EXIT);
         }
     }
     Rnd()
     {
-        appendCode(Instruction.CALLW, uint(Runtime.RndPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.RndPtr));
     }
     Seed()
     {
-        appendCode(Instruction.CALLW, uint(Runtime.SeedPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.SeedPtr));
     }
     Return()
     {
-        appendCode(Instruction.CALLW, uint(Runtime.PopReturnPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.PopReturnPtr));
         appendCode(Instruction.DUP,   0);
         appendCode(Instruction.JNZB,  5); // return stack empty?
         appendCode(Instruction.DECSP, 0);
@@ -545,7 +545,7 @@ unit HopperCode
     }
     Get()
     {
-        appendCode(Instruction.CALLW, uint(Runtime.GetPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.GetPtr));
 #ifdef CHECKED        
         appendCode(Instruction.DUP,  0); // DUP 0 implies duplicating [top], char(0) if <ctrl><X> was pressed
         appendCode(Instruction.JNZB, 3);
@@ -556,30 +556,30 @@ unit HopperCode
     {
         appendCode(Instruction.PUSHIB, iVariable);
         appendCode(Instruction.PUSHIB, byte(isString));
-        appendCode(Instruction.CALLW, uint(Runtime.InputPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.InputPtr));
         appendCode(Instruction.JNZB, 3); // Input(..) returns false if <ctrl><X>
         appendCode(Instruction.EXIT);
     }
     PrintRef()
     {
-        appendCode(Instruction.CALLW, uint(Runtime.PrintRefPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.PrintRefPtr));
     }
     PrintChar()
     {
         // LSB = ch, MSB = null assumed to be on stack
         appendCode(Instruction.SYSCALL0, iStringPushImmediate);
-        appendCode(Instruction.CALLW, uint(Runtime.PrintPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.PrintPtr));
     }
     PrintInt()
     {
-        appendCode(Instruction.CALLW, uint(Runtime.IntToStringPtr));
-        appendCode(Instruction.CALLW, uint(Runtime.PrintPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.IntToStringPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.PrintPtr));
     }
     PrintHex()
     {
         appendCode(Instruction.PUSHIB, 4);
-        appendCode(Instruction.CALLW, uint(Runtime.UIntToStringHexPtr));
-        appendCode(Instruction.CALLW, uint(Runtime.PrintPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.UIntToStringHexPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.PrintPtr));
     }
     PrintString(string text)
     {
@@ -623,7 +623,7 @@ unit HopperCode
                 appendCode(Instruction.PUSHIW, byte(chunk[index*2]) + (byte(chunk[index*2+1]) << 8));
             }
             appendCode(Instruction.SYSCALL0, iStringPushImmediate);
-            appendCode(Instruction.CALLW, uint(Runtime.PrintPtr));
+            appendCode(Instruction.CALLIW, uint(Runtime.PrintPtr));
             
             if (text.Length == 0)
             {
@@ -642,11 +642,11 @@ unit HopperCode
     }
     PeekW()
     {
-        appendCode(Instruction.CALLW, uint(Runtime.RAMReadWordPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.RAMReadWordPtr));
     }
     PokeW()
     {
-        appendCode(Instruction.CALLW, uint(Runtime.RAMWriteWordPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.RAMWriteWordPtr));
     }
     PeekB()
     {
@@ -739,7 +739,7 @@ unit HopperCode
         // push variable global from the stack as address
         appendCode(Instruction.PUSHGLOBALB, Runtime.Variables + variableIndex * 2);
         // WriteWord(uint address, uint w)
-        appendCode(Instruction.CALLW, uint(Runtime.RAMWriteWordPtr));
+        appendCode(Instruction.CALLIW, uint(Runtime.RAMWriteWordPtr));
     }
     SetVariable(byte variableIndex)
     {
@@ -891,65 +891,65 @@ unit HopperCode
             } // switch
             string methodName;
 #ifndef TERSE
-            if (Instruction.CALLW == opCode)
+            if (Instruction.CALLIW == opCode)
             {
-                if (methodKey == Runtime.IntToStringPtr)
+                if (methodKey == uint(Runtime.IntToStringPtr))
                 {
                     methodName = "Int.ToString(..)";
                 }
-                else if (methodKey == Runtime.UIntToStringHexPtr)
+                else if (methodKey == uint(Runtime.UIntToStringHexPtr))
                 {
                     methodName = "UInt.ToStringHex(..)";
                 }
-                else if (methodKey == Runtime.IsBreakPtr)
+                else if (methodKey == uint(Runtime.IsBreakPtr))
                 {
                     methodName = "Runtime.IsBreak(..)";
                 }
-                else if (methodKey == Runtime.PrintPtr)
+                else if (methodKey == uint(Runtime.PrintPtr))
                 {
                     methodName = "Runtime.Print(..)";
                 }
-                else if (methodKey == Runtime.GetPtr)
+                else if (methodKey == uint(Runtime.GetPtr))
                 {
                     methodName = "Runtime.Get(..)";
                 }
-                else if (methodKey == Runtime.RndPtr)
+                else if (methodKey == uint(Runtime.RndPtr))
                 {
                     methodName = "Runtime.Rnd(..)";
                 }
-                else if (methodKey == Runtime.SeedPtr)
+                else if (methodKey == uint(Runtime.SeedPtr))
                 {
                     methodName = "Runtime.Seed(..)";
                 }
-                else if (methodKey == Runtime.PrintRefPtr)
+                else if (methodKey == uint(Runtime.PrintRefPtr))
                 {
                     methodName = "Runtime.PrintRef(..)";
                 }
-                else if (methodKey == Runtime.InputPtr)
+                else if (methodKey == uint(Runtime.InputPtr))
                 {
                     methodName = "Runtime.Input(..)";
                 }
-                else if (methodKey == Runtime.ErrorPtr)
+                else if (methodKey == uint(Runtime.ErrorPtr))
                 {
                     methodName = "Runtime.Error(..)";
                 }
-                else if (methodKey == Runtime.PushReturnPtr)
+                else if (methodKey == uint(Runtime.PushReturnPtr))
                 {
                     methodName = "Runtime.PushReturn(..)";
                 }
-                else if (methodKey == Runtime.PopReturnPtr)
+                else if (methodKey == uint(Runtime.PopReturnPtr))
                 {
                     methodName = "Runtime.PopReturn(..)";
                 }
-                else if (methodKey == Runtime.HopperCodePatchPtr)
+                else if (methodKey == uint(Runtime.HopperCodePatchPtr))
                 {
                     methodName = "HopperCode.Patch(..)";
                 }
-                else if (methodKey == Runtime.RAMReadWordPtr)
+                else if (methodKey == uint(Runtime.RAMReadWordPtr))
                 {
                     methodName = "RAM.ReadWord(..)";
                 }
-                else if (methodKey == Runtime.RAMWriteWordPtr)
+                else if (methodKey == uint(Runtime.RAMWriteWordPtr))
                 {
                     methodName = "RAM.WriteWord(..)";
                 }

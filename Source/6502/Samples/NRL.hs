@@ -1,7 +1,8 @@
 program NRL
 {
 #define PORTABLE
-    uses "/Source/System/System"
+    //uses "/Source/System/System"
+    uses "/Source/6502/System"
     uses "/Source/System/IO"
     
     {
