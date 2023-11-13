@@ -135,6 +135,12 @@ opCodeJumpTable:
   .word opcodeJREL            ; 67
   .word opcodeJIXB            ; 68
   .word opcodeJIXW            ; 69
+  .word opcodeCALLIW          ; 6A
+  
+  .word opcodePUSHIBLE        ; 6B
+  .word opcodePUSHIBEQ        ; 6C
+  .word opcodeADDB            ; 6D
+  .word opcodeSUBB            ; 6E
 
   
 ; ######################## OpCode subroutines ######################## 
@@ -315,6 +321,66 @@ opcodeADDI:
   
   .ifdef STACK8
   
+opcodeADDB:
+  ; PC++
+  inc PCL
+  bne incPCopcodeADDB
+  inc PCH
+incPCopcodeADDB:
+  lda (PC) ; TOP
+  sta TOPL
+  stz TOPH
+
+  ldy SP8
+  dey
+  dey
+  
+  lda #tUInt
+  sta HopperTypeStack, Y
+  clc
+  lda HopperValueStack, Y ; NEXTL
+  adc TOPL
+  sta HopperValueStack, Y
+  iny
+  lda HopperValueStack, Y ; NEXTH
+  adc TOPH
+  sta HopperValueStack, Y
+  .ifdef CHECKED
+  lda #$AA
+  sta HopperTypeStack, Y ; error marker
+  .endif
+  jmp nextInstruction
+  
+opcodeSUBB:
+  ; PC++
+  inc PCL
+  bne incPCopcodeSUBB
+  inc PCH
+incPCopcodeSUBB:
+  lda (PC) ; TOP
+  sta TOPL
+  stz TOPH
+
+  ldy SP8
+  dey
+  dey
+  
+  lda #tUInt
+  sta HopperTypeStack, Y
+  sec
+  lda HopperValueStack, Y ; NEXTL
+  sbc TOPL
+  sta HopperValueStack, Y
+  iny
+  lda HopperValueStack, Y ; NEXTH
+  sbc TOPH
+  sta HopperValueStack, Y
+  .ifdef CHECKED
+  lda #$AA
+  sta HopperTypeStack, Y ; error marker
+  .endif
+  jmp nextInstruction
+
 opcodeADD:
 
   dec SP8
@@ -338,11 +404,67 @@ opcodeADD:
   lda #$AA
   sta HopperTypeStack, Y ; error marker
   .endif
-  
-  
+
   jmp nextInstruction
   
   .else
+
+
+opcodeADDB:
+  ; PC++
+  inc PCL
+  bne incPCopcodeADDB
+  inc PCH
+incPCopcodeADDB:
+  lda (PC) ; TOP
+  sta TOPL
+  stz TOPH
+
+  lda SPL
+  sta IDYL
+  lda SPH
+  sta IDYH
+  jsr decIDY
+  jsr decIDY
+  
+  ldy #1
+  clc
+  lda (IDY) ; NEXTL
+  adc TOPL
+  sta (IDY)
+  iny
+  lda (IDY), Y ; NEXTH
+  adc TOPH
+  sta (IDY), Y
+  jmp nextInstruction
+  
+opcodeSUBB:
+  ; PC++
+  inc PCL
+  bne incPCopcodeSUBB
+  inc PCH
+incPCopcodeSUBB:
+  lda (PC) ; TOP
+  sta TOPL
+  stz TOPH
+
+  lda SPL
+  sta IDYL
+  lda SPH
+  sta IDYH
+  jsr decIDY
+  jsr decIDY
+  
+  ldy #1
+  sec
+  lda (IDY) ; NEXTL
+  sbc TOPL
+  sta (IDY)
+  iny
+  lda (IDY), Y ; NEXTH
+  sbc TOPH
+  sta (IDY), Y
+  jmp nextInstruction
   
 opcodeADD:
   clc
@@ -1887,6 +2009,55 @@ badBP:
   .endif
   
 
+opcodeCALLIW:
+  ; PC++
+  inc PCL
+  bne incPCopcodeCALLIW0
+  inc PCH
+incPCopcodeCALLIW0:
+  lda (PC)  ; index into method table
+  sta ACCL
+  ; PC++
+  inc PCL
+  bne incPCopcodeCALLIW1
+  inc PCH
+incPCopcodeCALLIW1:
+  lda (PC)
+  sta ACCH
+  
+  ; PC++ - return address is next instruction
+  inc PCL
+  bne incPCopcodeCALLIW2
+  inc PCH
+incPCopcodeCALLIW2:
+  
+  ; push PC to CALL STACK
+  ldx CSP
+  lda PCL
+  sta HopperCallStack, X ; LSB
+  .ifdef CHECKED
+  jsr incCSP
+  ldx CSP
+  .else
+  inx
+  .endif
+  lda PCH
+  sta HopperCallStack, X  ; MSB
+  .ifdef CHECKED
+  jsr incCSP
+  ldx CSP
+  .else
+  inx
+  .endif
+  stx CSP
+  
+  ; absolute address is in ACC
+  lda ACCH
+  sta PCH
+  lda ACCL
+  sta PCL
+  jmp nextInstructionNoInc
+
   
 opcodeCALLW:
   ; PC++
@@ -1930,30 +2101,15 @@ incPCopcodeCALLW2:
   .endif
   stx CSP
   
-  lda ACCH
-  bit ACCH
-  bmi opcodeCALLWlookupMethod
-  
-opcodeCALLWlookupMethodFalseAlarm:
-  ; absolute address is in ACC
-  ;lda ACCH
-  sta PCH
-  lda ACCL
-  sta PCL
-  jmp nextInstructionNoInc
-  
-opcodeCALLWlookupMethod:
-  bvc opcodeCALLWlookupMethodFalseAlarm ; only lookup if both bits set
-
-  ; method table index is in bottom 14 bits of ACC
-  lda ACCH
-  and #$3F
-  sta ACCH
-  
   lda #<HopperMethodTable
   sta IDXL
   lda #>HopperMethodTable
   sta IDXH
+  
+  ; method table index is in bottom 14 bits of ACC (could be from delegate)
+  ;lda ACCH
+  ;and #$3F
+  ;sta ACCH
   
 methodHunt:
   ldy #1
@@ -1973,6 +2129,7 @@ methodHunt:
   sta IDYH
   jsr decIDY
   jsr decIDY
+  jsr decIDY
   
   iny
   lda (IDX), Y
@@ -1981,12 +2138,16 @@ methodHunt:
   lda (IDX), Y
   sta PCH
   
-  ldy #1
+  ldy #0
+  lda #$6A ; CALLIW
+  sta (IDY)
+  iny
   clc
   lda PCL
   adc #<HopperData
   sta PCL
-  sta (IDY)
+  sta (IDY), Y
+  iny
   lda PCH
   adc #>HopperData
   sta PCH

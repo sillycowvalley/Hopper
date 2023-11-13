@@ -84,6 +84,25 @@ opcodePUSHGP:
   jmp nextInstruction
   
   
+  
+opcodePUSHIBLE:
+
+   ; top
+  .ifdef CHECKED
+  jsr incPC ; PC++
+  .else
+  inc PCL
+  bne incPCopcodePUSHIBLEEnd
+  inc PCH
+incPCopcodePUSHIBLEEnd:
+  .endif
+
+  lda (PC)  ; LSB
+  sta TOPL
+  
+  lda (PC)  ; MSB
+  stz TOPH
+  bra sharedPUSHILE
 
 
 opcodePUSHIWLE:
@@ -112,6 +131,7 @@ incPCopcodePUSHIWLEEnd2:
   lda (PC)  ; MSB
   sta TOPH
   
+sharedPUSHILE:
   ; next
   .ifdef STACK8
   ldx SP8
@@ -182,6 +202,101 @@ phPUSHIWLE:
 
   lda #tBool
   jmp pushTOPExit
+
+
+
+
+
+opcodePUSHIBEQ:
+  
+  ; top
+  .ifdef CHECKED
+  jsr incPC ; PC++
+  .else
+  inc PCL
+  bne incPCopcodePUSHIBEQEnd
+  inc PCH
+incPCopcodePUSHIBEQEnd:
+  .endif
+
+  lda (PC)  ; LSB
+  sta TOPL
+  
+  stz TOPH  ; MSB
+  
+  ; next
+  .ifdef STACK8
+  ldx SP8
+  dex
+  lda HopperValueStack, X
+  sta NEXTH
+  .else
+  .ifdef CHECKED
+  jsr decSPnoA       ; MSB
+  .else
+  lda SPL
+  bne decSPopcodePUSHIBEQ
+  dec SPH
+decSPopcodePUSHIBEQ:
+  dec SPL
+  .endif
+  
+  lda (SP)
+  sta NEXTH
+  .endif
+  
+  .ifdef STACK8
+  dex
+  lda HopperValueStack, X
+  sta NEXTL
+  stx SP8
+  .else
+  .ifdef CHECKED
+  jsr decSPnoA       ; LSB
+  .else
+  lda SPL
+  bne decSPopcodePUSHIBEQ2
+  dec SPH
+decSPopcodePUSHIBEQ2:
+  dec SPL
+  .endif
+  
+  lda (SP)
+  sta NEXTL
+  .ifdef CHECKED
+  jsr decTSPnoA
+  .else
+  
+  lda TSPL
+  bne decTSPopcodePUSHIBEQ
+  dec TSPH
+decTSPopcodePUSHIBEQ:
+  dec TSPL
+  
+  .endif
+  .endif
+  
+  ; opcodeLE
+  ldx #0 ; NEXT != TOP
+  lda NEXTH
+  cmp TOPH
+  bne donePUSHIBEQ
+  lda NEXTL
+  cmp TOPL
+  bne donePUSHIBEQ
+  
+  ldx #1   ; NEXT == TOP
+donePUSHIBEQ:
+  stx TOPL
+  stz TOPH
+
+
+  lda #tBool
+  jmp pushTOPExit
+
+
+
+
 
 
 
@@ -292,6 +407,8 @@ opcodePUSHIWLEINegative:
 
 
 
+
+
 opcodePUSHIWLT:
   
   ; top
@@ -387,6 +504,11 @@ phPUSHIWLT:
 
   lda #tBool
   jmp pushTOPExit
+  
+  
+  
+  
+  
 
 
 opcodePUSHDW:

@@ -33,7 +33,7 @@ PERMISSIVE=1    ; additional level of CHECKED: allows uint for int or delegates
 ;MEMDEBUG2 = 1   ; for debugging gcRelease
 ;DICTDIAG = 1;
 ;VERIFYSTACK = 1 ; diagnostics for the 6502 SP
-;NODIAGNOSTICS=1 ; selective removal of diagnostic code (for reduced size) - use for smaller builds!
+NODIAGNOSTICS=1 ; selective removal of diagnostic code (for reduced size) - use for smaller builds!
 ;TESTINGHWM = 1  ; debugging maxing out the value stack
 STACK8 = 1      ; 8 bit value stack pointer
 
@@ -233,8 +233,8 @@ traceFlagOff:
 
   ; http://6502.org/tutorials/compare_instructions.html
   .ifdef CHECKED
-  cmp #$6A                     ; C will be set if A >= $6A (unknown OpCode)
-  bcs unknownOpCode            ; 0x6A..0xFF
+  cmp #$6F                     ; C will be set if A >= $6F (unknown OpCode)
+  bcs unknownOpCode            ; 0x6F..0xFF
   .endif
   
   .ifdef STACK8
@@ -247,7 +247,7 @@ traceFlagOff:
   
   
   cmp #$1A                 ; 2 -   C will be set if A >= $1A
-  bcs jumpOpCode           ; 2-4 - 0x1A..0x69: byteOperand, wordOperand & noOperand 
+  bcs jumpOpCode           ; 2-4 - 0x1A..0x6E: byteOperand, wordOperand & noOperand 
   cmp #$11                 ; 2 -   C will be clear if A < $11
   bcc pop2Push1Unsigned    ; 2-4 - 0x00..0x10
   ; bra pop2Push1Signed    ;       0x11..0x19
