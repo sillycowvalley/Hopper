@@ -7,6 +7,7 @@ unit Screen
     byte Columns { get system; }
     byte Rows    { get system; }
 
+    
 #ifndef H6502
     Suspend() system;
     
@@ -17,13 +18,13 @@ unit Screen
 
 
     Clear() system;
-
+    
     SetCursor(uint x, uint y) system;
     //SetForeColour(uint foreColour) system;
     //SetBackColour(uint backColour) system;
-    
-    DrawChar(uint x, uint y, char c, uint foreColour, uint backColour) system;
 
+    DrawChar(uint x, uint y, char c, uint foreColour, uint backColour) system;
+    
     Print(char c,     uint foreColour, uint backColour) system;
 #ifdef PORTABLE
     Print(string s,   uint foreColour, uint backColour)

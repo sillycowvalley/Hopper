@@ -9,6 +9,7 @@ program PreProcess
   uses "/Source/Compiler/Tokens/Scanner"
   uses "/Source/Compiler/Tokens/Parser"
   uses "/Source/Compiler/Tokens/SysCalls"
+  uses "/Source/Compiler/Tokens/LibCalls"
   uses "/Source/Compiler/Symbols"
    
   uses "/Source/Compiler/Constant"
@@ -200,7 +201,7 @@ program PreProcess
       loop
       {
           bool isSystem = false;
-          if (Parser.Check(HopperToken.Keyword, "system"))
+          if (Parser.Check(HopperToken.Keyword, "system") || Parser.Check(HopperToken.Keyword, "library"))
           {
               isSystem = true;
           }
@@ -216,7 +217,7 @@ program PreProcess
           }
           if (isSystem)
           {
-              // empty blockPos implies syscall
+              // empty blockPos implies syscall or libcall
           }
           else
           {
@@ -1046,6 +1047,7 @@ program PreProcess
       Symbols.New();
       Scanner.New();
       SysCalls.New();
+      LibCalls.New();
                         
       bool firstUnit = true;
       loop

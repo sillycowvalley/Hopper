@@ -5,6 +5,7 @@ unit Symbols
     uses "/Source/Compiler/JSON/JSON"
     uses "/Source/Compiler/Types"
     uses "/Source/Compiler/Tokens/SysCalls"
+    uses "/Source/Compiler/Tokens/LibCalls"
       
     // globals
     <string> gNames;
@@ -31,6 +32,10 @@ unit Symbols
     <uint, byte> fSysCall;
     <uint, byte> fSysCallOverload;
     <string, byte> fSysCallCount;
+    
+    <uint, byte> fLibCall;
+    <uint, byte> fLibCallOverload;
+    <string, byte> fLibCallCount;
     
     <uint,<byte> > fCodeStream;
     <uint, <string,string> > fDebugInfo;
@@ -96,7 +101,11 @@ unit Symbols
         fSysCall.Clear();
         fSysCallOverload.Clear();
         fSysCallCount.Clear();
-            
+        
+        fLibCall.Clear();
+        fLibCallOverload.Clear();
+        fLibCallCount.Clear();
+                
         iNextOverload = 1; 
         
         pdValues.Clear();
@@ -993,6 +1002,25 @@ unit Symbols
     }
     
     
+    bool IsLibCall(uint iOverload)
+    {
+        return fLibCall.Contains(iOverload);
+    }
+    byte GetLibCallIndex(uint iOverload)
+    {
+        return fLibCall[iOverload];
+    }
+    byte GetLibCallOverload(uint iOverload)
+    {
+        return fLibCallOverload[iOverload];
+    }
+    SetLibCall(uint iOverload, byte iLibCall, byte iLibCallOverload)
+    {
+        fLibCall[iOverload] = iLibCall;    
+        fLibCallOverload[iOverload] = iLibCallOverload;
+    }
+    
+    
     <string, string> GetOverloadStart(uint iOverload)
     {
         <string, string> startToken;
@@ -1189,20 +1217,33 @@ unit Symbols
             else
             {
                 byte iSysCall;
-                if (!SysCalls.TryParseSysCall(name, ref iSysCall))
+                if (SysCalls.TryParseSysCall(name, ref iSysCall))
                 {
-                    Parser.Error("undefined 'system' method '" + name + "'");
-                    break;    
+                    if (!fSysCallCount.Contains(name))
+                    {
+                        fSysCallCount[name] = 0;    
+                    }
+                    byte iSysCallOverload = fSysCallCount[name];
+                    fSysCallCount[name] = iSysCallOverload+1;
+                    fSysCall[iCurrentOverload] = iSysCall;
+                    fSysCallOverload[iCurrentOverload] = iSysCallOverload;
                 }
-                
-                if (!fSysCallCount.Contains(name))
+                else if (LibCalls.TryParseLibCall(name, ref iSysCall))
                 {
-                    fSysCallCount[name] = 0;    
+                    if (!fLibCallCount.Contains(name))
+                    {
+                        fLibCallCount[name] = 0;    
+                    }
+                    byte iLibCallOverload = fLibCallCount[name];
+                    fLibCallCount[name] = iLibCallOverload+1;
+                    fLibCall[iCurrentOverload] = iSysCall;
+                    fLibCallOverload[iCurrentOverload] = iLibCallOverload;
                 }
-                byte iSysCallOverload = fSysCallCount[name];
-                fSysCallCount[name] = iSysCallOverload+1;
-                fSysCall[iCurrentOverload] = iSysCall;
-                fSysCallOverload[iCurrentOverload] = iSysCallOverload;
+                else
+                {
+                    Parser.Error("undefined 'system' or 'library' method '" + name + "'");
+                    break; 
+                }
             }
             fOverloads[index] = overloads;
             
@@ -1428,6 +1469,10 @@ unit Symbols
                 <string,variant> mdict;
                 
                 if (IsSysCall(iUsedOverload))
+                {
+                    continue;
+                }
+                if (IsLibCall(iUsedOverload))
                 {
                     continue;
                 }
@@ -1669,6 +1714,11 @@ unit Symbols
                     {
                         odict["syscall"]         = fSysCall[overload];
                         odict["overload"] = fSysCallOverload[overload];
+                    }
+                    if (fLibCall.Contains(overload))
+                    {
+                        odict["libcall"]  = fLibCall[overload];
+                        odict["overload"] = fLibCallOverload[overload];
                     }
                     fentry[overload.ToString()] = odict;
                 }
@@ -1920,6 +1970,25 @@ unit Symbols
                                         }
                                         isSysCall = true;
                                     }
+                                    byte iLibCall;
+                                    byte iLibCallOverload;
+                                    bool isLibCall;
+                                    if (odict.Contains("libcall"))
+                                    {
+                                        string sc = odict["libcall"];
+                                        string ov = odict["overload"];
+                                        uint scui;
+                                        if (UInt.TryParse(sc, ref scui))
+                                        {
+                                            iLibCall = byte(scui);
+                                        }
+                                        uint ovui;
+                                        if (UInt.TryParse(ov, ref ovui))
+                                        {
+                                            iLibCallOverload = byte(ovui);
+                                        }
+                                        isLibCall = true;
+                                    }
                                     < <string> > arguments;
                                     if (odict.Contains("arguments"))
                                     {
@@ -1957,6 +2026,10 @@ unit Symbols
                                     {
                                         SetSysCall(iOverload, iSysCall, iSysCallOverload);
                                     }
+                                    if (isLibCall)
+                                    {
+                                        SetLibCall(iOverload, iLibCall, iLibCallOverload);
+                                    }
                                 } // kv3
                             } // kv2  
                         } // !onlyNamedTypes
@@ -1989,6 +2062,10 @@ unit Symbols
             if (IsSysCall(iOverload))
             {
                 overloadsCompiled[iOverload] = true; // syscall : pretend it is already compiled
+            }
+            else if (IsLibCall(iOverload))
+            {
+                overloadsCompiled[iOverload] = true; // libcall : pretend it is already compiled
             }
             else
             {

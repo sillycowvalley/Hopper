@@ -82,16 +82,9 @@ program HexDump
                 }
                 Print(b.ToHexString(2));
                 address++;
-                if (address > 0x200)
-                {
-                    break;
-                }
             }
             PrintLn();
-            
-            
             break;
         }
-        
     }
 }

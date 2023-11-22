@@ -110,5 +110,20 @@ unit Char
         return ((b >= 65) && (b <= 90))   // A..Z
             || ((b >= 97) && (b <= 122)); // a..z
     }
+    bool IsWhitespace(char this)
+    {
+        switch(byte(this))
+        {
+            case 0x09: // tab
+            case 0x0A: // line feed
+            case 0x0C: // form feed
+            case 0x0D: // return
+            case 0x20: // space
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
 }

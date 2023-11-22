@@ -11,6 +11,7 @@ program Translate
     uses "/Source/Compiler/Tokens/Scanner"
     uses "/Source/Compiler/Tokens/Parser"
     uses "/Source/Compiler/Tokens/SysCalls"
+    uses "/Source/Compiler/Tokens/LibCalls"
     uses "/Source/Compiler/Symbols"
     
     uses "/Source/Compiler/Types"
@@ -887,7 +888,6 @@ program Translate
             Directives.New();
             
             Types.SetCurrentMethod(iCurrentOverload);
-            
             string methodName = GetMethodNameFromOverload(iCurrentOverload);
             if (isMain)
             {
@@ -897,7 +897,10 @@ program Translate
             
             string headerContent;
             
-            bool isExternal = methodName.StartsWith("External.");
+            bool isExternal = methodName.StartsWith("External.") 
+                           || methodName.StartsWith("HRScreen.") 
+                           || methodName.StartsWith("HRWire.") 
+                           || methodName.StartsWith("HRGraphics.");
             
             < < string > > arguments = GetOverloadArguments(iCurrentOverload);
             bool firstarg = true;
@@ -923,7 +926,7 @@ program Translate
             headerContent = headerContent + ")";
             if (hadReference)
             {
-                headerContent = TranslateType(returnType) + " " + TranslateIdentifier(methodName) + "_R(" + headerContent;
+                headerContent = TranslateType(returnType) + " " + TranslateIdentifier(methodName) + "_R" + "(" + headerContent;
             }
             else
             {
@@ -933,7 +936,7 @@ program Translate
             if (!isExternal)
             {
                 Parser.Advance(); // load first token
-                isExternal = Parser.Check(HopperToken.Keyword, "system");
+                isExternal = Parser.Check(HopperToken.Keyword, "system") || Parser.Check(HopperToken.Keyword, "library");
             }
             if (isExternal)
             {
@@ -1231,6 +1234,7 @@ program Translate
             loop
             {
                 SysCalls.New();
+                LibCalls.New();
                 Symbols.New();
                 if (!Symbols.Import(jsonPath))
                 {
@@ -1239,6 +1243,7 @@ program Translate
                 
                 string extension = Path.GetExtension(jsonPath);
                 string codePath = jsonPath.Replace(extension, ".cpp");
+                string headerpath = jsonPath.Replace(extension, ".h");
                 
                 
                 uint mIndex;
@@ -1264,8 +1269,7 @@ program Translate
                     break;
                 }
                 Block.PopBlock();
-                
-                if (!SourceStream.Export(codePath))
+                if (!SourceStream.Export(headerpath, codePath))
                 {
                     break;
                 }

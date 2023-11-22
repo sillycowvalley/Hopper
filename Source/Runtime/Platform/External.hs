@@ -4,6 +4,33 @@ unit External
     uses "/Source/Runtime/Emulation/File.hs"
     uses "/Source/Runtime/Emulation/Float.hs"
     uses "/Source/Runtime/Emulation/Long.hs"
+    uses "/Source/Runtime/Emulation/HttpClient.hs"
+    uses "/Source/Runtime/Emulation/WiFi.hs"
+    
+    bool ReadAllCodeBytes(uint hrpath, uint loadAddress)
+    {
+        return false;
+    }
+    
+    
+    bool WiFiConnect(uint hrssid, uint hrpassword)
+    {
+        string ssid = nativeStringFromHopperString(hrssid);
+        string password = nativeStringFromHopperString(hrpassword);
+        return WiFi.Connect(ssid, password);
+    }
+    bool HttpClientGetRequest(uint hrurl, ref uint hrcontent)
+    {
+        string url = nativeStringFromHopperString(hrurl);
+        string response;
+        if (HttpClient.GetRequest(url, ref response))
+        {
+            GC.Release(hrcontent);
+            hrcontent = hopperStringFromNativeString(response);
+            return true;
+        }
+        return false;
+    }
     
     bool LoadAuto { get { return true; } }
     uint hopperStringFromNativeString(string str)
@@ -11,7 +38,7 @@ unit External
         uint hrstring = HRString.New();    
         foreach (var ch in str)
         {
-            HRString.Build(ref hrstring, ch);
+            HRString.BuildChar(ref hrstring, ch);
         }
         return hrstring;
     }
@@ -116,16 +143,28 @@ unit External
     {
         string path = nativeStringFromHopperString(hrpath);
         file f = File.Create(path);
-        uint length = HRList.GetLength(buffer);
+        uint length = HRString.GetLength(buffer);
         for (uint i=0; i < length; i++)
         {
             Type itype;
-            byte b = byte(HRList.GetItem(buffer, i, ref itype));
+            byte b = byte(HRString.GetChar(buffer, i));
             f.Append(b);
         }
         f.Flush();
     }
-    FileReadAllBytes(uint hrpath, uint buffer)
+    FileWriteAllCodeBytes(uint hrpath, uint codeStart, uint codeLength)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        file f = File.Create(path);
+        for (uint i=0; i < codeLength; i++)
+        {
+            Type itype;
+            byte b = ReadCodeByte(codeStart+i);
+            f.Append(b);
+        }
+        f.Flush();
+    }
+    FileReadAllBytes(uint hrpath, ref uint buffer)
     {
         string path = nativeStringFromHopperString(hrpath);
         file f = File.Open(path);
@@ -136,14 +175,14 @@ unit External
             {
                 break;
             }
-            HRList.Append(buffer, b, Type.Byte);
+            HRString.BuildChar(ref buffer, char(b));
         }
     }
     
     
-    uint GetSegmentSizes()
+    byte GetSegmentPages()
     {
-        return 0x8000; // size in Words: 0x8000 for Pi Pico, 0x4000 for Wemos D1 Mini
+        return 0xFF; // size in 256 byte pages: 0xFF for Pi Pico, 0x30 for Wemos D1 Mini
     }
     
     uint GetMillis()
@@ -266,7 +305,7 @@ unit External
         uint result = HRString.New(); 
         foreach (var c in str)
         {
-            HRString.Build(ref result, c);
+            HRString.BuildChar(ref result, c);
         }
         return result;
     }

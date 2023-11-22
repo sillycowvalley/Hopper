@@ -16,16 +16,51 @@ unit GPIO
     // #define WEMOS_D1_MINI_D7 13
     // #define WEMOS_D1_MINI_D8 15
     
-#else
-
-  #ifdef RP2040
-    const byte builtInLED = 32; // GP25 is pin 2 on Pi Pico W
-  #else
-    A specific MCU board must be defined to use the built-in LED: RP2040, WEMOSD1MINI, etc.
-  #endif
-    
 #endif
 
+#ifdef RP2040
+    const byte builtInLED = 32;
+#endif
+#ifdef ARDUINONANORP2040
+    const byte builtInLED = 6;
+#endif
+#ifdef SEEEDRP2040
+    const byte builtInLED  = 17;
+    const byte builtInLEDR = 17;
+    const byte builtInLEDG = 16;
+    const byte builtInLEDB = 25;
+#endif
+
+#ifdef ARDUINONANOESP32
+    const byte builtInLED = 13;
+#endif
+
+#ifdef SEEEDRP2040
+    bool LEDR
+    { 
+        set 
+        { 
+            MCU.PinMode(builtInLEDR, MCU.PinModeOption.Output);
+            MCU.DigitalWrite(builtInLEDR, value); 
+        } 
+    }
+    bool LEDG
+    { 
+        set 
+        { 
+            MCU.PinMode(builtInLEDG, MCU.PinModeOption.Output);
+            MCU.DigitalWrite(builtInLEDG, value); 
+        } 
+    }
+    bool LEDB
+    { 
+        set 
+        { 
+            MCU.PinMode(builtInLEDB, MCU.PinModeOption.Output);
+            MCU.DigitalWrite(builtInLEDB, value); 
+        } 
+    }
+#endif
     bool LED 
     { 
         set 

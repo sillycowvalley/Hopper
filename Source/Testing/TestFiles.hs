@@ -51,7 +51,6 @@ program TestFiles
         }
         if (ln != "Test Content")
         {
-            PrintLn("'" + ln + "'");
             PrintFailed("File text IO failed");
         }
         

@@ -2,7 +2,6 @@ program FiboUInt
 {
 #define PORTABLE      // use .hs runtime methods where they exist (rather than 'system')
 //#define CHECKED     // mainly stack checks, range checks and division by zero
-#define RUNTIME       // workaround special clipboard buffer for testing on Windows (that works without String)
 #define SERIALCONSOLE // Source/System/IO uses serial only (for MCU's etc)
 
     uses "/Source/Runtime/Emulation/Minimal" // minimal use of actual 'system' APIs

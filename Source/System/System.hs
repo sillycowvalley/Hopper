@@ -22,6 +22,7 @@ unit System
     uses "/Source/System/Path"
     uses "/Source/System/Directory"
     uses "/Source/System/Type"
+    
 
 #ifndef H6502
     bool Trace { get { return false; }  set { } }
@@ -41,7 +42,7 @@ unit System
 
     // execute an array of Hopper opCodes inline
     //   (use & operator to determine offsets of locals and globals)
-    uint Inline(byte[] code) system;
+    uint Inline(byte[] code, uint startIndex) system;
     
 #endif 
 }

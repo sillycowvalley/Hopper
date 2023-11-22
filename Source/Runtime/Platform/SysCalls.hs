@@ -22,7 +22,7 @@ unit SysCalls
         ListAppend         = 0x11,
         ListInsert         = 0x12,
         ListGetItem        = 0x13,
-   // ListGetItemAsVariant = 0x14,
+      ListGetItemAsVariant = 0x14,
         ListSetItem        = 0x15,
         ListClear          = 0x16,
         ListRemove         = 0x17,
@@ -46,11 +46,19 @@ unit SysCalls
         ScreenPrint        = 0x29,
         ScreenPrintLn      = 0x2A,
         ScreenClear        = 0x2B,
-        
+        ScreenSetCursor    = 0x2C,
+        ScreenColumnsGet   = 0x2D,
+        ScreenRowsGet      = 0x2E,
+        ScreenCursorXGet   = 0x2F,
+        ScreenCursorYGet   = 0x30,
+        ScreenSuspend      = 0x31,
+        ScreenResume       = 0x32,
+        ScreenDrawChar     = 0x33,
         
         IntToFloat         = 0x34,
         IntToLong          = 0x35,
         UIntToLong         = 0x36,
+        UIntToInt          = 0x37,
         
         LongToBytes          = 0x39,
         LongToFloat          = 0x3A,
@@ -111,8 +119,13 @@ unit SysCalls
         DirectoryGetDirectory      = 0x71,
         
         TypesTypeOf      = 0x7E,
+        TypesValueTypeOf = 0x7F,
+        TypesKeyTypeOf   = 0x80,
+        TypesBoxTypeOf   = 0x81,
         
         StringBuild      = 0x83,
+        
+        HttpClientGetRequest = 0x8A,
         
         SerialIsAvailableGet = 0xA5,
         SerialReadChar       = 0xA6,
@@ -147,5 +160,7 @@ unit SysCalls
         
         DirectoryCreate  = 0xE9,
         DirectoryDelete  = 0xEA,
+        
+        WiFiConnect      = 0xEB,
     }
 }

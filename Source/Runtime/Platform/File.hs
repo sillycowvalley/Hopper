@@ -9,37 +9,48 @@ unit HRFile
     //   00   bool:   isValid
     //   00   bool:   isReading
     //   00   bool:   isWriting
+    //   00   bool:   isCode: pos is length and buffer is start in codeSegment
     //   0000 string: path
     //   0000 uint:   pos
-    //   0000 <byte>: bytes (buffer)
+    //   0000 uint:   string (buffer)
     
     const uint fiValid    = 2;
     const uint fiReading  = 3;
     const uint fiWriting  = 4;
-    const uint fiPath     = 5;
-    const uint fiPos      = 7;
-    const uint fiBuffer   = 9;
+    const uint fiCode     = 5;
+    const uint fiPath     = 6;
+    const uint fiPos      = 8;
+    const uint fiBuffer   = 10;
     
     uint New()
     {
-        uint address = GC.New(11, Type.File);
-        WriteByte(address+fiValid, 0);
+        uint address = GC.New(12, Type.File);
+        WriteByte(address+fiValid,   0);
         WriteByte(address+fiReading, 0);
         WriteByte(address+fiWriting, 0);
+        WriteByte(address+fiCode,    0);
         WriteWord(address+fiPath,   HRString.New());
         WriteWord(address+fiPos,    0);
-        WriteWord(address+fiBuffer, HRList.New(Type.Byte));
+        WriteWord(address+fiBuffer, HRString.New());
         return address;
     }
     uint Clone(uint original)
     {
-        uint address = GC.New(11, Type.File);
+        uint address = GC.New(12, Type.File);
         WriteByte(address+fiValid,   ReadByte(original+fiValid));
         WriteByte(address+fiReading, ReadByte(original+fiReading));
         WriteByte(address+fiWriting, ReadByte(original+fiWriting));
+        WriteByte(address+fiCode,    ReadByte(original+fiCode));
         WriteWord(address+fiPath,    HRString.Clone(ReadWord(original+fiPath)));
         WriteWord(address+fiPos,     ReadWord(original+fiPos));
-        WriteWord(address+fiBuffer,  HRList.Clone(ReadWord(original+fiBuffer)));
+        if (IsCode(original))
+        {
+            WriteWord(address+fiBuffer,     ReadWord(original+fiBuffer));
+        }
+        else
+        {
+            WriteWord(address+fiBuffer,  HRString.Clone(ReadWord(original+fiBuffer)));
+        }
         return address;    
     }
     Clear(uint this)
@@ -50,7 +61,10 @@ unit HRFile
         GC.Release(ReadWord(this+fiPath));
         WriteWord(this+fiPath,   0);
         WriteWord(this+fiPos,    0);
-        GC.Release(ReadWord(this+fiBuffer));
+        if (!IsCode(this))
+        {
+            GC.Release(ReadWord(this+fiBuffer));
+        }
         WriteWord(this+fiBuffer, 0);
     }
     
@@ -74,11 +88,23 @@ unit HRFile
     {
         return (ReadByte(this+fiValid) != 0);
     }
+    bool IsCode(uint this)
+    {
+        return (ReadByte(this+fiCode) != 0);
+    }
     Flush(uint this)
     {
         if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiWriting) != 0))
         {
-            External.FileWriteAllBytes(ReadWord(this+fiPath), ReadWord(this+fiBuffer));
+            if (ReadByte(this+fiCode) == 0)
+            {
+                External.FileWriteAllBytes(ReadWord(this+fiPath), ReadWord(this+fiBuffer));
+            }
+            else
+            {
+                // isCode: pos is length and buffer is start in codeSegment
+                External.FileWriteAllCodeBytes(ReadWord(this+fiPath), ReadWord(this+fiBuffer), ReadWord(this+fiPos));
+            }
         }
         else
         {
@@ -87,10 +113,11 @@ unit HRFile
     }
     Append(uint this, byte b)
     {
-        if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiWriting) != 0))
+        if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiWriting) != 0) && (ReadByte(this+fiCode) == 0))
         {
             uint buffer = ReadWord(this+fiBuffer);
-            HRList.Append(buffer, b, Type.Byte);
+            HRString.BuildChar(ref buffer, char(b));
+            WriteWord(this+fiBuffer, buffer);
         }
         else
         {
@@ -99,14 +126,11 @@ unit HRFile
     }
     Append(uint this, uint hrstr)
     {
-        if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiWriting) != 0))
+        if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiWriting) != 0) && (ReadByte(this+fiCode) == 0))
         {
             uint buffer = ReadWord(this+fiBuffer);
-            uint length = HRString.GetLength(hrstr);
-            for (uint i = 0; i < length; i++)
-            {
-                HRList.Append(buffer, byte(HRString.GetChar(hrstr, i)), Type.Byte);
-            }
+            HRString.BuildString(ref buffer, hrstr);
+            WriteWord(this+fiBuffer, buffer);       
         }
         else
         {
@@ -114,6 +138,30 @@ unit HRFile
         }   
         
     }
+    uint CreateFromCode(uint hrpath, uint codeStart, uint codeLength)
+    {
+        if (Exists(hrpath))
+        {
+            Delete(hrpath);
+        }
+        uint address = HRFile.New();
+        WriteByte(address+fiValid,   1);
+        WriteByte(address+fiWriting, 1);
+        WriteByte(address+fiCode, 1);
+        
+        GC.Release(ReadWord(address+fiPath));
+        WriteWord(address+fiPath,    HRString.Clone(hrpath));
+        
+        // release the default string buffer created in HRFile.New(..)
+        GC.Release(ReadWord(address+fiBuffer));
+        
+        // isCode: pos is length and buffer is start in codeSegment
+        WriteWord(address+fiPos,       codeLength);
+        WriteWord(address+fiBuffer,    codeStart);
+        
+        return address;
+    }
+        
     uint Create(uint hrpath)
     {
         if (Exists(hrpath))
@@ -137,7 +185,9 @@ unit HRFile
             WriteByte(address+fiReading, 1);
             GC.Release(ReadWord(address+fiPath));
             WriteWord(address+fiPath,    HRString.Clone(hrpath));
-            External.FileReadAllBytes(ReadWord(address+fiPath), ReadWord(address+fiBuffer));
+            uint buffer = ReadWord(address+fiBuffer);
+            External.FileReadAllBytes(ReadWord(address+fiPath), ref buffer);
+            WriteWord(address+fiBuffer, buffer);
         }
         return address;
     }
@@ -151,11 +201,11 @@ unit HRFile
                 uint buffer = ReadWord(this+fiBuffer);
                 uint pos    = ReadWord(this+fiPos);
                 
-                uint length = HRList.GetLength(buffer);
+                uint length = HRString.GetLength(buffer);
                 if (pos < length)
                 {
                     Type itype;
-                    b = byte(HRList.GetItem(buffer, pos, ref itype));
+                    b = byte(HRString.GetChar(buffer, pos));
                     pos++;
                     WriteWord(this+fiPos, pos);
                     break;
@@ -176,11 +226,11 @@ unit HRFile
                 uint buffer  = ReadWord(this+fiBuffer);
                 uint seekpos = HRLong.ToUInt(hrseekpos);
                 
-                uint length = HRList.GetLength(buffer);
+                uint length = HRString.GetLength(buffer);
                 if (seekpos < length)
                 {
                     Type itype;
-                    b = byte(HRList.GetItem(buffer, seekpos, ref itype));
+                    b = byte(HRString.GetChar(buffer, seekpos));
                     break;
                 }
             }
@@ -199,7 +249,7 @@ unit HRFile
                 uint buffer = ReadWord(this+fiBuffer);
                 uint pos    = ReadWord(this+fiPos);
                 
-                uint length = HRList.GetLength(buffer);
+                uint length = HRString.GetLength(buffer);
                 if (pos < length)
                 {
                     loop
@@ -217,7 +267,7 @@ unit HRFile
                             break;
                         }
                         Type itype;
-                        byte b = byte(HRList.GetItem(buffer, pos, ref itype));
+                        byte b = byte(HRString.GetChar(buffer, pos));
                         pos++;
                         WriteWord(this+fiPos, pos);
                         if (b == 0x0D)
@@ -228,7 +278,7 @@ unit HRFile
                         {
                             break;
                         }
-                        HRString.Build(ref str, char(b));
+                        HRString.BuildChar(ref str, char(b));
                     }
                     break;
                 }

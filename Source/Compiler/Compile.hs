@@ -12,6 +12,7 @@ program Compile
     uses "/Source/Compiler/Tokens/Scanner"
     uses "/Source/Compiler/Tokens/Parser"
     uses "/Source/Compiler/Tokens/SysCalls"
+    uses "/Source/Compiler/Tokens/LibCalls"
     uses "/Source/Compiler/Symbols"
     
     uses "/Source/Compiler/Types"
@@ -1522,10 +1523,24 @@ program Compile
 //PrintLn();
 //Print("compileAssignment TODO E: resolve 'K': " + variableType + " " + variableName+ " <- " + expressionType);
                         }
+                        
+                        else if (variableType == "variant")
+                        {
+                            if (Types.IsValueType(expressionType))
+                            {
+                                // box value types before assigning them to a variant                                            
+                                byte vt = Types.ToByte(expressionType);
+                                CodeStream.AddInstructionPUSHI(vt);
+                                CodeStream.AddInstructionSysCall0("Variant", "Box");
+                            }
+                            else
+                            {
+                                // a variant can have any reference type assigned to it
+                            }
+                        }
                         else
                         {
-                            Parser.ErrorAt(leftToken, 
-                              "type mismatch in assignment, expect '" + variableType + "', was '" + expressionType + "'");       
+                            Parser.ErrorAt(leftToken, "type mismatch in assignment, expect '" + variableType + "', was '" + expressionType + "'");       
                             break;
                         }
                     }
@@ -1857,8 +1872,7 @@ program Compile
                                     }
                                     else if (!Types.AutomaticUpCastTop(expressionType, valueType))
                                     {
-                                        Parser.ErrorAtCurrent(
-                          "type mismatch in assignment, expect '" + valueType + "', was '" + expressionType + "'");       
+                                        Parser.ErrorAtCurrent("type mismatch in assignment, expect '" + valueType + "', was '" + expressionType + "'");       
                                         break;
                                     }
                                 }                          
@@ -2047,6 +2061,17 @@ program Compile
             Parser.Advance(); // load first token
             
             if (Parser.Check(HopperToken.Keyword, "system"))
+            {
+                // no need to compile system calls
+                Symbols.OverloadWasCompiled(iCurrentOverload);         
+                if (!Symbols.OverloadNextToCompile(ref iCurrentOverload))
+                {
+                    success = true; // all done
+                    break;
+                }
+                continue;
+            }
+            else if (Parser.Check(HopperToken.Keyword, "library"))
             {
                 // no need to compile system calls
                 Symbols.OverloadWasCompiled(iCurrentOverload);         
@@ -2337,6 +2362,7 @@ program Compile
             loop
             {
                 SysCalls.New();
+                LibCalls.New();
                 Symbols.New();
                 if (!Symbols.Import(jsonPath))
                 {

@@ -14,6 +14,7 @@ program DASM
     uses "/Source/Compiler/Tokens/Token"
     uses "/Source/Compiler/Tokens/Scanner"
     uses "/Source/Compiler/Tokens/SysCalls"
+    uses "/Source/Compiler/Tokens/LibCalls"
     uses "/Source/Compiler/Tokens/Parser"
     
     uint codeSize = 0;
@@ -226,6 +227,7 @@ program DASM
     }
     {
         SysCalls.New();
+        LibCalls.New();
         
         //EmitC();
         bool success = false;

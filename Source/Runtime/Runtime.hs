@@ -20,15 +20,19 @@ program Runtime
     uses "/Source/Runtime/Platform/File"
     uses "/Source/Runtime/Platform/Float"
     uses "/Source/Runtime/Platform/Int"
+    uses "/Source/Runtime/Platform/HttpClient"
     uses "/Source/Runtime/Platform/List"
     uses "/Source/Runtime/Platform/Long"
     uses "/Source/Runtime/Platform/Pair"
+    uses "/Source/Runtime/Platform/Screen"
     uses "/Source/Runtime/Platform/String"
     uses "/Source/Runtime/Platform/UInt"
     uses "/Source/Runtime/Platform/Variant"
+    uses "/Source/Runtime/Platform/WiFi"
     
     uses "/Source/Runtime/Platform/External"
     uses "/Source/Runtime/Platform/Instructions"
+    uses "/Source/Runtime/Platform/Library"
     
     uses "/Source/Runtime/HopperVM"
     
@@ -93,18 +97,7 @@ program Runtime
         uint path = HopperVM.GetAppName();
         if (HRFile.Exists(path))
         {
-            uint autoHexe = HRFile.Open(path);
-            if (HRFile.IsValid(autoHexe))
-            {
-                while (HRFile.IsValid(autoHexe))
-                {
-                    byte dataByte = HRFile.Read(autoHexe);
-                    WriteCodeByte(codeMemoryStart + address, dataByte);
-                    address++;
-                }
-                success = true;
-                GC.Release(autoHexe);
-            }
+            success = ReadAllCodeBytes(path, loadedAddress);
         }
         
         GC.Release(path);
@@ -182,7 +175,7 @@ program Runtime
     Windows()
     {
         loaded = false;
-        HopperVM.Restart(false);
+        HopperVM.Restart();
         bool refresh = true;
         loop
         {
@@ -222,8 +215,8 @@ program Runtime
                         IO.WriteLn();
                         IO.Write('L');IO.Write('o');IO.Write('a');IO.Write('d');IO.Write('e');IO.Write('d');
                         IO.WriteLn();
-                        HopperVM.Initialize(loadedAddress, codeLength);
-                        HopperVM.Restart(false);
+                        HopperVM.Initialize(loadedAddress);
+                        HopperVM.Restart();
                     }
                     else
                     {
@@ -244,7 +237,7 @@ program Runtime
                                 HopperVM.Execute();
                                 if (Error == 0)
                                 {
-                                    HopperVM.DumpHeap(false, 0x22 + 0x0A + 0x0A); // breakpoints and Array bit tables
+                                    HopperVM.DumpHeap(false, 0x22 + 0x0A + 0x0A + 0x10); // breakpoints, Array bit tables and CurrentDirectory
                                 }
                                 refresh = true;
                             }
@@ -286,7 +279,7 @@ program Runtime
                             }
                             case 'V':
                             {
-                                HopperVM.DumpStack();
+                                HopperVM.DumpStack(20);
                                 refresh = true;
                             }
                             case 'H':
@@ -301,7 +294,7 @@ program Runtime
                             }
                             case 'W':
                             {
-                                HopperVM.Restart(false);
+                                HopperVM.Restart();
                                 refresh = true;
                             }
                             default:
@@ -346,6 +339,8 @@ program Runtime
         bool success = true;
         loadedAddress = codeMemoryStart;
         
+        uint codeLimit = External.GetSegmentPages() << 8;
+        
         codeLength = 0;
         loop
         {
@@ -371,7 +366,8 @@ program Runtime
                     for (uint c=0; c < byteCount; c++)
                     {
                         byte dataByte;
-                        if (!TryReadSerialByte(ref dataByte)) { success = false; break; }
+                        if (!TryReadSerialByte(ref dataByte))             { success = false; break; }
+                        if (codeMemoryStart + recordAddress >= codeLimit) { success = false; break; }
                         WriteCodeByte(codeMemoryStart + recordAddress, dataByte);
                         codeLength++;
                         recordAddress++;
@@ -833,8 +829,6 @@ program Runtime
                             // heapSize
                             Out4Hex(Memory.HeapSize);
                             Serial.WriteChar(' ');
-                            
-                            
                         }
                         
                         // '*' success

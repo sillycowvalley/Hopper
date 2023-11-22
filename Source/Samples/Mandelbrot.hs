@@ -8,6 +8,9 @@ program Mandelbrot
     {
         IO.Clear();
         IO.WriteLn();
+        
+        // https://www.dos4ever.com/SCMP/NIBL.html
+        
         IO.WriteLn(" Mandelbrot - ported from Gordon's TinyBasic - Integers");
         IO.WriteLn("    Ported to Hopper, running a VM/Runtime written in Hopper.");
         IO.WriteLn();

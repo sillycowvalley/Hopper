@@ -272,20 +272,7 @@ unit CodeStream
                     if (!IsSysCall(iOverload))
                     {
                         Symbols.OverloadToCompile(iOverload); // User supplied SysCall as Hopper source
-
-                        if (CodeStream.Target6502)
-                        {
-                            if (iOverload <= 0x3FFF)
-                            {
-                                uint hOverload = 0xC000 | iOverload;
-                                CodeStream.AddInstruction(Instruction.CALLW, hOverload);
-                            }
-                            else
-                            {
-                                Parser.Error("H6502 has a limit of 16383 for function indices, (was '" + iOverload.ToString() + "')");
-                            }
-                        }
-                        else if (CodeStream.IsShortCalls && (iOverload < 256))
+                        if (CodeStream.IsShortCalls && (iOverload < 256))
                         {
                             CodeStream.AddInstruction(Instruction.CALLB, byte(iOverload));
                         }
@@ -318,6 +305,21 @@ unit CodeStream
                 Die(0x03); // key not found
             }
             CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
+            break;
+        }
+    }
+    AddInstructionLibCall(string libCallUnit, string libCallMethod)
+    {
+        loop
+        {
+            byte iLibCall;
+            string name = libCallUnit + '.' + libCallMethod;
+            if (!TryParseLibCall(name, ref iLibCall))
+            {
+                PrintLn("'" + name + "' not found");
+                Die(0x03); // key not found
+            }
+            CodeStream.AddInstruction(Instruction.LIBCALL, iLibCall);
             break;
         }
     }

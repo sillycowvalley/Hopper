@@ -3,6 +3,7 @@ unit JSON
     uses "/Source/System/System"
     uses "/Source/Compiler/Tokens/Token"
     uses "/Source/Compiler/Tokens/Scanner"
+    uses "/Source/Compiler/Tokens/Parser"
     
     string eol()
     {
@@ -16,7 +17,7 @@ unit JSON
     }
     
     // Serialize list to a string of .json
-    ExportList(file jsonFile, <variant> lst, uint indent)
+    exportList(file jsonFile, <variant> lst, uint indent)
     {
         uint entries;
         string content;
@@ -98,7 +99,7 @@ unit JSON
     }
     
     // Serialize dictionary to a string of .json
-    ExportDictionary(file jsonFile, <string, variant> dict, uint indent)
+    exportDictionary(file jsonFile, <string, variant> dict, uint indent)
     {
         string content = spaces(indent) + '{';
         jsonFile.Append(content + eol());
@@ -166,7 +167,7 @@ unit JSON
                     String.Build(ref content, char(0x0A));
                     jsonFile.Append(content);
                     content = "";
-                    ExportList(jsonFile, v, indent);
+                    exportList(jsonFile, v, indent);
                 }
                 case dictionary:
                 {
@@ -174,7 +175,7 @@ unit JSON
                     String.Build(ref content, char(0x0A));
                     jsonFile.Append(content);
                     content = "";
-                    ExportDictionary(jsonFile, v, indent);
+                    exportDictionary(jsonFile, v, indent);
                 }
                 default:
                 {
@@ -209,12 +210,12 @@ unit JSON
             File.Delete(path);
         }
         file jsonFile = File.Create(path);
-        ExportDictionary(jsonFile, dict, 0);
+        exportDictionary(jsonFile, dict, 0);
         jsonFile.Flush();
         return true;
     }
     
-    <string> ReadList()
+    <string> readList()
     {
         <string> lst;
         Parser.Consume(HopperToken.LBracket, '[');
@@ -253,7 +254,7 @@ unit JSON
         }
         return lst;
     }
-    <string, variant> ReadDictionary()
+    <string, variant> readDictionary()
     {
         <string, variant> dict;
         Parser.Consume(HopperToken.LBrace, '{');
@@ -313,14 +314,32 @@ unit JSON
 #endif
                 }
             }
+            else if (Parser.Check(HopperToken.Bool))
+            {
+                Parser.Advance();
+                if (currentToken["lexeme"] == "true")
+                {
+                    dict[name] = true;
+                }
+                else if (currentToken["lexeme"] == "false")
+                {
+                    dict[name] = false;
+                }
+                else
+                {
+#ifndef JSONEXPRESS
+                    Parser.ErrorAt(currentToken, "bool expected");
+#endif
+                }
+            }
             else if (Parser.Check(HopperToken.LBracket))
             {
-                <string> lst = ReadList();
+                <string> lst = readList();
                 dict[name] = lst;
             }
             else if (Parser.Check(HopperToken.LBrace))
             {
-                <string, variant> subDict = ReadDictionary();
+                <string, variant> subDict = readDictionary();
                 dict[name] = subDict;
             }
             else
@@ -334,7 +353,7 @@ unit JSON
     }
     
     // reverse of Export above
-    bool Read(string path, ref <string, variant> dict)
+    bool read(string path, ref <string, variant> dict)
     {
         Scanner.New();
         Parser.Reset();
@@ -381,13 +400,51 @@ unit JSON
             <string,string> currentToken = CurrentToken;
             if (Parser.Check(HopperToken.LBrace))
             {
-                <string, variant> section = ReadDictionary();
+                <string, variant> section = readDictionary();
                 dict[sectionName] = section;
             }
             else if (Parser.Check(HopperToken.LBracket))
             {
-                <string> section = ReadList();
+                <string> section = readList();
                 dict[sectionName] = section;
+            }
+            else if (Parser.Check(HopperToken.StringConstant))
+            {
+                Parser.Advance();
+                dict[sectionName] = currentToken["lexeme"];
+            }
+            else if (Parser.Check(HopperToken.Integer))
+            {
+                Parser.Advance();
+                long l;
+                if (Long.TryParse(currentToken["lexeme"], ref l))
+                {
+                    dict[sectionName] = l; //.ToString();
+                }
+                else
+                {
+#ifndef JSONEXPRESS
+                    Parser.ErrorAt(currentToken, "integer expected");
+#endif
+                }
+            }
+            else if (Parser.Check(HopperToken.Bool))
+            {
+                Parser.Advance();
+                if (currentToken["lexeme"] == "true")
+                {
+                    dict[sectionName] = true;
+                }
+                else if (currentToken["lexeme"] == "false")
+                {
+                    dict[sectionName] = false;
+                }
+                else
+                {
+#ifndef JSONEXPRESS
+                    Parser.ErrorAt(currentToken, "bool expected");
+#endif
+                }
             }
             else
             {
@@ -406,5 +463,33 @@ unit JSON
         }
 #endif
         return success;
+    }
+    
+    bool Read(string content, ref <string, variant> dict)
+    {
+        if (content.Contains('{'))
+        {
+            uint iBrace;
+            if (content.IndexOf('{', ref iBrace))
+            {
+                content = content.Substring(iBrace);
+            }
+            content = "{ \"fakesection\": " + content + "}";
+            string tempPath = "/temp/jsoncontent.json";
+            file t = File.Create(tempPath);
+            t.Append(content);
+            t.Flush();
+            if (read(tempPath, ref dict))
+            {
+                dict = dict["fakesection"];
+                File.Delete(tempPath);
+                return true;
+            }
+        }
+        else if (File.Exists(content))
+        {
+            return read(content, ref dict);
+        }
+        return false;
     }
 }

@@ -7,6 +7,7 @@ unit Color
     uint LightGray    { get { return 0xDDD; } }
     uint LightestGray { get { return 0xEEE; }}
     uint White        { get { return 0xFFF; } }
+    uint Invert       { get { return 0xF000; } }
     
     // Boring generic colors
     uint DarkBlue    { get { return 0x003; }}

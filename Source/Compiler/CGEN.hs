@@ -16,6 +16,7 @@ program CODEGEN
     uses "/Source/Compiler/Tokens/Scanner"
     uses "/Source/Compiler/Tokens/Parser"
     uses "/Source/Compiler/Tokens/SysCalls"
+    uses "/Source/Compiler/Tokens/LibCalls"
     uses "/Source/Compiler/Types"
     
     string pathLoaded;
@@ -140,6 +141,7 @@ program CODEGEN
                     break;
                 }
                 SysCalls.New();
+                LibCalls.New();
                 string eol = "" + char(0x0A);
 
                 cFile.Append("#include " + '"' + "Platform.h" + '"' + eol);

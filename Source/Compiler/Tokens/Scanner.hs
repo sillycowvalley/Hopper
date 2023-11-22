@@ -402,8 +402,8 @@ unit Scanner
                     token = errorToken("invalid hex integer literal");
                     break;
                 }
-                uint hexValue = 0;
-                if (!UInt.TryParse(value, ref hexValue))
+                long hexValue = 0;
+                if (!Long.TryParse(value, ref hexValue))
                 {
                     token = errorToken("invalid hex integer literal");
                     break;

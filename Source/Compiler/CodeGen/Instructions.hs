@@ -1,6 +1,7 @@
 unit Instructions
 {
     uses "/Source/Compiler/Tokens/SysCalls"
+    uses "/Source/Compiler/Tokens/LibCalls"
     
     enum Instruction
     {
@@ -174,6 +175,8 @@ unit Instructions
         ADDB,
         SUBB,
         
+        LIBCALL,
+        
         UNDEFINED,
     }
     
@@ -274,6 +277,7 @@ unit Instructions
             case Instruction.SYSCALL:
             case Instruction.SYSCALL0:
             case Instruction.SYSCALL1:
+            case Instruction.LIBCALL:
             case Instruction.INCGLOBALB:
             case Instruction.DECGLOBALB:
             case Instruction.DUP:
@@ -380,6 +384,7 @@ unit Instructions
             case Instruction.SYSCALL:
             case Instruction.SYSCALL0:
             case Instruction.SYSCALL1:
+            case Instruction.LIBCALL:
             case Instruction.JB:
             case Instruction.JZB:
             case Instruction.JNZB:
@@ -517,6 +522,10 @@ unit Instructions
             case Instruction.SYSCALL1:
             {
                 result = "SYSCALL1";
+            }
+            case Instruction.LIBCALL:
+            {
+                result = "LIBCALL";
             }
             case Instruction.PUSHI0:
             {
@@ -1190,6 +1199,11 @@ unit Instructions
         {
             string syscallName = SysCalls.GetSysCallName(iSysCall);
             content = content + "  // " + syscallName;
+        }
+        if (instruction == Instruction.LIBCALL)
+        {
+            string libcallName = LibCalls.GetLibCallName(iSysCall);
+            content = content + "  // " + libcallName;
         }
         if ((instruction == Instruction.CALLB)
          || (instruction == Instruction.CALLW)

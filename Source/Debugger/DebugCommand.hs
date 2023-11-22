@@ -55,6 +55,7 @@ unit DebugCommand
         InstallCommand("StepInto", "Step &Into", stepIntoCommand, stepIntoEnabled, key);
         key = (Key.F2);
         InstallCommand("Profile", "Run in &Profiler", profileCommand, profileEnabled, key);
+        key = (Key.F2 | Key.Alt);
         InstallCommand("Memory", "Dump &Memory", memoryCommand, memoryEnabled, key);
         key = (Key.ControlC);
         InstallCommand("Break", "&Break", breakCommand, breakEnabled, key);

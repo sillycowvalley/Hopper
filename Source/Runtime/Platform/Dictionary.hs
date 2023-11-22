@@ -701,6 +701,10 @@ unit HRDictionary
         {
             if (vtype == Type.Variant)
             {
+                vtype = Type(ReadByte(value)); // <key,variant> can contain reference types or boxed value types (actual variants)
+            }
+            if (vtype == Type.Variant)
+            {
                 value = HRVariant.GetValue(value, ref vtype); // returns a clone of the boxed value
             }
             else if (IsReferenceType(vtype))

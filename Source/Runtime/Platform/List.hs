@@ -186,6 +186,10 @@ unit HRList
         
         if (itype == Type.Variant)
         {
+            itype = Type(ReadByte(pData)); // <variant> can contain reference types or boxed value types (actual variants)
+        }
+        if (itype == Type.Variant)
+        {
             pData = HRVariant.GetValue(pData, ref itype); // returns a clone of the boxed value
         }
         else if (IsReferenceType(itype))

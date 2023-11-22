@@ -138,4 +138,8 @@ unit Int
     byte GetByte(int this, byte index) system;
     int FromBytes(byte b0, byte b1) system;
     
+    int Abs(int value)
+    {
+        return (value >= 0) ? value : -value;
+    }
 }

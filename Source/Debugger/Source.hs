@@ -14,6 +14,7 @@ unit Source
         symbolsLoaded = false;
         // before calling Symbols.Import
         SysCalls.New();
+        LibCalls.New();
         Symbols.New();
     }
     LoadSymbols()
@@ -507,6 +508,40 @@ unit Source
                     }
                     content = content + ">";
                 }
+                case "variant":
+                {
+                    type mtype = type(Pages.GetPageByte(value));
+                    string mtypes = mtype.ToString();
+                    if (mtype == variant)
+                    {
+                        // unbox the value type
+                        mtype   = type(Pages.GetPageByte(value+2));
+                        mtypes = mtype.ToString();
+                        bool mValueType = Types.IsValueType(mtypes);
+                        if (mValueType)
+                        {
+                            uint pMember = Pages.GetPageWord(value+3);
+                            content = content + TypeToString(pMember, mtypes, false, limit);    
+                        }
+                        else
+                        {
+                            content = value.ToHexString(4) + " v[" + mtypes + "]"; // what's this?
+                        }
+                    }
+                    else
+                    {
+                        bool mValueType = Types.IsValueType(mtypes);
+                        if (!mValueType)
+                        {
+                            // reference type other than variant
+                            content = content + TypeToString(value, mtypes, false, limit); 
+                        }
+                        else
+                        {
+                            content = value.ToHexString(4) + " v[" + mtypes + "]"; // what's this?
+                        }
+                    }
+                }
                 case "array":
                 {
                     content = "[";
@@ -538,41 +573,45 @@ unit Source
                     {
                         content = "0x" + value.ToHexString(4); // easy since 'value' is a uint
                     }
-                    else if ((value & 0x8000) != 0) // sign bit set?
-                    {
-                        int ivalue = Types.UIntToInt(value);
-                        content = ivalue.ToString();
-                    }
                     else
                     {
-                        content = value.ToString();
+                        int ivalue = Int.FromBytes(byte(value & 0xFF), byte(value >> 8));
+                        content = ivalue.ToString();
                     }
                 }
                 case "long":
                 {
-                    uint lsw = Pages.GetPageWord(value+2);
-                    uint msw = Pages.GetPageWord(value+4);
-
+                    byte b0 = Pages.GetPageByte(value+2);
+                    byte b1 = Pages.GetPageByte(value+3);
+                    byte b2 = Pages.GetPageByte(value+4);
+                    byte b3 = Pages.GetPageByte(value+5);
                     if (IsHexDisplayMode)
                     {
-                        content = "0x" + msw.ToHexString(4) + lsw.ToHexString(4);
-                    }
-                    else if ((msw & 0x8000) != 0) // sign bit set?
-                    {
-                        // two's complement
-                        lsw = ~lsw; // 0xFFFFFFFF -> 0x00000000, 0xFFFFFFFE -> 0x00000001
-                        msw = ~msw;
-                        long lvalue = long(msw) * 0x10000 + lsw;
-                        lvalue = 0 - lvalue - 1;
-                        content = lvalue.ToString();
+                        content = "0x" + b3.ToHexString(2) + b2.ToHexString(2) + b1.ToHexString(2) + b0.ToHexString(2);
                     }
                     else
                     {
-                        long lvalue = long(msw) * 0x10000 + lsw;
+                        long lvalue = Long.FromBytes(b0, b1, b2, b3);
                         content = lvalue.ToString();
                     }
-
                 }
+                case "float":
+                {
+                    byte b0 = Pages.GetPageByte(value+2);
+                    byte b1 = Pages.GetPageByte(value+3);
+                    byte b2 = Pages.GetPageByte(value+4);
+                    byte b3 = Pages.GetPageByte(value+5);
+                    if (IsHexDisplayMode)
+                    {
+                        content = "0x" + b3.ToHexString(2) + b2.ToHexString(2) + b1.ToHexString(2) + b0.ToHexString(2);
+                    }
+                    else
+                    {
+                        float fvalue = Float.FromBytes(b0, b1, b2, b3);
+                        content = fvalue.ToString();
+                    }
+                }
+                
                 case "enum":
                 {
                     tname = Types.QualifyEnum(tname);

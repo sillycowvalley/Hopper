@@ -169,6 +169,8 @@ unit Instructions
      
         instructionDelegate = Instructions.Cast;
         WriteToJumpTable(jumpTable, byte(OpCode.CAST), instructionDelegate);
+        instructionDelegate = Instructions.PushGlobalBB;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBALBB), instructionDelegate);
      
         //instructionDelegate = Instructions.IncGlobalB;
         //WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALB), instructionDelegate);
@@ -222,6 +224,8 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.ADDB), instructionDelegate);
         instructionDelegate = Instructions.SubB;
         WriteToJumpTable(jumpTable, byte(OpCode.SUBB), instructionDelegate);
+        instructionDelegate = Instructions.LibCall;
+        WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL), instructionDelegate);
         
     }
     
@@ -445,11 +449,18 @@ unit Instructions
         PC = methodAddress;
         return true;
     }
+    
     bool PushLocalBB()
     {
         bool res = PushLocalB();
         return PushLocalB();
     }
+    bool PushGlobalBB()
+    {
+        bool res = PushGlobalB();
+        return PushGlobalB();
+    }
+    
     bool PushLocalB()
     {
         int offset = ReadByteOffsetOperand();
@@ -667,6 +678,7 @@ unit Instructions
         uint result;
         switch (top)
         {
+            case 0:  {result =  next;       }
             case 1:  {result = (next << 1); }
             case 2:  {result = (next << 2); }
             case 3:  {result = (next << 3); }
@@ -703,6 +715,7 @@ unit Instructions
         uint result;
         switch (top)
         {
+            case 0:  {result =  next;       }
             case 1:  {result = (next >> 1); }
             case 2:  {result = (next >> 2); }
             case 3:  {result = (next >> 3); }
@@ -1217,6 +1230,11 @@ unit Instructions
 #endif   
         return true;
     }
+    bool LibCall()
+    {
+        byte iLibCall = ReadByteOperand();  
+        return ExecuteLibCall(iLibCall);
+    }
     bool SysCall0()
     {
         byte iSysCall = ReadByteOperand();  
@@ -1288,7 +1306,7 @@ unit Instructions
         Type ntype;
         uint next = Pop(ref ntype);
 #ifdef CHECKED
-        AssertUInt(ntype, next);
+        // AssertUInt(ntype, next); - there is no EQI opcode
 #endif  
         Push((next == top) ? 1 : 0, Type.Bool);
         return true;

@@ -43,26 +43,41 @@ unit SourceStream
         headerStream.Append(str);
     }
     
-    bool Export(string path)
+    bool Export(string headerpath, string sourcepath)
     {
         bool success = false;
-        File.Delete(path);
+        File.Delete(headerpath);
+        File.Delete(sourcepath);
         loop
         {
-            file codeFile = File.Create(path);
+            file headerFile = File.Create(headerpath);
+            if (!headerFile.IsValid())
+            {
+                break;
+            }
+            
+            file codeFile = File.Create(sourcepath);
             if (!codeFile.IsValid())
             {
                 break;
             }
-            codeFile.Append("// method definitions" + char(0x0A));
+            
+            
+            headerFile.Append("// method definitions" + char(0x0A));
             foreach (var line in headerStream)
             {
-                codeFile.Append(line + char(0x0A));
-                if (!codeFile.IsValid())
+                headerFile.Append(line + char(0x0A));
+                if (!headerFile.IsValid())
                 {
                     break;
                 }
             }
+            headerFile.Flush();
+            if (!headerFile.IsValid())
+            {
+                break;
+            }
+            
             codeFile.Append("" + char(0x0A));
             foreach (var line in sourceStream)
             {
@@ -72,6 +87,7 @@ unit SourceStream
                     break;
                 }
             }
+            
             codeFile.Flush();
             if (!codeFile.IsValid())
             {

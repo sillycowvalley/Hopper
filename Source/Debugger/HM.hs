@@ -86,7 +86,7 @@ program HopperMonitor
         file profileFile = File.Create(profilePath);
         
         string ln;
-        bool sysCalls = false;
+        bool sysCalls = false; // TODO LIBCALL
         foreach (var c in dataString)
         {
             if (c == char(0x0D))
@@ -584,6 +584,9 @@ program HopperMonitor
     {
         Screen.Clear();
         Serial.Connect(); // use the serial port with the highest number
+        
+        // drain garbage from serial and header rubbish (like from the Seeed XAIO ESP32 C3)
+        //WaitForDeviceReady();
         
         // send a <ctrl><C> in case there is a program running
         Serial.WriteChar(char(0x03));

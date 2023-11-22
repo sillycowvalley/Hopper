@@ -6,6 +6,7 @@ unit CodePoints
     uses "/Source/Compiler/CodeGen/CodeStream"
     uses "/Source/Compiler/CodeGen/Instructions"
     uses "/Source/Compiler/Tokens/SysCalls"
+    uses "/Source/Compiler/Tokens/LibCalls"
     uses "/Source/Compiler/CodeModel/ModelUtilities"
     
     <uint,uint> inlineMethodCandidates;   
@@ -2029,6 +2030,7 @@ unit CodePoints
                || (opCode0 == Instruction.SYSCALL)
                || (opCode0 == Instruction.SYSCALL0)
                || (opCode0 == Instruction.SYSCALL1)
+               || (opCode0 == Instruction.LIBCALL)
                )
             {
                 return;

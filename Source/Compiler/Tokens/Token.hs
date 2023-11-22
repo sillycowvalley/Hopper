@@ -219,6 +219,7 @@ unit Token
         statementKeywords["set"] = true;
         statementKeywords["switch"] = true;
         statementKeywords["system"] = true;
+        statementKeywords["library"] = true;
         statementKeywords["typeof"] = true;
         statementKeywords["addrof"] = true;
         statementKeywords["unit"] = true;

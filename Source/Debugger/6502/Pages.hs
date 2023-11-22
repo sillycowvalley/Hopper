@@ -1,7 +1,7 @@
 unit Pages
 {
     bool[0x100]   pageLoaded;
-    byte[0xFFFF]  pageData; // really should be 0x10000 (but luckily that top byte, 0xFFFF, is ROM)
+    uint[0x8000]  pageWordData; // because 64K is 0x10000, not 0xFFFF
     
     <string,uint> zeroPage;
     
@@ -42,6 +42,10 @@ unit Pages
                 //OutputDebug("Loaded: 0x"+page.ToHexString(2));
             }
         }
+        else
+        {
+            //OutputDebug("Cached: 0x"+page.ToHexString(2));
+        }
     }
     byte GetPageByte(uint address)
     {
@@ -50,14 +54,22 @@ unit Pages
         {
             LoadPageData(page);
         }
-        return pageData[address];
+        uint word = pageWordData[address >> 1];
+        byte b;
+        if ((address % 2) == 0)
+        {
+            b = byte(word & 0xFF); // LSB
+        }
+        else
+        {
+            b = byte(word >> 8); // MSB
+        }
+        //OutputDebug(address.ToHexString(4) + " " + b.ToHexString(2));
+        return b;
     }
     uint GetPageWord(uint address)
     {
-        byte lsb = GetPageByte(address);
-        address++;
-        byte msb = GetPageByte(address);
-        return lsb + (msb << 8);
+        return GetPageByte(address) + (GetPageByte(address+1) << 8);
     }
     
     
@@ -69,17 +81,18 @@ unit Pages
             ln = ln.Trim();
             if (ln.Length > 0)
             {
-                for (byte i = 0; i < 16; i++)
+                for (byte i = 0; i < 8; i++)
                 {
-                    uint index = address + i;
-                    string countString = "0x" + ln.Substring(i*2, 2);
-                    uint value;
-                    if (!UInt.TryParse(countString, ref value)) 
+                    uint index = address + (i << 1);
+                    string countString = "0x" + ln.Substring(i*4+2, 2) + ln.Substring(i*4, 2);
+                    uint word;
+                    if (!UInt.TryParse(countString, ref word)) 
                     {   
                         ok = false;
                         break;
                     }  
-                    pageData[index] = byte(value);
+                    //OutputDebug(index.ToHexString(4) + " " + word.ToHexString(4));
+                    pageWordData[index >> 1] = word;
                 }
             }
             break;
@@ -155,8 +168,8 @@ unit Pages
                 zeroPage["BP"]  = Pages.GetPageWord(0xB6);
             }
             zeroPage["CSP"] = Pages.GetPageByte(0xB8);
-            zeroPage["HEAPSTART"] = Pages.GetPageByte(0xEA);
-            zeroPage["HEAPSIZE"] = Pages.GetPageByte(0xEB);
+            zeroPage["HEAPSTART"] = Pages.GetPageByte(0xEA) << 8;
+            zeroPage["HEAPSIZE"] = Pages.GetPageByte(0xEB) << 8;
             zeroPage["FREELIST"] = Pages.GetPageWord(0xE8);
             zeroPage["CODESTART"] = Pages.GetPageByte(0xCA);
             

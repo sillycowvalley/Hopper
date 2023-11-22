@@ -4,6 +4,7 @@ unit Expression
     uses "/Source/Compiler/Tokens/Scanner"
     uses "/Source/Compiler/Tokens/Parser"
     uses "/Source/Compiler/Tokens/SysCalls"
+    uses "/Source/Compiler/Tokens/LibCalls"
     
     uses "/Source/Compiler/CodeGen/Block"
     uses "/Source/Compiler/CodeGen/Instructions"
@@ -98,8 +99,7 @@ unit Expression
                     }
                     default:
                     {
-                        Print("'" + sourceType + "' -> '" + castToType + "'");
-                        Die(0x0A);
+                        Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                     }
                 }
             }
@@ -119,8 +119,7 @@ unit Expression
                     }
                     default:
                     {
-                        Print("'" + sourceType + "' -> '" + castToType + "'");
-                        Die(0x0A);
+                        Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                     }
                 }
             }
@@ -141,8 +140,7 @@ unit Expression
                     }
                     default:
                     {
-                        Print("'" + sourceType + "' -> '" + castToType + "'");
-                        Die(0x0A);
+                        Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                     }
                 }
             }
@@ -158,8 +156,7 @@ unit Expression
                     }
                     default:
                     {
-                        Print("'" + sourceType + "' -> '" + castToType + "'");
-                        Die(0x0A);
+                        Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                     }
                 }
             }
@@ -188,9 +185,7 @@ unit Expression
                         }
                         else
                         {
-                            // CODEGEN : runtime cast from sourceType to castToType
-                            Print("'" + sourceType + "' -> '" + castToType + "'");
-                            Die(0x0A);
+                            Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                         }
                     }
                 }
@@ -224,9 +219,7 @@ unit Expression
                         }
                         else
                         {
-                            // CODEGEN : runtime cast from sourceType to castToType
-                            Print("'" + sourceType + "' -> '" + castToType + "'");
-                            Die(0x0A);
+                            Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                         }
                     }
                 }
@@ -245,9 +238,7 @@ unit Expression
                     }
                     default:
                     {
-                        // CODEGEN : runtime cast from sourceType to castToType
-                        Print("'" + sourceType + "' -> '" + castToType + "'");
-                        Die(0x0A);
+                        Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                     }
                 }
             }
@@ -259,9 +250,7 @@ unit Expression
                 }
                 else
                 {
-                    // CODEGEN : runtime cast from sourceType to castToType
-                    Print("'" + sourceType + "' -> '" + castToType + "'");
-                    Die(0x0A);
+                    Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                 }    
             }
             default:
@@ -294,8 +283,7 @@ unit Expression
                         }
                         default:
                         {
-                            Print("'" + sourceType + "' -> '" + castToType + "'");
-                            Die(0x0A);
+                            Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                         }
                     }
                 }
@@ -310,18 +298,14 @@ unit Expression
                         }
                         default:
                         {
-                            Print("'" + sourceType + "' -> '" + castToType + "'");
-                            Parser.ErrorAtCurrent("delegate cast not implemented");
-                            Die(0x0A);
+                            Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                         }
                     }
                 }
                 else
                 {
                     // CODEGEN : runtime cast from sourceType to castToType
-                    Print("'" + sourceType + "' -> '" + castToType + "'");
-                    Parser.ErrorAtCurrent("not implemented");
-                    Die(0x0A);
+                    Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
                 }
             }
         }
@@ -626,21 +610,14 @@ unit Expression
                     }
                 }
             }
+            else if (Symbols.IsLibCall(iOverload))
+            {
+                byte iLibCall = Symbols.GetLibCallIndex(iOverload);
+                CodeStream.AddInstruction(Instruction.LIBCALL, iLibCall);
+            }
             else
             {
-                if (CodeStream.Target6502)
-                {
-                    if (iOverload <= 0x3FFF)
-                    {
-                        uint beOverload = 0xC000 | iOverload;
-                        CodeStream.AddInstruction(Instruction.CALLW, beOverload);
-                    }
-                    else
-                    {
-                        Parser.Error("H6502 has a limit of 16383 for function indices, (was '" + iOverload.ToString() + "')");
-                    }
-                }
-                else if (CodeStream.IsShortCalls && (iOverload < 256))
+                if (CodeStream.IsShortCalls && (iOverload < 256))
                 {
                     CodeStream.AddInstruction(Instruction.CALLB, byte(iOverload));
                 }
@@ -1168,7 +1145,7 @@ unit Expression
                     Parser.Error("H6502 has a limit of 16383 for function indices, (was '" + wiOverload.ToString() + "')");
                 }
             }
-            else if (wiOverload < 256)
+            else if (CodeStream.IsShortCalls && (wiOverload < 256))
             {
                 CodeStream.AddInstruction(Instruction.PUSHDB, byte(wiOverload));
             }
@@ -2043,21 +2020,22 @@ unit Expression
                     HopperToken operation = Token.GetType(operationToken);
                     
                     Advance(); // <<, >>
-                    // only constants supported for now?!
-                    string shiftValue = ParseConstantExpression("byte"); // constant expression
+                    
+                    string shiftType = compileFactor(expectedType);
                     if (Parser.HadError)
                     {
                         break;
                     }
-                    uint iShift;
-                    if (UInt.TryParse(shiftValue, ref iShift))
+                    if ((actualType != "byte") 
+                     && (actualType != "uint")  
+                     && (actualType != "int")
+                     && (actualType != "+int")
+                     )
                     {
+                        Parser.ErrorAtCurrent("shift operand must be positive integral type");
+                        break;
                     }
-                    if ((iShift < 0) || (iShift > 16))
-                    {
-                        Parser.ErrorAtCurrent("shift operand must be between 0 and 16");
-                    }
-                    CodeStream.AddInstructionPUSHI(byte(iShift));
+                    // TODO : runtime check to verify that 15 >= [top] >= 0
                     if (operation == HopperToken.ShiftRight)
                     {
                         CodeStream.AddInstruction(Instruction.BITSHR);

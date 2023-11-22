@@ -79,7 +79,7 @@ unit GC
 #ifdef CHECKED                
         if (referenceCount == 0)
         {
-            ErrorDump(78);
+            WriteLn(); WriteHex(address); Write(':');WriteHex(ReadWord(address)); Write(' '); ErrorDump(78);
             Error = 0x0B;
             return;
         }

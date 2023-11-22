@@ -13,21 +13,28 @@ unit HopperVM
     uses "/Source/Runtime/Platform/Directory"
     uses "/Source/Runtime/Platform/File"
     uses "/Source/Runtime/Platform/Float"
+    uses "/Source/Runtime/Platform/HttpClient"
     uses "/Source/Runtime/Platform/Int"
     uses "/Source/Runtime/Platform/List"
     uses "/Source/Runtime/Platform/Long"
     uses "/Source/Runtime/Platform/Pair"
+    uses "/Source/Runtime/Platform/Screen"
     uses "/Source/Runtime/Platform/String"
     uses "/Source/Runtime/Platform/UInt"
     uses "/Source/Runtime/Platform/Variant"
+    uses "/Source/Runtime/Platform/WiFi"
     
     uses "/Source/Runtime/Platform/External"
     uses "/Source/Runtime/Platform/Instructions"
+    uses "/Source/Runtime/Platform/Library"
     
     
     const uint stackSize     = 512; // size of value stack in byte (each stack slot is 2 bytes)
     const uint callStackSize = 512; // size of callstack in bytes (4 bytes per call)
     
+#ifdef RUNTIME    
+    const uint keyboardBufferSize = 256;
+#endif
     const uint dataMemoryStart = 0x0000; // data memory magically exists from 0x0000 to 0xFFFF
     
     
@@ -40,6 +47,9 @@ unit HopperVM
     uint binaryAddress;
     uint constAddress;
     uint methodTable;
+#ifdef RUNTIME        
+    uint keyboardBuffer;
+#endif
     
     uint valueStack; // 2 byte slots
     uint typeStack;  // 2 byte slots (but we only use the LSB, just to be able to use the same 'sp' as valueStack)
@@ -142,6 +152,11 @@ unit HopperVM
         jumpTable          = nextAddress;
         nextAddress        = nextAddress + jumpTableSize;
         
+#ifdef RUNTIME        
+        keyboardBuffer     = nextAddress;
+        nextAddress        = nextAddress + keyboardBufferSize;
+        IO.AssignKeyboardBuffer(keyboardBuffer);
+#endif
         Instructions.PopulateJumpTable(jumpTable);
         
         dataMemory         = nextAddress;
@@ -153,14 +168,10 @@ unit HopperVM
         }
 #endif
         
-#ifdef SERIALCONSOLE
-        // currently we have 64K on the Pi Pico (0xFFFC is 64K (0x10000) - 4 
+        // currently we have 64K on the Pi Pico (actually only 0xFF00 for various reasons)
         // to avoid any boundary condition issues in the heap allocator)
-        // For Wemos D1 Mini, 32K segments so 0x7FFC
-        Memory.Initialize(dataMemory, ((External.GetSegmentSizes()-2) << 1) - dataMemory);
-#else
-        Memory.Initialize(dataMemory, 0xFFFC - dataMemory);
-#endif
+        // For Wemos D1 Mini, 32K segments so 0x8000
+        Memory.Initialize(dataMemory, (External.GetSegmentPages() << 8) - dataMemory);
 
         breakpoints   = Memory.Allocate(32);
         ClearBreakpoints(true);
@@ -182,40 +193,40 @@ unit HopperVM
     uint GetAppName()
     {
         uint path = HRString.New();
-        HRString.Build(ref path, char('/'));
-        HRString.Build(ref path, char('B'));
-        HRString.Build(ref path, char('i'));
-        HRString.Build(ref path, char('n'));
-        HRString.Build(ref path, char('/'));
-        HRString.Build(ref path, char('A'));
-        HRString.Build(ref path, char('u'));
-        HRString.Build(ref path, char('t'));
-        HRString.Build(ref path, char('o'));
-        HRString.Build(ref path, char('.'));
-        HRString.Build(ref path, char('h'));
-        HRString.Build(ref path, char('e'));
-        HRString.Build(ref path, char('x'));
-        HRString.Build(ref path, char('e'));
+        HRString.BuildChar(ref path, char('/'));
+        HRString.BuildChar(ref path, char('B'));
+        HRString.BuildChar(ref path, char('i'));
+        HRString.BuildChar(ref path, char('n'));
+        HRString.BuildChar(ref path, char('/'));
+        HRString.BuildChar(ref path, char('A'));
+        HRString.BuildChar(ref path, char('u'));
+        HRString.BuildChar(ref path, char('t'));
+        HRString.BuildChar(ref path, char('o'));
+        HRString.BuildChar(ref path, char('.'));
+        HRString.BuildChar(ref path, char('h'));
+        HRString.BuildChar(ref path, char('e'));
+        HRString.BuildChar(ref path, char('x'));
+        HRString.BuildChar(ref path, char('e'));
         return path;
     }
 
     DiskSetup()
     {
         uint path = HRString.New();
-        HRString.Build(ref path, char('/'));
-        HRString.Build(ref path, char('B'));
-        HRString.Build(ref path, char('i'));
-        HRString.Build(ref path, char('n'));
+        HRString.BuildChar(ref path, char('/'));
+        HRString.BuildChar(ref path, char('B'));
+        HRString.BuildChar(ref path, char('i'));
+        HRString.BuildChar(ref path, char('n'));
         if (!HRDirectory.Exists(path))
         {
             HRDirectory.Create(path);
         }
-        HRString.Build(ref path);
-        HRString.Build(ref path, char('/'));
-        HRString.Build(ref path, char('T'));
-        HRString.Build(ref path, char('e'));
-        HRString.Build(ref path, char('m'));
-        HRString.Build(ref path, char('p'));
+        HRString.BuildClear(ref path);
+        HRString.BuildChar(ref path, char('/'));
+        HRString.BuildChar(ref path, char('T'));
+        HRString.BuildChar(ref path, char('e'));
+        HRString.BuildChar(ref path, char('m'));
+        HRString.BuildChar(ref path, char('p'));
         if (!HRDirectory.Exists(path))
         {
             HRDirectory.Create(path);
@@ -224,13 +235,14 @@ unit HopperVM
     }
     FlashProgram(uint codeLocation, uint codeLength)
     {
+        //Write('A');Write(':');WriteHex(Memory.Available());WriteLn();
+        //Write('M');Write(':');WriteHex(Memory.Maximum());WriteLn();
+        //Write('L');Write(':');WriteHex(codeLength);WriteLn();
+        
         uint path = GetAppName();
-        uint appFile = HRFile.Create(path);
-        for (uint i = 0; i < codeLength; i++)
-        {
-            HRFile.Append(appFile, ReadCodeByte(codeLocation+i));
-        }
+        uint appFile = HRFile.CreateFromCode(path, codeLocation, codeLength);
         HRFile.Flush(appFile);
+        GC.Release(appFile);
         GC.Release(path);    
     }
     Restart()
@@ -286,6 +298,18 @@ unit HopperVM
             }
         }
     }
+    AssertByte(Type htype, uint value)
+    {
+        if (htype != Type.Byte)
+        {
+            AssertUInt(htype, value);
+        }
+        if (value > 255)
+        {
+            ErrorDump(129);
+            Error = 0x0B; // system failure (internal error)
+        }
+    }
     AssertBool(Type htype, uint value)
     {
         if (htype != Type.Bool)
@@ -322,6 +346,7 @@ unit HopperVM
             case Type.Char:
             case Type.Bool:
             case Type.UInt:
+            case Type.Type:
             {
             }
             case Type.Int:
@@ -402,7 +427,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(101);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif     
@@ -422,12 +447,12 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(102);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
                 bool result = HRFile.Exists(str);
-                Push(result ? 1 : 0, Type.Bool);        
+                Push(result ? 1 : 0, Type.Bool);
                 GC.Release(str);         
             }
             case SysCall.FileIsValid:
@@ -437,7 +462,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.File)
                 {
-                    ErrorDump(31);
+                    ErrorDump(103);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -452,7 +477,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.File)
                 {
-                    ErrorDump(31);
+                    ErrorDump(104);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -467,7 +492,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.File)
                 {
-                    ErrorDump(31);
+                    ErrorDump(105);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -486,7 +511,7 @@ unit HopperVM
 #ifdef CHECKED
                         if (stype != Type.File)
                         {
-                            ErrorDump(31);
+                            ErrorDump(106);
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif       
@@ -503,12 +528,12 @@ unit HopperVM
 #ifdef CHECKED
                         if (ltype != Type.Long)
                         {
-                            ErrorDump(31);
+                            ErrorDump(107);
                             Error = 0x0B; // system failure (internal error)
                         }
                         if (stype != Type.File)
                         {
-                            ErrorDump(31);
+                            ErrorDump(108);
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif       
@@ -531,7 +556,7 @@ unit HopperVM
 #ifdef CHECKED
                         if (stype != Type.File)
                         {
-                            ErrorDump(31);
+                            ErrorDump(109);
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif       
@@ -543,16 +568,16 @@ unit HopperVM
                         Type stype;
                         uint str = Pop(ref stype);
                         Type ftype;
-                        uint hrfile = Pop(ref stype);
+                        uint hrfile = Pop(ref ftype);
 #ifdef CHECKED
                         if (stype != Type.String)
                         {
-                            ErrorDump(31);
+                            ErrorDump(110);
                             Error = 0x0B; // system failure (internal error)
                         }
                         if (ftype != Type.File)
                         {
-                            ErrorDump(31);
+                            ErrorDump(111);
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif       
@@ -570,7 +595,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(112);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -585,7 +610,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(113);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -600,7 +625,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(114);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -614,7 +639,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(115);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -629,7 +654,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(116);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -650,7 +675,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(117);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -665,7 +690,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(118);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -680,7 +705,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.Directory)
                 {
-                    ErrorDump(31);
+                    ErrorDump(119);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -695,7 +720,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.Directory)
                 {
-                    ErrorDump(31);
+                    ErrorDump(120);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -710,7 +735,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.Directory)
                 {
-                    ErrorDump(31);
+                    ErrorDump(121);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -728,7 +753,7 @@ unit HopperVM
                 AssertUInt(itype, index);
                 if (stype != Type.Directory)
                 {
-                    ErrorDump(31);
+                    ErrorDump(122);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -746,7 +771,7 @@ unit HopperVM
                 AssertUInt(itype, index);
                 if (stype != Type.Directory)
                 {
-                    ErrorDump(31);
+                    ErrorDump(123);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -761,7 +786,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(124);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -775,7 +800,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(125);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -789,7 +814,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (stype != Type.String)
                 {
-                    ErrorDump(31);
+                    ErrorDump(126);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif       
@@ -803,7 +828,47 @@ unit HopperVM
             }
             case SysCall.ScreenClear:
             {
-                IO.Clear();
+                HRScreen.Clear();
+            }
+
+            case SysCall.ScreenColumnsGet:
+            {
+                Push(HRScreen.Columns, Type.Byte);
+            }
+            case SysCall.ScreenRowsGet:
+            {
+                Push(HRScreen.Rows, Type.Byte);
+            }
+            case SysCall.ScreenSuspend:
+            {
+                HRScreen.Suspend();
+            }
+            case SysCall.ScreenResume:
+            {
+                Type atype;
+                uint isInteractive = Pop(ref atype);
+                HRScreen.Resume(isInteractive != 0);
+            }
+            case SysCall.ScreenDrawChar:
+            {
+                Type atype;
+                uint bc = Pop(ref atype);
+                Type btype;
+                uint fc = Pop(ref btype);
+                Type ctype;
+                uint ch = Pop(ref ctype);
+                Type dtype;
+                uint y = Pop(ref atype);
+                Type etype;
+                uint x = Pop(ref btype);
+#ifdef CHECKED
+                AssertUInt(atype, bc);
+                AssertUInt(btype, fc);
+                AssertChar(ctype, ch);
+                AssertUInt(dtype, y);
+                AssertUInt(etype, x);
+#endif
+                HRScreen.DrawChar(x, y, char(ch), fc, bc); 
             }
             case SysCall.ScreenPrint:
             {
@@ -944,7 +1009,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (ttype != Type.String)
                 {
-                    ErrorDump(30);
+                    WriteLn(); WriteHex(byte(ttype)); ErrorDump(30);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
@@ -1043,7 +1108,7 @@ unit HopperVM
 #ifdef CHECKED
                 if ((atype != Type.String) || (btype != Type.String))
                 {
-                    ErrorDump(77);
+                    WriteLn(); WriteHex(byte(btype)); Write('='); WriteHex(byte(atype)); ErrorDump(77);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
@@ -1235,7 +1300,7 @@ unit HopperVM
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif        
-                        HRString.Build(ref str, append);
+                        HRString.BuildString(ref str, append);
                         Put(address, str, Type.String);
                         GC.Release(append);
                     }
@@ -1255,7 +1320,7 @@ unit HopperVM
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif        
-                        HRString.Build(ref str, ch);
+                        HRString.BuildChar(ref str, ch);
                         Put(address, str, Type.String);
                     }
                     case 2:
@@ -1270,7 +1335,7 @@ unit HopperVM
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif        
-                        HRString.Build(ref str);
+                        HRString.BuildClear(ref str);
                         Put(address, str, Type.String);                        
                     }
                     default:
@@ -1397,6 +1462,47 @@ unit HopperVM
                 HRString.TrimRight(ref str);
                 Put(address, str, Type.String);
             }
+            
+            case SysCall.WiFiConnect:
+            {
+                Type ptype;    
+                uint password = Pop(ref ptype);
+                Type stype;    
+                uint ssid = Pop(ref stype);
+#ifdef CHECKED
+                if ((stype != Type.String) || (ptype != Type.String))
+                {
+                    ErrorDump(16);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif        
+                bool success = HRWiFi.Connect(ssid, password);
+                GC.Release(ssid);
+                GC.Release(password);
+                Push(success ? 1 : 0, Type.Bool);                
+            }
+            
+            case SysCall.HttpClientGetRequest:
+            {
+                Type htype;    
+                uint address = Pop(ref htype);
+                uint content = Get(address, ref htype);
+                Type utype;    
+                uint url = Pop(ref utype);
+                
+#ifdef CHECKED
+                if ((htype != Type.String) || (utype != Type.String))
+                {
+                    ErrorDump(16);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif        
+                bool success = HRHttpClient.GetRequest(url, ref content);
+                Put(address, content, Type.String);
+                GC.Release(url);
+                Push(success ? 1 : 0, Type.Bool);
+            }
+            
             case SysCall.ArrayNew:
             {   
                 Type stype;
@@ -1578,6 +1684,31 @@ unit HopperVM
                 GC.Release(this);
                 Push(item, itype);
             }
+            case SysCall.ListGetItemAsVariant:
+            {
+                Type atype;
+                uint index = Pop(ref atype);
+                Type ttype;
+                uint this = Pop(ref ttype);
+#ifdef CHECKED
+                AssertUInt(atype, index);
+                if (ttype != Type.List)
+                {
+                    ErrorDump(127);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif    
+                Type itype;
+                uint item = HRList.GetItem(this, index, ref itype);
+                if (!IsReferenceType(itype))
+                {
+                    item = HRVariant.CreateValueVariant(item, itype);
+                    itype = Type.Variant;
+                }
+                //PrintLn(item.ToHexString(4) + " " + (ReadWord(item)).ToHexString(4) + " ");
+                GC.Release(this);
+                Push(item, itype);
+            }
             
             case SysCall.ListClear:
             {
@@ -1698,6 +1829,21 @@ unit HopperVM
                 uint this = Pop(ref ttype);
                 if (IsReferenceType(ttype))
                 {
+                    GC.Release(this);
+                }
+                Push(byte(ttype), Type.Type);
+            }
+            case SysCall.TypesBoxTypeOf:
+            {
+                Type ttype;
+                uint this = Pop(ref ttype);
+                if (IsReferenceType(ttype))
+                {
+                    ttype = Type(ReadByte(this));
+                    if (ttype == Type.Variant)
+                    {
+                        ttype = Type(ReadByte(this+2));
+                    }
                     GC.Release(this);
                 }
                 Push(byte(ttype), Type.Type);
@@ -1878,6 +2024,20 @@ unit HopperVM
 #endif
                 uint lng = HRUInt.ToLong(value);
                 Push(lng, Type.Long);
+            }
+            case SysCall.UIntToInt:
+            {
+                Type htype;
+                uint value = Pop(ref htype);
+#ifdef CHECKED
+                AssertUInt(htype, value);
+                if (value > 32767)
+                {
+                    ErrorDump(131);
+                    Error = 0x0D; // system failure (internal error)
+                }
+#endif        
+                PushI(int(value));             
             }
             
             case SysCall.IntToLong:
@@ -2537,7 +2697,7 @@ unit HopperVM
             {
                 break;
             }
-            pCurrent = pCurrent + size; // this is why we limit ourselves to 0xFFFC (not 0x10000, actual 64K)
+            pCurrent = pCurrent + size; // this is why we limit ourselves to 0xFF00 (not 0x10000, actual 64K)
         }
         bool reportAndStop = (HeapSize != (allocatedSize + freeSize));
         if (!reportAndStop && (accountedFor > 0))
@@ -2555,7 +2715,7 @@ unit HopperVM
             else
             {
                 IO.WriteLn();
-                Write('A');IO.WriteHex(allocatedSize);Write(' ');Write('F');IO.WriteHex(freeSize);
+                Write('A');IO.WriteHex(allocatedSize);Write(':');IO.WriteHex(accountedFor);Write(' ');Write('F');IO.WriteHex(freeSize);
                 Write(' ');Write('L');IO.WriteHex(HeapSize - (allocatedSize + freeSize));
             }
         }
@@ -2578,12 +2738,14 @@ unit HopperVM
         return false;
     }
     
-    DumpStack()
+    DumpStack(uint limit)
     {
-        return; // TODO REMOVE
+        //return; // TODO REMOVE
         IO.WriteLn();
+        limit = limit * 2;
         for (uint s = 0; s < sp; s = s + 2)
         {
+            if (sp - s > limit) { continue; }
             if (s == bp)
             {
                 IO.Write('B'); IO.Write('P');
@@ -2645,7 +2807,7 @@ unit HopperVM
         if (Error != 0)
         {
 #ifndef SERIALCONSOLE                
-            DumpStack();
+            DumpStack(8);
             IO.WriteLn();
             IO.WriteHex(messagePC);
             IO.Write(' '); IO.Write('E'); IO.Write('r'); IO.Write('r'); IO.Write('o'); IO.Write('r'); IO.Write(':'); 
@@ -2671,7 +2833,7 @@ unit HopperVM
             if (Error != 0)
             {
 #ifndef SERIALCONSOLE                
-                DumpStack();
+                DumpStack(8);
                 IO.WriteLn();
                 IO.WriteHex(messagePC);
                 IO.Write(' '); IO.Write('E'); IO.Write('r'); IO.Write('r'); IO.Write('o'); IO.Write('r'); IO.Write(':'); 
@@ -2715,18 +2877,21 @@ unit HopperVM
     bool ExecuteOpCode()
     {
         bool doNext;
+        //WriteLn(); WriteHex(pc);
         opCode = OpCode(ReadCodeByte(pc));
         pc++;
 
 #ifndef SERIALCONSOLE                
         uint jump = ReadWord(jumpTable + (byte(opCode) << 1));
 #endif        
+#ifndef SERIALCONSOLE   
 #ifdef CHECKED
         if (0 == jump)
         {
             if (Instructions.Undefined()) {}
             return false;
         }
+#endif
 #endif
 #ifdef SERIALCONSOLE // on MCU
         doNext = External.FunctionCall(jumpTable, byte(opCode));
@@ -2750,11 +2915,11 @@ unit HopperVM
             messagePC = PC;
 #endif
             opCode = OpCode(ReadCodeByte(pc));
-#ifndef SERIALCONSOLE            
+#ifndef SERIALCONSOLE
             uint jump = ReadWord(jumpTable + (byte(opCode) << 1));
 #endif
             pc++;
-            
+#ifndef SERIALCONSOLE            
 #ifdef CHECKED
             if (0 == jump)
             {
@@ -2762,6 +2927,8 @@ unit HopperVM
                 return;
             }
 #endif
+#endif
+
 #ifdef SERIALCONSOLE // on MCU
             doNext = External.FunctionCall(jumpTable, byte(opCode));
 #else
@@ -2783,7 +2950,7 @@ unit HopperVM
             if (Error != 0)
             {
 #ifndef SERIALCONSOLE                
-                DumpStack();
+                DumpStack(8);
                 IO.WriteLn();
 #ifdef CHECKED                
                 IO.WriteHex(messagePC);

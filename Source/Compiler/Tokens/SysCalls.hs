@@ -292,6 +292,8 @@ unit SysCalls
         
         addEntry("Directory", "Create");
         addEntry("Directory", "Delete");
+        
+        addEntry("WiFi", "Connect");
     }
     
     bool TryParseSysCall(string name, ref byte index)

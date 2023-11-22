@@ -12,15 +12,32 @@ unit HRString
     const int siLength = 2;
     const int siChars  = 4;
 
+    uint new(uint size)
+    {
+        uint blockSize = 6 + size;
+        blockSize = (blockSize + 15) & 0xFFF0; // round up string allocations to 16 byte boundaries
+        return GC.New(blockSize-4, Type.String);
+    }
+    uint clone(uint original, uint extra)
+    {
+        uint length = ReadWord(original+2);
+        uint address = HRString.new(length+extra);
+        WriteWord(address+2, length);
+        for (uint i = 0; i < length; i++)
+        {
+            WriteByte(address+4+i, ReadByte(original+4+i));
+        }
+        return address;    
+    }
     uint New()
     {
-        uint address = GC.New(2, Type.String);
+        uint address = HRString.new(0);
         WriteWord(address+2, 0); // length=0
         return address;
     }
     uint NewFromConstant0(uint location, uint length)
     {
-        uint address = GC.New(2 + length, Type.String);
+        uint address = HRString.new(length);
         WriteWord(address+2, length);
         for (uint i = 0; i < length; i++)
         {
@@ -32,7 +49,7 @@ unit HRString
     {
         byte lsb = byte(doubleChar & 0xFF);
         byte msb = byte(doubleChar >> 8);
-        uint address = GC.New((msb == 0) ? 3 : 4, Type.String);
+        uint address = HRString.new((msb == 0) ? 1 : 2);
         WriteWord(address+siLength, (msb == 0) ? 1 : 2); // length
         WriteByte(address+siChars, lsb);
         if (msb != 0)
@@ -45,17 +62,7 @@ unit HRString
     {
         return clone(original, 0);
     }
-    uint clone(uint original, uint extra)
-    {
-        uint length = ReadWord(original+2);
-        uint address = GC.New(4+length+extra, Type.String);
-        WriteWord(address+2, length);
-        for (uint i = 0; i < length; i++)
-        {
-            WriteByte(address+4+i, ReadByte(original+4+i));
-        }
-        return address;    
-    }
+    
     uint getCapacity(uint this)
     {
         return ReadWord(this-2) - 6;
@@ -80,7 +87,7 @@ unit HRString
     {
         uint length0 = GetLength(this);
         uint length1 = GetLength(append);
-        uint result = GC.New(2 + length0 + length1, Type.String);
+        uint result = HRString.new(length0 + length1);
         WriteWord(result+2, length0 + length1);
         for (uint i = 0; i < length0; i++)
         {
@@ -100,7 +107,7 @@ unit HRString
             start = length0;
         }
         uint length1 = length0 - start;
-        uint result = GC.New(2 + length1, Type.String);
+        uint result = HRString.new(length1);
         uint newLength = 0;
         for (uint i = 0; i < length1; i++)
         {
@@ -122,7 +129,7 @@ unit HRString
     uint InsertChar(uint this, uint index, char ch)
     {
         uint length = GetLength(this);
-        uint result = GC.New(2 + length + 1, Type.String);
+        uint result = HRString.new(length+1);
         uint j = 0;
         for (uint i = 0; i < length; i++)
         {
@@ -221,11 +228,11 @@ unit HRString
         }
         return result;
     }
-    Build(ref uint this)
+    BuildClear(ref uint this)
     {
         WriteWord(this+2, 0); // length = 0
     }
-    Build(ref uint this, uint append)
+    BuildString(ref uint this, uint append)
     {
         uint capacity = getCapacity(this);
         uint length0   = GetLength(this);
@@ -245,7 +252,7 @@ unit HRString
             WriteWord(this+2, length0+length1);
         }
     }
-    Build(ref uint this, char ch)
+    BuildChar(ref uint this, char ch)
     {
         uint capacity = getCapacity(this);
         uint length   = GetLength(this);

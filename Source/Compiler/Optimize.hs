@@ -15,6 +15,7 @@ program Optimize
     
     uses "/Source/Compiler/CodeGen/Instructions"
     uses "/Source/Compiler/Tokens/SysCalls"
+    uses "/Source/Compiler/Tokens/LibCalls"
     
     uses "/Source/Compiler/CodeModel/CodePoints"
     
@@ -429,6 +430,7 @@ program Optimize
                     }
                 }
                 SysCalls.New(); // initialize
+                LibCalls.New();
                 CodePoints.LoadSysCallIndices();
                 
                 uint pass = 0;

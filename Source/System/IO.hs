@@ -5,8 +5,9 @@ unit IO
     bool echoToLCD;
     // #### end of globals
     
-    
+#ifndef SERIALCONSOLE    
     uses "/Source/System/Screen"
+#endif
     uses "/Source/System/Serial"
     uses "/Source/System/Keyboard"
     uses "/Source/System/Clipboard"
@@ -332,10 +333,10 @@ unit IO
         get
         {
 #ifdef SERIALCONSOLE
-            return (HasKey()) || Serial.IsAvailable;
+            return (HaveKey()) || Serial.IsAvailable;
 #else            
     #ifdef H6502
-            return (HasKey()) || Serial.IsAvailable;
+            return (HaveKey()) || Serial.IsAvailable;
     #else
             return Keyboard.IsAvailable;
     #endif
@@ -386,16 +387,20 @@ unit IO
     
 #ifdef RUNTIME
 
-    // top 4K of 64K 'memory' reserved for circular string-less keyboard buffer
-    const uint keyboardBufferBase = 0xF000; // 0xF000..0xFFFF
+    // top 256 bytes circular keyboard buffer
+    uint keyboardBufferBase;
     uint  keyboardInPointer;
     uint  keyboardOutPointer;
+    AssignKeyboardBuffer(uint buffer)
+    {
+        keyboardBufferBase = buffer;
+    }
     
     PushKey(char c)
     {
         byte k = byte(c);
         Memory.WriteByte(keyboardBufferBase + keyboardInPointer, k);
-        if (keyboardInPointer == 0x0FFF)
+        if (keyboardInPointer == 0xFF)
         {
             keyboardInPointer = 0;
         }
@@ -407,7 +412,7 @@ unit IO
     char PopKey()
     {
         char c = char(Memory.ReadByte(keyboardBufferBase + keyboardOutPointer));
-        if (keyboardOutPointer == 0x0FFF)
+        if (keyboardOutPointer == 0xFF)
         {
             keyboardOutPointer = 0;
         }

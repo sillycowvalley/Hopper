@@ -90,6 +90,8 @@ unit OpCodes
         
         CAST     = 0x51,
         
+        PUSHGLOBALBB = 0x52,
+        
         INCGLOBALB = 0x53,
         DECGLOBALB = 0x54,
         
@@ -121,6 +123,8 @@ unit OpCodes
         
         ADDB      = 0x6D,
         SUBB      = 0x6E,      
+        
+        LIBCALL   = 0x6F,    
     }
     
     
