@@ -44,6 +44,8 @@ namespace HopperNET
         {
             get { return (byte)(Console.Rows); }
         }
+
+        
         public byte CursorX
         {
             get { return (byte)(console.CursorX); }

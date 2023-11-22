@@ -69,6 +69,7 @@ namespace HopperNET
             get { return textRows; }
         }
 
+        
         public uint CursorX { get { return hardwareCursorX; } } // TODO
         public uint CursorY { get { return hardwareCursorY; } } // TODO
 

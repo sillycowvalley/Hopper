@@ -437,6 +437,8 @@ namespace HopperNET
         DirectoryCreate = 0xE9,
         DirectoryDelete = 0xEA,
 
+        WiFiConnect     = 0xEB,
+
     };
 
     public enum HopperType // if you change this, look at the end of ToByte(..) in Types.hs
@@ -4208,6 +4210,7 @@ namespace HopperNET
 
                 case SysCall.SystemInline:
                     {
+                        ushort startIndex = (ushort)Pop();
                         HopperArray _this_ = (HopperArray)PopVariant(HopperType.tArray);
                         if (codeStore != null)
                         {
@@ -4219,7 +4222,7 @@ namespace HopperNET
                         bpStore  = bp;
                         cspStore = csp;
                         codeStore = code;
-                        pc = 0;
+                        pc = startIndex;
                         ushort[] array = _this_.Value;
                         code = new byte[array.Length];
                         for (uint i = 0; i < array.Length; i++)
@@ -4796,6 +4799,7 @@ namespace HopperNET
                 case SysCall.ScreenRowsGet:
                     Push(this.screen.Rows, HopperType.tByte);
                     break;
+                
                 case SysCall.ScreenCursorXGet:
                     Push(this.screen.CursorX, HopperType.tByte);
                     break;
@@ -5026,6 +5030,15 @@ namespace HopperNET
                         HopperDirectory.Create(path.Value);
                     }
                     break;
+
+                case SysCall.WiFiConnect:
+                    {
+                        // NOP:
+                        HopperString password = (HopperString)PopVariant(HopperType.tString);
+                        HopperString ssid = (HopperString)PopVariant(HopperType.tString);
+                        PushBool(true);
+                        break;
+                    }
 
 
                 case SysCall.TimeMillisGet:

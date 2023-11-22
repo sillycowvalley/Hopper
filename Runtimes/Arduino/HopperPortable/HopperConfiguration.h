@@ -1,0 +1,55 @@
+#ifndef HOPPERCONFIGURATION_H
+#define HOPPERCONFIGURATION_H
+
+#include <Arduino.h>
+
+const bool loadAuto = true; // set this to false if you are booting into a bad flashed Hopper program
+
+//#define DIAGNOSTICS // turn on more Serial.print output
+//#define CHECKED
+
+// Raspberry Pi Pico W
+// - LittleFS for built-in Flash
+// - WiFi
+#define RP2040PICO 
+
+// Arduino Connect RP2040
+// - LittleFS for built-in Flash
+// - WiFiNina
+//#define RP2040NANO 
+
+// Seeed XIA0 RP2040
+// - LittleFS for built-in Flash
+// - no WiFi
+//#define RP2040XIAO
+
+// Lolin Wemos D1 Mini, ESP 8266
+// - LittleFS for built-in Flash
+// - no ESP 8266 WiFi
+//#define LOLIND1MINI
+
+// Work in progress:
+//#define ARDUINONANOESP32
+//#define SEEEDESP32C3
+//#define LOLIN_C3_MINI
+//#define LOLIN_S2_PICO
+//#define TINY2040
+
+//Lolin S2 & C3 boards:
+// To put S2 and C3 boards into Device Firmware Upgrade (DFU) mode:
+// - Hold on Button 0|9
+// - Press Button Reset
+// - Release Button 0|9 When you hear the prompt tone on usb reconnection
+//
+// The steps to then get the C3 Mini working in Hopper are currently nuts:
+// - after uploading, press the reset button on the Mini
+// - in Hopper, run TERM to drain the diagnostic info from serial
+// - exit TERM then run HM!
+
+
+#if defined(RP2040PICO) || defined(RP2040NANO) || defined(RP2040XIAO) || defined(TINY2040)
+#define RP2040
+#endif
+
+
+#endif // HOPPERCONFIGURATION_H

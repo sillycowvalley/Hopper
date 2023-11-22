@@ -276,7 +276,7 @@ decTSPopcodePUSHIBEQ:
   .endif
   .endif
   
-  ; opcodeLE
+  ; opcodeEQ
   ldx #0 ; NEXT != TOP
   lda NEXTH
   cmp TOPH
