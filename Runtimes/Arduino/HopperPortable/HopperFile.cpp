@@ -115,9 +115,10 @@ void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength
 #endif    
 }
 
-Bool External_ReadAllCodeBytes(UInt hrpath, UInt loadAddress)
+Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLength)
 {
     Bool success = false;
+    codeLength = 0;
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
 #if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
@@ -131,6 +132,7 @@ Bool External_ReadAllCodeBytes(UInt hrpath, UInt loadAddress)
             {
                 Memory_WriteCodeByte(loadAddress, buffer[i]);
                 loadAddress++;
+                codeLength++;
             }
         }
         f.close();

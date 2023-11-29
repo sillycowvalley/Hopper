@@ -11,7 +11,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // Raspberry Pi Pico W
 // - LittleFS for built-in Flash
 // - WiFi
-#define RP2040PICO 
+//#define RP2040PICO 
 
 // Arduino Connect RP2040
 // - LittleFS for built-in Flash
@@ -23,6 +23,17 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - no WiFi
 //#define RP2040XIAO
 
+// Pimoroni Tiny 2040
+// - LittleFS for built-in Flash
+// - no WiFi
+#define TINY2040
+
+// Waveshare RP2040 One
+// - LittleFS for built-in Flash
+// - no WiFi
+//#define WAVESHARERP2040ONE
+
+
 // Lolin Wemos D1 Mini, ESP 8266
 // - LittleFS for built-in Flash
 // - no ESP 8266 WiFi
@@ -33,7 +44,6 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 //#define SEEEDESP32C3
 //#define LOLIN_C3_MINI
 //#define LOLIN_S2_PICO
-//#define TINY2040
 
 //Lolin S2 & C3 boards:
 // To put S2 and C3 boards into Device Firmware Upgrade (DFU) mode:
@@ -47,7 +57,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - exit TERM then run HM!
 
 
-#if defined(RP2040PICO) || defined(RP2040NANO) || defined(RP2040XIAO) || defined(TINY2040)
+#if defined(RP2040PICO) || defined(RP2040NANO) || defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE)
 #define RP2040
 #endif
 

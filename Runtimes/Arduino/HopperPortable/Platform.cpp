@@ -388,7 +388,14 @@ UInt External_LongDiv(UInt n, UInt t)
 {
     long top = nativeLongFromHopperLong(t);
     long next = nativeLongFromHopperLong(n);
-    return hopperLongFromNativeLong(next / top); // TODO : division by zero
+#ifdef CHECKED    
+    if (top == 0)
+    {
+        Diagnostics_SetError(0x04); // Division by zero.
+        return hopperLongFromNativeLong(0);
+    }
+#endif
+    return hopperLongFromNativeLong(next / top);
 }
 UInt External_LongMul(UInt n, UInt t)
 {
@@ -400,14 +407,53 @@ UInt External_LongMod(UInt n, UInt t)
 {
     long top = nativeLongFromHopperLong(t);
     long next = nativeLongFromHopperLong(n);
-    return hopperLongFromNativeLong(next % top); // TODO : division by zero
+#ifdef CHECKED    
+    if (top == 0)
+    {
+        Diagnostics_SetError(0x04); // Division by zero.
+        return hopperLongFromNativeLong(0);
+    }
+#endif
+    return hopperLongFromNativeLong(next % top);
 }
 
 UInt External_LongToFloat(UInt hrlong)
 {
     long ln = nativeLongFromHopperLong(hrlong);
-    return hopperFloatFromNativeFloat(float(ln));
+    return hopperFloatFromNativeFloat(float(ln)); // TODO : range
 }
+
+Int  External_LongToInt(UInt hrlong)
+{
+    long top = nativeLongFromHopperLong(hrlong);
+#ifdef CHECKED    
+    if ((top < -32768) || (top > 32767))
+    {
+        Diagnostics_SetError(0x0D); // Numeric type out of range/overflow.
+        return 0;
+    }
+#endif
+    return (Int)top;
+}
+
+UInt External_FloatToLong(UInt hrfloat)
+{
+    float fl = nativeFloatFromHopperFloat(hrfloat);
+    return hopperLongFromNativeLong(long(fl)); // TODO : range
+}
+UInt External_FloatToUInt(UInt hrfloat)
+{
+    float fl = nativeFloatFromHopperFloat(hrfloat);
+#ifdef CHECKED    
+    if (fl > 65535)
+    {
+        Diagnostics_SetError(0x0D); // Numeric type out of range/overflow.
+        return 0;
+    }
+#endif
+    return UInt(fl);
+}
+
 
 UInt External_IntToFloat(Int i)
 {
@@ -481,7 +527,14 @@ UInt External_FloatDiv(UInt n, UInt t)
 {
     float top = nativeFloatFromHopperFloat(t);
     float next = nativeFloatFromHopperFloat(n);
-    return hopperFloatFromNativeFloat(next / top); // TODO : division by zero
+#ifdef CHECKED    
+    if (top == 0)
+    {
+        Diagnostics_SetError(0x04); // Division by zero.
+        return hopperFloatFromNativeFloat(0);
+    }
+#endif
+    return hopperFloatFromNativeFloat(next / top);
 }
 UInt External_FloatMul(UInt n, UInt t)
 {

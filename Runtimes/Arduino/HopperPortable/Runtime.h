@@ -84,6 +84,7 @@ enum OpCode {
     eSYSCALL = 0x0026,
     eCOPYNEXTPOP = 0x0048,
     eENTER = 0x0049,
+    eNOP = 0x0050,
     eCAST = 0x0051,
     ePUSHGLOBALBB = 0x0052,
     eINCGLOBALB = 0x0053,
@@ -99,8 +100,11 @@ enum OpCode {
     ePUSHDW = 0x0060,
     eRETFAST = 0x0061,
     ePUSHDB = 0x0062,
+    eEXIT = 0x0063,
     eBITXOR = 0x0064,
     ePUSHIWLEI = 0x0065,
+    eINCGLOBALBB = 0x0066,
+    eJREL = 0x0067,
     eJIXB = 0x0068,
     eJIXW = 0x0069,
     eCALLIW = 0x006A,
@@ -164,6 +168,7 @@ enum SysCall {
     eUIntToInt = 0x0037,
     eLongToBytes = 0x0039,
     eLongToFloat = 0x003A,
+    eLongToInt = 0x003B,
     eLongToUInt = 0x003C,
     eLongNew = 0x003D,
     eLongNewFromConstant = 0x003E,
@@ -220,10 +225,28 @@ enum SysCall {
     eTypesBoxTypeOf = 0x0081,
     eStringBuild = 0x0083,
     eHttpClientGetRequest = 0x008A,
+    eRuntimePCGet = 0x008B,
+    eRuntimeSPGet = 0x008C,
+    eRuntimeBPGet = 0x008D,
+    eRuntimeCSPGet = 0x008E,
+    eRuntimeGetStackWord = 0x008F,
+    eRuntimeGetStackType = 0x0090,
+    eRuntimeGetCallStackWord = 0x0091,
+    eRuntimeExecute = 0x0092,
+    eRuntimeInline = 0x0093,
+    eRuntimeUserCodeGet = 0x0094,
     eSerialIsAvailableGet = 0x00A5,
     eSerialReadChar = 0x00A6,
     eSerialWriteChar = 0x00A7,
+    eMemoryReadByte = 0x00A9,
+    eMemoryWriteByte = 0x00AA,
+    eMemoryAvailable = 0x00AB,
+    eMemoryMaximum = 0x00AC,
+    eMemoryAllocate = 0x00AD,
+    eMemoryFree = 0x00AE,
     eStringBuildFront = 0x00B5,
+    eMemoryReadBit = 0x00B6,
+    eMemoryWriteBit = 0x00B7,
     eCharToDigit = 0x00BD,
     eTimeDelay = 0x00C6,
     eIntToBytes = 0x00CD,
@@ -232,6 +255,9 @@ enum SysCall {
     eStringTrim = 0x00D0,
     eStringTrimLeft = 0x00D1,
     eStringTrimRight = 0x00D2,
+    eStringPushImmediate = 0x00D3,
+    eMemoryReadWord = 0x00D7,
+    eMemoryWriteWord = 0x00D8,
     eMCUPinMode = 0x00D9,
     eMCUDigitalRead = 0x00DA,
     eMCUDigitalWrite = 0x00DB,
@@ -245,6 +271,8 @@ enum SysCall {
     eDirectoryCreate = 0x00E9,
     eDirectoryDelete = 0x00EA,
     eWiFiConnect = 0x00EB,
+    eFloatToUInt = 0x00EC,
+    eFloatToLong = 0x00ED,
 };
 
 enum Type {
@@ -294,6 +322,7 @@ enum LibCall {
     eGraphicsFilledRectangle = 0x0015,
     eGraphicsShow = 0x0016,
     eGraphicsDrawChar = 0x0017,
+    eMemoryIncWord = 0x0018,
 };
 
 enum Display {
@@ -472,7 +501,7 @@ enum Key {
 
 void HopperEntryPoint();
 void Runtime_MCU();
-Bool Runtime_LoadAuto_R(UInt & loadedAddress);
+Bool Runtime_LoadAuto_R(UInt & loadedAddress, UInt & codeLength);
 Byte Runtime_FromHex(Char ch);
 void Runtime_WaitForEnter();
 void Runtime_DumpPage(Byte iPage, Bool includeAddresses);
@@ -481,7 +510,7 @@ void Runtime_Out2Hex(Byte value);
 Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength);
 Bool Runtime_TryReadSerialByte_R(Byte & data);
 void HopperVM_Restart();
-void HopperVM_Initialize(UInt loadedAddress);
+void HopperVM_Initialize(UInt loadedAddress, UInt loadedSize);
 void HopperVM_ExecuteWarp();
 void HopperVM_ClearBreakpoints(Bool includingZero);
 void HopperVM_SetBreakpoint(Byte n, UInt address);
@@ -522,7 +551,9 @@ Bool IO_IsBreak();
 void IO_WriteLn();
 void IO_Write(Char c);
 void IO_AssignKeyboardBuffer(UInt buffer);
+void IO_WriteHex(UInt u);
 void IO_PushKey(Char c);
+void IO_WriteHex(Byte b);
 void HRArray_Release();
 void HRArray_Initialize();
 UInt HRString_New();
@@ -534,6 +565,7 @@ UInt HRString_getCapacity(UInt _this);
 UInt HRString_GetLength(UInt _this);
 UInt HRString_clone(UInt original, UInt extra);
 void Instructions_PopulateJumpTable(UInt jumpTable);
+Bool Instructions_Undefined();
 Bool Instructions_Add();
 Bool Instructions_Sub();
 Bool Instructions_Div();
@@ -576,6 +608,7 @@ Bool Instructions_RetB();
 Bool Instructions_RetRetB();
 Bool Instructions_CallB();
 Bool Instructions_TestBPB();
+Bool Instructions_Exit();
 Bool Instructions_JZB();
 Bool Instructions_JNZB();
 Bool Instructions_JB();
@@ -604,8 +637,12 @@ Bool Instructions_SysCall1();
 Bool Instructions_SysCall();
 Bool Instructions_CNP();
 Bool Instructions_Enter();
+Bool Instructions_NOP();
 Bool Instructions_Cast();
 Bool Instructions_PushGlobalBB();
+Bool Instructions_IncGlobalB();
+Bool Instructions_DecGlobalB();
+Bool Instructions_IncGlobalBB();
 Bool Instructions_PushIWLT();
 Bool Instructions_PushLocalBB();
 Bool Instructions_PopCopyLocalB();
@@ -617,6 +654,7 @@ Bool Instructions_EnterB();
 Bool Instructions_RetFast();
 Bool Instructions_BitXor();
 Bool Instructions_PushIWLEI();
+Bool Instructions_JREL();
 Bool Instructions_JIXB();
 Bool Instructions_JIXW();
 Bool Instructions_CallIW();
@@ -638,6 +676,7 @@ void HRDictionary_Clear(UInt _this);
 Bool HRDictionary_next_R(UInt _this, UInt & iterator, Type & ktype, UInt & key, Type & vtype, UInt & value);
 void HRPair_Clear(UInt _this);
 void HRVariant_Clear(UInt _this);
+OpCode HopperVM_CurrentOpCode_Get();
 UInt HopperVM_Pop();
 void HopperVM_Push(UInt value, Type htype);
 UInt HopperVM_Pop_R(Type & htype);
@@ -655,19 +694,21 @@ UInt HopperVM_PopCS();
 void HopperVM_PC_Set(UInt value);
 void HopperVM_PushCS(UInt value);
 UInt HopperVM_LookupMethod(UInt methodIndex);
+Bool HopperVM_ExitInline();
 Int HopperVM_ReadWordOffsetOperand();
 UInt HopperVM_ReadWordOperand();
 Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload);
 UInt HopperVM_Get(UInt address);
 Int HopperVM_PopI_R(Type & htype);
+Bool HopperVM_RunInline();
 Bool Types_IsReferenceType(Type htype);
 void GC_AddReference(UInt address);
 UInt GC_Clone(UInt original);
 Bool Library_ExecuteLibCall(Byte iLibCall);
 void IO_WriteUInt(UInt _this);
-void IO_WriteHex(UInt u);
-void IO_WriteHex(Byte b);
 void IO_writeDigit(UInt uthis);
+UInt Memory_Available();
+UInt Memory_Maximum();
 Bool HRFile_IsValid(UInt _this);
 UInt HRFile_ReadLine(UInt _this);
 Byte HRFile_Read(UInt _this);
@@ -766,7 +807,6 @@ Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 Char Char_ToDigit(Byte d);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
-
 
 
 #endif // HOPPERRUNTIME_H

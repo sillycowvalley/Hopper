@@ -8,7 +8,7 @@ void setup()
   Machine_Initialize();
   Platform_Initialize();
 
-#ifndef SEEEDESP32C3
+#if !defined(SEEEDESP32C3) && !defined(WAVESHARERP2040ONE)
   // flicker LED_BUILTIN to show that initialization completed
   pinMode(LED_BUILTIN, OUTPUT);
   for (int i = 0; i < 5; i++)

@@ -21,7 +21,7 @@ UInt External_DirectoryGetDirectoryCount(UInt hrpath);
 UInt External_DirectoryGetFile(UInt hrpath, UInt index);
 UInt External_DirectoryGetDirectory(UInt hrpath, UInt index);
 
-Bool External_ReadAllCodeBytes(UInt hrpath, UInt loadAddress);
+Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLength);
 
 
 #endif // HOPPERFILE_H

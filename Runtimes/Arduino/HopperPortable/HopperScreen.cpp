@@ -9,6 +9,8 @@ SPISettings screenSPISettings;
 Byte columns;
 Byte rows;
 Byte suspended;
+Byte cursorX;
+Byte cursorY;
 
 Display currentDisplay = Display::eNoDisplay;
 uint pixelHeight = 0;
@@ -26,7 +28,7 @@ Byte spiDataCommandPin;
 Byte resetPin = 0;
 Byte i2cAddress = 0;
 
-UInt * frameBuffer; // 4 bytes per pixel (for reading)
+UInt * frameBuffer;     // 4 bytes per pixel (for reading)
 Byte * monoFrameBuffer; // 1 bit per pixel for monochrome (OLED, LED Matrix, etc)
 
 #define CELLWIDTH   6
@@ -1086,7 +1088,7 @@ void HRScreen_Resume(Bool isInteractive)
         {
             for(uint8_t i=0;i<8;i++)
             {
-                sendMatrixData(i,monoFrameBuffer[i]);
+                sendMatrixData(i, monoFrameBuffer[i]);
 
                 digitalWrite(matrixDataPin, LOW);
                 digitalWrite(matrixClockPin, LOW);
@@ -1165,7 +1167,26 @@ void HRGraphics_SetPixel(Int x, Int y, UInt colour)
 void HRScreen_Clear()
 {
     HRGraphics_Clear(0x0000); // black
+    cursorX = 0;
+    cursorY = 0;
 }
+void HRScreen_Print(Char ch)
+{
+    HRScreen_DrawChar(cursorX, cursorY, ch, 0x7F7, 0x000);
+    //HRGraphics_DrawChar(cursorX * (CELLWIDTH-1), cursorY * CELLHEIGHT, ch, 0x7F7, 0x000, 1, true);
+    cursorX++;
+    if (cursorX == columns)
+    {
+        HRScreen_PrintLn();
+    }
+}
+void HRScreen_PrintLn()
+{
+    cursorX = 0;
+    cursorY++;
+    // TODO : scroll
+}
+
 void HRGraphics_Clear(UInt colour)
 {
     if (spiConfigured)

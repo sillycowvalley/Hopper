@@ -22,6 +22,10 @@ Byte HRScreen_Rows_Get();
 void HRScreen_DrawChar(UInt col, UInt row, Char chr, UInt foreColour, UInt backColour);
 void HRGraphics_DrawChar(UInt x, UInt y, Char chr, UInt foreColour, UInt backColour, Byte scale, Bool antiAliased);
 
+void HRScreen_Print(Char ch);
+void HRScreen_PrintLn();
+
+
 void HRScreen_Suspend();
 void HRScreen_Resume(Bool isInteractive);
 
