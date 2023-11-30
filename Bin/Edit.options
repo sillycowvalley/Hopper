@@ -1,0 +1,10 @@
+{
+    "buildoptions": 
+  {
+      "checkedBuild": "false"
+    , "runOptimizer": "true"
+    , "generateIHex": "true"
+    , "runDisassembler": "true"
+    , "autoSaveOnBuild": "true"
+  }
+}
