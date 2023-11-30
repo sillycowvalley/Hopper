@@ -1,100 +1,79 @@
 unit Errors
 {
+    
 #ifndef TERSE
-    string GetMessage(uint number)
+    string getMessage(uint number)
     {
         string message;
         switch (number)
         {
-            case 1:  { message = "Unknown command."; }
-            case 2:  { message = "Unknown argument."; }
-            case 3:  { message = "Invalid or illegal line number. Must be 1..9999."; }
-            case 4:  { message = "Expression expected."; }
-            case 5:  { message = "Unknown instruction."; }
-            case 6:  { message = "'=' expected."; }
-            case 7:  { message = "Variable identifier expected."; }
-            case 8:  { message = "Variable identifier cannot be reserved word."; }
-            case 9:  { message = "END expected."; }
-            case 10: { message = "Unexpected trailing content."; }
-            case 11: { message = "Destination line does not exist."; }
-            case 12: { message = "Closing '\"' expected."; }
-            case 13: { message = "Target line does not exist."; }
-            case 14: { message = "Unexpected character in expression:"; }
-            case 15: { message = "Integer expected."; }
-            case 16: { message = "Integers expected for operation."; }
-            case 17: { message = "Divide by zero."; }
-            case 18: { message = "Type mismatch."; }
-            case 19: { message = "THEN expected."; }
-            case 20: { message = "Boolean expression expected."; }
-            case 21: { message = "Unmatched WEND."; }
-            case 22: { message = "'(' expected."; }
-            case 23: { message = "WEND expected."; }
-            case 24: { message = "Unmatched NEXT."; }
-            case 25: { message = "NEXT expected."; }
-            case 26: { message = "')' expected."; }
-            case 27: { message = "Out of memory."; }
-            case 28: { message = "Array index out of range."; }
-            case 29: { message = "Positive integer expression expected."; }
-            case 30: { message = "TO expected."; }
-            case 31: { message = "Undefined variable in expression."; }
-            case 32: { message = "Constant integer expression expected."; }
-            case 33: { message = "Array variable identifier expected."; }
-            case 34: { message = "Out of memory for code."; }
-            case 35: { message = "Out of memory for variables."; }
-            case 36: { message = "Internal error."; }
-            case 37: { message = "Line number expected."; }
-            case 38: { message = "String expression expected."; }
-            case 39: { message = "Incorrect number of arguments for function."; }
-            case 40: { message = "Integer expression expected."; }
+            case 1:  { message = "Unknown command"; }
+            case 2:  { message = "Bad line number"; }
+            case 3:  { message = "Unexpected character"; }
+            case 4:  { message = "Integer expected"; }
+            case 5:  { message = "Out of memory for code"; }
+            case 6:  { message = "Out of memory for expression stack"; }
+            case 7:  { message = "Out of memory for call stack"; }
+            case 8:  { message = "RETURN without GOSUB"; }
+            case 9:  { message = "Syntax error"; }
+            case 10: { message = '"' + " expected"; }
+            case 11: { message = "EOL expected"; }
+            case 12: { message = "TO expected"; }
+            case 13: { message = "FOR without NEXT"; }
+            case 14: { message = "NEXT without FOR"; }
+            case 15: { message = "Integer expression expected"; }
+            case 16: { message = "Division by zero"; }
+            case 17: { message = ')' + " expected"; }
+            case 18: { message = "Unexpected base time"; }
+            case 19: { message = "DO without UNTIL"; }
+            case 20: { message = "UNTIL without DO"; }
+            case 21: { message = "Internal system error"; }
+            case 22: { message = "Feature not implemented"; }
+            case 23: { message = "Boolean expression expected"; }
+            case 24: { message = "Invalid hexadecimal literal"; }
+            case 25: { message = "Variable name expected"; }
+            case 26: { message = ',' + " expected"; }
+            default: { message = "Undefined error message"; }
         }
         return message;
     }
 #endif
-    
-    Error(uint number, string content, uint ln, char token)
+
+    Error(uint number, char token, uint lineNumber)
     {
-        Write("Error " + number.ToString() + ":");
+        bool wasContent;
+        Write("Error " + number.ToString());
 #ifndef TERSE
-        string message = GetMessage(number);
+        string message = getMessage(number);
         if (message.Length > 0)
         {
-            Write(" " + message);
-		          if (token != char(0))
-         			{
-         	    Write(" '" + token + "'.");
-            }
+            Write(": " + message);
+            wasContent = true;
         }
 #endif  
-        WriteLn();     
-        
-        if (content.Length > 0)
+        if (token != char(0))
         {
-            Write(" '" + content + "'");
+            Write(" at '" + token + "' ");
+            wasContent = true;
         }
-        if (ln != 0)
+        if ((lineNumber != 0) && (lineNumber <= Source.LineLimit))
         {
-            Write(" on line " + ln.ToString());
+            Write(" on line " + lineNumber.ToString());
+            wasContent = true;
         }
-        if ((content.Length > 0) || (ln != 0))
+        if (wasContent)
         {
-            WriteLn();
+            Write('.');
         }
-        WasError = true;
+        WriteLn();
+        Condition = Conditions.Error; 
     }
-   	Error(uint number, string content, uint ln)
+    Error(uint number, char token)
     {
-	       Error(number, content, ln, char(0));
+        Error(number, token, LineNumber);
     }
     Error(uint number)
     {
-        Error(number, "", 0);
-    }
-    Error(uint number, uint ln)
-    {
-        Error(number, "", ln);
-    }
-    Error(uint number, string content)
-    {
-        Error(number, content, 0);
+       Error(number, char(0), LineNumber);
     }
 }
