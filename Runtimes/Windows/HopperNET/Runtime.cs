@@ -19,7 +19,7 @@ namespace HopperNET
         Into,
         Over
     }
-    
+
     public enum Instruction
     {
 
@@ -31,7 +31,7 @@ namespace HopperNET
         DIV,
         MUL,
         MOD,
-        
+
         EQ,
         NE,
         GT,
@@ -39,7 +39,7 @@ namespace HopperNET
         GE,
         LE,
 
-        
+
         BOOLOR,
         BOOLAND,
         BITOR,
@@ -127,7 +127,7 @@ namespace HopperNET
         // instructions before here have a word operand (or two bytes)
 
 
-        
+
 
         BOOLNOT,   // ![top] -> [top]
         BITNOT,       // ~[top] -> [top]
@@ -196,6 +196,8 @@ namespace HopperNET
 
         ADDB,
         SUBB,
+
+        LIBCALL,
 
         UNDEFINED,
     };
@@ -295,7 +297,7 @@ namespace HopperNET
         SystemCurrentDirectoryGet = 0x5A,
         SystemCurrentDirectorySet = 0x5B,
         SystemBeep = 0x5C,
-        SystemExecute = 0x5D,
+        //SystemExecute = 0x5D,
         //SystemRegisterObject = 0x5E, unused
         FileExists = 0x5F,
         FileNew = 0x60,
@@ -344,6 +346,20 @@ namespace HopperNET
         WebServerClearHandlers = 0x89,
 
         HttpClientGetRequest = 0x8A,
+
+        RuntimePCGet = 0x8B,
+        RuntimeSPGet = 0x8C,
+        RuntimeBPGet = 0x8D,
+        RuntimeCSPGet = 0x8E,
+
+        RuntimeGetStackWord = 0x8F,
+        RuntimeGetStackType = 0x90,
+        RuntimeGetCallStackWord = 0x91,
+
+        RuntimeExecute = 0x92,
+        RuntimeInline = 0x93,
+
+        RuntimeUserCodeGet = 0x94,
 
         SerialConnect = 0xA2,
         SerialClose = 0xA3,
@@ -396,49 +412,57 @@ namespace HopperNET
         ArrayGetItemUInt = 0xCA,
         ArraySetItemUInt = 0xCB,
 
-        SystemInline = 0xCC,
+        //SystemInline = 0xCC,
         IntToBytes = 0xCD,
 
         FileGetTime = 0xCE,
         DirectoryGetTime = 0xCF,
 
-        StringTrim      = 0xD0,
-        StringTrimLeft  = 0xD1,
+        StringTrim = 0xD0,
+        StringTrimLeft = 0xD1,
         StringTrimRight = 0xD2,
-        StringPushImmediate = 0xD3, // not on Windows
-        StringToUpper   = 0xD4,
-        StringToLower   = 0xD5,
+        StringPushImmediate = 0xD3,
+        StringToUpper = 0xD4,
+        StringToLower = 0xD5,
 
         ClipboardGetChar = 0xD6,
 
-        MemoryReadWord  = 0xD7, // portable runtime only
-        MemoryWriteWord = 0xD8, // portable runtime only
+        MemoryReadWord = 0xD7,
+        MemoryWriteWord = 0xD8,
 
-        MCUPinMode      = 0xD9,
-        MCUDigitalRead  = 0xDA,
+        MCUPinMode = 0xD9,
+        MCUDigitalRead = 0xDA,
         MCUDigitalWrite = 0xDB,
 
-        MemoryReadCodeByte  = 0xDC,
+        MemoryReadCodeByte = 0xDC,
         MemoryWriteCodeByte = 0xDD,
-        MemoryReadCodeWord  = 0xDE, // portable runtime only
-        MemoryWriteCodeWord = 0xDF, // portable runtime only
+        MemoryReadCodeWord = 0xDE,
+        MemoryWriteCodeWord = 0xDF,
 
-        LongGetByte    = 0xE0,
-        IntGetByte     = 0xE1,
-        FloatGetByte   = 0xE2,
-        LongFromBytes  = 0xE3,
-        IntFromBytes   = 0xE4,
+        LongGetByte = 0xE0,
+        IntGetByte = 0xE1,
+        FloatGetByte = 0xE2,
+        LongFromBytes = 0xE3,
+        IntFromBytes = 0xE4,
         FloatFromBytes = 0xE5,
-        UIntToFloat    = 0xE6,
+        UIntToFloat = 0xE6,
 
-        SerialPortsGet    = 0xE7,
+        SerialPortsGet = 0xE7,
         SystemHexeVersionGet = 0xE8,
 
         DirectoryCreate = 0xE9,
         DirectoryDelete = 0xEA,
 
-        WiFiConnect     = 0xEB,
+        WiFiConnect = 0xEB,
 
+        FloatToUInt = 0xEC,
+        FloatToLong = 0xED,
+
+    };
+
+    enum LibCall
+    {
+        MemoryIncWord = 0x18,
     };
 
     public enum HopperType // if you change this, look at the end of ToByte(..) in Types.hs
@@ -648,7 +672,22 @@ namespace HopperNET
         const uint CALLSTACKSIZE = 256;
         
         public uint PC { get { return pc; } }
-        public uint InstructionPC { get { return instructionPC; } }
+        public uint InstructionPC 
+        { 
+            get 
+            {
+                uint pc = instructionPC;
+                if (codeStore != null)
+                {
+                    uint codeSize = (uint)codeStore.Length;
+                    if (codeSize < pc)
+                    {
+                        pc = pc - codeSize; // inline user code PC
+                    }
+                }
+                return pc; 
+            } 
+        }
         public uint SP { get { return sp; } }
         public uint BP { get { return bp; } }
         public uint CSP { get { return csp; } }
@@ -1561,21 +1600,24 @@ namespace HopperNET
                         {
                             short topi = PopInt();
                             short nexti = PopInt();
-                            PushLong(nexti + topi);
+                            PushInt((short)(nexti + topi));
+                            //PushLong(nexti + topi);
                         }
                         break;
                     case Instruction.SUBI:
                         {
                             short topi = PopInt();
                             short nexti = PopInt();
-                            PushLong(nexti - topi);
+                            PushInt((short)(nexti - topi));
+                            //PushLong(nexti - topi);
                         }
                         break;
                     case Instruction.MULI:
                         {
                             short topi = PopInt();
                             short nexti = PopInt();
-                            PushLong(nexti * topi);
+                            PushInt((short)(nexti * topi));
+                            //PushLong(nexti * topi);
                         }
                         break;
                     case Instruction.DIVI:
@@ -1587,7 +1629,8 @@ namespace HopperNET
                                 Diagnostics.Die(0x04, this);
                                 break;
                             }
-                            PushLong(nexti / topi);
+                            PushInt((short)(nexti / topi));
+                            //PushLong(nexti / topi);
                         }
                         break;
                     case Instruction.MODI:
@@ -1599,7 +1642,8 @@ namespace HopperNET
                                 Diagnostics.Die(0x04, this);
                                 break;
                             }
-                            PushLong(nexti % topi);
+                            PushInt((short)(nexti % topi));
+                            //PushLong(nexti % topi);
                         }
                         break;
                     case Instruction.GTI:
@@ -1631,7 +1675,14 @@ namespace HopperNET
                             PushBool(nexti <= topi);
                         }
                         break;
-                        
+
+                    case Instruction.LIBCALL:
+                        {
+                            operand = code[pc];
+                            pc++;
+                            LibraryCall(currentContext, (LibCall)operand);
+                        }
+                        break;
                     case Instruction.SYSCALL0:
                         {
                             operand = code[pc];
@@ -2978,7 +3029,7 @@ namespace HopperNET
                             uint methodIndex = Pop();
                             if (0 == methodIndex)
                             {
-                                Diagnostics.Die(0x0D, this); // invalid or uninitialized delegate
+                                Diagnostics.Die(0x0F, this); // invalid or uninitialized delegate
                                 break;
                             }
 #if PROFILE
@@ -2990,7 +3041,7 @@ namespace HopperNET
 
                     case Instruction.JREL:
                         {
-                            pc = (ushort)Pop(); // probably never used on Windows
+                            pc = (ushort)Pop();
                         }
                         break;
 
@@ -3453,6 +3504,8 @@ namespace HopperNET
             return lastError;
         }
 
+
+
 #if PROFILE
         private void KeepOpCodeLog(Context currentContext, Instruction opCode)
         {
@@ -3508,6 +3561,23 @@ namespace HopperNET
             currentContext.FnCallTimeReturnPCs.Add(returnPC);
         }
 #endif
+        private void LibraryCall(Context currentContext, LibCall libCall)
+        {
+
+            switch (libCall)
+            {
+                case LibCall.MemoryIncWord:
+                    {
+                        uint address = Pop();
+                        ushort value = (ushort)(currentContext.memoryArray[address] + (currentContext.memoryArray[address + 1] << 8));
+                        value++;
+                        currentContext.memoryArray[address] = (byte)(value & 0xFF);
+                        currentContext.memoryArray[address+1] = (byte)(value >> 8);
+                    }
+                    break;
+            }
+        }
+
         private void SystemCall(Context currentContext, SysCall sysCall, byte iOverload)
         {
             switch (sysCall)
@@ -3537,7 +3607,7 @@ namespace HopperNET
                                 UInt16 methodIndex = (UInt16)Pop();
                                 if (0 == methodIndex)
                                 {
-                                    Diagnostics.Die(0x0D, this); // invalid or uninitialized delegate
+                                    Diagnostics.Die(0x0F, this); // invalid or uninitialized delegate
                                     break;
                                 }
                                 HopperString url = (HopperString)PopVariant(HopperType.tString);
@@ -3550,7 +3620,7 @@ namespace HopperNET
                                 UInt16 methodIndex = (UInt16)Pop();
                                 if (0 == methodIndex)
                                 {
-                                    Diagnostics.Die(0x0D, this); // invalid or uninitialized delegate
+                                    Diagnostics.Die(0x0F, this); // invalid or uninitialized delegate
                                     break;
                                 }
                                 HopperString method = (HopperString)PopVariant(HopperType.tString);
@@ -3639,6 +3709,29 @@ namespace HopperNET
                             break;
                     }
                     break;
+                case SysCall.StringPushImmediate:
+                    {
+                        string value = "";
+                        for (; ; )
+                        {
+                            ushort content = (ushort)Pop();
+                            byte lsb = (byte)(content & 0xFF);
+                            byte msb = (byte)(content >> 8);
+                            if (lsb == 0)
+                            {
+                                break;
+                            }
+                            value = value + (char)lsb;
+                            if (msb == 0)
+                            {
+                                break;
+                            }
+                            value = value + (char)msb;
+                        }
+                        HopperString str = new HopperString(value);
+                        Push(str);
+                        break;
+                    }
                 case SysCall.CharToString:
                     switch (iOverload)
                     {
@@ -4208,10 +4301,10 @@ namespace HopperNET
                     }
                     break;
 
-                case SysCall.SystemInline:
+                case SysCall.RuntimeInline:
                     {
                         ushort startIndex = (ushort)Pop();
-                        HopperArray _this_ = (HopperArray)PopVariant(HopperType.tArray);
+                        HopperArray inlineCodeArray = (HopperArray)PopVariant(HopperType.tArray);
                         if (codeStore != null)
                         {
                             Diagnostics.Die(0x0B, this); // nested call to inline code?
@@ -4222,13 +4315,21 @@ namespace HopperNET
                         bpStore  = bp;
                         cspStore = csp;
                         codeStore = code;
-                        pc = startIndex;
-                        ushort[] array = _this_.Value;
-                        code = new byte[array.Length];
-                        for (uint i = 0; i < array.Length; i++)
+                        ushort[] inlineCode = inlineCodeArray.Value;
+                        code = new byte[codeStore.Length + inlineCode.Length];
+                        for (uint i = 0; i < codeStore.Length; i++)
                         {
-                            code[i] = (byte)array[i];
+                            code[i] = (byte)codeStore[i];
                         }
+                        ushort inlineStart = (ushort)codeStore.Length;
+
+                        //ModifyInlineCode(inlineCode);
+
+                        for (uint i = 0; i < inlineCode.Length; i++)
+                        {
+                            code[i + inlineStart] = (byte)inlineCode[i];
+                        }
+                        pc = (ushort)(startIndex + inlineStart);
                         break;
                     }
 
@@ -4722,7 +4823,7 @@ namespace HopperNET
                         Push(hopperSystem.HexeVersion, HopperType.tUInt);
                     }
                     break;
-                case SysCall.SystemExecute:
+                case SysCall.RuntimeExecute:
                     {
                         HopperList arguments = (HopperList)PopVariant(HopperType.tList);
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
@@ -4834,6 +4935,47 @@ namespace HopperNET
                     break;
                 case SysCall.ScreenClear:
                     this.screen.Clear();
+                    break;
+
+                case SysCall.RuntimePCGet:
+                    Push((ushort)this.pc, HopperType.tUInt);
+                    break;
+                case SysCall.RuntimeSPGet:
+                    Push((ushort)this.sp, HopperType.tUInt);
+                    break;
+                case SysCall.RuntimeBPGet:
+                    Push((ushort)this.bp, HopperType.tUInt);
+                    break;
+                case SysCall.RuntimeCSPGet:
+                    Push((ushort)this.bp, HopperType.tUInt);
+                    break;
+                case SysCall.RuntimeUserCodeGet:
+                    Push((ushort)this.codeStore.Length, HopperType.tUInt);
+                    break;
+
+                case SysCall.RuntimeGetStackWord:
+                    {
+                        
+                        ushort offset = (ushort)Pop();
+                        ushort value = (ushort)GetStack(offset); // doesn't work for long and float on Windows
+                        Push(value, HopperType.tUInt);
+                    }
+                    break;
+
+                case SysCall.RuntimeGetStackType:
+                    {
+                        ushort offset = (ushort)Pop();
+                        HopperType type = GetStackType(offset);
+                        Push((ushort)type, HopperType.tType);
+                        break;
+                    }
+                case SysCall.RuntimeGetCallStackWord:
+                    {
+
+                        ushort offset = (ushort)Pop();
+                        ushort value = (ushort)GetCallStack(offset);
+                        Push(value, HopperType.tUInt);
+                    }
                     break;
 
                 case SysCall.KeyboardReadKey:
@@ -5470,6 +5612,28 @@ namespace HopperNET
                         Push(new HopperString(top.ToString()));
                     }
                     break;
+                case SysCall.FloatToUInt:
+                    {
+                        float top = PopFloat();
+                        if ((top > 65535.0) || (top < 0.0))
+                        {
+                            Diagnostics.Die(0x0D, this); // numeric type out of range / overflow
+                            break;
+                        }
+                        Push((ushort)top, HopperType.tUInt);
+                    }
+                    break;
+                case SysCall.FloatToLong:
+                    {
+                        float top = PopFloat();
+                        if ((top > 2147483647) || (top < -2147483648))
+                        {
+                            Diagnostics.Die(0x0D, this); // numeric type out of range / overflow
+                            break;
+                        }
+                        PushLong((Int32)top);
+                    }
+                    break;
 
                 case SysCall.TypesTypeOf:
                     {
@@ -5826,10 +5990,44 @@ namespace HopperNET
                     break;
 
                 // emulation APIs for small devices
+                case SysCall.MemoryReadBit:
+                    {
+                        uint index = Pop();
+                        uint address = Pop();
+                        address = address + (index >> 3);
+                        byte mask = (byte)(1 << (byte)(index & 0x07));
+                        byte value = (byte)(currentContext.memoryArray[address] & mask);
+                        Push((byte)((value != 0) ? 1 : 0), HopperType.tByte);
+                    }
+                    break;
+                case SysCall.MemoryWriteBit:
+                    {
+                        uint data = Pop();
+                        uint index = Pop();
+                        uint address = Pop();
+                        address = address + (index >> 3);
+                        byte mask = (byte)(1 << (byte)(index & 0x07));
+                        if (data == 0)
+                        {
+                            currentContext.memoryArray[address] &= (byte)(~mask);
+                        }
+                        else
+                        {
+                            currentContext.memoryArray[address] |= mask;
+                        }
+                    }
+                    break;
+
                 case SysCall.MemoryReadByte:
                     {
                         uint address = Pop();
                         Push(currentContext.memoryArray[address], HopperType.tByte);
+                    }
+                    break;
+                case SysCall.MemoryReadWord:
+                    {
+                        uint address = Pop();
+                        Push((ushort)(currentContext.memoryArray[address] + (currentContext.memoryArray[address + 1] << 8)), HopperType.tUInt);
                     }
                     break;
 
@@ -5838,6 +6036,14 @@ namespace HopperNET
                         uint data = Pop();
                         uint address = Pop();
                         currentContext.memoryArray[address] = (byte)data;
+                    }
+                    break;
+                case SysCall.MemoryWriteWord:
+                    {
+                        uint data = Pop();
+                        uint address = Pop();
+                        currentContext.memoryArray[address]   = (byte)(data & 0xFF);
+                        currentContext.memoryArray[address+1] = (byte)((data >> 8) & 0xFF);
                     }
                     break;
                 case SysCall.MemoryAvailable:
@@ -5851,12 +6057,26 @@ namespace HopperNET
                         Push(currentContext.memoryCodeArray[address], HopperType.tByte);
                     }
                     break;
+                case SysCall.MemoryReadCodeWord:
+                    {
+                        uint address = Pop();
+                        Push((ushort)(currentContext.memoryCodeArray[address] + (currentContext.memoryCodeArray[address+1] << 8)), HopperType.tUInt);
+                    }
+                    break;
 
                 case SysCall.MemoryWriteCodeByte:
                     {
                         uint data = Pop();
                         uint address = Pop();
                         currentContext.memoryCodeArray[address] = (byte)data;
+                    }
+                    break;
+                case SysCall.MemoryWriteCodeWord:
+                    {
+                        uint data = Pop();
+                        uint address = Pop();
+                        currentContext.memoryCodeArray[address] = (byte)(data & 0xFF);
+                        currentContext.memoryCodeArray[address + 1] = (byte)((data >> 8) & 0xFF);
                     }
                     break;
 
@@ -5907,5 +6127,82 @@ namespace HopperNET
         {
             this.lastError = lastError;
         }
+        private void ModifyInlineCode(ushort[] inlineCode)
+        {
+            // Inline code on the MCUs or 6502 is different to running on Hopper .NET
+            // For example, we never use CALLIW on Windows (only CALLW)
+            ushort pc = 0;
+            ushort endPC = (ushort)inlineCode.Length;
+            for (; ; )
+            {
+                if (pc >= endPC)
+                {
+                    break;
+                }
+                Instruction opCode = (Instruction)inlineCode[pc];
+                switch (opCode)
+                {
+                    case Instruction.EXIT:
+                    case Instruction.PUSHI0:
+                    case Instruction.PUSHI1:
+                    case Instruction.PUSHIM1:
+                    case Instruction.SWAP:
+                    case Instruction.NOP:
+                    case Instruction.JREL:
+                    case Instruction.ADDI:
+                    case Instruction.SUBI:
+                    case Instruction.MULI:
+                    case Instruction.DIVI:
+                    case Instruction.MODI:
+                    case Instruction.BITNOT:
+                    case Instruction.BOOLAND:
+                    case Instruction.BOOLOR:
+                    case Instruction.LEI:
+                    case Instruction.NE:
+                    case Instruction.LTI:
+                    case Instruction.GEI:
+                    case Instruction.GTI:
+                    case Instruction.EQ:
+
+                    case Instruction.ADD: // zero .. NOP ..
+                        // no operand
+                        break;
+                    case Instruction.DUP:
+                    case Instruction.DECSP:
+                    case Instruction.JNZB:
+                    case Instruction.JZB:
+                    case Instruction.PUSHIB:
+                    case Instruction.SYSCALL0:
+                    case Instruction.PUSHGLOBALB:
+                    case Instruction.POPGLOBALB:
+                    case Instruction.INCGLOBALB:
+                    case Instruction.CAST:
+                    case Instruction.PUSHIBEQ:
+                        // byte operand
+                        pc++;
+                        break;
+                    case Instruction.PUSHIW:
+                    case Instruction.JW:
+                    case Instruction.JZW:
+                    case Instruction.PUSHIWLEI:
+                    case Instruction.CALLW: // already modified
+                    case Instruction.INCGLOBALBB:
+                    case Instruction.PUSHGLOBALBB:
+                        // word operand
+                        pc += 2;
+                        break;
+                    case Instruction.CALLIW:
+                        inlineCode[pc] = (byte)Instruction.CALLW;
+                        pc += 2;
+                        break;
+                    default:
+                        Diagnostics.Die(0x0A, this); // not implemented
+                        break;
+                }
+                pc++;
+            }
+            
+        }
+
     }
 }

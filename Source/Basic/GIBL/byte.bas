@@ -1,0 +1,27 @@
+NEW
+1  VDU12:PRINT "1983 BYTE Magazine Sieve Benchmark (in GIBL)"
+5  !160=0
+10  S = 8190
+20  F=TOP
+30  PRINT "10 iterations"
+40  FOR L = 1 TO 10
+50  C = 0
+60  FOR I = 0 TO S
+70  @(F,I) = 1
+80  NEXT I
+90  FOR I = 0 TO S
+100 IF @(F,I) = 0 GOTO 180
+110 P = I + I + 3
+115 REM PRINT P
+120 K = I + P
+130 IF K > S GOTO 170
+140 @(F,K) = 0
+150 K = K + P
+160 GOTO 130
+170 C = C + 1
+180 NEXT I
+185 PRINT "."; : NEXT L
+190 PRINT C, "Primes"
+200 E = !(160):E = E / 10: PRINT "Time: ",E/10;
+210VDU(46):VDU(E%10+48):PRINT" seconds"
+220END

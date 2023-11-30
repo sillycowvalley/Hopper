@@ -1,0 +1,431 @@
+
+;********************************************************************************
+;* This file is part of gibl:							*
+;*	Gordons Interactive Basic Language                                      *
+;********************************************************************************
+;*    A Tiny Basic for the 6502 inspired by the NIBL Tiny Basic interpreter;	*
+;*    "National Industrial Basic Language" originally for the INS8060 SC/MP	*
+;*    system.									*
+;*										*
+;*    gibl is distributed under a "Source Available" license.			*
+;*	It is NOT Open source and must not be treated as such.			*
+;*										*
+;*    See the file LICENSE for details.						*
+;*										*
+;*    gibl is Copyright (c) 2023 by Gordon Henderson				*
+;********************************************************************************
+
+	GIBL is based on NIBL:
+	  National Industrial Basic Language
+	    by Mark Alexander & Steve Leininger for the SC/MP, 1976.
+	      Which was based on Tiny Basic by Dennis Allison, 1975.
+
+
+Manual for release 4.
+
+  GIBL works like most interactive BASICs - if you type a command it's
+  executed immediately, or prefix the command with a number then its
+  stored in the computer memory to be executed at a later time when you
+  use the RUN, GOTO or GOSUB commands.
+
+  Lines are stored in numeric ascending order and it is suggested to
+  initially leave a gap of 10 between lines to enable new lines to be
+  inserted later if required. (There is no renumber command)
+
+  Entering a line with the same number as an existing line will overwrite
+  that line and entering a line number with no text will delete that line,
+  if it exists.
+
+
+VARIABLES:
+============================================================================
+
+  Variables are a single upper-case letter and the @ character. This
+  allows for 27 unique variables.  They are either 16-bit, 2s compliment
+  signed integers with a range -32768 through 32767 or may be used as
+  pointers into RAM to help create arrays of bytes, words or strings.
+
+  A variable prefixed with a dollar ($) symbol is used as a pointer to
+  some free RAM to store a string in. Memory management is left as an
+  exercise to the user, but see the TOP function below.
+
+  Variable @ can be used as a general purpose variable, however it has
+  a special use when printing numbers in that it specifies the field
+  width of the number being printed...
+
+    @ = 0
+    PRINT 123
+    123
+    @ = 4
+    PRINT 123
+      123
+
+  Note: The actual field width is @ + 1 characters in total.
+
+
+NUMBERS: 
+============================================================================
+
+  Numbers are decimal by default or may be prefixed with an & to denote
+  hexadecimal format. (This is standard Acorn notation, rather than
+  the more usual $ or 0x notation, or the "h" suffix)
+
+  e.g.
+
+    A = 123 : B = &FAAA
+
+  Range checking is only performed on decimal numbers - you can enter
+  16-bit absolute values in hexadecimal.
+
+
+BASIC Immediate-Mode commands:
+============================================================================
+
+  NEW
+    Deletes the current program and clears all variables, stacks, etc.
+
+  CLEAR
+    Just clears the variables and internal stacks.
+
+  LIST
+    Lists the current stored program. Note that there is currently no
+    way to list a single line or part of the program.
+
+  RUN
+    Clears variables, stacks, etc. and starts program execution at the
+    first stored line.
+
+  Additionally, variables may be printed and manipulated to help aid
+  with program debugging, if required and GOTO and GOSUB may be called to
+  transfer control to parts of the program other than the start without
+  clearing variables first.
+
+
+Save, Load, Chain and DIR
+============================================================================
+
+  Some systems may support a means to save and load programs.
+
+  The W65C134-SXB Boards:
+
+    LD n
+    SV n
+    CH n
+    DIR
+
+    These Load, Save and Chain (Load and Run) a program stored in storage
+    slot "n". There are 16 storage slots numbered 0-15 of varying sizes.
+
+    Slots: 0,1,2,3,4,5,6,7 and 15 are 4KB
+    Slots: 8,9,10 and 11 are 8KB
+    Slots: 12, 13 and 14 are 16KB
+
+  Autorun:
+
+    If a program in slot 15 has
+
+      0REM!BOOT
+
+    as it's very first line then it will be automatically loaded and run at
+    startup time. (It must be line number zero)
+
+  Chain:
+
+    The CH (chain) command loads and runs a program without clearing
+    variables first.
+
+  Directory:
+
+    If you have the vert first line (line number zero) as a REM comment
+    with the program name/function as that will be printed out with the
+    DIR command.
+
+    e.g.
+
+      0REM Hello World Program
+
+
+Stopping a running program
+============================================================================
+
+  Running programs may be stopped by using your systems usual convention
+  for stopping a running program. This will be handled by the person(s)
+  responsible for posting the verion of GIBL you use to your system but it
+  will typcally be by pressing the Ctrl-C or ESC keys on your keyboard.
+  Note that to help speed program execution, the check for a keyboard
+  interrupt is only perfomed on a GOTO, GOSUB, NEXT and UNTIL commands. If
+  you have a program with 10,000 lines of computation without any flow
+  changes, then it may take some time before one of these instructions
+  is executed...
+
+
+Commands for stored programs:
+============================================================================
+
+  LET - Optional
+	LET A = 5
+    or
+	A = 5
+    is the same thing
+
+  GOTO expression
+    The expression may be a variable or the result of a calculation.
+	e.g. GOTO 100 + S*10
+    If the line number does not exist then an error is generated.
+
+  GOSUB expression
+    As GOTO, however the place immediately after the GOTSUB is remembered
+    and can be returned to with the ...
+
+  RETURN
+    command.
+
+  FOR VAR = start TO end STEP value
+	As per most BASICs the STEP part is optional and is 1 by default.
+  NEXT var
+	Terminates a FOR loop. The variable name (letter) must be present.
+
+  DO
+    Marks the start of a DO/UNTIL loop
+
+  UNTIL expression
+    Evaluates the expression and if FALSE (ie. 0) then the program execution
+    returns to the statement immediately after the DO instruction.
+
+  IF expression THEN/GOTO ...
+    The expression is evaluated and if TRUE then the rest of the line is
+    executed. The THEN clause is optional and must not be used if you
+    are using GOTO or GOSUB next.  Unlike some BASICs, following THEN
+    with a line number is not valid here and you must use GOTO or GOSUB.
+
+  INPUT variable
+    Program execution stops and the user is prompted for either numeric
+    or string input, depending on the variable. You can only input one
+    variable at a time.
+
+  PRINT ...
+    Prints items to the terminal. Items may be constant strings enclosed
+    in "double quotes", variables or variables as strings where the
+    variable name is prefixed with a dollar $ sign. Items can be separated
+    with a comma and a trailing semicolon suppresses a new-line being
+    printed.  Additionally, numbers prefixed with a twiddle symbol ~
+    will be printed as a fixed width, 4-digit hexadecimal number.
+
+      PRINT "A is: ", A
+      PRINT "There are ",K, " Kilngons left"
+      PRINT "Data value is: ", ~V
+      PRINT "Hi, ", $N
+
+    See the notes on variables for using the @ variable to specify the
+    output field-width for numbers.
+
+  VDU expression {, expression, ...}
+    Output a single ASCII byte to the terminal, or a list of
+    bytes. e.g. VDU 12 may clear the screen on some terminals and VDU
+    7 may produce a beep...
+
+  REM
+    Start a remark or comment. Everything to the end of the line is
+    ignored.
+
+  END
+    Stops program execution and returns to the command prompt.
+
+
+Relational operators:
+============================================================================
+
+  GIBL supports the standard: =, <, <=, >, >=, <> operators. Relational
+  operators evaluate to 0 for FALSE or 1 for TRUE.
+
+
+Logical operators:
+============================================================================
+
+  AND, OR and EOR (exclusive-or) are supported and perform bitwise
+  logical operations on the arguments producing 16-bit results.
+
+  The NOT operator inverts the truth value of the operand. In GIBL,
+  FALSE is represented by the number 0 and TRUE is any other number
+  positive or negative.
+
+    PRINT 1 = 5
+    0
+    PRINT NOT (1 = 5)
+    1
+
+
+Arithmetic Operators:
+============================================================================
+
+  The standard operators; +, -, / (for divide) and * (for multiply)
+  are supported. Additionally, % for modulo (remainder after division)
+  is also supported. Brackets () may be used where required.
+
+
+Functions:
+============================================================================
+
+  There are a small number of built in functions which return various
+  data.
+
+  RND
+    This returns a pseudo random number in the range 0 through 32767. Can
+    be used with the % operator to constrain to a range. e.g.
+
+      D = RND % 6 : REM
+
+    You may also assign a value to RND to seed the generator. This can be used to
+    produce the same sequence of pseudo random numbers every run.
+
+      RND = 42
+      PRINT RND
+        12682
+
+  TOP
+    This returns the address of the first byte of free RAM after the program. You
+    can use this to store strings or create arrays of data. Management of this facility
+    is left up to you, the programmer.
+
+      A = TOP
+      $A = "Hello, World"
+      B = A + 100
+      $B = "Something else"
+      PRINT $A, " and ", $B
+
+  GET
+    Program execution is halted and it waits for a single character to
+    be typed on the terminal. This character is not echoed to the screen
+    and is available to your program as the ASCII value of the character
+    you typed.
+
+      PRINT GET
+
+    will print 42 if you type an asterisk (*).
+
+
+Indirection:
+============================================================================
+
+  Some BASICs have PEEK and POKE operators to manipulate memory and
+  peripherals, the indirection operators in GIBL work in a similar manner.
+
+  e.g.
+    A = TOP
+    ?A = 123
+
+  That stores a single byte into memory location TOP (the first free
+  memory location you can safely use).
+
+  Retrieve the value in a similar manner
+
+    PRINT ?A
+
+  should print 123 on the terminal.
+
+  You can use this to control the ports on e.g. a 6522 VIA.
+
+    ?&FE20 = &FF : REM Port A to all outputs
+    ?&FE10 = &AA : REM Port A to the pattern: 10101010
+
+  To read/write 16-bit words, use the ! operator:
+
+    A = TOP
+    !A = 12345
+    PRINT !A
+
+  To create an array you need to make sure you have enough space. This
+  is easy if you only have one array, but if you have 2 then you need
+  to work it out..
+
+  e.g. Lets say we need 2 arrays, the first 10 entries, the 2nd 20,
+  then in other BASICs this might be:
+
+    DIM A(10), B(20)
+
+  in GIBL:
+
+    A = TOP : B = A + 10 : REM 10 locations after A.
+
+  You can then do e.g.
+
+    FOR I = 0 TO 9 : A?I = 0 : NEXT I
+
+  and so on. Remember to double the size if you are storing 16-bit numbers using
+  the ! operator rather than the ? operator, and double the index value:
+
+  A!0 is the first element of a 16-bit array, A!2 is the 2nd element
+  and A!4 is the third element, and so-on.
+
+
+Operator precedence/Hierarchy:
+============================================================================
+
+    NOT, functions, ?, !, ( )
+    *, /, AND
+    +, -, OR, EOR
+    <, >, <=, >=, <>, =
+
+  e.g.
+
+      1 + 2 * 3
+
+  will yield 7.
+
+
+Strings:
+============================================================================
+
+  Variables can hold strings and the strings can be up to 255 characters
+  in length. There is no automatic memory allocation for the string data -
+  you must do this yourself.
+
+    A = TOP
+    $A = "Hello, world"
+    PRINT $A
+
+  The above statements will assign the value of TOP to variable A then
+  store the string "Hello, world" at that memory location then print it
+  to the output terminal.
+
+  If you want to store a 2nd string, then
+
+    B = A + 50
+    $B = "Hello, Moon."
+    PRINT $B
+
+  This allows for up to 49 charactrs to be stored in A.
+
+  Strings can be copied with:
+
+    $B = $A
+    PRINT $B
+
+  If you want individual character manipulation, then you can use the byte
+  indirection commands, so:
+
+    C = ?(A+5)
+
+  will assign the 6th letter of A (the comma) into C as an integer -
+  which will be 44 in this instance.
+
+  Memory allocation for strings and numeric arrays is left as an exercise
+  to the user. With great power comes great responsibility and all that.
+
+
+W65C134-SXB System Specific commands:
+================================================================================
+
+  On the W65C134-SXB boards there is an extra command: LED. You may assign
+  a value to this and the value will be represented on the 4 LEDs on the
+  system board. Valid values are from 0 through 15, but larger numbers
+  are truncated. The LEDs may be read back.
+
+  Example:
+
+    LED = 1
+    LED = LED * 2
+
+  There are other commands in the RAM version for the '134-SXB to help
+  facilitate flashing code and data into the on-board EEPROM but these
+  are beyond the scope of this document.

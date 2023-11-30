@@ -64,6 +64,8 @@ namespace HopperNET
                 case 0x0B: errorMessage = "Unexpected internal system error."; break;
                 case 0x0C: errorMessage = "Memory allocation failure."; break;
                 case 0x0D: errorMessage = "Numeric type out of range/overflow."; break;
+                case 0x0E: errorMessage = "User error (like compilation failure)."; break;
+                case 0x0F: errorMessage = "Invalid or uninitialized delegate."; break;
             }
             runtime.Screen.PrintLn("      " + errorMessage, 0xF77, 0x000);
 

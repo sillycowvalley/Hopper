@@ -1,0 +1,14 @@
+NEW
+   10REM Noels Retro Lab BASIC Benchmark
+   15!160=0:PRINT"S"
+   20FOR I=1 TO 10
+   25S=0
+   30FOR J=1 TO 1000
+   35S=S+I
+   40NEXT J
+   45PRINT ".";
+   50NEXT I
+   55PRINT S
+   60PRINT"E":Z=!160:PRINT "Time: ",Z/10;
+   70VDU(46):VDU(Z%10+48):PRINT" seconds"
+   80END
