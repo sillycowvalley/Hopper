@@ -177,7 +177,7 @@ unit Monitor
                     if (ch != char(0x0A)) // only do the 0x0D's
                     {
                         SerialWriteChar(ch);
-                        Delay(1);
+                        Delay(3);
                         if (ch == char (0x0D))
                         {
                             waitingForPrompt = true;

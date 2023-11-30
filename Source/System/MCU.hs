@@ -1,10 +1,16 @@
 unit MCU
 {
 
-#define PORTABLE      // use Hopper versions of runtime library functions (minimal platform requirements)
-#define SERIALCONSOLE // for IO.hs if there is no alternative screen (like an LCD for example)
+#ifndef PORTABLE
+  #define PORTABLE      // use Hopper versions of runtime library functions (minimal platform requirements)
+#endif
+#ifndef SERIALCONSOLE
+  #define SERIALCONSOLE // for IO.hs if there is no alternative screen (like an LCD for example)
+#endif
 
-#define MCU           // for correct versions of System APIs (like Time.Delay(..) for example)
+#ifndef MCU
+  #define MCU           // for correct versions of System APIs (like Time.Delay(..) for example)
+#endif
 
     uses "/Source/System/System"
     uses "/Source/System/IO"
@@ -30,6 +36,24 @@ unit MCU
         InputPulldown = 0x03,
     }
 #endif  
+#ifdef TINY2040
+    flags PinModeOption
+    {
+        Input         = 0x00,
+        Output        = 0x01,
+        InputPullup   = 0x02,
+        InputPulldown = 0x03,
+    }
+#endif
+#ifdef WAVESHARERP2040ONE
+    flags PinModeOption
+    {
+        Input         = 0x00,
+        Output        = 0x01,
+        InputPullup   = 0x02,
+        InputPulldown = 0x03,
+    }
+#endif
 #ifdef SEEEDRP2040
     flags PinModeOption
     {

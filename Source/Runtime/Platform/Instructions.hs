@@ -8,6 +8,13 @@ unit Instructions
     PopulateJumpTable(uint jumpTable)
     {
         InstructionDelegate
+        instructionDelegate = Instructions.Undefined;
+#ifdef CHECKED
+        for (uint opCode = 0; opCode < 256; opCode++)
+        {
+            WriteToJumpTable(jumpTable, byte(opCode), instructionDelegate);
+        }
+#endif
         instructionDelegate = Instructions.Add;
         WriteToJumpTable(jumpTable, byte(OpCode.ADD), instructionDelegate);
         
@@ -100,6 +107,9 @@ unit Instructions
         instructionDelegate = Instructions.TestBPB;
         WriteToJumpTable(jumpTable, byte(OpCode.TESTBPB), instructionDelegate);
         
+        instructionDelegate = Instructions.Exit;
+        WriteToJumpTable(jumpTable, byte(OpCode.EXIT), instructionDelegate);
+        
         
         instructionDelegate = Instructions.JZB;
         WriteToJumpTable(jumpTable, byte(OpCode.JZB), instructionDelegate);
@@ -167,15 +177,20 @@ unit Instructions
         instructionDelegate = Instructions.Enter;
         WriteToJumpTable(jumpTable, byte(OpCode.ENTER), instructionDelegate);
      
+        instructionDelegate = Instructions.NOP;
+        WriteToJumpTable(jumpTable, byte(OpCode.NOP), instructionDelegate);
         instructionDelegate = Instructions.Cast;
         WriteToJumpTable(jumpTable, byte(OpCode.CAST), instructionDelegate);
         instructionDelegate = Instructions.PushGlobalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBALBB), instructionDelegate);
      
-        //instructionDelegate = Instructions.IncGlobalB;
-        //WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALB), instructionDelegate);
-        //instructionDelegate = Instructions.DecGlobalB;
-        //WriteToJumpTable(jumpTable, byte(OpCode.DECGLOBALB), instructionDelegate);
+        instructionDelegate = Instructions.IncGlobalB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALB), instructionDelegate);
+        instructionDelegate = Instructions.DecGlobalB;
+        WriteToJumpTable(jumpTable, byte(OpCode.DECGLOBALB), instructionDelegate);
+        
+        instructionDelegate = Instructions.IncGlobalBB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALBB), instructionDelegate);
      
         instructionDelegate = Instructions.PushIWLT;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHIWLT), instructionDelegate);
@@ -208,6 +223,8 @@ unit Instructions
         instructionDelegate = Instructions.PushIWLEI;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHIWLEI), instructionDelegate);
      
+        instructionDelegate = Instructions.JREL;
+        WriteToJumpTable(jumpTable, byte(OpCode.JREL), instructionDelegate);
         instructionDelegate = Instructions.JIXB;
         WriteToJumpTable(jumpTable, byte(OpCode.JIXB), instructionDelegate);
         instructionDelegate = Instructions.JIXW;
@@ -530,7 +547,10 @@ unit Instructions
 #endif   
         return true;
     }
-    
+    bool Exit()
+    {
+        return HopperVM.ExitInline();
+    }
     bool RetRetB()
     {
         Type rtype;
@@ -557,6 +577,10 @@ unit Instructions
         {
             PC = PopCS();
         }
+        return true;
+    }
+    bool NOP()
+    {
         return true;
     }
     bool Cast()
@@ -758,6 +782,52 @@ unit Instructions
         Put(address, value+1, itype);
         return true;
     }
+    bool IncGlobalB()
+    {
+        uint address     = ReadByteOperand();
+        
+        // INCGLOBALB is an optimization of "i = i + 1":
+        // If it were done using ADDI or ADD, then the result pushed on the stack
+        // would be tInt or tUInt, even if i was a tByte.
+        // POPGLOBALB would then supply the type for the resulting expression.
+        //
+        // So, we need to choose between tUInt and tInt for the "pop" if it was tByte .. I choose tUInt
+        // (we need to avoid munting the type if it is currently a -ve tInt)
+        
+        Type itype;
+        uint value = HopperVM.Get(address, ref itype);
+        if (itype == Type.Byte)
+        {
+            itype = Type.UInt;
+        }
+        Put(address, value+1, itype);
+        return true;
+    }
+    bool IncGlobalBB()
+    {
+        uint address0     = ReadByteOperand();
+        uint address1     = ReadByteOperand();
+     
+        Type type0;
+        uint value = HopperVM.Get(address0, ref type0);
+        
+        Type type1;   
+        Put(address0, value + HopperVM.Get(address1, ref type1), type0);
+        return true;
+    }
+    bool DecGlobalB()
+    {
+        uint address     = ReadByteOperand();
+        
+        Type itype;
+        uint value = HopperVM.Get(address, ref itype);
+        if (itype == Type.Byte)
+        {
+            itype = Type.UInt;
+        }
+        Put(address, value-1, itype);
+        return true;
+    }
     bool PopLocalB00()
     {
         if (CNP) 
@@ -933,6 +1003,12 @@ unit Instructions
     bool JW()
     {
         PC = uint(ReadWordOffsetOperand() + int(PC-3));
+        return true;
+    }
+    bool JREL()
+    {
+        uint address = Pop();
+        PC = address;
         return true;
     }
     bool JIXB()
@@ -1420,7 +1496,7 @@ unit Instructions
         AssertUInt(rtype, methodIndex);
         if (methodIndex == 0)
         {
-            Error = 0x0D; // invalid or uninitialized delegate
+            Error = 0x0F; // invalid or uninitialized delegate
             return false;
         }
 #else

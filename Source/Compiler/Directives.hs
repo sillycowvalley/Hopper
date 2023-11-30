@@ -76,12 +76,16 @@ unit Directives
                 //    break;
                 //}
             }
-            if (Symbols.DefineExists(idToken["lexeme"]))
+            bool allDefined = Directives.IsAllDefined();
+            if (allDefined) // otherwise ignore it
             {
-                Parser.ErrorAtCurrent("preprocessor symbol can only be defined once");
-                break;
+                if (Symbols.DefineExists(idToken["lexeme"]))
+                {
+                    Parser.ErrorAtCurrent("preprocessor symbol can only be defined once");
+                    break;
+                }
+                Symbols.AddDefine(idToken["lexeme"], value);
             }
-            Symbols.AddDefine(idToken["lexeme"], value);
             break;
         }
     }

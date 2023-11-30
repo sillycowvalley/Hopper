@@ -7,9 +7,9 @@ unit External
     uses "/Source/Runtime/Emulation/HttpClient.hs"
     uses "/Source/Runtime/Emulation/WiFi.hs"
     
-    bool ReadAllCodeBytes(uint hrpath, uint loadAddress)
+    bool ReadAllCodeBytes(uint hrpath, uint loadAddress, ref uint codeLength)
     {
-        return false;
+        ErrorDump(156); Error = 0x0A; return false;
     }
     
     
@@ -195,13 +195,16 @@ unit External
     }
     DigitalWrite(byte pin, byte value)
     {
+        ErrorDump(157); Error = 0x0A; 
     }
     byte DigitalRead(byte pin)
     {
+        ErrorDump(158); Error = 0x0A; 
         return 0;
     }
     PinMode(byte pin, byte value)
     {
+        ErrorDump(159); Error = 0x0A; 
     }
     
     
@@ -230,6 +233,18 @@ unit External
     long nativeLongFromHopperLong(uint hrlong)
     {
         return Long.FromBytes(ReadByte(hrlong+2), ReadByte(hrlong+3), ReadByte(hrlong+4), ReadByte(hrlong+5));
+    }
+    int LongToInt(uint hrlong)
+    {
+        long top = nativeLongFromHopperLong(hrlong);
+#ifdef CHECKED
+        if ((top < -32768) || (top > -32767))
+        {
+            ErrorDump(167);
+            Error = 0x0D; // numeric type out of range / overflow
+        }
+#endif   
+        return int(top);     
     }
     
     uint LongAdd(uint next, uint top)
@@ -290,6 +305,18 @@ unit External
         long ln = nativeLongFromHopperLong(hrlong);
         return hopperFloatFromNativeFloat(float(ln));
     }
+    uint FloatToLong(uint hrfloat)
+    {
+        float fl = nativeFloatFromHopperFloat(hrfloat);
+        return hopperLongFromNativeLong(long(fl));
+    }
+    uint FloatToUInt(uint hrfloat)
+    {
+        float fl = nativeFloatFromHopperFloat(hrfloat);
+        return uint(fl);
+    }
+    
+    
     uint IntToFloat(int i)
     {
         return hopperFloatFromNativeFloat(float(i));
@@ -381,6 +408,7 @@ unit External
     }
     bool FunctionCall(uint address, byte opCode)
     {
+        ErrorDump(160); Error = 0x0A; 
         return false;    
     }
     WriteToJumpTable(uint jumpTable, byte opCode, InstructionDelegate instructionDelegate)

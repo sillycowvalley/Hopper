@@ -196,6 +196,21 @@ unit Instructions
         }
         return false;
     }
+    bool IsPushConstant(Instruction instruction)
+    {
+        switch(instruction)
+        {
+            case Instruction.PUSHI0:
+            case Instruction.PUSHI1:
+            case Instruction.PUSHIM1:
+            case Instruction.PUSHIB:
+            case Instruction.PUSHIW:
+            {
+                return true;   
+            }
+        }
+        return false;
+    }
     
     byte GetKitchenSinkWidth(Instruction instruction, ref bool isStackOffset, ref bool isAddressOffset, ref bool isRET)
     {

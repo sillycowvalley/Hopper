@@ -21,8 +21,14 @@ unit GPIO
 #ifdef RP2040
     const byte builtInLED = 32;
 #endif
+#ifdef TINY2040
+    const byte builtInLED = 19;
+#endif
 #ifdef ARDUINONANORP2040
     const byte builtInLED = 6;
+#endif
+#ifdef WAVESHARERP2040ONE
+    const byte builtInLED = 16; // GP16 WS2812 RGB LED??
 #endif
 #ifdef SEEEDRP2040
     const byte builtInLED  = 17;
@@ -67,10 +73,12 @@ unit GPIO
         { 
             MCU.PinMode(builtInLED, MCU.PinModeOption.Output);
 #ifdef WEMOSD1MINI
-            MCU.DigitalWrite(builtInLED, value ? false : true); // false = ON?!
-#else            
-            MCU.DigitalWrite(builtInLED, value); 
+            value = !value; // false = ON?!
 #endif
+#ifdef TINY2040
+            value = !value; // false = ON?!
+#endif
+            MCU.DigitalWrite(builtInLED, value); 
         } 
     }
 }

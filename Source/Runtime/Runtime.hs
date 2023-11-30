@@ -87,7 +87,7 @@ program Runtime
     bool loaded = false;
     const uint codeMemoryStart = 0x0000; // code memory magically exists from 0x0000 to 0xFFFF
     
-    bool LoadAuto(ref uint loadedAddress)
+    bool LoadAuto(ref uint loadedAddress, ref uint codeLength)
     {
         bool success;
         
@@ -97,7 +97,7 @@ program Runtime
         uint path = HopperVM.GetAppName();
         if (HRFile.Exists(path))
         {
-            success = ReadAllCodeBytes(path, loadedAddress);
+            success = ReadAllCodeBytes(path, loadedAddress, ref codeLength);
         }
         
         GC.Release(path);
@@ -168,7 +168,7 @@ program Runtime
     
     ErrorDump(uint number)
     {
-        IO.Write('F');IO.Write('U');IO.Write('C');IO.Write('K');IO.Write('!');
+        IO.Write('D');IO.Write('A');IO.Write('N');IO.Write('G');IO.Write('!');
         IO.WriteUInt(number);
     }
     
@@ -697,9 +697,10 @@ program Runtime
         
         // load 'auto.hexe' if it exists
         uint loadedAddress;
-        if (External.LoadAuto && Runtime.LoadAuto(ref loadedAddress))
+        uint codeLength;
+        if (External.LoadAuto && Runtime.LoadAuto(ref loadedAddress, ref codeLength))
         {
-            HopperVM.Initialize(loadedAddress);
+            HopperVM.Initialize(loadedAddress, codeLength);
             HopperVM.Restart();
             loaded = true;
             HopperVM.ExecuteWarp();
@@ -815,7 +816,7 @@ program Runtime
                         Serial.WriteChar(char(enter));
                         if (loaded)
                         {
-                            HopperVM.Initialize(loadedAddress);
+                            HopperVM.Initialize(loadedAddress, codeLength);
                             HopperVM.Restart();
                             
                             // codeLength

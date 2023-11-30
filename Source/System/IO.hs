@@ -64,6 +64,14 @@ unit IO
     {
 #ifdef SERIALCONSOLE
         Serial.WriteChar(char(0x0C)); // form feed
+        if (echoToLCD)
+        {
+#ifdef RUNTIME
+            HRScreen.Clear();
+#else
+            Screen.Clear();
+#endif
+        }
 #else        
     #ifdef H6502
         if (echoToLCD)
@@ -117,11 +125,37 @@ unit IO
         byte lsb = byte(u & 0xFF);
         WriteHex(lsb);
     }
-    
 #ifdef SERIALCONSOLE
     Write(char c)
     {
         Serial.WriteChar(c);
+        if (echoToLCD)
+        {
+            if (char(0x0D) == c)
+            {
+#ifdef RUNTIME
+                HRScreen.PrintLn();
+#else
+                //Screen.PrintLn();
+#endif 
+            }
+            else if (char(0x0C) == c)
+            {
+#ifdef RUNTIME
+                HRScreen.Clear();
+#else
+                //Screen.Clear();
+#endif 
+            }
+            else
+            {
+#ifdef RUNTIME
+                HRScreen.Print(c);
+#else
+                //Screen.Print(c);
+#endif 
+            }
+        }
     }
     Write(string s)
     {

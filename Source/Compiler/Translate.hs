@@ -796,20 +796,7 @@ program Translate
                 {
                     break;
                 }
-                if (Parser.Check(HopperToken.RBrace))
-                {
-                    Advance(); // }
-                    
-                    if (insertBreak)
-                    {
-                        SourceStream.NewLine();
-                        SourceStream.Append("break;");
-                    }
-                    SourceStream.NewLine();
-                    SourceStream.Append("}", -1);
-                    break; // end of method
-                }
-                else if (Parser.Check(HopperToken.Directive))
+                if (Parser.Check(HopperToken.Directive))
                 {
                     // preprocessor directives (#ifdef, #ifndef, #else, #endif")
                     Directives.Directive();
@@ -832,6 +819,19 @@ program Translate
                             }
                             Parser.Advance(); // gobble gobble
                         }
+                    }
+                    else if (Parser.Check(HopperToken.RBrace))
+                    {
+                        Advance(); // }
+                        
+                        if (insertBreak)
+                        {
+                            SourceStream.NewLine();
+                            SourceStream.Append("break;");
+                        }
+                        SourceStream.NewLine();
+                        SourceStream.Append("}", -1);
+                        break; // end of method
                     }
                     else
                     {      

@@ -1,6 +1,7 @@
 unit BuildCommand
 {
     uses "/Source/System/System"
+    uses "/Source/System/Runtime"
     uses "/Source/System/Screen"
     uses "/Source/System/Serial"
     uses "/Source/Editor/Commands"
@@ -183,7 +184,7 @@ unit BuildCommand
             arguments.Append("-g");
             arguments.Append(col.ToString());
             arguments.Append(row.ToString());
-            uint error = System.Execute(binaryPath, arguments);
+            uint error = Runtime.Execute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError("Preprocessor", error);
@@ -221,7 +222,7 @@ unit BuildCommand
             arguments.Append(row.ToString());
             
             Editor.SetStatusBarText("Compiling '" + jsonPath + "' -> '" + codePath + "'" + checkedBuild);
-            error = System.Execute(binaryPath, arguments);
+            error = Runtime.Execute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError("Compile", error);
@@ -243,7 +244,7 @@ unit BuildCommand
                 arguments.Append("-g");
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
-                error = System.Execute(binaryPath, arguments);
+                error = Runtime.Execute(binaryPath, arguments);
                 if (error != 0)
                 {
                     DisplayError("Optimize", error);
@@ -268,7 +269,7 @@ unit BuildCommand
             {
                 arguments.Append("-ihex");
             }
-            error = System.Execute(binaryPath, arguments);
+            error = Runtime.Execute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError("CODEGEN", error);
@@ -291,7 +292,7 @@ unit BuildCommand
                 arguments.Append("-g");
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
-                error = System.Execute(binaryPath, arguments);
+                error = Runtime.Execute(binaryPath, arguments);
                 if (error != 0)
                 {
                     DisplayError("DASM", error);
@@ -318,7 +319,7 @@ unit BuildCommand
         <string> arguments;
         string sourcePath = Editor.GetProjectPath(); 
         arguments.Append(sourcePath); // Debugger takes the .hs source path
-        uint error = System.Execute("Debug", arguments);
+        uint error = Runtime.Execute("Debug", arguments);
         Editor.DrawAll();
     }
     Run()
@@ -333,7 +334,7 @@ unit BuildCommand
             arguments.Append(path); // HopperMon takes IHex path
             path = "hm";
         }
-        uint error = System.Execute(path, arguments);
+        uint error = Runtime.Execute(path, arguments);
         Editor.DrawAll();
     }
     

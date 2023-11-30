@@ -4,6 +4,7 @@ program Shell
 //#define TINYHOPPER  
 
     uses "/Source/System/System"
+    uses "/Source/System/Runtime"
     uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
     uses "/Source/System/Diagnostics"
@@ -73,7 +74,7 @@ program Shell
             {
                 break;
             }
-            uint result = System.Execute(command, arguments);
+            uint result = Runtime.Execute(command, arguments);
             // TODO REMOVE
             if (result != 0)
             {

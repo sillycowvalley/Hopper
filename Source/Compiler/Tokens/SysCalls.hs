@@ -116,7 +116,7 @@ unit SysCalls
         addEntry("System", "CurrentDirectory_Get");
         addEntry("System", "CurrentDirectory_Set");
         addEntry("System", "Beep");
-        addEntry("System", "Execute");
+        addEntry("System", "Execute"); // unused
         addEntry("System", "RegisterObject");
         
         addEntry("File", "Exists");
@@ -172,8 +172,18 @@ unit SysCalls
         
         addEntry("HttpClient", "GetRequest");
         
-        addEntry("Runtime", "Halted_Get");
-        addEntry("Runtime", "Halted_Set");
+        addEntry("Runtime", "PC_Get");
+        addEntry("Runtime", "SP_Get");
+        addEntry("Runtime", "BP_Get");
+        addEntry("Runtime", "CSP_Get");
+        addEntry("Runtime", "GetStackWord");
+        addEntry("Runtime", "GetStackType");
+        addEntry("Runtime", "GetCallStackWord");
+        addEntry("Runtime", "Execute");
+        addEntry("Runtime", "Inline");
+        addEntry("Runtime", "UserCode_Get");
+        
+        // legacy:
         addEntry("Runtime", "Load");             // used by the windows shell debugger
         addEntry("Runtime", "BytesLoaded_Get");  // used by the windows shell debugger
         addEntry("Runtime", "Run");              // used by the windows shell debugger
@@ -182,19 +192,11 @@ unit SysCalls
         addEntry("Runtime", "StepInto");
         addEntry("Runtime", "StepOver");
         addEntry("Runtime", "StepRun");
-        addEntry("Runtime", "PC_Get");
         addEntry("Runtime", "Waiting_Get");
         addEntry("Runtime", "ClearBreakpoints");
         addEntry("Runtime", "ClearStatements");
         addEntry("Runtime", "SetBreakpoint");
         addEntry("Runtime", "SetStatement");
-        addEntry("Runtime", "SP_Get");
-        addEntry("Runtime", "BP_Get");
-        addEntry("Runtime", "CSP_Get");
-        addEntry("Runtime", "GetStackWord");
-        addEntry("Runtime", "GetStackVariant");
-        addEntry("Runtime", "GetStackType");
-        addEntry("Runtime", "GetCallStackWord");
         
         addEntry("Serial", "Connect");
         addEntry("Serial", "Close");
@@ -252,7 +254,7 @@ unit SysCalls
         addEntry("Array", "GetItemUInt");
         addEntry("Array", "SetItemUInt");
         
-        addEntry("System", "Inline");
+        addEntry("System", "Inline");  // unused
         addEntry("Int", "ToBytes");
         
         addEntry("File", "GetTime");
@@ -294,6 +296,9 @@ unit SysCalls
         addEntry("Directory", "Delete");
         
         addEntry("WiFi", "Connect");
+        
+        addEntry("Float", "ToUInt");
+        addEntry("Float", "ToLong");
     }
     
     bool TryParseSysCall(string name, ref byte index)

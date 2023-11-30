@@ -88,6 +88,8 @@ unit OpCodes
         COPYNEXTPOP = 0x48,
         ENTER       = 0x49,
         
+        NOP      = 0x50,
+        
         CAST     = 0x51,
         
         PUSHGLOBALBB = 0x52,
@@ -109,9 +111,14 @@ unit OpCodes
         RETFAST  = 0x61,
         PUSHDB   = 0x62,
         
+        EXIT     = 0x63,
+        
         BITXOR    = 0x64,
         
         PUSHIWLEI = 0x65,
+        INCGLOBALBB = 0x66,
+        
+        JREL      = 0x67,
         
         JIXB      = 0x68,
         JIXW      = 0x69,

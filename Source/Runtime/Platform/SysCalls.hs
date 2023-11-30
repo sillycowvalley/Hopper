@@ -62,6 +62,7 @@ unit SysCalls
         
         LongToBytes          = 0x39,
         LongToFloat          = 0x3A,
+        LongToInt            = 0x3B,
         LongToUInt           = 0x3C,
         LongNew              = 0x3D,
         LongNewFromConstant  = 0x3E,
@@ -127,11 +128,36 @@ unit SysCalls
         
         HttpClientGetRequest = 0x8A,
         
+        RuntimePCGet  = 0x8B,
+        RuntimeSPGet  = 0x8C,
+        RuntimeBPGet  = 0x8D,
+        RuntimeCSPGet = 0x8E,
+        
+        RuntimeGetStackWord = 0x8F,
+        RuntimeGetStackType = 0x90,
+        RuntimeGetCallStackWord = 0x91,
+        
+        RuntimeExecute = 0x92,
+        RuntimeInline  = 0x93,
+        
+        RuntimeUserCodeGet = 0x94,
+        
         SerialIsAvailableGet = 0xA5,
         SerialReadChar       = 0xA6,
         SerialWriteChar      = 0xA7,
         
+        MemoryReadByte = 0xA9,
+        MemoryWriteByte = 0xAA,
+        MemoryAvailable = 0xAB,
+        MemoryMaximum = 0xAC,
+        MemoryAllocate = 0xAD,
+        MemoryFree = 0xAE,
+        
+        
         StringBuildFront = 0xB5,
+        
+        MemoryReadBit = 0xB6,
+        MemoryWriteBit = 0xB7,
         
         CharToDigit      = 0xBD,
         
@@ -145,6 +171,10 @@ unit SysCalls
         StringTrim       = 0xD0,
         StringTrimLeft   = 0xD1,
         StringTrimRight  = 0xD2,
+        StringPushImmediate = 0xD3,
+        
+        MemoryReadWord  = 0xD7,
+        MemoryWriteWord = 0xD8,
         
         MCUPinMode       = 0xD9,
         MCUDigitalRead   = 0xDA,
@@ -162,5 +192,8 @@ unit SysCalls
         DirectoryDelete  = 0xEA,
         
         WiFiConnect      = 0xEB,
+        
+        FloatToUInt     = 0xEC,
+        FloatToLong     = 0xED,
     }
 }

@@ -31,5 +31,7 @@ unit LibCalls
         
         GraphicsShow,
         GraphicsDrawChar,
+        
+        MemoryIncWord,
     }
 }

@@ -199,7 +199,7 @@ program I2CDemo
         long start;
         long elapsed;
         
-        if (!DisplayILI9341xPiPico28())
+        if (!DisplaySSD1306x96())
         {
             WriteLn("Failed to initialize Display");
             return;

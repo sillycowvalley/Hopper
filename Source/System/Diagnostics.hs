@@ -19,8 +19,9 @@ unit Diagnostics
     //   0x0A - feature not implemented
     //   0x0B - system failure (internal error)
     //   0x0C - memory allocation failure
-    //   0x0D - invalid or uninitialized delegate
+    //   0x0D - numeric type out of range/overflow
     //   0x0E - user error (like compilation failure)
+    //   0x0F - invalid or uninitialized delegate
     Die(uint error) system;
 
     OutputDebug(string output) system;

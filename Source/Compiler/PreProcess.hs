@@ -132,7 +132,7 @@ program PreProcess
                             break;   
                         }
                     }
-                    else if ((currentUnit == "System") && (typeString == "byte"))
+                    else if (((currentUnit == "System") || (currentUnit == "Runtime")) && (typeString == "byte"))
                     {
                         systemByteArray = true;
                     }
@@ -855,6 +855,8 @@ program PreProcess
         }
         else if (Parser.Check(HopperToken.Directive))
         {
+            //OutputDebug("Directive:");
+            //DumpCurrent();
             Directives.Directive(); 
         }
         else
@@ -867,14 +869,37 @@ program PreProcess
                 {
                     if (Parser.Check(HopperToken.Directive))
                     {
-                        break;
+                        
+                        //DumpCurrent();
+                        // The only directives we don't want to gobble are:
+                        // - the #endif that flips allDefined
+                        // - the #else that flips allDefined
+                        if (Parser.Check(HopperToken.Directive, "#define"))
+                        {
+                            Directives.Declaration(); 
+                        }
+                        else
+                        {
+                            Directives.Directive(); 
+                        }
+                        allDefined = Directives.IsAllDefined();
+                        if (allDefined)
+                        {
+                            //OutputDebug("allDefined->");
+                            break;
+                        }
+                        else
+                        {
+                            //OutputDebug("Gobbled");
+                            continue;
+                        }
                     }
                     if (Parser.Check(HopperToken.EOF))
                     {
                         break;
                     }
                     Parser.Advance(); // gobble gobble
-                }
+                } // loop
             }                                           
             else if (Parser.Check(HopperToken.LBrace))
             {

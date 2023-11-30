@@ -41,6 +41,10 @@ unit LibCalls
         addEntry("Graphics", "Show");
         addEntry("Graphics", "DrawChar");
         
+        addEntry("Memory", "IncWord");
+        
+        
+        
     }
     
     bool TryParseLibCall(string name, ref byte index)

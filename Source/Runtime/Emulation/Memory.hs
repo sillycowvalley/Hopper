@@ -10,31 +10,10 @@ unit Memory
     uint heapStart = 0x8000; // 32K
     uint heapSize  = 0x4000; // 32K-48K    
     
-#ifdef SERIALCONSOLE
     uint ReadWord(uint address) system;
     WriteWord(uint address, uint value) system;
     uint ReadCodeWord(uint address) system;
     WriteCodeWord(uint address, uint value) system;
-#else
-    uint ReadWord(uint address)
-    {
-        return (ReadByte(address+1) << 8) + ReadByte(address);
-    }
-    WriteWord(uint address, uint word)
-    {
-        WriteByte(address,   byte(word & 0xFF));
-        WriteByte(address+1, byte(word >> 8));
-    }
-    uint ReadCodeWord(uint address)
-    {
-        return (ReadCodeByte(address+1) << 8) + ReadCodeByte(address);
-    }
-    WriteCodeWord(uint address, uint word)
-    {
-        WriteCodeByte(address,   byte(word & 0xFF));
-        WriteCodeByte(address+1, byte(word >> 8));
-    }
-#endif
     
     uint freeList;
     const byte mcbSize = 6;
@@ -66,7 +45,7 @@ unit Memory
         {
             if (0 == size)
             {
-                Error = 0x0C;
+                ErrorDump(161); Error = 0x0C;
                 break;
             }
             uint best;
@@ -168,7 +147,7 @@ unit Memory
             }
             else
             {
-                Error = 0x0C;
+                WriteHex(size); ErrorDump(162); Error = 0x0C;
                 address = 0; // failed to allocate
             }
             break;

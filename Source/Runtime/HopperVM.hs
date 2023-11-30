@@ -45,6 +45,7 @@ unit HopperVM
 #endif
     
     uint binaryAddress;
+    uint programSize;
     uint constAddress;
     uint methodTable;
 #ifdef RUNTIME        
@@ -128,9 +129,10 @@ unit HopperVM
         }
     }
     
-    Initialize(uint loadedAddress)
+    Initialize(uint loadedAddress, uint loadedSize)
     {
         binaryAddress      = loadedAddress;
+        programSize        = loadedSize;
         constAddress       = ReadCodeWord(binaryAddress + 0x0002);
         methodTable        = binaryAddress + 0x0006;
     }
@@ -389,7 +391,7 @@ unit HopperVM
             }
             default:
             {
-                ErrorDump(33);
+                WriteHex(byte(htype)); Write(' '); ErrorDump(33);
                 Error= 0x0B; // system failure (internal error)
             }
         }
@@ -416,6 +418,132 @@ unit HopperVM
         bool doNext = true;
         switch (SysCall(iSysCall))
         {
+            case SysCall.RuntimeInline:
+            {
+                if (!RunInline())
+                {
+                    ErrorDump(165); Error= 0x0B; // nested call to inline code?
+                    doNext = false;
+                }
+            }
+            case SysCall.RuntimeUserCodeGet:
+            {
+                Push(programSize, Type.UInt);
+            }
+            case SysCall.MemoryAvailable:
+            {
+                uint size = Memory.Available();
+                Push(size, Type.UInt);
+            }
+            case SysCall.MemoryMaximum:
+            {
+                uint size = Memory.Maximum();
+                Push(size, Type.UInt);
+            }
+            case SysCall.MemoryAllocate:
+            {
+                Type atype;
+                uint size = Pop(ref atype);
+#ifdef CHECKED
+                AssertUInt(atype, size);
+#endif       
+                uint address = Memory.Allocate(size);
+                Push(address, Type.UInt);
+            }
+            case SysCall.MemoryFree:
+            {
+                Type atype;
+                uint address = Pop(ref atype);
+#ifdef CHECKED
+                AssertUInt(atype, address);
+#endif       
+                Memory.Free(address);
+            }
+            case SysCall.MemoryReadBit:
+            {
+                Type itype;
+                uint index = Pop(ref itype);
+                Type atype;
+                uint address = Pop(ref atype);
+#ifdef CHECKED
+                AssertUInt(itype, index);
+                AssertUInt(atype, address);
+#endif       
+                address = address + (index >> 3);
+                byte mask = (1 << (index & 0x07));
+                byte value = Memory.ReadByte(address) & mask;
+                Push((value != 0) ? 1 : 0, Type.Byte);
+            }
+            case SysCall.MemoryWriteBit:
+            {
+                Type btype;
+                uint data = Pop(ref btype);
+                Type itype;
+                uint index = Pop(ref itype);
+                Type atype;
+                uint address = Pop(ref atype);
+#ifdef CHECKED
+                AssertByte(btype, data);
+                AssertUInt(itype, index);
+                AssertUInt(atype, address);
+#endif       
+                address = address + (index >> 3);
+                byte mask = (1 << (index & 0x07));
+                byte current = Memory.ReadByte(address);
+                if (data == 0)
+                {
+                    Memory.WriteByte(address, byte(current & ~mask));
+                }
+                else
+                {
+                    Memory.WriteByte(address, byte(current | mask));
+                }
+            }
+            
+            case SysCall.MemoryReadByte:
+            {
+                Type atype;
+                uint address = Pop(ref atype);
+#ifdef CHECKED
+                AssertUInt(atype, address);
+#endif       
+                byte b = Memory.ReadByte(address);
+                Push(b, Type.Byte);
+            }
+            case SysCall.MemoryWriteByte:
+            {
+                Type btype;
+                uint b = Pop(ref btype);
+                Type atype;
+                uint address = Pop(ref atype);
+#ifdef CHECKED
+                AssertByte(btype, b);
+                AssertUInt(atype, address);
+#endif       
+                Memory.WriteByte(address, byte(b));
+            }
+            case SysCall.MemoryReadWord:
+            {
+                Type atype;
+                uint address = Pop(ref atype);
+#ifdef CHECKED
+                AssertUInt(atype, address);
+#endif       
+                uint w = Memory.ReadWord(address);
+                Push(w, Type.UInt);
+            }
+            case SysCall.MemoryWriteWord:
+            {
+                Type btype;
+                uint w = Pop(ref btype);
+                Type atype;
+                uint address = Pop(ref atype);
+#ifdef CHECKED
+                AssertUInt(btype, w);
+                AssertUInt(atype, address);
+#endif       
+                Memory.WriteWord(address, w);
+            }
             case SysCall.SystemCurrentDirectoryGet:
             {
                 Push(GC.Clone(currentDirectory), Type.String);
@@ -824,7 +952,7 @@ unit HopperVM
             }
             case SysCall.ScreenPrintLn:
             {
-                IO.WriteLn();
+                HRScreen.PrintLn();
             }
             case SysCall.ScreenClear:
             {
@@ -887,7 +1015,7 @@ unit HopperVM
                         AssertUInt(btype, fc);
                         AssertChar(ctype, ch);
 #endif
-                        IO.Write(char(ch));
+                        HRScreen.Print(char(ch));
                     }
                     case 1:
                     {
@@ -910,7 +1038,7 @@ unit HopperVM
                         for (uint i=0; i < length; i++)
                         {
                             char ch = HRString.GetChar(str, i);
-                            IO.Write(ch);
+                            HRScreen.Print(ch);
                         }
                         GC.Release(str);
                     }
@@ -962,7 +1090,7 @@ unit HopperVM
                 uint address = HRFloat.NewFromConstant(constAddress + location);
                 Push(address, Type.Float);
             }
-        
+            
             case SysCall.StringNewFromConstant:
             {
                 switch(iOverload)
@@ -997,6 +1125,32 @@ unit HopperVM
                     }
                 }
             }
+            case SysCall.StringPushImmediate:
+            {
+                uint address = HRString.New();
+                loop
+                {
+                    Type utype;
+                    uint content = Pop(ref utype);
+#ifdef CHECKED
+                    AssertUInt(utype, content);
+#endif
+                    byte lsb = byte(content & 0xFF);
+                    byte msb = byte(content >> 8);
+                    if (lsb == 0)
+                    {
+                        break;
+                    }
+                    HRString.BuildChar(ref address, char(lsb));
+                    if (msb == 0)
+                    {
+                        break;
+                    }
+                    HRString.BuildChar(ref address, char(msb));
+                }
+                Push(address, Type.String);
+            }
+        
             case SysCall.StringNew:
             {
                 uint address = HRString.New();
@@ -1553,7 +1707,7 @@ unit HopperVM
                 AssertUInt(atype, index);
                 if ((ttype != Type.Array) || IsReferenceType(itype))
                 {
-                    ErrorDump(10);
+                    WriteHex(this); Write(' '); WriteHex(byte(ttype)); Write(' '); WriteHex(byte(itype)); Write(' '); ErrorDump(164);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
@@ -2025,6 +2179,8 @@ unit HopperVM
                 uint lng = HRUInt.ToLong(value);
                 Push(lng, Type.Long);
             }
+            
+            
             case SysCall.UIntToInt:
             {
                 Type htype;
@@ -2085,8 +2241,33 @@ unit HopperVM
                 AssertLong(htype);
 #endif
                 uint lst = HRLong.ToBytes(l);
-                Push(lst, Type.List);                
+                Push(lst, Type.List);  
+                GC.Release(l);
             }
+            
+            case SysCall.FloatToLong:
+            {
+                Type htype;
+                uint f = Pop(ref htype);
+#ifdef CHECKED
+                AssertFloat(htype);
+#endif
+                uint lng = External.FloatToLong(f);
+                Push(lng, Type.Long);
+                GC.Release(f);
+            }
+            case SysCall.FloatToUInt:
+            {
+                Type htype;
+                uint f = Pop(ref htype);
+#ifdef CHECKED
+                AssertFloat(htype);
+#endif
+                uint ui = External.FloatToUInt(f);
+                Push(ui, Type.UInt);
+                GC.Release(f);
+            }
+            
             case SysCall.LongGetByte:
             {
                 uint index = Pop();
@@ -2096,7 +2277,8 @@ unit HopperVM
                 AssertLong(htype);
 #endif
                 byte b = HRLong.GetByte(l, index);
-                Push(b, Type.Byte);                
+                Push(b, Type.Byte);  
+                GC.Release(l);              
             }
             case SysCall.LongFromBytes:
             {
@@ -2179,6 +2361,21 @@ unit HopperVM
 #endif
                 uint ui = HRLong.ToUInt(this);
                 Push(ui, Type.UInt);
+                GC.Release(this);
+            }
+            case SysCall.LongToInt:
+            {
+                Type htype;
+                uint this = Pop(ref htype);
+#ifdef CHECKED
+                if (htype != Type.Long)
+                {
+                    ErrorDump(7);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                int i = External.LongToInt(this);
+                PushI(i);
                 GC.Release(this);
             }
             case SysCall.LongToFloat:
@@ -2973,5 +3170,44 @@ unit HopperVM
                 break;
             }
         } // loop
+    }
+    
+    uint pcStore;
+    
+    bool RunInline()
+    {
+        Type stype;
+        uint startIndex = Pop(ref stype);
+        Type ttype;
+        uint inlineCodeArray = Pop(ref ttype);
+#ifdef CHECKED
+        AssertUInt(stype, startIndex);
+        if (ttype != Type.Array)
+        {
+            ErrorDump(167); Error = 0x0B;
+        }
+#endif       
+        
+        pcStore  = pc;
+        uint inlineLocation = binaryAddress + programSize;
+        pc = inlineLocation + startIndex;
+        
+        uint length = HRArray.GetCount(inlineCodeArray);
+        for (uint i = 0; i < length; i++)
+        {
+            Type itype;
+            byte c = byte(HRArray.GetItem(inlineCodeArray, i, ref itype));
+            WriteCodeByte(inlineLocation, c);
+            inlineLocation++;
+        }
+        GC.Release(inlineCodeArray);
+        
+        return true; // success
+    }
+    bool ExitInline()
+    {
+        pc = pcStore;
+        Push(0, Type.UInt); // strictly speaking, this is the result from Runtime.Inline(..)
+        return true;
     }
 }

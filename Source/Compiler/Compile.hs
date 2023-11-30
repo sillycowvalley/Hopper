@@ -1968,13 +1968,7 @@ program Compile
                 {
                     break;
                 }
-                if (Parser.Check(HopperToken.RBrace))
-                {
-                    Advance(); // }
-                    //CodeStream.InsertDebugInfo(true);
-                    break; // end of method
-                }
-                else if (Parser.Check(HopperToken.Directive))
+                if (Parser.Check(HopperToken.Directive))
                 {
                     // preprocessor directives (#ifdef, #ifndef, #else, #endif")
                     Directives.Directive();
@@ -1997,6 +1991,12 @@ program Compile
                             }
                             Parser.Advance(); // gobble gobble
                         }
+                    }
+                    else if (Parser.Check(HopperToken.RBrace))
+                    {
+                        Advance(); // }
+                        //CodeStream.InsertDebugInfo(true);
+                        break; // end of method
                     }
                     else
                     {      

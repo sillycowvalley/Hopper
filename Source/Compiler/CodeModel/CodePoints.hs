@@ -735,7 +735,7 @@ unit CodePoints
                    )
                 {
                     uint callMethodIndex = iOperands[iIndex];
-                    if (Target6502)
+                    if (Target6502) // delegates still use this
                     {
                         callMethodIndex = callMethodIndex & 0x3FFF;
                     }

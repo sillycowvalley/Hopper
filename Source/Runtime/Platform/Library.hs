@@ -37,6 +37,18 @@ unit Library
                 HRWire.EndTx();
             }
             
+            case LibCall.MemoryIncWord:
+            {
+                Type utype;
+                uint address = Pop(ref utype);
+#ifdef CHECKED             
+                AssertByte(utype, address);
+#endif                   
+                uint w = Memory.ReadWord(address);
+                w++;
+                Memory.WriteWord(address, w);
+            }
+            
             case LibCall.GraphicsConfigureDisplay:
             {
                 Type utype;
@@ -77,7 +89,10 @@ unit Library
                 uint result = uint(HRGraphics.Begin());
                 Push(result, Type.UInt);
             }
-            
+            case LibCall.GraphicsEnd:
+            {
+                HRGraphics.End();
+            }
             case LibCall.GraphicsClear:
             {
                 Type ctype;
@@ -216,7 +231,7 @@ unit Library
                 Serial.WriteChar('L');
                 Runtime.Out2Hex(iLibCall);
                 Serial.WriteChar(' ');
-                WriteHex(PC); Write(':'); Write('L'); WriteHex(iLibCall); Write(' '); ErrorDump(2);
+                WriteHex(PC); Write(':'); Write('L'); WriteHex(iLibCall); Write(' '); ErrorDump(132);
                 Error = 0x0A; // not implemented
             }
         }

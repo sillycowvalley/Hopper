@@ -6,7 +6,6 @@ unit Screen
     byte CursorY { get system; }
     byte Columns { get system; }
     byte Rows    { get system; }
-
     
 #ifndef H6502
     Suspend() system;
@@ -14,16 +13,12 @@ unit Screen
     // if !isInteractive then Resume will pump messages (not needed if we are processing keystrokes)
     Resume(bool isInteractive) system;
 #endif
-    
-
 
     Clear() system;
     
-    SetCursor(uint x, uint y) system;
-    //SetForeColour(uint foreColour) system;
-    //SetBackColour(uint backColour) system;
+    SetCursor(uint col, uint row) system;
 
-    DrawChar(uint x, uint y, char c, uint foreColour, uint backColour) system;
+    DrawChar(uint col, uint row, char c, uint foreColour, uint backColour) system;
     
     Print(char c,     uint foreColour, uint backColour) system;
 #ifdef PORTABLE
@@ -39,8 +34,6 @@ unit Screen
 #endif    
     PrintLn() system;
 
-
-
     PrintLn(char c,   uint foreColour, uint backColour)
     {
         Print(c, foreColour, backColour);
@@ -51,8 +44,6 @@ unit Screen
         Print(s, foreColour, backColour);
         PrintLn();
     }
-
-    
     
     Print(char c)
     {

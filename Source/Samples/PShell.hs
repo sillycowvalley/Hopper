@@ -76,7 +76,7 @@ program Shell
             {
                 break;
             }
-            uint result = System.Execute(command, arguments);
+            uint result = Runtime.Execute(command, arguments);
             // TODO REMOVE
             if (result != 0)
             {

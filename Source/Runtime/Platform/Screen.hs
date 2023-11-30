@@ -18,9 +18,7 @@ unit HRScreen
         Screen.Clear();
 #endif
     }    
-    SetPixel(uint x, uint y, uint colour)
-    {
-    }
+    
 #ifndef SERIALCONSOLE   
     byte Columns { get { return Screen.Columns; }  }
     byte Rows    { get { return Screen.Rows; }  }
@@ -30,5 +28,17 @@ unit HRScreen
 #endif
     DrawChar(uint col, uint row, char c, uint foreColour, uint backColour)
     {
+    }
+    PrintLn()
+    {
+#ifndef SERIALCONSOLE        
+        Screen.PrintLn();
+#endif
+    }    
+    Print(char ch)
+    {
+#ifndef SERIALCONSOLE        
+        Screen.Print(ch);
+#endif
     }
 }

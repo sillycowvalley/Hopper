@@ -1,6 +1,7 @@
 unit DebugCommand
 {
     uses "/Source/System/System"
+    uses "/Source/System/Runtime"
     uses "/Source/System/Screen"
     uses "/Source/System/Serial"
     uses "/Source/Editor/Commands"

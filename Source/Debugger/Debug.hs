@@ -151,7 +151,7 @@ program Debug
                 }
                 else if (Output.OnKey(key))
                 {
-                    // consumed by the output window
+                    // consumed by the output window (only consumes mouse up clicks)
                 }
                 else
                 {

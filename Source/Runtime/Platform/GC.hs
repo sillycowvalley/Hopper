@@ -188,7 +188,7 @@ unit GC
             {
 #ifdef CHECKED
                 IO.WriteHex(byte(htype));
-                ErrorDump(10);
+                ErrorDump(163);
                 //Error = 0x0A; // dump
 #endif
             }

@@ -242,6 +242,24 @@ unit Expression
                     }
                 }
             }
+            case "float":
+            {
+                switch (castToType)
+                {
+                    case "uint":
+                    {
+                        CodeStream.AddInstructionSysCall0("Float", "ToUInt");
+                    }
+                    case "long":
+                    {
+                        CodeStream.AddInstructionSysCall0("Float", "ToLong");
+                    }
+                    default:
+                    {
+                        Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
+                    }
+                }
+            }
             case "variant":
             {
                 if (Types.IsSimpleType(castToType))
@@ -1127,6 +1145,14 @@ unit Expression
             if (winner == 0)
             {
                 Parser.ErrorAtCurrent("no function matches for delegate type '" + expectedType + "'");
+            }
+            if (Symbols.IsSysCall(wiOverload))
+            {
+                Parser.ErrorAtCurrent("system calls cannot be delegates");
+            }
+            if (Symbols.IsLibCall(wiOverload))
+            {
+                Parser.ErrorAtCurrent("library calls cannot be delegates");
             }
             
             // delegate was pushed onto stack so we need to compile it

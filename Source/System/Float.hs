@@ -59,6 +59,7 @@ unit Float
                 {
                     break;
                 }
+                bool negative = (longValue < 0);
                 floatValue = longValue.ToFloat();
                 digits = content.Substring(iDot+1);
                 uint length = digits.Length;
@@ -74,13 +75,13 @@ unit Float
                         decimalValue = decimalValue / 10.0;
                         length--;
                     }
-                    if (floatValue > 0)
+                    if (negative)
                     {
-                        floatValue = floatValue + decimalValue;
+                        floatValue = floatValue - decimalValue;
                     }
                     else
                     {
-                        floatValue = floatValue - decimalValue;
+                        floatValue = floatValue + decimalValue;    
                     }
                 }
                 success = true;
@@ -119,4 +120,8 @@ unit Float
     
     byte GetByte(float this, byte index) system;
     float FromBytes(byte b0, byte b1, byte b2, byte b3) system;
+    float Abs(float value)
+    {
+        return (value >= 0) ? value : -value;
+    }
 }

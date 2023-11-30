@@ -2,6 +2,7 @@ unit Char
 {
     
 #ifdef PORTABLE
+
     bool IsUpper(char this)
     {
         byte b;
@@ -79,7 +80,9 @@ unit Char
         String.Build(ref result, this);
         return result;
     }
+    
 #else
+
     char ToUpper(char this) system;
     bool IsDigit(char this) system;
     bool IsHexDigit(char this) system;
@@ -90,16 +93,16 @@ unit Char
     char ToDigit(byte d) system; // TODO : should be in Byte
     char ToHex(byte h) system;   // TODO : should be in Byte
     
-#ifdef H6502
+  #ifdef H6502
     string ToString(char this)
     {
         string result;
         String.Build(ref result, this);
         return result;
     }
-#else
+  #else
     string ToString(char this) system;
-#endif
+  #endif
 
 #endif
 
@@ -125,5 +128,4 @@ unit Char
         }
         return false;
     }
-
 }
