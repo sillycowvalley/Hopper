@@ -20,9 +20,9 @@ unit Directives
         bool allDefined = true;
         if (defineNesting.Length > 0)
         {
-            foreach (var defined in defineNesting)
+            foreach (var isDefined in defineNesting)
             {
-                if (!defined)
+                if (!isDefined)
                 {
                     allDefined = false;
                     break;
@@ -32,15 +32,139 @@ unit Directives
         return allDefined;
     }
     
-    string expression(string ln)
+    bool directivePrimary()
     {
-        string value;
+        bool result;
         loop
         {
-            Parser.ErrorAtCurrent("preprocessorExpression not yet implemented");
+            if (Parser.Check(HopperToken.Directive, "defined"))
+            {
+                Parser.Advance(); // defined
+                Parser.Consume(HopperToken.LParen, '(');
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (!Parser.Check(HopperToken.Identifier))
+                {
+                    Parser.ErrorAtCurrent("conditional symbol identifier expected");
+                    break;
+                }
+                <string,string> idToken = Parser.CurrentToken;
+                string symbol = idToken["lexeme"];
+                result = Symbols.DefineExists(symbol);
+                    
+                Parser.Advance();
+                Parser.Consume(HopperToken.RParen, ')');
+                if (Parser.HadError)
+                {
+                    break;
+                }
+            }
+            else if (Parser.Check(HopperToken.LParen))
+            {
+                Parser.Advance(); // (
+                result = directiveExpression();
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                Parser.Consume(HopperToken.RParen, ')');
+            }
+            else
+            {
+                Parser.ErrorAtCurrent("'defined' expected");
+            }
+            break;
+        } // loop
+        return result;
+    }
+    
+    bool directiveUnary()
+    {
+        bool result;
+        loop
+        {
+            HopperToken operation = HopperToken.Undefined;
+            if (Parser.Check(HopperToken.BooleanNot))
+            {
+                Parser.Advance();
+                operation = HopperToken.BooleanNot;
+            }
+            result = directivePrimary();
+            if (Parser.HadError)
+            {
+                break;
+            }
+            if (operation == HopperToken.BooleanNot)
+            {
+                result = !result;
+            }
             break;
         }
-        return value;
+        return result;
+    }
+    bool directiveBooleanAnd()
+    {
+        bool result;
+        loop
+        {
+            result = directiveUnary();
+            if (Parser.HadError)
+            {
+                break;
+            }
+            loop
+            {
+                if (!Parser.Check(HopperToken.BooleanAnd))
+                {
+                    break;
+                }
+                Parser.Advance(); // &&
+                bool rightResult = directiveUnary();
+                result = result && rightResult;
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                continue;
+            } // loop
+            break;
+        } // loop
+        return result; 
+    }
+    bool directiveBooleanOr()
+    {
+        bool result;
+        loop
+        {
+            result = directiveBooleanAnd();
+            if (Parser.HadError)
+            {
+                break;
+            }
+            loop
+            {
+                if (!Parser.Check(HopperToken.BooleanOr))
+                {
+                    break;
+                }
+                Parser.Advance(); // ||
+                bool rightResult = directiveBooleanAnd();
+                result = result || rightResult;
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                continue;
+            } // loop
+            break;
+        } // loop
+        return result;
+    }
+    bool directiveExpression()
+    {
+        return directiveBooleanOr();
     }
     
     Declaration()
@@ -119,6 +243,8 @@ unit Directives
         return false;
     }
     
+    
+    
     Directive()
     {
         <string,string> currentToken = Parser.CurrentToken;
@@ -151,9 +277,14 @@ unit Directives
             }
             else if (directive == "#if")
             {
-                string value = expression(ln);
-                defineNesting.Append(false); // TODO
-                Parser.ErrorAtCurrent("preprocessorDirective '" + directive + "' not yet implemented");
+                bool value = directiveExpression();
+                defineNesting.Append(value);
+                <string,string> idToken = Parser.PreviousToken;
+                if (idToken["line"] != ln)
+                {
+                    Parser.ErrorAtCurrent("preprocessor directive must be on one line");
+                    break;
+                }
             }
             else if (directive == "#else")
             {

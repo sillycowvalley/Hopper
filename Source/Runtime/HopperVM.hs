@@ -2585,24 +2585,6 @@ unit HopperVM
                 External.Delay(Pop());
                 doNext = false;
             }
-            case SysCall.MCUPinMode:
-            {
-                byte mode  = byte(Pop());
-                byte pin   = byte(Pop());
-                External.PinMode(pin, mode);
-            }
-            case SysCall.MCUDigitalWrite:
-            {
-                byte value = byte(Pop());
-                byte pin   = byte(Pop());
-                External.DigitalWrite(pin, value);
-            }
-            case SysCall.MCUDigitalRead:
-            {
-                byte pin   = byte(Pop());
-                byte value = External.DigitalRead(pin);
-                Push(value, Type.Byte);
-            }
             
             default:
             {

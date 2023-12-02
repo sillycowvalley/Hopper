@@ -205,9 +205,23 @@ void External_DigitalWrite(Byte pin, Byte value)
     digitalWrite(pin, value);
 }
 
+void External_AnalogWrite(Byte pin, UInt value)
+{
+    analogWrite(pin, value);
+}
+void External_AnalogWriteResolution(Byte bits)
+{
+    analogWriteResolution(bits);
+}
+
 Byte External_DigitalRead(Byte pin)
 {
     Byte value = digitalRead(pin);
+    return value;
+}
+UInt External_AnalogRead(Byte pin)
+{
+    UInt value = analogRead(pin);
     return value;
 }
 

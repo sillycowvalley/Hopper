@@ -113,7 +113,36 @@ program Debug
             }
             
             Screen.Clear();
-            Serial.Connect(); // use the serial port with the highest number
+            
+            
+            // if "Debug.options" exists, see it has a comPort set by Port.hexe:
+            uint comPort;
+            string optionsPath = Path.Combine("/Bin/", "Debug.options");
+            if (File.Exists(optionsPath))
+            {
+                <string, variant> dict;
+                if (JSON.Read(optionsPath, ref dict))
+                {
+                    <string, string> debugOptions = dict["debugoptions"];
+                    if (debugOptions.Contains("comPort"))
+                    {
+                        string value = debugOptions["comPort"];
+                        if (UInt.TryParse(value, ref comPort))
+                        {
+                            // found a current port
+                        }
+                    }
+                }
+            }
+            
+            if (comPort == 0)
+            {
+                Serial.Connect(); // use the serial port with the highest number
+            }
+            else
+            {
+                Serial.Connect(comPort);
+            }
             
             // send a <ctrl><C> in case there is a program running
             Serial.WriteChar(char(0x03));

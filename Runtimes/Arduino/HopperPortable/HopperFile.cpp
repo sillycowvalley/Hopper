@@ -28,14 +28,36 @@
 
 void FileSystem_Initialize()
 {
+      //Serial.println("FileSystem_Initialize");
 #ifdef ESP32LITTLEFS
       LittleFS.begin(true); // mount the file system, format if failed to mount
 #endif
 #ifdef USELITTLEFS  
+      
       // LittleFS will automatically format the filesystem if one is not detected.
       LittleFSConfig cfg;
       LittleFS.setConfig(cfg);
-      LittleFS.begin(); // mount the file system
+      if (!LittleFS.begin()) // mount the file system
+      {
+          Serial.println("LittleFS NOT ok: did you configure Flash Size correctly on the Tools menu?");
+      }
+
+      /*
+      FSInfo info;
+      if (LittleFS.info(info))
+      {
+        Serial.println("LittleFS.info ok");
+        Serial.println(info.blockSize);
+        Serial.println(info.pageSize);
+        Serial.println(info.maxOpenFiles);
+        Serial.println(info.totalBytes);
+        Serial.println(info.usedBytes);
+      }
+      else
+      {
+        Serial.println("LittleFS.info NOT ok");
+      }
+      */
 #endif
 }
 
@@ -236,7 +258,9 @@ void External_DirectoryCreate(UInt hrpath)
 {
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
+
 #if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
+
     LittleFS.mkdir(buffer);
     uint plen = strlen(buffer);
     if ((plen == 0) || (buffer[plen-1] != '/'))
@@ -250,6 +274,7 @@ void External_DirectoryCreate(UInt hrpath)
     File f = LittleFS.open(buffer, "w");
     f.print('.');
     f.close();
+
 #endif
 }
 UInt External_DirectoryGetTime(UInt hrpath)

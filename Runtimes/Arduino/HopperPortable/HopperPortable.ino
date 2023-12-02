@@ -3,11 +3,11 @@
 void setup() 
 {
   Serial.begin(57600); // always stick to 56K (it also works on 6502 and Z80 for the client side)
-  delay(100);
+  delay(2000);
 
   Machine_Initialize();
   Platform_Initialize();
-
+  
 #if !defined(SEEEDESP32C3) && !defined(WAVESHARERP2040ONE)
   // flicker LED_BUILTIN to show that initialization completed
   pinMode(LED_BUILTIN, OUTPUT);

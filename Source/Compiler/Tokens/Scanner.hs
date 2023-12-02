@@ -607,17 +607,37 @@ unit Scanner
                     case ':': { htoken = HopperToken.Colon; }
                     case ',': { htoken = HopperToken.Comma; }
                     case '.': { htoken = HopperToken.Dot; }
-                    case '*': { htoken = HopperToken.Multiply; }
-                    case '/': { htoken = HopperToken.Divide; }
-                    case '%': { htoken = HopperToken.Modulus; }
                     case '~': { htoken = HopperToken.BitNot; }
                     case '^': { htoken = HopperToken.BitXor; }
                     case '?': { htoken = HopperToken.Question; }
                     
+                    case '*':
+                    {
+                        if (match('='))
+                        { htoken = HopperToken.AssignMultiply; }
+                        else
+                        { htoken = HopperToken.Multiply; }
+                    }
+                    case '/':
+                    {
+                        if (match('='))
+                        { htoken = HopperToken.AssignDivide; }
+                        else
+                        { htoken = HopperToken.Divide; }
+                    }
+                    case '%':
+                    {
+                        if (match('='))
+                        { htoken = HopperToken.AssignModulus; }
+                        else
+                        { htoken = HopperToken.Modulus; }
+                    }
                     case '-':
                     {
                         if (match('-'))
                         { htoken = HopperToken.Decrement; }
+                        else if (match('='))
+                        { htoken = HopperToken.AssignSubtract; }
                         else
                         { htoken = HopperToken.Subtract; }
                     }
@@ -625,6 +645,8 @@ unit Scanner
                     {
                         if (match('+'))
                         { htoken = HopperToken.Increment; }
+                        else if (match('='))
+                        { htoken = HopperToken.AssignAdd; }
                         else
                         { htoken = HopperToken.Add; }
                     }
@@ -664,6 +686,8 @@ unit Scanner
                     {
                         if (match('|'))
                         { htoken = HopperToken.BooleanOr; }
+                        else if (match('='))
+                        { htoken = HopperToken.AssignBitOr; }
                         else
                         { htoken = HopperToken.BitOr; }
                     }
@@ -671,6 +695,8 @@ unit Scanner
                     {
                         if (match('&'))
                         { htoken = HopperToken.BooleanAnd; }
+                        else if (match('='))
+                        { htoken = HopperToken.AssignBitAnd; }
                         else
                         { htoken = HopperToken.BitAnd; }
                     }

@@ -2004,6 +2004,47 @@ unit CodePoints
         } // loop
         return modified;
     }
+    
+    bool OptimizeSetters()
+    {
+        if (iCodes.Length < 4)
+        {
+            return false;
+        }
+        uint iIndex = 3;
+        uint hits = 0;
+        bool modified = false;
+        loop
+        {
+            if (iIndex >= iCodes.Length)
+            {
+                break;
+            }
+            
+            Instruction opCode3 = iCodes[iIndex-3]; 
+            Instruction opCode2 = iCodes[iIndex-2]; 
+            Instruction opCode1 = iCodes[iIndex-1]; 
+            Instruction opCode0 = iCodes[iIndex]; 
+            if (   (opCode3 == Instruction.ENTER) 
+                && (opCode2 == Instruction.PUSHLOCALB) // -2
+                && ((opCode1 == Instruction.POPGLOBALB) || (opCode1 == Instruction.POPGLOBALW))
+                && (opCode0 == Instruction.RETB)
+               )
+            {
+                if (   (iOperands[iIndex-2] == 0xFE) // PUSHLOCALB BP-2
+                    && (iOperands[iIndex]   == 2) // RETB 2
+                   )
+                {
+                    iCodes.SetItem(iIndex, Instruction.RET0);
+                    iLengths.SetItem(iIndex, 1);
+                    RemoveInstruction(iIndex-2);
+                }
+            }
+        
+            iIndex++;
+        } // loop
+        return modified;
+    }
     GoFishing(uint currentMethod)
     {
         if (iCodes.Length < 1)

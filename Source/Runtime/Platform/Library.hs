@@ -37,17 +37,42 @@ unit Library
                 HRWire.EndTx();
             }
             
-            case LibCall.MemoryIncWord:
+            case LibCall.MCUPinMode:
             {
-                Type utype;
-                uint address = Pop(ref utype);
-#ifdef CHECKED             
-                AssertByte(utype, address);
-#endif                   
-                uint w = Memory.ReadWord(address);
-                w++;
-                Memory.WriteWord(address, w);
+                byte mode  = byte(Pop());
+                byte pin   = byte(Pop());
+                External.PinMode(pin, mode);
             }
+            case LibCall.MCUDigitalWrite:
+            {
+                byte value = byte(Pop());
+                byte pin   = byte(Pop());
+                External.DigitalWrite(pin, value);
+            }
+            case LibCall.MCUDigitalRead:
+            {
+                byte pin   = byte(Pop());
+                byte value = External.DigitalRead(pin);
+                Push(value, Type.Byte);
+            }
+            case LibCall.MCUAnalogRead:
+            {
+                byte pin   = byte(Pop());
+                uint value = External.AnalogRead(pin);
+                Push(value, Type.UInt);
+            }
+            case LibCall.MCUAnalogWrite:
+            {
+                uint value = Pop();
+                byte pin   = byte(Pop());
+                External.AnalogWrite(pin, value);
+            }
+            case LibCall.MCUAnalogWriteResolution:
+            {
+                byte value = byte(Pop());
+                External.AnalogWriteResolution(value);
+            }
+            
             
             case LibCall.GraphicsConfigureDisplay:
             {

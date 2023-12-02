@@ -179,12 +179,12 @@ unit ModelUtilities
         {
             case Instruction.POPLOCALB:   
             case Instruction.POPGLOBALB:   
-            case Instruction.POPRELB:   
             case Instruction.POPLOCALW:   
             case Instruction.POPGLOBALW:   
-            case Instruction.POPRELW:   
             case Instruction.POPLOCALB00:   
             case Instruction.POPLOCALB02:   
+            case Instruction.POPRELB:   
+            case Instruction.POPRELW:   
             {
                 return true;
             }

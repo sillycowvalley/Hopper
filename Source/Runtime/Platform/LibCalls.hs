@@ -7,6 +7,13 @@ unit LibCalls
         WireEndTx,
         WireWrite,
         
+        MCUPinMode,
+        MCUDigitalRead,
+        MCUDigitalWrite,
+        MCUAnalogRead,
+        MCUAnalogWrite,
+        MCUAnalogWriteResolution,
+        
         GraphicsConfigureDisplay,
         GraphicsConfigureSPI,
         GraphicsConfigureReset,
@@ -31,7 +38,5 @@ unit LibCalls
         
         GraphicsShow,
         GraphicsDrawChar,
-        
-        MemoryIncWord,
     }
 }

@@ -5,9 +5,9 @@ unit IO
     bool echoToLCD;
     // #### end of globals
     
-#ifndef SERIALCONSOLE    
+//#ifndef SERIALCONSOLE
     uses "/Source/System/Screen"
-#endif
+//#endif
     uses "/Source/System/Serial"
     uses "/Source/System/Keyboard"
     uses "/Source/System/Clipboard"
@@ -49,14 +49,10 @@ unit IO
     {
         get 
         { 
-#ifdef SERIALCONSOLE
+#if defined(SERIALCONSOLE) || defined(H6502)
             return 120;
 #else            
-    #ifdef H6502
-            return 120;
-    #else            
             return Screen.Columns-1;
-    #endif
 #endif
         }
     }
@@ -136,7 +132,7 @@ unit IO
 #ifdef RUNTIME
                 HRScreen.PrintLn();
 #else
-                //Screen.PrintLn();
+                Screen.PrintLn();
 #endif 
             }
             else if (char(0x0C) == c)
@@ -144,7 +140,7 @@ unit IO
 #ifdef RUNTIME
                 HRScreen.Clear();
 #else
-                //Screen.Clear();
+                Screen.Clear();
 #endif 
             }
             else
@@ -152,7 +148,7 @@ unit IO
 #ifdef RUNTIME
                 HRScreen.Print(c);
 #else
-                //Screen.Print(c);
+                Screen.Print(c);
 #endif 
             }
         }
@@ -295,12 +291,9 @@ unit IO
             }
             else
             {
-#ifdef SERIALCONSOLE
+#if defined(SERIALCONSOLE) || defined(H6502)
                 ch = Serial.ReadChar();
-#else
-    #ifdef H6502
-                ch = Serial.ReadChar();
-    #else                
+#else                
                 Key key = Keyboard.ReadKey();
                 if (key == Key.ControlV)
                 {
@@ -342,7 +335,6 @@ unit IO
                     }
                 }
                 ch = TransformKey(key);
-    #endif
 #endif                
             }
             byte b = byte(ch);
@@ -366,20 +358,16 @@ unit IO
     {
         get
         {
-#ifdef SERIALCONSOLE
+#if defined(SERIALCONSOLE) || defined(H6502)
             return (HaveKey()) || Serial.IsAvailable;
-#else            
-    #ifdef H6502
-            return (HaveKey()) || Serial.IsAvailable;
-    #else
+#else
             return Keyboard.IsAvailable;
-    #endif
-#endif            
+#endif
         }
     }
     bool IsBreak()
     {
-#ifdef SERIALCONSOLE
+#if defined(SERIALCONSOLE) || defined(H6502)
         while (Serial.IsAvailable)
         {
             char ch = Serial.ReadChar();
@@ -390,19 +378,7 @@ unit IO
             // buffer all the non <ctrl><C> characters seen here
             PushKey(ch);
         }
-#else
-    #ifdef H6502
-        while (Serial.IsAvailable)
-        {
-            char ch = Serial.ReadChar();
-            if (ch == char(0x03)) // <ctrl><C>?
-            {
-                return true;
-            }
-            // buffer all the non <ctrl><C> characters seen here
-            PushKey(ch);
-        }
-    #else        
+#else        
         while (Keyboard.IsAvailable)
         {
             Key key = Keyboard.ReadKey();
@@ -414,7 +390,6 @@ unit IO
             char ch = IO.TransformKey(key);
             PushKey(ch);
         }
-    #endif
 #endif
         return false;
     }

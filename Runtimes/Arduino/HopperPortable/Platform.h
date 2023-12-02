@@ -51,6 +51,9 @@ void External_Delay(UInt ms);
 void External_PinMode(Byte pin, Byte value);
 void External_DigitalWrite(Byte pin, Byte value);
 Byte External_DigitalRead(Byte pin);
+UInt External_AnalogRead(Byte pin);
+void External_AnalogWrite(Byte pin, UInt value);
+void External_AnalogWriteResolution(Byte bits);
 
 Bool Serial_IsAvailable_Get();
 Char Serial_ReadChar();

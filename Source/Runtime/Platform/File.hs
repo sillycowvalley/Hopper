@@ -24,7 +24,7 @@ unit HRFile
     
     uint New()
     {
-        uint address = GC.New(12, Type.File);
+        uint address = GC.New(10, Type.File);
         WriteByte(address+fiValid,   0);
         WriteByte(address+fiReading, 0);
         WriteByte(address+fiWriting, 0);
@@ -36,7 +36,7 @@ unit HRFile
     }
     uint Clone(uint original)
     {
-        uint address = GC.New(12, Type.File);
+        uint address = GC.New(10, Type.File);
         WriteByte(address+fiValid,   ReadByte(original+fiValid));
         WriteByte(address+fiReading, ReadByte(original+fiReading));
         WriteByte(address+fiWriting, ReadByte(original+fiWriting));

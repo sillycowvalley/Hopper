@@ -4,6 +4,8 @@
 #include "HopperScreen.h"
 
 
+
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -1364,7 +1366,7 @@ void HRFile_Delete(UInt path)
 
 UInt HRFile_New()
 {
-    UInt address = GC_New(0x0C, Type::eFile);
+    UInt address = GC_New(0x0A, Type::eFile);
     Memory_WriteByte(address + 2, 0x00);
     Memory_WriteByte(address + 3, 0x00);
     Memory_WriteByte(address + 4, 0x00);
@@ -5030,27 +5032,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         doNext = false;
         break;
     }
-    case SysCall::eMCUPinMode:
-    {
-        Byte mode = Byte(HopperVM_Pop());
-        Byte pin = Byte(HopperVM_Pop());
-        External_PinMode(pin, mode);
-        break;
-    }
-    case SysCall::eMCUDigitalWrite:
-    {
-        Byte value = Byte(HopperVM_Pop());
-        Byte pin = Byte(HopperVM_Pop());
-        External_DigitalWrite(pin, value);
-        break;
-    }
-    case SysCall::eMCUDigitalRead:
-    {
-        Byte pin = Byte(HopperVM_Pop());
-        Byte value = External_DigitalRead(pin);
-        HopperVM_Push(value, Type::eByte);
-        break;
-    }
     default:
     {
         Runtime_Out4Hex(HopperVM_PC_Get());
@@ -5206,14 +5187,45 @@ Bool Library_ExecuteLibCall(Byte iLibCall)
         HRWire_EndTx();
         break;
     }
-    case LibCall::eMemoryIncWord:
+    case LibCall::eMCUPinMode:
     {
-        Type utype = (Type)0;
-        UInt address = HopperVM_Pop_R(utype);
-        UInt w = Memory_ReadWord(address);
-        
-        w++;
-        Memory_WriteWord(address, w);
+        Byte mode = Byte(HopperVM_Pop());
+        Byte pin = Byte(HopperVM_Pop());
+        External_PinMode(pin, mode);
+        break;
+    }
+    case LibCall::eMCUDigitalWrite:
+    {
+        Byte value = Byte(HopperVM_Pop());
+        Byte pin = Byte(HopperVM_Pop());
+        External_DigitalWrite(pin, value);
+        break;
+    }
+    case LibCall::eMCUDigitalRead:
+    {
+        Byte pin = Byte(HopperVM_Pop());
+        Byte value = External_DigitalRead(pin);
+        HopperVM_Push(value, Type::eByte);
+        break;
+    }
+    case LibCall::eMCUAnalogRead:
+    {
+        Byte pin = Byte(HopperVM_Pop());
+        UInt value = External_AnalogRead(pin);
+        HopperVM_Push(value, Type::eUInt);
+        break;
+    }
+    case LibCall::eMCUAnalogWrite:
+    {
+        UInt value = HopperVM_Pop();
+        Byte pin = Byte(HopperVM_Pop());
+        External_AnalogWrite(pin, value);
+        break;
+    }
+    case LibCall::eMCUAnalogWriteResolution:
+    {
+        Byte value = Byte(HopperVM_Pop());
+        External_AnalogWriteResolution(value);
         break;
     }
     case LibCall::eGraphicsConfigureDisplay:
@@ -5642,7 +5654,7 @@ UInt HRFile_GetSize(UInt path)
 
 UInt HRFile_Clone(UInt original)
 {
-    UInt address = GC_New(0x0C, Type::eFile);
+    UInt address = GC_New(0x0A, Type::eFile);
     Memory_WriteByte(address + 2, Memory_ReadByte(original + 2));
     Memory_WriteByte(address + 3, Memory_ReadByte(original + 3));
     Memory_WriteByte(address + 4, Memory_ReadByte(original + 4));

@@ -272,9 +272,9 @@ unit SysCalls
         addEntry("Memory", "ReadWord");
         addEntry("Memory", "WriteWord");
         
-        addEntry("MCU", "PinMode");
-        addEntry("MCU", "DigitalRead");
-        addEntry("MCU", "DigitalWrite");
+        addEntry("Unused", "PinMode");
+        addEntry("Unused", "DigitalRead");
+        addEntry("Unused", "DigitalWrite");
         
         addEntry("Memory", "ReadCodeByte");
         addEntry("Memory", "WriteCodeByte");

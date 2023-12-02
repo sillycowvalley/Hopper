@@ -430,9 +430,9 @@ namespace HopperNET
         MemoryReadWord = 0xD7,
         MemoryWriteWord = 0xD8,
 
-        MCUPinMode = 0xD9,
-        MCUDigitalRead = 0xDA,
-        MCUDigitalWrite = 0xDB,
+        //MCUPinMode = 0xD9,
+        //MCUDigitalRead = 0xDA,
+        //MCUDigitalWrite = 0xDB,
 
         MemoryReadCodeByte = 0xDC,
         MemoryWriteCodeByte = 0xDD,

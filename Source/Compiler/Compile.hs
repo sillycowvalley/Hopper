@@ -1279,19 +1279,54 @@ program Compile
         bool success = false;
         loop
         {
+            uint iOverload;
+            bool isSetter;
+            
             Parser.Advance(); // ++ or --
             string qualifiedName;
-            string variableType = Types.GetTypeString(variableName, true, ref qualifiedName);
+            string variableType = Types.GetTypeString(variableName, false, ref qualifiedName);
             if (Parser.HadError)
             {
                 break;
             }
+            if (variableType.Length == 0)
+            {
+                // perhaps it is a setter
+                string setterMethod = variableName + "_Set";
+                setterMethod = Types.QualifyMethodName(setterMethod);
+                uint fIndex;
+                if (!Symbols.GetFunctionIndex(setterMethod, ref fIndex))
+                {
+                    Parser.ErrorAtCurrent("undefined identifier");   
+                    break;
+                }
+                <uint> overloads = Symbols.GetFunctionOverloads(fIndex);
+                if (overloads.Length != 1)
+                {
+                    Parser.ErrorAtCurrent("setter method should only have one overload");   
+                    break;
+                }
+                iOverload = overloads[0];
+                < < string > > arguments = Symbols.GetOverloadArguments(iOverload); 
+                
+                if (arguments.Length != 1)
+                {
+                    Parser.ErrorAtCurrent("setter method should only have one argument");   
+                    break;
+                }
+                <string> argument = arguments[0];
+                variableType = argument[1];   
+                isSetter = true;
+                Symbols.OverloadToCompile(iOverload);
+            }
+            
+            
             if (!Types.IsNumericType(variableType))
             {
                 Parser.ErrorAtCurrent("++ and -- operations only legal for numeric types");
                 break;
             }
-            if ((variableType == "uint") || (variableType == "byte") || (variableType == "int"))
+            if (!isSetter && ((variableType == "uint") || (variableType == "byte") || (variableType == "int")))
             {
                 if (!Symbols.GlobalMemberExists(qualifiedName))
                 {
@@ -1313,8 +1348,17 @@ program Compile
                     }
                 }
             }
-            
-            CodeStream.AddInstructionPushVariable(qualifiedName);
+            if (isSetter)
+            {
+                if (!callGetter(variableName + "_Get", variableType))
+                {
+                    break;
+                }
+            }
+            else
+            {
+                CodeStream.AddInstructionPushVariable(qualifiedName);
+            }
             CodeStream.AddInstructionPUSHI(byte(1));
             if (tokenType == HopperToken.Increment)
             {
@@ -1370,19 +1414,162 @@ program Compile
                     }
                 }
             }
-            CodeStream.AddInstructionPopVariable(variableType, qualifiedName);
+            if (isSetter)
+            {
+                // call setter method with expression result on stack as argument
+                string returnType = CompileMethodCall(variableName + "_Set", "", "");
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (returnType != "void")
+                {
+                    Die(0x0B);
+                }
+            }
+            else
+            {
+                CodeStream.AddInstructionPopVariable(variableType, qualifiedName);
+            }
             success = true;           
             break;
         }
         return success;
     } 
+    
+    bool callGetter(string getterMethod, string variableType)
+    {
+        bool success;
+        loop
+        {
+            // call getter
+            getterMethod = Types.QualifyMethodName(getterMethod);
+            uint fgIndex;
+            if (!Symbols.GetFunctionIndex(getterMethod, ref fgIndex))
+            {
+                Parser.ErrorAtCurrent("property needs getter for operation");   
+                break;
+            }
+            <uint> goverloads = Symbols.GetFunctionOverloads(fgIndex);
+            if (goverloads.Length != 1)
+            {
+                Parser.ErrorAtCurrent("getter method should only have one overload");   
+                break;
+            }
+            uint igOverload = goverloads[0];
+            < < string > > garguments = Symbols.GetOverloadArguments(igOverload); 
+            
+            if (garguments.Length == 1)
+            {
+                Parser.ErrorAtCurrent("getter method should only have zero arguments");   
+                break;
+            }
+            string greturnType = Symbols.GetOverloadReturnType(igOverload);
+            if (greturnType != variableType)
+            {
+                Parser.ErrorAtCurrent("getter method has invalid return type");   
+                break;
+            }
+            Symbols.OverloadToCompile(igOverload);
+            Symbols.AddFunctionCall(igOverload);
+            
+            // call the getter
+            if (Symbols.IsSysCall(igOverload))
+            {
+                byte iSysCall = Symbols.GetSysCallIndex(igOverload);
+                byte iSysOverload = Symbols.GetSysCallOverload(igOverload);
+                switch (iSysOverload)
+                {
+                    case 0:
+                    {
+                        if (!TryUserSysCall(getterMethod))
+                        {
+                            CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
+                        }
+                    }
+                    case 1:
+                    {
+                        CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+                    }
+                    default:
+                    {
+                        CodeStream.AddInstructionPUSHI(iSysOverload);
+                        CodeStream.AddInstruction(Instruction.SYSCALL, iSysCall);
+                    }
+                }
+            }
+            else if (Symbols.IsLibCall(igOverload))
+            {
+                byte iLibCall = Symbols.GetLibCallIndex(igOverload);
+                CodeStream.AddInstruction(Instruction.LIBCALL, iLibCall);
+            }
+            else
+            {
+                if (CodeStream.IsShortCalls && (igOverload < 256))
+                {
+                    CodeStream.AddInstruction(Instruction.CALLB, byte(igOverload));
+                }
+                else
+                {
+                    CodeStream.AddInstruction(Instruction.CALLW, igOverload);
+                }
+            }
+            success = true;
+            break;
+        } // loop
+        return success;
+    }
     bool compileAssignment(string variableName, bool ignoreZero)
     {
         bool success = false;
         loop
         {
             <string,string> leftToken = PreviousToken;
-            Parser.Consume(HopperToken.Assign, '=');
+            HopperToken assignOperation = HopperToken.Assign;
+            if (Parser.Check(HopperToken.Assign))
+            {
+                Parser.Advance(); // =
+            }
+            else if (Parser.Check(HopperToken.AssignAdd))
+            {
+                Parser.Advance(); // +=
+                assignOperation = HopperToken.AssignAdd;
+            }
+            else if (Parser.Check(HopperToken.AssignSubtract))
+            {
+                Parser.Advance(); // -=
+                assignOperation = HopperToken.AssignSubtract;
+            }
+            else if (Parser.Check(HopperToken.AssignMultiply))
+            {
+                Parser.Advance(); // *=
+                assignOperation = HopperToken.AssignMultiply;
+            }
+            else if (Parser.Check(HopperToken.AssignDivide))
+            {
+                Parser.Advance(); // /=
+                assignOperation = HopperToken.AssignDivide;
+            }
+            else if (Parser.Check(HopperToken.AssignModulus))
+            {
+                Parser.Advance(); // %=
+                assignOperation = HopperToken.AssignModulus;
+            }
+            else if (Parser.Check(HopperToken.AssignBitAnd))
+            {
+                Parser.Advance(); // &=
+                assignOperation = HopperToken.AssignBitAnd;
+            }
+            else if (Parser.Check(HopperToken.AssignBitOr))
+            {
+                Parser.Advance(); // |=
+                assignOperation = HopperToken.AssignBitOr;
+            }
+            else
+            {
+                Parser.ErrorAtCurrent("'=' expected"); 
+            }
+            
             if (Parser.HadError)
             {
                 break;
@@ -1391,10 +1578,16 @@ program Compile
             // uses Blocks, respects namespaces, Parser.Error on failure
             string qualifiedName;
             string variableType = Types.GetTypeString(variableName, false, ref qualifiedName);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            
             bool isSetter = false;
+            bool isStringAppend = false;
             uint iOverload;
             
-            if (ignoreZero)
+            if (ignoreZero) // only from compileLocalDeclaration(..) where +=, -=, etc. are not legal
             {
                 ignoreZero = Types.IsValueType(variableType);
                 if (ignoreZero)
@@ -1457,13 +1650,62 @@ program Compile
                 variableType = argument[1];   
                 isSetter = true;
                 Symbols.OverloadToCompile(iOverload);
+                
             }
+            
+            if (assignOperation != HopperToken.Assign)
+            {
+                if ((assignOperation == HopperToken.AssignBitAnd) || (assignOperation == HopperToken.AssignBitOr))
+                {
+                    if (!Types.IsBitwiseType(variableType))
+                    {
+                        Parser.ErrorAtCurrent("bitwise operations only legal for 'uint', 'int', 'flags' and 'byte', (not '" + variableType + "')");
+                        break;
+                    }
+                }
+                else if ((assignOperation == HopperToken.AssignAdd) && (variableType == "string"))
+                {
+                    isStringAppend = true;   
+                }
+                else if (!Types.IsNumericType(variableType))
+                {
+                    Parser.ErrorAtCurrent("operation only legal for numeric types");
+                    break;
+                }
+                else if ((assignOperation == HopperToken.AssignModulus) && (variableType == "float"))
+                {
+                    Parser.ErrorAtCurrent("operation only legal for integral numeric types");
+                    break;
+                }
+                
+                
+                if (isSetter)
+                {
+                    if (!callGetter(variableName + "_Get", variableType))
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    CodeStream.AddInstructionPushVariable(qualifiedName);
+                }
+            }
+            
             string expressionType = CompileExpression(variableType);
             if (Parser.HadError)
             {
                 break;
             }
-            if (expressionType != variableType)
+            if (isStringAppend)
+            {
+                if ((expressionType != "string") && (expressionType != "char"))
+                {
+                    Parser.ErrorAtCurrent("operation only legal for char and string types");
+                    break;
+                }
+            }
+            else if (expressionType != variableType)
             {
                 if (!Types.AutomaticUpCastTop(expressionType, variableType))
                 {
@@ -1547,6 +1789,126 @@ program Compile
                 }
             }
             
+            switch (assignOperation)
+            {
+                case HopperToken.AssignAdd:
+                {
+                    if (variableType == "string")
+                    {
+                        if (expressionType == "string")
+                        {
+                            CodeStream.AddInstructionSysCall0("String", "Append");
+                        }
+                        else
+                        {
+                            byte iSysCall;
+                            if (!TryParseSysCall("String.Append", ref iSysCall))
+                            {
+                                Die(3); // key not found
+                            }
+                            // string Append(string,char)
+                            CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+                        }
+                    }
+                    else if (variableType == "float")
+                    {
+                        CodeStream.AddInstructionSysCall0("Float", "Add");
+                    }
+                    else if (variableType == "long")
+                    {
+                        CodeStream.AddInstructionSysCall0("Long", "Add");
+                    }
+                    else if (Types.IsSignedIntType(variableType))
+                    {
+                        CodeStream.AddInstruction(Instruction.ADDI);
+                    }
+                    else
+                    {
+                        CodeStream.AddInstruction(Instruction.ADD);
+                    }
+                }
+                case HopperToken.AssignSubtract:
+                {
+                    if (variableType == "float")
+                    {
+                        CodeStream.AddInstructionSysCall0("Float", "Sub");
+                    }
+                    else if (variableType == "long")
+                    {
+                        CodeStream.AddInstructionSysCall0("Long", "Sub");
+                    }
+                    else if (Types.IsSignedIntType(variableType))
+                    {
+                        CodeStream.AddInstruction(Instruction.SUBI);
+                    }
+                    else
+                    {
+                        CodeStream.AddInstruction(Instruction.SUB);
+                    }
+                }
+                case HopperToken.AssignMultiply:
+                {
+                    if (variableType == "float")
+                    {
+                        CodeStream.AddInstructionSysCall0("Float", "Mul");
+                    }
+                    else if (variableType == "long")
+                    {
+                        CodeStream.AddInstructionSysCall0("Long", "Mul");
+                    }
+                    else if (Types.IsSignedIntType(variableType))
+                    {
+                        CodeStream.AddInstruction(Instruction.MULI);
+                    }
+                    else
+                    {
+                        CodeStream.AddInstruction(Instruction.MUL);
+                    }
+                }
+                case HopperToken.AssignDivide:
+                {
+                    if (variableType == "float")
+                    {
+                        CodeStream.AddInstructionSysCall0("Float", "Div");
+                    }
+                    else if (variableType == "long")
+                    {
+                        CodeStream.AddInstructionSysCall0("Long", "Div");
+                    }
+                    else if (Types.IsSignedIntType(variableType))
+                    {
+                        CodeStream.AddInstruction(Instruction.DIVI);
+                    }
+                    else
+                    {
+                        CodeStream.AddInstruction(Instruction.DIV);
+                    }
+                }
+                case HopperToken.AssignModulus:
+                {
+                    if (variableType == "long")
+                    {
+                        CodeStream.AddInstructionSysCall0("Long", "Mod");
+                    }
+                    else if (Types.IsSignedIntType(variableType))
+                    {
+                        CodeStream.AddInstruction(Instruction.MODI);
+                    }
+                    else
+                    {
+                        CodeStream.AddInstruction(Instruction.MOD);
+                    }
+                }
+                case HopperToken.AssignBitAnd:
+                {
+                    CodeStream.AddInstruction(Instruction.BITAND);
+                }
+                case HopperToken.AssignBitOr:
+                {
+                    CodeStream.AddInstruction(Instruction.BITOR);
+                }
+            }
+            
             if (!isSetter)
             {
                 CodeStream.AddInstructionPopVariable(variableType, qualifiedName);
@@ -1601,7 +1963,9 @@ program Compile
             }
             Parser.Advance(); // identifier
             
-            if (!Parser.Check(HopperToken.Assign) && !Parser.Check(HopperToken.SemiColon))
+            if (    !Parser.Check(HopperToken.Assign)
+                 && !Parser.Check(HopperToken.SemiColon)
+               )
             {
                 Parser.ErrorAtCurrent("';' or '=' expected");
                 break;
@@ -1715,7 +2079,15 @@ program Compile
                         tokenString = idToken["lexeme"];
                         nextToken = Parser.CurrentToken;
                         tokenType = Token.GetType(nextToken);
-                        if (tokenType == HopperToken.Assign)
+                        if (   (tokenType == HopperToken.Assign)
+                            || (tokenType == HopperToken.AssignAdd)
+                            || (tokenType == HopperToken.AssignSubtract)
+                            || (tokenType == HopperToken.AssignMultiply)
+                            || (tokenType == HopperToken.AssignDivide)
+                            || (tokenType == HopperToken.AssignModulus)
+                            || (tokenType == HopperToken.AssignBitAnd)
+                            || (tokenType == HopperToken.AssignBitOr)
+                           )
                         {
                             // assignment
                             success = compileAssignment(tokenString, false);

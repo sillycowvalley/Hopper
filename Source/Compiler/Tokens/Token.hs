@@ -60,8 +60,15 @@ unit Token
         Increment, // ++;
         Decrement, // --
 
-        Assign,    // =
-
+        Assign,         // =
+        AssignAdd,      // +=
+        AssignSubtract, // -=
+        AssignMultiply, // *=
+        AssignDivide,   // /=
+        AssignModulus,  // %=
+        AssignBitAnd,   // &=
+        AssignBitOr,    // |=
+        
         EOF
     }
     
@@ -127,6 +134,15 @@ unit Token
         hopperTokenTypes["Float"] = HopperToken.Float;
         hopperTokenTypes["StringConstant"] = HopperToken.StringConstant;
         hopperTokenTypes["Assign"] = HopperToken.Assign;
+        
+        hopperTokenTypes["AssignAdd"]      = HopperToken.AssignAdd;
+        hopperTokenTypes["AssignSubtract"] = HopperToken.AssignSubtract;
+        hopperTokenTypes["AssignMultiply"] = HopperToken.AssignMultiply;
+        hopperTokenTypes["AssignDivide"]   = HopperToken.AssignDivide;
+        hopperTokenTypes["AssignModulus"]   = HopperToken.AssignModulus;
+        hopperTokenTypes["AssignBitAnd"]   = HopperToken.AssignBitAnd;
+        hopperTokenTypes["AssignBitOr"]   = HopperToken.AssignBitOr;
+        
         hopperTokenTypes["BitAnd"] = HopperToken.BitAnd;
         hopperTokenTypes["BitOr"] = HopperToken.BitOr;
         hopperTokenTypes["LParen"] = HopperToken.LParen;
@@ -202,6 +218,8 @@ unit Token
         directiveKeywords["#else"] = true;
         directiveKeywords["#endif"] = true;
         directiveKeywords["#define"] = true;
+        directiveKeywords["#if"] = true;
+        directiveKeywords["defined"] = true;
         
         statementKeywords["break"] = true;
         statementKeywords["case"] = true;

@@ -798,7 +798,7 @@ program Translate
                 }
                 if (Parser.Check(HopperToken.Directive))
                 {
-                    // preprocessor directives (#ifdef, #ifndef, #else, #endif")
+                    // preprocessor directives (#ifdef, #ifndef, #if, #else, #endif")
                     Directives.Directive();
                 }
                 else

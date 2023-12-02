@@ -206,6 +206,19 @@ unit External
     {
         ErrorDump(159); Error = 0x0A; 
     }
+    uint AnalogRead(byte pin)
+    {
+        ErrorDump(168); Error = 0x0A; 
+        return 0;
+    }
+    AnalogWrite(byte pin, uint value)
+    {
+        ErrorDump(169); Error = 0x0A; 
+    }
+    AnalogWriteResolution(byte bits)
+    {
+        ErrorDump(169); Error = 0x0A; 
+    }
     
     
     uint IntToUInt(int value)

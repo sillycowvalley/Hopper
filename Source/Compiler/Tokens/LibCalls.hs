@@ -16,6 +16,13 @@ unit LibCalls
         addEntry("Wire", "EndTx");
         addEntry("Wire", "Write");
         
+        addEntry("MCU", "PinMode");
+        addEntry("MCU", "DigitalRead");
+        addEntry("MCU", "DigitalWrite");
+        addEntry("MCU", "AnalogRead");
+        addEntry("MCU", "AnalogWrite");
+        addEntry("MCU", "AnalogWriteResolution");
+        
         addEntry("Graphics", "ConfigureDisplay");
         addEntry("Graphics", "ConfigureSPI");
         addEntry("Graphics", "ConfigureReset");
@@ -40,10 +47,6 @@ unit LibCalls
         
         addEntry("Graphics", "Show");
         addEntry("Graphics", "DrawChar");
-        
-        addEntry("Memory", "IncWord");
-        
-        
         
     }
     

@@ -192,10 +192,6 @@ program Optimize
                 codeBefore = codeBefore + size;
             }
             CodePoints.MarkReachableInstructions();
-            //if (pass == 0)
-            //{
-            //    CodePoints.GoFishing(methodIndex);
-            //}
             if (CodePoints.OptimizeFrameRemoval())
             {
                 modified = true;
@@ -260,10 +256,16 @@ program Optimize
             //    modified = true;
             //}
             
+            
+            if (OptimizeSetters())
+            {
+                modified = true;
+            }
+            
             // str = str.Trim() -> Trim(ref str),  str = str.Append(x) -> Build(ref str, x), etc.
             if (OptimizeStringRef())
             {
-                  modified = true;
+              modified = true;
             }
             
             // not just NOP, also JMP -> JMP + 1, can cause more short JumpToJump's to work

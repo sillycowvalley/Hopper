@@ -40,11 +40,59 @@ program Term
         }
         return ch;
     }
-    
+    bool DoConnect()
+    {
+        bool success = false;
+        <string> ports = Serial.Ports;
+        uint i;
+        char defCh;
+        PrintLn("COM Ports:");
+        foreach (var port in ports)
+        {
+            i++;
+            string content = "  " + (i.ToString()).LeftPad(' ', 3) + ": " + port;
+            if (i == ports.Length)
+            {
+                content = content + " (default)";
+                defCh = char(48+i);
+            }
+            PrintLn(content);
+        }
+        PrintLn("Press number to select port (or <enter> for default)");
+        Key key = ReadKey();
+        char ch = Keyboard.ToChar(key);
+        if (key == Key.Enter)
+        {
+            ch = defCh;
+        }
+        if ((ch >= '1') && (ch <= '9'))
+        {
+            i = uint(ch) - 49;
+            if (i < ports.Length)
+            {
+                string port = (ports[i]).Replace("COM", "");
+                uint iport;
+                if (UInt.TryParse(port, ref iport))
+                {
+                    Serial.Connect(iport);
+                    PrintLn("Connected to COM" + iport.ToString() + " ('Q' to quit)");
+                    success = true;
+                }
+            }
+        }
+        
+        
+        return success;
+    }
     string keyboardBuffer;
     
     {
-        Serial.Connect();
+        if (!DoConnect())
+        {
+            return;
+        }
+        
+        
         
         loop
         {
