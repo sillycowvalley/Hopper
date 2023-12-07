@@ -57,7 +57,7 @@ The compilation toolchain is broken into 5 applications, all written in Hopper:
 - driver (in Hopper) for SD cards (probably using LittleFS) then port File and Directory
 2. Web / WiFi
 - HTTP client and server drivers (in Hopper)
-3. Port to RP240
+3. Port to RP2040
 4. Port to Z80 again
 
 Contact me for more info: BiggerTigger at sillycowvalley dot com
