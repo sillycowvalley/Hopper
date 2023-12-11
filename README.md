@@ -55,8 +55,8 @@ I've also recently written a portable runtime in Hopper which, along with a Hopp
 Current state on microcontrollers (via the Arduino IDE) is:
 - tested on several ESP8266 and RP2040 devices
 - seperate configurable code and data segments (unlike 6502 which only has a monolithic 64K segment for both)
-- GPIO API including digital, PWW and analog
-- LittleFS for file system
+- GPIO API including digital, PWM and analog
+- LittleFS for file system (to store your current program too)
 - I2C (via Arduino Wire.h)
 - SPI (mostly for display support so far)
 - several display drivers for OLED and TFT LCD
