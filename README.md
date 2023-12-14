@@ -65,15 +65,18 @@ Current state on microcontrollers (via the Arduino IDE) is:
 
 ## What's Next?
 
-1. generic SPI interface (beyond the display drivers)
-2. compiler:
-- split constant literals into own segment (to give code segment full 64K)
-- block comments (/*..*/)
-3. SD card driver
+1. generic SPI interface (beyond the current display drivers)
+2. system | compiler | debugger:
+- split constant literals into own 'text' segment (to give code segment full 64K)
+- block comment support (/*..*/)
+- fix line-ending functionality throught (consistent across platforms): parsing, serial IO, etc.
+- compiler and debugger options per-project (not global)
+3. SD card driver (FAT?)
 4. Web / WiFi support (beyond current simple HTTP request support)
 5. Port to Z80 again
 6. Get Hopper up and running on some currently available 8 bit kits (like RC2014 and Neo6502 for example)
 7. Sound APIs (8-bit retro style possibly)
+8. UF2 binary for simpler getting starting on RP2040
 
 ## Fun Project Ideas
 
@@ -83,5 +86,6 @@ Current state on microcontrollers (via the Arduino IDE) is:
 - support for remote word-level debugging in the debugger
 2. A second Hopper client to support more than just Windows (probably Raspberry Pi next)
 3. Some utility libraries to make it easier to support retro game development on microcontrollers
+4. Revisit TinyHopper (minimal runtime with no reference types or GC) to support non-Hopper languages
 
 Contact me for more info: BiggerTigger at sillycowvalley dot com
