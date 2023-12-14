@@ -66,11 +66,14 @@ Current state on microcontrollers (via the Arduino IDE) is:
 ## What's Next?
 
 1. generic SPI interface (beyond the display drivers)
-2. SD card driver
-3. Web / WiFi support (beyond current simple HTTP request support)
-4. Port to Z80 again
-5. Get Hopper up and running on some currently available 8 bit kits (like RC2014 and Neo6502 for example)
-6. Sound APIs (8-bit retro style possibly)
+2. compiler:
+- split constant literals into own segment (to give code segment full 64K)
+- block comments (/*..*/)
+3. SD card driver
+4. Web / WiFi support (beyond current simple HTTP request support)
+5. Port to Z80 again
+6. Get Hopper up and running on some currently available 8 bit kits (like RC2014 and Neo6502 for example)
+7. Sound APIs (8-bit retro style possibly)
 
 ## Fun Project Ideas
 
