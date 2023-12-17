@@ -232,6 +232,8 @@ program Optimize
             {
                 modified = true;
             }
+            //GoFishing(methodIndex);
+            
             if (Target6502)
             {
                 // Only works on 6502 because 'long' is not currently a reference type on Windows:
@@ -401,7 +403,6 @@ program Optimize
                 BadArguments();
                 break;
             }
-            string codePath = args[0];
             
             string ext = ".code";
             string codePath = args[0];

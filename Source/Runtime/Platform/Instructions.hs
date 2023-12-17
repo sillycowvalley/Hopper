@@ -699,28 +699,7 @@ unit Instructions
         uint top = Pop();
         uint next = Pop();
 #endif              
-        uint result;
-        switch (top)
-        {
-            case 0:  {result =  next;       }
-            case 1:  {result = (next << 1); }
-            case 2:  {result = (next << 2); }
-            case 3:  {result = (next << 3); }
-            case 4:  {result = (next << 4); }
-            case 5:  {result = (next << 5); }
-            case 6:  {result = (next << 6); }
-            case 7:  {result = (next << 7); }
-            case 8:  {result = (next << 8); }
-            case 9:  {result = (next << 9); }
-            case 10: {result = (next << 10); }
-            case 11: {result = (next << 11); }
-            case 12: {result = (next << 12); }
-            case 13: {result = (next << 13); }
-            case 14: {result = (next << 14); }
-            case 15: {result = (next << 15); }
-            default: { Error = 0x0B; ErrorDump(79); return false; }
-        }
-        Push(result, Type.UInt); 
+        Push(next << top, Type.UInt); 
         return true;
     }
     bool BitShr()
@@ -736,28 +715,7 @@ unit Instructions
         uint top = Pop();
         uint next = Pop();
 #endif              
-        uint result;
-        switch (top)
-        {
-            case 0:  {result =  next;       }
-            case 1:  {result = (next >> 1); }
-            case 2:  {result = (next >> 2); }
-            case 3:  {result = (next >> 3); }
-            case 4:  {result = (next >> 4); }
-            case 5:  {result = (next >> 5); }
-            case 6:  {result = (next >> 6); }
-            case 7:  {result = (next >> 7); }
-            case 8:  {result = (next >> 8); }
-            case 9:  {result = (next >> 9); }
-            case 10: {result = (next >> 10); }
-            case 11: {result = (next >> 11); }
-            case 12: {result = (next >> 12); }
-            case 13: {result = (next >> 13); }
-            case 14: {result = (next >> 14); }
-            case 15: {result = (next >> 15); }
-            default: { Error = 0x0B; ErrorDump(80); return false; }
-        }
-        Push(result, Type.UInt); 
+        Push(next >> top, Type.UInt); 
         return true;
     }
     bool IncLocalB()

@@ -461,12 +461,12 @@ program Compile
         loop
         {
             Block.PushBlock(true); // new loop block context
-            Block.AddLocal("string", identifier+ "_c");    // string collection object (expression in [top])
+            Block.AddLocal("string", identifier+ "_c");    // 'foreach' string collection object (expression in [top])
             CodeStream.AddInstruction(Instruction.PUSHI0); // char: identifier
             CodeStream.AddInstruction(Instruction.PUSHI0); // uint: identifier_i
             // kv has same type as collection if dictionary
-            Block.AddLocal("char", identifier);
-            Block.AddLocal("uint", identifier+"_i");
+            Block.AddLocal("char", identifier);            // 'foreach' string
+            Block.AddLocal("uint", identifier+"_i");       // 'foreach' string
             
             
             bool isRef;
@@ -523,12 +523,12 @@ program Compile
         loop
         {
             Block.PushBlock(true); // new loop block context
-            Block.AddLocal(collectionType, identifier+ "_c");    // list collection object (expression in [top])
+            Block.AddLocal(collectionType, identifier+ "_c");    // 'foreach' list : list collection object (expression in [top])
             CodeStream.AddInstruction(Instruction.PUSHI0); // iteratorType: identifier
             CodeStream.AddInstruction(Instruction.PUSHI0); // uint: identifier_i
             
-            Block.AddLocal(iteratorType, identifier);
-            Block.AddLocal("uint", identifier+"_i");
+            Block.AddLocal(iteratorType, identifier);            // 'foreach' list
+            Block.AddLocal("uint", identifier+"_i");             // 'foreach' list
             
             bool isReference = !Types.IsValueType(iteratorType);
             
@@ -600,12 +600,12 @@ program Compile
         loop
         {
             Block.PushBlock(true); // new loop block context
-            Block.AddLocal(collectionType, identifier+ "_c");    // array collection object (expression in [top])
+            Block.AddLocal(collectionType, identifier+ "_c");    // 'foreach' array : array collection object (expression in [top])
             CodeStream.AddInstruction(Instruction.PUSHI0); // iteratorType: identifier
             CodeStream.AddInstruction(Instruction.PUSHI0); // uint: identifier_i
             
-            Block.AddLocal(iteratorType, identifier);
-            Block.AddLocal("uint", identifier+"_i");
+            Block.AddLocal(iteratorType, identifier);            // 'foreach' array
+            Block.AddLocal("uint", identifier+"_i");             // 'foreach' array
             
             bool isReference = !Types.IsValueType(iteratorType);
             if (isReference)
@@ -676,7 +676,7 @@ program Compile
         {
             Block.PushBlock(true); // new loop block context
             
-            Block.AddLocal(collectionType, identifier+ "_c");    // dictionary collection object (expression in [top])
+            Block.AddLocal(collectionType, identifier+ "_c");    // 'foreach' dictionary : dictionary collection object (expression in [top])
             
             string keyType = Types.GetKeyFromCollection(collectionType);
             string valueType = Types.GetKeyFromCollection(collectionType);
@@ -688,8 +688,8 @@ program Compile
             CodeStream.AddInstructionSysCall0("Pair", "New");
             CodeStream.AddInstructionPUSHI(0);
             
-            Block.AddLocal(iteratorType, identifier); // pair is same type as collection
-            Block.AddLocal("uint", identifier+"_i");
+            Block.AddLocal(iteratorType, identifier); // 'foreach' dictionary : pair is same type as collection
+            Block.AddLocal("uint", identifier+"_i");  // 'foreach' dictionary 
             
             bool isRef;
             byte identifierOffset = CodeStream.IntToByte(Block.GetOffset(identifier, ref isRef));
@@ -1092,7 +1092,7 @@ program Compile
             uint unique = CodeStream.NextAddress;
             string switchName ="switch_" + unique.ToHexString(4);
             Block.PushBlock(false); // block for switch variable
-            Block.AddLocal(switchType, switchName);
+            Block.AddLocal(switchType, switchName);   // switch variable
             
             bool isRef;
             byte switchOffset = CodeStream.IntToByte(Block.GetOffset(switchName, ref isRef));
@@ -1972,7 +1972,12 @@ program Compile
             }
             // to reserve slot
             InitializeVariable(variableType);
-            Block.AddLocal(variableType, identifier);
+            if (Block.LocalExists(identifier))
+            {
+                Parser.ErrorAtCurrent("'" + identifier + "' already exists in this scope");
+                break;
+            }
+            Block.AddLocal(variableType, identifier); // local declaration
             if (Parser.Check(HopperToken.SemiColon))
             {
                 if (variableType == "variant")

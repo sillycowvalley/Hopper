@@ -1,6 +1,7 @@
 program TestSuite
 {
 #define PORTABLE
+#define SERIALCONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
@@ -19,13 +20,12 @@ program TestSuite
 #endif
     PrintFailed(string message)
     {
-        Trace = false;
-        
+      
 #ifdef H6502
         WriteLn("  " + message);
         Diagnostics.Die(0x0B); // system failure / internal error
 #else
-        PrintLn("  " + message, MatrixRed, 0);
+        WriteLn("  " + message);
 #endif         
     }
     
@@ -1687,10 +1687,8 @@ program TestSuite
 #endif
         WriteLn();
         WriteLn("TestSuite Ok");
-#ifndef H6502
-
-        //Key key = ReadKey();
-        
+#ifndef SERIALCONSOLE
+        Key key = ReadKey();
 #endif
     }
 }

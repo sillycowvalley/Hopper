@@ -3,7 +3,11 @@
 #include <Wire.h>
 
 #include <SPI.h>
+#ifdef RP2040
+SPIClassRP2040* screenSPI;
+#else
 SPIClass* screenSPI;
+#endif
 SPISettings screenSPISettings;
 
 Byte columns;
@@ -19,14 +23,20 @@ bool spiConfigured = false;
 bool i2cConfigured = false;
 bool matrixConfigured = false;
 bool resetPinConfigured = false;
+bool portPinsConfigured = false;
 bool isRGB444 = false;
 Byte matrixClockPin;
 Byte matrixDataPin;
 Byte matrixIntensity;
 Byte spiChipSelectPin;
 Byte spiDataCommandPin;
+Byte spiTxPin = 0;
+Byte spiClkPin = 0;
 Byte resetPin = 0;
 Byte i2cAddress = 0;
+
+Byte xFudge = 0;
+Byte yFudge = 0;
 
 UInt * frameBuffer;     // 4 bytes per pixel (for reading)
 Byte * monoFrameBuffer; // 1 bit per pixel for monochrome (OLED, LED Matrix, etc)
@@ -45,6 +55,12 @@ void HRGraphics_ConfigureSPI(Byte chipSelectPin, Byte dataCommandPin)
     spiChipSelectPin = chipSelectPin;
     spiDataCommandPin = dataCommandPin;
     spiConfigured = true;
+}
+void HRGraphics_ConfigureSPIPort(Byte txPin, Byte clkPin)
+{
+    spiTxPin = txPin;
+    spiClkPin = clkPin;
+    portPinsConfigured = true;
 }
 void HRGraphics_ConfigureReset(Byte rst)
 {
@@ -106,6 +122,8 @@ UInt fontBuffer[CELLWIDTH*CELLHEIGHT];
 #define TFT_NOP     0x00
 #define TFT_SWRST   0x01
 
+#define TFT_SLPOUT 0x11     //  Sleep Out
+
 #define TFT_INVOFF  0x20
 #define TFT_INVON   0x21
 
@@ -120,13 +138,14 @@ UInt fontBuffer[CELLWIDTH*CELLHEIGHT];
 #define MADCTL_MX  0x40  // Right to left
 #define MADCTL_MV  0x20  // Reverse Mode
 #define MADCTL_BGR 0x08  // Blue-Green-Red pixel order
+#define MADCTL_RGB 0x00
 
 
 #define ST7796_RDDID 0x04      //  Read display identification information
 #define ST7796_RDDST 0x09      //  Read Display Status
 
 #define ST7796_SLPIN 0x10      //  Enter Sleep Mode
-#define ST7796_SLPOUT 0x11     //  Sleep Out
+
 #define ST7796_PTLON 0x12      //  Partial Mode ON
 #define ST7796_NORON 0x13      //  Normal Display Mode ON
 
@@ -159,6 +178,72 @@ UInt fontBuffer[CELLWIDTH*CELLHEIGHT];
 #define ST7796_GMCTRN1 0xE1
 
 
+
+#define ST7735_SWRESET 0x01
+#define ST7735_NORON   0x13
+
+#define ST7735_INVOFF  0x20
+#define ST7735_DISPON  0x29
+
+#define ST7735_COLMOD  0x3A
+
+
+#define ST7735_FRMCTR1 0xB1
+#define ST7735_FRMCTR2 0xB2
+#define ST7735_FRMCTR3 0xB3
+#define ST7735_INVCTR  0xB4
+
+#define ST7735_PWCTR1  0xC0
+#define ST7735_PWCTR2  0xC1
+#define ST7735_PWCTR3  0xC2
+#define ST7735_PWCTR4  0xC3
+#define ST7735_PWCTR5  0xC4
+#define ST7735_VMCTR1  0xC5
+
+#define ST7735_GMCTRP1 0xE0
+#define ST7735_GMCTRN1 0xE1
+
+// CS, DC, MOSI CLK, RST
+// Adafruit_ST7735 tft = Adafruit_ST7735(9, 8, 11, 10, 12);
+// tft.initR(INITR_144GREENTAB);
+
+// https://github.com/Bodmer/TFT_eSPI/blob/master/TFT_Drivers/ST7735_Init.h
+static const uint8_t 
+#ifndef LOLIND1MINI
+PROGMEM
+#endif
+initcmdSPI_ST7735[] =
+{
+  //  (COMMAND_BYTE), n, data_bytes....
+  TFT_SLPOUT    , 0x80,     // Sleep exit
+  ST7735_FRMCTR1, 3      ,  //  3: Frame rate ctrl - normal mode, 3 args:
+    0x01, 0x2C, 0x2D,       //     Rate = fosc/(1x2+40) * (LINE+2C+2D)
+  ST7735_FRMCTR2, 3      ,  //  4: Frame rate control - idle mode, 3 args:
+    0x01, 0x2C, 0x2D,       //     Rate = fosc/(1x2+40) * (LINE+2C+2D)
+  ST7735_FRMCTR3, 6      ,  //  5: Frame rate ctrl - partial mode, 6 args:
+    0x01, 0x2C, 0x2D,       //     Dot inversion mode
+    0x01, 0x2C, 0x2D,       //     Line inversion mode
+  ST7735_INVCTR , 1      ,  //  6: Display inversion ctrl, 1 arg, no delay:
+    0x07,                   //     No inversion
+  ST7735_PWCTR2 , 1      ,  //  8: Power control, 1 arg, no delay:
+    0xC5,                   //     VGH25 = 2.4C VGSEL = -10 VGH = 3 * AVDD
+  ST7735_PWCTR3 , 2      ,  //  9: Power control, 2 args, no delay:
+    0x0A,                   //     Opamp current small
+    0x00,                   //     Boost frequency
+  ST7735_VMCTR1 , 1      ,  // 12: Power control, 1 arg, no delay:
+    0x0E,
+  ST7735_INVOFF , 0      ,  // 13: Don't invert display, no args, no delay
+  //TFT_MADCTL      , 1, (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR),              // Memory Access Control
+  TFT_MADCTL      , 1, (   MADCTL_BGR),              // Memory Access Control
+  ST7735_COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
+    0x05,
+  ST7735_GMCTRP1, 16      , 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10, // Set Gamma
+  ST7735_GMCTRN1, 16      , 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10, // Set Gamma
+  ST7735_NORON  ,    0x80, //  3: Normal display on, no args, w/delay
+  ST7735_DISPON ,    0x80, //  4: Main screen turn on, no args w/delay
+  0x00                        // End of list
+};
+
 // https://github.com/Bodmer/TFT_eSPI/blob/master/TFT_Drivers/ST7796_Init.h
 static const uint8_t 
 #ifndef LOLIND1MINI
@@ -167,10 +252,10 @@ PROGMEM
 initcmdSPI_ST7796[] =
 {
   //  (COMMAND_BYTE), n, data_bytes....
-  ST7796_SLPOUT   , 0x80,     // Sleep exit
+  TFT_SLPOUT   , 0x80,     // Sleep exit
   0xF0            , 1, 0xC3,
   0xF0            , 1, 0x96,
-  TFT_MADCTL      , 1, (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR), //0x48,             // Memory Access Control
+  TFT_MADCTL      , 1, (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR),            // Memory Access Control
   ST7796_PIXFMT   , 1, 0x55,
   ST7796_INVCTR   , 1, 0x01,  // Column inversion (1 dot)
   ST7796_DFUNCTR  , 3, 0x80, 0x02, 0x3B,
@@ -187,7 +272,6 @@ initcmdSPI_ST7796[] =
 };
 
 
-#define ILI9341_SLPOUT   0x11 // Sleep Out
 #define ILI9341_GAMMASET 0x26 // Gamma Set
 #define ILI9341_DISPON   0x29 // Display ON
 #define ILI9341_VSCRSADD 0x37 // Vertical Scrolling Start Address
@@ -227,7 +311,7 @@ initcmdSPI_ILI9341[] =
   ILI9341_GAMMASET , 1, 0x01,             // Gamma curve selected
   ILI9341_GMCTRP1 , 15, 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00, // Set Gamma
   ILI9341_GMCTRN1 , 15, 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F, // Set Gamma
-  ILI9341_SLPOUT  , 0x80,                // Exit Sleep
+  TFT_SLPOUT  , 0x80,                // Exit Sleep
   ILI9341_DISPON  , 0x80,                // Display on
   0x00                                   // End of list
 };
@@ -620,6 +704,11 @@ void sendCommandI2C(Byte command)
 }
 void initScreenSPI(uint32_t freq)
 {
+    if (portPinsConfigured) // by default, both are zero
+    {
+        screenSPI->setTX(spiTxPin);
+        screenSPI->setSCK(spiClkPin);
+    }
     pinMode(spiChipSelectPin, OUTPUT);
     digitalWrite(spiChipSelectPin, HIGH); // Deselect
     pinMode(spiDataCommandPin, OUTPUT);
@@ -685,6 +774,10 @@ void writeCommandSPI(Byte cmd)
 
 void setAddrWindowSPI(UInt x1, UInt y1, UInt x2, UInt y2, bool write)
 {
+    x1 += xFudge;
+    x2 += xFudge;
+    y1 += yFudge;
+    y2 += yFudge;
     writeCommandSPI(TFT_CASET); // Column address set
     screenSPI->transfer16(x1);
     screenSPI->transfer16(x2);
@@ -770,7 +863,9 @@ DisplayState HRGraphics_Begin()
         switch (currentDisplay)
         {
           case Display::eILI9341:
+          case Display::eST7735:
           case Display::eST7796:
+
               // Color / RGB444
               if (spiConfigured)
               {
@@ -859,18 +954,33 @@ DisplayState HRGraphics_Begin()
         if (spiConfigured)
         {
             screenSPI = &SPI;
-            initScreenSPI(SPI_DEFAULT_FREQ);
-            Byte cmd, x, numArgs;
+                    
             const Byte* addr = nullptr;
             switch (currentDisplay)
             {
                 case Display::eILI9341:
                     addr = initcmdSPI_ILI9341;
                     break;
+
+                case Display::eST7735:
+                    addr = initcmdSPI_ST7735;
+                    xFudge = 2;
+                    yFudge = 1;
+#ifdef RP2040
+                    if (portPinsConfigured) 
+                    {
+                        screenSPI = &SPI1; // why?
+                    }
+#endif
+                    break;
                 case Display::eST7796:
                     addr = initcmdSPI_ST7796;
                     break;
             }
+
+            initScreenSPI(SPI_DEFAULT_FREQ);
+            Byte cmd, x, numArgs;
+            
             while ((cmd = pgm_read_byte(addr++)) > 0)
             {
                 x = pgm_read_byte(addr++);
@@ -1341,6 +1451,70 @@ void HRGraphics_FilledRectangle(UInt x, UInt y, UInt w, UInt h, UInt colour)
     }
     HRScreen_Resume(false);
 }
+
+void drawCirclePoints(uint xc, uint yc, int x, int y, UInt colour) 
+{ 
+    HRGraphics_SetPixel(xc+x, yc+y, colour); 
+    HRGraphics_SetPixel(xc-x, yc+y, colour); 
+    HRGraphics_SetPixel(xc+x, yc-y, colour); 
+    HRGraphics_SetPixel(xc-x, yc-y, colour); 
+    HRGraphics_SetPixel(xc+y, yc+x, colour); 
+    HRGraphics_SetPixel(xc-y, yc+x, colour); 
+    HRGraphics_SetPixel(xc+y, yc-x, colour); 
+    HRGraphics_SetPixel(xc-y, yc-x, colour); 
+} 
+void HRGraphics_Circle(UInt xc, UInt yc, UInt r, UInt colour)
+{
+    HRScreen_Suspend();
+    
+    int x = 0, y = r; 
+    int d = 3 - 2 * r; 
+    drawCirclePoints(xc, yc, x, y, colour); 
+    while (y >= x) 
+    { 
+        x++; 
+        if (d > 0) 
+        { 
+            y--;  
+            d = d + 4 * (x - y) + 10; 
+        } 
+        else
+        {
+            d = d + 4 * x + 6; 
+        }
+        drawCirclePoints(xc, yc, x, y, colour); 
+    } 
+    
+    HRScreen_Resume(false);
+}
+
+void HRGraphics_FilledCircle(UInt xc, UInt yc, UInt r, UInt colour)
+{
+    HRScreen_Suspend();
+    
+    int r2 = r*r;
+    for (int y=-r; y<=r; y++)
+    {
+        int y2 = y*y;
+        for (int x=-r; x<=r; x++)
+        {
+            if(x*x+y2 <= r2)
+            {
+                HRGraphics_SetPixel(xc+x, yc+y, colour);
+            }
+        }
+    }
+
+    
+    //while (r != 0)
+    //{
+    //    HRGraphics_Circle(xc, yc, r, colour);
+    //    r--;
+    //} 
+    
+    HRScreen_Resume(false);
+}
+
 
 void lineLow(int x0, int y0, int x1, int y1, uint colour)
 {

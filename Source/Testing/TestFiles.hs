@@ -1,6 +1,7 @@
 program TestFiles
 {
 #define PORTABLE
+#define SERIALCONSOLE
     uses "/Source/System/System"
     
     uses "/Source/System/IO"
@@ -10,7 +11,7 @@ program TestFiles
     
     PrintFailed(string message)
     {
-        PrintLn("  " + message, MatrixRed, 0);
+        WriteLn("  " + message);
     }
     
     TestFiles()
@@ -22,18 +23,17 @@ program TestFiles
         {
             File.Delete(testPath);
         }
-        
         file testFile = File.Create(testPath);
         if (!testFile.IsValid())
         {
             PrintFailed("File.Create(..) failed");
         }
-        File.Append(testFile, "Test Content");
+        testFile.Append("Test Content");
         if (!testFile.IsValid())
         {
             PrintFailed("File.Append(..) failed");
         }
-        File.Flush(testFile);
+        testFile.Flush();
         if (!testFile.IsValid())
         {
             PrintFailed("File.Flush(..) failed");
@@ -58,7 +58,7 @@ program TestFiles
         ln = "";
         loop
         {
-            byte b = File.Read(testFile2, pos);
+            byte b = testFile2.Read(pos);
             if (!testFile2.IsValid())
             {
                 break;
@@ -68,7 +68,7 @@ program TestFiles
         }
         if (ln != "Test Content")
         {
-            PrintLn("'" + ln + "'");
+            WriteLn("'" + ln + "'");
             PrintFailed("File char IO failed");
         }
         
@@ -85,7 +85,7 @@ program TestFiles
             PrintFailed("File.Create(..) failed");
         }
         byte content = 42;
-        File.Append(testFile, content);
+        testFile.Append(content);
         if (!testFile.IsValid())
         {
             PrintFailed("File.Append(..) failed");
@@ -108,7 +108,7 @@ program TestFiles
         }
         if (content != 42)
         {
-            PrintLn("'" + content.ToString() + "'");
+            WriteLn("'" + content.ToString() + "'");
             PrintFailed("File byte IO failed");
         }
         
@@ -259,7 +259,8 @@ program TestFiles
         
         WriteLn();
         WriteLn("TestSuite Ok");
-        
-        //Key k = ReadKey();
+#ifndef SERIALCONSOLE
+        Key key = ReadKey();
+#endif
     }
 }

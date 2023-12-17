@@ -506,7 +506,7 @@ program Translate
             }
             
             content = TranslateType(variableType) + " ";
-            Block.AddLocal(variableType, identifier);
+            Block.AddLocal(variableType, identifier);  // local declaration
             if (Parser.Check(HopperToken.SemiColon))
             {
                 if (variableType == "bool")
@@ -971,10 +971,10 @@ program Translate
             }
             
             <string,variant> blockContext = Block.Top();
-            < < string > > arguments = Symbols.GetOverloadArguments(iCurrentOverload);
+            arguments = Symbols.GetOverloadArguments(iCurrentOverload);
             blockContext["arguments"] = arguments;
             blockContext["iOverload"] = iCurrentOverload.ToString();
-            string returnType = Symbols.GetOverloadReturnType(iCurrentOverload);
+            returnType = Symbols.GetOverloadReturnType(iCurrentOverload);
             if (returnType != "void")
             {                    
                 blockContext["returntype"] = returnType;

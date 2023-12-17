@@ -10,9 +10,17 @@ namespace HopperNET
 {
     public class HopperPath
     {
-        static string hopperRoot = @"D:\Repos\Maker\Z80\Hopper\HS"; // Michael's dev location
+        static string hopperRoot;
         public static void InitializeFolders()
         {
+            if (Directory.Exists(@"D:\Repos\Maker"))
+            {
+                hopperRoot = @"D:\Repos\Maker\Z80\Hopper\HS"; // Michael's dev location
+            }
+            else if (Directory.Exists(@"C:\Repos\Maker"))
+            {
+                hopperRoot = @"C:\Repos\Maker\Z80\Hopper\HS"; // Michael's dev location
+            }
             Assembly currentAssem = Assembly.GetExecutingAssembly();
             string exePath = currentAssem.Location;
             string exeFolder = Path.GetDirectoryName(exePath);

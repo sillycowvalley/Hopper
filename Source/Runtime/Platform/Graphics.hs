@@ -4,6 +4,7 @@ unit HRGraphics
     {
         NoDisplay,
         ILI9341,
+        ST7735,
         ST7796,
         SSD1306,
         LedMatrix,
@@ -21,6 +22,7 @@ unit HRGraphics
     
     ConfigureDisplay(Display display, uint width, uint height) { ErrorDump(137); Error = 0x0A; }
     ConfigureSPI(byte chipSelectPin, byte dataCommandPin) { ErrorDump(138); Error = 0x0A; }
+    ConfigureSPIPort(byte txPin, byte clkPin) { ErrorDump(170); Error = 0x0A; }
     ConfigureReset(byte resetPin) { ErrorDump(139); Error = 0x0A; }
     ConfigureI2C(byte i2cAddress) { ErrorDump(140); Error = 0x0A; }
     ConfigureMatrix(byte clockPin, byte dataPin, byte intensity) { ErrorDump(141); Error = 0x0A; }
@@ -39,6 +41,8 @@ unit HRGraphics
     VerticalLine(uint x1, uint y1, uint x2, uint y2, uint colour) {ErrorDump(151); Error = 0x0A; }
     Rectangle(uint x, uint y, uint w, uint h, uint colour) { ErrorDump(152); Error = 0x0A; }
     FilledRectangle(uint x, uint y, uint w, uint h, uint colour) { ErrorDump(153); Error = 0x0A; }
+    Circle(uint x, uint y, uint r, uint colour) { ErrorDump(152); Error = 0x0A; }
+    FilledCircle(uint x, uint y, uint r, uint colour) { ErrorDump(153); Error = 0x0A; }
     Show(bool on) { ErrorDump(154); Error = 0x0A; }
     DrawChar(uint col, uint row, char c, uint foreColour, uint backColour, byte scale, bool antiAlias) { ErrorDump(155); Error = 0x0A; }
     

@@ -7,6 +7,7 @@
 
 void HRGraphics_ConfigureDisplay(Display display, UInt width, UInt height);
 void HRGraphics_ConfigureSPI(Byte chipSelectPin, Byte dataCommandPin);
+void HRGraphics_ConfigureSPIPort(Byte txPin, Byte clkPin);
 void HRGraphics_ConfigureReset(Byte resetPin);
 void HRGraphics_ConfigureI2C(Byte i2cAddress);
 void HRGraphics_ConfigureMatrix(Byte clockPin, Byte dataPin, Byte intensity);
@@ -36,6 +37,8 @@ void HRGraphics_HorizontalLine(UInt x1, UInt y1, UInt x2, UInt y2, UInt colour);
 void HRGraphics_VerticalLine(UInt x1, UInt y1, UInt x2, UInt y2, UInt colour);
 void HRGraphics_Rectangle(UInt x, UInt y, UInt w, UInt h, UInt colour);
 void HRGraphics_FilledRectangle(UInt x, UInt y, UInt w, UInt h, UInt colour);
+void HRGraphics_Circle(UInt x, UInt y, UInt r, UInt colour);
+void HRGraphics_FilledCircle(UInt x, UInt y, UInt r, UInt colour);
 
 void HRGraphics_InvertDisplay(Bool invertColours);
 void HRGraphics_FlipDisplay(Bool flipVertical);

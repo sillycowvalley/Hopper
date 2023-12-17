@@ -89,6 +89,13 @@ unit Library
                 uint cs = Pop(ref utype);
                 HRGraphics.ConfigureSPI(byte(cs), byte(dc));
             }
+            case LibCall.GraphicsConfigureSPIPort:
+            {
+                Type utype;
+                uint clk = Pop(ref utype);
+                uint tx  = Pop(ref utype);
+                HRGraphics.ConfigureSPIPort(byte(tx), byte(clk)); // TX(MOSI), CLK
+            }
             case LibCall.GraphicsConfigureReset:
             {
                 Type utype;
@@ -192,6 +199,24 @@ unit Library
                 uint y = Pop(ref utype);
                 uint x = Pop(ref utype);
                 HRGraphics.FilledRectangle(x, y, w, h, color);
+            }
+            case LibCall.GraphicsCircle:
+            {
+                Type utype;
+                uint color = Pop(ref utype);
+                uint r = Pop(ref utype);
+                uint y = Pop(ref utype);
+                uint x = Pop(ref utype);
+                HRGraphics.Circle(x, y, r, color);
+            }
+            case LibCall.GraphicsFilledCircle:
+            {
+                Type utype;
+                uint color = Pop(ref utype);
+                uint r = Pop(ref utype);
+                uint y = Pop(ref utype);
+                uint x = Pop(ref utype);
+                HRGraphics.FilledCircle(x, y, r, color);
             }
             case LibCall.GraphicsInvertDisplay:
             {

@@ -16,6 +16,7 @@ unit LibCalls
         
         GraphicsConfigureDisplay,
         GraphicsConfigureSPI,
+        GraphicsConfigureSPIPort,
         GraphicsConfigureReset,
         GraphicsConfigureI2C,
         GraphicsConfigureMatrix,
@@ -35,6 +36,8 @@ unit LibCalls
         GraphicsVerticalLine,
         GraphicsRectangle,
         GraphicsFilledRectangle,
+        GraphicsCircle,
+        GraphicsFilledCircle,
         
         GraphicsShow,
         GraphicsDrawChar,

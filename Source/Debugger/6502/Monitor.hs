@@ -433,7 +433,6 @@ unit Monitor
     
     uint GetCurrentPC()
     {
-        uint pc;
         if (!ZeroPageContains("CODESTART"))
         {
             LoadZeroPage(false);

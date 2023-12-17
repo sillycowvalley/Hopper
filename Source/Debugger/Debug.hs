@@ -132,8 +132,25 @@ program Debug
                             // found a current port
                         }
                     }
+                    if (comPort != 0)
+                    {
+                        string currentPort = "COM" + comPort.ToString();
+                        <string> ports = Serial.Ports;
+                        if (!ports.Contains(currentPort))
+                        {
+                            // current port no longer exists
+                            comPort = 0;
+                            debugOptions["comPort"] = comPort.ToString();
+                            File.Delete(optionsPath);
+                            dict["debugoptions"] = debugOptions;
+                            if (JSON.Write(optionsPath, dict))
+                            {
+                            }
+                        }
+                    }
                 }
             }
+            
             
             if (comPort == 0)
             {

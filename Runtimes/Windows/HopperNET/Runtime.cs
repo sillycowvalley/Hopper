@@ -462,7 +462,45 @@ namespace HopperNET
 
     enum LibCall
     {
-        MemoryIncWord = 0x18,
+        WireBegin = 0x00,
+        WireBeginTx = 0x01,
+        WireEndTx = 0x02,
+        WireWrite = 0x03,
+
+        MCUPinMode = 0x04,
+        MCUDigitalRead = 0x05,
+        MCUDigitalWrite = 0x06,
+        MCUAnalogRead = 0x07,
+        MCUAnalogWrite = 0x08,
+        MCUAnalogWriteResolution = 0x09,
+
+        GraphicsConfigureDisplay = 0x0A,
+        GraphicsConfigureSPI = 0x0B,
+        GraphicsConfigureSPIPort = 0x0C,
+        GraphicsConfigureReset = 0x0D,
+        GraphicsConfigureI2C = 0x0E,
+        GraphicsConfigureMatrix = 0x0F,
+        GraphicsBegin = 0x10,
+        GraphicsEnd = 0x11,
+
+        GraphicsInvertDisplay = 0x12,
+        GraphicsFlipDisplay = 0x13,
+
+        GraphicsClear = 0x14,
+        GraphicsWidthGet = 0x15,
+        GraphicsHeightGet = 0x16,
+        GraphicsSetPixel = 0x17,
+
+        GraphicsLine = 0x18,
+        GraphicsHorizontalLine = 0x19,
+        GraphicsVerticalLine = 0x1A,
+        GraphicsRectangle = 0x1B,
+        GraphicsFilledRectangle = 0x1C,
+        GraphicsCircle = 0x1D,
+        GraphicsFilledCircle = 0x1E,
+
+        GraphicsShow = 0x1F,     // turn hardware display on or off (currently only OLED)
+        GraphicsDrawChar = 0x20,
     };
 
     public enum HopperType // if you change this, look at the end of ToByte(..) in Types.hs
@@ -3566,13 +3604,136 @@ namespace HopperNET
 
             switch (libCall)
             {
-                case LibCall.MemoryIncWord:
+                case LibCall.GraphicsWidthGet:
                     {
-                        uint address = Pop();
-                        ushort value = (ushort)(currentContext.memoryArray[address] + (currentContext.memoryArray[address + 1] << 8));
-                        value++;
-                        currentContext.memoryArray[address] = (byte)(value & 0xFF);
-                        currentContext.memoryArray[address+1] = (byte)(value >> 8);
+                        ushort width = (ushort)Console.CanvasWidth;
+                        Push(width, HopperType.tUInt);
+                    }
+                    break;
+                case LibCall.GraphicsHeightGet:
+                    {
+                        ushort height = (ushort)Console.CanvasHeight;
+                        Push(height, HopperType.tUInt);
+                    }
+                    break;
+                case LibCall.GraphicsFlipDisplay:
+                    Console.FlipVertical = (bool)(Pop() != 0);
+                    break;
+                case LibCall.GraphicsClear:
+                    {
+                        ushort color = (ushort)Pop();
+                        screen.Suspend();
+                        screen.Console.GraphicsClear(color);
+                        screen.Resume(false);
+                    }
+                    break;
+                case LibCall.GraphicsSetPixel:
+                    {
+                        ushort colour = (ushort)Pop();
+                        ushort y = (ushort)Pop();
+                        ushort x = (ushort)Pop();
+                        screen.Suspend();
+                        screen.Console.SetPixel(x, y, colour);
+                        screen.Resume(false);
+                    }
+                    break;
+
+
+                case LibCall.GraphicsLine:
+                    {
+                        ushort colour = (ushort)Pop();
+                        ushort y2 = (ushort)Pop();
+                        ushort x2 = (ushort)Pop();
+                        ushort y1 = (ushort)Pop();
+                        ushort x1 = (ushort)Pop();
+                        screen.Suspend();
+                        screen.Console.Line(x1, y1, x2, y2, colour);
+                        screen.Resume(false);
+                    }
+                    break;
+                case LibCall.GraphicsHorizontalLine:
+                    {
+                        ushort colour = (ushort)Pop();
+                        ushort y2 = (ushort)Pop();
+                        ushort x2 = (ushort)Pop();
+                        ushort y1 = (ushort)Pop();
+                        ushort x1 = (ushort)Pop();
+                        screen.Suspend();
+                        screen.Console.HorizontalLine(x1, y1, x2, y2, colour);
+                        screen.Resume(false);
+                    }
+                    break;
+                case LibCall.GraphicsVerticalLine:
+                    {
+                        ushort colour = (ushort)Pop();
+                        ushort y2 = (ushort)Pop();
+                        ushort x2 = (ushort)Pop();
+                        ushort y1 = (ushort)Pop();
+                        ushort x1 = (ushort)Pop();
+                        screen.Suspend();
+                        screen.Console.VerticalLine(x1, y1, x2, y2, colour);
+                        screen.Resume(false);
+                    }
+                    break;
+                case LibCall.GraphicsRectangle:
+                    {
+                        ushort colour = (ushort)Pop();
+                        ushort h = (ushort)Pop();
+                        ushort w = (ushort)Pop();
+                        ushort y = (ushort)Pop();
+                        ushort x = (ushort)Pop();
+                        screen.Suspend();
+                        screen.Console.Rectangle(x, y, w, h, colour);
+                        screen.Resume(false);
+                    }
+                    break;
+                case LibCall.GraphicsFilledRectangle:
+                    {
+                        ushort colour = (ushort)Pop();
+                        ushort h = (ushort)Pop();
+                        ushort w = (ushort)Pop();
+                        ushort y = (ushort)Pop();
+                        ushort x = (ushort)Pop();
+                        screen.Suspend();
+                        screen.Console.FillRectangle(x, y, w, h, colour);
+                        screen.Resume(false);
+                    }
+                    break;
+                case LibCall.GraphicsCircle:
+                    {
+                        ushort colour = (ushort)Pop();
+                        ushort r = (ushort)Pop();
+                        ushort y = (ushort)Pop();
+                        ushort x = (ushort)Pop();
+                        screen.Suspend();
+                        screen.Console.Circle(x, y, r, colour);
+                        screen.Resume(false);
+                    }
+                    break;
+                case LibCall.GraphicsFilledCircle:
+                    {
+                        ushort colour = (ushort)Pop();
+                        ushort r = (ushort)Pop();
+                        ushort y = (ushort)Pop();
+                        ushort x = (ushort)Pop();
+                        screen.Suspend();
+                        screen.Console.FillCircle(x, y, r, colour);
+                        screen.Resume(false);
+                    }
+                    break;
+
+                case LibCall.GraphicsDrawChar:
+                    {
+                        bool   antiAlias = (bool)(Pop() != 0);
+                        byte   scale = (byte)Pop();
+                        ushort backColour = (ushort)Pop();
+                        ushort foreColour = (ushort)Pop();
+                        char   chr = (char)Pop();
+                        ushort y = (ushort)Pop();
+                        ushort x = (ushort)Pop();
+                        screen.Suspend();
+                        throw new NotImplementedException();
+                        screen.Resume(false);
                     }
                     break;
             }
@@ -4322,8 +4483,6 @@ namespace HopperNET
                             code[i] = (byte)codeStore[i];
                         }
                         ushort inlineStart = (ushort)codeStore.Length;
-
-                        //ModifyInlineCode(inlineCode);
 
                         for (uint i = 0; i < inlineCode.Length; i++)
                         {
@@ -6127,82 +6286,5 @@ namespace HopperNET
         {
             this.lastError = lastError;
         }
-        private void ModifyInlineCode(ushort[] inlineCode)
-        {
-            // Inline code on the MCUs or 6502 is different to running on Hopper .NET
-            // For example, we never use CALLIW on Windows (only CALLW)
-            ushort pc = 0;
-            ushort endPC = (ushort)inlineCode.Length;
-            for (; ; )
-            {
-                if (pc >= endPC)
-                {
-                    break;
-                }
-                Instruction opCode = (Instruction)inlineCode[pc];
-                switch (opCode)
-                {
-                    case Instruction.EXIT:
-                    case Instruction.PUSHI0:
-                    case Instruction.PUSHI1:
-                    case Instruction.PUSHIM1:
-                    case Instruction.SWAP:
-                    case Instruction.NOP:
-                    case Instruction.JREL:
-                    case Instruction.ADDI:
-                    case Instruction.SUBI:
-                    case Instruction.MULI:
-                    case Instruction.DIVI:
-                    case Instruction.MODI:
-                    case Instruction.BITNOT:
-                    case Instruction.BOOLAND:
-                    case Instruction.BOOLOR:
-                    case Instruction.LEI:
-                    case Instruction.NE:
-                    case Instruction.LTI:
-                    case Instruction.GEI:
-                    case Instruction.GTI:
-                    case Instruction.EQ:
-
-                    case Instruction.ADD: // zero .. NOP ..
-                        // no operand
-                        break;
-                    case Instruction.DUP:
-                    case Instruction.DECSP:
-                    case Instruction.JNZB:
-                    case Instruction.JZB:
-                    case Instruction.PUSHIB:
-                    case Instruction.SYSCALL0:
-                    case Instruction.PUSHGLOBALB:
-                    case Instruction.POPGLOBALB:
-                    case Instruction.INCGLOBALB:
-                    case Instruction.CAST:
-                    case Instruction.PUSHIBEQ:
-                        // byte operand
-                        pc++;
-                        break;
-                    case Instruction.PUSHIW:
-                    case Instruction.JW:
-                    case Instruction.JZW:
-                    case Instruction.PUSHIWLEI:
-                    case Instruction.CALLW: // already modified
-                    case Instruction.INCGLOBALBB:
-                    case Instruction.PUSHGLOBALBB:
-                        // word operand
-                        pc += 2;
-                        break;
-                    case Instruction.CALLIW:
-                        inlineCode[pc] = (byte)Instruction.CALLW;
-                        pc += 2;
-                        break;
-                    default:
-                        Diagnostics.Die(0x0A, this); // not implemented
-                        break;
-                }
-                pc++;
-            }
-            
-        }
-
     }
 }

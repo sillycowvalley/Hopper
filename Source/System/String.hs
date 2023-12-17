@@ -494,7 +494,7 @@ unit String
         char c;
         uint length;
         string result;
-        uint length = this.Length;
+        length = this.Length;
         for (; i < length; i++)
         {
             c = this[i];

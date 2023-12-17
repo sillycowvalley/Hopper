@@ -26,7 +26,6 @@ namespace HopperNET
             console.ExitBuffering(isInteractive);
         }
 
-
         public void SetCursor(ushort x, ushort y)
         {
             console.SetCursor(x, y);
@@ -65,11 +64,10 @@ namespace HopperNET
                     console.WriteCharacter(x, y, ' ', 0x000, 0x000);
                 }
             }
+            //console.ClearPixels();
             console.SetCursor(0, 0);
             console.ExitBuffering(false);
         }
-
-
 
         public void Print(char character, ushort foreColor, ushort backColor)
         {

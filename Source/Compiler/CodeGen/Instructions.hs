@@ -997,9 +997,9 @@ unit Instructions
             
             // jump back offset
             address++;
-            byte lsb = code[address];
+            lsb = code[address];
             address++;
-            byte msb = code[address];
+            msb = code[address];
             opcontent = opcontent + " -0x" +msb.ToHexString(2) + lsb.ToHexString(2);
             
             uint backJump = (msb << 8) + lsb;

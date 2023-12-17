@@ -443,113 +443,112 @@ unit Types
     }
     byte ToByte(string typeName)
     {
-        byte b;
         switch (typeName)
         {
             case "byte":
             {
-                b = byte(byte);
+                return byte(byte);
             }
             case "char":
             {
-                b = byte(char);   
+                return byte(char);   
             }
             case "bool":
             {
-                b = byte(bool);
+                return byte(bool);
             }
             case "int":
             {
-                b = byte(int);
+                return byte(int);
             }
             case "uint":
             {
-                b = byte(uint);
+                return byte(uint);
             }
             case "long":
             {
-                b = byte(long);
+                return byte(long);
             }
             case "float":
             {
-                b = byte(float);
+                return byte(float);
             }
             case "file":
             {
-                b = byte(file);
+                return byte(file);
             }
             case "directory":
             {
-                b = byte(directory);
+                return byte(directory);
             }
             case "string":
             {
-                b = byte(string);
+                return byte(string);
             }
             case "variant":
             {
-                b = byte(variant);
+                return byte(variant);
             }
             case "type":
             {
-                b = byte(type);
+                return byte(type);
             }
             case "list":
             {
-                b = byte(list);
+                return byte(list);
             }
             case "array":
             {
-                b = byte(array);
+                return byte(array);
             }
             case "dictionary":
             {
-                b = byte(dictionary);
+                return byte(dictionary);
             }
             case "enum":
             {
-                b = byte(enum);
+                return byte(enum);
             }
             case "flags":
             {
-                b = byte(flags);
+                return byte(flags);
             }
             case "pair":
             {
-                b = byte(pair);
+                return byte(pair);
             }
             case "delegate":
             {
-                b = byte(delegate);
+                return byte(delegate);
             }
             default:
             {
                 // compound types
                 if (Types.IsList(typeName))
                 {
-                    b = byte(list);
+                    return byte(list);
                 }
                 else if (Types.IsArray(typeName))
                 {
-                    b = byte(array);
+                    return byte(array);
                 }
                 else if (Types.IsDictionaryOrPair(typeName))
                 {
-                    b = byte(dictionary);
+                    return byte(dictionary);
                 }
                 
                 // named types
                 else if (Types.IsEnum(typeName))
                 {
-                    b = byte(enum);
+                    return byte(enum);
                 }
                 else if (Types.IsFlags(typeName))
                 {
-                    b = byte(flags);
+                    return byte(flags);
                 }
                 else if (Types.IsDelegate(typeName))
                 {
-                    b = byte(delegate);
+                    return byte(delegate);
                 }
                 else
                 {
@@ -558,15 +557,7 @@ unit Types
                 }
             }
         }
-        if (b == 26)
-        {
-            b = 19; // tHashDictionary -> tDictionary
-        }
-        if (b == 27)
-        {
-            b = 16; // tHashPair -> tPair
-        }
-        return b;
+        return byte(0);
     }
     bool tryParseTypeString(ref string typeString)
     {
@@ -666,22 +657,28 @@ unit Types
     
     uint GetArraySizeFromCollection(string collectionType)
     {
-        uint fb;
-        uint lb;
+        uint bPos;
         uint sz;
-        if (!collectionType.IndexOf('[', ref fb))
+        string szs;
+        loop
         {
-            Parser.ErrorAtCurrent("invalid array type '" + collectionType + "'");
-        }
-        string szs = collectionType.Substring(fb+1);
-        if (!szs.IndexOf(']', ref lb))
-        {
-            Parser.ErrorAtCurrent("invalid array type '" + collectionType + "'");
-        }
-        szs = szs.Substring(0, lb);
-        if (!UInt.TryParse(szs, ref sz))
-        {
-            Parser.ErrorAtCurrent("invalid array type '" + collectionType + "'");
+            if (!collectionType.IndexOf('[', ref bPos))
+            {
+                Parser.ErrorAtCurrent("invalid array type '" + collectionType + "'");
+                break;
+            }
+            szs = collectionType.Substring(bPos+1);
+            if (!szs.IndexOf(']', ref bPos))
+            {
+                Parser.ErrorAtCurrent("invalid array type '" + collectionType + "'");
+                break;
+            }
+            szs = szs.Substring(0, bPos);
+            if (!UInt.TryParse(szs, ref sz))
+            {
+                Parser.ErrorAtCurrent("invalid array type '" + collectionType + "'");
+            }
+            break;
         }
         return sz;
     }
@@ -689,51 +686,39 @@ unit Types
     string GetKeyFromCollection(string collectionType)
     {
         // collectionType could be dictionary or pair (they look the same
-        string keyType;
         uint cIndex;    
         if (IsDictionaryOrPair(collectionType) && collectionType.IndexOf(',', ref cIndex))
         {
-            keyType = collectionType.Substring(1, cIndex-1);        
+            return collectionType.Substring(1, cIndex-1);        
         }
-        else
-        {
-            Parser.ErrorAtCurrent("invalid collection type for key '" + collectionType + "'");
-        }
-        return keyType;
+        Parser.ErrorAtCurrent("invalid collection type for key '" + collectionType + "'");
+        return "";
     }
     
     string GetValueFromCollection(string collectionType)
     {
         // collectionType could be dictionary or pair (they look the same)
-        string valueType;
         uint cIndex;    
         if (IsDictionaryOrPair(collectionType) && collectionType.IndexOf(',', ref cIndex))
         {
-            valueType = collectionType.Substring(cIndex+1);
-            valueType = valueType.Substring(0, valueType.Length-1);     
+            string valueType = collectionType.Substring(cIndex+1);
+            return valueType.Substring(0, valueType.Length-1);     
         }
         else if (IsList(collectionType))
         {
-            valueType = collectionType.Substring(1);
-            valueType = valueType.Substring(0, valueType.Length-1);         
+            string valueType = collectionType.Substring(1);
+            return valueType.Substring(0, valueType.Length-1);         
         }
         else if (IsArray(collectionType))
         {
             uint fb;
-            if (!collectionType.IndexOf('[', ref fb))
+            if (collectionType.IndexOf('[', ref fb))
             {
-                Parser.ErrorAtCurrent("invalid collection type for value '" + collectionType + "'");
-            }
-            else
-            {
-                valueType = collectionType.Substring(0, fb);
+                return collectionType.Substring(0, fb);
             }
         }
-        else
-        {
-            Parser.ErrorAtCurrent("invalid collection type for value '" + collectionType + "'");
-        }
-        return valueType;
+        Parser.ErrorAtCurrent("invalid collection type for value '" + collectionType + "'");
+        return "";
     }
     
     string GetIteratorFromCollection(string collectionType)
@@ -844,12 +829,7 @@ unit Types
     }
     bool IsArray(string typeString)
     {
-        bool isArray= false;
-        if (typeString.Contains('['))
-        {
-            isArray = true;
-        }   
-        return isArray;
+        return typeString.Contains('[');
     }
     
     string QualifyFlags(string identifier)
@@ -1344,27 +1324,12 @@ unit Types
             CodeStream.AddInstruction(Instruction.DIE, byte(0x09)); // invalid variant type
         }
     }
-    
     uint IntToUInt(int value)
     {
-        <byte> bytes = value.ToBytes();
-        return uint(bytes[0]) + uint(bytes[1]) << 8;
+        return value.GetByte(0) + (value.GetByte(1) << 8);
     }
-    
     int UIntToInt(uint value)
     {
-        if ((value & 0x8000) != 0) // sign bit set?
-        {
-            // two's complement
-            value = ~value; // 0xFFFF -> 0x0000, 0xFFFE -> 0x0001
-            long lvalue = 0 - long(value) - 1;
-            return int(lvalue);
-        }
-        else
-        {
-            return int(value); // '+int'
-        }
+        return Int.FromBytes(byte(this & 0xFF), byte(this >> 8));
     }
-    
-    
 }

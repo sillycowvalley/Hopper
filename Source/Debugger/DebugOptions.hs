@@ -10,10 +10,10 @@ unit DebugOptions
     uses "/Source/Compiler/JSON/JSON"
     
     <string, string> debugOptions;
-    bool IsHexDisplay()     { return debugOptions["hexDisplay"]    != "false"; }
+    bool IsHexDisplay()     { return debugOptions.Contains("hexDisplay") && (debugOptions["hexDisplay"] != "false"); }
     bool IsHexDisplayMode { get { return IsHexDisplay(); } }
     
-    bool IsCaptureConsole()     { return debugOptions["captureConsole"]    != "false"; }
+    bool IsCaptureConsole()     { return debugOptions.Contains("captureConsole") && (debugOptions["captureConsole"] != "false"); }
     bool IsCaptureConsoleMode { get { return IsCaptureConsole(); } }
     
     Register()

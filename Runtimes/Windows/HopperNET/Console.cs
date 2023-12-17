@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -49,7 +50,12 @@ namespace HopperNET
         // indices are y x width + x
         ConsoleCell[] consoleBuffer = null;
         ConsoleCell[] consoleCache = null;
+        
+        Bitmap graphicsBitmap = null;
+        bool graphicsMode = false;
 
+        const ushort invertColour = 0xF000;
+        
 
         static public uint CanvasWidth // width in pixels
         {
@@ -58,6 +64,249 @@ namespace HopperNET
         static public uint CanvasHeight // height in pixels
         {
             get { return textRows * textCellHeight * uiScale; }
+        }
+        public static bool FlipVertical { get; internal set; }
+        public void ClearPixels(ushort colour)
+        {
+            Color color = ToColor(colour);
+            lock (graphicsBitmap)
+            {
+                using (Graphics graphics = Graphics.FromImage(graphicsBitmap))
+                {
+                    SolidBrush brush = new SolidBrush(color);
+                    graphics.FillRectangle(brush, 0, 0, CanvasWidth, CanvasHeight);
+                }
+            }
+            graphicsMode = (colour != 0x000);
+        }
+        public void SetPixel(ushort x, ushort y, ushort colour)
+        {
+            lock (graphicsBitmap)
+            {
+                if (colour == invertColour)
+                {
+                    Color color = graphicsBitmap.GetPixel(x, y);
+                    color = Color.FromArgb((byte)~color.R, (byte)~color.G, (byte)~color.B);
+                    graphicsBitmap.SetPixel(x, y, color);
+                }
+                else
+                {
+                    Color color = ToColor(colour);
+                    graphicsBitmap.SetPixel(x, y, color);
+                }
+            }
+            graphicsMode = true;
+        }
+        public void GraphicsClear(ushort colour)
+        {
+            ClearPixels(colour);
+            if (colour == 0x000)
+            {
+                Reset();
+                hopper.HopperInvalidate();
+            }
+        }
+
+        void lineLow(int x0, int y0, int x1, int y1, ushort colour)
+        {
+            int dx = x1 - x0;
+            int dy = y1 - y0;
+            int yi = 1;
+            if (dy < 0)
+            {
+                yi = -1;
+                dy = -dy;
+            }
+            int d = (2 * dy) - dx;
+            int y = y0;
+            for (int x = x0; x <= x1; x++)
+            {
+                SetPixel((ushort)x, (ushort)y, colour);
+                if (d > 0)
+                {
+                    y = y + yi;
+                    d = d + (2 * (dy - dx));
+                }
+                else
+                {
+                    d = d + 2 * dy;
+                }
+            }
+        }
+
+        void lineHigh(int x0, int y0, int x1, int y1, ushort colour)
+        {
+            int dx = x1 - x0;
+            int dy = y1 - y0;
+            int xi = 1;
+            if (dx < 0)
+            {
+                xi = -1;
+                dx = -dx;
+            }
+            int d = (2 * dx) - dy;
+            int x = x0;
+            for (int y = y0; y <= y1; y++)
+            {
+                SetPixel((ushort)x, (ushort)y, colour);
+                if (d > 0)
+                {
+                    x = x + xi;
+                    d = d + (2 * (dx - dy));
+                }
+                else
+                {
+                    d = d + 2 * dx;
+                }
+            }
+        }
+
+        internal void Line(ushort x0, ushort y0, ushort x1, ushort y1, ushort colour)
+        {
+            if (x0 == x1) { VerticalLine(x0, y0, x1, y1, colour); }
+            else if (y0 == y1) { HorizontalLine(x0, y0, x1, y1, colour); }
+            else if (Math.Abs((int)(y1) - (int)(y0)) < Math.Abs((int)(x1) - (int)(x0)))
+            {
+                if (x0 > x1)
+                {
+                    lineLow((int)(x1), (int)(y1), (int)(x0), (int)(y0), colour);
+                }
+                else
+                {
+                    lineLow((int)(x0), (int)(y0), (int)(x1), (int)(y1), colour);
+                }
+            }
+            else
+            {
+                if (y0 > y1)
+                {
+                    lineHigh((int)(x1), (int)(y1), (int)(x0), (int)(y0), colour);
+                }
+                else
+                {
+                    lineHigh((int)(x0), (int)(y0), (int)(x1), (int)(y1), colour);
+                }
+            }
+        }
+
+        internal void HorizontalLine(ushort x1, ushort y1, ushort x2, ushort y2, ushort colour)
+        {
+            if (x1 > x2)
+            {
+                ushort t = x1;
+                x1 = x2;
+                x2 = t;
+            }
+
+            Color color = ToColor(colour);
+            lock (graphicsBitmap)
+            {
+                BitmapData bmpData = graphicsBitmap.LockBits(new Rectangle(0, 0, graphicsBitmap.Width, graphicsBitmap.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+                unsafe
+                {
+                    byte* p = (byte*)(void*)bmpData.Scan0;
+                    p += bmpData.Stride * y1 + x1 * 4;
+                    for (ushort x = x1; x <= x2; x++)
+                    {
+                        if (colour == invertColour)
+                        {
+                            p[0] = (byte)(~p[0]);
+                            p[1] = (byte)(~p[1]);
+                            p[2] = (byte)(~p[2]);
+                        }
+                        else
+                        {
+                            p[0] = color.B;
+                            p[1] = color.G;
+                            p[2] = color.R;
+                        }
+                        p += 4;
+                    }
+                }
+                graphicsBitmap.UnlockBits(bmpData);
+                graphicsMode = true;
+            }
+        }
+
+        internal void VerticalLine(ushort x1, ushort y1, ushort x2, ushort y2, ushort colour)
+        {
+            if (y1 > y2)
+            {
+                ushort t = y1;
+                y1 = y2;
+                y2 = t;
+            }
+            Color color = ToColor(colour);
+            lock (graphicsBitmap)
+            {
+                BitmapData bmpData = graphicsBitmap.LockBits(new Rectangle(0, 0, graphicsBitmap.Width, graphicsBitmap.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+                unsafe
+                {
+                    byte* p = (byte*)(void*)bmpData.Scan0;
+                    p += bmpData.Stride * y1 + x1 * 4;
+                    for (ushort y = y1; y <= y2; y++)
+                    {
+                        if (colour == invertColour)
+                        {
+                            p[0] = (byte)(~p[0]);
+                            p[1] = (byte)(~p[1]);
+                            p[2] = (byte)(~p[2]);
+                        }
+                        else
+                        {
+                            p[0] = color.B;
+                            p[1] = color.G;
+                            p[2] = color.R;
+                        }
+                        p += bmpData.Stride;
+                    }
+                }
+                graphicsBitmap.UnlockBits(bmpData);
+                graphicsMode = true;
+            }
+        }
+
+        internal void Rectangle(ushort x, ushort y, ushort w, ushort h, ushort colour)
+        {
+            HorizontalLine(x, y, (ushort)(x + w - 1), y, colour);
+            HorizontalLine(x, (ushort)(y + h - 1), (ushort)(x + w - 1), (ushort)(y + h - 1), colour);
+            VerticalLine(x, y, x, (ushort)(y + h - 1), colour);
+            VerticalLine((ushort)(x + w - 1), y, (ushort)(x + w - 1), (ushort)(y + h - 1), colour);
+        }
+
+        internal void FillRectangle(ushort x, ushort y, ushort w, ushort h, ushort colour)
+        {
+            for (ushort i = y; i < y + h; i++)
+            {
+                HorizontalLine(x, i, (ushort)(x + w - 1), i, colour);
+            }
+        }
+        internal void Circle(ushort x, ushort y, ushort r, ushort colour)
+        {
+            Color color = ToColor(colour);
+            lock (graphicsBitmap)
+            {
+                using (Graphics graphics = Graphics.FromImage(graphicsBitmap))
+                {
+                    Pen pen = new Pen(color);
+                    graphics.DrawEllipse(pen, x, y, r, r);
+                }
+                graphicsMode = true;
+            }
+        }
+
+        internal void FillCircle(ushort x, ushort y, ushort r, ushort colour)
+        {
+            Color color = ToColor(colour);
+            lock (graphicsBitmap)
+            {
+                using (Graphics graphics = Graphics.FromImage(graphicsBitmap))
+                {
+                    SolidBrush brush = new SolidBrush(color);
+                    graphics.FillEllipse(brush, x, y, r, r);
+                }
+                graphicsMode = true;
+            }
         }
 
         static public uint Columns
@@ -129,14 +378,17 @@ namespace HopperNET
             return (byte)result;
         }
 
-
+        
         public void Redraw(Graphics graphics)
         {
             if (hopper.Exiting || (consoleBuffer == null) || (consoleCache == null))
             {
                 return; // exiting
             }
-
+            if (buffering > 0)
+            {
+                return; // wait for Resume(..)
+            }
             uint width = CanvasWidth;
             uint height = CanvasHeight;
             uint columns = Columns;
@@ -144,6 +396,15 @@ namespace HopperNET
 
             uint cellWidth = width / columns;
             uint cellHeight = height / rows;
+
+            if (graphicsMode)
+            {
+                lock (graphicsBitmap)
+                {
+                    graphics.DrawImage(graphicsBitmap, 0, 0);
+                }
+                return;
+            }
 
             int cursorCellIndex = (int)(CursorX + CursorY * textColumns);
             int cursorCellIndexL = -1;
@@ -170,7 +431,8 @@ namespace HopperNET
                     {
                         // or the cell left of the cursor at the right edge
                     }
-                    else if ((cacheCell.character == consoleCell.character)
+                    else if (
+                               (cacheCell.character == consoleCell.character)
                             && (cacheCell.backColor == consoleCell.backColor)
                             && (cacheCell.foreColor == consoleCell.foreColor)
                             )
@@ -297,8 +559,13 @@ namespace HopperNET
 
             consoleCache = new ConsoleCell[textColumns * textRows];
             consoleBuffer = new ConsoleCell[textColumns * textRows];
+
+            graphicsBitmap = new Bitmap((int)CanvasWidth, (int)CanvasHeight);
+
+            ClearPixels(0x000);
         }
         public IHopper Hopper { get { return hopper; } }
+
         public void ConsoleFree()
         {
             // avoid crashes on exit
@@ -342,7 +609,7 @@ namespace HopperNET
 
         public void ServiceCursor()
         {
-            if (cursorVisible && !hopper.Exiting)
+            if (cursorVisible && !hopper.Exiting && !graphicsMode)
             {
                 //ConsoleDrawCursor(ConsoleGetCursorX(), ConsoleGetCursorY(), cursorToggle);
                 cursorToggle = !cursorToggle;
@@ -433,5 +700,7 @@ namespace HopperNET
 
             File.WriteAllText(txtPath, sb.ToString());
         }
+
+        
     }
 }

@@ -25,6 +25,7 @@ unit LibCalls
         
         addEntry("Graphics", "ConfigureDisplay");
         addEntry("Graphics", "ConfigureSPI");
+        addEntry("Graphics", "ConfigureSPIPort");
         addEntry("Graphics", "ConfigureReset");
         addEntry("Graphics", "ConfigureI2C");
         addEntry("Graphics", "ConfigureMatrix");
@@ -44,6 +45,8 @@ unit LibCalls
         addEntry("Graphics", "VerticalLine");
         addEntry("Graphics", "Rectangle");
         addEntry("Graphics", "FilledRectangle");
+        addEntry("Graphics", "Circle");
+        addEntry("Graphics", "FilledCircle");
         
         addEntry("Graphics", "Show");
         addEntry("Graphics", "DrawChar");

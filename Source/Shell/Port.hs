@@ -50,7 +50,7 @@ program Port
     {
         <string> ports = Serial.Ports;
         uint comCurrent = LoadPort();
-        
+        bool currentExists;
         uint i;
         char defCh;
         PrintLn("COM Ports:");
@@ -63,6 +63,7 @@ program Port
             {
                 content = content + " (current)";
                 defCh = char(48+i);    
+                currentExists = true;
             }
             if ((defCh == char(0)) && (i == ports.Length))
             {
@@ -71,6 +72,13 @@ program Port
             }
             PrintLn(content);
         }
+        uint iport;        
+        if (!currentExists)
+        {
+            // current port no longer exists
+            SavePort(iport);
+        }
+        
         PrintLn("Press number to select COM port (or <enter> for default)");
         Key key = ReadKey();
         char ch = Keyboard.ToChar(key);
@@ -84,7 +92,6 @@ program Port
             if (i < ports.Length)
             {
                 string port = (ports[i]).Replace("COM", "");
-                uint iport;
                 if (UInt.TryParse(port, ref iport))
                 {
                     SavePort(iport);

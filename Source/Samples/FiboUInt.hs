@@ -1,10 +1,15 @@
 program FiboUInt
 {
 #define PORTABLE
+#define SERIALCONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
     
     // https://forums.raspberrypi.com/viewtopic.php?t=303458
+    
+    // Forth:
+    // : FIB ( N1 -- N2 ) DUP 2 < IF DROP 1 ELSE DUP 1- RECURSE SWAP 2 - RECURSE + THEN ;
+    // https://github.com/cstrotm/helforth/blob/master/bench/fib.fs
     
     delegate uint FiboDelegate(uint n);
     

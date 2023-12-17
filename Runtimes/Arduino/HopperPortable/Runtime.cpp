@@ -6,6 +6,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -1961,98 +1962,7 @@ Bool Instructions_BitShl()
 {
     UInt top = HopperVM_Pop();
     UInt next = HopperVM_Pop();
-    UInt result = 0;
-    switch (top)
-    {
-    case 0x00:
-    {
-        result = next;
-        break;
-    }
-    case 0x01:
-    {
-        result = (next << 0x01);
-        break;
-    }
-    case 0x02:
-    {
-        result = (next << 0x02);
-        break;
-    }
-    case 0x03:
-    {
-        result = (next << 0x03);
-        break;
-    }
-    case 0x04:
-    {
-        result = (next << 0x04);
-        break;
-    }
-    case 0x05:
-    {
-        result = (next << 0x05);
-        break;
-    }
-    case 0x06:
-    {
-        result = (next << 0x06);
-        break;
-    }
-    case 0x07:
-    {
-        result = (next << 0x07);
-        break;
-    }
-    case 0x08:
-    {
-        result = (next << 0x08);
-        break;
-    }
-    case 0x09:
-    {
-        result = (next << 0x09);
-        break;
-    }
-    case 0x0A:
-    {
-        result = (next << 0x0A);
-        break;
-    }
-    case 0x0B:
-    {
-        result = (next << 0x0B);
-        break;
-    }
-    case 0x0C:
-    {
-        result = (next << 0x0C);
-        break;
-    }
-    case 0x0D:
-    {
-        result = (next << 0x0D);
-        break;
-    }
-    case 0x0E:
-    {
-        result = (next << 0x0E);
-        break;
-    }
-    case 0x0F:
-    {
-        result = (next << 0x0F);
-        break;
-    }
-    default:
-    {
-        Minimal_Error_Set(0x0B);
-        Runtime_ErrorDump(0x4F);
-        return false;
-        break;
-    }
-    } // switch
-    HopperVM_Push(result, Type::eUInt);
+    HopperVM_Push(next << top, Type::eUInt);
     return true;
 }
 
@@ -2060,98 +1970,7 @@ Bool Instructions_BitShr()
 {
     UInt top = HopperVM_Pop();
     UInt next = HopperVM_Pop();
-    UInt result = 0;
-    switch (top)
-    {
-    case 0x00:
-    {
-        result = next;
-        break;
-    }
-    case 0x01:
-    {
-        result = (next >> 0x01);
-        break;
-    }
-    case 0x02:
-    {
-        result = (next >> 0x02);
-        break;
-    }
-    case 0x03:
-    {
-        result = (next >> 0x03);
-        break;
-    }
-    case 0x04:
-    {
-        result = (next >> 0x04);
-        break;
-    }
-    case 0x05:
-    {
-        result = (next >> 0x05);
-        break;
-    }
-    case 0x06:
-    {
-        result = (next >> 0x06);
-        break;
-    }
-    case 0x07:
-    {
-        result = (next >> 0x07);
-        break;
-    }
-    case 0x08:
-    {
-        result = (next >> 0x08);
-        break;
-    }
-    case 0x09:
-    {
-        result = (next >> 0x09);
-        break;
-    }
-    case 0x0A:
-    {
-        result = (next >> 0x0A);
-        break;
-    }
-    case 0x0B:
-    {
-        result = (next >> 0x0B);
-        break;
-    }
-    case 0x0C:
-    {
-        result = (next >> 0x0C);
-        break;
-    }
-    case 0x0D:
-    {
-        result = (next >> 0x0D);
-        break;
-    }
-    case 0x0E:
-    {
-        result = (next >> 0x0E);
-        break;
-    }
-    case 0x0F:
-    {
-        result = (next >> 0x0F);
-        break;
-    }
-    default:
-    {
-        Minimal_Error_Set(0x0B);
-        Runtime_ErrorDump(0x50);
-        return false;
-        break;
-    }
-    } // switch
-    HopperVM_Push(result, Type::eUInt);
+    HopperVM_Push(next >> top, Type::eUInt);
     return true;
 }
 
@@ -5245,6 +5064,14 @@ Bool Library_ExecuteLibCall(Byte iLibCall)
         HRGraphics_ConfigureSPI(Byte(cs), Byte(dc));
         break;
     }
+    case LibCall::eGraphicsConfigureSPIPort:
+    {
+        Type utype = (Type)0;
+        UInt clk = HopperVM_Pop_R(utype);
+        UInt tx = HopperVM_Pop_R(utype);
+        HRGraphics_ConfigureSPIPort(Byte(tx), Byte(clk));
+        break;
+    }
     case LibCall::eGraphicsConfigureReset:
     {
         Type utype = (Type)0;
@@ -5358,6 +5185,26 @@ Bool Library_ExecuteLibCall(Byte iLibCall)
         UInt y = HopperVM_Pop_R(utype);
         UInt x = HopperVM_Pop_R(utype);
         HRGraphics_FilledRectangle(x, y, w, h, color);
+        break;
+    }
+    case LibCall::eGraphicsCircle:
+    {
+        Type utype = (Type)0;
+        UInt color = HopperVM_Pop_R(utype);
+        UInt r = HopperVM_Pop_R(utype);
+        UInt y = HopperVM_Pop_R(utype);
+        UInt x = HopperVM_Pop_R(utype);
+        HRGraphics_Circle(x, y, r, color);
+        break;
+    }
+    case LibCall::eGraphicsFilledCircle:
+    {
+        Type utype = (Type)0;
+        UInt color = HopperVM_Pop_R(utype);
+        UInt r = HopperVM_Pop_R(utype);
+        UInt y = HopperVM_Pop_R(utype);
+        UInt x = HopperVM_Pop_R(utype);
+        HRGraphics_FilledCircle(x, y, r, color);
         break;
     }
     case LibCall::eGraphicsInvertDisplay:

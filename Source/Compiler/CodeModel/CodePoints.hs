@@ -2045,13 +2045,13 @@ unit CodePoints
         } // loop
         return modified;
     }
-    GoFishing(uint currentMethod)
+    GoFishing(uint methodIndex)
     {
-        if (iCodes.Length < 1)
+        if (iCodes.Length < 3)
         {
             return;
         }
-        uint iIndex = 1;
+        uint iIndex = 2;
         uint hits = 0;
         loop
         {
@@ -2059,30 +2059,18 @@ unit CodePoints
             {
                 break;
             }
+            Instruction opCode2 = iCodes[iIndex-2];   
+            Instruction opCode1 = iCodes[iIndex-1];   
             Instruction opCode0 = iCodes[iIndex];   
-            if (IsJumpIXInstruction(opCode0) || IsConditionalJumpInstruction(opCode0))
-            {
-                return;
-            }
-            if (  (opCode0 == Instruction.CALLW) 
-               || (opCode0 == Instruction.CALLB)
-               || (opCode0 == Instruction.CALLREL)
-               || (opCode0 == Instruction.JREL)
-               || (opCode0 == Instruction.SYSCALL)
-               || (opCode0 == Instruction.SYSCALL0)
-               || (opCode0 == Instruction.SYSCALL1)
-               || (opCode0 == Instruction.LIBCALL)
+            if (  ((opCode2 == Instruction.ENTER) || (opCode2 == Instruction.ENTERB))
+               && ((opCode0 == Instruction.RET0) || (opCode0 == Instruction.RETB) || (opCode0 == Instruction.RETRETB))
                )
             {
-                return;
+                Print(" X " + methodIndex.ToHexString(4) + " ");
+                Print(Instructions.ToString(opCode1));
             }
             iIndex++;
         } // loop
-        uint length = iCodes.Length;
-        //if (hits > 0)
-        //{
-            Print( currentMethod.ToHexString(4) + ":" + length.ToString() + " ");
-        //}
     }
     
 }

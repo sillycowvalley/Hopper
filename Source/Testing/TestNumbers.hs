@@ -1,6 +1,7 @@
 program TestNumbers
 {
-#define PORTABLE
+//#define PORTABLE
+//#define SERIALCONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
@@ -19,15 +20,8 @@ program TestNumbers
 #endif
     PrintFailed(string message)
     {
-        Trace = false;
-        
-#ifdef H6502
         WriteLn("  " + message);
-        
-#else
-        PrintLn("  " + message, MatrixRed, 0);
-#endif         
-        Diagnostics.Die(0x0B); // system failure / internal error
+        //Diagnostics.Die(0x0B); // system failure / internal error
     }
    
     TestEquals()
@@ -840,10 +834,95 @@ program TestNumbers
         }
 #endif
     }
+    flags PFlags
+    {
+        None = 0,
+        One = 0x01,
+        Two = 0x02,
+        Four = 0x04
+    }
+    
+    uint gProp;
+    uint Prop { get { return gProp; } set { gProp = value; } }
+    
+    PFlags fProp;
+    PFlags FProp { get { return fProp; } set { fProp = value; } }
+    
+    TestPropertyMath()
+    {
+        WriteLn("'property' math");
+        Prop = 42;
+        Prop += 1;
+        if (Prop != 43)
+        {
+            PrintFailed("'property' 1");        
+        }
+        Prop -= 1;
+        if (Prop != 42)
+        {
+            PrintFailed("'property' 2");        
+        }
+        Prop = 3;
+        Prop *= 6;
+        if (Prop != 18)
+        {
+            PrintFailed("'property' 3");        
+        }
+        Prop /= 6;
+        if (Prop != 3)
+        {
+            PrintFailed("'property' 4");        
+        }
+        Prop++;
+        if (Prop != 4)
+        {
+            PrintFailed("'property' 5");
+        }
+        Prop--;
+        if (Prop != 3)
+        {
+            PrintFailed("'property' 6");
+        }
+        
+        fProp |= PFlags.Four;
+        if (fProp != PFlags.Four)
+        {
+            PrintFailed("'property' 7");
+        }
+        fProp &= PFlags.Two;
+        if (fProp != PFlags.None)
+        {
+            PrintFailed("'property' 8");
+        }
+        
+        FProp |= PFlags.Four;
+        if (FProp != PFlags.Four)
+        {
+            PrintFailed("'property' 9");
+        }
+        FProp &= PFlags.Two;
+        if (FProp != PFlags.None)
+        {
+            PrintFailed("'property' 10");
+        }
+        
+        string str = "Bob";
+        str += " and Jane";
+        if (str != "Bob and Jane")
+        {
+            PrintFailed("'property' 11");
+        }
+        str += '!';
+        if (str != "Bob and Jane!")
+        {
+            PrintFailed("'property' 12");
+        }
+        
+    }
 
     TestUIntMath()
     {
-        WriteLn("'uint'");
+        WriteLn("'uint' math");
         
         // globalUInt   = 10000;
         // globalUInt2  = 20000;
@@ -957,7 +1036,7 @@ program TestNumbers
     
     TestIntMath()
     {
-        WriteLn("'int'");
+        WriteLn("'int' math");
         
         // globalInt   = 10000;
         // globalInt2  = 10001;
@@ -1256,7 +1335,7 @@ program TestNumbers
 	
     TestLongMath()
     {
-        WriteLn("'long'");
+        WriteLn("'long' math");
         
         // globalLong   = 100000;
         // globalLong2  = 100001;
@@ -1423,12 +1502,46 @@ program TestNumbers
         {
             PrintFailed("'long' 29");
         }
+        
+        longRef = 42;
+        longRef++;
+        if (longRef != 43)
+        {
+            PrintFailed("'long' 30");
+        }
+        longRef--;
+        if (longRef != 42)
+        {
+            PrintFailed("'long' 31");
+        }
+        longRef += 4;
+        if (longRef != 46)
+        {
+            PrintFailed("'long' 32");
+        }
+        longRef -= 4;
+        if (longRef != 42)
+        {
+            PrintFailed("'long' 33");
+        }
+        longRef = 4;
+        longRef *= 6;
+        if (longRef != 24)
+        {
+            PrintFailed("'long' 34");
+        }
+        longRef /= 4;
+        if (longRef != 6)
+        {
+            PrintFailed("'long' 35");
+        }
+        
     } // TestLongMath
     
 #ifdef TESTFLOATS
     TestFloatMath()
     {
-        WriteLn("'float'");
+        WriteLn("'float' math");
         
         float test = 3.141;
         
@@ -1574,6 +1687,40 @@ program TestNumbers
             PrintFailed("'float' 27");
         }
         
+        float ya = 1.6;
+        float xa = 0.04 * ya;
+        
+        if (xa.ToString() != "0.064")
+        {
+            PrintLn(xa.ToString());
+            PrintFailed("'float' 30");
+        }
+        
+        
+        float x = 0.0;
+        float y = 0.0;
+        float xn =  0.85 * x + 0.04 * y;
+        float yn = -0.04 * x + 0.85 * y + 1.6;
+        
+        
+        
+        if ((xn.ToString() != "0") || (yn.ToString() != "1.6"))
+        {
+            PrintLn(xn.ToString() + "," + yn.ToString());
+            PrintFailed("'float' 31");
+        }
+        x = xn;
+        y = yn;
+        
+        xn =   0.85 * x  + 0.04 * y;
+        yn =  -0.04 * x  + 0.85 * y + 1.6;
+        
+        if ((xn.ToString() != "0.064") || (yn.ToString() != "2.96"))
+        {
+            PrintLn(xn.ToString() + "," + yn.ToString());
+            PrintFailed("'float' 32");
+        }
+        
         
         
     } // TestFloatMath(..)
@@ -1599,12 +1746,12 @@ program TestNumbers
         TestUIntMath();
         TestIntMath();
         
+        TestPropertyMath();
+        
         WriteLn();
         WriteLn("TestNumbers Ok");
-#ifndef H6502
-
-        //Key key = ReadKey();
-        
+#ifndef SERIALCONSOLE
+        Key key = ReadKey();
 #endif
     }
 }

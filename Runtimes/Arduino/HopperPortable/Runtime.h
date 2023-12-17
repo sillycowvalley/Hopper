@@ -307,32 +307,36 @@ enum LibCall {
     eMCUAnalogWriteResolution = 0x0009,
     eGraphicsConfigureDisplay = 0x000A,
     eGraphicsConfigureSPI = 0x000B,
-    eGraphicsConfigureReset = 0x000C,
-    eGraphicsConfigureI2C = 0x000D,
-    eGraphicsConfigureMatrix = 0x000E,
-    eGraphicsBegin = 0x000F,
-    eGraphicsEnd = 0x0010,
-    eGraphicsInvertDisplay = 0x0011,
-    eGraphicsFlipDisplay = 0x0012,
-    eGraphicsClear = 0x0013,
-    eGraphicsWidthGet = 0x0014,
-    eGraphicsHeightGet = 0x0015,
-    eGraphicsSetPixel = 0x0016,
-    eGraphicsLine = 0x0017,
-    eGraphicsHorizontalLine = 0x0018,
-    eGraphicsVerticalLine = 0x0019,
-    eGraphicsRectangle = 0x001A,
-    eGraphicsFilledRectangle = 0x001B,
-    eGraphicsShow = 0x001C,
-    eGraphicsDrawChar = 0x001D,
+    eGraphicsConfigureSPIPort = 0x000C,
+    eGraphicsConfigureReset = 0x000D,
+    eGraphicsConfigureI2C = 0x000E,
+    eGraphicsConfigureMatrix = 0x000F,
+    eGraphicsBegin = 0x0010,
+    eGraphicsEnd = 0x0011,
+    eGraphicsInvertDisplay = 0x0012,
+    eGraphicsFlipDisplay = 0x0013,
+    eGraphicsClear = 0x0014,
+    eGraphicsWidthGet = 0x0015,
+    eGraphicsHeightGet = 0x0016,
+    eGraphicsSetPixel = 0x0017,
+    eGraphicsLine = 0x0018,
+    eGraphicsHorizontalLine = 0x0019,
+    eGraphicsVerticalLine = 0x001A,
+    eGraphicsRectangle = 0x001B,
+    eGraphicsFilledRectangle = 0x001C,
+    eGraphicsCircle = 0x001D,
+    eGraphicsFilledCircle = 0x001E,
+    eGraphicsShow = 0x001F,
+    eGraphicsDrawChar = 0x0020,
 };
 
 enum Display {
     eNoDisplay = 0x0000,
     eILI9341 = 0x0001,
-    eST7796 = 0x0002,
-    eSSD1306 = 0x0003,
-    eLedMatrix = 0x0004,
+    eST7735 = 0x0002,
+    eST7796 = 0x0003,
+    eSSD1306 = 0x0004,
+    eLedMatrix = 0x0005,
 };
 
 enum DisplayState {
@@ -809,6 +813,5 @@ Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 Char Char_ToDigit(Byte d);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
-
 
 #endif // HOPPERRUNTIME_H

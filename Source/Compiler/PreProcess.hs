@@ -1077,7 +1077,6 @@ program PreProcess
       bool firstUnit = true;
       loop
       {
-          uint curlyDeclarations;
           Parser.Reset();
           
           Directives.New();

@@ -43,7 +43,37 @@ unit Block
         }
         return methodBlock;
     }
-    
+    bool LocalExists(string identifier)
+    {
+        bool exists;
+        <string,variant> top = Top();
+        < <string> > locals = top["locals"];
+        uint nlocals = locals.Length;   
+        for (uint i=0; i < nlocals; i++)
+        {
+            <string> local = locals[i]; // <type, name>
+            string name = local[1];
+            if (name == identifier)
+            {
+                return true;
+            }
+        }
+        if (top.Contains("arguments"))
+        {
+            < <string> > arguments = top["arguments"];
+            uint narguments = arguments.Length;   
+            for (uint i=0; i < narguments; i++)
+            {
+                <string> argument = arguments[i]; // <ref, type, name>
+                string name = argument[2];
+                if (name == identifier)
+                {
+                    return true;
+                }
+            }
+        }        
+        return false;
+    }
     AddLocal(string variableType, string identifier)
     {
         <string,variant> top = Top();

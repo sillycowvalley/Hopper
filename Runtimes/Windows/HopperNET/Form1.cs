@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -112,7 +113,8 @@ namespace HopperNET
             }
             if (e.KeyData == Keys.F12)
             {
-                Console.Save(@"D:\Repos\Maker\Z80\Hopper\HS\Temp\Console.txt");
+                string consoleDumpFile = HopperPath.ToWindowsPath("/Temp/Console.txt");
+                Console.Save(consoleDumpFile);
             }
         }
 

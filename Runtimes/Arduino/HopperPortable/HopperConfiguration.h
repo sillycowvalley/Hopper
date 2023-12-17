@@ -11,7 +11,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // Raspberry Pi Pico W
 // - LittleFS for built-in Flash
 // - WiFi
-//#define RP2040PICO
+#define RP2040PICO 
 
 // Arduino Connect RP2040
 // - LittleFS for built-in Flash
@@ -26,7 +26,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // Pimoroni Tiny 2040
 // - LittleFS for built-in Flash
 // - no WiFi
-#define TINY2040
+//#define TINY2040
 
 // Waveshare RP2040 One
 // - LittleFS for built-in Flash
