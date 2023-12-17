@@ -1,0 +1,7 @@
+*.hasm
+
+*.suo
+*.user
+\obj
+
+Runtimes/Windows/HopperNet/bin
