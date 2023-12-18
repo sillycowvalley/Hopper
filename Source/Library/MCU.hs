@@ -39,10 +39,22 @@ unit MCU
     }
 #endif
 
+    enum PinStatus
+    {
+        Low = 0,
+        High = 1,
+        Change = 2,
+        Falling = 3,
+        Rising = 4,
+    }
+    delegate ISRDelegate(byte pin, PinStatus status);
+
     PinMode(byte pin, PinModeOption pinMode) library;
     bool DigitalRead(byte pin) library;
     DigitalWrite(byte pin, bool value) library;
     uint AnalogRead(byte pin) library;
     AnalogWrite(byte pin, uint value) library;
     AnalogWriteResolution(byte bits) library;
+    
+    bool AttachToPin(byte pin, ISRDelegate gpioISR, PinStatus status) library;
 }

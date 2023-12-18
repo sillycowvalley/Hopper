@@ -13,6 +13,7 @@ unit LibCalls
         MCUAnalogRead,
         MCUAnalogWrite,
         MCUAnalogWriteResolution,
+        MCUAttachToPin,
         
         GraphicsConfigureDisplay,
         GraphicsConfigureSPI,

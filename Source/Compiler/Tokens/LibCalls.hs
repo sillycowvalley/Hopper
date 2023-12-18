@@ -22,6 +22,7 @@ unit LibCalls
         addEntry("MCU", "AnalogRead");
         addEntry("MCU", "AnalogWrite");
         addEntry("MCU", "AnalogWriteResolution");
+        addEntry("MCU", "AttachToPin");
         
         addEntry("Graphics", "ConfigureDisplay");
         addEntry("Graphics", "ConfigureSPI");

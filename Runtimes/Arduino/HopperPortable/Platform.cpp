@@ -18,6 +18,74 @@ unsigned char * codeMemoryBlock = nullptr;
 Byte lastError;
 bool exited;
 
+struct PinISRStruct
+{
+    Byte pin;
+    Byte status;
+    UInt isrDelegate;
+};
+
+std::queue<PinISRStruct> isrQueue;
+
+void pinISR(void * param)
+{
+    uint lparam          = (uint)(param);
+
+    PinISRStruct isrStruct;
+
+    isrStruct.pin         = (UInt)((lparam >> 16) & 0xFF);
+    isrStruct.status      = (UInt)((lparam >> 24) & 0xFF);
+    isrStruct.isrDelegate = (UInt)(lparam &0xFFFF);
+    isrQueue.push(isrStruct);
+}
+
+Bool External_AttachToPin(Byte pin, ISRDelegate gpioISRDelegate, Byte status)
+{
+    if (digitalPinToInterrupt(pin) == -1)
+    {
+        // pin is not valid for interrupt
+        return false;
+    }
+    pinMode(pin, INPUT_PULLUP);
+    uint param = gpioISRDelegate + (pin << 16) + (status << 24);
+    attachInterruptParam(digitalPinToInterrupt(pin), pinISR, (PinStatus)status, (void*)param);
+    return true;
+}
+
+void External_ServiceInterrupts()
+{
+    for(;;)
+    {
+        if (isrQueue.empty())
+        {
+            break; // as fast as possible if empty? what's the overhead of noInterrupts() .. interrupts()?
+        }
+        noInterrupts();
+        if (isrQueue.empty())
+        {
+            interrupts();
+            break;
+        }
+        PinISRStruct isrStruct = isrQueue.front();
+        isrQueue.pop();
+        interrupts();
+
+        // construct a delegate call
+        uint methodIndex = isrStruct.isrDelegate;
+        HopperVM_PushCS(HopperVM_PC_Get());
+        uint methodAddress = HopperVM_LookupMethod(methodIndex);
+        
+        // arguments
+        HopperVM_Push(isrStruct.pin,    Type::eByte);
+        HopperVM_Push(isrStruct.status, Type::eByte);
+
+        // make the call
+        HopperVM_PC_Set(methodAddress);
+        break;
+    } // for (;;)
+}
+
+
 
 bool External_LoadAuto_Get()
 {
@@ -224,7 +292,6 @@ UInt External_AnalogRead(Byte pin)
     UInt value = analogRead(pin);
     return value;
 }
-
 
 
 

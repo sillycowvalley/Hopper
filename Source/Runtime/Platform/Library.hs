@@ -4,6 +4,7 @@ unit Library
     uses "/Source/Runtime/Platform/Graphics"
     uses "/Source/Runtime/Platform/Wire"
     
+    delegate ISRDelegate();
     
     bool ExecuteLibCall(byte iLibCall)
     {
@@ -72,7 +73,14 @@ unit Library
                 byte value = byte(Pop());
                 External.AnalogWriteResolution(value);
             }
-            
+            case LibCall.MCUAttachToPin:
+            {
+                byte state = byte(Pop());
+                ISRDelegate isrDelegate = ISRDelegate(Pop());
+                byte pin = byte(Pop());
+                bool result = External.AttachToPin(pin, isrDelegate, state);
+                Push(result ? 1 : 0, Type.Bool);
+            }
             
             case LibCall.GraphicsConfigureDisplay:
             {

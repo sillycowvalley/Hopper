@@ -1,6 +1,8 @@
 #ifndef HOPPERPLATFORM_H
 #define HOPPERPLATFORM_H
 
+#include <queue>
+
 #include <Arduino.h>
 #include "Runtime.h"
 
@@ -54,6 +56,8 @@ Byte External_DigitalRead(Byte pin);
 UInt External_AnalogRead(Byte pin);
 void External_AnalogWrite(Byte pin, UInt value);
 void External_AnalogWriteResolution(Byte bits);
+Bool External_AttachToPin(Byte value, ISRDelegate gpioISRDelegate, Byte status);
+void External_ServiceInterrupts();
 
 Bool Serial_IsAvailable_Get();
 Char Serial_ReadChar();

@@ -3056,6 +3056,9 @@ unit HopperVM
     bool ExecuteOpCode()
     {
         bool doNext;
+        
+        ServiceInterrupts();
+        
         //WriteLn(); WriteHex(pc);
         opCode = OpCode(ReadCodeByte(pc));
         pc++;
@@ -3090,6 +3093,7 @@ unit HopperVM
         uint watchDog = 2500;
         loop
         {
+            ServiceInterrupts();
 #ifdef CHECKED
             messagePC = PC;
 #endif

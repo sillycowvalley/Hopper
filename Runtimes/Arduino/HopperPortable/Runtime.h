@@ -11,6 +11,7 @@ typedef   signed short Int;
 typedef           bool Bool;
 
 typedef Bool (*InstructionDelegate)();
+typedef UInt ISRDelegate;
 
 // method definitions
 enum OpCode {
@@ -305,29 +306,30 @@ enum LibCall {
     eMCUAnalogRead = 0x0007,
     eMCUAnalogWrite = 0x0008,
     eMCUAnalogWriteResolution = 0x0009,
-    eGraphicsConfigureDisplay = 0x000A,
-    eGraphicsConfigureSPI = 0x000B,
-    eGraphicsConfigureSPIPort = 0x000C,
-    eGraphicsConfigureReset = 0x000D,
-    eGraphicsConfigureI2C = 0x000E,
-    eGraphicsConfigureMatrix = 0x000F,
-    eGraphicsBegin = 0x0010,
-    eGraphicsEnd = 0x0011,
-    eGraphicsInvertDisplay = 0x0012,
-    eGraphicsFlipDisplay = 0x0013,
-    eGraphicsClear = 0x0014,
-    eGraphicsWidthGet = 0x0015,
-    eGraphicsHeightGet = 0x0016,
-    eGraphicsSetPixel = 0x0017,
-    eGraphicsLine = 0x0018,
-    eGraphicsHorizontalLine = 0x0019,
-    eGraphicsVerticalLine = 0x001A,
-    eGraphicsRectangle = 0x001B,
-    eGraphicsFilledRectangle = 0x001C,
-    eGraphicsCircle = 0x001D,
-    eGraphicsFilledCircle = 0x001E,
-    eGraphicsShow = 0x001F,
-    eGraphicsDrawChar = 0x0020,
+    eMCUAttachToPin = 0x000A,
+    eGraphicsConfigureDisplay = 0x000B,
+    eGraphicsConfigureSPI = 0x000C,
+    eGraphicsConfigureSPIPort = 0x000D,
+    eGraphicsConfigureReset = 0x000E,
+    eGraphicsConfigureI2C = 0x000F,
+    eGraphicsConfigureMatrix = 0x0010,
+    eGraphicsBegin = 0x0011,
+    eGraphicsEnd = 0x0012,
+    eGraphicsInvertDisplay = 0x0013,
+    eGraphicsFlipDisplay = 0x0014,
+    eGraphicsClear = 0x0015,
+    eGraphicsWidthGet = 0x0016,
+    eGraphicsHeightGet = 0x0017,
+    eGraphicsSetPixel = 0x0018,
+    eGraphicsLine = 0x0019,
+    eGraphicsHorizontalLine = 0x001A,
+    eGraphicsVerticalLine = 0x001B,
+    eGraphicsRectangle = 0x001C,
+    eGraphicsFilledRectangle = 0x001D,
+    eGraphicsCircle = 0x001E,
+    eGraphicsFilledCircle = 0x001F,
+    eGraphicsShow = 0x0020,
+    eGraphicsDrawChar = 0x0021,
 };
 
 enum Display {
@@ -813,5 +815,6 @@ Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 Char Char_ToDigit(Byte d);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
 
 #endif // HOPPERRUNTIME_H

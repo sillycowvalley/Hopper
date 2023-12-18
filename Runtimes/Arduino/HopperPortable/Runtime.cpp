@@ -6,7 +6,6 @@
 
 
 
-
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -786,6 +785,7 @@ void HopperVM_ExecuteWarp()
     UInt watchDog = 0x09C4;
     for (;;)
     {
+        External_ServiceInterrupts();
         HopperVM_opCode = OpCode(Memory_ReadCodeByte(HopperVM_pc));
         
         HopperVM_pc++;
@@ -1071,6 +1071,7 @@ void HopperVM_DiskSetup()
 Bool HopperVM_ExecuteOpCode()
 {
     Bool doNext = false;
+    External_ServiceInterrupts();
     HopperVM_opCode = OpCode(Memory_ReadCodeByte(HopperVM_pc));
     
     HopperVM_pc++;
@@ -5045,6 +5046,15 @@ Bool Library_ExecuteLibCall(Byte iLibCall)
     {
         Byte value = Byte(HopperVM_Pop());
         External_AnalogWriteResolution(value);
+        break;
+    }
+    case LibCall::eMCUAttachToPin:
+    {
+        Byte state = Byte(HopperVM_Pop());
+        ISRDelegate isrDelegate = ISRDelegate(HopperVM_Pop());
+        Byte pin = Byte(HopperVM_Pop());
+        Bool result = External_AttachToPin(pin, isrDelegate, state);
+        HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
         break;
     }
     case LibCall::eGraphicsConfigureDisplay:

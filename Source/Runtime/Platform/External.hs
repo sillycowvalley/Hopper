@@ -7,6 +7,11 @@ unit External
     uses "/Source/Runtime/Emulation/HttpClient.hs"
     uses "/Source/Runtime/Emulation/WiFi.hs"
     
+    ServiceInterrupts()
+    {
+        // does nothing under Windows
+    }
+    
     bool ReadAllCodeBytes(uint hrpath, uint loadAddress, ref uint codeLength)
     {
         ErrorDump(156); Error = 0x0A; return false;
@@ -218,6 +223,12 @@ unit External
     AnalogWriteResolution(byte bits)
     {
         ErrorDump(169); Error = 0x0A; 
+    }
+    
+    bool AttachToPin(byte pin, ISRDelegate isrDelegate, byte state)
+    {
+        ErrorDump(170); Error = 0x0A; 
+        return false;
     }
     
     
