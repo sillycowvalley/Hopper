@@ -183,6 +183,7 @@ UInt fontBuffer[CELLWIDTH*CELLHEIGHT];
 #define ST7735_NORON   0x13
 
 #define ST7735_INVOFF  0x20
+#define ST7735_INVON   0x21
 #define ST7735_DISPON  0x29
 
 #define ST7735_COLMOD  0x3A
@@ -212,7 +213,7 @@ static const uint8_t
 #ifndef LOLIND1MINI
 PROGMEM
 #endif
-initcmdSPI_ST7735[] =
+initcmdSPI_ST7735_144[] =
 {
   //  (COMMAND_BYTE), n, data_bytes....
   TFT_SLPOUT    , 0x80,     // Sleep exit
@@ -232,9 +233,49 @@ initcmdSPI_ST7735[] =
     0x00,                   //     Boost frequency
   ST7735_VMCTR1 , 1      ,  // 12: Power control, 1 arg, no delay:
     0x0E,
+  
+  // Pico-LCD-1.44:
   ST7735_INVOFF , 0      ,  // 13: Don't invert display, no args, no delay
-  //TFT_MADCTL      , 1, (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR),              // Memory Access Control
   TFT_MADCTL      , 1, (   MADCTL_BGR),              // Memory Access Control
+
+  ST7735_COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
+    0x05,
+  ST7735_GMCTRP1, 16      , 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10, // Set Gamma
+  ST7735_GMCTRN1, 16      , 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10, // Set Gamma
+  ST7735_NORON  ,    0x80, //  3: Normal display on, no args, w/delay
+  ST7735_DISPON ,    0x80, //  4: Main screen turn on, no args w/delay
+  0x00                        // End of list
+};
+
+static const uint8_t 
+#ifndef LOLIND1MINI
+PROGMEM
+#endif
+initcmdSPI_ST7735_096[] =
+{
+  //  (COMMAND_BYTE), n, data_bytes....
+  TFT_SLPOUT    , 0x80,     // Sleep exit
+  ST7735_FRMCTR1, 3      ,  //  3: Frame rate ctrl - normal mode, 3 args:
+    0x01, 0x2C, 0x2D,       //     Rate = fosc/(1x2+40) * (LINE+2C+2D)
+  ST7735_FRMCTR2, 3      ,  //  4: Frame rate control - idle mode, 3 args:
+    0x01, 0x2C, 0x2D,       //     Rate = fosc/(1x2+40) * (LINE+2C+2D)
+  ST7735_FRMCTR3, 6      ,  //  5: Frame rate ctrl - partial mode, 6 args:
+    0x01, 0x2C, 0x2D,       //     Dot inversion mode
+    0x01, 0x2C, 0x2D,       //     Line inversion mode
+  ST7735_INVCTR , 1      ,  //  6: Display inversion ctrl, 1 arg, no delay:
+    0x07,                   //     No inversion
+  ST7735_PWCTR2 , 1      ,  //  8: Power control, 1 arg, no delay:
+    0xC5,                   //     VGH25 = 2.4C VGSEL = -10 VGH = 3 * AVDD
+  ST7735_PWCTR3 , 2      ,  //  9: Power control, 2 args, no delay:
+    0x0A,                   //     Opamp current small
+    0x00,                   //     Boost frequency
+  ST7735_VMCTR1 , 1      ,  // 12: Power control, 1 arg, no delay:
+    0x0E,
+  
+  // Pico-LCD-0.96:
+  ST7735_INVON , 0      ,  // 13: Invert display, no args, no delay
+  TFT_MADCTL      , 1, (  MADCTL_MY | MADCTL_MV | MADCTL_BGR),              // Memory Access Control : 
+
   ST7735_COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
     0x05,
   ST7735_GMCTRP1, 16      , 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10, // Set Gamma
@@ -963,9 +1004,21 @@ DisplayState HRGraphics_Begin()
                     break;
 
                 case Display::eST7735:
-                    addr = initcmdSPI_ST7735;
-                    xFudge = 2;
-                    yFudge = 1;
+                    
+                    if (pixelHeight == 80)
+                    {
+                        // Pico-LCD-0.96:
+                        addr = initcmdSPI_ST7735_096;
+                        xFudge = 1;
+                        yFudge = 26;
+                    }
+                    else // pixelHeight == 128
+                    {
+                        // Pico-LCD-1.44:
+                        addr = initcmdSPI_ST7735_144;
+                        xFudge = 2;
+                        yFudge = 1;
+                    }
 #ifdef RP2040
                     if (portPinsConfigured) 
                     {

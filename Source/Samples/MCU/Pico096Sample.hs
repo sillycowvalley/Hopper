@@ -1,4 +1,4 @@
-program Pico144Sample
+program Pico096Sample
 {
 #define PORTABLE
 #define SERIALCONSOLE
@@ -6,30 +6,36 @@ program Pico144Sample
     
     uses "/Source/Library/MCU"
     uses "/Source/Library/Graphics"
-    uses "/Source/Samples/MCU/Games/Pico144"
+    uses "/Source/Samples/MCU/Games/Pico096"
     
     ButtonISR(byte pin, PinStatus status) 
     { 
         uint colour;
         switch (pin)
         {
-            case 15: { colour = Color.Red; }
-            case 17: { colour = Color.Green; }
-            case  2: { colour = Color.Blue; }
-            case  3: { colour = Color.Black; }
+            case 15: { colour = Color.Red; }      // A
+            case 17: { colour = Color.Green; }    // B
+            
+            case 16: { colour = Color.Blue; }      // Left
+            case 20: { colour = Color.DustyTeal; } // Right
+            
+            case 2:  { colour = Color.Avocado; }   // Up
+            case 18: { colour = Color.Denim; }     // Down
+            
+            case  3: { colour = Color.Black; }     // Press
         }
         Redraw("Pin " + pin.ToString(), colour); 
     }
     
     Redraw(string message, uint colour)
     {
-        //WriteLn(message);
+        WriteLn(message);
         Graphics.Clear(colour);
     }
     
     {
         ISRDelegate buttonDelegate = ButtonISR;
-        if (!Pico144.Initialize(buttonDelegate))
+        if (!Pico096.Initialize(buttonDelegate))
         {
             return;
         }

@@ -17,6 +17,8 @@ program HopperMonitor
     
     uses "/Source/Compiler/JSON/JSON"
     
+    string optionsPath;
+    string OptionsPath { get { return string optionsPath; } }
     
     <Key> keyboardBuffer;
     InjectKey(Key key)
@@ -588,7 +590,7 @@ program HopperMonitor
         
         // if "Debug.options" exists, see it has a comPort set by Port.hexe:
         uint comPort;
-        string optionsPath = Path.Combine("/Bin/", "Debug.options");
+        optionsPath = Path.MakeOptions("Debug.options");
         if (File.Exists(optionsPath))
         {
             <string, variant> dict;

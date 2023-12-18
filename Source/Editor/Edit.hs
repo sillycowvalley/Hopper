@@ -10,6 +10,9 @@ program Edit
     uses "/Source/Editor/Commands"
     uses "/Source/Compiler/Tokens/Parser" // SetInteractive
     
+    string optionsPath;
+    string OptionsPath { get { return optionsPath; } }
+    
     {
         <string> arguments = System.Arguments;
         
@@ -88,6 +91,8 @@ program Edit
                 PrintLn("EDIT <filepath>");
                 break;
             }
+            
+            optionsPath = Path.MakeOptions(filePath);
             
             Screen.Clear();
             Commands.Initialize();

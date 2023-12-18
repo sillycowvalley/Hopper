@@ -38,11 +38,10 @@ unit DebugOptions
     }
     loadOptions()
     {
-        string optionsPath = Path.Combine("/Bin/", "Debug.options");
-        if (File.Exists(optionsPath))
+        if (File.Exists(OptionsPath))
         {
             <string, variant> dict;
-            if (JSON.Read(optionsPath, ref dict))
+            if (JSON.Read(OptionsPath, ref dict))
             {
                 debugOptions = dict["debugoptions"];
             }
@@ -50,11 +49,10 @@ unit DebugOptions
     }
     saveOptions()
     {
-        string optionsPath = Path.Combine("/Bin/", "Debug.options");
-        File.Delete(optionsPath);
+        File.Delete(OptionsPath);
         <string, variant> dict;
         dict["debugoptions"] = debugOptions;
-        if (JSON.Write(optionsPath, dict))
+        if (JSON.Write(OptionsPath, dict))
         {
         }
     }

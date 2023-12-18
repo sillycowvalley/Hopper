@@ -147,4 +147,13 @@ unit Path
         }
         return path;
     }
+    string MakeOptions(string filePath)
+    {
+        Directory.Create("/Bin/Options/"); // make sure the /Bin/Options directory exists
+        filePath = Path.GetFileName(filePath);
+        string extension = Path.GetExtension(filePath);
+        filePath = filePath.Replace(extension, ".options");
+        filePath = Path.Combine("/Bin/Options/", filePath);
+        return filePath;
+    }
 }

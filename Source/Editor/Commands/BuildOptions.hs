@@ -51,18 +51,13 @@ unit BuildOptions
         InstallChecked("Disassemble", disassembleIsChecked);
         InstallCommand("AutoSave", "[ ] &Save on Build", autosaveCommand, autosaveEnabled, Key.NoKey);
         InstallChecked("AutoSave", autosaveIsChecked);
-        
-        
-        
-        
     }
     loadOptions()
     {
-        string optionsPath = Path.Combine("/Bin/", "Edit.options");
-        if (File.Exists(optionsPath))
+        if (File.Exists(OptionsPath))
         {
             <string, variant> dict;
-            if (JSON.Read(optionsPath, ref dict))
+            if (JSON.Read(OptionsPath, ref dict))
             {
                 buildOptions = dict["buildoptions"];
             }
@@ -70,11 +65,10 @@ unit BuildOptions
     }
     saveOptions()
     {
-        string optionsPath = Path.Combine("/Bin/", "Edit.options");
-        File.Delete(optionsPath);
+        File.Delete(OptionsPath);
         <string, variant> dict;
         dict["buildoptions"] = buildOptions;
-        if (JSON.Write(optionsPath, dict))
+        if (JSON.Write(OptionsPath, dict))
         {
         }
     }

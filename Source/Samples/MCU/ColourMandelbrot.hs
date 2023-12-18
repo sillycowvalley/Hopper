@@ -1,4 +1,4 @@
-program Displays
+program ColourMandelbrot
 {
 #define PORTABLE
     uses "/Source/System/System"
@@ -25,6 +25,15 @@ program Displays
         ConfigureDisplay(Display.SSD1306, 128, 64);
         ConfigureI2C(0x3C);
         DisplayState result = Graphics.Begin();
+        return (result == DisplayState.OK);
+    }
+    bool DisplayST7735xPiPico144() // Waveshare Pico-LCD-1.44
+    {
+        ConfigureDisplay(Display.ST7735, 128, 128);
+        ConfigureSPI(9, 8);       // CS, DC
+        ConfigureSPIPort(11, 10); // TX(MOSI), CLK
+        ConfigureReset(12);
+        DisplayState result = Begin();
         return (result == DisplayState.OK);
     }
     
@@ -128,13 +137,13 @@ program Displays
         }
         long ms = (Millis - start); 
         float mpp = ms / (1.0 * width * height);
-        PrintLn((isColour ? "Colour, " : "Mono,   ") + ms.ToString() + " " + " ms (" + mpp.ToString() + " " + " mspp)");
+        //PrintLn((isColour ? "Colour, " : "Mono,   ") + ms.ToString() + " " + " ms (" + mpp.ToString() + " " + " mspp)");
     }
     TFTDemo()
     {
         if (!DisplayILI9341xPiPico28())
         {
-            WriteLn("Failed to initialize TFT display");
+            WriteLn("Failed to initialize 2.8 TFT display");
             return;
         }
         Graphics.Clear(Color.Black);
@@ -156,8 +165,22 @@ program Displays
         Screen.Resume(false);
         Graphics.End();
     }
+    Pico144Demo()
     {
-        OLEDDemo();
-        TFTDemo();
+        if (!DisplayST7735xPiPico144())
+        {
+            WriteLn("Failed to initialize 1.44 TFT display");
+            return;
+        }
+        Graphics.Clear(Color.Black);
+        Screen.Suspend();
+        Plot(true);
+        Screen.Resume(false);
+        Graphics.End();
+    }
+    {
+        //OLEDDemo();
+        //TFTDemo();
+        Pico144Demo();
     }
 }
