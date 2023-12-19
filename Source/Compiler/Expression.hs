@@ -1266,7 +1266,6 @@ unit Expression
             {
                 break;
             }
-            
             if (identifierTypeString.Length != 0)
             {
                 if (Parser.Check(HopperToken.LBracket))
@@ -1286,7 +1285,6 @@ unit Expression
             else // (identifierTypeString.Length == 0)
             {
                 // named type casts
-                
                 if (Types.IsEnum(identifier) || Types.IsFlags(identifier) || Types.IsDelegate(identifier))
                 {
                     if (Parser.Check(HopperToken.LParen))
@@ -1412,7 +1410,7 @@ unit Expression
                         }
                         break;
                     }
-                    break;
+                    // fall through to undefined identifier error
                 } // "this" case
                 
                 else
@@ -2308,6 +2306,10 @@ unit Expression
                 HopperToken operation = Token.GetType(comparisonToken);
                 Advance(); // <, <=, >, >=
                 string rightType = compileTerm(expectedType);
+                if (Parser.HadError)
+                {
+                    break;
+                } 
                 if (leftType != rightType)
                 {
                     if (Types.AutomaticUpCastTop(rightType, leftType))
