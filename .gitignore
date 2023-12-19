@@ -1,7 +1,9 @@
 *.hasm
 *.hex
+*.options
 
 *.suo
+*.vsidx
 *.user
 \obj
 

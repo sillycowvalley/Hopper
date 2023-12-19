@@ -42,7 +42,52 @@ unit Constant
                     Parser.Advance();
                     value = currentToken["lexeme"];
                     actualType = "string";
-                }             
+                }
+                case HopperToken.LBrace:
+                {
+                    if (typeExpected != "string")
+                    {
+                        Parser.ErrorAtCurrent("hex string constant expected");
+                        break;
+                    }
+                    Parser.Advance();
+                    
+                    loop
+                    {
+                        <string,string> currentToken = Parser.CurrentToken;
+                        HopperToken ttype = Token.GetType(currentToken);
+                        if (ttype != HopperToken.Integer)
+                        {
+                            Parser.ErrorAtCurrent("hex character constant expected");
+                            break;
+                        }
+                        uint v;
+                        if (!UInt.TryParse(currentToken["lexeme"], ref v) || (v > 255))
+                        {
+                            Parser.ErrorAtCurrent("hex character constant expected");
+                            break;
+                        }
+                        String.Build(ref value, char(v));
+                        Parser.Advance();
+                        currentToken = Parser.CurrentToken;
+                        ttype = Token.GetType(currentToken);
+                        if (ttype == HopperToken.RBrace)
+                        {
+                            Parser.Advance();
+                            break;
+                        }
+                        Parser.Consume(HopperToken.Comma, "',' expected");
+                        if (HadError)
+                        {
+                            break;
+                        }  
+                    } // loop
+                    if (HadError)
+                    {
+                        break;
+                    }
+                    actualType = "string";
+                }
                 case HopperToken.Char:
                 {
                     Parser.Advance();

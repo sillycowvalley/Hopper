@@ -44,8 +44,8 @@ unit Graphics
     Line(uint x1, uint y1, uint x2, uint y2, uint colour) library;
     HorizontalLine(uint x1, uint y1, uint x2, uint y2, uint colour) library;
     VerticalLine(uint x1, uint y1, uint x2, uint y2, uint colour) library;
-    Rectangle(uint x1, uint y1, uint x2, uint y2, uint colour) library;
-    FilledRectangle(uint x1, uint y1, uint x2, uint y2, uint colour) library;
+    Rectangle(uint x, uint y, uint w, uint h, uint colour) library;
+    FilledRectangle(uint x, uint y, uint w, uint h, uint colour) library;
     Circle(uint x, uint y, uint r, uint colour) library;
     FilledCircle(uint x, uint y, uint r, uint colour) library;
     

@@ -37,8 +37,6 @@ unit Memory
     uint ReadCodeWord(uint address) system;
     WriteCodeWord(uint address, uint value) system;
     
-    IncWord(uint address) library;
-
 #ifdef MCU     
     uint Allocate(uint size) system;
     Free(uint address) system;
