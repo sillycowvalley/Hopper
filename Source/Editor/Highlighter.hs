@@ -57,7 +57,7 @@ unit Highlighter
         return colour;
     }
     
-    <uint> Hopper(string ln, uint backColor)
+    <uint> Hopper(string ln, uint backColor, ref uint blockCommentNesting)
     {
         <uint> colours;
         uint colour;
@@ -65,119 +65,117 @@ unit Highlighter
         uint length = ln.Length;
         
         string word;
-        bool inChar = false;
-        bool inString = false;
-        bool inComment = false;
-        for (uint i=0; i < length; i++)
+        
+        
+        uint i=0;
+        loop 
         {
+            if (i >= length) { break; }
             char c = ln[i];
-            
-            if (inComment)
-            {
-                colours.Append(Comment);
-                continue;
-            }
             switch (c)
             {
             case ' ':
                 {
-                    if (inChar || inString)
+                    if (word.Length > 0)
                     {
-                        word = word + c;
-                    }
-                    else
-                    {
-                        if (word.Length > 0)
+                        colour = HopperWord(word);
+                        foreach (var ch in word)
                         {
-                            colour = HopperWord(word);
-                            foreach (var ch in word)
-                            {
-                                colours.Append(colour);
-                            }
-                            inString = false;
-                            inChar = false;
-                            word = "";
+                            colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
                         }
-                        colours.Append(backColor);
+                        word = "";
                     }
+                    colours.Append(backColor);
                 }
             case '"':
                 {
-                    word = word + c;
-                    if (inChar)
+                    uint strLength = 1; // opening "
+                    loop
                     {
-                    }
-                    else if (inString)
-                    {
-                        colour = HopperWord(word);
-                        foreach (var ch in word)
+                        i++;
+                        if (i >= length) { break; }
+                        strLength++;
+                        if (ln[i] == '\\')
                         {
-                            colours.Append(colour);
+                            i++;
+                            strLength++;
                         }
-                        inString = false;
-                        inChar = false;
-                        word = "";
+                        else if (ln[i] == '"')
+                        {
+                            break; // closing  "
+                        }
                     }
-                    else
+                    while (strLength > 0)
                     {
-                        inString = true;
+                        colours.Append((blockCommentNesting == 0) ? Color.Constant : Color.Comment);
+                        strLength--;
                     }
+                    word = "";
+                    i++;
+                    continue;
                 }
             case '\'':
                 {
-                    word = word + c;
-                    if (inString)
+                    word += c;
+                    // process 'x' or '\x'
+                    uint charLength = 1; // opening '
+                    i++;
+                    if (i < length)
                     {
-                    }
-                    else if (inChar)
-                    {
-                        colour = HopperWord(word);
-                        foreach (var ch in word)
+                        charLength++; // x or \
+                        if (ln[i] == '\\')
                         {
-                            colours.Append(colour);
-                        }
-                        inString = false;
-                        inChar = false;
-                        word = "";
+                            i++;
+                            if (i < length)
+                            {
+                                charLength++; // x
+                            }
+                        }   
                     }
-                    else
+                    charLength++; // closing '
+                    i++;
+                    while (charLength > 0)
                     {
-                        inChar = true;
+                        colours.Append((blockCommentNesting == 0) ? Color.Constant : Color.Comment);
+                        charLength--;
                     }
+                    word = "";
+                    i++;
+                    continue;
                 }
             case '\\':
                 {
                     word = word + c;
-                    if (inChar || inString)
+                    colour = HopperWord(word);
+                    foreach (var ch in word)
                     {
-                        // do nothing
+                        colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
                     }
-                    else
-                    {
-                        colour = HopperWord(word);
-                        foreach (var ch in word)
-                        {
-                            colours.Append(colour);
-                        }
-                        inString = false;
-                        inChar = false;
-                        word = "";
-                    }
+                    word = "";
                 }
             default:
                 {
-                    if (inChar || inString)
+                    if (c == '/')
                     {
-                        word = word + c;
-                    }
-                    else if (c == '/')
-                    {
-                        if (word == "/")
+                        if (word == "/") // //
                         {
-                            colours.Append(Comment);
-                            colours.Append(Comment);
-                            inComment = true;
+                            colours.Append(Comment); 
+                            colours.Append(Comment); 
                             word = "";
+                            loop
+                            {
+                                i++;
+                                if (i >= length) { break; }
+                                colours.Append(Color.Comment);
+                            }
+                        }
+                        else if ((i+1 < length) && (ln[i+1] == '*'))
+                        {
+                            // /*
+                            colours.Append(Color.Comment);
+                            colours.Append(Color.Comment);
+                            blockCommentNesting++;
+                            i++;
                         }
                         else 
                         {
@@ -186,7 +184,7 @@ unit Highlighter
                                 colour = HopperWord(word);
                                 foreach (var ch in word)
                                 {
-                                    colours.Append(colour);
+                                    colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
                                 }
                             }
                             word = "/";
@@ -199,14 +197,26 @@ unit Highlighter
                             colour = HopperWord(word);
                             foreach (var ch in word)
                             {
-                                colours.Append(colour);
+                                colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
                             }
                         }
-                        colour = HopperWord(c.ToString());
-                        colours.Append(colour);
-                        inString = false;
-                        inChar = false;
                         word = "";
+                        if ((c == '*') && (i+1 < length) && (ln[i+1] == '/'))
+                        {
+                            // */
+                            colours.Append(Color.Comment);
+                            colours.Append(Color.Comment);
+                            if (blockCommentNesting > 0)
+                            {
+                                blockCommentNesting--;
+                            }
+                            i++;
+                        }
+                        else
+                        {
+                            colour = HopperWord(c.ToString());
+                            colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                        }
                     }
                     else
                     {
@@ -214,13 +224,14 @@ unit Highlighter
                     }
                 }
             }
-        } // foreach
+            i++;
+        } // loop
         if (word.Length > 0)
         {
             colour = HopperWord(word);
             foreach (var ch in word)
             {
-                colours.Append(colour);
+                colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
             }
         }
         return colours;

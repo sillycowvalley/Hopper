@@ -256,7 +256,8 @@ unit Output
         if (row < outputTop + outputHeight)
         {
             content = content.Replace('`', ',');
-            <uint> colors = Highlighter.Hopper(content, backColor);
+            uint blockCommentNesting;
+            <uint> colors = Highlighter.Hopper(content, backColor, ref blockCommentNesting);
             
             for (byte i = 0; i < content.Length; i++)
             {

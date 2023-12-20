@@ -1462,13 +1462,32 @@ unit Editor
         string currentLower = currentPath.ToLower();
         bool currentIsActive = (activePath == currentLower);
         
+        uint blockCommentNesting;
+        
         // render the text buffer
         uint lineCount = TextBuffer.GetLineCount();
+        
+        if (isHopperSource && (bufferTopLeftY > 0))
+        {
+            // what if /* and| or */ appear before the visible content?
+            for (uint i = 0; i < bufferTopLeftY; i++)
+            {
+                if (i < lineCount)
+                {
+                    string ln = TextBuffer.GetLine(i);
+                    if (ln.Contains("/*") || ln.Contains("*/"))
+                    {
+                        colours = Highlighter.Hopper(ln, background, ref blockCommentNesting);
+                    }
+                }
+            }
+        }
+        
         for (uint r=0; r < h; r++)
         {
             // does this line in the window have a line in the TextBuffer?
             uint lineIndex = r + bufferTopLeftY;
-
+            
             uint lineNumber = lineIndex+1;
             char bp = ' ';
             uint breakColor = Color.Red;
@@ -1566,7 +1585,7 @@ unit Editor
             {
                 if (isHopperSource)
                 {
-                    colours = Highlighter.Hopper(ln, background);
+                    colours = Highlighter.Hopper(ln, background, ref blockCommentNesting);
                 }
                 uint colourOffset = 0;
                 

@@ -698,7 +698,8 @@ unit MessageBox
         if (doHighlight)
         {
             backcolor = LightestGray;
-            colors = Highlighter.Hopper(message, backcolor);
+            uint blockCommentNesting;
+            colors = Highlighter.Hopper(message, backcolor, ref blockCommentNesting);
         }
         
         uint x = xLeft;

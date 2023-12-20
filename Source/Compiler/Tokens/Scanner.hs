@@ -227,7 +227,7 @@ unit Scanner
         currentPos = currentPos + 1;
         return true;
     }
-    skipWhitespace()
+    bool skipWhitespace()
     {
         loop
         {
@@ -260,34 +260,59 @@ unit Scanner
                 else if (n == '*')
                 {
                     // block comment until '*/'
-                    // TODO: deal with ignoring '*/' within strings
                     c = advance();
                     c = advance();
+                    bool inString;
+                    uint  nesting = 1;
                     loop
                     {
                         c = peek();
                         if ((c == char(0)) || isAtEnd())
                         {
-                            break;
+                            return false; // unexpected EOF in block comment
                         }
                         n = peekNext();
                         if ((n == char(0)) || isAtEnd())
                         {
-                            break;
+                            return false; // unexpected EOF in block comment
                         }
-                        if ((c == '*') && (n == '/'))
+                        if ((c == '*') && (n == '/') && !inString)
                         {
                             // end of block comment
+                            nesting--;
                             c = advance();
                             c = advance();
+                            if (nesting > 0)
+                            {
+                                continue;
+                            }
                             break;
+                        }
+                        else if ((c == '/') && (n == '*') && !inString)
+                        {
+                            nesting++;
+                            c = advance();
+                            c = advance();
+                            continue;
+                        }
+                        //else if (inString && (c == '\\') && (n == '"'))
+                        else if (inString && (c == '\\'))
+                        {
+                            // ignore \" in string
+                            c = advance(); // gobble
+                            c = advance(); // gobble
+                            continue;
+                        }
+                        else if (c == '"')
+                        {
+                            inString = !inString;
                         }
                         c = advance(); // gobble gobble   
                         if (c == char(0x0A))
                         {
                             currentLine++;    
                         }
-                    }
+                    } // loop
                 }
                 else
                 {
@@ -299,6 +324,7 @@ unit Scanner
                 break;
             }
         }
+        return true;
     }
     <string,string> scanString()
     {
@@ -519,9 +545,13 @@ unit Scanner
             }
             loop
             {
-                skipWhitespace();
-                char c = advance();
                 HopperToken htoken = HopperToken.Undefined;
+                if (!skipWhitespace())
+                {
+                    token = errorToken("unexpected EOF in block comment");
+                    break;
+                }
+                char c = advance();
                 switch (c)
                 {
                     case '#':
