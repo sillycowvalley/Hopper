@@ -145,9 +145,37 @@ unit JSON
                 case string:
                 {
                     string v = kv.value;
-                    String.Build(ref content, '"');
-                    String.Build(ref content, v);
-                    String.Build(ref content, '"');
+                    bool isBinary;
+                    foreach (var c in v)
+                    {
+                        if (byte(c) < 32)
+                        {
+                            isBinary = true;
+                            break;
+                        }
+                    }
+                    if (isBinary)
+                    {
+                        String.Build(ref content, '[');
+                        bool next;
+                        foreach (var c in v)
+                        {
+                            if (next)
+                            {
+                                String.Build(ref content, ", ");   
+                            }
+                            byte b = byte(c);
+                            String.Build(ref content, "0x" + b.ToHexString(2));   
+                            next = true; 
+                        }
+                        String.Build(ref content, "]");
+                    }
+                    else
+                    {
+                        String.Build(ref content, '"');
+                        String.Build(ref content, v);
+                        String.Build(ref content, '"');
+                    }
                 }
                 case bool:
                 {
@@ -248,13 +276,61 @@ unit JSON
             else
             {
 #ifndef JSONEXPRESS
-                Parser.ErrorAt(currentToken, "value type not implemented in ReadList");
+                Parser.ErrorAt(currentToken, "value type not implemented in readList");
 #endif
             }
         }
         return lst;
     }
-    <string, variant> readDictionary()
+    string readBinaryString()
+    {
+        string str;
+        Parser.Consume(HopperToken.LBracket, '[');
+        bool first = true;
+        loop
+        {
+#ifndef JSONEXPRESS
+            if (Parser.HadError)
+            {
+                break;
+            }
+#endif
+            if (Parser.Check(HopperToken.RBracket))
+            {
+                Parser.Advance(); // ]
+                break;
+            }
+            if (!first)
+            {
+                Parser.Consume(HopperToken.Comma, ',');
+            }
+            first = false;
+            <string,string> currentToken = CurrentToken;
+            if (Parser.Check(HopperToken.Integer))
+            {
+                Parser.Advance();
+                string v = currentToken["lexeme"];
+                uint ui;
+                if (UInt.TryParse(v, ref ui) && (ui <= 255))
+                {
+                    char c = char(ui);
+                    str += c;
+                }
+                else
+                {
+                    Parser.ErrorAt(currentToken, "bad binary value in readBinaryString");
+                }
+            }
+            else
+            {
+#ifndef JSONEXPRESS
+                Parser.ErrorAt(currentToken, "value type not implemented in readBinaryString");
+#endif
+            }
+        }
+        return str;
+    }
+    <string, variant> readDictionary(string dictionaryName)
     {
         <string, variant> dict;
         Parser.Consume(HopperToken.LBrace, '{');
@@ -334,18 +410,26 @@ unit JSON
             }
             else if (Parser.Check(HopperToken.LBracket))
             {
-                <string> lst = readList();
-                dict[name] = lst;
+                if (dictionaryName == "constants") // seriously cheating!
+                {
+                    string str = readBinaryString();
+                    dict[name] = str;
+                }
+                else
+                {
+                    <string> lst = readList();
+                    dict[name] = lst;
+                }
             }
             else if (Parser.Check(HopperToken.LBrace))
             {
-                <string, variant> subDict = readDictionary();
+                <string, variant> subDict = readDictionary(name);
                 dict[name] = subDict;
             }
             else
             {
 #ifndef JSONEXPRESS
-                Parser.ErrorAt(currentToken, "value type not implemented in ReadDictionary");
+                Parser.ErrorAt(currentToken, "value type not implemented in ReadDictionary for '" + dictionaryName + "'");
 #endif
             }
         }
@@ -400,7 +484,7 @@ unit JSON
             <string,string> currentToken = CurrentToken;
             if (Parser.Check(HopperToken.LBrace))
             {
-                <string, variant> section = readDictionary();
+                <string, variant> section = readDictionary(sectionName);
                 dict[sectionName] = section;
             }
             else if (Parser.Check(HopperToken.LBracket))
