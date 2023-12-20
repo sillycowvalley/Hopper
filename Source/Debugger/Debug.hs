@@ -118,9 +118,9 @@ program Debug
             Screen.Clear();
             
             
-            // if "Debug.options" exists, see it has a comPort set by Port.hexe:
+            // if "Debugger.options" exists, see it has a comPort set by Port.hexe:
             uint comPort;
-            optionsPath = Path.MakeOptions("Debug.options");
+            optionsPath = Path.MakeOptions("Debugger.options");
             if (File.Exists(optionsPath))
             {
                 <string, variant> dict;

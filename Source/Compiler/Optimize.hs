@@ -483,7 +483,7 @@ program Optimize
                             }
                         } // kv
                     }
-                    Print("Success, " + codeBefore.ToString() + "->" + codeAfter.ToString() + " code bytes.", Color.ProgressText, Color.ProgressFace);
+                    Print("Success, " + codeBefore.ToString() + "->" + codeAfter.ToString() + " bytes of code,", Color.ProgressText, Color.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
                     PrintLn("  " + seconds.ToString() + "s", Color.ProgressHighlight, Color.ProgressFace);

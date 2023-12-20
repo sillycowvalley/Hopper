@@ -45,6 +45,7 @@ namespace HopperNET
         internal static void Die(int lastError, Runtime runtime)
         {
             uint pc = runtime.InstructionPC;
+            
             Debug.WriteLine("Error: 0x" + lastError.ToString("X2") + " at 0x" + pc.ToString("X4"));
 
             runtime.Screen.PrintLn("  Fatal Error 0x" + lastError.ToString("X2") + " at PC=0x" + pc.ToString("X4") + ":", 0xF77, 0x000);

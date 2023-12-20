@@ -15,6 +15,7 @@ program CODEGEN
     uses "/Source/Compiler/Tokens/Parser"
     
     long codeSize = 0;
+    bool extendedCodeSegment;
     
     WriteCode(file hexeFile, <byte> code)
     {
@@ -30,7 +31,8 @@ program CODEGEN
         PrintLn("Invalid arguments for CODEGEN:");
         PrintLn("  CODEGEN <code file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
-        PrintLn("    -ihex : generate an Intel HEX file from the .hexe");
+        PrintLn("    -extended  : full 64K for code, assumes 32 bit runtime");
+        PrintLn("    -ihex      : generate an Intel HEX file from the .hexe");
     }
     
     byte hexCheckSum(string values)
@@ -145,6 +147,10 @@ program CODEGEN
                         {
                             doIHex = true;
                         }
+                        case "-extended":
+                        {
+                            extendedCodeSegment = true;
+                        }
                         default:
                         {
                             args.Clear();
@@ -193,7 +199,7 @@ program CODEGEN
                     break;
                 }
                                 
-                byte versionLSB = 0;
+                byte versionLSB = extendedCodeSegment ? 0x01 : 0x00;
                 hexeFile.Append(versionLSB);
                 hexeFile.Append(byte(0));
                 
@@ -221,7 +227,11 @@ program CODEGEN
                 hexeFile.Append(byte(msb));
                 
                 uint entryIndex = Code.GetEntryIndex();
-                uint offset = mainOffset + Code.GetMethodSize(entryIndex);
+                uint offset = Code.GetMethodSize(entryIndex);
+                if (!extendedCodeSegment)
+                {
+                    offset += mainOffset;
+                }
                 
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 foreach (var sz in methodSizes)
@@ -274,8 +284,12 @@ program CODEGEN
                 if (!Parser.IsInteractive())
                 {
                     codeSize = File.GetSize(hexePath);
+                    if (extendedCodeSegment)
+                    {
+                        codeSize -= mainOffset;
+                    }
                     PrintLn();
-                    Print("Success, " + codeSize.ToString() + " bytes, ", Color.ProgressText, Color.ProgressFace);
+                    Print("Success, " + codeSize.ToString() + " bytes of code, ", Color.ProgressText, Color.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
                     PrintLn("  " + seconds.ToString() +"s", Color.ProgressHighlight, Color.ProgressFace);
@@ -293,6 +307,5 @@ program CODEGEN
         {
             Diagnostics.SetError(0x0E);
         }
-
     }
 }

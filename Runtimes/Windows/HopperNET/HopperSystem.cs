@@ -35,7 +35,9 @@ namespace HopperNET
         public List<string> Arguments { get; }
         public ushort SetError { get; internal set; }
         public ushort ConstantsStart { get; internal set; }
+        public ushort BinaryVersion { get; internal set; }
         public ushort EntryPoint { get; internal set; }
+        public ushort CodeOffset { get; internal set; }
         public ushort[] MethodTable { get; internal set; }
         public byte[] Code { get; internal set; }
 
@@ -83,14 +85,21 @@ namespace HopperNET
 #if DEBUG
             Diagnostics.ASSERT(iCode == fileSize, "error loading binary file");
 #endif
-            if (fileSize > 0xFFFF)
-            {
-                screen.PrintLn(ProgramPath + " is " + fileSize.ToString() + " bytes, more than 64K!!", 0xF77, 0);
-            }
             Code = code;
-            
+
+            BinaryVersion  = (ushort)(code[0] + (code[1] << 8));
             ConstantsStart = (ushort)(code[2] + (code[3] << 8));
-            EntryPoint = (ushort)(code[4] + (code[5] << 8));
+            EntryPoint     = (ushort)(code[4] + (code[5] << 8));
+
+            if ((fileSize - EntryPoint) > 0xFFFF)
+            {
+                screen.PrintLn(ProgramPath + " is " + fileSize.ToString() + " bytes, more than 64K of code!!", 0xF77, 0);
+            }
+            CodeOffset = 0;
+            if ((BinaryVersion & 0x0001) != 0)
+            {
+                CodeOffset = EntryPoint;
+            }
 
             ushort iMethod = 6;
             ushort maxCallIndex = 0;

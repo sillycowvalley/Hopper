@@ -17,6 +17,8 @@ program DASM
     uses "/Source/Compiler/Tokens/LibCalls"
     uses "/Source/Compiler/Tokens/Parser"
     
+    bool extendedCodeSegment;
+    
     uint codeSize = 0;
     uint instructionCount = 0;
     
@@ -188,37 +190,6 @@ program DASM
         hasmFile.Append(content);
     }
     
-    EmitC()
-    {
-        PrintLn("POP2PUSH1   " + (byte(Instruction.POP2PUSH1)).ToHexString(2));
-        PrintLn("BYTEOPERAND " + (byte(Instruction.BYTEOPERAND)).ToHexString(2));
-        PrintLn("WORDOPERAND " + (byte(Instruction.WORDOPERAND)).ToHexString(2));
-        PrintLn("NOOPERAND   " + (byte(Instruction.NOOPERAND)).ToHexString(2));
-        
-        string cPath = "/Debug/syscalls.h";
-        
-        File.Delete(cPath);
-        file cFile = File.Create(cPath);
-        cFile.Append("enum SysCall" + char(0x0A));
-        cFile.Append("{" + char(0x0A));
-        <string,byte> syscalls = SysCalls.GetSysCalls();
-        for (uint i=0; i < 256; i++)
-        {
-            foreach(var kv in syscalls)
-            {
-                if (kv.value == i)
-                {
-                    string name = kv.key;
-                    name = name.Replace(".", "");
-                    name = name.Replace("_", "");
-                    cFile.Append("    " + name + " = 0x" + i.ToHexString(2) + "," + char(0x0A));        
-                }
-            }
-        }
-        cFile.Append("};" + char(0x0A));
-        cFile.Flush();
-    }
-    
     BadArguments()
     {
         PrintLn("Invalid arguments for DASM:");
@@ -229,7 +200,6 @@ program DASM
         SysCalls.New();
         LibCalls.New();
         
-        //EmitC();
         bool success = false;
         loop
         {
@@ -324,6 +294,7 @@ program DASM
                     break;
                 }
                 uint version = lsb + (msb << 8);
+                extendedCodeSegment = (version & 0x0001) != 0;
                 hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + version.ToHexString(4) + " // binary version number" + char(0x0A));
                 address = address + 2;
                                     
@@ -361,7 +332,14 @@ program DASM
                 // read the method table
                 <uint,string> methodNames;
                 methodNames[constOffset] = "constant data";
-                methodNames[codeOffset] = "0x0000";
+                if (extendedCodeSegment)
+                {
+                    methodNames[0] = "0x0000";
+                }
+                else
+                {
+                    methodNames[codeOffset] = "0x0000";
+                }
                 
                 uint constLength = codeOffset - constOffset;
                 
@@ -447,6 +425,10 @@ program DASM
                     }
                     code.Append(b);
                 }
+                if (extendedCodeSegment)
+                {
+                    address = 0;
+                }
                 DisassembleCode(hasmFile, code, address, methodNames);
                 codeSize = codeSize + code.Length;
                 Parser.ProgressTick(".");
@@ -454,7 +436,11 @@ program DASM
                 if (!Parser.IsInteractive())
                 {
                     PrintLn();
-                    Print("Success, " + codeSize.ToString() + " bytes, ", Color.ProgressText, Color.ProgressFace);
+                    if (extendedCodeSegment)
+                    {
+                        codeSize -= codeOffset;
+                    }
+                    Print("Success, " + codeSize.ToString() + " bytes of code, ", Color.ProgressText, Color.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
                     PrintLn("  " + seconds.ToString() +"s", Color.ProgressHighlight, Color.ProgressFace);

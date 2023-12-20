@@ -13,7 +13,7 @@ program Port
     {
         // load options
         uint comCurrent;
-        string optionsPath = Path.MakeOptions("Debug.options");
+        string optionsPath = Path.MakeOptions("Debugger.options");
         if (File.Exists(optionsPath))
         {
             <string, variant> dict;
@@ -38,7 +38,7 @@ program Port
         debugOptions["comPort"] = iport.ToString();
         
         // save options
-        string optionsPath = Path.MakeOptions("Debug.options");
+        string optionsPath = Path.MakeOptions("Debugger.options");
         File.Delete(optionsPath);
         <string, variant> dict;
         dict["debugoptions"] = debugOptions;

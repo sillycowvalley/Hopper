@@ -1235,7 +1235,7 @@ namespace HopperNET
 
             // do a fake CALL to load csp to detect final RET
             PushCS(0);
-            pc = currentContext.EntryPoint; // ?
+            pc = (ushort)(currentContext.EntryPoint - currentContext.CodeOffset); // ?
             gp = sp; // floor for globals (matters for child processes)
 
             code = currentContext.Code;
@@ -1265,7 +1265,7 @@ namespace HopperNET
                     }
                 }
                 //Debug.WriteLine("PC: 0x" + pc.ToString("X4"));
-                Instruction opCode = (Instruction)code[pc];
+                Instruction opCode = (Instruction)code[pc + currentContext.CodeOffset];
                 instructionPC = pc;
                 if (pc == 0x10E7)
                 {
@@ -1716,28 +1716,28 @@ namespace HopperNET
 
                     case Instruction.LIBCALL:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             LibraryCall(currentContext, (LibCall)operand);
                         }
                         break;
                     case Instruction.SYSCALL0:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             SystemCall(currentContext, (SysCall)operand, 0);
                         }
                         break;
                     case Instruction.SYSCALL1:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             SystemCall(currentContext, (SysCall)operand, 1);
                         }
                         break;
                     case Instruction.SYSCALL:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             SystemCall(currentContext, (SysCall)operand, (byte)Pop());
                         }
@@ -1745,7 +1745,7 @@ namespace HopperNET
 
                     case Instruction.PUSHIB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 #if UNDOINLINED
                         Push(operand, HopperType.tByte);
@@ -1762,7 +1762,7 @@ namespace HopperNET
 
                     case Instruction.ADDB:
                         {
-                            uint top = code[pc];
+                            uint top = code[pc + currentContext.CodeOffset];
                             pc++;
                             uint next = Pop();
                             Push(next + top, HopperType.tUInt);
@@ -1770,7 +1770,7 @@ namespace HopperNET
                         break;
                     case Instruction.SUBB:
                         {
-                            uint top = code[pc];
+                            uint top = code[pc + currentContext.CodeOffset];
                             pc++;
                             uint next = Pop();
                             Push(next - top, HopperType.tUInt);
@@ -1780,7 +1780,7 @@ namespace HopperNET
 
                     case Instruction.RETB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             bp = PopCS();
 
@@ -1820,7 +1820,7 @@ namespace HopperNET
                     case Instruction.RETRETB:
                         {
                             // function return value
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 #if UNDOINLINED
                             uint top = 0;
@@ -1899,7 +1899,7 @@ namespace HopperNET
 
                     case Instruction.JB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             short offset = (short)operand;
                             if (offset > 127)
@@ -1912,7 +1912,7 @@ namespace HopperNET
 
                     case Instruction.JNZB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 #if UNDOINLINED
                             if (Pop() != 0)
@@ -1935,7 +1935,7 @@ namespace HopperNET
 
                     case Instruction.JZB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             if (Pop() == 0)
@@ -1952,7 +1952,7 @@ namespace HopperNET
 
                     case Instruction.POPGLOBALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             ushort address = (ushort)(operand + gp);
@@ -1994,7 +1994,7 @@ namespace HopperNET
 
                     case Instruction.POPLOCALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             short offset = (short)operand;
@@ -2041,7 +2041,7 @@ namespace HopperNET
 
                     case Instruction.POPRELB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             short offset = (short)operand;
@@ -2089,7 +2089,7 @@ namespace HopperNET
 
                     case Instruction.PUSHGLOBALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
 #if UNDOINLINED
@@ -2127,7 +2127,7 @@ namespace HopperNET
 
                     case Instruction.PUSHLOCALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             short offset = (short)operand;
@@ -2173,7 +2173,7 @@ namespace HopperNET
 
                     case Instruction.PUSHRELB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             short offset = (short)operand;
@@ -2197,7 +2197,7 @@ namespace HopperNET
 
                     case Instruction.PUSHSTACKADDRB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             short offset = (short)operand;
@@ -2214,7 +2214,7 @@ namespace HopperNET
 
                     case Instruction.INCLOCALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             short offset = (short)operand;
@@ -2250,7 +2250,7 @@ namespace HopperNET
 
                     case Instruction.DECLOCALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             short offset = (short)operand;
@@ -2270,7 +2270,7 @@ namespace HopperNET
 
                     case Instruction.CALLB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             PushCS(pc);
@@ -2283,7 +2283,7 @@ namespace HopperNET
 
                     case Instruction.DUP:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             ushort localAddress = (ushort)((sp - 2) - operand); // DUP 0 implies duplicating [top]
@@ -2301,7 +2301,7 @@ namespace HopperNET
 
                     case Instruction.DECSP:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             ClearStack(operand);
@@ -2310,7 +2310,7 @@ namespace HopperNET
 
                     case Instruction.TESTBPB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             ushort bpExpected = (ushort)(sp - operand);
@@ -2322,7 +2322,7 @@ namespace HopperNET
 
                     case Instruction.DIE:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             lastError = operand;
@@ -2332,7 +2332,7 @@ namespace HopperNET
                        
                     case Instruction.INCLOCALBB:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
                             short offset0 = (short)(operand & 0x00FF); // first offset
@@ -2351,7 +2351,7 @@ namespace HopperNET
 
                     case Instruction.PUSHIW:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
 #if UNDOINLINED
@@ -2370,7 +2370,7 @@ namespace HopperNET
                     case Instruction.PUSHIWLE:
                         {
 
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
 
@@ -2402,7 +2402,7 @@ namespace HopperNET
                     case Instruction.PUSHIBLE:
                         {
 
-                            operand = (ushort)(code[pc]);
+                            operand = (ushort)(code[pc + currentContext.CodeOffset]);
                             pc++;
 
 #if UNDOINLINED
@@ -2432,7 +2432,7 @@ namespace HopperNET
                     case Instruction.PUSHIBEQ:
                         {
 
-                            operand = (ushort)(code[pc]);
+                            operand = (ushort)(code[pc + currentContext.CodeOffset]);
                             pc++;
 
 #if UNDOINLINED
@@ -2462,7 +2462,7 @@ namespace HopperNET
 
                     case Instruction.CALLW:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
                             PushCS(pc);
@@ -2484,7 +2484,7 @@ namespace HopperNET
 
                     case Instruction.JW:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
                             short offset = (short)operand;
@@ -2497,7 +2497,7 @@ namespace HopperNET
                         break;
                     case Instruction.JZW:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
 #if UNDOINLINED
@@ -2519,7 +2519,7 @@ namespace HopperNET
                         break;
                     case Instruction.JNZW:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
 #if UNDOINLINED
@@ -2541,7 +2541,7 @@ namespace HopperNET
                         break;
                     case Instruction.PUSHGLOBALW:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
 #if UNDOINLINED
@@ -2578,7 +2578,7 @@ namespace HopperNET
                         break;
                     case Instruction.POPGLOBALW:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
                             ushort address = (ushort)(operand + gp);
@@ -2618,7 +2618,7 @@ namespace HopperNET
                         break;
                     case Instruction.RETW:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
                             bp = PopCS();
@@ -2658,7 +2658,7 @@ namespace HopperNET
                         
                     case Instruction.CAST:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 #if UNDOINLINED
                             Push(Pop(), (HopperType)operand);
@@ -2671,9 +2671,9 @@ namespace HopperNET
 
                     case Instruction.INCGLOBALBB:
                         {
-                            ushort operand0 = code[pc];
+                            ushort operand0 = code[pc + currentContext.CodeOffset];
                             pc++;
-                            ushort operand1 = code[pc];
+                            ushort operand1 = code[pc + currentContext.CodeOffset];
                             pc++;
 #if UNDOINLINED
                             ushort globalAddress0 = (ushort)(operand0 + gp);
@@ -2690,7 +2690,7 @@ namespace HopperNET
 
                     case Instruction.INCGLOBALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             // INCGLOBALB is an optimization of "i = i + 1":
                             // If it were done using ADDI or ADD, then the result pushed on the stack
@@ -2720,7 +2720,7 @@ namespace HopperNET
 
                     case Instruction.DECGLOBALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 #if UNDOINLINED
                             ushort globalAddress = (ushort)(operand + gp);
@@ -2735,7 +2735,7 @@ namespace HopperNET
 
                     case Instruction.POPCOPYGLOBALW:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
                             ushort address = (ushort)(operand + gp);
                             HopperType type = GetStackType((ushort)(sp - 2));
@@ -2764,7 +2764,7 @@ namespace HopperNET
 
                     case Instruction.POPCOPYGLOBALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             ushort address = (ushort)(operand + gp);
                             HopperType type = GetStackType((ushort)(sp - 2));
@@ -2795,7 +2795,7 @@ namespace HopperNET
 
                     case Instruction.POPCOPYLOCALB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             short offset = (short)operand;
                             if (offset > 127)
@@ -2830,7 +2830,7 @@ namespace HopperNET
 
                     case Instruction.POPCOPYRELB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             short offset = (short)operand;
                             if (offset > 127)
@@ -2873,7 +2873,7 @@ namespace HopperNET
                             {
                                 break;
                             }
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 #if UNDOINLINED
                             HopperType type = GetStackType((ushort)(operand + gp));
@@ -2915,7 +2915,7 @@ namespace HopperNET
                             {
                                 break;
                             }
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             short offset = (short)operand;
@@ -2961,7 +2961,7 @@ namespace HopperNET
 
                     case Instruction.PUSHIWLT:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
 
@@ -2991,7 +2991,7 @@ namespace HopperNET
 
                     case Instruction.PUSHIWLEI:
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
                                 
                             Push(operand, HopperType.tUInt);
@@ -3036,7 +3036,7 @@ namespace HopperNET
 
                     case Instruction.ENTERB:
                         {
-                            operand = code[pc];
+                            operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             PushCS(bp);
                             bp = sp;
@@ -3088,14 +3088,14 @@ namespace HopperNET
                         {
                             uint switchCase = Pop();
 
-                            byte minRange = code[pc];
+                            byte minRange = code[pc + currentContext.CodeOffset];
                             pc++;
-                            byte maxRange = code[pc];
+                            byte maxRange = code[pc + currentContext.CodeOffset];
                             pc++;
 
-                            byte lsb = code[pc];
+                            byte lsb = code[pc + currentContext.CodeOffset];
                             pc++;
-                            byte msb = code[pc];
+                            byte msb = code[pc + currentContext.CodeOffset];
                             pc++;
 
                             int jumpBackOffset = lsb + (msb << 8);
@@ -3117,12 +3117,12 @@ namespace HopperNET
                                 if (opCode == Instruction.JIXW)
                                 {
                                     uint index = tpc + (switchCase - minRange)*2;
-                                    offset = (uint)(code[index] + (code[index+1] << 8));
+                                    offset = (uint)(code[index + currentContext.CodeOffset] + (code[index+ 1 + currentContext.CodeOffset] << 8));
                                 }
                                 else
                                 {
                                     uint index = tpc + switchCase - minRange;
-                                    offset = code[index];
+                                    offset = code[index + currentContext.CodeOffset];
                                 }
                             }
 
@@ -3184,7 +3184,7 @@ namespace HopperNET
 
                     case Instruction.PUSHDB: // only difference on Windows is a signal to the optimizer
                         {
-                            operand = (ushort)(code[pc]);
+                            operand = (ushort)(code[pc + currentContext.CodeOffset]);
                             pc++;
 #if UNDOINLINED
                             Push(operand, HopperType.tByte);
@@ -3201,7 +3201,7 @@ namespace HopperNET
 
                     case Instruction.PUSHDW: // only difference on Windows is a signal to the optimizer
                         {
-                            operand = (ushort)(code[pc] + (code[pc + 1] << 8));
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 #if UNDOINLINED
                             Push(operand, HopperType.tUInt);

@@ -10,19 +10,21 @@ unit BuildOptions
     uses "/Source/Compiler/JSON/JSON"
     
     <string, string> buildOptions;
-    bool IsCheckedEnabled()      { return buildOptions["checkedBuild"]    != "false"; }
-    bool IsOptimizeEnabled()     { return buildOptions["runOptimizer"]    != "false"; }
-    bool IsGenerateIHexEnabled() { return buildOptions["generateIHex"] != "false"; }
-    bool IsDisassembleEnabled()  { return buildOptions["runDisassembler"] != "false"; }
-    bool IsAutoSaveEnabled()     { return buildOptions["autoSaveOnBuild"] != "false"; }
+    bool IsCheckedEnabled()      { return buildOptions["checkedBuild"]        != "false"; }
+    bool IsOptimizeEnabled()     { return buildOptions["runOptimizer"]        != "false"; }
+    bool IsGenerateIHexEnabled() { return buildOptions["generateIHex"]        != "false"; }
+    bool IsDisassembleEnabled()  { return buildOptions["runDisassembler"]     != "false"; }
+    bool IsAutoSaveEnabled()     { return buildOptions["autoSaveOnBuild"]     != "false"; }
+    bool IsExtendedEnabled()     { return buildOptions["extendedCodeSegment"] != "false"; }
     
     Register()
     {
-        buildOptions["checkedBuild"]    = "false";
-        buildOptions["runOptimizer"]    = "false";
-        buildOptions["generateIHex"]    = "false";
-        buildOptions["runDisassembler"] = "false";
-        buildOptions["autoSaveOnBuild"] = "false";
+        buildOptions["checkedBuild"]        = "false";
+        buildOptions["runOptimizer"]        = "false";
+        buildOptions["generateIHex"]        = "false";
+        buildOptions["runDisassembler"]     = "false";
+        buildOptions["autoSaveOnBuild"]     = "false";
+        buildOptions["extendedCodeSegment"] = "false";
         loadOptions();
         
         Commands.CommandExecuteDelegate checkedCommand = BuildOptions.Checked;
@@ -31,6 +33,9 @@ unit BuildOptions
         Commands.CommandExecuteDelegate optimizeCommand = BuildOptions.Optimized;
         Commands.CommandEnabledDelegate optimizeEnabled = BuildOptions.AlwaysEnabled;
         Commands.CommandCheckedDelegate optimizeIsChecked = BuildOptions.IsOptimizeEnabled;
+        Commands.CommandExecuteDelegate extendedCommand = BuildOptions.Extended;
+        Commands.CommandEnabledDelegate extendedEnabled = BuildOptions.AlwaysEnabled;
+        Commands.CommandCheckedDelegate extendedIsChecked = BuildOptions.IsExtendedEnabled;
         Commands.CommandExecuteDelegate ihexCommand = BuildOptions.GenerateIHex;
         Commands.CommandEnabledDelegate ihexEnabled = BuildOptions.AlwaysEnabled;
         Commands.CommandCheckedDelegate ihexIsChecked = BuildOptions.IsGenerateIHexEnabled;
@@ -45,6 +50,8 @@ unit BuildOptions
         InstallChecked("Checked", checkedIsChecked);
         InstallCommand("Optimize",    "[ ] Run &Optimizer", optimizeCommand, optimizeEnabled, Key.NoKey);
         InstallChecked("Optimize", optimizeIsChecked);
+        InstallCommand("Extended",    "[ ] E&xtended Code Segment", extendedCommand, extendedEnabled, Key.NoKey);
+        InstallChecked("Extended", extendedIsChecked);
         InstallCommand("GenerateIHex", "[ ] Generate &IHex", ihexCommand, ihexEnabled, Key.NoKey);
         InstallChecked("GenerateIHex", ihexIsChecked);
         InstallCommand("Disassemble", "[ ] Run &Disassembler", disassembleCommand, disassembleEnabled, Key.NoKey);
@@ -60,6 +67,10 @@ unit BuildOptions
             if (JSON.Read(OptionsPath, ref dict))
             {
                 buildOptions = dict["buildoptions"];
+                if (!buildOptions.Contains("extendedCodeSegment"))
+                {
+                    buildOptions["extendedCodeSegment"] = "false";
+                }
             }
         }
     }
@@ -97,6 +108,18 @@ unit BuildOptions
         else
         {
             buildOptions["runOptimizer"] = "false";
+        }
+        saveOptions();
+    }
+    Extended()
+    {
+        if (buildOptions["extendedCodeSegment"] == "false")
+        {
+            buildOptions["extendedCodeSegment"] = "true";
+        }
+        else
+        {
+            buildOptions["extendedCodeSegment"] = "false";
         }
         saveOptions();
     }
