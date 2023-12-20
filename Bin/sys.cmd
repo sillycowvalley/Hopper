@@ -31,7 +31,7 @@ codegen /debug/obj/dir
 codegen /debug/obj/term
 codegen /debug/obj/port
 codegen /debug/obj/hm
-codegen /debug/obj/debug -extended
+codegen /debug/obj/debug
 codegen /debug/obj/edit
 
 dasm /bin/show
