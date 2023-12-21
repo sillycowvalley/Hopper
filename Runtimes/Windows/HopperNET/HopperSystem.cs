@@ -71,7 +71,7 @@ namespace HopperNET
 #endif
             byte[] code = new byte[fileSize];
             HopperFile binaryFile = HopperFile.Open(ProgramPath);
-            ushort iCode = 0;
+            uint iCode = 0;
             for (; ; )
             {
                 byte b = binaryFile.Read();
