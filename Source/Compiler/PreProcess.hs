@@ -1261,7 +1261,10 @@ program PreProcess
           if (!sourceFound)
           {
               BadArguments();
+              break;
           }
+          sourcePath = Path.GetFullPath(sourcePath);
+          
           long startTime = Millis;
           
           loop
