@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -170,10 +171,121 @@ namespace HopperNET
     }
     public class Keyboard
     {
-        Key translateToHopperKey(Keys ps2ScanCode, Key hopperModifiers)
+        private bool AnyOfAltControlShift(Key hopperModifiers)
         {
-            Key c = Key.NoKey;
-            switch (ps2ScanCode)
+            const Key AnyModifier = Key.Alt | Key.Control | Key.Shift;
+            return (hopperModifiers & AnyModifier) > 0;
+        }
+
+        private bool AltXorControl(Key hopperModifiers)
+        {
+            return (hopperModifiers & Key.Alt) == Key.Alt
+                    ^(hopperModifiers & Key.Control) == Key.Control;
+        }
+
+        private bool AltOrControl(Key hopperModifiers)
+        {
+            const Key AnyModifierButShift = Key.Alt | Key.Control;
+            return (hopperModifiers & AnyModifierButShift) > 0;
+        }
+
+        private bool NoneOfAltControlShift(Key hopperModifiers)
+        {
+            const Key AnyModifier = Key.Alt | Key.Control | Key.Shift;
+            return 0 == (hopperModifiers & AnyModifier);
+        }
+
+        internal Key TranslateAsciiToHopperKey(char c, Key hopperModifiers)
+        {
+#if DIAG
+            Debug.WriteLine("ASCII '{0}' 0x{1} {2} - {3} {4} {5}",
+                c, ((int)c).ToString("X"), (int)c,
+                (hopperModifiers & Key.Shift) == Key.Shift ? "SHIFT" : "shift",
+                (hopperModifiers & Key.Control) == Key.Control ? "CTRL" : "ctrl",
+                (hopperModifiers & Key.Alt) == Key.Alt ? "ALT" : "alt");
+#endif
+            // 
+            if (c < ' ') 
+                return Key.NoKey;
+
+            if (c > '~') 
+                return Key.NoKey;
+
+            // Alt Gr key sequence contains both Ctrl & Alt 
+            //if (BothControlAndAlt(hopperModifiers))
+            //    return Key.NoKey;
+            if (AltXorControl(hopperModifiers)) 
+                return Key.NoKey;
+
+            return (Key)c;
+        }
+
+        internal Key TranslateCtrlToHopperKey(Keys ctrlKey, Key hopperModifiers)
+        {
+#if DIAG
+            Debug.WriteLine("CTRL '{0}' 0x{1} {2} - {3} {4} {5}",
+                ctrlKey, ((int)ctrlKey).ToString("X"), (int)ctrlKey,
+                (hopperModifiers & Key.Shift) == Key.Shift ? "SHIFT" : "shift",
+                (hopperModifiers & Key.Control) == Key.Control ? "CTRL" : "ctrl",
+                (hopperModifiers & Key.Alt) == Key.Alt ? "ALT" : "alt");
+#endif
+            // Space, allow any modifier
+            if (ctrlKey == Keys.Space && AnyOfAltControlShift(hopperModifiers))
+            {
+                return Key.ModSpace | hopperModifiers;
+            }
+
+            if (Char.IsLetter((char)ctrlKey) && AltOrControl(hopperModifiers))
+            {
+                switch (ctrlKey)
+                {
+                    case Keys.A: return Key.ModA | hopperModifiers;
+                    case Keys.B: return Key.ModB | hopperModifiers;
+                    case Keys.C: return Key.ModC | hopperModifiers;
+                    case Keys.D: return Key.ModD | hopperModifiers;
+                    case Keys.E: return Key.ModE | hopperModifiers;
+                    case Keys.F: return Key.ModF | hopperModifiers;
+                    case Keys.G: return Key.ModG | hopperModifiers;
+                    case Keys.H: return Key.ModH | hopperModifiers;
+                    case Keys.I: return Key.ModI | hopperModifiers;
+                    case Keys.J: return Key.ModJ | hopperModifiers;
+                    case Keys.K: return Key.ModK | hopperModifiers;
+                    case Keys.L: return Key.ModL | hopperModifiers;
+                    case Keys.M: return Key.ModM | hopperModifiers;
+                    case Keys.N: return Key.ModN | hopperModifiers;
+                    case Keys.O: return Key.ModO | hopperModifiers;
+                    case Keys.P: return Key.ModP | hopperModifiers;
+                    case Keys.Q: return Key.ModQ | hopperModifiers;
+                    case Keys.R: return Key.ModR | hopperModifiers;
+                    case Keys.S: return Key.ModS | hopperModifiers;
+                    case Keys.T: return Key.ModT | hopperModifiers;
+                    case Keys.U: return Key.ModU | hopperModifiers;
+                    case Keys.V: return Key.ModV | hopperModifiers;
+                    case Keys.W: return Key.ModW | hopperModifiers;
+                    case Keys.X: return Key.ModX | hopperModifiers;
+                    case Keys.Y: return Key.ModY | hopperModifiers;
+                    case Keys.Z: return Key.ModZ | hopperModifiers;
+                }
+            }
+
+            if (Char.IsDigit((char)ctrlKey) && AltOrControl(hopperModifiers))
+            {
+                switch (ctrlKey)
+                {
+                    case Keys.D0: return Key.Mod0 | hopperModifiers;
+                    case Keys.D1: return Key.Mod1 | hopperModifiers;
+                    case Keys.D2: return Key.Mod2 | hopperModifiers;
+                    case Keys.D3: return Key.Mod3 | hopperModifiers;
+                    case Keys.D4: return Key.Mod4 | hopperModifiers;
+                    case Keys.D5: return Key.Mod5 | hopperModifiers;
+                    case Keys.D6: return Key.Mod6 | hopperModifiers;
+                    case Keys.D7: return Key.Mod7 | hopperModifiers;
+                    case Keys.D8: return Key.Mod8 | hopperModifiers;
+                    case Keys.D9: return Key.Mod0 | hopperModifiers;
+                }
+            }
+
+            switch (ctrlKey)
             {
                 case Keys.Shift:
                 case Keys.ShiftKey:
@@ -186,441 +298,62 @@ namespace HopperNET
                 case Keys.Menu:
                 case Keys.LMenu:
                 case Keys.RMenu:
-                    // not considered stand-alone keys
-                    break;
-                case Keys.Space:
-                    if (0 == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)' ';
-                    }
-                    else
-                    {
-                        c = (Key)(Key.ModSpace | hopperModifiers);
-                    }
-                    break;
-                case Keys.OemPeriod:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'>';
-                    }
-                    else if (0 == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'.';
-                    }
-                    else
-                    {
-                        c = (Key)(Key.ModPeriod | hopperModifiers);
-                    }
-                    break;
-                case Keys.Oemplus:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'+';
-                    }
-                    else
-                    {
-                        c = (Key)'=';
-                    }
-                    break;
-                case Keys.OemMinus:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'_';
-                    }
-                    else
-                    {
-                        c = (Key)'-';
-                    }
-                    break;
-                case Keys.Oemcomma:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'<';
-                    }
-                    else
-                    {
-                        c = (Key)',';
-                    }
-                    break;
-                case Keys.Oem2:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'?';
-                    }
-                    else
-                    {
-                        c = (Key)'/';
-                    }
-                    break;
-                case Keys.Oem1:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)':';
-                    }
-                    else
-                    {
-                        c = (Key)';';
-                    }
-                    break;
-                case Keys.Oem3:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'~';
-                    }
-                    else
-                    {
-                        c = (Key)'`';
-                    }
-                    break;
-                case Keys.Oem4:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'{';
-                    }
-                    else
-                    {
-                        c = (Key)'[';
-                    }
-                    break;
-                case Keys.Oem5:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'|';
-                    }
-                    else
-                    {
-                        c = (Key)'\\';
-                    }
-                    break;
-                case Keys.Oem6:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'}';
-                    }
-                    else
-                    {
-                        c = (Key)']';
-                    }
-                    break;
-                case Keys.Oem7:
-                    if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = (Key)'"';
-                    }
-                    else
-                    {
-                        c = (Key)'\'';
-                    }
                     break;
                 case Keys.Back:
-                    if (0 == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = Key.Backspace;
-                    }
-                    else
-                    {
-                        c = (Key)(Key.ModBackspace | hopperModifiers);
-                    }
-                    break;
+                    return NoneOfAltControlShift(hopperModifiers) ? Key.Backspace : Key.ModBackspace | hopperModifiers;
                 case Keys.Tab:
-                    c = (Key)(Key.Tab | hopperModifiers);
-                    break;
+                    return (Key.Tab | hopperModifiers);
                 case Keys.Return:
-                    if (0 == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = Key.Enter;
-                    }
-                    else
-                    {
-                        c = (Key)(Key.ModEnter | hopperModifiers);
-                    }
-                    break;
+                    return NoneOfAltControlShift(hopperModifiers) ? Key.Enter : Key.ModEnter | hopperModifiers;
                 case Keys.Escape:
-                    if (0 == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                    {
-                        c = Key.Esc;
-                    }
-                    else
-                    {
-                        c = (Key)(Key.ModEsc | hopperModifiers);
-                    }
-                    break;
+                    return NoneOfAltControlShift(hopperModifiers) ? Key.Esc : Key.ModEsc | hopperModifiers;
                 case Keys.Delete:
-                    c = (Key)(Key.Delete | hopperModifiers);
-                    break;
+                    return Key.Delete | hopperModifiers;
                 case Keys.Insert:
-                    c = (Key)(Key.ModInsert | hopperModifiers);
-                    break;
-
+                    return Key.ModInsert | hopperModifiers;
                 case Keys.End:
-                    c = (Key)(Key.End | hopperModifiers);
-                    break;
+                    return Key.End | hopperModifiers;
                 case Keys.Home:
-                    c = (Key)(Key.Home | hopperModifiers);
-                    break;
+                    return Key.Home | hopperModifiers;
                 case Keys.Left:
-                    c = (Key)(Key.Left | hopperModifiers);
-                    break;
+                    return Key.Left | hopperModifiers;
                 case Keys.Right:
-                    c = (Key)(Key.Right | hopperModifiers);
-                    break;
+                    return Key.Right | hopperModifiers;
                 case Keys.Up:
-                    c = (Key)(Key.Up | hopperModifiers);
-                    break;
+                    return Key.Up | hopperModifiers;
                 case Keys.Down:
-                    c = (Key)(Key.Down | hopperModifiers);
-                    break;
+                    return Key.Down | hopperModifiers;
                 case Keys.Prior:
-                    c = (Key)(Key.PageUp | hopperModifiers);
-                    break;
+                    return Key.PageUp | hopperModifiers;
                 case Keys.Next:
-                    c = (Key)(Key.PageDown | hopperModifiers);
-                    break;
-
+                    return Key.PageDown | hopperModifiers;
                 case Keys.F1:
-                    c = (Key)(Key.F1 | hopperModifiers);
-                    break;
+                    return Key.F1 | hopperModifiers;
                 case Keys.F2:
-                    c = (Key)(Key.F2 | hopperModifiers);
-                    break;
+                    return Key.F2 | hopperModifiers;
                 case Keys.F3:
-                    c = (Key)(Key.F3 | hopperModifiers);
-                    break;
+                    return Key.F3 | hopperModifiers;
                 case Keys.F4:
-                    c = (Key)(Key.F4 | hopperModifiers);
-                    break;
+                    return Key.F4 | hopperModifiers;
                 case Keys.F5:
-                    c = (Key)(Key.F5 | hopperModifiers);
-                    break;
+                    return Key.F5 | hopperModifiers;
                 case Keys.F6:
-                    c = (Key)(Key.F6 | hopperModifiers);
-                    break;
+                    return Key.F6 | hopperModifiers;
                 case Keys.F7:
-                    c = (Key)(Key.F7 | hopperModifiers);
-                    break;
+                    return Key.F7 | hopperModifiers;
                 case Keys.F8:
-                    c = (Key)(Key.F8 | hopperModifiers);
-                    break;
+                    return Key.F8 | hopperModifiers;
                 case Keys.F9:
-                    c = (Key)(Key.F9 | hopperModifiers);
-                    break;
+                    return Key.F9 | hopperModifiers;
                 case Keys.F10:
-                    c = (Key)(Key.F10 | hopperModifiers);
-                    break;
+                    return Key.F10 | hopperModifiers;
                 case Keys.F11:
-                    c = (Key)(Key.F11 | hopperModifiers);
-                    break;
+                    return Key.F11 | hopperModifiers;
                 case Keys.F12:
-                    c = (Key)(Key.F12 | hopperModifiers);
-                    break;
-                default:
-                    if (((uint)ps2ScanCode >= 0x30) && ((uint)ps2ScanCode <= 0x39))
-                    {
-                        // digits
-                        c = (Key)ps2ScanCode;
-                        if (0 == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                        {
-                            // leave as digits
-                        }
-                        else if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                        {
-                            // shifted digits
-                            switch ((char)c)
-                            {
-                                case '0':
-                                    c = (Key)')';
-                                    break;
-                                case '1':
-                                    c = (Key)'!';
-                                    break;
-                                case '2':
-                                    c = (Key)'@';
-                                    break;
-                                case '3':
-                                    c = (Key)'#';
-                                    break;
-                                case '4':
-                                    c = (Key)'$';
-                                    break;
-                                case '5':
-                                    c = (Key)'%';
-                                    break;
-                                case '6':
-                                    c = (Key)'^';
-                                    break;
-                                case '7':
-                                    c = (Key)'&';
-                                    break;
-                                case '8':
-                                    c = (Key)'*';
-                                    break;
-                                case '9':
-                                    c = (Key)'(';
-                                    break;
-                                default:
-#if DEBUG
-                                    Diagnostics.ASSERT(false, "not implemented");
-#endif
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            // modified digits
-                            switch ((char)c)
-                            {
-                                case '0':
-                                    c = Key.Mod0;
-                                    break;
-                                case '1':
-                                    c = Key.Mod1;
-                                    break;
-                                case '2':
-                                    c = Key.Mod2;
-                                    break;
-                                case '3':
-                                    c = Key.Mod3;
-                                    break;
-                                case '4':
-                                    c = Key.Mod4;
-                                    break;
-                                case '5':
-                                    c = Key.Mod5;
-                                    break;
-                                case '6':
-                                    c = Key.Mod6;
-                                    break;
-                                case '7':
-                                    c = Key.Mod7;
-                                    break;
-                                case '8':
-                                    c = Key.Mod8;
-                                    break;
-                                case '9':
-                                    c = Key.Mod9;
-                                    break;
-                                default:
-#if DEBUG
-                                    Diagnostics.ASSERT(false, "not implemented");
-#endif
-                                    break;
-                            }
-                            c = (Key)(c | hopperModifiers);
-                        }
-                    }
-                    else if (((uint)ps2ScanCode >= 0x41) && ((uint)ps2ScanCode <= 0x5A))
-                    {
-                        // A.. Z
-                        c = (Key)ps2ScanCode;
-                        if (Key.Shift == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                        {
-                            // leave as uppercase
-                        }
-                        else if (0 == (hopperModifiers & (Key.Alt | Key.Control | Key.Shift)))
-                        {
-                            // lowercase letters
-                            c = (Key)(c + ('a' - 'A'));
-                        }
-                        else
-                        {
-                            // modified letters
-                            switch ((char)c)
-                            {
-                                case 'A':
-                                    c = Key.ModA;
-                                    break;
-                                case 'B':
-                                    c = Key.ModB;
-                                    break;
-                                case 'C':
-                                    c = Key.ModC;
-                                    break;
-                                case 'D':
-                                    c = Key.ModD;
-                                    break;
-                                case 'E':
-                                    c = Key.ModE;
-                                    break;
-                                case 'F':
-                                    c = Key.ModF;
-                                    break;
-                                case 'G':
-                                    c = Key.ModG;
-                                    break;
-                                case 'H':
-                                    c = Key.ModH;
-                                    break;
-                                case 'I':
-                                    c = Key.ModI;
-                                    break;
-                                case 'J':
-                                    c = Key.ModJ;
-                                    break;
-                                case 'K':
-                                    c = Key.ModK;
-                                    break;
-                                case 'L':
-                                    c = Key.ModL;
-                                    break;
-                                case 'M':
-                                    c = Key.ModM;
-                                    break;
-                                case 'N':
-                                    c = Key.ModN;
-                                    break;
-                                case 'O':
-                                    c = Key.ModO;
-                                    break;
-                                case 'P':
-                                    c = Key.ModP;
-                                    break;
-                                case 'Q':
-                                    c = Key.ModQ;
-                                    break;
-                                case 'R':
-                                    c = Key.ModR;
-                                    break;
-                                case 'S':
-                                    c = Key.ModS;
-                                    break;
-                                case 'T':
-                                    c = Key.ModT;
-                                    break;
-                                case 'U':
-                                    c = Key.ModU;
-                                    break;
-                                case 'V':
-                                    c = Key.ModV;
-                                    break;
-                                case 'W':
-                                    c = Key.ModW;
-                                    break;
-                                case 'X':
-                                    c = Key.ModX;
-                                    break;
-                                case 'Y':
-                                    c = Key.ModY;
-                                    break;
-                                case 'Z':
-                                    c = Key.ModZ;
-                                    break;
-                                default:
-#if DEBUG
-                                    Diagnostics.ASSERT(false, "not implemented");
-#endif
-                                    break;
-                            }
-                            c = (Key)(c | hopperModifiers);
-                        }
-                    }
-                    else
-                    {
-                        HopperSystem.Beep(); // deal with this key
-                    }
-                    break;
+                    return Key.F12 | hopperModifiers;
             }
 
-            return c;
+            return Key.NoKey;
         }
 
         List<Key> keyboardBuffer;
@@ -658,45 +391,21 @@ namespace HopperNET
                 return current.clickDouble; 
             }
         }
-        internal void PushKey(KeyEventArgs e)
-        {
-            Key key = Key.NoKey;
-            Key modifiers = Key.NoKey;
-            bool pushTheKey = false;
-            if ((Hopper.ModifierKeys & Keys.Shift) != 0)
-            {
-                modifiers = (modifiers | Key.Shift);
-            }
-            if ((Hopper.ModifierKeys & Keys.Control) != 0)
-            {
-                modifiers = (modifiers | Key.Control);
-            }
-            if ((Hopper.ModifierKeys & Keys.Alt) != 0)
-            {
-                modifiers = (modifiers | Key.Alt);
-            }
 
-            switch (e.KeyCode)
+        internal bool PushToKeyboardBuffer(Key key)
+        {
+            if (key != Key.NoKey)
             {
-                case Keys.Menu:
-                case Keys.LMenu:
-                case Keys.RMenu:
-                    // ignore alt key on its own
-                    break;
-                default:
-                    key = translateToHopperKey(e.KeyCode, modifiers);
-                    pushTheKey = true;
-                    break;
-            }
-            if (pushTheKey)
-            {
-                // push key into keyboard buffer
                 lock (keyboardBuffer)
                 {
                     keyboardBuffer.Add(key);
                 }
+                return true;
             }
+
+            return false;
         }
+
         internal void PushClick(MouseEventArgs e, bool down)
         {
             ClickArgs clickArgs = new ClickArgs();
@@ -719,15 +428,15 @@ namespace HopperNET
             }
             if ((Hopper.ModifierKeys & Keys.Shift) != 0)
             {
-                key = (key | Key.Shift);
+                key |= Key.Shift;
             }
             if ((Hopper.ModifierKeys & Keys.Control) != 0)
             {
-                key = (key | Key.Control);
+                key |= Key.Control;
             }
             if ((Hopper.ModifierKeys & Keys.Alt) != 0)
             {
-                key = (key | Key.Alt);
+                key |= Key.Alt;
             }
             lock (keyboardBuffer)
             {
@@ -805,6 +514,8 @@ namespace HopperNET
                     {
                         c = keyboardBuffer[0];
                         keyboardBuffer.RemoveAt(0);
+
+                        //TODO DIAG Debug.WriteLine(c);
 
                         if ((c & Key.Mask) == Key.Click)
                         {

@@ -843,6 +843,7 @@ namespace HopperNET
         }
         void Push(uint value, HopperType type)
         {
+            //LDB Debug.WriteLine("Push {0} {1}", value, (int)type);
             if (sp == STACKSIZE)
             {
                 Diagnostics.Die(0x07, this);

@@ -51,6 +51,7 @@ namespace HopperNET
             this.Load += new System.EventHandler(this.Hopper_Load);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.Hopper_Paint);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Hopper_KeyDown);
+            this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Hopper_KeyPress);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Hopper_KeyUp);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Hopper_MouseDown);
             this.MouseUp += new System.Windows.Forms.MouseEventHandler(this.Hopper_MouseUp);

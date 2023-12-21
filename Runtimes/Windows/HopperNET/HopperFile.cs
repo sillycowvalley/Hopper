@@ -13,13 +13,13 @@ namespace HopperNET
         static string hopperRoot;
         public static void InitializeFolders()
         {
-            if (Directory.Exists(@"D:\Repos\Maker"))
+            if (Directory.Exists(@"C:\Repos\Hopper\"))
             {
-                hopperRoot = @"D:\Repos\Maker\Z80\Hopper\HS"; // Michael's dev location
+                hopperRoot = @"C:\Repos\Hopper\";             // C drive dev location
             }
-            else if (Directory.Exists(@"C:\Repos\Maker"))
+            else if (Directory.Exists(@"D:\Repos\Hopper"))
             {
-                hopperRoot = @"C:\Repos\Maker\Z80\Hopper\HS"; // Michael's dev location
+                hopperRoot = @"D:\Repos\Hopper";             // D drive dev location
             }
             Assembly currentAssem = Assembly.GetExecutingAssembly();
             string exePath = currentAssem.Location;
