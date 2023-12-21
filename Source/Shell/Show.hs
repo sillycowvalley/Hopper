@@ -7,12 +7,12 @@ program Show
     uses "/Source/Compiler/Tokens/Token"
     uses "/Source/Editor/Highlighter"
 
-    uint backColor = 0xAAA;
-    uint plainTextColor = 0x066;
+    uint backColor           = 0xAAA;
+    uint plainTextColor      = 0x066;
     
-    uint dataColor = 0x900;
-    uint addressColor = 0xF60;
-    uint operandColor = 0x33F;
+    uint dataColor           = 0x900;
+    uint addressColor        = 0x006;
+    uint opcodeColor         = 0x33F;
     uint listingCommentColor = 0x360;
         
     bool more = false;
@@ -52,59 +52,72 @@ program Show
     
     ListingLinePrinter(string ln)
     {
-        ln = ln.Pad(' ', Screen.Columns);
         uint iComment;
         bool commentFound;
+        bool allComment;
+        string comment;
         if (ln.IndexOf("//", ref iComment))
         {
             commentFound = true;
-        }
-        if (ln.Length >= 6) 
-        {
-            if (commentFound && (iComment < 6))
+            if (ln.Trim().StartsWith("//"))
             {
-                // whole line is a comment
+                comment = ln;
+                ln = "";
             }
             else
+            {
+                comment = ln.Substring(iComment);
+                ln = ln.Substring(0,iComment);
+            }
+        }
+        if (ln.Length > 0)
+        {
+            if (!allComment && (ln.Length >= 6)) 
             {
                 Print(ln.Substring(0,6), addressColor, backColor); // address
                 ln = ln.Substring(6);
             }
-        }
-        string trimmedLine = ln.Trim();
-        if (trimmedLine.Length > 55)
-        {
-            // data line
-            Print(ln.Substring(0,50), dataColor, backColor);
-            Print(ln.Substring(50),   Constant, backColor);
-        }
-        else
-        {
-            string comment;
-            commentFound = false;
-            if (ln.IndexOf("//", ref iComment))
+            string trimmedLine = ln.Trim();
+            if (trimmedLine.Length > 55)
             {
-                commentFound = true;
+                // data line
+                Print(ln.Substring(0,50), dataColor, backColor);
+                Print(ln.Substring(50),   Constant,  backColor);
             }
-            bool allComment = false;
-            if (commentFound)
-            {
-                comment = ln.Substring(iComment);
-                ln = ln.Substring(0,iComment);
-                allComment = (iComment < 20);
-            }
-            if (!allComment)
+            else
             {
                 // instruction line
-                Print(ln.Substring(0,13), Statement, backColor);
-                Print(ln.Substring(13,7), Type, backColor);
-                Print(ln.Substring(20), operandColor, backColor);
+                Print(ln.Substring(0,17), Statement, backColor); // hex
+                ln = ln.Substring(17);
+                
+                // leading space
+                while ((ln.Length > 0) &&  (ln[0] == ' '))
+                {
+                    Print(' ', opcodeColor, backColor);
+                    ln = ln.Substring(1);
+                }
+                
+                uint iSpace;
+                if (!ln.IndexOf(' ', ref iSpace))
+                {
+                    Print(ln, opcodeColor, backColor); // opcode, no operand
+                }
+                else
+                {
+                    Print(ln.Substring(0,iSpace), opcodeColor, backColor); // opcode
+                    Print(ln.Substring(iSpace), dataColor,    backColor); // operand
+                }
             }
-            
-            if (comment.Length > 0)
-            {
-                Print(comment, listingCommentColor, backColor);
-            }
+        }
+        if (comment.Length > 0)
+        {
+            Print(comment, listingCommentColor, backColor);
+        }
+        uint cx = Screen.CursorX;
+        while  (cx < Screen.Columns)
+        {
+            Print(' ', backColor, backColor);
+            cx++;
         }
     }
     
@@ -187,7 +200,7 @@ program Show
             LinePrinter linePrinter = DefaultLinePrinter;
             string extension = Path.GetExtension(filePath);
             extension = extension.ToLower();
-            if (extension == ".hs")
+            if ((extension == ".hs") || (extension == ".json") || (extension == ".code") || (extension == ".options"))
             {
                 linePrinter = HopperLinePrinter;
                 Token.Initialize();// inialize the tokenizer
