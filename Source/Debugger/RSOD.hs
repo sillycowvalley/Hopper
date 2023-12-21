@@ -377,15 +377,18 @@ program  RedScreenOfDeath
                 for (uint i=0; i < stackAddresses.Length; i++)
                 {
                    <string> parts = (stackLines[i]).Split('`'); 
-                   string part0 = parts[0];
-                   if (part0.Length > max0)
+                   if  (parts.Length > 0)
                    {
-                       max0 = part0.Length;
-                   }  
-                   string part1 = parts[1];
-                   if  (part1.Length > max1)
-                   {
-                       max1 = part1.Length;
+                       string part0 = parts[0];
+                       if (part0.Length > max0)
+                       {
+                           max0 = part0.Length;
+                       }  
+                       string part1 = parts[1];
+                       if  (part1.Length > max1)
+                       {
+                           max1 = part1.Length;
+                       }
                    }
                 }
                 for (uint i=0; i < stackAddresses.Length; i++)
@@ -393,13 +396,16 @@ program  RedScreenOfDeath
                     <string> parts = (stackLines[i]).Split('`'); 
                     string line = "  0x"  + (stackAddresses[i]).ToHexString(4) +  " ";
                     Print(line, Color.MatrixBlue,  Color.Black);
-                    line = parts[0];
-                    line = line.Pad(' ', max0 + 2);
-                    Print(line, Color.MatrixBlue,  Color.Black);
-                    line = parts[1];
-                    line = line.Pad(' ', max1 + 2);
-                    Print(line, Color.MatrixRed,  Color.Black);
-                    Print(parts[2], Color.LightestGray,  Color.Black);
+                    if  (parts.Length > 0)
+                    {
+                        line = parts[0];
+                        line = line.Pad(' ', max0 + 2);
+                        Print(line, Color.MatrixBlue,  Color.Black);
+                        line = parts[1];
+                        line = line.Pad(' ', max1 + 2);
+                        Print(line, Color.MatrixRed,  Color.Black);
+                        Print(parts[2], Color.LightestGray,  Color.Black);
+                    }
                     PrintLn();
                 }
     
