@@ -6,6 +6,26 @@ program Dir
     
     string wildcardStartsWith;
     string wildcardEndsWith;
+    
+    uint FileCRC16(string filepath)
+    {
+        // stackoverflow.com/users/1180620/mark-adler .. more or less .. nice and simple.
+        // Not a good implementation when it comes to performance but that doesn't seem to matter for 'dir'
+        uint crc = 0xFFFF;
+        file f = File.Open(filepath);
+        loop
+        {
+            byte data = f.Read();
+            if (!f.IsValid()) { break; }
+            
+            crc = crc ^ data;
+            for (byte k = 0; k < 8; k++)
+            {
+                crc = (crc & 1 != 0) ? ((crc >> 1) ^ 0xA001) : (crc >> 1);
+            }
+        }
+        return crc;
+    }
 
     DirectoryListing(<string> options, <string> arguments, bool firstCall)
     {
@@ -17,6 +37,7 @@ program Dir
         bool recursive = false;
         bool fullpaths = false; 
         bool showtime = false;
+        bool showcrc = false;
         directory dir;
         string currentFolder = CurrentDirectory;
         loop
@@ -34,6 +55,10 @@ program Dir
                 else if (option == "-t")
                 {
                     showtime = true;
+                }
+                else if (option == "-c")
+                {
+                    showcrc = true;
                 }
                 else
                 {
@@ -184,6 +209,7 @@ program Dir
                 PrintLn("Invalid arguments for DIR:");
                 PrintLn("  -f : full paths for each file");
                 PrintLn("  -t : include unix time stamp");
+                PrintLn("  -c : include crc-16 as checksum");
                 PrintLn("  -s : this directory and all subdirectories");
                 break;
             }
@@ -221,13 +247,28 @@ program Dir
                 }
             }
             files =  dir.GetFileCount();
+            uint maxLength = 0;
+            if (showtime || showcrc)
+            {
+                for (uint i = 0; i < files; i++)
+                {
+                    string filepath = dir.GetFile(i);
+                    string filename = Path.GetFileName(filepath);
+                    if (filename.Length > maxLength)
+                    {
+                        maxLength = filename.Length;
+                    }
+                }
+            }
             for (uint i = 0; i < files; i++)
             {
                 string filepath = dir.GetFile(i);
                 string filename = Path.GetFileName(filepath);
                 string filenameLower = filename.ToLower();
+                
                 long ft = File.GetTime(filepath);
-                string filetime = "0x" + ft.ToHexString(8);
+                
+                
                 if (wildcardEndsWith.Length > 0)
                 {
                     if (!filenameLower.EndsWith(wildcardEndsWith))
@@ -242,14 +283,6 @@ program Dir
                         continue;
                     }
                 }
-                if (!fullpaths)
-                {
-                    filepath = filename;
-                }
-                if (showtime)
-                {
-                    filepath = filepath + " " + filetime;
-                }
                 if (first && !fullpaths && !firstCall)
                 {
                     // only print the folder if there is at least one file listed in it
@@ -258,10 +291,33 @@ program Dir
                 }
                 if (!fullpaths)
                 {
-                    Print(" ");
+                    Print(" " + filename, Color.MatrixBlue, Color.Black);
                 }
-                PrintLn(filepath, Color.MatrixBlue, Color.Black);
-            }
+                else
+                {
+                    Print(filepath, Color.MatrixBlue, Color.Black);
+                }
+                if (showtime || showcrc)
+                {
+                    uint pad = maxLength - filename.Length;
+                    while (pad  != 0)
+                    {
+                        Print(' ');
+                        pad--;
+                    }
+                }
+                if (showtime)
+                {
+                    Print("  0x"  +  ft.ToHexString(8), Color.MatrixGreen, Color.Black);
+                }
+                if (showcrc)
+                {
+                    uint crc = FileCRC16(filepath);
+                    Print("  0x"  +  crc.ToHexString(4), Color.MatrixRed, Color.Black);
+                }
+                PrintLn();
+            } // file loop
+            
             if (recursive)
             {
                 for (uint i = 0; i < directories; i++)
