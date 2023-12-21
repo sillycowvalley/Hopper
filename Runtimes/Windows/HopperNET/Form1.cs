@@ -1,25 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
+using System.Diagnostics;
 using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Windows.Forms;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace HopperNET
 {
     public partial class Hopper : Form, IHopper
     {
         WebServer httpServer;
+
         public Hopper()
         {
             InitializeComponent();
-            this.ClientSize = new System.Drawing.Size((int)Console.CanvasWidth, (int)Console.CanvasHeight);
+            this.ClientSize = new Size((int)Console.CanvasWidth, (int)Console.CanvasHeight);
+
+            string versionName =  FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
+
+            this.Text += " [" + versionName + "]";
             
+
             Console = new Console(this);
             Screen = new Screen(Console);
             Keyboard = new Keyboard(Console);
@@ -37,11 +39,17 @@ namespace HopperNET
         {
             Console.ServiceCursor();
         }
+        
         BackgroundWorker worker;
+        
         public Keyboard Keyboard { get; set; }
+        
         public Console Console { get; set; }
+        
         public Screen  Screen { get; set; }
+        
         public Runtime Runtime { get; set; }
+        
         public bool Exiting { get; set; }
 
         public void HopperInvalidate()
@@ -90,7 +98,6 @@ namespace HopperNET
             // do nothing
         }
 
-
         private void Hopper_MouseUp(object sender, MouseEventArgs e)
         {
             Keyboard.PushClick(e, false);
@@ -100,6 +107,7 @@ namespace HopperNET
         {
             Keyboard.PushClick(e, true);
         }
+        
         protected override void OnMouseWheel(MouseEventArgs e)
         {
             Keyboard.PushScroll(e);
@@ -113,14 +121,62 @@ namespace HopperNET
             }
             if (e.KeyData == Keys.F12)
             {
-                string consoleDumpFile = HopperPath.ToWindowsPath("/Temp/Console.txt");
-                Console.Save(consoleDumpFile);
+                //Console.Save(@"D:\Repos\Maker\Z80\Hopper\HS\Temp\Console.txt");
+                Console.Save(@"C:\Repos\Hopper\Temp\Console.txt");
             }
+
+            //TODO
+
+            Key modifiers = Key.NoKey;
+
+            if ((Hopper.ModifierKeys & Keys.Shift) != 0)
+            {
+                modifiers |= Key.Shift;
+            }
+            if ((Hopper.ModifierKeys & Keys.Control) != 0)
+            {
+                modifiers |= Key.Control;
+            }
+            if ((Hopper.ModifierKeys & Keys.Alt) != 0)
+            {
+                modifiers |= Key.Alt;
+            }
+
+            Key myKey = Keyboard.TranslateCtrlToHopperKey(e.KeyCode, modifiers);
+
+            e.SuppressKeyPress = e.Handled = Keyboard.PushToKeyboardBuffer(myKey); 
+        }
+
+        private void Hopper_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            var ctrl = Control.ModifierKeys;
+
+            Key modifiers = Key.NoKey;
+
+            if ((ctrl & Keys.Shift) != 0)
+            {
+                modifiers |= Key.Shift;
+            }
+            if ((ctrl & Keys.Control) != 0)
+            {
+                modifiers |= Key.Control;
+            }
+            if ((ctrl & Keys.Alt) != 0)
+            {
+                modifiers |= Key.Alt;
+            }
+
+            var key = Keyboard.TranslateAsciiToHopperKey(e.KeyChar, modifiers);
+
+            if (key == Key.NoKey)
+                return;
+
+            e.Handled = true; 
+            Keyboard.PushToKeyboardBuffer(key);
         }
 
         private void Hopper_KeyDown(object sender, KeyEventArgs e)
-        {
-            Keyboard.PushKey(e);
+        {          
             if (e.KeyData == Keys.F10)
             {
                 e.SuppressKeyPress = true;
@@ -128,6 +184,7 @@ namespace HopperNET
         }
 
         delegate bool hasClipboardText();
+        
         public bool HasClipboardText()
         {
             if (this.InvokeRequired)
@@ -142,6 +199,7 @@ namespace HopperNET
         }
 
         delegate void setClipboardText(string s);
+        
         public void SetClipboardText(string text)
         {
             if (this.InvokeRequired)
@@ -154,7 +212,9 @@ namespace HopperNET
                 Clipboard.SetText(text, TextDataFormat.Text);
             }
         }
+        
         delegate string getClipboardText();
+        
         public string GetClipboardText() 
         {
             if (this.InvokeRequired)
