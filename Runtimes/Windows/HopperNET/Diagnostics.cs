@@ -44,9 +44,18 @@ namespace HopperNET
         //}
         internal static void Die(int lastError, Runtime runtime)
         {
-            if (runtime == null) { return; }  // TODO LARS: we should figure out why we ever arrive here with runtime == null ...
+            // TODO LARS: we should figure out why we ever arrive here with runtime == null ...
+            //if (runtime == null) 
+            //{ 
+            //    return; 
+            //}  
+
+            StringBuilder sb = new StringBuilder();
+
             uint pc = runtime.InstructionPC;
-            Debug.WriteLine("Error: 0x" + lastError.ToString("X2") + " at 0x" + pc.ToString("X4"));
+            string line = "Error: 0x" + lastError.ToString("X2") + " at 0x" + pc.ToString("X4");
+            sb.AppendLine(line);
+            Debug.WriteLine(line);
 
             runtime.Screen.PrintLn("  Fatal Error 0x" + lastError.ToString("X2") + " at PC=0x" + pc.ToString("X4") + ":", 0xF77, 0x000);
             string errorMessage = "Unknown error in Die(..)";
@@ -68,14 +77,23 @@ namespace HopperNET
                 case 0x0E: errorMessage = "User error (like compilation failure)."; break;
                 case 0x0F: errorMessage = "Invalid or uninitialized delegate."; break;
             }
+            sb.AppendLine(errorMessage);
+            Debug.WriteLine(errorMessage);
             runtime.Screen.PrintLn("      " + errorMessage, 0xF77, 0x000);
 
             List<UInt16> cs = runtime.CallStack;
             int dcsp = cs.Count;
             if (dcsp != 0)
             {
-                runtime.Screen.PrintLn("    Call Stack:", 0xF77, 0x000);
-                runtime.Screen.PrintLn("      0x" + pc.ToString("X4"), 0xF77, 0x000);
+                line = "    Call Stack:";
+                sb.AppendLine(line);
+                Debug.WriteLine(line);
+                runtime.Screen.PrintLn(line, 0xF77, 0x000);
+                line = "      0x" + pc.ToString("X4");
+                sb.AppendLine(line);
+                Debug.WriteLine(line);
+                runtime.Screen.PrintLn(line, 0xF77, 0x000);
+
                 int stackLines = 0;
                 for (; ; )
                 {
@@ -89,7 +107,10 @@ namespace HopperNET
                     {
                         break; // fake return for child process
                     }
-                    runtime.Screen.PrintLn("      0x" + returnAddress.ToString("X4"), 0xF77, 0x000);
+                    line = "      0x" + returnAddress.ToString("X4");
+                    sb.AppendLine(line);
+                    Debug.WriteLine(line);
+                    runtime.Screen.PrintLn(line, 0xF77, 0x000);
                     stackLines++;
                     if (stackLines >= 10)
                     {
@@ -103,6 +124,9 @@ namespace HopperNET
             runtime.Screen.Print("  Press any key.", 0xF77, 0x000);
             runtime.Keyboard.ReadKey();
             runtime.Screen.PrintLn();
+
+            string dumpPath = HopperPath.ToWindowsPath("/Debug/crash.log");
+            System.IO.File.WriteAllText(dumpPath, sb.ToString());
         }
         static public void OutputDebug(String content)
         {

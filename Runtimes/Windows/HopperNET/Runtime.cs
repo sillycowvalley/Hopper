@@ -3732,11 +3732,11 @@ namespace HopperNET
                         char   chr = (char)Pop();
                         ushort y = (ushort)Pop();
                         ushort x = (ushort)Pop();
-                        screen.Suspend();
+                        //screen.Suspend();
                         throw new NotImplementedException();
-                        screen.Resume(false);
+                        //screen.Resume(false);
                     }
-                    break;
+                    //break;
             }
         }
 

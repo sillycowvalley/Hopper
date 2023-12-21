@@ -15,7 +15,7 @@ namespace HopperNET
         {
             if (Directory.Exists(@"C:\Repos\Hopper\"))
             {
-                hopperRoot = @"C:\Repos\Hopper\";             // C drive dev location
+                hopperRoot = @"C:\Repos\Hopper\";            // C drive dev location
             }
             else if (Directory.Exists(@"D:\Repos\Hopper"))
             {

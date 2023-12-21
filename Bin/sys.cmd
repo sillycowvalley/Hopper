@@ -5,6 +5,7 @@ preprocess /source/shell/term
 preprocess /source/shell/port
 preprocess /source/debugger/hm
 preprocess /source/debugger/debug
+preprocess /source/debugger/rsod
 preprocess /source/editor/edit
 
 compile /debug/obj/show -o
@@ -14,6 +15,7 @@ compile /debug/obj/term -o
 compile /debug/obj/port -o
 compile /debug/obj/hm -o
 compile /debug/obj/debug -o
+compile /debug/obj/rsod -o
 compile /debug/obj/edit -o
 
 optimize /debug/obj/show
@@ -23,6 +25,7 @@ optimize /debug/obj/term
 optimize /debug/obj/port
 optimize /debug/obj/hm
 optimize /debug/obj/debug
+//optimize /debug/obj/rsod
 optimize /debug/obj/edit
 
 codegen /debug/obj/show
@@ -32,6 +35,7 @@ codegen /debug/obj/term
 codegen /debug/obj/port
 codegen /debug/obj/hm
 codegen /debug/obj/debug
+codegen /debug/obj/rsod
 codegen /debug/obj/edit
 
 dasm /bin/show
@@ -41,5 +45,6 @@ dasm /bin/term
 dasm /bin/port
 dasm /bin/hm
 dasm /bin/debug
+dasm /bin/rsod
 dasm /bin/edit
 
