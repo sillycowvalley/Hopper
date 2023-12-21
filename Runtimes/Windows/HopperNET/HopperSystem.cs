@@ -190,7 +190,7 @@ namespace HopperNET
                 SaveCallStats(currentContext);
 #endif
             }
-            catch (Exception ex)
+            catch (Exception /*ex*/)
             {
                 Diagnostics.Die(0x0B, runtime); // internal error
                 errorShown = true;
