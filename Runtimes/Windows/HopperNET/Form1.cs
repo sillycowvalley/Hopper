@@ -145,7 +145,7 @@ namespace HopperNET
 
             var key = Keyboard.TranslateCtrlToHopperKey(e.KeyCode, modifiers);
 
-            /*e.SuppressKeyPress =*/ e.Handled = Keyboard.PushToKeyboardBuffer(key); 
+            e.SuppressKeyPress = e.Handled = Keyboard.PushToKeyboardBuffer(key); 
         }
 
         private void Hopper_KeyPress(object sender, KeyPressEventArgs e)
