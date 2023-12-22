@@ -47,7 +47,7 @@ namespace HopperNET
             // TODO LARS: we should figure out why we ever arrive here with runtime == null ...
             if (runtime == null) 
             {
-                int why = 0;
+                //int why = 0;
                 //return; 
             }  
 
