@@ -126,7 +126,7 @@ namespace HopperNET
             }
 
             //TODO
-
+            /*
             Key modifiers = Key.NoKey;
             Keys currentModifierState = Hopper.ModifierKeys;
 
@@ -146,6 +146,7 @@ namespace HopperNET
             var key = Keyboard.TranslateCtrlToHopperKey(e.KeyCode, modifiers);
 
             e.SuppressKeyPress = e.Handled = Keyboard.PushToKeyboardBuffer(key); 
+            */
         }
 
         private void Hopper_KeyPress(object sender, KeyPressEventArgs e)
@@ -176,6 +177,26 @@ namespace HopperNET
             {
                 e.SuppressKeyPress = true;
             }
+
+            Key modifiers = Key.NoKey;
+            Keys currentModifierState = Hopper.ModifierKeys;
+
+            if ((currentModifierState & Keys.Shift) != 0)
+            {
+                modifiers |= Key.Shift;
+            }
+            if ((currentModifierState & Keys.Control) != 0)
+            {
+                modifiers |= Key.Control;
+            }
+            if ((currentModifierState & Keys.Alt) != 0)
+            {
+                modifiers |= Key.Alt;
+            }
+
+            var key = Keyboard.TranslateCtrlToHopperKey(e.KeyCode, modifiers);
+
+            e.SuppressKeyPress = e.Handled = Keyboard.PushToKeyboardBuffer(key);
         }
 
         delegate bool hasClipboardText();
