@@ -96,19 +96,19 @@ HEAD UM+ 30 C, OVERT
 HEAD CMOVE 31 C, OVERT
 
 \ Optimized secondaries
-HEAD 1+ 32 C, OVERT     HEAD 2+ 33 C, OVERT     HEAD 1- 34 C, OVERT
-HEAD 2- 35 C, OVERT     HEAD ROT 36 C, OVERT    HEAD 2DROP 37 C, OVERT
-HEAD 2DUP 38 C, OVERT   HEAD NIP 39 C, OVERT    HEAD TUCK 40 C, OVERT
-HEAD NOT 41 C, OVERT    HEAD NEGATE 42 C, OVERT HEAD DNEGATE 43 C, OVERT
-HEAD D+ 44 C, OVERT     HEAD - 45 C, OVERT      HEAD +! 46 C, OVERT
-HEAD ++ 47 C, OVERT     HEAD -- 48 C, OVERT
-HEAD ?DUP 49 C, OVERT   HEAD ABS 50 C, OVERT    HEAD @EXECUTE 51 C, OVERT
-HEAD 0= 52 C, OVERT     HEAD = 53 C, OVERT      HEAD <> 54 C, OVERT
-HEAD U< 55 C, OVERT     HEAD < 56 C, OVERT      HEAD > 57 C, OVERT
-HEAD MAX 58 C, OVERT    HEAD MIN 59 C, OVERT    HEAD WITHIN 60 C, OVERT
-HEAD UM/MOD 61 C, OVERT HEAD M/MOD 62 C, OVERT
-HEAD UM* 63 C, OVERT    HEAD M* 64 C, OVERT
-HEAD << 65 C, OVERT     HEAD 2^ 66 C, OVERT     HEAD >> 67 C, OVERT
+\ HEAD 1+ 32 C, OVERT     HEAD 2+ 33 C, OVERT     HEAD 1- 34 C, OVERT
+\ HEAD 2- 35 C, OVERT     HEAD ROT 36 C, OVERT    HEAD 2DROP 37 C, OVERT
+\ HEAD 2DUP 38 C, OVERT   HEAD NIP 39 C, OVERT    HEAD TUCK 40 C, OVERT
+\ HEAD NOT 41 C, OVERT    HEAD NEGATE 42 C, OVERT HEAD DNEGATE 43 C, OVERT
+\ HEAD D+ 44 C, OVERT     HEAD - 45 C, OVERT      HEAD +! 46 C, OVERT
+\ HEAD ++ 47 C, OVERT     HEAD -- 48 C, OVERT
+\ HEAD ?DUP 49 C, OVERT   HEAD ABS 50 C, OVERT    HEAD @EXECUTE 51 C, OVERT
+\ HEAD 0= 52 C, OVERT     HEAD = 53 C, OVERT      HEAD <> 54 C, OVERT
+\ HEAD U< 55 C, OVERT     HEAD < 56 C, OVERT      HEAD > 57 C, OVERT
+\ HEAD MAX 58 C, OVERT    HEAD MIN 59 C, OVERT    HEAD WITHIN 60 C, OVERT
+\ HEAD UM/MOD 61 C, OVERT HEAD M/MOD 62 C, OVERT
+\ HEAD UM* 63 C, OVERT    HEAD M* 64 C, OVERT
+\ HEAD << 65 C, OVERT     HEAD 2^ 66 C, OVERT     HEAD >> 67 C, OVERT
 
 \ FORTH utilities
 HEAD dispatch 71 C, OVERT
@@ -185,13 +185,13 @@ $7F     CONSTANT <DEL>
  -1 CONSTANT TRUE    0 CONSTANT FALSE   32 CONSTANT BL
 
 : HERE      DP @ ;
-: ALLOT     DP +! ;
+: ALLOT     HERE + DP ! ;
 : ,         HERE ! 2 ALLOT ;
 : C,        HERE C! 1 ALLOT ;
 : call,     5 C, ;
 : PAD       HERE 80 + ;
 : LATEST    CURRENT @ @ ;
-: COMPILE   R> DUP @ , 2+ >R ;
+: COMPILE   R> DUP @ , 2 + >R ;
 : COMP-ONLY LATEST C@ $20 OR LATEST C! ;
 : IMMEDIATE LATEST C@ $40 OR LATEST C! ;
 : LITERAL   COMPILE lit , ; IMMEDIATE
@@ -216,6 +216,95 @@ $7F     CONSTANT <DEL>
 : ELSE      [COMPILE] AHEAD SWAP [COMPILE] THEN ; IMMEDIATE
 : WHEN      [COMPILE] IF OVER ; IMMEDIATE
 : WHILE     [COMPILE] IF SWAP ; IMMEDIATE
+
+\ ----------------------------------------
+\ Unoptomized lower level words
+\ (NOTE! Should be re-written as primaries)
+
+: 1+        1 + ;
+: 2+        2 + ;
+: 1-        -1 + ;
+: 2-        -2 + ;
+
+: ROT       >R SWAP R> SWAP ;
+: 2DROP     DROP DROP ;
+: 2DUP      OVER OVER ;
+: NIP       SWAP DROP ;
+: TUCK      SWAP OVER ;
+: NOT       -1 XOR ;
+: NEGATE    NOT 1+ ;
+: DNEGATE   NOT >R NOT 1 UM+ R> + ;
+: D+        >R SWAP >R UM+ R> R> + + ;
+: -         NEGATE + ;
+: +!        SWAP OVER @ + SWAP ! ;
+: ++        DUP @ 1+ SWAP ! ;
+: --        DUP @ 1- SWAP ! ;
+
+: 0=        IF FALSE EXIT THEN TRUE ;
+: =         XOR IF FALSE EXIT THEN TRUE ;
+: <>        = NOT ;
+: U<        2DUP XOR 0< IF SWAP DROP 0< EXIT THEN - 0< ;
+: <         2DUP XOR 0< IF      DROP 0< EXIT THEN - 0< ;
+: >         SWAP < ;
+: MAX       2DUP      < IF SWAP THEN DROP ;
+: MIN       2DUP SWAP < IF SWAP THEN DROP ;
+: WITHIN    OVER - >R - R> U< ;
+
+: ?DUP      DUP IF DUP THEN ;
+: ABS       DUP 0< IF NEGATE THEN ;
+: @EXECUTE  @ ?DUP IF EXECUTE THEN ;
+
+\ Unsigned mixed-precision division ( ud u -- ur uq )
+: UM/MOD
+    2DUP U<
+    IF
+        NEGATE 15
+        FOR
+            >R DUP UM+ >R >R DUP UM+ R> + DUP
+            R> R@ SWAP >R UM+ R> OR
+            IF
+                >R DROP 1 + R>
+            ELSE
+                DROP
+            THEN
+            R>
+        NEXT
+        DROP SWAP EXIT
+    THEN
+    DROP 2DROP -1 DUP ;
+
+\ Signed mixed-precision (floored) division ( d n -- r q )
+: M/MOD
+    DUP 0< DUP >R
+    IF
+        NEGATE >R DNEGATE R>
+    THEN
+    >R DUP 0<
+    IF
+        R@ +
+    THEN
+    R> UM/MOD R>
+    IF
+        SWAP NEGATE SWAP
+    THEN ;
+
+\ Unsigned mixed-precision multiplication ( u u -- ud )
+: UM*
+    0 SWAP 15
+    FOR
+        DUP UM+ >R >R DUP UM+ R> + R>
+        IF
+            >R OVER UM+ R> +
+        THEN
+    NEXT
+    ROT DROP ;
+
+\ Signed mixed-precision multiplication ( n n -- d )
+: M*
+    2DUP XOR 0< >R ABS SWAP ABS UM* R>
+    IF
+        DNEGATE
+    THEN ;
 
 \ ----------------------------------------
 \ Basic terminal I/O
@@ -423,6 +512,7 @@ $7F     CONSTANT <DEL>
 \                  0        1       3      5^
 \                                        CURRENT
 \                                        CONTEXT
+
 : voc           R> CONTEXT ! ;
 : VOCABULARY    CREATE COMPILE voc CURRENT @ 2+ , $81 C, BL C, ;
 : DEFINITIONS   CONTEXT @ CURRENT ! ;
@@ -527,28 +617,15 @@ $7F     CONSTANT <DEL>
 ' ?unique 'UNIQUE !
 
 \ ----------------------------------------
-\ SlowCorners extras
-\
-\ Simple but effective DOER .. MAKE
-
-\ : MAKE
-\     [COMPILE] ' 3 + [COMPILE] ' 1+ STATE @
-\     IF COMPILE lit , COMPILE lit , COMPILE !
-\     ELSE SWAP !
-\     THEN ; IMMEDIATE
-
-\ : doer      R> @ >R ;
-\ : DOER      CREATE COMPILE doer [ ' NOP 1+ ] LITERAL , ;
-
-\ ----------------------------------------
 \ 16-bit version of George Marsaglia's wonderful XorShift
 \ pseudo-random number generator
+\ NOTE! Requires << and >> as primitives for speed to be useful
 
-: MAXRND    SEED @ DUP 7 << XOR DUP 9 >> XOR DUP 8 << XOR DUP SEED ! ;
+\ : MAXRND    SEED @ DUP 7 << XOR DUP 9 >> XOR DUP 8 << XOR DUP SEED ! ;
 
-: SCALE     65535 SWAP 0 SWAP UM/MOD NIP ;              ( max -- divisor )
-: RND       SCALE MAXRND SWAP 0 SWAP UM/MOD NIP 1+ ;    ( max -- rnd )
-: DICE      SWAP FOR 0 AFT OVER RND + THEN NEXT NIP ;   ( n eyes -- sum )
+\ : SCALE     65535 SWAP 0 SWAP UM/MOD NIP ;              ( max -- divisor )
+\ : RND       SCALE MAXRND SWAP 0 SWAP UM/MOD NIP 1+ ;    ( max -- rnd )
+\ : DICE      SWAP FOR 0 AFT OVER RND + THEN NEXT NIP ;   ( n eyes -- sum )
 
 \ ----------------------------------------
 \ Interpret and Compile
@@ -633,9 +710,6 @@ $7F     CONSTANT <DEL>
     [ ' ?unique ] LITERAL 'UNIQUE !
     +ECHO ;
 
-\ Used by both FILE LOAD and SCREEN LOAD as "CATCH load"
-: load  BEGIN QUERY EVAL AGAIN ;
-
 : QUIT
     RP0 RP! SP0 SP!
     BEGIN
@@ -655,6 +729,9 @@ $7F     CONSTANT <DEL>
 
 VOCABULARY FORTH IMMEDIATE
 
+\ The following line is needed to activate the very first vocabulary,
+\ which in this case is FORTH. All subsequent vocabulary references
+\ will work as expected.
 ' FORTH >NAME ' FORTH 3 + !
 
 FORTH DEFINITIONS
@@ -673,370 +750,6 @@ FORTH DEFINITIONS
     [ ' dispatch ] LITERAL 'DISPATCH !
     0 L/S !
     WARM ;
-
-\ ----------------------------------------
-\ Raspberyy Pi Pico vocabulary
-
-VOCABULARY PICO IMMEDIATE
-
-PICO DEFINITIONS
-
-HEAD pi# 68 C, OVERT
-: pico#     R> @ ;
-: Pico#     CREATE COMPILE pico# pi# , ;
-
-HEAD pi() 69 C, OVERT
-: pico()    R> @ pi() ;
-: Pico()    CREATE COMPILE pico() , ;
-
-\ ----------------------------------------
-\ LittlFS file system
-
-FORTH DEFINITIONS
-
-VOCABULARY FILE IMMEDIATE
-
-FILE DEFINITIONS
-
-200 CONSTANT EXC_NOT_FOUND
-201 CONSTANT EXC_ALR_OPEN
-202 CONSTANT EXC_NOT_OPEN
-203 CONSTANT EXC_WR_ERR
-204 CONSTANT EXC_RD_ERR
-205 CONSTANT EXC_UMO_ERR
-206 CONSTANT EXC_MOU_ERR
-207 CONSTANT EXC_EOF
-208 CONSTANT EXC_SEEK
-209 CONSTANT EXC_RW_ERR
-
-$0001   CONSTANT O_RD
-$0002   CONSTANT O_WR
-$0003   CONSTANT O_RDWR
-$0100   CONSTANT O_CREAT
-$0200   CONSTANT O_EXCL
-$0400   CONSTANT O_TRUNC
-$0800   CONSTANT O_APPEND
-
-PICO
-200 Pico() del
-201 Pico() open
-202 Pico() close
-203 Pico() write
-204 Pico() read
-205 Pico() format
-206 Pico() seek
-
-HEAD DIR 70 C, OVERT
-
-: DEL       del ?DUP IF THROW THEN ;
-: OPEN      open ?DUP IF THROW THEN ;
-: CLOSE     close ?DUP IF THROW THEN ;
-: WRITE     write ?DUP IF THROW THEN ;
-: READ      read ?DUP IF THROW THEN ;
-: EXISTS    O_RD OPEN CLOSE ;
-: FORMAT    format ?DUP IF THROW THEN ;
-: SEEK      seek ?DUP IF THROW THEN ;
-
-\ tx! to file
-: file!     SP@ 1 WRITE DROP ;
-\ ?rx from file
-: ?file
-    'DISPATCH @EXECUTE
-    0 SP@ 1 READ NEGATE ?DUP
-    IF EXIT THEN EXC_EOF THROW ;
-
-: LIST
-    CR O_RD OPEN
-    BEGIN
-        CATCH ?file IF CLOSE CR EXIT THEN
-        DROP EMIT
-    AGAIN ;
-
-: LOAD
-    file>R '?KEY @ >R ( 'ECHO @ >R -ECHO )
-    [ ' ?file ] LITERAL '?KEY !
-    O_RD CATCH OPEN DUP 0= IF
-        DROP CATCH load CLOSE
-    THEN
-    ( R> 'ECHO ! ) R> '?KEY ! R>file
-    DUP EXC_EOF = IF DROP EXIT THEN THROW ;
-
-\ ----------------------------------------
-\ XMODEM File Transfer
-
-FILE DEFINITIONS
-
-VOCABULARY XMODEM IMMEDIATE
-
-XMODEM DEFINITIONS
-
-111     CONSTANT EXC_CANCEL
-112     CONSTANT EXC_SYNC_ERR
-
-VARIABLE 'ACTION
-VARIABLE P-BUFF
-VARIABLE P-NUM
-VARIABLE P-SIZE
-VARIABLE BYTES
-
-: FAILURE                                   ( -- )
-    CATCH CLOSE DROP
-    <CAN> EMIT <CAN> EMIT <CAN> EMIT
-    EXC_SYNC_ERR THROW ;
-
-: FLUSH-INPUT                               ( -- )
-    BEGIN
-        1000 ?rx/t
-    WHILE
-        DROP
-    REPEAT ;
-
-: ACCEPT    <ACK> EMIT ;
-: REJECT    FLUSH-INPUT <NAK> EMIT ;
-
-: CSUM                                      ( addr n -- csum8 )
-    0 SWAP
-    FOR AFT
-        OVER R@ + C@ +
-    THEN NEXT
-    NIP $00FF AND ;
-
-: CHECK?                                    ( -- flag )
-    P-BUFF @ 2+ P-SIZE @ 2DUP + C@ >R CSUM R> = ( packet checksum ok )
-    P-BUFF @ C@ P-BUFF @ 1+ C@ NOT $FF AND =    ( byte1 == ~byte2 )
-    AND
-    P-BUFF @ C@ P-NUM C@ =                  ( addr_byte1 == expected )
-    P-BUFF @ C@ 1+ $FF AND P-NUM C@ = OR    ( addr_byte1+1 == expected )
-    AND ;
-
-: ?CTRL-Z                                   ( addr n -- addr n' )
-    0 >R
-    BEGIN
-        R@ OVER <
-    WHILE
-        OVER R@ + C@ <CTRL-Z> = IF
-            DROP R> EXIT
-        THEN
-        R> 1+ >R
-    REPEAT
-    R> DROP ;
-
-: HANDLE-PACKET
-    CHECK? IF
-        P-BUFF @ C@ P-NUM C@ = IF
-            P-BUFF @ 2+ P-SIZE @ ?CTRL-Z WRITE
-            P-NUM C@ 1+ P-NUM C!
-            P-SIZE @ BYTES +!
-        THEN
-        ACCEPT
-    ELSE
-        REJECT
-    THEN ;
-
-: RCVE-PACKET
-    P-BUFF @ P-SIZE @ 3 +
-    FOR AFT                             ( addr ) 
-        1000 ?rx/t IF                   ( addr ch )
-            OVER C! 1+                  ( addr+1 )
-        ELSE
-            REJECT R> 2DROP FALSE EXIT  ( skip loop counter and address )
-        THEN
-    THEN NEXT DROP TRUE ;
-
-: RCVE      RCVE-PACKET IF HANDLE-PACKET THEN ;
-
-: DONE
-    FLUSH-INPUT ACCEPT ACCEPT
-    CATCH CLOSE DROP
-    R> DROP ;                           ( Also exit calling word )
-
-: CANCEL
-    ACCEPT FLUSH-INPUT
-    CATCH CLOSE DROP
-    EXC_CANCEL THROW ;
-
-: PROBE
-    [ ' FAILURE ] LITERAL 'ACTION !
-    32 FOR AFT
-        <NAK> EMIT
-        1000 ?rx/t IF
-            DUP <SOH> = IF
-                128 P-SIZE ! [ ' RCVE ] LITERAL 'ACTION !
-            ELSE
-                DUP <STX> = IF
-                    1024 P-SIZE ! [ ' RCVE ] LITERAL 'ACTION !
-                ELSE
-                    DUP <EOT> = IF
-                        [ ' DONE ] LITERAL 'ACTION !
-                    ELSE
-                        DUP <CAN> = IF
-                            [ ' CANCEL ] LITERAL 'ACTION !
-                        THEN
-                    THEN
-                THEN
-            THEN
-            R> 2DROP EXIT
-        THEN
-    THEN NEXT
-    FAILURE ;
-
-: RECEIVE
-    O_WR O_CREAT O_TRUNC OR OR CATCH OPEN IF FAILURE THEN
-    FIRST P-BUFF !
-    1 P-NUM !
-    0 BYTES !
-    BEGIN
-        PROBE 'ACTION @EXECUTE
-    AGAIN
-;
-
-FORTH DEFINITIONS FILE
-
-: R/W
-    \ ." R/W: " U. U. U. EXIT
-    file>R " FORTH.DAT" O_RDWR OPEN
-    SWAP SEEK IF B/BUF READ DROP ELSE B/BUF WRITE B/BUF THEN
-    CLOSE R>file
-;
-
-\ ----------------------------------------
-\ FORTH SCREEN I/O
-
-VOCABULARY SCREEN IMMEDIATE
-
-SCREEN DEFINITIONS
-
-107 CONSTANT EXC_EOSCR
-
-: +BUF                 ( addr1 -- addr flag )
-    B/BUF 10 + +
-    DUP LIMIT =
-    IF DROP FIRST THEN
-    DUP PREV @ <>
-;
-
-: BUFFER                ( n -- addr )
-    USE @ DUP >R
-    BEGIN +BUF UNTIL
-    USE ! R@ @ 0<
-    IF R@ 2+ R@ @ $7FFF AND 0 R/W THEN
-    R@ ! R@ PREV ! R> 2+ ;
-
-: UPDATE    PREV @ @ $8000 OR PREV @ ! ;
-
-: DISCARD
-    FIRST LIMIT OVER - 0 FILL ;
-
-: FLUSH
-    LIMIT FIRST - B/BUF / FOR 0 BUFFER DROP NEXT ;
-
-: BLOCK                 ( n -- addr )
-    >R
-    PREV @ DUP @        ( prev blk# )
-    R@ - DUP +
-    IF
-        BEGIN
-            +BUF 0=
-            IF
-                DROP R@ BUFFER DUP R@ 1 R/W 2-
-            THEN
-            DUP @ R@ - DUP + 0=
-        UNTIL
-        DUP PREV !
-    THEN
-    R> DROP 2+ ;
-
-: line                      ( line screen -- addr count )
-    BLOCK SWAP C/L * + C/L ;
-
-: LIST                   ( n -- )
-    CR 15
-    FOR
-        15 R@ - DUP 2 .R SPACE OVER line -TRIM TYPE CR
-    NEXT
-    DROP ;
-
-: INDEX                 ( start end -- )
-    CR OVER -
-    FOR
-        DUP 3 .R SPACE 0 OVER line -TRIM TYPE CR 1+
-    NEXT
-    DROP ;
-
-: CLEAR                 ( start end -- )
-    1+ SWAP
-    BEGIN
-        2DUP = IF 2DROP FLUSH EXIT THEN
-        DUP BLOCK B/BUF BL FILL UPDATE 1+
-    AGAIN ;
-
-: <nl>      SCR# @ NEGATE SCR# ! ;
-: line#     POS# @ C/L / ;
-: col#      POS# @ C/L MOD ;
-: #rest     C/L col# - ;
-
-: ?scr
-    SCR# @ 0< IF <nl> NL TRUE EXIT THEN
-    POS# @ B/BUF <
-    IF
-        SCR# @ BLOCK POS# @ + #rest -TRIM
-        IF
-            POS# ++ C@
-            DUP 0= IF EXC_EOSCR THROW THEN
-            col# 0= IF <nl> THEN
-        ELSE
-            DROP #rest POS# +! NL
-        THEN
-        TRUE
-    ELSE
-        EXC_EOSCR THROW
-    THEN ;
-
-: LOAD
-    '?KEY @ >R 'ECHO @ >R SCR# @ >R POS# @ >R
-    SCR# ! 0 POS# ! [ ' ?scr ] LITERAL '?KEY ! -ECHO
-    CATCH load
-    R> POS# ! R> SCR# ! R> 'ECHO ! R> '?KEY ! 
-    DUP EXC_EOSCR = IF DROP EXIT THEN
-    THROW ;
-
-: FORMAT
-    file>R FILE " FORTH.DAT" O_WR O_CREAT O_TRUNC OR OR OPEN
-    FOR AFT
-        1024 FOR AFT BL file! THEN NEXT
-        ASCII . ECHO
-    THEN NEXT
-    CLOSE R>file ;
-
-\ ----------------------------------------
-\ Multitasker
-
-\ TASK:
-\ +--------+--------+--------+
-\ | Ticker |   ca   |  next  |
-\ +--------+--------+--------+
-\  0        2        4
-
-FORTH DEFINITIONS
-
-: task      R> ;
-: TASK      CREATE COMPILE task 0 , [ ' NOP ] LITERAL , 0 , ;
-
-: >QUEUE                    ( taddr -- )
-    0 OVER 4 + ! TASKS
-    BEGIN DUP @ 0= IF ! EXIT THEN @ 4 +
-    AGAIN ;
-
-: RUNS      ' SWAP 2+ ! ;
-: AFTER     DUP >R ! R> >QUEUE ;            ( delay taddr -- )
-: START     0 SWAP AFTER ;                  ( taddr -- )
-: STAT      TASKS @ OVER 4 + ! TASKS ! ;    ( taddr -- )
-
-: STOP                                      ( taddr -- )
-    TASKS
-    BEGIN 2DUP @ DUP
-    WHILE = IF SWAP 4 + @ SWAP ! EXIT THEN @ 4 +
-    REPEAT 2DROP 2DROP ;
 
 \ ----------------------------------------
 \ FORGET with built-in FENCE
@@ -1072,13 +785,5 @@ HERE 30 !                   \ 30: DP0
                             \ 34: -
                             \ 36: -
                             \ 38: -
-
-\ ----------------------------------------
-\ Make "dangerous" primitives compile-only
-
-' file>R >NAME DUP C@ $20 OR SWAP C!
-' R>file >NAME DUP C@ $20 OR SWAP C!
-
-
 
 \ End of FORTH.FTH

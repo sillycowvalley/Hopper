@@ -796,6 +796,7 @@ def compile_FORTH():
     # Compile FORTH.FTH
     for source_line in source_file:
         line_num += 1
+        # DEBUG
         #print(line_num, end = ' ')
         #print('-' * 24)
         #print('Now on line %d with DP=%04.4X' % (line_num, ldw(UVAR_DP)))
@@ -885,6 +886,8 @@ def list_words():
     for msg in msgs:
         lstFile.write('%s\n' % msg)
         print(msg)
+    lstFile.write('Total ROM sixe: %d bytes.\n' % ldw(UVAR_DP))
+    print('Total ROM sixe: %d bytes.' % ldw(UVAR_DP))
     lstFile.close()
 
 # ----------------------------------------------------------------------
