@@ -45,10 +45,11 @@ namespace HopperNET
         internal static void Die(int lastError, Runtime runtime)
         {
             // TODO LARS: we should figure out why we ever arrive here with runtime == null ...
-            //if (runtime == null) 
-            //{ 
-            //    return; 
-            //}  
+            if (runtime == null) 
+            {
+                int why = 0;
+                //return; 
+            }  
 
             StringBuilder sb = new StringBuilder();
 

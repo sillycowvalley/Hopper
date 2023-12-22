@@ -220,11 +220,11 @@ namespace HopperNET
             }
             catch (HttpRequestException /*ex*/)
             {
-                //int wtf = 0;
+                //int why = 0;
             }
             catch (Exception /*ex*/)
             {
-                //int wtf = 0;
+                //int why = 0;
             }
             return success;
         }

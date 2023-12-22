@@ -1270,7 +1270,7 @@ namespace HopperNET
                 instructionPC = pc;
                 if (pc == 0x10E7)
                 {
-                    //int wtf = 0;
+                    //int why = 0;
                 }
                 if (!inISR && (currentISR != 0))
                 {
