@@ -552,8 +552,7 @@ unit Types
                 }
                 else
                 {
-                    PrintLn(typeName);
-                    Die(0x0A);
+                    Parser.ErrorAtCurrent("byte cast not implemented for '" + typeName + "'");
                 }
             }
         }
