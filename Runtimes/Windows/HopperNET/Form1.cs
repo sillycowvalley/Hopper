@@ -15,7 +15,7 @@ namespace HopperNET
         public Hopper()
         {
             InitializeComponent();
-            this.ClientSize = new Size((int)Console.CanvasWidth, (int)Console.CanvasHeight);
+            this.ClientSize = new System.Drawing.Size((int)Console.CanvasWidth, (int)Console.CanvasHeight);
 
             string versionName =  FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
 
@@ -77,9 +77,9 @@ namespace HopperNET
 
         private void Hopper_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if ((Control.ModifierKeys == Keys.Alt) || (Control.ModifierKeys == Keys.F4))
+            if ((Hopper.ModifierKeys == Keys.Alt) || (Hopper.ModifierKeys == Keys.F4)) // <-- this looks like a mistake?
             {
-                e.Cancel = true;
+                e.Cancel = true; // we don't want <Alt><F4> to close the main window (by mistake)
                 return;
             }
             Exiting = true;
@@ -126,53 +126,49 @@ namespace HopperNET
             }
 
             //TODO
-
+            /*
             Key modifiers = Key.NoKey;
+            Keys currentModifierState = Hopper.ModifierKeys;
 
-            if ((Hopper.ModifierKeys & Keys.Shift) != 0)
+            if ((currentModifierState & Keys.Shift) != 0)
             {
                 modifiers |= Key.Shift;
             }
-            if ((Hopper.ModifierKeys & Keys.Control) != 0)
+            if ((currentModifierState & Keys.Control) != 0)
             {
                 modifiers |= Key.Control;
             }
-            if ((Hopper.ModifierKeys & Keys.Alt) != 0)
+            if ((currentModifierState & Keys.Alt) != 0)
             {
                 modifiers |= Key.Alt;
             }
 
-            Key myKey = Keyboard.TranslateCtrlToHopperKey(e.KeyCode, modifiers);
+            var key = Keyboard.TranslateCtrlToHopperKey(e.KeyCode, modifiers);
 
-            e.SuppressKeyPress = e.Handled = Keyboard.PushToKeyboardBuffer(myKey); 
+            e.SuppressKeyPress = e.Handled = Keyboard.PushToKeyboardBuffer(key); 
+            */
         }
 
         private void Hopper_KeyPress(object sender, KeyPressEventArgs e)
         {
-            var ctrl = Control.ModifierKeys;
-
+            Keys currentModifierState = Hopper.ModifierKeys;
             Key modifiers = Key.NoKey;
-
-            if ((ctrl & Keys.Shift) != 0)
+            if ((currentModifierState & Keys.Shift) != 0)
             {
                 modifiers |= Key.Shift;
             }
-            if ((ctrl & Keys.Control) != 0)
+            if ((currentModifierState & Keys.Control) != 0)
             {
                 modifiers |= Key.Control;
             }
-            if ((ctrl & Keys.Alt) != 0)
+            if ((currentModifierState & Keys.Alt) != 0)
             {
                 modifiers |= Key.Alt;
             }
 
             var key = Keyboard.TranslateAsciiToHopperKey(e.KeyChar, modifiers);
 
-            if (key == Key.NoKey)
-                return;
-
-            e.Handled = true; 
-            Keyboard.PushToKeyboardBuffer(key);
+            e.Handled = Keyboard.PushToKeyboardBuffer(key); 
         }
 
         private void Hopper_KeyDown(object sender, KeyEventArgs e)
@@ -181,6 +177,26 @@ namespace HopperNET
             {
                 e.SuppressKeyPress = true;
             }
+
+            Key modifiers = Key.NoKey;
+            Keys currentModifierState = Hopper.ModifierKeys;
+
+            if ((currentModifierState & Keys.Shift) != 0)
+            {
+                modifiers |= Key.Shift;
+            }
+            if ((currentModifierState & Keys.Control) != 0)
+            {
+                modifiers |= Key.Control;
+            }
+            if ((currentModifierState & Keys.Alt) != 0)
+            {
+                modifiers |= Key.Alt;
+            }
+
+            var key = Keyboard.TranslateCtrlToHopperKey(e.KeyCode, modifiers);
+
+            e.SuppressKeyPress = e.Handled = Keyboard.PushToKeyboardBuffer(key);
         }
 
         delegate bool hasClipboardText();

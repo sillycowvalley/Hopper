@@ -8,6 +8,159 @@ unit Constant
     uses "/Source/Compiler/Tokens/Parser"
     uses "/Source/Compiler/Symbols"
     uses "/Source/Compiler/Types"
+    
+    string constantOperation(string leftValue, string rightValue, string typeExpected, HopperToken operation)
+    {
+        string result;
+        long   lresult;
+        float  fresult;
+        string message = typeExpected + "." + HopperTokenToString(operation) + "(" + leftValue + ", " + rightValue + ")";
+        loop
+        {
+            switch (typeExpected)
+            {
+                case "float":
+                {
+                    float left;
+                    float right;
+                    if (!Float.TryParse(leftValue, ref left) || !Float.TryParse(rightValue, ref right))
+                    {
+                        Parser.ErrorAtCurrent(message + " failed");
+                    } 
+                    switch (operation)
+                    {
+                        case HopperToken.Add:
+                        {
+                            fresult = left + right;
+                        }
+                        case HopperToken.Subtract:
+                        {
+                            fresult = left - right;
+                        }
+                        case HopperToken.Multiply:
+                        {
+                            fresult = left * right;
+                        }
+                        case HopperToken.Divide:
+                        {
+                            if (right == 0)
+                            {
+                                Parser.ErrorAtCurrent("division by zero in constant");
+                            }
+                            else
+                            {
+                                fresult = left / right;
+                            }
+                        }
+                        default:
+                        {
+                            Parser.ErrorAtCurrent(message + " not implemented");
+                        }
+                    }
+                    
+                }
+                case "byte":
+                case "uint":
+                case "int":
+                case "long":
+                {
+                    long left;
+                    long right;
+                    if (!Long.TryParse(leftValue, ref left) || !Long.TryParse(rightValue, ref right))
+                    {
+                        Parser.ErrorAtCurrent(message + " failed");
+                    } 
+                    switch (operation)
+                    {
+                        case HopperToken.Add:
+                        {
+                            lresult = left + right;
+                        }
+                        case HopperToken.Subtract:
+                        {
+                            lresult = left - right;
+                        }
+                        case HopperToken.Multiply:
+                        {
+                            lresult = left * right;
+                        }
+                        case HopperToken.Divide:
+                        {
+                            if (right == 0)
+                            {
+                                Parser.ErrorAtCurrent("division by zero in constant");
+                            }
+                            else
+                            {
+                                lresult = left / right;
+                            }
+                        }
+                        case HopperToken.Modulus:
+                        {
+                            if (right == 0)
+                            {
+                                Parser.ErrorAtCurrent("division by zero in constant");
+                            }
+                            else
+                            {
+                                lresult = left % right;
+                            }
+                        }
+                        default:
+                        {
+                            Parser.ErrorAtCurrent(message + " not implemented");
+                        }
+                    }
+                }
+                default:
+                {
+                    Parser.ErrorAtCurrent(message + " not implemented");
+                }
+            }
+            if (Parser.HadError)
+            {
+                break;
+            }
+        
+            if (typeExpected == "byte")
+            {
+                if ((lresult < 0) || (lresult > 255))
+                {
+                    Parser.ErrorAtCurrent("'byte' constant out of range");           
+                    break;
+                }
+                result = lresult.ToString();
+            }
+            else if (typeExpected == "int")
+            {
+                if ((lresult < -32768) || (lresult > 32767))
+                {
+                    Parser.ErrorAtCurrent("'int' constant out of range");           
+                    break;
+                }
+                result = lresult.ToString();
+            }
+            else if (typeExpected == "uint")
+            {
+                if ((lresult < 0) || (lresult > 0xFFFF))
+                {
+                    Parser.ErrorAtCurrent("'uint' constant out of range");           
+                    break;
+                }
+                result = lresult.ToString();    
+            }
+            else if (typeExpected == "long")
+            {
+                result = lresult.ToString();
+            }
+            else if (typeExpected == "float")
+            {
+                result = fresult.ToString();
+            }
+            break;
+        } // loop
+        return result;
+    }
 
     string parseConstantPrimary(string typeExpected)
     {
@@ -284,6 +437,17 @@ unit Constant
                         break;           
                     }
                 }
+                case HopperToken.LParen:
+                {
+                    Parser.Advance(); // (
+                    value = ParseConstantExpression(typeExpected);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    Parser.Consume(HopperToken.RParen, ')');
+                    actualType = typeExpected;
+                }
                 default:
                 {
                     Parser.ErrorAtCurrent("constant expected");
@@ -320,9 +484,110 @@ unit Constant
         return value;
     }
     
+    string parseConstantFactor(string typeExpected)
+    {
+        string value;
+        loop
+        {
+            value = parseConstantPrimary(typeExpected);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            loop
+            {
+                if (Parser.Check(HopperToken.Multiply) || Parser.Check(HopperToken.Divide) || Parser.Check(HopperToken.Modulus))
+                {
+                    <string,string> operationToken = Parser.CurrentToken;
+                    HopperToken operation = Token.GetType(operationToken);
+                    
+                    if (!Types.IsNumericType(typeExpected))
+                    {
+                        if ((operation == HopperToken.Modulus) && (typeExpected == "float"))
+                        {
+                            Parser.ErrorAtCurrent("modulus operation not legal for 'float'");
+                        }
+                        else
+                        {
+                            Parser.ErrorAtCurrent("multiply, divide and modulus operations only legal for numeric types");
+                            break;
+                        }
+                    }
+                    Advance(); // *, /, %
+                    
+                    string rightValue = parseConstantPrimary(typeExpected);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    value = constantOperation(value, rightValue, typeExpected, operation);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    continue;
+                }
+                break;
+            } // loop
+            break;
+        } // loop
+        return value;
+    }
+                    
+    
+    string parseConstantTerm(string typeExpected)
+    {
+        string value;
+        loop
+        {
+            value = parseConstantFactor(typeExpected);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            loop
+            {
+                if (Parser.Check(HopperToken.Add) || Parser.Check(HopperToken.Subtract))
+                {
+                    <string,string> operationToken = Parser.CurrentToken;
+                    HopperToken operation = Token.GetType(operationToken);
+                    
+                    if (!Types.IsNumericType(typeExpected))
+                    {
+                        if ((operation == HopperToken.Add) && ((typeExpected == "string") || (typeExpected == "char")))
+                        {
+                            // ok
+                        }
+                        else
+                        {
+                            Parser.ErrorAtCurrent("add and subtract operations only legal for numeric types");
+                            break;
+                        }
+                    }
+                    Advance(); // +, -
+                    
+                    string rightValue = parseConstantFactor(typeExpected);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    value = constantOperation(value, rightValue, typeExpected, operation);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    continue;
+                }
+                break;
+            } // loop
+            break;
+        } // loop
+        return value;
+    }
+    
     string ParseConstantExpression(string typeExpected)
     {
-        return parseConstantPrimary(typeExpected);
+        return parseConstantTerm(typeExpected);
     }
 
 }
