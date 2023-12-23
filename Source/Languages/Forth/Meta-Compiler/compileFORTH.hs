@@ -47,9 +47,6 @@ SOFTWARE.
 //     Not ideal in terms of performance but we'll think of a better way later ...
 //   - for the return value of findWord I return a <uint> (list of uints). Works if the members of the tuple are the same type.
 //
-// - I could have hacked the constant expressions but I decided to leave them and implement constant expressions in Hopper
-//   so that's the remaining unimplemented part of this sample for now (search for "TODO")
-//
 // - no underscores in identifiers is a bit of a pain when the existing code has tons of them
 //
 // - in theory, identifiers starting with uppercase are public. It doesn't really matter except for me being very familiar
@@ -66,11 +63,11 @@ SOFTWARE.
 // - I would not trust some of the 'signed' arithmetic operations without testing them first.
 
 
-//#define SERIALCONSOLE
-
-
 program CompilerFORTH
 {
+
+    #define SERIALCONSOLE
+    
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     uses "/Source/System/IO"
@@ -106,9 +103,9 @@ program CompilerFORTH
     const uint FALSE = 0x0000;
     
     // Input and output files
-    const string forthFTH = "FORTH.FTH";
-    const string forthPreCompiledHS  = "Precompiled.hs";
-    const string forthPreCompiledLST = "Precompiled.lst";
+    const string forthFTH = "/Source/Languages/FORTH/meta-compiler/FORTH.FTH";
+    const string forthPreCompiledHS  = "/Source/Languages/FORTH/meta-compiler/PrecompiledB.hs";
+    const string forthPreCompiledLST = "/Source/Languages/FORTH/meta-compiler/Precompiled.lst";
     
     // Sizes of various areas
     const long memSize    = 0x8000;
@@ -118,41 +115,30 @@ program CompilerFORTH
     const uint PADSize    = 66;
     const uint stackSize  = 256;
     const uint rstackSize = 256;
-    const uint dskBfSize  = 0; // TODO bBuf + 10;
+    const uint dskBfSize  = bBuf + 10;
     const uint dskBfNum   = 3;
     const uint bootSize   = 40;
     
     // Memory Map
-    const uint mmEnd = 0; // TODO memSize - 1;
+    const uint mmEnd = memSize - 1;
     const uint endBf = mmEnd;
-    const uint dskBf = 0; // TODO (endBf - (dskBfNum * dskBfSize));
-    const uint UA0 = 0; // TODO dskBf - UAreaSize;
-    const uint TIB0 = 0; // TODO UA0 - TIBSize;
+    const uint dskBf = (endBf - (dskBfNum * dskBfSize));
+    const uint UA0 = dskBf - UAreaSize;
+    const uint TIB0 = UA0 - TIBSize;
     const uint RP0 = TIB0;
-    const uint SP0 = 0; // TODO RP0 - rstackSize;
+    const uint SP0 = RP0 - rstackSize;
     
     // USER VARIABLES
-    // TODO
-    //const uint uVarSTATE = UA0 + 0;   const uint uVarBASE = UA0 + 2;    const uint uVarCONT = UA0 + 4;    const uint uVarCURR = UA0 + 6;
-    //const uint uVarDP = UA0 + 8;      const uint uVarOUT = UA0 + 10;    const uint uVarHLD = UA0 + 12;    const uint uVarNTIB = UA0 + 14;
-    //const uint uVarSPAN = UA0 + 16;   const uint uVarINPTR = UA0 + 18;  const uint uVarCSP = UA0 + 20;    const uint uVarHNDLR = UA0 + 22;
-    //const uint uVarLATES = UA0 + 24;  const uint uVarTMP = UA0 + 26;    const uint uVarVQKEY = UA0 + 28;  const uint uVarVEMIT = UA0 + 30;
-    //const uint uVarVECHO = UA0 + 32;  const uint uVarVEXPE = UA0 + 34;  const uint uVarVTAP = UA0 + 36;   const uint uVarVPRMP = UA0 + 38;
-    //const uint uVarVEVAL = UA0 + 40;  const uint uVarVNUMB = UA0 + 42;  const uint uVarSEED = UA0 + 44;   const uint uVarVUNIQ = UA0 + 46;
-    //const uint uVarNP = UA0 + 48;     const uint uVarVDISP = UA0 + 50;  const uint uVarTASKS = UA0 + 52;  const uint uVarALOAD = UA0 + 54;
-    //const uint uVarSCRN = UA0 + 56;   const uint uVarPOSN = UA0 + 58;   const uint uVarCURN = UA0 + 60;   const uint uVarLPS = UA0 + 62;
-    //const uint uVarLINES = UA0 + 64;  const uint uVarUSE = UA0 + 66;    const uint uVarPREV = UA0 + 68;   const uint uVarVUNIQ = UA0 + 70;
-    //const uint uVarFSYS = UA0 + 72;   const uint uVarFILE = UA0 + 74;   const uint uVarFILE2 = UA0 + 76;  const uint uVarTICKS = UA0 + 78;
-    const uint uVarSTATE = 0;   const uint uVarBASE = 2;    const uint uVarCONT = 4;    const uint uVarCURR = 6;
-    const uint uVarDP = 8;      const uint uVarOUT = 10;    const uint uVarHLD = 12;    const uint uVarNTIB = 14;
-    const uint uVarSPAN = 16;   const uint uVarINPTR = 18;  const uint uVarCSP = 20;    const uint uVarHNDLR = 22;
-    const uint uVarLATES = 24;  const uint uVarTMP = 26;    const uint uVarVQKEY = 28;  const uint uVarVEMIT = 30;
-    const uint uVarVECHO = 32;  const uint uVarVEXPE = 34;  const uint uVarVTAP = 36;   const uint uVarVPRMP = 38;
-    const uint uVarVEVAL = 40;  const uint uVarVNUMB = 42;  const uint uVarSEED = 44;   const uint uVarVUNIQ = 46;
-    const uint uVarNP = 48;     const uint uVarVDISP = 50;  const uint uVarTASKS = 52;  const uint uVarALOAD = 54;
-    const uint uVarSCRN = 56;   const uint uVarPOSN = 58;   const uint uVarCURN = 60;   const uint uVarLPS = 62;
-    const uint uVarLINES = 64;  const uint uVarUSE = 66;    const uint uVarPREV = 68;   const uint uVarVUNIQ = 70;
-    const uint uVarFSYS = 72;   const uint uVarFILE = 74;   const uint uVarFILE2 = 76;  const uint uVarTICKS = 78;
+    const uint uVarSTATE = UA0 + 0;   const uint uVarBASE = UA0 + 2;    const uint uVarCONT = UA0 + 4;    const uint uVarCURR = UA0 + 6;
+    const uint uVarDP = UA0 + 8;      const uint uVarOUT = UA0 + 10;    const uint uVarHLD = UA0 + 12;    const uint uVarNTIB = UA0 + 14;
+    const uint uVarSPAN = UA0 + 16;   const uint uVarINPTR = UA0 + 18;  const uint uVarCSP = UA0 + 20;    const uint uVarHNDLR = UA0 + 22;
+    const uint uVarLATES = UA0 + 24;  const uint uVarTMP = UA0 + 26;    const uint uVarVQKEY = UA0 + 28;  const uint uVarVEMIT = UA0 + 30;
+    const uint uVarVECHO = UA0 + 32;  const uint uVarVEXPE = UA0 + 34;  const uint uVarVTAP = UA0 + 36;   const uint uVarVPRMP = UA0 + 38;
+    const uint uVarVEVAL = UA0 + 40;  const uint uVarVNUMB = UA0 + 42;  const uint uVarSEED = UA0 + 44;   const uint uVarVUNIQ = UA0 + 46;
+    const uint uVarNP = UA0 + 48;     const uint uVarVDISP = UA0 + 50;  const uint uVarTASKS = UA0 + 52;  const uint uVarALOAD = UA0 + 54;
+    const uint uVarSCRN = UA0 + 56;   const uint uVarPOSN = UA0 + 58;   const uint uVarCURN = UA0 + 60;   const uint uVarLPS = UA0 + 62;
+    const uint uVarLINES = UA0 + 64;  const uint uVarUSE = UA0 + 66;    const uint uVarPREV = UA0 + 68;   const uint uVarVUNIQ = UA0 + 70;
+    const uint uVarFSYS = UA0 + 72;   const uint uVarFILE = UA0 + 74;   const uint uVarFILE2 = UA0 + 76;  const uint uVarTICKS = UA0 + 78;
     
     // BOOT TABLE
     const uint bootCOLD = 0;          const uint bootWARM = 2;          const uint bootfree5 = 4;         const uint bootfree6 = 6;
@@ -935,13 +921,13 @@ program CompilerFORTH
     DOTH()
     {
         uint h = pop();
-        Print(" " + h.ToHexString(4) + " ");
+        Write(" " + h.ToHexString(4) + " ");
     }
 
     DOTD()
     {
         uint d = pop();
-        Print(" " + d.ToString() + " ");
+        Write(" " + d.ToString() + " ");
     }
 
     temp(string name, WordDelegate function, byte flgs)
@@ -988,7 +974,7 @@ program CompilerFORTH
         msgs.Append(txt);
         foreach (var msg in msgs)
         {
-            PrintLn(msg);
+            WriteLn(msg);
         }
         Diagnostics.Die(0x0B);
     }
@@ -1323,35 +1309,35 @@ program CompilerFORTH
         file lstFile = File.Create(forthPreCompiledLST);
         uint wrk = ldw(ldw(uVarCONT));
         lstFile.Append("" + char(0x0A));
-        PrintLn();
+        WriteLn();
         foreach (var msg in msgs)
         {
             lstFile.Append(msg + char(0x0A));
-            PrintLn(msg);
+            WriteLn(msg);
         }
         while (wrk != 0)
         {
             if ((nwds % 3) == 0)
             {
                 lstFile.Append("" + char(0x0A));
-                PrintLn();
+                WriteLn();
             }
             string fName = FORTHname(wrk);
             lstFile.Append(fName.Pad(' ', 14) + wrk.ToHexString(4));
-            Print(fName.Pad(' ', 14) + wrk.ToHexString(4));
+            Write(fName.Pad(' ', 14) + wrk.ToHexString(4));
             wrk = ldw(wrk - 2);
             nwds++;
         }
-        PrintLn();
+        WriteLn();
         lstFile.Append(char(0x0A) + nwds.ToString() + " words." + char(0x0A) + dump(0, ldw(uVarDP))+ char(0x0A));
-        Print(char(0x0A) + nwds.ToString() + " words." + char(0x0A) + dump(0, ldw(uVarDP))+ char(0x0A));
+        Write(char(0x0A) + nwds.ToString() + " words." + char(0x0A) + dump(0, ldw(uVarDP))+ char(0x0A));
         foreach(var msg in msgs)
         {
             lstFile.Append(msg + char(0x0A));
-            PrintLn(msg);
+            WriteLn(msg);
         }
         lstFile.Append("Total ROM size: " + (ldw(uVarDP)).ToString() +" bytes." + char(0x0A));
-        PrintLn("Total ROM size: " + (ldw(uVarDP)).ToString() +" bytes.");
+        WriteLn("Total ROM size: " + (ldw(uVarDP)).ToString() +" bytes.");
         lstFile.Flush();
     }
     
