@@ -63,10 +63,7 @@ unit Highlighter
         uint colour;
         
         uint length = ln.Length;
-        
         string word;
-        
-        
         uint i=0;
         loop 
         {
@@ -89,6 +86,15 @@ unit Highlighter
                 }
             case '"':
                 {
+                    if (word.Length > 0)
+                    {
+                        colour = HopperWord(word);
+                        foreach (var ch in word)
+                        {
+                            colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                        }
+                        word = "";
+                    }
                     uint strLength = 1; // opening "
                     loop
                     {
@@ -116,6 +122,15 @@ unit Highlighter
                 }
             case '\'':
                 {
+                    if (word.Length > 0)
+                    {
+                        colour = HopperWord(word);
+                        foreach (var ch in word)
+                        {
+                            colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                        }
+                        word = "";
+                    }
                     word += c;
                     // process 'x' or '\x'
                     uint charLength = 1; // opening '
@@ -142,16 +157,6 @@ unit Highlighter
                     word = "";
                     i++;
                     continue;
-                }
-            case '\\':
-                {
-                    word = word + c;
-                    colour = HopperWord(word);
-                    foreach (var ch in word)
-                    {
-                        colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
-                    }
-                    word = "";
                 }
             default:
                 {
