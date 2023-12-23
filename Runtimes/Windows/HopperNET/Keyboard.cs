@@ -422,19 +422,20 @@ namespace HopperNET
             
 
             Key key = Key.Click;
+            Keys currentModifierState = Hopper.ModifierKeys;
             if (e.Button == MouseButtons.Right)
             {
                 key = Key.ClickRight;
             }
-            if ((Hopper.ModifierKeys & Keys.Shift) != 0)
+            if ((currentModifierState & Keys.Shift) != 0)
             {
                 key |= Key.Shift;
             }
-            if ((Hopper.ModifierKeys & Keys.Control) != 0)
+            if ((currentModifierState & Keys.Control) != 0)
             {
                 key |= Key.Control;
             }
-            if ((Hopper.ModifierKeys & Keys.Alt) != 0)
+            if ((currentModifierState & Keys.Alt) != 0)
             {
                 key |= Key.Alt;
             }
@@ -452,16 +453,18 @@ namespace HopperNET
             clickArgs.scrollDelta = (short)(e.Delta / 120); // WHEEL_DELTA
             clickArgs.clickUp = false;
             clickArgs.clickDouble = false;
+
             Key key = Key.Scroll;
-            if ((Hopper.ModifierKeys & Keys.Shift) != 0)
+            Keys currentModifierState = Hopper.ModifierKeys;
+            if ((currentModifierState & Keys.Shift) != 0)
             {
                 key = (key | Key.Shift);
             }
-            if ((Hopper.ModifierKeys & Keys.Control) != 0)
+            if ((currentModifierState & Keys.Control) != 0)
             {
                 key = (key | Key.Control);
             }
-            if ((Hopper.ModifierKeys & Keys.Alt) != 0)
+            if ((currentModifierState & Keys.Alt) != 0)
             {
                 key = (key | Key.Alt);
             }

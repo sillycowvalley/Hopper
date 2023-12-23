@@ -840,9 +840,10 @@ program PreProcess
         } // loop
     }
     
-    declaration(ref uint curlyDeclarations)
+    declaration(ref uint curlyDeclarations, ref string lastID)
     {
         bool isDelegate;
+        lastID = "";
         if (Parser.Check(HopperToken.Keyword, "delegate"))
         {
             isDelegate = true;
@@ -954,6 +955,7 @@ program PreProcess
                         if (Parser.Check(HopperToken.Identifier) || Parser.Check(HopperToken.DottedIdentifier))
                         {
                             idToken = Parser.CurrentToken;
+                            lastID = idToken["lexeme"];
                             Parser.Advance();
                             if (Parser.Check(HopperToken.LParen))
                             {
@@ -985,6 +987,7 @@ program PreProcess
                     else if (Parser.Check(HopperToken.Identifier) || Parser.Check(HopperToken.DottedIdentifier))
                     {
                         idToken = Parser.CurrentToken;
+                        lastID = idToken["lexeme"];
                         Parser.Advance();
                         if (Parser.Check(HopperToken.Identifier) || Parser.Check(HopperToken.DottedIdentifier))
                         {
@@ -1113,6 +1116,7 @@ program PreProcess
           firstUnit = false;
           bool endedProperly = false;
           uint curlyDeclarations;
+          string lastID;
           loop
           {
               if (Parser.Check(HopperToken.EOF))
@@ -1129,7 +1133,7 @@ program PreProcess
                   success = false;
                   break;
               }
-              declaration(ref curlyDeclarations);
+              declaration(ref curlyDeclarations, ref lastID);
               if (Parser.HadError)
               {
                   success = false;
@@ -1145,7 +1149,12 @@ program PreProcess
           else if (!endedProperly)
           {
               // can't "Consume" at the end of the file
-              Parser.Error('}');
+              string message = "'}' expected";
+              if (lastID.Length > 0)
+              {
+                  message = " missing '}', opening '{' in " + lastID;
+              }
+              Parser.Error(message);
               success = false;
           }
           else
