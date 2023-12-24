@@ -11,6 +11,8 @@ unit Monitor
     const byte is8BitStack     = 0x08;
     const byte isProfileBuild  = 0x10;
     const byte isBreakpointSet = 0x20;
+    const byte isSingleStep    = 0x40;
+    const byte isMCUPlatform   = 0x80;
     
     bool collectOutput;
     string serialOutput;
@@ -332,6 +334,79 @@ unit Monitor
         return 0;
     }
     
+    UploadFile(string localPath, string remoteFolder)
+    {
+        Pages.ClearPageData(); // just to be sure
+        loop
+        {
+            if (!remoteFolder.StartsWith('/'))
+            {
+                remoteFolder = '/' + remoteFolder;
+            }
+            sendCommand("T"); // waits for \ confirmation
+            
+            // destination name
+            string filePath = Path.Combine(remoteFolder, Path.GetFileName(localPath));
+            foreach (var ch in filePath)
+            {
+                SerialWriteChar(ch); 
+            }
+            SerialWriteChar(char(0x0D));
+            if (!checkEcho(true)) // waits for \ confirmation    
+            {
+                Output.Print("  Failed to upload '" + filePath + "'");
+                break;
+            }
+            
+            // destination folder
+            foreach (var ch in remoteFolder)
+            {
+                SerialWriteChar(ch); 
+            }
+            SerialWriteChar(char(0x0D));
+            if (!checkEcho(true)) // waits for \ confirmation    
+            {
+                Output.Print("  Failed to upload '" + filePath + "'");
+                break;
+            }
+            
+            // transfer size in bytes
+            long size = File.GetSize(localPath);
+            string str = size.ToHexString(4);
+            foreach (var c in str)
+            {
+                SerialWriteChar(c); 
+            }
+            
+            if (checkEcho(true)) { } // waits for \ confirmation    
+            
+            file dFile = File.Open(localPath);
+            collectOutput = true; // just to toss it away   
+            while (size != 0)
+            {
+                byte b = dFile.Read();
+                string str = b.ToHexString(2);
+                foreach (var c in str)
+                {
+                    SerialWriteChar(c); 
+                }
+                size--;
+                if (size % 256 == 0)
+                {
+                    Delay(1); // breathing room for serial comms
+                }
+            }
+            
+            if (checkEcho(true)) // waits for \ confirmation    
+            {
+                Output.Print("  Uploaded to '" + filePath + "'");
+            }
+            break;
+        } // loop
+        
+        ClearSerialOutput(); // toss it
+        collectOutput = false;   
+    }
     
     UploadHex(string ihexPath)
     {
@@ -399,10 +474,14 @@ unit Monitor
         return lastHexPath;
     }
     
+    uint hopperFlags;
+    
+    bool IsMCU { get { return (0 != hopperFlags & isMCUPlatform); } }
+    
     string GetHopperInfo()
     {
         LoadZeroPage(false);
-        uint hopperFlags = 0;
+        
         if (ZeroPageContains("FLAGS"))
         {
             hopperFlags = GetZeroPage("FLAGS");
@@ -427,6 +506,14 @@ unit Monitor
         if (0 != hopperFlags & isProfileBuild)
         {
             info = info + ", Profile Build";
+        }
+        if (0 != hopperFlags & isMCUPlatform)
+        {
+            info = info + ", MCU";
+        }
+        else
+        {
+            info = info + ", 6502";
         }
         return info;
     }     
