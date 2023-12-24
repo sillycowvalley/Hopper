@@ -62,9 +62,22 @@ program LittleFS
         }
     }
     
+    ShowFile(string path)
     {
-        string path = "/";
-        ListDirectory(path, "");
-        //DeleteDirectory(path, ""); // delete everything
+        file f = File.Open(path);
+        loop
+        {
+            char c = char(f.Read());    
+            if (!f.IsValid())
+            {
+                break;
+            }
+            Write(c);
+        }
+    }
+    {
+        //ListDirectory("/", "");
+        DeleteDirectory("/", ""); // delete everything
+        //ShowFile("/Data/Mandelbrot.txt");
     }
 }
