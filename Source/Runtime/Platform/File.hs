@@ -98,7 +98,9 @@ unit HRFile
         {
             if (ReadByte(this+fiCode) == 0)
             {
-                External.FileWriteAllBytes(ReadWord(this+fiPath), ReadWord(this+fiBuffer));
+                uint content = ReadWord(this+fiBuffer);
+                External.FileWriteAllBytes(ReadWord(this+fiPath), content);
+                HRString.BuildClear(ref content);
             }
             else
             {

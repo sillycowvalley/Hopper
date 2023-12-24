@@ -575,11 +575,16 @@ program HopperMonitor
         PrintPad("I        - step into, also <F11>", 4);
         PrintPad("B X      - clear all breakpoints", 4);
         PrintPad("B x xxxx - set breakpoint 1..F", 4);
+        if (Monitor.IsMCU)
+        {
+            PrintPad("T        - transfer file to LittleFS on MCU", 4);
+        }
         PrintLn();
         PrintPad("C        - emit Hopper call stack", 4);
         PrintPad("V        - emit Hopper value stack", 4);
         PrintPad("R        - emit Hopper registers", 4);
         PrintPad("P        - emit Hopper PC", 4);
+        PrintPad("S        - show source listing at Hopper PC", 4);
         PrintPad("H        - emit current Hopper heap objects", 4);
         PrintPad("M <page> - emit a 256 byte page of memory", 4);
         PrintPad("U        - profile: opCode and sysCall usage data, generates .csv", 4);
@@ -743,6 +748,23 @@ program HopperMonitor
                     }
                 } // case 'L'
                 
+                else if (Monitor.IsMCU && (currentCommand == 'T')) // transfer file to LittleFS
+                {
+                    string arguments = commandLine.Substring(2);
+                    <string> paths = arguments.Split(' ');
+                    if (paths.Length == 2)
+                    {
+                        string localFile  = paths[0];
+                        string remotePath = paths[1]; 
+                        localFile = Path.GetFullPath(localFile);
+                        if (File.Exists(localFile))
+                        {
+                            UploadFile(localFile, remotePath);
+                            refresh = true;
+                        }
+                    }
+                } // case 'T'
+                
                 else if (currentCommand == 'M') // memory dump
                 {
                     string hexpage = "";
@@ -822,6 +844,7 @@ program HopperMonitor
                     }
                     refresh = true;
                 } // case 'U'
+                
                 else if (currentCommand == 'X') // Execute (run with Warp)
                 {
                     Monitor.RunCommand(commandLine);
@@ -918,9 +941,13 @@ program HopperMonitor
                     if (clength == 0)
                     {
                         // first character must be command key
-                        if (String.Contains("?BCDFHILMOPQRSUVWXZ", ch))
+                        if (String.Contains("?BCDFHILMOPQRSTUVWXZ", ch))
                         {
                             currentCommand = ch;
+                        }
+                        else if (Monitor.IsMCU && String.Contains("T", ch))
+                        {
+                            currentCommand = ch; // MCU-only command
                         }
                         else
                         {
@@ -934,6 +961,10 @@ program HopperMonitor
                             continue;
                         }
                         if (currentCommand == 'L')
+                        {
+                            // has arguments
+                        }
+                        else if (Monitor.IsMCU && (currentCommand == 'T'))
                         {
                             // has arguments
                         }
@@ -960,6 +991,10 @@ program HopperMonitor
                         if (currentCommand == 'L')
                         {
                             // L <ihex path>
+                        }
+                        else if (currentCommand == 'T')
+                        {
+                            // T <local file path> <remote folder>
                         }
                         else if (currentCommand == 'M')
                         {

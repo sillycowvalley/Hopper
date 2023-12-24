@@ -805,6 +805,73 @@ program Runtime
                         
                         Serial.WriteChar(char(slash)); // confirm data
                     }
+                    case 'T':
+                    {
+                        WaitForEnter();
+                        
+                        // read name characters till 0x0D
+                        uint destinationName = HRString.New();
+                        loop
+                        {
+                            char ch = Serial.ReadChar();
+                            if (ch == char(enter))
+                            {
+                                break;
+                            }
+                            HRString.BuildChar(ref destinationName, ch);
+                        }
+                        Serial.WriteChar(char(enter));
+                        Serial.WriteChar(char(slash));
+                        
+                        // read path characters till 0x0D
+                        uint destinationFolder = HRString.New();
+                        loop
+                        {
+                            char ch = Serial.ReadChar();
+                            if (ch == char(enter))
+                            {
+                                break;
+                            }
+                            HRString.BuildChar(ref destinationFolder, ch);
+                        }
+                        Serial.WriteChar(char(enter));
+                        Serial.WriteChar(char(slash));
+                        
+                        HRDirectory.Create(destinationFolder);
+                        
+                        char h3 = Serial.ReadChar();
+                        char h2 = Serial.ReadChar();
+                        char h1 = Serial.ReadChar();
+                        char h0 = Serial.ReadChar();
+                        
+                        uint size = (FromHex(h3) << 12) + (FromHex(h2) << 8) + (FromHex(h1) << 4) + FromHex(h0);
+                        
+                        Serial.WriteChar(char(enter));
+                        Serial.WriteChar(char(slash));
+                        
+                        uint fh = HRFile.Create(destinationName);
+                        
+                        // read file hex nibbles
+                        uint count;
+                        while (size != 0)
+                        {
+                            char n1 = Serial.ReadChar();
+                            char n0 = Serial.ReadChar();
+                            byte b = (FromHex(n1) << 4) + FromHex(n0);
+                            HRFile.Append(fh, b);
+                            size--;
+                            count++;
+                            if (count == 2048)
+                            {
+                                HRFile.Flush(fh);
+                                count = 0;
+                            }
+                        }
+                        HRFile.Flush(fh);
+                        Serial.WriteChar(char(enter));
+                        Serial.WriteChar(char(slash));
+                        
+                    }
                     case 'L':
                     {
                         WaitForEnter();

@@ -104,7 +104,7 @@ void External_FileWriteAllBytes(UInt hrpath, UInt content)
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
 #if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    File f = LittleFS.open(buffer, "w");
+    File f = LittleFS.open(buffer, "a"); // creates file if it does not exist
     if (f) 
     {
         UInt length = HRString_GetLength(content);
@@ -393,10 +393,10 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index)
             }
             if (!file.isDirectory())
             {
+                String name = file.name();
+                if (name == "_") { continue; } // no count++
                 if (count == index)
                 {
-                    String name = file.name();
-                    if (name == "_") { continue; }
                     UInt str = HRString_New();
                     uint plen = strlen(buffer);
                     for (uint i=0; i < plen; i++)
@@ -424,11 +424,10 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index)
     {
         if (!dir.isDirectory())  
         {
+            String name = dir.fileName();
+            if (name == "_") { continue; } // no count++
             if (count == index)
             {
-                String name = dir.fileName();
-                if (name == "_") continue;
-
                 UInt str = HRString_New();
                 uint plen = strlen(buffer);
                 for (uint i=0; i < plen; i++)
@@ -443,6 +442,7 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index)
                 {
                     HRString_BuildChar_R(str, name[i]);
                 }
+                
                 return str;
             }
             count++;
