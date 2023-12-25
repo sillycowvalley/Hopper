@@ -119,6 +119,12 @@ unit HRFile
         {
             uint buffer = ReadWord(this+fiBuffer);
             HRString.BuildChar(ref buffer, char(b));
+            uint length = HRString.GetLength(buffer);
+            if (length >= 256) // auto-Flush the buffer
+            {
+                External.FileWriteAllBytes(ReadWord(this+fiPath), buffer); // appends if file exists
+                HRString.BuildClear(ref buffer);
+            }
             WriteWord(this+fiBuffer, buffer);
         }
         else
@@ -132,7 +138,14 @@ unit HRFile
         {
             uint buffer = ReadWord(this+fiBuffer);
             HRString.BuildString(ref buffer, hrstr);
-            WriteWord(this+fiBuffer, buffer);       
+            
+            uint length = HRString.GetLength(buffer);
+            if (length >= 256) // auto-Flush the buffer
+            {
+                External.FileWriteAllBytes(ReadWord(this+fiPath), buffer); // appends if file exists
+                HRString.BuildClear(ref buffer);
+            }
+            WriteWord(this+fiBuffer, buffer);
         }
         else
         {

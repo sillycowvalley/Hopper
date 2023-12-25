@@ -14,6 +14,7 @@ typedef Bool (*InstructionDelegate)();
 typedef UInt ISRDelegate;
 
 // method definitions
+// method definitions
 enum OpCode {
     eADD = 0x0000,
     eSUB = 0x0001,

@@ -852,7 +852,6 @@ program Runtime
                         uint fh = HRFile.Create(destinationName);
                         
                         // read file hex nibbles
-                        uint count;
                         while (size != 0)
                         {
                             char n1 = Serial.ReadChar();
@@ -860,12 +859,6 @@ program Runtime
                             byte b = (FromHex(n1) << 4) + FromHex(n0);
                             HRFile.Append(fh, b);
                             size--;
-                            count++;
-                            if (count == 2048)
-                            {
-                                HRFile.Flush(fh);
-                                count = 0;
-                            }
                         }
                         HRFile.Flush(fh);
                         Serial.WriteChar(char(enter));
