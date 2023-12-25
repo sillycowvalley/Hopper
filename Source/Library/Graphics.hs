@@ -6,7 +6,8 @@ unit Graphics
     {
         NoDisplay,
         ILI9341,
-        ST7735,     // Pico-LCD-1.44
+        ST7735,     // Pico-LCD-1.44, Pico-LCD-0.96
+        ST7789,     // Pico-LCD-1.14
         ST7796,
         SSD1306,
         LEDMatrix,

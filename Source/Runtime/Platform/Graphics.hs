@@ -5,6 +5,7 @@ unit HRGraphics
         NoDisplay,
         ILI9341,
         ST7735,
+        ST7789,
         ST7796,
         SSD1306,
         LedMatrix,

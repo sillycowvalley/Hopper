@@ -19,6 +19,8 @@ Byte cursorY;
 Display currentDisplay = Display::eNoDisplay;
 uint pixelHeight = 0;
 uint pixelWidth = 0;
+uint visiblePixelHeight = 0;
+uint visiblePixelWidth = 0;
 bool spiConfigured = false;
 bool i2cConfigured = false;
 bool matrixConfigured = false;
@@ -47,8 +49,15 @@ Byte * monoFrameBuffer; // 1 bit per pixel for monochrome (OLED, LED Matrix, etc
 void HRGraphics_ConfigureDisplay(Display display, UInt width, UInt height)
 {
     currentDisplay = display;
-    pixelWidth  = width;
-    pixelHeight = height;
+    visiblePixelWidth = pixelWidth  = width;
+    visiblePixelHeight = pixelHeight = height;
+
+    // Pico-LCD-1.14
+    if ((display == Display::eST7789) && (visiblePixelWidth == 240) && (visiblePixelHeight == 135))
+    {
+        pixelWidth  = 320;
+        pixelHeight = 240;
+    }
 }
 void HRGraphics_ConfigureSPI(Byte chipSelectPin, Byte dataCommandPin)
 {
@@ -275,6 +284,44 @@ initcmdSPI_ST7735_096[] =
   // Pico-LCD-0.96:
   ST7735_INVON , 0      ,  // 13: Invert display, no args, no delay
   TFT_MADCTL      , 1, (  MADCTL_MY | MADCTL_MV | MADCTL_BGR),              // Memory Access Control : 
+
+  ST7735_COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
+    0x05,
+  ST7735_GMCTRP1, 16      , 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10, // Set Gamma
+  ST7735_GMCTRN1, 16      , 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10, // Set Gamma
+  ST7735_NORON  ,    0x80, //  3: Normal display on, no args, w/delay
+  ST7735_DISPON ,    0x80, //  4: Main screen turn on, no args w/delay
+  0x00                        // End of list
+};
+
+static const uint8_t 
+#ifndef LOLIND1MINI
+PROGMEM
+#endif
+initcmdSPI_ST7789_114[] =
+{
+  //  (COMMAND_BYTE), n, data_bytes....
+  TFT_SLPOUT    , 0x80,     // Sleep exit
+  ST7735_FRMCTR1, 3      ,  //  3: Frame rate ctrl - normal mode, 3 args:
+    0x01, 0x2C, 0x2D,       //     Rate = fosc/(1x2+40) * (LINE+2C+2D)
+  ST7735_FRMCTR2, 3      ,  //  4: Frame rate control - idle mode, 3 args:
+    0x01, 0x2C, 0x2D,       //     Rate = fosc/(1x2+40) * (LINE+2C+2D)
+  ST7735_FRMCTR3, 6      ,  //  5: Frame rate ctrl - partial mode, 6 args:
+    0x01, 0x2C, 0x2D,       //     Dot inversion mode
+    0x01, 0x2C, 0x2D,       //     Line inversion mode
+  ST7735_INVCTR , 1      ,  //  6: Display inversion ctrl, 1 arg, no delay:
+    0x07,                   //     No inversion
+  ST7735_PWCTR2 , 1      ,  //  8: Power control, 1 arg, no delay:
+    0xC5,                   //     VGH25 = 2.4C VGSEL = -10 VGH = 3 * AVDD
+  ST7735_PWCTR3 , 2      ,  //  9: Power control, 2 args, no delay:
+    0x0A,                   //     Opamp current small
+    0x00,                   //     Boost frequency
+  ST7735_VMCTR1 , 1      ,  // 12: Power control, 1 arg, no delay:
+    0x0E,
+  
+  // Pico-LCD-1.14:
+  ST7735_INVON , 0      ,  // 13: Invert display, no args, no delay
+  TFT_MADCTL      , 1, (  /*MADCTL_MY | */ MADCTL_MX | MADCTL_MV | MADCTL_RGB),              // Memory Access Control : 
 
   ST7735_COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
     0x05,
@@ -729,11 +776,11 @@ Byte HRScreen_Rows_Get()
 
 UInt HRGraphics_Width_Get()  
 {
-    return pixelWidth;  
+    return visiblePixelWidth;  
 }
 UInt HRGraphics_Height_Get() 
 { 
-    return pixelHeight; 
+    return visiblePixelHeight; 
 }
 
 void sendCommandI2C(Byte command)
@@ -905,6 +952,7 @@ DisplayState HRGraphics_Begin()
         {
           case Display::eILI9341:
           case Display::eST7735:
+          case Display::eST7789:
           case Display::eST7796:
 
               // Color / RGB444
@@ -988,8 +1036,8 @@ DisplayState HRGraphics_Begin()
         }
         
         // 5x8 character cells
-        columns = pixelWidth  / CELLWIDTH;
-        rows    = pixelHeight / CELLHEIGHT;
+        columns = visiblePixelWidth  / CELLWIDTH;
+        rows    = visiblePixelHeight / CELLHEIGHT;
         suspended = 0;
 
         if (spiConfigured)
@@ -1005,7 +1053,7 @@ DisplayState HRGraphics_Begin()
 
                 case Display::eST7735:
                     
-                    if (pixelHeight == 80)
+                    if ((pixelWidth == 160) && (pixelHeight == 80))
                     {
                         // Pico-LCD-0.96:
                         addr = initcmdSPI_ST7735_096;
@@ -1019,6 +1067,18 @@ DisplayState HRGraphics_Begin()
                         xFudge = 2;
                         yFudge = 1;
                     }
+#ifdef RP2040
+                    if (portPinsConfigured) 
+                    {
+                        screenSPI = &SPI1; // why?
+                    }
+#endif
+                    break;
+                case Display::eST7789:
+                    // Pico-LCD-1.14:
+                    addr = initcmdSPI_ST7789_114;
+                    xFudge = 40;
+                    yFudge = 53;
 #ifdef RP2040
                     if (portPinsConfigured) 
                     {

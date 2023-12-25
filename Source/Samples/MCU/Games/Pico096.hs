@@ -9,12 +9,22 @@ unit Pico096
         DisplayState result = Begin();
         return (result == DisplayState.OK);
     }
+    bool DisplayST7789xPiPico114() // Waveshare Pico-LCD-1.14
+    {
+        ConfigureDisplay(Display.ST7789, 240, 135);
+        ConfigureSPI(9, 8);       // CS, DC
+        ConfigureSPIPort(11, 10); // TX(MOSI), CLK
+        ConfigureReset(12);
+        DisplayState result = Begin();
+        return (result == DisplayState.OK);
+    }
     bool Initialize(ISRDelegate buttonDelegate)
     {
         bool success;
         loop
         {
-            if (!DisplayST7735xPiPico096())
+            //if (!DisplayST7735xPiPico096())
+            if (!DisplayST7789xPiPico114())
             {
                 WriteLn("Failed to initialize Display.");
                 break;

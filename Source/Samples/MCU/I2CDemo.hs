@@ -47,6 +47,16 @@ program I2CDemo
         return (result == DisplayState.OK);
     }
     
+    bool DisplayST7789xPiPico114() // Waveshare Pico-LCD-1.14
+    {
+        ConfigureDisplay(Display.ST7789, 240, 135);
+        ConfigureSPI(9, 8);       // CS, DC
+        ConfigureSPIPort(11, 10); // TX(MOSI), CLK
+        ConfigureReset(12);
+        DisplayState result = Begin();
+        return (result == DisplayState.OK);
+    }
+    
     bool DisplayILI9341xD1Mini28()
     {
         ConfigureDisplay(Display.ILI9341, 320, 240);
@@ -251,7 +261,7 @@ program I2CDemo
         long start;
         long elapsed;
         
-        if (!DisplayST7735xPiPico096())
+        if (!DisplayST7789xPiPico114())
         {
             WriteLn("Failed to initialize Display");
             return;
@@ -261,6 +271,26 @@ program I2CDemo
         {
             Graphics.FlipDisplay(true);
             Graphics.InvertDisplay(false);
+            
+            /*
+            
+            Graphics.Clear(Color.Blue);
+            FilledRectangle(0, 0, Width, Height, Color.Red);
+            FilledRectangle(4, 4, Width-8, Height-8, Color.Green);
+            Line(0, 0, Width-1, Height-1, Color.Black);
+            Line(0, Height-1, Width-1, 0, Color.Black);
+            Rectangle(0,0, Width/2, Height/2, Color.Blue);
+            
+            Graphics.DrawChar(0,  0, 'A', Color.MatrixRed, Color.Black, 3, false);
+            Graphics.DrawChar(18, 0, 'B', Color.MatrixRed, Color.Black, 3, false);
+            Graphics.DrawChar(36, 0, 'C', Color.MatrixRed, Color.Black, 3, false);
+            
+            Graphics.DrawChar(60, 60, 'A', Color.MatrixGreen, Color.Black, 3, false);
+            Graphics.DrawChar(78, 60, 'B', Color.MatrixGreen, Color.Black, 3, false);
+            Graphics.DrawChar(96, 60, 'C', Color.MatrixGreen, Color.Black, 3, false);
+            
+            break;
+            */
             
             start = Millis;
             Graphics.Clear(Color.White);

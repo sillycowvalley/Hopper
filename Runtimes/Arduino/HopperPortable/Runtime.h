@@ -336,9 +336,10 @@ enum Display {
     eNoDisplay = 0x0000,
     eILI9341 = 0x0001,
     eST7735 = 0x0002,
-    eST7796 = 0x0003,
-    eSSD1306 = 0x0004,
-    eLedMatrix = 0x0005,
+    eST7789 = 0x0003,
+    eST7796 = 0x0004,
+    eSSD1306 = 0x0005,
+    eLedMatrix = 0x0006,
 };
 
 enum DisplayState {
