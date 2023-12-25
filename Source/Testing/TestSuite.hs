@@ -154,7 +154,7 @@ program TestSuite
         {
             PrintFailed("Array UInt: zero initialization failed");
         }
-        int count = 0;
+        count = 0;
         
         foreach (var a in uintArray)
         {
@@ -192,7 +192,7 @@ program TestSuite
         {
             PrintFailed("Array Char: zero initialization failed");
         }
-        int count = 0;
+        count = 0;
         
         foreach (var a in charArray)
         {
@@ -260,7 +260,7 @@ program TestSuite
         {
             PrintFailed("Array Bool: [9] = failed");
         }
-        int count = 0;
+        count = 0;
         
         foreach (var a in boolArray)
         {
@@ -325,7 +325,7 @@ program TestSuite
         {
             PrintFailed("Dictionary UInt: Contains failed 2");
         }
-        string result = uintDictionary.Get(1);
+        result = uintDictionary.Get(1);
         if (result != "b value")
         {
             PrintFailed("Dictionary UInt: Get failed");
@@ -353,7 +353,7 @@ program TestSuite
         {
             PrintFailed("Dictionary String: Contains failed 2");
         }
-        string result = stringDictionary.Get("b");
+        result = stringDictionary.Get("b");
         if (result != "b value")
         {
             PrintFailed("Dictionary String: Get failed");

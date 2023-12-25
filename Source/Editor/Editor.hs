@@ -1803,7 +1803,8 @@ unit Editor
     }
     UpdateTitle()
     {
-        MenuBar.SetTitleText(menubar, currentPath, projectPath);
+        string cp = IsDebugger ? Path.GetFileName(currentPath) : currentPath;
+        MenuBar.SetTitleText(menubar, cp, projectPath);
         StatusBar.SetText(statusbar, ""); // clears the "Saved" - not ideal
     }
     

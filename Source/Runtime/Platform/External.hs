@@ -169,21 +169,14 @@ unit External
         }
         f.Flush();
     }
-    FileReadAllBytes(uint hrpath, ref uint buffer)
+    
+    bool TryFileReadByte(uint hrpath, uint seekpos, ref byte b)
     {
         string path = nativeStringFromHopperString(hrpath);
         file f = File.Open(path);
-        loop
-        {
-            byte b = f.Read();
-            if (!f.IsValid())
-            {
-                break;
-            }
-            HRString.BuildChar(ref buffer, char(b));
-        }
+        b = f.Read(seekpos);
+        return f.IsValid();
     }
-    
     
     byte GetSegmentPages()
     {

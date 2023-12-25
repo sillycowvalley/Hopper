@@ -1,5 +1,6 @@
 program TestJSON
 {
+#define SERIALCONSOLE
 #define PORTABLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
@@ -9,7 +10,7 @@ program TestJSON
     
     PrintFailed(string message)
     {
-        Trace = false;
+        //Trace = false;
         
 #ifdef H6502
         WriteLn("  " + message);

@@ -76,8 +76,8 @@ program LittleFS
         }
     }
     {
-        //ListDirectory("/", "");
-        DeleteDirectory("/", ""); // delete everything
+        ListDirectory("/", "");
+        //DeleteDirectory("/", ""); // delete everything
         //ShowFile("/Data/Mandelbrot.txt");
     }
 }

@@ -20,28 +20,28 @@ unit HRString
     }
     uint clone(uint original, uint extra)
     {
-        uint length = ReadWord(original+2);
+        uint length = ReadWord(original+siLength);
         uint address = HRString.new(length+extra);
-        WriteWord(address+2, length);
+        WriteWord(address+siLength, length);
         for (uint i = 0; i < length; i++)
         {
-            WriteByte(address+4+i, ReadByte(original+4+i));
+            WriteByte(address+siChars+i, ReadByte(original+siChars+i));
         }
         return address;    
     }
     uint New()
     {
         uint address = HRString.new(0);
-        WriteWord(address+2, 0); // length=0
+        WriteWord(address+siLength, 0); // length=0
         return address;
     }
     uint NewFromConstant0(uint location, uint length)
     {
         uint address = HRString.new(length);
-        WriteWord(address+2, length);
+        WriteWord(address+siLength, length);
         for (uint i = 0; i < length; i++)
         {
-            WriteByte(address+4+i, ReadCodeByte(location+i));
+            WriteByte(address+siChars+i, ReadCodeByte(location+i));
         }
         return address;
     }
@@ -54,7 +54,7 @@ unit HRString
         WriteByte(address+siChars, lsb);
         if (msb != 0)
         {
-            WriteByte(address+5, msb);
+            WriteByte(address+siChars+1, msb);
         }
         return address;
     }
@@ -69,7 +69,7 @@ unit HRString
     }
     uint GetLength(uint this)
     {
-        return ReadWord(this+2);
+        return ReadWord(this+siLength);
     }
     char GetChar(uint this, uint index)
     {
@@ -81,23 +81,7 @@ unit HRString
             return char(0);
         }
 #endif
-        return char(ReadByte(this+4+index));     
-    }
-    uint Append(uint this, uint append)
-    {
-        uint length0 = GetLength(this);
-        uint length1 = GetLength(append);
-        uint result = HRString.new(length0 + length1);
-        WriteWord(result+2, length0 + length1);
-        for (uint i = 0; i < length0; i++)
-        {
-            WriteByte(result+4+i, ReadByte(this+4+i));
-        }
-        for (uint i = 0; i < length1; i++)
-        {
-            WriteByte(result+4+i+length0, ReadByte(append+4+i));
-        }
-        return result;
+        return char(ReadByte(this+siChars+index));     
     }
     uint Substring(uint this, uint start, uint limit)
     {
@@ -115,10 +99,10 @@ unit HRString
             {
                 break;
             }
-            WriteByte(result+4+i, ReadByte(this+4+i+start));
+            WriteByte(result+siChars+i, ReadByte(this+siChars+i+start));
             newLength++;
         }
-        WriteWord(result+2, newLength);
+        WriteWord(result+siLength, newLength);
         return result;
     }
     uint Substring(uint this, uint start)
@@ -135,25 +119,17 @@ unit HRString
         {
             if (i == index)
             {
-                WriteByte(result+4+j, byte(ch));
+                WriteByte(result+siChars+j, byte(ch));
                 j++;
             }
-            WriteByte(result+4+j, ReadByte(this+4+i));
+            WriteByte(result+siChars+j, ReadByte(this+siChars+i));
             j++;
         }
         if ((length == 0) || (index >= length))
         {
-            WriteByte(result+4+j, byte(ch));    
+            WriteByte(result+siChars+j, byte(ch));    
         }
-        WriteWord(result+2, length+1);
-        return result;
-    }
-    uint Append(uint this, char ch)
-    {
-        uint length = GetLength(this);
-        uint result = clone(this, 1);
-        WriteByte(result+4+length, byte(ch));
-        WriteWord(result+2, length+1);
+        WriteWord(result+siLength, length+1);
         return result;
     }
     
@@ -188,7 +164,7 @@ unit HRString
                 match = true;
                 for (uint n=0; n < patternLength; n++)
                 {
-                    if (ReadByte(this+4+i+n) != ReadByte(pattern+4+n))
+                    if (ReadByte(this+siChars+i+n) != ReadByte(pattern+siChars+n))
                     {
                         match = false;
                         break;
@@ -200,17 +176,17 @@ unit HRString
                 i = i + patternLength;
                 for (uint n = 0; n < replaceLength; n++)
                 {
-                    WriteByte(result+4+j, ReadByte(replace+4+n));
+                    WriteByte(result+siChars+j, ReadByte(replace+siChars+n));
                     j++;
                 }
             }
             else
             {
-                WriteByte(result+4+j, ReadByte(this+4+i));
+                WriteByte(result+siChars+j, ReadByte(this+siChars+i));
                 j++; i++;
             }
         }
-        WriteWord(result+2, j);
+        WriteWord(result+siLength, j);
         return result;
     }
     
@@ -220,74 +196,16 @@ unit HRString
         uint result = clone(this, 0);
         for (uint i = 0; i < length; i++)
         {
-            char ch = char(ReadByte(this+4+i));
+            char ch = char(ReadByte(this+siChars+i));
             if (ch == from)
             {
-                WriteByte(result+4+i, byte(to));
+                WriteByte(result+siChars+i, byte(to));
             }
         }
         return result;
     }
-    BuildClear(ref uint this)
-    {
-        WriteWord(this+2, 0); // length = 0
-    }
-    BuildString(ref uint this, uint append)
-    {
-        uint capacity = getCapacity(this);
-        uint length0   = GetLength(this);
-        uint length1   = GetLength(append);
-        if (length1 > 0)
-        {
-            if (capacity < length0+length1)
-            {
-                uint copy = clone(this, length0+length1 - capacity);
-                GC.Release(this);
-                this = copy;
-            }
-            for (uint i = 0; i < length1; i++)
-            {
-                WriteByte(this+4+length0+i, ReadByte(append+4+i));
-            }
-            WriteWord(this+2, length0+length1);
-        }
-    }
-    BuildChar(ref uint this, char ch)
-    {
-        uint capacity = getCapacity(this);
-        uint length   = GetLength(this);
-        if (capacity < length+1)
-        {
-            uint copy = clone(this, 1);
-            GC.Release(this);
-            this = copy;
-        }
-        WriteByte(this+4+length, byte(ch));
-        WriteWord(this+2, length+1);
-    }
-    BuildFront(ref uint this, char ch)
-    {
-        uint capacity = getCapacity(this);
-        uint length = GetLength(this);
-        if (capacity < length+1)
-        {
-            uint copy = clone(this, 1);
-            GC.Release(this);
-            this = copy;
-        }
-        uint i = length;
-        loop
-        {
-            WriteByte(this+4+i, ReadByte(this+3+i));
-            i--;
-            if (i == 0)
-            {
-                break;
-            }
-        }
-        WriteByte(this+4, byte(ch));
-        WriteWord(this+2, length+1);
-    }
+    
+    
     Substring(ref uint this, uint start)
     {
         uint length = GetLength(this);
@@ -297,16 +215,16 @@ unit HRString
         }
         if (start >= length)
         {
-            WriteWord(this+2, 0); // new length
+            WriteWord(this+siLength, 0); // new length
             return;
         }
         
-        WriteWord(this+2, length-start); // new length
+        WriteWord(this+siLength, length-start); // new length
         uint i = start;
         uint j = 0;
         loop
         {
-            WriteByte(this+4+j, ReadByte(this+4+i));  
+            WriteByte(this+siChars+j, ReadByte(this+siChars+i));  
             i++;
             j++;
             if (i == length)
@@ -336,7 +254,7 @@ unit HRString
         loop
         {
             if (i == length) { break; }
-            char ch = char(ReadByte(this+4+i));
+            char ch = char(ReadByte(this+siChars+i));
             if (ch != ' ')
             {
                 break;
@@ -355,15 +273,15 @@ unit HRString
         uint i = length-1;
         loop
         {
-            char ch = char(ReadByte(this+4+i));
+            char ch = char(ReadByte(this+siChars+i));
             if (ch != ' ')
             {
-                WriteWord(this+2, i+1); // new length    
+                WriteWord(this+siLength, i+1); // new length    
                 break;
             }
             if (i == 0) 
             { 
-                WriteWord(this+2, 0); // new length    
+                WriteWord(this+siLength, 0); // new length    
                 break; 
             }
             i--;
@@ -377,7 +295,7 @@ unit HRString
         {
             return false;
         }
-        return (char(ReadByte(this+4+length-1)) == with);
+        return (char(ReadByte(this+siChars+length-1)) == with);
     }
     bool EndsWith(uint this, uint with)
     {
@@ -394,8 +312,8 @@ unit HRString
         uint i = 1;
         loop
         {
-            char w = char(ReadByte(with+4+length1-i));   
-            char t = char(ReadByte(this+4+length0-i));
+            char w = char(ReadByte(with+siChars+length1-i));   
+            char t = char(ReadByte(this+siChars+length0-i));
             if (w != t) { return false; }
             if (i == length1)
             {
@@ -471,16 +389,104 @@ unit HRString
         }
         
         IO.Write(char(0x27)); // single quote
-        uint length = ReadWord(address+2);
+        uint length = ReadWord(address+siLength);
         if (length > 40)
         {
             length = 40;
         }
         for (uint i = 0; i < length; i++)
         {
-            IO.Write(char(ReadByte(address+4+i)));
+            IO.Write(char(ReadByte(address+siChars+i)));
         }
         IO.Write(char(0x27)); // single quote
     }
+    
+    uint Append(uint this, uint append)
+    {
+        uint length0 = GetLength(this);
+        uint length1 = GetLength(append);
+        uint result = HRString.new(length0 + length1);
+        WriteWord(result+siLength, length0 + length1);
+        for (uint i = 0; i < length0; i++)
+        {
+            WriteByte(result+siChars+i, ReadByte(this+siChars+i));
+        }
+        for (uint i = 0; i < length1; i++)
+        {
+            WriteByte(result+siChars+i+length0, ReadByte(append+siChars+i));
+        }
+        return result;
+    }
+    uint Append(uint this, char ch)
+    {
+        uint length = GetLength(this);
+        uint result = clone(this, 1);
+        WriteByte(result+siChars+length, byte(ch));
+        WriteWord(result+siLength, length+1);
+        return result;
+    }
+    
+    BuildClear(ref uint this)
+    {
+        WriteWord(this+siLength, 0); // length = 0
+    }
+    BuildChar(ref uint this, char ch)
+    {
+        uint capacity = getCapacity(this);
+        uint length   = GetLength(this);
+        if (capacity < length+1)
+        {
+            uint copy = clone(this, 1);
+            GC.Release(this);
+            this = copy;
+        }
+        WriteByte(this+siChars+length, byte(ch));
+        WriteWord(this+siLength, length+1);
+    }
+    BuildString(ref uint this, uint append)
+    {
+        uint length1 = GetLength(append);
+        if (length1 > 0)
+        {
+            uint capacity = getCapacity(this);
+            uint length0  = GetLength(this);
+            if (capacity < length0+length1)
+            {
+                uint copy = clone(this, length1);
+                GC.Release(this);
+                this = copy;
+            }
+            for (uint i = 0; i < length1; i++)
+            {
+                WriteByte(this+siChars+length0+i, ReadByte(append+siChars+i));
+            }
+            WriteWord(this+siLength, length0+length1);
+        }
+    }
+    BuildFront(ref uint this, char ch)
+    {
+        uint capacity = getCapacity(this);
+        uint length = GetLength(this);
+        if (capacity < length+1)
+        {
+            uint copy = clone(this, 1);
+            GC.Release(this);
+            this = copy;
+        }
+        uint i = length;
+        loop
+        {
+            WriteByte(this+siChars+i, ReadByte(this+siChars+i-1));
+            i--;
+            if (i == 0)
+            {
+                break;
+            }
+        }
+        WriteByte(this+siChars, byte(ch));
+        WriteWord(this+siLength, length+1);
+    }
+    
+    
 
 }

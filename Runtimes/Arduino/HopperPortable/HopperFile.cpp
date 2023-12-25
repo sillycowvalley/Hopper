@@ -164,26 +164,24 @@ Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLengt
     return success;
 }
 
-void External_FileReadAllBytes_R(UInt hrpath, UInt & content)
+Bool External_TryFileReadByte_R(UInt hrpath, UInt seekpos, Byte & b)
 {
+    bool success = false;    
+    b = 0;
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
 #if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
     File f = LittleFS.open(buffer, "r");
-    if (f && !f.isDirectory()) 
+    if (f && !f.isDirectory() && f.seek(seekpos)) 
     {
-        while(f.available())
-        {
-            uint bytesRead = f.readBytes(buffer, pathBufferSize);
-            for (uint i=0; i < bytesRead; i++)
-            {
-                HRString_BuildChar_R(content, (Char)buffer[i]);
-            }
-        }
+        b = (Byte)(f.read());
         f.close();
+        success = true;    
     }
 #endif
+    return success;
 }
+
 UInt External_FileGetTime(UInt hrpath)
 {
     char buffer[pathBufferSize];

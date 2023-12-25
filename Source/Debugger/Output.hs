@@ -1144,6 +1144,7 @@ unit Output
             
             uint pData  = Pages.GetPageWord(address + 0);
             uint pNext  = Pages.GetPageWord(address + 2);
+            content = content + "0x" + address.ToHexString(4) + " ";
             content = content + "0x" + pData.ToHexString(4) + " ";
             content = content + "0x" + pNext.ToHexString(4) + " ";
             SafePad(ref content, paddingWidth);
@@ -1240,22 +1241,26 @@ unit Output
         //   0000 string: path
         //   0000 uint:   pos
         //   0000 uint:   string (buffer)
+        //   0000 uint:   size
         accountedFor[address-2] = true;        
         string content;
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
-        content = content + WalkHeader(address);
+        content = content + WalkHeader(address); // heapsize type referencecount (0x000E 0x15 0x01)
         uint isValid = Pages.GetPageByte(address + 2);
         content = content + ((isValid != 0) ? "Valid" : "Invalid") + " ";
         uint isReading = Pages.GetPageByte(address + 3);
         content = content + ((isReading != 0) ? "Reading" : "") + " ";
         uint isWriting = Pages.GetPageByte(address + 4);
         content = content + ((isWriting != 0) ? "Writing" : "") + " ";
-        uint path = Pages.GetPageWord(address + 5);
-        
-        uint pos    = Pages.GetPageWord(address + 7);
-        content = content + "0x" + pos.ToHexString(4) + " ";
-        uint buffer = Pages.GetPageWord(address + 9);
+         uint isCode = Pages.GetPageByte(address + 5);
+        content = content + ((isCode != 0) ? "Code" : "") + " ";
+
+        uint path = Pages.GetPageWord(address + 6);
+        uint pos    = Pages.GetPageWord(address + 8);
+        uint sz     = Pages.GetPageWord(address + 12);
+        content = content + "0x" + pos.ToHexString(4) + " 0x" + sz.ToHexString(4) + " ";
+        uint buffer = Pages.GetPageWord(address + 10);
         
         SafePad(ref content, paddingWidth);
         content = content + " (" + size.ToString() + " bytes)";         
@@ -1280,6 +1285,7 @@ unit Output
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
         uint length = Pages.GetPageWord(address + 2);
+        content = content + "0x" + address.ToHexString(4) + " ";
         content = content + WalkHeader(address);
         content = content + "0x" + length.ToHexString(4) + " " + '"';
         uint characters = address + 4;
