@@ -4,6 +4,7 @@
 #include "HopperScreen.h"
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -1280,7 +1281,7 @@ void HRFile_Delete(UInt path)
 
 UInt HRFile_New()
 {
-    UInt address = GC_New(0x0A, Type::eFile);
+    UInt address = GC_New(0x0C, Type::eFile);
     Memory_WriteByte(address + 2, 0x00);
     Memory_WriteByte(address + 3, 0x00);
     Memory_WriteByte(address + 4, 0x00);
@@ -1288,6 +1289,7 @@ UInt HRFile_New()
     Memory_WriteWord(address + 6, HRString_New());
     Memory_WriteWord(address + 8, 0x00);
     Memory_WriteWord(address + 10, HRString_New());
+    Memory_WriteWord(address + 12, 0x00);
     return address;
 }
 
@@ -3028,6 +3030,7 @@ void HRFile_Clear(UInt _this)
         GC_Release(Memory_ReadWord(_this + 10));
     }
     Memory_WriteWord(_this + 10, 0x00);
+    Memory_WriteWord(_this + 12, 0x00);
 }
 
 Bool HRFile_IsCode(UInt _this)
@@ -5429,31 +5432,32 @@ Bool HRFile_IsValid(UInt _this)
 UInt HRFile_ReadLine(UInt _this)
 {
     UInt str = HRString_New();
+    Bool isValid = false;
     for (;;)
     {
         if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 3) != 0x00))
         {
-            UInt buffer = Memory_ReadWord(_this + 10);
             UInt pos = Memory_ReadWord(_this + 8);
-            UInt length = HRString_GetLength(buffer);
-            if (pos < length)
+            UInt size = Memory_ReadWord(_this + 12);
+            if (pos < size)
             {
+                isValid = true;
                 for (;;)
                 {
-                    if (pos == length)
+                    if (pos == size)
                     {
-                        if (HRString_GetLength(str) > 0x00)
+                        if (HRString_GetLength(str) == 0x00)
                         {
-                            Memory_WriteByte(_this + 2, 0x01);
-                        }
-                        else
-                        {
-                            Memory_WriteByte(_this + 2, 0x00);
+                            isValid = false;
                         }
                         break;;
                     }
-                    Type itype = (Type)0;
-                    Byte b = Byte(HRString_GetChar(buffer, pos));
+                    Byte b = 0;
+                    if (!External_TryFileReadByte_R(Memory_ReadWord(_this + 6), pos, b))
+                    {
+                        isValid = false;
+                        break;;
+                    }
                     
                     pos++;
                     Memory_WriteWord(_this + 8, pos);
@@ -5470,8 +5474,11 @@ UInt HRFile_ReadLine(UInt _this)
                 break;;
             }
         }
-        Memory_WriteByte(_this + 2, 0x00);
         break;;
+    }
+    if (!isValid)
+    {
+        Memory_WriteByte(_this + 2, 0x00);
     }
     return str;
 }
@@ -5483,17 +5490,17 @@ Byte HRFile_Read(UInt _this)
     {
         if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 3) != 0x00))
         {
-            UInt buffer = Memory_ReadWord(_this + 10);
             UInt pos = Memory_ReadWord(_this + 8);
-            UInt length = HRString_GetLength(buffer);
-            if (pos < length)
+            UInt size = Memory_ReadWord(_this + 12);
+            if (pos < size)
             {
-                Type itype = (Type)0;
-                b = Byte(HRString_GetChar(buffer, pos));
-                
-                pos++;
-                Memory_WriteWord(_this + 8, pos);
-                break;;
+                if (External_TryFileReadByte_R(Memory_ReadWord(_this + 6), pos, b))
+                {
+                    
+                    pos++;
+                    Memory_WriteWord(_this + 8, pos);
+                    break;;
+                }
             }
         }
         Memory_WriteByte(_this + 2, 0x00);
@@ -5509,14 +5516,14 @@ Byte HRFile_Read(UInt _this, UInt hrseekpos)
     {
         if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 3) != 0x00))
         {
-            UInt buffer = Memory_ReadWord(_this + 10);
             UInt seekpos = HRLong_ToUInt(hrseekpos);
-            UInt length = HRString_GetLength(buffer);
-            if (seekpos < length)
+            UInt size = Memory_ReadWord(_this + 12);
+            if (seekpos < size)
             {
-                Type itype = (Type)0;
-                b = Byte(HRString_GetChar(buffer, seekpos));
-                break;;
+                if (External_TryFileReadByte_R(Memory_ReadWord(_this + 6), seekpos, b))
+                {
+                    break;;
+                }
             }
         }
         Memory_WriteByte(_this + 2, 0x00);
@@ -5554,9 +5561,10 @@ UInt HRFile_Open(UInt hrpath)
         Memory_WriteByte(address + 3, 0x01);
         GC_Release(Memory_ReadWord(address + 6));
         Memory_WriteWord(address + 6, HRString_Clone(hrpath));
-        UInt buffer = Memory_ReadWord(address + 10);
-        External_FileReadAllBytes_R(Memory_ReadWord(address + 6), buffer);
-        Memory_WriteWord(address + 10, buffer);
+        UInt hrsize = HRFile_GetSize(hrpath);
+        UInt size = HRLong_ToUInt(hrsize);
+        Memory_WriteWord(address + 8, 0x00);
+        Memory_WriteWord(address + 12, size);
     }
     return address;
 }
@@ -5573,7 +5581,7 @@ UInt HRFile_GetSize(UInt path)
 
 UInt HRFile_Clone(UInt original)
 {
-    UInt address = GC_New(0x0A, Type::eFile);
+    UInt address = GC_New(0x0C, Type::eFile);
     Memory_WriteByte(address + 2, Memory_ReadByte(original + 2));
     Memory_WriteByte(address + 3, Memory_ReadByte(original + 3));
     Memory_WriteByte(address + 4, Memory_ReadByte(original + 4));
@@ -5588,6 +5596,7 @@ UInt HRFile_Clone(UInt original)
     {
         Memory_WriteWord(address + 10, HRString_Clone(Memory_ReadWord(original + 10)));
     }
+    Memory_WriteWord(address + 12, Memory_ReadWord(original + 12));
     return address;
 }
 

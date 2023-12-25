@@ -38,8 +38,7 @@ SOFTWARE.
 
 // Notes about the Hopper 'port' so far:
 //
-// - I don't even want to pretend that this will run correctly. I ported it very quickly
-//   with the intent of learning some Python and finding weaknesses in Hopper
+// - progress : first failure when trying to compile FORTH.FTH is now around line 615 (278 of 298 words compiled)
 //
 // - Hopper has no tuple support:
 //   - for number(), I use the Hopper TryParse style (return true on success, result as ref argument)
@@ -61,12 +60,16 @@ SOFTWARE.
 //   returns a value (it is an expression), it must be consumed. I removed some of the unused return values
 //
 // - I would not trust some of the 'signed' arithmetic operations without testing them first.
+//
+// - I compile each line as I load it in compileFORTH() - much less memory required on the MCU if we don't hold FORTH.FTH in memory
 
 
 program CompilerFORTH
 {
-
-    #define SERIALCONSOLE
+    
+    // MCU defines. Comment the next two lines out for Windows:
+    //#define SERIALCONSOLE
+    //#define PORTABLE
     
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
@@ -103,9 +106,17 @@ program CompilerFORTH
     const uint FALSE = 0x0000;
     
     // Input and output files
+#ifdef SERIALCONSOLE    
+    // MCU
+    const string forthFTH = "/Data/FORTH.FTH";
+    const string forthPreCompiledHS  = "/Data/PrecompiledB.hs";
+    const string forthPreCompiledLST = "/Data/Precompiled.lst";
+#else
+    // Windows
     const string forthFTH = "/Source/Languages/FORTH/meta-compiler/FORTH.FTH";
     const string forthPreCompiledHS  = "/Source/Languages/FORTH/meta-compiler/PrecompiledB.hs";
-    const string forthPreCompiledLST = "/Source/Languages/FORTH/meta-compiler/Precompiled.lst";
+    const string forthPreCompiledLST = "/Source/Languages/FORTH/meta-compiler/PrecompiledB.lst";
+#endif
     
     // Sizes of various areas
     const long memSize    = 0x8000;
@@ -1200,16 +1211,6 @@ program CompilerFORTH
 
     compileFORTH()
     {
-        // Get FORTH.FTH
-        <string> sourceFile;
-        file src = File.Open(forthFTH);
-        loop
-        {
-            string ln = src.ReadLine();
-            if (!src.IsValid()) { break; }
-            sourceFile.Append(ln);
-        }
-        
         // Initialize the FORTH virtual machine
         sp = SP0;
         rp = RP0;
@@ -1233,12 +1234,18 @@ program CompilerFORTH
         stw(bootBSP, BSP);
         // Precompile temporary words for meta-compilation
         precompile();
+        
         // Compile FORTH.FTH
-        foreach (var sourceLine in sourceFile)
+        file src = File.Open(forthFTH);
+        loop
         {
+            string sourceLine = src.ReadLine();
+            if (!src.IsValid()) { break; }
             lineNum++;
+            Write(lineNum.ToString() + " ");
             handleLine(sourceLine);
         }
+        WriteLn();
     }
         
         
@@ -1323,8 +1330,8 @@ program CompilerFORTH
                 WriteLn();
             }
             string fName = FORTHname(wrk);
-            lstFile.Append(fName.Pad(' ', 14) + wrk.ToHexString(4));
-            Write(fName.Pad(' ', 14) + wrk.ToHexString(4));
+            lstFile.Append(fName.LeftPad(' ', 14) + "(" + wrk.ToHexString(4) + ")");
+            Write(fName.LeftPad(' ', 14) + "(" + wrk.ToHexString(4) + ")");
             wrk = ldw(wrk - 2);
             nwds++;
         }

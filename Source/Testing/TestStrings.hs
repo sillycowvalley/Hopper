@@ -1,8 +1,8 @@
 program TestStrings
 {
 
-//#define PORTABLE
-//#define SERIALCONSOLE
+#define PORTABLE
+#define SERIALCONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
@@ -128,7 +128,7 @@ program TestStrings
             PrintFailed("'string': Trim failed 5");
         }
         
-        string trimmed = str;
+        trimmed = str;
         trimmed = trimmed.Trim();
         if (trimmed != "untrimmed string")
         {
@@ -751,7 +751,7 @@ program TestStrings
         WriteLn("string 'case'");
         string test = "Test String";
         string result = test;
-        string result = result.ToUpper();
+        result = result.ToUpper();
         if (result != "TEST STRING")
         {
             PrintFailed("ToUpper 1 failed");

@@ -7,12 +7,13 @@ unit HRFile
     //   0F   type = tFile
     //   00   GC reference count
     //   00   bool:   isValid
-    //   00   bool:   isReading
+    //   00   bool:   isReading: pos is position of next byte to read
     //   00   bool:   isWriting
-    //   00   bool:   isCode: pos is length and buffer is start in codeSegment
+    //   00   bool:   isCode:    pos is length and buffer is start in codeSegment
     //   0000 string: path
     //   0000 uint:   pos
     //   0000 uint:   string (buffer)
+    //   0000 uint:   size: file size in bytes
     
     const uint fiValid    = 2;
     const uint fiReading  = 3;
@@ -20,11 +21,12 @@ unit HRFile
     const uint fiCode     = 5;
     const uint fiPath     = 6;
     const uint fiPos      = 8;
-    const uint fiBuffer   = 10;
+    const uint fiBuffer   = 10; // writing
+    const uint fiSize     = 12; // reading
     
     uint New()
     {
-        uint address = GC.New(10, Type.File);
+        uint address = GC.New(12, Type.File);
         WriteByte(address+fiValid,   0);
         WriteByte(address+fiReading, 0);
         WriteByte(address+fiWriting, 0);
@@ -32,11 +34,12 @@ unit HRFile
         WriteWord(address+fiPath,   HRString.New());
         WriteWord(address+fiPos,    0);
         WriteWord(address+fiBuffer, HRString.New());
+        WriteWord(address+fiSize,   0);
         return address;
     }
     uint Clone(uint original)
     {
-        uint address = GC.New(10, Type.File);
+        uint address = GC.New(12, Type.File);
         WriteByte(address+fiValid,   ReadByte(original+fiValid));
         WriteByte(address+fiReading, ReadByte(original+fiReading));
         WriteByte(address+fiWriting, ReadByte(original+fiWriting));
@@ -49,8 +52,9 @@ unit HRFile
         }
         else
         {
-            WriteWord(address+fiBuffer,  HRString.Clone(ReadWord(original+fiBuffer)));
+            WriteWord(address+fiBuffer, HRString.Clone(ReadWord(original+fiBuffer)));
         }
+        WriteWord(address+fiSize,     ReadWord(original+fiSize));
         return address;    
     }
     Clear(uint this)
@@ -66,6 +70,7 @@ unit HRFile
             GC.Release(ReadWord(this+fiBuffer));
         }
         WriteWord(this+fiBuffer, 0);
+        WriteWord(this+fiSize, 0);
     }
     
     bool Exists(uint str)
@@ -200,9 +205,11 @@ unit HRFile
             WriteByte(address+fiReading, 1);
             GC.Release(ReadWord(address+fiPath));
             WriteWord(address+fiPath,    HRString.Clone(hrpath));
-            uint buffer = ReadWord(address+fiBuffer);
-            External.FileReadAllBytes(ReadWord(address+fiPath), ref buffer);
-            WriteWord(address+fiBuffer, buffer);
+            uint hrsize = GetSize(hrpath);
+            uint size = HRLong.ToUInt(hrsize);
+            // buffer is probably empty string (doesn't matter)
+            WriteWord(address+fiPos,  0);
+            WriteWord(address+fiSize, size);
         }
         return address;
     }
@@ -213,17 +220,16 @@ unit HRFile
         {
             if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiReading) != 0))
             {
-                uint buffer = ReadWord(this+fiBuffer);
-                uint pos    = ReadWord(this+fiPos);
-                
-                uint length = HRString.GetLength(buffer);
-                if (pos < length)
+                uint pos   = ReadWord(this+fiPos);
+                uint size  = ReadWord(this+fiSize);
+                if (pos < size)
                 {
-                    Type itype;
-                    b = byte(HRString.GetChar(buffer, pos));
-                    pos++;
-                    WriteWord(this+fiPos, pos);
-                    break;
+                    if (External.TryFileReadByte(ReadWord(this+fiPath), pos, ref b))
+                    {
+                        pos++;
+                        WriteWord(this+fiPos, pos);
+                        break;
+                    }
                 }
             }
             WriteByte(this+fiValid, 0);
@@ -238,15 +244,14 @@ unit HRFile
         {
             if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiReading) != 0))
             {
-                uint buffer  = ReadWord(this+fiBuffer);
                 uint seekpos = HRLong.ToUInt(hrseekpos);
-                
-                uint length = HRString.GetLength(buffer);
-                if (seekpos < length)
+                uint size  = ReadWord(this+fiSize);
+                if (seekpos < size)
                 {
-                    Type itype;
-                    b = byte(HRString.GetChar(buffer, seekpos));
-                    break;
+                    if (External.TryFileReadByte(ReadWord(this+fiPath), seekpos, ref b))
+                    {
+                        break;
+                    }
                 }
             }
             WriteByte(this+fiValid, 0);
@@ -257,32 +262,32 @@ unit HRFile
     uint ReadLine(uint this)
     {
         uint str = HRString.New();
+        bool isValid = false;
         loop
         {
             if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiReading) != 0))
             {
-                uint buffer = ReadWord(this+fiBuffer);
                 uint pos    = ReadWord(this+fiPos);
-                
-                uint length = HRString.GetLength(buffer);
-                if (pos < length)
+                uint size   = ReadWord(this+fiSize);
+                if (pos < size)
                 {
+                    isValid = true;
                     loop
                     {
-                        if (pos == length)
+                        if (pos == size)
                         {
-                            if (HRString.GetLength(str) > 0)
+                            if (HRString.GetLength(str) == 0)
                             {
-                                WriteByte(this+fiValid, 1);    
-                            }
-                            else
-                            {
-                                WriteByte(this+fiValid, 0); // EOF    
+                                isValid = false; // EOF 
                             }
                             break;
                         }
-                        Type itype;
-                        byte b = byte(HRString.GetChar(buffer, pos));
+                        byte b;
+                        if (!External.TryFileReadByte(ReadWord(this+fiPath), pos, ref b))
+                        {
+                            isValid = false; // error?
+                            break;    
+                        }
                         pos++;
                         WriteWord(this+fiPos, pos);
                         if (b == 0x0D)
@@ -294,13 +299,16 @@ unit HRFile
                             break;
                         }
                         HRString.BuildChar(ref str, char(b));
-                    }
+                    } // line loop
                     break;
-                }
+                } 
             }
-            WriteByte(this+fiValid, 0);
             break;
-        } 
+        } // valid loop
+        if (!isValid)
+        {
+            WriteByte(this+fiValid, 0);
+        }
         return str;
     }
 }

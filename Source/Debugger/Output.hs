@@ -1241,6 +1241,7 @@ unit Output
         //   0000 string: path
         //   0000 uint:   pos
         //   0000 uint:   string (buffer)
+        //   0000 uint:   size
         accountedFor[address-2] = true;        
         string content;
         uint size = Pages.GetPageWord(address - 2);
@@ -1257,7 +1258,8 @@ unit Output
 
         uint path = Pages.GetPageWord(address + 6);
         uint pos    = Pages.GetPageWord(address + 8);
-        content = content + "0x" + pos.ToHexString(4) + " ";
+        uint sz     = Pages.GetPageWord(address + 12);
+        content = content + "0x" + pos.ToHexString(4) + " 0x" + sz.ToHexString(4) + " ";
         uint buffer = Pages.GetPageWord(address + 10);
         
         SafePad(ref content, paddingWidth);

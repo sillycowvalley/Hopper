@@ -9,7 +9,7 @@ Bool External_FileExists(UInt hrpath);
 void External_FileDelete(UInt hrpath);
 void External_FileWriteAllBytes(UInt hrpath, UInt content);
 void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength);
-void External_FileReadAllBytes_R(UInt hrpath, UInt & content);
+Bool External_TryFileReadByte_R(UInt hrpath, UInt seekpos, Byte & b);
 UInt External_FileGetTime(UInt hrpath);
 UInt External_FileGetSize(UInt hrpath);
 Bool External_DirectoryExists(UInt hrpath);
