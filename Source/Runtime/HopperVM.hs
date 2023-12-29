@@ -3093,19 +3093,20 @@ unit HopperVM
         uint watchDog = 2500;
         loop
         {
-            ServiceInterrupts();
+            if (ISRExists) { ServiceInterrupts(); }
 #ifdef CHECKED
             messagePC = PC;
 #endif
-            opCode = OpCode(ReadCodeByte(pc));
+            byte bopCode = ReadCodeByte(pc);
 #ifndef SERIALCONSOLE
-            uint jump = ReadWord(jumpTable + (byte(opCode) << 1));
+            uint jump = ReadWord(jumpTable + (bopCode << 1));
 #endif
             pc++;
 #ifndef SERIALCONSOLE            
 #ifdef CHECKED
             if (0 == jump)
             {
+                opCode = OpCode(bopCode); // for error reporting of undefined opcodes
                 if (Instructions.Undefined()) {}
                 return;
             }
@@ -3113,7 +3114,7 @@ unit HopperVM
 #endif
 
 #ifdef SERIALCONSOLE // on MCU
-            doNext = External.FunctionCall(jumpTable, byte(opCode));
+            doNext = External.FunctionCall(jumpTable, bopCode);
 #else
             InstructionDelegate instructionDelegate = InstructionDelegate(jump);
             doNext = instructionDelegate();

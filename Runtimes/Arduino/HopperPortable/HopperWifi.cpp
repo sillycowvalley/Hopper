@@ -1,11 +1,11 @@
 #include "HopperWifi.h"
 
-#ifdef RP2040PICO
+#ifdef RP2040PICOW
 #define USEWIFI       // WiFi for Raspberry Pi Pico W
 #endif
 
-#if defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE)
-#define USEWIFISTUBS    // no WiFi for Seeed XIA0 RP2040 or Pimoroni Tiny 2040
+#if defined(RP2040PICO) || defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE)
+#define USEWIFISTUBS    // no WiFi for Pi Pico, Seeed XIA0 RP2040 or Pimoroni Tiny 2040
 #endif
 
 #ifdef RP2040NANO

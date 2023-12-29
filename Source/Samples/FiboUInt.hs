@@ -7,10 +7,6 @@ program FiboUInt
     
     // https://forums.raspberrypi.com/viewtopic.php?t=303458
     
-    // Forth:
-    // : FIB ( N1 -- N2 ) DUP 2 < IF DROP 1 ELSE DUP 1- RECURSE SWAP 2 - RECURSE + THEN ;
-    // https://github.com/cstrotm/helforth/blob/master/bench/fib.fs
-    
     delegate uint FiboDelegate(uint n);
     
     uint Fibo(uint n)
@@ -30,7 +26,8 @@ program FiboUInt
             result = func(arg);
         }
         long ms = (Millis - start); // stop timing
-        WriteLn(name + "(" + arg.ToString() + ") = " + result.ToString() + " in " + (ms / loops).ToString() + "ms");
+        float seconds = ms / 1000.0;
+        WriteLn(name + "(" + arg.ToString() + ") = " + result.ToString() + " in " + (seconds / loops).ToString() + " seconds");
     }
         
     {

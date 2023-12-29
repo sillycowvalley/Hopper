@@ -17,7 +17,7 @@ unit MCU
     uses "/Source/Library/GPIO"
     uses "/Source/Library/Wire"
 
-#if defined(RP2040) || defined(TINY2040) || defined(WAVESHARERP2040ONE) || defined(SEEEDRP2040) || defined(ARDUINONANORP2040) || defined(WEMOSD1MINI)
+#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(TINY2040) || defined(WAVESHARERP2040ONE) || defined(SEEEDRP2040) || defined(ARDUINONANORP2040) || defined(WEMOSD1MINI)
     flags PinModeOption
     {
         Input         = 0x00,

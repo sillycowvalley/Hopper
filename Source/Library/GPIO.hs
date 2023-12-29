@@ -18,10 +18,19 @@ unit GPIO
     
 #endif
 
-#ifdef RP2040
+#ifdef RP2040PICO
+    // Raspberry Pi Pico
+    const byte a0         = 26; // A0
+    const byte a1         = 27; // A1
+    const byte a2         = 28; // A2
+    const byte a3         = 29; // VSYS/3 on Pi Pico
     
+    const byte builtInLED = 25; // different to the W
     
-    // Raspberry Pi Pico and Pimoroni Tiny 2040 have the same pins:
+#endif
+
+#ifdef RP2040PICOW
+    // Raspberry Pi Pico
     const byte a0         = 26; // A0
     const byte a1         = 27; // A1
     const byte a2         = 28; // A2

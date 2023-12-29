@@ -6,6 +6,9 @@ unit Library
     
     delegate ISRDelegate();
     
+    bool isrExists;
+    bool ISRExists { get { return isrExists; } }
+    
     bool ExecuteLibCall(byte iLibCall)
     {
         bool doNext = true;
@@ -80,6 +83,7 @@ unit Library
                 byte pin = byte(Pop());
                 bool result = External.AttachToPin(pin, isrDelegate, state);
                 Push(result ? 1 : 0, Type.Bool);
+                isrExists = true;
             }
             
             case LibCall.GraphicsConfigureDisplay:

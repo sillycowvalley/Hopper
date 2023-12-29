@@ -5,7 +5,6 @@
 
 
 
-
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -13,6 +12,7 @@ UInt Memory_heapSize = 0x4000;
 UInt Memory_freeList = 0;
 UInt HRArray_setSlots = 0;
 UInt HRArray_clearSlots = 0;
+Bool Library_isrExists = false;
 UInt HopperVM_binaryAddress = 0;
 UInt HopperVM_programSize = 0;
 UInt HopperVM_constAddress = 0;
@@ -835,11 +835,14 @@ void HopperVM_ExecuteWarp()
     UInt watchDog = 0x09C4;
     for (;;)
     {
-        External_ServiceInterrupts();
-        HopperVM_opCode = OpCode(Memory_ReadCodeByte(HopperVM_pc));
+        if (Library_ISRExists_Get())
+        {
+            External_ServiceInterrupts();
+        }
+        Byte bopCode = Memory_ReadCodeByte(HopperVM_pc);
         
         HopperVM_pc++;
-        doNext = External_FunctionCall(HopperVM_jumpTable, Byte(HopperVM_opCode));
+        doNext = External_FunctionCall(HopperVM_jumpTable, bopCode);
         
         watchDog--;
         if (watchDog == 0x00)
@@ -1627,6 +1630,11 @@ void Minimal_Error_Set(Byte value)
 Byte Minimal_Error_Get()
 {
     return Minimal_error;
+}
+
+Bool Library_ISRExists_Get()
+{
+    return Library_isrExists;
 }
 
 Bool IO_IsBreak()
@@ -5143,6 +5151,7 @@ Bool Library_ExecuteLibCall(Byte iLibCall)
         Byte pin = Byte(HopperVM_Pop());
         Bool result = External_AttachToPin(pin, isrDelegate, state);
         HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
+        Library_isrExists = true;
         break;
     }
     case LibCall::eGraphicsConfigureDisplay:

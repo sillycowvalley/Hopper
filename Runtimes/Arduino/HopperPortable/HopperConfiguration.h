@@ -8,10 +8,15 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 //#define DIAGNOSTICS // turn on more Serial.print output
 //#define CHECKED
 
+// Raspberry Pi Pico
+// - LittleFS for built-in Flash
+// - no WiFi
+#define RP2040PICO
+
 // Raspberry Pi Pico W
 // - LittleFS for built-in Flash
 // - WiFi
-#define RP2040PICO 
+//#define RP2040PICOW
 
 // Arduino Connect RP2040
 // - LittleFS for built-in Flash
@@ -57,7 +62,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - exit TERM then run HM!
 
 
-#if defined(RP2040PICO) || defined(RP2040NANO) || defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE)
+#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(RP2040NANO) || defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE)
 #define RP2040
 #endif
 

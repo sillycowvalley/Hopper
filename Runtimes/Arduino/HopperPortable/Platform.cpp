@@ -101,7 +101,9 @@ UInt External_GetSegmentPages()
 
 void External_WatchDog()
 {
-#ifndef RP2040PICO  // Pi Pico appears to not need this
+#if defined(RP2040PICO) || defined(RP2040PICOW)  
+    // Pi Pico appears to not need this
+#else
     yield();
 #endif
 }

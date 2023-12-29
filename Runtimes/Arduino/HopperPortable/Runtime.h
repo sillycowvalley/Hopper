@@ -567,6 +567,7 @@ UInt GC_New(UInt size, Type htype);
 Char Char_ToHex(Byte h);
 void Minimal_Error_Set(Byte value);
 Byte Minimal_Error_Get();
+Bool Library_ISRExists_Get();
 Bool IO_IsBreak();
 void IO_WriteLn();
 void IO_Write(Char c);
