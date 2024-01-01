@@ -1,5 +1,6 @@
 program TestNumbers
 {
+//#define TINYHOPPER
 #define PORTABLE
 #define SERIALCONSOLE
     //uses "/Source/6502/System"
@@ -1728,7 +1729,7 @@ program TestNumbers
     
     {
         EchoToLCD = true;
-        Screen.Clear();
+        //Screen.Clear();
 
 #ifdef TESTFLOATS
         TestFloatMath();

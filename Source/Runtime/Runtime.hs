@@ -924,7 +924,7 @@ program Runtime
                                     uint pc = HopperVM.PC;
                                     OpCode opCode = OpCode(ReadCodeByte(pc));
                                     
-                                    if ((opCode == OpCode.CALLW) || (opCode == OpCode.CALLIW))
+                                    if ((opCode == OpCode.CALL) || (opCode == OpCode.CALLI))
                                     {
                                         
                                         // set breakpoint[0] to PC+3

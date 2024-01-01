@@ -1,6 +1,6 @@
 program Blink
 {
-
+#define TINYHOPPER
 #define RP2040PICO
 //#define RP2040PICOW
 //#define TINY2040

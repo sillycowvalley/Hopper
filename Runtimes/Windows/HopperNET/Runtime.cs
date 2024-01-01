@@ -22,52 +22,7 @@ namespace HopperNET
 
     public enum Instruction
     {
-
-
-        // instructions before here have no operands
-
-        ADD,
-        SUB,
-        DIV,
-        MUL,
-        MOD,
-
-        EQ,
-        NE,
-        GT,
-        LT,
-        GE,
-        LE,
-
-
-        BOOLOR,
-        BOOLAND,
-        BITOR,
-        BITAND,
-        BITSHL,
-        BITSHR,
-
-        // instructions before here have
-        // - no immediate operands, 
-        // - pop 2 and push 1
-
-        // signed:
-        ADDI,
-        SUBI,
-        DIVI,
-        MULI,
-        MODI,
-        GTI,
-        LTI,
-        GEI,
-        LEI,
-
-        // instructions before here have
-        // - no immediate operands, 
-        // - pop 2 and push 1
-        // - are signed operations
-
-        PUSHIB,       // operand is byte
+        PUSHIB = 0x1A,       // operand is byte
         POPLOCALB,    // operand is the location to pop to: BP + offset
         PUSHLOCALB,   // operand is the location to push from: BP + offset
         POPRELB,      // like POPLOCAL but the absolute address to pop is taken from BP + offset
@@ -89,7 +44,7 @@ namespace HopperNET
         DIE,       // 0x?? fail setting lastError to <byte operand>
 
         RETB,      // RET and pop <byte operand> bytes
-        RETRETB,   // RET and pop <byte operand> bytes, but preserve [top] as the return value
+        RETRESB,   // RET and pop <byte operand> bytes, but preserve [top] as the return value
 
         CALLB,     // <byte index operand>
         TESTBPB,   // verify that BP is what we expect it to be
@@ -103,33 +58,33 @@ namespace HopperNET
         // instructions before here have a single byte operand
 
         // jump offsets: -1 means address of J instruction - 1, 0 means address after J instruction
-        JZW,       // <signed int offset>
-        JNZW,      // <signed int offset>
-        JW,        // <signed int offset>
+        JZ,        // <signed int offset>
+        JNZ,       // <signed int offset>
+        J,         // <signed int offset>
 
-        CALLW,     // <integer index operand>
+        CALL,     // <integer index operand>
 
-        RETW,      // RET and pop <uint operand> bytes
-        RETRETW,   // RET and pop <uint operand> bytes, but preserve [top] as the return value
+        RET,      // RET and pop <uint operand> bytes
+        RETRES,   // RET and pop <uint operand> bytes, but preserve [top] as the return value
 
-        PUSHIW,          // operand is uint
-        POPLOCALW,       // operand is the location to pop to: BP + offset
-        PUSHLOCALW,      // operand is the location to push from: BP + offset
-        POPRELW,         // like POPLOCAL but the absolute address to pop is taken from BP + offset
-        PUSHRELW,        // like PUSHLOCAL but the absolute address to push is taken from BP + offset
-        POPGLOBALW,      // operand is the absolute address to pop to
-        PUSHGLOBALW,     // operand is the absolute address to push from
-        PUSHSTACKADDRW,  // operand is the offset from BP of the variable - convert to absolute stack address and push that
+        PUSHI,          // operand is uint
+        POPLOCAL,       // operand is the location to pop to: BP + offset
+        PUSHLOCAL,      // operand is the location to push from: BP + offset
+        POPREL,         // like POPLOCAL but the absolute address to pop is taken from BP + offset
+        PUSHREL,        // like PUSHLOCAL but the absolute address to push is taken from BP + offset
+        POPGLOBAL,      // operand is the absolute address to pop to
+        PUSHGLOBAL,     // operand is the absolute address to push from
+        PUSHSTACKADDR,  // operand is the offset from BP of the variable - convert to absolute stack address and push that
 
         INCLOCALBB,
-        PUSHIWLE,
+        PUSHILE,
 
         // instructions before here have a word operand (or two bytes)
 
 
 
 
-        BOOLNOT,   // ![top] -> [top]
+        BOOLNOT,      // ![top] -> [top]
         BITNOT,       // ~[top] -> [top]
 
         SWAP,         // swap [top] and [next] (consider object manager stack slots?)
@@ -158,38 +113,38 @@ namespace HopperNET
         INCGLOBALB,
         DECGLOBALB,
 
-        PUSHIWLT,
+        PUSHILT,
 
         PUSHLOCALBB,
 
         POPCOPYLOCALB,
         POPCOPYRELB,
         POPCOPYGLOBALB,
-        POPCOPYLOCALW,
-        POPCOPYRELW,
-        POPCOPYGLOBALW,
+        POPCOPYLOCAL,
+        POPCOPYREL,
+        POPCOPYGLOBAL,
 
         POPCOPYLOCALB00,
         POPCOPYLOCALB02,
 
         ENTERB,
 
-        PUSHDW,
+        PUSHD,
 
         RETFAST,
 
         PUSHDB,
         EXIT,
-        BITXOR,
+        //BITXOR0,
 
-        PUSHIWLEI,
+        PUSHILEI = 0x65,
         INCGLOBALBB,
 
         JREL,
         JIXB,
-        JIXW,
+        JIX,
 
-        CALLIW,
+        CALLI,
 
         PUSHIBLE,
         PUSHIBEQ,
@@ -198,6 +153,39 @@ namespace HopperNET
         SUBB,
 
         LIBCALL,
+
+        // pop 2 -> operation -> push 1: (bit 0 set means 'signed')
+        ADD   = 0x80,
+        ADDI  = 0x81,
+        SUB   = 0x82,
+        SUBI  = 0x83,
+        DIV   = 0x84,
+        DIVI  = 0x85,
+        MUL   = 0x86,
+        MULI  = 0x87,
+        MOD   = 0x88,
+        MODI  = 0x89,
+        
+        GT    = 0x8A,
+        GTI   = 0x8B,
+        LT    = 0x8C,
+        LTI   = 0x8D,
+        GE    = 0x8E,
+        GEI   = 0x8F,
+        LE    = 0x90,
+        LEI   = 0x91,
+
+        // pop 2 -> operation -> push 1: (bit 0 set means 'signed' so these are always unsigned)
+
+        EQ      = 0x92,
+        NE      = 0x94,
+        BOOLOR  = 0x96,
+        BOOLAND = 0x98,
+        BITAND  = 0x9A,
+        BITOR   = 0x9C,
+        BITXOR  = 0x9E,
+        BITSHR  = 0xA0,
+        BITSHL  = 0xA2,
 
         UNDEFINED,
     };
@@ -1402,8 +1390,8 @@ namespace HopperNET
                     case Instruction.EQ:
                         {
 #if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
+                            uint top = Pop();
+                            uint next = Pop();
 #else
                             sp -= 2;
                             ushort sp2 = (ushort)((sp >> 1) - 1);
@@ -1411,7 +1399,7 @@ namespace HopperNET
                             uint next = stack[sp2].value;
 #endif
 #if UNDOINLINED
-                        PushBool(next == top);
+                            PushBool(next == top);
 #else
                             stack[sp2].value = (uint)((next == top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
@@ -1421,8 +1409,8 @@ namespace HopperNET
                     case Instruction.NE:
                         {
 #if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
+                            uint top = Pop();
+                            uint next = Pop();
 #else
                             sp -= 2;
                             ushort sp2 = (ushort)((sp >> 1) - 1);
@@ -1430,7 +1418,7 @@ namespace HopperNET
                             uint next = stack[sp2].value;
 #endif
 #if UNDOINLINED
-                        PushBool(next != top);
+                            PushBool(next != top);
 #else
                             stack[sp2].value = (uint)((next != top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
@@ -1440,8 +1428,8 @@ namespace HopperNET
                     case Instruction.LE:
                         {
 #if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
+                            uint top = Pop();
+                            uint next = Pop();
 #else
                             sp -= 2;
                             ushort sp2 = (ushort)((sp >> 1) - 1);
@@ -1449,7 +1437,7 @@ namespace HopperNET
                             uint next = stack[sp2].value;
 #endif
 #if UNDOINLINED
-                        PushBool(next <= top);
+                            PushBool(next <= top);
 #else
                             stack[sp2].value = (uint)((next <= top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
@@ -1459,8 +1447,8 @@ namespace HopperNET
                     case Instruction.LT:
                         {
 #if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
+                            uint top = Pop();
+                            uint next = Pop();
 #else
                             sp -= 2;
                             ushort sp2 = (ushort)((sp >> 1) - 1);
@@ -1468,7 +1456,7 @@ namespace HopperNET
                             uint next = stack[sp2].value;
 #endif
 #if UNDOINLINED
-                        PushBool(next < top);
+                            PushBool(next < top);
 #else
                             stack[sp2].value = (uint)((next < top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
@@ -1487,7 +1475,7 @@ namespace HopperNET
                             uint next = stack[sp2].value;
 #endif
 #if UNDOINLINED
-                        PushBool(next >= top);
+                            PushBool(next >= top);
 #else
                             stack[sp2].value = (uint)((next >= top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
@@ -1511,6 +1499,36 @@ namespace HopperNET
                             stack[sp2].value = (uint)((next > top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
 #endif
+                        }
+                        break;
+
+                    case Instruction.GTI:
+                        {
+                            short topi = PopInt();
+                            short nexti = PopInt();
+                            PushBool(nexti > topi);
+                        }
+                        break;
+                    case Instruction.GEI:
+                        {
+                            short topi = PopInt();
+                            short nexti = PopInt();
+                            PushBool(nexti >= topi);
+                        }
+                        break;
+
+                    case Instruction.LTI:
+                        {
+                            short topi = PopInt();
+                            short nexti = PopInt();
+                            PushBool(nexti < topi);
+                        }
+                        break;
+                    case Instruction.LEI:
+                        {
+                            short topi = PopInt();
+                            short nexti = PopInt();
+                            PushBool(nexti <= topi);
                         }
                         break;
 
@@ -1552,7 +1570,12 @@ namespace HopperNET
 #endif
                         }
                         break;
-                        
+
+                    case Instruction.BITXOR:
+                        Push(Pop() ^ Pop(), HopperType.tUInt);
+                        break;
+
+
                     case Instruction.BITSHR:
                         {
 #if UNDOINLINED
@@ -1577,8 +1600,8 @@ namespace HopperNET
                     case Instruction.BITSHL:
                         {
 #if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
+                            uint top = Pop();
+                            uint next = Pop();
 #else
                             sp -= 2;
                             ushort sp2 = (ushort)((sp >> 1) - 1);
@@ -1599,8 +1622,8 @@ namespace HopperNET
                     case Instruction.BOOLOR:
                         {
 #if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
+                            uint top = Pop();
+                            uint next = Pop();
 #else
                             sp -= 2;
                             ushort sp2 = (ushort)((sp >> 1) - 1);
@@ -1618,8 +1641,8 @@ namespace HopperNET
                     case Instruction.BOOLAND:
                         {
 #if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
+                            uint top = Pop();
+                            uint next = Pop();
 #else
                             sp -= 2;
                             ushort sp2 = (ushort)((sp >> 1) - 1);
@@ -1627,20 +1650,19 @@ namespace HopperNET
                             uint next = stack[sp2].value;
 #endif
 #if UNDOINLINED
-                        PushBool(((0 != next) && (0 != top)));
+                            PushBool(((0 != next) && (0 != top)));
 #else
                             stack[sp2].value = (uint)(((0 != next) && (0 != top)) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
 #endif
                         }
                         break;
-                     
+
                     case Instruction.ADDI:
                         {
                             short topi = PopInt();
                             short nexti = PopInt();
                             PushInt((short)(nexti + topi));
-                            //PushLong(nexti + topi);
                         }
                         break;
                     case Instruction.SUBI:
@@ -1648,7 +1670,6 @@ namespace HopperNET
                             short topi = PopInt();
                             short nexti = PopInt();
                             PushInt((short)(nexti - topi));
-                            //PushLong(nexti - topi);
                         }
                         break;
                     case Instruction.MULI:
@@ -1656,7 +1677,6 @@ namespace HopperNET
                             short topi = PopInt();
                             short nexti = PopInt();
                             PushInt((short)(nexti * topi));
-                            //PushLong(nexti * topi);
                         }
                         break;
                     case Instruction.DIVI:
@@ -1669,7 +1689,6 @@ namespace HopperNET
                                 break;
                             }
                             PushInt((short)(nexti / topi));
-                            //PushLong(nexti / topi);
                         }
                         break;
                     case Instruction.MODI:
@@ -1682,38 +1701,9 @@ namespace HopperNET
                                 break;
                             }
                             PushInt((short)(nexti % topi));
-                            //PushLong(nexti % topi);
                         }
                         break;
-                    case Instruction.GTI:
-                        {
-                            short topi = PopInt();
-                            short nexti = PopInt();
-                            PushBool(nexti > topi);
-                        }
-                        break;
-                    case Instruction.GEI:
-                        {
-                            short topi = PopInt();
-                            short nexti = PopInt();
-                            PushBool(nexti >= topi);
-                        }
-                        break;
-
-                    case Instruction.LTI:
-                        {
-                            short topi = PopInt();
-                            short nexti = PopInt();
-                            PushBool(nexti < topi);
-                        }
-                        break;
-                    case Instruction.LEI:
-                        {
-                            short topi = PopInt();
-                            short nexti = PopInt();
-                            PushBool(nexti <= topi);
-                        }
-                        break;
+                    
 
                     case Instruction.LIBCALL:
                         {
@@ -1818,7 +1808,7 @@ namespace HopperNET
                         }
                         break;
 
-                    case Instruction.RETRETB:
+                    case Instruction.RETRESB:
                         {
                             // function return value
                             operand = code[pc + currentContext.CodeOffset];
@@ -1851,6 +1841,88 @@ namespace HopperNET
                             int retLocation = (sp >> 1) - 1;
                             HopperType type = stack[retLocation].type;
                                 
+                            // clear the locals and arguments off the stack (return value is already dealt with if needed)
+                            sp -= operand;
+                            int sp2 = (sp >> 1) - 1;
+                            if (type <= HopperType.tLong)
+                            {
+                                stack[sp2].value = stack[retLocation].value;
+                                stack[sp2].type = type;
+                            }
+                            else
+                            {
+                                type = stack[retLocation].reference.Type;
+                                if (type <= HopperType.tLong)
+                                {
+                                    type = HopperType.tVariant;
+                                }
+                                stack[sp2].reference = stack[retLocation].reference;
+                                stack[sp2].type = type;
+                            }
+#endif
+
+                            bp = PopCS();
+                            if (csp != 0) // Main() entry has no return address
+                            {
+                                // POP address -> PC                
+                                pc = PopCS();
+#if PROFILE
+                                KeepFnReturn(currentContext, pc);
+#endif
+                            }
+
+                            if (currentISR != 0)
+                            {
+                                if (preISRcsp == csp)
+                                {
+                                    currentISR = 0; // ISR returned
+                                    inISR = false;
+                                }
+                            }
+
+                            if (csp == 0)
+                            {
+                                Halted = true;
+                            }
+                        }
+                        break;
+
+                    case Instruction.RETRES:
+                        {
+                            // function return value
+
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
+                            pc += 2;
+
+
+#if UNDOINLINED
+                            uint top = 0;
+                            Variant vtop = null;
+                            HopperType type = GetStackType((ushort)(sp - 2));
+                            bool isValueType = Type_IsValueType(type);
+                            if (isValueType)
+                            {
+                                top = Pop(); 
+                            }
+                            else
+                            {
+                                vtop = PopVariant(HopperType.tUndefined);
+                            }
+                            // clear the locals and arguments off the stack (return value is already dealt with if needed)
+                            ClearStack(operand);
+                            // restore function return value before GC
+                            if (isValueType)
+                            {
+                                Push(top, type);
+                            }
+                            else
+                            {
+                                Push(vtop);
+                            }
+#else
+                            int retLocation = (sp >> 1) - 1;
+                            HopperType type = stack[retLocation].type;
+
                             // clear the locals and arguments off the stack (return value is already dealt with if needed)
                             sp -= operand;
                             int sp2 = (sp >> 1) - 1;
@@ -1992,6 +2064,53 @@ namespace HopperNET
                         }
                         break;
 
+                    case Instruction.POPLOCAL:
+                        {
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
+                            pc += 2;
+
+                            short offset = (short)operand;
+                            if (operand > 0x7FFF)
+                            {
+                                offset = (short)(operand - 0x10000); // 0xFFFF -> -1
+                            }
+                            ushort localAddress = (ushort)(bp + offset);
+
+                            HopperType type = GetStackType((ushort)(sp - 2));
+                            if (copyNextPop)
+                            {
+                                if ((type == HopperType.tLong) || (type == HopperType.tFloat))
+                                {
+                                    PutStack(localAddress, Pop(), type);
+                                }
+                                else
+                                {
+                                    Variant referenceNew = PopVariant(HopperType.tUndefined);
+                                    Variant referenceOld = null;
+                                    HopperType targetType = GetStackType(localAddress);
+                                    if (!Type_IsValueType(targetType))
+                                    {
+                                        referenceOld = GetStackVariant(localAddress);
+                                    }
+                                    if (referenceNew != referenceOld)
+                                    {
+                                        referenceNew = referenceNew.Clone();
+                                        PutStackVariant(localAddress, referenceNew);
+                                    }
+                                }
+                                copyNextPop = false;
+                            }
+                            else if (Type_IsValueType(type))
+                            {
+                                PutStack(localAddress, Pop(), type);
+                            }
+                            else
+                            {
+                                PutStackVariant(localAddress, PopVariant(type));
+                            }
+                        }
+                        break;
+
 
                     case Instruction.POPLOCALB:
                         {
@@ -2021,6 +2140,55 @@ namespace HopperNET
                                     {
                                         referenceOld = GetStackVariant(localAddress);
                                     }
+                                    if (referenceNew != referenceOld)
+                                    {
+                                        referenceNew = referenceNew.Clone();
+                                        PutStackVariant(localAddress, referenceNew);
+                                    }
+                                }
+                                copyNextPop = false;
+                            }
+                            else if (Type_IsValueType(type))
+                            {
+                                PutStack(localAddress, Pop(), type);
+                            }
+                            else
+                            {
+                                PutStackVariant(localAddress, PopVariant(type));
+                            }
+                        }
+                        break;
+
+                    case Instruction.POPREL:
+                        {
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
+                            pc += 2;
+
+                            short offset = (short)operand;
+                            if (operand > 0x7FFF)
+                            {
+                                offset = (short)(operand - 0x10000); // 0xFFFF -> -1
+                            }
+
+                            ushort referenceAddress = (ushort)(bp + offset);
+                            ushort localAddress = (ushort)GetStack(referenceAddress);
+                            HopperType type = GetStackType((ushort)(sp - 2));
+                            if (copyNextPop)
+                            {
+                                if ((type == HopperType.tLong) || (type == HopperType.tFloat))
+                                {
+                                    PutStack(localAddress, Pop(), type);
+                                }
+                                else
+                                {
+                                    Variant referenceNew = PopVariant(HopperType.tUndefined);
+                                    Variant referenceOld = null;
+                                    HopperType targetType = GetStackType(localAddress);
+                                    if (!Type_IsValueType(targetType))
+                                    {
+                                        referenceOld = GetStackVariant(localAddress);
+                                    }
+
                                     if (referenceNew != referenceOld)
                                     {
                                         referenceNew = referenceNew.Clone();
@@ -2126,6 +2294,51 @@ namespace HopperNET
                         }
                         break;
 
+                    case Instruction.PUSHLOCAL:
+                        {
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
+                            pc += 2;
+
+                            short offset = (short)operand;
+                            if (operand > 0x7FFF)
+                            {
+                                offset = (short)(operand - 0x10000); // 0xFFFF -> -1
+                            }
+
+#if UNDOINLINED
+                            ushort localAddress = (ushort)(bp + offset);
+                            HopperType type = GetStackType(localAddress);
+                            if (Type_IsValueType(type))
+                            {
+                                Push(GetStack(localAddress), type);
+                            }
+                            else
+                            {
+                                Push(GetStackVariant(localAddress));
+                            }
+#else
+                            ushort localAddress2 = (ushort)((bp + offset) >> 1);
+                            HopperType type = stack[localAddress2].type;
+                            ushort sp2 = (ushort)(sp >> 1);
+                            if (type <= HopperType.tLong)
+                            {
+                                stack[sp2].value = stack[localAddress2].value;
+                            }
+                            else
+                            {
+                                type = stack[localAddress2].reference.Type;
+                                if (type <= HopperType.tLong)
+                                {
+                                    type = HopperType.tVariant;
+                                }
+                                stack[sp2].reference = stack[localAddress2].reference;
+                            }
+                            stack[sp2].type = type;
+                            sp += 2;
+#endif
+                        }
+                        break;
+
                     case Instruction.PUSHLOCALB:
                         {
                             operand = code[pc + currentContext.CodeOffset];
@@ -2168,7 +2381,30 @@ namespace HopperNET
                             stack[sp2].type = type;
                             sp += 2;
 #endif
+                        }
+                        break;
 
+                    case Instruction.PUSHREL:
+                        {
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
+                            pc += 2;
+
+                            short offset = (short)operand;
+                            if (operand > 0x7FFF)
+                            {
+                                offset = (short)(operand - 0x10000); // 0xFFFF -> -1
+                            }
+                            ushort referenceAddress = (ushort)(bp + offset);
+                            ushort localAddress = (ushort)GetStack(referenceAddress);
+                            HopperType type = GetStackType(localAddress);
+                            if (Type_IsValueType(type))
+                            {
+                                Push(GetStack(localAddress), type);
+                            }
+                            else
+                            {
+                                Push(GetStackVariant(localAddress));
+                            }
                         }
                         break;
 
@@ -2211,7 +2447,22 @@ namespace HopperNET
                         }
                         break;
 
-                        
+                    case Instruction.PUSHSTACKADDR:
+                        {
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
+                            pc += 2;
+
+                            short offset = (short)operand;
+                            if (operand > 0x7FFF)
+                            {
+                                offset = (short)(operand - 0x10000); // 0xFFFF -> -1
+                            }
+                            ushort localAddress = (ushort)(bp + offset);
+                            Push(localAddress, HopperType.tReference);
+                        }
+                        break;
+
+
 
                     case Instruction.INCLOCALB:
                         {
@@ -2350,13 +2601,13 @@ namespace HopperNET
                         }
                         break;
 
-                    case Instruction.PUSHIW:
+                    case Instruction.PUSHI:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
 #if UNDOINLINED
-                        Push(operand, HopperType.tUInt);
+                            Push(operand, HopperType.tUInt);
 #else
                             {
                                 ushort sp2 = (ushort)(sp >> 1);
@@ -2368,7 +2619,7 @@ namespace HopperNET
                         }
                         break;
 
-                    case Instruction.PUSHIWLE:
+                    case Instruction.PUSHILE:
                         {
 
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
@@ -2377,10 +2628,10 @@ namespace HopperNET
 
 
 #if UNDOINLINED
-                        Push(operand, HopperType.tUInt);
-                        uint top = Pop();
-                        uint next = Pop();
-                        PushBool(next <= top);
+                            Push(operand, HopperType.tUInt);
+                            uint top = Pop();
+                            uint next = Pop();
+                            PushBool(next <= top);
 #else
                             {
                                 ushort sp2 = (ushort)(sp >> 1);
@@ -2461,7 +2712,7 @@ namespace HopperNET
                         }
                         break;
 
-                    case Instruction.CALLW:
+                    case Instruction.CALL:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -2483,7 +2734,7 @@ namespace HopperNET
                         }
                         break;
 
-                    case Instruction.JW:
+                    case Instruction.J:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -2496,7 +2747,7 @@ namespace HopperNET
                             pc = (ushort)(pc + offset - 3);
                         }
                         break;
-                    case Instruction.JZW:
+                    case Instruction.JZ:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -2518,7 +2769,7 @@ namespace HopperNET
                             }
                         }
                         break;
-                    case Instruction.JNZW:
+                    case Instruction.JNZ:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -2540,7 +2791,7 @@ namespace HopperNET
                             }
                         }
                         break;
-                    case Instruction.PUSHGLOBALW:
+                    case Instruction.PUSHGLOBAL:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -2577,7 +2828,7 @@ namespace HopperNET
 #endif
                         }
                         break;
-                    case Instruction.POPGLOBALW:
+                    case Instruction.POPGLOBAL:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -2617,7 +2868,7 @@ namespace HopperNET
                             }
                         }
                         break;
-                    case Instruction.RETW:
+                    case Instruction.RET:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -2734,7 +2985,7 @@ namespace HopperNET
                         }
                         break;
 
-                    case Instruction.POPCOPYGLOBALW:
+                    case Instruction.POPCOPYGLOBAL:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -2960,7 +3211,7 @@ namespace HopperNET
                         }
                         break;
 
-                    case Instruction.PUSHIWLT:
+                    case Instruction.PUSHILT:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -2990,7 +3241,7 @@ namespace HopperNET
                         }
                         break;
 
-                    case Instruction.PUSHIWLEI:
+                    case Instruction.PUSHILEI:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -3085,7 +3336,7 @@ namespace HopperNET
                         break;
 
                     case Instruction.JIXB:
-                    case Instruction.JIXW:
+                    case Instruction.JIX:
                         {
                             uint switchCase = Pop();
 
@@ -3106,7 +3357,7 @@ namespace HopperNET
                             pc = (ushort)(pc - jumpBackOffset - 5);
 
                             ushort tableSize = (ushort)(maxRange - minRange + 1);
-                            if (opCode == Instruction.JIXW)
+                            if (opCode == Instruction.JIX)
                             {
                                 tableSize = (ushort)(tableSize << 1);
                             }
@@ -3115,7 +3366,7 @@ namespace HopperNET
                             if ((switchCase >= minRange) && (switchCase <= maxRange))
                             {
                                 // in the table
-                                if (opCode == Instruction.JIXW)
+                                if (opCode == Instruction.JIX)
                                 {
                                     uint index = tpc + (switchCase - minRange)*2;
                                     offset = (uint)(code[index + currentContext.CodeOffset] + (code[index+ 1 + currentContext.CodeOffset] << 8));
@@ -3200,7 +3451,7 @@ namespace HopperNET
                         }
                         break;
 
-                    case Instruction.PUSHDW: // only difference on Windows is a signal to the optimizer
+                    case Instruction.PUSHD: // only difference on Windows is a signal to the optimizer
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
@@ -3470,9 +3721,6 @@ namespace HopperNET
                         PushBool(Pop() == 0);
                         break;
 
-                    case Instruction.BITXOR:
-                        Push(Pop() ^ Pop(), HopperType.tUInt);
-                        break;
                     case Instruction.SWAP:
                         {
                             HopperType topType = GetStackType((ushort)(sp - 2));

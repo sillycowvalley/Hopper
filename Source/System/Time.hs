@@ -1,9 +1,7 @@
 unit Time
 {
-#ifndef TINYHOPPER    
-    long Micros { get system; }
     long Millis  { get system; }
-#endif
+
 #ifdef MCU
     Delay(uint ms) system;
 #else

@@ -45,6 +45,9 @@ program Optimize
     { 
         get { return target6502; }
     }
+    bool isTinyHopper;
+    bool IsTinyHopper { get { return isTinyHopper; }}
+    
     CheckTarget()
     {
         foreach (var kv in symbols)
@@ -59,13 +62,15 @@ program Optimize
                     {
                         target6502 = true;
                     }
+                    if (pdValues.Contains("TINYHOPPER"))
+                    {
+                        isTinyHopper = true;
+                    }
                     break;
                 }
             }
         } // kv
     }
-    
-    
     
     bool CompareBeforeAndAfter(string codePath, string optPath)
     {
@@ -192,19 +197,22 @@ program Optimize
                 codeBefore = codeBefore + size;
             }
             CodePoints.MarkReachableInstructions();
-            if (CodePoints.OptimizeFrameRemoval())
+            if (!IsTinyHopper)
             {
-                modified = true;
-            }
-            if (CodePoints.OptimizeENTERPUSHI0())
-            {
-                modified = true;
+                if (CodePoints.OptimizeFrameRemoval())
+                {
+                    modified = true;
+                }
+                if (CodePoints.OptimizeENTERPUSHI0())
+                {
+                    modified = true;
+                }
             }
             if (CodePoints.OptimizeDECSPRET())
             {
                 modified = true;
             }
-            if (CodePoints.OptimizePUSHRETRET())
+            if (CodePoints.OptimizePUSHRETRES())
             {
                 modified = true;
             }
@@ -212,9 +220,12 @@ program Optimize
             {
                 modified = true;
             }
-            if (CodePoints.OptimizeJumpW())
+            if (!IsTinyHopper)
             {
-                modified = true;
+                if (CodePoints.OptimizeJumpW()) // W->B
+                {
+                    modified = true;
+                }
             }
             if (OptimizeJumpToJump())
             {
@@ -275,7 +286,7 @@ program Optimize
             {
                 modified = true;
             }
-            if (CodePoints.OptimizeCOPYPOP())
+            if (!IsTinyHopper && CodePoints.OptimizeCOPYPOP())
             {
                 modified = true;
             }

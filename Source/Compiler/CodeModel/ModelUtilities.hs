@@ -4,11 +4,11 @@ unit ModelUtilities
     {
         switch (opCode)
         {
-            case Instruction.JW:
+            case Instruction.J:
             case Instruction.JB:
-            case Instruction.JZW:
+            case Instruction.JZ:
             case Instruction.JZB:
-            case Instruction.JNZW:
+            case Instruction.JNZ:
             case Instruction.JNZB:
             {
                 return true;
@@ -20,7 +20,7 @@ unit ModelUtilities
     {
         switch (opCode)
         {
-            case Instruction.JIXW:
+            case Instruction.JIX:
             case Instruction.JIXB:
             {
                 return true;
@@ -32,9 +32,9 @@ unit ModelUtilities
     {
         switch (opCode)
         {
-            case Instruction.JW:
-            case Instruction.JZW:
-            case Instruction.JNZW:
+            case Instruction.J:
+            case Instruction.JZ:
+            case Instruction.JNZ:
             {
                 return true;
             }
@@ -58,9 +58,9 @@ unit ModelUtilities
     {
         switch (opCode)
         {
-            case Instruction.JZW:
+            case Instruction.JZ:
             case Instruction.JZB:
-            case Instruction.JNZW:
+            case Instruction.JNZ:
             case Instruction.JNZB:
             {
                 return true;
@@ -72,7 +72,7 @@ unit ModelUtilities
     {
         switch (opCode)
         {
-            case Instruction.JW:
+            case Instruction.J:
             case Instruction.JB:
             {
                 return true;
@@ -86,10 +86,10 @@ unit ModelUtilities
         {
             case Instruction.RETFAST:
             case Instruction.RETB:
-            case Instruction.RETW:
+            case Instruction.RET:
             case Instruction.RET0:
-            case Instruction.RETRETW:
-            case Instruction.RETRETB:
+            case Instruction.RETRES:
+            case Instruction.RETRESB:
             case Instruction.DIE:
             {
                 return true;
@@ -103,8 +103,8 @@ unit ModelUtilities
         {
             case Instruction.PUSHLOCALB:
             case Instruction.POPLOCALB:
-            case Instruction.PUSHLOCALW:
-            case Instruction.POPLOCALW:
+            case Instruction.PUSHLOCAL:
+            case Instruction.POPLOCAL:
             case Instruction.PUSHLOCALB00:
             case Instruction.PUSHLOCALB02:
             case Instruction.POPLOCALB00:
@@ -112,7 +112,7 @@ unit ModelUtilities
             case Instruction.POPCOPYLOCALB:
             case Instruction.POPCOPYLOCALB00:
             case Instruction.PUSHLOCALBB:
-            case Instruction.POPCOPYLOCALW:
+            case Instruction.POPCOPYLOCAL:
             case Instruction.POPCOPYLOCALB02:
             {
                 return true;
@@ -126,7 +126,7 @@ unit ModelUtilities
         {
             case Instruction.POPCOPYLOCALB:
             case Instruction.POPCOPYLOCALB00:
-            case Instruction.POPCOPYLOCALW:
+            case Instruction.POPCOPYLOCAL:
             case Instruction.POPCOPYLOCALB02:
             {
                 return true;
@@ -150,25 +150,25 @@ unit ModelUtilities
             {
                 opCode = Instruction.POPCOPYLOCALB02;
             }
-            case Instruction.POPLOCALW:
+            case Instruction.POPLOCAL:
             {
-                opCode = Instruction.POPCOPYLOCALW;
+                opCode = Instruction.POPCOPYLOCAL;
             }
             case Instruction.POPGLOBALB:
             {
                 opCode = Instruction.POPCOPYGLOBALB;
             }
-            case Instruction.POPGLOBALW:
+            case Instruction.POPGLOBAL:
             {
-                opCode = Instruction.POPCOPYGLOBALW;
+                opCode = Instruction.POPCOPYGLOBAL;
             }
             case Instruction.POPRELB:
             {
                 opCode = Instruction.POPCOPYRELB;
             }
-            case Instruction.POPRELW:
+            case Instruction.POPREL:
             {
-                opCode = Instruction.POPCOPYRELW;
+                opCode = Instruction.POPCOPYREL;
             }
         }
         return opCode;
@@ -179,12 +179,12 @@ unit ModelUtilities
         {
             case Instruction.POPLOCALB:   
             case Instruction.POPGLOBALB:   
-            case Instruction.POPLOCALW:   
-            case Instruction.POPGLOBALW:   
+            case Instruction.POPLOCAL:   
+            case Instruction.POPGLOBAL:   
             case Instruction.POPLOCALB00:   
             case Instruction.POPLOCALB02:   
             case Instruction.POPRELB:   
-            case Instruction.POPRELW:   
+            case Instruction.POPREL:   
             {
                 return true;
             }
@@ -198,14 +198,14 @@ unit ModelUtilities
             case Instruction.PUSHIB:
             case Instruction.PUSHI0:
             case Instruction.PUSHI1:
-            case Instruction.PUSHIW:
+            case Instruction.PUSHI:
             case Instruction.PUSHIM1:
             case Instruction.PUSHLOCALB:
             case Instruction.PUSHGLOBALB:
             case Instruction.PUSHRELB:
-            case Instruction.PUSHLOCALW:
-            case Instruction.PUSHGLOBALW:
-            case Instruction.PUSHRELW:
+            case Instruction.PUSHLOCAL:
+            case Instruction.PUSHGLOBAL:
+            case Instruction.PUSHREL:
             case Instruction.PUSHLOCALB00:
             case Instruction.PUSHLOCALB02:
             {

@@ -15,32 +15,63 @@ typedef UInt ISRDelegate;
 
 // method definitions
 enum OpCode {
-    eADD = 0x0000,
-    eSUB = 0x0001,
-    eDIV = 0x0002,
-    eMUL = 0x0003,
-    eMOD = 0x0004,
-    eEQ = 0x0005,
-    eNE = 0x0006,
-    eGT = 0x0007,
-    eLT = 0x0008,
-    eGE = 0x0009,
-    eLE = 0x000A,
-    eBOOLOR = 0x000B,
-    eBOOLAND = 0x000C,
-    eBITOR = 0x000D,
-    eBITAND = 0x000E,
-    eBITSHL = 0x000F,
-    eBITSHR = 0x0010,
-    eADDI = 0x0011,
-    eSUBI = 0x0012,
-    eDIVI = 0x0013,
-    eMULI = 0x0014,
-    eMODI = 0x0015,
-    eGTI = 0x0016,
-    eLTI = 0x0017,
-    eGEI = 0x0018,
-    eLEI = 0x0019,
+    ePUSHI = 0x0037,
+    ePUSHD = 0x0060,
+    ePUSHLOCAL = 0x0039,
+    ePUSHREL = 0x003B,
+    ePUSHGLOBAL = 0x003D,
+    ePUSHSTACKADDR = 0x003E,
+    ePUSHGP = 0x0047,
+    ePOPLOCAL = 0x0038,
+    ePOPREL = 0x003A,
+    ePOPGLOBAL = 0x003C,
+    eCOPYNEXTPOP = 0x0048,
+    eBOOLNOT = 0x0041,
+    eBITNOT = 0x0042,
+    eSWAP = 0x0043,
+    eDUP = 0x0027,
+    eDECSP = 0x0028,
+    eENTER = 0x0049,
+    eNOP = 0x0050,
+    eCAST = 0x0051,
+    eJZ = 0x0031,
+    eJNZ = 0x0032,
+    eJW = 0x0033,
+    eJREL = 0x0067,
+    eRET = 0x0035,
+    eRETRES = 0x0036,
+    eCALLI = 0x006A,
+    eCALL = 0x0034,
+    eCALLREL = 0x004B,
+    eSYSCALL = 0x0026,
+    eLIBCALL = 0x006F,
+    eADD = 0x0080,
+    eADDI = 0x0081,
+    eSUB = 0x0082,
+    eSUBI = 0x0083,
+    eDIV = 0x0084,
+    eDIVI = 0x0085,
+    eMUL = 0x0086,
+    eMULI = 0x0087,
+    eMOD = 0x0088,
+    eMODI = 0x0089,
+    eGT = 0x008A,
+    eGTI = 0x008B,
+    eLT = 0x008C,
+    eLTI = 0x008D,
+    eGE = 0x008E,
+    eGEI = 0x008F,
+    eLE = 0x0090,
+    eLEI = 0x0091,
+    eEQ = 0x0092,
+    eNE = 0x0094,
+    eBOOLOR = 0x0096,
+    eBOOLAND = 0x0098,
+    eBITAND = 0x009A,
+    eBITOR = 0x009C,
+    eBITXOR = 0x009E,
+    eBITSHR = 0x00A0,
+    eBITSHL = 0x00A2,
     ePUSHIB = 0x001A,
     ePOPLOCALB = 0x001B,
     ePUSHLOCALB = 0x001C,
@@ -51,46 +82,31 @@ enum OpCode {
     ePUSHSTACKADDRB = 0x0021,
     eINCLOCALB = 0x0022,
     eDECLOCALB = 0x0023,
-    eDUP = 0x0027,
-    eDECSP = 0x0028,
     eRETB = 0x002A,
-    eRETRETB = 0x002B,
+    eRETRESB = 0x002B,
     eCALLB = 0x002C,
     eTESTBPB = 0x002D,
     eJZB = 0x002E,
     eJNZB = 0x002F,
     eJB = 0x0030,
-    eJZW = 0x0031,
-    eJNZW = 0x0032,
-    eJW = 0x0033,
-    eCALLW = 0x0034,
-    ePUSHIW = 0x0037,
+    eJIXB = 0x0068,
+    eJIX = 0x0069,
     eINCLOCALBB = 0x003F,
-    ePUSHIWLE = 0x0040,
-    eBOOLNOT = 0x0041,
-    eBITNOT = 0x0042,
-    eSWAP = 0x0043,
+    ePUSHILE = 0x0040,
     ePUSHI0 = 0x0044,
     ePUSHI1 = 0x0045,
     ePUSHIM1 = 0x0046,
-    ePUSHGP = 0x0047,
     eRET0 = 0x004A,
-    eCALLREL = 0x004B,
     ePOPLOCALB00 = 0x004C,
     ePOPLOCALB02 = 0x004D,
     ePUSHLOCALB00 = 0x004E,
     ePUSHLOCALB02 = 0x004F,
     eSYSCALL0 = 0x0024,
     eSYSCALL1 = 0x0025,
-    eSYSCALL = 0x0026,
-    eCOPYNEXTPOP = 0x0048,
-    eENTER = 0x0049,
-    eNOP = 0x0050,
-    eCAST = 0x0051,
     ePUSHGLOBALBB = 0x0052,
     eINCGLOBALB = 0x0053,
     eDECGLOBALB = 0x0054,
-    ePUSHIWLT = 0x0055,
+    ePUSHILT = 0x0055,
     ePUSHLOCALBB = 0x0056,
     ePOPCOPYLOCALB = 0x0057,
     ePOPCOPYRELB = 0x0058,
@@ -98,22 +114,15 @@ enum OpCode {
     ePOPCOPYLOCALB00 = 0x005D,
     ePOPCOPYLOCALB02 = 0x005E,
     eENTERB = 0x005F,
-    ePUSHDW = 0x0060,
-    eRETFAST = 0x0061,
-    ePUSHDB = 0x0062,
     eEXIT = 0x0063,
-    eBITXOR = 0x0064,
-    ePUSHIWLEI = 0x0065,
+    ePUSHDB = 0x0062,
+    ePUSHILEI = 0x0065,
     eINCGLOBALBB = 0x0066,
-    eJREL = 0x0067,
-    eJIXB = 0x0068,
-    eJIXW = 0x0069,
-    eCALLIW = 0x006A,
+    eRETFAST = 0x0061,
     ePUSHIBLE = 0x006B,
     ePUSHIBEQ = 0x006C,
     eADDB = 0x006D,
     eSUBB = 0x006E,
-    eLIBCALL = 0x006F,
 };
 
 enum SysCall {
@@ -615,48 +624,24 @@ Bool Instructions_PushGlobalB();
 Bool Instructions_PushStackAddrB();
 Bool Instructions_IncLocalB();
 Bool Instructions_DecLocalB();
-Bool Instructions_Dup();
-Bool Instructions_DecSP();
-Bool Instructions_RetB();
-Bool Instructions_RetRetB();
 Bool Instructions_CallB();
-Bool Instructions_TestBPB();
-Bool Instructions_Exit();
 Bool Instructions_JZB();
 Bool Instructions_JNZB();
 Bool Instructions_JB();
-Bool Instructions_JZW();
-Bool Instructions_JNZW();
-Bool Instructions_JW();
-Bool Instructions_CallW();
-Bool Instructions_PushIW();
 Bool Instructions_IncLocalBB();
-Bool Instructions_PushIWLE();
-Bool Instructions_BoolNot();
-Bool Instructions_BitNot();
-Bool Instructions_Swap();
+Bool Instructions_Ret0();
 Bool Instructions_PushI0();
 Bool Instructions_PushI1();
-Bool Instructions_PushIM1();
-Bool Instructions_PushGP();
-Bool Instructions_Ret0();
-Bool Instructions_CallRel();
 Bool Instructions_PopLocalB00();
 Bool Instructions_PopLocalB02();
 Bool Instructions_PushLocalB00();
 Bool Instructions_PushLocalB02();
 Bool Instructions_SysCall0();
 Bool Instructions_SysCall1();
-Bool Instructions_SysCall();
-Bool Instructions_CNP();
-Bool Instructions_Enter();
-Bool Instructions_NOP();
-Bool Instructions_Cast();
 Bool Instructions_PushGlobalBB();
 Bool Instructions_IncGlobalB();
 Bool Instructions_DecGlobalB();
 Bool Instructions_IncGlobalBB();
-Bool Instructions_PushIWLT();
 Bool Instructions_PushLocalBB();
 Bool Instructions_PopCopyLocalB();
 Bool Instructions_PopCopyRelB();
@@ -664,18 +649,54 @@ Bool Instructions_PopCopyGlobalB();
 Bool Instructions_PopCopyLocalB00();
 Bool Instructions_PopCopyLocalB02();
 Bool Instructions_EnterB();
-Bool Instructions_RetFast();
-Bool Instructions_BitXor();
-Bool Instructions_PushIWLEI();
-Bool Instructions_JREL();
 Bool Instructions_JIXB();
-Bool Instructions_JIXW();
-Bool Instructions_CallIW();
+Bool Instructions_PushILE();
+Bool Instructions_PushILT();
 Bool Instructions_PushIBLE();
+Bool Instructions_PushILEI();
 Bool Instructions_PushIBEQ();
 Bool Instructions_AddB();
 Bool Instructions_SubB();
+Bool Instructions_RetB();
+Bool Instructions_RetResB();
+Bool Instructions_RetFast();
+Bool Instructions_PopLocal();
+Bool Instructions_PushLocal();
+Bool Instructions_PopRel();
+Bool Instructions_PushRel();
+Bool Instructions_PopGlobal();
+Bool Instructions_PushGlobal();
+Bool Instructions_PushStackAddr();
+Bool Instructions_Dup();
+Bool Instructions_DecSP();
+Bool Instructions_Ret();
+Bool Instructions_RetRes();
+Bool Instructions_TestBPB();
+Bool Instructions_Exit();
+Bool Instructions_JZ();
+Bool Instructions_JNZ();
+Bool Instructions_J();
+Bool Instructions_PushIW();
+Bool Instructions_BoolNot();
+Bool Instructions_BitNot();
+Bool Instructions_Swap();
+Bool Instructions_PushIM1();
+Bool Instructions_PushGP();
+Bool Instructions_CNP();
+Bool Instructions_Enter();
+Bool Instructions_NOP();
+Bool Instructions_Cast();
+Bool Instructions_BitXor();
+Bool Instructions_JREL();
+Bool Instructions_JIX();
+Bool Instructions_Call();
+Bool Instructions_CallI();
+Bool Instructions_CallRel();
+Bool Instructions_SysCall();
 Bool Instructions_LibCall();
+Bool Instructions_PopCopyLocal();
+Bool Instructions_PopCopyRel();
+Bool Instructions_PopCopyGlobal();
 UInt HRString_Clone(UInt original);
 void Runtime_ErrorDump(UInt number);
 void HRDirectory_Clear(UInt _this);
@@ -701,17 +722,17 @@ Int HopperVM_ReadByteOffsetOperand();
 UInt HopperVM_TypeStack_Get();
 UInt HopperVM_ValueStack_Get();
 void HopperVM_Put(UInt address, UInt value, Type htype);
+void HopperVM_PushCS(UInt value);
+void HopperVM_PC_Set(UInt value);
+UInt HopperVM_LookupMethod(UInt methodIndex);
 void HopperVM_BP_Set(UInt value);
 UInt HopperVM_PopCS();
-void HopperVM_PC_Set(UInt value);
-void HopperVM_PushCS(UInt value);
-UInt HopperVM_LookupMethod(UInt methodIndex);
-Bool HopperVM_ExitInline();
-Int HopperVM_ReadWordOffsetOperand();
-UInt HopperVM_ReadWordOperand();
 Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload);
-UInt HopperVM_Get(UInt address);
+UInt HopperVM_ReadWordOperand();
 Int HopperVM_PopI_R(Type & htype);
+Int HopperVM_ReadWordOffsetOperand();
+Bool HopperVM_ExitInline();
+UInt HopperVM_Get(UInt address);
 Bool HopperVM_RunInline();
 Bool Types_IsReferenceType(Type htype);
 void GC_AddReference(UInt address);
@@ -817,6 +838,7 @@ Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 Char Char_ToDigit(Byte d);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
 
 
 #endif // HOPPERRUNTIME_H

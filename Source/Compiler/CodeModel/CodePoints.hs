@@ -312,7 +312,7 @@ unit CodePoints
                 jumpTargets.Append(iIndex+1); // default is the next instruction
                 
                 byte offsetSize = 1;
-                if (opCode == Instruction.JIXW)
+                if (opCode == Instruction.JIX)
                 {
                     offsetSize = 2;
                 }
@@ -373,7 +373,7 @@ unit CodePoints
         code.Append(byte(negativeOffset >> 8));
         
         byte offsetSize = 1;
-        if (opCode == Instruction.JIXW)
+        if (opCode == Instruction.JIX)
         {
             offsetSize = 2;
         }
@@ -730,8 +730,8 @@ unit CodePoints
             if (iReachable[iIndex])
             {
                 Instruction opCode = iCodes[iIndex];
-                if (    (opCode == Instruction.CALLW)  || (opCode == Instruction.CALLB)  // method called
-                     || (opCode == Instruction.PUSHDW) || (opCode == Instruction.PUSHDB) // method referenced by delegate
+                if (    (opCode == Instruction.CALL)  || (opCode == Instruction.CALLB)  // method called
+                     || (opCode == Instruction.PUSHD) || (opCode == Instruction.PUSHDB) // method referenced by delegate
                    )
                 {
                     uint callMethodIndex = iOperands[iIndex];
@@ -788,13 +788,13 @@ unit CodePoints
                         {
                             switch (opCode)
                             {
-                                case Instruction.JZW:
+                                case Instruction.JZ:
                                 case Instruction.JZB:
                                 {
                                     // always branch
                                     mainPath = false;
                                 }
-                                case Instruction.JNZW:
+                                case Instruction.JNZ:
                                 case Instruction.JNZB:
                                 {
                                     // never branch
@@ -806,13 +806,13 @@ unit CodePoints
                         {
                             switch (opCode)
                             {
-                                case Instruction.JZW:
+                                case Instruction.JZ:
                                 case Instruction.JZB:
                                 {
                                     // never branch
                                     takeJump = false;
                                 }
-                                case Instruction.JNZW:
+                                case Instruction.JNZ:
                                 case Instruction.JNZB:
                                 {
                                     // always branch
@@ -833,7 +833,7 @@ unit CodePoints
                     }
                     // fall through to 'continue' on the non-branch path ..
                 }
-                else if ((opCode == Instruction.JIXB) || (opCode == Instruction.JIXW))
+                else if ((opCode == Instruction.JIXB) || (opCode == Instruction.JIX))
                 {
                     // JIX : always assume all the options are possible
                     <uint> jumpTargets = iJumpTargets[iIndex];
@@ -843,7 +843,7 @@ unit CodePoints
                     }
                     // fall through to 'continue' on the non-branch path ..
                 }
-                else if ((opCode == Instruction.JW) || (opCode == Instruction.JB))
+                else if ((opCode == Instruction.J) || (opCode == Instruction.JB))
                 {
                     // unconditional branch: continue on the branch path only
                     <uint> jumpTargets = iJumpTargets[iIndex];
@@ -999,7 +999,7 @@ unit CodePoints
             }
             Instruction opCode = iCodes[iIndex];
             if (   IsLOCALInstruction( opCode)
-                 || (opCode == Instruction.CALLW)
+                 || (opCode == Instruction.CALL)
                  || (opCode == Instruction.CALLB)
                  || (opCode == Instruction.CALLREL)
                )
@@ -1098,7 +1098,7 @@ unit CodePoints
                 break;
             }
             Instruction opCode = iCodes[iIndex];
-            if ((opCode == Instruction.CALLW) || (opCode == Instruction.CALLB))
+            if ((opCode == Instruction.CALL) || (opCode == Instruction.CALLB))
             {
                 uint callMethodIndex = iOperands[iIndex];
                 if (Target6502)
@@ -1198,13 +1198,13 @@ unit CodePoints
                 {
                     switch (opCode)
                     {
-                        case Instruction.JZW:
+                        case Instruction.JZ:
                         case Instruction.JZB:
                         {
                             // always branch
                             mainPathIsValid = false;
                         }
-                        case Instruction.JNZW:
+                        case Instruction.JNZ:
                         case Instruction.JNZB:
                         {
                             // never branch
@@ -1216,13 +1216,13 @@ unit CodePoints
                 {
                     switch (opCode)
                     {
-                        case Instruction.JZW:
+                        case Instruction.JZ:
                         case Instruction.JZB:
                         {
                             // never branch
                             jumpPathIsValid = false;
                         }
-                        case Instruction.JNZW:
+                        case Instruction.JNZ:
                         case Instruction.JNZB:
                         {
                             // always branch
@@ -1236,9 +1236,9 @@ unit CodePoints
                 {
                     switch (opCode)
                     {
-                        case Instruction.JZW:
+                        case Instruction.JZ:
                         {
-                            opCode = Instruction.JNZW;
+                            opCode = Instruction.JNZ;
                             invertJump = true;
                         }
                         case Instruction.JZB:
@@ -1246,9 +1246,9 @@ unit CodePoints
                             opCode = Instruction.JNZB;
                             invertJump = true;
                         }
-                        case Instruction.JNZW:
+                        case Instruction.JNZ:
                         {
-                            opCode = Instruction.JZW;
+                            opCode = Instruction.JZ;
                             invertJump = true;
                         }
                         case Instruction.JNZB:
@@ -1267,9 +1267,9 @@ unit CodePoints
                 {
                     switch (opCode)
                     {
-                        case Instruction.JZW:
+                        case Instruction.JZ:
                         case Instruction.JZB:
-                        case Instruction.JNZW:
+                        case Instruction.JNZ:
                         case Instruction.JNZB:
                         {
                             simplifyJump = true;
@@ -1295,10 +1295,10 @@ unit CodePoints
                        
                     switch (opCode)
                     {
-                        case Instruction.JZW:
-                        case Instruction.JNZW:
+                        case Instruction.JZ:
+                        case Instruction.JNZ:
                         {
-                            opCode = Instruction.JW;
+                            opCode = Instruction.J;
                         }
                         case Instruction.JZB:
                         case Instruction.JNZB:
@@ -1356,7 +1356,7 @@ unit CodePoints
             {
                 removeIt = true;
             }
-            else if ((opCode == Instruction.JB) || (opCode == Instruction.JW))
+            else if ((opCode == Instruction.JB) || (opCode == Instruction.J))
             {
                 <uint> jumpTargets = iJumpTargets[iIndex];
                 uint jumpTarget = jumpTargets[0];
@@ -1433,15 +1433,15 @@ unit CodePoints
                 {
                     switch (opCode)
                     {
-                        case Instruction.JW:
+                        case Instruction.J:
                         {
                             opCode = Instruction.JB;
                         }
-                        case Instruction.JZW:
+                        case Instruction.JZ:
                         {
                             opCode = Instruction.JZB;
                         }
-                        case Instruction.JNZW:
+                        case Instruction.JNZ:
                         {
                             opCode = Instruction.JNZB;
                         }
@@ -1565,7 +1565,7 @@ unit CodePoints
                     
                     else if (IsUnconditionalJumpInstruction(opCode) && IsMethodExitInstruction(opCodeTarget))
                     {
-                        // JB or JW -> RETx  becomes RETx
+                        // JB or J -> RETx  becomes RETx
                         uint jumpOperandWidth   = iLengths[iIndex] - 1;
                         uint targetOperandWidth = iLengths[jumpTarget] - 1;
                         if (targetOperandWidth <= jumpOperandWidth) // inserting code is harder than it may first appear (knock-on effects ..)
@@ -1575,10 +1575,10 @@ unit CodePoints
                             // OperandWidth = 1:
                             //     Instruction.DIE
                             //     Instruction.RETB
-                            //     Instruction.RETRETB
+                            //     Instruction.RETRESB
                             // OperandWidth = 2
-                            //     Instruction.RETW
-                            //     Instruction.RETRETW
+                            //     Instruction.RET
+                            //     Instruction.RETRES
                             iCodes.SetItem(iIndex, opCodeTarget);
                             iLengths.SetItem(iIndex, iLengths[jumpTarget]);
                             iOperands.SetItem(iIndex, iOperands[jumpTarget]);
@@ -1591,7 +1591,7 @@ unit CodePoints
         } // loop
         return modified;
     }
-    bool OptimizePUSHRETRET()
+    bool OptimizePUSHRETRES()
     {
         if (iCodes.Length < 3)
         {
@@ -1607,7 +1607,7 @@ unit CodePoints
             }
             Instruction opCode0  = iCodes   [iIndex];
             uint        operand0 = iOperands[iIndex];
-            if ((opCode0 == Instruction.RETRETB) && (operand0 == 2)) // RETRETB 0x02
+            if ((opCode0 == Instruction.RETRESB) && (operand0 == 2)) // RETRESB 0x02
             {
                 Instruction opCode1  = iCodes   [iIndex-1];
                 uint        operand1 = iOperands[iIndex-1];
@@ -2027,7 +2027,7 @@ unit CodePoints
             Instruction opCode0 = iCodes[iIndex]; 
             if (   (opCode3 == Instruction.ENTER) 
                 && (opCode2 == Instruction.PUSHLOCALB) // -2
-                && ((opCode1 == Instruction.POPGLOBALB) || (opCode1 == Instruction.POPGLOBALW))
+                && ((opCode1 == Instruction.POPGLOBALB) || (opCode1 == Instruction.POPGLOBAL))
                 && (opCode0 == Instruction.RETB)
                )
             {
@@ -2063,7 +2063,7 @@ unit CodePoints
             Instruction opCode1 = iCodes[iIndex-1];   
             Instruction opCode0 = iCodes[iIndex];   
             if (  ((opCode2 == Instruction.ENTER) || (opCode2 == Instruction.ENTERB))
-               && ((opCode0 == Instruction.RET0) || (opCode0 == Instruction.RETB) || (opCode0 == Instruction.RETRETB))
+               && ((opCode0 == Instruction.RET0) || (opCode0 == Instruction.RETB) || (opCode0 == Instruction.RETRESB))
                )
             {
                 Print(" X " + methodIndex.ToHexString(4) + " ");

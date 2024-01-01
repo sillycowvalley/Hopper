@@ -2,36 +2,84 @@ unit OpCodes
 {
     enum OpCode
     {
-        ADD = 0x00,
-        SUB = 0x01,
-        DIV = 0x02,
-        MUL = 0x03,
-        MOD = 0x04,
         
-        EQ = 0x05,
-        NE = 0x06,
-        GT = 0x07,
-        LT = 0x08,
-        GE = 0x09,
-        LE = 0x0A,
+        PUSHI         = 0x37, // <uint operand>
+        PUSHD         = 0x60, // <uint operand> : identical to PUSHI except that optimizer knows it points to a delegate method (reachable code)
+        PUSHLOCAL     = 0x39, // <int offset operand>
+        PUSHREL       = 0x3B, // [top] contains uint stack address
+        PUSHGLOBAL    = 0x3D, // <uint stack address operand>
+        PUSHSTACKADDR = 0x3E, // <int offset operand> pushed to [top] as uint stack address
+        PUSHGP        = 0x47, // only used for current process 'floor' for globals passed as ref arguments
         
-        BOOLOR  = 0x0B,
-        BOOLAND = 0x0C,
-        BITOR   = 0x0D,
-        BITAND  = 0x0E,
-        BITSHL  = 0x0F,
-        BITSHR  = 0x10,
+        POPLOCAL    = 0x38,   // <int offset operand>
+        POPREL      = 0x3A,   // [top] contains uint stack address
+        POPGLOBAL   = 0x3C,   // <uint stack address operand>
+        COPYNEXTPOP = 0x48,   // next POP is a copy-on-assigment of a reference type
         
-        ADDI = 0x11,
-        SUBI = 0x12,
-        DIVI = 0x13,
-        MULI = 0x14,
-        MODI = 0x15,
-        GTI = 0x16,
-        LTI = 0x17,
-        GEI = 0x18,
-        LEI = 0x19,
+        BOOLNOT = 0x41,       // ![top] -> [top]
+        BITNOT  = 0x42,       // ~[top] -> [top]
         
+        SWAP    = 0x43,       // swap [top] and [next]
+        DUP     = 0x27,       // <byte offset operand> to duplicate to [TOP] (DUP 0 means [top])
+        DECSP   = 0x28,       // <byte operand> number of bytes to subtract from SP (release reference types too)
+        
+        ENTER   = 0x49,       // new local stack frame: push BP to callstack, BP = SP
+        
+        NOP     = 0x50,       // no operation
+        
+        CAST    = 0x51,       // change type of [top] to <byte operand>
+        
+        JZ      = 0x31,       // <int offset> if [top] == 0 then PC = PC + offset else PC += 3
+        JNZ     = 0x32,       // <int offset> if [top] != 0 then PC = PC + offset else PC += 3
+        JW      = 0x33,       // PC += <int offset>
+        JREL    = 0x67,       // PC = [top]
+        
+        RET     = 0x35,       // <uint operand> of bytes to pop from stack, pop BP from callstack, pop PC from callstack
+        RETRES  = 0x36,       // pop [top] to result, <uint operand> of bytes to pop from stack, push result to [top], pop BP from callstack, pop PC from callstack
+        
+        CALLI   = 0x6A,       // optionally used at runtime to replace CALL <method index> with CALLI <immediate address>
+        CALL    = 0x34,       // CALL <method index>
+        CALLREL = 0x4B,       // call delegate based on <index> in [top]
+        SYSCALL = 0x26,       // J <system method index> [iOverload]
+        LIBCALL = 0x6F,       // J <library method index>  
+        
+        // pop 2 -> operation -> push 1: (bit 0 set means 'signed')
+        
+        ADD   = 0x80,         // [next] + [top] -> [top]
+        ADDI  = 0x81,         // [next] + [top] -> [top]
+        SUB   = 0x82,         // [next] - [top] -> [top]
+        SUBI  = 0x83,         // [next] - [top] -> [top]
+        DIV   = 0x84,         // [next] / [top] -> [top]
+        DIVI  = 0x85,         // [next] / [top] -> [top]
+        MUL   = 0x86,         // [next] * [top] -> [top]
+        MULI  = 0x87,         // [next] * [top] -> [top]
+        MOD   = 0x88,         // [next] % [top] -> [top]
+        MODI  = 0x89,         // [next] % [top] -> [top]
+        
+        GT    = 0x8A,         // [next] >  [top] ? 1 -> [top] : 0 -> [top]
+        GTI   = 0x8B,         // [next] >  [top] ? 1 -> [top] : 0 -> [top]
+        LT    = 0x8C,         // [next] <  [top] ? 1 -> [top] : 0 -> [top]
+        LTI   = 0x8D,         // [next] <  [top] ? 1 -> [top] : 0 -> [top]
+        GE    = 0x8E,         // [next] >= [top] ? 1 -> [top] : 0 -> [top]
+        GEI   = 0x8F,         // [next] >= [top] ? 1 -> [top] : 0 -> [top]
+        LE    = 0x90,         // [next] <= [top] ? 1 -> [top] : 0 -> [top]
+        LEI   = 0x91,         // [next] <= [top] ? 1 -> [top] : 0 -> [top]
+
+        // pop 2 -> operation -> push 1: (bit 0 set means 'signed' so these are always unsigned)
+
+        EQ      = 0x92,       // [next] == [top] ? 1 -> [top] : 0 -> [top]
+        NE      = 0x94,       // [next] != [top] ? 1 -> [top] : 0 -> [top]
+        BOOLOR  = 0x96,       // [next] || [top] ? 1 -> [top] : 0 -> [top]
+        BOOLAND = 0x98,       // [next] && [top] ? 1 -> [top] : 0 -> [top]
+        BITAND  = 0x9A,       // [next] &  [top] -> [top]
+        BITOR   = 0x9C,       // [next] |  [top] -> [top]
+        BITXOR  = 0x9E,       // [next] ^  [top] -> [top]
+        BITSHR  = 0xA0,       // [next] >> [top] -> [top]
+        BITSHL  = 0xA2,       // [next] << [top] -> [top]
+        
+        
+        
+        // not part of the minimal Tiny Hopper opcode set:
         PUSHIB      = 0x1A,
         POPLOCALB   = 0x1B,
         PUSHLOCALB  = 0x1C,
@@ -43,38 +91,25 @@ unit OpCodes
         INCLOCALB   = 0x22,
         DECLOCALB   = 0x23,
         
-        DUP         = 0x27,
-        DECSP       = 0x28,
-        
         RETB        = 0x2A,
-        RETRETB     = 0x2B,
+        RETRESB     = 0x2B,
         CALLB       = 0x2C,
         TESTBPB     = 0x2D,
         
-        JZB  = 0x2E,
-        JNZB = 0x2F,
-        JB   = 0x30,
-        JZW  = 0x31,
-        JNZW = 0x32,
-        JW   = 0x33,
-        
-        CALLW  = 0x034,
-        
-        PUSHIW = 0x37,
+        JZB     = 0x2E,
+        JNZB    = 0x2F,
+        JB      = 0x30,
+        JIXB    = 0x68,            
+        JIX     = 0x69,
         
         INCLOCALBB = 0x3F,
-        PUSHIWLE = 0x40,
-        BOOLNOT = 0x41,
-        BITNOT  = 0x42,
+        PUSHILE = 0x40,
         
-        SWAP    = 0x43,
         PUSHI0  = 0x44,
         PUSHI1  = 0x45,
         PUSHIM1 = 0x46,
-        PUSHGP  = 0x47,
         
         RET0         = 0x4A,
-        CALLREL      = 0x4B,
         
         POPLOCALB00  = 0x4C,
         POPLOCALB02  = 0x4D,
@@ -83,21 +118,13 @@ unit OpCodes
         
         SYSCALL0 = 0x24,
         SYSCALL1 = 0x25,
-        SYSCALL  = 0x26,
-        
-        COPYNEXTPOP = 0x48,
-        ENTER       = 0x49,
-        
-        NOP      = 0x50,
-        
-        CAST     = 0x51,
         
         PUSHGLOBALBB = 0x52,
         
         INCGLOBALB = 0x53,
         DECGLOBALB = 0x54,
         
-        PUSHIWLT = 0x55,
+        PUSHILT = 0x55,
         PUSHLOCALBB     = 0x56,
         POPCOPYLOCALB   = 0x57,
         POPCOPYRELB     = 0x58,
@@ -107,31 +134,22 @@ unit OpCodes
         POPCOPYLOCALB02 = 0x5E,
         
         ENTERB   = 0x5F,
-        PUSHDW   = 0x60,
-        RETFAST  = 0x61,
+        EXIT     = 0x63, // only used in inline code (like GIBL)
+      
         PUSHDB   = 0x62,
         
-        EXIT     = 0x63,
-        
-        BITXOR    = 0x64,
-        
-        PUSHIWLEI = 0x65,
+        PUSHILEI = 0x65,
         INCGLOBALBB = 0x66,
+
         
-        JREL      = 0x67,
-        
-        JIXB      = 0x68,
-        JIXW      = 0x69,
-        
-        CALLIW    = 0x6A,
+        RETFAST  = 0x61,
         
         PUSHIBLE  = 0x6B,
         PUSHIBEQ  = 0x6C,
         
         ADDB      = 0x6D,
-        SUBB      = 0x6E,      
+        SUBB      = 0x6E,  
         
-        LIBCALL   = 0x6F,    
     }
     
     

@@ -184,9 +184,9 @@ unit Block
             {
                 Instruction previousInstruction = CodeStream.GetLastInstruction();
                 if ((previousInstruction != Instruction.RETB) 
-                 && (previousInstruction != Instruction.RETW)
-                 && (previousInstruction != Instruction.RETRETB) 
-                 && (previousInstruction != Instruction.RETRETW)
+                 && (previousInstruction != Instruction.RET)
+                 && (previousInstruction != Instruction.RETRESB) 
+                 && (previousInstruction != Instruction.RETRES)
                  && (previousInstruction != Instruction.RET0)
                    )
                 {

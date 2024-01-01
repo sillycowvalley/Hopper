@@ -1,6 +1,6 @@
 program TestStrings
 {
-
+#define TINYHOPPER
 #define PORTABLE
 #define SERIALCONSOLE
     //uses "/Source/6502/System"
@@ -317,13 +317,13 @@ program TestStrings
             PrintFailed("'string': Replace failed 7");
         }
         
-        
         // string Replace(string original, char pattern, char replace)
         replaced = original.Replace('a', 'b');
         if (replaced != "b <> 10")
         {
             PrintFailed("'string': Replace failed 8");
         }
+        
         replaced = original.Replace('a', 'a');
         if (replaced != "a <> 10")
         {
@@ -358,6 +358,7 @@ program TestStrings
         {
             PrintFailed("'string': StartsWith failed 2");
         }
+        
         
         // bool StartsWith(string this, string pattern)
         if (!original.StartsWith("The"))
@@ -395,7 +396,6 @@ program TestStrings
         {
             PrintFailed("'string': Compare failed 6");
         }
-        
         
         string insertString = 'a' + "bcde";
         if (String.Compare(insertString, "abcde") != 0)
@@ -454,11 +454,12 @@ program TestStrings
         {
             PrintFailed("'string': IndexOf failed 7");
         }
-        
+        Print("a");
         if (insertString.IndexOf('a', 1, ref index))
         {
             PrintFailed("'string': IndexOf failed 8");
         }
+        Print("b");
         if (!insertString.IndexOf('c', 2, ref index))
         {
             PrintFailed("'string': IndexOf failed 9");
@@ -508,8 +509,6 @@ program TestStrings
             PrintFailed("'string': Build failed 5");
         }
         
-        
-        
         Build (ref build);
         if (build != "")
         {
@@ -553,6 +552,7 @@ program TestStrings
         {
             PrintFailed("'string': Build failed 13");
         }
+        
     }
     
 

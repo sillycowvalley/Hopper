@@ -200,17 +200,17 @@ unit CodeStream
             case Instruction.JNZB:
             {
             }
-            case Instruction.JW:
+            case Instruction.J:
             {
                 isLong = true;
                 shortInstruction = Instruction.JB;
             }
-            case Instruction.JZW:
+            case Instruction.JZ:
             {
                 isLong = true;
                 shortInstruction = Instruction.JZB;
             }
-            case Instruction.JNZW:
+            case Instruction.JNZ:
             {
                 isLong = true;
                 shortInstruction = Instruction.JNZB;
@@ -229,7 +229,7 @@ unit CodeStream
             uint op = Types.IntToUInt(offset);
             uint lsb = op & 0xFF;
             uint msb = op >> 8;
-            if ((shortInstruction == Instruction.JB) && (offset >= 0) && (offset <= 127))
+            if ((shortInstruction == Instruction.JB) && (offset >= 0) && (offset <= 127) && !IsTinyHopper)
             {
                 uint phb = PeepholeBoundary;
                 if (jumpAddress > phb)
@@ -278,7 +278,7 @@ unit CodeStream
                         }
                         else
                         {
-                            CodeStream.AddInstruction(Instruction.CALLW, iOverload);
+                            CodeStream.AddInstruction(Instruction.CALL, iOverload);
                         }
                         userSupplied = true;
                     }
@@ -289,7 +289,62 @@ unit CodeStream
         return userSupplied;
     }
     
-    AddInstructionSysCall0(string sysCallUnit, string sysCallMethod)
+    AddInstructionPushLocal(byte offset)
+    {
+        if (IsTinyHopper)
+        {
+            uint uoffset = (offset & 0x80 != 0) ? (byte(offset) | 0xFF00) : offset; // sign extend if -ve
+            AddInstruction(Instruction.PUSHLOCAL, uoffset);
+        }
+        else
+        {
+            AddInstruction(Instruction.PUSHLOCALB, offset);
+        }
+    }
+    AddInstructionPopLocal(byte offset)
+    {
+        if (IsTinyHopper)
+        {
+            uint uoffset = (offset & 0x80 != 0) ? (byte(offset) | 0xFF00) : offset; // sign extend if -ve
+            AddInstruction(Instruction.POPLOCAL, uoffset);
+        }
+        else
+        {
+            AddInstruction(Instruction.POPLOCALB, offset);
+        }
+    }
+    
+    AddInstructionIncLocal(byte offset, bool signed)
+    {
+        if (IsTinyHopper)
+        {
+            uint uoffset = (offset & 0x80 != 0) ? (byte(offset) | 0xFF00) : offset; // sign extend if -ve
+            AddInstruction(Instruction.PUSHLOCAL, uoffset);
+            AddInstructionPUSHI(1);
+            AddInstruction(signed ? Instruction.ADDI : Instruction.ADD);
+            AddInstruction(Instruction.POPLOCAL, uoffset);
+        }
+        else
+        {
+            AddInstruction(Instruction.INCLOCALB, offset);
+        }
+    }
+    AddInstructionDecLocal(byte offset, bool signed)
+    {
+        if (IsTinyHopper)
+        {
+            uint uoffset = (offset & 0x80 != 0) ? (byte(offset) | 0xFF00) : offset; // sign extend if -ve
+            AddInstruction(Instruction.PUSHLOCAL, uoffset);
+            AddInstructionPUSHI(1);
+            AddInstruction(signed ? Instruction.SUBI : Instruction.SUB);
+            AddInstruction(Instruction.POPLOCAL, uoffset);
+        }
+        else
+        {
+            AddInstruction(Instruction.DECLOCALB, offset);
+        }
+    }
+    AddInstructionSysCall(string sysCallUnit, string sysCallMethod, byte iSysOverload)
     {
         loop
         {
@@ -304,10 +359,27 @@ unit CodeStream
                 PrintLn("'" + name + "' not found");
                 Die(0x03); // key not found
             }
-            CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
+            if (!IsTinyHopper && (iSysOverload == 0))
+            {
+                CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
+            }
+            else if (!IsTinyHopper && (iSysOverload == 1))
+            {
+                CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+            }
+            else
+            {
+                CodeStream.AddInstructionPUSHI(iSysOverload);
+                CodeStream.AddInstruction(Instruction.SYSCALL, iSysCall);
+            }
             break;
         }
     }
+    AddInstructionSysCall0(string sysCallUnit, string sysCallMethod)
+    {
+        AddInstructionSysCall(sysCallUnit, sysCallMethod, 0);
+    }
+    
     AddInstructionLibCall(string libCallUnit, string libCallMethod)
     {
         loop
@@ -330,9 +402,9 @@ unit CodeStream
         
         switch (jumpInstruction)
         {
-            case Instruction.JW:
-            case Instruction.JZW:
-            case Instruction.JNZW:
+            case Instruction.J:
+            case Instruction.JZ:
+            case Instruction.JNZ:
             {
                 AddInstruction(jumpInstruction, uint(0)); // place holder
             }
@@ -356,7 +428,7 @@ unit CodeStream
     }
     AddInstructionJump(Instruction jumpInstruction, uint jumpToAddress)
     {
-        if ((jumpInstruction == Instruction.JIXW) || (jumpInstruction == Instruction.JIXB))
+        if ((jumpInstruction == Instruction.JIX) || (jumpInstruction == Instruction.JIXB))
         {
             AddInstruction(jumpInstruction, jumpToAddress); // operand is not really an address, always a uint
         }
@@ -364,20 +436,20 @@ unit CodeStream
         {
             uint jumpAddress = NextAddress;
             int offset = int(jumpToAddress) - int(jumpAddress);
-            if ((offset >= -128) && (offset <= 127))
+            if ((offset >= -128) && (offset <= 127) && !IsTinyHopper)
             {
                 byte op = IntToByte(offset);
                 switch (jumpInstruction)
                 {
-                    case Instruction.JW:
+                    case Instruction.J:
                     {
                         jumpInstruction = Instruction.JB;
                     }
-                    case Instruction.JZW:
+                    case Instruction.JZ:
                     {
                         jumpInstruction = Instruction.JZB;
                     }
-                    case Instruction.JNZW:
+                    case Instruction.JNZ:
                     {
                         jumpInstruction = Instruction.JNZB;
                     }
@@ -391,15 +463,15 @@ unit CodeStream
                 {
                     case Instruction.JB:
                     {
-                        jumpInstruction = Instruction.JW;
+                        jumpInstruction = Instruction.J;
                     }
                     case Instruction.JZB:
                     {
-                        jumpInstruction = Instruction.JZW;
+                        jumpInstruction = Instruction.JZ;
                     }
                     case Instruction.JNZB:
                     {
-                        jumpInstruction = Instruction.JNZW;
+                        jumpInstruction = Instruction.JNZ;
                     }
                 }
                 AddInstruction(jumpInstruction, op);
@@ -423,11 +495,11 @@ unit CodeStream
             case Instruction.JB:
             case Instruction.JZB:
             case Instruction.JNZB:
-            case Instruction.JW:
-            case Instruction.JZW:
-            case Instruction.JNZW:
+            case Instruction.J:
+            case Instruction.JZ:
+            case Instruction.JNZ:
             case Instruction.JIXB:
-            case Instruction.JIXW:
+            case Instruction.JIX:
             {
                 Die(0x0B); // illegal to not use th Jump-specific AddInstructions (to update peephole boundary)
             }
@@ -452,23 +524,24 @@ unit CodeStream
     }
     AddInstructionPUSHI(uint operand)
     {
-        if (operand == 0)
+        if ((operand < 256) && !IsTinyHopper)
         {
-            CodeStream.internalAddInstruction(Instruction.PUSHI0);
-            PeepholeOptimize(ref currentStream);
-        }
-        else if (operand == 1)
-        {
-            CodeStream.internalAddInstruction(Instruction.PUSHI1);
-            PeepholeOptimize(ref currentStream);
-        }
-        else if (operand < 256)
-        {
-            CodeStream.AddInstruction(Instruction.PUSHIB, byte(operand));
+            if (operand == 0)
+            {
+                CodeStream.AddInstruction(Instruction.PUSHI0);
+            }
+            else if (operand == 1)
+            {
+                CodeStream.AddInstruction(Instruction.PUSHI1);
+            }
+            else
+            {
+                CodeStream.AddInstruction(Instruction.PUSHIB, byte(operand));    
+            }
         }
         else
         {
-            CodeStream.AddInstruction(Instruction.PUSHIW, operand);
+            CodeStream.AddInstruction(Instruction.PUSHI, operand);    
         }
     }
     
@@ -479,20 +552,20 @@ unit CodeStream
         if (Symbols.GlobalMemberExists(fullName))
         {
             uint globalAddress = Symbols.GetGlobalAddress(fullName);
-            if (globalAddress < 256)
+            if ((globalAddress < 256) && !IsTinyHopper)
             {
                 CodeStream.AddInstruction(Instruction.PUSHGLOBALB, byte(globalAddress));
             }
             else
             {
-                CodeStream.AddInstruction(Instruction.PUSHGLOBALW, globalAddress);
+                CodeStream.AddInstruction(Instruction.PUSHGLOBAL, globalAddress);
             }       
         }
         else
         {
             bool isRef;
             int offset = Block.GetOffset(variableName, ref isRef);
-            if ((offset > -129) && (offset < 128))
+            if ((offset > -129) && (offset < 128) && !IsTinyHopper)
             {
                 byte operand =  CodeStream.IntToByte(offset);
                 if (isRef)
@@ -509,11 +582,11 @@ unit CodeStream
                 uint operand = Types.IntToUInt(offset);
                 if (isRef)
                 {
-                    CodeStream.AddInstruction(Instruction.PUSHRELW, operand);
+                    CodeStream.AddInstruction(Instruction.PUSHREL, operand);
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.PUSHLOCALW, operand);
+                    CodeStream.AddInstruction(Instruction.PUSHLOCAL, operand);
                 }
             }
         }
@@ -532,20 +605,20 @@ unit CodeStream
         if (Symbols.GlobalMemberExists(fullName))
         {
             uint globalAddress = Symbols.GetGlobalAddress(fullName);
-            if (globalAddress < 256)
+            if ((globalAddress < 256) && !IsTinyHopper)
             {
                 CodeStream.AddInstruction(Instruction.POPGLOBALB, byte(globalAddress));
             }
             else
             {
-                CodeStream.AddInstruction(Instruction.POPGLOBALW, globalAddress);
+                CodeStream.AddInstruction(Instruction.POPGLOBAL, globalAddress);
             }       
         }
         else
         {
             bool isRef;
             int offset = Block.GetOffset(variableName, ref isRef);
-            if ((offset > -129) && (offset < 128))
+            if ((offset > -129) && (offset < 128) && !IsTinyHopper)
             {
                 byte operand =  CodeStream.IntToByte(offset);
                 if (isRef)
@@ -562,11 +635,11 @@ unit CodeStream
                 uint operand = Types.IntToUInt(offset);
                 if (isRef)
                 {
-                    CodeStream.AddInstruction(Instruction.POPRELW, operand);
+                    CodeStream.AddInstruction(Instruction.POPREL, operand);
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.POPLOCALW, operand);
+                    CodeStream.AddInstruction(Instruction.POPLOCAL, operand);
                 }
             }
         }
@@ -575,34 +648,24 @@ unit CodeStream
     {
         if (value.Length == 0)
         {
-            CodeStream.AddInstructionSysCall0("String", "New");
+            CodeStream.AddInstructionSysCall("String", "New", 0);
         }
         else if (value.Length == 1)
         {
             CodeStream.AddInstructionPUSHI(byte(value[0]));
-            byte iSysCall;
-            if (!TryParseSysCall("String.NewFromConstant", ref iSysCall))
-            {
-                Die(0x03); // key not found
-            }
-            CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+            CodeStream.AddInstructionSysCall("String", "NewFromConstant", 1);
         }
         else if (value.Length == 2)
         {
             CodeStream.AddInstructionPUSHI(byte(value[0]) + (byte(value[1]) << 8));
-            byte iSysCall;
-            if (!TryParseSysCall("String.NewFromConstant", ref iSysCall))
-            {
-                Die(0x03); // key not found
-            }
-            CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+            CodeStream.AddInstructionSysCall("String", "NewFromConstant", 1);
         }
         else
         {
             uint constantAddress = CodeStream.CreateStringConstant(value);
             CodeStream.AddInstructionPUSHI(constantAddress);
             CodeStream.AddInstructionPUSHI(value.Length);
-            CodeStream.AddInstructionSysCall0("String", "NewFromConstant");
+            CodeStream.AddInstructionSysCall("String", "NewFromConstant", 0);
         }
     }
     

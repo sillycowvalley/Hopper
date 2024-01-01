@@ -5,6 +5,8 @@
 
 
 
+
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -248,7 +250,7 @@ void Runtime_MCU()
                         Runtime_WaitForEnter();
                         UInt pc = HopperVM_PC_Get();
                         OpCode opCode = OpCode(Memory_ReadCodeByte(pc));
-                        if ((opCode == OpCode::eCALLW) || (opCode == OpCode::eCALLIW))
+                        if ((opCode == OpCode::eCALL) || (opCode == OpCode::eCALLI))
                         {
                             HopperVM_SetBreakpoint(0x00, pc + 0x03);
                             HopperVM_Execute();
@@ -1821,58 +1823,22 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCLOCALB), instructionDelegate);
     instructionDelegate = &Instructions_DecLocalB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eDECLOCALB), instructionDelegate);
-    instructionDelegate = &Instructions_Dup;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eDUP), instructionDelegate);
-    instructionDelegate = &Instructions_DecSP;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eDECSP), instructionDelegate);
-    instructionDelegate = &Instructions_RetB;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETB), instructionDelegate);
-    instructionDelegate = &Instructions_RetRetB;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETRETB), instructionDelegate);
     instructionDelegate = &Instructions_CallB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALLB), instructionDelegate);
-    instructionDelegate = &Instructions_TestBPB;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eTESTBPB), instructionDelegate);
-    instructionDelegate = &Instructions_Exit;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eEXIT), instructionDelegate);
     instructionDelegate = &Instructions_JZB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eJZB), instructionDelegate);
     instructionDelegate = &Instructions_JNZB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eJNZB), instructionDelegate);
     instructionDelegate = &Instructions_JB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eJB), instructionDelegate);
-    instructionDelegate = &Instructions_JZW;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJZW), instructionDelegate);
-    instructionDelegate = &Instructions_JNZW;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJNZW), instructionDelegate);
-    instructionDelegate = &Instructions_JW;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJW), instructionDelegate);
-    instructionDelegate = &Instructions_CallW;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALLW), instructionDelegate);
-    instructionDelegate = &Instructions_PushIW;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIW), instructionDelegate);
     instructionDelegate = &Instructions_IncLocalBB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCLOCALBB), instructionDelegate);
-    instructionDelegate = &Instructions_PushIWLE;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIWLE), instructionDelegate);
-    instructionDelegate = &Instructions_BoolNot;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eBOOLNOT), instructionDelegate);
-    instructionDelegate = &Instructions_BitNot;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eBITNOT), instructionDelegate);
-    instructionDelegate = &Instructions_Swap;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eSWAP), instructionDelegate);
+    instructionDelegate = &Instructions_Ret0;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRET0), instructionDelegate);
     instructionDelegate = &Instructions_PushI0;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHI0), instructionDelegate);
     instructionDelegate = &Instructions_PushI1;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHI1), instructionDelegate);
-    instructionDelegate = &Instructions_PushIM1;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIM1), instructionDelegate);
-    instructionDelegate = &Instructions_PushGP;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHGP), instructionDelegate);
-    instructionDelegate = &Instructions_Ret0;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRET0), instructionDelegate);
-    instructionDelegate = &Instructions_CallRel;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALLREL), instructionDelegate);
     instructionDelegate = &Instructions_PopLocalB00;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePOPLOCALB00), instructionDelegate);
     instructionDelegate = &Instructions_PopLocalB02;
@@ -1885,16 +1851,6 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL0), instructionDelegate);
     instructionDelegate = &Instructions_SysCall1;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL1), instructionDelegate);
-    instructionDelegate = &Instructions_SysCall;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL), instructionDelegate);
-    instructionDelegate = &Instructions_CNP;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCOPYNEXTPOP), instructionDelegate);
-    instructionDelegate = &Instructions_Enter;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eENTER), instructionDelegate);
-    instructionDelegate = &Instructions_NOP;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eNOP), instructionDelegate);
-    instructionDelegate = &Instructions_Cast;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCAST), instructionDelegate);
     instructionDelegate = &Instructions_PushGlobalBB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHGLOBALBB), instructionDelegate);
     instructionDelegate = &Instructions_IncGlobalB;
@@ -1903,8 +1859,6 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eDECGLOBALB), instructionDelegate);
     instructionDelegate = &Instructions_IncGlobalBB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCGLOBALBB), instructionDelegate);
-    instructionDelegate = &Instructions_PushIWLT;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIWLT), instructionDelegate);
     instructionDelegate = &Instructions_PushLocalBB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHLOCALBB), instructionDelegate);
     instructionDelegate = &Instructions_PopCopyLocalB;
@@ -1919,32 +1873,98 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePOPCOPYLOCALB02), instructionDelegate);
     instructionDelegate = &Instructions_EnterB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eENTERB), instructionDelegate);
-    instructionDelegate = &Instructions_PushIW;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHDW), instructionDelegate);
-    instructionDelegate = &Instructions_RetFast;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETFAST), instructionDelegate);
     instructionDelegate = &Instructions_PushIB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHDB), instructionDelegate);
-    instructionDelegate = &Instructions_BitXor;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eBITXOR), instructionDelegate);
-    instructionDelegate = &Instructions_PushIWLEI;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIWLEI), instructionDelegate);
-    instructionDelegate = &Instructions_JREL;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJREL), instructionDelegate);
     instructionDelegate = &Instructions_JIXB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eJIXB), instructionDelegate);
-    instructionDelegate = &Instructions_JIXW;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJIXW), instructionDelegate);
-    instructionDelegate = &Instructions_CallIW;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALLIW), instructionDelegate);
+    instructionDelegate = &Instructions_PushILE;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHILE), instructionDelegate);
+    instructionDelegate = &Instructions_PushILT;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHILT), instructionDelegate);
     instructionDelegate = &Instructions_PushIBLE;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIBLE), instructionDelegate);
+    instructionDelegate = &Instructions_PushILEI;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHILEI), instructionDelegate);
     instructionDelegate = &Instructions_PushIBEQ;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIBEQ), instructionDelegate);
     instructionDelegate = &Instructions_AddB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eADDB), instructionDelegate);
     instructionDelegate = &Instructions_SubB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eSUBB), instructionDelegate);
+    instructionDelegate = &Instructions_RetB;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETB), instructionDelegate);
+    instructionDelegate = &Instructions_RetResB;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETRESB), instructionDelegate);
+    instructionDelegate = &Instructions_RetFast;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETFAST), instructionDelegate);
+    instructionDelegate = &Instructions_PopLocal;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePOPLOCAL), instructionDelegate);
+    instructionDelegate = &Instructions_PushLocal;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHLOCAL), instructionDelegate);
+    instructionDelegate = &Instructions_PopRel;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePOPREL), instructionDelegate);
+    instructionDelegate = &Instructions_PushRel;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHREL), instructionDelegate);
+    instructionDelegate = &Instructions_PopGlobal;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePOPGLOBAL), instructionDelegate);
+    instructionDelegate = &Instructions_PushGlobal;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHGLOBAL), instructionDelegate);
+    instructionDelegate = &Instructions_PushStackAddr;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHSTACKADDR), instructionDelegate);
+    instructionDelegate = &Instructions_Dup;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eDUP), instructionDelegate);
+    instructionDelegate = &Instructions_DecSP;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eDECSP), instructionDelegate);
+    instructionDelegate = &Instructions_Ret;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRET), instructionDelegate);
+    instructionDelegate = &Instructions_RetRes;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETRES), instructionDelegate);
+    instructionDelegate = &Instructions_TestBPB;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eTESTBPB), instructionDelegate);
+    instructionDelegate = &Instructions_Exit;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eEXIT), instructionDelegate);
+    instructionDelegate = &Instructions_JZ;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJZ), instructionDelegate);
+    instructionDelegate = &Instructions_JNZ;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJNZ), instructionDelegate);
+    instructionDelegate = &Instructions_J;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJW), instructionDelegate);
+    instructionDelegate = &Instructions_PushIW;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHI), instructionDelegate);
+    instructionDelegate = &Instructions_BoolNot;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eBOOLNOT), instructionDelegate);
+    instructionDelegate = &Instructions_BitNot;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eBITNOT), instructionDelegate);
+    instructionDelegate = &Instructions_Swap;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eSWAP), instructionDelegate);
+    instructionDelegate = &Instructions_PushIM1;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIM1), instructionDelegate);
+    instructionDelegate = &Instructions_PushGP;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHGP), instructionDelegate);
+    instructionDelegate = &Instructions_CNP;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCOPYNEXTPOP), instructionDelegate);
+    instructionDelegate = &Instructions_Enter;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eENTER), instructionDelegate);
+    instructionDelegate = &Instructions_NOP;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eNOP), instructionDelegate);
+    instructionDelegate = &Instructions_Cast;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCAST), instructionDelegate);
+    instructionDelegate = &Instructions_PushIW;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHD), instructionDelegate);
+    instructionDelegate = &Instructions_BitXor;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eBITXOR), instructionDelegate);
+    instructionDelegate = &Instructions_JREL;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJREL), instructionDelegate);
+    instructionDelegate = &Instructions_JIX;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eJIX), instructionDelegate);
+    instructionDelegate = &Instructions_Call;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALL), instructionDelegate);
+    instructionDelegate = &Instructions_CallI;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALLI), instructionDelegate);
+    instructionDelegate = &Instructions_CallRel;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALLREL), instructionDelegate);
+    instructionDelegate = &Instructions_SysCall;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL), instructionDelegate);
     instructionDelegate = &Instructions_LibCall;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eLIBCALL), instructionDelegate);
 }
@@ -2288,114 +2308,12 @@ Bool Instructions_DecLocalB()
     return true;
 }
 
-Bool Instructions_Dup()
-{
-    Byte offset = HopperVM_ReadByteOperand();
-    UInt address = HopperVM_SP_Get() - 0x02 - offset;
-    UInt value = Memory_ReadWord(HopperVM_ValueStack_Get() + address);
-    Type htype = Type(Memory_ReadWord(HopperVM_TypeStack_Get() + address));
-    HopperVM_Push(value, htype);
-    if (Types_IsReferenceType(htype))
-    {
-        GC_AddReference(value);
-    }
-    return true;
-}
-
-Bool Instructions_DecSP()
-{
-    UInt popBytes = HopperVM_ReadByteOperand();
-    while (popBytes != 0x00)
-    {
-        Type htype = (Type)0;
-        UInt address = HopperVM_Pop_R(htype);
-        if (Types_IsReferenceType(htype))
-        {
-            GC_Release(address);
-        }
-        popBytes = popBytes - 0x02;
-    }
-    return true;
-}
-
-Bool Instructions_RetB()
-{
-    UInt popBytes = HopperVM_ReadByteOperand();
-    while (popBytes != 0x00)
-    {
-        Type htype = (Type)0;
-        UInt address = HopperVM_Pop_R(htype);
-        if (Types_IsReferenceType(htype))
-        {
-            GC_Release(address);
-        }
-        popBytes = popBytes - 0x02;
-    }
-    HopperVM_BP_Set(HopperVM_PopCS());
-    if (HopperVM_CSP_Get() == 0x00)
-    {
-        HopperVM_PC_Set(0x00);
-        return false;
-    }
-    else
-    {
-        HopperVM_PC_Set(HopperVM_PopCS());
-    }
-    return true;
-}
-
-Bool Instructions_RetRetB()
-{
-    Type rtype = (Type)0;
-    UInt value = HopperVM_Pop_R(rtype);
-    UInt popBytes = HopperVM_ReadByteOperand();
-    while (popBytes != 0x00)
-    {
-        Type htype = (Type)0;
-        UInt address = HopperVM_Pop_R(htype);
-        if (Types_IsReferenceType(htype))
-        {
-            GC_Release(address);
-        }
-        popBytes = popBytes - 0x02;
-    }
-    HopperVM_Push(value, rtype);
-    HopperVM_BP_Set(HopperVM_PopCS());
-    if (HopperVM_CSP_Get() == 0x00)
-    {
-        HopperVM_PC_Set(0x00);
-        return false;
-    }
-    else
-    {
-        HopperVM_PC_Set(HopperVM_PopCS());
-    }
-    return true;
-}
-
 Bool Instructions_CallB()
 {
     UInt methodIndex = HopperVM_ReadByteOperand();
     HopperVM_PushCS(HopperVM_PC_Get());
     HopperVM_PC_Set(HopperVM_LookupMethod(methodIndex));
     return true;
-}
-
-Bool Instructions_TestBPB()
-{
-    Byte operand = HopperVM_ReadByteOperand();
-    UInt bpExpected = UInt(HopperVM_SP_Get() - operand);
-    if (bpExpected != HopperVM_BP_Get())
-    {
-        Minimal_Error_Set(0x0B);
-        return false;
-    }
-    return true;
-}
-
-Bool Instructions_Exit()
-{
-    return HopperVM_ExitInline();
 }
 
 Bool Instructions_JZB()
@@ -2430,55 +2348,6 @@ Bool Instructions_JB()
     return true;
 }
 
-Bool Instructions_JZW()
-{
-    if (HopperVM_Pop() == 0x00)
-    {
-        HopperVM_PC_Set(UInt(HopperVM_ReadWordOffsetOperand() + Int(HopperVM_PC_Get() - 0x03)));
-    }
-    else
-    {
-        HopperVM_PC_Set(HopperVM_PC_Get() + 0x02);
-    }
-    return true;
-}
-
-Bool Instructions_JNZW()
-{
-    if (HopperVM_Pop() != 0x00)
-    {
-        HopperVM_PC_Set(UInt(HopperVM_ReadWordOffsetOperand() + Int(HopperVM_PC_Get() - 0x03)));
-    }
-    else
-    {
-        HopperVM_PC_Set(HopperVM_PC_Get() + 0x02);
-    }
-    return true;
-}
-
-Bool Instructions_JW()
-{
-    HopperVM_PC_Set(UInt(HopperVM_ReadWordOffsetOperand() + Int(HopperVM_PC_Get() - 0x03)));
-    return true;
-}
-
-Bool Instructions_CallW()
-{
-    UInt methodIndex = HopperVM_ReadWordOperand();
-    HopperVM_PushCS(HopperVM_PC_Get());
-    UInt methodAddress = HopperVM_LookupMethod(methodIndex);
-    Memory_WriteCodeByte(HopperVM_PC_Get() - 0x03, Byte(OpCode::eCALLIW));
-    Memory_WriteCodeWord(HopperVM_PC_Get() - 0x02, methodAddress);
-    HopperVM_PC_Set(methodAddress);
-    return true;
-}
-
-Bool Instructions_PushIW()
-{
-    HopperVM_Push(HopperVM_ReadWordOperand(), Type::eUInt);
-    return true;
-}
-
 Bool Instructions_IncLocalBB()
 {
     Int offset0 = HopperVM_ReadByteOffsetOperand();
@@ -2486,64 +2355,6 @@ Bool Instructions_IncLocalBB()
     UInt address0 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + offset0);
     UInt address1 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + offset1);
     Memory_WriteWord(address0, Memory_ReadWord(address0) + Memory_ReadWord(address1));
-    return true;
-}
-
-Bool Instructions_PushIWLE()
-{
-    UInt top = HopperVM_ReadWordOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
-    return true;
-}
-
-Bool Instructions_BoolNot()
-{
-    HopperVM_Push(((HopperVM_Pop() == 0x00)) ? (0x01) : (0x00), Type::eBool);
-    return true;
-}
-
-Bool Instructions_BitNot()
-{
-    HopperVM_Push(~(HopperVM_Pop()), Type::eUInt);
-    return true;
-}
-
-Bool Instructions_Swap()
-{
-    UInt topValue = Memory_ReadWord(HopperVM_ValueStack_Get() + HopperVM_SP_Get() - 0x02);
-    UInt nextValue = Memory_ReadWord(HopperVM_ValueStack_Get() + HopperVM_SP_Get() - 0x04);
-    Memory_WriteWord(HopperVM_ValueStack_Get() + HopperVM_SP_Get() - 0x02, nextValue);
-    Memory_WriteWord(HopperVM_ValueStack_Get() + HopperVM_SP_Get() - 0x04, topValue);
-    UInt topType = Memory_ReadWord(HopperVM_TypeStack_Get() + HopperVM_SP_Get() - 0x02);
-    UInt nextType = Memory_ReadWord(HopperVM_TypeStack_Get() + HopperVM_SP_Get() - 0x04);
-    Memory_WriteWord(HopperVM_TypeStack_Get() + HopperVM_SP_Get() - 0x02, nextType);
-    Memory_WriteWord(HopperVM_TypeStack_Get() + HopperVM_SP_Get() - 0x04, topType);
-    return true;
-}
-
-Bool Instructions_PushI0()
-{
-    HopperVM_Push(0x00, Type::eByte);
-    return true;
-}
-
-Bool Instructions_PushI1()
-{
-    HopperVM_Push(0x01, Type::eByte);
-    return true;
-}
-
-Bool Instructions_PushIM1()
-{
-    HopperVM_PushI(-0x01);
-    return true;
-}
-
-Bool Instructions_PushGP()
-{
-    HopperVM_Push(0x00, Type::eUInt);
     return true;
 }
 
@@ -2562,11 +2373,15 @@ Bool Instructions_Ret0()
     return true;
 }
 
-Bool Instructions_CallRel()
+Bool Instructions_PushI0()
 {
-    UInt methodIndex = HopperVM_Pop();
-    HopperVM_PushCS(HopperVM_PC_Get());
-    HopperVM_PC_Set(HopperVM_LookupMethod(methodIndex));
+    HopperVM_Push(0x00, Type::eByte);
+    return true;
+}
+
+Bool Instructions_PushI1()
+{
+    HopperVM_Push(0x01, Type::eByte);
     return true;
 }
 
@@ -2652,38 +2467,6 @@ Bool Instructions_SysCall1()
     return HopperVM_ExecuteSysCall(iSysCall, 0x01);
 }
 
-Bool Instructions_SysCall()
-{
-    Type htype = (Type)0;
-    UInt iOverload = HopperVM_Pop_R(htype);
-    Byte iSysCall = HopperVM_ReadByteOperand();
-    return HopperVM_ExecuteSysCall(iSysCall, iOverload);
-}
-
-Bool Instructions_CNP()
-{
-    HopperVM_CNP_Set(true);
-    return true;
-}
-
-Bool Instructions_Enter()
-{
-    HopperVM_PushCS(HopperVM_BP_Get());
-    HopperVM_BP_Set(HopperVM_SP_Get());
-    return true;
-}
-
-Bool Instructions_NOP()
-{
-    return true;
-}
-
-Bool Instructions_Cast()
-{
-    HopperVM_Put(HopperVM_SP_Get() - 0x02, HopperVM_Get(HopperVM_SP_Get() - 0x02), Type(HopperVM_ReadByteOperand()));
-    return true;
-}
-
 Bool Instructions_PushGlobalBB()
 {
     Bool res = Instructions_PushGlobalB();
@@ -2724,15 +2507,6 @@ Bool Instructions_IncGlobalBB()
     UInt value = HopperVM_Get_R(address0, type0);
     Type type1 = (Type)0;
     HopperVM_Put(address0, value + HopperVM_Get_R(address1, type1), type0);
-    return true;
-}
-
-Bool Instructions_PushIWLT()
-{
-    UInt top = HopperVM_ReadWordOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_Push(((next < top)) ? (0x01) : (0x00), Type::eBool);
     return true;
 }
 
@@ -2867,38 +2641,6 @@ Bool Instructions_EnterB()
     return true;
 }
 
-Bool Instructions_RetFast()
-{
-    HopperVM_PC_Set(HopperVM_PopCS());
-    return true;
-}
-
-Bool Instructions_BitXor()
-{
-    UInt top = HopperVM_Pop();
-    UInt next = HopperVM_Pop();
-    HopperVM_Push((next | top) & (~(next & top)), Type::eUInt);
-    return true;
-}
-
-Bool Instructions_PushIWLEI()
-{
-    HopperVM_Push(HopperVM_ReadWordOperand(), Type::eUInt);
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
-    return true;
-}
-
-Bool Instructions_JREL()
-{
-    UInt address = HopperVM_Pop();
-    HopperVM_PC_Set(address);
-    return true;
-}
-
 Bool Instructions_JIXB()
 {
     UInt switchCase = HopperVM_Pop();
@@ -2927,39 +2669,21 @@ Bool Instructions_JIXB()
     return true;
 }
 
-Bool Instructions_JIXW()
+Bool Instructions_PushILE()
 {
-    UInt switchCase = HopperVM_Pop();
-    Byte minRange = HopperVM_ReadByteOperand();
-    Byte maxRange = HopperVM_ReadByteOperand();
-    Byte lsb = HopperVM_ReadByteOperand();
-    Byte msb = HopperVM_ReadByteOperand();
-    Int jumpBackOffset = Int(lsb + (msb << 0x08));
-    UInt tpc = HopperVM_PC_Get();
-    HopperVM_PC_Set(UInt(Int(HopperVM_PC_Get()) - jumpBackOffset - 0x05));
-    UInt tableSize = (UInt(maxRange) - UInt(minRange) + 0x01) << 0x01;
-    UInt offset = 0x00;
-    if ((switchCase >= minRange) && (switchCase <= maxRange))
-    {
-        UInt index = tpc + (switchCase - minRange) * 0x02;
-        offset = Memory_ReadCodeByte(index) + (Memory_ReadCodeByte(index + 0x01) << 0x08);
-    }
-    if (offset == 0x00)
-    {
-        HopperVM_PC_Set(tpc + tableSize);
-    }
-    else
-    {
-        HopperVM_PC_Set(HopperVM_PC_Get() + offset);
-    }
+    UInt top = HopperVM_ReadWordOperand();
+    Type ntype = (Type)0;
+    UInt next = HopperVM_Pop_R(ntype);
+    HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
     return true;
 }
 
-Bool Instructions_CallIW()
+Bool Instructions_PushILT()
 {
-    UInt methodAddress = HopperVM_ReadWordOperand();
-    HopperVM_PushCS(HopperVM_PC_Get());
-    HopperVM_PC_Set(methodAddress);
+    UInt top = HopperVM_ReadWordOperand();
+    Type ntype = (Type)0;
+    UInt next = HopperVM_Pop_R(ntype);
+    HopperVM_Push(((next < top)) ? (0x01) : (0x00), Type::eBool);
     return true;
 }
 
@@ -2968,6 +2692,17 @@ Bool Instructions_PushIBLE()
     UInt top = HopperVM_ReadByteOperand();
     Type ntype = (Type)0;
     UInt next = HopperVM_Pop_R(ntype);
+    HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
+    return true;
+}
+
+Bool Instructions_PushILEI()
+{
+    HopperVM_Push(HopperVM_ReadWordOperand(), Type::eUInt);
+    Type ttype = (Type)0;
+    Int top = HopperVM_PopI_R(ttype);
+    Type ntype = (Type)0;
+    Int next = HopperVM_PopI_R(ntype);
     HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
     return true;
 }
@@ -2999,10 +2734,542 @@ Bool Instructions_SubB()
     return true;
 }
 
+Bool Instructions_RetB()
+{
+    UInt popBytes = HopperVM_ReadByteOperand();
+    while (popBytes != 0x00)
+    {
+        Type htype = (Type)0;
+        UInt address = HopperVM_Pop_R(htype);
+        if (Types_IsReferenceType(htype))
+        {
+            GC_Release(address);
+        }
+        popBytes = popBytes - 0x02;
+    }
+    HopperVM_BP_Set(HopperVM_PopCS());
+    if (HopperVM_CSP_Get() == 0x00)
+    {
+        HopperVM_PC_Set(0x00);
+        return false;
+    }
+    else
+    {
+        HopperVM_PC_Set(HopperVM_PopCS());
+    }
+    return true;
+}
+
+Bool Instructions_RetResB()
+{
+    Type rtype = (Type)0;
+    UInt value = HopperVM_Pop_R(rtype);
+    UInt popBytes = HopperVM_ReadByteOperand();
+    while (popBytes != 0x00)
+    {
+        Type htype = (Type)0;
+        UInt address = HopperVM_Pop_R(htype);
+        if (Types_IsReferenceType(htype))
+        {
+            GC_Release(address);
+        }
+        popBytes = popBytes - 0x02;
+    }
+    HopperVM_Push(value, rtype);
+    HopperVM_BP_Set(HopperVM_PopCS());
+    if (HopperVM_CSP_Get() == 0x00)
+    {
+        HopperVM_PC_Set(0x00);
+        return false;
+    }
+    else
+    {
+        HopperVM_PC_Set(HopperVM_PopCS());
+    }
+    return true;
+}
+
+Bool Instructions_RetFast()
+{
+    HopperVM_PC_Set(HopperVM_PopCS());
+    return true;
+}
+
+Bool Instructions_PopLocal()
+{
+    Int offset = 0;
+    if (HopperVM_CNP_Get())
+    {
+        HopperVM_CNP_Set(false);
+        return Instructions_PopCopyLocal();
+    }
+    else
+    {
+        Int offset = HopperVM_ReadWordOffsetOperand();
+        Type htype = Type(Memory_ReadWord(UInt(Int(HopperVM_TypeStack_Get()) + Int(HopperVM_BP_Get()) + offset)));
+        UInt value = 0;
+        if (Types_IsReferenceType(htype))
+        {
+            value = Memory_ReadWord(UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + offset));
+            GC_Release(value);
+        }
+        value = HopperVM_Pop_R(htype);
+        Memory_WriteWord(UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + offset), value);
+        Memory_WriteWord(UInt(Int(HopperVM_TypeStack_Get()) + Int(HopperVM_BP_Get()) + offset), UInt(htype));
+    }
+    return true;
+}
+
+Bool Instructions_PushLocal()
+{
+    Int offset = HopperVM_ReadWordOffsetOperand();
+    UInt value = Memory_ReadWord(UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + offset));
+    Type htype = Type(Memory_ReadWord(UInt(Int(HopperVM_TypeStack_Get()) + Int(HopperVM_BP_Get()) + offset)));
+    HopperVM_Push(value, htype);
+    if (Types_IsReferenceType(htype))
+    {
+        GC_AddReference(value);
+    }
+    return true;
+}
+
+Bool Instructions_PopRel()
+{
+    if (HopperVM_CNP_Get())
+    {
+        HopperVM_CNP_Set(false);
+        return Instructions_PopCopyRel();
+    }
+    else
+    {
+        Int offset = HopperVM_ReadWordOffsetOperand();
+        UInt referenceAddress = UInt(Int(HopperVM_BP_Get()) + offset);
+        Type rtype = (Type)0;
+        UInt localAddress = HopperVM_Get_R(referenceAddress, rtype);
+        UInt existing = HopperVM_Get_R(localAddress, rtype);
+        if (Types_IsReferenceType(rtype))
+        {
+            GC_Release(existing);
+        }
+        Type vtype = (Type)0;
+        UInt value = HopperVM_Pop_R(vtype);
+        HopperVM_Put(localAddress, value, vtype);
+    }
+    return true;
+}
+
+Bool Instructions_PushRel()
+{
+    Int offset = HopperVM_ReadWordOffsetOperand();
+    UInt referenceAddress = UInt(Int(HopperVM_BP_Get()) + offset);
+    Type rtype = (Type)0;
+    UInt localAddress = HopperVM_Get_R(referenceAddress, rtype);
+    UInt value = HopperVM_Get_R(localAddress, rtype);
+    HopperVM_Push(value, rtype);
+    if (Types_IsReferenceType(rtype))
+    {
+        GC_AddReference(value);
+    }
+    return true;
+}
+
+Bool Instructions_PopGlobal()
+{
+    if (HopperVM_CNP_Get())
+    {
+        HopperVM_CNP_Set(false);
+        return Instructions_PopCopyGlobal();
+    }
+    else
+    {
+        UInt offset = HopperVM_ReadWordOperand();
+        Type htype = Type(Memory_ReadWord(HopperVM_TypeStack_Get() + offset));
+        UInt value = 0;
+        if (Types_IsReferenceType(htype))
+        {
+            value = Memory_ReadWord(HopperVM_ValueStack_Get() + offset);
+            GC_Release(value);
+        }
+        value = HopperVM_Pop_R(htype);
+        Memory_WriteWord(HopperVM_ValueStack_Get() + offset, value);
+        Memory_WriteWord(HopperVM_TypeStack_Get() + offset, UInt(htype));
+    }
+    return true;
+}
+
+Bool Instructions_PushGlobal()
+{
+    UInt offset = HopperVM_ReadWordOperand();
+    UInt value = Memory_ReadWord(HopperVM_ValueStack_Get() + offset);
+    Type htype = Type(Memory_ReadWord(HopperVM_TypeStack_Get() + offset));
+    HopperVM_Push(value, htype);
+    if (Types_IsReferenceType(htype))
+    {
+        GC_AddReference(value);
+    }
+    return true;
+}
+
+Bool Instructions_PushStackAddr()
+{
+    Int offset = HopperVM_ReadWordOffsetOperand();
+    UInt address = UInt(Int(HopperVM_BP_Get()) + offset);
+    HopperVM_Push(address, Type::eReference);
+    return true;
+}
+
+Bool Instructions_Dup()
+{
+    Byte offset = HopperVM_ReadByteOperand();
+    UInt address = HopperVM_SP_Get() - 0x02 - offset;
+    UInt value = Memory_ReadWord(HopperVM_ValueStack_Get() + address);
+    Type htype = Type(Memory_ReadWord(HopperVM_TypeStack_Get() + address));
+    HopperVM_Push(value, htype);
+    if (Types_IsReferenceType(htype))
+    {
+        GC_AddReference(value);
+    }
+    return true;
+}
+
+Bool Instructions_DecSP()
+{
+    UInt popBytes = HopperVM_ReadByteOperand();
+    while (popBytes != 0x00)
+    {
+        Type htype = (Type)0;
+        UInt address = HopperVM_Pop_R(htype);
+        if (Types_IsReferenceType(htype))
+        {
+            GC_Release(address);
+        }
+        popBytes = popBytes - 0x02;
+    }
+    return true;
+}
+
+Bool Instructions_Ret()
+{
+    UInt popBytes = HopperVM_ReadWordOperand();
+    while (popBytes != 0x00)
+    {
+        Type htype = (Type)0;
+        UInt address = HopperVM_Pop_R(htype);
+        if (Types_IsReferenceType(htype))
+        {
+            GC_Release(address);
+        }
+        popBytes = popBytes - 0x02;
+    }
+    HopperVM_BP_Set(HopperVM_PopCS());
+    if (HopperVM_CSP_Get() == 0x00)
+    {
+        HopperVM_PC_Set(0x00);
+        return false;
+    }
+    else
+    {
+        HopperVM_PC_Set(HopperVM_PopCS());
+    }
+    return true;
+}
+
+Bool Instructions_RetRes()
+{
+    Type rtype = (Type)0;
+    UInt value = HopperVM_Pop_R(rtype);
+    UInt popBytes = HopperVM_ReadWordOperand();
+    while (popBytes != 0x00)
+    {
+        Type htype = (Type)0;
+        UInt address = HopperVM_Pop_R(htype);
+        if (Types_IsReferenceType(htype))
+        {
+            GC_Release(address);
+        }
+        popBytes = popBytes - 0x02;
+    }
+    HopperVM_Push(value, rtype);
+    HopperVM_BP_Set(HopperVM_PopCS());
+    if (HopperVM_CSP_Get() == 0x00)
+    {
+        HopperVM_PC_Set(0x00);
+        return false;
+    }
+    else
+    {
+        HopperVM_PC_Set(HopperVM_PopCS());
+    }
+    return true;
+}
+
+Bool Instructions_TestBPB()
+{
+    Byte operand = HopperVM_ReadByteOperand();
+    UInt bpExpected = UInt(HopperVM_SP_Get() - operand);
+    if (bpExpected != HopperVM_BP_Get())
+    {
+        Minimal_Error_Set(0x0B);
+        return false;
+    }
+    return true;
+}
+
+Bool Instructions_Exit()
+{
+    return HopperVM_ExitInline();
+}
+
+Bool Instructions_JZ()
+{
+    if (HopperVM_Pop() == 0x00)
+    {
+        HopperVM_PC_Set(UInt(HopperVM_ReadWordOffsetOperand() + Int(HopperVM_PC_Get() - 0x03)));
+    }
+    else
+    {
+        HopperVM_PC_Set(HopperVM_PC_Get() + 0x02);
+    }
+    return true;
+}
+
+Bool Instructions_JNZ()
+{
+    if (HopperVM_Pop() != 0x00)
+    {
+        HopperVM_PC_Set(UInt(HopperVM_ReadWordOffsetOperand() + Int(HopperVM_PC_Get() - 0x03)));
+    }
+    else
+    {
+        HopperVM_PC_Set(HopperVM_PC_Get() + 0x02);
+    }
+    return true;
+}
+
+Bool Instructions_J()
+{
+    HopperVM_PC_Set(UInt(HopperVM_ReadWordOffsetOperand() + Int(HopperVM_PC_Get() - 0x03)));
+    return true;
+}
+
+Bool Instructions_PushIW()
+{
+    HopperVM_Push(HopperVM_ReadWordOperand(), Type::eUInt);
+    return true;
+}
+
+Bool Instructions_BoolNot()
+{
+    HopperVM_Push(((HopperVM_Pop() == 0x00)) ? (0x01) : (0x00), Type::eBool);
+    return true;
+}
+
+Bool Instructions_BitNot()
+{
+    HopperVM_Push(~(HopperVM_Pop()), Type::eUInt);
+    return true;
+}
+
+Bool Instructions_Swap()
+{
+    UInt topValue = Memory_ReadWord(HopperVM_ValueStack_Get() + HopperVM_SP_Get() - 0x02);
+    UInt nextValue = Memory_ReadWord(HopperVM_ValueStack_Get() + HopperVM_SP_Get() - 0x04);
+    Memory_WriteWord(HopperVM_ValueStack_Get() + HopperVM_SP_Get() - 0x02, nextValue);
+    Memory_WriteWord(HopperVM_ValueStack_Get() + HopperVM_SP_Get() - 0x04, topValue);
+    UInt topType = Memory_ReadWord(HopperVM_TypeStack_Get() + HopperVM_SP_Get() - 0x02);
+    UInt nextType = Memory_ReadWord(HopperVM_TypeStack_Get() + HopperVM_SP_Get() - 0x04);
+    Memory_WriteWord(HopperVM_TypeStack_Get() + HopperVM_SP_Get() - 0x02, nextType);
+    Memory_WriteWord(HopperVM_TypeStack_Get() + HopperVM_SP_Get() - 0x04, topType);
+    return true;
+}
+
+Bool Instructions_PushIM1()
+{
+    HopperVM_PushI(-0x01);
+    return true;
+}
+
+Bool Instructions_PushGP()
+{
+    HopperVM_Push(0x00, Type::eUInt);
+    return true;
+}
+
+Bool Instructions_CNP()
+{
+    HopperVM_CNP_Set(true);
+    return true;
+}
+
+Bool Instructions_Enter()
+{
+    HopperVM_PushCS(HopperVM_BP_Get());
+    HopperVM_BP_Set(HopperVM_SP_Get());
+    return true;
+}
+
+Bool Instructions_NOP()
+{
+    return true;
+}
+
+Bool Instructions_Cast()
+{
+    HopperVM_Put(HopperVM_SP_Get() - 0x02, HopperVM_Get(HopperVM_SP_Get() - 0x02), Type(HopperVM_ReadByteOperand()));
+    return true;
+}
+
+Bool Instructions_BitXor()
+{
+    UInt top = HopperVM_Pop();
+    UInt next = HopperVM_Pop();
+    HopperVM_Push((next | top) & (~(next & top)), Type::eUInt);
+    return true;
+}
+
+Bool Instructions_JREL()
+{
+    UInt address = HopperVM_Pop();
+    HopperVM_PC_Set(address);
+    return true;
+}
+
+Bool Instructions_JIX()
+{
+    UInt switchCase = HopperVM_Pop();
+    Byte minRange = HopperVM_ReadByteOperand();
+    Byte maxRange = HopperVM_ReadByteOperand();
+    Byte lsb = HopperVM_ReadByteOperand();
+    Byte msb = HopperVM_ReadByteOperand();
+    Int jumpBackOffset = Int(lsb + (msb << 0x08));
+    UInt tpc = HopperVM_PC_Get();
+    HopperVM_PC_Set(UInt(Int(HopperVM_PC_Get()) - jumpBackOffset - 0x05));
+    UInt tableSize = (UInt(maxRange) - UInt(minRange) + 0x01) << 0x01;
+    UInt offset = 0x00;
+    if ((switchCase >= minRange) && (switchCase <= maxRange))
+    {
+        UInt index = tpc + (switchCase - minRange) * 0x02;
+        offset = Memory_ReadCodeByte(index) + (Memory_ReadCodeByte(index + 0x01) << 0x08);
+    }
+    if (offset == 0x00)
+    {
+        HopperVM_PC_Set(tpc + tableSize);
+    }
+    else
+    {
+        HopperVM_PC_Set(HopperVM_PC_Get() + offset);
+    }
+    return true;
+}
+
+Bool Instructions_Call()
+{
+    UInt methodIndex = HopperVM_ReadWordOperand();
+    HopperVM_PushCS(HopperVM_PC_Get());
+    UInt methodAddress = HopperVM_LookupMethod(methodIndex);
+    Memory_WriteCodeByte(HopperVM_PC_Get() - 0x03, Byte(OpCode::eCALLI));
+    Memory_WriteCodeWord(HopperVM_PC_Get() - 0x02, methodAddress);
+    HopperVM_PC_Set(methodAddress);
+    return true;
+}
+
+Bool Instructions_CallI()
+{
+    UInt methodAddress = HopperVM_ReadWordOperand();
+    HopperVM_PushCS(HopperVM_PC_Get());
+    HopperVM_PC_Set(methodAddress);
+    return true;
+}
+
+Bool Instructions_CallRel()
+{
+    UInt methodIndex = HopperVM_Pop();
+    HopperVM_PushCS(HopperVM_PC_Get());
+    HopperVM_PC_Set(HopperVM_LookupMethod(methodIndex));
+    return true;
+}
+
+Bool Instructions_SysCall()
+{
+    Type htype = (Type)0;
+    UInt iOverload = HopperVM_Pop_R(htype);
+    Byte iSysCall = HopperVM_ReadByteOperand();
+    return HopperVM_ExecuteSysCall(iSysCall, iOverload);
+}
+
 Bool Instructions_LibCall()
 {
     Byte iLibCall = HopperVM_ReadByteOperand();
     return Library_ExecuteLibCall(iLibCall);
+}
+
+Bool Instructions_PopCopyLocal()
+{
+    Int offset = HopperVM_ReadWordOffsetOperand();
+    Type htype = (Type)0;
+    UInt localAddress = UInt(Int(HopperVM_BP_Get()) + offset);
+    UInt oldvalue = HopperVM_Get_R(localAddress, htype);
+    if (Types_IsReferenceType(htype))
+    {
+        GC_Release(oldvalue);
+    }
+    UInt value = HopperVM_Pop_R(htype);
+    if (value == oldvalue)
+    {
+    }
+    else
+    {
+        UInt newvalue = GC_Clone(value);
+        GC_Release(value);
+        HopperVM_Put(localAddress, newvalue, htype);
+    }
+    return true;
+}
+
+Bool Instructions_PopCopyRel()
+{
+    Int offset = HopperVM_ReadWordOffsetOperand();
+    UInt referenceAddress = UInt(Int(HopperVM_BP_Get()) + offset);
+    Type rtype = (Type)0;
+    UInt localAddress = HopperVM_Get_R(referenceAddress, rtype);
+    UInt oldvalue = HopperVM_Get_R(localAddress, rtype);
+    if (Types_IsReferenceType(rtype))
+    {
+        GC_Release(oldvalue);
+    }
+    UInt value = HopperVM_Pop_R(rtype);
+    if (value == oldvalue)
+    {
+    }
+    else
+    {
+        UInt newvalue = GC_Clone(value);
+        GC_Release(value);
+        HopperVM_Put(localAddress, newvalue, rtype);
+    }
+    return true;
+}
+
+Bool Instructions_PopCopyGlobal()
+{
+    UInt offset = HopperVM_ReadWordOperand();
+    Type htype = (Type)0;
+    UInt oldvalue = HopperVM_Get_R(offset, htype);
+    if (Types_IsReferenceType(htype))
+    {
+        GC_Release(oldvalue);
+    }
+    UInt value = HopperVM_Pop_R(htype);
+    if (value == oldvalue)
+    {
+    }
+    else
+    {
+        UInt newvalue = GC_Clone(value);
+        GC_Release(value);
+        HopperVM_Put(offset, newvalue, htype);
+    }
+    return true;
 }
 
 UInt HRString_Clone(UInt original)
@@ -3300,26 +3567,15 @@ void HopperVM_Put(UInt address, UInt value, Type htype)
     Memory_WriteWord(HopperVM_typeStack + address, Byte(htype));
 }
 
-void HopperVM_BP_Set(UInt value)
+void HopperVM_PushCS(UInt value)
 {
-    HopperVM_bp = value;
-}
-
-UInt HopperVM_PopCS()
-{
-    HopperVM_csp = HopperVM_csp - 0x02;
-    return Memory_ReadWord(HopperVM_callStack + HopperVM_csp);
+    Memory_WriteWord(HopperVM_callStack + HopperVM_csp, value);
+    HopperVM_csp = HopperVM_csp + 0x02;
 }
 
 void HopperVM_PC_Set(UInt value)
 {
     HopperVM_pc = value;
-}
-
-void HopperVM_PushCS(UInt value)
-{
-    Memory_WriteWord(HopperVM_callStack + HopperVM_csp, value);
-    HopperVM_csp = HopperVM_csp + 0x02;
 }
 
 UInt HopperVM_LookupMethod(UInt methodIndex)
@@ -3339,31 +3595,15 @@ UInt HopperVM_LookupMethod(UInt methodIndex)
     return address;
 }
 
-Bool HopperVM_ExitInline()
+void HopperVM_BP_Set(UInt value)
 {
-    HopperVM_pc = HopperVM_pcStore;
-    HopperVM_Push(0x00, Type::eUInt);
-    return true;
+    HopperVM_bp = value;
 }
 
-Int HopperVM_ReadWordOffsetOperand()
+UInt HopperVM_PopCS()
 {
-    Int offset = External_UIntToInt(Memory_ReadCodeWord(HopperVM_pc));
-    
-    HopperVM_pc++;
-    
-    HopperVM_pc++;
-    return offset;
-}
-
-UInt HopperVM_ReadWordOperand()
-{
-    UInt operand = Memory_ReadCodeWord(HopperVM_pc);
-    
-    HopperVM_pc++;
-    
-    HopperVM_pc++;
-    return operand;
+    HopperVM_csp = HopperVM_csp - 0x02;
+    return Memory_ReadWord(HopperVM_callStack + HopperVM_csp);
 }
 
 Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
@@ -4968,9 +5208,14 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     return doNext && (Minimal_Error_Get() == 0x00);
 }
 
-UInt HopperVM_Get(UInt address)
+UInt HopperVM_ReadWordOperand()
 {
-    return Memory_ReadWord(HopperVM_valueStack + address);
+    UInt operand = Memory_ReadCodeWord(HopperVM_pc);
+    
+    HopperVM_pc++;
+    
+    HopperVM_pc++;
+    return operand;
 }
 
 Int HopperVM_PopI_R(Type & htype)
@@ -4979,6 +5224,28 @@ Int HopperVM_PopI_R(Type & htype)
     UInt value = Memory_ReadWord(HopperVM_valueStack + HopperVM_sp);
     htype = Type(Memory_ReadWord(HopperVM_typeStack + HopperVM_sp));
     return External_UIntToInt(value);
+}
+
+Int HopperVM_ReadWordOffsetOperand()
+{
+    Int offset = External_UIntToInt(Memory_ReadCodeWord(HopperVM_pc));
+    
+    HopperVM_pc++;
+    
+    HopperVM_pc++;
+    return offset;
+}
+
+Bool HopperVM_ExitInline()
+{
+    HopperVM_pc = HopperVM_pcStore;
+    HopperVM_Push(0x00, Type::eUInt);
+    return true;
+}
+
+UInt HopperVM_Get(UInt address)
+{
+    return Memory_ReadWord(HopperVM_valueStack + address);
 }
 
 Bool HopperVM_RunInline()

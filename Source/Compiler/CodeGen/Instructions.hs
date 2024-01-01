@@ -5,58 +5,13 @@ unit Instructions
     
     enum Instruction
     {
-        // unsigned
-        ADD,
-        SUB,
-        DIV,
-        MUL,
-        MOD,
-        EQ,
-        NE,
-        GT,
-        LT,
-        GE,
-        LE,
-        
-        BOOLOR,
-        BOOLAND,
-        BITOR,
-        BITAND,
-
-        BITSHL,
-        BITSHR,
-        
-        // instructions before here have
-        // - no immediate operands, 
-        // - pop 2 and push 1
-
-        //POP2PUSH1UNSIGNED = 0x20,    // OLDOPS
-        
-        // signed:
-        ADDI,
-        SUBI,
-        DIVI,
-        MULI,
-        MODI,
-        GTI,
-        LTI,
-        GEI,
-        LEI,
-        
-        // instructions before here have
-        // - no immediate operands, 
-        // - pop 2 and push 1
-        // - are signed operations
-
-        //POP2PUSH1SIGNED = 0x30,    // OLDOPS
-        
-        PUSHIB,       // operand is byte
-        POPLOCALB,    // operand is the location to pop to: BP + offset
-        PUSHLOCALB,   // operand is the location to push from: BP + offset
-        POPRELB,      // like POPLOCAL but the absolute address to pop is taken from BP + offset
-        PUSHRELB,     // like PUSHLOCAL but the absolute address to push is taken from BP + offset
-        POPGLOBALB,   // operand is the absolute address to pop to
-        PUSHGLOBALB,  // operand is the absolute address to push from
+        PUSHIB = 0x1A,  // operand is byte
+        POPLOCALB,      // operand is the location to pop to: BP + offset
+        PUSHLOCALB,     // operand is the location to push from: BP + offset
+        POPRELB,        // like POPLOCAL but the absolute address to pop is taken from BP + offset
+        PUSHRELB,       // like PUSHLOCAL but the absolute address to push is taken from BP + offset
+        POPGLOBALB,     // operand is the absolute address to pop to
+        PUSHGLOBALB,    // operand is the absolute address to push from
         PUSHSTACKADDRB, // operand is the offset from BP of the variable - convert to absolute stack address and push that
         
         INCLOCALB,
@@ -72,7 +27,7 @@ unit Instructions
         DIE,       // 0x?? fail setting lastError to <byte operand>
   
         RETB,      // RET and pop <byte operand> bytes
-        RETRETB,   // RET and pop <byte operand> bytes, but preserve [top] as the return value
+        RETRESB,   // RET and pop <byte operand> bytes, but preserve [top] as the return value
       
         CALLB,     // <byte index operand>
         TESTBPB,   // verify that BP is what we expect it to be
@@ -82,32 +37,28 @@ unit Instructions
         JNZB,      // <signed byte offset>
         JB,        // <signed byte offset>
         
-        //BYTEOPERAND = 0x60,  // OLDOPS
-        
         // jump offsets: -1 means address of J instruction - 1, 0 means address after J instruction
-        JZW,       // <signed int offset>
-        JNZW,      // <signed int offset>
-        JW,        // <signed int offset>
+        JZ,       // <signed int offset>
+        JNZ,      // <signed int offset>
+        J,        // <signed int offset>
         
-        CALLW,     // <integer index operand>
+        CALL,     // <integer index operand>
   
-        RETW,      // RET and pop <uint operand> bytes
-        RETRETW,   // RET and pop <uint operand> bytes, but preserve [top] as the return value
+        RET,      // RET and pop <uint operand> bytes
+        RETRES,   // RET and pop <uint operand> bytes, but preserve [top] as the return value
         
-        PUSHIW,       // operand is uint
-        POPLOCALW,    // operand is the location to pop to: BP + offset
-        PUSHLOCALW,   // operand is the location to push from: BP + offset
-        POPRELW,      // like POPLOCAL but the absolute address to pop is taken from BP + offset
-        PUSHRELW,     // like PUSHLOCAL but the absolute address to push is taken from BP + offset
-        POPGLOBALW,   // operand is the absolute address to pop to
-        PUSHGLOBALW,  // operand is the absolute address to push from
-        PUSHSTACKADDRW, // operand is the offset from BP of the variable - convert to absolute stack address and push that
+        PUSHI,       // operand is uint
+        POPLOCAL,    // operand is the location to pop to: BP + offset
+        PUSHLOCAL,   // operand is the location to push from: BP + offset
+        POPREL,      // like POPLOCAL but the absolute address to pop is taken from BP + offset
+        PUSHREL,     // like PUSHLOCAL but the absolute address to push is taken from BP + offset
+        POPGLOBAL,   // operand is the absolute address to pop to
+        PUSHGLOBAL,  // operand is the absolute address to push from
+        PUSHSTACKADDR, // operand is the offset from BP of the variable - convert to absolute stack address and push that
         
         INCLOCALBB,
-        PUSHIWLE,
+        PUSHILE,
 
-        //WORDOPERAND = 0x80,  // OLDOPS
-        
         BOOLNOT,      // ![top] -> [top]
         BITNOT,       // ~[top] -> [top]
         
@@ -137,37 +88,35 @@ unit Instructions
         INCGLOBALB,
         DECGLOBALB,
         
-        PUSHIWLT,
+        PUSHILT,
         
         PUSHLOCALBB,
         
         POPCOPYLOCALB,
         POPCOPYRELB,
         POPCOPYGLOBALB,
-        POPCOPYLOCALW,   // unused?
-        POPCOPYRELW,     // unused?
-        POPCOPYGLOBALW,
+        POPCOPYLOCAL,   // unused?
+        POPCOPYREL,     // unused?
+        POPCOPYGLOBAL,
         
         POPCOPYLOCALB00,
         POPCOPYLOCALB02,
         
         ENTERB,
         
-        PUSHDW, // operand uint, gets resolved at runtime from delegate index to delegate pointer
+        PUSHD, // operand uint, gets resolved at runtime from delegate index to delegate pointer
         RETFAST,
         PUSHDB,
         EXIT, // NOP, only used by inline code
         
-        BITXOR, // for 'flags'
-        
-        PUSHIWLEI,
+        PUSHILEI = 0x65,
         INCGLOBALBB,
         
         JREL,
         JIXB,
-        JIXW,
+        JIX,
         
-        CALLIW,
+        CALLI,
         
         PUSHIBLE,
         PUSHIBEQ,
@@ -176,6 +125,39 @@ unit Instructions
         SUBB,
         
         LIBCALL,
+        
+        // pop 2 -> operation -> push 1: (bit 0 set means 'signed')
+        ADD  = 0x80,
+        ADDI = 0x81,
+        SUB  = 0x82,
+        SUBI = 0x83,
+        DIV  = 0x84,
+        DIVI = 0x85,
+        MUL  = 0x86,
+        MULI = 0x87,
+        MOD  = 0x88,
+        MODI = 0x89,
+        
+        GT    = 0x8A,
+        GTI   = 0x8B,
+        LT    = 0x8C,
+        LTI   = 0x8D,
+        GE    = 0x8E,
+        GEI   = 0x8F,
+        LE    = 0x90,
+        LEI   = 0x91,
+
+        // pop 2 -> operation -> push 1: (bit 0 set means 'signed' so these are always unsigned)
+
+        EQ      = 0x92,
+        NE      = 0x94,
+        BOOLOR  = 0x96,
+        BOOLAND = 0x98,
+        BITAND  = 0x9A,
+        BITOR   = 0x9C,
+        BITXOR  = 0x9E,
+        BITSHR  = 0xA0,
+        BITSHL  = 0xA2,
         
         UNDEFINED,
     }
@@ -187,9 +169,9 @@ unit Instructions
             case Instruction.RET0:
             case Instruction.RETFAST:
             case Instruction.RETB:
-            case Instruction.RETRETB:
-            case Instruction.RETW:
-            case Instruction.RETRETW:
+            case Instruction.RETRESB:
+            case Instruction.RET:
+            case Instruction.RETRES:
             {
                 return true;   
             }
@@ -204,7 +186,7 @@ unit Instructions
             case Instruction.PUSHI1:
             case Instruction.PUSHIM1:
             case Instruction.PUSHIB:
-            case Instruction.PUSHIW:
+            case Instruction.PUSHI:
             {
                 return true;   
             }
@@ -233,13 +215,13 @@ unit Instructions
                 width = 1;
                 isStackOffset = true;
             }
-            case Instruction.POPRELW:
-            case Instruction.POPLOCALW:
-            case Instruction.POPCOPYLOCALW:
-            case Instruction.POPCOPYRELW:
-            case Instruction.PUSHLOCALW:
-            case Instruction.PUSHSTACKADDRW:
-            case Instruction.PUSHRELW:
+            case Instruction.POPREL:
+            case Instruction.POPLOCAL:
+            case Instruction.POPCOPYLOCAL:
+            case Instruction.POPCOPYREL:
+            case Instruction.PUSHLOCAL:
+            case Instruction.PUSHSTACKADDR:
+            case Instruction.PUSHREL:
             {
                 width = 2;
                 isStackOffset = true;
@@ -256,8 +238,8 @@ unit Instructions
                 isRET = true;
                 width = 1;
             }
-            case Instruction.RETW:
-            case Instruction.RETRETW:
+            case Instruction.RET:
+            case Instruction.RETRET:
             {
                 width = 2;
                 isRET = true;
@@ -270,9 +252,9 @@ unit Instructions
                 isAddressOffset = true;
                 width = 1;
             }
-            case Instruction.JW:
-            case Instruction.JZW:
-            case Instruction.JNZW:
+            case Instruction.J:
+            case Instruction.JZ:
+            case Instruction.JNZ:
             {
                 isAddressOffset = true;
                 width = 2;
@@ -305,22 +287,22 @@ unit Instructions
                 width = 1;
             }
             
-            case Instruction.CALLW:
-            case Instruction.PUSHIW:
-            case Instruction.PUSHDW:
-            case Instruction.PUSHIWLE:
-            case Instruction.PUSHIWLEI:
-            case Instruction.PUSHIWLT:
-            case Instruction.POPGLOBALW:
-            case Instruction.POPCOPYGLOBALW:
+            case Instruction.CALL:
+            case Instruction.PUSHI:
+            case Instruction.PUSHD:
+            case Instruction.PUSHILE:
+            case Instruction.PUSHILEI:
+            case Instruction.PUSHILT:
+            case Instruction.POPGLOBAL:
+            case Instruction.POPCOPYGLOBAL:
             case Instruction.PUSHGLOBALBB:
             case Instruction.PUSHLOCALBB:
-            case Instruction.PUSHGLOBALW:
+            case Instruction.PUSHGLOBAL:
             case Instruction.INCLOCALBB:
             case Instruction.INCGLOBALBB:
             case Instruction.JIXB:
-            case Instruction.JIXW:
-            case Instruction.CALLIW:
+            case Instruction.JIX:
+            case Instruction.CALLI:
             {
                 width = 2;
             }
@@ -336,18 +318,18 @@ unit Instructions
             case Instruction.INCLOCALB:
             case Instruction.DECLOCALB:
             case Instruction.POPLOCALB:
-            case Instruction.POPLOCALW:
+            case Instruction.POPLOCAL:
             case Instruction.POPRELB:
-            case Instruction.POPRELW:
+            case Instruction.POPREL:
             case Instruction.POPCOPYLOCALB:
-            case Instruction.POPCOPYLOCALW:
+            case Instruction.POPCOPYLOCAL:
             case Instruction.POPCOPYRELB:
-            case Instruction.POPCOPYRELW:
+            case Instruction.POPCOPYREL:
             case Instruction.PUSHLOCALB:
-            case Instruction.PUSHLOCALW:
-            case Instruction.PUSHSTACKADDRW:
+            case Instruction.PUSHLOCAL:
+            case Instruction.PUSHSTACKADDR:
             case Instruction.PUSHRELB:
-            case Instruction.PUSHRELW:
+            case Instruction.PUSHREL:
             case Instruction.PUSHSTACKADDRB:
             {
                 isOffset = true;
@@ -363,9 +345,9 @@ unit Instructions
             case Instruction.JB:
             case Instruction.JZB:
             case Instruction.JNZB:
-            case Instruction.JW:
-            case Instruction.JZW:
-            case Instruction.JNZW:
+            case Instruction.J:
+            case Instruction.JZ:
+            case Instruction.JNZ:
             {
                 isOffset = true;
             }
@@ -381,7 +363,7 @@ unit Instructions
             case Instruction.CALLB:
             case Instruction.TESTBPB:
             case Instruction.RETB:
-            case Instruction.RETRETB:
+            case Instruction.RETRESB:
             case Instruction.PUSHIB:
             case Instruction.ADDB:
             case Instruction.SUBB:
@@ -417,34 +399,34 @@ unit Instructions
                 result = 1;
             }
             
-            case Instruction.CALLW:
-            case Instruction.RETW:
-            case Instruction.RETRETW:
-            case Instruction.PUSHIW:
-            case Instruction.PUSHDW:
-            case Instruction.PUSHIWLE:
-            case Instruction.PUSHIWLEI:
-            case Instruction.PUSHIWLT:
-            case Instruction.POPGLOBALW:
-            case Instruction.POPLOCALW:
-            case Instruction.POPRELW:
-            case Instruction.POPCOPYGLOBALW:
-            case Instruction.POPCOPYLOCALW:
-            case Instruction.POPCOPYRELW:
+            case Instruction.CALL:
+            case Instruction.RET:
+            case Instruction.RETRES:
+            case Instruction.PUSHI:
+            case Instruction.PUSHD:
+            case Instruction.PUSHILE:
+            case Instruction.PUSHILEI:
+            case Instruction.PUSHILT:
+            case Instruction.POPGLOBAL:
+            case Instruction.POPLOCAL:
+            case Instruction.POPREL:
+            case Instruction.POPCOPYGLOBAL:
+            case Instruction.POPCOPYLOCAL:
+            case Instruction.POPCOPYREL:
             case Instruction.PUSHGLOBALBB:
             case Instruction.PUSHLOCALBB:
-            case Instruction.PUSHGLOBALW:
-            case Instruction.PUSHLOCALW:
-            case Instruction.PUSHRELW:
-            case Instruction.PUSHSTACKADDRW:
-            case Instruction.JW:
-            case Instruction.JZW:
-            case Instruction.JNZW:
+            case Instruction.PUSHGLOBAL:
+            case Instruction.PUSHLOCAL:
+            case Instruction.PUSHREL:
+            case Instruction.PUSHSTACKADDR:
+            case Instruction.J:
+            case Instruction.JZ:
+            case Instruction.JNZ:
             case Instruction.INCLOCALBB:
             case Instruction.INCGLOBALBB:
             case Instruction.JIXB:
-            case Instruction.JIXW:
-            case Instruction.CALLIW:
+            case Instruction.JIX:
+            case Instruction.CALLI:
             {
                 result = 2;
             }
@@ -486,13 +468,13 @@ unit Instructions
             {
                 result = "TESTBPB";
             }
-            case Instruction.CALLW:
+            case Instruction.CALL:
             {
-                result = "CALLW";
+                result = "CALL";
             }
-            case Instruction.CALLIW:
+            case Instruction.CALLI:
             {
-                result = "CALLIW";
+                result = "CALLI";
             }
             case Instruction.CALLREL:
             {
@@ -514,17 +496,17 @@ unit Instructions
             {
                 result = "RETB";
             }
-            case Instruction.RETW:
+            case Instruction.RET:
             {
-                result = "RETW";
+                result = "RET";
             }
-            case Instruction.RETRETB:
+            case Instruction.RETRESB:
             {
-                result = "RETRETB";
+                result = "RETRESB";
             }
-            case Instruction.RETRETW:
+            case Instruction.RETRES:
             {
-                result = "RETRETW";
+                result = "RETRES";
             }
             case Instruction.SYSCALL:
             {
@@ -570,13 +552,13 @@ unit Instructions
             {
                 result = "SUBB";
             }
-            case Instruction.PUSHIW:
+            case Instruction.PUSHI:
             {
-                result = "PUSHIW";
+                result = "PUSHI";
             }
-            case Instruction.PUSHDW:
+            case Instruction.PUSHD:
             {
-                result = "PUSHDW";
+                result = "PUSHD";
             }
             case Instruction.PUSHDB:
             {
@@ -590,17 +572,17 @@ unit Instructions
             {
                 result = "PUSHIBEQ";
             }
-            case Instruction.PUSHIWLE:
+            case Instruction.PUSHILE:
             {
-                result = "PUSHIWLE";
+                result = "PUSHILE";
             }
-            case Instruction.PUSHIWLEI:
+            case Instruction.PUSHILEI:
             {
-                result = "PUSHIWLEI";
+                result = "PUSHILEI";
             }
-            case Instruction.PUSHIWLT:
+            case Instruction.PUSHILT:
             {
-                result = "PUSHIWLT";
+                result = "PUSHILT";
             }
             
             case Instruction.INCGLOBALB:
@@ -632,50 +614,50 @@ unit Instructions
             {
                 result = "POPGLOBALB";
             }
-            case Instruction.POPGLOBALW:
+            case Instruction.POPGLOBAL:
             {
-                result = "POPGLOBALW";
+                result = "POPGLOBAL";
             }
             case Instruction.POPLOCALB:
             {
                 result = "POPLOCALB";
             }
-            case Instruction.POPLOCALW:
+            case Instruction.POPLOCAL:
             {
-                result = "POPLOCALW";
+                result = "POPLOCAL";
             }
             case Instruction.POPRELB:
             {
                 result = "POPRELB";
             }
-            case Instruction.POPRELW:
+            case Instruction.POPREL:
             {
-                result = "POPRELW";
+                result = "POPREL";
             }
             
             case Instruction.POPCOPYGLOBALB:
             {
                 result = "POPCOPYGLOBALB";
             }
-            case Instruction.POPCOPYGLOBALW:
+            case Instruction.POPCOPYGLOBAL:
             {
-                result = "POPCOPYGLOBALW";
+                result = "POPCOPYGLOBAL";
             }
             case Instruction.POPCOPYLOCALB:
             {
                 result = "POPCOPYLOCALB";
             }
-            case Instruction.POPCOPYLOCALW:
+            case Instruction.POPCOPYLOCAL:
             {
-                result = "POPCOPYLOCALW";
+                result = "POPCOPYLOCAL";
             }
             case Instruction.POPCOPYRELB:
             {
                 result = "POPCOPYRELB";
             }
-            case Instruction.POPCOPYRELW:
+            case Instruction.POPCOPYREL:
             {
-                result = "POPCOPYRELW";
+                result = "POPCOPYREL";
             }
             
             
@@ -709,17 +691,17 @@ unit Instructions
             {
                 result = "PUSHLOCALBB";
             }
-            case Instruction.PUSHGLOBALW:
+            case Instruction.PUSHGLOBAL:
             {
-                result = "PUSHGLOBALW";
+                result = "PUSHGLOBAL";
             }
             case Instruction.PUSHSTACKADDRB:
             {
                 result = "PUSHSTACKADDRB";
             }
-            case Instruction.PUSHSTACKADDRW:
+            case Instruction.PUSHSTACKADDR:
             {
-                result = "PUSHSTACKADDRW";
+                result = "PUSHSTACKADDR";
             }      
                           
             
@@ -735,18 +717,18 @@ unit Instructions
             {
                 result = "PUSHLOCALB02";
             }
-            case Instruction.PUSHLOCALW:
+            case Instruction.PUSHLOCAL:
             {
-                result = "PUSHLOCALW";
+                result = "PUSHLOCAL";
             }
             
             case Instruction.PUSHRELB:
             {
                 result = "PUSHRELB";
             }
-            case Instruction.PUSHRELW:
+            case Instruction.PUSHREL:
             {
-                result = "PUSHRELW";
+                result = "PUSHREL";
             }
             
             case Instruction.BOOLNOT:
@@ -790,25 +772,25 @@ unit Instructions
             {
                 result = "JNZB";
             }
-            case Instruction.JW:
+            case Instruction.J:
             {
-                result = "JW";
+                result = "J";
             }
-            case Instruction.JZW:
+            case Instruction.JZ:
             {
-                result = "JZW";
+                result = "JZ";
             }
-            case Instruction.JNZW:
+            case Instruction.JNZ:
             {
-                result = "JNZW";
+                result = "JNZ";
             }
             case Instruction.JIXB:
             {
                 result = "JIXB";
             }
-            case Instruction.JIXW:
+            case Instruction.JIX:
             {
-                result = "JIXW";
+                result = "JIX";
             }
             case Instruction.COPYNEXTPOP:
             {
@@ -935,7 +917,7 @@ unit Instructions
         uint tableSize;
         switch (instruction)
         {
-            case Instruction.JIXW:
+            case Instruction.JIX:
             {
                 uint entries = (operand >> 8) - (operand & 0xFF) + 1;
                 tableSize = entries * 2 + 2; // +2 for the start offset
@@ -977,7 +959,7 @@ unit Instructions
         byte cd = code[address];
         Instruction instruction = Instruction(cd);
   
-        if ((instruction == Instruction.JIXB) || (instruction == Instruction.JIXW))
+        if ((instruction == Instruction.JIXB) || (instruction == Instruction.JIX))
         {
             uint actualAddress = entryPointAddress + address;
             string addressContent = "0x" + actualAddress.ToHexString(4) + "  ";
@@ -1012,7 +994,7 @@ unit Instructions
             String.Build(ref content);
             string widePadding = "                        ";
             byte count = 0;
-            if (instruction == Instruction.JIXW)
+            if (instruction == Instruction.JIX)
             {
                 for (uint it = 0; it < tableSize/2; it++)
                 {
@@ -1221,7 +1203,7 @@ unit Instructions
             content = content + "  // " + libcallName;
         }
         if ((instruction == Instruction.CALLB)
-         || (instruction == Instruction.CALLW)
+         || (instruction == Instruction.CALL)
            )
         {
             <string,variant> methodSymbols =  Code.GetMethodSymbols(methodKey);
@@ -1241,7 +1223,7 @@ unit Instructions
                 content = content + "   // " + name;
             }
         }
-        if (instruction == Instruction.CALLIW)
+        if (instruction == Instruction.CALLI)
         {
             // TODO : reverse lookup of method from address to index to add name to comment
         }

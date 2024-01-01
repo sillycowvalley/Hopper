@@ -31,6 +31,9 @@ program Compile
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; } }
     
+    bool isTinyHopper;
+    bool IsTinyHopper { get { return isTinyHopper; } }
+    
     uint iCurrentOverload;
     
     uint spaces; 
@@ -90,7 +93,7 @@ program Compile
             
             // if false jump past
             uint jumpPast = CodeStream.NextAddress;
-            CodeStream.AddInstructionJump(Instruction.JZW);
+            CodeStream.AddInstructionJump(Instruction.JZ);
             
             Block.PushBlock(false); // not a loop context
             compileBlock();
@@ -105,7 +108,7 @@ program Compile
             // jump end (past a potential "else" block)
             uint jumpEnd = CodeStream.NextAddress;
             jumpEnds.Append(jumpEnd);
-            CodeStream.AddInstructionJump(Instruction.JW);
+            CodeStream.AddInstructionJump(Instruction.J);
 // past:    
             uint pastAddress = CodeStream.NextAddress;
             CodeStream.PatchJump(jumpPast, pastAddress);        
@@ -182,31 +185,31 @@ program Compile
             
             // bytesToPop = locals + arguments
             uint bytesToPop = Block.GetLocalsToPop(true, false);
-            if (bytesToPop == 0)
+            if (!IsTinyHopper && (bytesToPop == 0))
             {
                 // if there is a return value, then it is already exactly where it needs to be
                 CodeStream.AddInstruction(Instruction.RET0);
             }
             else if (returnBytes > 0)
             {
-                if (bytesToPop < 256)
+                if (!IsTinyHopper && (bytesToPop < 256))
                 {
-                    CodeStream.AddInstruction(Instruction.RETRETB, byte(bytesToPop));
+                    CodeStream.AddInstruction(Instruction.RETRESB, byte(bytesToPop));
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.RETRETW, bytesToPop);
+                    CodeStream.AddInstruction(Instruction.RETRES, bytesToPop);
                 }
             }
             else
             {
-                if (bytesToPop < 256)
+                if (!IsTinyHopper && (bytesToPop < 256))
                 {
                     CodeStream.AddInstruction(Instruction.RETB, byte(bytesToPop));
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.RETW, bytesToPop);
+                    CodeStream.AddInstruction(Instruction.RET, bytesToPop);
                 }
             }
             success = true;
@@ -238,7 +241,7 @@ program Compile
                
         // - jump to current inner loop 'exit'
         uint breakJump = CodeStream.NextAddress;
-        CodeStream.AddInstructionJump(Instruction.JW);
+        CodeStream.AddInstructionJump(Instruction.J);
         if (!Block.AddBreakPatch(breakJump))
         {
             Parser.ErrorAtCurrent("'break' must be inside loop block");
@@ -266,7 +269,7 @@ program Compile
         }
         // - jump to current inner loop 'next'
         uint continueJump = CodeStream.NextAddress;
-        CodeStream.AddInstructionJump(Instruction.JW);
+        CodeStream.AddInstructionJump(Instruction.J);
         if (!Block.AddContinuePatch(continueJump))
         {
             Parser.ErrorAtCurrent("'continue' must be inside loop block");
@@ -307,7 +310,7 @@ program Compile
             
             // if false jump exit
             uint jumpExit = CodeStream.NextAddress;
-            CodeStream.AddInstructionJump(Instruction.JZW);
+            CodeStream.AddInstructionJump(Instruction.JZ);
             
             Block.PushBlock(true); // loop block context
             
@@ -317,7 +320,7 @@ program Compile
             
             CodeStream.InsertDebugInfo(true);
             
-            CodeStream.AddInstructionJump(Instruction.JW, continueAddress);
+            CodeStream.AddInstructionJump(Instruction.J, continueAddress);
 // exit:            
             uint breakAddress = CodeStream.NextAddress;
             CodeStream.PatchJump(jumpExit, breakAddress);
@@ -351,7 +354,7 @@ program Compile
             
             CodeStream.InsertDebugInfo(true);
             
-            CodeStream.AddInstructionJump(Instruction.JW, continueAddress);
+            CodeStream.AddInstructionJump(Instruction.J, continueAddress);
             uint breakAddress = CodeStream.NextAddress;
             
             Block.PopBlock(continueAddress, breakAddress);
@@ -407,7 +410,7 @@ program Compile
             }
             
             uint jumpExit = CodeStream.NextAddress;
-            CodeStream.AddInstructionJump(Instruction.JZW);
+            CodeStream.AddInstructionJump(Instruction.JZ);
             
             <byte> mainStream = CodeStream.CurrentStream;
             CodeStream.New();
@@ -441,7 +444,7 @@ program Compile
             
             uint continueAddress = CodeStream.NextAddress;
             CodeStream.AppendCode(incrementStream);
-            CodeStream.AddInstructionJump(Instruction.JW, loopAddress);
+            CodeStream.AddInstructionJump(Instruction.J, loopAddress);
 // exit:                      
             uint breakAddress = CodeStream.NextAddress;
             CodeStream.PatchJump(jumpExit, breakAddress);
@@ -462,8 +465,8 @@ program Compile
         {
             Block.PushBlock(true); // new loop block context
             Block.AddLocal("string", identifier+ "_c");    // 'foreach' string collection object (expression in [top])
-            CodeStream.AddInstruction(Instruction.PUSHI0); // char: identifier
-            CodeStream.AddInstruction(Instruction.PUSHI0); // uint: identifier_i
+            CodeStream.AddInstructionPUSHI(0); // char: identifier
+            CodeStream.AddInstructionPUSHI(0); // uint: identifier_i
             // kv has same type as collection if dictionary
             Block.AddLocal("char", identifier);            // 'foreach' string
             Block.AddLocal("uint", identifier+"_i");       // 'foreach' string
@@ -475,20 +478,20 @@ program Compile
             byte collectionOffset = CodeStream.IntToByte(Block.GetOffset(identifier+"_c", ref isRef));
 //next:            
             uint nextAddress = CodeStream.NextAddress;
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, collectionOffset); // string collection object
-            CodeStream.AddInstructionSysCall0("String", "Length_Get");
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, iteratorOffset);
+            CodeStream.AddInstructionPushLocal(collectionOffset); // string collection object
+            CodeStream.AddInstructionSysCall("String", "Length_Get", 0);
+            CodeStream.AddInstructionPushLocal(iteratorOffset);
             CodeStream.AddInstruction(Instruction.EQ);
             uint jumpExit = CodeStream.NextAddress;
-            CodeStream.AddInstructionJump(Instruction.JNZW);
+            CodeStream.AddInstructionJump(Instruction.JNZ);
             
             // load identifier using identifier_i
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, collectionOffset); // string collection object
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, iteratorOffset);
-            CodeStream.AddInstructionSysCall0("String", "GetChar");
+            CodeStream.AddInstructionPushLocal(collectionOffset); // string collection object
+            CodeStream.AddInstructionPushLocal(iteratorOffset);
+            CodeStream.AddInstructionSysCall("String", "GetChar", 0);
             
             // identifier <- collection[iterator]
-            CodeStream.AddInstruction(Instruction.POPLOCALB, identifierOffset);
+            CodeStream.AddInstructionPopLocal(identifierOffset);
             
             Block.PushBlock(false); // for block locals
             compileBlock();
@@ -503,9 +506,9 @@ program Compile
             CodeStream.InsertDebugInfo(true); 
             
             // iterator++            
-            CodeStream.AddInstruction(Instruction.INCLOCALB, iteratorOffset);
+            CodeStream.AddInstructionIncLocal(iteratorOffset, false);
             
-            CodeStream.AddInstructionJump(Instruction.JW, nextAddress);
+            CodeStream.AddInstructionJump(Instruction.J, nextAddress);
 // exit:            
             uint breakAddress = CodeStream.NextAddress;
             CodeStream.PatchJump(jumpExit, breakAddress);
@@ -524,8 +527,8 @@ program Compile
         {
             Block.PushBlock(true); // new loop block context
             Block.AddLocal(collectionType, identifier+ "_c");    // 'foreach' list : list collection object (expression in [top])
-            CodeStream.AddInstruction(Instruction.PUSHI0); // iteratorType: identifier
-            CodeStream.AddInstruction(Instruction.PUSHI0); // uint: identifier_i
+            CodeStream.AddInstructionPUSHI(0); // iteratorType: identifier
+            CodeStream.AddInstructionPUSHI(0); // uint: identifier_i
             
             Block.AddLocal(iteratorType, identifier);            // 'foreach' list
             Block.AddLocal("uint", identifier+"_i");             // 'foreach' list
@@ -539,25 +542,25 @@ program Compile
 
 // next:
             uint nextAddress = CodeStream.NextAddress;            
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, collectionOffset); // list collection object
-            CodeStream.AddInstructionSysCall0("List", "Length_Get");
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, iteratorOffset);
+            CodeStream.AddInstructionPushLocal(collectionOffset); // list collection object
+            CodeStream.AddInstructionSysCall("List", "Length_Get", 0);
+            CodeStream.AddInstructionPushLocal(iteratorOffset);
             CodeStream.AddInstruction(Instruction.EQ);
             uint jumpExit = CodeStream.NextAddress;
-            CodeStream.AddInstructionJump(Instruction.JNZW);
+            CodeStream.AddInstructionJump(Instruction.JNZ);
             
             // load identifier using identifier_i
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, collectionOffset); // list collection object
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, iteratorOffset);
+            CodeStream.AddInstructionPushLocal(collectionOffset); // list collection object
+            CodeStream.AddInstructionPushLocal(iteratorOffset);
             if (iteratorType == "variant")
             {
                 // int type is not known at compile time
-                CodeStream.AddInstructionSysCall0("List", "GetItemAsVariant");
+                CodeStream.AddInstructionSysCall("List", "GetItemAsVariant", 0);
             }
             else
             {
                 // item type is known at compile time
-                CodeStream.AddInstructionSysCall0("List", "GetItem");
+                CodeStream.AddInstructionSysCall("List", "GetItem", 0);
             }
             
             // identifier <- collection[iterator]
@@ -565,7 +568,7 @@ program Compile
             {
                 CodeStream.AddInstruction(Instruction.COPYNEXTPOP);
             }
-            CodeStream.AddInstruction(Instruction.POPLOCALB, identifierOffset);
+            CodeStream.AddInstructionPopLocal(identifierOffset);
             
             Block.PushBlock(false); // for block locals
             compileBlock();
@@ -580,9 +583,9 @@ program Compile
             CodeStream.InsertDebugInfo(true);
             
             // iterator++            
-            CodeStream.AddInstruction(Instruction.INCLOCALB, iteratorOffset);
+            CodeStream.AddInstructionIncLocal(iteratorOffset, false);
             
-            CodeStream.AddInstructionJump(Instruction.JW, nextAddress);
+            CodeStream.AddInstructionJump(Instruction.J, nextAddress);
 // exit:            
             uint breakAddress = CodeStream.NextAddress;
             CodeStream.PatchJump(jumpExit, breakAddress);
@@ -601,8 +604,8 @@ program Compile
         {
             Block.PushBlock(true); // new loop block context
             Block.AddLocal(collectionType, identifier+ "_c");    // 'foreach' array : array collection object (expression in [top])
-            CodeStream.AddInstruction(Instruction.PUSHI0); // iteratorType: identifier
-            CodeStream.AddInstruction(Instruction.PUSHI0); // uint: identifier_i
+            CodeStream.AddInstructionPUSHI(0); // iteratorType: identifier
+            CodeStream.AddInstructionPUSHI(0); // uint: identifier_i
             
             Block.AddLocal(iteratorType, identifier);            // 'foreach' array
             Block.AddLocal("uint", identifier+"_i");             // 'foreach' array
@@ -620,16 +623,16 @@ program Compile
             
             uint nextAddress = CodeStream.NextAddress;
 // next:            
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, collectionOffset); // array collection object
+            CodeStream.AddInstructionPushLocal(collectionOffset); // array collection object
             CodeStream.AddInstructionSysCall0("Array", "Count_Get");
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, iteratorOffset);
+            CodeStream.AddInstructionPushLocal(iteratorOffset);
             CodeStream.AddInstruction(Instruction.EQ);
             uint jumpExit = CodeStream.NextAddress;
-            CodeStream.AddInstructionJump(Instruction.JNZW);
+            CodeStream.AddInstructionJump(Instruction.JNZ);
             
             // load identifier using identifier_i
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, collectionOffset); // array collection object
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, iteratorOffset);
+            CodeStream.AddInstructionPushLocal(collectionOffset); // array collection object
+            CodeStream.AddInstructionPushLocal(iteratorOffset);
             if (CodeStream.Target6502 && IsWordValueType(iteratorType))
             {
                 CodeStream.AddInstructionSysCall0("Array", "GetItemUInt");
@@ -640,7 +643,7 @@ program Compile
             }
             
             // identifier <- collection[iterator]
-            CodeStream.AddInstruction(Instruction.POPLOCALB, identifierOffset);
+            CodeStream.AddInstructionPopLocal(identifierOffset);
             
             Block.PushBlock(false); // for block locals
             compileBlock();
@@ -655,9 +658,9 @@ program Compile
             CodeStream.InsertDebugInfo(true); 
             
             // iterator++            
-            CodeStream.AddInstruction(Instruction.INCLOCALB, iteratorOffset);
+            CodeStream.AddInstructionIncLocal(iteratorOffset, false);
             
-            CodeStream.AddInstructionJump(Instruction.JW, nextAddress);
+            CodeStream.AddInstructionJump(Instruction.J, nextAddress);
 // exit:            
             uint breakAddress = CodeStream.NextAddress;
             CodeStream.PatchJump(jumpExit, breakAddress);
@@ -698,15 +701,15 @@ program Compile
                                     
             uint continueAddress = CodeStream.NextAddress;
 // continue:            
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, collectionOffset); // dictionary collection object
-            CodeStream.AddInstruction(Instruction.PUSHLOCALB, iteratorOffset);
+            CodeStream.AddInstructionPushLocal(collectionOffset); // dictionary collection object
+            CodeStream.AddInstructionPushLocal(iteratorOffset);
             CodeStream.AddInstructionSysCall0("Dictionary", "Next");
             
-            CodeStream.AddInstruction(Instruction.POPLOCALB, iteratorOffset); // iterator (identifier_i)
-            CodeStream.AddInstruction(Instruction.POPLOCALB, identifierOffset); // pair (identifier)
+            CodeStream.AddInstructionPopLocal(iteratorOffset); // iterator (identifier_i)
+            CodeStream.AddInstructionPopLocal(identifierOffset); // pair (identifier)
             
             uint jumpExit = CodeStream.NextAddress;
-            CodeStream.AddInstructionJump(Instruction.JZW);
+            CodeStream.AddInstructionJump(Instruction.JZ);
             
             Block.PushBlock(false); // for block locals
             compileBlock();
@@ -719,7 +722,7 @@ program Compile
             
             CodeStream.InsertDebugInfo(true); 
             
-            CodeStream.AddInstructionJump(Instruction.JW, continueAddress);
+            CodeStream.AddInstructionJump(Instruction.J, continueAddress);
 // exit            
             uint breakAddress = CodeStream.NextAddress;
             CodeStream.PatchJump(jumpExit, breakAddress);    
@@ -830,7 +833,7 @@ program Compile
             <uint> jumpEnds;
             
             uint switchJump = CodeStream.NextAddress;
-            CodeStream.AddInstructionJump(Instruction.JW);
+            CodeStream.AddInstructionJump(Instruction.J);
             
             // needs to not be zero for the first case to not clash with how 'default' works so +3 is fine
             uint switchBaseline = switchJump;
@@ -968,7 +971,7 @@ program Compile
                 Block.PopBlock();
                 
                 uint jumpEnd = CodeStream.NextAddress;
-                CodeStream.AddInstructionJump(Instruction.JW);
+                CodeStream.AddInstructionJump(Instruction.J);
                 jumpEnds.Append(jumpEnd);
             } // loop
             
@@ -1017,7 +1020,7 @@ program Compile
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.JIXW, operand);
+                    CodeStream.AddInstruction(Instruction.JIX, operand);
                 }
                 
                 <byte> tableBytes;
@@ -1052,7 +1055,7 @@ program Compile
             }
             if (defaultSeen)
             {
-                CodeStream.AddInstructionJump(Instruction.JW, defaultAddress);
+                CodeStream.AddInstructionJump(Instruction.J, defaultAddress);
             }
 // end:             
             uint endAddress = CodeStream.NextAddress;
@@ -1083,7 +1086,7 @@ program Compile
             
             
             byte upperBound;
-            if (Types.IsByteRange(switchType, ref upperBound))
+            if (!IsTinyHopper && Types.IsByteRange(switchType, ref upperBound))
             {
                 success = compileFastSwitch(switchType, upperBound);
                 break;
@@ -1205,22 +1208,22 @@ program Compile
                     
                     if (!isDefault)
                     {
-                        CodeStream.AddInstruction(Instruction.PUSHLOCALB, switchOffset); // switch variable
+                        CodeStream.AddInstructionPushLocal(switchOffset); // switch variable
                         // compare with case constant
                         if (switchType == "string")
                         {
-                            CodeStream.AddInstructionSysCall0("String", "Compare");
-                            CodeStream.AddInstruction(Instruction.PUSHI0);
+                            CodeStream.AddInstructionSysCall("String", "Compare", 0);
+                            CodeStream.AddInstructionPUSHI(0);
                         }
                         CodeStream.AddInstruction(Instruction.EQ); // => 1
                         uint jumpNext = CodeStream.NextAddress;
                         jumpNexts.Append(jumpNext);
-                        CodeStream.AddInstructionJump(Instruction.JZW);
+                        CodeStream.AddInstructionJump(Instruction.JZ);
                         
                         if (Parser.Check(HopperToken.Keyword, "case"))
                         {
                             uint jumpMatch = CodeStream.NextAddress;
-                            CodeStream.AddInstructionJump(Instruction.JW);
+                            CodeStream.AddInstructionJump(Instruction.J);
                             jumpMatches.Append(jumpMatch);
                             
                             uint nextAddress = CodeStream.NextAddress;
@@ -1251,7 +1254,7 @@ program Compile
                 CodeStream.InsertDebugInfo(true); 
                 
                 uint jumpEnd = CodeStream.NextAddress;
-                CodeStream.AddInstructionJump(Instruction.JW);
+                CodeStream.AddInstructionJump(Instruction.J);
                 jumpEnds.Append(jumpEnd);
 // next:        
                 // next case will be after the block if there was one
@@ -1337,11 +1340,11 @@ program Compile
                         byte operand =  CodeStream.IntToByte(offset);
                         if (tokenType == HopperToken.Increment)
                         {
-                            CodeStream.AddInstruction(Instruction.INCLOCALB, operand);
+                            CodeStream.AddInstructionIncLocal(operand, (variableType == "int"));
                         }
                         else
                         {
-                            CodeStream.AddInstruction(Instruction.DECLOCALB, operand);
+                            CodeStream.AddInstructionDecLocal(operand, (variableType == "int"));
                         }
                         success = true;           
                         break;
@@ -1366,13 +1369,13 @@ program Compile
                 {
                     case "long":
                     {
-                        CodeStream.AddInstructionSysCall0("UInt", "ToLong");
-                        CodeStream.AddInstructionSysCall0("Long", "Add");
+                        CodeStream.AddInstructionSysCall("UInt", "ToLong", 0);
+                        CodeStream.AddInstructionSysCall("Long", "Add", 0);
                     }
                     case "float":
                     {
-                        CodeStream.AddInstructionSysCall0("UInt", "ToFloat");
-                        CodeStream.AddInstructionSysCall0("Float", "Add");
+                        CodeStream.AddInstructionSysCall("UInt", "ToFloat", 0);
+                        CodeStream.AddInstructionSysCall("Float", "Add", 0);
                     }
                     default:
                     {
@@ -1478,24 +1481,22 @@ program Compile
             {
                 byte iSysCall = Symbols.GetSysCallIndex(igOverload);
                 byte iSysOverload = Symbols.GetSysCallOverload(igOverload);
-                switch (iSysOverload)
+                if ((iSysOverload == 0) && TryUserSysCall(getterMethod))
                 {
-                    case 0:
-                    {
-                        if (!TryUserSysCall(getterMethod))
-                        {
-                            CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
-                        }
-                    }
-                    case 1:
-                    {
-                        CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
-                    }
-                    default:
-                    {
-                        CodeStream.AddInstructionPUSHI(iSysOverload);
-                        CodeStream.AddInstruction(Instruction.SYSCALL, iSysCall);
-                    }
+                    // done
+                }
+                else if (!IsTinyHopper && (iSysOverload == 0))
+                {
+                    CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
+                }
+                else if (!IsTinyHopper && (iSysOverload == 1))
+                {
+                    CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+                }
+                else
+                {
+                    CodeStream.AddInstructionPUSHI(iSysOverload);
+                    CodeStream.AddInstruction(Instruction.SYSCALL, iSysCall);
                 }
             }
             else if (Symbols.IsLibCall(igOverload))
@@ -1511,7 +1512,7 @@ program Compile
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.CALLW, igOverload);
+                    CodeStream.AddInstruction(Instruction.CALL, igOverload);
                 }
             }
             success = true;
@@ -1797,26 +1798,21 @@ program Compile
                     {
                         if (expressionType == "string")
                         {
-                            CodeStream.AddInstructionSysCall0("String", "Append");
+                            CodeStream.AddInstructionSysCall("String", "Append", 0);
                         }
                         else
                         {
-                            byte iSysCall;
-                            if (!TryParseSysCall("String.Append", ref iSysCall))
-                            {
-                                Die(3); // key not found
-                            }
                             // string Append(string,char)
-                            CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
+                            CodeStream.AddInstructionSysCall("String", "Append", 1);
                         }
                     }
                     else if (variableType == "float")
                     {
-                        CodeStream.AddInstructionSysCall0("Float", "Add");
+                        CodeStream.AddInstructionSysCall("Float", "Add", 0);
                     }
                     else if (variableType == "long")
                     {
-                        CodeStream.AddInstructionSysCall0("Long", "Add");
+                        CodeStream.AddInstructionSysCall("Long", "Add", 0);
                     }
                     else if (Types.IsSignedIntType(variableType))
                     {
@@ -2500,8 +2496,8 @@ program Compile
             {
                 Instruction lastInstruction = CodeStream.GetLastInstruction();
                 if ((lastInstruction != Instruction.RET0)
-                 && (lastInstruction != Instruction.RETRETB)
-                 && (lastInstruction != Instruction.RETRETW)
+                 && (lastInstruction != Instruction.RETRESB)
+                 && (lastInstruction != Instruction.RETRES)
                    )
                 {
                     Parser.ErrorAtCurrent("'return' expected");
@@ -2530,17 +2526,17 @@ program Compile
                 }
 
                 uint bytesToPop = Block.GetLocalsToPop(true, isMain);
-                if (bytesToPop == 0)
+                if (!IsTinyHopper && (bytesToPop == 0))
                 {
                     CodeStream.AddInstruction(Instruction.RET0);
                 }
-                else if (bytesToPop < 256)
+                else if (!IsTinyHopper && (bytesToPop < 256))
                 {
                     CodeStream.AddInstruction(Instruction.RETB, byte(bytesToPop));
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.RETW, bytesToPop);
+                    CodeStream.AddInstruction(Instruction.RET, bytesToPop);
                 }
             }
             if (!isMain)
@@ -2638,13 +2634,13 @@ program Compile
                     }
                 }
                 uint globalAddress = Symbols.GetGlobalAddress(identifier);
-                if (globalAddress < 256)
+                if (!IsTinyHopper && (globalAddress < 256))
                 {
                     CodeStream.AddInstruction(Instruction.POPGLOBALB, byte(globalAddress));
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.POPGLOBALW, globalAddress);
+                    CodeStream.AddInstruction(Instruction.POPGLOBAL, globalAddress);
                 }
             }
         }
@@ -2746,6 +2742,8 @@ program Compile
                     break;
                 }
                 CodeStream.InitializeSymbolShortcuts();
+                
+                isTinyHopper = DefineExists("TINYHOPPER");
                 
                 uint mIndex;
                 if (!Symbols.GetFunctionIndex("main", ref mIndex))   

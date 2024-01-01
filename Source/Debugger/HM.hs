@@ -20,6 +20,8 @@ program HopperMonitor
     string optionsPath;
     string OptionsPath { get { return string optionsPath; } }
     
+    bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
+    
     <Key> keyboardBuffer;
     InjectKey(Key key)
     {

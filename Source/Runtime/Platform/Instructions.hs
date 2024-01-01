@@ -92,70 +92,23 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALB), instructionDelegate);
         instructionDelegate = Instructions.DecLocalB;
         WriteToJumpTable(jumpTable, byte(OpCode.DECLOCALB), instructionDelegate);
-        
-        instructionDelegate = Instructions.Dup;
-        WriteToJumpTable(jumpTable, byte(OpCode.DUP), instructionDelegate);
-        instructionDelegate = Instructions.DecSP;
-        WriteToJumpTable(jumpTable, byte(OpCode.DECSP), instructionDelegate);
-        
-        instructionDelegate = Instructions.RetB;
-        WriteToJumpTable(jumpTable, byte(OpCode.RETB), instructionDelegate);
-        instructionDelegate = Instructions.RetRetB;
-        WriteToJumpTable(jumpTable, byte(OpCode.RETRETB), instructionDelegate);
         instructionDelegate = Instructions.CallB;
         WriteToJumpTable(jumpTable, byte(OpCode.CALLB), instructionDelegate);
-        instructionDelegate = Instructions.TestBPB;
-        WriteToJumpTable(jumpTable, byte(OpCode.TESTBPB), instructionDelegate);
-        
-        instructionDelegate = Instructions.Exit;
-        WriteToJumpTable(jumpTable, byte(OpCode.EXIT), instructionDelegate);
-        
-        
         instructionDelegate = Instructions.JZB;
         WriteToJumpTable(jumpTable, byte(OpCode.JZB), instructionDelegate);
         instructionDelegate = Instructions.JNZB;
         WriteToJumpTable(jumpTable, byte(OpCode.JNZB), instructionDelegate);
         instructionDelegate = Instructions.JB;
         WriteToJumpTable(jumpTable, byte(OpCode.JB), instructionDelegate);
-        instructionDelegate = Instructions.JZW;
-        WriteToJumpTable(jumpTable, byte(OpCode.JZW), instructionDelegate);
-        instructionDelegate = Instructions.JNZW;
-        WriteToJumpTable(jumpTable, byte(OpCode.JNZW), instructionDelegate);
-        instructionDelegate = Instructions.JW;
-        WriteToJumpTable(jumpTable, byte(OpCode.JW), instructionDelegate);
-        
-        
-        instructionDelegate = Instructions.CallW;
-        WriteToJumpTable(jumpTable, byte(OpCode.CALLW), instructionDelegate);
-        
-        instructionDelegate = Instructions.PushIW;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIW), instructionDelegate);
-        
         instructionDelegate = Instructions.IncLocalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALBB), instructionDelegate);
-        instructionDelegate = Instructions.PushIWLE;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIWLE), instructionDelegate);
-        instructionDelegate = Instructions.BoolNot;
-        WriteToJumpTable(jumpTable, byte(OpCode.BOOLNOT), instructionDelegate);
-        instructionDelegate = Instructions.BitNot;
-        WriteToJumpTable(jumpTable, byte(OpCode.BITNOT), instructionDelegate);
-        
-        instructionDelegate = Instructions.Swap;
-        WriteToJumpTable(jumpTable, byte(OpCode.SWAP), instructionDelegate);
+        instructionDelegate = Instructions.Ret0;
+        WriteToJumpTable(jumpTable, byte(OpCode.RET0), instructionDelegate);
         instructionDelegate = Instructions.PushI0;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHI0), instructionDelegate);
         instructionDelegate = Instructions.PushI1;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHI1), instructionDelegate);
-        instructionDelegate = Instructions.PushIM1;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIM1), instructionDelegate);
-        instructionDelegate = Instructions.PushGP;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHGP), instructionDelegate);
         
-        instructionDelegate = Instructions.Ret0;
-        WriteToJumpTable(jumpTable, byte(OpCode.RET0), instructionDelegate);
-        instructionDelegate = Instructions.CallRel;
-        WriteToJumpTable(jumpTable, byte(OpCode.CALLREL), instructionDelegate);
-                        
         instructionDelegate = Instructions.PopLocalB00;
         WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB00), instructionDelegate);
         instructionDelegate = Instructions.PopLocalB02;
@@ -169,18 +122,7 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL0), instructionDelegate);
         instructionDelegate = Instructions.SysCall1;
         WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL1), instructionDelegate);
-        instructionDelegate = Instructions.SysCall;
-        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL), instructionDelegate);
         
-        instructionDelegate = Instructions.CNP;
-        WriteToJumpTable(jumpTable, byte(OpCode.COPYNEXTPOP), instructionDelegate);
-        instructionDelegate = Instructions.Enter;
-        WriteToJumpTable(jumpTable, byte(OpCode.ENTER), instructionDelegate);
-     
-        instructionDelegate = Instructions.NOP;
-        WriteToJumpTable(jumpTable, byte(OpCode.NOP), instructionDelegate);
-        instructionDelegate = Instructions.Cast;
-        WriteToJumpTable(jumpTable, byte(OpCode.CAST), instructionDelegate);
         instructionDelegate = Instructions.PushGlobalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBALBB), instructionDelegate);
      
@@ -192,8 +134,6 @@ unit Instructions
         instructionDelegate = Instructions.IncGlobalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALBB), instructionDelegate);
      
-        instructionDelegate = Instructions.PushIWLT;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIWLT), instructionDelegate);
         instructionDelegate = Instructions.PushLocalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALBB), instructionDelegate);
         instructionDelegate = Instructions.PopCopyLocalB;
@@ -202,7 +142,6 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYRELB), instructionDelegate);
         instructionDelegate = Instructions.PopCopyGlobalB;
         WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYGLOBALB), instructionDelegate);
-        
         instructionDelegate = Instructions.PopCopyLocalB00;
         WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYLOCALB00), instructionDelegate);
         instructionDelegate = Instructions.PopCopyLocalB02;
@@ -210,37 +149,119 @@ unit Instructions
         
         instructionDelegate = Instructions.EnterB;
         WriteToJumpTable(jumpTable, byte(OpCode.ENTERB), instructionDelegate);
-        instructionDelegate = Instructions.PushIW;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHDW), instructionDelegate);
-        instructionDelegate = Instructions.RetFast;
-        WriteToJumpTable(jumpTable, byte(OpCode.RETFAST), instructionDelegate);
+     
         instructionDelegate = Instructions.PushIB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHDB), instructionDelegate);
-     
-        instructionDelegate = Instructions.BitXor;
-        WriteToJumpTable(jumpTable, byte(OpCode.BITXOR), instructionDelegate);
-     
-        instructionDelegate = Instructions.PushIWLEI;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIWLEI), instructionDelegate);
-     
-        instructionDelegate = Instructions.JREL;
-        WriteToJumpTable(jumpTable, byte(OpCode.JREL), instructionDelegate);
+        
         instructionDelegate = Instructions.JIXB;
         WriteToJumpTable(jumpTable, byte(OpCode.JIXB), instructionDelegate);
-        instructionDelegate = Instructions.JIXW;
-        WriteToJumpTable(jumpTable, byte(OpCode.JIXW), instructionDelegate);
         
-        instructionDelegate = Instructions.CallIW;
-        WriteToJumpTable(jumpTable, byte(OpCode.CALLIW), instructionDelegate);
-        
+        instructionDelegate = Instructions.PushILE;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHILE), instructionDelegate);
+        instructionDelegate = Instructions.PushILT;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHILT), instructionDelegate);
         instructionDelegate = Instructions.PushIBLE;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHIBLE), instructionDelegate);
+        instructionDelegate = Instructions.PushILEI;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHILEI), instructionDelegate);
         instructionDelegate = Instructions.PushIBEQ;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHIBEQ), instructionDelegate);
+        
         instructionDelegate = Instructions.AddB;
         WriteToJumpTable(jumpTable, byte(OpCode.ADDB), instructionDelegate);
         instructionDelegate = Instructions.SubB;
         WriteToJumpTable(jumpTable, byte(OpCode.SUBB), instructionDelegate);
+        
+        instructionDelegate = Instructions.RetB;
+        WriteToJumpTable(jumpTable, byte(OpCode.RETB), instructionDelegate);
+        instructionDelegate = Instructions.RetResB;
+        WriteToJumpTable(jumpTable, byte(OpCode.RETRESB), instructionDelegate);
+        instructionDelegate = Instructions.RetFast;
+        WriteToJumpTable(jumpTable, byte(OpCode.RETFAST), instructionDelegate);
+        
+        instructionDelegate = Instructions.PopLocal;
+        WriteToJumpTable(jumpTable, byte(OpCode.POPLOCAL), instructionDelegate);
+        instructionDelegate = Instructions.PushLocal;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCAL), instructionDelegate);
+        instructionDelegate = Instructions.PopRel;
+        WriteToJumpTable(jumpTable, byte(OpCode.POPREL), instructionDelegate);
+        instructionDelegate = Instructions.PushRel;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHREL), instructionDelegate);
+        instructionDelegate = Instructions.PopGlobal;
+        WriteToJumpTable(jumpTable, byte(OpCode.POPGLOBAL), instructionDelegate);
+        instructionDelegate = Instructions.PushGlobal;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBAL), instructionDelegate);
+        instructionDelegate = Instructions.PushStackAddr;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHSTACKADDR), instructionDelegate);
+        
+        instructionDelegate = Instructions.Dup;
+        WriteToJumpTable(jumpTable, byte(OpCode.DUP), instructionDelegate);
+        instructionDelegate = Instructions.DecSP;
+        WriteToJumpTable(jumpTable, byte(OpCode.DECSP), instructionDelegate);
+        
+        instructionDelegate = Instructions.Ret;
+        WriteToJumpTable(jumpTable, byte(OpCode.RET), instructionDelegate);
+        instructionDelegate = Instructions.RetRes;
+        WriteToJumpTable(jumpTable, byte(OpCode.RETRES), instructionDelegate);
+        instructionDelegate = Instructions.TestBPB;
+        WriteToJumpTable(jumpTable, byte(OpCode.TESTBPB), instructionDelegate);
+        
+        instructionDelegate = Instructions.Exit;
+        WriteToJumpTable(jumpTable, byte(OpCode.EXIT), instructionDelegate);
+        
+        
+        instructionDelegate = Instructions.JZ;
+        WriteToJumpTable(jumpTable, byte(OpCode.JZ), instructionDelegate);
+        instructionDelegate = Instructions.JNZ;
+        WriteToJumpTable(jumpTable, byte(OpCode.JNZ), instructionDelegate);
+        instructionDelegate = Instructions.J;
+        WriteToJumpTable(jumpTable, byte(OpCode.JW), instructionDelegate);
+        
+        instructionDelegate = Instructions.PushIW;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHI), instructionDelegate);
+        
+        instructionDelegate = Instructions.BoolNot;
+        WriteToJumpTable(jumpTable, byte(OpCode.BOOLNOT), instructionDelegate);
+        instructionDelegate = Instructions.BitNot;
+        WriteToJumpTable(jumpTable, byte(OpCode.BITNOT), instructionDelegate);
+        
+        instructionDelegate = Instructions.Swap;
+        WriteToJumpTable(jumpTable, byte(OpCode.SWAP), instructionDelegate);
+        instructionDelegate = Instructions.PushIM1;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIM1), instructionDelegate);
+        instructionDelegate = Instructions.PushGP;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHGP), instructionDelegate);
+        
+        instructionDelegate = Instructions.CNP;
+        WriteToJumpTable(jumpTable, byte(OpCode.COPYNEXTPOP), instructionDelegate);
+        instructionDelegate = Instructions.Enter;
+        WriteToJumpTable(jumpTable, byte(OpCode.ENTER), instructionDelegate);
+     
+        instructionDelegate = Instructions.NOP;
+        WriteToJumpTable(jumpTable, byte(OpCode.NOP), instructionDelegate);
+        instructionDelegate = Instructions.Cast;
+        WriteToJumpTable(jumpTable, byte(OpCode.CAST), instructionDelegate);
+        
+        instructionDelegate = Instructions.PushIW;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHD), instructionDelegate);
+        
+        instructionDelegate = Instructions.BitXor;
+        WriteToJumpTable(jumpTable, byte(OpCode.BITXOR), instructionDelegate);
+        
+        instructionDelegate = Instructions.JREL;
+        WriteToJumpTable(jumpTable, byte(OpCode.JREL), instructionDelegate);
+        instructionDelegate = Instructions.JIX;
+        WriteToJumpTable(jumpTable, byte(OpCode.JIX), instructionDelegate);
+        
+        instructionDelegate = Instructions.Call;
+        WriteToJumpTable(jumpTable, byte(OpCode.CALL), instructionDelegate);
+        instructionDelegate = Instructions.CallI;
+        WriteToJumpTable(jumpTable, byte(OpCode.CALLI), instructionDelegate);
+        instructionDelegate = Instructions.CallRel;
+        WriteToJumpTable(jumpTable, byte(OpCode.CALLREL), instructionDelegate);
+        
+        instructionDelegate = Instructions.SysCall;
+        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL), instructionDelegate);
         instructionDelegate = Instructions.LibCall;
         WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL), instructionDelegate);
         
@@ -429,6 +450,7 @@ unit Instructions
 #endif
         return true;
     }
+    
     bool PushI0()
     {
         Push(0, Type.Byte);
@@ -439,16 +461,19 @@ unit Instructions
         Push(1, Type.Byte);
         return true;
     }
+
     bool PushIM1()
     {
         PushI(-1);
         return true;
     }
+    
     bool PushIB()
     {
         Push(ReadByteOperand(), Type.Byte);
         return true;
     }
+
     bool PushGP()
     {
         Push(0, Type.UInt);
@@ -459,7 +484,7 @@ unit Instructions
         Push(ReadWordOperand(), Type.UInt);
         return true;
     }
-    bool CallIW()
+    bool CallI()
     {
         uint methodAddress = ReadWordOperand();
         PushCS(PC);
@@ -490,6 +515,20 @@ unit Instructions
         }
         return true;
     }
+
+    bool PushLocal()
+    {
+        int offset = ReadWordOffsetOperand();
+        uint value =      ReadWord(uint(int(ValueStack) + int(BP) + offset));
+        Type htype = Type(ReadWord(uint(int(TypeStack)  + int(BP) + offset)));
+        Push(value, htype);
+        if (IsReferenceType(htype))
+        {
+            GC.AddReference(value);
+        }
+        return true;
+    }
+    
     bool PushLocalB00()
     {
         uint value = ReadWord(uint(int(ValueStack)     + int(BP)));
@@ -512,6 +551,7 @@ unit Instructions
         }
         return true;
     }
+
     bool Enter()
     {
         PushCS(BP);
@@ -551,11 +591,41 @@ unit Instructions
     {
         return HopperVM.ExitInline();
     }
-    bool RetRetB()
+    
+    bool RetResB()
     {
         Type rtype;
         uint value = Pop(ref rtype);
         uint popBytes = ReadByteOperand();
+        while (popBytes != 0)
+        {
+            Type htype;
+            uint address = Pop(ref htype);
+            if (IsReferenceType(htype))
+            {
+                GC.Release(address);
+            }
+            popBytes = popBytes - 2;
+        }
+        Push(value, rtype);
+        BP = PopCS();
+        if (CSP == 0)
+        {
+            PC = 0; // exit program
+            return false;
+        }
+        else
+        {
+            PC = PopCS();
+        }
+        return true;
+    }
+    
+    bool RetRes()
+    {
+        Type rtype;
+        uint value = Pop(ref rtype);
+        uint popBytes = ReadWordOperand();
         while (popBytes != 0)
         {
             Type htype;
@@ -718,6 +788,7 @@ unit Instructions
         Push(next >> top, Type.UInt); 
         return true;
     }
+    
     bool IncLocalB()
     {
         int offset     = ReadByteOffsetOperand();
@@ -861,6 +932,35 @@ unit Instructions
         }
         return true;
     }
+
+    bool PopLocal()
+    {
+        int offset;
+        if (CNP) 
+        { 
+            CNP = false;
+            return PopCopyLocal();
+        }
+        else
+        {
+            int offset     = ReadWordOffsetOperand();
+        
+            // this is the slot we are about to overwrite: decrease reference count if reference type
+            Type htype = Type(ReadWord(uint(int(TypeStack) + int(BP) + offset)));
+            uint value;
+            if (IsReferenceType(htype))
+            {
+                value = ReadWord(uint(int(ValueStack)     + int(BP) + offset));
+                GC.Release(value);
+            }
+            
+            value = Pop(ref htype);
+            WriteWord(uint(int(ValueStack) + int(BP) + offset), value);
+            WriteWord(uint(int(TypeStack)  + int(BP) + offset), uint(htype));
+        }
+        return true;
+    }
+    
     bool PopCopyLocalB00()
     {
         // this is the slot we are about to overwrite: decrease reference count if reference type
@@ -909,6 +1009,34 @@ unit Instructions
         }
         return true;
     }
+    
+    bool PopCopyLocal()
+    {
+        int offset     = ReadWordOffsetOperand();
+        
+        // this is the slot we are about to overwrite: decrease reference count if reference type
+        Type htype;
+        uint localAddress = uint(int(BP) + offset);
+        uint oldvalue = HopperVM.Get(localAddress, ref htype);
+        if (IsReferenceType(htype))
+        {
+            GC.Release(oldvalue);
+        }
+        uint value = Pop(ref htype);
+        if (value == oldvalue)
+        {
+            // overwriting self - no more to do
+        }
+        else
+        {
+            // clone self, release the original
+            uint newvalue = GC.Clone(value);
+            GC.Release(value);
+            Put(localAddress, newvalue, htype); 
+        }
+        return true;
+    }
+    
     bool PopCopyLocalB()
     {
         int offset     = ReadByteOffsetOperand();
@@ -958,7 +1086,8 @@ unit Instructions
         PC = uint(ReadByteOffsetOperand() + int(PC-2));
         return true;
     }
-    bool JW()
+
+    bool J()
     {
         PC = uint(ReadWordOffsetOperand() + int(PC-3));
         return true;
@@ -969,6 +1098,7 @@ unit Instructions
         PC = address;
         return true;
     }
+    
     bool JIXB()
     {
         uint switchCase = Pop();
@@ -1006,7 +1136,8 @@ unit Instructions
         }
         return true;
     }
-    bool JIXW()
+
+    bool JIX()
     {
         uint switchCase = Pop();
 
@@ -1178,6 +1309,7 @@ unit Instructions
 #endif   
         return true;             
     }
+    
     bool JNZB()
     {
 #ifdef CHECKED
@@ -1206,7 +1338,8 @@ unit Instructions
 #endif   
         return true;
     }
-    bool JZW()
+
+    bool JZ()
     {
 #ifdef CHECKED
         int offset = ReadWordOffsetOperand();
@@ -1235,7 +1368,7 @@ unit Instructions
 #endif   
         return true;
     }
-    bool JNZW()
+    bool JNZ()
     {
 #ifdef CHECKED
         int offset = ReadWordOffsetOperand();
@@ -1269,6 +1402,7 @@ unit Instructions
         byte iLibCall = ReadByteOperand();  
         return ExecuteLibCall(iLibCall);
     }
+
     bool SysCall0()
     {
         byte iSysCall = ReadByteOperand();  
@@ -1279,6 +1413,7 @@ unit Instructions
         byte iSysCall = ReadByteOperand();  
         return ExecuteSysCall(iSysCall, 1);
     }
+
     bool SysCall()
     {
         Type htype;
@@ -1286,7 +1421,8 @@ unit Instructions
         byte iSysCall  = ReadByteOperand();  
         return ExecuteSysCall(iSysCall, iOverload);
     }
-    bool PushIWLT()
+
+    bool PushILT()
     {
         uint top = ReadWordOperand();    
         Type ntype;
@@ -1297,7 +1433,7 @@ unit Instructions
         Push((next < top) ? 1 : 0, Type.Bool);
         return true;
     }
-    bool PushIWLE()
+    bool PushILE()
     {
         uint top = ReadWordOperand();    
         Type ntype;
@@ -1308,7 +1444,7 @@ unit Instructions
         Push((next <= top) ? 1 : 0, Type.Bool);
         return true;
     }
-    bool PushIWLEI()
+    bool PushILEI()
     {
         Push(ReadWordOperand(), Type.UInt);    
         Type ttype;
@@ -1385,9 +1521,34 @@ unit Instructions
         }
         return true;
     }
+
+    bool PushRel()
+    {
+        int  offset = ReadWordOffsetOperand();
+        uint referenceAddress = uint(int(BP) + offset);
+        Type rtype;
+        uint localAddress = HopperVM.Get(referenceAddress, ref rtype);
+#ifdef CHECKED
+        AssertReference(rtype, localAddress);
+#endif
+        uint value = HopperVM.Get(localAddress, ref rtype);
+        Push(value, rtype);
+        if (IsReferenceType(rtype))
+        {
+            GC.AddReference(value);
+        }
+        return true;
+    }
     bool PushStackAddrB()
     {
         int  offset = ReadByteOffsetOperand();
+        uint address = uint(int(BP) + offset);
+        Push(address, Type.Reference);
+        return true;
+    }
+    bool PushStackAddr()
+    {
+        int  offset = ReadWordOffsetOperand();
         uint address = uint(int(BP) + offset);
         Push(address, Type.Reference);
         return true;
@@ -1429,6 +1590,7 @@ unit Instructions
         }
         return true;
     }
+    
     bool CallB()
     {
         uint methodIndex = ReadByteOperand();
@@ -1436,12 +1598,13 @@ unit Instructions
         PC = LookupMethod(methodIndex);
         return true;
     }
-    bool CallW()
+
+    bool Call()
     {
         uint methodIndex = ReadWordOperand();
         PushCS(PC);
         uint methodAddress = LookupMethod(methodIndex);
-        WriteCodeByte(PC-3, byte(OpCode.CALLIW));
+        WriteCodeByte(PC-3, byte(OpCode.CALLI));
         WriteCodeWord(PC-2, methodAddress);
         PC = methodAddress;
         return true;
@@ -1479,6 +1642,7 @@ unit Instructions
         }
         return true;
     }
+    
     bool RetFast()
     {
         PC = PopCS();
@@ -1523,6 +1687,33 @@ unit Instructions
         }
         return true;
     }
+    
+    bool Ret()
+    {
+        uint popBytes = ReadWordOperand();
+        while (popBytes != 0)
+        {
+            Type htype;
+            uint address = Pop(ref htype);
+            if (IsReferenceType(htype))
+            {
+                GC.Release(address);
+            }
+            popBytes = popBytes - 2;
+        }
+        BP = PopCS();
+        if (CSP == 0)
+        {
+            PC = 0; // exit program
+            return false;
+        }
+        else
+        {
+            PC = PopCS();
+        }
+        return true;
+    }
+    
     bool EnterB()
     {
         PushCS(BP);
@@ -1546,6 +1737,20 @@ unit Instructions
         }
         return true;
     }
+
+    bool PushGlobal()
+    {
+        uint offset     = ReadWordOperand();
+        uint value = ReadWord(ValueStack + offset);
+        Type htype = Type(ReadWord(TypeStack + offset));
+        Push(value, htype);
+        if (IsReferenceType(htype))
+        {
+            GC.AddReference(value);
+        }
+        return true;
+    }
+    
     bool PopGlobalB()
     {
         if (CNP)
@@ -1571,6 +1776,33 @@ unit Instructions
         }
         return true;
     }
+
+    bool PopGlobal()
+    {
+        if (CNP)
+        { 
+            CNP=false; 
+            return PopCopyGlobal(); 
+        }
+        else
+        {
+            uint offset     = ReadWordOperand();
+            // this is the slot we are about to overwrite: decrease reference count if reference type
+            Type htype = Type(ReadWord(TypeStack  + offset));
+            uint value;
+            if (IsReferenceType(htype))
+            {
+                value = ReadWord(ValueStack  + offset);
+                GC.Release(value);
+            }
+            
+            value = Pop(ref htype);
+            WriteWord(ValueStack + offset, value);
+            WriteWord(TypeStack  + offset, uint(htype));
+        }
+        return true;
+    }
+    
     bool PopRelB()
     {
         if (CNP)
@@ -1595,6 +1827,32 @@ unit Instructions
         }
         return true;
     }
+
+    bool PopRel()
+    {
+        if (CNP)
+        {
+            CNP = false;
+            return PopCopyRel();
+        }
+        else
+        {        
+            int offset = ReadWordOffsetOperand();
+            uint referenceAddress = uint(int(BP) + offset);
+            Type rtype;
+            uint localAddress = HopperVM.Get(referenceAddress, ref rtype);
+            uint existing = HopperVM.Get(localAddress, ref rtype);
+            if (IsReferenceType(rtype))
+            {
+                GC.Release(existing);
+            }
+            Type vtype;
+            uint value = Pop(ref vtype);
+            Put(localAddress, value, vtype);
+        }
+        return true;
+    }
+    
     bool PopCopyGlobalB()
     {
         byte offset     = ReadByteOperand();
@@ -1619,9 +1877,65 @@ unit Instructions
         }
         return true;
     }
+
+    bool PopCopyGlobal()
+    {
+        uint offset     = ReadWordOperand();
+        // this is the slot we are about to overwrite: decrease reference count if reference type
+        Type htype;
+        uint oldvalue = HopperVM.Get(offset, ref htype);
+        if (IsReferenceType(htype))
+        {
+            GC.Release(oldvalue);
+        }
+        uint value = Pop(ref htype);
+        if (value == oldvalue)
+        {
+            // overwriting self - no more to do
+        }
+        else
+        {
+            // clone self, release the original
+            uint newvalue = GC.Clone(value);
+            GC.Release(value);
+            Put(offset, newvalue, htype); 
+        }
+        return true;
+    }
+    
     bool PopCopyRelB()
     {
         int  offset = ReadByteOffsetOperand();
+        uint referenceAddress = uint(int(BP) + offset);
+        Type rtype;
+        uint localAddress = HopperVM.Get(referenceAddress, ref rtype);
+#ifdef CHECKED
+        AssertReference(rtype, localAddress);
+#endif
+        // this is the slot we are about to overwrite: decrease reference count if reference type
+        uint oldvalue = HopperVM.Get(localAddress, ref rtype);
+        if (IsReferenceType(rtype))
+        {
+            GC.Release(oldvalue);
+        }
+        uint value = Pop(ref rtype);
+        if (value == oldvalue)
+        {
+            // nothing more to do
+        }
+        else
+        {
+            // clone self, release the original
+            uint newvalue = GC.Clone(value);
+            GC.Release(value);
+            Put(localAddress, newvalue, rtype);
+        }
+        return true;
+    }
+
+    bool PopCopyRel()
+    {
+        int  offset = ReadWordOffsetOperand();
         uint referenceAddress = uint(int(BP) + offset);
         Type rtype;
         uint localAddress = HopperVM.Get(referenceAddress, ref rtype);

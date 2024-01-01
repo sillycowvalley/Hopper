@@ -186,8 +186,8 @@ unit Code
             {
                 case Instruction.POPGLOBALB:
                 case Instruction.PUSHGLOBALB:
-                case Instruction.POPGLOBALW:
-                case Instruction.PUSHGLOBALW:
+                case Instruction.POPGLOBAL:
+                case Instruction.PUSHGLOBAL:
                 {
                     if (!globalOffsets.Contains(operand))
                     {

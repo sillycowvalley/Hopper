@@ -28,6 +28,8 @@ program Debug
     string optionsPath;
     string OptionsPath { get { return optionsPath; } }
     
+    bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
+    
     {
         <string> arguments = System.Arguments;
         

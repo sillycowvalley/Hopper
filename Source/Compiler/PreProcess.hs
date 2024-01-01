@@ -16,7 +16,8 @@ program PreProcess
   
   uses "/Source/Compiler/Directives" 
   
-  bool IsDebugger { get { return false; } }
+  bool IsDebugger   { get { return false; } }
+  bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
   
   // Documentation:
   // - documentation comments

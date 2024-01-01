@@ -28,6 +28,7 @@ program Translate
     
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; } }
+    bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
     
     uint iCurrentOverload;
     string collectedContent;

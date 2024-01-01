@@ -1,5 +1,6 @@
 program TestSuite
 {
+//#define TINYHOPPER
 #define PORTABLE
 #define SERIALCONSOLE
     //uses "/Source/6502/System"
