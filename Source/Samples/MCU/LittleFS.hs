@@ -2,7 +2,7 @@ program LittleFS
 {
     #define SERIALCONSOLE // use Serial, not Screen for Write, WriteLn, etc.
     
-    #define RP2040
+    #define RP2040PICO
     uses "/Source/Library/MCU"
     
     ListDirectory(string directoryPath, string indent)

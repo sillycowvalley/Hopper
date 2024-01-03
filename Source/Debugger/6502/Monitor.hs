@@ -6,7 +6,8 @@ unit Monitor
     
     // Zero Page FLAGS:
     const byte isTraceOn       = 0x01;
-    const byte isWarpSpeed     = 0x02;
+    const byte isWarpSpeed     = 0x02; // on 6502, built without checks for <Ctrl><C>
+    const byte isLongValues    = 0x02; // on MCUs, 'float' and 'long' are value types
     const byte isCheckedBuild  = 0x04;
     const byte is8BitStack     = 0x08;
     const byte isProfileBuild  = 0x10;
@@ -476,7 +477,8 @@ unit Monitor
     
     uint hopperFlags;
     
-    bool IsMCU { get { return (0 != hopperFlags & isMCUPlatform); } }
+    bool IsMCU { get { return (isMCUPlatform                 == hopperFlags & isMCUPlatform); } }
+    bool IsLV  { get { return ((isMCUPlatform | isWarpSpeed) == hopperFlags & (isMCUPlatform | isWarpSpeed) ) } }
     
     string GetHopperInfo()
     {
@@ -510,6 +512,10 @@ unit Monitor
         if (0 != hopperFlags & isMCUPlatform)
         {
             info = info + ", MCU";
+            if (0 != hopperFlags & isLongValues)
+            {
+                info = info + ", Long Values";
+            }
         }
         else
         {

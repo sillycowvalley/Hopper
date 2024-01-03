@@ -364,6 +364,7 @@ enum DisplayState {
 enum HopperFlags {
     eTraceOn = 0x0001,
     eWarpSpeed = 0x0002,
+    eLongValues = 0x0002,
     eCheckedBuild = 0x0004,
     eStack8Bit = 0x0008,
     eProfileBuild = 0x0010,
@@ -838,7 +839,6 @@ Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 Char Char_ToDigit(Byte d);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
-
 
 
 #endif // HOPPERRUNTIME_H

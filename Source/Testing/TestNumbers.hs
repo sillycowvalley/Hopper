@@ -1693,7 +1693,7 @@ program TestNumbers
         
         if (xa.ToString() != "0.064")
         {
-            PrintLn(xa.ToString());
+            WriteLn(xa.ToString());
             PrintFailed("'float' 30");
         }
         
@@ -1703,11 +1703,9 @@ program TestNumbers
         float xn =  0.85 * x + 0.04 * y;
         float yn = -0.04 * x + 0.85 * y + 1.6;
         
-        
-        
         if ((xn.ToString() != "0") || (yn.ToString() != "1.6"))
         {
-            PrintLn(xn.ToString() + "," + yn.ToString());
+            WriteLn(xn.ToString() + "," + yn.ToString());
             PrintFailed("'float' 31");
         }
         x = xn;
@@ -1718,7 +1716,7 @@ program TestNumbers
         
         if ((xn.ToString() != "0.064") || (yn.ToString() != "2.96"))
         {
-            PrintLn(xn.ToString() + "," + yn.ToString());
+            WriteLn(xn.ToString() + "," + yn.ToString());
             PrintFailed("'float' 32");
         }
         

@@ -553,7 +553,7 @@ UInt External_FloatToString(UInt hrfloat)
     UInt hrstring = HRString_New();
     char buffer[20];
     float fl = nativeFloatFromHopperFloat(hrfloat);
-    sprintf(buffer, "%f", fl);
+    sprintf(buffer, "%g", fl);
     UInt i = 0;
     while (buffer[i])
     {
