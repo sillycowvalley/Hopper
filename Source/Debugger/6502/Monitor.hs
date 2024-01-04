@@ -404,7 +404,6 @@ unit Monitor
             }
             break;
         } // loop
-        
         ClearSerialOutput(); // toss it
         collectOutput = false;   
     }
@@ -477,7 +476,7 @@ unit Monitor
     
     uint hopperFlags;
     
-    bool IsMCU { get { return (isMCUPlatform                 == hopperFlags & isMCUPlatform); } }
+    bool IsMCU { get { return (isMCUPlatform                 == (hopperFlags & isMCUPlatform)); } }
     bool IsLV  { get { return ((isMCUPlatform | isWarpSpeed) == hopperFlags & (isMCUPlatform | isWarpSpeed) ) } }
     
     string GetHopperInfo()
@@ -497,22 +496,22 @@ unit Monitor
         {
             info = info + "16 bit SP and BP";
         }
-        if (0 != hopperFlags & isWarpSpeed)
+        if (isWarpSpeed == (hopperFlags & (isMCUPlatform | isWarpSpeed)))
         {
             info = info + ", Warp speed (no <ctrl><C>)";
         }
-        if (0 != hopperFlags & isCheckedBuild)
+        if (0 != (hopperFlags & isCheckedBuild))
         {
             info = info + ", Checked Build";
         }
-        if (0 != hopperFlags & isProfileBuild)
+        if (0 != (hopperFlags & isProfileBuild))
         {
             info = info + ", Profile Build";
         }
-        if (0 != hopperFlags & isMCUPlatform)
+        if (isMCUPlatform == (hopperFlags & isMCUPlatform))
         {
             info = info + ", MCU";
-            if (0 != hopperFlags & isLongValues)
+            if (isLongValues == (hopperFlags & isLongValues))
             {
                 info = info + ", Long Values";
             }

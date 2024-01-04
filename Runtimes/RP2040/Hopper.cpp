@@ -1,0 +1,1115 @@
+
+
+#include "Common.h"
+
+const UInt LED_PIN = 25;
+
+const Char enter  = (Char)0x0D;
+const Char escape = (Char)0x1B;
+const Char slash  = (Char)0x5C;
+
+const UInt stackSize     = 512; // size of value stack in byte (each stack slot is 2 bytes)
+const UInt callStackSize = 512; // size of callstack in bytes (4 bytes per call)
+    
+const UInt dataMemoryStart = 0x0000; // data memory magically exists from 0x0000 to 0xFFFF
+const UInt codeMemoryStart = 0x0000; // code memory magically exists from 0x0000 to 0xFFFF
+
+Byte * dataMemoryBlock = nullptr;
+Byte * codeMemoryBlock = nullptr;
+Bool codeLoaded;
+Byte lastError;
+UInt errorContext;
+
+UInt binaryAddress;
+UInt programSize;
+UInt constAddress;
+UInt methodTable;
+
+UInt valueStack; // 4 byte slots (sp << 1)
+
+UInt typeStack;  // 2 byte slots (but we only use the LSB, just to be able to use the same 'sp' as valueStack)
+UInt callStack;  // 2 byte slots (either return address PC or BP for stack from)
+
+UInt dataMemory; // start of free memory (changes if a new program is loaded)
+
+UInt breakpoints[16];
+Bool breakpointExists;
+
+UInt currentDirectory;
+
+UInt pc;
+UInt sp;
+UInt bp;
+UInt csp;
+Bool cnp;
+
+OpCode opCode;
+
+UInt GetPC()  { return pc; }
+UInt GetSP()  { return sp; }
+UInt GetBP()  { return bp; }
+UInt GetCSP() { return csp; }
+
+UInt GetValueStack() { return valueStack; }
+UInt GetTypeStack()  { return typeStack;  }
+
+
+void SetPC(UInt newpc) { pc = newpc; }
+void SetBP(UInt newbp) { bp = newbp; }
+
+void SetError(Byte error, UInt context)
+{
+    lastError = error;
+    errorContext = context;
+    printf("\nError: 0x%02X at %d", error, context);
+    putchar(slash);
+    putchar(slash);
+    putchar(slash);
+}
+
+Byte Memory_ReadCodeByte(UInt address)
+{
+    return codeMemoryBlock[address];
+}
+
+
+void Memory_WriteCodeByte(UInt address, Byte value)
+{
+    codeMemoryBlock[address] = value;
+}
+
+UInt Memory_ReadCodeWord(UInt address)
+{
+    return codeMemoryBlock[address] + (codeMemoryBlock[address+1] << 8);
+}
+
+Byte Memory_ReadByte(UInt address)
+{
+    return dataMemoryBlock[address];
+}
+
+void Memory_WriteByte(UInt address, Byte value)
+{
+    dataMemoryBlock[address] = value;
+}
+
+UInt Memory_ReadWord(UInt address)
+{
+    return dataMemoryBlock[address] + (dataMemoryBlock[address+1] << 8);
+}
+void Memory_WriteWord(UInt address, UInt value)
+{
+    dataMemoryBlock[address]   = value & 0xFF;
+    dataMemoryBlock[address+1] = value >> 8;
+}
+
+UInt VMGetCS(UInt stackOffset)
+{
+    return Memory_ReadWord(callStack + stackOffset);
+}
+
+UInt32 VMGetVS(UInt stackOffset)
+{
+    return Memory_ReadWord(valueStack + (stackOffset << 1)) + (Memory_ReadWord(valueStack + (stackOffset << 1) + 2) << 16);
+}
+
+Type VMGetTS(UInt stackOffset)
+{
+    return Type(Memory_ReadWord(typeStack + stackOffset));
+}
+
+UInt VMReadWordOperand()
+{
+    UInt operand = Memory_ReadCodeWord(pc);
+    pc += 2;
+    return operand;
+}
+Byte VMReadByteOperand()
+{
+    Byte operand = Memory_ReadCodeByte(pc);
+    pc++;
+    return operand;
+}
+
+Int  VMReadWordOffsetOperand()
+{
+    Int offset = (Int)(Memory_ReadCodeWord(pc));
+    pc += 2;
+    return offset;
+}
+Int  VMReadByteOffsetOperand()
+{
+    Int offset = (Int)(Memory_ReadCodeByte(pc));
+    pc++;
+    if (offset > 0x7F)
+    {
+        offset = offset - 0x0100;
+    }
+    return offset;
+}
+
+void VMPushCS(UInt word)
+{
+#ifdef CHECKED
+    if (csp == callStackSize)
+    {
+        SetError(0x08, (10)); // call stack overflow
+    }
+#endif
+    Memory_WriteWord(callStack + csp,     word);
+    csp += 2;
+}
+UInt VMPopCS()
+{
+#ifdef CHECKED
+    if (csp == 0)
+    {
+        SetError(0x08, (13)); // call stack overflow
+    }
+#endif
+    csp -= 2;
+    return Memory_ReadWord(callStack + csp);
+}
+
+void VMPush(UInt word, Type type)
+{
+#ifdef CHECKED
+    if (sp == stackSize)
+    {
+        SetError(0x07, (12)); // argument stack overflow
+    }
+#endif
+    Memory_WriteWord(valueStack + (sp << 1),     word); // lsw
+    Memory_WriteWord(valueStack + (sp << 1) + 2, 0);    // msw
+    Memory_WriteWord(typeStack  + sp, type);
+    sp += 2;
+}
+void VMPush(UInt32 dword, Type type)
+{
+    #ifdef CHECKED
+    if (sp == stackSize)
+    {
+        SetError(0x07, (12)); // argument stack overflow
+    }
+#endif
+    Memory_WriteWord(valueStack + (sp << 1),     dword & 0xFFFF); // lsw
+    Memory_WriteWord(valueStack + (sp << 1) + 2, dword >> 16);    // msw
+    Memory_WriteWord(typeStack  + sp, type);
+    sp += 2;
+}
+
+UInt VMPop()
+{
+#ifdef CHECKED
+    if (sp == 0)
+    {
+        SetError(0x07, (11)); // argument stack overflow
+    }
+#endif
+    sp -= 2;
+    UInt value = Memory_ReadWord(valueStack + (sp << 1)); // lsw
+    return value;
+}
+
+UInt VMPop(Type & type)
+{
+    #ifdef CHECKED
+    if (sp == 0)
+    {
+        SetError(0x07, (11)); // argument stack overflow
+    }
+#endif
+    sp -= 2;
+    UInt value = Memory_ReadWord(valueStack + (sp << 1)); // lsw
+    type = (Type)(Memory_ReadWord(typeStack  + sp));
+    return value;
+}
+
+UInt VMLookupMethod(UInt methodIndex)
+{
+    methodIndex = (methodIndex & 0x3FFF);
+    UInt address = methodTable;
+    for (;;)
+    {
+        UInt entry = Memory_ReadCodeWord(address);
+        if (entry == methodIndex)
+        {
+            address = Memory_ReadCodeWord(address + 0x02);
+            break;
+        }
+        address = address + 0x04;
+    }
+    return address;
+}
+
+    
+
+void ClearBreakpoints(Bool includingZero)
+{
+    for (Byte i=1; i < 16; i++)
+    {
+        breakpoints[i] = 0;
+    }
+    if (includingZero)
+    {
+        breakpoints[0] = 0;
+        breakpointExists = false;
+    }
+    else
+    {
+        breakpointExists = breakpoints[0] != 0; // single step breakpoint set?
+    }
+}
+
+UInt GetBreakpoint(Byte n)
+{
+    return breakpoints[n];
+}
+    
+void SetBreakpoint(Byte n, uint address)
+{
+    breakpoints[n] = address;
+    if (address != 0)
+    {
+        breakpointExists = true;
+    }
+    else
+    {
+        breakpointExists = false;
+        for (Byte i=0; i < 16; i++)
+        {
+            if (breakpoints[i]!= 0)
+            {
+                breakpointExists = true;
+                break;
+            }
+        }
+    }
+}
+
+Byte FromHex(Char ch)
+{
+    switch (ch)
+    {
+        case '0': { return 0x00; }
+        case '1': { return 0x01; }
+        case '2': { return 0x02; }
+        case '3': { return 0x03; }
+        case '4': { return 0x04; }
+        case '5': { return 0x05; }
+        case '6': { return 0x06; }
+        case '7': { return 0x07; }
+        case '8': { return 0x08; }
+        case '9': { return 0x09; }
+        case 'a': case 'A': { return 0x0A; }
+        case 'b': case 'B': { return 0x0B; }
+        case 'c': case 'C': { return 0x0C; }
+        case 'd': case 'D': { return 0x0D; }
+        case 'e': case 'E': { return 0x0E; }
+        case 'f': case 'F': { return 0x0F; }
+    }
+    return 0;
+}
+
+
+Bool TryReadSerialByte(Byte & data)
+{
+    char c0 = getchar();
+    char c1 = getchar();
+    Byte msn = FromHex(c0);
+    Byte lsn = FromHex(c1);
+    data =  (msn << 4) + lsn;
+    return true;
+}
+    
+Bool SerialLoadIHex(UInt & loadedAddress, UInt & codeLength)
+{
+    Bool success = true;
+    loadedAddress = codeMemoryStart;
+    
+    UInt codeLimit = 0xFFFF; // 64K - 1 (so that it fits in 16 bits)
+    
+    codeLength = 0;
+    for (;;)
+    {
+        char colon = getchar();
+        if (colon != ':') { success = false; break; }
+        
+        Byte byteCount;
+        if (!TryReadSerialByte(byteCount)) { success = false; break; }
+        
+        Byte lsb;
+        Byte msb;
+        if (!TryReadSerialByte(msb)) { success = false; break; }
+        if (!TryReadSerialByte(lsb)) { success = false; break; }
+        UInt recordAddress = lsb + (msb << 8);
+        
+        Byte recordType;
+        if (!TryReadSerialByte(recordType)) { success = false; break; }
+        
+        switch (recordType)
+        {
+            case 0x00: // data
+            {
+                for (UInt c=0; c < byteCount; c++)
+                {
+                    Byte dataByte;
+                    if (!TryReadSerialByte(dataByte))             { success = false; break; }
+                    if (codeMemoryStart + recordAddress >= codeLimit) { success = false; break; }
+                    Memory_WriteCodeByte(codeMemoryStart + recordAddress, dataByte);
+                    codeLength++;
+                    recordAddress++;
+                }
+                Byte checkSum;
+                if (!TryReadSerialByte(checkSum)) { success = false; break; }
+                
+                Char eol = getchar();
+                if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
+                { 
+                    success = false; break;
+                }
+                continue; // next record
+            }
+            case 0x01:
+            {
+                Byte checkSum;
+                if (!TryReadSerialByte(checkSum)) { success = false; break; }
+                break; // EOF
+            }
+            default:
+            {
+                success = false; break;
+            }
+        }
+        break;
+    } // loop
+    return success;
+}
+
+void DumpPage(Byte iPage, Bool includeAddresses)
+{
+    UInt rowAddress = (iPage << 0x08);;
+    for (Byte row = 0x00; row < 0x10; row++)
+    {
+        putchar(Char(13));
+        if (includeAddresses)
+        {
+            printf("%04X ", rowAddress);
+            rowAddress = rowAddress + 0x10;
+        }
+        if (iPage == 0x00)
+        {
+            for (Byte col = 0x00; col < 0x10; col++)
+            {
+                Byte data = 0;
+                Byte address = col + (row << 0x04);
+                switch (address)
+                {
+                    case 0xB1:
+                    {
+                        data = Byte(pc >> 0x08);
+                        break;
+                    }
+                    case 0xB0:
+                    {
+                        data = Byte(pc & 0xFF);
+                        break;
+                    }
+                    case 0xB3:
+                    {
+                        data = Byte((sp + 0x0600) >> 0x08);
+                        break;
+                    }
+                    case 0xB2:
+                    {
+                        data = Byte((sp + 0x0600) & 0xFF);
+                        break;
+                    }
+                    case 0xB5:
+                    {
+                        data = Byte(((sp / 0x02) + 0x0500) >> 0x08);
+                        break;
+                    }
+                    case 0xB4:
+                    {
+                        data = Byte(((sp / 0x02) + 0x0500) & 0xFF);
+                        break;
+                    }
+                    case 0xB7:
+                    {
+                        data = Byte((bp + 0x0600) >> 0x08);
+                        break;
+                    }
+                    case 0xB6:
+                    {
+                        data = Byte((bp + 0x0600) & 0xFF);
+                        break;
+                    }
+                    case 0xB9:
+                    {
+                        data = Byte((csp + 0x0400) >> 0x08);
+                        break;
+                    }
+                    case 0xB8:
+                    {
+                        data = Byte((csp + 0x0400) & 0xFF);
+                        break;
+                    }
+                    case 0xBB:
+                    {
+                        data = Byte(HopperFlags::eMCUPlatform | HopperFlags::eLongValues);
+                        if (breakpointExists)
+                        {
+                            data = data | Byte(HopperFlags::eBreakpointsSet);
+                        }
+                        break;
+                    }
+                    case 0xE9:
+                    {
+                        data = Byte(Memory_FreeList_Get() >> 0x08);
+                        break;
+                    }
+                    case 0xE8:
+                    {
+                        data = Byte(Memory_FreeList_Get() & 0xFF);
+                        break;
+                    }
+                    case 0xEB:
+                    {
+                        data = Byte(Memory_HeapSize_Get() >> 0x08);
+                        break;
+                    }
+                    case 0xEA:
+                    {
+                        data = Byte(Memory_HeapStart_Get() >> 0x08);
+                        break;
+                    }
+                    case 0xCA:
+                    {
+                        data = 0x00;
+                        break;
+                    }
+                    default:
+                    {
+                        if ((address >= 0x50) && (address <= 0x5F))
+                        {
+                            data = Byte(GetBreakpoint(address - 0x50) & 0xFF);
+                        }
+                        else if ((address >= 0x60) && (address <= 0x6F))
+                        {
+                            data = Byte(GetBreakpoint(address - 0x60) >> 0x08);
+                        }
+                        else
+                        {
+                            data = 0x00;
+                        }
+                        break;
+                    }
+                } // switch
+                if (includeAddresses)
+                {
+                    putchar(' ');
+                    if (col == 0x08)
+                    {
+                        putchar(' ');
+                    }
+                }
+                printf("%02X", data);
+            }
+        }
+        else if (iPage == 0x04)
+        {
+            for (Byte col = 0x00; col < 0x08; col++)
+            {
+                UInt address = col * 0x02 + (row << 0x04);
+                UInt stackData = VMGetCS(address);
+                if (includeAddresses)
+                {
+                    putchar(' ');
+                    if (col == 0x04)
+                    {
+                        putchar(' ');
+                    }
+                }
+                printf("%02X", Byte(stackData & 0xFF));
+                if (includeAddresses)
+                {
+                    putchar(' ');
+                }
+                printf("%02X", Byte(stackData >> 0x08));
+            }
+        }
+        else if (iPage == 0x05)
+        {
+            for (Byte col = 0x00; col < 0x10; col++)
+            {
+                UInt address = col + (row << 0x04);
+                address = address * 0x02;
+                Type htype = VMGetTS(address);
+                if (includeAddresses)
+                {
+                    putchar(' ');
+                    if (col == 0x08)
+                    {
+                        putchar(' ');
+                    }
+                }
+                printf("%02X", Byte(htype));
+            }
+        }
+        else if ((iPage >= 0x06) && (iPage <= 0x09))
+        {
+            uint delta = (iPage - 0x06) * 0x0100;
+            for (Byte col = 0; col < 16; col++)
+            {
+                UInt address = col + (row << 4);
+                address += delta;
+                
+                Byte data = Memory_ReadByte(valueStack + address);
+                if (includeAddresses)
+                {
+                    putchar(' ');
+                    if (col == 8)
+                    {
+                        putchar(' ');
+                    }
+                }
+                printf("%02X", data);
+            }
+        }
+        else if (iPage > 0x09)
+        {
+            for (Byte col = 0x00; col < 0x10; col++)
+            {
+                UInt address = col + (row << 0x04);
+                address = address + (0x0100 * iPage);
+                if (includeAddresses)
+                {
+                    putchar(' ');
+                    if (col == 0x08)
+                    {
+                        putchar(' ');
+                    }
+                }
+                printf("%02X", Memory_ReadByte(address));
+            }
+        }
+        else
+        {
+            for (Byte col = 0x00; col < 0x10; col++)
+            {
+                if (includeAddresses)
+                {
+                    putchar(' ');
+                    if (col == 0x08)
+                    {
+                        putchar(' ');
+                    }
+                }
+                printf("00");
+            }
+        }
+    }
+    putchar(Char(13));
+}
+
+void Platform_Release()
+{
+    free(dataMemoryBlock);
+    dataMemoryBlock = nullptr;
+    free(codeMemoryBlock);
+    codeMemoryBlock = nullptr;
+}
+
+
+Bool Platform_Initialize()
+{
+    for (;;)
+    {
+        lastError = 0;
+        errorContext = 0;
+        if (nullptr != dataMemoryBlock)
+        {
+            Platform_Release();
+        }
+        codeMemoryBlock = (unsigned char*)malloc(0x10000); // 64K
+        if (nullptr == codeMemoryBlock) { break; }
+        memset(codeMemoryBlock, 0x10000, 0);
+        
+        dataMemoryBlock = (unsigned char*)malloc(0x10000); // 64K
+        if (nullptr == dataMemoryBlock) { break; }
+        memset(dataMemoryBlock, 0x10000, 0);
+        
+        return true;
+    }
+    return false;
+}
+
+
+void WaitForEnter()
+{
+    for(;;)
+    {
+        Char ch = getchar();
+        if (ch == enter)
+        {
+            break;
+        }       
+    } // loop
+    putchar(slash); // '\' response : acknowledge <enter> received
+}
+
+void VMInitialize(UInt loadedAddress, UInt loadedSize)
+{
+    binaryAddress      = loadedAddress;
+    programSize        = loadedSize;
+    constAddress       = Memory_ReadCodeWord(binaryAddress + 0x0002);
+    methodTable        = binaryAddress + 0x0006;
+}
+
+void DataMemoryReset()
+{
+    UInt nextAddress   = dataMemoryStart;
+    callStack          = nextAddress;
+    nextAddress        = nextAddress + callStackSize;
+    
+    valueStack         = nextAddress;
+    nextAddress        = nextAddress + (stackSize << 1);
+    
+    typeStack          = nextAddress;
+    nextAddress        = nextAddress + stackSize;
+    
+    OpCodes_PopulateJumpTable();
+    SysCalls_PopulateJumpTable();
+    LibCalls_PopulateJumpTable();
+    
+    dataMemory         = nextAddress;
+    
+    if (dataMemory < 0x0A00)
+    {
+        dataMemory = 0x0A00; // after our 'fake' stack pages
+    }
+    Memory_Initialize(dataMemory, 0x10000 - dataMemory);
+    ClearBreakpoints(true);
+    currentDirectory = HRString_New();
+    Memory_Set(typeStack,  0, stackSize);
+    Memory_Set(valueStack, 0, (stackSize << 1));
+}
+
+void VMRelease()
+{
+    if (currentDirectory != 0)
+    {
+        GC_Release(currentDirectory);
+        currentDirectory = 0;
+    }
+}
+
+void VMRestart()
+{
+    DataMemoryReset();
+    // TODO DiskSetup();
+    
+    sp = 0;
+    bp = 0;
+    csp = 0;
+    lastError = 0;
+    cnp = false;
+    pc = Memory_ReadCodeWord(binaryAddress + 0x0004);  
+}
+
+
+Bool ExecuteOpCode()
+{
+    Bool doNext = false;
+    // TODO : External_ServiceInterrupts();
+    opCode = OpCode(Memory_ReadCodeByte(pc));
+    pc++;
+    
+    doNext = OpCodeCall(opCode);
+    return doNext;
+}
+
+void Execute()
+{
+    UInt messagePC = 0;
+    for (;;)
+    {
+        messagePC = pc;
+        Bool doNext = ExecuteOpCode();
+        if (lastError != 0x00)
+        {
+            break;
+        }
+        if (pc == 0x00)
+        {
+            VMRestart();
+            break;
+        }
+        /* TODO
+        if (IsBreak())
+        {
+            printf("\nBREAK\n");
+            break;;
+        }
+        */
+        if (breakpointExists)
+        {
+            Byte iBreak = 0;
+            Bool atBreakpoint = false;;
+            for (iBreak = 0; iBreak < 16; iBreak++)
+            {
+                if (GetBreakpoint(iBreak) == pc)
+                {
+                    if (iBreak == 0)
+                    {
+                        SetBreakpoint(0, 0);
+                    }
+                    return;
+                }
+            }
+        }
+    }
+}
+
+void ExecuteStepTo()
+{
+    Bool doNext = ExecuteOpCode();
+    if (lastError != 0x00)
+    {
+    }
+    else if (pc == 0x00)
+    {
+        printf("2");
+        VMRestart();
+        printf("3");
+    }
+}
+
+void ExecuteWarp()
+{
+    SetError(0x0A, (6)); // TODO
+}
+
+
+void HopperEntryPoint()
+{
+    codeLoaded = false;
+    VMRestart();
+    bool refresh = true;
+    UInt loadedAddress = 0;
+    UInt codeLength = 0;
+    
+    if (loadAuto)
+    {
+        /* TODO
+        if (Runtime_LoadAuto_R(loadedAddress, codeLength))
+        {
+            VMInitialize(loadedAddress, codeLength);
+            VMRestart();
+            codeLoaded = true;
+            VMExecuteWarp();
+        }
+        */
+    }
+    putchar(slash); // ready
+    
+    for(;;) // loop
+    {
+        Char ch;
+        if (tud_cdc_available())
+        {
+            ch = getchar();
+        }
+        if (ch == escape) // <esc> from Debugger
+        {
+            putchar(slash); // '\' response -> ready for command
+            ch = getchar();  // single letter command
+            switch (ch)
+            {
+                case 'F': // fast memory page dump
+                {
+                    Byte msn = FromHex(getchar());
+                    Byte lsn = FromHex(getchar());
+                    WaitForEnter();
+                    
+                    Byte iPage = (msn << 4) + lsn;
+                    DumpPage(iPage, false);
+                    putchar(slash); // confirm data
+                    break;
+                }
+                case 'M': // memory page dump
+                {
+                    Byte msn = FromHex(getchar());
+                    Byte lsn = FromHex(getchar());
+                    WaitForEnter();
+                    
+                    Byte iPage = (msn << 4) + lsn;
+                    DumpPage(iPage, true);
+                    putchar(slash); // confirm data
+                    break;
+                }
+                case 'B':
+                {
+                    char arg = getchar();
+                    if (arg == 'X')
+                    {
+                        ClearBreakpoints(false);
+                    }
+                    else
+                    {
+                        Byte n  = FromHex(arg);
+                        Byte a3 = FromHex(getchar());
+                        Byte a2 = FromHex(getchar());
+                        Byte a1 = FromHex(getchar());
+                        Byte a0 = FromHex(getchar());
+                        UInt address = (a3 << 12) + (a2 << 8) + (a1 << 4) + a0;
+                        SetBreakpoint(n, address);   
+                    }
+                    WaitForEnter();
+                    break;
+                }
+                case 'P': // get PC
+                {
+                    WaitForEnter();
+                    
+                    putchar(char(enter));
+                    printf("%04X", pc);
+                    putchar(char(slash)); // confirm data
+                    break;
+                }
+                case 'R': // get Registers
+                {
+                    WaitForEnter();
+                    
+                    putchar(char(enter));
+                    putchar('P');
+                    putchar('C');
+                    putchar('=');
+                    printf("%04X", pc);
+                    putchar(' ');
+                    
+                    putchar('C');
+                    putchar('S');
+                    putchar('P');
+                    putchar('=');
+                    printf("%04X", csp);
+                    putchar(' ');
+                    
+                    putchar('S');
+                    putchar('P');
+                    putchar('=');
+                    printf("%04X", sp + 0x0600);
+                    putchar(' ');
+                    
+                    putchar('T');
+                    putchar('S');
+                    putchar('P');
+                    putchar('=');
+                    printf("%04X", sp + 0x0500);
+                    putchar(' ');
+                    
+                    putchar('B');
+                    putchar('P');
+                    putchar('=');
+                    printf("%04X", bp + 0x0600);
+                    
+                    putchar(char(slash)); // confirm data
+                    break;
+                }
+                /*
+                case 'T':
+                    {
+                        WaitForEnter();
+                        
+                        // read name characters till 0x0D
+                        uint destinationName = HRString.New();
+                        for(;;)
+                        {
+                            char ch = getchar();
+                            if (ch == char(enter))
+                            {
+                                break;
+                            }
+                            HRString.BuildChar(ref destinationName, ch);
+                        }
+                        putchar(char(enter));
+                        putchar(char(slash));
+                        
+                        // read path characters till 0x0D
+                        uint destinationFolder = HRString.New();
+                        for(;;)
+                        {
+                            char ch = getchar();
+                            if (ch == char(enter))
+                            {
+                                break;
+                            }
+                            HRString.BuildChar(ref destinationFolder, ch);
+                        }
+                        putchar(char(enter));
+                        putchar(char(slash));
+                        
+                        HRDirectory.Create(destinationFolder);
+                        
+                        char h3 = getchar();
+                        char h2 = getchar();
+                        char h1 = getchar();
+                        char h0 = getchar();
+                        
+                        uint size = (FromHex(h3) << 12) + (FromHex(h2) << 8) + (FromHex(h1) << 4) + FromHex(h0);
+                        
+                        putchar(char(enter));
+                        putchar(char(slash));
+                        
+                        uint fh = HRFile.Create(destinationName);
+                        
+                        // read file hex nibbles
+                        while (size != 0)
+                        {
+                            char n1 = getchar();
+                            char n0 = getchar();
+                            byte b = (FromHex(n1) << 4) + FromHex(n0);
+                            HRFile.Append(fh, b);
+                            size--;
+                        }
+                        HRFile.Flush(fh);
+                        putchar(char(enter));
+                        putchar(char(slash));
+                        break;
+                    }
+                    */
+                case 'L':
+                    {
+                        WaitForEnter();
+                        
+                        loadedAddress = 0;
+                        UInt codeLength;
+                    
+                        codeLoaded = SerialLoadIHex(loadedAddress, codeLength);
+                        putchar(char(enter));
+                        if (codeLoaded)
+                        {
+                            VMInitialize(loadedAddress, codeLength);
+                            VMRestart();
+                            
+                            // codeLength
+                            printf("\n codeLength=0x%04X  pc=0x%04X", codeLength, pc);
+                            putchar(' ');
+                        }
+                        
+                        // '*' success
+                        for(;;)
+                        {
+                            ch = getchar();
+                            if ((ch == '!') || (ch == '*'))
+                            {
+                                break;
+                            }
+                        }
+                        putchar(enter);
+                        putchar(codeLoaded ? '*' : '!');
+                        
+                        putchar(slash); // confirm the data
+                        
+                        if (codeLoaded)
+                        {
+                            // TODO FlashProgram(loadedAddress, codeLength);
+                        }
+                        break;
+                    } // L
+                default:
+                    {
+                        if (codeLoaded)
+                        {
+                            switch (ch)
+                            {
+                                case 'O': // Step Over | <F10>
+                                {
+                                    WaitForEnter();
+                                    OpCode opCode = OpCode(Memory_ReadCodeByte(pc));
+                                    if ((opCode == OpCode::eCALL) || (opCode == OpCode::eCALLI))
+                                    {
+                                        
+                                        // set breakpoint[0] to PC+3
+                                        SetBreakpoint(0, pc+3);
+                                        Execute();
+                                    }
+                                    else if (opCode == OpCode::eCALLB)
+                                    {
+                                        // set breakpoint[0] to PC+2
+                                        SetBreakpoint(0, pc+2);
+                                        Execute();
+                                    }
+                                    else
+                                    {
+                                        // use single step (set bit in HopperFlags)
+                                        ExecuteStepTo();
+                                    }
+                                    putchar(slash); // confirm handing back control
+                                    break;
+                                }
+                                case 'I': // Step Into | <F11>
+                                {
+                                    WaitForEnter();
+                                    ExecuteStepTo();
+                                    putchar(slash); // confirm handing back control
+                                    break;
+                                }
+                                case 'D': // Debug
+                                {
+                                    WaitForEnter();
+                                    Execute();
+                                    putchar(slash); // confirm handing back control
+                                    break;
+                                }
+                                case 'X': // Execute
+                                {
+                                    WaitForEnter();
+                                    ExecuteWarp();
+                                    putchar(slash); // confirm handing back control
+                                    break;
+                                }
+                                case 'W': // Warm restart
+                                {
+                                    WaitForEnter();
+                                    VMRestart();
+                                    break;
+                                }
+                            } // switch
+                        } // loaded
+                    } // default
+            } // switch
+        } // <esc> from Debugger
+    } // loop
+    VMRelease();
+}
+
+
+int main() 
+{
+    stdio_init_all();
+    
+    while (!tud_cdc_connected())
+    {
+        sleep_ms(100);
+    }
+    
+    if (Platform_Initialize())
+    {
+        // flicker LED_BUILTIN to show that initialization completed
+        gpio_init(LED_PIN);
+        gpio_set_dir(LED_PIN, GPIO_OUT);
+        for (int i = 0; i < 5; i++)
+        {
+            gpio_put(LED_PIN, 1);
+            sleep_ms(50);
+            gpio_put(LED_PIN, 0);
+            sleep_ms(50);
+        }
+        
+        HopperEntryPoint();
+        Platform_Release();
+    }
+}
+

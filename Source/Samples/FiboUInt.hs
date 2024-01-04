@@ -1,8 +1,8 @@
 program FiboUInt
 {
-//#define TINYHOPPER
+#define TINYHOPPER
 #define PORTABLE
-#define SERIALCONSOLE
+//#define SERIALCONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
     
