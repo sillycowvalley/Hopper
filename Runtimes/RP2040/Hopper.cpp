@@ -45,17 +45,6 @@ Bool cnp;
 
 OpCode opCode;
 
-UInt GetPC()  { return pc; }
-UInt GetSP()  { return sp; }
-UInt GetBP()  { return bp; }
-UInt GetCSP() { return csp; }
-
-UInt GetValueStack() { return valueStack; }
-UInt GetTypeStack()  { return typeStack;  }
-
-
-void SetPC(UInt newpc) { pc = newpc; }
-void SetBP(UInt newbp) { bp = newbp; }
 
 void SetError(Byte error, UInt context)
 {
@@ -67,40 +56,44 @@ void SetError(Byte error, UInt context)
     putchar(slash);
 }
 
-Byte Memory_ReadCodeByte(UInt address)
+std::queue<Char> charQueue;
+
+Char GetChar()
 {
-    return codeMemoryBlock[address];
+    Char ch;
+    if (!charQueue.empty())
+    {
+        ch = charQueue.front();
+        charQueue.pop();
+    }
+    else
+    {
+        ch = getchar();
+    }
+    return ch;
+}
+Bool IsAvailable()
+{
+    return !charQueue.empty() || tud_cdc_available();
 }
 
+Bool IsBreak()
+{
+    while (tud_cdc_available())
+    {
+        Char ch = getchar();
+        if (ch == Char(0x03))
+        {
+            return true;
+        }
+        charQueue.push(ch);
+    }
+    return false;
+}
 
 void Memory_WriteCodeByte(UInt address, Byte value)
 {
     codeMemoryBlock[address] = value;
-}
-
-UInt Memory_ReadCodeWord(UInt address)
-{
-    return codeMemoryBlock[address] + (codeMemoryBlock[address+1] << 8);
-}
-
-Byte Memory_ReadByte(UInt address)
-{
-    return dataMemoryBlock[address];
-}
-
-void Memory_WriteByte(UInt address, Byte value)
-{
-    dataMemoryBlock[address] = value;
-}
-
-UInt Memory_ReadWord(UInt address)
-{
-    return dataMemoryBlock[address] + (dataMemoryBlock[address+1] << 8);
-}
-void Memory_WriteWord(UInt address, UInt value)
-{
-    dataMemoryBlock[address]   = value & 0xFF;
-    dataMemoryBlock[address+1] = value >> 8;
 }
 
 UInt VMGetCS(UInt stackOffset)
@@ -118,42 +111,12 @@ Type VMGetTS(UInt stackOffset)
     return Type(Memory_ReadWord(typeStack + stackOffset));
 }
 
-UInt VMReadWordOperand()
-{
-    UInt operand = Memory_ReadCodeWord(pc);
-    pc += 2;
-    return operand;
-}
-Byte VMReadByteOperand()
-{
-    Byte operand = Memory_ReadCodeByte(pc);
-    pc++;
-    return operand;
-}
-
-Int  VMReadWordOffsetOperand()
-{
-    Int offset = (Int)(Memory_ReadCodeWord(pc));
-    pc += 2;
-    return offset;
-}
-Int  VMReadByteOffsetOperand()
-{
-    Int offset = (Int)(Memory_ReadCodeByte(pc));
-    pc++;
-    if (offset > 0x7F)
-    {
-        offset = offset - 0x0100;
-    }
-    return offset;
-}
-
 void VMPushCS(UInt word)
 {
 #ifdef CHECKED
     if (csp == callStackSize)
     {
-        SetError(0x08, (10)); // call stack overflow
+        SetError(0x08, (1)); // call stack overflow
     }
 #endif
     Memory_WriteWord(callStack + csp,     word);
@@ -164,7 +127,7 @@ UInt VMPopCS()
 #ifdef CHECKED
     if (csp == 0)
     {
-        SetError(0x08, (13)); // call stack overflow
+        SetError(0x08, (2)); // call stack overflow
     }
 #endif
     csp -= 2;
@@ -176,7 +139,7 @@ void VMPush(UInt word, Type type)
 #ifdef CHECKED
     if (sp == stackSize)
     {
-        SetError(0x07, (12)); // argument stack overflow
+        SetError(0x07, (3)); // argument stack overflow
     }
 #endif
     Memory_WriteWord(valueStack + (sp << 1),     word); // lsw
@@ -184,12 +147,12 @@ void VMPush(UInt word, Type type)
     Memory_WriteWord(typeStack  + sp, type);
     sp += 2;
 }
-void VMPush(UInt32 dword, Type type)
+void VMPush32(UInt32 dword, Type type)
 {
     #ifdef CHECKED
     if (sp == stackSize)
     {
-        SetError(0x07, (12)); // argument stack overflow
+        SetError(0x07, (4)); // argument stack overflow
     }
 #endif
     Memory_WriteWord(valueStack + (sp << 1),     dword & 0xFFFF); // lsw
@@ -203,7 +166,7 @@ UInt VMPop()
 #ifdef CHECKED
     if (sp == 0)
     {
-        SetError(0x07, (11)); // argument stack overflow
+        SetError(0x07, (5)); // argument stack overflow
     }
 #endif
     sp -= 2;
@@ -213,14 +176,79 @@ UInt VMPop()
 
 UInt VMPop(Type & type)
 {
-    #ifdef CHECKED
+#ifdef CHECKED
     if (sp == 0)
     {
-        SetError(0x07, (11)); // argument stack overflow
+        SetError(0x07, (6)); // argument stack overflow
     }
 #endif
     sp -= 2;
     UInt value = Memory_ReadWord(valueStack + (sp << 1)); // lsw
+    type = (Type)(Memory_ReadWord(typeStack  + sp));
+    return value;
+}
+UInt VMGet(UInt address, Type & type)
+{
+    UInt value = Memory_ReadWord(valueStack + (address << 1)); // lsw
+    type = Type(Memory_ReadWord(typeStack + address));
+    return value;
+}
+UInt32 VMGet32(UInt address, Type & type)
+{
+    UInt32 value = Memory_ReadWord(valueStack + (address << 1)) + (Memory_ReadWord(valueStack + (address << 1) + 2) << 16); 
+    type = Type(Memory_ReadWord(typeStack + address));
+    return value;
+}
+void VMPut  (UInt address, UInt value, Type type)
+{
+    Memory_WriteWord(valueStack + (address << 1),    value); // lsw
+    Memory_WriteWord(valueStack + (address << 1) +2, 0);     // msw
+    Memory_WriteWord(typeStack + address, type);
+}
+void VMPut32(UInt address, UInt32 value, Type type)
+{
+    Memory_WriteWord(valueStack + (address << 1),    value & 0xFFFF); // lsw
+    Memory_WriteWord(valueStack + (address << 1) +2, value >> 16);     // msw
+    Memory_WriteWord(typeStack + address, type);
+}
+
+Float VMPopFloat()
+{
+    Type type;
+    UInt32 ui = VMPop32(type);
+    Float * f = (Float*)&ui;
+    return *f;
+}
+void  VMPushFloat(Float f)
+{
+    UInt32 * ui = (UInt32*)&f;
+    VMPush32(*ui, Type::eFloat);
+}
+Int VMPopInt()
+{
+    UInt ui = VMPop();
+    Int * i = (Int*)&ui;
+    return *i;
+}
+void  VMPushInt(Int i)
+{
+    UInt * ui = (UInt*)&i;
+    VMPush(*ui, Type::eInt);
+}
+    
+
+
+
+UInt32 VMPop32(Type & type)
+{
+#ifdef CHECKED
+    if (sp == 0)
+    {
+        SetError(0x07, (7)); // argument stack overflow
+    }
+#endif
+    sp -= 2;
+    UInt32 value = Memory_ReadWord(valueStack + (sp << 1)) + (Memory_ReadWord(valueStack + (sp << 1) + 2 ) << 16);
     type = (Type)(Memory_ReadWord(typeStack  + sp));
     return value;
 }
@@ -314,8 +342,8 @@ Byte FromHex(Char ch)
 
 Bool TryReadSerialByte(Byte & data)
 {
-    char c0 = getchar();
-    char c1 = getchar();
+    char c0 = GetChar();
+    char c1 = GetChar();
     Byte msn = FromHex(c0);
     Byte lsn = FromHex(c1);
     data =  (msn << 4) + lsn;
@@ -332,7 +360,7 @@ Bool SerialLoadIHex(UInt & loadedAddress, UInt & codeLength)
     codeLength = 0;
     for (;;)
     {
-        char colon = getchar();
+        char colon = GetChar();
         if (colon != ':') { success = false; break; }
         
         Byte byteCount;
@@ -363,7 +391,7 @@ Bool SerialLoadIHex(UInt & loadedAddress, UInt & codeLength)
                 Byte checkSum;
                 if (!TryReadSerialByte(checkSum)) { success = false; break; }
                 
-                Char eol = getchar();
+                Char eol = GetChar();
                 if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
                 { 
                     success = false; break;
@@ -634,11 +662,11 @@ Bool Platform_Initialize()
         }
         codeMemoryBlock = (unsigned char*)malloc(0x10000); // 64K
         if (nullptr == codeMemoryBlock) { break; }
-        memset(codeMemoryBlock, 0x10000, 0);
+        memset(codeMemoryBlock, 0, 0x10000);
         
         dataMemoryBlock = (unsigned char*)malloc(0x10000); // 64K
         if (nullptr == dataMemoryBlock) { break; }
-        memset(dataMemoryBlock, 0x10000, 0);
+        memset(dataMemoryBlock, 0, 0x10000);
         
         return true;
     }
@@ -650,7 +678,7 @@ void WaitForEnter()
 {
     for(;;)
     {
-        Char ch = getchar();
+        Char ch = GetChar();
         if (ch == enter)
         {
             break;
@@ -732,11 +760,9 @@ Bool ExecuteOpCode()
 
 void Execute()
 {
-    UInt messagePC = 0;
     for (;;)
     {
-        messagePC = pc;
-        Bool doNext = ExecuteOpCode();
+        ExecuteOpCode();
         if (lastError != 0x00)
         {
             break;
@@ -746,18 +772,14 @@ void Execute()
             VMRestart();
             break;
         }
-        /* TODO
         if (IsBreak())
         {
             printf("\nBREAK\n");
             break;;
         }
-        */
         if (breakpointExists)
         {
-            Byte iBreak = 0;
-            Bool atBreakpoint = false;;
-            for (iBreak = 0; iBreak < 16; iBreak++)
+            for (Byte iBreak = 0; iBreak < 16; iBreak++)
             {
                 if (GetBreakpoint(iBreak) == pc)
                 {
@@ -774,21 +796,61 @@ void Execute()
 
 void ExecuteStepTo()
 {
-    Bool doNext = ExecuteOpCode();
+    ExecuteOpCode();
     if (lastError != 0x00)
     {
     }
     else if (pc == 0x00)
     {
-        printf("2");
         VMRestart();
-        printf("3");
     }
 }
 
 void ExecuteWarp()
 {
-    SetError(0x0A, (6)); // TODO
+    Bool doNext = false;
+    UInt watchDog = 2500;
+    for (;;)
+    {
+        // TODO if (Library_ISRExists_Get())
+        //{
+        //    External_ServiceInterrupts();
+        //}
+        
+        OpCode opCode = OpCode(Memory_ReadCodeByte(pc));
+        pc++;
+    
+        doNext = OpCodeCall(opCode);
+        
+        watchDog--;
+        if (watchDog == 0)
+        {
+            watchDog = 2500;
+            if (IsBreak())
+            {
+                printf("\nBREAK\n");
+                break;
+            }
+        }
+        if (doNext)
+        {
+            continue;;
+        }
+        if (lastError != 0)
+        {
+            break;
+        }
+        if (pc == 0)
+        {
+            VMRestart();
+            break;
+        }
+        if (IsBreak())
+        {
+            printf("\nBREAK\n");
+            break;
+        }
+    }
 }
 
 
@@ -796,7 +858,6 @@ void HopperEntryPoint()
 {
     codeLoaded = false;
     VMRestart();
-    bool refresh = true;
     UInt loadedAddress = 0;
     UInt codeLength = 0;
     
@@ -816,21 +877,21 @@ void HopperEntryPoint()
     
     for(;;) // loop
     {
-        Char ch;
-        if (tud_cdc_available())
+        Char ch = 0;
+        if (IsAvailable())
         {
-            ch = getchar();
+            ch = GetChar();
         }
         if (ch == escape) // <esc> from Debugger
         {
             putchar(slash); // '\' response -> ready for command
-            ch = getchar();  // single letter command
+            ch = GetChar();  // single letter command
             switch (ch)
             {
                 case 'F': // fast memory page dump
                 {
-                    Byte msn = FromHex(getchar());
-                    Byte lsn = FromHex(getchar());
+                    Byte msn = FromHex(GetChar());
+                    Byte lsn = FromHex(GetChar());
                     WaitForEnter();
                     
                     Byte iPage = (msn << 4) + lsn;
@@ -840,8 +901,8 @@ void HopperEntryPoint()
                 }
                 case 'M': // memory page dump
                 {
-                    Byte msn = FromHex(getchar());
-                    Byte lsn = FromHex(getchar());
+                    Byte msn = FromHex(GetChar());
+                    Byte lsn = FromHex(GetChar());
                     WaitForEnter();
                     
                     Byte iPage = (msn << 4) + lsn;
@@ -851,7 +912,7 @@ void HopperEntryPoint()
                 }
                 case 'B':
                 {
-                    char arg = getchar();
+                    char arg = GetChar();
                     if (arg == 'X')
                     {
                         ClearBreakpoints(false);
@@ -859,10 +920,10 @@ void HopperEntryPoint()
                     else
                     {
                         Byte n  = FromHex(arg);
-                        Byte a3 = FromHex(getchar());
-                        Byte a2 = FromHex(getchar());
-                        Byte a1 = FromHex(getchar());
-                        Byte a0 = FromHex(getchar());
+                        Byte a3 = FromHex(GetChar());
+                        Byte a2 = FromHex(GetChar());
+                        Byte a1 = FromHex(GetChar());
+                        Byte a0 = FromHex(GetChar());
                         UInt address = (a3 << 12) + (a2 << 8) + (a1 << 4) + a0;
                         SetBreakpoint(n, address);   
                     }
@@ -926,7 +987,7 @@ void HopperEntryPoint()
                         uint destinationName = HRString.New();
                         for(;;)
                         {
-                            char ch = getchar();
+                            char ch = GetChar();
                             if (ch == char(enter))
                             {
                                 break;
@@ -940,7 +1001,7 @@ void HopperEntryPoint()
                         uint destinationFolder = HRString.New();
                         for(;;)
                         {
-                            char ch = getchar();
+                            char ch = GetChar();
                             if (ch == char(enter))
                             {
                                 break;
@@ -952,10 +1013,10 @@ void HopperEntryPoint()
                         
                         HRDirectory.Create(destinationFolder);
                         
-                        char h3 = getchar();
-                        char h2 = getchar();
-                        char h1 = getchar();
-                        char h0 = getchar();
+                        char h3 = GetChar();
+                        char h2 = GetChar();
+                        char h1 = GetChar();
+                        char h0 = GetChar();
                         
                         uint size = (FromHex(h3) << 12) + (FromHex(h2) << 8) + (FromHex(h1) << 4) + FromHex(h0);
                         
@@ -967,8 +1028,8 @@ void HopperEntryPoint()
                         // read file hex nibbles
                         while (size != 0)
                         {
-                            char n1 = getchar();
-                            char n0 = getchar();
+                            char n1 = GetChar();
+                            char n0 = GetChar();
                             byte b = (FromHex(n1) << 4) + FromHex(n0);
                             HRFile.Append(fh, b);
                             size--;
@@ -984,8 +1045,7 @@ void HopperEntryPoint()
                         WaitForEnter();
                         
                         loadedAddress = 0;
-                        UInt codeLength;
-                    
+                        
                         codeLoaded = SerialLoadIHex(loadedAddress, codeLength);
                         putchar(char(enter));
                         if (codeLoaded)
@@ -1001,7 +1061,7 @@ void HopperEntryPoint()
                         // '*' success
                         for(;;)
                         {
-                            ch = getchar();
+                            ch = GetChar();
                             if ((ch == '!') || (ch == '*'))
                             {
                                 break;

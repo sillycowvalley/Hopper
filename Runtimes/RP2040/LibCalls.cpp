@@ -49,7 +49,7 @@ enum LibCall {
 bool undefinedLib()
 {
     printf("\nundefined libcall at 0x%04X", GetPC());
-    SetError(0x0A, 10);
+    SetError(0x0A, (13));
     return false;
 }
 
@@ -95,7 +95,7 @@ void LibCalls_PopulateJumpTable()
     {
         libcallJumps[i] = undefinedLib;
     }
-    libcallJumps[LibCall::eMCUPinMode] = mcuPinMode;
+    libcallJumps[LibCall::eMCUPinMode]      = mcuPinMode;
     libcallJumps[LibCall::eMCUDigitalWrite] = mcuDigitalWrite;
     
     // TODO
@@ -103,6 +103,7 @@ void LibCalls_PopulateJumpTable()
 
 Bool LibCall(Byte iLibCall)
 {
+    //printf("\nLibCall: 0x%04X 0x%02X", GetPC()-1, iLibCall);
     return libcallJumps[iLibCall]();
 }
 

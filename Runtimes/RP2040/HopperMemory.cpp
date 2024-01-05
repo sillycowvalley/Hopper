@@ -25,7 +25,7 @@ void Memory_Free(UInt address)
     {
         if (0x00 == address)
         {
-            SetError(0x0B, (1)); // Memory_Free(0)
+            SetError(0x0B, (12)); // Memory_Free(0)
             break;
         }
         UInt blockAddress = address - 0x02;
@@ -136,7 +136,7 @@ UInt Memory_Allocate(UInt size)
     {
         if (0x00 == size)
         {
-            SetError(0x0C, (3)); // Memory_Allocate size == 0
+            SetError(0x0C, (11)); // Memory_Allocate size == 0
             break;;
         }
         UInt best = 0;
@@ -224,7 +224,7 @@ UInt Memory_Allocate(UInt size)
         }
         else
         {
-            SetError(0x0C, (2)); // failed to Memory_Allocate
+            SetError(0x0C, (10)); // failed to Memory_Allocate
             address = 0x00;
         }
         break;;
@@ -304,6 +304,56 @@ void GC_Release(UInt address)
             }
         } // switch
     }
+}
+UInt GC_Clone(UInt original)
+{
+    Type htype = Type(Memory_ReadByte(original));
+    switch (htype)
+    {
+        case Type::eString:
+        {
+            return HRString_Clone(original);
+            break;
+        }
+        /* TODO
+        case Type::eDirectory:
+        {
+            return HRDirectory_Clone(original);
+            break;
+        }
+        case Type::eFile:
+        {
+            return HRFile_Clone(original);
+            break;
+        }
+        case Type::eList:
+        {
+            return HRList_Clone(original);
+            break;
+        }
+        case Type::eDictionary:
+        {
+            return HRDictionary_Clone(original);
+            break;
+        }
+        case Type::ePair:
+        {
+            return HRPair_Clone(original);
+            break;
+        }
+        case Type::eVariant:
+        {
+            return HRVariant_Clone(original);
+            break;
+        }
+        */
+        default:
+        {
+            SetError(0x0A, (21)); // TODO : GC_Clone
+            break;
+        }
+    } // switch
+    return 0x00;
 }
 
 UInt GC_New(UInt size, Type htype)

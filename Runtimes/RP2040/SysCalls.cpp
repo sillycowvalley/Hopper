@@ -164,7 +164,7 @@ enum SysCall {
 bool undefinedSys(Byte iOverload)
 {
     printf("\nundefined syscall at 0x%04X", GetPC()-2);
-    SetError(0x0A, 10);
+    SetError(0x0A, (18));
     return false;
 }
 
@@ -189,12 +189,12 @@ Bool serialReadChar(Byte iOverload)
     {
         value = (Char)0x0D;
     }
-    VMPush((UInt)value, Type::eChar);
+    VMPush(value, Type::eChar);
     return true;
 }
 bool serialIsAvailableGet(Byte iOverload)
 {
-    VMPush((UInt)(tud_cdc_available() ? 1 : 0), Type::eBool);
+    VMPush((tud_cdc_available() ? 1 : 0), Type::eBool);
     return true;
 }
 
@@ -207,6 +207,338 @@ Bool timeDelay(Byte iOverload)
     }
     return true;
 }
+Bool timeMillis(Byte iOverload)
+{
+    UInt32 ms = to_ms_since_boot(get_absolute_time());
+    VMPush32(ms, Type::eLong);
+    //printf("\nMillis: %d", ms);
+    return true;
+}
+
+Bool stringNew(Byte iOverload)
+{
+    UInt address = HRString_New();
+    VMPush(address, Type::eString);
+    return true;
+}
+Bool stringNewFromConstant(Byte iOverload)
+{
+    if (iOverload == 0)
+    {
+        UInt length   = VMPop();
+        UInt location = VMPop();
+        UInt address = HRString_NewFromConstant0(GetConstantAddress() + location, length);
+        VMPush(address, Type::eString);
+        return true;
+    }
+    else if (iOverload == 1)
+    {
+        UInt doubleChar = VMPop();
+        UInt address = HRString_NewFromConstant1(doubleChar);
+        VMPush(address, Type::eString);
+        
+        return true;
+    }
+    else
+    {
+        SetError(0x0A, (19));
+        return false;
+    }
+}
+Bool stringInsertChar(Byte iOverload)
+{
+    UInt ch = VMPop();
+    UInt index = VMPop();
+    UInt _this = VMPop();
+    UInt result = HRString_InsertChar(_this, index, Char(ch));
+    GC_Release(_this);
+    VMPush(result, Type::eString);
+    
+    return true;
+}
+Bool stringLengthGet(Byte iOverload)
+{
+    UInt _this = VMPop();
+    UInt length = HRString_GetLength(_this);
+    GC_Release(_this);
+    VMPush(length, Type::eUInt);
+    return true;
+}
+Bool stringGetChar(Byte iOverload)
+{
+    UInt index = VMPop();
+    UInt _this = VMPop();
+    Char ch = HRString_GetChar(_this, index);
+    GC_Release(_this);
+    VMPush(ch, Type::eChar);
+    return true;
+}
+Bool stringAppend(Byte iOverload)
+{
+    if (iOverload == 0)
+    {
+        UInt append = VMPop();
+        UInt _this = VMPop();
+        UInt result = HRString_Append(_this, append);
+        GC_Release(_this);
+        GC_Release(append);
+        VMPush(result, Type::eString);
+        return true;
+    }
+    else if (iOverload == 1)
+    {
+        UInt append = VMPop();
+        UInt _this = VMPop();
+        UInt result = HRString_Append(_this, Char(append));
+        GC_Release(_this);
+        VMPush(result, Type::eString);
+        return true;
+    }
+    else
+    {
+        SetError(0x0A, (19));
+        return false;
+    }
+}
+Bool floatToString(Byte iOverload)
+{
+    Float top = VMPopFloat();
+    UInt str = HRString_New();
+    char buffer[20];
+    sprintf(buffer, "%g", top);
+    //printf("\nfloatToString: %s", buffer);
+    UInt i = 0;
+    while (buffer[i])
+    {
+        HRString_BuildChar_R(str , (Char)buffer[i]);
+        i++;
+    }
+    VMPush(str, Type::eString);
+    return true;
+}
+
+Bool longNew(Byte iOverload)
+{
+    VMPush(0, Type::eLong);
+    //Type type;
+    //UInt32 ln = VMGet32(GetSP()-2, type);
+    //printf("\nlongNew: 0x%08X", ln);
+    return true;
+}
+Bool floatNew(Byte iOverload)
+{
+    VMPush(0, Type::eFloat);
+    return true;
+}
+Bool floatNewFromConstant(Byte iOverload)
+{
+    UInt location = VMPop() + GetConstantAddress();
+    UInt32 value = Memory_ReadCodeWord(location) + (Memory_ReadCodeWord(location + 0x02) << 16);
+    VMPush32(value, Type::eFloat);
+    //Type type;
+    //value = VMGet32(GetSP()-2, type);
+    //Float * f = (Float*)&value;
+    //printf("\nfloatNewFromConstant: 0x%08X %g", value, *f);
+    return true;
+}
+Bool floatAdd(Byte iOverload)
+{
+    Float topf  = VMPopFloat();
+    Float nextf = VMPopFloat();
+    VMPushFloat(nextf + topf);
+    return true;
+}
+Bool floatSub(Byte iOverload)
+{
+    Float topf  = VMPopFloat();
+    Float nextf = VMPopFloat();
+    VMPushFloat(nextf - topf);
+    return true;
+}
+Bool floatMul(Byte iOverload)
+{
+    Float topf  = VMPopFloat();
+    Float nextf = VMPopFloat();
+    VMPushFloat(nextf * topf);
+    return true;
+}
+Bool floatDiv(Byte iOverload)
+{
+    Float topf  = VMPopFloat();
+    Float nextf = VMPopFloat();
+    if (topf == 0.0)
+    {
+        SetError(0x04, (20));
+        return false;
+    }
+    VMPushFloat(nextf / topf);
+    //printf("\nfloatDiv: %g / %g == %g", nextf, topf, nextf / topf);
+    return true;
+}
+
+Bool longAdd(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    VMPush32((UInt32)(next + top), Type::eLong);
+    //printf("\nlongAdd: %d + %d == %d", next, top, next + top);
+    return true;
+}
+Bool longSub(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    VMPush32((UInt32)(next - top), Type::eLong);
+    //printf("\nlongSub: %d - %d == %d", next, top, next - top);
+    return true;
+}
+Bool longMul(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    VMPush32((UInt32)(next * top), Type::eLong);
+    //printf("\nlongMul: %d * %d == %d", next, top, next * top);
+    return true;
+}
+Bool longDiv(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    if (top == 0)
+    {
+        SetError(0x04, (21));
+        return false;
+    }
+    VMPush32((UInt32)(next / top), Type::eLong);
+    //printf("\nlongDiv: %d / %d == %d", next, top, next / top);
+    return true;
+}
+Bool longMod(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    if (top == 0)
+    {
+        SetError(0x04, (22));
+        return false;
+    }
+    VMPush32((UInt32)(next % top), Type::eLong);
+    //printf("\nlongMod: %d %% %d == %d", next, top, next % top);
+    return true;
+}
+Bool longEQ(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    VMPush32((next == top) ? 1 : 0, Type::eBool);
+    //printf("\nlongEQ: %d == %d", next, top);
+    return true;
+}
+Bool longLT(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    VMPush32((next < top) ? 1 : 0, Type::eBool);
+    //printf("\nlongLT: %d < %d", next, top);
+    return true;
+}
+Bool longLE(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    VMPush32((next <= top) ? 1 : 0, Type::eBool);
+    return true;
+}
+Bool longGT(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    VMPush32((next > top) ? 1 : 0, Type::eBool);
+    return true;
+}
+Bool longGE(Byte iOverload)
+{
+    Type ttype;
+    Type ntype;
+    Long top  = (Long)VMPop32(ttype);
+    Long next = (Long)VMPop32(ntype);
+    VMPush32((next >= top) ? 1 : 0, Type::eBool);
+    return true;
+}
+
+
+Bool longToFloat(Byte iOverload)
+{
+    Type ttype;
+    Long top  = (Long)VMPop32(ttype);
+    Float value = top;
+    VMPushFloat(value);
+    //printf("\nlongToFloat: %d -> %g", top, value);
+    return true;
+}
+Bool uintToLong(Byte iOverload)
+{
+    // assumptions:
+    // - msb of type  is zero
+    // - msw of value is zero
+    Memory_WriteByte(typeStack  + sp - 2, Type::eLong);
+    return true;
+}
+Bool longToUInt(Byte iOverload)
+{
+    Type ttype;
+    UInt32 top  = VMPop32(ttype);
+    VMPush((top & 0xFFFF), Type::eUInt);
+    //printf("\nlongToUInt: 0x%08X -> 0x%04X", top, top & 0xFFFF);
+    return true;
+}
+Bool screenPrintLn(Byte iOverload)
+{
+    // TODO HRScreen_PrintLn();
+    return true;
+}
+Bool screenPrint(Byte iOverload)
+{
+    if (iOverload == 0)
+    {
+        UInt bc = VMPop();
+        UInt fc = VMPop();
+        UInt ch = VMPop();
+        // TODO HRScreen_Print(Char(ch));
+    }
+    else if (iOverload == 1)
+    {
+        UInt bc  = VMPop();
+        UInt fc  = VMPop();
+        UInt str = VMPop();
+        UInt length = HRString_GetLength(str);;
+        for (UInt i = 0; i < length; i++)
+        {
+            Char ch = HRString_GetChar(str, i);
+            // TODO HRScreen_Print(ch);
+        }
+        GC_Release(str);
+    }
+    return true;
+}
 
 void SysCalls_PopulateJumpTable()
 {
@@ -214,16 +546,57 @@ void SysCalls_PopulateJumpTable()
     {
         syscallJumps[i] = undefinedSys;
     }
-    syscallJumps[SysCall::eSerialIsAvailableGet] = serialIsAvailableGet;
-    syscallJumps[SysCall::eSerialReadChar]       = serialReadChar;
-    syscallJumps[SysCall::eSerialWriteChar]      = serialWriteChar;
+    syscallJumps[SysCall::eSerialIsAvailableGet]  = serialIsAvailableGet;
+    syscallJumps[SysCall::eSerialReadChar]        = serialReadChar;
+    syscallJumps[SysCall::eSerialWriteChar]       = serialWriteChar;
     
-    syscallJumps[SysCall::eTimeDelay] = timeDelay;
+    syscallJumps[SysCall::eTimeDelay]             = timeDelay;
+    syscallJumps[SysCall::eTimeMillis]            = timeMillis;
+    
+    syscallJumps[SysCall::eStringNew]             = stringNew;
+    syscallJumps[SysCall::eStringNewFromConstant] = stringNewFromConstant;
+    syscallJumps[SysCall::eStringAppend]          = stringAppend;
+    syscallJumps[SysCall::eStringInsertChar]      = stringInsertChar;
+    syscallJumps[SysCall::eStringLengthGet]       = stringLengthGet;
+    syscallJumps[SysCall::eStringGetChar]         = stringGetChar;
+    
+    syscallJumps[SysCall::eLongNew]               = longNew;
+    syscallJumps[SysCall::eLongAdd]               = longAdd;
+    syscallJumps[SysCall::eLongSub]               = longSub;
+    syscallJumps[SysCall::eLongMul]               = longMul;
+    syscallJumps[SysCall::eLongDiv]               = longDiv;
+    syscallJumps[SysCall::eLongMod]               = longMod;
+    
+    syscallJumps[SysCall::eLongEQ]                = longEQ;
+    syscallJumps[SysCall::eLongLT]                = longLT;
+    syscallJumps[SysCall::eLongLE]                = longLE;
+    syscallJumps[SysCall::eLongGT]                = longGT;
+    syscallJumps[SysCall::eLongGE]                = longGE;
+    
+    
+    syscallJumps[SysCall::eFloatNew]              = floatNew;
+    syscallJumps[SysCall::eFloatNewFromConstant]  = floatNewFromConstant;
+    
+    syscallJumps[SysCall::eFloatAdd]              = floatAdd;
+    syscallJumps[SysCall::eFloatSub]              = floatSub;
+    syscallJumps[SysCall::eFloatMul]              = floatMul;
+    syscallJumps[SysCall::eFloatDiv]              = floatDiv;
+    
+    syscallJumps[SysCall::eLongToFloat]           = longToFloat;
+    syscallJumps[SysCall::eUIntToLong]            = uintToLong;
+    syscallJumps[SysCall::eLongToUInt]            = longToUInt;
+    syscallJumps[SysCall::eFloatToString]         = floatToString;
+    
+    syscallJumps[SysCall::eScreenPrint]           = screenPrint;
+    syscallJumps[SysCall::eScreenPrintLn]         = screenPrintLn;
+    
     // TODO
 }
 
 Bool SysCall(Byte iSysCall, Byte iOverload)
 {
+    //printf("\nSysCall: 0x%04X 0x%02X 0x%02X", GetPC()-1, iSysCall, iOverload);
     return syscallJumps[iSysCall](iOverload);
 }
+
 

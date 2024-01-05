@@ -1,7 +1,7 @@
 #ifndef HOPPERPLATFORM_H
 #define HOPPERPLATFORM_H
 
-#define CHECKED
+//#define CHECKED
 
 const bool loadAuto = true; // set this to false if you are booting into a bad flashed Hopper program
 
@@ -25,6 +25,8 @@ typedef  unsigned char Char;
 typedef       uint16_t UInt;
 typedef       uint32_t UInt32;
 typedef        int16_t Int;
+typedef        int32_t Long;
+typedef        float   Float;
 typedef           bool Bool;
 
 enum Type {
@@ -63,33 +65,63 @@ enum HopperFlags {
 
 void SetError(Byte error, UInt context);
 
-Byte Memory_ReadCodeByte(UInt address);
+
+extern UInt bp;
+extern UInt pc;
+extern UInt sp;
+extern UInt csp;
+extern Bool cnp;
+
+extern UInt valueStack;
+extern UInt typeStack;
+extern UInt constAddress;
+
+extern Byte * dataMemoryBlock;
+extern Byte * codeMemoryBlock;
+
+inline UInt GetBP()  { return bp; }
+inline UInt GetPC()  { return pc; }
+inline UInt GetSP()  { return sp; }
+inline UInt GetCSP() { return csp; }
+inline Bool GetCNP() { return cnp; }
+
+inline void SetPC(UInt newpc)   { pc = newpc; }
+inline void SetBP(UInt newbp)   { bp = newbp; }
+inline void SetCNP(Bool newcnp) { cnp = newcnp; }
+
+inline UInt GetValueStack()      { return valueStack; }
+inline UInt GetTypeStack()       { return typeStack;  }
+inline UInt GetConstantAddress() { return constAddress; }
+
+inline Byte Memory_ReadCodeByte(UInt address) { return codeMemoryBlock[address]; }
+inline UInt Memory_ReadCodeWord(UInt address) { return codeMemoryBlock[address] + (codeMemoryBlock[address+1] << 8); }
+
 void Memory_WriteCodeByte(UInt address, Byte value);
 
-Byte Memory_ReadByte(UInt address);
-void Memory_WriteByte(UInt address, Byte value);
-UInt Memory_ReadWord(UInt address);
-void Memory_WriteWord(UInt address, UInt value);
+inline Byte Memory_ReadByte(UInt address)              { return dataMemoryBlock[address]; }
+inline void Memory_WriteByte(UInt address, Byte value) { dataMemoryBlock[address] = value; }
+inline UInt Memory_ReadWord(UInt address)              { return dataMemoryBlock[address] + (dataMemoryBlock[address+1] << 8); }
+inline void Memory_WriteWord(UInt address, UInt value) { dataMemoryBlock[address]   = value & 0xFF; dataMemoryBlock[address+1] = value >> 8; }
 
-UInt GetPC();
-void SetPC(UInt newpc);
-UInt GetSP();
-UInt GetBP();
-void SetBP(UInt newbp);
-UInt GetCSP();
-
-UInt GetValueStack();
-UInt GetTypeStack();
-
-UInt VMReadWordOperand();
-Byte VMReadByteOperand();
-Int  VMReadWordOffsetOperand();
-Int  VMReadByteOffsetOperand();
+inline UInt VMReadWordOperand()       { UInt operand = codeMemoryBlock[pc] + (codeMemoryBlock[pc+1] << 8); pc += 2; return operand; }
+inline Byte VMReadByteOperand()       { Byte operand = codeMemoryBlock[pc]; pc++; return operand; }
+inline Int  VMReadWordOffsetOperand() { Int offset = (Int)(codeMemoryBlock[pc] + (codeMemoryBlock[pc+1] << 8)); pc += 2; return offset; }
+inline Int  VMReadByteOffsetOperand() { Int offset = (Int)(codeMemoryBlock[pc]); pc++; if (offset > 0x7F) { offset = offset - 0x0100; } return offset; }
 
 void VMPush(UInt word, Type type);
-void VMPush(UInt32 word, Type type);
+void VMPush32(UInt32 word, Type type);
 UInt VMPop();
+Int  VMPopInt();
 UInt VMPop(Type & type);
+UInt VMGet(UInt address, Type & type);
+UInt32 VMGet32(UInt address, Type & type);
+void VMPut  (UInt address, UInt value, Type type);
+void VMPut32(UInt address, UInt32 value, Type type);
+
+Float VMPopFloat();
+void  VMPushFloat(Float f);
+
+UInt32 VMPop32(Type & type);
 void VMPushCS(UInt word);
 UInt VMPopCS();
 

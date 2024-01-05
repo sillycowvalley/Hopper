@@ -1,8 +1,8 @@
 program FiboUInt
 {
-#define TINYHOPPER
+//#define TINYHOPPER
 #define PORTABLE
-//#define SERIALCONSOLE
+#define SERIALCONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
     
@@ -33,6 +33,6 @@ program FiboUInt
         
     {
         FiboDelegate fiboDelegate = Fibo;
-        Benchmark("Fibo", fiboDelegate, 24, 10); // Fibo(24) = 46368
+        Benchmark("Fibo", fiboDelegate, 24, 5); // Fibo(24) = 46368
     }
 }

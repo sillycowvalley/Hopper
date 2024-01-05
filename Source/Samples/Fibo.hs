@@ -29,6 +29,6 @@ program Fibo
         
     {
         FiboDelegate fiboDelegate = Fibo;
-        Benchmark("Fibo", fiboDelegate, 24, 1); // Fibo(24) = 46368
+        Benchmark("Fibo", fiboDelegate, 24, 5); // Fibo(24) = 46368
     }
 }
