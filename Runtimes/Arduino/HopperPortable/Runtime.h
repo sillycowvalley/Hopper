@@ -280,6 +280,8 @@ enum SysCall {
     eWiFiConnect = 0x00EB,
     eFloatToUInt = 0x00EC,
     eFloatToLong = 0x00ED,
+    eLongAddB = 0x00EE,
+    eLongSubB = 0x00EF,
 };
 
 enum Type {
@@ -788,6 +790,8 @@ Byte HRLong_GetByte(UInt ichunk, UInt i);
 UInt HRLong_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3);
 UInt HRLong_ToUInt(UInt _this);
 UInt HRLong_LongNegate(UInt top);
+UInt HRLong_LongAddB(UInt next, UInt top);
+UInt HRLong_LongSubB(UInt next, UInt top);
 UInt HRLong_New();
 UInt HRLong_Clone(UInt original);
 UInt HRFloat_NewFromConstant(UInt location);

@@ -2490,6 +2490,46 @@ unit HopperVM
                 GC.Release(top);
                 GC.Release(next);
             }
+            case SysCall.LongAddB:
+            {
+                Type ttype;
+                uint top  = Pop(ref ttype);
+                Type ntype;
+                uint next = Pop(ref ntype);
+#ifdef CHECKED
+                if (ntype != Type.Long)
+                {
+                    ErrorDump(6);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                uint result;
+                Type rtype = Type.Long;
+                
+                result = HRLong.LongAddB(next, top);
+                Push(result, rtype);        
+                GC.Release(next);
+            }
+            case SysCall.LongSubB:
+            {
+                Type ttype;
+                uint top  = Pop(ref ttype);
+                Type ntype;
+                uint next = Pop(ref ntype);
+#ifdef CHECKED
+                if (ntype != Type.Long)
+                {
+                    ErrorDump(6);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                uint result;
+                Type rtype = Type.Long;
+                
+                result = HRLong.LongSubB(next, top);
+                Push(result, rtype);        
+                GC.Release(next);
+            }
             
             case SysCall.FloatAdd:
             case SysCall.FloatSub:
@@ -3055,8 +3095,6 @@ unit HopperVM
     
     bool ExecuteOpCode()
     {
-        bool doNext;
-        
         ServiceInterrupts();
         
         //WriteLn(); WriteHex(pc);
@@ -3076,12 +3114,11 @@ unit HopperVM
 #endif
 #endif
 #ifdef SERIALCONSOLE // on MCU
-        doNext = External.FunctionCall(jumpTable, byte(opCode));
+        return External.FunctionCall(jumpTable, byte(opCode));
 #else
         InstructionDelegate instructionDelegate = InstructionDelegate(jump);
-        doNext = instructionDelegate();
+        return instructionDelegate();
 #endif
-        return doNext;
     }
     
     ExecuteWarp()
@@ -3089,7 +3126,7 @@ unit HopperVM
 #ifdef CHECKED
         uint messagePC;
 #endif
-        bool doNext;
+        
         uint watchDog = 2500;
         loop
         {
@@ -3112,13 +3149,6 @@ unit HopperVM
             }
 #endif
 #endif
-
-#ifdef SERIALCONSOLE // on MCU
-            doNext = External.FunctionCall(jumpTable, bopCode);
-#else
-            InstructionDelegate instructionDelegate = InstructionDelegate(jump);
-            doNext = instructionDelegate();
-#endif
             watchDog--;
             if (watchDog == 0)
             {
@@ -3130,7 +3160,14 @@ unit HopperVM
                     break;
                 }
             }
-            if (doNext) { continue; }
+            
+#ifdef SERIALCONSOLE // on MCU
+            if (External.FunctionCall(jumpTable, bopCode)) { continue; }
+#else
+            InstructionDelegate instructionDelegate = InstructionDelegate(jump);
+            if (instructionDelegate()) { continue; }
+#endif
+            
             if (Error != 0)
             {
 #ifndef SERIALCONSOLE                

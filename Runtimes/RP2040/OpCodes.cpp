@@ -19,22 +19,34 @@ bool nop()
 
 bool pushI()
 {
-    VMPush(VMReadWordOperand(), Type::eUInt);
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    *top = VMReadWordOperand();
+    dataMemoryBlock[typeStack + sp] = Type::eUInt;
+    sp += 2;
     return true;
 }
 bool pushIB()
 {
-    VMPush(codeMemoryBlock[pc], Type::eUInt); pc++;
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    *top = codeMemoryBlock[pc]; pc++;
+    dataMemoryBlock[typeStack + sp] = Type::eByte;
+    sp += 2;
     return true;
 }
 bool pushI0()
 {
-    VMPush(0, Type::eUInt);
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    *top = 0;
+    dataMemoryBlock[typeStack + sp] = Type::eByte;
+    sp += 2;
     return true;
 }
 bool pushI1()
 {
-    VMPush(1, Type::eUInt);
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    *top = 1;
+    dataMemoryBlock[typeStack + sp] = Type::eByte;
+    sp += 2;
     return true;
 }
 bool pushIM1()
@@ -87,20 +99,18 @@ Bool pushRelB()
 bool pushLocalShared(Int operand)
 {
     const UInt offset = (UInt)(operand + bp);
-    const Type htype = Type(Memory_ReadByte(typeStack + offset));
-    const UInt stackAddress = valueStack + (offset << 1);
-    if ((htype == Type::eLong) || (htype == Type::eFloat))
+    const Type htype = (Type)dataMemoryBlock[typeStack + offset];
+    if (IsReferenceType(htype))
     {
-        VMPush32(Memory_ReadWord(stackAddress) + (Memory_ReadWord(stackAddress + 2) << 16), htype);
+        const UInt value = Memory_ReadWord(valueStack + (offset << 1));
+        VMPush(value, htype);
+        GC_AddReference(value);
     }
     else
     {
-        const UInt value = Memory_ReadWord(stackAddress);
-        VMPush(value, htype);
-        if (IsReferenceType(htype))
-        {
-            GC_AddReference(value);
-        }
+        memcpy(&dataMemoryBlock[valueStack + (sp << 1)], &dataMemoryBlock[valueStack + (offset << 1)], 4);
+        dataMemoryBlock[typeStack + sp] = htype;
+        sp += 2;
     }
     return true;
 }
@@ -111,7 +121,8 @@ bool pushLocal()
 }
 bool pushLocalB()
 {
-    return pushLocalShared(VMReadByteOffsetOperand());
+    Int offset = (Int)(codeMemoryBlock[pc]); pc++; if (offset > 0x7F) { offset = offset - 0x0100; }
+    return pushLocalShared(offset);
 }
 bool pushLocalBB()
 {
@@ -178,7 +189,7 @@ bool popLocalShared(Int operand)
     }
     Int offset = operand + GetBP();
     UInt stackAddress = GetValueStack();
-    Type htype = Type(Memory_ReadWord(UInt(GetTypeStack() + offset)));
+    Type htype = (Type)Memory_ReadWord(UInt(GetTypeStack() + offset));
     if ((htype == Type::eLong) || (htype == Type::eFloat))
     {
         UInt32 value = VMPop32(htype);
@@ -283,7 +294,7 @@ bool popRelB()
 bool pushGlobalShared(UInt offset)
 {
     UInt stackAddress = GetValueStack();
-    Type htype = Type(Memory_ReadWord(GetTypeStack() + offset));
+    Type htype = (Type)Memory_ReadWord(GetTypeStack() + offset);
     if ((htype == Type::eLong) || (htype == Type::eFloat))
     {
         UInt32 value = Memory_ReadWord(stackAddress + (offset * 2)) + (Memory_ReadWord(stackAddress + (offset * 2) + 2) << 16);
@@ -317,14 +328,17 @@ bool copyNextPop()
 
 bool enter()
 {
-    VMPushCS(GetBP());
-    SetBP(GetSP());
+    UInt * slot = (UInt*)&dataMemoryBlock[callStack + csp];
+    *slot = bp;
+    csp += 2;
+    
+    bp = sp;
     return true;
 }
 bool enterB()
 {
-    VMPushCS(GetBP());
-    SetBP(GetSP());
+    VMPushCS(bp);
+    bp = sp;
     UInt zeros = codeMemoryBlock[pc]; pc++;
     for (UInt i = 0x00; i < zeros; i++)
     {
@@ -351,16 +365,18 @@ Bool callRel()
 {
     UInt methodIndex = VMPop();
     UInt methodAddress = VMLookupMethod(methodIndex);
-    VMPushCS(GetPC());
-    SetPC(methodAddress);
+    VMPushCS(pc);
+    pc = methodAddress;
     return true;
 }
 
 Bool callI()
 {
-    UInt methodAddress = VMReadWordOperand();
-    VMPushCS(GetPC());
-    SetPC(methodAddress);
+    UInt * slot = (UInt*)&dataMemoryBlock[callStack + csp];
+    *slot = pc+2;
+    csp += 2;
+    
+    pc = codeMemoryBlock[pc] + (codeMemoryBlock[pc+1] << 8);
     return true;
 }
 
@@ -376,15 +392,21 @@ Bool retShared(UInt popBytes)
         }
         popBytes = popBytes - 0x02;
     }
-    SetBP(VMPopCS());
-    if (GetCSP() == 0x00)
+    
+    csp -= 2;
+    UInt * slot = (UInt*)&dataMemoryBlock[callStack + csp];
+    bp = *slot;
+    
+    if (csp == 0)
     {
-        SetPC(0x00);
+        pc = 0;
         return false;
     }
     else
     {
-        SetPC(VMPopCS());
+        csp -= 2;
+        slot = (UInt*)&dataMemoryBlock[callStack + csp];
+        pc = *slot;
     }
     return true;
 }
@@ -402,28 +424,41 @@ Bool ret0()
 }
 Bool retresShared(UInt popBytes)
 {
-    Type rtype = (Type)0;
-    UInt32 value = VMPop32(rtype);
-    while (popBytes != 0x00)
+    sp -= 2;
+    Byte * top = (Byte*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Type rtype = (Type)dataMemoryBlock[typeStack + sp];
+    while (popBytes != 0)
     {
-        Type htype = (Type)0;
-        UInt address = VMPop(htype);
-        if (IsReferenceType(htype))
+        if (IsReferenceType(dataMemoryBlock[typeStack + sp - 2]))
         {
+            UInt address = VMPop();
             GC_Release(address);
+        }
+        else
+        {
+            sp -= 2;
         }
         popBytes -= 2;
     }
-    VMPush32(value, rtype);
-    SetBP(VMPopCS());
-    if (GetCSP() == 0x00)
+    
+    memcpy(&dataMemoryBlock[valueStack + (sp << 1)], top, 4);
+    dataMemoryBlock[typeStack + sp] = rtype;
+    sp += 2;
+    
+    csp -= 2;
+    UInt * slot = (UInt*)&dataMemoryBlock[callStack + csp];
+    bp = *slot;
+    
+    if (csp == 0)
     {
-        SetPC(0x00);
+        pc = 0;
         return false;
     }
     else
     {
-        SetPC(VMPopCS());
+        csp -= 2;
+        UInt * slot = (UInt*)&dataMemoryBlock[callStack + csp];
+        pc = *slot;
     }
     return true;
 }
@@ -439,13 +474,16 @@ Bool retresB()
 Bool decSP()
 {
     UInt popBytes = codeMemoryBlock[pc]; pc++;
-    while (popBytes != 0x00)
+    while (popBytes != 0)
     {
-        Type htype = (Type)0;
-        UInt address = VMPop(htype);
-        if (IsReferenceType(htype))
+        if (IsReferenceType(dataMemoryBlock[typeStack + sp - 2]))
         {
+            UInt address = VMPop();
             GC_Release(address);
+        }
+        else
+        {
+            sp -= 2;
         }
         popBytes -= 2;
     }
@@ -473,31 +511,10 @@ Bool cast()
 {
     // assumptions:
     // - msb of type  is zero
-    Memory_WriteByte(typeStack  + sp - 2, Type(codeMemoryBlock[pc])); pc++;
+    Memory_WriteByte(typeStack  + sp - 2, (Type)codeMemoryBlock[pc]); pc++;
     return true;
 }
 
-bool libCall()
-{
-    Byte iLibCall = codeMemoryBlock[pc]; pc++;
-    return LibCall(iLibCall);
-}
-bool sysCall()
-{
-    Byte iOverload = VMPop();
-    Byte iSysCall  = codeMemoryBlock[pc]; pc++;
-    return SysCall(iSysCall, iOverload);
-}
-bool sysCall0()
-{
-    Byte iSysCall  = codeMemoryBlock[pc]; pc++;
-    return SysCall(iSysCall, 0);
-}
-bool sysCall1()
-{
-    Byte iSysCall  = codeMemoryBlock[pc]; pc++;
-    return SysCall(iSysCall, 1);
-}
 
 bool jz()
 {
@@ -507,7 +524,7 @@ bool jz()
     }
     else
     {
-        SetPC(GetPC() + 0x02);
+        pc += 2;
     }
     return true;
 }
@@ -519,7 +536,7 @@ bool jnz()
     }
     else
     {
-        SetPC(GetPC() + 0x02);
+        pc += 2;
     }
     return true;
 }
@@ -530,25 +547,29 @@ bool jw()
 }
 bool jzb()
 {
-    if (VMPop() == 0x00)
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    if (*top == 0)
     {
         SetPC((UInt)(VMReadByteOffsetOperand() + (Int)(GetPC() - 0x02)));
     }
     else
     {
-        SetPC(GetPC() + 0x01);
+        pc++;
     }
     return true;
 }
 bool jnzb()
 {
-    if (VMPop() != 0x00)
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    if (*top != 0)
     {
         SetPC((UInt)(VMReadByteOffsetOperand() + (Int)(GetPC() - 0x02)));
     }
     else
     {
-        SetPC(GetPC() + 0x01);
+        pc++;
     }
     return true;
 }
@@ -560,134 +581,162 @@ bool jb()
 
 bool eq()
 {
-    UInt top  = VMPop();
-    UInt next = VMPop();
-    VMPush(next == top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next == *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 bool ne()
 {
-    UInt top  = VMPop();
-    UInt next = VMPop();
-    VMPush(next != top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next != *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 bool lt()
 {
-    UInt top  = VMPop();
-    UInt next = VMPop();
-    VMPush(next < top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next < *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 bool le()
 {
-    UInt top  = VMPop();
-    UInt next = VMPop();
-    VMPush(next <= top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next <= *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 bool gt()
 {
-    UInt top  = VMPop();
-    UInt next = VMPop();
-    VMPush(next > top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next > *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 bool ge()
 {
-    UInt top  = VMPop();
-    UInt next = VMPop();
-    VMPush(next >= top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next >= *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 
 bool lti()
 {
-    Int top  = VMPopInt();
-    Int next = VMPopInt();
-    VMPush(next < top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    Int * top  = (Int*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Int * next = (Int*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next < *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 bool lei()
 {
-    Int top  = VMPopInt();
-    Int next = VMPopInt();
-    VMPush(next <= top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    Int * top  = (Int*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Int * next = (Int*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next <= *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 bool gti()
 {
-    Int top  = VMPopInt();
-    Int next = VMPopInt();
-    VMPush(next > top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    Int * top  = (Int*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Int * next = (Int*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next > *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 bool gei()
 {
-    Int top  = VMPopInt();
-    Int next = VMPopInt();
-    VMPush(next >= top ? 1 : 0, Type::eBool);
+    sp -= 2;
+    Int * top  = (Int*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Int * next = (Int*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next >= *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 
 
 bool add()
 {
-    UInt top  = VMPop();
-    UInt next = VMPop();
-    VMPush(next + top, Type::eUInt);
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next + *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
     return true;
 }
 bool sub()
 {
-    UInt top  = VMPop();
-    UInt next = VMPop();
-    VMPush(next - top, Type::eUInt);
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next - *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
     return true;
 }
 bool mul()
 {
-    UInt top  = VMPop();
-    UInt next = VMPop();
-    VMPush(next * top, Type::eUInt);
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next * *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
     return true;
 }
 bool div()
 {
     UInt top  = VMPop();
-    UInt next = VMPop();
     if (top == 0)
     {
         SetError(0x04, (16));
         return false;
     }
-    VMPush(next / top, Type::eUInt);
+    UInt address = valueStack + ((sp-2) << 1);
+    Memory_WriteWord(address, Memory_ReadWord(address) / top);
+    Memory_WriteByte(typeStack  + sp - 2, Type::eUInt);
     return true;
 }
 bool mod()
 {
     UInt top  = VMPop();
-    UInt next = VMPop();
     if (top == 0)
     {
         SetError(0x04, (17));
         return false;
     }
-    VMPush(next % top, Type::eUInt);
+    UInt address = valueStack + ((sp-2) << 1);
+    Memory_WriteWord(address, Memory_ReadWord(address) % top);
+    Memory_WriteByte(typeStack  + sp - 2, Type::eUInt);
     return true;
 }
 bool addB()
 {
-    UInt address = valueStack + ((sp-2) << 1);
-    Memory_WriteWord(address, Memory_ReadWord(address) + codeMemoryBlock[pc]); pc++;
-    Memory_WriteByte(typeStack  + sp - 2, Type::eUInt);
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next += codeMemoryBlock[pc]; pc++;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
     return true;
 }
 bool subB()
 {
-    UInt address = valueStack + ((sp-2) << 1);
-    Memory_WriteWord(address, Memory_ReadWord(address) - codeMemoryBlock[pc]); pc++;
-    Memory_WriteByte(typeStack  + sp - 2, Type::eUInt);
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next -= codeMemoryBlock[pc]; pc++;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
     return true;
 }
 bool incLocalB()
@@ -715,12 +764,16 @@ bool decLocalB()
 
 bool pushIBLE()
 {
-    pushIB();
-    return le();
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next <= codeMemoryBlock[pc]) ? 1 : 0; pc++;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
+    return true;
 }
 bool pushIBEQ()
 {
-    pushIB();
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next == codeMemoryBlock[pc]) ? 1 : 0; pc++;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return eq();
 }
 bool pushILE()
@@ -790,10 +843,10 @@ void OpCodes_PopulateJumpTable()
     opCodeJumps[OpCode::eCALL]     = call;
     opCodeJumps[OpCode::eCALLI]    = callI;
     opCodeJumps[OpCode::eCALLREL]  = callRel;
-    opCodeJumps[OpCode::eLIBCALL]  = libCall;
-    opCodeJumps[OpCode::eSYSCALL]  = sysCall;
-    opCodeJumps[OpCode::eSYSCALL0] = sysCall0;
-    opCodeJumps[OpCode::eSYSCALL1] = sysCall1;
+    opCodeJumps[OpCode::eLIBCALL]  = LibCall;
+    opCodeJumps[OpCode::eSYSCALL]  = SysCall;
+    opCodeJumps[OpCode::eSYSCALL0] = SysCall0;
+    opCodeJumps[OpCode::eSYSCALL1] = SysCall1;
     
     opCodeJumps[OpCode::eRET]      = ret;
     opCodeJumps[OpCode::eRET0]     = ret0;

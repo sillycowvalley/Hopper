@@ -195,5 +195,7 @@ unit SysCalls
         
         FloatToUInt     = 0xEC,
         FloatToLong     = 0xED,
+        LongAddB        = 0xEE,
+        LongSubB        = 0xEF,
     }
 }

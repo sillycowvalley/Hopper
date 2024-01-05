@@ -47,7 +47,7 @@ program Optimize
     }
     bool isTinyHopper;
     bool IsTinyHopper { get { return isTinyHopper; }}
-    
+    bool IsExperimental { get { return experimental; }}
     CheckTarget()
     {
         foreach (var kv in symbols)
@@ -243,7 +243,10 @@ program Optimize
             {
                 modified = true;
             }
-            //GoFishing(methodIndex);
+            if (CodePoints.OptimizeLongAddSub(methodIndex))
+            {
+                modified = true;
+            }
             
             if (Target6502)
             {

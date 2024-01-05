@@ -101,9 +101,8 @@ void LibCalls_PopulateJumpTable()
     // TODO
 }
 
-Bool LibCall(Byte iLibCall)
+bool LibCall()
 {
-    //printf("\nLibCall: 0x%04X 0x%02X", GetPC()-1, iLibCall);
-    return libcallJumps[iLibCall]();
+    return libcallJumps[codeMemoryBlock[pc++]]();
 }
 

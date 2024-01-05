@@ -299,6 +299,9 @@ unit SysCalls
         
         addEntry("Float", "ToUInt");
         addEntry("Float", "ToLong");
+        
+        addEntry("Long", "AddB");
+        addEntry("Long", "SubB");
     }
     
     bool TryParseSysCall(string name, ref byte index)

@@ -364,11 +364,6 @@ UInt GC_New(UInt size, Type htype)
     return address;
 }
 
-Bool IsReferenceType(Type htype)
-{
-    return (Byte(htype) >= 0x0F);
-}
-
 void GC_AddReference(UInt address)
 {
     Byte referenceCount = Memory_ReadByte(address + 0x01);

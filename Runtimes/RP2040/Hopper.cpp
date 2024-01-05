@@ -808,20 +808,9 @@ void ExecuteStepTo()
 
 void ExecuteWarp()
 {
-    Bool doNext = false;
     UInt watchDog = 2500;
     for (;;)
     {
-        // TODO if (Library_ISRExists_Get())
-        //{
-        //    External_ServiceInterrupts();
-        //}
-        
-        OpCode opCode = OpCode(Memory_ReadCodeByte(pc));
-        pc++;
-    
-        doNext = OpCodeCall(opCode);
-        
         watchDog--;
         if (watchDog == 0)
         {
@@ -832,9 +821,18 @@ void ExecuteWarp()
                 break;
             }
         }
-        if (doNext)
+        
+        // TODO if (Library_ISRExists_Get())
+        //{
+        //    External_ServiceInterrupts();
+        //}
+        
+        OpCode opCode = (OpCode)Memory_ReadCodeByte(pc);
+        pc++;
+        
+        if (OpCodeCall(opCode))
         {
-            continue;;
+            continue;
         }
         if (lastError != 0)
         {

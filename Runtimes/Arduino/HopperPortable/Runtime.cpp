@@ -833,7 +833,6 @@ void HopperVM_Initialize(UInt loadedAddress, UInt loadedSize)
 
 void HopperVM_ExecuteWarp()
 {
-    Bool doNext = false;
     UInt watchDog = 0x09C4;
     for (;;)
     {
@@ -844,7 +843,6 @@ void HopperVM_ExecuteWarp()
         Byte bopCode = Memory_ReadCodeByte(HopperVM_pc);
         
         HopperVM_pc++;
-        doNext = External_FunctionCall(HopperVM_jumpTable, bopCode);
         
         watchDog--;
         if (watchDog == 0x00)
@@ -863,7 +861,7 @@ void HopperVM_ExecuteWarp()
                 break;;
             }
         }
-        if (doNext)
+        if (External_FunctionCall(HopperVM_jumpTable, bopCode))
         {
             continue;;
         }
@@ -1125,13 +1123,11 @@ void HopperVM_DiskSetup()
 
 Bool HopperVM_ExecuteOpCode()
 {
-    Bool doNext = false;
     External_ServiceInterrupts();
     HopperVM_opCode = OpCode(Memory_ReadCodeByte(HopperVM_pc));
     
     HopperVM_pc++;
-    doNext = External_FunctionCall(HopperVM_jumpTable, Byte(HopperVM_opCode));
-    return doNext;
+    return External_FunctionCall(HopperVM_jumpTable, Byte(HopperVM_opCode));
 }
 
 UInt HRString_New()
@@ -5090,6 +5086,32 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(next);
         break;
     }
+    case SysCall::eLongAddB:
+    {
+        Type ttype = (Type)0;
+        UInt top = HopperVM_Pop_R(ttype);
+        Type ntype = (Type)0;
+        UInt next = HopperVM_Pop_R(ntype);
+        UInt result = 0;
+        Type rtype = Type::eLong;
+        result = HRLong_LongAddB(next, top);
+        HopperVM_Push(result, rtype);
+        GC_Release(next);
+        break;
+    }
+    case SysCall::eLongSubB:
+    {
+        Type ttype = (Type)0;
+        UInt top = HopperVM_Pop_R(ttype);
+        Type ntype = (Type)0;
+        UInt next = HopperVM_Pop_R(ntype);
+        UInt result = 0;
+        Type rtype = Type::eLong;
+        result = HRLong_LongSubB(next, top);
+        HopperVM_Push(result, rtype);
+        GC_Release(next);
+        break;
+    }
     case SysCall::eFloatAdd:
     case SysCall::eFloatSub:
     case SysCall::eFloatDiv:
@@ -6416,6 +6438,22 @@ UInt HRLong_LongNegate(UInt top)
     UInt zero = HRUInt_ToLong(0x00);
     UInt result = External_LongSub(zero, top);
     GC_Release(zero);
+    return result;
+}
+
+UInt HRLong_LongAddB(UInt next, UInt top)
+{
+    UInt argument = HRUInt_ToLong(top);
+    UInt result = External_LongAdd(next, argument);
+    GC_Release(argument);
+    return result;
+}
+
+UInt HRLong_LongSubB(UInt next, UInt top)
+{
+    UInt argument = HRUInt_ToLong(top);
+    UInt result = External_LongSub(next, argument);
+    GC_Release(argument);
     return result;
 }
 

@@ -446,6 +446,9 @@ namespace HopperNET
         FloatToUInt = 0xEC,
         FloatToLong = 0xED,
 
+        LongAddB = 0xEE,
+        LongSubB = 0xEF,
+
     };
 
     enum LibCall
@@ -5622,6 +5625,32 @@ namespace HopperNET
                         PushLong(next + top);
                     }
                     break;
+                case SysCall.LongSub:
+                    {
+                        Int32 top = PopLong();
+                        Int32 next = PopLong();
+                        PushLong(next - top);
+                    }
+                    break;
+
+                case SysCall.LongAddB:
+                    {
+                        Int32 top = (Int32)Pop();
+                        Int32 next = PopLong();
+                        PushLong(next + top);
+                    }
+                    break;
+                case SysCall.LongSubB:
+                    {
+                        Int32 top  = (Int32)Pop();
+                        Int32 next = PopLong();
+                        PushLong(next - top);
+                    }
+                    break;
+
+
+                    
+
                 case SysCall.LongMul:
                     {
                         Int32 top = PopLong();
@@ -5677,13 +5706,6 @@ namespace HopperNET
                     }
                     break;
 
-                case SysCall.LongSub:
-                    {
-                        Int32 top = PopLong();
-                        Int32 next = PopLong();
-                        PushLong(next - top);
-                    }
-                    break;
                 
                 case SysCall.LongDiv:
                     {

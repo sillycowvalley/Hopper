@@ -13,6 +13,7 @@ unit CodePoints
     
     byte iLongMul;
     byte iLongAdd;
+    byte iLongSub;
     byte iFloatMul;
     byte iFloatAdd;
     byte iUIntToLong;
@@ -20,6 +21,8 @@ unit CodePoints
     byte iLongMulRef;
     byte iLongAddRef;
     byte iLongInc;
+    byte iLongAddB;
+    byte iLongSubB;
     
     byte iStringTrim;
     byte iStringTrimLeft;
@@ -35,6 +38,7 @@ unit CodePoints
     {
         if (!SysCalls.TryParseSysCall("Long.Mul", ref iLongMul)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("Long.Add", ref iLongAdd)) { Die(0x0B); }
+        if (!SysCalls.TryParseSysCall("Long.Sub", ref iLongSub)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("Float.Mul", ref iFloatMul)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("Float.Add", ref iFloatAdd)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("UInt.ToLong", ref iUIntToLong)) { Die(0x0B); }
@@ -42,6 +46,8 @@ unit CodePoints
         if (!SysCalls.TryParseSysCall("Long.MulRef", ref iLongMulRef)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("Long.AddRef", ref iLongAddRef)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("Long.Inc", ref iLongInc)) { Die(0x0B); }
+        if (!SysCalls.TryParseSysCall("Long.AddB", ref iLongAddB)) { Die(0x0B); }
+        if (!SysCalls.TryParseSysCall("Long.SubB", ref iLongSubB)) { Die(0x0B); }
         
         if (!SysCalls.TryParseSysCall("String.Trim", ref iStringTrim)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("String.TrimLeft", ref iStringTrimLeft)) { Die(0x0B); }
@@ -2045,11 +2051,12 @@ unit CodePoints
         } // loop
         return modified;
     }
-    GoFishing(uint methodIndex)
+    bool OptimizeLongAddSub(uint methodIndex)
     {
+        bool modified;
         if (iCodes.Length < 3)
         {
-            return;
+            return false;
         }
         uint iIndex = 2;
         uint hits = 0;
@@ -2062,15 +2069,34 @@ unit CodePoints
             Instruction opCode2 = iCodes[iIndex-2];   
             Instruction opCode1 = iCodes[iIndex-1];   
             Instruction opCode0 = iCodes[iIndex];   
-            if (  ((opCode2 == Instruction.ENTER) || (opCode2 == Instruction.ENTERB))
-               && ((opCode0 == Instruction.RET0) || (opCode0 == Instruction.RETB) || (opCode0 == Instruction.RETRESB))
-               )
+            if ((opCode2 == Instruction.PUSHI1) || (opCode2 == Instruction.PUSHIB))
             {
-                Print(" X " + methodIndex.ToHexString(4) + " ");
-                Print(Instructions.ToString(opCode1));
+                if ((opCode1 == Instruction.SYSCALL0) && (opCode0 == Instruction.SYSCALL0))
+                {
+                    uint operand = 1;
+                    if (opCode2 == Instruction.PUSHIB)
+                    {
+                        operand = iOperands[iIndex-2];
+                    }
+                    if ((iOperands[iIndex-1] == iUIntToLong) && (iOperands[iIndex] == iLongAdd))
+                    {
+                        iOperands.SetItem(iIndex, iLongAddB);
+                        RemoveInstruction(iIndex-1);
+                        modified = true;
+                        continue;
+                    }
+                    if ((iOperands[iIndex-1] == iUIntToLong) && (iOperands[iIndex] == iLongSub))
+                    {
+                        iOperands.SetItem(iIndex, iLongSubB);
+                        RemoveInstruction(iIndex-1);
+                        modified = true;
+                        continue;
+                    }
+                }
             }
             iIndex++;
         } // loop
+        return modified;
     }
     
 }

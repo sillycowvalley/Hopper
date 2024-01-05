@@ -51,6 +51,10 @@ enum Type {
     eListItem = 0x001A,
 };
 
+inline Bool IsReferenceType(Type htype) { return (Byte(htype) >= 0x0F); }
+inline Bool IsReferenceType(Byte htype) { return (htype >= 0x0F); }
+
+
 enum HopperFlags {
     eTraceOn = 0x0001,
     eWarpSpeed = 0x0002,
@@ -72,6 +76,7 @@ extern UInt sp;
 extern UInt csp;
 extern Bool cnp;
 
+extern UInt callStack;
 extern UInt valueStack;
 extern UInt typeStack;
 extern UInt constAddress;
@@ -126,6 +131,11 @@ void VMPushCS(UInt word);
 UInt VMPopCS();
 
 UInt VMLookupMethod(UInt methodIndex);
+
+bool LibCall();
+bool SysCall();
+bool SysCall0();
+bool SysCall1();
 
 #include "HopperMemory.h"
 #include "HopperString.h"

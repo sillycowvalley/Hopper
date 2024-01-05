@@ -73,6 +73,20 @@ unit HRLong
         GC.Release(zero);
         return result;
     }
+    uint LongAddB(uint next, uint top)
+    {
+        uint argument = HRUInt.ToLong(top);
+        uint result = LongAdd(next, argument);
+        GC.Release(argument);
+        return result;
+    }
+    uint LongSubB(uint next, uint top)
+    {
+        uint argument = HRUInt.ToLong(top);
+        uint result = LongSub(next, argument);
+        GC.Release(argument);
+        return result;
+    }
     
     uint ToBytes(uint ichunk)
     {

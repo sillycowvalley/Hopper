@@ -159,6 +159,8 @@ enum SysCall {
     eWiFiConnect = 0x00EB,
     eFloatToUInt = 0x00EC,
     eFloatToLong = 0x00ED,
+    eLongAddB = 0x00EE,
+    eLongSubB = 0x00EF,
 };
 
 bool undefinedSys(Byte iOverload)
@@ -378,32 +380,29 @@ Bool floatDiv(Byte iOverload)
 
 Bool longAdd(Byte iOverload)
 {
-    Type ttype;
-    Type ntype;
-    Long top  = (Long)VMPop32(ttype);
-    Long next = (Long)VMPop32(ntype);
-    VMPush32((UInt32)(next + top), Type::eLong);
-    //printf("\nlongAdd: %d + %d == %d", next, top, next + top);
+    sp -= 2;
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Long * next = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next + *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eLong;
     return true;
 }
 Bool longSub(Byte iOverload)
 {
-    Type ttype;
-    Type ntype;
-    Long top  = (Long)VMPop32(ttype);
-    Long next = (Long)VMPop32(ntype);
-    VMPush32((UInt32)(next - top), Type::eLong);
-    //printf("\nlongSub: %d - %d == %d", next, top, next - top);
+    sp -= 2;
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Long * next = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next - *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eLong;
     return true;
 }
 Bool longMul(Byte iOverload)
 {
-    Type ttype;
-    Type ntype;
-    Long top  = (Long)VMPop32(ttype);
-    Long next = (Long)VMPop32(ntype);
-    VMPush32((UInt32)(next * top), Type::eLong);
-    //printf("\nlongMul: %d * %d == %d", next, top, next * top);
+    sp -= 2;
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Long * next = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next * *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eLong;
     return true;
 }
 Bool longDiv(Byte iOverload)
@@ -438,49 +437,47 @@ Bool longMod(Byte iOverload)
 }
 Bool longEQ(Byte iOverload)
 {
-    Type ttype;
-    Type ntype;
-    Long top  = (Long)VMPop32(ttype);
-    Long next = (Long)VMPop32(ntype);
-    VMPush32((next == top) ? 1 : 0, Type::eBool);
-    //printf("\nlongEQ: %d == %d", next, top);
+    sp -= 2;
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Long * next = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next == *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 Bool longLT(Byte iOverload)
 {
-    Type ttype;
-    Type ntype;
-    Long top  = (Long)VMPop32(ttype);
-    Long next = (Long)VMPop32(ntype);
-    VMPush32((next < top) ? 1 : 0, Type::eBool);
-    //printf("\nlongLT: %d < %d", next, top);
+    sp -= 2;
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Long * next = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next < *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 Bool longLE(Byte iOverload)
 {
-    Type ttype;
-    Type ntype;
-    Long top  = (Long)VMPop32(ttype);
-    Long next = (Long)VMPop32(ntype);
-    VMPush32((next <= top) ? 1 : 0, Type::eBool);
+    sp -= 2;
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Long * next = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next <= *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 Bool longGT(Byte iOverload)
 {
-    Type ttype;
-    Type ntype;
-    Long top  = (Long)VMPop32(ttype);
-    Long next = (Long)VMPop32(ntype);
-    VMPush32((next > top) ? 1 : 0, Type::eBool);
+    sp -= 2;
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Long * next = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next > *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 Bool longGE(Byte iOverload)
 {
-    Type ttype;
-    Type ntype;
-    Long top  = (Long)VMPop32(ttype);
-    Long next = (Long)VMPop32(ntype);
-    VMPush32((next >= top) ? 1 : 0, Type::eBool);
+    sp -= 2;
+    Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Long * next = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = (*next >= *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
     return true;
 }
 
@@ -499,7 +496,7 @@ Bool uintToLong(Byte iOverload)
     // assumptions:
     // - msb of type  is zero
     // - msw of value is zero
-    Memory_WriteByte(typeStack  + sp - 2, Type::eLong);
+    dataMemoryBlock[typeStack  + sp - 2] = Type::eLong;
     return true;
 }
 Bool longToUInt(Byte iOverload)
@@ -567,6 +564,9 @@ void SysCalls_PopulateJumpTable()
     syscallJumps[SysCall::eLongDiv]               = longDiv;
     syscallJumps[SysCall::eLongMod]               = longMod;
     
+    syscallJumps[SysCall::eLongAddB]              = longAdd;
+    syscallJumps[SysCall::eLongSubB]              = longSub;
+    
     syscallJumps[SysCall::eLongEQ]                = longEQ;
     syscallJumps[SysCall::eLongLT]                = longLT;
     syscallJumps[SysCall::eLongLE]                = longLE;
@@ -593,10 +593,17 @@ void SysCalls_PopulateJumpTable()
     // TODO
 }
 
-Bool SysCall(Byte iSysCall, Byte iOverload)
+bool SysCall()
 {
-    //printf("\nSysCall: 0x%04X 0x%02X 0x%02X", GetPC()-1, iSysCall, iOverload);
-    return syscallJumps[iSysCall](iOverload);
+    return syscallJumps[codeMemoryBlock[pc++]](VMPop());
+}
+bool SysCall0()
+{
+    return syscallJumps[codeMemoryBlock[pc++]](0);
+}
+bool SysCall1()
+{
+    return syscallJumps[codeMemoryBlock[pc++]](1);
 }
 
 
