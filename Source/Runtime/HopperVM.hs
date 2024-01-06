@@ -2873,7 +2873,8 @@ unit HopperVM
         {
             IO.WriteLn();
             IO.Write('H');IO.Write(':');
-            IO.WriteHex(HeapStart+HeapSize);IO.Write('-');
+            uint h = HeapStart+HeapSize;
+            IO.WriteHex(h);IO.Write('-');
             IO.WriteHex(HeapStart);IO.Write('=');IO.WriteHex(HeapSize);
         }
         pCurrent = HeapStart;
@@ -2935,7 +2936,8 @@ unit HopperVM
             {
                 IO.WriteLn();
                 Write('A');IO.WriteHex(allocatedSize);Write(':');IO.WriteHex(accountedFor);Write(' ');Write('F');IO.WriteHex(freeSize);
-                Write(' ');Write('L');IO.WriteHex(HeapSize - (allocatedSize + freeSize));
+                uint fl = HeapSize - (allocatedSize + freeSize);
+                Write(' ');Write('L');IO.WriteHex(fl);
             }
         }
     }
@@ -3015,7 +3017,6 @@ unit HopperVM
                 } 
             }
             IO.WriteLn();
-            
         }
     }  
     

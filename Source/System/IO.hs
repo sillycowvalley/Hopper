@@ -93,7 +93,6 @@ unit IO
     }
     WriteInt(int this)
     {
-        uint uthis;
         if (this < 0)
         {
             Write('-');

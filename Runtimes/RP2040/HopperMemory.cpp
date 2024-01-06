@@ -370,3 +370,60 @@ void GC_AddReference(UInt address)
     referenceCount++;
     Memory_WriteByte(address + 0x01, referenceCount);
 }
+
+void GC_Dump(UInt address)
+{
+    GC_Dump(address, 0);
+}
+
+void GC_Dump(UInt address, UInt indent)
+{
+    if (indent > 0)
+    {
+        for (UInt i = 0; i < indent; i++)
+        {
+            putchar(' ');
+        }
+        indent = indent + 2;
+    }
+    Type htype = Type(Memory_ReadByte(address));
+    switch (htype)
+    {
+        case Type::eString:
+        {
+            HRString_Dump(address, indent);
+            break;
+        }
+        /* TODO
+        case Type::eArray:
+        {
+            HRArray_Dump(address, indent);
+            break;
+        }
+        case Type::eList:
+        {
+            HRList_Dump(address, indent);
+            break;
+        }
+        case Type::ePair:
+        {
+            HRPair_Dump(address, indent);
+            break;
+        }
+        case Type::eVariant:
+        {
+            HRVariant_Dump(address, indent);
+            break;
+        }
+        case Type::eDictionary:
+        {
+            HRDictionary_Dump(address, indent);
+            break;
+        }
+        */
+        default:
+        {
+            break;
+        }
+    } // switch
+}

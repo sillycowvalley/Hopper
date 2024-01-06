@@ -422,6 +422,13 @@ Bool ret0()
 {
     return retShared(0);
 }
+Bool retfast()
+{
+    csp -= 2;
+    UInt * slot = (UInt*)&dataMemoryBlock[callStack + csp];
+    pc = *slot;
+    return true;
+}
 Bool retresShared(UInt popBytes)
 {
     sp -= 2;
@@ -701,30 +708,89 @@ bool mul()
 }
 bool div()
 {
-    UInt top  = VMPop();
-    if (top == 0)
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    if (*top == 0)
     {
         SetError(0x04, (16));
         return false;
     }
-    UInt address = valueStack + ((sp-2) << 1);
-    Memory_WriteWord(address, Memory_ReadWord(address) / top);
-    Memory_WriteByte(typeStack  + sp - 2, Type::eUInt);
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next / *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
     return true;
 }
 bool mod()
 {
-    UInt top  = VMPop();
-    if (top == 0)
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    if (*top == 0)
     {
         SetError(0x04, (17));
         return false;
     }
-    UInt address = valueStack + ((sp-2) << 1);
-    Memory_WriteWord(address, Memory_ReadWord(address) % top);
-    Memory_WriteByte(typeStack  + sp - 2, Type::eUInt);
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next % *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
     return true;
 }
+
+bool addi()
+{
+    sp -= 2;
+    Int * top  = (Int*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Int * next = (Int*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next + *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eInt;
+    return true;
+}
+bool subi()
+{
+    sp -= 2;
+    Int * top  = (Int*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Int * next = (Int*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next - *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eInt;
+    return true;
+}
+bool muli()
+{
+    sp -= 2;
+    Int * top  = (Int*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Int * next = (Int*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next * *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eInt;
+    return true;
+}
+bool divi()
+{
+    sp -= 2;
+    Int * top  = (Int*)&dataMemoryBlock[valueStack + (sp << 1)];
+    if (*top == 0)
+    {
+        SetError(0x04, (16));
+        return false;
+    }
+    Int * next = (Int*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next / *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eInt;
+    return true;
+}
+bool modi()
+{
+    sp -= 2;
+    Int * top  = (Int*)&dataMemoryBlock[valueStack + (sp << 1)];
+    if (*top == 0)
+    {
+        SetError(0x04, (17));
+        return false;
+    }
+    Int * next = (Int*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next % *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eInt;
+    return true;
+}
+
 bool addB()
 {
     UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
@@ -737,6 +803,15 @@ bool subB()
     UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
     *next -= codeMemoryBlock[pc]; pc++;
     dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
+    return true;
+}
+bool incLocalBB()
+{
+    UInt offset0 = bp + VMReadByteOffsetOperand();
+    UInt offset1 = bp + VMReadByteOffsetOperand();
+    UInt * address0 = (UInt*)&dataMemoryBlock[valueStack + (offset0 << 1)];
+    UInt * address1 = (UInt*)&dataMemoryBlock[valueStack + (offset1 << 1)];
+    *address0 += *address1;
     return true;
 }
 bool incLocalB()
@@ -853,6 +928,7 @@ void OpCodes_PopulateJumpTable()
     opCodeJumps[OpCode::eRETB]     = retB;
     opCodeJumps[OpCode::eRETRES]   = retres;
     opCodeJumps[OpCode::eRETRESB]  = retresB;
+    opCodeJumps[OpCode::eRETFAST]  = retfast;
     
     opCodeJumps[OpCode::eJZ]   = jz;
     opCodeJumps[OpCode::eJNZ]  = jnz;
@@ -878,6 +954,12 @@ void OpCodes_PopulateJumpTable()
     opCodeJumps[OpCode::eDIV]  = div;
     opCodeJumps[OpCode::eMOD]  = mod;
     
+    opCodeJumps[OpCode::eADDI]  = addi;
+    opCodeJumps[OpCode::eSUBI]  = subi;
+    opCodeJumps[OpCode::eMULI]  = muli;
+    opCodeJumps[OpCode::eDIVI]  = divi;
+    opCodeJumps[OpCode::eMODI]  = modi;
+    
     opCodeJumps[OpCode::ePUSHILE]  = pushILE;
     opCodeJumps[OpCode::ePUSHILT]  = pushILT;
     opCodeJumps[OpCode::ePUSHILEI] = pushILEI;
@@ -889,6 +971,7 @@ void OpCodes_PopulateJumpTable()
     
     opCodeJumps[OpCode::eINCLOCALB]  = incLocalB;
     opCodeJumps[OpCode::eDECLOCALB]  = decLocalB;
+    opCodeJumps[OpCode::eINCLOCALBB] = incLocalBB;
     
     // TODO
 }

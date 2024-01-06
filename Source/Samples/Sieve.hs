@@ -1,12 +1,10 @@
 program Sieve
 {
-    uses "/Source/System/String"
-    uses "/Source/System/UInt"
-    uses "/Source/System/Float"
-    uses "/Source/System/Long"
-    uses "/Source/System/Screen"
-    uses "/Source/System/Keyboard"
-    uses "/Source/System/Time"
+//#define TINYHOPPER    
+#define PORTABLE
+#define SERIALCONSOLE
+    uses "/Source/System/System"
+    uses "/Source/System/IO"
     
     const uint sizepl = 8191;
     bool[sizepl] flagsGlobal;
@@ -19,11 +17,11 @@ program Sieve
         uint iter;
 
         IO.Clear();
-        IO.WriteLn("1 iterations");
+        IO.WriteLn("10 iterations");
 
         long start  = Millis;
         
-        for (iter = 1; iter <= 1; iter ++)
+        for (iter = 1; iter <= 10; iter ++)
         {
             count=0 ; 
             for (i = 0; i < sizepl; i++)
@@ -48,7 +46,7 @@ program Sieve
         IO.WriteLn("Done.");
         IO.WriteLn(count.ToString() + " primes");
 
-        float ms = ((Millis - start) / 100.0); 
+        float ms = ((Millis - start) / 10.0); 
         IO.WriteLn(ms.ToString() + " " + " ms");
     }
 }

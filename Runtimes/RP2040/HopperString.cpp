@@ -485,3 +485,21 @@ UInt HRString_TrimLeft(UInt _this)
     return copy;
 }
 
+void HRString_Dump(UInt address, UInt indent)
+{
+    for (UInt i = 0; i < indent; i++)
+    {
+        putchar(' ');
+    }
+    putchar('\'');
+    UInt length = Memory_ReadWord(address + 2);
+    if (length > 40)
+    {
+        length = 40;
+    };
+    for (UInt i = 0; i < length; i++)
+    {
+        putchar((Char)Memory_ReadByte(address + 4 + i));
+    }
+    putchar('\'');
+}

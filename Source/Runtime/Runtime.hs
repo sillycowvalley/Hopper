@@ -968,6 +968,18 @@ program Runtime
                                     WaitForEnter();
                                     HopperVM.Restart();
                                 }
+                                case 'V':
+                                {
+                                    WaitForEnter();
+                                    HopperVM.DumpStack(20);
+                                    Serial.WriteChar(char(slash)); // confirm handing back control
+                                }
+                                case 'H':
+                                {
+                                    WaitForEnter();
+                                    HopperVM.DumpHeap(true, 0);
+                                    Serial.WriteChar(char(slash)); // confirm handing back control
+                                }
                             } // switch
                         } // loaded
                     } // default

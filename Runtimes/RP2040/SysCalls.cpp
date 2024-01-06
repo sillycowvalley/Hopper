@@ -173,10 +173,10 @@ bool undefinedSys(Byte iOverload)
 Bool serialWriteChar(Byte iOverload)
 {
     Char value = (Char)VMPop();
-    if (value == (Char)0x0D)
-    {
-        value = (Char)0x0A;
-    }
+    //if (value == (Char)0x0D)
+    //{
+    //    value = (Char)0x0A;
+    //}
     putchar(value);
     return true;
 }
@@ -537,6 +537,43 @@ Bool screenPrint(Byte iOverload)
     return true;
 }
 
+Bool arrayNew(Byte iOverload)
+{
+    Type htype = Type(VMPop());
+    UInt count = VMPop();
+    UInt address = HRArray_New(htype, count);
+    VMPush(address, Type::eArray);
+    return true;
+}
+Bool arrayCountGet(Byte iOverload)
+{
+    UInt _this = VMPop();
+    UInt length = HRArray_GetCount(_this);
+    GC_Release(_this);
+    VMPush(length, Type::eUInt);
+    return true;
+}
+Bool arrayGetItem(Byte iOverload)
+{
+    UInt index = VMPop();
+    UInt _this = VMPop();
+    Type etype = (Type)0;
+    UInt item = HRArray_GetItem(_this, index, etype);
+    GC_Release(_this);
+    VMPush(item, etype);
+    return true;
+}
+Bool arraySetItem(Byte iOverload)
+{
+    UInt item  = VMPop();
+    UInt index = VMPop();
+    UInt _this = VMPop();
+    HRArray_SetItem(_this, index, item);
+    GC_Release(_this);
+    return true;
+}
+
+
 void SysCalls_PopulateJumpTable()
 {
     for (UInt i = 0; i < 256; i++)
@@ -556,6 +593,11 @@ void SysCalls_PopulateJumpTable()
     syscallJumps[SysCall::eStringInsertChar]      = stringInsertChar;
     syscallJumps[SysCall::eStringLengthGet]       = stringLengthGet;
     syscallJumps[SysCall::eStringGetChar]         = stringGetChar;
+    
+    syscallJumps[SysCall::eArrayNew]              = arrayNew;
+    syscallJumps[SysCall::eArrayCountGet]         = arrayCountGet;
+    syscallJumps[SysCall::eArrayGetItem]          = arrayGetItem;
+    syscallJumps[SysCall::eArraySetItem]          = arraySetItem;
     
     syscallJumps[SysCall::eLongNew]               = longNew;
     syscallJumps[SysCall::eLongAdd]               = longAdd;
@@ -595,14 +637,17 @@ void SysCalls_PopulateJumpTable()
 
 bool SysCall()
 {
+    //printf("\nSysCall: 0x%04X 0x%02X", GetPC()-1, codeMemoryBlock[pc]);
     return syscallJumps[codeMemoryBlock[pc++]](VMPop());
 }
 bool SysCall0()
 {
+    //printf("\nSysCall0: 0x%04X 0x%02X", GetPC()-1, codeMemoryBlock[pc]);
     return syscallJumps[codeMemoryBlock[pc++]](0);
 }
 bool SysCall1()
 {
+    //printf("\nSysCall1: 0x%04X 0x%02X", GetPC()-1, codeMemoryBlock[pc]);
     return syscallJumps[codeMemoryBlock[pc++]](1);
 }
 

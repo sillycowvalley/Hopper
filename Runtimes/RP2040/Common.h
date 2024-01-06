@@ -139,6 +139,7 @@ bool SysCall1();
 
 #include "HopperMemory.h"
 #include "HopperString.h"
+#include "HopperArray.h"
 #include "OpCodes.h"
 
 #endif // HOPPERPLATFORM_H

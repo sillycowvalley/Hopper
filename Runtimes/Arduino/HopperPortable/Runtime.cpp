@@ -294,6 +294,20 @@ void Runtime_MCU()
                         HopperVM_Restart();
                         break;
                     }
+                    case 'V':
+                    {
+                        Runtime_WaitForEnter();
+                        HopperVM_DumpStack(0x14);
+                        Serial_WriteChar(Char(92));
+                        break;
+                    }
+                    case 'H':
+                    {
+                        Runtime_WaitForEnter();
+                        HopperVM_DumpHeap(true, 0x00);
+                        Serial_WriteChar(Char(92));
+                        break;
+                    }
                     } // switch
                 }
                 break;
@@ -1015,6 +1029,241 @@ void HopperVM_ExecuteStepTo()
     }
 }
 
+void HopperVM_DumpStack(UInt limit)
+{
+    IO_WriteLn();
+    limit = limit * 0x02;;
+    for (UInt s = 0x00; s < HopperVM_sp; s = s + 0x02)
+    {
+        if (HopperVM_sp - s > limit)
+        {
+            continue;;
+        }
+        if (s == HopperVM_bp)
+        {
+            IO_Write('B');
+            IO_Write('P');
+        }
+        else
+        {
+            IO_Write(' ');
+            IO_Write(' ');
+        }
+        IO_Write(' ');
+        IO_Write(' ');
+        UInt value = Memory_ReadWord(HopperVM_valueStack + s);
+        UInt address = HopperVM_valueStack + s;
+        Byte htype = Byte(Memory_ReadWord(HopperVM_typeStack + s));
+        IO_WriteHex(s);
+        IO_Write(' ');
+        IO_WriteHex(address);
+        IO_Write(' ');
+        IO_WriteHex(value);
+        IO_Write(':');
+        IO_WriteHex(htype);
+        if (Types_IsReferenceType(Type(htype)))
+        {
+            Byte count = Byte(Memory_ReadByte(value + 0x01));
+            IO_Write(' ');
+            IO_WriteHex(count);
+            IO_Write(' ');
+            GC_Dump(value);
+        }
+        else
+        {
+            switch (Type(htype))
+            {
+            case Type::eByte:
+            case Type::eUInt:
+            {
+                IO_Write(' ');
+                IO_WriteUInt(value);
+                break;
+            }
+            case Type::eBool:
+            {
+                IO_Write(' ');
+                IO_Write((((value != 0x00)) ? ('t') : ('f')));
+                break;
+            }
+            case Type::eChar:
+            {
+                IO_Write(Char(0x27));
+                IO_Write(Char(value));
+                IO_Write(Char(0x27));
+                break;
+            }
+            case Type::eInt:
+            {
+                IO_Write(' ');
+                Int iv = External_UIntToInt(value);
+                IO_WriteInt(iv);
+                break;
+            }
+            } // switch
+        }
+        IO_WriteLn();
+    }
+}
+
+void HopperVM_DumpHeap(Bool display, UInt accountedFor)
+{
+    Bool verboseDisplay = false;
+    if (display)
+    {
+        verboseDisplay = true;
+    }
+    if (verboseDisplay)
+    {
+        IO_WriteLn();;
+        for (UInt s = 0x00; s < HopperVM_sp; s = s + 0x02)
+        {
+            UInt value = Memory_ReadWord(HopperVM_valueStack + s);
+            UInt address = HopperVM_valueStack + s;
+            Byte htype = Byte(Memory_ReadWord(HopperVM_typeStack + s));
+            if (Types_IsReferenceType(Type(htype)))
+            {
+                Byte count = Byte(Memory_ReadByte(value + 0x01));
+                IO_WriteHex(value);
+                IO_Write(':');
+                IO_WriteHex(htype);
+                IO_Write(' ');
+                IO_WriteHex(count);
+                IO_Write(' ');
+                GC_Dump(value, 0x00);
+                IO_WriteLn();
+            }
+        }
+    }
+    if (display)
+    {
+        IO_WriteLn();
+        IO_Write('P');
+        IO_Write('C');
+        IO_Write(':');
+        IO_WriteHex(HopperVM_PC_Get());
+        IO_WriteLn();
+        IO_Write('F');
+        IO_Write(':');
+    }
+    UInt pCurrent = Memory_FreeList_Get();
+    UInt freeSize = 0x00;
+    UInt allocatedSize = 0x00;
+    for (;;)
+    {
+        if (0x00 == pCurrent)
+        {
+            break;;
+        }
+        UInt size = Memory_ReadWord(pCurrent);
+        UInt pNext = Memory_ReadWord(pCurrent + 0x02);
+        UInt pPrev = Memory_ReadWord(pCurrent + 0x04);
+        if (verboseDisplay)
+        {
+            IO_WriteLn();
+            IO_WriteHex(pCurrent);
+            IO_Write(' ');
+            IO_WriteHex(size);
+            IO_Write(' ');
+            IO_WriteHex(pNext);
+            IO_Write('>');
+            IO_Write(' ');
+            IO_Write('<');
+            IO_WriteHex(pPrev);
+        }
+        pCurrent = pNext;
+        freeSize = freeSize + size;
+    }
+    if (display)
+    {
+        IO_WriteLn();
+        IO_Write('H');
+        IO_Write(':');
+        UInt h = Memory_HeapStart_Get() + Memory_HeapSize_Get();
+        IO_WriteHex(h);
+        IO_Write('-');
+        IO_WriteHex(Memory_HeapStart_Get());
+        IO_Write('=');
+        IO_WriteHex(Memory_HeapSize_Get());
+    }
+    pCurrent = Memory_HeapStart_Get();
+    UInt pLimit = Memory_HeapStart_Get() + Memory_HeapSize_Get();
+    UInt count = 0x00;
+    for (;;)
+    {
+        
+        count++;
+        if (pCurrent >= pLimit)
+        {
+            break;;
+        }
+        UInt size = Memory_ReadWord(pCurrent);
+        if (count > 0x32)
+        {
+            break;;
+        }
+        if (!HopperVM_IsOnFreeList(pCurrent))
+        {
+            if (verboseDisplay)
+            {
+                IO_WriteLn();
+                IO_WriteHex(pCurrent);
+                IO_Write(' ');
+                IO_WriteHex(size);
+                IO_Write(' ');
+                Byte tp = Memory_ReadByte(pCurrent + 0x02);
+                Byte rf = Memory_ReadByte(pCurrent + 0x03);
+                IO_WriteHex(tp);
+                IO_Write(' ');
+                IO_WriteHex(rf);
+            }
+            allocatedSize = allocatedSize + size;
+        }
+        else if (verboseDisplay)
+        {
+            IO_WriteLn();
+            IO_WriteHex(pCurrent);
+            IO_Write(' ');
+            IO_WriteHex(size);
+            IO_Write(' ');
+        }
+        if (size == 0x00)
+        {
+            break;;
+        }
+        pCurrent = pCurrent + size;
+    }
+    Bool reportAndStop = (Memory_HeapSize_Get() != (allocatedSize + freeSize));
+    if (!reportAndStop && (accountedFor > 0x00))
+    {
+        reportAndStop = (accountedFor != allocatedSize);
+    }
+    if (reportAndStop)
+    {
+        if (!display)
+        {
+            HopperVM_DumpHeap(true, accountedFor);
+            Runtime_ErrorDump(0x5B);
+            Minimal_Error_Set(0x0B);
+        }
+        else
+        {
+            IO_WriteLn();
+            IO_Write('A');
+            IO_WriteHex(allocatedSize);
+            IO_Write(':');
+            IO_WriteHex(accountedFor);
+            IO_Write(' ');
+            IO_Write('F');
+            IO_WriteHex(freeSize);
+            UInt fl = Memory_HeapSize_Get() - (allocatedSize + freeSize);
+            IO_Write(' ');
+            IO_Write('L');
+            IO_WriteHex(fl);
+        }
+    }
+}
+
 void HopperVM_Release()
 {
     HRArray_Release();
@@ -1128,6 +1377,24 @@ Bool HopperVM_ExecuteOpCode()
     
     HopperVM_pc++;
     return External_FunctionCall(HopperVM_jumpTable, Byte(HopperVM_opCode));
+}
+
+Bool HopperVM_IsOnFreeList(UInt pCandidate)
+{
+    UInt pCurrent = Memory_FreeList_Get();
+    for (;;)
+    {
+        if (0x00 == pCurrent)
+        {
+            break;;
+        }
+        if (pCurrent == pCandidate)
+        {
+            return true;
+        }
+        pCurrent = Memory_ReadWord(pCurrent + 0x02);
+    }
+    return false;
 }
 
 UInt HRString_New()
@@ -1598,6 +1865,66 @@ void GC_Release(UInt address)
     }
 }
 
+void GC_Dump(UInt address)
+{
+    GC_Dump(address, 0x00);
+}
+
+void GC_Dump(UInt address, UInt indent)
+{
+    if (indent > 0x00)
+    {;
+        for (UInt i = 0x00; i < indent; i++)
+        {
+            IO_Write(' ');
+        }
+        indent = indent + 0x02;
+    }
+    Type htype = Type(Memory_ReadByte(address));
+    switch (htype)
+    {
+    case Type::eLong:
+    {
+        HRLong_Dump(address, indent);
+        break;
+    }
+    case Type::eString:
+    {
+        HRString_Dump(address, indent);
+        break;
+    }
+    case Type::eArray:
+    {
+        HRArray_Dump(address, indent);
+        break;
+    }
+    case Type::eList:
+    {
+        HRList_Dump(address, indent);
+        break;
+    }
+    case Type::ePair:
+    {
+        HRPair_Dump(address, indent);
+        break;
+    }
+    case Type::eVariant:
+    {
+        HRVariant_Dump(address, indent);
+        break;
+    }
+    case Type::eDictionary:
+    {
+        HRDictionary_Dump(address, indent);
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    } // switch
+}
+
 UInt GC_New(UInt size, Type htype)
 {
     UInt address = Memory_Allocate(size + 0x02);
@@ -1674,17 +2001,41 @@ void IO_Write(Char c)
     }
 }
 
-void IO_AssignKeyboardBuffer(UInt buffer)
-{
-    IO_keyboardBufferBase = buffer;
-}
-
 void IO_WriteHex(UInt u)
 {
     Byte msb = Byte(u >> 0x08);
     IO_WriteHex(msb);
     Byte lsb = Byte(u & 0xFF);
     IO_WriteHex(lsb);
+}
+
+void IO_WriteHex(Byte b)
+{
+    Byte msn = ((b >> 0x04) & 0x0F);
+    IO_Write(Char_ToHex(msn));
+    Byte lsn = b & 0x0F;
+    IO_Write(Char_ToHex(lsn));
+}
+
+void IO_WriteUInt(UInt _this)
+{
+    IO_writeDigit(_this);
+}
+
+void IO_WriteInt(Int _this)
+{
+    if (_this < 0x00)
+    {
+        IO_Write('-');
+        _this = 0x00 - _this;
+    }
+    UInt uthis = UInt(_this);
+    IO_writeDigit(uthis);
+}
+
+void IO_AssignKeyboardBuffer(UInt buffer)
+{
+    IO_keyboardBufferBase = buffer;
 }
 
 void IO_PushKey(Char c)
@@ -1702,12 +2053,31 @@ void IO_PushKey(Char c)
     }
 }
 
-void IO_WriteHex(Byte b)
+void IO_writeDigit(UInt uthis)
 {
-    Byte msn = ((b >> 0x04) & 0x0F);
-    IO_Write(Char_ToHex(msn));
-    Byte lsn = b & 0x0F;
-    IO_Write(Char_ToHex(lsn));
+    UInt digit = uthis % 0x0A;
+    Char c = Char_ToDigit(Byte(digit));
+    uthis = uthis / 0x0A;
+    if (uthis != 0x00)
+    {
+        IO_writeDigit(uthis);
+    }
+    IO_Write(c);
+}
+
+Bool Types_IsReferenceType(Type htype)
+{
+    return (Byte(htype) >= 0x0D);
+}
+
+void Runtime_ErrorDump(UInt number)
+{
+    IO_Write('D');
+    IO_Write('A');
+    IO_Write('N');
+    IO_Write('G');
+    IO_Write('!');
+    IO_WriteUInt(number);
 }
 
 void HRArray_Release()
@@ -1742,6 +2112,19 @@ void HRArray_Initialize()
     Memory_WriteByte(HRArray_clearSlots + 0x05, 0xDF);
     Memory_WriteByte(HRArray_clearSlots + 0x06, 0xBF);
     Memory_WriteByte(HRArray_clearSlots + 0x07, 0x7F);
+}
+
+void HRArray_Dump(UInt address, UInt indent)
+{;
+    for (UInt i = 0x00; i < indent; i++)
+    {
+        IO_Write(' ');
+    }
+    UInt elements = Memory_ReadWord(address + 2);
+    Byte etype = Memory_ReadByte(address + 4);
+    IO_WriteHex(elements);
+    IO_Write(' ');
+    IO_WriteHex(etype);
 }
 
 void Instructions_PopulateJumpTable(UInt jumpTable)
@@ -3273,14 +3656,23 @@ UInt HRString_Clone(UInt original)
     return HRString_clone(original, 0x00);
 }
 
-void Runtime_ErrorDump(UInt number)
-{
-    IO_Write('D');
-    IO_Write('A');
-    IO_Write('N');
-    IO_Write('G');
-    IO_Write('!');
-    IO_WriteUInt(number);
+void HRString_Dump(UInt address, UInt indent)
+{;
+    for (UInt i = 0x00; i < indent; i++)
+    {
+        IO_Write(' ');
+    }
+    IO_Write(Char(0x27));
+    UInt length = Memory_ReadWord(address + 2);
+    if (length > 0x28)
+    {
+        length = 0x28;
+    };
+    for (UInt i = 0x00; i < length; i++)
+    {
+        IO_Write(Char(Memory_ReadByte(address + 4 + i)));
+    }
+    IO_Write(Char(0x27));
 }
 
 void HRDirectory_Clear(UInt _this)
@@ -3322,6 +3714,79 @@ void HRList_Clear(UInt _this)
     Memory_WriteWord(_this + 5, 0x00);
     Memory_WriteWord(_this + 7, 0x00);
     Memory_WriteWord(_this + 7 + 0x02, 0x00);
+}
+
+void HRList_Dump(UInt address, UInt indent)
+{
+    if (indent > 0x00)
+    {;
+        for (UInt i = 0x00; i < indent; i++)
+        {
+            IO_Write(' ');
+        }
+        indent = indent + 0x02;
+    }
+    UInt elements = Memory_ReadWord(address + 2);
+    Byte etype = Memory_ReadByte(address + 4);
+    IO_WriteHex(elements);
+    IO_Write(' ');
+    IO_WriteHex(etype);
+    if (indent > 0x00)
+    {
+        UInt pCurrent = Memory_ReadWord(address + 5);
+        IO_Write(' ');
+        IO_WriteHex(pCurrent);
+        UInt count = 0x00;
+        for (;;)
+        {
+            if (pCurrent == 0x00)
+            {
+                break;;
+            }
+            IO_WriteLn();
+            UInt pData = Memory_ReadWord(pCurrent + 0);;
+            for (UInt i = 0x00; i < indent; i++)
+            {
+                IO_Write(' ');
+            }
+            if (Types_IsReferenceType(Type(etype)))
+            {
+                UInt pNext = Memory_ReadWord(pCurrent + 2);
+                IO_WriteHex(pCurrent);
+                IO_Write(',');
+                IO_WriteHex(pNext);
+                IO_Write('-');
+                IO_Write('>');
+                IO_WriteHex(pData);
+                Byte itype = Memory_ReadByte(pData);
+                Byte iref = Memory_ReadByte(pData + 0x01);
+                IO_Write(':');
+                IO_WriteHex(itype);
+                IO_Write(' ');
+                IO_WriteHex(iref);
+                GC_Dump(pData, indent);
+            }
+            else
+            {
+                IO_WriteHex(pData);
+            }
+            
+            count++;
+            if (count >= 0x05)
+            {
+                IO_WriteLn();;
+                for (UInt i = 0x00; i < indent; i++)
+                {
+                    IO_Write(' ');
+                }
+                IO_Write('.');
+                IO_Write('.');
+                IO_Write('.');
+                break;;
+            }
+            pCurrent = Memory_ReadWord(pCurrent + 2);
+        }
+    }
 }
 
 void HRList_clearAllItems(UInt pCurrent, Type etype)
@@ -3375,6 +3840,86 @@ void HRDictionary_Clear(UInt _this)
     Memory_WriteWord(_this + 4, 0x00);
     Memory_WriteWord(_this + 6, 0x00);
     Memory_WriteWord(_this + 8, 0x00);
+}
+
+void HRDictionary_Dump(UInt address, UInt indent)
+{
+    if (indent > 0x00)
+    {;
+        for (UInt i = 0x00; i < indent; i++)
+        {
+            IO_Write(' ');
+        }
+        indent = indent + 0x02;
+    }
+    UInt elements = Memory_ReadWord(address + 4);
+    Byte ktype = Memory_ReadByte(address + 2);
+    Byte vtype = Memory_ReadByte(address + 3);
+    IO_WriteHex(elements);
+    IO_Write(' ');
+    IO_Write('k');
+    IO_WriteHex(ktype);
+    IO_Write(' ');
+    IO_Write('v');
+    IO_WriteHex(vtype);
+    UInt pEntries = Memory_ReadWord(address + 8);
+    IO_Write(' ');
+    IO_WriteHex(pEntries);
+    UInt iterator = 0;
+    Type kType = (Type)0;
+    UInt key = 0;
+    Type vType = (Type)0;
+    UInt value = 0;
+    while (HRDictionary_next_R(address, iterator, kType, key, vType, value))
+    {
+        IO_WriteLn();;
+        for (UInt i = 0x00; i < indent; i++)
+        {
+            IO_Write(' ');
+        }
+        if (kType == Type::eString)
+        {
+            GC_Dump(key, indent);
+        }
+        else
+        {
+            IO_WriteHex(key);
+        }
+        IO_Write(' ');
+        if (Types_IsReferenceType(vType))
+        {
+            GC_Dump(value, indent);
+        }
+        else
+        {
+            IO_WriteHex(value);
+        }
+    }
+    if (false)
+    {
+        IO_WriteLn();
+        UInt capacity = Memory_ReadWord(address + 6);
+        UInt pEntries = Memory_ReadWord(address + 8);;
+        for (UInt i = 0x00; i < capacity; i++)
+        {
+            IO_WriteHex(pEntries);
+            IO_Write(':');
+            UInt key = Memory_ReadWord(pEntries + 0);
+            IO_WriteHex(key);
+            IO_Write('-');
+            UInt hash = Memory_ReadWord(pEntries + 2);
+            IO_WriteHex(hash);
+            IO_Write('-');
+            UInt value = Memory_ReadWord(pEntries + 6);
+            IO_WriteHex(value);
+            pEntries = pEntries + 8;
+            IO_Write(' ');
+            if (i % 0x05 == 0x06)
+            {
+                IO_WriteLn();
+            }
+        }
+    }
 }
 
 Bool HRDictionary_next_R(UInt _this, UInt & iterator, Type & ktype, UInt & key, Type & vtype, UInt & value)
@@ -3465,6 +4010,32 @@ void HRPair_Clear(UInt _this)
     Memory_WriteWord(_this + 6, 0x00);
 }
 
+void HRPair_Dump(UInt address, UInt indent)
+{
+    if (indent > 0x00)
+    {;
+        for (UInt i = 0x00; i < indent; i++)
+        {
+            IO_Write(' ');
+        }
+        indent = indent + 0x02;
+    }
+    Byte ktype = Memory_ReadByte(address + 2);
+    Byte vtype = Memory_ReadByte(address + 3);
+    IO_Write(' ');
+    IO_Write('k');
+    IO_WriteHex(ktype);
+    IO_Write(' ');
+    IO_Write('v');
+    IO_WriteHex(vtype);
+    UInt key = Memory_ReadWord(address + 4);
+    IO_Write(' ');
+    IO_WriteHex(key);
+    UInt value = Memory_ReadWord(address + 6);
+    IO_Write(' ');
+    IO_WriteHex(value);
+}
+
 void HRVariant_Clear(UInt _this)
 {
     Type vtype = Type(Memory_ReadByte(_this + 2));
@@ -3475,6 +4046,44 @@ void HRVariant_Clear(UInt _this)
     }
     Memory_WriteWord(_this + 2, 0x00);
     Memory_WriteWord(_this + 3, 0x00);
+}
+
+void HRVariant_Dump(UInt address, UInt indent)
+{
+    if (indent > 0x00)
+    {;
+        for (UInt i = 0x00; i < indent; i++)
+        {
+            IO_Write(' ');
+        }
+        indent = indent + 0x02;
+    }
+    Byte vtype = Memory_ReadByte(address + 2);
+    IO_Write(' ');
+    IO_Write('v');
+    IO_WriteHex(vtype);
+    UInt value = Memory_ReadWord(address + 3);
+    IO_Write(' ');
+    IO_WriteHex(value);
+}
+
+void HRLong_Dump(UInt address, UInt indent)
+{;
+    for (UInt i = 0x00; i < indent; i++)
+    {
+        IO_Write(' ');
+    }
+    UInt lsw = Memory_ReadWord(address + 0x02);
+    UInt msw = Memory_ReadWord(address + 0x04);
+    IO_WriteHex(msw);
+    IO_WriteHex(lsw);
+    IO_Write(' ');
+}
+
+Char Char_ToDigit(Byte d)
+{
+    d = d + 0x30;
+    return Char(d);
 }
 
 OpCode HopperVM_CurrentOpCode_Get()
@@ -5292,11 +5901,6 @@ Bool HopperVM_RunInline()
     return true;
 }
 
-Bool Types_IsReferenceType(Type htype)
-{
-    return (Byte(htype) >= 0x0D);
-}
-
 void GC_AddReference(UInt address)
 {
     Byte referenceCount = Memory_ReadByte(address + 0x01);
@@ -5661,23 +6265,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall)
     }
     } // switch
     return doNext && (Minimal_Error_Get() == 0x00);
-}
-
-void IO_WriteUInt(UInt _this)
-{
-    IO_writeDigit(_this);
-}
-
-void IO_writeDigit(UInt uthis)
-{
-    UInt digit = uthis % 0x0A;
-    Char c = Char_ToDigit(Byte(digit));
-    uthis = uthis / 0x0A;
-    if (uthis != 0x00)
-    {
-        IO_writeDigit(uthis);
-    }
-    IO_Write(c);
 }
 
 UInt Memory_Available()
@@ -7487,12 +8074,6 @@ Byte HRInt_GetByte(UInt ichunk, UInt i)
 UInt HRInt_FromBytes(Byte b0, Byte b1)
 {
     return b0 + (b1 << 0x08);
-}
-
-Char Char_ToDigit(Byte d)
-{
-    d = d + 0x30;
-    return Char(d);
 }
 
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype)

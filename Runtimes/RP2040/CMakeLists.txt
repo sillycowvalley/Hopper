@@ -17,6 +17,7 @@ add_executable(hopper
     Hopper.cpp
     HopperMemory.cpp
     HopperString.cpp
+    HopperArray.cpp
     OpCodes.cpp
     SysCalls.cpp
     LibCalls.cpp

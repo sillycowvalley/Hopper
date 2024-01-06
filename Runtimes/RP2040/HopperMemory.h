@@ -15,6 +15,9 @@ UInt GC_New(UInt size, Type htype);
 UInt GC_Clone(UInt original);
 void GC_AddReference(UInt address);
 Bool IsReferenceType(Type htype);
+void GC_Dump(UInt address);
+void GC_Dump(UInt address, UInt indent);
+
 
 
 #endif // HOPPERMEMORY_H

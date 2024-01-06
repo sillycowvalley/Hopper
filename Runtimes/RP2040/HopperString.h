@@ -28,5 +28,6 @@ UInt HRString_Trim(UInt _this);
 void HRString_TrimRight_R(UInt & _this);
 void HRString_TrimLeft_R(UInt & _this);
 UInt HRString_TrimLeft(UInt _this);
+void HRString_Dump(UInt address, UInt indent);
 
 #endif // HOPPERSTRING_H

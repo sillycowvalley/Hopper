@@ -851,6 +851,218 @@ void ExecuteWarp()
     }
 }
 
+void VMDumpStack(UInt limit)
+{
+    putchar(enter);
+    limit = limit * 2;
+    for (UInt s = 0; s < sp; s = s + 2)
+    {
+        if (sp - s > limit) { continue; }
+        if (s == bp)
+        {
+            printf("BP");
+        }
+        else
+        {
+            printf("  ");
+        }
+        printf("  ");
+        UInt * pvalue   = (UInt*)&dataMemoryBlock[valueStack + (s << 1)];
+        UInt address    = valueStack + (s << 1);
+        Byte htype      = Byte(Memory_ReadWord(typeStack + s));
+        printf("%04X %04X %04X:%02X", s, address, *pvalue, htype);
+        if (IsReferenceType(Type(htype)))
+        {
+            Byte count  = Byte(Memory_ReadByte(*pvalue + 1));
+            printf(" %02X ", count);
+            GC_Dump(*pvalue);
+        }
+        else
+        {
+            switch ((Type)htype)
+            {
+                case Type::eByte:
+                case Type::eUInt:
+                {
+                    printf(" %d", *pvalue);
+                    break;
+                }
+                case Type::eBool:
+                {
+                    printf(" %c", (*pvalue != 0) ? 't' : 'f');
+                    break;
+                }
+                case Type::eChar:
+                {
+                    printf(" '%c'", (Char)*pvalue);
+                    break;
+                }
+                case Type::eInt:
+                {
+                    Int * iv = (Int *)pvalue;
+                    printf(" %d", *iv);
+                    break;
+                }
+                case Type::eLong:
+                {
+                    Long * pl = (Long*)pvalue;
+                    printf(" %ld ", *pl);
+                    break;
+                }
+                case Type::eFloat:
+                {
+                    Float * pf = (Float*)pvalue;
+                    printf(" %g ", *pf);
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            } 
+        }
+        putchar(enter);
+    }
+}
+
+Bool VMIsOnFreeList(UInt pCandidate)
+{
+    UInt pCurrent = Memory_FreeList_Get();
+    for (;;)
+    {
+        if (0 == pCurrent)
+        {
+            break;
+        }
+        if (pCurrent == pCandidate)
+        {
+            return true;
+        }
+        pCurrent = Memory_ReadWord(pCurrent + 2);
+    }
+    return false;
+}
+
+void VMDumpHeap(bool display, UInt accountedFor)
+{
+    bool verboseDisplay = false;
+    if (display)
+    {
+        verboseDisplay = true;
+    }
+    if (verboseDisplay)
+    {
+        putchar(enter);
+        for (UInt s = 0; s < sp; s = s + 2)
+        {
+            UInt * pvalue = (UInt*)&dataMemoryBlock[valueStack + (s << 1)];
+            //UInt address  = valueStack + (s << 1);
+            Byte htype    = Byte(Memory_ReadWord(typeStack + s));
+            if (IsReferenceType(htype))
+            {
+                Byte count  = Byte(Memory_ReadByte(*pvalue + 1));
+                printf("%04X:%02X %02X ", *pvalue, htype, count);
+                GC_Dump(*pvalue, 0);
+                putchar(enter);
+            }
+        }
+    }
+    
+    if (display)
+    {
+        putchar(enter);
+        printf("PC:%04X", pc);
+        putchar(enter);
+        printf("F:");
+    }
+    
+    UInt pCurrent = Memory_FreeList_Get();
+    UInt freeSize = 0;
+    UInt allocatedSize = 0;
+    for(;;)
+    {
+        if (0 == pCurrent)
+        {
+            break;
+        }
+        UInt size  = Memory_ReadWord(pCurrent);    
+        UInt pNext = Memory_ReadWord(pCurrent+2);    
+        UInt pPrev = Memory_ReadWord(pCurrent+4);   
+        if (verboseDisplay) // free list items
+        { 
+            putchar(enter);
+            printf("%04X %04X %04X> <%04X", pCurrent, size, pNext, pPrev);
+        }
+        pCurrent = pNext;
+        freeSize = freeSize + size;
+    }
+    if (display)
+    {
+        putchar(enter);
+        
+        UInt h = Memory_HeapStart_Get()+Memory_HeapSize_Get();
+        printf("H:%04X-%04X=%04X", h, Memory_HeapStart_Get(), Memory_HeapSize_Get());
+    }
+    pCurrent      = Memory_HeapStart_Get();
+    UInt pLimit   = Memory_HeapStart_Get() + Memory_HeapSize_Get();
+    UInt count    = 0;
+    for(;;)
+    {
+        count ++;
+        if (pCurrent >= pLimit)
+        {
+            break;
+        }
+        UInt size  = Memory_ReadWord(pCurrent);    
+        if (count > 50)
+        {
+            break;
+        }
+            
+        if (!VMIsOnFreeList(pCurrent))
+        {
+            if (verboseDisplay) // heap items
+            {
+                putchar(enter);
+                Byte tp = Memory_ReadByte(pCurrent+2);
+                Byte rf = Memory_ReadByte(pCurrent+3);
+                printf("%04X %04X %02X %02X", pCurrent, size, tp, rf);
+            }
+            allocatedSize = allocatedSize + size;
+        }
+        else if (verboseDisplay)
+        {
+            // free list items
+            putchar(enter);
+            printf("%04X %04X", pCurrent, size);
+        }
+        if (size == 0)
+        {
+            break;
+        }
+        pCurrent = pCurrent + size; // this is why we limit ourselves to 0xFF00 (not 0x10000, actual 64K)
+    }
+    bool reportAndStop = (Memory_HeapSize_Get() != (allocatedSize + freeSize));
+    if (!reportAndStop && (accountedFor > 0))
+    {
+        reportAndStop = (accountedFor != allocatedSize);    
+    }
+    if (reportAndStop)
+    {
+        if (!display)
+        {
+            VMDumpHeap(true, accountedFor);
+            SetError(0x0B, 25);
+        }
+        else
+        {
+            putchar(enter);
+            UInt fl = Memory_HeapSize_Get() - (allocatedSize + freeSize);
+            printf("A%04X:%04X F%04X %04X", allocatedSize, accountedFor, freeSize, fl);
+        }
+    }
+}
+
 
 void HopperEntryPoint()
 {
@@ -932,16 +1144,16 @@ void HopperEntryPoint()
                 {
                     WaitForEnter();
                     
-                    putchar(char(enter));
+                    putchar(enter);
                     printf("%04X", pc);
-                    putchar(char(slash)); // confirm data
+                    putchar(slash); // confirm data
                     break;
                 }
                 case 'R': // get Registers
                 {
                     WaitForEnter();
                     
-                    putchar(char(enter));
+                    putchar(enter);
                     putchar('P');
                     putchar('C');
                     putchar('=');
@@ -973,7 +1185,7 @@ void HopperEntryPoint()
                     putchar('=');
                     printf("%04X", bp + 0x0600);
                     
-                    putchar(char(slash)); // confirm data
+                    putchar(slash); // confirm data
                     break;
                 }
                 /*
@@ -986,28 +1198,28 @@ void HopperEntryPoint()
                         for(;;)
                         {
                             char ch = GetChar();
-                            if (ch == char(enter))
+                            if (ch == enter)
                             {
                                 break;
                             }
                             HRString.BuildChar(ref destinationName, ch);
                         }
-                        putchar(char(enter));
-                        putchar(char(slash));
+                        putchar(enter);
+                        putchar(slash);
                         
                         // read path characters till 0x0D
                         uint destinationFolder = HRString.New();
                         for(;;)
                         {
                             char ch = GetChar();
-                            if (ch == char(enter))
+                            if (ch == enter)
                             {
                                 break;
                             }
                             HRString.BuildChar(ref destinationFolder, ch);
                         }
-                        putchar(char(enter));
-                        putchar(char(slash));
+                        putchar(enter);
+                        putchar(slash);
                         
                         HRDirectory.Create(destinationFolder);
                         
@@ -1018,8 +1230,8 @@ void HopperEntryPoint()
                         
                         uint size = (FromHex(h3) << 12) + (FromHex(h2) << 8) + (FromHex(h1) << 4) + FromHex(h0);
                         
-                        putchar(char(enter));
-                        putchar(char(slash));
+                        putchar(enter);
+                        putchar(slash);
                         
                         uint fh = HRFile.Create(destinationName);
                         
@@ -1033,8 +1245,8 @@ void HopperEntryPoint()
                             size--;
                         }
                         HRFile.Flush(fh);
-                        putchar(char(enter));
-                        putchar(char(slash));
+                        putchar(enter);
+                        putchar(slash);
                         break;
                     }
                     */
@@ -1045,7 +1257,7 @@ void HopperEntryPoint()
                         loadedAddress = 0;
                         
                         codeLoaded = SerialLoadIHex(loadedAddress, codeLength);
-                        putchar(char(enter));
+                        putchar(enter);
                         if (codeLoaded)
                         {
                             VMInitialize(loadedAddress, codeLength);
@@ -1134,6 +1346,23 @@ void HopperEntryPoint()
                                     VMRestart();
                                     break;
                                 }
+                                
+                                case 'V':
+                                {
+                                    WaitForEnter();
+                                    VMDumpStack(20);
+                                    putchar(slash); // confirm data
+                                    break;
+                                }
+                                
+                                case 'H':
+                                {
+                                    WaitForEnter();
+                                    VMDumpHeap(true, 0);
+                                    putchar(slash); // confirm data
+                                    break;
+                                }
+                                
                             } // switch
                         } // loaded
                     } // default
