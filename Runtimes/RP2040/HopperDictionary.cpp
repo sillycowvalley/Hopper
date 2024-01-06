@@ -56,6 +56,10 @@ UInt hashKey16(UInt key)
     return hash;
 }
 
+UInt HRDictionary_GetCount(UInt _this)
+{
+    return Memory_ReadWord(_this+idCount);
+}
 
 UInt HRDictionary_New(Type ktype, Type vtype)
 {
@@ -277,11 +281,11 @@ void adjustCapacity(UInt _this, UInt newCapacity)
 
 void HRDictionary_Clear(UInt _this)
 {
-    UInt iterator;
-    Type ktype;
-    UInt key;
-    Type vtype;
-    UInt32 value;
+    UInt iterator = 0;
+    Type ktype = (Type)0;
+    UInt key = 0;
+    Type vtype = (Type)0;
+    UInt32 value = 0;
     while (dictionaryNext(_this, iterator, ktype, key, vtype, value))
     {
         if (ktype == Type::eString)
@@ -394,10 +398,10 @@ void HRDictionary_Set(UInt _this, UInt key, Type ktype, UInt32 value, Type vtype
 
 bool HRDictionary_Next(UInt _this, UInt & iterator, UInt & hrpair)
 {
-    Type ktype;
-    UInt key;
-    Type vtype;
-    UInt32 value;
+    Type ktype =(Type)0;
+    UInt key = 0;
+    Type vtype = (Type)0;
+    UInt32 value = 0;
     
     bool found = dictionaryNext(_this, iterator, ktype, key, vtype, value);
     if (found && (0 != value) && (vtype == Type::eVariant))
@@ -410,10 +414,10 @@ bool HRDictionary_Next(UInt _this, UInt & iterator, UInt & hrpair)
 
 Bool HRDictionary_Contains(UInt _this, UInt key)
 {
-    Type dkType = Type(Memory_ReadByte(_this+idKType));
+    Type dkType    = Type(Memory_ReadByte(_this+idKType));
     bool valueKeys = (dkType != Type::eString);
-    UInt pEntries = Memory_ReadWord(_this+idEntries);
-    UInt capacity = Memory_ReadWord(_this+idCapacity);
+    UInt pEntries  = Memory_ReadWord(_this+idEntries);
+    UInt capacity  = Memory_ReadWord(_this+idCapacity);
     UInt hash = 0;
     if (!valueKeys)
     {
@@ -464,18 +468,22 @@ UInt32 HRDictionary_Get(UInt _this, UInt key, Type & vtype)
 }
 UInt HRDictionary_Clone(UInt original)
 {
+    //UInt count = HRDictionary_GetCount(original);
+    //printf("\nHRDictionary_Clone %04X (count=%d)\n", original, count);
+    
     Type dkType = (Type)Memory_ReadByte(original+idKType);
     Type dvType = (Type)Memory_ReadByte(original+idVType);
     
     UInt clone = HRDictionary_New (dkType, dvType);
     
-    UInt iterator;
-    Type ktype;
-    UInt key;
-    Type vtype;
-    UInt32 value;
+    UInt iterator = 0;
+    Type ktype = (Type)0;
+    UInt key = 0;
+    Type vtype = (Type)0;
+    UInt32 value = 0;
     while (dictionaryNext(original, iterator, ktype, key, vtype, value))
     {
+        //printf(" K:%04X V:%08lX", key, value);
         HRDictionary_Set(clone, key, ktype, value, vtype);
     }
     
@@ -499,11 +507,11 @@ void HRDictionary_Dump(UInt address, UInt indent)
     
     printf("%04X k%02X v%02X %04X", elements, ktype, vtype, pEntries);
     
-    UInt iterator;
-    Type kType;
-    UInt key;
-    Type vType;
-    UInt32 value;
+    UInt iterator = 0;
+    Type kType = (Type)0;
+    UInt key = 0;
+    Type vType = (Type)0;
+    UInt32 value = 0;
     while (dictionaryNext(address, iterator, kType, key, vType, value))
     {
         putchar((Char)0x0D);
@@ -546,8 +554,4 @@ void HRDictionary_Dump(UInt address, UInt indent)
         }
     }
     
-}
-UInt HRDictionary_GetCount(UInt _this)
-{
-    return Memory_ReadWord(_this+idCount);
 }
