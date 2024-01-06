@@ -58,7 +58,9 @@ UInt32 HRVariant_GetValue(UInt _this, Type & vtype)
 UInt32 HRVariant_UnBox(UInt _this, Type & vtype)
 {
     vtype = (Type)Memory_ReadByte(_this+ivType);
-    return Memory_ReadWord(_this+ivValue) + (Memory_ReadWord(_this+ivValue +2) << 16);
+    UInt32 value = Memory_ReadWord(_this+ivValue) + (Memory_ReadWord(_this+ivValue +2) << 16);
+    //printf("\nUnBox: %02X %08lX", vtype, value);
+    return value;
 }
 
 UInt HRVariant_Clone(UInt original)

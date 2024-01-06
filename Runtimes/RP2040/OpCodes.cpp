@@ -182,8 +182,8 @@ bool popCopyLocalShared(Int operand)
     UInt32 value = VMPop32(htype);
     if ((htype == Type::eLong) || (htype == Type::eFloat))
     {
+        //printf("\npopCopyLocalShared: %08lX", value);
         VMPut32(localAddress, value, htype);
-        //value = VMGet32(localAddress, htype);
     }
     else if (value == oldvalue)
     {

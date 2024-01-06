@@ -7,7 +7,7 @@
 //   xx   kType
 //   xx   vType
 //   xxxx pKey   - always a variant
-//   xxxx pData  - always a variant
+//   xxxxxxxx pData
 
 const UInt ipKType = 2;
 const UInt ipVType = 3;
@@ -16,7 +16,7 @@ const UInt ipValue = 6;
 
 UInt HRPair_New(Type ktype, UInt key, Type vtype, UInt32 value)
 {
-    UInt address = GC_New(6, Type::ePair);
+    UInt address = GC_New(8, Type::ePair);
     Memory_WriteByte(address+ipKType, Byte(ktype)); // key type
     Memory_WriteByte(address+ipVType, Byte(vtype)); // value type
     
@@ -26,10 +26,11 @@ UInt HRPair_New(Type ktype, UInt key, Type vtype, UInt32 value)
     }
     if (IsReferenceType(vtype) && (0 != value))
     {
-        value = GC_Clone(value);
+        value = GC_Clone(value & 0xFFFF);
     }
     Memory_WriteWord(address+ipKey, key);
-    Memory_WriteWord(address+ipValue, value);
+    Memory_WriteWord(address+ipValue, value & 0xFFFF);
+    Memory_WriteWord(address+ipValue + 2, value >> 16);
     return address;
 }
 
@@ -39,7 +40,7 @@ UInt HRPair_Clone(UInt original)
     Type dvType = (Type)Memory_ReadByte(original+ipVType);
     
     UInt key   = Memory_ReadWord(original+ipKey);
-    UInt value = Memory_ReadWord(original+ipValue);
+    UInt32 value = Memory_ReadWord(original+ipValue) + (Memory_ReadWord(original+ipValue + 2) << 16);
     
     return HRPair_New(dkType, key, dvType, value);
 }
@@ -50,7 +51,7 @@ void HRPair_Clear(UInt _this)
     Type dvType = (Type)Memory_ReadByte(_this+ipVType);
     
     UInt key   = Memory_ReadWord(_this+ipKey);
-    UInt value = Memory_ReadWord(_this+ipValue);
+    UInt32 value = Memory_ReadWord(_this+ipValue) + (Memory_ReadWord(_this+ipValue + 2) << 16);
     
     if (IsReferenceType(dkType) && (0 != key))
     {
@@ -58,10 +59,11 @@ void HRPair_Clear(UInt _this)
     }
     if (IsReferenceType(dvType) && (0 != value))
     {
-        GC_Release(value);
+        GC_Release(value & 0xFFFF);
     }
     Memory_WriteWord(_this+ipKey, 0);
     Memory_WriteWord(_this+ipValue, 0);
+    Memory_WriteWord(_this+ipValue+2, 0);
 }
 
 UInt HRPair_GetKey(UInt _this, Type & ktype)
@@ -79,14 +81,14 @@ UInt HRPair_GetKey(UInt _this, Type & ktype)
 UInt32 HRPair_GetValue(UInt _this, Type & vtype)
 {
     vtype = (Type)Memory_ReadByte(_this+ipVType);
-    UInt32 value = Memory_ReadWord(_this+ipValue);
+    UInt32 value = Memory_ReadWord(_this+ipValue) + (Memory_ReadWord(_this+ipValue + 2) << 16);
     if (vtype == Type::eVariant)
     {
-        value = HRVariant_GetValue(value, vtype); // returns a clone of the boxed value
+        value = HRVariant_GetValue(value & 0xFFFF, vtype); // returns a clone of the boxed value
     }
     else if (IsReferenceType(vtype))
     {
-        value = GC_Clone(value);
+        value = GC_Clone(value & 0xFFFF);
         vtype = (Type)Memory_ReadByte(value);
     }
     return value;
@@ -104,6 +106,6 @@ void HRPair_Dump(UInt address, UInt indent)
     Byte ktype    = Memory_ReadByte(address+ipKType);
     Byte vtype    = Memory_ReadByte(address+ipVType);
     UInt key    = Memory_ReadWord(address+ipKey);
-    UInt value    = Memory_ReadWord(address+ipValue);
-    printf(" k%02X v%02X %04X %04X", ktype, vtype, key, value);
+    UInt32 value = Memory_ReadWord(address+ipValue) + (Memory_ReadWord(address+ipValue + 2) << 16);
+    printf(" k%02X v%02X %04X %08lX", ktype, vtype, key, value);
 }

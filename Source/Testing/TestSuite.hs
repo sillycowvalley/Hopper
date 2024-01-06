@@ -24,10 +24,10 @@ program TestSuite
       
 #ifdef H6502
         WriteLn("  " + message);
-        Diagnostics.Die(0x0B); // system failure / internal error
 #else
         WriteLn("  " + message);
 #endif         
+        Diagnostics.Die(0x0B); // system failure / internal error
     }
     
 #ifdef TEXTBUFFER
@@ -890,7 +890,7 @@ program TestSuite
         }
         if (total != 21)
         {
-            PrintFailed("List : < <string, int> > failed");
+            PrintFailed("List : < <string, int> > failed 3");
         }
         
         uint count = 0;
@@ -929,7 +929,7 @@ program TestSuite
         }
         if (total != 12)
         {
-            PrintFailed("List : < <string, int> > failed");
+            PrintFailed("List : < <string, int> > failed 4");
         }
    	}
 
@@ -1318,8 +1318,10 @@ program TestSuite
         dict["true"] = true;
         dict["false"] = false;
         dict["uint"] = uint(10);
-        long ll = 100;
+        long ll = 42424242;
         dict["long"] = ll;
+        float fl = 3.141;
+        dict["float"] = fl;
         
         <string> slist;
         slist.Append("string");
@@ -1358,7 +1360,7 @@ program TestSuite
                 case "long":
                 {
                     long l = long(kv.value);
-                    if (l == 100)
+                    if (l == 42424242)
                     {
                         count++;
                     }
@@ -1403,15 +1405,27 @@ program TestSuite
                         PrintFailed("<string,variant> 6");
                     }
                 }
+                case "float":
+                {
+                    float l = float(kv.value);
+                    if (l == 3.141)
+                    {
+                        count++;
+                    }
+                    else
+                    {
+                        PrintFailed("<string,variant> 8");
+                    }
+                }
                 default:
                 {
                     PrintFailed("<string,variant> 7");
                 }
             }
         }
-        if (count != 6)
+        if (count != 7)
         {
-            PrintFailed("<string,variant> 8");
+            PrintFailed("<string,variant> 9");
         }
         
     } // TestVariantDictionary
@@ -1661,7 +1675,9 @@ program TestSuite
         TestList();
         
         TestFor();
-        
+#ifndef H6502
+        TestVariantDictionary(); // Variant.Box
+#endif           
         TestDictionaryExpandRR();
         TestDictionaryExpandVV();
         TestDictionaryExpandRV();
@@ -1669,9 +1685,6 @@ program TestSuite
         
         TestValueDictionary();
         
-#ifndef H6502
-        TestVariantDictionary(); // Variant.Box
-#endif   
         TestForEach();
         
         TestDictionary();       

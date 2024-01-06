@@ -330,6 +330,11 @@ UInt GC_Clone(UInt original)
             return HRList_Clone(original);
             break;
         }
+        case Type::eDictionary:
+        {
+            return HRDictionary_Clone(original);
+            break;
+        }
         /* TODO
         case Type::eDirectory:
         {
@@ -341,15 +346,11 @@ UInt GC_Clone(UInt original)
             return HRFile_Clone(original);
             break;
         }
-        case Type::eDictionary:
-        {
-            return HRDictionary_Clone(original);
-            break;
-        }
         */
         default:
         {
-            SetError(0x0A, (21)); // TODO : GC_Clone
+            printf("\nClone: %02X, PC=%04X", htype, pc);
+            SetError(0x0A, (43)); // TODO : GC_Clone
             break;
         }
     } // switch
@@ -414,13 +415,11 @@ void GC_Dump(UInt address, UInt indent)
             HRList_Dump(address, indent);
             break;
         }
-        /* TODO
         case Type::eDictionary:
         {
             HRDictionary_Dump(address, indent);
             break;
         }
-        */
         default:
         {
             break;

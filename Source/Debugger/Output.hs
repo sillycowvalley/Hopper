@@ -402,7 +402,7 @@ unit Output
                     byte htype = Pages.GetPageByte(0x0500+(isp/2));
                     
                     string reference;
-                    if (htype >= 0x0D)
+                    if (IsMachineReferenceType(htype))
                     {
                         uint address = value;
                         uint rtype  = Pages.GetPageByte(address+0);    
@@ -423,6 +423,14 @@ unit Output
                 }
             }
         }
+    }
+    bool IsMachineReferenceType(uint typeValue)
+    {
+        if (Is32BitStackSlot)
+        {
+            return typeValue >= 0x0F;
+        }
+        return typeValue >= 0x0D;
     }
     bool IsMachineReferenceType(string typeName)
     {
@@ -737,10 +745,11 @@ unit Output
                 uint dPtr = Pages.GetPageWord(bp + offset);   
                 uint iterator = 0;
                 uint kvalue;
-                uint vvalue;
+                uint vvalue0;
+                uint vvalue1;
                 loop
                 {
-                    if (Source.DictionaryNextItem(dPtr, ref iterator, ref kvalue, ref vvalue))
+                    if (Source.DictionaryNextItem(dPtr, ref iterator, ref kvalue, ref vvalue0, ref vvalue1))
                     {
                     }
                     if (ivalue == iterator)
@@ -757,10 +766,10 @@ unit Output
                     dataClicks[yCurrent-1] = kType + "`" + kname + "`" + kvalue.ToString();
                 }
                 
-                lcontent = TypeToString(vvalue, 0, vType, false, maxDataWidth);
+                lcontent = TypeToString(vvalue0, vvalue1, vType, false, maxDataWidth);
                 PrintWatch(0, yCurrent, "  " + vType + " " + vname + "=" + lcontent, Black, LightestGray);
                 ltype  = vType;
-                cPtr = vvalue;
+                cPtr = vvalue0;
                 cName = vname;
                 yCurrent++;
                 wasKV = true;
@@ -946,10 +955,11 @@ unit Output
         return consumed;
     }
     
-    bool WalkStack(<uint> stackValues, <byte> stackTypes, ref uint sp, ref uint bp)
+    bool WalkStack(<uint> stackValues0, <uint> stackValues1, <byte> stackTypes, ref uint sp, ref uint bp)
     {
         bool success = true;
-        stackValues.Clear();
+        stackValues0.Clear();
+        stackValues1.Clear();
         stackTypes.Clear();
         loop
         {
@@ -961,8 +971,13 @@ unit Output
             }
             else
             {
-                sp  = Pages.GetZeroPage("SP")  - 0x0600;
-                bp  = Pages.GetZeroPage("BP")  - 0x0600;
+                sp  = Pages.GetZeroPage("SP") - 0x0600;
+                bp  = Pages.GetZeroPage("BP") - 0x0600;
+                if (Is32BitStackSlot)
+                {
+                    sp = sp / 2;
+                    bp = bp / 2;
+                }
                 tspInc = 1;
             }
             if (sp % 2 != 0)
@@ -979,11 +994,25 @@ unit Output
             uint count = sp / 2;
             loop
             {
-                uint v = Pages.GetPageWord(sCurrent);
-                stackValues.Append(v);
+                if (Is32BitStackSlot)
+                {
+                    uint v = Pages.GetPageWord(sCurrent);
+                    sCurrent = sCurrent + 2;
+                    stackValues0.Append(v);
+                    v = Pages.GetPageWord(sCurrent);
+                    sCurrent = sCurrent + 2;
+                    stackValues1.Append(v);
+                }
+                else
+                {
+                    uint v = Pages.GetPageWord(sCurrent);
+                    stackValues0.Append(v);
+                    stackValues1.Append(0);
+                    sCurrent = sCurrent + 2;
+                }
+                
                 byte t = Pages.GetPageByte(tCurrent);
                 stackTypes.Append(t);
-                sCurrent = sCurrent + 2;
                 tCurrent = tCurrent + tspInc;
                 count--;
                 if (count == 0)
@@ -1148,41 +1177,47 @@ unit Output
         bool first = true;
         uint iterator = 0;
         uint kValue;
-        uint vValue;
+        uint vValue0;
+        uint vValue1;
         uint pVariant;
         indent = indent + 2;
-        while (Source.DictionaryNextItem(address, ref iterator, ref kValue, ref vValue))
+        while (Source.DictionaryNextItem(address, ref iterator, ref kValue, ref vValue0, ref vValue1))
         {
             uint itemSize = 0;
             content = "";
             content = content.Pad(' ', indent);
             string keyText   = "K:0x" +  kValue.ToHexString(4);
-            string valueText = "V:0x" +  vValue.ToHexString(4);
+            string valueText = "V:0x";
+            if (Is32BitStackSlot && ((valueType == 0x0D) || (valueType == 0x0E)))
+            {
+                valueText = valueText +  vValue1.ToHexString(4);
+            }
+            valueText = valueText + vValue0.ToHexString(4);
             content = content + keyText;
         
-            if (valueType < 0x0D)    
+            if (!IsMachineReferenceType(valueType))    
             {
-                content = content + " -> " + valueText;
+                content = content + " -> " + valueText + " " + ValueTypeToString(valueType, vValue0, vValue1);
             }
          
             memoryFile.Append(content + char(0x0D));
             DebugFlush(memoryFile);
-            if ((keyType >= 0x0D) && (kValue != 0)) // reference types
+            if (IsMachineReferenceType(keyType) && (kValue != 0))
             {
                 byte kt = Pages.GetPageByte(kValue);
                 itemSize = itemSize + WalkMemory(memoryFile, kValue, kt, indent + 2);
             }
-            if (valueType >= 0x0D)
+            if (IsMachineReferenceType(valueType))
             {
                 content = "";
                 content = content.Pad(' ', indent);
                 content = content + valueText;
                 memoryFile.Append(content + char(0x0D));
                 DebugFlush(memoryFile);
-                if (vValue != 0) // reference types
+                if (vValue0 != 0) // reference types
                 {
-                    byte vt = Pages.GetPageByte(vValue);
-                    itemSize = itemSize + WalkMemory(memoryFile, vValue, vt, indent + 2);
+                    byte vt = Pages.GetPageByte(vValue0);
+                    itemSize = itemSize + WalkMemory(memoryFile, vValue0, vt, indent + 2);
                 }
             }
             size = size + itemSize;
@@ -1196,6 +1231,12 @@ unit Output
     }
     uint WalkMemoryListItem(file memoryFile, uint address, uint listItemTypes, uint indent)
     {
+        // ListItem memory map:
+        //   0000 heap allocator size
+        //   xxxx inline for value types, pData for reference types and when item type is variant
+        //   xxxx 2nd half of 'long' and 'float' if item type is not variant
+        //   0000 pNext
+        
         uint size;
         loop
         {
@@ -1205,19 +1246,30 @@ unit Output
             size = size + itemSize;
             content = content.Pad(' ', indent);
             
-            uint pData  = Pages.GetPageWord(address + 0);
-            uint pNext  = Pages.GetPageWord(address + 2);
+            uint pData0  = Pages.GetPageWord(address + 0);
+            uint pData1  = Is32BitStackSlot ? Pages.GetPageWord(address + 2) : 0;
+            uint pNext   = Is32BitStackSlot ? Pages.GetPageWord(address + 4) : Pages.GetPageWord(address + 2);
             content = content + "0x" + address.ToHexString(4) + " ";
-            content = content + "0x" + pData.ToHexString(4) + " ";
+            content = content + "0x";
+            if (Is32BitStackSlot && ((listItemTypes == 0x0D) || (listItemTypes == 0x0E)))
+            {
+                content = content + pData1.ToHexString(4);
+            }
+            content = content + pData0.ToHexString(4) + " ";
             content = content + "0x" + pNext.ToHexString(4) + " ";
+            if (!IsMachineReferenceType(listItemTypes))
+            {
+                content = content + ValueTypeToString(byte(listItemTypes), pData0, pData1) + " ";
+            }
+            
             SafePad(ref content, paddingWidth);
             content = content + " (" + itemSize.ToString() + " bytes)";         
             memoryFile.Append(content + char(0x0D));
             DebugFlush(memoryFile);
-            if ((listItemTypes >= 0x0D) && (pData != 0)) // reference types
+            if (IsMachineReferenceType(listItemTypes) && (pData0 != 0)) // reference types
             {
-                byte tp2 = Pages.GetPageByte(pData);
-                size = size + WalkMemory(memoryFile, pData, tp2, indent + 2);
+                byte tp2 = Pages.GetPageByte(pData0);
+                size = size + WalkMemory(memoryFile, pData0, tp2, indent + 2);
             }
             if (pNext != 0)
             {
@@ -1230,6 +1282,16 @@ unit Output
     }
     uint WalkMemoryList(file memoryFile, uint address, uint tp, uint indent)
     {
+        // List memory map:
+        //   0000 heap allocator size
+        //   19   type = tList
+        //   00   GC reference count
+        //   0000 current number of items
+        //   xx   type of items
+        //   xxxx pFirst
+        //   xxxx pRecent
+        //   xxxx iRecent
+        
         accountedFor[address-2] = true;        
         string content;
         uint size = Pages.GetPageWord(address - 2);
@@ -1397,25 +1459,28 @@ unit Output
     }
     uint WalkMemoryFloat(file memoryFile, uint address, uint tp, uint indent)
     {
-        accountedFor[address-2] = true;
         string content;
-        uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
+        
+        accountedFor[address-2] = true;
+        uint size = Pages.GetPageWord(address - 2);
         content = content + WalkHeader(address);
         byte b0 = Pages.GetPageByte(address + 2 + 0);
         byte b1 = Pages.GetPageByte(address + 2 + 1);
         byte b2 = Pages.GetPageByte(address + 2 + 2);
         byte b3 = Pages.GetPageByte(address + 2 + 3);
+    
         content = content + b3.ToHexString(2);
         content = content + b2.ToHexString(2);
         content = content + b1.ToHexString(2);
         content = content + b0.ToHexString(2);
-        
         content = content + ' ';
         float f = Float.FromBytes(b0, b1, b2, b3);
         content = content + f.ToString();
+        
         SafePad(ref content, paddingWidth);
         content = content + " (" + size.ToString() + " bytes)";
+    
         memoryFile.Append(content + char(0x0D));
         DebugFlush(memoryFile);
         return size;
@@ -1441,47 +1506,52 @@ unit Output
         DebugFlush(memoryFile);
         return size;
     }
-    uint WalkMemory(file memoryFile, uint value, uint tp, uint indent)
+    uint WalkMemory(file memoryFile, uint value0, uint tp, uint indent)
     {
         uint size = 0;
         switch (tp)
         {
             case 0x0D:
             {
-                size = size + WalkMemoryFloat(memoryFile, value, tp, indent + 2);
+                if (!Is32BitStackSlot)
+                {
+                    size = size + WalkMemoryFloat(memoryFile, value0, tp, indent + 2);
+                }
             }
             case 0x0E:
             {
-                size = size + WalkMemoryLong(memoryFile, value, tp, indent + 2);
+                if (!Is32BitStackSlot)
+                {
+                    size = size + WalkMemoryLong(memoryFile, value0, tp, indent + 2);
+                }
             }
             case 0x0F:
             {
-                size = size + WalkMemoryString(memoryFile, value, tp, indent + 2);
+                size = size + WalkMemoryString(memoryFile, value0, tp, indent + 2);
             }
             case 0x12:
             {
-                size = size + WalkMemoryArray(memoryFile, value, tp, indent + 2);
+                size = size + WalkMemoryArray(memoryFile, value0, tp, indent + 2);
             }
             case 0x13:
             {
-                size = size + WalkMemoryDictionary(memoryFile, value, tp, indent + 2);
+                size = size + WalkMemoryDictionary(memoryFile, value0, tp, indent + 2);
             }
             case 0x14:
             {
-                size = size + WalkMemoryVariant(memoryFile, value, tp, indent + 2);
+                size = size + WalkMemoryVariant(memoryFile, value0, tp, indent + 2);
             }
             case 0x15:
             {
-                size = size + WalkMemoryFile(memoryFile, value, tp, indent + 2);
+                size = size + WalkMemoryFile(memoryFile, value0, tp, indent + 2);
             }
-            
             case 0x16:
             {
-                size = size + WalkMemoryDirectory(memoryFile, value, tp, indent + 2);
+                size = size + WalkMemoryDirectory(memoryFile, value0, tp, indent + 2);
             }
             case 0x19:
             {
-                size = size + WalkMemoryList(memoryFile, value, tp, indent + 2);
+                size = size + WalkMemoryList(memoryFile, value0, tp, indent + 2);
             }
         }
         return size;
@@ -1507,38 +1577,40 @@ unit Output
     uint WalkHeap(file memoryFile, uint indent)
     {
         uint size = 0;
-        uint heapStart = Pages.GetZeroPage("HEAPSTART");
-        uint heapSize  = Pages.GetZeroPage("HEAPSIZE");
-        uint heapPtr    = heapStart;
-        uint heapEndPtr = heapStart + heapSize;
+        uint heapStart  = Pages.GetZeroPage("HEAPSTART");
+        uint heapSize   = Pages.GetZeroPage("HEAPSIZE");
+        long heapPtr    = heapStart;
+        long heapEndPtr = long(heapStart) + long(heapSize);
         
-        OutputDebug("heapEndPtr=0x" + heapEndPtr.ToHexString(4));
+        OutputDebug("heapStart  = 0x" + heapStart.ToHexString(4));
+        OutputDebug("heapSize   = 0x" + heapSize.ToHexString(4));
+        OutputDebug("heapEndPtr = 0x" + heapEndPtr.ToHexString(5));
         loop
         {
-            uint blockSize = Pages.GetPageWord(heapPtr);
             if (heapPtr >= heapEndPtr)
             {
-                OutputDebug("heapPtr=0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4) + " LAST");
+                OutputDebug("heapPtr    = 0x" + heapPtr.ToHexString(4) + " LAST");
                 break;
             }
+            uint blockSize = Pages.GetPageWord(heapPtr);
             if (freeBlocks.Contains(heapPtr))
             {
                 // accounted for
-                OutputDebug("freePtr=0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
+                OutputDebug("freePtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
             }
             else if (accountedFor.Contains(heapPtr))
             {
                 // we already walked it
-                OutputDebug("stackPtr=0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
+                OutputDebug("stackPtr   = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
             }
             else if (blockSize <= 2)
             {
-                OutputDebug("heapPtr=0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4) + " WTF?!");
+                OutputDebug("heapPtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4) + " WTF?!");
                 break; // WTF?!
             }
             else
             {
-                OutputDebug("heapPtr=0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
+                OutputDebug("heapPtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
                 // allocated by Memory.Allocate(..) so not reachable from the stack
                 string content;
                 content = content.Pad(' ', indent);
@@ -1573,6 +1645,51 @@ unit Output
     DebugFlush(file memoryFile)
     {
         //memoryFile.Flush();
+    }
+    
+    string ValueTypeToString(byte vtype, uint value0, uint value1)
+    {
+        string content;
+        switch (vtype)
+        {
+            case 0x01: // char
+            {
+                content = "'" + char(value0) + "'";
+            }
+            case 0x03: // byte
+            case 0x02: // uint
+            {
+                content = "(" + value0.ToString() + ")";
+            }
+            case 0x06: // bool
+            {
+                content = ((value0 == 0) && (value1 == 0)) ? "false" : "true";
+            }
+            case 0x04: // int
+            {
+                int ivalue = Int.FromBytes(byte(value0 & 0xFF), byte(value0 >> 8));
+                content = "(" + ivalue.ToString() + ")";
+            }
+            case 0x0D: // float
+            {
+                byte b0 = byte(value0 & 0xFF);
+                byte b1 = byte(value0 >> 8);
+                byte b2 = byte(value1 & 0xFF);
+                byte b3 = byte(value1 >> 8);
+                float fvalue = Float.FromBytes(b0, b1, b2, b3);
+                content = "(" + fvalue.ToString() + ")";
+            }
+            case 0x0E: // long
+            {
+                byte b0 = byte(value0 & 0xFF);
+                byte b1 = byte(value0 >> 8);
+                byte b2 = byte(value1 & 0xFF);
+                byte b3 = byte(value1 >> 8);
+                long lvalue = Long.FromBytes(b0, b1, b2, b3);
+                content = "(" + lvalue.ToString() + ")";
+            }
+        }
+        return content;
     }
     
     bool DumpMemory()
@@ -1635,23 +1752,32 @@ unit Output
             }
             
             // walk the stack
-            <uint> stackValues;
+            <uint> stackValues0;
+            <uint> stackValues1;
             <byte> stackTypes;
             uint bp;
             uint sp;
-            if (!WalkStack(stackValues, stackTypes, ref sp, ref bp))
+            if (!WalkStack(stackValues0, stackValues1, stackTypes, ref sp, ref bp))
             {
                 break;
             }
-            uint l = stackValues.Length;
+            uint l = stackValues0.Length;
             uint size = 0;
             string content;
             for (uint i = 0; i < l; i++)
             {
-                uint v = stackValues[i];
+                uint v0 = stackValues0[i];
+                uint v1 = stackValues1[i];
                 uint t = stackTypes[i];
                 uint i2 = i * 2;
-                string content = "0x" + i2.ToHexString(2) + " 0x" + v.ToHexString(4) + " 0x" + t.ToHexString(2);
+                
+                string content = "0x" + i2.ToHexString(2) + " 0x";
+                if (Is32BitStackSlot)
+                {
+                    content = content + v1.ToHexString(4);
+                }
+                content = content + v0.ToHexString(4);
+                content = content + " 0x" + t.ToHexString(2);
                 if (i2 == bp)
                 {
                     content = "BP  " + content;
@@ -1659,6 +1785,10 @@ unit Output
                 else
                 {
                     content = "    " + content;
+                }
+                if (!IsMachineReferenceType(t))
+                {
+                    content = content + " " + ValueTypeToString(byte(t), v0, v1);
                 }
                 string key = i2.ToString();
                 if (globalLists.Contains(key))
@@ -1668,7 +1798,7 @@ unit Output
                 }
                 memoryFile.Append(content + char(0x0D));
                 DebugFlush(memoryFile);
-                size = size + WalkMemory(memoryFile, v, t, 9);
+                size = size + WalkMemory(memoryFile, v0, t, 9);
                 Parser.ProgressTick(".");
             }
             content = "";

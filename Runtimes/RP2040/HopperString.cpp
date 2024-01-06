@@ -489,6 +489,51 @@ UInt HRString_TrimLeft(UInt _this)
     return copy;
 }
 
+UInt HRString_ToUpper(UInt _this)
+{
+    UInt copy = HRString_Clone(_this);
+    HRString_ToUpper_R(copy);
+    return copy;
+}
+UInt HRString_ToLower(UInt _this)
+{
+    UInt copy = HRString_Clone(_this);
+    HRString_ToLower_R(copy);
+    return copy;
+}
+
+void HRString_ToUpper_R(UInt & _this)
+{
+    UInt length = HRString_GetLength(_this);
+    UInt i = 0;
+    for (;;)
+    {
+        if (i == length)
+        {
+            break;;
+        }
+        Char ch = (Char)Memory_ReadByte(_this + 4 + i);
+        Memory_WriteByte(_this + 4 + i, HRChar_ToUpper(ch));
+        i++;
+    }
+}
+void HRString_ToLower_R(UInt & _this)
+{
+    UInt length = HRString_GetLength(_this);
+    UInt i = 0;
+    for (;;)
+    {
+        if (i == length)
+        {
+            break;;
+        }
+        Char ch = (Char)Memory_ReadByte(_this + 4 + i);
+        Memory_WriteByte(_this + 4 + i, HRChar_ToLower(ch));
+        i++;
+    }
+}
+
+
 void HRString_Dump(UInt address, UInt indent)
 {
     for (UInt i = 0; i < indent; i++)

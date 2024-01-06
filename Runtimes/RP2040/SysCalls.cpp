@@ -6,6 +6,7 @@ SysCallMethod syscallJumps[256];
 
 enum SysCall {
     eStringNewFromConstant = 0x0000,
+    eCharToString = 0x0001,
     eStringNew = 0x0002,
     eStringAppend = 0x0003,
     eStringInsertChar = 0x0004,
@@ -138,7 +139,18 @@ enum SysCall {
     eStringBuildFront = 0x00B5,
     eMemoryReadBit = 0x00B6,
     eMemoryWriteBit = 0x00B7,
-    eCharToDigit = 0x00BD,
+    
+    eCharToUpper = 0xB8,
+    eCharIsUpper = 0xB9,
+    eCharIsDigit = 0xBA,
+    eCharIsLetterOrDigit = 0xBB,
+    eCharIsLower = 0xBC,
+    eCharToDigit = 0xBD,
+    eCharToHex = 0xBE,
+    eCharIsHexDigit = 0xBF,
+    eCharToLower = 0xC0,
+            
+    
     eTimeDelay = 0x00C6,
     eIntToBytes = 0x00CD,
     eFileGetTime = 0x00CE,
@@ -147,6 +159,8 @@ enum SysCall {
     eStringTrimLeft = 0x00D1,
     eStringTrimRight = 0x00D2,
     eStringPushImmediate = 0x00D3,
+    eStringToUpper = 0xD4,
+    eStringToLower = 0xD5,
     eMemoryReadWord = 0x00D7,
     eMemoryWriteWord = 0x00D8,
     eLongGetByte = 0x00E0,
@@ -255,6 +269,14 @@ Bool stringNewFromConstant(Byte iOverload)
         return false;
     }
 }
+Bool charToString(Byte iOverload)
+{
+    UInt doubleChar = VMPop();
+    UInt address = HRString_NewFromConstant1(doubleChar);
+    VMPush(address, Type::eString);
+    return true;
+}
+
 Bool stringInsertChar(Byte iOverload)
 {
     UInt ch = VMPop();
@@ -327,6 +349,256 @@ Bool stringBuild(Byte iOverload)
     } // switch
     return true;
 }
+Bool stringReplace(Byte iOverload)
+{
+    switch (iOverload)
+    {
+        case 0x00:
+        {
+            UInt to     = VMPop();
+            UInt from   = VMPop();
+            UInt _this  = VMPop();
+            UInt result = HRString_Replace(_this, from, to);
+            GC_Release(_this);
+            GC_Release(to);
+            GC_Release(from);
+            VMPush(result, Type::eString);
+            break;
+        }
+        case 0x01:
+        {
+            UInt to     = VMPop();
+            UInt from   = VMPop();
+            UInt _this  = VMPop();
+            UInt result = HRString_Replace(_this, (Char)from, (Char)to);
+            GC_Release(_this);
+            VMPush(result, Type::eString);
+            break;
+        }
+        default:
+        {
+            SetError(0x0B, (39));
+            break;
+        }
+    } // switch
+    return true;
+}
+Bool stringEndsWith(Byte iOverload)
+{
+    switch (iOverload)
+    {
+        case 0x00:
+        {
+            UInt with = VMPop();
+            UInt _this = VMPop();
+            Bool result = HRString_EndsWith(_this, (Char)with);
+            GC_Release(_this);
+            VMPush(result ? 1 : 0, Type::eBool);
+            break;
+        }
+        case 0x01:
+        {
+            UInt with = VMPop();
+            UInt _this = VMPop();
+            Bool result = HRString_EndsWith(_this, with);
+            GC_Release(_this);
+            GC_Release(with);
+            VMPush(result ? 1 : 0, Type::eBool);
+            break;
+        }
+        default:
+        {
+            SetError(0x0B, (40));
+            break;
+        }
+    } // switch
+    return true;
+}
+Bool stringTrimLeft(Byte iOverload)
+{
+    switch (iOverload)
+    {
+        case 0x00:
+        {
+            UInt _this = VMPop();
+            UInt result = HRString_TrimLeft(_this);
+            GC_Release(_this);
+            VMPush(result, Type::eString);
+            break;
+        }
+        case 0x01:
+        {
+            UInt address = VMPop();
+            Type htype = (Type)0;
+            UInt str = VMGet(address, htype);
+            HRString_TrimLeft_R(str);
+            VMPut(address, str, Type::eString);
+            break;
+        }
+        default:
+        {
+            SetError(0x0B, (41));
+            break;
+        }
+    } // switch
+    return true;
+}
+Bool stringTrim(Byte iOverload)
+{
+    switch (iOverload)
+    {
+        case 0x00:
+        {
+            UInt _this = VMPop();
+            UInt result = HRString_Trim(_this);
+            GC_Release(_this);
+            VMPush(result, Type::eString);
+            break;
+        }
+        case 0x01:
+        {
+            UInt address = VMPop();
+            Type htype = (Type)0;
+            UInt str = VMGet(address, htype);
+            HRString_TrimRight_R(str);
+            HRString_TrimLeft_R(str);
+            VMPut(address, str, Type::eString);
+            break;
+        }
+        default:
+        {
+            SetError(0x0B, (41));
+            break;
+        }
+    } // switch
+    return true;
+}
+
+Bool stringToUpper(Byte iOverload)
+{
+    switch (iOverload)
+    {
+        case 0x00:
+        {
+            UInt _this = VMPop();
+            UInt result = HRString_ToUpper(_this);
+            GC_Release(_this);
+            VMPush(result, Type::eString);
+            break;
+        }
+        case 0x01:
+        {
+            UInt address = VMPop();
+            Type htype = (Type)0;
+            UInt str = VMGet(address, htype);
+            HRString_ToUpper_R(str);
+            VMPut(address, str, Type::eString);
+            break;
+        }
+        default:
+        {
+            SetError(0x0B, (41));
+            break;
+        }
+    } // switch
+    return true;
+}
+
+Bool stringToLower(Byte iOverload)
+{
+    switch (iOverload)
+    {
+        case 0x00:
+        {
+            UInt _this = VMPop();
+            UInt result = HRString_ToLower(_this);
+            GC_Release(_this);
+            VMPush(result, Type::eString);
+            break;
+        }
+        case 0x01:
+        {
+            UInt address = VMPop();
+            Type htype = (Type)0;
+            UInt str = VMGet(address, htype);
+            HRString_ToLower_R(str);
+            VMPut(address, str, Type::eString);
+            break;
+        }
+        default:
+        {
+            SetError(0x0B, (41));
+            break;
+        }
+    } // switch
+    return true;
+}
+Bool charToUpper(Byte iOverload)
+{
+    Char ch = (Char)VMPop();
+    VMPush(HRChar_ToUpper(ch), Type::eChar);
+    return true;
+}
+Bool charIsUpper(Byte iOverload)
+{
+    Char ch = (Char)VMPop();
+    VMPush(HRChar_IsUpper(ch), Type::eBool);
+    return true;
+}
+Bool charIsDigit(Byte iOverload)
+{
+    Char ch = (Char)VMPop();
+    VMPush(HRChar_IsDigit(ch), Type::eBool);
+    return true;
+}
+Bool charIsLetterOrDigit(Byte iOverload)
+{
+    Char ch = (Char)VMPop();
+    VMPush(HRChar_IsLetterOrDigit(ch), Type::eBool);
+    return true;
+}
+Bool charIsLower(Byte iOverload)
+{
+    Char ch = (Char)VMPop();
+    VMPush(HRChar_IsLower(ch), Type::eBool);
+    return true;
+}
+Bool charToDigit(Byte iOverload)
+{
+    Byte b = (Byte)VMPop();
+    VMPush(HRChar_ToDigit(b), Type::eChar);
+    return true;
+}
+Bool charToHex(Byte iOverload)
+{
+    Byte b = (Byte)VMPop();
+    VMPush(HRChar_ToHex(b), Type::eChar);
+    return true;
+}
+Bool charIsHexDigit(Byte iOverload)
+{
+    Char ch = (Char)VMPop();
+    VMPush(HRChar_IsHexDigit(ch), Type::eBool);
+    return true;
+}
+Bool charToLower(Byte iOverload)
+{
+    Char ch = (Char)VMPop();
+    VMPush(HRChar_ToLower(ch), Type::eChar);
+    return true;
+}
+
+
+Bool stringTrimRight(Byte iOverload)
+{
+    UInt address = VMPop();
+    Type htype = (Type)0;
+    UInt str = VMGet(address, htype);
+    HRString_TrimRight_R(str);
+    VMPut(address, str, Type::eString);
+    return true;
+}
+
 
 Bool stringSubstring(Byte iOverload)
 {
@@ -357,7 +629,7 @@ Bool stringSubstring(Byte iOverload)
             Type htype = (Type)0;
             UInt address = VMPop(htype);
             UInt str = VMGet(address, htype);
-            HRString_Substring(str, start);
+            HRString_Substring_R(str, start);
             VMPut(address, str, Type::eString);
             break;
         }
@@ -1014,6 +1286,142 @@ Bool dictionaryClear(Byte iOverload)
     GC_Release(_this);
     return true;
 }
+Bool dictionarySet(Byte iOverload)
+{
+    Type vtype   = (Type)0;
+    UInt32 value = VMPop32(vtype);
+    Type ktype   = (Type)0;
+    UInt key     = VMPop(ktype);
+    UInt _this   = VMPop();
+    HRDictionary_Set(_this, key, ktype, value, vtype);
+    if (IsReferenceType(ktype))
+    {
+        GC_Release(key);
+    }
+    if (IsReferenceType(vtype))
+    {
+        GC_Release(value);
+    }
+    GC_Release(_this);
+    return true;
+}
+Bool dictionaryGet(Byte iOverload)
+{
+    Type ktype = (Type)0;
+    UInt key = VMPop(ktype);
+    UInt _this = VMPop();
+    Type vtype = (Type)0;
+    UInt32 result = HRDictionary_Get(_this, key, vtype);
+    if (ktype == Type::eString)
+    {
+        GC_Release(key);
+    }
+    GC_Release(_this);
+    VMPush32(result, vtype);
+    return true;
+}
+Bool dictionaryNext(Byte iOverload)
+{
+    UInt iterator = VMPop();
+    UInt _this = VMPop();
+    UInt hrpair = 0;
+    UInt found = (HRDictionary_Next(_this, iterator, hrpair)) ? 1 : 0;
+    GC_Release(_this);
+    VMPush(found, Type::eBool);
+    VMPush(hrpair, Type::ePair);
+    VMPush(iterator, Type::eUInt);
+    return true;
+}
+Bool dictionaryContains(Byte iOverload)
+{
+    Type ktype = (Type)0;
+    UInt key   = VMPop(ktype);
+    UInt _this = VMPop();
+    UInt found = (HRDictionary_Contains(_this, key)) ? 1 : 0;
+    if (ktype == Type::eString)
+    {
+        GC_Release(key);
+    }
+    GC_Release(_this);
+    VMPush(found, Type::eBool);
+    return true;
+}
+Bool dictionaryCountGet(Byte iOverload)
+{
+    UInt _this = VMPop();
+    UInt count = HRDictionary_GetCount(_this);
+    GC_Release(_this);
+    VMPush(count, Type::eUInt);
+    return true;
+}
+
+Bool variantBox(Byte iOverload)
+{
+    Type vtype = (Type)VMPop();
+    UInt value = VMPop();
+    UInt address = HRVariant_New(value, vtype);
+    VMPush(address, Type::eVariant);
+    return true;
+}
+Bool typesTypeOf(Byte iOverload)
+{
+    Type ttype = (Type)0;
+    UInt _this = VMPop(ttype);
+    if (IsReferenceType(ttype))
+    {
+        GC_Release(_this);
+    }
+    VMPush(Byte(ttype), Type::eType);
+    return true;
+}
+Bool typesBoxTypeOf(Byte iOverload)
+{
+    Type ttype = (Type)0;
+    UInt _this = VMPop(ttype);
+    if (IsReferenceType(ttype))
+    {
+        ttype = (Type)Memory_ReadByte(_this);
+        if (ttype == Type::eVariant)
+        {
+            ttype = (Type)Memory_ReadByte(_this + 2);
+        }
+        GC_Release(_this);
+    }
+    VMPush((Byte)ttype, Type::eType);
+    return true;
+}
+
+Bool pairNew(Byte iOverload)
+{
+    Type vtype = (Type)0;
+    UInt32 value = VMPop32(vtype);
+    Type ktype = (Type)0;
+    UInt key = VMPop(ktype);
+    UInt address = HRPair_New(ktype, key, vtype, value);
+    VMPush(address, Type::ePair);
+    return true;
+}
+Bool pairKey(Byte iOverload)
+{
+    Type ttype = (Type)0;
+    UInt _this = VMPop(ttype);
+    Type ktype = (Type)0;
+    UInt key = HRPair_GetKey(_this, ktype);
+    GC_Release(_this);
+    VMPush(key, ktype);
+    return true;
+}
+Bool pairValue(Byte iOverload)
+{
+    Type ttype = (Type)0;
+    UInt _this = VMPop(ttype);
+    Type vtype = (Type)0;
+    UInt32 value = HRPair_GetValue(_this, vtype);
+    //printf("\npairValue: %08lX", value);
+    GC_Release(_this);
+    VMPush32(value, vtype);
+    return true;
+}
 
 
 
@@ -1040,6 +1448,24 @@ void SysCalls_PopulateJumpTable()
     syscallJumps[SysCall::eStringCompare]         = stringCompare;
     syscallJumps[SysCall::eStringBuildFront]      = stringBuildFront;
     syscallJumps[SysCall::eStringBuild]           = stringBuild;
+    syscallJumps[SysCall::eStringReplace]         = stringReplace;
+    syscallJumps[SysCall::eStringEndsWith]        = stringEndsWith;
+    syscallJumps[SysCall::eStringTrimLeft]        = stringTrimLeft;
+    syscallJumps[SysCall::eStringTrimRight]       = stringTrimRight;
+    syscallJumps[SysCall::eStringTrim]            = stringTrim;
+    syscallJumps[SysCall::eStringToUpper]         = stringToUpper;
+    syscallJumps[SysCall::eStringToLower]         = stringToLower;
+    
+    syscallJumps[SysCall::eCharToString]          = charToString;
+    syscallJumps[SysCall::eCharToUpper]           = charToUpper;
+    syscallJumps[SysCall::eCharIsUpper]           = charIsUpper;
+    syscallJumps[SysCall::eCharIsDigit]           = charIsDigit;
+    syscallJumps[SysCall::eCharIsLetterOrDigit]   = charIsLetterOrDigit;
+    syscallJumps[SysCall::eCharIsLower]           = charIsLower;
+    syscallJumps[SysCall::eCharToDigit]           = charToDigit;
+    syscallJumps[SysCall::eCharToHex]             = charToHex;
+    syscallJumps[SysCall::eCharIsHexDigit]        = charIsHexDigit;
+    syscallJumps[SysCall::eCharToLower]           = charToLower;
     
     syscallJumps[SysCall::eArrayNew]              = arrayNew;
     syscallJumps[SysCall::eArrayCountGet]         = arrayCountGet;
@@ -1059,6 +1485,19 @@ void SysCalls_PopulateJumpTable()
     
     syscallJumps[SysCall::eDictionaryNew]         = dictionaryNew;
     syscallJumps[SysCall::eDictionaryClear]       = dictionaryClear;
+    syscallJumps[SysCall::eDictionarySet]         = dictionarySet;
+    syscallJumps[SysCall::eDictionaryGet]         = dictionaryGet;
+    syscallJumps[SysCall::eDictionaryNext]        = dictionaryNext;
+    syscallJumps[SysCall::eDictionaryContains]    = dictionaryContains;
+    syscallJumps[SysCall::eDictionaryCountGet]    = dictionaryCountGet;
+    
+    syscallJumps[SysCall::ePairNew]               = pairNew;
+    syscallJumps[SysCall::ePairKey]               = pairKey;
+    syscallJumps[SysCall::ePairValue]             = pairValue;
+    
+    syscallJumps[SysCall::eVariantBox]            = variantBox;
+    syscallJumps[SysCall::eTypesTypeOf]           = typesTypeOf;
+    syscallJumps[SysCall::eTypesBoxTypeOf]        = typesBoxTypeOf;
     
     syscallJumps[SysCall::eLongNew]               = longNew;
     syscallJumps[SysCall::eLongNewFromConstant]   = longNewFromConstant;
@@ -1102,8 +1541,6 @@ void SysCalls_PopulateJumpTable()
     syscallJumps[SysCall::eLongToBytes]           = longToBytes;
     syscallJumps[SysCall::eFloatToBytes]          = longToBytes;
     syscallJumps[SysCall::eIntToBytes]            = intToBytes;
-    
-    
     
     syscallJumps[SysCall::eLongToFloat]           = longToFloat;
     syscallJumps[SysCall::eLongToString]          = longToString;

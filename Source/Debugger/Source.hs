@@ -222,7 +222,7 @@ unit Source
         return item0;
     }
     
-    bool DictionaryNextItem(uint dPtr, ref uint iterator, ref uint kValue, ref uint vValue)
+    bool DictionaryNextItem(uint dPtr, ref uint iterator, ref uint kValue, ref uint vValue0, ref uint vValue1)
     {
         // Dictionary memory map:
         //   0000 heap allocator size
@@ -255,13 +255,30 @@ unit Source
             uint pEntry = pEntries + (iterator << 3);
             iterator = (iterator + 1) % capacity;
             
+            // 16 bit stack slots:
+            //
             // xxxx key
             // XXxxxxxx isOccupied / Hash
             // xxxx pValue variant
+            
+            // 32 bit stack slots:
+            //
+            // xxxx key
+            // XXxx isOccupied / Hash
+            // xxxxxxxx pValue variant
+            
+            
             bool notOccupied;
             if (dktype == string)
             {
-                notOccupied = (Pages.GetPageWord(pEntry+2) == 0) && (Pages.GetPageWord(pEntry+4) == 0);
+                if (Is32BitStackSlot)
+                {
+                    notOccupied = (Pages.GetPageWord(pEntry+2) == 0);
+                }
+                else
+                {
+                    notOccupied = ((Pages.GetPageWord(pEntry+2) == 0) && (Pages.GetPageWord(pEntry+4) == 0));
+                }
             }
             else
             {
@@ -273,8 +290,17 @@ unit Source
             }
             else
             {
-                kValue = Pages.GetPageWord(pEntry);
-                vValue = Pages.GetPageWord(pEntry+6);
+                kValue  = Pages.GetPageWord(pEntry);
+                if (Is32BitStackSlot)
+                {
+                    vValue0 = Pages.GetPageWord(pEntry+4);
+                    vValue1 = Pages.GetPageWord(pEntry+6);
+                }
+                else
+                {
+                    vValue0 = Pages.GetPageWord(pEntry+6);
+                    vValue1 = 0;
+                }
                 if (iterator == 0)
                 {
                     iterator = 0xFFFF; // end indicator for foreach loop
@@ -463,8 +489,9 @@ unit Source
                     bool first = true;
                     uint iterator = 0;
                     uint kValue;
-                    uint vValue;
-                    while (DictionaryNextItem(value0, ref iterator, ref kValue, ref vValue))
+                    uint vValue0;
+                    uint vValue1;
+                    while (DictionaryNextItem(value0, ref iterator, ref kValue, ref vValue0, ref vValue1))
                     {
                         if (!first)
                         {
@@ -478,7 +505,7 @@ unit Source
                         content = content + "<";
                         content = content + TypeToString(kValue, 0, dktypes, false, limit);
                         content = content + ", ";
-                        content = content + TypeToString(vValue, 0, dvtypes, false, limit);
+                        content = content + TypeToString(vValue0, vValue1, dvtypes, false, limit);
                         content = content + ">";
                         first = false;
                     }
