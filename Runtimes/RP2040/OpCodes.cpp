@@ -6,7 +6,7 @@ OpCodeMethod opCodeJumps[256];
 
 bool undefined()
 {
-    printf("\nundefined opcode at 0x%04X", GetPC()-1);
+    printf("\nundefined opcode at 0x%04X", pc-1);
     SetError(0x0A, (14));
     return false;
 }
@@ -15,7 +15,11 @@ bool nop()
     return true;
 }
 
-
+Bool pushGP()
+{
+    VMPush(0, Type::eUInt);
+    return true;
+}
 
 bool pushI()
 {
@@ -137,6 +141,34 @@ bool pushLocalB02()
 {
     return pushLocalShared(2);
 }
+
+
+bool popCopyGlobalShared(UInt offset)
+{
+    Type htype = (Type)0;
+    UInt oldvalue = VMGet(offset, htype);
+    if (IsReferenceType(htype))
+    {
+        GC_Release(oldvalue);
+    }
+    UInt32 value = VMPop32(htype);
+    if ((htype == Type::eLong) || (htype == Type::eFloat))
+    {
+        VMPut32(offset, value, htype);
+        //value = VMGet32(offset, htype);
+    }
+    else if (value == oldvalue)
+    {
+    }
+    else
+    {
+        UInt newvalue = GC_Clone(value);
+        GC_Release(value);
+        VMPut(offset, newvalue, htype);
+    }
+    return true;
+}
+
 bool popCopyLocalShared(Int operand)
 {
     Int offset = operand;
@@ -151,7 +183,7 @@ bool popCopyLocalShared(Int operand)
     if ((htype == Type::eLong) || (htype == Type::eFloat))
     {
         VMPut32(localAddress, value, htype);
-        value = VMGet32(localAddress, htype);
+        //value = VMGet32(localAddress, htype);
     }
     else if (value == oldvalue)
     {
@@ -225,6 +257,46 @@ bool popLocalB00()
 bool popLocalB02()
 {
     return popLocalShared(2);
+}
+
+bool popGlobalShared(UInt offset)
+{
+    if (GetCNP())
+    {
+        SetCNP(false);
+        return popCopyGlobalShared(offset);
+    }
+    else
+    {
+        Type htype = (Type)Memory_ReadWord(typeStack + offset);
+        UInt32 value = 0;
+        if (IsReferenceType(htype))
+        {
+            value = Memory_ReadWord(valueStack + (offset<<1));
+            GC_Release(value);
+        }
+        value = VMPop32(htype);
+        Memory_WriteWord(valueStack + (offset << 1),     (value & 0xFFFF));
+        Memory_WriteWord(valueStack + (offset << 1) + 2, (value >> 16));
+        Memory_WriteWord(typeStack  + offset, (UInt)htype);
+    }
+    return true;
+}
+bool popGlobal()
+{
+    return popGlobalShared(VMReadWordOperand());
+}
+bool popGlobalB()
+{
+    return popGlobalShared(VMReadByteOperand());
+}
+bool popCopyGlobal()
+{
+    return popCopyGlobalShared(VMReadWordOperand());
+}
+bool popCopyGlobalB()
+{
+    return popCopyGlobalShared(VMReadByteOperand());
 }
 
 
@@ -477,7 +549,19 @@ Bool retresB()
 {
     return retresShared(VMReadByteOperand());
 }
-
+Bool dup()
+{
+    Byte offset  = VMReadByteOperand();
+    UInt address = sp - 2 - offset;
+    UInt32 value = Memory_ReadWord(valueStack + (address<<1)) + (Memory_ReadWord(valueStack + (address<<1) + 2) << 16);
+    Type htype = Type(Memory_ReadWord(typeStack + address));
+    VMPush32(value, htype);
+    if (IsReferenceType(htype))
+    {
+        GC_AddReference(value);
+    }
+    return true;
+}
 Bool decSP()
 {
     UInt popBytes = codeMemoryBlock[pc]; pc++;
@@ -493,6 +577,18 @@ Bool decSP()
             sp -= 2;
         }
         popBytes -= 2;
+    }
+    return true;
+}
+
+Bool testBPB()
+{
+    Byte operand = VMReadByteOperand();
+    UInt bpExpected = UInt(sp - operand);
+    if (bpExpected != bp)
+    {
+        SetError(0x0B, (36));
+        return false;
     }
     return true;
 }
@@ -678,6 +774,84 @@ bool gei()
     return true;
 }
 
+Bool boolAnd()
+{
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = ((*next != 0) && (*top != 0)) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
+    return true;
+}
+Bool boolOr()
+{
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = ((*next != 0) || (*top != 0)) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
+    return true;
+}
+Bool bitAnd()
+{
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next & *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
+    return true;
+}
+Bool bitOr()
+{
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next | *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
+    return true;
+}
+Bool bitXor()
+{
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next ^ *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
+    return true;
+}
+Bool bitShl()
+{
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next << *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
+    return true;
+}
+Bool bitShr()
+{
+    sp -= 2;
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + (sp << 1)];
+    UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *next = *next >> *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
+    return true;
+}
+Bool boolNot()
+{
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *top = (*top == 0) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
+    return true;
+}
+Bool bitNot()
+{
+    UInt * top  = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *top = ~(*top);
+    dataMemoryBlock[typeStack + sp-2] = Type::eUInt;
+    return true;
+}
+
 
 bool add()
 {
@@ -849,7 +1023,7 @@ bool pushIBEQ()
     UInt * next = (UInt*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
     *next = (*next == codeMemoryBlock[pc]) ? 1 : 0; pc++;
     dataMemoryBlock[typeStack + sp-2] = Type::eBool;
-    return eq();
+    return true;
 }
 bool pushILE()
 {
@@ -867,6 +1041,62 @@ bool pushILEI()
     return lei();
 }
 
+Bool jixB()
+{
+    UInt switchCase = VMPop();
+    Byte minRange   = VMReadByteOperand();
+    Byte maxRange   = VMReadByteOperand();
+    Byte lsb        = VMReadByteOperand();
+    Byte msb        = VMReadByteOperand();
+    Int jumpBackOffset = Int(lsb + (msb << 0x08));
+    UInt tpc = pc;
+    pc = (UInt(Int(pc) - jumpBackOffset - 5));
+    UInt tableSize = UInt(maxRange) - UInt(minRange) + 1;
+    UInt offset = 0;
+    if ((switchCase >= minRange) && (switchCase <= maxRange))
+    {
+        UInt index = tpc + switchCase - minRange;
+        offset = Memory_ReadCodeByte(index);
+    }
+    if (offset == 0)
+    {
+        pc = tpc + tableSize;
+    }
+    else
+    {
+        pc += offset;
+    }
+    return true;
+}
+
+Bool jix()
+{
+    UInt switchCase = VMPop();
+    Byte minRange   = VMReadByteOperand();
+    Byte maxRange   = VMReadByteOperand();
+    Byte lsb        = VMReadByteOperand();
+    Byte msb        = VMReadByteOperand();
+    Int jumpBackOffset = Int(lsb + (msb << 0x08));
+    UInt tpc = pc;
+    pc = (UInt(Int(pc) - jumpBackOffset - 5));
+    UInt tableSize = (UInt(maxRange) - UInt(minRange) + 1) << 0x01;
+    UInt offset = 0;
+    if ((switchCase >= minRange) && (switchCase <= maxRange))
+    {
+        UInt index = tpc + (switchCase - minRange) * 2;
+        offset = Memory_ReadCodeByte(index) + (Memory_ReadCodeByte(index + 0x01) << 0x08);
+    }
+    if (offset == 0)
+    {
+        pc = tpc + tableSize;
+    }
+    else
+    {
+        pc += offset;
+    }
+    return true;
+}
+
 void OpCodes_PopulateJumpTable()
 {
     
@@ -882,6 +1112,7 @@ void OpCodes_PopulateJumpTable()
     opCodeJumps[OpCode::ePUSHIB]         = pushIB;
     opCodeJumps[OpCode::ePUSHI]          = pushI;
     opCodeJumps[OpCode::ePUSHD]          = pushI;
+    opCodeJumps[OpCode::ePUSHGP]         = pushGP;
     opCodeJumps[OpCode::ePUSHLOCAL]      = pushLocal;
     opCodeJumps[OpCode::ePUSHLOCALB]     = pushLocalB;
     opCodeJumps[OpCode::ePUSHLOCALBB]    = pushLocalBB;
@@ -900,11 +1131,17 @@ void OpCodes_PopulateJumpTable()
     opCodeJumps[OpCode::ePOPLOCALB02]     = popLocalB02;
     opCodeJumps[OpCode::ePOPREL]          = popRel;
     opCodeJumps[OpCode::ePOPRELB]         = popRelB;
+    opCodeJumps[OpCode::ePOPGLOBAL]       = popGlobal;
+    opCodeJumps[OpCode::ePOPGLOBALB]      = popGlobalB;
     
+    opCodeJumps[OpCode::ePOPCOPYLOCAL]    = popCopyLocal;
     opCodeJumps[OpCode::ePOPCOPYLOCALB]   = popCopyLocalB;
     opCodeJumps[OpCode::ePOPCOPYLOCALB00] = popCopyLocalB00;
     opCodeJumps[OpCode::ePOPCOPYLOCALB02] = popCopyLocalB02;
+    opCodeJumps[OpCode::ePOPCOPYREL]      = popCopyRel;
     opCodeJumps[OpCode::ePOPCOPYRELB]     = popCopyRelB;
+    opCodeJumps[OpCode::ePOPCOPYGLOBAL]   = popCopyGlobal;
+    opCodeJumps[OpCode::ePOPCOPYGLOBALB]  = popCopyGlobalB;
     
     
     opCodeJumps[OpCode::eCOPYNEXTPOP] = copyNextPop;
@@ -914,6 +1151,8 @@ void OpCodes_PopulateJumpTable()
     opCodeJumps[OpCode::eDECSP]    = decSP;
     opCodeJumps[OpCode::eSWAP]     = swap;
     opCodeJumps[OpCode::eCAST]     = cast;
+    opCodeJumps[OpCode::eDUP]      = dup;
+    opCodeJumps[OpCode::eTESTBPB]  = testBPB;
     
     opCodeJumps[OpCode::eCALL]     = call;
     opCodeJumps[OpCode::eCALLI]    = callI;
@@ -936,6 +1175,8 @@ void OpCodes_PopulateJumpTable()
     opCodeJumps[OpCode::eJZB]  = jzb;
     opCodeJumps[OpCode::eJNZB] = jnzb;
     opCodeJumps[OpCode::eJB]   = jb;
+    opCodeJumps[OpCode::eJIXB] = jixB;
+    opCodeJumps[OpCode::eJIX]  = jix;
     
     opCodeJumps[OpCode::eEQ]   = eq;
     opCodeJumps[OpCode::eNE]   = ne;
@@ -953,6 +1194,18 @@ void OpCodes_PopulateJumpTable()
     opCodeJumps[OpCode::eMUL]  = mul;
     opCodeJumps[OpCode::eDIV]  = div;
     opCodeJumps[OpCode::eMOD]  = mod;
+    
+    opCodeJumps[OpCode::eBOOLAND]  = boolAnd;
+    opCodeJumps[OpCode::eBOOLOR]   = boolOr;
+    opCodeJumps[OpCode::eBITAND]   = bitAnd;
+    opCodeJumps[OpCode::eBITOR]    = bitOr;
+    opCodeJumps[OpCode::eBITXOR]   = bitXor;
+    opCodeJumps[OpCode::eBITSHL]   = bitShl;
+    opCodeJumps[OpCode::eBITSHR]   = bitShr;
+    
+    opCodeJumps[OpCode::eBOOLNOT]  = boolNot;
+    opCodeJumps[OpCode::eBITNOT]   = bitNot;
+    
     
     opCodeJumps[OpCode::eADDI]  = addi;
     opCodeJumps[OpCode::eSUBI]  = subi;
@@ -976,8 +1229,17 @@ void OpCodes_PopulateJumpTable()
     // TODO
 }
 
+bool dumping;
+
 Bool OpCodeCall(OpCode opCode)
 {
-    //printf("\nOpCode: 0x%04X 0x%02X", GetPC()-1, opCode);
+    if (pc == 0x00B5)
+    {
+        //dumping = true;
+    }
+    if (dumping)
+    {
+        printf("\nOpCode: 0x%04X 0x%02X", GetPC()-1, opCode);
+    }
     return opCodeJumps[opCode]();
 }

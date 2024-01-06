@@ -153,8 +153,7 @@ program HopperMonitor
     uint TypeAddressFromValueAddress(uint voffset)
     {
         uint toffset;
-        bool stack8 = ZeroPageContains("BP8");
-        if (stack8)
+        if (Is8BitSP)
         {
             toffset = uint(voffset - 0x0100);
         }
@@ -186,13 +185,18 @@ program HopperMonitor
                 if (Int.TryParse(kv.key, ref delta))
                 {
                 }
+                if (Is32BitStackSlot)
+                {
+                    delta = delta * 2;
+                }
                 uint voffset = uint(int(bp) +  delta);
                 uint toffset = TypeAddressFromValueAddress(voffset);
-                uint value = GetPageWord(voffset);
+                uint value0 = GetPageWord(voffset);
+                uint value1 = GetPageWord(voffset + 2);
                 string vtype = argumentList[1];
                 // TODO : validate against pageData[toffset];
                 bool isReference = (argumentList[0] == "true");
-                content = content + char(2) + TypeToString(value, vtype, isReference, 255) + char(3);
+                content = content + char(2) + TypeToString(value0, value1, vtype, isReference, 255) + char(3);
                 first = false;
             }
         }
@@ -278,8 +282,9 @@ program HopperMonitor
         //Pages.LoadPageData(0x04);
         //Pages.LoadPageData(0x05);
         //Pages.LoadPageData(0x06);
-        bool stack8 = ZeroPageContains("BP8");
-        if (!stack8)
+        Output.Initialize();
+        
+        if (!Is8BitSP)
         {
             //Pages.LoadPageData(0x07);
         }
@@ -304,7 +309,7 @@ program HopperMonitor
                 {
                     address = GetPageWord(0x0400+icsp);
                     bp      = GetPageWord(0x0400+icsp+2);
-                    if (stack8)
+                    if (Is8BitSP)
                     {
                         bp  = 0x600 + bp;
                     }
@@ -317,7 +322,7 @@ program HopperMonitor
                 // current method
                 uint pc = GetZeroPage("PC") - (GetZeroPage("CODESTART") << 8);
                 methodIndex = LocationToIndex(pc);
-                if (stack8)
+                if (Is8BitSP)
                 {
                     bp  = 0x600 + GetZeroPage("BP8");
                 }
@@ -332,15 +337,20 @@ program HopperMonitor
                     foreach (var kv in usedGlobals)
                     {
                         uint goffset = kv.key;
+                        if (Is32BitStackSlot)
+                        {
+                            goffset = goffset * 2;
+                        }
                         <string> globalList = kv.value;
                         uint gaddress = goffset + 0x0600;
                         uint toffset = TypeAddressFromValueAddress(gaddress);
-                        uint gvalue = GetPageWord(gaddress);
+                        uint gvalue0 = GetPageWord(gaddress);
+                        uint gvalue1 = GetPageWord(gaddress + 2);
                         
                         string gtype = globalList[0];
                         // TODO : validate against pageData[toffset];
                         
-                        string gcontent = char(2) + Source.TypeToString(gvalue, gtype, false, 255) + char(3);
+                        string gcontent = char(2) + Source.TypeToString(gvalue0, gvalue1, gtype, false, 255) + char(3);
                         
                         PrintLn();
                         PrintColors("    " + globalList[1] + "=" + gcontent);

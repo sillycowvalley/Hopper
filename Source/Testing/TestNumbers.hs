@@ -1,7 +1,7 @@
 program TestNumbers
 {
-#define TINYHOPPER
-#define PORTABLE
+//#define TINYHOPPER
+//#define PORTABLE
 #define SERIALCONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
@@ -22,7 +22,7 @@ program TestNumbers
     PrintFailed(string message)
     {
         WriteLn("  " + message);
-        //Diagnostics.Die(0x0B); // system failure / internal error
+        Diagnostics.Die(0x0B); // system failure / internal error
     }
    
     TestEquals()

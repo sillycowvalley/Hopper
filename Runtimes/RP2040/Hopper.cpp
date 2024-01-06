@@ -212,6 +212,14 @@ void VMPut32(UInt address, UInt32 value, Type type)
     Memory_WriteWord(typeStack + address, type);
 }
 
+Long  VMPopLong()
+{
+    Type type;
+    UInt32 ui = VMPop32(type);
+    Long * l = (Long*)&ui;
+    return *l;
+}
+
 Float VMPopFloat()
 {
     Type type;
@@ -223,6 +231,11 @@ void  VMPushFloat(Float f)
 {
     UInt32 * ui = (UInt32*)&f;
     VMPush32(*ui, Type::eFloat);
+}
+void  VMPushLong(Long l)
+{
+    UInt32 * ui = (UInt32*)&l;
+    VMPush32(*ui, Type::eLong);
 }
 Int VMPopInt()
 {
@@ -445,12 +458,12 @@ void DumpPage(Byte iPage, Bool includeAddresses)
                     }
                     case 0xB3:
                     {
-                        data = Byte((sp + 0x0600) >> 0x08);
+                        data = Byte(((sp<<1) + 0x0600) >> 0x08);
                         break;
                     }
                     case 0xB2:
                     {
-                        data = Byte((sp + 0x0600) & 0xFF);
+                        data = Byte(((sp<<1) + 0x0600) & 0xFF);
                         break;
                     }
                     case 0xB5:
@@ -465,12 +478,12 @@ void DumpPage(Byte iPage, Bool includeAddresses)
                     }
                     case 0xB7:
                     {
-                        data = Byte((bp + 0x0600) >> 0x08);
+                        data = Byte(((bp<<1) + 0x0600) >> 0x08);
                         break;
                     }
                     case 0xB6:
                     {
-                        data = Byte((bp + 0x0600) & 0xFF);
+                        data = Byte(((bp<<1) + 0x0600) & 0xFF);
                         break;
                     }
                     case 0xB9:
@@ -1170,7 +1183,7 @@ void HopperEntryPoint()
                     putchar('S');
                     putchar('P');
                     putchar('=');
-                    printf("%04X", sp + 0x0600);
+                    printf("%04X", (sp<<1) + 0x0600);
                     putchar(' ');
                     
                     putchar('T');
@@ -1183,7 +1196,7 @@ void HopperEntryPoint()
                     putchar('B');
                     putchar('P');
                     putchar('=');
-                    printf("%04X", bp + 0x0600);
+                    printf("%04X", (bp<<1) + 0x0600);
                     
                     putchar(slash); // confirm data
                     break;

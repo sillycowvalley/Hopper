@@ -259,16 +259,15 @@ void GC_Release(UInt address)
                 Memory_Free(address);
                 break;
             }
-            /* TODO
-            case Type::eDirectory:
+            case Type::ePair:
             {
-                HRDirectory_Clear(address);
+                HRPair_Clear(address);
                 Memory_Free(address);
                 break;
             }
-            case Type::eFile:
+            case Type::eVariant:
             {
-                HRFile_Clear(address);
+                HRVariant_Clear(address);
                 Memory_Free(address);
                 break;
             }
@@ -284,15 +283,16 @@ void GC_Release(UInt address)
                 Memory_Free(address);
                 break;
             }
-            case Type::ePair:
+            /* TODO
+            case Type::eDirectory:
             {
-                HRPair_Clear(address);
+                HRDirectory_Clear(address);
                 Memory_Free(address);
                 break;
             }
-            case Type::eVariant:
+            case Type::eFile:
             {
-                HRVariant_Clear(address);
+                HRFile_Clear(address);
                 Memory_Free(address);
                 break;
             }
@@ -315,6 +315,21 @@ UInt GC_Clone(UInt original)
             return HRString_Clone(original);
             break;
         }
+        case Type::ePair:
+        {
+            return HRPair_Clone(original);
+            break;
+        }
+        case Type::eVariant:
+        {
+            return HRVariant_Clone(original);
+            break;
+        }
+        case Type::eList:
+        {
+            return HRList_Clone(original);
+            break;
+        }
         /* TODO
         case Type::eDirectory:
         {
@@ -326,24 +341,9 @@ UInt GC_Clone(UInt original)
             return HRFile_Clone(original);
             break;
         }
-        case Type::eList:
-        {
-            return HRList_Clone(original);
-            break;
-        }
         case Type::eDictionary:
         {
             return HRDictionary_Clone(original);
-            break;
-        }
-        case Type::ePair:
-        {
-            return HRPair_Clone(original);
-            break;
-        }
-        case Type::eVariant:
-        {
-            return HRVariant_Clone(original);
             break;
         }
         */
@@ -394,15 +394,9 @@ void GC_Dump(UInt address, UInt indent)
             HRString_Dump(address, indent);
             break;
         }
-        /* TODO
         case Type::eArray:
         {
             HRArray_Dump(address, indent);
-            break;
-        }
-        case Type::eList:
-        {
-            HRList_Dump(address, indent);
             break;
         }
         case Type::ePair:
@@ -415,6 +409,12 @@ void GC_Dump(UInt address, UInt indent)
             HRVariant_Dump(address, indent);
             break;
         }
+        case Type::eList:
+        {
+            HRList_Dump(address, indent);
+            break;
+        }
+        /* TODO
         case Type::eDictionary:
         {
             HRDictionary_Dump(address, indent);

@@ -18,6 +18,10 @@ add_executable(hopper
     HopperMemory.cpp
     HopperString.cpp
     HopperArray.cpp
+    HopperDictionary.cpp
+    HopperList.cpp
+    HopperVariant.cpp
+    HopperPair.cpp
     OpCodes.cpp
     SysCalls.cpp
     LibCalls.cpp

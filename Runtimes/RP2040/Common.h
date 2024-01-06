@@ -117,12 +117,15 @@ void VMPush(UInt word, Type type);
 void VMPush32(UInt32 word, Type type);
 UInt VMPop();
 Int  VMPopInt();
+void VMPushInt(Int i);
 UInt VMPop(Type & type);
 UInt VMGet(UInt address, Type & type);
 UInt32 VMGet32(UInt address, Type & type);
 void VMPut  (UInt address, UInt value, Type type);
 void VMPut32(UInt address, UInt32 value, Type type);
 
+Long  VMPopLong();
+void  VMPushLong(Long l);
 Float VMPopFloat();
 void  VMPushFloat(Float f);
 
@@ -140,6 +143,10 @@ bool SysCall1();
 #include "HopperMemory.h"
 #include "HopperString.h"
 #include "HopperArray.h"
+#include "HopperVariant.h"
+#include "HopperPair.h"
+#include "HopperDictionary.h"
+#include "HopperList.h"
 #include "OpCodes.h"
 
 #endif // HOPPERPLATFORM_H

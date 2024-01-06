@@ -55,6 +55,7 @@ enum SysCall {
     eIntToLong = 0x0035,
     eUIntToLong = 0x0036,
     eUIntToInt = 0x0037,
+    eLongToString = 0x38,
     eLongToBytes = 0x0039,
     eLongToFloat = 0x003A,
     eLongToInt = 0x003B,
@@ -108,6 +109,7 @@ enum SysCall {
     eDirectoryGetFileCount = 0x006F,
     eDirectoryGetFile = 0x0070,
     eDirectoryGetDirectory = 0x0071,
+    eDiagnosticsDie = 0x007C,
     eTypesTypeOf = 0x007E,
     eTypesValueTypeOf = 0x007F,
     eTypesKeyTypeOf = 0x0080,
@@ -167,6 +169,12 @@ bool undefinedSys(Byte iOverload)
 {
     printf("\nundefined syscall at 0x%04X", GetPC()-2);
     SetError(0x0A, (18));
+    return false;
+}
+Bool diagnosticsDie(Byte iOverload)
+{
+    Byte err = (Byte)VMPop();
+    SetError(err, (38));
     return false;
 }
 
@@ -258,6 +266,110 @@ Bool stringInsertChar(Byte iOverload)
     
     return true;
 }
+Bool stringCompare(Byte iOverload)
+{
+    UInt right = VMPop();
+    UInt left = VMPop();
+    Int result = HRString_Compare(left, right);
+    GC_Release(right);
+    GC_Release(left);
+    VMPushInt(result);
+    return true;
+}
+Bool stringBuildFront(Byte iOverload)
+{
+    // BuildFront(ref string build, char insert)
+    Char ch      = (Char)VMPop();
+    Type htype   = (Type)0;
+    UInt address = VMPop(htype);
+    UInt str = VMGet(address, htype);
+    HRString_BuildFront_R(str, ch);
+    VMPut(address, str, Type::eString);
+    return true;
+}
+Bool stringBuild(Byte iOverload)
+{
+    Type type;
+    switch (iOverload)
+    {
+        case 0x00:
+        {
+            UInt append = VMPop();
+            UInt address = VMPop();
+            UInt str = VMGet(address, type);
+            HRString_BuildString_R(str, append);
+            VMPut(address, str, Type::eString);
+            GC_Release(append);
+            break;
+        }
+        case 0x01:
+        {
+            Char ch = (Char)VMPop();
+            UInt address = VMPop();
+            UInt str = VMGet(address, type);
+            HRString_BuildChar_R(str, ch);
+            VMPut(address, str, Type::eString);
+            break;
+        }
+        case 0x02:
+        {
+            UInt address = VMPop();
+            UInt str = VMGet(address, type);
+            HRString_BuildClear_R(str);
+            VMPut(address, str, Type::eString);
+            break;
+        }
+        default:
+        {
+            SetError(0x0B, (37));
+            break;
+        }
+    } // switch
+    return true;
+}
+
+Bool stringSubstring(Byte iOverload)
+{
+    switch (iOverload)
+    {
+        case 0:
+        {
+            UInt start = VMPop();
+            UInt _this = VMPop();
+            UInt result = HRString_Substring(_this, start);
+            GC_Release(_this);
+            VMPush(result, Type::eString);
+            break;
+        }
+        case 1:
+        {
+            UInt limit = VMPop();
+            UInt start = VMPop();
+            UInt _this = VMPop();
+            UInt result = HRString_Substring(_this, start, limit);
+            GC_Release(_this);
+            VMPush(result, Type::eString);
+            break;
+        }
+        case 2:
+        {
+            UInt start = VMPop();
+            Type htype = (Type)0;
+            UInt address = VMPop(htype);
+            UInt str = VMGet(address, htype);
+            HRString_Substring(str, start);
+            VMPut(address, str, Type::eString);
+            break;
+        }
+        default:
+        {
+            SetError(0x12, (35));
+            break;
+        }
+    } // switch
+    return true;
+}
+
 Bool stringLengthGet(Byte iOverload)
 {
     UInt _this = VMPop();
@@ -302,12 +414,38 @@ Bool stringAppend(Byte iOverload)
         return false;
     }
 }
+void stripTrailingZeros(char * buffer)
+{
+    int i = strlen(buffer) - 1;
+    for (;;)
+    {
+        if (i == 0)
+        {
+            break;
+        }
+        if (buffer[i] != '0')
+        {
+            break;
+        }
+        // buffer[i] == 0
+        if ((i >= 1) && (buffer[i-1] != '.'))
+        {
+            buffer[i] = 0;
+        }
+        i--;
+    }
+    if (strcmp(buffer, "0.0") == 0)
+    {
+        buffer[1] = 0; // "0.0" -> "0"
+    }
+}
 Bool floatToString(Byte iOverload)
 {
     Float top = VMPopFloat();
     UInt str = HRString_New();
     char buffer[20];
     sprintf(buffer, "%g", top);
+    stripTrailingZeros(buffer);
     //printf("\nfloatToString: %s", buffer);
     UInt i = 0;
     while (buffer[i])
@@ -316,6 +454,89 @@ Bool floatToString(Byte iOverload)
         i++;
     }
     VMPush(str, Type::eString);
+    return true;
+}
+Bool longToString(Byte iOverload)
+{
+    Long top = VMPopLong();
+    UInt str = HRString_New();
+    char buffer[20];
+    sprintf(buffer, "%ld", top);
+    //printf("\nlongToString: %s", buffer);
+    UInt i = 0;
+    while (buffer[i])
+    {
+        HRString_BuildChar_R(str , (Char)buffer[i]);
+        i++;
+    }
+    VMPush(str, Type::eString);
+    return true;
+}
+
+Bool longGetByte(Byte iOverload)
+{
+    UInt index = VMPop();
+    Type type;
+    UInt32 top   = VMPop32(type);
+    Byte b = (Byte)((top >> (8*index)) & 0xFF);
+    VMPush(b, Type::eByte);
+    return true;
+}
+Bool intGetByte(Byte iOverload)
+{
+    UInt index = VMPop();
+    UInt top   = VMPop();
+    Byte b = (Byte)((top >> (8*index)) & 0xFF);
+    VMPush(b, Type::eByte);
+    return true;
+}
+Bool longFromBytes(Byte iOverload)
+{
+    Byte b3 = (Byte)VMPop();
+    Byte b2 = (Byte)VMPop();
+    Byte b1 = (Byte)VMPop();
+    Byte b0 = (Byte)VMPop();
+    UInt32 l = b0 + (b1 << 8) + (b2 << 16) + (b3 << 24);
+    VMPush32(l, Type::eLong);
+    return true;
+}
+Bool floatFromBytes(Byte iOverload)
+{
+    Byte b3 = (Byte)VMPop();
+    Byte b2 = (Byte)VMPop();
+    Byte b1 = (Byte)VMPop();
+    Byte b0 = (Byte)VMPop();
+    UInt32 l = b0 + (b1 << 8) + (b2 << 16) + (b3 << 24);
+    VMPush32(l, Type::eFloat);
+    return true;
+}
+Bool intFromBytes(Byte iOverload)
+{
+    Byte b1 = (Byte)VMPop();
+    Byte b0 = (Byte)VMPop();
+    UInt ui = b0 + (b1 << 8);
+    VMPush(ui, Type::eInt);
+    return true;
+}
+bool longToBytes(Byte iOverload)
+{
+    Type type;
+    UInt32 l = VMPop32(type);
+    UInt lst = HRList_New(Type::eByte);
+    HRList_Append(lst, (l & 0xFF), Type::eByte);
+    HRList_Append(lst, ((l >> 8) & 0xFF), Type::eByte);
+    HRList_Append(lst, ((l >> 16) & 0xFF), Type::eByte);
+    HRList_Append(lst, (l >> 24), Type::eByte);
+    VMPush(lst, Type::eList);
+    return true;
+}
+bool intToBytes(Byte iOverload)
+{
+    UInt ui = VMPop();
+    UInt lst = HRList_New(Type::eByte);;
+    HRList_Append(lst, (ui & 0xFF), Type::eByte);
+    HRList_Append(lst, (ui >> 8), Type::eByte);
+    VMPush(lst, Type::eList);
     return true;
 }
 
@@ -337,10 +558,13 @@ Bool floatNewFromConstant(Byte iOverload)
     UInt location = VMPop() + GetConstantAddress();
     UInt32 value = Memory_ReadCodeWord(location) + (Memory_ReadCodeWord(location + 0x02) << 16);
     VMPush32(value, Type::eFloat);
-    //Type type;
-    //value = VMGet32(GetSP()-2, type);
-    //Float * f = (Float*)&value;
-    //printf("\nfloatNewFromConstant: 0x%08X %g", value, *f);
+    return true;
+}
+Bool longNewFromConstant(Byte iOverload)
+{
+    UInt location = VMPop() + GetConstantAddress();
+    UInt32 value = Memory_ReadCodeWord(location) + (Memory_ReadCodeWord(location + 0x02) << 16);
+    VMPush32(value, Type::eLong);
     return true;
 }
 Bool floatAdd(Byte iOverload)
@@ -393,6 +617,13 @@ Bool longSub(Byte iOverload)
     Long * top  = (Long*)&dataMemoryBlock[valueStack + (sp << 1)];
     Long * next = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
     *next = *next - *top;
+    dataMemoryBlock[typeStack + sp-2] = Type::eLong;
+    return true;
+}
+Bool longNegate(Byte iOverload)
+{
+    Long * top = (Long*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *top = - *top;
     dataMemoryBlock[typeStack + sp-2] = Type::eLong;
     return true;
 }
@@ -481,6 +712,53 @@ Bool longGE(Byte iOverload)
     return true;
 }
 
+Bool floatEQ(Byte iOverload)
+{
+    sp -= 2;
+    Float * top  = (Float*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Float * next = (Float*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    //printf("\nfloatEQ: %g == %g -> %c", *next, *top, (*next == *top) ? 't' : 'f');
+    *((UInt32*)next) = (*next == *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
+    return true;
+}
+Bool floatLT(Byte iOverload)
+{
+    sp -= 2;
+    Float * top  = (Float*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Float * next = (Float*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *((UInt32*)next) = (*next < *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
+    return true;
+}
+Bool floatLE(Byte iOverload)
+{
+    sp -= 2;
+    Float * top  = (Float*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Float * next = (Float*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *((UInt32*)next) = (*next <= *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
+    return true;
+}
+Bool floatGT(Byte iOverload)
+{
+    sp -= 2;
+    Float * top  = (Float*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Float * next = (Float*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *((UInt32*)next) = (*next > *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
+    return true;
+}
+Bool floatGE(Byte iOverload)
+{
+    sp -= 2;
+    Float * top  = (Float*)&dataMemoryBlock[valueStack + (sp << 1)];
+    Float * next = (Float*)&dataMemoryBlock[valueStack + ((sp-2) << 1)];
+    *((UInt32*)next) = (*next >= *top) ? 1 : 0;
+    dataMemoryBlock[typeStack + sp-2] = Type::eBool;
+    return true;
+}
+
 
 Bool longToFloat(Byte iOverload)
 {
@@ -488,7 +766,15 @@ Bool longToFloat(Byte iOverload)
     Long top  = (Long)VMPop32(ttype);
     Float value = top;
     VMPushFloat(value);
-    //printf("\nlongToFloat: %d -> %g", top, value);
+    //printf("\nlongToFloat: %ld -> %g", top, value);
+    return true;
+}
+Bool uintToFloat(Byte iOverload)
+{
+    UInt top  = VMPop();
+    Float value = top;
+    VMPushFloat(value);
+    //printf("\nuintToFloat: %d -> %g", top, value);
     return true;
 }
 Bool uintToLong(Byte iOverload)
@@ -499,12 +785,33 @@ Bool uintToLong(Byte iOverload)
     dataMemoryBlock[typeStack  + sp - 2] = Type::eLong;
     return true;
 }
+Bool intToLong(Byte iOverload)
+{
+    Int top  = VMPopInt();
+    Long value = top;
+    VMPushLong(value);
+    return true;
+}
+Bool intToFloat(Byte iOverload)
+{
+    Int top  = VMPopInt();
+    Float value = top;
+    VMPushFloat(value);
+    return true;
+}
+
 Bool longToUInt(Byte iOverload)
 {
     Type ttype;
     UInt32 top  = VMPop32(ttype);
     VMPush((top & 0xFFFF), Type::eUInt);
     //printf("\nlongToUInt: 0x%08X -> 0x%04X", top, top & 0xFFFF);
+    return true;
+}
+
+Bool screenClear(Byte iOverload)
+{
+    // TODO HRScreen_Clear();
     return true;
 }
 Bool screenPrintLn(Byte iOverload)
@@ -516,20 +823,20 @@ Bool screenPrint(Byte iOverload)
 {
     if (iOverload == 0)
     {
-        UInt bc = VMPop();
-        UInt fc = VMPop();
-        UInt ch = VMPop();
+        /*UInt bc =*/ VMPop();
+        /*UInt fc =*/ VMPop();
+        /*UInt ch =*/ VMPop();
         // TODO HRScreen_Print(Char(ch));
     }
     else if (iOverload == 1)
     {
-        UInt bc  = VMPop();
-        UInt fc  = VMPop();
+        /*UInt bc  =*/ VMPop();
+        /*UInt fc  =*/ VMPop();
         UInt str = VMPop();
         UInt length = HRString_GetLength(str);;
         for (UInt i = 0; i < length; i++)
         {
-            Char ch = HRString_GetChar(str, i);
+            /*Char ch =*/ HRString_GetChar(str, i);
             // TODO HRScreen_Print(ch);
         }
         GC_Release(str);
@@ -573,6 +880,142 @@ Bool arraySetItem(Byte iOverload)
     return true;
 }
 
+Bool listNew(Byte iOverload)
+{
+    Type htype = (Type)VMPop();
+    UInt address = HRList_New(htype);
+    VMPush(address, Type::eList);
+    return true;
+}
+Bool listLengthGet(Byte iOverload)
+{
+    UInt _this = VMPop();
+    UInt length = HRList_GetLength(_this);
+    GC_Release(_this);
+    VMPush(length, Type::eUInt);
+    return true;
+}
+
+Bool listAppend(Byte iOverload)
+{
+    Type itype = (Type)0;
+    UInt32 item = VMPop32(itype);
+    UInt _this = VMPop();
+    HRList_Append(_this, item, itype);
+    if (IsReferenceType(itype))
+    {
+        GC_Release(item);
+    }
+    GC_Release(_this);
+    return true;
+}
+
+Bool listInsert(Byte iOverload)
+{
+    Type itype  = (Type)0;
+    UInt32 item = VMPop(itype);
+    UInt index  = VMPop();
+    UInt _this  = VMPop();
+    HRList_Insert(_this, index, item, itype);
+    if (IsReferenceType(itype))
+    {
+        GC_Release(item);
+    }
+    GC_Release(_this);
+    return true;
+}
+
+Bool listGetItem(Byte iOverload)
+{
+    UInt index = VMPop();
+    UInt _this = VMPop();
+    Type itype = (Type)0;
+    UInt32 item = HRList_GetItem(_this, index, itype);
+    GC_Release(_this);
+    VMPush32(item, itype);
+    return true;
+}
+
+Bool listGetItemAsVariant(Byte iOverload)
+{
+    UInt index  = VMPop();
+    UInt _this  = VMPop();
+    Type itype  = (Type)0;
+    UInt32 item = HRList_GetItem(_this, index, itype);
+    if (!IsReferenceType(itype))
+    {
+        item = HRVariant_CreateValueVariant(item, itype);
+        itype = Type::eVariant;
+    }
+    GC_Release(_this);
+    VMPush(item, itype);
+    return true;
+}
+
+Bool listSetItem(Byte iOverload)
+{
+    Type itype  = (Type)0;
+    UInt32 item = VMPop32(itype);
+    UInt index  = VMPop();
+    UInt _this  = VMPop();
+    HRList_SetItem(_this, index, item, itype);
+    if (IsReferenceType(itype))
+    {
+        GC_Release(item);
+    }
+    GC_Release(_this);
+    return true;
+}
+
+Bool listClear(Byte iOverload)
+{
+    UInt _this = VMPop();
+    HRList_Clear(_this);
+    GC_Release(_this);
+    return true;
+}
+
+Bool listRemove(Byte iOverload)
+{
+    UInt index = VMPop();
+    UInt _this = VMPop();
+    HRList_Remove(_this, index);
+    GC_Release(_this);
+    return true;
+}
+
+Bool listContains(Byte iOverload)
+{
+    Type   itype  = (Type)0;
+    UInt32 item   = VMPop32(itype);
+    UInt   _this  = VMPop();
+    Bool contains = HRList_Contains(_this, item, itype);
+    if (IsReferenceType(itype))
+    {
+        GC_Release(item);
+    }
+    GC_Release(_this);
+    VMPush(contains ? 1 : 0, Type::eBool);
+    return true;
+}
+
+Bool dictionaryNew(Byte iOverload)
+{
+    Type vtype = (Type)VMPop();
+    Type ktype = (Type)VMPop();
+    UInt address = HRDictionary_New(ktype, vtype);
+    VMPush(address, Type::eDictionary);
+    return true;
+}
+Bool dictionaryClear(Byte iOverload)
+{
+    UInt _this = VMPop();
+    HRDictionary_Clear(_this);
+    GC_Release(_this);
+    return true;
+}
+
+
 
 void SysCalls_PopulateJumpTable()
 {
@@ -593,13 +1036,32 @@ void SysCalls_PopulateJumpTable()
     syscallJumps[SysCall::eStringInsertChar]      = stringInsertChar;
     syscallJumps[SysCall::eStringLengthGet]       = stringLengthGet;
     syscallJumps[SysCall::eStringGetChar]         = stringGetChar;
+    syscallJumps[SysCall::eStringSubstring]       = stringSubstring;
+    syscallJumps[SysCall::eStringCompare]         = stringCompare;
+    syscallJumps[SysCall::eStringBuildFront]      = stringBuildFront;
+    syscallJumps[SysCall::eStringBuild]           = stringBuild;
     
     syscallJumps[SysCall::eArrayNew]              = arrayNew;
     syscallJumps[SysCall::eArrayCountGet]         = arrayCountGet;
     syscallJumps[SysCall::eArrayGetItem]          = arrayGetItem;
     syscallJumps[SysCall::eArraySetItem]          = arraySetItem;
     
+    syscallJumps[SysCall::eListNew]               = listNew;
+    syscallJumps[SysCall::eListLengthGet]         = listLengthGet;
+    syscallJumps[SysCall::eListAppend]            = listAppend;
+    syscallJumps[SysCall::eListInsert]            = listInsert;
+    syscallJumps[SysCall::eListGetItem]           = listGetItem;
+    syscallJumps[SysCall::eListGetItemAsVariant]  = listGetItemAsVariant;
+    syscallJumps[SysCall::eListSetItem]           = listSetItem;
+    syscallJumps[SysCall::eListClear]             = listClear;
+    syscallJumps[SysCall::eListRemove]            = listRemove;
+    syscallJumps[SysCall::eListContains]          = listContains;
+    
+    syscallJumps[SysCall::eDictionaryNew]         = dictionaryNew;
+    syscallJumps[SysCall::eDictionaryClear]       = dictionaryClear;
+    
     syscallJumps[SysCall::eLongNew]               = longNew;
+    syscallJumps[SysCall::eLongNewFromConstant]   = longNewFromConstant;
     syscallJumps[SysCall::eLongAdd]               = longAdd;
     syscallJumps[SysCall::eLongSub]               = longSub;
     syscallJumps[SysCall::eLongMul]               = longMul;
@@ -608,13 +1070,13 @@ void SysCalls_PopulateJumpTable()
     
     syscallJumps[SysCall::eLongAddB]              = longAdd;
     syscallJumps[SysCall::eLongSubB]              = longSub;
+    syscallJumps[SysCall::eLongNegate]            = longNegate;
     
     syscallJumps[SysCall::eLongEQ]                = longEQ;
     syscallJumps[SysCall::eLongLT]                = longLT;
     syscallJumps[SysCall::eLongLE]                = longLE;
     syscallJumps[SysCall::eLongGT]                = longGT;
     syscallJumps[SysCall::eLongGE]                = longGE;
-    
     
     syscallJumps[SysCall::eFloatNew]              = floatNew;
     syscallJumps[SysCall::eFloatNewFromConstant]  = floatNewFromConstant;
@@ -624,13 +1086,40 @@ void SysCalls_PopulateJumpTable()
     syscallJumps[SysCall::eFloatMul]              = floatMul;
     syscallJumps[SysCall::eFloatDiv]              = floatDiv;
     
+    syscallJumps[SysCall::eFloatEQ]                = floatEQ;
+    syscallJumps[SysCall::eFloatLT]                = floatLT;
+    syscallJumps[SysCall::eFloatLE]                = floatLE;
+    syscallJumps[SysCall::eFloatGT]                = floatGT;
+    syscallJumps[SysCall::eFloatGE]                = floatGE;
+    
+    
+    syscallJumps[SysCall::eLongGetByte]           = longGetByte;
+    syscallJumps[SysCall::eFloatGetByte]          = longGetByte;
+    syscallJumps[SysCall::eIntGetByte]            = intGetByte;
+    syscallJumps[SysCall::eLongFromBytes]         = longFromBytes;
+    syscallJumps[SysCall::eFloatFromBytes]        = floatFromBytes;
+    syscallJumps[SysCall::eIntFromBytes]          = intFromBytes;
+    syscallJumps[SysCall::eLongToBytes]           = longToBytes;
+    syscallJumps[SysCall::eFloatToBytes]          = longToBytes;
+    syscallJumps[SysCall::eIntToBytes]            = intToBytes;
+    
+    
+    
     syscallJumps[SysCall::eLongToFloat]           = longToFloat;
+    syscallJumps[SysCall::eLongToString]          = longToString;
     syscallJumps[SysCall::eUIntToLong]            = uintToLong;
+    syscallJumps[SysCall::eUIntToFloat]           = uintToFloat;
+    syscallJumps[SysCall::eIntToFloat]            = intToFloat;
+    syscallJumps[SysCall::eIntToLong]             = intToLong;
     syscallJumps[SysCall::eLongToUInt]            = longToUInt;
     syscallJumps[SysCall::eFloatToString]         = floatToString;
     
+    syscallJumps[SysCall::eScreenClear]           = screenClear;
     syscallJumps[SysCall::eScreenPrint]           = screenPrint;
     syscallJumps[SysCall::eScreenPrintLn]         = screenPrintLn;
+    
+    syscallJumps[SysCall::eDiagnosticsDie]        = diagnosticsDie;
+    
     
     // TODO
 }

@@ -152,3 +152,13 @@ void HRArray_SetItem(UInt _this, UInt index, UInt value)
     }
 }
 
+void HRArray_Dump(UInt address, UInt indent)
+{
+    for (UInt i = 0; i < indent; i++)
+    {
+        putchar(' ');
+    }
+    UInt elements = Memory_ReadWord(address + 2);
+    Byte etype = Memory_ReadByte(address + 4);
+    printf("%04X %02X", elements, etype);
+}

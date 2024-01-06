@@ -184,7 +184,7 @@ unit DebugCommand
     {
         Pages.ClearPageData();
         Pages.LoadZeroPage(false); // for CSP and PC
-        bool stack8 = ZeroPageContains("BP8");
+        Output.Initialize();
         if (   ZeroPageContains("PC") 
             && ZeroPageContains("CSP") 
             && ZeroPageContains("CODESTART")
@@ -194,7 +194,7 @@ unit DebugCommand
             uint csp = GetZeroPage("CSP");
             if (csp > 0)
             {
-                Output.CallStack(stack8, csp);
+                Output.CallStack(csp);
             }
         }
     }

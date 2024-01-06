@@ -476,12 +476,12 @@ unit HRString
         uint i = length;
         loop
         {
-            WriteByte(this+siChars+i, ReadByte(this+siChars+i-1));
-            i--;
             if (i == 0)
             {
                 break;
             }
+            WriteByte(this+siChars+i, ReadByte(this+siChars+i-1));
+            i--;
         }
         WriteByte(this+siChars, byte(ch));
         WriteWord(this+siLength, length+1);
