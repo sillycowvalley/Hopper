@@ -8,6 +8,9 @@
 
 // Machine
 
+extern unsigned char * dataMemoryBlock;
+extern unsigned char * codeMemoryBlock;
+
 void Machine_Initialize();
 Bool Machine_GetExited();
 void Machine_SetExited(Bool value);

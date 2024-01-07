@@ -3,7 +3,7 @@
 #include "HopperWiFi.h"
 #include "HopperScreen.h"
 
-
+#include "Inlined.h"
 
 
 
@@ -2129,14 +2129,18 @@ void HRArray_Dump(UInt address, UInt indent)
 
 void Instructions_PopulateJumpTable(UInt jumpTable)
 {
-    InstructionDelegate instructionDelegate = &Instructions_Undefined;
-    instructionDelegate = &Instructions_Add;
+    InstructionDelegate instructionDelegate = &Instructions_Undefined;;
+    for (UInt opCode = 0x00; opCode < 0x0100; opCode++)
+    {
+        External_WriteToJumpTable(jumpTable, Byte(opCode), instructionDelegate);
+    }
+    instructionDelegate = &Instructions_InlinedAdd;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eADD), instructionDelegate);
-    instructionDelegate = &Instructions_Sub;
+    instructionDelegate = &Instructions_InlinedSub;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eSUB), instructionDelegate);
     instructionDelegate = &Instructions_Div;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eDIV), instructionDelegate);
-    instructionDelegate = &Instructions_Mul;
+    instructionDelegate = &Instructions_InlinedMul;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eMUL), instructionDelegate);
     instructionDelegate = &Instructions_Mod;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eMOD), instructionDelegate);
@@ -2186,7 +2190,7 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIB), instructionDelegate);
     instructionDelegate = &Instructions_PopLocalB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePOPLOCALB), instructionDelegate);
-    instructionDelegate = &Instructions_PushLocalB;
+    instructionDelegate = &Instructions_InlinedPushLocalB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHLOCALB), instructionDelegate);
     instructionDelegate = &Instructions_PopRelB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePOPRELB), instructionDelegate);
@@ -2266,13 +2270,13 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHILEI), instructionDelegate);
     instructionDelegate = &Instructions_PushIBEQ;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIBEQ), instructionDelegate);
-    instructionDelegate = &Instructions_AddB;
+    instructionDelegate = &Instructions_InlinedAddB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eADDB), instructionDelegate);
-    instructionDelegate = &Instructions_SubB;
+    instructionDelegate = &Instructions_InlinedSubB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eSUBB), instructionDelegate);
     instructionDelegate = &Instructions_RetB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETB), instructionDelegate);
-    instructionDelegate = &Instructions_RetResB;
+    instructionDelegate = &Instructions_InlinedRetResB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETRESB), instructionDelegate);
     instructionDelegate = &Instructions_RetFast;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eRETFAST), instructionDelegate);
@@ -2322,7 +2326,7 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHGP), instructionDelegate);
     instructionDelegate = &Instructions_CNP;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eCOPYNEXTPOP), instructionDelegate);
-    instructionDelegate = &Instructions_Enter;
+    instructionDelegate = &Instructions_InlinedEnter;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eENTER), instructionDelegate);
     instructionDelegate = &Instructions_NOP;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eNOP), instructionDelegate);
@@ -2338,7 +2342,7 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eJIX), instructionDelegate);
     instructionDelegate = &Instructions_Call;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALL), instructionDelegate);
-    instructionDelegate = &Instructions_CallI;
+    instructionDelegate = &Instructions_InlinedCallI;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALLI), instructionDelegate);
     instructionDelegate = &Instructions_CallRel;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALLREL), instructionDelegate);
@@ -2360,29 +2364,10 @@ Bool Instructions_Undefined()
     return false;
 }
 
-Bool Instructions_Add()
-{
-    HopperVM_Push(HopperVM_Pop() + HopperVM_Pop(), Type::eUInt);
-    return true;
-}
-
-Bool Instructions_Sub()
-{
-    UInt top = HopperVM_Pop();
-    HopperVM_Push(HopperVM_Pop() - top, Type::eUInt);
-    return true;
-}
-
 Bool Instructions_Div()
 {
     UInt top = HopperVM_Pop();
     HopperVM_Push(HopperVM_Pop() / top, Type::eUInt);
-    return true;
-}
-
-Bool Instructions_Mul()
-{
-    HopperVM_Push(HopperVM_Pop() * HopperVM_Pop(), Type::eUInt);
     return true;
 }
 
@@ -2561,19 +2546,6 @@ Bool Instructions_PopLocalB()
         value = HopperVM_Pop_R(htype);
         Memory_WriteWord(UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + offset), value);
         Memory_WriteWord(UInt(Int(HopperVM_TypeStack_Get()) + Int(HopperVM_BP_Get()) + offset), UInt(htype));
-    }
-    return true;
-}
-
-Bool Instructions_PushLocalB()
-{
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    UInt value = Memory_ReadWord(UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + offset));
-    Type htype = Type(Memory_ReadWord(UInt(Int(HopperVM_TypeStack_Get()) + Int(HopperVM_BP_Get()) + offset)));
-    HopperVM_Push(value, htype);
-    if (Types_IsReferenceType(htype))
-    {
-        GC_AddReference(value);
     }
     return true;
 }
@@ -2891,8 +2863,8 @@ Bool Instructions_IncGlobalBB()
 
 Bool Instructions_PushLocalBB()
 {
-    Bool res = Instructions_PushLocalB();
-    return Instructions_PushLocalB();
+    Bool res = Instructions_InlinedPushLocalB();
+    return Instructions_InlinedPushLocalB();
 }
 
 Bool Instructions_PopCopyLocalB()
@@ -3095,24 +3067,6 @@ Bool Instructions_PushIBEQ()
     return true;
 }
 
-Bool Instructions_AddB()
-{
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_Push(next + top, Type::eUInt);
-    return true;
-}
-
-Bool Instructions_SubB()
-{
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_Push(next - top, Type::eUInt);
-    return true;
-}
-
 Bool Instructions_RetB()
 {
     UInt popBytes = HopperVM_ReadByteOperand();
@@ -3126,35 +3080,6 @@ Bool Instructions_RetB()
         }
         popBytes = popBytes - 0x02;
     }
-    HopperVM_BP_Set(HopperVM_PopCS());
-    if (HopperVM_CSP_Get() == 0x00)
-    {
-        HopperVM_PC_Set(0x00);
-        return false;
-    }
-    else
-    {
-        HopperVM_PC_Set(HopperVM_PopCS());
-    }
-    return true;
-}
-
-Bool Instructions_RetResB()
-{
-    Type rtype = (Type)0;
-    UInt value = HopperVM_Pop_R(rtype);
-    UInt popBytes = HopperVM_ReadByteOperand();
-    while (popBytes != 0x00)
-    {
-        Type htype = (Type)0;
-        UInt address = HopperVM_Pop_R(htype);
-        if (Types_IsReferenceType(htype))
-        {
-            GC_Release(address);
-        }
-        popBytes = popBytes - 0x02;
-    }
-    HopperVM_Push(value, rtype);
     HopperVM_BP_Set(HopperVM_PopCS());
     if (HopperVM_CSP_Get() == 0x00)
     {
@@ -3480,13 +3405,6 @@ Bool Instructions_CNP()
     return true;
 }
 
-Bool Instructions_Enter()
-{
-    HopperVM_PushCS(HopperVM_BP_Get());
-    HopperVM_BP_Set(HopperVM_SP_Get());
-    return true;
-}
-
 Bool Instructions_NOP()
 {
     return true;
@@ -3548,14 +3466,6 @@ Bool Instructions_Call()
     UInt methodAddress = HopperVM_LookupMethod(methodIndex);
     Memory_WriteCodeByte(HopperVM_PC_Get() - 0x03, Byte(OpCode::eCALLI));
     Memory_WriteCodeWord(HopperVM_PC_Get() - 0x02, methodAddress);
-    HopperVM_PC_Set(methodAddress);
-    return true;
-}
-
-Bool Instructions_CallI()
-{
-    UInt methodAddress = HopperVM_ReadWordOperand();
-    HopperVM_PushCS(HopperVM_PC_Get());
     HopperVM_PC_Set(methodAddress);
     return true;
 }
@@ -6906,13 +6816,13 @@ void HRString_BuildFront_R(UInt & _this, Char ch)
     UInt i = length;
     for (;;)
     {
-        Memory_WriteByte(_this + 4 + i, Memory_ReadByte(_this + 4 + i - 0x01));
-        
-        i--;
         if (i == 0x00)
         {
             break;;
         }
+        Memory_WriteByte(_this + 4 + i, Memory_ReadByte(_this + 4 + i - 0x01));
+        
+        i--;
     }
     Memory_WriteByte(_this + 4, Byte(ch));
     Memory_WriteWord(_this + 2, length + 0x01);

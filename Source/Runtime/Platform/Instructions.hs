@@ -9,20 +9,20 @@ unit Instructions
     {
         InstructionDelegate
         instructionDelegate = Instructions.Undefined;
-#ifdef CHECKED
+//#ifdef CHECKED
         for (uint opCode = 0; opCode < 256; opCode++)
         {
             WriteToJumpTable(jumpTable, byte(opCode), instructionDelegate);
         }
-#endif
-        instructionDelegate = Instructions.Add;
+//#endif
+        instructionDelegate = Instructions.InlinedAdd;
         WriteToJumpTable(jumpTable, byte(OpCode.ADD), instructionDelegate);
         
-        instructionDelegate = Instructions.Sub;
+        instructionDelegate = Instructions.InlinedSub;
         WriteToJumpTable(jumpTable, byte(OpCode.SUB), instructionDelegate);
         instructionDelegate = Instructions.Div;
         WriteToJumpTable(jumpTable, byte(OpCode.DIV), instructionDelegate);
-        instructionDelegate = Instructions.Mul;
+        instructionDelegate = Instructions.InlinedMul;
         WriteToJumpTable(jumpTable, byte(OpCode.MUL), instructionDelegate);
         instructionDelegate = Instructions.Mod;
         WriteToJumpTable(jumpTable, byte(OpCode.MOD), instructionDelegate);
@@ -76,7 +76,7 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHIB), instructionDelegate);
         instructionDelegate = Instructions.PopLocalB;
         WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB), instructionDelegate);
-        instructionDelegate = Instructions.PushLocalB;
+        instructionDelegate = Instructions.InlinedPushLocalB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALB), instructionDelegate);
         instructionDelegate = Instructions.PopRelB;
         WriteToJumpTable(jumpTable, byte(OpCode.POPRELB), instructionDelegate);
@@ -167,14 +167,14 @@ unit Instructions
         instructionDelegate = Instructions.PushIBEQ;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHIBEQ), instructionDelegate);
         
-        instructionDelegate = Instructions.AddB;
+        instructionDelegate = Instructions.InlinedAddB;
         WriteToJumpTable(jumpTable, byte(OpCode.ADDB), instructionDelegate);
-        instructionDelegate = Instructions.SubB;
+        instructionDelegate = Instructions.InlinedSubB;
         WriteToJumpTable(jumpTable, byte(OpCode.SUBB), instructionDelegate);
         
         instructionDelegate = Instructions.RetB;
         WriteToJumpTable(jumpTable, byte(OpCode.RETB), instructionDelegate);
-        instructionDelegate = Instructions.RetResB;
+        instructionDelegate = Instructions.InlinedRetResB;
         WriteToJumpTable(jumpTable, byte(OpCode.RETRESB), instructionDelegate);
         instructionDelegate = Instructions.RetFast;
         WriteToJumpTable(jumpTable, byte(OpCode.RETFAST), instructionDelegate);
@@ -234,7 +234,7 @@ unit Instructions
         
         instructionDelegate = Instructions.CNP;
         WriteToJumpTable(jumpTable, byte(OpCode.COPYNEXTPOP), instructionDelegate);
-        instructionDelegate = Instructions.Enter;
+        instructionDelegate = Instructions.InlinedEnter;
         WriteToJumpTable(jumpTable, byte(OpCode.ENTER), instructionDelegate);
      
         instructionDelegate = Instructions.NOP;
@@ -255,7 +255,7 @@ unit Instructions
         
         instructionDelegate = Instructions.Call;
         WriteToJumpTable(jumpTable, byte(OpCode.CALL), instructionDelegate);
-        instructionDelegate = Instructions.CallI;
+        instructionDelegate = Instructions.InlinedCallI;
         WriteToJumpTable(jumpTable, byte(OpCode.CALLI), instructionDelegate);
         instructionDelegate = Instructions.CallRel;
         WriteToJumpTable(jumpTable, byte(OpCode.CALLREL), instructionDelegate);
@@ -267,7 +267,7 @@ unit Instructions
         
     }
     
-    bool Add()
+    bool InlinedAdd()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -282,7 +282,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool Sub()
+    bool InlinedSub()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -297,7 +297,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool Mul()
+    bool InlinedMul()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -484,7 +484,7 @@ unit Instructions
         Push(ReadWordOperand(), Type.UInt);
         return true;
     }
-    bool CallI()
+    bool InlinedCallI()
     {
         uint methodAddress = ReadWordOperand();
         PushCS(PC);
@@ -494,8 +494,8 @@ unit Instructions
     
     bool PushLocalBB()
     {
-        bool res = PushLocalB();
-        return PushLocalB();
+        bool res = InlinedPushLocalB();
+        return InlinedPushLocalB();
     }
     bool PushGlobalBB()
     {
@@ -503,7 +503,7 @@ unit Instructions
         return PushGlobalB();
     }
     
-    bool PushLocalB()
+    bool InlinedPushLocalB()
     {
         int offset = ReadByteOffsetOperand();
         uint value =      ReadWord(uint(int(ValueStack) + int(BP) + offset));
@@ -552,7 +552,7 @@ unit Instructions
         return true;
     }
 
-    bool Enter()
+    bool InlinedEnter()
     {
         PushCS(BP);
         BP = SP;
@@ -592,7 +592,7 @@ unit Instructions
         return HopperVM.ExitInline();
     }
     
-    bool RetResB()
+    bool InlinedRetResB()
     {
         Type rtype;
         uint value = Pop(ref rtype);
@@ -1481,7 +1481,7 @@ unit Instructions
         Push((next == top) ? 1 : 0, Type.Bool);
         return true;
     }
-    bool AddB()
+    bool InlinedAddB()
     {
         uint top = ReadByteOperand();    
         Type ntype;
@@ -1492,15 +1492,19 @@ unit Instructions
         Push(next + top, Type.UInt);
         return true;
     }
-    bool SubB()
+    bool InlinedSubB()
     {
-        uint top = ReadByteOperand();    
+        uint top = ReadCodeByte(PC); PC = PC + 1;
+#ifdef CHECKED
         Type ntype;
         uint next = Pop(ref ntype);
-#ifdef CHECKED
         AssertUInt(ntype, next);
-#endif  
         Push(next - top, Type.UInt);
+#else
+        uint sp2 = SP - 2;
+        WriteWord(ValueStack + sp2, ReadWord(ValueStack + sp2) - top);
+        WriteWord(TypeStack  + sp2, byte(Type.UInt));
+#endif  
         return true;
     }
     

@@ -901,7 +901,8 @@ program Translate
             bool isExternal = methodName.StartsWith("External.") 
                            || methodName.StartsWith("HRScreen.") 
                            || methodName.StartsWith("HRWire.") 
-                           || methodName.StartsWith("HRGraphics.");
+                           || methodName.StartsWith("HRGraphics.")
+                           || methodName.StartsWith("Instructions.Inlined");
             
             < < string > > arguments = GetOverloadArguments(iCurrentOverload);
             bool firstarg = true;
