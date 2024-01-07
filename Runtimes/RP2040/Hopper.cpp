@@ -1390,6 +1390,14 @@ int main()
 {
     stdio_init_all();
     
+#ifdef PICO_CYW43_SUPPORTED
+    if (cyw43_arch_init()) 
+    {
+        printf("Wi-Fi init failed");
+        return -1;
+    }
+#endif
+    
     while (!tud_cdc_connected())
     {
         sleep_ms(100);
@@ -1398,18 +1406,29 @@ int main()
     if (Platform_Initialize())
     {
         // flicker LED_BUILTIN to show that initialization completed
+#ifndef PICO_CYW43_SUPPORTED
         gpio_init(LED_PIN);
         gpio_set_dir(LED_PIN, GPIO_OUT);
+#endif
         for (int i = 0; i < 5; i++)
         {
+#ifdef PICO_CYW43_SUPPORTED
+            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+#else
             gpio_put(LED_PIN, 1);
+#endif
             sleep_ms(50);
+#ifdef PICO_CYW43_SUPPORTED
+            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+#else
             gpio_put(LED_PIN, 0);
+#endif
             sleep_ms(50);
         }
         
         HopperEntryPoint();
         Platform_Release();
     }
+    return 0;
 }
 

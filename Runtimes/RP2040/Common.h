@@ -1,7 +1,7 @@
 #ifndef HOPPERPLATFORM_H
 #define HOPPERPLATFORM_H
 
-//#define CHECKED
+#define PICO_CYW43_SUPPORTED // TODO : get this from the CMakeLists.txt setting
 
 const bool loadAuto = true; // set this to false if you are booting into a bad flashed Hopper program
 
@@ -10,9 +10,17 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 #include <cstdint>
 #include <cstring>
 #include "pico/stdlib.h"
+
+#ifdef PICO_CYW43_SUPPORTED
+#include "pico/cyw43_arch.h"
+#endif
+
 #include "hardware/gpio.h"
+#include "hardware/pwm.h"
+#include "hardware/clocks.h"
 #include "hardware/adc.h"
 #include "hardware/sync.h"
+
 
 #include <tusb.h>
 

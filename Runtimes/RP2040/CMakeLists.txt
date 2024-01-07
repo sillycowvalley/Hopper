@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 
+set(PICO_BOARD "pico_w")
+#set(PICO_BOARD "pico")
+
 include(pico_sdk_import.cmake)
 
 project(hopper_project C CXX ASM)
@@ -31,5 +34,20 @@ pico_enable_stdio_uart(hopper 0)
 
 pico_add_extra_outputs(hopper)
 
-target_link_libraries(hopper pico_stdlib hardware_adc)
+if (PICO_CYW43_SUPPORTED)
+target_link_libraries(hopper
+                      pico_stdlib
+                      hardware_adc
+                      hardware_pwm
+                      hardware_clocks
+                      pico_cyw43_arch_none     # we need Wifi to access the GPIO, but we don't need anything else
+                      )
+else()
+target_link_libraries(hopper
+                      pico_stdlib
+                      hardware_pwm
+                      hardware_clocks
+                      hardware_adc
+                      )
+endif()
 
