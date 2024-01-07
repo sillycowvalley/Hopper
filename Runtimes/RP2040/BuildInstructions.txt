@@ -1,0 +1,5 @@
+VS Developer console:
+d:
+cd D:\Pico\Hopper\build
+cmake -G "NMake Makefiles" ..
+nmake

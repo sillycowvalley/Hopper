@@ -559,7 +559,7 @@ unit Source
                         if (mValueType)
                         {
                             uint pMember0 = Pages.GetPageWord(value0+3);
-                            uint pMember1 = Pages.GetPageWord(value1+3);
+                            uint pMember1 = Is32BitStackSlot ? Pages.GetPageWord(value1+3) : 0;
                             content = content + TypeToString(pMember0, pMember1, mtypes, false, limit);    
                         }
                         else
@@ -622,8 +622,8 @@ unit Source
                 {
                     byte b0 = Output.Is32BitStackSlot? byte(value0 & 0xFF) : Pages.GetPageByte(value0+2);
                     byte b1 = Output.Is32BitStackSlot? byte(value0 >> 8)   : Pages.GetPageByte(value0+3);
-                    byte b2 = Output.Is32BitStackSlot? byte(value1 & 0xFF) : Pages.GetPageByte(value1+4);
-                    byte b3 = Output.Is32BitStackSlot? byte(value1 >> 8)   : Pages.GetPageByte(value1+5);
+                    byte b2 = Output.Is32BitStackSlot? byte(value1 & 0xFF) : Pages.GetPageByte(value0+4);
+                    byte b3 = Output.Is32BitStackSlot? byte(value1 >> 8)   : Pages.GetPageByte(value0+5);
                     
                     if (IsHexDisplayMode)
                     {
@@ -639,8 +639,8 @@ unit Source
                 {
                     byte b0 = Output.Is32BitStackSlot? byte(value0 & 0xFF) : Pages.GetPageByte(value0+2);
                     byte b1 = Output.Is32BitStackSlot? byte(value0 >> 8)   : Pages.GetPageByte(value0+3);
-                    byte b2 = Output.Is32BitStackSlot? byte(value1 & 0xFF) : Pages.GetPageByte(value1+4);
-                    byte b3 = Output.Is32BitStackSlot? byte(value1 >> 8)   : Pages.GetPageByte(value1+5);
+                    byte b2 = Output.Is32BitStackSlot? byte(value1 & 0xFF) : Pages.GetPageByte(value0+4);
+                    byte b3 = Output.Is32BitStackSlot? byte(value1 >> 8)   : Pages.GetPageByte(value0+5);
 
                     if (IsHexDisplayMode)
                     {

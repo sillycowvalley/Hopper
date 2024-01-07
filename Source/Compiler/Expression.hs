@@ -399,6 +399,7 @@ unit Expression
         string returnType;
         < <string > > arguments;
         bool isDelegateType = false;
+        string collectionValueType;
         bool isLocal = false;
         loop
         {
@@ -480,14 +481,17 @@ unit Expression
                     if (Types.IsDictionaryOrPair(typeString))
                     {
                         methodName = "Dictionary." + parts[1];
+                        collectionValueType = Types.GetValueFromCollection(typeString);
                     }
                     else if (Types.IsList(typeString))
                     {
                         methodName = "List." + parts[1];
+                        collectionValueType = Types.GetValueFromCollection(typeString);
                     }
                     else if (Types.IsArray(typeString))
                     {
                         methodName = "Array." + parts[1];    
+                        collectionValueType = Types.GetValueFromCollection(typeString);
                     }
                     else if (Types.IsSimpleType(typeString))
                     {
@@ -588,6 +592,7 @@ unit Expression
                 {
                     break;
                 }
+                
                 CodeStream.AddInstructionPushVariable(methodName);
                 CodeStream.AddInstruction(Instruction.CALLREL);
                 break;
@@ -606,6 +611,46 @@ unit Expression
             Symbols.AddFunctionCall(iOverload);   // CompileMethodCall(methodName)
             if (Symbols.IsSysCall(iOverload))
             {
+                if (collectionValueType.Length > 0)
+                {
+                    < < string > > overloadArguments = Symbols.GetOverloadArguments(iOverload);
+                    uint argCount = overloadArguments.Length;
+                    if (argCount > 1)
+                    {
+                        <string> templateArgument = overloadArguments[argCount-1];
+                        <string> actualArgument   = arguments[argCount-1];
+                        if ((templateArgument[0] == "") && (templateArgument[1] == "V") && (collectionValueType != actualArgument[1]))
+                        {
+                            // For a single trailing 'V' template argument, we can attempt to promote types
+                            // like List.Append(xx) for example.
+                            string expressionType = actualArgument[1];
+                            Instruction before = CodeStream.GetLastInstruction();
+                            if (collectionValueType == "variant")
+                            {
+                                // a variant value container can contain anything
+                                if (Types.IsValueType(expressionType))
+                                {
+                                    // box value types before adding to collection as variant                                            
+                                    byte vt = Types.ToByte(expressionType);
+                                    CodeStream.AddInstructionPUSHI(vt);
+                                    CodeStream.AddInstructionSysCall0("Variant", "Box");
+                                }
+                            }
+                            else if (!Types.AutomaticUpCastTop(expressionType, collectionValueType))
+                            {
+                                Parser.ErrorAtCurrent("type mismatch in argument, expect '" + collectionValueType + "', was '" + expressionType + "'");       
+                                break;
+                            }
+                            if (before != CodeStream.GetLastInstruction())
+                            {
+                                OutputDebug(methodName + ":" + collectionValueType);
+                                OutputDebug(templateArgument);
+                                OutputDebug(actualArgument);
+                            }
+                        }
+                    }
+                }
+                
                 byte iSysCall = Symbols.GetSysCallIndex(iOverload);
                 byte iSysOverload = Symbols.GetSysCallOverload(iOverload);
                 if ((iSysOverload == 0) && TryUserSysCall(methodName))

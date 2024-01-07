@@ -338,7 +338,7 @@ unit Output
                     continue;
                 }
                 uint value0 = GetPageWord(voffset);
-                uint value1 = GetPageWord(voffset+2);
+                uint value1 = Is32BitStackSlot ? GetPageWord(voffset+2) : 0;
                 string vtype = argumentList[1];
                 bool isReference = (argumentList[0] == "true");
                 if (verbose)
@@ -777,7 +777,7 @@ unit Output
             else
             {
                 lvalue0 = GetPageWord(bp + offset);
-                lvalue1 = GetPageWord(bp + offset + 2);
+                lvalue1 = Is32BitStackSlot ? GetPageWord(bp + offset + 2) : 0;
                 lcontent = TypeToString(lvalue0, lvalue1, ltype, false, maxDataWidth);
                 cPtr = lvalue0;
             }

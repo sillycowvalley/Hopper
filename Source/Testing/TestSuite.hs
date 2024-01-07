@@ -1,7 +1,7 @@
 program TestSuite
 {
 //#define TINYHOPPER
-//#define PORTABLE
+#define PORTABLE
 #define SERIALCONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
@@ -683,6 +683,97 @@ program TestSuite
         }
         
         
+    }
+    
+    TestList32()
+    {
+        WriteLn("List 32");
+        <float> floatList;
+        floatList.Append(0);
+        floatList.Append(20);     // byte
+        floatList.Append(-10);    // int
+        floatList.Append(40000);  // uint
+        floatList.Append(100000); // long
+        floatList.Append(1.5);
+        floatList.Append(2.5);
+        floatList.Append(3.5);
+        floatList.Append(4.5);
+        
+        float total;
+        foreach (var f in floatList)
+        {
+            total += f;
+        }
+        
+        if (total != 140022.0)
+        {
+            PrintFailed("List 32: float failed");
+        }
+        
+        <long> longList;
+        longList.Append(0);
+        longList.Append(20);     // byte
+        longList.Append(-10);    // int
+        longList.Append(40000); // uint
+        longList.Append(100000);
+        longList.Append(-40000);
+        longList.Append(80000);
+        longList.Append(-80000);
+        
+        long ltotal;
+        foreach (var l in longList)
+        {
+            ltotal += l;
+        }
+        if (ltotal != 100010)
+        {
+            PrintFailed("List 32: long failed");
+        }
+    }
+    TestDictionary32()
+    {
+        WriteLn("Dictionary 32");
+        <byte,float> floatDictionary;
+        floatDictionary[0] = 0;
+        floatDictionary[1] = 20;
+        floatDictionary[2] = -10; // int
+        floatDictionary[3] = 40000; // int
+        floatDictionary[4] = 100000; // long
+        floatDictionary[5] = 1.5;
+        floatDictionary[6] = 2.5;
+        floatDictionary[7] = 3.5;
+        floatDictionary[8] = 4.5;
+        
+        float total;
+        foreach (var f in floatDictionary)
+        {
+            total += f.value;
+        }
+        
+        if (total != 140022.0)
+        {
+            PrintFailed("Dictionary 32: float failed");
+        }
+        
+        <byte,long> longDictionary;
+        longDictionary[0] = 0;
+        longDictionary[1] = 20;  // byte
+        longDictionary[2] = -10; // int
+        longDictionary[3] = 100000;
+        longDictionary[4] = 40000; // uint
+        longDictionary[5] = -40000;
+        longDictionary[6] = 80000;
+        longDictionary[7] = -80000;
+        
+        long ltotal;
+        foreach (var l in longDictionary)
+        {
+            ltotal += l.value;
+        }
+        if (ltotal != 100010)
+        {
+            PrintFailed("Dictionary 32: long failed");
+        }
     }
 
     TestList()
@@ -1673,6 +1764,9 @@ program TestSuite
         TestWhile();
         
         TestList();
+        
+        TestList32();
+        TestDictionary32();
         
         TestFor();
 #ifndef H6502
