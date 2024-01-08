@@ -15,6 +15,9 @@ unit Instructions
             WriteToJumpTable(jumpTable, byte(opCode), instructionDelegate);
         }
 //#endif
+        instructionDelegate = Instructions.Die;
+        WriteToJumpTable(jumpTable, byte(OpCode.DIE), instructionDelegate);
+        
         instructionDelegate = Instructions.InlinedAdd;
         WriteToJumpTable(jumpTable, byte(OpCode.ADD), instructionDelegate);
         
@@ -1965,6 +1968,17 @@ unit Instructions
             Put(localAddress, newvalue, rtype);
         }
         return true;
+    }
+    bool Die()
+    {
+        Type atype;
+        uint err = Pop(ref atype);
+#ifdef CHECKED
+        AssertByte(err, size);
+#endif          
+        ErrorDump(94);
+        Error = byte(err);
+        return false;
     }
     bool Undefined()
     {

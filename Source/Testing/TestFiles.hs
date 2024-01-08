@@ -11,6 +11,7 @@ program TestFiles
     PrintFailed(string message)
     {
         WriteLn("  " + message);
+        //Die(0x0B);
     }
     
     TestFiles()

@@ -119,6 +119,8 @@ unit SysCalls
         DirectoryGetFile           = 0x70,
         DirectoryGetDirectory      = 0x71,
         
+        DiagnosticsDie = 0x7C,
+        
         TypesTypeOf      = 0x7E,
         TypesValueTypeOf = 0x7F,
         TypesKeyTypeOf   = 0x80,

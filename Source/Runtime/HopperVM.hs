@@ -421,6 +421,10 @@ unit HopperVM
         bool doNext = true;
         switch (SysCall(iSysCall))
         {
+            case SysCall.DiagnosticsDie:
+            {
+                doNext = Instructions.Die();
+            }
             case SysCall.RuntimeInline:
             {
                 if (!RunInline())

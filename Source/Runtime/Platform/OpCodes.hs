@@ -23,6 +23,8 @@ unit OpCodes
         DUP     = 0x27,       // <byte offset operand> to duplicate to [TOP] (DUP 0 means [top])
         DECSP   = 0x28,       // <byte operand> number of bytes to subtract from SP (release reference types too)
         
+        DIE     = 0x29,       // 0x?? fail setting lastError to <byte operand>
+        
         ENTER   = 0x49,       // new local stack frame: push BP to callstack, BP = SP
         
         NOP     = 0x50,       // no operation

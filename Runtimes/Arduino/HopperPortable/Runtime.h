@@ -32,6 +32,7 @@ enum OpCode {
     eSWAP = 0x0043,
     eDUP = 0x0027,
     eDECSP = 0x0028,
+    eDIE = 0x0029,
     eENTER = 0x0049,
     eNOP = 0x0050,
     eCAST = 0x0051,
@@ -232,6 +233,7 @@ enum SysCall {
     eDirectoryGetFileCount = 0x006F,
     eDirectoryGetFile = 0x0070,
     eDirectoryGetDirectory = 0x0071,
+    eDiagnosticsDie = 0x007C,
     eTypesTypeOf = 0x007E,
     eTypesValueTypeOf = 0x007F,
     eTypesKeyTypeOf = 0x0080,
@@ -615,6 +617,7 @@ void HRArray_Initialize();
 void HRArray_Dump(UInt address, UInt indent);
 void Instructions_PopulateJumpTable(UInt jumpTable);
 Bool Instructions_Undefined();
+Bool Instructions_Die();
 Bool Instructions_BoolOr();
 Bool Instructions_BoolAnd();
 Bool Instructions_BitOr();
@@ -846,8 +849,6 @@ UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
-
-
 
 
 

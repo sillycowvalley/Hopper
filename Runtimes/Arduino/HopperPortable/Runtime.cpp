@@ -10,6 +10,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -2095,6 +2096,8 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     {
         External_WriteToJumpTable(jumpTable, Byte(opCode), instructionDelegate);
     }
+    instructionDelegate = &Instructions_Die;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eDIE), instructionDelegate);
     instructionDelegate = &Instructions_InlinedAdd;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eADD), instructionDelegate);
     instructionDelegate = &Instructions_InlinedSub;
@@ -2322,6 +2325,15 @@ Bool Instructions_Undefined()
     Serial_WriteChar(' ');
     Runtime_ErrorDump(0x5D);
     Minimal_Error_Set(0x0A);
+    return false;
+}
+
+Bool Instructions_Die()
+{
+    Type atype = (Type)0;
+    UInt err = HopperVM_Pop_R(atype);
+    Runtime_ErrorDump(0x5E);
+    Minimal_Error_Set(Byte(err));
     return false;
 }
 
@@ -3902,6 +3914,11 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     Bool doNext = true;
     switch (SysCall(iSysCall))
     {
+    case SysCall::eDiagnosticsDie:
+    {
+        doNext = Instructions_Die();
+        break;
+    }
     case SysCall::eRuntimeInline:
     {
         if (!HopperVM_RunInline())
