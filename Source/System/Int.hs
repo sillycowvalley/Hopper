@@ -123,17 +123,7 @@ unit Int
         return result;
     }
     
-#ifdef PORTABLE    
-    <byte> ToBytes(int this)
-    {
-        <byte> lst;
-        lst.Append(GetByte(this, 0));
-        lst.Append(GetByte(this, 1));
-        return lst;
-    }
-#else
     <byte> ToBytes(int this) system;
-#endif
 
     byte GetByte(int this, byte index) system;
     int FromBytes(byte b0, byte b1) system;

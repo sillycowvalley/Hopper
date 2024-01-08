@@ -1,7 +1,6 @@
 program TestJSON
 {
 #define SERIALCONSOLE
-#define PORTABLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
     uses "/Source/System/Serialize"

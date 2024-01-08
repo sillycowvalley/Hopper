@@ -81,6 +81,7 @@ UInt External_FloatToUInt(UInt hrfloat);
 UInt External_IntToFloat(Int i);
 UInt External_UIntToFloat(UInt ui);
 UInt External_FloatToString(UInt hrfloat);
+UInt External_LongToString(UInt hrlong);
 Int  External_UIntToInt(UInt ui);
 UInt External_IntToUInt(Int i);
 Int  External_LongToInt(UInt hrlong);

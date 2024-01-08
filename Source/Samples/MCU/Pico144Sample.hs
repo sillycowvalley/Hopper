@@ -1,6 +1,5 @@
 program Pico144Sample
 {
-#define PORTABLE
 #define SERIALCONSOLE
 #define RP2040
     

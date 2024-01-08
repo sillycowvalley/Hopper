@@ -20,24 +20,24 @@ unit Instructions
         
         instructionDelegate = Instructions.InlinedSub;
         WriteToJumpTable(jumpTable, byte(OpCode.SUB), instructionDelegate);
-        instructionDelegate = Instructions.Div;
+        instructionDelegate = Instructions.InlinedDiv;
         WriteToJumpTable(jumpTable, byte(OpCode.DIV), instructionDelegate);
         instructionDelegate = Instructions.InlinedMul;
         WriteToJumpTable(jumpTable, byte(OpCode.MUL), instructionDelegate);
-        instructionDelegate = Instructions.Mod;
+        instructionDelegate = Instructions.InlinedMod;
         WriteToJumpTable(jumpTable, byte(OpCode.MOD), instructionDelegate);
         
-        instructionDelegate = Instructions.EQ;
+        instructionDelegate = Instructions.InlinedEQ;
         WriteToJumpTable(jumpTable, byte(OpCode.EQ), instructionDelegate);
-        instructionDelegate = Instructions.NE;
+        instructionDelegate = Instructions.InlinedNE;
         WriteToJumpTable(jumpTable, byte(OpCode.NE), instructionDelegate);
-        instructionDelegate = Instructions.GT;
+        instructionDelegate = Instructions.InlinedGT;
         WriteToJumpTable(jumpTable, byte(OpCode.GT), instructionDelegate);
-        instructionDelegate = Instructions.LT;
+        instructionDelegate = Instructions.InlinedLT;
         WriteToJumpTable(jumpTable, byte(OpCode.LT), instructionDelegate);
-        instructionDelegate = Instructions.GE;
+        instructionDelegate = Instructions.InlinedGE;
         WriteToJumpTable(jumpTable, byte(OpCode.GE), instructionDelegate);
-        instructionDelegate = Instructions.LE;
+        instructionDelegate = Instructions.InlinedLE;
         WriteToJumpTable(jumpTable, byte(OpCode.LE), instructionDelegate);
         
         instructionDelegate = Instructions.BoolOr;
@@ -53,26 +53,26 @@ unit Instructions
         instructionDelegate = Instructions.BitShr;
         WriteToJumpTable(jumpTable, byte(OpCode.BITSHR), instructionDelegate);
         
-        instructionDelegate = Instructions.AddI;
+        instructionDelegate = Instructions.InlinedAddI;
         WriteToJumpTable(jumpTable, byte(OpCode.ADDI), instructionDelegate);
-        instructionDelegate = Instructions.SubI;
+        instructionDelegate = Instructions.InlinedSubI;
         WriteToJumpTable(jumpTable, byte(OpCode.SUBI), instructionDelegate);
-        instructionDelegate = Instructions.DivI;
+        instructionDelegate = Instructions.InlinedDivI;
         WriteToJumpTable(jumpTable, byte(OpCode.DIVI), instructionDelegate);
-        instructionDelegate = Instructions.MulI;
+        instructionDelegate = Instructions.InlinedMulI;
         WriteToJumpTable(jumpTable, byte(OpCode.MULI), instructionDelegate);
-        instructionDelegate = Instructions.ModI;
+        instructionDelegate = Instructions.InlinedModI;
         WriteToJumpTable(jumpTable, byte(OpCode.MODI), instructionDelegate);
-        instructionDelegate = Instructions.GTI;
+        instructionDelegate = Instructions.InlinedGTI;
         WriteToJumpTable(jumpTable, byte(OpCode.GTI), instructionDelegate);
-        instructionDelegate = Instructions.LTI;
+        instructionDelegate = Instructions.InlinedLTI;
         WriteToJumpTable(jumpTable, byte(OpCode.LTI), instructionDelegate);
-        instructionDelegate = Instructions.GEI;
+        instructionDelegate = Instructions.InlinedGEI;
         WriteToJumpTable(jumpTable, byte(OpCode.GEI), instructionDelegate);
-        instructionDelegate = Instructions.LEI;
+        instructionDelegate = Instructions.InlinedLEI;
         WriteToJumpTable(jumpTable, byte(OpCode.LEI), instructionDelegate);
         
-        instructionDelegate = Instructions.PushIB;
+        instructionDelegate = Instructions.InlinedPushIB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHIB), instructionDelegate);
         instructionDelegate = Instructions.PopLocalB;
         WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB), instructionDelegate);
@@ -94,7 +94,7 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.DECLOCALB), instructionDelegate);
         instructionDelegate = Instructions.CallB;
         WriteToJumpTable(jumpTable, byte(OpCode.CALLB), instructionDelegate);
-        instructionDelegate = Instructions.JZB;
+        instructionDelegate = Instructions.InlinedJZB;
         WriteToJumpTable(jumpTable, byte(OpCode.JZB), instructionDelegate);
         instructionDelegate = Instructions.JNZB;
         WriteToJumpTable(jumpTable, byte(OpCode.JNZB), instructionDelegate);
@@ -104,18 +104,18 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALBB), instructionDelegate);
         instructionDelegate = Instructions.Ret0;
         WriteToJumpTable(jumpTable, byte(OpCode.RET0), instructionDelegate);
-        instructionDelegate = Instructions.PushI0;
+        instructionDelegate = Instructions.InlinedPushI0;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHI0), instructionDelegate);
-        instructionDelegate = Instructions.PushI1;
+        instructionDelegate = Instructions.InlinedPushI1;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHI1), instructionDelegate);
         
         instructionDelegate = Instructions.PopLocalB00;
         WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB00), instructionDelegate);
         instructionDelegate = Instructions.PopLocalB02;
         WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB02), instructionDelegate);
-        instructionDelegate = Instructions.PushLocalB00;
+        instructionDelegate = Instructions.InlinedPushLocalB00;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALB00), instructionDelegate);
-        instructionDelegate = Instructions.PushLocalB02;
+        instructionDelegate = Instructions.InlinedPushLocalB02;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALB02), instructionDelegate);
         
         instructionDelegate = Instructions.SysCall0;
@@ -150,7 +150,7 @@ unit Instructions
         instructionDelegate = Instructions.EnterB;
         WriteToJumpTable(jumpTable, byte(OpCode.ENTERB), instructionDelegate);
      
-        instructionDelegate = Instructions.PushIB;
+        instructionDelegate = Instructions.InlinedPushIB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHDB), instructionDelegate);
         
         instructionDelegate = Instructions.JIXB;
@@ -160,7 +160,7 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHILE), instructionDelegate);
         instructionDelegate = Instructions.PushILT;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHILT), instructionDelegate);
-        instructionDelegate = Instructions.PushIBLE;
+        instructionDelegate = Instructions.InlinedPushIBLE;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHIBLE), instructionDelegate);
         instructionDelegate = Instructions.PushILEI;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHILEI), instructionDelegate);
@@ -312,7 +312,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool Div()
+    bool InlinedDiv()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -335,7 +335,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool Mod()
+    bool InlinedMod()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -359,7 +359,7 @@ unit Instructions
         return true;
     }
     
-    bool AddI()
+    bool InlinedAddI()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -374,7 +374,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool MulI()
+    bool InlinedMulI()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -389,7 +389,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool SubI()
+    bool InlinedSubI()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -404,7 +404,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool DivI()
+    bool InlinedDivI()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -427,7 +427,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool ModI()
+    bool InlinedModI()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -451,12 +451,12 @@ unit Instructions
         return true;
     }
     
-    bool PushI0()
+    bool InlinedPushI0()
     {
         Push(0, Type.Byte);
         return true;
     }
-    bool PushI1()
+    bool InlinedPushI1()
     {
         Push(1, Type.Byte);
         return true;
@@ -468,7 +468,7 @@ unit Instructions
         return true;
     }
     
-    bool PushIB()
+    bool InlinedPushIB()
     {
         Push(ReadByteOperand(), Type.Byte);
         return true;
@@ -529,7 +529,7 @@ unit Instructions
         return true;
     }
     
-    bool PushLocalB00()
+    bool InlinedPushLocalB00()
     {
         uint value = ReadWord(uint(int(ValueStack)     + int(BP)));
         Type htype = Type(ReadWord(uint(int(TypeStack) + int(BP))));
@@ -540,7 +540,7 @@ unit Instructions
         }
         return true;
     }
-    bool PushLocalB02()
+    bool InlinedPushLocalB02()
     {
         uint value = ReadWord(uint(int(ValueStack)     + int(BP) + 2));
         Type htype = Type(ReadWord(uint(int(TypeStack) + int(BP) + 2)));
@@ -558,7 +558,7 @@ unit Instructions
         BP = SP;
         return true;
     }
-    bool JZB()
+    bool InlinedJZB()
     {
 #ifdef CHECKED  
         int offset = ReadByteOffsetOperand();              
@@ -1179,17 +1179,17 @@ unit Instructions
         HopperVM.CNP = true;
         return true;
     }
-    bool EQ()
+    bool InlinedEQ()
     {
         Push((Pop() == Pop()) ? 1 : 0, Type.Bool);
         return true;
     }
-    bool NE()
+    bool InlinedNE()
     {
         Push((Pop() != Pop()) ? 1 : 0, Type.Bool);
         return true;
     }
-    bool LT()
+    bool InlinedLT()
     {
 #ifdef CHECKED
         Type ttype;
@@ -1204,7 +1204,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool GT()
+    bool InlinedGT()
     {
 #ifdef CHECKED
         Type ttype;
@@ -1219,7 +1219,7 @@ unit Instructions
 #endif        
         return true;        
     }
-    bool LE()
+    bool InlinedLE()
     {
 #ifdef CHECKED
         Type ttype;
@@ -1234,7 +1234,7 @@ unit Instructions
 #endif 
         return true;               
     }
-    bool GE()
+    bool InlinedGE()
     {
 #ifdef CHECKED
         Type ttype;
@@ -1249,7 +1249,7 @@ unit Instructions
 #endif      
         return true;          
     }
-    bool LTI()
+    bool InlinedLTI()
     {
 #ifdef CHECKED
         Type ttype;
@@ -1264,7 +1264,7 @@ unit Instructions
 #endif   
         return true;             
     }
-    bool GTI()
+    bool InlinedGTI()
     {
 #ifdef CHECKED
         Type ttype;
@@ -1279,7 +1279,7 @@ unit Instructions
 #endif     
         return true;           
     }
-    bool LEI()
+    bool InlinedLEI()
     {
 #ifdef CHECKED
         Type ttype;
@@ -1294,7 +1294,7 @@ unit Instructions
 #endif 
         return true;               
     }
-    bool GEI()
+    bool InlinedGEI()
     {
 #ifdef CHECKED
         Type ttype;
@@ -1459,7 +1459,7 @@ unit Instructions
         return true;
     }
     
-    bool PushIBLE()
+    bool InlinedPushIBLE()
     {
         uint top = ReadByteOperand();    
         Type ntype;

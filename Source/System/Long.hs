@@ -80,42 +80,7 @@ unit Long
     }
     
 #ifndef H6502  
-  
-#ifdef PORTABLE
-    string ToString(long this)
-    {
-        bool negative;
-        uint udigit;
-        char c;
-        long digit;
-        string result;
-        if (this < 0)
-        {
-            negative = true;
-            this = 0 - this;
-        }
-        else if (this == 0)
-        {
-            String.Build(ref result, '0');
-        }
-        while (this != 0)
-        {
-            digit = this % 10;
-            udigit = uint(digit);
-            c = Char.ToDigit(byte(udigit));
-            String.BuildFront(ref result, c);
-            this = this / 10;
-        }
-        if (negative)
-        {
-            String.BuildFront(ref result, '-');
-        }
-        return result;
-    }
-#else
     string ToString(long this) system;
-#endif
-
 #else    
     string ToString(long this)
     {
@@ -149,19 +114,7 @@ unit Long
     }
 #endif    
 
-#ifdef PORTABLE    
-    <byte> ToBytes(long this)
-    {
-        <byte> lst;
-        lst.Append(GetByte(this, 0));
-        lst.Append(GetByte(this, 1));
-        lst.Append(GetByte(this, 2));
-        lst.Append(GetByte(this, 3));
-        return lst;
-    }
-#else    
     <byte> ToBytes(long this) system;
-#endif
     
     byte GetByte(long this, byte index) system;
     long FromBytes(byte b0, byte b1, byte b2, byte b3) system;

@@ -353,7 +353,17 @@ unit External
         }
         return result;
     }
-    
+    uint LongToString(uint hrlong)
+    {
+        long l = nativeLongFromHopperLong(hrlong);
+        string str = l.ToString();
+        uint result = HRString.New(); 
+        foreach (var c in str)
+        {
+            HRString.BuildChar(ref result, c);
+        }
+        return result;
+    }   
     
     uint hopperFloatFromNativeFloat(float fl)
     {

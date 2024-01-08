@@ -1,6 +1,5 @@
 program FiboUInt
 {
-#define PORTABLE
     uses "/Source/6502/System"
     uses "/Source/System/IO"
     

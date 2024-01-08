@@ -1,8 +1,8 @@
 program Blink
 {
 //#define TINYHOPPER
-#define RP2040PICO
-//#define RP2040PICOW
+//#define RP2040PICO
+#define RP2040PICOW
 //#define TINY2040
 //#define SEEEDRP2040
 //#define ARDUINONANORP2040

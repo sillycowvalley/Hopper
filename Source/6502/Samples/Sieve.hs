@@ -1,6 +1,5 @@
 program Sieve
 {
-#define PORTABLE    
     uses "/Source/6502/System"
     
     const uint size = 8191;

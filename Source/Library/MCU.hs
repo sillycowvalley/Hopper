@@ -1,9 +1,6 @@
 unit MCU
 {
 
-#if !defined(PORTABLE)
-  //#define PORTABLE      // use Hopper versions of runtime library functions (minimal platform requirements)
-#endif
 #if !defined(SERIALCONSOLE)
   #define SERIALCONSOLE // for IO.hs if there is no alternative screen (like an LCD for example)
 #endif

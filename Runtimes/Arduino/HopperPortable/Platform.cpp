@@ -1,4 +1,5 @@
 #include "Platform.h"
+#include "Inlined.h"
 #include "HopperScreen.h"
 
 #include <Wire.h>
@@ -320,7 +321,7 @@ void Error(Byte error, UInt pc)
     if (0 != error)
     {
         char buffer[40];
-        sprintf(buffer, "Error: 0x%02x (PC=0x%04x)\n", error, pc);
+        sprintf(buffer, "Error: 0x%02X (PC=0x%04X)\n", error, pc);
         Serial.print(buffer);
         exited = true;
     }
@@ -359,14 +360,6 @@ void External_WriteToJumpTable(UInt jumpTable, Byte opCode, InstructionDelegate 
     InstructionDelegate * jumpLocation = (InstructionDelegate * )(&dataMemoryBlock[jumpTable] + opOffset);
     *jumpLocation = instructionDelegate;
 }
-
-bool External_FunctionCall(UInt jumpTable, Byte opCode)
-{
-    UInt opOffset = (opCode << 2);
-    InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[jumpTable] + opOffset));
-    return instructionDelegate();
-}
-
 
 UInt hopperLongFromNativeLong(long nativeLong)
 {
@@ -562,6 +555,20 @@ UInt External_FloatToString(UInt hrfloat)
     }
     return hrstring;
 }
+UInt External_LongToString(UInt hrlong)
+{
+    UInt hrstring = HRString_New();
+    char buffer[20];
+    long l = nativeLongFromHopperLong(hrlong);
+    sprintf(buffer, "%d", l);
+    UInt i = 0;
+    while (buffer[i])
+    {
+        HRString_BuildChar_R(hrstring , (Char)buffer[i]);
+        i++;
+    }
+    return hrstring;
+}
 
 bool External_FloatEQ(UInt n, UInt t)
 {
@@ -653,3 +660,65 @@ void HRWire_Write(Byte data)
     Wire.write(data);
 }
 
+bool External_FunctionCall(UInt jumpTable, Byte opCode)
+{
+    UInt opOffset = (opCode << 2);
+    InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[jumpTable] + opOffset));
+    return instructionDelegate();
+}
+
+
+void HopperVM_InlinedExecuteWarp()
+{
+    UInt isrCheck = 25;  // check for interrupt events every 25 instructions
+    UInt watchDog = 100; // check for <ctrl><C> every 2500 instructions
+    for (;;) // loop
+    {
+#ifdef CHECKED
+        HopperVM_messagePC = HopperVM_pc;
+#endif
+        
+        if (--isrCheck == 0)
+        {
+            isrCheck = 25;
+            if (Library_isrExists)
+            {
+                External_ServiceInterrupts();
+            }
+            if (--watchDog == 0)
+            {
+#if defined(RP2040PICO) || defined(RP2040PICOW)  
+                // Pi Pico appears to not need this
+#else
+                External_WatchDog();
+#endif
+                watchDog = 100;
+                if (IO_IsBreak())
+                {
+                    HopperVM_WriteBREAK();
+                    break;
+                }
+            }
+        }
+        
+        InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[HopperVM_jumpTable + (codeMemoryBlock[HopperVM_pc++] << 2)]));
+        if (instructionDelegate())
+        {
+            continue;
+        }
+        if (Minimal_error != 0)
+        {
+            break;
+        }
+        if (HopperVM_pc== 0)
+        {
+            HopperVM_Restart();
+            break;
+        }
+        if (IO_IsBreak())
+        {
+            HopperVM_WriteBREAK();
+            break;
+        }
+    } // loop
+}

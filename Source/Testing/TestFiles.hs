@@ -1,6 +1,5 @@
 program TestFiles
 {
-#define PORTABLE
 #define SERIALCONSOLE
     uses "/Source/System/System"
     

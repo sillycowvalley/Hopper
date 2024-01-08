@@ -1,6 +1,5 @@
 program I2CDemo
 {
-#define PORTABLE
 #define SERIALCONSOLE
 
     uses "/Source/System/System"
@@ -261,7 +260,7 @@ program I2CDemo
         long start;
         long elapsed;
         
-        if (!DisplayST7789xPiPico114())
+        if (!DisplaySSD1306x96())
         {
             WriteLn("Failed to initialize Display");
             return;

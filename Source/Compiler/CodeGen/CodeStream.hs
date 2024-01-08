@@ -22,13 +22,11 @@ unit CodeStream
         set { checkedBuild = value; }
     }
     bool IsShortCalls { get { return shortCallsDefined; } }
-    bool IsPortable   { get { return portableDefined; } }
     bool Target6502   { get { return h6053Defined; } }
     
     InitializeSymbolShortcuts()
     {
         shortCallsDefined = DefineExists("SHORTCALLS");
-        portableDefined = DefineExists("PORTABLE");
         h6053Defined = DefineExists("H6502");
     }
     bool InUse { get { return currentStream.Length > 0; } } 
@@ -261,7 +259,7 @@ unit CodeStream
         // Is there a user supplied alternative to the SysCall with only one overload?
         //  (we're not checking arguments or return type : shooting from the hip ..)
         uint fIndex;
-        if (CodeStream.Target6502 || CodeStream.IsPortable)
+        if (CodeStream.Target6502)
         {
             if (GetFunctionIndex(name, ref fIndex))
             {

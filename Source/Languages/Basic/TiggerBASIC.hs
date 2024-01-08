@@ -11,7 +11,6 @@ program TiggerBASIC
     
     #define MCU            // running on a microcontroller (CALLIW vs CALLW for example)
     #define SERIALCONSOLE  // no Keyboard
-    #define PORTABLE       // use Hopper versions of system calls when native ones are absent
     //#define USELCD
     
     uses "/Source/System/System"    

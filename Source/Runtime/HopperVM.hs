@@ -68,6 +68,9 @@ unit HopperVM
     uint bp;
     uint csp;
     bool cnp;
+#ifdef CHECKED
+    uint messagePC;
+#endif    
     
     uint PC  { get { return pc; }  set { pc = value; } }
     uint SP  { get { return sp; }  set { sp = value; } }
@@ -1090,7 +1093,6 @@ unit HopperVM
                 uint address = HRFloat.NewFromConstant(constAddress + location);
                 Push(address, Type.Float);
             }
-            
             case SysCall.StringNewFromConstant:
             {
                 switch(iOverload)
@@ -1209,6 +1211,82 @@ unit HopperVM
                 uint result = HRString.InsertChar(this, index, char(ch));
                 GC.Release(this);
                 Push(result, Type.String);                
+            }
+            case SysCall.StringToUpper:
+            {
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        // string ToUpper(string this)
+                        Type ttype;
+                        uint this = Pop(ref ttype);
+#ifdef CHECKED
+                        if (ttype != Type.String)
+                        {
+                            ErrorDump(27);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif        
+                        uint result = HRString.ToUpper(this);
+                        GC.Release(this);
+                        Push(result, Type.String);
+                    }
+                    case 1:
+                    {
+                        // ToUpper(ref string build) system;
+                        Type htype;
+                        uint address = Pop(ref htype);
+                        uint str = Get(address, ref htype);
+#ifdef CHECKED
+                        if (htype != Type.String)
+                        {
+                            ErrorDump(19);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif        
+                        HRString.ToUpper(ref str);
+                        Put(address, str, Type.String);
+                    }
+                }
+            }
+            case SysCall.StringToLower:
+            {
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        // string ToLower(string this)
+                        Type ttype;
+                        uint this = Pop(ref ttype);
+#ifdef CHECKED
+                        if (ttype != Type.String)
+                        {
+                            ErrorDump(27);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif        
+                        uint result = HRString.ToLower(this);
+                        GC.Release(this);
+                        Push(result, Type.String);
+                    }
+                    case 1:
+                    {
+                        // ToUpper(ref string build) system;
+                        Type htype;
+                        uint address = Pop(ref htype);
+                        uint str = Get(address, ref htype);
+#ifdef CHECKED
+                        if (htype != Type.String)
+                        {
+                            ErrorDump(19);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif        
+                        HRString.ToLower(ref str);
+                        Put(address, str, Type.String);
+                    }
+                }
             }
             case SysCall.StringEndsWith:
             {
@@ -2156,6 +2234,80 @@ unit HopperVM
                 GC.Release(this);
             }
             
+            case SysCall.CharToString:
+            {
+                Type utype;
+                uint singleChar = Pop(ref utype);
+#ifdef CHECKED
+                AssertChar(utype, singleChar);
+#endif
+                uint address = HRString.NewFromConstant1(singleChar);
+                Push(address, Type.String);
+            }
+            case SysCall.CharToUpper:
+            {
+                Type utype;
+                uint ch = Pop(ref utype);
+#ifdef CHECKED
+                AssertChar(utype, ch);
+#endif
+                Push(byte(HRChar.ToUpper(char(ch))), Type.Char);
+            }
+            case SysCall.CharToLower:
+            {
+                Type utype;
+                uint ch = Pop(ref utype);
+#ifdef CHECKED
+                AssertChar(utype, ch);
+#endif
+                Push(byte(HRChar.ToLower(char(ch))), Type.Char);
+            }
+            case SysCall.CharIsUpper:
+            {
+                Type utype;
+                uint ch = Pop(ref utype);
+#ifdef CHECKED
+                AssertChar(utype, ch);
+#endif
+                Push(byte(HRChar.IsUpper(char(ch))), Type.Bool);
+            }
+            case SysCall.CharIsLower:
+            {
+                Type utype;
+                uint ch = Pop(ref utype);
+#ifdef CHECKED
+                AssertChar(utype, ch);
+#endif
+                Push(byte(HRChar.IsLower(char(ch))), Type.Bool);
+            }
+            case SysCall.CharIsDigit:
+            {
+                Type utype;
+                uint ch = Pop(ref utype);
+#ifdef CHECKED
+                AssertChar(utype, ch);
+#endif
+                Push(byte(HRChar.IsDigit(char(ch))), Type.Bool);
+            }
+            case SysCall.CharIsLetterOrDigit:
+            {
+                Type utype;
+                uint ch = Pop(ref utype);
+#ifdef CHECKED
+                AssertChar(utype, ch);
+#endif
+                Push(byte(HRChar.IsLetterOrDigit(char(ch))), Type.Bool);
+            }
+            case SysCall.CharIsHexDigit:
+            {
+                Type utype;
+                uint ch = Pop(ref utype);
+#ifdef CHECKED
+                AssertChar(utype, ch);
+#endif
+                Push(byte(HRChar.IsHexDigit(char(ch))), Type.Bool);
+            }
+            
             case SysCall.CharToDigit:
             {
                 Type htype;
@@ -2167,8 +2319,22 @@ unit HopperVM
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif
-                Push(uint(b+48), Type.Char);
+                Push(byte(HRChar.ToDigit(byte(b))), Type.Char);
             }
+            case SysCall.CharToHex:
+            {
+                Type htype;
+                uint b = byte(Pop(ref htype));
+#ifdef CHECKED
+                if (b > 0x0F) // 0..F ok
+                {
+                    ErrorDump(8);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                Push(byte(HRChar.ToHex(byte(b))), Type.Char);
+            }
+            
             case SysCall.UIntToLong:
             {
                 Type htype;
@@ -2325,6 +2491,16 @@ unit HopperVM
                 AssertFloat(htype);
 #endif
                 uint str = External.FloatToString(l);
+                Push(str, Type.String);                
+            }
+            case SysCall.LongToString:
+            {
+                Type htype;
+                uint l = Pop(ref htype);
+#ifdef CHECKED
+                AssertLong(htype);
+#endif
+                uint str = External.LongToString(l);
                 Push(str, Type.String);                
             }
             case SysCall.FloatGetByte:
@@ -2811,6 +2987,26 @@ unit HopperVM
         IO.WriteHex(pc); IO.Write(' ');  IO.WriteHex(ReadCodeByte(pc)); IO.Write(' ');
         IO.WriteLn();
     }
+    WriteBREAK()
+    {
+        IO.WriteLn();IO.Write('B');IO.Write('R');IO.Write('E');IO.Write('A');IO.Write('K');IO.WriteLn();
+    }
+    WriteERROR()
+    {
+#ifndef SERIALCONSOLE                
+        DumpStack(8);
+#endif        
+        IO.WriteLn();
+#ifdef CHECKED                
+        IO.WriteHex(messagePC);
+#else
+        IO.WriteHex(PC);
+#endif
+        IO.Write(' '); IO.Write('E'); IO.Write('r'); IO.Write('r'); IO.Write('o'); IO.Write('r'); IO.Write(':'); 
+        byte berror = Error;
+        IO.WriteHex(berror);
+        IO.WriteLn();
+    }
     
     DumpHeap(bool display, uint accountedFor)
     {
@@ -3022,19 +3218,13 @@ unit HopperVM
     
     ExecuteStepTo()
     {
-        uint messagePC = pc;
+#ifdef CHECKED
+        messagePC = pc;
+#endif
         bool doNext = ExecuteOpCode();
         if (Error != 0)
         {
-#ifndef SERIALCONSOLE                
-            DumpStack(8);
-            IO.WriteLn();
-            IO.WriteHex(messagePC);
-            IO.Write(' '); IO.Write('E'); IO.Write('r'); IO.Write('r'); IO.Write('o'); IO.Write('r'); IO.Write(':'); 
-            byte berror = Error;
-            IO.WriteHex(berror);
-            IO.WriteLn();
-#endif
+            WriteERROR();
         }
         else if (pc == 0) // returned from "main"
         {
@@ -3045,22 +3235,15 @@ unit HopperVM
     
     Execute()
     {
-        uint messagePC;
         loop
         {
+#ifdef CHECKED
             messagePC = pc;
+#endif
             bool doNext = ExecuteOpCode();
             if (Error != 0)
             {
-#ifndef SERIALCONSOLE                
-                DumpStack(8);
-                IO.WriteLn();
-                IO.WriteHex(messagePC);
-                IO.Write(' '); IO.Write('E'); IO.Write('r'); IO.Write('r'); IO.Write('o'); IO.Write('r'); IO.Write(':'); 
-                byte berror = Error;
-                IO.WriteHex(berror);
-                IO.WriteLn();
-#endif
+                WriteERROR();
                 break;
             }
             if (pc == 0) // returned from "main"
@@ -3070,7 +3253,7 @@ unit HopperVM
             }
             if (IsBreak())
             {
-                IO.WriteLn();IO.Write('B');IO.Write('R');IO.Write('E');IO.Write('A');IO.Write('K');IO.WriteLn();
+                WriteBREAK();
                 break;
             }
             if (BreakpointExists)
@@ -3122,11 +3305,8 @@ unit HopperVM
 #endif
     }
     
-    ExecuteWarp()
+    InlinedExecuteWarp()
     {
-#ifdef CHECKED
-        uint messagePC;
-#endif
         
         uint watchDog = 2500;
         loop
@@ -3157,7 +3337,7 @@ unit HopperVM
                 watchDog = 2500;
                 if (IsBreak()) // adding this check slowed down the FiboUInt benchmark from 1094ms to 1220ms (~10%)
                 {
-                    IO.WriteLn();IO.Write('B');IO.Write('R');IO.Write('E');IO.Write('A');IO.Write('K');IO.WriteLn();
+                    WriteBREAK();
                     break;
                 }
             }
@@ -3171,17 +3351,7 @@ unit HopperVM
             
             if (Error != 0)
             {
-#ifndef SERIALCONSOLE                
-                DumpStack(8);
-                IO.WriteLn();
-#ifdef CHECKED                
-                IO.WriteHex(messagePC);
-#endif
-                IO.Write(' '); IO.Write('E'); IO.Write('r'); IO.Write('r'); IO.Write('o'); IO.Write('r'); IO.Write(':'); 
-                byte berror = Error;
-                IO.WriteHex(berror);
-                IO.WriteLn();
-#endif
+                WriteERROR();
                 break;
             }
             if (PC == 0) // returned from "main"
@@ -3191,7 +3361,7 @@ unit HopperVM
             }
             if (IsBreak())
             {
-                IO.WriteLn();IO.Write('B');IO.Write('R');IO.Write('E');IO.Write('A');IO.Write('K');IO.WriteLn();
+                WriteBREAK();
                 break;
             }
         } // loop

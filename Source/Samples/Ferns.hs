@@ -2,7 +2,6 @@ program Ferns
 {
     // https://en.wikipedia.org/wiki/Barnsley_fern#History
     
-#define PORTABLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
     uses "/Source/System/Color"

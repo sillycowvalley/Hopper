@@ -1,6 +1,6 @@
 program I2CDemo
 {
-#define PORTABLE
+#define SERIALCONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
     uses "/Source/System/Color"

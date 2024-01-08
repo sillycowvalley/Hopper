@@ -271,7 +271,7 @@ unit HopperCode
     }
     bool IsPushImmediate(Instruction instruction)
     {
-        if (   (instruction == Instruction.PUSHIW) || (instruction == Instruction.PUSHIB)
+        if (   (instruction == Instruction.PUSHI) || (instruction == Instruction.PUSHIB)
             || (instruction == Instruction.PUSHI0) || (instruction == Instruction.PUSHI1) || (instruction == Instruction.PUSHIM1)
            )
         {
@@ -282,7 +282,7 @@ unit HopperCode
     bool isLastPushImmediate(ref uint operandWidth, ref uint operandValue)
     {
         bool result;
-        if (LastInstruction == Instruction.PUSHIW)
+        if (LastInstruction == Instruction.PUSHI)
         {
             operandWidth = 2;
             operandValue = getCodeWord(gCodeSize - 2);
@@ -316,7 +316,7 @@ unit HopperCode
     }
     GotoAddress(Basic basicInstruction)
     {
-        Instruction jumpOpCode = Instruction.JW;
+        Instruction jumpOpCode = Instruction.J;
         if (basicInstruction == Basic.Gosub)
         {
             Error(22, 'm'); // implement GOSUB/RETURN
@@ -346,10 +346,10 @@ unit HopperCode
     }
     GotoLine(Basic basicInstruction, uint lineNumber, bool useLineNumber, bool jumpIsJZ)
     {
-        Instruction jumpOpCode = Instruction.JW;
+        Instruction jumpOpCode = Instruction.J;
         if (jumpIsJZ)
         {
-            jumpOpCode = Instruction.JZW;
+            jumpOpCode = Instruction.JZ;
         }
         
         uint operandWidth;
@@ -379,9 +379,9 @@ unit HopperCode
                     }
                     else
                     {
-                        appendCode(Instruction.PUSHIW, address);                        // 3 bytes
+                        appendCode(Instruction.PUSHI, address);                        // 3 bytes
                     }
-                    appendCode(Instruction.CALLW, uint(Platform.PushReturnPtr));   // 3 bytes
+                    appendCode(Instruction.CALL, uint(Platform.PushReturnPtr));   // 3 bytes
                     appendCode(Instruction.JNZB, 3); // return stack overflow?      // 2 bytes
                     appendCode(Instruction.EXIT);                                   // 1 byte
                 }
@@ -404,16 +404,16 @@ unit HopperCode
                     }
                     else
                     {
-                        appendCode(Instruction.PUSHIW, address);                        // 3 bytes
+                        appendCode(Instruction.PUSHI, address);                        // 3 bytes
                     }
-                    appendCode(Instruction.CALLW, uint(Platform.PushReturnPtr));       // 3 bytes
+                    appendCode(Instruction.CALL, uint(Platform.PushReturnPtr));       // 3 bytes
                     appendCode(Instruction.JNZB, 3); // return stack overflow?          // 2 bytes
                     appendCode(Instruction.EXIT);                                       // 1 bytes
                 }
                 
                 // Runtime address calculation based on lineNumber if line came from variable or expression.
                 // This address will be calculated and put on the stack at runtime:
-                appendCode(Instruction.CALLW, uint(Platform.HopperLineToAddressPtr));
+                appendCode(Instruction.CALL, uint(Platform.HopperLineToAddressPtr));
                 appendCode(Instruction.JREL);
                 gRuntimeFixups = true;
             }
@@ -439,22 +439,22 @@ unit HopperCode
     {
         if (gBreakCheck)
         {
-            appendCode(Instruction.CALLW, uint(Platform.IsBreakPtr));
+            appendCode(Instruction.CALL, uint(Platform.IsBreakPtr));
             appendCode(Instruction.JZB, 3);
             appendCode(Instruction.EXIT);
         }
     }
     Rnd()
     {
-        appendCode(Instruction.CALLW, uint(Platform.RndPtr));
+        appendCode(Instruction.CALL, uint(Platform.RndPtr));
     }
     Seed()
     {
-        appendCode(Instruction.CALLW, uint(Platform.SeedPtr));
+        appendCode(Instruction.CALL, uint(Platform.SeedPtr));
     }
     Return()
     {
-        appendCode(Instruction.CALLW, uint(Platform.PopReturnPtr));
+        appendCode(Instruction.CALL, uint(Platform.PopReturnPtr));
         appendCode(Instruction.DUP,   0);
         appendCode(Instruction.JNZB,  5); // return stack empty?
         appendCode(Instruction.DECSP, 0);
@@ -463,7 +463,7 @@ unit HopperCode
     }
     Get()
     {
-        appendCode(Instruction.CALLW, uint(Platform.GetChPtr));
+        appendCode(Instruction.CALL, uint(Platform.GetChPtr));
 #ifdef CHECKED        
         appendCode(Instruction.DUP,  0); // DUP 0 implies duplicating [top], char(0) if <ctrl><X> was pressed
         appendCode(Instruction.JNZB, 3);
@@ -474,30 +474,30 @@ unit HopperCode
     {
         appendCode(Instruction.PUSHIB, iVariable);
         appendCode(Instruction.PUSHIB, byte(isString));
-        appendCode(Instruction.CALLW, uint(Platform.InputPtr));
+        appendCode(Instruction.CALL, uint(Platform.InputPtr));
         appendCode(Instruction.JNZB, 3); // Input(..) returns false if <ctrl><X>
         appendCode(Instruction.EXIT);
     }
     PrintRef()
     {
-        appendCode(Instruction.CALLW, uint(Platform.PrintRefPtr));
+        appendCode(Instruction.CALL, uint(Platform.PrintRefPtr));
     }
     PrintChar()
     {
         // LSB = ch, MSB = null assumed to be on stack
         appendCode(Instruction.SYSCALL0, iStringPushImmediate);
-        appendCode(Instruction.CALLW, uint(Platform.PrintPtr));
+        appendCode(Instruction.CALL, uint(Platform.PrintPtr));
     }
     PrintInt()
     {
-        appendCode(Instruction.CALLW, uint(Platform.IntToStringPtr));
-        appendCode(Instruction.CALLW, uint(Platform.PrintPtr));
+        appendCode(Instruction.CALL, uint(Platform.IntToStringPtr));
+        appendCode(Instruction.CALL, uint(Platform.PrintPtr));
     }
     PrintHex()
     {
         appendCode(Instruction.PUSHIB, 4);
-        appendCode(Instruction.CALLW, uint(Platform.UIntToStringHexPtr));
-        appendCode(Instruction.CALLW, uint(Platform.PrintPtr));
+        appendCode(Instruction.CALL, uint(Platform.UIntToStringHexPtr));
+        appendCode(Instruction.CALL, uint(Platform.PrintPtr));
     }
     PrintString(string text)
     {
@@ -524,27 +524,27 @@ unit HopperCode
                 break;
             }
             index--;
-            appendCode(Instruction.PUSHIW, byte(text[index*2]) + (byte(text[index*2+1]) << 8));
+            appendCode(Instruction.PUSHI, byte(text[index*2]) + (byte(text[index*2+1]) << 8));
         }
         appendCode(Instruction.SYSCALL0, iStringPushImmediate);
-        appendCode(Instruction.CALLW, uint(Platform.PrintPtr));
+        appendCode(Instruction.CALL, uint(Platform.PrintPtr));
     }
     PushTOP()
     {
-        appendCode(Instruction.PUSHIW, Memory.Top);
+        appendCode(Instruction.PUSHI, Memory.Top);
     }
      
     PushInt(int integer)
     {
-        appendCode(Instruction.PUSHIW, integer);
+        appendCode(Instruction.PUSHI, integer);
     }
     PeekW()
     {
-        appendCode(Instruction.CALLW, uint(Platform.ReadWordPtr));
+        appendCode(Instruction.CALL, uint(Platform.ReadWordPtr));
     }
     PokeW()
     {
-        appendCode(Instruction.CALLW, uint(Platform.WriteWordPtr));
+        appendCode(Instruction.CALL, uint(Platform.WriteWordPtr));
     }
     PeekB()
     {
@@ -571,7 +571,7 @@ unit HopperCode
             appendCode(Instruction.DUP, 0); // DUP 0 implies duplicating [top], the current value in the variable
             if (0 != offset)
             {
-                appendCode(Instruction.PUSHIW, offset);
+                appendCode(Instruction.PUSHI, offset);
                 appendCode(Instruction.ADDI);
             }
             appendCode(Instruction.PUSHIB, byte(ch));
@@ -581,7 +581,7 @@ unit HopperCode
         // no DUP on the last one, consume the original
         if (0 != offset)
         {
-            appendCode(Instruction.PUSHIW, offset);
+            appendCode(Instruction.PUSHI, offset);
             appendCode(Instruction.ADDI);
         }
         appendCode(Instruction.PUSHIB, 0);
@@ -660,7 +660,7 @@ unit HopperCode
     {
         int offset = address - int(gCodeSize);
         uint w = CastIntToUInt(offset);
-        appendCode(Instruction.JZW, offset);
+        appendCode(Instruction.JZ, offset);
     }
     
     
@@ -1063,20 +1063,20 @@ unit HopperCode
         {
             if (gLastInstruction0 == Instruction.PUSHIB)
             {
-                instruction = Instruction.PUSHIWLEI;
+                instruction = Instruction.PUSHILEI;
                 programCode[gCodeSize-3] = byte(instruction);
                 programCode[gCodeSize-1] = 0;
                 gLastInstruction0 = instruction; replaced = true;
             }
-            else if (gLastInstruction0 == Instruction.PUSHIW)
+            else if (gLastInstruction0 == Instruction.PUSHI)
             {
-                instruction = Instruction.PUSHIWLEI;
+                instruction = Instruction.PUSHILEI;
                 programCode[gCodeSize-4] = byte(instruction);
                 gCodeSize--;
                 gLastInstruction0 = instruction; replaced = true;
             }
         }
-        else if (instruction == Instruction.PUSHIW)
+        else if (instruction == Instruction.PUSHI)
         {
             if (programCode[gCodeSize-1] == 0) // MSB
             {

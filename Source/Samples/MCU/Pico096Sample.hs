@@ -1,6 +1,5 @@
 program Pico096Sample
 {
-#define PORTABLE
 #define SERIALCONSOLE
 #define RP2040
     

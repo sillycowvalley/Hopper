@@ -233,13 +233,13 @@ unit Instructions
                 isRET = true;
             }
             case Instruction.RETB:
-            case Instruction.RETRETB:
+            case Instruction.RETRESB:
             {
                 isRET = true;
                 width = 1;
             }
             case Instruction.RET:
-            case Instruction.RETRET:
+            case Instruction.RETRES:
             {
                 width = 2;
                 isRET = true;

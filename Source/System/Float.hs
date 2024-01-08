@@ -104,19 +104,7 @@ unit Float
     }
     string ToString(float this) system;
     
-#ifdef PORTABLE    
-    <byte> ToBytes(float this)
-    {
-        <byte> lst;
-        lst.Append(GetByte(this, 0));
-        lst.Append(GetByte(this, 1));
-        lst.Append(GetByte(this, 2));
-        lst.Append(GetByte(this, 3));
-        return lst;
-    }
-#else 
     <byte> ToBytes(float this) system;
-#endif
     
     byte GetByte(float this, byte index) system;
     float FromBytes(byte b0, byte b1, byte b2, byte b3) system;

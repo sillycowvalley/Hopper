@@ -902,7 +902,7 @@ program Translate
                            || methodName.StartsWith("HRScreen.") 
                            || methodName.StartsWith("HRWire.") 
                            || methodName.StartsWith("HRGraphics.")
-                           || methodName.StartsWith("Instructions.Inlined");
+                           || methodName.Contains(".Inlined");
             
             < < string > > arguments = GetOverloadArguments(iCurrentOverload);
             bool firstarg = true;

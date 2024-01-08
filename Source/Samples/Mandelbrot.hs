@@ -1,7 +1,6 @@
 program Mandelbrot
 {
 //#define TINYHOPPER    
-//#define PORTABLE
 #define SERIALCONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"

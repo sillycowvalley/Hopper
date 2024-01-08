@@ -1,6 +1,5 @@
 program NRL
 {
-//#define PORTABLE
 #define SERIALCONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"

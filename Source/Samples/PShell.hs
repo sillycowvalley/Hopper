@@ -1,7 +1,6 @@
 program Shell
 {
         
-#define PORTABLE
 #define SERIALCONSOLE
 
     uses "/Source/System/System"

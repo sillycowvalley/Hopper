@@ -1,7 +1,6 @@
 program TestStrings
 {
 //#define TINYHOPPER
-//#define PORTABLE
 #define SERIALCONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"

@@ -1,6 +1,5 @@
 program Runtime
 {
-#define PORTABLE      // use .hs runtime methods where they exist (rather than 'system')
 //#define CHECKED     // mainly stack checks, range checks and division by zero
 
 #define RUNTIME       // workaround special clipboard buffer for testing on Windows (that works without String)
@@ -25,6 +24,7 @@ program Runtime
     uses "/Source/Runtime/Platform/Long"
     uses "/Source/Runtime/Platform/Pair"
     uses "/Source/Runtime/Platform/Screen"
+    uses "/Source/Runtime/Platform/Char"
     uses "/Source/Runtime/Platform/String"
     uses "/Source/Runtime/Platform/UInt"
     uses "/Source/Runtime/Platform/Variant"
@@ -290,7 +290,7 @@ program Runtime
                             }
                             case 'X':
                             {
-                                HopperVM.ExecuteWarp();
+                                HopperVM.InlinedExecuteWarp();
                                 refresh = true;
                             }
                             case 'W':
@@ -704,7 +704,7 @@ program Runtime
             HopperVM.Initialize(loadedAddress, codeLength);
             HopperVM.Restart();
             loaded = true;
-            HopperVM.ExecuteWarp();
+            HopperVM.InlinedExecuteWarp();
         }
 
         Serial.WriteChar(char(slash)); // ready
@@ -960,7 +960,7 @@ program Runtime
                                 case 'X': // Execute
                                 {
                                     WaitForEnter();
-                                    HopperVM.ExecuteWarp();
+                                    HopperVM.InlinedExecuteWarp();
                                     Serial.WriteChar(char(slash)); // confirm handing back control
                                 }
                                 case 'W': // Warm restart

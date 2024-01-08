@@ -1,6 +1,5 @@
 program Newton
 {
-#define PORTABLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
         

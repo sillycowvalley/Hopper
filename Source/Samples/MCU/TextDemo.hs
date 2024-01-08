@@ -1,6 +1,5 @@
 program TextDemo
 {
-#define PORTABLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
     uses "/Source/System/Color"

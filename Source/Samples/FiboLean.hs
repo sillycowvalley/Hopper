@@ -1,6 +1,5 @@
 program FiboUInt
 {
-#define PORTABLE      // use .hs runtime methods where they exist (rather than 'system')
 //#define CHECKED     // mainly stack checks, range checks and division by zero
 #define SERIALCONSOLE // Source/System/IO uses serial only (for MCU's etc)
 

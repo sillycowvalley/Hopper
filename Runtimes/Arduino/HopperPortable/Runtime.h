@@ -8,6 +8,7 @@ typedef unsigned char  Byte;
 typedef unsigned char  Char;
 typedef unsigned short UInt;
 typedef   signed short Int;
+typedef   signed char  Int8;
 typedef           bool Bool;
 
 typedef Bool (*InstructionDelegate)();
@@ -127,6 +128,7 @@ enum OpCode {
 
 enum SysCall {
     eStringNewFromConstant = 0x0000,
+    eCharToString = 0x0001,
     eStringNew = 0x0002,
     eStringAppend = 0x0003,
     eStringInsertChar = 0x0004,
@@ -176,6 +178,7 @@ enum SysCall {
     eIntToLong = 0x0035,
     eUIntToLong = 0x0036,
     eUIntToInt = 0x0037,
+    eLongToString = 0x0038,
     eLongToBytes = 0x0039,
     eLongToFloat = 0x003A,
     eLongToInt = 0x003B,
@@ -257,7 +260,15 @@ enum SysCall {
     eStringBuildFront = 0x00B5,
     eMemoryReadBit = 0x00B6,
     eMemoryWriteBit = 0x00B7,
+    eCharToUpper = 0x00B8,
+    eCharIsUpper = 0x00B9,
+    eCharIsDigit = 0x00BA,
+    eCharIsLetterOrDigit = 0x00BB,
+    eCharIsLower = 0x00BC,
     eCharToDigit = 0x00BD,
+    eCharToHex = 0x00BE,
+    eCharIsHexDigit = 0x00BF,
+    eCharToLower = 0x00C0,
     eTimeDelay = 0x00C6,
     eIntToBytes = 0x00CD,
     eFileGetTime = 0x00CE,
@@ -266,6 +277,8 @@ enum SysCall {
     eStringTrimLeft = 0x00D1,
     eStringTrimRight = 0x00D2,
     eStringPushImmediate = 0x00D3,
+    eStringToUpper = 0x00D4,
+    eStringToLower = 0x00D5,
     eMemoryReadWord = 0x00D7,
     eMemoryWriteWord = 0x00D8,
     eLongGetByte = 0x00E0,
@@ -532,7 +545,6 @@ Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength);
 Bool Runtime_TryReadSerialByte_R(Byte & data);
 void HopperVM_Restart();
 void HopperVM_Initialize(UInt loadedAddress, UInt loadedSize);
-void HopperVM_ExecuteWarp();
 void HopperVM_ClearBreakpoints(Bool includingZero);
 void HopperVM_SetBreakpoint(Byte n, UInt address);
 UInt HopperVM_PC_Get();
@@ -553,6 +565,8 @@ UInt HopperVM_Get_R(UInt address, Type & htype);
 void HopperVM_DataMemoryReset();
 void HopperVM_DiskSetup();
 Bool HopperVM_ExecuteOpCode();
+void HopperVM_WriteERROR();
+void HopperVM_WriteBREAK();
 Bool HopperVM_IsOnFreeList(UInt pCandidate);
 UInt HRString_New();
 void HRString_BuildChar_R(UInt & _this, Char ch);
@@ -581,10 +595,9 @@ void GC_Release(UInt address);
 void GC_Dump(UInt address);
 void GC_Dump(UInt address, UInt indent);
 UInt GC_New(UInt size, Type htype);
-Char Char_ToHex(Byte h);
+Char HRChar_ToHex(Byte h);
 void Minimal_Error_Set(Byte value);
 Byte Minimal_Error_Get();
-Bool Library_ISRExists_Get();
 Bool IO_IsBreak();
 void IO_WriteLn();
 void IO_Write(Char c);
@@ -602,30 +615,12 @@ void HRArray_Initialize();
 void HRArray_Dump(UInt address, UInt indent);
 void Instructions_PopulateJumpTable(UInt jumpTable);
 Bool Instructions_Undefined();
-Bool Instructions_Div();
-Bool Instructions_Mod();
-Bool Instructions_EQ();
-Bool Instructions_NE();
-Bool Instructions_GT();
-Bool Instructions_LT();
-Bool Instructions_GE();
-Bool Instructions_LE();
 Bool Instructions_BoolOr();
 Bool Instructions_BoolAnd();
 Bool Instructions_BitOr();
 Bool Instructions_BitAnd();
 Bool Instructions_BitShl();
 Bool Instructions_BitShr();
-Bool Instructions_AddI();
-Bool Instructions_SubI();
-Bool Instructions_DivI();
-Bool Instructions_MulI();
-Bool Instructions_ModI();
-Bool Instructions_GTI();
-Bool Instructions_LTI();
-Bool Instructions_GEI();
-Bool Instructions_LEI();
-Bool Instructions_PushIB();
 Bool Instructions_PopLocalB();
 Bool Instructions_PopRelB();
 Bool Instructions_PushRelB();
@@ -635,17 +630,12 @@ Bool Instructions_PushStackAddrB();
 Bool Instructions_IncLocalB();
 Bool Instructions_DecLocalB();
 Bool Instructions_CallB();
-Bool Instructions_JZB();
 Bool Instructions_JNZB();
 Bool Instructions_JB();
 Bool Instructions_IncLocalBB();
 Bool Instructions_Ret0();
-Bool Instructions_PushI0();
-Bool Instructions_PushI1();
 Bool Instructions_PopLocalB00();
 Bool Instructions_PopLocalB02();
-Bool Instructions_PushLocalB00();
-Bool Instructions_PushLocalB02();
 Bool Instructions_SysCall0();
 Bool Instructions_SysCall1();
 Bool Instructions_PushGlobalBB();
@@ -662,7 +652,6 @@ Bool Instructions_EnterB();
 Bool Instructions_JIXB();
 Bool Instructions_PushILE();
 Bool Instructions_PushILT();
-Bool Instructions_PushIBLE();
 Bool Instructions_PushILEI();
 Bool Instructions_PushIBEQ();
 Bool Instructions_RetB();
@@ -719,20 +708,18 @@ void HRPair_Dump(UInt address, UInt indent);
 void HRVariant_Clear(UInt _this);
 void HRVariant_Dump(UInt address, UInt indent);
 void HRLong_Dump(UInt address, UInt indent);
-Char Char_ToDigit(Byte d);
+Char HRChar_ToDigit(Byte d);
 OpCode HopperVM_CurrentOpCode_Get();
-UInt HopperVM_Pop();
-void HopperVM_Push(UInt value, Type htype);
 UInt HopperVM_Pop_R(Type & htype);
-Int HopperVM_PopI();
-void HopperVM_PushI(Int ivalue);
-Byte HopperVM_ReadByteOperand();
+void HopperVM_Push(UInt value, Type htype);
+UInt HopperVM_Pop();
 Bool HopperVM_CNP_Get();
 void HopperVM_CNP_Set(Bool value);
 Int HopperVM_ReadByteOffsetOperand();
 UInt HopperVM_TypeStack_Get();
 UInt HopperVM_ValueStack_Get();
 void HopperVM_Put(UInt address, UInt value, Type htype);
+Byte HopperVM_ReadByteOperand();
 void HopperVM_PushCS(UInt value);
 void HopperVM_PC_Set(UInt value);
 UInt HopperVM_LookupMethod(UInt methodIndex);
@@ -743,6 +730,7 @@ UInt HopperVM_ReadWordOperand();
 Int HopperVM_PopI_R(Type & htype);
 Int HopperVM_ReadWordOffsetOperand();
 Bool HopperVM_ExitInline();
+void HopperVM_PushI(Int ivalue);
 UInt HopperVM_Get(UInt address);
 Bool HopperVM_RunInline();
 void GC_AddReference(UInt address);
@@ -773,6 +761,10 @@ Char HRString_GetChar(UInt _this, UInt index);
 UInt HRString_NewFromConstant0(UInt location, UInt length);
 UInt HRString_NewFromConstant1(UInt doubleChar);
 UInt HRString_InsertChar(UInt _this, UInt index, Char ch);
+UInt HRString_ToUpper(UInt _this);
+void HRString_ToUpper_R(UInt & _this);
+UInt HRString_ToLower(UInt _this);
+void HRString_ToLower_R(UInt & _this);
 Bool HRString_EndsWith(UInt _this, Char with);
 Bool HRString_EndsWith(UInt _this, UInt with);
 Int HRString_Compare(UInt left, UInt right);
@@ -841,12 +833,22 @@ void HRDictionary_adjustCapacity(UInt _this, UInt newCapacity);
 UInt HRDictionary_hashKey16(UInt key);
 UInt HRDictionary_findEntry(UInt pEntries, UInt capacity, UInt key, UInt hash, Bool valueKeys);
 Bool HRDictionary_validEntry(UInt pEntry, Bool valueKeys);
+Char HRChar_ToUpper(Char _this);
+Char HRChar_ToLower(Char _this);
+Bool HRChar_IsUpper(Char _this);
+Bool HRChar_IsLower(Char _this);
+Bool HRChar_IsDigit(Char _this);
+Bool HRChar_IsLetterOrDigit(Char _this);
+Bool HRChar_IsHexDigit(Char _this);
 UInt HRUInt_ToLong(UInt ui);
 UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
+
+
 
 
 #endif // HOPPERRUNTIME_H

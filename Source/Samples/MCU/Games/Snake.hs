@@ -2,9 +2,8 @@ program Snake
 {
     // https://www.geeksforgeeks.org/snake-game-in-c/
     
-#define PORTABLE
 #define SERIALCONSOLE
-#define RP2040
+#define RP2040PICOW
     
     uses "/Source/Library/MCU"
     uses "/Source/Library/Graphics"

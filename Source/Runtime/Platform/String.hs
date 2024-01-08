@@ -234,16 +234,16 @@ unit HRString
         }
     
     }
-    uint TrimLeft(uint this)
-    {
-        uint copy = Clone(this);
-        TrimLeft(ref copy);
-        return copy;
-    }
     uint Trim(uint this)
     {
         uint copy = Clone(this);
         TrimRight(ref copy);
+        TrimLeft(ref copy);
+        return copy;
+    }
+    uint TrimLeft(uint this)
+    {
+        uint copy = Clone(this);
         TrimLeft(ref copy);
         return copy;
     }
@@ -487,6 +487,41 @@ unit HRString
         WriteWord(this+siLength, length+1);
     }
     
-    
+    uint ToUpper(uint this)
+    {
+        uint copy = Clone(this);
+        ToUpper(ref copy);
+        return copy;
+    }
+    ToUpper(ref uint this)
+    {
+        uint length = GetLength(this);
+        uint i = 0;
+        loop
+        {
+            if (i == length) { break; }
+            char ch = char(ReadByte(this+siChars+i));
+            WriteByte(this+siChars+i, byte(HRChar.ToUpper(ch)));
+            i++;
+        }
+    }
+    uint ToLower(uint this)
+    {
+        uint copy = Clone(this);
+        ToUpper(ref copy);
+        return copy;
+    }
+    ToLower(ref uint this)
+    {
+        uint length = GetLength(this);
+        uint i = 0;
+        loop
+        {
+            if (i == length) { break; }
+            char ch = char(ReadByte(this+siChars+i));
+            WriteByte(this+siChars+i, byte(HRChar.ToLower(ch)));
+            i++;
+        }
+    }
 
 }

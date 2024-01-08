@@ -17,17 +17,8 @@ unit String
     // optimizer for: this = "";
     Build(ref string build) system;
 
-#ifdef PORTABLE
-    BuildFront(ref string build, char insert)
-    {
-        string result = build.InsertChar(0, insert);
-        build = result;
-    }
-#else    
     // optimizer for: this = this.InsertChar(0, ch);
     BuildFront(ref string build, char insert) system;
-#endif
-    
     
     // used for:  str[n] accesss
     char GetChar(string this, uint index) system;
@@ -485,125 +476,7 @@ unit String
     TrimLeft(ref string build) system;
     
     TrimRight(ref string build) system;
-    
-    
-#ifdef PORTABLE
-    string ToUpper(string this)
-    {
-        uint i;
-        char c;
-        uint length;
-        string result;
-        length = this.Length;
-        for (; i < length; i++)
-        {
-            c = this[i];
-            Build(ref result, c.ToUpper());
-        }
-        return result;
-    }
-    string ToLower(string this)
-    {
-        uint i;
-        char c;
-        uint length;
-        string result;
-        length = this.Length;
-        for (; i < length; i++)
-        {
-            c = this[i];
-            Build(ref result, c.ToLower());
-        }
-        return result;
-    }
-    ToUpper(ref string this)
-    {
-        uint i;
-        char c;
-        uint length;
-        length = this.Length;
-        
-        string other = this.ToUpper();
-        Build(ref this);
-        for ( ;i < length; i++)
-        {
-            Build(ref this, other[i]);
-        }
-    }
-    ToLower(ref string this)
-    {
-        uint i;
-        char c;
-        uint length;
-        length = this.Length;
-        
-        string other = this.ToLower();
-        Build(ref this);
-        for ( ;i < length; i++)
-        {
-            Build(ref this, other[i]);
-        }
-    }
-    int Compare(string left, string right) // returns -1, 0, +1
-    {
-        uint ll;
-        uint rl;
-        uint i;
-        int result;
-        ll = left.Length;
-        rl = right.Length;
-        loop
-        {
-            if (i >= ll)
-            {
-                break;
-            }
-            if (i >= rl)
-            {
-                break;
-            }
-            if (left[i] != right[i])
-            {
-                break;
-            }
-            i++;
-        }
-        loop
-        {
-            if ((ll == 0) && (rl == 0))
-            {
-                break; // " == "
-            }
-            
-            // at this point the strings are identical up to left[i-1] == right[i-1]
-            if ((i < ll) && (i < rl))
-            {
-                if (int(left[i]) > int(right[i]))
-                {
-                    result = 1;
-                }
-                else
-                {
-                    result = -1;
-                }
-                break;
-            }
-            if (i >= ll)
-            {
-                if (i >= rl)
-                {
-                    break; // they were equal to this point
-                }
-                // left string is shorter but they are equal to [i-1]
-                result = -1;
-                break;
-            }
-            result = 1;
-            break;
-        }
-        return result;
-    }
-#else
+
     string ToUpper(string this) system;
     ToUpper(ref string this) system;
     string ToLower(string this) system;
@@ -611,6 +484,5 @@ unit String
     
     // returns -1, 0, +1
     int Compare(string left, string right) system; 
-#endif
     
 }

@@ -21,17 +21,7 @@ unit Screen
     DrawChar(uint col, uint row, char c, uint foreColour, uint backColour) system;
     
     Print(char c,     uint foreColour, uint backColour) system;
-#ifdef PORTABLE
-    Print(string s,   uint foreColour, uint backColour)
-    {
-        foreach (var ch in s)
-        {
-            Print(ch, foreColour, backColour);
-        }
-    }
-#else    
     Print(string s,   uint foreColour, uint backColour) system;
-#endif    
     PrintLn() system;
 
     PrintLn(char c,   uint foreColour, uint backColour)

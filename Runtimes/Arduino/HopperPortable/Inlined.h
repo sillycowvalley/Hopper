@@ -4,6 +4,9 @@
 #include "Runtime.h"
 #include "Platform.h"
 
+#ifdef CHECKED
+extern UInt HopperVM_messagePC;
+#endif
 extern UInt HopperVM_pc;
 extern UInt HopperVM_sp;
 extern UInt HopperVM_bp;
@@ -14,15 +17,49 @@ extern UInt HopperVM_typeStack;
 extern UInt HopperVM_callStack;
 extern UInt HopperVM_dataMemory;
 extern UInt HopperVM_codeMemory;
+extern UInt HopperVM_jumpTable;
+extern Bool Library_isrExists;
+extern Byte Minimal_error;
+
+void HopperVM_InlinedExecuteWarp();
 
 Bool Instructions_InlinedAdd();
 Bool Instructions_InlinedSub();
 Bool Instructions_InlinedMul();
+Bool Instructions_InlinedDiv();
+Bool Instructions_InlinedMod();
+
+Bool Instructions_InlinedEQ();
+Bool Instructions_InlinedNE();
+Bool Instructions_InlinedLT();
+Bool Instructions_InlinedGT();
+Bool Instructions_InlinedLE();
+Bool Instructions_InlinedGE();
+
+Bool Instructions_InlinedAddI();
+Bool Instructions_InlinedSubI();
+Bool Instructions_InlinedMulI();
+Bool Instructions_InlinedDivI();
+Bool Instructions_InlinedModI();
+
+Bool Instructions_InlinedGTI();
+Bool Instructions_InlinedGEI();
+Bool Instructions_InlinedLTI();
+Bool Instructions_InlinedLEI();
+
+
 Bool Instructions_InlinedAddB();
 Bool Instructions_InlinedSubB();
+Bool Instructions_InlinedPushI0();
+Bool Instructions_InlinedPushI1();
+Bool Instructions_InlinedPushIB();
 Bool Instructions_InlinedPushLocalB();
+Bool Instructions_InlinedPushLocalB00();
+Bool Instructions_InlinedPushLocalB02();
 Bool Instructions_InlinedEnter();
 Bool Instructions_InlinedCallI();
 Bool Instructions_InlinedRetResB();
+Bool Instructions_InlinedJZB();
+Bool Instructions_InlinedPushIBLE();
 
 #endif

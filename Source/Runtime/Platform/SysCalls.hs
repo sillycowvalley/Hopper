@@ -3,7 +3,7 @@ unit SysCalls
     enum SysCall
     {
         StringNewFromConstant = 0x00,
-        
+        CharToString       = 0x01,
         StringNew          = 0x02,
         StringAppend       = 0x03,
         StringInsertChar   = 0x04,
@@ -40,9 +40,9 @@ unit SysCalls
       //PairKeyType        = 0x23,
         PairValue          = 0x24,
       //PairValueType      = 0x25,
-        
-        VariantBox         = 0x27,        
-        
+      //VariantType        = 0x26,
+        VariantBox         = 0x27,  
+      //VariantUnBox       = 0x28,      
         ScreenPrint        = 0x29,
         ScreenPrintLn      = 0x2A,
         ScreenClear        = 0x2B,
@@ -55,11 +55,11 @@ unit SysCalls
         ScreenResume       = 0x32,
         ScreenDrawChar     = 0x33,
         
-        IntToFloat         = 0x34,
-        IntToLong          = 0x35,
-        UIntToLong         = 0x36,
-        UIntToInt          = 0x37,
-        
+        IntToFloat           = 0x34,
+        IntToLong            = 0x35,
+        UIntToLong           = 0x36,
+        UIntToInt            = 0x37,
+        LongToString         = 0x38,
         LongToBytes          = 0x39,
         LongToFloat          = 0x3A,
         LongToInt            = 0x3B,
@@ -159,7 +159,15 @@ unit SysCalls
         MemoryReadBit = 0xB6,
         MemoryWriteBit = 0xB7,
         
-        CharToDigit      = 0xBD,
+        CharToUpper = 0xB8,
+        CharIsUpper = 0xB9,
+        CharIsDigit = 0xBA,
+        CharIsLetterOrDigit = 0xBB,
+        CharIsLower = 0xBC,
+        CharToDigit = 0xBD,
+        CharToHex = 0xBE,
+        CharIsHexDigit = 0xBF,
+        CharToLower = 0xC0,
         
         TimeDelay        = 0xC6,
         
@@ -172,6 +180,9 @@ unit SysCalls
         StringTrimLeft   = 0xD1,
         StringTrimRight  = 0xD2,
         StringPushImmediate = 0xD3,
+        
+        StringToUpper = 0xD4,
+        StringToLower = 0xD5,
         
         MemoryReadWord  = 0xD7,
         MemoryWriteWord = 0xD8,

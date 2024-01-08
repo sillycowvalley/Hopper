@@ -102,7 +102,4 @@ unit HRLong
     {
         return ReadByte(ichunk+2+i);    
     }
-    
-    
-    
 }
