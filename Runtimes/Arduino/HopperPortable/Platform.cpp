@@ -802,8 +802,12 @@ void HRWire_Write(Byte controller, Byte data)
 }
 void HRWire_Write(Byte controller, UInt hrarray, UInt startIndex, UInt length)
 {
-     // TODO
-     (controller == 0) ? Serial.println("HRWire_WriteBuffer 0") : Serial.println("HRWire_WriteBuffer 1");
+     Byte * data = &dataMemoryBlock[hrarray + startIndex + 5];
+#ifdef RP2040
+    (controller == 0) ? Wire.write(data, length): Wire1.write(data, length);
+#else
+    Wire.write(data, length);
+#endif
 }
 
 bool External_FunctionCall(UInt jumpTable, Byte opCode)

@@ -1749,9 +1749,7 @@ program TestSuite
     
     
     {
-        EchoToLCD = true;
-        Screen.Clear();
-        
+        //EchoToLCD = true;
         
         TestArray();
         

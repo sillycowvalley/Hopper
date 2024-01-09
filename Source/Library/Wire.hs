@@ -5,8 +5,7 @@ unit Wire
         bool success;
         loop
         {
-#if defined(RP2040PICO) || defined(RP2040PICOW)
-            // Pi Pico pin validation:
+#if defined(RP2040PICO) || defined(RP2040PICOW)            // Pi Pico pin validation:
             switch (i2cController)
             {
                 case 0:
@@ -31,6 +30,33 @@ unit Wire
                          || ((sdaPin == 10) && (sclPin == 11))
                          || ((sdaPin == 14) && (sclPin == 15))
                          || ((sdaPin == 18) && (sclPin == 19))
+                         || ((sdaPin == 26) && (sclPin == 27))
+                       ) { } else { break; }
+                }
+                default:
+                {
+                    break;
+                }
+            }
+#endif
+#if defined(TINY2040)
+            switch (i2cController)
+            {
+                case 0:
+                {
+                    if ((sdaPin == 0) && (sclPin == 0)) { sdaPin = 4; } // zero is a legit value for SDA for controller 0
+                    if (sclPin == 0) { sclPin = 5; }
+                    if (    ((sdaPin == 0) && (sclPin == 1))
+                         || ((sdaPin == 4) && (sclPin == 5))
+                       ) { } else { break; }
+                     
+                }
+                case 1:
+                {
+                    if (sdaPin == 0) { sdaPin = 26; }
+                    if (sclPin == 0) { sclPin = 27; }
+                    if (    ((sdaPin == 2) && (sclPin == 3))
+                         || ((sdaPin == 6) && (sclPin == 7))
                          || ((sdaPin == 26) && (sclPin == 27))
                        ) { } else { break; }
                 }

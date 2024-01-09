@@ -62,4 +62,16 @@ Bool Instructions_InlinedRetResB();
 Bool Instructions_InlinedJZB();
 Bool Instructions_InlinedPushIBLE();
 
+
+Bool Instructions_InlinedBoolNot();
+Bool Instructions_InlinedBoolAnd();
+Bool Instructions_InlinedBoolOr();
+Bool Instructions_InlinedBitXor();
+Bool Instructions_InlinedBitNot();
+Bool Instructions_InlinedBitShr();
+Bool Instructions_InlinedBitShl();
+Bool Instructions_InlinedBitAnd();
+Bool Instructions_InlinedBitOr();
+Bool Instructions_InlinedCast();
+
 #endif

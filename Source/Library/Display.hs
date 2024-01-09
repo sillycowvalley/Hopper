@@ -1,7 +1,9 @@
 unit Display
 {
     uses "/Source/Library/Math.hs"
-    
+        
+    uint pixelWidth; 
+    uint pixelHeight;
     byte i2cAddress;
     byte i2cController; // conveniently defaults to zero
     byte sdaPin;        // zero implies use the default depending on controller
@@ -10,9 +12,13 @@ unit Display
     byte I2CAddress    { get { return i2cAddress; }    set { i2cAddress = value; } }
     byte I2CSDAPin     { get { return sdaPin; }        set { sdaPin = value; } }
     byte I2CSCLPin     { get { return sclPin; }        set { sclPin = value; } }
-         
+    
+    uint PixelWidth  { get { return pixelWidth;  } set { pixelWidth  = value;  }}
+    uint PixelHeight { get { return pixelHeight; } set { pixelHeight = value;  }}
+    
     bool Begin()
     {
+        
         return DisplayDriver.Begin();
     }
     
@@ -53,24 +59,28 @@ unit Display
 #endif                        
     }
     
-    Rectangle(int x, int y, int w, int h, uint colour)
+    Rectangle(int x, int y, uint w, uint h, uint colour)
     {
+        int iw = int(w);
+        int ih = int(h);
         Suspend();
-        HorizontalLine(x,y,x+w-1, colour);
-        HorizontalLine(x,y+h-1,x+w-1, colour);
-        VerticalLine(x,y,y+h-1,colour);
-        VerticalLine(x+w-1,y,y+h-1,colour);
+        HorizontalLine(x,y,x+iw-1, colour);
+        HorizontalLine(x,y+ih-1,x+iw-1, colour);
+        VerticalLine(x,y,y+ih-1,colour);
+        VerticalLine(x+iw-1,y,y+ih-1,colour);
         Resume();
     }
-    FilledRectangle(int x, int y, int w, int h, uint colour)
+    FilledRectangle(int x, int y, uint w, uint h, uint colour)
     {
 #ifdef DISPLAYDIAGNOSTICS
         IO.Write("<Display.FilledRectangle");
 #endif                
+        int iw = int(w);
+        int ih = int(h);
         Suspend();
-        for (int i=y; i < y+h; i++)
+        for (int i=y; i < y+ih; i++)
         {
-            HorizontalLine(x, i, x+w-1, colour);
+            HorizontalLine(x, i, x+iw-1, colour);
         }
         Resume();
 #ifdef DISPLAYDIAGNOSTICS
@@ -88,6 +98,8 @@ unit Display
             yi = -1;
             dy = -dy;
         }
+        int dydx2 = (2 * (dy - dx));
+        int dy2 = 2*dy;
         int d = (2 * dy) - dx;
         int y = y0;
         for (int x = x0; x <= x1; x++)
@@ -96,11 +108,11 @@ unit Display
             if (d > 0)
             {
                 y = y + yi;
-                d = d + (2 * (dy - dx));
+                d = d + dydx2;
             }
             else
             {
-                d = d + 2*dy;
+                d = d + dy2;
             }
         }
     }
@@ -115,6 +127,8 @@ unit Display
             xi = -1;
             dx = -dx;
         }
+        int dxdy2 = (2 * (dx - dy));
+        int dx2 = 2*dx;
         int d = (2 * dx) - dy;
         int x = x0;
         for (int y = y0; y <= y1; y++)
@@ -123,11 +137,11 @@ unit Display
             if (d > 0)
             {
                 x = x + xi;
-                d = d + (2 * (dx - dy));
+                d = d + dxdy2;
             }
             else
             {
-                d = d + 2*dx;
+                d = d + dx2;
             }
         }
     }
@@ -161,6 +175,11 @@ unit Display
             }
         }
         Resume();
+    }
+    
+    ScrollUp(uint lines)
+    {
+        DisplayDriver.ScrollUp(lines);
     }
     
 }

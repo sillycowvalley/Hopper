@@ -14,7 +14,8 @@ unit CodeStream
     bool checkedBuild;
     bool shortCallsDefined;
     bool portableDefined;
-    bool h6053Defined;
+    bool h6502Defined;
+    bool mcuDefined;
     
     bool CheckedBuild 
     { 
@@ -22,12 +23,14 @@ unit CodeStream
         set { checkedBuild = value; }
     }
     bool IsShortCalls { get { return shortCallsDefined; } }
-    bool Target6502   { get { return h6053Defined; } }
+    bool Target6502   { get { return h6502Defined; } }
+    bool TargetMCU    { get { return mcuDefined; } }
     
     InitializeSymbolShortcuts()
     {
         shortCallsDefined = DefineExists("SHORTCALLS");
-        h6053Defined = DefineExists("H6502");
+        h6502Defined      = DefineExists("H6502");
+        mcuDefined        = DefineExists("MCU");
     }
     bool InUse { get { return currentStream.Length > 0; } } 
     
@@ -259,7 +262,7 @@ unit CodeStream
         // Is there a user supplied alternative to the SysCall with only one overload?
         //  (we're not checking arguments or return type : shooting from the hip ..)
         uint fIndex;
-        if (CodeStream.Target6502)
+        if (CodeStream.Target6502 || TargetMCU)
         {
             if (GetFunctionIndex(name, ref fIndex))
             {

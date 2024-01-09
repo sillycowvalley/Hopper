@@ -1724,7 +1724,7 @@ program TestNumbers
 #endif    
     
     {
-        EchoToLCD = true;
+        //EchoToLCD = true;
         //Screen.Clear();
 
 #ifdef TESTFLOATS

@@ -39,15 +39,49 @@ unit DisplayDriver
     byte i2cAddress;
     bool resolutionSet;
     bool i2cConfigured;
-    int pixelWidth; 
+    
+    int pixelWidth;
     int pixelHeight;
     
     byte[1024] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
     
-    int PixelWidth  { get { return pixelWidth;  } }
-    int PixelHeight { get { return pixelHeight; } }
+    ScrollUp(uint lines)
+    {
+        uint pw8 = uint(pixelWidth/8);
+        uint dy;
+        for (uint uy = lines; uy < Display.PixelHeight; uy++)
+        {
+            dy = uy - lines;
+            for (uint ux = 0; ux < Display.PixelWidth; ux++)
+            {
+                uint soffset = ((uy & 0xFFF8) * pw8) + ux; 
+                uint doffset = ((dy & 0xFFF8) * pw8) + ux; 
+                if ((monoFrameBuffer[soffset] & (1 << (uy & 0x07))) == 0)
+                {
+                    monoFrameBuffer[doffset] = monoFrameBuffer[doffset] & ~(1 << (dy & 0x07));
+                }
+                else
+                {
+                    monoFrameBuffer[doffset] = monoFrameBuffer[doffset] | (1 << (dy & 0x07));
+                }
+            } 
+        }
+        loop
+        {
+            dy++;
+            if (dy >= Display.PixelHeight) { break; }
+            for (uint ux = 0; ux < Display.PixelWidth; ux++)
+            {
+                uint doffset = ((dy & 0xFFF8) * pw8) + ux; 
+                monoFrameBuffer[doffset] = monoFrameBuffer[doffset] & ~(1 << (dy & 0x07));
+            }
+        }
+    }
+    
     SetResolution(int width, int height)
     {
+        Display.PixelWidth = uint(width);
+        Display.PixelHeight = uint(height);
         pixelWidth = width;
         pixelHeight = height;
         resolutionSet = true;
@@ -65,8 +99,7 @@ unit DisplayDriver
             
             if (!resolutionSet)
             {
-                pixelWidth = 128;
-                pixelHeight = 64;
+                SetResolution(128, 64);
                 resolutionSet = true;
             }
             if (!Wire.Initialize(Display.I2CController, Display.I2CSDAPin, Display.I2CSCLPin))
@@ -81,7 +114,7 @@ unit DisplayDriver
             Wire.Write(Display.I2CController, SSD1306SETDISPLAYCLOCKDIV);
             Wire.Write(Display.I2CController, 0x80);
             Wire.Write(Display.I2CController, SSD1306SETMULTIPLEX);
-            Wire.Write(Display.I2CController, byte(pixelHeight-1));
+            Wire.Write(Display.I2CController, byte(Display.PixelHeight-1));
             byte result = Wire.EndTx(Display.I2CController);
             if (result != 0)
             {
@@ -119,7 +152,7 @@ unit DisplayDriver
             Wire.BeginTx(Display.I2CController, i2cAddress);
             Wire.Write(0x00);
             Wire.Write(Display.I2CController, SSD1306SETCOMPINS);
-            Wire.Write(Display.I2CController, (pixelWidth > 2 * pixelHeight) ? 0x02 : 0x12);
+            Wire.Write(Display.I2CController, (Display.PixelWidth > 2 * Display.PixelHeight) ? 0x02 : 0x12);
             Wire.Write(Display.I2CController, SSD1306SETCONTRAST);
             Wire.Write(Display.I2CController, 0xCF);
             Wire.Write(Display.I2CController, SSD1306SETPRECHARGE);
@@ -203,17 +236,17 @@ unit DisplayDriver
             Wire.Write(Display.I2CController, 0x00);
             Wire.Write(Display.I2CController, SSD1306PAGEADDR);   // Reset Page Address (for horizontal addressing)
             Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, 0xFF);             //Wire.Write(byte((pixelHeight/8)-1));
+            Wire.Write(Display.I2CController, 0xFF);             //Wire.Write(byte((Display.PixelHeight/8)-1));
             Wire.Write(Display.I2CController, SSD1306COLUMNADDR); // Reset Column Address (for horizontal addressing)
-            if (pixelWidth == 64)
+            if (Display.PixelWidth == 64)
             {
                 Wire.Write(Display.I2CController, 32);
-                Wire.Write(Display.I2CController, byte(32+pixelWidth-1));
+                Wire.Write(Display.I2CController, byte(32+Display.PixelWidth-1));
             }
             else
             {
                 Wire.Write(Display.I2CController, 0x00);
-                Wire.Write(Display.I2CController, byte(pixelWidth-1));
+                Wire.Write(Display.I2CController, byte(Display.PixelWidth-1));
             }
             byte result = Wire.EndTx(Display.I2CController);
             if (result != 0)
@@ -225,16 +258,13 @@ unit DisplayDriver
             uint address = 0;
             byte written;
                 
+            uint pw8 = Display.PixelWidth >> 3; // 128/8 = 16 bytes per transaction seems small enough
             for (int y = 0; y < pixelHeight; y++) 
             {
-                // 128/8 = 16 bytes per transaction seems small enough
                 Wire.BeginTx(Display.I2CController, i2cAddress);
                 Wire.Write(Display.I2CController, 0x40);
-                for(int i = 0; i < pixelWidth/8; i++) 
-                {
-                    Wire.Write(Display.I2CController, monoFrameBuffer[address]); 
-                    address++;
-                }
+                Wire.Write(Display.I2CController, monoFrameBuffer, address, pw8);
+                address += pw8;
                 result = Wire.EndTx(Display.I2CController);
                 if (result != 0)
                 {
@@ -277,7 +307,7 @@ unit DisplayDriver
         uint ux = uint(x);
         uint uy = uint(y);
         
-        uint offset = ((uy & 0xFFF8) * (uint(pixelWidth)/8)) + ux;
+        uint offset = ((uy & 0xFFF8) * (Display.PixelWidth/8)) + ux;
         if (colour == 0xF000) // Color.Invert
         {
             monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
@@ -297,7 +327,7 @@ unit DisplayDriver
         
         uint ux = uint(x);
         uint uy = uint(y);
-        uint offset = ((uy & 0xFFF8) * (uint(pixelWidth)/8)) + ux;
+        uint offset = ((uy & 0xFFF8) * (Display.PixelWidth/8)) + ux;
         if (colour == 0xF000) // Color.Invert
         {
             monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
@@ -320,23 +350,48 @@ unit DisplayDriver
             x1 = x2;
             x2 = t;
         }
-        
         // clip here so we can use RawSetPixel
         if (x2 < 0) { return; }
         if (y < 0) { return; }
         int ymax = pixelHeight-1;
-        if (y >= ymax) { return; }
+        if (y > ymax) { return; }
         
         int xmax = pixelWidth-1;
-        if (x1 >= xmax) { return; }
+        if (x1 > xmax) { return; }
         
         if (x1 < 0) { x1 = 0; }
         if (x2 >= xmax) { x2 = xmax; }
-        
         Suspend();
-        for (int x=x1; x <= x2; x++)
+        uint pw8 = Display.PixelWidth/8;
+        uint uy = uint(y);
+        uint uyandpw8 = (uy & 0xFFF8) * pw8;
+        uint ux1 = uint(x1);
+        uint ux2 = uint(x2);
+        byte uybit = byte(1 << (uy & 0x07));
+        if (colour == 0xF000) // Color.Invert
         {
-            RawSetPixel(x, y, colour);
+            for (uint ux=ux1; ux <= ux2; ux++)
+            {
+                uint offset = uyandpw8 + ux;
+                monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ uybit;
+            }
+        }
+        else if (colour == 0x0000) // Color.Black
+        {
+            uybit = ~uybit;
+            for (uint ux=ux1; ux <= ux2; ux++)
+            {
+                uint offset = uyandpw8 + ux;
+                monoFrameBuffer[offset] = monoFrameBuffer[offset] & uybit;
+            }
+        }
+        else
+        {
+            for (uint ux=ux1; ux <= ux2; ux++)
+            {
+                uint offset = uyandpw8 + ux;
+                monoFrameBuffer[offset] = monoFrameBuffer[offset] | uybit;
+            }
         }
         Resume();
     }
@@ -352,18 +407,41 @@ unit DisplayDriver
         if (y2 < 0) { return; }
         if (x < 0) { return; }
         int ymax = pixelHeight-1;
-        if (y1 >= ymax) { return; }
+        if (y1 > ymax) { return; }
         
         int xmax = pixelWidth-1;
-        if (x >= xmax) { return; }
+        if (x > xmax) { return; }
         
         if (y1 < 0) { y1 = 0; }
         if (y2 >= ymax) { y2 = ymax; }
-        
         Suspend();
-        for (int y=y1; y <= y2; y++)
+        uint ux  = uint(x);
+        uint uy1 = uint(y1);
+        uint uy2 = uint(y2);
+        uint pw8 = Display.PixelWidth/8;
+        if (colour == 0xF000) // Color.Invert
         {
-            RawSetPixel(x, y, colour);
+            for (uint uy=uy1; uy <= uy2; uy++)
+            {
+                uint offset = ((uy & 0xFFF8) * pw8) + ux;
+                monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
+            }
+        }
+        else if (colour == 0x0000) // Color.Black
+        {
+            for (uint uy=uy1; uy <= uy2; uy++)
+            {
+                uint offset = ((uy & 0xFFF8) * pw8) + ux;
+                monoFrameBuffer[offset] = monoFrameBuffer[offset] & ~(1 << (uy & 0x07));
+            }
+        }
+        else
+        {
+            for (uint uy=uy1; uy <= uy2; uy++)
+            {
+                uint offset = ((uy & 0xFFF8) * pw8) + ux;
+                monoFrameBuffer[offset] = monoFrameBuffer[offset] | (1 << (uy & 0x07));
+            }
         }
         Resume();
     }

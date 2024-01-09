@@ -18,8 +18,8 @@ unit DebugOptions
     
     Register()
     {
-        debugOptions["hexDisplay"]    = "false";
-        debugOptions["captureConsole"]    = "false";
+        debugOptions["hexDisplay"]     = "false";
+        debugOptions["captureConsole"] = "false";
         loadOptions();
         
         Commands.CommandExecuteDelegate hexDisplayCommand   = DebugOptions.HexDisplay;
@@ -44,6 +44,11 @@ unit DebugOptions
             if (JSON.Read(OptionsPath, ref dict))
             {
                 debugOptions = dict["debugoptions"];
+                if (!debugOptions.Contains("hexDisplay"))
+                {
+                    debugOptions["hexDisplay"] = "false";
+                    debugOptions["captureConsole"] = "false";
+                }
             }
         }
     }

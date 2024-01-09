@@ -43,17 +43,17 @@ unit Instructions
         instructionDelegate = Instructions.InlinedLE;
         WriteToJumpTable(jumpTable, byte(OpCode.LE), instructionDelegate);
         
-        instructionDelegate = Instructions.BoolOr;
+        instructionDelegate = Instructions.InlinedBoolOr;
         WriteToJumpTable(jumpTable, byte(OpCode.BOOLOR), instructionDelegate);
-        instructionDelegate = Instructions.BoolAnd;
+        instructionDelegate = Instructions.InlinedBoolAnd;
         WriteToJumpTable(jumpTable, byte(OpCode.BOOLAND), instructionDelegate);
-        instructionDelegate = Instructions.BitOr;
+        instructionDelegate = Instructions.InlinedBitOr;
         WriteToJumpTable(jumpTable, byte(OpCode.BITOR), instructionDelegate);
-        instructionDelegate = Instructions.BitAnd;
+        instructionDelegate = Instructions.InlinedBitAnd;
         WriteToJumpTable(jumpTable, byte(OpCode.BITAND), instructionDelegate);
-        instructionDelegate = Instructions.BitShl;
+        instructionDelegate = Instructions.InlinedBitShl;
         WriteToJumpTable(jumpTable, byte(OpCode.BITSHL), instructionDelegate);
-        instructionDelegate = Instructions.BitShr;
+        instructionDelegate = Instructions.InlinedBitShr;
         WriteToJumpTable(jumpTable, byte(OpCode.BITSHR), instructionDelegate);
         
         instructionDelegate = Instructions.InlinedAddI;
@@ -223,9 +223,9 @@ unit Instructions
         instructionDelegate = Instructions.PushIW;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHI), instructionDelegate);
         
-        instructionDelegate = Instructions.BoolNot;
+        instructionDelegate = Instructions.InlinedBoolNot;
         WriteToJumpTable(jumpTable, byte(OpCode.BOOLNOT), instructionDelegate);
-        instructionDelegate = Instructions.BitNot;
+        instructionDelegate = Instructions.InlinedBitNot;
         WriteToJumpTable(jumpTable, byte(OpCode.BITNOT), instructionDelegate);
         
         instructionDelegate = Instructions.Swap;
@@ -242,13 +242,13 @@ unit Instructions
      
         instructionDelegate = Instructions.NOP;
         WriteToJumpTable(jumpTable, byte(OpCode.NOP), instructionDelegate);
-        instructionDelegate = Instructions.Cast;
+        instructionDelegate = Instructions.InlinedCast;
         WriteToJumpTable(jumpTable, byte(OpCode.CAST), instructionDelegate);
         
         instructionDelegate = Instructions.PushIW;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHD), instructionDelegate);
         
-        instructionDelegate = Instructions.BitXor;
+        instructionDelegate = Instructions.InlinedBitXor;
         WriteToJumpTable(jumpTable, byte(OpCode.BITXOR), instructionDelegate);
         
         instructionDelegate = Instructions.JREL;
@@ -660,12 +660,12 @@ unit Instructions
     {
         return true;
     }
-    bool Cast()
+    bool InlinedCast()
     {
         HopperVM.Put(SP-2, HopperVM.Get(SP-2), Type(ReadByteOperand()));
         return true;
     }
-    bool BoolNot()
+    bool InlinedBoolNot()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -677,7 +677,7 @@ unit Instructions
 #endif
         return true;
     }
-    bool BitNot()
+    bool InlinedBitNot()
     {
 #ifdef CHECKED                
         Type ttype;
@@ -689,7 +689,7 @@ unit Instructions
 #endif              
         return true;
     }
-    bool BoolAnd()
+    bool InlinedBoolAnd()
     {
         Type ttype;
         uint top = Pop(ref ttype);
@@ -703,7 +703,7 @@ unit Instructions
         Push(((next != 0) && (top != 0)) ? 1 : 0, Type.Bool); 
         return true;
     }
-    bool BoolOr()
+    bool InlinedBoolOr()
     {
         Type ttype;
         uint top = Pop(ref ttype);
@@ -717,7 +717,7 @@ unit Instructions
         Push(((next != 0) || (top != 0)) ? 1 : 0, Type.Bool); 
         return true;
     }
-    bool BitAnd()
+    bool InlinedBitAnd()
     {
 #ifdef CHECKED
         Type ttype;
@@ -732,7 +732,7 @@ unit Instructions
 #endif              
         return true;
     }
-    bool BitOr()
+    bool InlinedBitOr()
     {
 #ifdef CHECKED
         Type ttype;
@@ -747,7 +747,7 @@ unit Instructions
 #endif              
         return true;
     }
-    bool BitXor()
+    bool InlinedBitXor()
     {
 #ifdef CHECKED
         Type ttype;
@@ -763,7 +763,7 @@ unit Instructions
         Push((next | top) & (~(next & top)), Type.UInt); 
         return true;
     }
-    bool BitShl()
+    bool InlinedBitShl()
     {
 #ifdef CHECKED
         Type ttype;
@@ -779,7 +779,7 @@ unit Instructions
         Push(next << top, Type.UInt); 
         return true;
     }
-    bool BitShr()
+    bool InlinedBitShr()
     {
 #ifdef CHECKED
         Type ttype;

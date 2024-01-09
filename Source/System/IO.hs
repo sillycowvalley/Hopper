@@ -5,9 +5,11 @@ unit IO
     bool echoToLCD;
     // #### end of globals
     
-//#ifndef SERIALCONSOLE
+#ifndef MCU
     uses "/Source/System/Screen"
-//#endif
+#else    
+    uses "/Source/Library/Screen.hs"
+#endif
     uses "/Source/System/Serial"
     uses "/Source/System/Keyboard"
     uses "/Source/System/Clipboard"

@@ -163,7 +163,7 @@ program DASM
             {
                 content = content + " ";
             }
-            if ((cd > 31) && (cd < 128))
+            if ((cd > 31) && (cd < 127))
             {
                 literal = literal + char(cd);
             }
