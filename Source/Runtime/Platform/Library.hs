@@ -193,12 +193,8 @@ unit Library
             
             default:
             {
-                Runtime.Out4Hex(PC);
-                Serial.WriteChar(':');
-                Serial.WriteChar('L');
-                Runtime.Out2Hex(iLibCall);
-                Serial.WriteChar(' ');
-                WriteHex(PC); Write(':'); Write('L'); WriteHex(iLibCall); Write(' '); ErrorDump(132);
+                IO.WriteHex(PC); IO.Write(':'); IO.Write('L'); IO.WriteHex(iLibCall); IO.Write('-'); IO.WriteHex(iOverload);  
+                IO.Write(' '); ErrorDump(132);
                 Error = 0x0A; // not implemented
             }
         }

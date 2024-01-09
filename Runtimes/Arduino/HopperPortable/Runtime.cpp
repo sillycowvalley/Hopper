@@ -8,6 +8,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -5571,15 +5572,12 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     }
     default:
     {
-        Runtime_Out4Hex(HopperVM_PC_Get());
-        Serial_WriteChar(':');
-        Serial_WriteChar('S');
-        Runtime_Out2Hex(iSysCall);
-        Serial_WriteChar(' ');
         IO_WriteHex(HopperVM_PC_Get());
         IO_Write(':');
         IO_Write('S');
         IO_WriteHex(iSysCall);
+        IO_Write('-');
+        IO_WriteHex(iOverload);
         IO_Write(' ');
         Runtime_ErrorDump(0x02);
         Minimal_Error_Set(0x0A);
@@ -5893,15 +5891,12 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     }
     default:
     {
-        Runtime_Out4Hex(HopperVM_PC_Get());
-        Serial_WriteChar(':');
-        Serial_WriteChar('L');
-        Runtime_Out2Hex(iLibCall);
-        Serial_WriteChar(' ');
         IO_WriteHex(HopperVM_PC_Get());
         IO_Write(':');
         IO_Write('L');
         IO_WriteHex(iLibCall);
+        IO_Write('-');
+        IO_WriteHex(iOverload);
         IO_Write(' ');
         Runtime_ErrorDump(0x84);
         Minimal_Error_Set(0x0A);

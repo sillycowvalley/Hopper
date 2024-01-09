@@ -38,9 +38,6 @@ unit HopperCode
     const byte iMemoryReadWord      = 0xD7; // uint ReadWord(uint address) system;
     const byte iMemoryWriteWord     = 0xD8; // Writeword(uint address, uint value) system;
     
-    // LIBCALL indices used by BASIC
-    const byte iMemoryIncWord       = 0x18; // IncWord(uint address) library;
-    
     
     Instruction LastInstruction { get { return gLastInstruction0;     } } // last Hopper VM opcode appended to code
     uint        CodeSizeLimit   { get { return codeLimit;             } }
@@ -863,18 +860,6 @@ unit HopperCode
                 {
                     methodName = " " + methodName;
                 }
-            }
-            else if (Instruction.LIBCALL == opCode)
-            {
-                if (methodKey == iMemoryIncWord)
-                {
-                    methodName = "Memory.IncWord(..)"; // IncWord(uint address) library;
-                }
-                else
-                {
-                    methodName = "Unknown LibCall";
-                }
-                methodName = "     // " + methodName;
             }
             else if (Instruction.SYSCALL0 == opCode)
             {

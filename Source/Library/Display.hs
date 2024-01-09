@@ -56,10 +56,10 @@ unit Display
     Rectangle(int x, int y, int w, int h, uint colour)
     {
         Suspend();
-        HorizontalLine(x,y,x+w-1,y, colour);
-        HorizontalLine(x,y+h-1,x+w-1,y+h-1, colour);
-        VerticalLine(x,y,x,y+h-1,colour);
-        VerticalLine(x+w-1,y,x+w-1,y+h-1,colour);
+        HorizontalLine(x,y,x+w-1, colour);
+        HorizontalLine(x,y+h-1,x+w-1, colour);
+        VerticalLine(x,y,y+h-1,colour);
+        VerticalLine(x+w-1,y,y+h-1,colour);
         Resume();
     }
     FilledRectangle(int x, int y, int w, int h, uint colour)
@@ -70,7 +70,7 @@ unit Display
         Suspend();
         for (int i=y; i < y+h; i++)
         {
-            HorizontalLine(x, i, x+w-1, i, colour);
+            HorizontalLine(x, i, x+w-1, colour);
         }
         Resume();
 #ifdef DISPLAYDIAGNOSTICS
@@ -136,8 +136,8 @@ unit Display
     Line(int x0, int y0, int x1, int y1, uint colour)
     {
         Suspend();
-        if (x0 == x1)      { VerticalLine(x0, y0, x1, y1, colour);   }
-        else if (y0 == y1) { HorizontalLine(x0, y0, x1, y1, colour); }
+        if (x0 == x1)      { VerticalLine(x0, y0, y1, colour);   }
+        else if (y0 == y1) { HorizontalLine(x0, y0, x1, colour); }
         else if (Math.Abs(y1-y0) < Math.Abs(x1-x0))
         {
             if (x0 > x1)

@@ -2708,12 +2708,8 @@ unit HopperVM
             
             default:
             {
-                Runtime.Out4Hex(PC);
-                Serial.WriteChar(':');
-                Serial.WriteChar('S');
-                Runtime.Out2Hex(iSysCall);
-                Serial.WriteChar(' ');
-                WriteHex(PC); Write(':'); Write('S'); WriteHex(iSysCall); Write(' '); ErrorDump(2);
+                IO.WriteHex(PC); IO.Write(':'); IO.Write('S'); IO.WriteHex(iSysCall); IO.Write('-'); IO.WriteHex(iOverload);  
+                IO.Write(' '); ErrorDump(2);
                 Error = 0x0A; // not implemented
             }
         }

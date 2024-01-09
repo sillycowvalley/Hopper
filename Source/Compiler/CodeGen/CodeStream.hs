@@ -378,21 +378,6 @@ unit CodeStream
         AddInstructionSysCall(sysCallUnit, sysCallMethod, 0);
     }
     
-    AddInstructionLibCall(string libCallUnit, string libCallMethod)
-    {
-        loop
-        {
-            byte iLibCall;
-            string name = libCallUnit + '.' + libCallMethod;
-            if (!TryParseLibCall(name, ref iLibCall))
-            {
-                PrintLn("'" + name + "' not found");
-                Die(0x03); // key not found
-            }
-            CodeStream.AddInstruction(Instruction.LIBCALL0, iLibCall);
-            break;
-        }
-    }
     AddInstructionJump(Instruction jumpInstruction)
     {
         // before jump (since this placeholder patch location is locked in already)

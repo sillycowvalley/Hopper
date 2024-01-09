@@ -747,11 +747,11 @@ bool HRWire_Begin(Byte controller)
             case 1:
                 if (controller1Configured)
                 {
-                    if (!Wire.setSDA(sdaPin1))
+                    if (!Wire1.setSDA(sdaPin1))
                     {
                         break;
                     }
-                    if (!Wire.setSCL(sclPin1))
+                    if (!Wire1.setSCL(sclPin1))
                     {
                         break;
                     }

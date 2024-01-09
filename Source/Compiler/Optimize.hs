@@ -282,7 +282,7 @@ program Optimize
 #endif
                 modified = true;    
             }
-            if (OptimizePUSHPUSHSWAP())
+            if (CodePoints.OptimizePUSHPUSHSWAP())
             {
 #ifdef DIAGNOSTICS
                 if (logging)
@@ -292,7 +292,7 @@ program Optimize
 #endif
                 modified = true;
             }
-            if (OptimizeCommutativeSWAP())
+            if (CodePoints.OptimizeCommutativeSWAP())
             {
 #ifdef DIAGNOSTICS
                 if (logging)
@@ -348,7 +348,7 @@ program Optimize
             //}
             
             
-            if (OptimizeSetters())
+            if (CodePoints.OptimizeSetters())
             {
 #ifdef DIAGNOSTICS
                 if (logging)
@@ -360,7 +360,7 @@ program Optimize
             }
             
             // str = str.Trim() -> Trim(ref str),  str = str.Append(x) -> Build(ref str, x), etc.
-            if (OptimizeStringRef())
+            if (CodePoints.OptimizeStringRef())
             {
 #ifdef DIAGNOSTICS
                 if (logging)

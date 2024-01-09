@@ -1693,15 +1693,7 @@ unit CodePoints
                     iLengths.SetItem (iIndex, 1);
                     RemoveInstruction(iIndex-1);
                     modified = true;
-                }      
-                else if ((opCode1 == Instruction.PUSHLOCALB) && (operand1 == 0xFE)) // PUSHLOCALB 0xFE
-                {
-                    // single local, simple value argument
-                    iCodes.SetItem   (iIndex, Instruction.RET0);
-                    iLengths.SetItem (iIndex, 1);
-                    RemoveInstruction(iIndex-1);
-                    modified = true;
-                }
+                }    
             }
             iIndex++;
         } // loop

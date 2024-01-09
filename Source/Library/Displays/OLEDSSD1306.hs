@@ -272,6 +272,25 @@ unit DisplayDriver
         }
         
     }
+    RawSetPixel(int x, int y, uint colour)
+    {
+        uint ux = uint(x);
+        uint uy = uint(y);
+        
+        uint offset = ((uy & 0xFFF8) * (uint(pixelWidth)/8)) + ux;
+        if (colour == 0xF000) // Color.Invert
+        {
+            monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
+        }
+        else if (colour == 0x0000) // Color.Black
+        {
+            monoFrameBuffer[offset] = monoFrameBuffer[offset] & ~(1 << (uy & 0x07));
+        }
+        else
+        {
+            monoFrameBuffer[offset] = monoFrameBuffer[offset] | (1 << (uy & 0x07));
+        }
+    }
     SetPixel(int x, int y, uint colour)
     {
         if ((x < 0) || (y < 0) || (x >= pixelWidth) || (y >= pixelHeight)) { return; }
@@ -293,7 +312,7 @@ unit DisplayDriver
         }
     }
     
-    HorizontalLine(int x1, int y1, int x2, int y2, uint colour)
+    HorizontalLine(int x1, int y, int x2, uint colour)
     {
         if (x1 > x2)
         {
@@ -301,14 +320,27 @@ unit DisplayDriver
             x1 = x2;
             x2 = t;
         }
+        
+        // clip here so we can use RawSetPixel
+        if (x2 < 0) { return; }
+        if (y < 0) { return; }
+        int ymax = pixelHeight-1;
+        if (y >= ymax) { return; }
+        
+        int xmax = pixelWidth-1;
+        if (x1 >= xmax) { return; }
+        
+        if (x1 < 0) { x1 = 0; }
+        if (x2 >= xmax) { x2 = xmax; }
+        
         Suspend();
         for (int x=x1; x <= x2; x++)
         {
-            SetPixel(x, y1, colour);
+            RawSetPixel(x, y, colour);
         }
         Resume();
     }
-    VerticalLine(int x1, int y1, int x2, int y2, uint colour)
+    VerticalLine(int x, int y1, int y2, uint colour)
     {
         if (y1 > y2)
         {
@@ -316,10 +348,22 @@ unit DisplayDriver
             y1 = y2;
             y2 = t;
         }
+        // clip here so we can use RawSetPixel
+        if (y2 < 0) { return; }
+        if (x < 0) { return; }
+        int ymax = pixelHeight-1;
+        if (y1 >= ymax) { return; }
+        
+        int xmax = pixelWidth-1;
+        if (x >= xmax) { return; }
+        
+        if (y1 < 0) { y1 = 0; }
+        if (y2 >= ymax) { y2 = ymax; }
+        
         Suspend();
         for (int y=y1; y <= y2; y++)
         {
-            SetPixel(x1, y, colour);
+            RawSetPixel(x, y, colour);
         }
         Resume();
     }

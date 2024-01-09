@@ -77,9 +77,9 @@ program SSD1306Demo
     {
         Display.I2CAddress = 0x3C;
         
-        //Display.I2CController = 0;
-        //Display.I2CSDAPin = 4;
-        //Display.I2CSCLPin = 5;
+        Display.I2CController = 1;
+        Display.I2CSDAPin = 14;
+        Display.I2CSCLPin = 15;
         
         if (!Display.Begin())
         {
