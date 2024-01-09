@@ -389,7 +389,7 @@ unit CodeStream
                 PrintLn("'" + name + "' not found");
                 Die(0x03); // key not found
             }
-            CodeStream.AddInstruction(Instruction.LIBCALL, iLibCall);
+            CodeStream.AddInstruction(Instruction.LIBCALL0, iLibCall);
             break;
         }
     }

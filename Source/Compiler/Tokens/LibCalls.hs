@@ -15,6 +15,7 @@ unit LibCalls
         addEntry("Wire", "BeginTx");
         addEntry("Wire", "EndTx");
         addEntry("Wire", "Write");
+        addEntry("Wire", "Configure");
         
         addEntry("MCU", "PinMode");
         addEntry("MCU", "DigitalRead");
@@ -23,35 +24,6 @@ unit LibCalls
         addEntry("MCU", "AnalogWrite");
         addEntry("MCU", "AnalogWriteResolution");
         addEntry("MCU", "AttachToPin");
-        
-        addEntry("Graphics", "ConfigureDisplay");
-        addEntry("Graphics", "ConfigureSPI");
-        addEntry("Graphics", "ConfigureSPIPort");
-        addEntry("Graphics", "ConfigureReset");
-        addEntry("Graphics", "ConfigureI2C");
-        addEntry("Graphics", "ConfigureMatrix");
-        addEntry("Graphics", "Begin");
-        addEntry("Graphics", "End");
-        
-        addEntry("Graphics", "InvertDisplay");
-        addEntry("Graphics", "FlipDisplay");
-        
-        addEntry("Graphics", "Clear");
-        addEntry("Graphics", "Width_Get");
-        addEntry("Graphics", "Height_Get");
-        addEntry("Graphics", "SetPixel");
-        
-        addEntry("Graphics", "Line");
-        addEntry("Graphics", "HorizontalLine");
-        addEntry("Graphics", "VerticalLine");
-        addEntry("Graphics", "Rectangle");
-        addEntry("Graphics", "FilledRectangle");
-        addEntry("Graphics", "Circle");
-        addEntry("Graphics", "FilledCircle");
-        
-        addEntry("Graphics", "Show");
-        addEntry("Graphics", "DrawChar");
-        
     }
     
     bool TryParseLibCall(string name, ref byte index)

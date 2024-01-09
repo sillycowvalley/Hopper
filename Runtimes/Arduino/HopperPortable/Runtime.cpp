@@ -8,9 +8,6 @@
 
 
 
-
-
-
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -1950,15 +1947,12 @@ void IO_Write(Char c)
     {
         if (Char(0x0D) == c)
         {
-            HRScreen_PrintLn();
         }
         else if (Char(0x0C) == c)
         {
-            HRScreen_Clear();
         }
         else
         {
-            HRScreen_Print(c);
         }
     }
 }
@@ -2312,6 +2306,10 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eCALLREL), instructionDelegate);
     instructionDelegate = &Instructions_SysCall;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL), instructionDelegate);
+    instructionDelegate = &Instructions_LibCall0;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eLIBCALL0), instructionDelegate);
+    instructionDelegate = &Instructions_LibCall1;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eLIBCALL1), instructionDelegate);
     instructionDelegate = &Instructions_LibCall;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eLIBCALL), instructionDelegate);
 }
@@ -3288,10 +3286,25 @@ Bool Instructions_SysCall()
     return HopperVM_ExecuteSysCall(iSysCall, iOverload);
 }
 
-Bool Instructions_LibCall()
+Bool Instructions_LibCall0()
 {
     Byte iLibCall = HopperVM_ReadByteOperand();
-    return Library_ExecuteLibCall(iLibCall);
+    return Library_ExecuteLibCall(iLibCall, 0x00);
+}
+
+Bool Instructions_LibCall1()
+{
+    Type htype = (Type)0;
+    Byte iLibCall = HopperVM_ReadByteOperand();
+    return Library_ExecuteLibCall(iLibCall, 0x01);
+}
+
+Bool Instructions_LibCall()
+{
+    Type htype = (Type)0;
+    UInt iOverload = HopperVM_Pop_R(htype);
+    Byte iLibCall = HopperVM_ReadByteOperand();
+    return Library_ExecuteLibCall(iLibCall, iOverload);
 }
 
 Bool Instructions_PopCopyLocal()
@@ -4278,94 +4291,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt result = HRDirectory_GetTime(str);
         HopperVM_Push(result, Type::eLong);
         GC_Release(str);
-        break;
-    }
-    case SysCall::eScreenPrintLn:
-    {
-        HRScreen_PrintLn();
-        break;
-    }
-    case SysCall::eScreenClear:
-    {
-        HRScreen_Clear();
-        break;
-    }
-    case SysCall::eScreenColumnsGet:
-    {
-        HopperVM_Push(HRScreen_Columns_Get(), Type::eByte);
-        break;
-    }
-    case SysCall::eScreenRowsGet:
-    {
-        HopperVM_Push(HRScreen_Rows_Get(), Type::eByte);
-        break;
-    }
-    case SysCall::eScreenSuspend:
-    {
-        HRScreen_Suspend();
-        break;
-    }
-    case SysCall::eScreenResume:
-    {
-        Type atype = (Type)0;
-        UInt isInteractive = HopperVM_Pop_R(atype);
-        HRScreen_Resume(isInteractive != 0x00);
-        break;
-    }
-    case SysCall::eScreenDrawChar:
-    {
-        Type atype = (Type)0;
-        UInt bc = HopperVM_Pop_R(atype);
-        Type btype = (Type)0;
-        UInt fc = HopperVM_Pop_R(btype);
-        Type ctype = (Type)0;
-        UInt ch = HopperVM_Pop_R(ctype);
-        Type dtype = (Type)0;
-        UInt y = HopperVM_Pop_R(atype);
-        Type etype = (Type)0;
-        UInt x = HopperVM_Pop_R(btype);
-        HRScreen_DrawChar(x, y, Char(ch), fc, bc);
-        break;
-    }
-    case SysCall::eScreenPrint:
-    {
-        switch (iOverload)
-        {
-        case 0x00:
-        {
-            Type atype = (Type)0;
-            UInt bc = HopperVM_Pop_R(atype);
-            Type btype = (Type)0;
-            UInt fc = HopperVM_Pop_R(btype);
-            Type ctype = (Type)0;
-            UInt ch = HopperVM_Pop_R(ctype);
-            HRScreen_Print(Char(ch));
-            break;
-        }
-        case 0x01:
-        {
-            Type atype = (Type)0;
-            UInt bc = HopperVM_Pop_R(atype);
-            Type btype = (Type)0;
-            UInt fc = HopperVM_Pop_R(btype);
-            Type stype = (Type)0;
-            UInt str = HopperVM_Pop_R(stype);
-            UInt length = HRString_GetLength(str);;
-            for (UInt i = 0x00; i < length; i++)
-            {
-                Char ch = HRString_GetChar(str, i);
-                HRScreen_Print(ch);
-            }
-            GC_Release(str);
-            break;
-        }
-        default:
-        {
-            Runtime_ErrorDump(0x06);
-            Minimal_Error_Set(0x0A);
-            break;
-        }
-        } // switch
         break;
     }
     case SysCall::eSerialIsAvailableGet:
@@ -5800,33 +5725,119 @@ UInt GC_Clone(UInt original)
     return 0x00;
 }
 
-Bool Library_ExecuteLibCall(Byte iLibCall)
+Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
 {
     Bool doNext = true;
     switch (LibCall(iLibCall))
     {
     case LibCall::eWireBegin:
     {
-        HRWire_Begin();
+        switch (iOverload)
+        {
+        case 0x00:
+        {
+            Bool result = HRWire_Begin(0x00);
+            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
+            break;
+        }
+        case 0x01:
+        {
+            Type ctype = (Type)0;
+            UInt controller = HopperVM_Pop_R(ctype);
+            Bool result = HRWire_Begin(Byte(controller));
+            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
+            break;
+        }
+        } // switch
         break;
     }
     case LibCall::eWireBeginTx:
     {
         Type atype = (Type)0;
-        UInt b = HopperVM_Pop_R(atype);
-        HRWire_BeginTx(Byte(b));
+        UInt address = HopperVM_Pop_R(atype);
+        switch (iOverload)
+        {
+        case 0x00:
+        {
+            HRWire_BeginTx(0x00, Byte(address));
+            break;
+        }
+        case 0x01:
+        {
+            Type ctype = (Type)0;
+            UInt controller = HopperVM_Pop_R(ctype);
+            HRWire_BeginTx(Byte(controller), Byte(address));
+            break;
+        }
+        } // switch
         break;
     }
     case LibCall::eWireWrite:
     {
-        Type atype = (Type)0;
-        UInt b = HopperVM_Pop_R(atype);
-        HRWire_Write(Byte(b));
+        switch (iOverload)
+        {
+        case 0x00:
+        {
+            Type atype = (Type)0;
+            UInt b = HopperVM_Pop_R(atype);
+            HRWire_Write(0x00, Byte(b));
+            break;
+        }
+        case 0x01:
+        {
+            Type atype = (Type)0;
+            UInt b = HopperVM_Pop_R(atype);
+            Type ctype = (Type)0;
+            UInt controller = HopperVM_Pop_R(ctype);
+            HRWire_Write(Byte(controller), Byte(b));
+            break;
+        }
+        case 0x02:
+        {
+            Type ltype = (Type)0;
+            UInt length = HopperVM_Pop_R(ltype);
+            Type stype = (Type)0;
+            UInt startIndex = HopperVM_Pop_R(stype);
+            Type atype = (Type)0;
+            UInt hrarray = HopperVM_Pop_R(atype);
+            Type ctype = (Type)0;
+            UInt controller = HopperVM_Pop_R(ctype);
+            HRWire_Write(Byte(controller), hrarray, startIndex, length);
+            break;
+        }
+        } // switch
+        break;
+    }
+    case LibCall::eWireConfigure:
+    {
+        Type cltype = (Type)0;
+        UInt sclPin = HopperVM_Pop_R(cltype);
+        Type datype = (Type)0;
+        UInt sdaPin = HopperVM_Pop_R(datype);
+        Type ctype = (Type)0;
+        UInt controller = HopperVM_Pop_R(ctype);
+        HRWire_Configure(Byte(controller), Byte(sdaPin), Byte(sclPin));
         break;
     }
     case LibCall::eWireEndTx:
     {
-        HRWire_EndTx();
+        switch (iOverload)
+        {
+        case 0x00:
+        {
+            Byte result = HRWire_EndTx(0x00);
+            HopperVM_Push(result, Type::eByte);
+            break;
+        }
+        case 0x01:
+        {
+            Type ctype = (Type)0;
+            UInt controller = HopperVM_Pop_R(ctype);
+            Byte result = HRWire_EndTx(Byte(controller));
+            HopperVM_Push(result, Type::eByte);
+            break;
+        }
+        } // switch
         break;
     }
     case LibCall::eMCUPinMode:
@@ -5878,206 +5889,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall)
         Bool result = External_AttachToPin(pin, isrDelegate, state);
         HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
         Library_isrExists = true;
-        break;
-    }
-    case LibCall::eGraphicsConfigureDisplay:
-    {
-        Type utype = (Type)0;
-        UInt h = HopperVM_Pop_R(utype);
-        UInt w = HopperVM_Pop_R(utype);
-        Display display = Display(HopperVM_Pop_R(utype));
-        HRGraphics_ConfigureDisplay(display, w, h);
-        break;
-    }
-    case LibCall::eGraphicsConfigureSPI:
-    {
-        Type utype = (Type)0;
-        UInt dc = HopperVM_Pop_R(utype);
-        UInt cs = HopperVM_Pop_R(utype);
-        HRGraphics_ConfigureSPI(Byte(cs), Byte(dc));
-        break;
-    }
-    case LibCall::eGraphicsConfigureSPIPort:
-    {
-        Type utype = (Type)0;
-        UInt clk = HopperVM_Pop_R(utype);
-        UInt tx = HopperVM_Pop_R(utype);
-        HRGraphics_ConfigureSPIPort(Byte(tx), Byte(clk));
-        break;
-    }
-    case LibCall::eGraphicsConfigureReset:
-    {
-        Type utype = (Type)0;
-        UInt rst = HopperVM_Pop_R(utype);
-        HRGraphics_ConfigureReset(Byte(rst));
-        break;
-    }
-    case LibCall::eGraphicsConfigureI2C:
-    {
-        Type utype = (Type)0;
-        UInt addr = HopperVM_Pop_R(utype);
-        HRGraphics_ConfigureI2C(Byte(addr));
-        break;
-    }
-    case LibCall::eGraphicsConfigureMatrix:
-    {
-        Type utype = (Type)0;
-        UInt intensity = HopperVM_Pop_R(utype);
-        UInt dp = HopperVM_Pop_R(utype);
-        UInt cp = HopperVM_Pop_R(utype);
-        HRGraphics_ConfigureMatrix(Byte(cp), Byte(dp), Byte(intensity));
-        break;
-    }
-    case LibCall::eGraphicsBegin:
-    {
-        UInt result = UInt(HRGraphics_Begin());
-        HopperVM_Push(result, Type::eUInt);
-        break;
-    }
-    case LibCall::eGraphicsEnd:
-    {
-        HRGraphics_End();
-        break;
-    }
-    case LibCall::eGraphicsClear:
-    {
-        Type ctype = (Type)0;
-        UInt color = HopperVM_Pop_R(ctype);
-        HRGraphics_Clear(color);
-        break;
-    }
-    case LibCall::eGraphicsWidthGet:
-    {
-        HopperVM_Push(HRGraphics_Width_Get(), Type::eUInt);
-        break;
-    }
-    case LibCall::eGraphicsHeightGet:
-    {
-        HopperVM_Push(HRGraphics_Height_Get(), Type::eUInt);
-        break;
-    }
-    case LibCall::eGraphicsSetPixel:
-    {
-        Type utype = (Type)0;
-        UInt color = HopperVM_Pop_R(utype);
-        UInt y = HopperVM_Pop_R(utype);
-        UInt x = HopperVM_Pop_R(utype);
-        HRGraphics_SetPixel(x, y, color);
-        break;
-    }
-    case LibCall::eGraphicsLine:
-    {
-        Type utype = (Type)0;
-        UInt color = HopperVM_Pop_R(utype);
-        UInt y2 = HopperVM_Pop_R(utype);
-        UInt x2 = HopperVM_Pop_R(utype);
-        UInt y1 = HopperVM_Pop_R(utype);
-        UInt x1 = HopperVM_Pop_R(utype);
-        HRGraphics_Line(x1, y1, x2, y2, color);
-        break;
-    }
-    case LibCall::eGraphicsHorizontalLine:
-    {
-        Type utype = (Type)0;
-        UInt color = HopperVM_Pop_R(utype);
-        UInt y2 = HopperVM_Pop_R(utype);
-        UInt x2 = HopperVM_Pop_R(utype);
-        UInt y1 = HopperVM_Pop_R(utype);
-        UInt x1 = HopperVM_Pop_R(utype);
-        HRGraphics_HorizontalLine(x1, y1, x2, y2, color);
-        break;
-    }
-    case LibCall::eGraphicsVerticalLine:
-    {
-        Type utype = (Type)0;
-        UInt color = HopperVM_Pop_R(utype);
-        UInt y2 = HopperVM_Pop_R(utype);
-        UInt x2 = HopperVM_Pop_R(utype);
-        UInt y1 = HopperVM_Pop_R(utype);
-        UInt x1 = HopperVM_Pop_R(utype);
-        HRGraphics_VerticalLine(x1, y1, x2, y2, color);
-        break;
-    }
-    case LibCall::eGraphicsRectangle:
-    {
-        Type utype = (Type)0;
-        UInt color = HopperVM_Pop_R(utype);
-        UInt h = HopperVM_Pop_R(utype);
-        UInt w = HopperVM_Pop_R(utype);
-        UInt y = HopperVM_Pop_R(utype);
-        UInt x = HopperVM_Pop_R(utype);
-        HRGraphics_Rectangle(x, y, w, h, color);
-        break;
-    }
-    case LibCall::eGraphicsFilledRectangle:
-    {
-        Type utype = (Type)0;
-        UInt color = HopperVM_Pop_R(utype);
-        UInt h = HopperVM_Pop_R(utype);
-        UInt w = HopperVM_Pop_R(utype);
-        UInt y = HopperVM_Pop_R(utype);
-        UInt x = HopperVM_Pop_R(utype);
-        HRGraphics_FilledRectangle(x, y, w, h, color);
-        break;
-    }
-    case LibCall::eGraphicsCircle:
-    {
-        Type utype = (Type)0;
-        UInt color = HopperVM_Pop_R(utype);
-        UInt r = HopperVM_Pop_R(utype);
-        UInt y = HopperVM_Pop_R(utype);
-        UInt x = HopperVM_Pop_R(utype);
-        HRGraphics_Circle(x, y, r, color);
-        break;
-    }
-    case LibCall::eGraphicsFilledCircle:
-    {
-        Type utype = (Type)0;
-        UInt color = HopperVM_Pop_R(utype);
-        UInt r = HopperVM_Pop_R(utype);
-        UInt y = HopperVM_Pop_R(utype);
-        UInt x = HopperVM_Pop_R(utype);
-        HRGraphics_FilledCircle(x, y, r, color);
-        break;
-    }
-    case LibCall::eGraphicsInvertDisplay:
-    {
-        Type ctype = (Type)0;
-        UInt flag = HopperVM_Pop_R(ctype);
-        HRGraphics_InvertDisplay(flag != 0x00);
-        break;
-    }
-    case LibCall::eGraphicsFlipDisplay:
-    {
-        Type ctype = (Type)0;
-        UInt flag = HopperVM_Pop_R(ctype);
-        HRGraphics_FlipDisplay(flag != 0x00);
-        break;
-    }
-    case LibCall::eGraphicsShow:
-    {
-        Type ctype = (Type)0;
-        UInt flag = HopperVM_Pop_R(ctype);
-        HRGraphics_Show(flag != 0x00);
-        break;
-    }
-    case LibCall::eGraphicsDrawChar:
-    {
-        Type aatype = (Type)0;
-        UInt aa = HopperVM_Pop_R(aatype);
-        Type stype = (Type)0;
-        UInt scale = HopperVM_Pop_R(stype);
-        Type atype = (Type)0;
-        UInt bc = HopperVM_Pop_R(atype);
-        Type btype = (Type)0;
-        UInt fc = HopperVM_Pop_R(btype);
-        Type ctype = (Type)0;
-        UInt ch = HopperVM_Pop_R(ctype);
-        Type dtype = (Type)0;
-        UInt y = HopperVM_Pop_R(atype);
-        Type etype = (Type)0;
-        UInt x = HopperVM_Pop_R(btype);
-        HRGraphics_DrawChar(x, y, Char(ch), fc, bc, Byte(scale), aa != 0x00);
         break;
     }
     default:
@@ -6389,10 +6200,134 @@ UInt HRDirectory_Clone(UInt original)
     return address;
 }
 
-Char HRString_GetChar(UInt _this, UInt index)
+UInt HRLong_NewFromConstant(UInt location)
 {
-    UInt length = HRString_GetLength(_this);
-    return Char(Memory_ReadByte(_this + 4 + index));
+    UInt address = GC_New(0x04, Type::eLong);
+    Memory_WriteWord(address + 0x02, Memory_ReadCodeWord(location));
+    Memory_WriteWord(address + 0x04, Memory_ReadCodeWord(location + 0x02));
+    return address;
+}
+
+UInt HRLong_ToBytes(UInt ichunk)
+{
+    UInt lst = HRList_New(Type::eByte);;
+    for (Byte i = 0x00; i < 0x04; i++)
+    {
+        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
+        HRList_Append(lst, b, Type::eByte);
+    }
+    return lst;
+}
+
+Byte HRLong_GetByte(UInt ichunk, UInt i)
+{
+    return Memory_ReadByte(ichunk + 0x02 + i);
+}
+
+UInt HRLong_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3)
+{
+    UInt address = GC_New(0x04, Type::eLong);
+    Memory_WriteByte(address + 0x02, b0);
+    Memory_WriteByte(address + 0x02 + 0x01, b1);
+    Memory_WriteByte(address + 0x02 + 0x02, b2);
+    Memory_WriteByte(address + 0x02 + 0x03, b3);
+    return address;
+}
+
+UInt HRLong_ToUInt(UInt _this)
+{
+    UInt value = Memory_ReadWord(_this + 0x04);
+    return Memory_ReadWord(_this + 0x02);
+}
+
+UInt HRLong_LongNegate(UInt top)
+{
+    UInt zero = HRUInt_ToLong(0x00);
+    UInt result = External_LongSub(zero, top);
+    GC_Release(zero);
+    return result;
+}
+
+UInt HRLong_LongAddB(UInt next, UInt top)
+{
+    UInt argument = HRUInt_ToLong(top);
+    UInt result = External_LongAdd(next, argument);
+    GC_Release(argument);
+    return result;
+}
+
+UInt HRLong_LongSubB(UInt next, UInt top)
+{
+    UInt argument = HRUInt_ToLong(top);
+    UInt result = External_LongSub(next, argument);
+    GC_Release(argument);
+    return result;
+}
+
+UInt HRLong_New()
+{
+    UInt address = GC_New(0x04, Type::eLong);
+    Memory_WriteWord(address + 0x02, 0x00);
+    Memory_WriteWord(address + 0x04, 0x00);
+    return address;
+}
+
+UInt HRLong_Clone(UInt original)
+{
+    UInt address = GC_New(0x04, Type::eLong);
+    Memory_WriteWord(address + 0x02, Memory_ReadWord(original + 0x02));
+    Memory_WriteWord(address + 0x04, Memory_ReadWord(original + 0x04));
+    return address;
+}
+
+UInt HRFloat_NewFromConstant(UInt location)
+{
+    UInt address = GC_New(0x04, Type::eFloat);
+    Memory_WriteWord(address + 0x02, Memory_ReadCodeWord(location));
+    Memory_WriteWord(address + 0x04, Memory_ReadCodeWord(location + 0x02));
+    return address;
+}
+
+UInt HRFloat_ToBytes(UInt ichunk)
+{
+    UInt lst = HRList_New(Type::eByte);;
+    for (Byte i = 0x00; i < 0x04; i++)
+    {
+        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
+        HRList_Append(lst, b, Type::eByte);
+    }
+    return lst;
+}
+
+Byte HRFloat_GetByte(UInt ichunk, UInt i)
+{
+    return Memory_ReadByte(ichunk + 0x02 + i);
+}
+
+UInt HRFloat_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3)
+{
+    UInt address = GC_New(0x04, Type::eFloat);
+    Memory_WriteByte(address + 0x02, b0);
+    Memory_WriteByte(address + 0x03, b1);
+    Memory_WriteByte(address + 0x04, b2);
+    Memory_WriteByte(address + 0x05, b3);
+    return address;
+}
+
+UInt HRFloat_New()
+{
+    UInt address = GC_New(0x04, Type::eFloat);
+    Memory_WriteWord(address + 0x02, 0x00);
+    Memory_WriteWord(address + 0x04, 0x00);
+    return address;
+}
+
+UInt HRFloat_Clone(UInt original)
+{
+    UInt address = GC_New(0x04, Type::eFloat);
+    Memory_WriteWord(address + 0x02, Memory_ReadWord(original + 0x02));
+    Memory_WriteWord(address + 0x04, Memory_ReadWord(original + 0x04));
+    return address;
 }
 
 UInt HRString_NewFromConstant0(UInt location, UInt length)
@@ -6418,6 +6353,12 @@ UInt HRString_NewFromConstant1(UInt doubleChar)
         Memory_WriteByte(address + 4 + 0x01, msb);
     }
     return address;
+}
+
+Char HRString_GetChar(UInt _this, UInt index)
+{
+    UInt length = HRString_GetLength(_this);
+    return Char(Memory_ReadByte(_this + 4 + index));
 }
 
 UInt HRString_InsertChar(UInt _this, UInt index, Char ch)
@@ -6859,136 +6800,6 @@ UInt HRString_TrimLeft(UInt _this)
     UInt copy = HRString_Clone(_this);
     HRString_TrimLeft_R(copy);
     return copy;
-}
-
-UInt HRLong_NewFromConstant(UInt location)
-{
-    UInt address = GC_New(0x04, Type::eLong);
-    Memory_WriteWord(address + 0x02, Memory_ReadCodeWord(location));
-    Memory_WriteWord(address + 0x04, Memory_ReadCodeWord(location + 0x02));
-    return address;
-}
-
-UInt HRLong_ToBytes(UInt ichunk)
-{
-    UInt lst = HRList_New(Type::eByte);;
-    for (Byte i = 0x00; i < 0x04; i++)
-    {
-        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
-        HRList_Append(lst, b, Type::eByte);
-    }
-    return lst;
-}
-
-Byte HRLong_GetByte(UInt ichunk, UInt i)
-{
-    return Memory_ReadByte(ichunk + 0x02 + i);
-}
-
-UInt HRLong_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3)
-{
-    UInt address = GC_New(0x04, Type::eLong);
-    Memory_WriteByte(address + 0x02, b0);
-    Memory_WriteByte(address + 0x02 + 0x01, b1);
-    Memory_WriteByte(address + 0x02 + 0x02, b2);
-    Memory_WriteByte(address + 0x02 + 0x03, b3);
-    return address;
-}
-
-UInt HRLong_ToUInt(UInt _this)
-{
-    UInt value = Memory_ReadWord(_this + 0x04);
-    return Memory_ReadWord(_this + 0x02);
-}
-
-UInt HRLong_LongNegate(UInt top)
-{
-    UInt zero = HRUInt_ToLong(0x00);
-    UInt result = External_LongSub(zero, top);
-    GC_Release(zero);
-    return result;
-}
-
-UInt HRLong_LongAddB(UInt next, UInt top)
-{
-    UInt argument = HRUInt_ToLong(top);
-    UInt result = External_LongAdd(next, argument);
-    GC_Release(argument);
-    return result;
-}
-
-UInt HRLong_LongSubB(UInt next, UInt top)
-{
-    UInt argument = HRUInt_ToLong(top);
-    UInt result = External_LongSub(next, argument);
-    GC_Release(argument);
-    return result;
-}
-
-UInt HRLong_New()
-{
-    UInt address = GC_New(0x04, Type::eLong);
-    Memory_WriteWord(address + 0x02, 0x00);
-    Memory_WriteWord(address + 0x04, 0x00);
-    return address;
-}
-
-UInt HRLong_Clone(UInt original)
-{
-    UInt address = GC_New(0x04, Type::eLong);
-    Memory_WriteWord(address + 0x02, Memory_ReadWord(original + 0x02));
-    Memory_WriteWord(address + 0x04, Memory_ReadWord(original + 0x04));
-    return address;
-}
-
-UInt HRFloat_NewFromConstant(UInt location)
-{
-    UInt address = GC_New(0x04, Type::eFloat);
-    Memory_WriteWord(address + 0x02, Memory_ReadCodeWord(location));
-    Memory_WriteWord(address + 0x04, Memory_ReadCodeWord(location + 0x02));
-    return address;
-}
-
-UInt HRFloat_ToBytes(UInt ichunk)
-{
-    UInt lst = HRList_New(Type::eByte);;
-    for (Byte i = 0x00; i < 0x04; i++)
-    {
-        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
-        HRList_Append(lst, b, Type::eByte);
-    }
-    return lst;
-}
-
-Byte HRFloat_GetByte(UInt ichunk, UInt i)
-{
-    return Memory_ReadByte(ichunk + 0x02 + i);
-}
-
-UInt HRFloat_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3)
-{
-    UInt address = GC_New(0x04, Type::eFloat);
-    Memory_WriteByte(address + 0x02, b0);
-    Memory_WriteByte(address + 0x03, b1);
-    Memory_WriteByte(address + 0x04, b2);
-    Memory_WriteByte(address + 0x05, b3);
-    return address;
-}
-
-UInt HRFloat_New()
-{
-    UInt address = GC_New(0x04, Type::eFloat);
-    Memory_WriteWord(address + 0x02, 0x00);
-    Memory_WriteWord(address + 0x04, 0x00);
-    return address;
-}
-
-UInt HRFloat_Clone(UInt original)
-{
-    UInt address = GC_New(0x04, Type::eFloat);
-    Memory_WriteWord(address + 0x02, Memory_ReadWord(original + 0x02));
-    Memory_WriteWord(address + 0x04, Memory_ReadWord(original + 0x04));
-    return address;
 }
 
 Bool HRWiFi_Connect(UInt ssid, UInt password)

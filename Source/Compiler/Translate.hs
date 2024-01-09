@@ -899,9 +899,9 @@ program Translate
             string headerContent;
             
             bool isExternal = methodName.StartsWith("External.") 
-                           || methodName.StartsWith("HRScreen.") 
+                           //|| methodName.StartsWith("HRScreen.") 
                            || methodName.StartsWith("HRWire.") 
-                           || methodName.StartsWith("HRGraphics.")
+                           //|| methodName.StartsWith("HRGraphics.")
                            || methodName.Contains(".Inlined");
             
             < < string > > arguments = GetOverloadArguments(iCurrentOverload);

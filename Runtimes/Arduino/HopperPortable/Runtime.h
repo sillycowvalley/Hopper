@@ -16,6 +16,9 @@ typedef UInt ISRDelegate;
 
 // method definitions
 enum OpCode {
+    eLIBCALL = 0x0008,
+    eLIBCALL0 = 0x0009,
+    eLIBCALL1 = 0x000A,
     ePUSHI = 0x0037,
     ePUSHD = 0x0060,
     ePUSHLOCAL = 0x0039,
@@ -46,7 +49,6 @@ enum OpCode {
     eCALL = 0x0034,
     eCALLREL = 0x004B,
     eSYSCALL = 0x0026,
-    eLIBCALL = 0x006F,
     eADD = 0x0080,
     eADDI = 0x0081,
     eSUB = 0x0082,
@@ -326,56 +328,14 @@ enum LibCall {
     eWireBeginTx = 0x0001,
     eWireEndTx = 0x0002,
     eWireWrite = 0x0003,
-    eMCUPinMode = 0x0004,
-    eMCUDigitalRead = 0x0005,
-    eMCUDigitalWrite = 0x0006,
-    eMCUAnalogRead = 0x0007,
-    eMCUAnalogWrite = 0x0008,
-    eMCUAnalogWriteResolution = 0x0009,
-    eMCUAttachToPin = 0x000A,
-    eGraphicsConfigureDisplay = 0x000B,
-    eGraphicsConfigureSPI = 0x000C,
-    eGraphicsConfigureSPIPort = 0x000D,
-    eGraphicsConfigureReset = 0x000E,
-    eGraphicsConfigureI2C = 0x000F,
-    eGraphicsConfigureMatrix = 0x0010,
-    eGraphicsBegin = 0x0011,
-    eGraphicsEnd = 0x0012,
-    eGraphicsInvertDisplay = 0x0013,
-    eGraphicsFlipDisplay = 0x0014,
-    eGraphicsClear = 0x0015,
-    eGraphicsWidthGet = 0x0016,
-    eGraphicsHeightGet = 0x0017,
-    eGraphicsSetPixel = 0x0018,
-    eGraphicsLine = 0x0019,
-    eGraphicsHorizontalLine = 0x001A,
-    eGraphicsVerticalLine = 0x001B,
-    eGraphicsRectangle = 0x001C,
-    eGraphicsFilledRectangle = 0x001D,
-    eGraphicsCircle = 0x001E,
-    eGraphicsFilledCircle = 0x001F,
-    eGraphicsShow = 0x0020,
-    eGraphicsDrawChar = 0x0021,
-};
-
-enum Display {
-    eNoDisplay = 0x0000,
-    eILI9341 = 0x0001,
-    eST7735 = 0x0002,
-    eST7789 = 0x0003,
-    eST7796 = 0x0004,
-    eSSD1306 = 0x0005,
-    eLedMatrix = 0x0006,
-};
-
-enum DisplayState {
-    eOK = 0x0000,
-    eDisplayNotSet = 0x0001,
-    eBadWidth = 0x0002,
-    eBadHeight = 0x0003,
-    eSPIPinsNotSet = 0x0004,
-    eI2CAddressNotSet = 0x0005,
-    eMatrixNotConfigured = 0x0006,
+    eWireConfigure = 0x0004,
+    eMCUPinMode = 0x0005,
+    eMCUDigitalRead = 0x0006,
+    eMCUDigitalWrite = 0x0007,
+    eMCUAnalogRead = 0x0008,
+    eMCUAnalogWrite = 0x0009,
+    eMCUAnalogWriteResolution = 0x000A,
+    eMCUAttachToPin = 0x000B,
 };
 
 enum HopperFlags {
@@ -690,6 +650,8 @@ Bool Instructions_JIX();
 Bool Instructions_Call();
 Bool Instructions_CallRel();
 Bool Instructions_SysCall();
+Bool Instructions_LibCall0();
+Bool Instructions_LibCall1();
 Bool Instructions_LibCall();
 Bool Instructions_PopCopyLocal();
 Bool Instructions_PopCopyRel();
@@ -738,7 +700,7 @@ UInt HopperVM_Get(UInt address);
 Bool HopperVM_RunInline();
 void GC_AddReference(UInt address);
 UInt GC_Clone(UInt original);
-Bool Library_ExecuteLibCall(Byte iLibCall);
+Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload);
 UInt Memory_Available();
 UInt Memory_Maximum();
 Bool HRFile_IsValid(UInt _this);
@@ -760,9 +722,25 @@ UInt HRDirectory_GetDirectory(UInt hrdir, UInt index);
 void HRDirectory_Delete(UInt hrpath);
 UInt HRDirectory_GetTime(UInt hrpath);
 UInt HRDirectory_Clone(UInt original);
-Char HRString_GetChar(UInt _this, UInt index);
+UInt HRLong_NewFromConstant(UInt location);
+UInt HRLong_ToBytes(UInt ichunk);
+Byte HRLong_GetByte(UInt ichunk, UInt i);
+UInt HRLong_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3);
+UInt HRLong_ToUInt(UInt _this);
+UInt HRLong_LongNegate(UInt top);
+UInt HRLong_LongAddB(UInt next, UInt top);
+UInt HRLong_LongSubB(UInt next, UInt top);
+UInt HRLong_New();
+UInt HRLong_Clone(UInt original);
+UInt HRFloat_NewFromConstant(UInt location);
+UInt HRFloat_ToBytes(UInt ichunk);
+Byte HRFloat_GetByte(UInt ichunk, UInt i);
+UInt HRFloat_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3);
+UInt HRFloat_New();
+UInt HRFloat_Clone(UInt original);
 UInt HRString_NewFromConstant0(UInt location, UInt length);
 UInt HRString_NewFromConstant1(UInt doubleChar);
+Char HRString_GetChar(UInt _this, UInt index);
 UInt HRString_InsertChar(UInt _this, UInt index, Char ch);
 UInt HRString_ToUpper(UInt _this);
 void HRString_ToUpper_R(UInt & _this);
@@ -784,22 +762,6 @@ UInt HRString_Trim(UInt _this);
 void HRString_TrimRight_R(UInt & _this);
 void HRString_TrimLeft_R(UInt & _this);
 UInt HRString_TrimLeft(UInt _this);
-UInt HRLong_NewFromConstant(UInt location);
-UInt HRLong_ToBytes(UInt ichunk);
-Byte HRLong_GetByte(UInt ichunk, UInt i);
-UInt HRLong_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3);
-UInt HRLong_ToUInt(UInt _this);
-UInt HRLong_LongNegate(UInt top);
-UInt HRLong_LongAddB(UInt next, UInt top);
-UInt HRLong_LongSubB(UInt next, UInt top);
-UInt HRLong_New();
-UInt HRLong_Clone(UInt original);
-UInt HRFloat_NewFromConstant(UInt location);
-UInt HRFloat_ToBytes(UInt ichunk);
-Byte HRFloat_GetByte(UInt ichunk, UInt i);
-UInt HRFloat_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3);
-UInt HRFloat_New();
-UInt HRFloat_Clone(UInt original);
 Bool HRWiFi_Connect(UInt ssid, UInt password);
 Bool HRHttpClient_GetRequest_R(UInt url, UInt & content);
 UInt HRArray_New(Type htype, UInt count);
@@ -849,7 +811,6 @@ UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
-
 
 
 #endif // HOPPERRUNTIME_H

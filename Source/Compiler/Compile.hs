@@ -1502,7 +1502,20 @@ program Compile
             else if (Symbols.IsLibCall(igOverload))
             {
                 byte iLibCall = Symbols.GetLibCallIndex(igOverload);
-                CodeStream.AddInstruction(Instruction.LIBCALL, iLibCall);
+                byte iLibOverload = Symbols.GetLibCallOverload(igOverload);
+                if (!IsTinyHopper && (iLibOverload == 0))
+                {
+                    CodeStream.AddInstruction(Instruction.LIBCALL0, iLibCall);
+                }
+                else if (!IsTinyHopper && (iLibOverload == 1))
+                {
+                    CodeStream.AddInstruction(Instruction.LIBCALL1, iLibCall);
+                }
+                else
+                {
+                    CodeStream.AddInstructionPUSHI(iLibOverload);
+                    CodeStream.AddInstruction(Instruction.LIBCALL, iLibCall);
+                }
             }
             else
             {

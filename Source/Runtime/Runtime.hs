@@ -23,7 +23,6 @@ program Runtime
     uses "/Source/Runtime/Platform/List"
     uses "/Source/Runtime/Platform/Long"
     uses "/Source/Runtime/Platform/Pair"
-    uses "/Source/Runtime/Platform/Screen"
     uses "/Source/Runtime/Platform/Char"
     uses "/Source/Runtime/Platform/String"
     uses "/Source/Runtime/Platform/UInt"

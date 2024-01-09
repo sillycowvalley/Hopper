@@ -5,6 +5,10 @@ unit Instructions
     
     enum Instruction
     {
+        LIBCALL  = 0x08,
+        LIBCALL0 = 0x09,
+        LIBCALL1 = 0x0A,
+    
         PUSHIB = 0x1A,  // operand is byte
         POPLOCALB,      // operand is the location to pop to: BP + offset
         PUSHLOCALB,     // operand is the location to push from: BP + offset
@@ -124,7 +128,7 @@ unit Instructions
         ADDB,
         SUBB,
         
-        LIBCALL,
+        
         
         // pop 2 -> operation -> push 1: (bit 0 set means 'signed')
         ADD  = 0x80,
@@ -275,6 +279,8 @@ unit Instructions
             case Instruction.SYSCALL0:
             case Instruction.SYSCALL1:
             case Instruction.LIBCALL:
+            case Instruction.LIBCALL0:
+            case Instruction.LIBCALL1:
             case Instruction.INCGLOBALB:
             case Instruction.DECGLOBALB:
             case Instruction.DUP:
@@ -382,6 +388,8 @@ unit Instructions
             case Instruction.SYSCALL0:
             case Instruction.SYSCALL1:
             case Instruction.LIBCALL:
+            case Instruction.LIBCALL0:
+            case Instruction.LIBCALL1:
             case Instruction.JB:
             case Instruction.JZB:
             case Instruction.JNZB:
@@ -523,6 +531,14 @@ unit Instructions
             case Instruction.LIBCALL:
             {
                 result = "LIBCALL";
+            }
+            case Instruction.LIBCALL0:
+            {
+                result = "LIBCALL0";
+            }
+            case Instruction.LIBCALL1:
+            {
+                result = "LIBCALL1";
             }
             case Instruction.PUSHI0:
             {
@@ -1197,7 +1213,10 @@ unit Instructions
             string syscallName = SysCalls.GetSysCallName(iSysCall);
             content = content + "  // " + syscallName;
         }
-        if (instruction == Instruction.LIBCALL)
+        if ((instruction == Instruction.LIBCALL)
+         || (instruction == Instruction.LIBCALL0)
+         || (instruction == Instruction.LIBCALL1)
+           )
         {
             string libcallName = LibCalls.GetLibCallName(iSysCall);
             content = content + "  // " + libcallName;

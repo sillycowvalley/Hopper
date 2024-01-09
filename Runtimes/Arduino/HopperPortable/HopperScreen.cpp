@@ -1,5 +1,7 @@
 #include "HopperScreen.h"
 
+/*
+
 #include <Wire.h>
 
 #include <SPI.h>
@@ -16,7 +18,7 @@ Byte suspended;
 Byte cursorX;
 Byte cursorY;
 
-Display currentDisplay = Display::eNoDisplay;
+//Display currentDisplay = Display::eNoDisplay;
 uint pixelHeight = 0;
 uint pixelWidth = 0;
 uint visiblePixelHeight = 0;
@@ -114,7 +116,6 @@ UInt fontBuffer[CELLWIDTH*CELLHEIGHT];
 #define SSD1306_NORMALDISPLAY   0xA6
 #define SSD1306_INVERTDISPLAY   0xA7
 
-#define SSD1306_SEGREMAP 0xA0
 #define SSD1306_DISPLAYALLON_RESUME 0xA4
 #define SSD1306_SETMULTIPLEX 0xA8
 #define SSD1306_SETDISPLAYOFFSET 0xD3
@@ -321,7 +322,7 @@ initcmdSPI_ST7789_114[] =
   
   // Pico-LCD-1.14:
   ST7735_INVON , 0      ,  // 13: Invert display, no args, no delay
-  TFT_MADCTL      , 1, (  /*MADCTL_MY | */ MADCTL_MX | MADCTL_MV | MADCTL_RGB),              // Memory Access Control : 
+  TFT_MADCTL      , 1, (   MADCTL_MX | MADCTL_MV | MADCTL_RGB),              // Memory Access Control : 
 
   ST7735_COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
     0x05,
@@ -600,7 +601,7 @@ tinyFont[][9] =
     { 0x7E, 0xFFFF, 0xFFFF, 0xFFFF, 0xA096, 0x3E22, 0xFFFF, 0xFFFF, 0xFFFF}
 };
 
-static const uint8_t /*PROGMEM*/ toneToShade[] = { 0, 37, 60, 81, 99, 116, 133, 148, 163, 177, 191, 204, 217, 230, 243, 255 };
+static const uint8_t toneToShade[] = { 0, 37, 60, 81, 99, 116, 133, 148, 163, 177, 191, 204, 217, 230, 243, 255 };
 
 UInt blendPixelColor(Byte tone, UInt foreColor, UInt backColor)
 {
@@ -1233,7 +1234,6 @@ void HRGraphics_End()
     Serial.println(">");
 #endif
 }
-
 void sendMatrix(Byte data)
 {
     for (int i = 0; i < 8; i++) 
@@ -1258,7 +1258,6 @@ void sendMatrixData(Byte address, Byte data)
       sendMatrix(data);
       digitalWrite(matrixDataPin, HIGH);
 }
-
 // https://github.com/ThingPulse/esp8266-oled-ssd1306/blob/master/src/OLEDDisplay.cpp
 void HRGraphics_InvertDisplay(Bool invertColours)
 {
@@ -1386,7 +1385,6 @@ void HRGraphics_SetPixel(Int x, Int y, UInt colour)
     }
     HRScreen_Resume(false);
 }
-
 void HRScreen_Clear()
 {
     HRGraphics_Clear(0x0000); // black
@@ -1713,7 +1711,6 @@ void HRGraphics_Line(UInt x0, UInt y0, UInt x1, UInt y1, UInt colour)
     }
     HRScreen_Resume(false);
 }
-
 void render5x8Character(Char chr, UInt foreColour, UInt backColour)
 {
     Byte * buffer = (Byte*)&fontBuffer;
@@ -2030,3 +2027,4 @@ void HRScreen_DrawChar(UInt col, UInt row, Char chr, UInt foreColour, UInt backC
     }
     drawMonoChar(col * CELLWIDTH, row * CELLHEIGHT, chr, foreColour, backColour, 1);
 }
+*/

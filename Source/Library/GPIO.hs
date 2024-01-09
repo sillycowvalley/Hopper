@@ -4,18 +4,19 @@ unit GPIO
 
 #ifdef WEMOSD1MINI
 
-    const byte builtInLED = 2;
+    const byte d0 = 16;
+    const byte d1 = 5;
+    const byte d2 = 4;
+    const byte d3 = 0;
+    const byte d4 = 2; // built in LED
+    const byte d5 = 14;
+    const byte d6 = 12;
+    const byte d7 = 13;
+    const byte d8 = 15;
     
-    // #define WEMOS_D1_MINI_D0 16
-    // #define WEMOS_D1_MINI_D1 5
-    // #define WEMOS_D1_MINI_D2 4
-    // #define WEMOS_D1_MINI_D3 0
-    // #define WEMOS_D1_MINI_D4 2   // built in LED
-    // #define WEMOS_D1_MINI_D5 14
-    // #define WEMOS_D1_MINI_D6 12
-    // #define WEMOS_D1_MINI_D7 13
-    // #define WEMOS_D1_MINI_D8 15
+    //const byte a0 = 3?; // test?
     
+    const byte builtInLED = d4;    
 #endif
 
 #ifdef RP2040PICO
@@ -40,6 +41,14 @@ unit GPIO
     
 #endif
 
+#ifdef ADAFRUITQTPY
+    // AdaFruit QT Py
+    const byte a0         = 29; // A0
+    const byte a1         = 28; // A1
+    const byte a2         = 27; // A2
+    const byte a3         = 26; // A3
+#endif
+
 #ifdef TINY2040
     // Pimoroni Tiny 2040 
     const byte a0          = 26; // A0
@@ -56,6 +65,9 @@ unit GPIO
 #endif
 
 #ifdef ARDUINONANORP2040
+    const byte a0         = 26; // A0
+    const byte a1         = 27; // A1
+    
     const byte builtInLED = 6;
 #endif
 #ifdef WAVESHARERP2040ONE
@@ -101,8 +113,10 @@ unit GPIO
 
     uint A0 { get { return MCU.AnalogRead(a0); } }
     uint A1 { get { return MCU.AnalogRead(a1); } }
+#ifndef ARDUINONANORP2040    
     uint A2 { get { return MCU.AnalogRead(a2); } }
     uint A3 { get { return MCU.AnalogRead(a3); } }
+#endif
     
     bool LED 
     { 

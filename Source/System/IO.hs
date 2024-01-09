@@ -43,7 +43,7 @@ unit IO
     //   WriteLn()          | WriteLnBoth(bool both)
     //   WriteLn(int value) | WriteLnBoth(int value, bool both)
     
-    bool EchoToLCD { set { echoToLCD = value; } }
+    bool EchoToLCD { set { echoToLCD = value; } get { return echoToLCD; } }
 
     uint LineMax
     {
@@ -128,25 +128,19 @@ unit IO
         {
             if (char(0x0D) == c)
             {
-#ifdef RUNTIME
-                HRScreen.PrintLn();
-#else
+#ifndef RUNTIME
                 Screen.PrintLn();
 #endif 
             }
             else if (char(0x0C) == c)
             {
-#ifdef RUNTIME
-                HRScreen.Clear();
-#else
+#ifndef RUNTIME
                 Screen.Clear();
 #endif 
             }
             else
             {
-#ifdef RUNTIME
-                HRScreen.Print(c);
-#else
+#ifndef RUNTIME
                 Screen.Print(c);
 #endif 
             }

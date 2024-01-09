@@ -133,7 +133,7 @@ program PreProcess
                             break;   
                         }
                     }
-                    else if (((currentUnit == "System") || (currentUnit == "Runtime")) && (typeString == "byte"))
+                    else if (((currentUnit == "System") || (currentUnit == "Runtime") || (currentUnit == "Wire")) && (typeString == "byte"))
                     {
                         systemByteArray = true;
                     }

@@ -2,6 +2,9 @@ unit OpCodes
 {
     enum OpCode
     {
+        LIBCALL  = 0x08,       // <library method index>, iOverload = [top]
+        LIBCALL0 = 0x09,       // <library method index>, iOverload = 0
+        LIBCALL1 = 0x0A,       // <library method index>, iOverload = 1
         
         PUSHI         = 0x37, // <uint operand>
         PUSHD         = 0x60, // <uint operand> : identical to PUSHI except that optimizer knows it points to a delegate method (reachable code)
@@ -43,7 +46,7 @@ unit OpCodes
         CALL    = 0x34,       // CALL <method index>
         CALLREL = 0x4B,       // call delegate based on <index> in [top]
         SYSCALL = 0x26,       // J <system method index> [iOverload]
-        LIBCALL = 0x6F,       // J <library method index>  
+        
         
         // pop 2 -> operation -> push 1: (bit 0 set means 'signed')
         

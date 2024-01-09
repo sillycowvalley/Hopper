@@ -6,6 +6,7 @@ unit LibCalls
         WireBeginTx,
         WireEndTx,
         WireWrite,
+        WireConfigure,
         
         MCUPinMode,
         MCUDigitalRead,
@@ -14,33 +15,5 @@ unit LibCalls
         MCUAnalogWrite,
         MCUAnalogWriteResolution,
         MCUAttachToPin,
-        
-        GraphicsConfigureDisplay,
-        GraphicsConfigureSPI,
-        GraphicsConfigureSPIPort,
-        GraphicsConfigureReset,
-        GraphicsConfigureI2C,
-        GraphicsConfigureMatrix,
-        GraphicsBegin,
-        GraphicsEnd,
-        
-        GraphicsInvertDisplay,
-        GraphicsFlipDisplay,
-        
-        GraphicsClear,
-        GraphicsWidthGet,
-        GraphicsHeightGet,
-        GraphicsSetPixel,
-        
-        GraphicsLine,
-        GraphicsHorizontalLine,
-        GraphicsVerticalLine,
-        GraphicsRectangle,
-        GraphicsFilledRectangle,
-        GraphicsCircle,
-        GraphicsFilledCircle,
-        
-        GraphicsShow,
-        GraphicsDrawChar,
     }
 }

@@ -674,7 +674,20 @@ unit Expression
             else if (Symbols.IsLibCall(iOverload))
             {
                 byte iLibCall = Symbols.GetLibCallIndex(iOverload);
-                CodeStream.AddInstruction(Instruction.LIBCALL, iLibCall);
+                byte iLibOverload = Symbols.GetLibCallOverload(iOverload);
+                if (!IsTinyHopper && (iLibOverload == 0))
+                {
+                    CodeStream.AddInstruction(Instruction.LIBCALL0, iLibCall);
+                }
+                else if (!IsTinyHopper && (iLibOverload == 1))
+                {
+                    CodeStream.AddInstruction(Instruction.LIBCALL1, iLibCall);
+                }
+                else
+                {
+                    CodeStream.AddInstructionPUSHI(iLibOverload);
+                    CodeStream.AddInstruction(Instruction.LIBCALL, iLibCall);
+                }
             }
             else
             {

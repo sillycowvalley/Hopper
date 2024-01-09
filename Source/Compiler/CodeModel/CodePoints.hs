@@ -214,20 +214,34 @@ unit CodePoints
     }
     
     
-    
-    
-    uint GetInstructionIndex(uint seekAddress)
+    bool TryGetInstructionIndex(uint seekAddress, ref uint index)
     {
         uint address;
-        uint index;
+        index = 0;
+        bool found;
         loop
         {
             if (address == seekAddress)
+            {
+                found = true;
+                break;
+            }
+            if (index >= iLengths.Length)
             {
                 break;
             }
             address = address + iLengths[index];
             index++;
+        }
+        return found;
+    }
+    
+    uint GetInstructionIndex(uint seekAddress)
+    {
+        uint index;
+        if (!TryGetInstructionIndex(seekAddress, ref index))
+        {
+            Die(0x0B);
         }
         return index;
     }
@@ -402,8 +416,58 @@ unit CodePoints
         }
     }
     
-    uint Load(uint methodIndex)
+#ifdef DIAGNOSTICS
+    DumpInstructions(string description)
     {
+        uint icodesLength = iCodes.Length;
+        PrintLn(description + ", length=" + icodesLength.ToString());
+
+        uint iIndex = 0;
+        uint count = 0;
+        uint address = 0;
+        loop
+        {
+            if (iIndex == icodesLength)
+            {
+                break;
+            }
+            Instruction opCode = iCodes[iIndex];
+            string content = "  0x" + address.ToHexString(4) + " [i"+ iIndex.ToString() + "] ";
+            content = content.Pad(' ', 18);
+            content = content + Instructions.ToString(opCode);
+            content = content.Pad(' ', 32);
+            Print(content);
+            uint iLength = iLengths[iIndex];
+            address += iLength;
+            if (iLength == 2)
+            {
+                Print(" 0x" + (iOperands[iIndex]).ToHexString(2));
+            }
+            else if (iLength == 3)
+            {
+                Print(" 0x" + (iOperands[iIndex]).ToHexString(4));
+            }
+            Print(" (" + iLength.ToString() + ")");
+            PrintLn();
+            count++;
+            if (count == 20)
+            {
+                Key k = ReadKey();
+                count = 0;
+            }
+            iIndex++;
+        }
+        if (count > 0)
+        {
+            Key k = ReadKey();
+        }
+    }
+#endif     
+    
+    uint Load(uint methodIndex, string when)
+    {
+        currentMethod = methodIndex;
+        
         iCodes.Clear();
         iLengths.Clear();
         iOperands.Clear();
@@ -412,8 +476,6 @@ unit CodePoints
         indexDebugInfo.Clear();
         iJIXMaps.Clear();
         iReachable.Clear();
-        
-        currentMethod = methodIndex;
         
         <byte> code = Code.GetMethodCode(currentMethod);
         uint codeLength = code.Length;
@@ -476,8 +538,16 @@ unit CodePoints
             if (UInt.TryParse(saddress, ref address))
             {
             }
-            uint index = GetInstructionIndex(address);
-            indexDebugInfo[index] = kv.value;
+            uint index;
+            if (!TryGetInstructionIndex(address, ref index))
+            {
+                PrintLn();
+                PrintLn("Bad DebugInfo for method 0x" + currentMethod.ToHexString(4) + " : " + kv.key + "->" + kv.value + " " + when);
+            }
+            else
+            {
+                indexDebugInfo[index] = kv.value;
+            }
         }
         ProgessNudge();
         return codeLength;
@@ -754,8 +824,6 @@ unit CodePoints
     }
     MarkReachableInstructions()
     {
-        
-        
         uint iIndex = 0;
         uint icodesLength = iCodes.Length;
         
@@ -862,6 +930,7 @@ unit CodePoints
                 }
                 iIndex++;
             } // loop
+            
             iIndex = 0;
             while (tailCalls.Length > 0)
             {
@@ -1620,17 +1689,17 @@ unit CodePoints
                 if (opCode1 == Instruction.PUSHLOCALB00)
                 {
                     // single local
-                    iCodes.SetItem   (iIndex-1, Instruction.RET0);
-                    iLengths.SetItem (iIndex-1, 1);
-                    RemoveInstruction(iIndex);
+                    iCodes.SetItem   (iIndex, Instruction.RET0);
+                    iLengths.SetItem (iIndex, 1);
+                    RemoveInstruction(iIndex-1);
                     modified = true;
                 }      
                 else if ((opCode1 == Instruction.PUSHLOCALB) && (operand1 == 0xFE)) // PUSHLOCALB 0xFE
                 {
                     // single local, simple value argument
-                    iCodes.SetItem   (iIndex-1, Instruction.RET0);
-                    iLengths.SetItem (iIndex-1, 1);
-                    RemoveInstruction(iIndex);
+                    iCodes.SetItem   (iIndex, Instruction.RET0);
+                    iLengths.SetItem (iIndex, 1);
+                    RemoveInstruction(iIndex-1);
                     modified = true;
                 }
             }

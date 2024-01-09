@@ -1,7 +1,6 @@
 unit Library
 {
     uses "/Source/Runtime/Platform/LibCalls"
-    uses "/Source/Runtime/Platform/Graphics"
     uses "/Source/Runtime/Platform/Wire"
     
     delegate ISRDelegate();
@@ -9,36 +8,141 @@ unit Library
     bool isrExists;
     bool ISRExists { get { return isrExists; } }
     
-    bool ExecuteLibCall(byte iLibCall)
+    bool ExecuteLibCall(byte iLibCall, uint iOverload)
     {
         bool doNext = true;
         switch (LibCall(iLibCall))
         {
             case LibCall.WireBegin:
             {
-                HRWire.Begin();
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        bool result = HRWire.Begin(0);
+                        Push(result ? 1 : 0, Type.Bool);
+                    }
+                    case 1:
+                    {
+                        Type ctype;
+                        uint controller = Pop(ref ctype);
+#ifdef CHECKED             
+                        AssertByte(ctype, controller);
+#endif   
+                        bool result = HRWire.Begin(byte(controller));
+                        Push(result ? 1 : 0, Type.Bool);
+                    }
+                }
             }
             case LibCall.WireBeginTx:
             {
                 Type atype;
-                uint b = Pop(ref atype);
+                uint address = Pop(ref atype);
 #ifdef CHECKED             
-                AssertByte(atype, b);
+                AssertByte(atype, address);
 #endif   
-                HRWire.BeginTx(byte(b));
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        HRWire.BeginTx(0, byte(address));
+                    }
+                    case 1:
+                    {
+                        Type ctype;
+                        uint controller = Pop(ref ctype);
+#ifdef CHECKED             
+                        AssertByte(ctype, controller);
+#endif   
+                        HRWire.BeginTx(byte(controller), byte(address));
+                    }
+                }
             }
             case LibCall.WireWrite:
             {
-                Type atype;
-                uint b = Pop(ref atype);
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        Type atype;
+                        uint b = Pop(ref atype);
 #ifdef CHECKED             
-                AssertByte(atype, b);
+                        AssertByte(atype, b);
 #endif   
-                HRWire.Write(byte(b));
+                        HRWire.Write(0, byte(b));
+                    }
+                    case 1:
+                    {
+                        Type atype;
+                        uint b = Pop(ref atype);
+                        Type ctype;
+                        uint controller = Pop(ref ctype);
+#ifdef CHECKED             
+                        AssertByte(atype, b);
+                        AssertByte(ctype, controller);
+#endif   
+                        HRWire.Write(byte(controller), byte(b));
+                    }
+                    case 2:
+                    {
+                        Type ltype;
+                        uint length = Pop(ref ltype);
+                        Type stype;
+                        uint startIndex = Pop(ref stype);
+                        Type atype;
+                        uint hrarray = Pop(ref atype);
+                        Type ctype;
+                        uint controller = Pop(ref ctype);
+#ifdef CHECKED             
+                        AssertByte(ctype, controller);
+                        AssertUInt(stype, startIndex);
+                        AssertUInt(ltype, length);
+                        AssertUInt(atype, hrarray);
+                        if (atype != Type.Array)
+                        {
+                            ErrorDump(11);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif   
+                        HRWire.Write(byte(controller), hrarray, startIndex, length);
+                    }
+                }
+            }
+            case LibCall.WireConfigure:
+            {
+                Type cltype;
+                uint sclPin = Pop(ref cltype);
+                Type datype;
+                uint sdaPin = Pop(ref datype);
+                Type ctype;
+                uint controller = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ctype,  controller);
+                AssertByte(cltype, sclPin);
+                AssertByte(datype, sdaPin);
+#endif
+                HRWire.Configure(byte(controller), byte(sdaPin), byte(sclPin));
             }
             case LibCall.WireEndTx:
             {
-                HRWire.EndTx();
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        byte result = HRWire.EndTx(0);
+                        Push(result, Type.Byte);
+                    }
+                    case 1:
+                    {
+                        Type ctype;
+                        uint controller = Pop(ref ctype);
+#ifdef CHECKED             
+                        AssertByte(ctype, controller);
+#endif   
+                        byte result = HRWire.EndTx(byte(controller));
+                        Push(result, Type.Byte);
+                    }
+                }
             }
             
             case LibCall.MCUPinMode:
@@ -85,206 +189,7 @@ unit Library
                 Push(result ? 1 : 0, Type.Bool);
                 isrExists = true;
             }
-            
-            case LibCall.GraphicsConfigureDisplay:
-            {
-                Type utype;
-                uint h = Pop(ref utype);
-                uint w = Pop(ref utype);
-                Display display = Display(Pop(ref utype));
-                HRGraphics.ConfigureDisplay(display, w, h);
-            }
-            case LibCall.GraphicsConfigureSPI:
-            {
-                Type utype;
-                uint dc = Pop(ref utype);
-                uint cs = Pop(ref utype);
-                HRGraphics.ConfigureSPI(byte(cs), byte(dc));
-            }
-            case LibCall.GraphicsConfigureSPIPort:
-            {
-                Type utype;
-                uint clk = Pop(ref utype);
-                uint tx  = Pop(ref utype);
-                HRGraphics.ConfigureSPIPort(byte(tx), byte(clk)); // TX(MOSI), CLK
-            }
-            case LibCall.GraphicsConfigureReset:
-            {
-                Type utype;
-                uint rst = Pop(ref utype);
-                HRGraphics.ConfigureReset(byte(rst));
-            }
-            case LibCall.GraphicsConfigureI2C:
-            {
-                Type utype;
-                uint addr = Pop(ref utype);
-                HRGraphics.ConfigureI2C(byte(addr));
-            }
-            case LibCall.GraphicsConfigureMatrix:
-            {
-                Type utype;
-                uint intensity = Pop(ref utype);
-                uint dp  = Pop(ref utype);
-                uint cp  = Pop(ref utype);
-                HRGraphics.ConfigureMatrix(byte(cp), byte(dp), byte(intensity));
-            }
-            case LibCall.GraphicsBegin:
-            {
-                uint result = uint(HRGraphics.Begin());
-                Push(result, Type.UInt);
-            }
-            case LibCall.GraphicsEnd:
-            {
-                HRGraphics.End();
-            }
-            case LibCall.GraphicsClear:
-            {
-                Type ctype;
-                uint color = Pop(ref ctype);
-    #ifdef CHECKED
-                AssertUInt(ctype, color);
-    #endif
-                HRGraphics.Clear(color);
-            }
-            case LibCall.GraphicsWidthGet:
-            {
-                Push(HRGraphics.Width, Type.UInt);
-            }
-            case LibCall.GraphicsHeightGet:
-            {
-                Push(HRGraphics.Height, Type.UInt);
-            }
-            case LibCall.GraphicsSetPixel:
-            {
-                Type utype;
-                uint color = Pop(ref utype);
-                uint y = Pop(ref utype);
-                uint x = Pop(ref utype);
-                HRGraphics.SetPixel(x, y, color);
-            }
-            case LibCall.GraphicsLine:
-            {
-                Type utype;
-                uint color = Pop(ref utype);
-                uint y2 = Pop(ref utype);
-                uint x2 = Pop(ref utype);
-                uint y1 = Pop(ref utype);
-                uint x1 = Pop(ref utype);
-                HRGraphics.Line(x1, y1, x2, y2, color);
-            }
-            case LibCall.GraphicsHorizontalLine:
-            {
-                Type utype;
-                uint color = Pop(ref utype);
-                uint y2 = Pop(ref utype);
-                uint x2 = Pop(ref utype);
-                uint y1 = Pop(ref utype);
-                uint x1 = Pop(ref utype);
-                HRGraphics.HorizontalLine(x1, y1, x2, y2, color);
-            }
-            case LibCall.GraphicsVerticalLine:
-            {
-                Type utype;
-                uint color = Pop(ref utype);
-                uint y2 = Pop(ref utype);
-                uint x2 = Pop(ref utype);
-                uint y1 = Pop(ref utype);
-                uint x1 = Pop(ref utype);
-                HRGraphics.VerticalLine(x1, y1, x2, y2, color);
-            }
-            case LibCall.GraphicsRectangle:
-            {
-                Type utype;
-                uint color = Pop(ref utype);
-                uint h = Pop(ref utype);
-                uint w = Pop(ref utype);
-                uint y = Pop(ref utype);
-                uint x = Pop(ref utype);
-                HRGraphics.Rectangle(x, y, w, h, color);
-            }
-            case LibCall.GraphicsFilledRectangle:
-            {
-                Type utype;
-                uint color = Pop(ref utype);
-                uint h = Pop(ref utype);
-                uint w = Pop(ref utype);
-                uint y = Pop(ref utype);
-                uint x = Pop(ref utype);
-                HRGraphics.FilledRectangle(x, y, w, h, color);
-            }
-            case LibCall.GraphicsCircle:
-            {
-                Type utype;
-                uint color = Pop(ref utype);
-                uint r = Pop(ref utype);
-                uint y = Pop(ref utype);
-                uint x = Pop(ref utype);
-                HRGraphics.Circle(x, y, r, color);
-            }
-            case LibCall.GraphicsFilledCircle:
-            {
-                Type utype;
-                uint color = Pop(ref utype);
-                uint r = Pop(ref utype);
-                uint y = Pop(ref utype);
-                uint x = Pop(ref utype);
-                HRGraphics.FilledCircle(x, y, r, color);
-            }
-            case LibCall.GraphicsInvertDisplay:
-            {
-                Type ctype;
-                uint flag  = Pop(ref ctype);
-#ifdef CHECKED
-                AssertBool(ctype, flag);
-#endif
-                HRGraphics.InvertDisplay(flag != 0);
-            }
-            case LibCall.GraphicsFlipDisplay:
-            {
-                Type ctype;
-                uint flag  = Pop(ref ctype);
-#ifdef CHECKED
-                AssertBool(ctype, flag);
-#endif
-                HRGraphics.FlipDisplay(flag != 0);
-            }
-            case LibCall.GraphicsShow:
-            {
-                Type ctype;
-                uint flag  = Pop(ref ctype);
-#ifdef CHECKED
-                AssertBool(ctype, flag);
-#endif
-                HRGraphics.Show(flag != 0);
-            }
-            case LibCall.GraphicsDrawChar:
-            {
-                Type aatype;
-                uint aa = Pop(ref aatype);
-                Type stype;
-                uint scale = Pop(ref stype);
-                Type atype;
-                uint bc = Pop(ref atype);
-                Type btype;
-                uint fc = Pop(ref btype);
-                Type ctype;
-                uint ch = Pop(ref ctype);
-                Type dtype;
-                uint y = Pop(ref atype);
-                Type etype;
-                uint x = Pop(ref btype);
-#ifdef CHECKED
-                AssertUInt(aatype, aa);
-                AssertUInt(stype, scale);
-                AssertUInt(atype, bc);
-                AssertUInt(btype, fc);
-                AssertChar(ctype, ch);
-                AssertUInt(dtype, y);
-                AssertUInt(etype, x);
-#endif
-                HRGraphics.DrawChar(x, y, char(ch), fc, bc, byte(scale), aa != 0); 
-            }
-            
+          
             
             default:
             {

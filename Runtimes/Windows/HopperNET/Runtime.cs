@@ -22,6 +22,10 @@ namespace HopperNET
 
     public enum Instruction
     {
+        LIBCALL  = 0x08,
+        LIBCALL0 = 0x09,
+        LIBCALL1 = 0x0A,
+
         PUSHIB = 0x1A,       // operand is byte
         POPLOCALB,    // operand is the location to pop to: BP + offset
         PUSHLOCALB,   // operand is the location to push from: BP + offset
@@ -151,8 +155,6 @@ namespace HopperNET
 
         ADDB,
         SUBB,
-
-        LIBCALL,
 
         // pop 2 -> operation -> push 1: (bit 0 set means 'signed')
         ADD   = 0x80,
@@ -457,41 +459,16 @@ namespace HopperNET
         WireBeginTx = 0x01,
         WireEndTx = 0x02,
         WireWrite = 0x03,
+        WireConfigure = 0x04,
 
-        MCUPinMode = 0x04,
-        MCUDigitalRead = 0x05,
-        MCUDigitalWrite = 0x06,
-        MCUAnalogRead = 0x07,
-        MCUAnalogWrite = 0x08,
-        MCUAnalogWriteResolution = 0x09,
+        MCUPinMode = 0x05,
+        MCUDigitalRead = 0x06,
+        MCUDigitalWrite = 0x07,
+        MCUAnalogRead = 0x08,
+        MCUAnalogWrite = 0x09,
+        MCUAnalogWriteResolution = 0x0A,
 
-        GraphicsConfigureDisplay = 0x0A,
-        GraphicsConfigureSPI = 0x0B,
-        GraphicsConfigureSPIPort = 0x0C,
-        GraphicsConfigureReset = 0x0D,
-        GraphicsConfigureI2C = 0x0E,
-        GraphicsConfigureMatrix = 0x0F,
-        GraphicsBegin = 0x10,
-        GraphicsEnd = 0x11,
-
-        GraphicsInvertDisplay = 0x12,
-        GraphicsFlipDisplay = 0x13,
-
-        GraphicsClear = 0x14,
-        GraphicsWidthGet = 0x15,
-        GraphicsHeightGet = 0x16,
-        GraphicsSetPixel = 0x17,
-
-        GraphicsLine = 0x18,
-        GraphicsHorizontalLine = 0x19,
-        GraphicsVerticalLine = 0x1A,
-        GraphicsRectangle = 0x1B,
-        GraphicsFilledRectangle = 0x1C,
-        GraphicsCircle = 0x1D,
-        GraphicsFilledCircle = 0x1E,
-
-        GraphicsShow = 0x1F,     // turn hardware display on or off (currently only OLED)
-        GraphicsDrawChar = 0x20,
+        
     };
 
     public enum HopperType // if you change this, look at the end of ToByte(..) in Types.hs
@@ -1708,11 +1685,25 @@ namespace HopperNET
                         break;
                     
 
-                    case Instruction.LIBCALL:
+                    case Instruction.LIBCALL0:
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             LibraryCall(currentContext, (LibCall)operand);
+                        }
+                        break;
+                    case Instruction.LIBCALL1:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            LibraryCall(currentContext, (LibCall)operand);
+                        }
+                        break;
+                    case Instruction.LIBCALL:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, (byte)Pop());
                         }
                         break;
                     case Instruction.SYSCALL0:
@@ -3853,7 +3844,7 @@ namespace HopperNET
 #endif
         private void LibraryCall(Context currentContext, LibCall libCall)
         {
-
+            /*
             switch (libCall)
             {
                 case LibCall.GraphicsWidthGet:
@@ -3989,6 +3980,7 @@ namespace HopperNET
                     }
                     //break;
             }
+            */
         }
 
         private void SystemCall(Context currentContext, SysCall sysCall, byte iOverload)

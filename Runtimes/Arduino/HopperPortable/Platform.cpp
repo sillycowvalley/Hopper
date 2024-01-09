@@ -142,7 +142,7 @@ void Platform_Release()
     LittleFS.end();
 #endif
 
-    HRGraphics_End();
+    //HRGraphics_End();
     
     free(dataMemoryBlock);
     dataMemoryBlock = nullptr;
@@ -643,31 +643,6 @@ UInt External_IntToUInt(Int i)
     return (UInt)i;
 }
 
-void HRWire_Begin()
-{
-    Wire.begin();
-}
-void HRWire_BeginTx(Byte address)
-{
-    Wire.beginTransmission(address);
-}
-void HRWire_EndTx()
-{
-    Wire.endTransmission();
-}
-void HRWire_Write(Byte data)
-{
-    Wire.write(data);
-}
-
-bool External_FunctionCall(UInt jumpTable, Byte opCode)
-{
-    UInt opOffset = (opCode << 2);
-    InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[jumpTable] + opOffset));
-    return instructionDelegate();
-}
-
-
 void HopperVM_InlinedExecuteWarp()
 {
     UInt isrCheck = 25;  // check for interrupt events every 25 instructions
@@ -722,3 +697,119 @@ void HopperVM_InlinedExecuteWarp()
         }
     } // loop
 }
+
+bool controller0Configured = false;
+bool controller1Configured = false;
+Byte sdaPin0 = 0;
+Byte sdaPin1 = 0;
+Byte sclPin0 = 0;
+Byte sclPin1 = 0;
+
+void HRWire_Configure(Byte controller, Byte sdaPin, Byte sclPin)
+{
+    switch (controller)
+    {
+        case 0:
+            controller0Configured = true;
+            sdaPin0 = sdaPin;
+            sclPin0 = sclPin;
+            break;  
+        case 1:
+            controller1Configured = true;
+            sdaPin1 = sdaPin;
+            sclPin1 = sclPin;
+            break;  
+    }
+}
+bool HRWire_Begin(Byte controller)
+{
+    bool success = false;
+    for (;;)
+    {
+        switch (controller)
+        {
+            case 0:
+                if (controller0Configured)
+                {
+                    if (!Wire.setSDA(sdaPin0))
+                    {
+                        break;
+                    }
+                    if (!Wire.setSCL(sclPin0))
+                    {
+                        break;
+                    }
+                }
+                Wire.begin();
+                success = true;
+                break;
+#ifdef RP2040
+            case 1:
+                if (controller1Configured)
+                {
+                    if (!Wire.setSDA(sdaPin1))
+                    {
+                        break;
+                    }
+                    if (!Wire.setSCL(sclPin1))
+                    {
+                        break;
+                    }
+                }
+                Wire1.begin();
+                success = true;
+                break;
+#endif
+        }
+        break;
+    }
+    return success;
+}
+void HRWire_BeginTx(Byte controller, Byte address)
+{
+#ifdef RP2040
+    (controller == 0) ? Wire.beginTransmission(address) : Wire1.beginTransmission(address);
+#else
+    Wire.beginTransmission(address);
+#endif
+}
+Byte HRWire_EndTx(Byte controller)
+{
+#ifdef RP2040
+    Byte result = ((controller == 0) ? Wire.endTransmission(): Wire1.endTransmission());
+#else
+    Byte result = Wire.endTransmission();
+#endif
+    
+    /*
+    0: success
+    1: busy timeout upon entering endTransmission()
+    2: START bit generation timeout
+    3: end of address transmission timeout
+    4: data byte transfer timeout
+    5: data byte transfer succeeded, busy timeout immediately after
+    6: timeout waiting for peripheral to clear stop bit
+    */
+    return result;
+}
+void HRWire_Write(Byte controller, Byte data)
+{
+#ifdef RP2040
+    (controller == 0) ? Wire.write(data): Wire1.write(data);
+#else
+    Wire.write(data);
+#endif
+}
+void HRWire_Write(Byte controller, UInt hrarray, UInt startIndex, UInt length)
+{
+     // TODO
+     (controller == 0) ? Serial.println("HRWire_WriteBuffer 0") : Serial.println("HRWire_WriteBuffer 1");
+}
+
+bool External_FunctionCall(UInt jumpTable, Byte opCode)
+{
+    UInt opOffset = (opCode << 2);
+    InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[jumpTable] + opOffset));
+    return instructionDelegate();
+}
+

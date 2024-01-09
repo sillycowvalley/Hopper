@@ -18,7 +18,6 @@ unit HopperVM
     uses "/Source/Runtime/Platform/List"
     uses "/Source/Runtime/Platform/Long"
     uses "/Source/Runtime/Platform/Pair"
-    uses "/Source/Runtime/Platform/Screen"
     uses "/Source/Runtime/Platform/String"
     uses "/Source/Runtime/Platform/UInt"
     uses "/Source/Runtime/Platform/Variant"
@@ -956,105 +955,6 @@ unit HopperVM
                 uint result = HRDirectory.GetTime(str);
                 Push(result, Type.Long);        
                 GC.Release(str);         
-            }
-            case SysCall.ScreenPrintLn:
-            {
-                HRScreen.PrintLn();
-            }
-            case SysCall.ScreenClear:
-            {
-                HRScreen.Clear();
-            }
-
-            case SysCall.ScreenColumnsGet:
-            {
-                Push(HRScreen.Columns, Type.Byte);
-            }
-            case SysCall.ScreenRowsGet:
-            {
-                Push(HRScreen.Rows, Type.Byte);
-            }
-            case SysCall.ScreenSuspend:
-            {
-                HRScreen.Suspend();
-            }
-            case SysCall.ScreenResume:
-            {
-                Type atype;
-                uint isInteractive = Pop(ref atype);
-                HRScreen.Resume(isInteractive != 0);
-            }
-            case SysCall.ScreenDrawChar:
-            {
-                Type atype;
-                uint bc = Pop(ref atype);
-                Type btype;
-                uint fc = Pop(ref btype);
-                Type ctype;
-                uint ch = Pop(ref ctype);
-                Type dtype;
-                uint y = Pop(ref atype);
-                Type etype;
-                uint x = Pop(ref btype);
-#ifdef CHECKED
-                AssertUInt(atype, bc);
-                AssertUInt(btype, fc);
-                AssertChar(ctype, ch);
-                AssertUInt(dtype, y);
-                AssertUInt(etype, x);
-#endif
-                HRScreen.DrawChar(x, y, char(ch), fc, bc); 
-            }
-            case SysCall.ScreenPrint:
-            {
-                switch (iOverload)
-                {
-                    case 0:
-                    {
-                        Type atype;
-                        uint bc = Pop(ref atype);
-                        Type btype;
-                        uint fc = Pop(ref btype);
-                        Type ctype;
-                        uint ch = Pop(ref ctype);
-#ifdef CHECKED
-                        AssertUInt(atype, bc);
-                        AssertUInt(btype, fc);
-                        AssertChar(ctype, ch);
-#endif
-                        HRScreen.Print(char(ch));
-                    }
-                    case 1:
-                    {
-                        Type atype;
-                        uint bc = Pop(ref atype);
-                        Type btype;
-                        uint fc = Pop(ref btype);
-                        Type stype;
-                        uint str = Pop(ref stype);
-#ifdef CHECKED
-                        AssertUInt(atype, bc);
-                        AssertUInt(btype, fc);
-                        if (stype != Type.String)
-                        {
-                            ErrorDump(31);
-                            Error = 0x0B; // system failure (internal error)
-                        }
-#endif
-                        uint length = HRString.GetLength(str);
-                        for (uint i=0; i < length; i++)
-                        {
-                            char ch = HRString.GetChar(str, i);
-                            HRScreen.Print(ch);
-                        }
-                        GC.Release(str);
-                    }
-                    default:
-                    {
-                        ErrorDump(6);
-                        Error = 0x0A; // iOverload
-                    }
-                }
             }
             case SysCall.SerialIsAvailableGet:
             {

@@ -25,7 +25,7 @@ optimize /debug/obj/term
 optimize /debug/obj/port
 optimize /debug/obj/hm
 optimize /debug/obj/debug
-//optimize /debug/obj/rsod
+optimize /debug/obj/rsod
 optimize /debug/obj/edit
 
 codegen /debug/obj/show

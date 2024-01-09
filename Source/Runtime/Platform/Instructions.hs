@@ -265,6 +265,10 @@ unit Instructions
         
         instructionDelegate = Instructions.SysCall;
         WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL), instructionDelegate);
+        instructionDelegate = Instructions.LibCall0;
+        WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL0), instructionDelegate);
+        instructionDelegate = Instructions.LibCall1;
+        WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL1), instructionDelegate);
         instructionDelegate = Instructions.LibCall;
         WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL), instructionDelegate);
         
@@ -1400,10 +1404,23 @@ unit Instructions
 #endif   
         return true;
     }
-    bool LibCall()
+    bool LibCall0()
     {
         byte iLibCall = ReadByteOperand();  
-        return ExecuteLibCall(iLibCall);
+        return ExecuteLibCall(iLibCall, 0);
+    }
+    bool LibCall1()
+    {
+        Type htype;
+        byte iLibCall = ReadByteOperand();  
+        return ExecuteLibCall(iLibCall, 1);
+    }
+    bool LibCall()
+    {
+        Type htype;
+        uint iOverload = Pop(ref htype);
+        byte iLibCall = ReadByteOperand();  
+        return ExecuteLibCall(iLibCall, iOverload);
     }
 
     bool SysCall0()
@@ -1974,7 +1991,7 @@ unit Instructions
         Type atype;
         uint err = Pop(ref atype);
 #ifdef CHECKED
-        AssertByte(err, size);
+        AssertByte(atype, err);
 #endif          
         ErrorDump(94);
         Error = byte(err);

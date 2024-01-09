@@ -5,6 +5,7 @@
 #include "Runtime.h"
 #include "Platform.h"
 
+/*
 void HRGraphics_ConfigureDisplay(Display display, UInt width, UInt height);
 void HRGraphics_ConfigureSPI(Byte chipSelectPin, Byte dataCommandPin);
 void HRGraphics_ConfigureSPIPort(Byte txPin, Byte clkPin);
@@ -14,18 +15,18 @@ void HRGraphics_ConfigureMatrix(Byte clockPin, Byte dataPin, Byte intensity);
 DisplayState HRGraphics_Begin();
 void HRGraphics_End();
 
-void HRScreen_Clear();
 void HRGraphics_Clear(UInt colour);
 UInt HRGraphics_Width_Get();
 UInt HRGraphics_Height_Get();
+void HRGraphics_DrawChar(UInt x, UInt y, Char chr, UInt foreColour, UInt backColour, Byte scale, Bool antiAliased);
+
+void HRScreen_Clear();
 Byte HRScreen_Columns_Get();
 Byte HRScreen_Rows_Get();
-void HRScreen_DrawChar(UInt col, UInt row, Char chr, UInt foreColour, UInt backColour);
-void HRGraphics_DrawChar(UInt x, UInt y, Char chr, UInt foreColour, UInt backColour, Byte scale, Bool antiAliased);
 
 void HRScreen_Print(Char ch);
 void HRScreen_PrintLn();
-
+void HRScreen_DrawChar(UInt col, UInt row, Char chr, UInt foreColour, UInt backColour);
 
 void HRScreen_Suspend();
 void HRScreen_Resume(Bool isInteractive);
@@ -43,6 +44,6 @@ void HRGraphics_FilledCircle(UInt x, UInt y, UInt r, UInt colour);
 void HRGraphics_InvertDisplay(Bool invertColours);
 void HRGraphics_FlipDisplay(Bool flipVertical);
 void HRGraphics_Show(Bool on);
-
+*/
 
 #endif // HOPPERSCREEN_H

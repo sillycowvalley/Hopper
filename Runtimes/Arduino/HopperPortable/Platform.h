@@ -107,9 +107,11 @@ UInt External_LongDiv(UInt n, UInt t);
 UInt External_LongMod(UInt n, UInt t);
 UInt External_LongMul(UInt n, UInt t);
 
-void HRWire_Begin();
-void HRWire_BeginTx(Byte address);
-void HRWire_EndTx();
-void HRWire_Write(Byte data);
+bool HRWire_Begin(Byte controller);
+void HRWire_BeginTx(Byte controller, Byte address);
+Byte HRWire_EndTx(Byte controller);
+void HRWire_Write(Byte controller, Byte data);
+void HRWire_Write(Byte controller, UInt hrarray, UInt startIndex, UInt length);
+void HRWire_Configure(Byte controller, Byte sdaPin, Byte sclPin);
 
 #endif // HOPPERPLATFORM_H
