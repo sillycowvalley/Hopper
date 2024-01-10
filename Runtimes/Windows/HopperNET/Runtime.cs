@@ -2639,7 +2639,7 @@ namespace HopperNET
                             byte[] bytes = BitConverter.GetBytes(stack[(bp + offset) >> 1].value);
                             short a = BitConverter.ToInt16(bytes, 0);
                             a++;
-                            stack[(bp + offset) >> 1].value = BitConverter.ToUInt32(BitConverter.GetBytes(a), 0);
+                            stack[(bp + offset) >> 1].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
                             stack[(bp + offset) >> 1].type = HopperType.tInt;
                         }
                         break;
@@ -2656,7 +2656,7 @@ namespace HopperNET
                             byte[] bytes = BitConverter.GetBytes(stack[(bp + offset) >> 1].value);
                             short a = BitConverter.ToInt16(bytes, 0);
                             a--;
-                            stack[(bp + offset) >> 1].value = BitConverter.ToUInt32(BitConverter.GetBytes(a), 0);
+                            stack[(bp + offset) >> 1].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
                             stack[(bp + offset) >> 1].type = HopperType.tInt;
                         }
                         break;
@@ -2668,7 +2668,7 @@ namespace HopperNET
                             byte[] bytes = BitConverter.GetBytes(stack[address].value);
                             short a = BitConverter.ToInt16(bytes, 0);
                             a++;
-                            stack[address].value = BitConverter.ToUInt32(BitConverter.GetBytes(a), 0);
+                            stack[address].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
                             stack[address].type = HopperType.tInt;
                         }
                         break;
@@ -2680,7 +2680,7 @@ namespace HopperNET
                             byte[] bytes = BitConverter.GetBytes(stack[address].value);
                             short a = BitConverter.ToInt16(bytes, 0);
                             a--;
-                            stack[address].value = BitConverter.ToUInt32(BitConverter.GetBytes(a), 0);
+                            stack[address].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
                             stack[address].type = HopperType.tInt;
                         }
                         break;

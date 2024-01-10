@@ -2736,7 +2736,7 @@ unit HopperVM
 #ifdef CHECKED        
         if (sp == stackSize)
         {
-            Error = 0x07; // stack overflow
+            ErrorDump(7); ErrorDump(1); Error = 0x07; // stack overflow
             return;
         }
 #endif
@@ -2762,7 +2762,7 @@ unit HopperVM
 #ifdef CHECKED
         if (sp == 0)
         {
-            Error = 0x07; // stack underflow
+            ErrorDump(2); Error = 0x07; // stack underflow
             return 0;
         }
 #endif
@@ -2776,7 +2776,7 @@ unit HopperVM
 #ifdef CHECKED
         if (sp == 0)
         {
-            Error = 0x07; // stack underflow
+            ErrorDump(3); Error = 0x07; // stack underflow
             return 0;
         }
 #endif
@@ -2801,7 +2801,7 @@ unit HopperVM
 #ifdef CHECKED        
         if (sp == stackSize)
         {
-            Error = 0x07; // stack overflow
+            ErrorDump(4); Error = 0x07; // stack overflow
             return;
         }
 #endif
@@ -2814,7 +2814,7 @@ unit HopperVM
 #ifdef CHECKED
         if (sp == 0)
         {
-            Error = 0x07; // stack underflow
+            ErrorDump(5); Error = 0x07; // stack underflow
             return 0;
         }
 #endif
@@ -2828,7 +2828,7 @@ unit HopperVM
 #ifdef CHECKED
         if (sp == 0)
         {
-            Error = 0x07; // stack underflow
+            ErrorDump(6); Error = 0x07; // stack underflow
             return 0;
         }
 #endif
@@ -2844,7 +2844,7 @@ unit HopperVM
 #ifdef CHECKED
         if (csp == callStackSize)
         {
-            Error = 0x06; // call stack overflow
+            ErrorDump(8); Error = 0x06; // call stack overflow
             return;
         }
 #endif
@@ -2856,7 +2856,7 @@ unit HopperVM
 #ifdef CHECKED
         if (csp == 0)
         {
-            Error = 0x06; // call stack underflow
+            ErrorDump(9); Error = 0x06; // call stack underflow
             return 0;
         }
 #endif
@@ -3036,8 +3036,7 @@ unit HopperVM
             if (!display)
             {
                 DumpHeap(true, accountedFor);
-                ErrorDump(91);
-                Error = 0x0B;
+                ErrorDump(91); Error = 0x0B;
             }
             else
             {

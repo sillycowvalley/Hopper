@@ -325,6 +325,10 @@ unit CodeStream
             AddInstruction(signed ? Instruction.ADDI : Instruction.ADD);
             AddInstruction(Instruction.POPLOCAL, uoffset);
         }
+        else if (signed)
+        {
+            AddInstruction(Instruction.INCLOCALIB, offset);
+        }
         else
         {
             AddInstruction(Instruction.INCLOCALB, offset);
@@ -339,6 +343,10 @@ unit CodeStream
             AddInstructionPUSHI(1);
             AddInstruction(signed ? Instruction.SUBI : Instruction.SUB);
             AddInstruction(Instruction.POPLOCAL, uoffset);
+        }
+        else if (signed)
+        {
+            AddInstruction(Instruction.DECLOCALIB, offset);
         }
         else
         {

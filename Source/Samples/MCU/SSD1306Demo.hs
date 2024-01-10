@@ -2,6 +2,7 @@ program SSD1306Demo
 {
     //#define TINY2040
     #define RP2040PICOW
+    //#define PEEPHOLEOPT
     
     //#define DISPLAYDIAGNOSTICS
     
@@ -34,11 +35,10 @@ program SSD1306Demo
     TestDrawLines() 
     {
         int i;
-        
-        Display.Suspend();
-        Screen.Clear();
         int ph = int(Display.PixelHeight);
         int pw = int(Display.PixelWidth);
+        Display.Suspend();
+        Screen.Clear();
         for(i=0; i<pw; i += 4) 
         {
             Line(0, 0, i, ph-1, Color.White);
@@ -48,7 +48,7 @@ program SSD1306Demo
             Line(0, 0, pw-1, i, Color.White);
         }
         Display.Resume();
-
+        
         Display.Suspend();
         Screen.Clear();
         for(i=0; i< pw; i += 4)
@@ -60,7 +60,7 @@ program SSD1306Demo
             Line(0, ph-1, pw-1, i, Color.Red);
         }
         Display.Resume();
-
+        
         Display.Suspend(); 
         Screen.Clear();
         for(i= pw-1; i>=0; i -= 4)
@@ -132,7 +132,7 @@ program SSD1306Demo
             WriteLn("TestFillRect: " + elapsed.ToString());
             Display.Resume();
             Delay(1000);
- 
+            
             start = Millis;
             TestDrawLines();
             elapsed = Millis - start;

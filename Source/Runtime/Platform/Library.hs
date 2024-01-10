@@ -97,7 +97,6 @@ unit Library
                         AssertByte(ctype, controller);
                         AssertUInt(stype, startIndex);
                         AssertUInt(ltype, length);
-                        AssertUInt(atype, hrarray);
                         if (atype != Type.Array)
                         {
                             ErrorDump(11);
@@ -105,6 +104,7 @@ unit Library
                         }
 #endif   
                         HRWire.Write(byte(controller), hrarray, startIndex, length);
+                        GC.Release(hrarray);
                     }
                 }
             }

@@ -643,14 +643,22 @@ UInt External_IntToUInt(Int i)
     return (UInt)i;
 }
 
+//#define HWM
+
 void HopperVM_InlinedExecuteWarp()
 {
+#ifdef HWM  
+    UInt hmw = 0;
+#endif
     UInt isrCheck = 25;  // check for interrupt events every 25 instructions
     UInt watchDog = 100; // check for <ctrl><C> every 2500 instructions
     for (;;) // loop
     {
 #ifdef CHECKED
         HopperVM_messagePC = HopperVM_pc;
+#endif
+#ifdef HWM
+        uint instructionPC = HopperVM_pc;
 #endif
         
         if (--isrCheck == 0)
@@ -677,10 +685,29 @@ void HopperVM_InlinedExecuteWarp()
         }
         
         InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[HopperVM_jumpTable + (codeMemoryBlock[HopperVM_pc++] << 2)]));
+#ifdef HWM
+        uint spb = HopperVM_sp;
+        bool goOn = instructionDelegate();
+        if (HopperVM_sp > hmw)
+        {
+            Serial.print(instructionPC, HEX); Serial.print(" "); Serial.print(HopperVM_bp, HEX); Serial.print(":"); Serial.print(spb, HEX); Serial.print("->"), Serial.print(HopperVM_sp, HEX); Serial.println();
+            hmw = HopperVM_sp;
+            if (hmw >= 512)
+            {
+                Minimal_error = 0x07; // stack overflow
+                break;
+            }
+        }
+        if (goOn)
+        {
+            continue;
+        }
+#else
         if (instructionDelegate())
         {
             continue;
         }
+#endif
         if (Minimal_error != 0)
         {
             break;

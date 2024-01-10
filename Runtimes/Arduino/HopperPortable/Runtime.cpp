@@ -9,6 +9,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -5680,6 +5681,7 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
             Type ctype = (Type)0;
             UInt controller = HopperVM_Pop_R(ctype);
             HRWire_Write(Byte(controller), hrarray, startIndex, length);
+            GC_Release(hrarray);
             break;
         }
         } // switch

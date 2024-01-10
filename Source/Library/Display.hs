@@ -153,7 +153,9 @@ unit Display
         Suspend();
         if (x0 == x1)      { VerticalLine(x0, y0, y1, colour);   }
         else if (y0 == y1) { HorizontalLine(x0, y0, x1, colour); }
-        else if (Math.Abs(y1-y0) < Math.Abs(x1-x0))
+        
+        if (Math.Abs(y1-y0) < Math.Abs(x1-x0))
+        //if (((y1-y0 < 0) ? -(y1-y0) : y1-y0) < ((x1-x0 < 0) ? -(x1-x0) : x1-x0))
         {
             if (x0 > x1)
             {

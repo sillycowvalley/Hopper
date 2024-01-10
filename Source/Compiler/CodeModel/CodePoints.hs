@@ -1735,23 +1735,29 @@ unit CodePoints
                 uint        operand1 = iOperands[iIndex-1];
                 if (opCode1 == Instruction.PUSHLOCALB00)
                 {
-                    // single local
-                    //Print(" RR:00:" + currentMethod.ToHexString(4) +" ");
-                    iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
-                    iLengths.SetItem (iIndex, 1);
-                    RemoveInstruction(iIndex-1);
-                    MergedRET0Exists = true;
-                    modified = true;
+                    if (!IsTargetOfJumps(iIndex))
+                    {
+                        // single local
+                        //Print(" RR:00:" + currentMethod.ToHexString(4) +" ");
+                        iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
+                        iLengths.SetItem (iIndex, 1);
+                        RemoveInstruction(iIndex-1);
+                        MergedRET0Exists = true;
+                        modified = true;
+                    }
                 }  
                 else if ((opCode1 == Instruction.PUSHLOCALB) && (operand1 == 0xFE))
                 {
                     // returning the only argument, no locals
-                    //Print(" RR:FE:" + currentMethod.ToHexString(4) +" ");
-                    iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
-                    iLengths.SetItem (iIndex, 1);
-                    RemoveInstruction(iIndex-1);
-                    MergedRET0Exists = true;
-                    modified = true;
+                    if (!IsTargetOfJumps(iIndex))
+                    {
+                        //Print(" RR:FE:" + currentMethod.ToHexString(4) +" ");
+                        iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
+                        iLengths.SetItem (iIndex, 1);
+                        RemoveInstruction(iIndex-1);
+                        MergedRET0Exists = true;
+                        modified = true;
+                    }
                 }
             }
             iIndex++;
@@ -2333,6 +2339,9 @@ unit CodePoints
                              (signed ? Instruction.INCGLOBALIB : Instruction.INCGLOBALB) : 
                              (signed ? Instruction.DECGLOBALIB : Instruction.DECGLOBALB);
                 }
+                
+                // IsTargetOfJumps(iIndex)) ??
+                
                 //Print(" " + Instructions.ToString(opCode) + ((delta == 2) ? "x2:" : ":") + operand.ToHexString(2));
                 if (delta == 1)
                 {

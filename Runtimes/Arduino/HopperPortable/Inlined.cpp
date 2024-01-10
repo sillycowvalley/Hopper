@@ -1,5 +1,20 @@
 #include "Inlined.h"
 
+#ifdef CHECKED
+void HopperVM_AssertBool(Type htype, UInt value)
+{
+    if (htype != Type::eBool)
+    {
+        HopperVM_AssertUInt(htype, value);
+    }
+    if (value > 1)
+    {
+        Runtime_ErrorDump(36);
+        Minimal_Error_Set(0x0B);
+    }
+}
+#endif
+
 Bool Instructions_InlinedAdd()
 {
     HopperVM_sp -= 2;
@@ -514,7 +529,7 @@ Bool Instructions_InlinedGE()
     UInt next = HopperVM_Pop_R(ntype);
     HopperVM_AssertUInt(ttype, top);
     HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(((next > top)) ? (0x01) : (0x00), Type::eBool);
+    HopperVM_Push(((next >= top)) ? (0x01) : (0x00), Type::eBool);
 #else
     HopperVM_sp -= 2;
     UInt sp2 = HopperVM_sp - 2;
@@ -533,7 +548,7 @@ Bool Instructions_InlinedLE()
     UInt next = HopperVM_Pop_R(ntype);
     HopperVM_AssertUInt(ttype, top);
     HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(((next < top)) ? (0x01) : (0x00), Type::eBool);
+    HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
 #else
     HopperVM_sp -= 2;
     UInt sp2 = HopperVM_sp - 2;
@@ -550,122 +565,7 @@ Bool Instructions_InlinedCast()
     return true;
 }
 
-Bool Instructions_InlinedBitOr()
-{
-#ifdef CHECKED
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next | top, Type::eUInt);
-#else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next | *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
-#endif
-    return true;
-}
 
-Bool Instructions_InlinedBitAnd()
-{
-    #ifdef CHECKED
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next & top, Type::eUInt);
-#else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next & *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
-#endif
-    return true;
-}
-
-Bool Instructions_InlinedBitShl()
-{
-#ifdef CHECKED
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next << top, Type::eUInt);
-#else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next << *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
-#endif
-    return true;
-}
-
-Bool Instructions_InlinedBitShr()
-{
-#ifdef CHECKED
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next >> top, Type::eUInt);
-#else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next >> *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
-#endif
-    return true;
-}
-
-Bool Instructions_InlinedBitNot()
-{
-#ifdef CHECKED  
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    HopperVM_AssertBool(ttype, top);
-    HopperVM_Push(~top, Type::eUInt);
-#else
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * top = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *top = ~(*top);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
-#endif
-    return true;
-}
-
-Bool Instructions_InlinedBitXor()
-{
-#ifdef CHECKED
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push((next | top) & (~(next & top)), Type::eUInt);
-#else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt *  top = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp];
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = ((*next | *top) & (~(*next & *top)));
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
-#endif
-    return true;
-}
 
 Bool Instructions_InlinedBoolOr()
 {
@@ -729,6 +629,13 @@ Bool Instructions_InlinedIncLocalB()
 {
     UInt address = UInt(HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++]));
     UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + address];
+#ifdef CHECKED
+    if (*value == 0xFFFF)
+    {
+        Minimal_Error_Set(0x0D); // numeric type out of range / overflow
+        return false;
+    }    
+#endif
     (*value)++;
     Byte   vtype = dataMemoryBlock[HopperVM_typeStack + address];
     if (vtype == 0x03) // Type::eByte
@@ -742,6 +649,13 @@ Bool Instructions_InlinedIncLocalB()
 Bool Instructions_InlinedDecLocalB()
 {
     UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++])];
+#ifdef CHECKED
+    if (*value == 0)
+    {
+        Minimal_Error_Set(0x0D); // numeric type out of range / overflow
+        return false;
+    }    
+#endif
     (*value)--;
     return true;
 }
@@ -751,6 +665,13 @@ Bool Instructions_InlinedIncGlobalB()
     UInt address = codeMemoryBlock[HopperVM_pc++];
     Type itype = (Type)0;
     UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + address];
+#ifdef CHECKED
+    if (*value == 0xFFFF)
+    {
+        Minimal_Error_Set(0x0D); // numeric type out of range / overflow
+        return false;
+    }    
+#endif
     (*value)++;
     Byte   vtype = dataMemoryBlock[HopperVM_typeStack + address];
     if (vtype == 0x03) // Type::eByte
@@ -764,6 +685,13 @@ Bool Instructions_InlinedIncGlobalB()
 Bool Instructions_InlinedDecGlobalB()
 {
     UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + codeMemoryBlock[HopperVM_pc++]];
+#ifdef CHECKED
+    if (*value == 0)
+    {
+        Minimal_Error_Set(0x0D); // numeric type out of range / overflow
+        return false;
+    }    
+#endif
     (*value)--;
     return true;
 }
@@ -772,6 +700,13 @@ Bool Instructions_InlinedIncLocalIB()
 {
     UInt address = UInt(HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++]));
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+#ifdef CHECKED
+    if (*ivalue == 32767)
+    {
+        Minimal_Error_Set(0x0D); // numeric type out of range / overflow
+        return false;
+    }    
+#endif
     (*ivalue)++;
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
     return true;
@@ -781,6 +716,13 @@ Bool Instructions_InlinedDecLocalIB()
 {
     UInt address = UInt(HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++]));
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+#ifdef CHECKED
+    if (*ivalue == -32768)
+    {
+        Minimal_Error_Set(0x0D); // numeric type out of range / overflow
+        return false;
+    }    
+#endif
     (*ivalue)--;
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
     return true;
@@ -790,6 +732,13 @@ Bool Instructions_InlinedIncGlobalIB()
 {
     UInt address = codeMemoryBlock[HopperVM_pc++];
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+#ifdef CHECKED
+    if (*ivalue == 32767)
+    {
+        Minimal_Error_Set(0x0D); // numeric type out of range / overflow
+        return false;
+    }    
+#endif
     (*ivalue)++;
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
     return true;
@@ -799,10 +748,132 @@ Bool Instructions_InlinedDecGlobalIB()
 {
     UInt address = codeMemoryBlock[HopperVM_pc++];
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+#ifdef CHECKED
+    if (*ivalue == -32768)
+    {
+        Minimal_Error_Set(0x0D); // numeric type out of range / overflow
+        return false;
+    }    
+#endif
     (*ivalue)--;
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
     return true;
 }
 
+Bool Instructions_InlinedBitOr()
+{
+#ifdef CHECKED
+    Type ttype = (Type)0;
+    UInt top = HopperVM_Pop_R(ttype);
+    Type ntype = (Type)0;
+    UInt next = HopperVM_Pop_R(ntype);
+    HopperVM_AssertUInt(ttype, top);
+    HopperVM_AssertUInt(ntype, next);
+    HopperVM_Push(next | top, Type::eUInt);
+#else    
+    HopperVM_sp -= 2;
+    UInt sp2 = HopperVM_sp - 2;
+    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
+    *next = *next | *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+#endif
+    return true;
+}
 
+Bool Instructions_InlinedBitAnd()
+{
+#ifdef CHECKED
+    Type ttype = (Type)0;
+    UInt top = HopperVM_Pop_R(ttype);
+    Type ntype = (Type)0;
+    UInt next = HopperVM_Pop_R(ntype);
+    HopperVM_AssertUInt(ttype, top);
+    HopperVM_AssertUInt(ntype, next);
+    HopperVM_Push(next & top, Type::eUInt);
+#else    
+    HopperVM_sp -= 2;
+    UInt sp2 = HopperVM_sp - 2;
+    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
+    *next = *next & *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+#endif
+    return true;
+}
+
+Bool Instructions_InlinedBitShl()
+{
+#ifdef CHECKED
+    Type ttype = (Type)0;
+    UInt top = HopperVM_Pop_R(ttype);
+    Type ntype = (Type)0;
+    UInt next = HopperVM_Pop_R(ntype);
+    HopperVM_AssertUInt(ttype, top);
+    HopperVM_AssertUInt(ntype, next);
+    HopperVM_Push(next << top, Type::eUInt);
+#else    
+    HopperVM_sp -= 2;
+    UInt sp2 = HopperVM_sp - 2;
+    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
+    *next = *next << *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+#endif
+    return true;
+}
+
+Bool Instructions_InlinedBitShr()
+{
+#ifdef CHECKED
+    Type ttype = (Type)0;
+    UInt top = HopperVM_Pop_R(ttype);
+    Type ntype = (Type)0;
+    UInt next = HopperVM_Pop_R(ntype);
+    HopperVM_AssertUInt(ttype, top);
+    HopperVM_AssertUInt(ntype, next);
+    HopperVM_Push(next >> top, Type::eUInt);
+#else    
+    HopperVM_sp -= 2;
+    UInt sp2 = HopperVM_sp - 2;
+    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
+    *next = *next >> *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+#endif
+    return true;
+}
+
+Bool Instructions_InlinedBitNot()
+{
+#ifdef CHECKED  
+    Type ttype = (Type)0;
+    UInt top = HopperVM_Pop_R(ttype);
+    HopperVM_AssertUInt(ttype, top);
+    HopperVM_Push(~top, Type::eUInt);
+#else
+    UInt sp2 = HopperVM_sp - 2;
+    UInt * top = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
+    *top = ~(*top);
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+#endif
+    return true;
+}
+
+Bool Instructions_InlinedBitXor()
+{
+#ifdef CHECKED
+    Type ttype = (Type)0;
+    UInt top = HopperVM_Pop_R(ttype);
+    Type ntype = (Type)0;
+    UInt next = HopperVM_Pop_R(ntype);
+    HopperVM_AssertUInt(ttype, top);
+    HopperVM_AssertUInt(ntype, next);
+    HopperVM_Push((next | top) & (~(next & top)), Type::eUInt);
+#else    
+    HopperVM_sp -= 2;
+    UInt sp2 = HopperVM_sp - 2;
+    UInt *  top = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp];
+    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
+    *next = ((*next | *top) & (~(*next & *top)));
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+#endif
+    return true;
+}
 

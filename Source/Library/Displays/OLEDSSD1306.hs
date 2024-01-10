@@ -283,6 +283,7 @@ unit DisplayDriver
             {
                 Wire.BeginTx(Display.I2CController, i2cAddress);
                 Wire.Write(Display.I2CController, 0x40);
+                //for (uint i=0; i < pw8; i++) { Wire.Write(Display.I2CController, monoFrameBuffer[address+i]); }
                 Wire.Write(Display.I2CController, monoFrameBuffer, address, pw8);
                 address += pw8;
                 result = Wire.EndTx(Display.I2CController);
@@ -344,7 +345,6 @@ unit DisplayDriver
     SetPixel(int x, int y, uint colour)
     {
         if ((x < 0) || (y < 0) || (x >= pixelWidth) || (y >= pixelHeight)) { return; }
-        
         uint ux = uint(x);
         uint uy = uint(y);
         uint offset = ((uy & 0xFFF8) * (Display.PixelWidth/8)) + ux;
