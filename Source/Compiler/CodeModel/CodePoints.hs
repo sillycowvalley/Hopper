@@ -1144,15 +1144,23 @@ unit CodePoints
                     iIndex++;
                 } // loop
                 
-                RemoveInstruction(0);
+                RemoveInstruction(0); // ENTER
                 modified = true;
                 
-                if ((hasRET0 == 1) && (retIndex == iCodes.Length) && (byteLength <= 4)) 
+                if ((hasRET0 == 1) && (retIndex == iCodes.Length)) 
                 {
-                    // only one RETxx that is the last instruction
-                    // 4 because it won't need the RETFAST when it is inlined
-                    inlineMethodCandidates[currentMethod] = byteLength-1;
+                    if (byteLength <= 4)
+                    {
+                        // only one RETxx that is the last instruction
+                        // 4 because it won't need the RETFAST when it is inlined
+                        inlineMethodCandidates[currentMethod] = byteLength-1;
+                    }
+                    //else if (byteLength <= 6)
+                    //{
+                    //    Print(" " + currentMethod.ToHexString(4) + ":" + byteLength.ToString() + " ");
+                    //}
                 }    
+                
             } // ENTER
         }
         return modified;
@@ -2112,7 +2120,7 @@ unit CodePoints
         } // loop
         return modified;
     }
-    bool OptimizeLongAddSub(uint methodIndex)
+    bool OptimizeLongAddSub()
     {
         bool modified;
         if (iCodes.Length < 3)
@@ -2159,5 +2167,168 @@ unit CodePoints
         } // loop
         return modified;
     }
-    
+    bool OptimizeINCDEC()
+    {
+        bool modified;
+        if (iCodes.Length < 4)
+        {
+            return false;
+        }
+        uint iIndex = 3;
+        uint hits = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Length)
+            {
+                break;
+            }
+            Instruction opCode3 = iCodes[iIndex-3];   
+            Instruction opCode2 = iCodes[iIndex-2];   
+            Instruction opCode1 = iCodes[iIndex-1];   
+            Instruction opCode0 = iCodes[iIndex]; 
+            
+            bool signed;
+            bool unsigned;
+            bool local;
+            bool global;
+            uint operand;
+            uint delta = 1;
+            if ((opCode2 == Instruction.PUSHI1) && ((opCode1 == Instruction.ADD) || (opCode1 == Instruction.SUB)))
+            {
+                unsigned = true;
+            }
+            else if ((opCode2 == Instruction.PUSHI1) && ((opCode1 == Instruction.ADDI) || (opCode1 == Instruction.SUBI)))
+            {
+                signed = true;
+            }
+            if (signed || unsigned)
+            {
+                if ((opCode3 == Instruction.PUSHGLOBALB) && (opCode0 == Instruction.POPGLOBALB))
+                {
+                    if (iOperands[iIndex-3] == iOperands[iIndex])
+                    {
+                        operand = iOperands[iIndex];
+                        global = true;
+                    }
+                }
+                else if ((opCode3 == Instruction.PUSHLOCALB) && (opCode0 == Instruction.POPLOCALB))
+                {
+                    if (iOperands[iIndex-3] == iOperands[iIndex])
+                    {
+                        operand = iOperands[iIndex];
+                        local = true;
+                    }
+                }
+                else if ((opCode3 == Instruction.PUSHLOCALB00) && (opCode0 == Instruction.POPLOCALB00))
+                {
+                    operand = 0;
+                    local = true;
+                }
+                else if ((opCode3 == Instruction.PUSHLOCALB02) && (opCode0 == Instruction.POPLOCALB02))
+                {
+                    operand = 2;
+                    local = true;
+                }
+            }
+            else
+            {
+                if (   ((opCode1 == Instruction.ADDB) || (opCode1 == Instruction.SUBB)) 
+                    && ((iOperands[iIndex-1] == 1) || (iOperands[iIndex-1] == 2)))
+                {
+                    if ((opCode2 == Instruction.PUSHGLOBALB) && (opCode0 == Instruction.POPGLOBALB))
+                    {
+                        if (iOperands[iIndex-2] == iOperands[iIndex])
+                        {
+                            operand = iOperands[iIndex];
+                            global = true;
+                            delta = iOperands[iIndex-1];
+                        }
+                    }
+                    else if ((opCode2 == Instruction.PUSHLOCALB) && (opCode0 == Instruction.POPLOCALB))
+                    {
+                        if (iOperands[iIndex-2] == iOperands[iIndex])
+                        {
+                            operand = iOperands[iIndex];
+                            local = true;
+                            delta = iOperands[iIndex-1];
+                        }
+                    }
+                    else if ((opCode2 == Instruction.PUSHLOCALB00) && (opCode0 == Instruction.POPLOCALB00))
+                    {
+                        operand = 0;
+                        local = true;
+                        delta = iOperands[iIndex-1];
+                    }
+                    else if ((opCode2 == Instruction.PUSHLOCALB02) && (opCode0 == Instruction.POPLOCALB02))
+                    {
+                        operand = 2;
+                        local = true;
+                        delta = iOperands[iIndex-1];
+                    }
+                }
+            }
+            if ((local || global) && (delta <= 2))
+            {
+                Instruction opCode = Instruction.NOP;
+                if (local)
+                {
+                    opCode = ((opCode1 == Instruction.ADD) || (opCode1 == Instruction.ADDI) || (opCode1 == Instruction.ADDB)) ? 
+                             (signed ? Instruction.INCLOCALIB : Instruction.INCLOCALB) : 
+                             (signed ? Instruction.DECLOCALIB : Instruction.DECLOCALB);
+                }
+                if (global)
+                {
+                    opCode = ((opCode1 == Instruction.ADD) || (opCode1 == Instruction.ADDI) || (opCode1 == Instruction.ADDB)) ? 
+                             (signed ? Instruction.INCGLOBALIB : Instruction.INCGLOBALB) : 
+                             (signed ? Instruction.DECGLOBALIB : Instruction.DECGLOBALB);
+                }
+                //Print(" " + Instructions.ToString(opCode) + ((delta == 2) ? "x2:" : ":") + operand.ToHexString(2));
+                if (delta == 1)
+                {
+                    iCodes.SetItem(iIndex, opCode);
+                    iOperands.SetItem(iIndex, operand);
+                    iLengths.SetItem(iIndex, 2);
+                    
+                    if ((opCode1 == Instruction.ADDB) || (opCode1 == Instruction.SUBB))
+                    {
+                        // PUSH   ADDB|SUBB   POP  -> INC | DEC
+                        // 3 instructions          -> 1 instruction = remove 2
+                        RemoveInstruction(iIndex-2);
+                        RemoveInstruction(iIndex-2);
+                        //Print("-2 ");
+                    }
+                    else
+                    {
+                        // PUSH   PUSHI1  ADD|ADDI|SUB|SUBI  POP  -> INC | DEC
+                        // 4 instructions                         -> 1 instruction = remove 3
+                        RemoveInstruction(iIndex-3);
+                        RemoveInstruction(iIndex-3);
+                        RemoveInstruction(iIndex-3);
+                        //Print("-3 ");
+                    }
+                    modified = true;
+                    continue;
+                }
+                else if (delta == 2) 
+                {
+                    iCodes.SetItem(iIndex, opCode);
+                    iOperands.SetItem(iIndex, operand);
+                    iLengths.SetItem(iIndex, 2);
+                    
+                    iCodes.SetItem(iIndex-1, opCode);
+                    iOperands.SetItem(iIndex-1, operand);
+                    iLengths.SetItem(iIndex-1, 2);
+                 
+                    // PUSH   ADDB|SUBB   POP  -> INC|INC DEC|DEC   
+                    // 3 instructions          -> 2 instructions = remove 1
+                    RemoveInstruction(iIndex-2);
+                    //Print("-1 ");
+                    modified = true;
+                    continue;
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
 }

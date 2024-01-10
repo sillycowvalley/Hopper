@@ -93,8 +93,6 @@ unit OpCodes
         POPGLOBALB  = 0x1F,
         PUSHGLOBALB = 0x20,        
         PUSHSTACKADDRB = 0x21,
-        INCLOCALB   = 0x22,
-        DECLOCALB   = 0x23,
         
         RETB        = 0x2A,
         RETRESB     = 0x2B,
@@ -107,7 +105,6 @@ unit OpCodes
         JIXB    = 0x68,            
         JIX     = 0x69,
         
-        INCLOCALBB = 0x3F,
         PUSHILE = 0x40,
         
         PUSHI0  = 0x44,
@@ -126,8 +123,16 @@ unit OpCodes
         
         PUSHGLOBALBB = 0x52,
         
+        INCLOCALB   = 0x22,
+        INCLOCALIB  = 0xA4,
+        DECLOCALB   = 0x23,
+        DECLOCALIB  = 0xA6,
         INCGLOBALB = 0x53,
+        INCGLOBALIB = 0xA5,
         DECGLOBALB = 0x54,
+        DECGLOBALIB = 0xA7,
+        INCLOCALBB = 0x3F,
+        INCLOCALIBB = 0xA3,
         
         PUSHILT = 0x55,
         PUSHLOCALBB     = 0x56,

@@ -1,5 +1,7 @@
 unit DisplayDriver
 {
+    #define DISPLAYDRIVER
+    
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
     
@@ -85,6 +87,24 @@ unit DisplayDriver
         pixelWidth = width;
         pixelHeight = height;
         resolutionSet = true;
+    }
+    
+    bool Visible
+    {
+        set
+        {
+            if (i2cConfigured)
+            {
+                Wire.BeginTx(Display.I2CController, i2cAddress);
+                Wire.Write(Display.I2CController, 0x00);
+                Wire.Write(Display.I2CController, value ? SSD1306DISPLAYON : SSD1306DISPLAYOFF);
+                byte result = Wire.EndTx(Display.I2CController);
+                if (result != 0)
+                {
+                    IO.WriteLn("Visible failed: " + result.ToString());
+                }     
+            }
+        }
     }
     bool Begin()
     {

@@ -18,8 +18,12 @@ unit Display
     
     bool Begin()
     {
-        
-        return DisplayDriver.Begin();
+        if (DisplayDriver.Begin())
+        {
+            DisplayDriver.Visible = true;
+            return true;
+        }
+        return false;
     }
     
     int suspended;
@@ -42,10 +46,6 @@ unit Display
     {
         suspended++;
     }
-    Clear()
-    {
-        Clear(Color.Black);
-    }
     Clear(uint colour)
     {
 #ifdef DISPLAYDIAGNOSTICS
@@ -58,6 +58,7 @@ unit Display
         IO.WriteLn(">");
 #endif                        
     }
+    bool Visible { set { DisplayDriver.Visible = value; } }
     
     Rectangle(int x, int y, uint w, uint h, uint colour)
     {

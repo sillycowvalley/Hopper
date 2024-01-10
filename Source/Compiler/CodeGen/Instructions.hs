@@ -163,6 +163,13 @@ unit Instructions
         BITSHR  = 0xA0,
         BITSHL  = 0xA2,
         
+        INCLOCALIBB = 0xA3,
+        INCLOCALIB  = 0xA4,
+        INCGLOBALIB = 0xA5,
+        DECLOCALIB  = 0xA6,
+        DECGLOBALIB = 0xA7,
+
+        
         UNDEFINED,
     }
     
@@ -207,7 +214,9 @@ unit Instructions
         switch (instruction)
         {
             case Instruction.INCLOCALB:
+            case Instruction.INCLOCALIB:
             case Instruction.DECLOCALB:
+            case Instruction.DECLOCALIB:
             case Instruction.POPLOCALB:
             case Instruction.POPRELB:
             case Instruction.POPCOPYLOCALB:
@@ -282,7 +291,9 @@ unit Instructions
             case Instruction.LIBCALL0:
             case Instruction.LIBCALL1:
             case Instruction.INCGLOBALB:
+            case Instruction.INCGLOBALIB:
             case Instruction.DECGLOBALB:
+            case Instruction.DECGLOBALIB:
             case Instruction.DUP:
             case Instruction.DECSP:
             case Instruction.DIE:
@@ -305,6 +316,7 @@ unit Instructions
             case Instruction.PUSHLOCALBB:
             case Instruction.PUSHGLOBAL:
             case Instruction.INCLOCALBB:
+            case Instruction.INCLOCALIBB:
             case Instruction.INCGLOBALBB:
             case Instruction.JIXB:
             case Instruction.JIX:
@@ -322,7 +334,9 @@ unit Instructions
         switch (instruction)
         {
             case Instruction.INCLOCALB:
+            case Instruction.INCLOCALIB:
             case Instruction.DECLOCALB:
+            case Instruction.DECLOCALIB:
             case Instruction.POPLOCALB:
             case Instruction.POPLOCAL:
             case Instruction.POPRELB:
@@ -394,9 +408,13 @@ unit Instructions
             case Instruction.JZB:
             case Instruction.JNZB:
             case Instruction.INCGLOBALB:
+            case Instruction.INCGLOBALIB:
             case Instruction.DECGLOBALB:
+            case Instruction.DECGLOBALIB:
             case Instruction.INCLOCALB:
+            case Instruction.INCLOCALIB:
             case Instruction.DECLOCALB:
+            case Instruction.DECLOCALIB:
             case Instruction.DUP:
             case Instruction.DECSP:
             case Instruction.DIE:
@@ -431,6 +449,7 @@ unit Instructions
             case Instruction.JZ:
             case Instruction.JNZ:
             case Instruction.INCLOCALBB:
+            case Instruction.INCLOCALIBB:
             case Instruction.INCGLOBALBB:
             case Instruction.JIXB:
             case Instruction.JIX:
@@ -605,17 +624,33 @@ unit Instructions
             {
                 result = "INCGLOBALB";
             }
+            case Instruction.INCGLOBALIB:
+            {
+                result = "INCGLOBALIB";
+            }
             case Instruction.DECGLOBALB:
             {
                 result = "DECGLOBALB";
+            }
+            case Instruction.DECGLOBALIB:
+            {
+                result = "DECGLOBALIB";
             }
             case Instruction.INCLOCALB:
             {
                 result = "INCLOCALB";
             }
+            case Instruction.INCLOCALIB:
+            {
+                result = "INCLOCALIB";
+            }
             case Instruction.INCLOCALBB:
             {
                 result = "INCLOCALBB";
+            }
+            case Instruction.INCLOCALIBB:
+            {
+                result = "INCLOCALIBB";
             }
             case Instruction.INCGLOBALBB:
             {
@@ -624,6 +659,10 @@ unit Instructions
             case Instruction.DECLOCALB:
             {
                 result = "DECLOCALB";
+            }
+            case Instruction.DECLOCALIB:
+            {
+                result = "DECLOCALIB";
             }
             
             case Instruction.POPGLOBALB:

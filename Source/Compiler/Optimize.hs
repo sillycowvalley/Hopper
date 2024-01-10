@@ -26,10 +26,13 @@ program Optimize
     <uint,bool> methodsCalled;
     
     bool     verbose;
+    bool     showSizes;
     bool     experimental;
-    <string> outputLines;
+    <string> outputLinesRemoved;
+    <string> outputLinesSizes;
     uint     totalBytesRemoved;
     uint     totalMethodsRemoved;
+    uint     totalMethodBytes;
     
     const uint progressSteps = 256;
     uint progressInstructions;
@@ -113,25 +116,46 @@ program Optimize
         return success;
     }
     
+    ReportMethodSizes()
+    {
+        outputLinesSizes.Clear();
+        totalMethodBytes = 0;
+        
+        foreach (var methodCall in methodsCalled)
+        {
+            uint methodIndex = methodCall.key;
+            bool isCalled = methodCall.value || 
+                            (methodIndex == 0); // "main" is an exception
+            <byte> code = Code.GetMethodCode(methodIndex);
+            uint sizeInBytes = code.Length;
+            string methodName = Code.GetMethodName(methodIndex);
+            string sizeString = sizeInBytes.ToString();
+            if (!isCalled)
+            {
+                continue;
+            }
+            outputLinesSizes.Append("  " + methodName.Pad(' ', 40) + sizeString.LeftPad(' ', 5));  
+            totalMethodBytes = totalMethodBytes +  sizeInBytes;
+        }
+    }
     ReportUnreachable()
     {
         foreach (var methodCall in methodsCalled)
         {
-            if (methodCall.value == false)
+            uint methodIndex = methodCall.key;
+            bool isCalled = methodCall.value || 
+                            (methodIndex == 0); // "main" is an exception
+            <byte> code = Code.GetMethodCode(methodIndex);
+            uint sizeInBytes = code.Length;
+            string methodName = Code.GetMethodName(methodIndex);
+            string sizeString = sizeInBytes.ToString();
+            if (isCalled)
             {
-                uint methodIndex = methodCall.key;
-                if (methodIndex == 0)
-                {
-                    continue; // "main" is an exception
-                }
-                <byte> code = Code.GetMethodCode(methodIndex);
-                uint sizeInBytes = code.Length;
-                string methodName = Code.GetMethodName(methodIndex);
-                string sizeString = sizeInBytes.ToString();
-                outputLines.Append("  " + methodName.Pad(' ', 40) + sizeString.LeftPad(' ', 5));  
-                totalBytesRemoved = totalBytesRemoved +  sizeInBytes;
-                totalMethodsRemoved++;
+                continue;
             }
+            outputLinesRemoved.Append("  " + methodName.Pad(' ', 40) + sizeString.LeftPad(' ', 5));  
+            totalBytesRemoved = totalBytesRemoved +  sizeInBytes;
+            totalMethodsRemoved++;
         }
     }
     
@@ -166,7 +190,6 @@ program Optimize
             SetDebugSymbols(ref newDebugSymbols);
             
         }
-        methodsCalled.Clear(); // just to be sure ..
         return removed;
     }
 
@@ -186,7 +209,15 @@ program Optimize
         }
         codeAfter = 0;
         
-        CodePoints.Reset(); // clear inline method candidates
+        // Inlining and inlineMethodCandidates:
+        //
+        // - CodePoints.Reset() clears the list of inline method candidates
+        // - CodePoints.OptimizeFrameRemoval() builds the new list of inline method candidates based on size after frame removal
+        // - at the end of each Optimize pass, if InlineMethodCandidatesExist, call InlineSmallMethods() which will ..
+        //   .. cause RemoveUnreachableMethods() to remove completely inlined methods on the next pass
+        CodePoints.Reset(); 
+        
+        
         
         uint methodIndex = 0; // "main"
         methodsCalled[methodIndex] = true; // "main"
@@ -208,6 +239,16 @@ program Optimize
             CodePoints.MarkReachableInstructions();
             if (!IsTinyHopper)
             {
+                if (!IsTinyHopper && CodePoints.OptimizeINCDEC())
+                {
+#ifdef DIAGNOSTICS
+                    if (logging)
+                    {
+                        CodePoints.DumpInstructions("OptimizeINCDEC");
+                    }
+#endif
+                    modified = true;
+                }
                 if (CodePoints.OptimizeFrameRemoval())
                 {
                     modified = true;
@@ -312,7 +353,7 @@ program Optimize
 #endif
                 modified = true;
             }
-            if (CodePoints.OptimizeLongAddSub(methodIndex))
+            if (CodePoints.OptimizeLongAddSub())
             {
 #ifdef DIAGNOSTICS
                 if (logging)
@@ -437,6 +478,11 @@ program Optimize
         {
             modified = true;
         }
+        if (showSizes)
+        {
+            ReportMethodSizes();
+        }
+        methodsCalled.Clear(); // just to be sure ..
         
         if (CodePoints.InlineCandidatesExist)
         {
@@ -455,6 +501,7 @@ program Optimize
            }
         }
         
+        
         return modified;
     }
     
@@ -464,6 +511,7 @@ program Optimize
         PrintLn("  OPTIMIZE <code file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
         PrintLn("    -v         : verbose output");
+        PrintLn("    -t         : method size after optimization");
         PrintLn("    -x         : experimental");
         
     }
@@ -485,6 +533,10 @@ program Optimize
                         case "-v":
                         {
                             verbose = true;
+                        }
+                        case "-t":
+                        {
+                            showSizes = true;
                         }
                         case "-x":
                         {
@@ -540,9 +592,9 @@ program Optimize
                 }
                 long codeBefore;
                 long codeAfter;
-                string optPath = codePath; //.Replace(extension, "opt.code");
-                
+                string optPath = codePath;
                 string symbolsPath = codePath.Replace(extension, ".json");
+                string verbosePath = codePath.Replace(extension, ".txt");
                 
                 if (File.Exists(symbolsPath))
                 {
@@ -574,19 +626,51 @@ program Optimize
                 if (!Parser.IsInteractive())
                 {
                     PrintLn();
-                    
-                    if (verbose)
+                    if (verbose || showSizes)
                     {
+                        file logFile = File.Create(verbosePath);
+                        bool addNewLine;
+                        if (outputLinesSizes.Length > 0)
+                        {
+                            string content = "Method sizes after optimization:";
+                            logFile.Append(content + char(0x0D));
+                            PrintLn(content);
+                            uint count;
+                            foreach (var str in outputLinesSizes)
+                            {
+                                logFile.Append(str + char(0x0D));
+                                PrintLn(str);
+                                count++;
+                            }
+                            string space;
+                            string sizeString = totalMethodBytes.ToString();
+                            content = space.Pad(' ', 42) + sizeString.LeftPad(' ', 5) +
+                                      " (" + count.ToString() + " methods)";
+                            logFile.Append(content + char(0x0D));
+                            PrintLn(content);
+                            addNewLine = true;
+                        }
                         if (totalMethodsRemoved > 0)
                         {
-                            PrintLn("Unreachable Code:");
-                            foreach (var str in outputLines)
+                            if (addNewLine)
                             {
+                                logFile.Append("" + char(0x0D));
+                                PrintLn();
+                            }
+                            string content = "Unreachable Code (includes inlined and removed):";
+                            logFile.Append(content + char(0x0D));
+                            PrintLn(content);
+                            foreach (var str in outputLinesRemoved)
+                            {
+                                logFile.Append(str + char(0x0D));
                                 PrintLn(str);
                             }
                             string space;
                             string sizeString = totalBytesRemoved.ToString();
-                            PrintLn(space.Pad(' ', 42) + sizeString.LeftPad(' ', 5) + " (" + totalMethodsRemoved.ToString() + " methods)");
+                            content = space.Pad(' ', 42) + sizeString.LeftPad(' ', 5) +
+                                      " (" + totalMethodsRemoved.ToString() + " methods)";
+                            logFile.Append(content + char(0x0D));
+                            PrintLn(content);
                         }
                         <string,variant> gValues;
                         foreach (var kv in symbols)
@@ -601,6 +685,7 @@ program Optimize
                                 }
                             }
                         } // kv
+                        logFile.Flush();
                     }
                     Print("Success, " + codeBefore.ToString() + "->" + codeAfter.ToString() + " bytes of code,", Color.ProgressText, Color.ProgressFace);
                     long elapsedTime = Millis - startTime;

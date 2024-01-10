@@ -8,11 +8,9 @@ program SSD1306Demo
     uses "/Source/Library/Displays/OLEDSSD1306"
     uses "/Source/Library/Fonts/Hitachi5x7"
     
-    uses "/Source/Library/Screen.hs"
-    
     TestDrawRect()
     {
-        Clear();
+        Screen.Clear();
         int ph = int(Display.PixelHeight);
         int pw = int(Display.PixelWidth);
         for(int i=0; i< ph / 2; i += 2)
@@ -23,7 +21,7 @@ program SSD1306Demo
 
     TestFillRect()
     {
-        Clear();
+        Screen.Clear();
         int ph = int(Display.PixelHeight);
         int pw = int(Display.PixelWidth);
         for(int i=0; i<ph / 2; i += 3)
@@ -36,7 +34,9 @@ program SSD1306Demo
     TestDrawLines() 
     {
         int i;
-        Clear();
+        
+        Display.Suspend();
+        Screen.Clear();
         int ph = int(Display.PixelHeight);
         int pw = int(Display.PixelWidth);
         for(i=0; i<pw; i += 4) 
@@ -47,9 +47,10 @@ program SSD1306Demo
         {
             Line(0, 0, pw-1, i, Color.White);
         }
+        Display.Resume();
 
-        Clear();
-
+        Display.Suspend();
+        Screen.Clear();
         for(i=0; i< pw; i += 4)
         {
             Line(0, ph-1, i, 0, Color.Red);
@@ -58,9 +59,10 @@ program SSD1306Demo
         {
             Line(0, ph-1, pw-1, i, Color.Red);
         }
- 
-        Clear();
+        Display.Resume();
 
+        Display.Suspend(); 
+        Screen.Clear();
         for(i= pw-1; i>=0; i -= 4)
         {
             Line(pw-1, ph-1, i, 0, Color.Green);
@@ -69,9 +71,10 @@ program SSD1306Demo
         {
             Line(pw-1, ph-1, 0, i, Color.Green);
         }
+        Display.Resume();
 
-        Clear();
-
+        Display.Suspend();
+        Screen.Clear();
         for(i=0; i< ph; i += 4)
         {
             Line(pw-1, 0, 0, i, Color.Blue);
@@ -80,6 +83,7 @@ program SSD1306Demo
         {
             Line(pw-1, 0, i, ph-1, Color.Blue);
         }
+        Display.Resume();
     }
     
     
@@ -102,33 +106,40 @@ program SSD1306Demo
         long start;
         long elapsed;
         
-        Display.Clear();
+        Screen.Clear();
         loop
         {
             start = Millis;
-            Display.Clear();
+            Display.Clear(Color.Black);
             elapsed = Millis - start;
+            Display.Suspend();
             WriteLn("Clear: " + elapsed.ToString());
-            Delay(300);
+            Display.Resume();
+            Delay(1000);
             
             start = Millis;
             TestDrawRect();
             elapsed = Millis - start;
+            Display.Suspend();
             WriteLn("TestDrawRect: " + elapsed.ToString());
-            Delay(300);
+            Display.Resume();
+            Delay(1000);
             
             start = Millis;
-            TestFillRect();        
+            TestFillRect();   
             elapsed = Millis - start;
+            Display.Suspend();
             WriteLn("TestFillRect: " + elapsed.ToString());
-            Delay(300);
+            Display.Resume();
+            Delay(1000);
  
-            continue;           
-            
             start = Millis;
             TestDrawLines();
             elapsed = Millis - start;
+            Display.Suspend();
             WriteLn("TestDrawLines: " + elapsed.ToString());
+            Display.Resume();
+            Delay(1000);
         }
     }
 }

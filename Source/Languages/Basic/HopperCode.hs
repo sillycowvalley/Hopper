@@ -245,7 +245,7 @@ unit HopperCode
             appendCode(Instruction.DUP, 0);     //  // DUP 0 implies duplicating [top]
             appendCode(Instruction.JNZB, 8);
             appendCode(Instruction.PUSHIB, 16); // Division by zero
-            appendCode(Instruction.CALLW, uint(Platform.ErrorPtr));   
+            appendCode(Instruction.CALL, uint(Platform.ErrorPtr));   
             appendCode(Instruction.EXIT);   
         }
     }
@@ -391,7 +391,7 @@ unit HopperCode
                 uint address;
                 if (basicInstruction == Basic.Gosub)
                 {
-                    // Push return address: gCodeSize+6 (gCodeSize after CALLW <addr>, JW <line> below)
+                    // Push return address: gCodeSize+6 (gCodeSize after CALL <addr>, JW <line> below)
                     address = gCodeSize+6;
                     address = address + 9; // plus myself
                     if (address < 256)
@@ -789,7 +789,7 @@ unit HopperCode
             } // switch
             string methodName;
 #ifndef TERSE
-            if ((Instruction.CALLIW == opCode) || (Instruction.CALLW == opCode))
+            if ((Instruction.CALLI == opCode) || (Instruction.CALL == opCode))
             {
                 if (methodKey == uint(Platform.IntToStringPtr))
                 {
@@ -856,7 +856,7 @@ unit HopperCode
                     methodName = "Unknown Platform Method";
                 }
                 methodName = "    // " + methodName;
-                if (Instruction.CALLW == opCode)
+                if (Instruction.CALL == opCode)
                 {
                     methodName = " " + methodName;
                 }

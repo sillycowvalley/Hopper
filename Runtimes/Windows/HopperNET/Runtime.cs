@@ -189,6 +189,12 @@ namespace HopperNET
         BITSHR  = 0xA0,
         BITSHL  = 0xA2,
 
+        INCLOCALIBB = 0xA3,
+        INCLOCALIB  = 0xA4,
+        INCGLOBALIB = 0xA5,
+        DECLOCALIB  = 0xA6,
+        DECGLOBALIB = 0xA7,
+
         UNDEFINED,
     };
 
@@ -2595,6 +2601,91 @@ namespace HopperNET
                         }
                         break;
 
+                    case Instruction.INCLOCALIBB:
+                        {
+                            operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
+                            pc += 2;
+
+                            short offset0 = (short)(operand & 0x00FF); // first offset
+                            short offset1 = (short)(operand >> 8);     // second offset
+                            if (offset0 > 127)
+                            {
+                                offset0 = (short)(offset0 - 256); // 255 -> -1
+                            }
+                            if (offset1 > 127)
+                            {
+                                offset1 = (short)(offset1 - 256); // 255 -> -1
+                            }
+                            byte[] bytes = BitConverter.GetBytes(stack[(bp + offset0) >> 1].value);
+                            short a = BitConverter.ToInt16(bytes, 0);
+                            bytes = BitConverter.GetBytes(stack[(bp + offset1) >> 1].value);
+                            short b = BitConverter.ToInt16(bytes, 0);
+                            a = (short)(a + b);
+                            stack[(bp + offset0) >> 1].value = BitConverter.ToUInt32(BitConverter.GetBytes(a), 0);
+                        }
+                        break;
+
+
+                    case Instruction.INCLOCALIB:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+
+                            short offset = (short)operand;
+                            if (offset > 127)
+                            {
+                                offset = (short)(offset - 256); // 255 -> -1
+                            }
+                            byte[] bytes = BitConverter.GetBytes(stack[(bp + offset) >> 1].value);
+                            short a = BitConverter.ToInt16(bytes, 0);
+                            a++;
+                            stack[(bp + offset) >> 1].value = BitConverter.ToUInt32(BitConverter.GetBytes(a), 0);
+                            stack[(bp + offset) >> 1].type = HopperType.tInt;
+                        }
+                        break;
+                    case Instruction.DECLOCALIB:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+
+                            short offset = (short)operand;
+                            if (offset > 127)
+                            {
+                                offset = (short)(offset - 256); // 255 -> -1
+                            }
+                            byte[] bytes = BitConverter.GetBytes(stack[(bp + offset) >> 1].value);
+                            short a = BitConverter.ToInt16(bytes, 0);
+                            a--;
+                            stack[(bp + offset) >> 1].value = BitConverter.ToUInt32(BitConverter.GetBytes(a), 0);
+                            stack[(bp + offset) >> 1].type = HopperType.tInt;
+                        }
+                        break;
+                    case Instruction.INCGLOBALIB:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            ushort address = (ushort)((operand + gp) >> 1);
+                            byte[] bytes = BitConverter.GetBytes(stack[address].value);
+                            short a = BitConverter.ToInt16(bytes, 0);
+                            a++;
+                            stack[address].value = BitConverter.ToUInt32(BitConverter.GetBytes(a), 0);
+                            stack[address].type = HopperType.tInt;
+                        }
+                        break;
+                    case Instruction.DECGLOBALIB:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            ushort address = (ushort)((operand + gp) >> 1);
+                            byte[] bytes = BitConverter.GetBytes(stack[address].value);
+                            short a = BitConverter.ToInt16(bytes, 0);
+                            a--;
+                            stack[address].value = BitConverter.ToUInt32(BitConverter.GetBytes(a), 0);
+                            stack[address].type = HopperType.tInt;
+                        }
+                        break;
+
+
                     case Instruction.PUSHI:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
@@ -2933,6 +3024,7 @@ namespace HopperNET
 #endif
                         }
                         break;
+                    
 
                     case Instruction.INCGLOBALB:
                         {

@@ -2750,6 +2750,12 @@ unit HopperVM
         WriteWord(valueStack + address, value);
         WriteWord(typeStack  + address, byte(htype));
     }
+    PutI(uint address, int ivalue)
+    {
+        uint value = External.IntToUInt(ivalue);
+        WriteWord(valueStack + address, value);
+        WriteWord(typeStack  + address, byte(Type.Int));
+    }
     
     int PopI(ref Type htype)
     {
@@ -2781,6 +2787,11 @@ unit HopperVM
     {
         uint value  = ReadWord(valueStack + address);
         htype  = Type(ReadWord(typeStack + address));
+        return External.UIntToInt(value);
+    }
+    int GetI(uint address)
+    {
+        uint value  = ReadWord(valueStack + address);
         return External.UIntToInt(value);
     }
     

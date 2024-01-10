@@ -91,10 +91,6 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBALB), instructionDelegate);
         instructionDelegate = Instructions.PushStackAddrB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHSTACKADDRB), instructionDelegate);
-        instructionDelegate = Instructions.IncLocalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALB), instructionDelegate);
-        instructionDelegate = Instructions.DecLocalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.DECLOCALB), instructionDelegate);
         instructionDelegate = Instructions.CallB;
         WriteToJumpTable(jumpTable, byte(OpCode.CALLB), instructionDelegate);
         instructionDelegate = Instructions.InlinedJZB;
@@ -103,8 +99,6 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.JNZB), instructionDelegate);
         instructionDelegate = Instructions.JB;
         WriteToJumpTable(jumpTable, byte(OpCode.JB), instructionDelegate);
-        instructionDelegate = Instructions.IncLocalBB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALBB), instructionDelegate);
         instructionDelegate = Instructions.Ret0;
         WriteToJumpTable(jumpTable, byte(OpCode.RET0), instructionDelegate);
         instructionDelegate = Instructions.InlinedPushI0;
@@ -129,14 +123,7 @@ unit Instructions
         instructionDelegate = Instructions.PushGlobalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBALBB), instructionDelegate);
      
-        instructionDelegate = Instructions.IncGlobalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALB), instructionDelegate);
-        instructionDelegate = Instructions.DecGlobalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.DECGLOBALB), instructionDelegate);
         
-        instructionDelegate = Instructions.IncGlobalBB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALBB), instructionDelegate);
-     
         instructionDelegate = Instructions.PushLocalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALBB), instructionDelegate);
         instructionDelegate = Instructions.PopCopyLocalB;
@@ -271,6 +258,31 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL1), instructionDelegate);
         instructionDelegate = Instructions.LibCall;
         WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL), instructionDelegate);
+        
+        instructionDelegate = Instructions.IncLocalBB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALBB), instructionDelegate);
+        instructionDelegate = Instructions.IncGlobalBB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALBB), instructionDelegate);
+        
+        instructionDelegate = Instructions.IncLocalB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALB), instructionDelegate);
+        instructionDelegate = Instructions.DecLocalB;
+        WriteToJumpTable(jumpTable, byte(OpCode.DECLOCALB), instructionDelegate);
+        instructionDelegate = Instructions.IncGlobalB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALB), instructionDelegate);
+        instructionDelegate = Instructions.DecGlobalB;
+        WriteToJumpTable(jumpTable, byte(OpCode.DECGLOBALB), instructionDelegate);
+        instructionDelegate = Instructions.IncGlobalBB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALBB), instructionDelegate);
+        
+        instructionDelegate = Instructions.IncLocalIB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALIB), instructionDelegate);
+        instructionDelegate = Instructions.DecLocalIB;
+        WriteToJumpTable(jumpTable, byte(OpCode.DECLOCALIB), instructionDelegate);
+        instructionDelegate = Instructions.IncGlobalIB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALIB), instructionDelegate);
+        instructionDelegate = Instructions.DecGlobalIB;
+        WriteToJumpTable(jumpTable, byte(OpCode.DECGLOBALIB), instructionDelegate);
         
     }
     
@@ -796,74 +808,7 @@ unit Instructions
         return true;
     }
     
-    bool IncLocalB()
-    {
-        int offset     = ReadByteOffsetOperand();
-        
-        // INCLOCALB is an optimization of "i = i + 1":
-        // If it were done using ADDI or ADD, then the result pushed on the stack
-        // would be tInt or tUInt, even if i was a tByte.
-        // POPLOCALB would then supply the type for the resulting expression.
-        //
-        // So, we need to choose between tUInt and tInt for the "pop" if it was tByte .. I choose tUInt
-        // (we need to avoid munting the type if it is currently a -ve tInt)
-        
-        Type itype;
-        uint address = uint(int(BP) + offset);
-        uint value = HopperVM.Get(address, ref itype);
-        if (itype == Type.Byte)
-        {
-            itype = Type.UInt;
-        }
-        Put(address, value+1, itype);
-        return true;
-    }
-    bool IncGlobalB()
-    {
-        uint address     = ReadByteOperand();
-        
-        // INCGLOBALB is an optimization of "i = i + 1":
-        // If it were done using ADDI or ADD, then the result pushed on the stack
-        // would be tInt or tUInt, even if i was a tByte.
-        // POPGLOBALB would then supply the type for the resulting expression.
-        //
-        // So, we need to choose between tUInt and tInt for the "pop" if it was tByte .. I choose tUInt
-        // (we need to avoid munting the type if it is currently a -ve tInt)
-        
-        Type itype;
-        uint value = HopperVM.Get(address, ref itype);
-        if (itype == Type.Byte)
-        {
-            itype = Type.UInt;
-        }
-        Put(address, value+1, itype);
-        return true;
-    }
-    bool IncGlobalBB()
-    {
-        uint address0     = ReadByteOperand();
-        uint address1     = ReadByteOperand();
-     
-        Type type0;
-        uint value = HopperVM.Get(address0, ref type0);
-        
-        Type type1;   
-        Put(address0, value + HopperVM.Get(address1, ref type1), type0);
-        return true;
-    }
-    bool DecGlobalB()
-    {
-        uint address     = ReadByteOperand();
-        
-        Type itype;
-        uint value = HopperVM.Get(address, ref itype);
-        if (itype == Type.Byte)
-        {
-            itype = Type.UInt;
-        }
-        Put(address, value-1, itype);
-        return true;
-    }
+    
     bool PopLocalB00()
     {
         if (CNP) 
@@ -1070,24 +1015,7 @@ unit Instructions
         }
         return true;
     }
-    bool DecLocalB()
-    {
-        int offset     = ReadByteOffsetOperand();
-        Type itype;
-        uint address = uint(int(BP) + offset);
-        uint value = HopperVM.Get(address, ref itype);
-        Put(address, value-1, itype);
-        return true;
-    }
-    bool IncLocalBB()
-    {
-        int offset0    = ReadByteOffsetOperand();
-        int offset1    = ReadByteOffsetOperand();
-        uint address0 = uint(int(ValueStack) + int(BP) + offset0);
-        uint address1 = uint(int(ValueStack) + int(BP) + offset1);
-        WriteWord(address0, ReadWord(address0) + ReadWord(address1));
-        return true;
-    }
+    
     bool JB()
     {
         PC = uint(ReadByteOffsetOperand() + int(PC-2));
@@ -2008,4 +1936,122 @@ unit Instructions
         Error = 0x0A; // not implemented
         return false;
     }
+    
+    bool IncLocalBB()
+    {
+        int offset0    = ReadByteOffsetOperand();
+        int offset1    = ReadByteOffsetOperand();
+        uint address0 = uint(int(ValueStack) + int(BP) + offset0);
+        uint address1 = uint(int(ValueStack) + int(BP) + offset1);
+        WriteWord(address0, ReadWord(address0) + ReadWord(address1));
+        return true;
+    }
+    bool IncGlobalBB()
+    {
+        uint address0     = ReadByteOperand();
+        uint address1     = ReadByteOperand();
+        Type type0;
+        uint value = HopperVM.Get(address0, ref type0);
+        Type type1;   
+        Put(address0, value + HopperVM.Get(address1, ref type1), type0);
+        return true;
+    }
+    
+    
+    bool IncLocalB()
+    {
+        int offset     = ReadByteOffsetOperand();
+        
+        // INCLOCALB is an optimization of "i = i + 1":
+        // If it were done using ADDI or ADD, then the result pushed on the stack
+        // would be tInt or tUInt, even if i was a tByte.
+        // POPLOCALB would then supply the type for the resulting expression.
+        //
+        // So, we need to choose between tUInt and tInt for the "pop" if it was tByte .. I choose tUInt
+        // (we need to avoid munting the type if it is currently a -ve tInt)
+        
+        Type itype;
+        uint address = uint(int(BP) + offset);
+        uint value = HopperVM.Get(address, ref itype);
+        if (itype == Type.Byte)
+        {
+            itype = Type.UInt;
+        }
+        Put(address, value+1, itype);
+        return true;
+    }
+    bool IncLocalIB()
+    {
+        int offset     = ReadByteOffsetOperand();
+        uint address = uint(int(BP) + offset);
+        int value = HopperVM.GetI(address);
+        PutI(address, value+1);
+        return true;
+    }
+    bool DecLocalB()
+    {
+        int offset     = ReadByteOffsetOperand();
+        Type itype;
+        uint address = uint(int(BP) + offset);
+        uint value = HopperVM.Get(address, ref itype);
+        Put(address, value-1, itype);
+        return true;
+    }
+    bool DecLocalIB()
+    {
+        int offset     = ReadByteOffsetOperand();
+        uint address = uint(int(BP) + offset);
+        int value = HopperVM.GetI(address);
+        PutI(address, value-1);
+        return true;
+    }
+    bool IncGlobalB()
+    {
+        uint address     = ReadByteOperand();
+        // INCGLOBALB is an optimization of "i = i + 1":
+        // If it were done using ADDI or ADD, then the result pushed on the stack
+        // would be tInt or tUInt, even if i was a tByte.
+        // POPGLOBALB would then supply the type for the resulting expression.
+        //
+        // So, we need to choose between tUInt and tInt for the "pop" if it was tByte .. I choose tUInt
+        // (we need to avoid munting the type if it is currently a -ve tInt)
+        Type itype;
+        uint value = HopperVM.Get(address, ref itype);
+        if (itype == Type.Byte)
+        {
+            itype = Type.UInt;
+        }
+        Put(address, value+1, itype);
+        return true;
+    }
+    bool IncGlobalIB()
+    {
+        uint address     = ReadByteOperand();
+        int value = HopperVM.GetI(address);
+        PutI(address, value+1);
+        return true;
+    }
+    bool DecGlobalB()
+    {
+        uint address     = ReadByteOperand();
+        Type itype;
+        uint value = HopperVM.Get(address, ref itype);
+        if (itype == Type.Byte)
+        {
+            itype = Type.UInt;
+        }
+        Put(address, value-1, itype);
+        return true;
+    }
+    bool DecGlobalIB()
+    {
+        uint address     = ReadByteOperand();
+        int value = HopperVM.GetI(address);
+        PutI(address, value-1);
+        return true;
+    }
+    
+    
+    
+    
 }

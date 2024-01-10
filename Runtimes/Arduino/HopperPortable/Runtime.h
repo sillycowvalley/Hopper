@@ -84,8 +84,6 @@ enum OpCode {
     ePOPGLOBALB = 0x001F,
     ePUSHGLOBALB = 0x0020,
     ePUSHSTACKADDRB = 0x0021,
-    eINCLOCALB = 0x0022,
-    eDECLOCALB = 0x0023,
     eRETB = 0x002A,
     eRETRESB = 0x002B,
     eCALLB = 0x002C,
@@ -95,7 +93,6 @@ enum OpCode {
     eJB = 0x0030,
     eJIXB = 0x0068,
     eJIX = 0x0069,
-    eINCLOCALBB = 0x003F,
     ePUSHILE = 0x0040,
     ePUSHI0 = 0x0044,
     ePUSHI1 = 0x0045,
@@ -108,8 +105,16 @@ enum OpCode {
     eSYSCALL0 = 0x0024,
     eSYSCALL1 = 0x0025,
     ePUSHGLOBALBB = 0x0052,
+    eINCLOCALB = 0x0022,
+    eINCLOCALIB = 0x00A4,
+    eDECLOCALB = 0x0023,
+    eDECLOCALIB = 0x00A6,
     eINCGLOBALB = 0x0053,
+    eINCGLOBALIB = 0x00A5,
     eDECGLOBALB = 0x0054,
+    eDECGLOBALIB = 0x00A7,
+    eINCLOCALBB = 0x003F,
+    eINCLOCALIBB = 0x00A3,
     ePUSHILT = 0x0055,
     ePUSHLOCALBB = 0x0056,
     ePOPCOPYLOCALB = 0x0057,
@@ -584,21 +589,15 @@ Bool Instructions_PushRelB();
 Bool Instructions_PopGlobalB();
 Bool Instructions_PushGlobalB();
 Bool Instructions_PushStackAddrB();
-Bool Instructions_IncLocalB();
-Bool Instructions_DecLocalB();
 Bool Instructions_CallB();
 Bool Instructions_JNZB();
 Bool Instructions_JB();
-Bool Instructions_IncLocalBB();
 Bool Instructions_Ret0();
 Bool Instructions_PopLocalB00();
 Bool Instructions_PopLocalB02();
 Bool Instructions_SysCall0();
 Bool Instructions_SysCall1();
 Bool Instructions_PushGlobalBB();
-Bool Instructions_IncGlobalB();
-Bool Instructions_DecGlobalB();
-Bool Instructions_IncGlobalBB();
 Bool Instructions_PushLocalBB();
 Bool Instructions_PopCopyLocalB();
 Bool Instructions_PopCopyRelB();
@@ -643,6 +642,16 @@ Bool Instructions_SysCall();
 Bool Instructions_LibCall0();
 Bool Instructions_LibCall1();
 Bool Instructions_LibCall();
+Bool Instructions_IncLocalBB();
+Bool Instructions_IncGlobalBB();
+Bool Instructions_IncLocalB();
+Bool Instructions_DecLocalB();
+Bool Instructions_IncGlobalB();
+Bool Instructions_DecGlobalB();
+Bool Instructions_IncLocalIB();
+Bool Instructions_DecLocalIB();
+Bool Instructions_IncGlobalIB();
+Bool Instructions_DecGlobalIB();
 Bool Instructions_PopCopyLocal();
 Bool Instructions_PopCopyRel();
 Bool Instructions_PopCopyGlobal();
@@ -686,6 +695,8 @@ Int HopperVM_PopI_R(Type & htype);
 Int HopperVM_ReadWordOffsetOperand();
 Bool HopperVM_ExitInline();
 void HopperVM_PushI(Int ivalue);
+Int HopperVM_GetI(UInt address);
+void HopperVM_PutI(UInt address, Int ivalue);
 Bool HopperVM_RunInline();
 void GC_AddReference(UInt address);
 UInt GC_Clone(UInt original);
@@ -800,6 +811,7 @@ UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
 
 
 #endif // HOPPERRUNTIME_H

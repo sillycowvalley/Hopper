@@ -7,7 +7,7 @@ program TiggerBASIC
     #define DYNAMICSTACK // <uint> vs [uint] for GOSUB call stack (use dynamic/list if you don't need extreme GOSUB call depth)
     
     // Development only:
-    //#define DEBUG        // verbose listings showing the IL code, internal system checks
+    #define DEBUG        // verbose listings showing the IL code, internal system checks
     
     #define MCU            // running on a microcontroller (CALLIW vs CALLW for example)
     #define SERIALCONSOLE  // no Keyboard
@@ -17,13 +17,11 @@ program TiggerBASIC
 #ifdef MCU    
     #define TINY2040
     uses "/Source/Library/MCU"
+    uses "/Source/Library/Screen"
 #else
     uses "/Source/System/Diagnostics"
-#endif
-
     uses "/Source/System/Screen"
-    
-    uses "/Source/Library/Graphics"
+#endif
     
     uses "/Source/System/IO"         // write either to Screen or Screen and Serial, read from Keyboard or Keyboard and Serial
     
