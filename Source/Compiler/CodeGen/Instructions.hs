@@ -169,7 +169,7 @@ unit Instructions
         DECLOCALIB  = 0xA6,
         DECGLOBALIB = 0xA7,
 
-        
+        MERGEDRET0  = 0xFF, // placeholder for 'optimize'
         UNDEFINED,
     }
     
@@ -178,6 +178,7 @@ unit Instructions
         switch(instruction)
         {
             case Instruction.RET0:
+            case Instruction.MERGEDRET0:
             case Instruction.RETFAST:
             case Instruction.RETB:
             case Instruction.RETRESB:
@@ -241,6 +242,7 @@ unit Instructions
             }
             
             case Instruction.RET0:
+            case Instruction.MERGEDRET0:
             case Instruction.RETFAST:
             {
                 isRET = true;
@@ -514,6 +516,10 @@ unit Instructions
             case Instruction.RET0:
             {
                 result = "RET0";
+            }
+            case Instruction.MERGEDRET0:
+            {
+                result = "MERGEDRET0";
             }
             case Instruction.RETFAST:
             {

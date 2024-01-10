@@ -7,9 +7,9 @@ program TiggerBASIC
     #define DYNAMICSTACK // <uint> vs [uint] for GOSUB call stack (use dynamic/list if you don't need extreme GOSUB call depth)
     
     // Development only:
-    #define DEBUG        // verbose listings showing the IL code, internal system checks
+    //#define DEBUG        // verbose listings showing the IL code, internal system checks
     
-    #define MCU            // running on a microcontroller (CALLIW vs CALLW for example)
+    #define MCU            // running on a microcontroller (CALLI vs CALL for example)
     #define SERIALCONSOLE  // no Keyboard
     //#define USELCD
     

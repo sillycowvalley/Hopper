@@ -88,6 +88,7 @@ unit ModelUtilities
             case Instruction.RETB:
             case Instruction.RET:
             case Instruction.RET0:
+            case Instruction.MERGEDRET0:
             case Instruction.RETRES:
             case Instruction.RETRESB:
             case Instruction.DIE:

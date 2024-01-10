@@ -725,7 +725,84 @@ Bool Instructions_InlinedBoolNot()
     return true;
 }
 
+Bool Instructions_InlinedIncLocalB()
+{
+    UInt address = UInt(HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++]));
+    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + address];
+    (*value)++;
+    Byte   vtype = dataMemoryBlock[HopperVM_typeStack + address];
+    if (vtype == 0x03) // Type::eByte
+    {
+        vtype = 0x04; // Type::eUInt;
+    }
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = vtype; 
+    return true;
+}
 
+Bool Instructions_InlinedDecLocalB()
+{
+    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++])];
+    (*value)--;
+    return true;
+}
+
+Bool Instructions_InlinedIncGlobalB()
+{
+    UInt address = codeMemoryBlock[HopperVM_pc++];
+    Type itype = (Type)0;
+    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + address];
+    (*value)++;
+    Byte   vtype = dataMemoryBlock[HopperVM_typeStack + address];
+    if (vtype == 0x03) // Type::eByte
+    {
+        vtype = 0x04; // Type::eUInt;
+    }
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = vtype; 
+    return true;
+}
+
+Bool Instructions_InlinedDecGlobalB()
+{
+    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + codeMemoryBlock[HopperVM_pc++]];
+    (*value)--;
+    return true;
+}
+
+Bool Instructions_InlinedIncLocalIB()
+{
+    UInt address = UInt(HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++]));
+    Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+    (*ivalue)++;
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
+    return true;
+}
+
+Bool Instructions_InlinedDecLocalIB()
+{
+    UInt address = UInt(HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++]));
+    Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+    (*ivalue)--;
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
+    return true;
+}
+
+Bool Instructions_InlinedIncGlobalIB()
+{
+    UInt address = codeMemoryBlock[HopperVM_pc++];
+    Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+    (*ivalue)++;
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
+    return true;
+}
+
+Bool Instructions_InlinedDecGlobalIB()
+{
+    UInt address = codeMemoryBlock[HopperVM_pc++];
+    Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+    (*ivalue)--;
+    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
+    return true;
+}
 
 
 

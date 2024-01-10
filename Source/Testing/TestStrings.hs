@@ -9,7 +9,6 @@ program TestStrings
     
     uses "/Source/System/IO"
     uses "/Source/System/Diagnostics"
-    uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
     uses "/Source/Compiler/Tokens/Token"
 
@@ -272,7 +271,7 @@ program TestStrings
         if (String.Compare("bbb", "aaa") != 1)
         {
             int result = String.Compare("bbb", "aaa");
-            PrintLn(result.ToString());
+            WriteLn(result.ToString());
             PrintFailed("'string': Compare failed 7");
         }
         
@@ -453,12 +452,10 @@ program TestStrings
         {
             PrintFailed("'string': IndexOf failed 7");
         }
-        Print("a");
         if (insertString.IndexOf('a', 1, ref index))
         {
             PrintFailed("'string': IndexOf failed 8");
         }
-        Print("b");
         if (!insertString.IndexOf('c', 2, ref index))
         {
             PrintFailed("'string': IndexOf failed 9");
@@ -824,8 +821,6 @@ program TestStrings
     }
     
     {
-        EchoToLCD = true;
-        //Screen.Clear();
         
         TestStringSystem();
         

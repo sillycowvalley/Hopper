@@ -1165,6 +1165,34 @@ unit CodePoints
         }
         return modified;
     }
+    bool ReplaceMergedRET0(ref <byte> rawCode)
+    {
+        bool replaced;
+        uint iCodesLength = iCodes.Length;
+        if (iCodesLength < 2)
+        {
+            return false;
+        }
+        bool modified = false;
+        uint iIndex = 0;
+        loop
+        {
+            if (iIndex >= iCodesLength)
+            {
+                break;
+            }
+            Instruction opCode = iCodes[iIndex];
+            if (opCode == Instruction.MERGEDRET0)
+            {
+                uint instructionAddress = GetInstructionAddress(iIndex);
+                rawCode.SetItem(instructionAddress, byte(Instruction.RET0));
+                //Print("Replaced: " + currentMethod.ToHexString(4) + ":" + instructionAddress.ToString() + " ");
+                replaced = true;
+            } 
+            iIndex++;
+        }   
+        return replaced;
+    }
     bool InlineSmallMethods(ref <byte> rawCode)
     {
         uint iCodesLength = iCodes.Length;
@@ -1655,6 +1683,7 @@ unit CodePoints
                         {    
                             // OperandWidth = 0:
                             //     Instruction.RET0
+                            //     Instruction.MERGEDRET0
                             // OperandWidth = 1:
                             //     Instruction.DIE
                             //     Instruction.RETB
@@ -1692,16 +1721,38 @@ unit CodePoints
             uint        operand0 = iOperands[iIndex];
             if ((opCode0 == Instruction.RETRESB) && (operand0 == 2)) // RETRESB 0x02
             {
+                // When we merge the PUSH and the RETRESB 0x02 into a single RET0,
+                // we need to preserve the fact that this is not a normal RET0:
+                // - it is RET0 on the assumption that the return value is already
+                //   on the top of the stack.
+                // The danger of using RET0 is that it may get merged with other instructions
+                // (like DECSP for example : DECSP 0x02 + RET0 -> RETB 0x02) which would screw
+                // up our assumption about what was pushed to the top of the stack.
+                // MERGEDRET0 is a placeholder for RET0 that is a reminder not to touch it with
+                // later optimizations. It is replaced with RET0 at the end of optimization.
+                
                 Instruction opCode1  = iCodes   [iIndex-1];
                 uint        operand1 = iOperands[iIndex-1];
                 if (opCode1 == Instruction.PUSHLOCALB00)
                 {
                     // single local
-                    iCodes.SetItem   (iIndex, Instruction.RET0);
+                    //Print(" RR:00:" + currentMethod.ToHexString(4) +" ");
+                    iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
                     iLengths.SetItem (iIndex, 1);
                     RemoveInstruction(iIndex-1);
+                    MergedRET0Exists = true;
                     modified = true;
-                }    
+                }  
+                else if ((opCode1 == Instruction.PUSHLOCALB) && (operand1 == 0xFE))
+                {
+                    // returning the only argument, no locals
+                    //Print(" RR:FE:" + currentMethod.ToHexString(4) +" ");
+                    iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
+                    iLengths.SetItem (iIndex, 1);
+                    RemoveInstruction(iIndex-1);
+                    MergedRET0Exists = true;
+                    modified = true;
+                }
             }
             iIndex++;
         } // loop

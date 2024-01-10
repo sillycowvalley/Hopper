@@ -8,6 +8,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -2304,23 +2305,21 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCLOCALBB), instructionDelegate);
     instructionDelegate = &Instructions_IncGlobalBB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCGLOBALBB), instructionDelegate);
-    instructionDelegate = &Instructions_IncLocalB;
+    instructionDelegate = &Instructions_InlinedIncLocalB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCLOCALB), instructionDelegate);
-    instructionDelegate = &Instructions_DecLocalB;
+    instructionDelegate = &Instructions_InlinedDecLocalB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eDECLOCALB), instructionDelegate);
-    instructionDelegate = &Instructions_IncGlobalB;
+    instructionDelegate = &Instructions_InlinedIncGlobalB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCGLOBALB), instructionDelegate);
-    instructionDelegate = &Instructions_DecGlobalB;
+    instructionDelegate = &Instructions_InlinedDecGlobalB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eDECGLOBALB), instructionDelegate);
-    instructionDelegate = &Instructions_IncGlobalBB;
-    External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCGLOBALBB), instructionDelegate);
-    instructionDelegate = &Instructions_IncLocalIB;
+    instructionDelegate = &Instructions_InlinedIncLocalIB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCLOCALIB), instructionDelegate);
-    instructionDelegate = &Instructions_DecLocalIB;
+    instructionDelegate = &Instructions_InlinedDecLocalIB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eDECLOCALIB), instructionDelegate);
-    instructionDelegate = &Instructions_IncGlobalIB;
+    instructionDelegate = &Instructions_InlinedIncGlobalIB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCGLOBALIB), instructionDelegate);
-    instructionDelegate = &Instructions_DecGlobalIB;
+    instructionDelegate = &Instructions_InlinedDecGlobalIB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eDECGLOBALIB), instructionDelegate);
 }
 
@@ -3190,90 +3189,6 @@ Bool Instructions_IncGlobalBB()
     UInt value = HopperVM_Get_R(address0, type0);
     Type type1 = (Type)0;
     HopperVM_Put(address0, value + HopperVM_Get_R(address1, type1), type0);
-    return true;
-}
-
-Bool Instructions_IncLocalB()
-{
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    Type itype = (Type)0;
-    UInt address = UInt(Int(HopperVM_BP_Get()) + offset);
-    UInt value = HopperVM_Get_R(address, itype);
-    if (itype == Type::eByte)
-    {
-        itype = Type::eUInt;
-    }
-    HopperVM_Put(address, value + 0x01, itype);
-    return true;
-}
-
-Bool Instructions_DecLocalB()
-{
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    Type itype = (Type)0;
-    UInt address = UInt(Int(HopperVM_BP_Get()) + offset);
-    UInt value = HopperVM_Get_R(address, itype);
-    HopperVM_Put(address, value - 0x01, itype);
-    return true;
-}
-
-Bool Instructions_IncGlobalB()
-{
-    UInt address = HopperVM_ReadByteOperand();
-    Type itype = (Type)0;
-    UInt value = HopperVM_Get_R(address, itype);
-    if (itype == Type::eByte)
-    {
-        itype = Type::eUInt;
-    }
-    HopperVM_Put(address, value + 0x01, itype);
-    return true;
-}
-
-Bool Instructions_DecGlobalB()
-{
-    UInt address = HopperVM_ReadByteOperand();
-    Type itype = (Type)0;
-    UInt value = HopperVM_Get_R(address, itype);
-    if (itype == Type::eByte)
-    {
-        itype = Type::eUInt;
-    }
-    HopperVM_Put(address, value - 0x01, itype);
-    return true;
-}
-
-Bool Instructions_IncLocalIB()
-{
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    UInt address = UInt(Int(HopperVM_BP_Get()) + offset);
-    Int value = HopperVM_GetI(address);
-    HopperVM_PutI(address, value + 0x01);
-    return true;
-}
-
-Bool Instructions_DecLocalIB()
-{
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    UInt address = UInt(Int(HopperVM_BP_Get()) + offset);
-    Int value = HopperVM_GetI(address);
-    HopperVM_PutI(address, value - 0x01);
-    return true;
-}
-
-Bool Instructions_IncGlobalIB()
-{
-    UInt address = HopperVM_ReadByteOperand();
-    Int value = HopperVM_GetI(address);
-    HopperVM_PutI(address, value + 0x01);
-    return true;
-}
-
-Bool Instructions_DecGlobalIB()
-{
-    UInt address = HopperVM_ReadByteOperand();
-    Int value = HopperVM_GetI(address);
-    HopperVM_PutI(address, value - 0x01);
     return true;
 }
 
@@ -5597,19 +5512,6 @@ void HopperVM_PushI(Int ivalue)
     Memory_WriteWord(HopperVM_valueStack + HopperVM_sp, value);
     Memory_WriteWord(HopperVM_typeStack + HopperVM_sp, Byte(Type::eInt));
     HopperVM_sp = HopperVM_sp + 0x02;
-}
-
-Int HopperVM_GetI(UInt address)
-{
-    UInt value = Memory_ReadWord(HopperVM_valueStack + address);
-    return External_UIntToInt(value);
-}
-
-void HopperVM_PutI(UInt address, Int ivalue)
-{
-    UInt value = External_IntToUInt(ivalue);
-    Memory_WriteWord(HopperVM_valueStack + address, value);
-    Memory_WriteWord(HopperVM_typeStack + address, Byte(Type::eInt));
 }
 
 Bool HopperVM_RunInline()

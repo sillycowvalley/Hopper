@@ -264,24 +264,22 @@ unit Instructions
         instructionDelegate = Instructions.IncGlobalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALBB), instructionDelegate);
         
-        instructionDelegate = Instructions.IncLocalB;
+        instructionDelegate = Instructions.InlinedIncLocalB;
         WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALB), instructionDelegate);
-        instructionDelegate = Instructions.DecLocalB;
+        instructionDelegate = Instructions.InlinedDecLocalB;
         WriteToJumpTable(jumpTable, byte(OpCode.DECLOCALB), instructionDelegate);
-        instructionDelegate = Instructions.IncGlobalB;
+        instructionDelegate = Instructions.InlinedIncGlobalB;
         WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALB), instructionDelegate);
-        instructionDelegate = Instructions.DecGlobalB;
+        instructionDelegate = Instructions.InlinedDecGlobalB;
         WriteToJumpTable(jumpTable, byte(OpCode.DECGLOBALB), instructionDelegate);
-        instructionDelegate = Instructions.IncGlobalBB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALBB), instructionDelegate);
         
-        instructionDelegate = Instructions.IncLocalIB;
+        instructionDelegate = Instructions.InlinedIncLocalIB;
         WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALIB), instructionDelegate);
-        instructionDelegate = Instructions.DecLocalIB;
+        instructionDelegate = Instructions.InlinedDecLocalIB;
         WriteToJumpTable(jumpTable, byte(OpCode.DECLOCALIB), instructionDelegate);
-        instructionDelegate = Instructions.IncGlobalIB;
+        instructionDelegate = Instructions.InlinedIncGlobalIB;
         WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALIB), instructionDelegate);
-        instructionDelegate = Instructions.DecGlobalIB;
+        instructionDelegate = Instructions.InlinedDecGlobalIB;
         WriteToJumpTable(jumpTable, byte(OpCode.DECGLOBALIB), instructionDelegate);
         
     }
@@ -1958,7 +1956,7 @@ unit Instructions
     }
     
     
-    bool IncLocalB()
+    bool InlinedIncLocalB()
     {
         int offset     = ReadByteOffsetOperand();
         
@@ -1980,7 +1978,7 @@ unit Instructions
         Put(address, value+1, itype);
         return true;
     }
-    bool IncLocalIB()
+    bool InlinedIncLocalIB()
     {
         int offset     = ReadByteOffsetOperand();
         uint address = uint(int(BP) + offset);
@@ -1988,7 +1986,7 @@ unit Instructions
         PutI(address, value+1);
         return true;
     }
-    bool DecLocalB()
+    bool InlinedDecLocalB()
     {
         int offset     = ReadByteOffsetOperand();
         Type itype;
@@ -1997,7 +1995,7 @@ unit Instructions
         Put(address, value-1, itype);
         return true;
     }
-    bool DecLocalIB()
+    bool InlinedDecLocalIB()
     {
         int offset     = ReadByteOffsetOperand();
         uint address = uint(int(BP) + offset);
@@ -2005,7 +2003,7 @@ unit Instructions
         PutI(address, value-1);
         return true;
     }
-    bool IncGlobalB()
+    bool InlinedIncGlobalB()
     {
         uint address     = ReadByteOperand();
         // INCGLOBALB is an optimization of "i = i + 1":
@@ -2024,14 +2022,14 @@ unit Instructions
         Put(address, value+1, itype);
         return true;
     }
-    bool IncGlobalIB()
+    bool InlinedIncGlobalIB()
     {
         uint address     = ReadByteOperand();
         int value = HopperVM.GetI(address);
         PutI(address, value+1);
         return true;
     }
-    bool DecGlobalB()
+    bool InlinedDecGlobalB()
     {
         uint address     = ReadByteOperand();
         Type itype;
@@ -2043,7 +2041,7 @@ unit Instructions
         Put(address, value-1, itype);
         return true;
     }
-    bool DecGlobalIB()
+    bool InlinedDecGlobalIB()
     {
         uint address     = ReadByteOperand();
         int value = HopperVM.GetI(address);

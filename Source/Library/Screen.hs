@@ -147,7 +147,7 @@ unit Screen
 #endif
         foreach (var c in s)
         {
-            Print(c, foreColour, backColour)
+            Print(c, foreColour, backColour);
         }
 #ifdef DISPLAYDRIVER
         Display.Resume();

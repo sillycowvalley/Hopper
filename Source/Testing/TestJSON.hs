@@ -15,7 +15,7 @@ program TestJSON
         WriteLn("  " + message);
         Diagnostics.Die(0x0B); // system failure / internal error
 #else
-        PrintLn("  " + message, MatrixRed, 0);
+        WriteLn("  " + message);
 #endif         
     }
     TestManual()

@@ -51,8 +51,12 @@ program Optimize
         get { return target6502; }
     }
     bool isTinyHopper;
+    bool mergedRET0Exists;
     bool IsTinyHopper { get { return isTinyHopper; }}
     bool IsExperimental { get { return experimental; }}
+    
+    bool MergedRET0Exists { get { return mergedRET0Exists; } set { mergedRET0Exists = value; }}
+    
     CheckTarget()
     {
         foreach (var kv in symbols)
@@ -615,6 +619,19 @@ program Optimize
                         break;
                     }
                     pass++;
+                }
+                if (MergedRET0Exists)
+                {
+                    <uint> indices = Code.GetMethodIndices(); // reload: some methods may be gone
+                    foreach (var methodIndex in indices)
+                    {
+                        uint size = CodePoints.Load(methodIndex, "replacing MERGEDRET0");
+                        <byte> rawCode = Code.GetMethodCode(methodIndex);
+                        if (ReplaceMergedRET0(ref rawCode))
+                        {
+                            Code.SetMethodCode(methodIndex, rawCode);
+                        }
+                   }
                 }
                 
                 File.Delete(optPath);

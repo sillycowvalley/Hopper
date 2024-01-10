@@ -644,14 +644,6 @@ Bool Instructions_LibCall1();
 Bool Instructions_LibCall();
 Bool Instructions_IncLocalBB();
 Bool Instructions_IncGlobalBB();
-Bool Instructions_IncLocalB();
-Bool Instructions_DecLocalB();
-Bool Instructions_IncGlobalB();
-Bool Instructions_DecGlobalB();
-Bool Instructions_IncLocalIB();
-Bool Instructions_DecLocalIB();
-Bool Instructions_IncGlobalIB();
-Bool Instructions_DecGlobalIB();
 Bool Instructions_PopCopyLocal();
 Bool Instructions_PopCopyRel();
 Bool Instructions_PopCopyGlobal();
@@ -695,8 +687,6 @@ Int HopperVM_PopI_R(Type & htype);
 Int HopperVM_ReadWordOffsetOperand();
 Bool HopperVM_ExitInline();
 void HopperVM_PushI(Int ivalue);
-Int HopperVM_GetI(UInt address);
-void HopperVM_PutI(UInt address, Int ivalue);
 Bool HopperVM_RunInline();
 void GC_AddReference(UInt address);
 UInt GC_Clone(UInt original);
@@ -811,7 +801,6 @@ UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
-
 
 
 #endif // HOPPERRUNTIME_H

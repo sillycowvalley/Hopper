@@ -74,4 +74,13 @@ Bool Instructions_InlinedBitAnd();
 Bool Instructions_InlinedBitOr();
 Bool Instructions_InlinedCast();
 
+Bool Instructions_InlinedIncLocalB();
+Bool Instructions_InlinedDecLocalB();
+Bool Instructions_InlinedIncGlobalB();
+Bool Instructions_InlinedDecGlobalB();
+Bool Instructions_InlinedIncLocalIB();
+Bool Instructions_InlinedDecLocalIB();
+Bool Instructions_InlinedIncGlobalIB();
+Bool Instructions_InlinedDecGlobalIB();
+
 #endif
