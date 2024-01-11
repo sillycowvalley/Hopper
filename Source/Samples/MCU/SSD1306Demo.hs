@@ -2,7 +2,6 @@ program SSD1306Demo
 {
     //#define TINY2040
     #define RP2040PICOW
-    //#define PEEPHOLEOPT
     
     //#define DISPLAYDIAGNOSTICS
     
@@ -105,10 +104,15 @@ program SSD1306Demo
         
         long start;
         long elapsed;
+        long laps;
         
         Screen.Clear();
         loop
         {
+            Display.Suspend();
+            WriteLn("Laps: " + laps.ToString());
+            Display.Resume();
+            laps++;
             start = Millis;
             Display.Clear(Color.Black);
             elapsed = Millis - start;

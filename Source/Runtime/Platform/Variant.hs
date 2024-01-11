@@ -57,6 +57,11 @@ unit HRVariant
         WriteWord(address+ivValue, value);    
         return address;    
     }
+    Type GetValueType(uint this)
+    {
+        return Type(ReadByte(this+ivType));
+    }
+    
     
     uint GetValue(uint this, ref Type vtype)
     {

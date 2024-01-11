@@ -1,6 +1,7 @@
 program Runtime
 {
 //#define CHECKED     // mainly stack checks, range checks and division by zero
+//#define MEMORYLEAKS
 
 #define RUNTIME       // workaround special clipboard buffer for testing on Windows (that works without String)
 #define SERIALCONSOLE // Source/System/IO uses serial only (for MCU's etc)

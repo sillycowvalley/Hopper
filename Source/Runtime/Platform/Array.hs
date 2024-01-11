@@ -83,6 +83,10 @@ unit HRArray
         }
         return this;
     }
+    Type GetValueType(uint this)
+    {
+        return Type(ReadByte(this+aiType));
+    }
     Dump(uint address, uint indent)
     {
         for (uint i = 0; i < indent; i++)

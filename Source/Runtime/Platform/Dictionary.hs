@@ -75,6 +75,15 @@ unit HRDictionary
         return address;
     }
     
+    Type GetKeyType(uint this)
+    {
+        return Type(ReadByte(this+idKType));
+    }
+    Type GetValueType(uint this)
+    {
+        return Type(ReadByte(this+idVType));
+    }
+    
     uint GetCount(uint this)
     {
         return ReadWord(this+idCount);
@@ -673,7 +682,6 @@ unit HRDictionary
             WriteWord(pEntry+ieValue, value);
         }
     }
-    
     
     uint Get(uint this, uint key, ref Type vtype)
     {

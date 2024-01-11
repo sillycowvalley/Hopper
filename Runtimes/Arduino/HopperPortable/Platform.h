@@ -15,6 +15,7 @@ void Machine_Initialize();
 Bool Machine_GetExited();
 void Machine_SetExited(Bool value);
 
+
 // lastError codes:
 //   0x00 - ok
 //   0x01 - list index out of range

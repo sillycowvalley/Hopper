@@ -1984,6 +1984,126 @@ unit HopperVM
                 }
                 Push(byte(ttype), Type.Type);
             }
+            case SysCall.TypesVerifyValueTypes:
+            {
+                Type ttype;
+                Type memberType = Type(Pop(ref ttype));
+                uint this = Pop(ref ttype);
+                bool success = true;
+                switch (ttype)
+                {
+                    case Type.List:
+                    {
+                        // verify that all members of the list are of type valueType
+                        uint length = HRList.GetLength(this);
+                        for (uint i = 0; i < length; i++)
+                        {
+                            Type itype;
+                            uint item = HRList.GetItem(this, i, ref itype);
+                            if (IsReferenceType(itype))
+                            {
+                                GC.Release(item);
+                            }
+                            if (itype != memberType)
+                            {
+                                success = false;
+                                break;
+                            }
+                        }
+                    }
+                    case Type.Dictionary:
+                    {
+                        // verify that all members of the dictionary are of type valueType
+                        uint iterator;
+                        uint hrpair;
+                        while(HRDictionary.Next(this, ref iterator, ref hrpair))
+                        {
+                            Type vtype = HRPair.GetValueType(hrpair);
+                            GC.Release(hrpair);
+                            if (vtype != memberType)
+                            {
+                                success = false;
+                                break;
+                            }
+                        }
+                    }
+                    default:
+                    {
+                        ErrorDump(12);
+                        Error = 0x0B;
+                    }
+                }
+                Push(success ? 1 : 0, Type.Bool);
+                GC.Release(this);
+            }
+            
+            
+            case SysCall.TypesKeyTypeOf:
+            {
+                Type vtype;
+                uint this = Pop(ref vtype);
+                switch (vtype)
+                {
+                    case Type.Dictionary:
+                    {
+                        Push(uint(HRDictionary.GetKeyType(this)), Type.Type);
+                    }
+                    case Type.Pair:
+                    {
+                        Push(uint(HRPair.GetKeyType(this)), Type.Type);
+                    }
+                    default:
+                    {
+                        ErrorDump(11);
+                        Error = 0x0B; // system failure (internal error)
+                    }
+                } // switch
+                if (IsReferenceType(vtype))
+                {
+                    GC.Release(this);
+                }
+            }
+            case SysCall.TypesValueTypeOf:
+            {
+                Type vtype;
+                uint this = Pop(ref vtype);
+                switch (vtype)
+                {
+                    case Type.Dictionary:
+                    {
+                        Push(uint(HRDictionary.GetValueType(this)), Type.Type);
+                    }
+                    case Type.Pair:
+                    {
+                        Push(uint(HRPair.GetValueType(this)), Type.Type);
+                    }
+                    case Type.List:
+                    {
+                        Push(uint(HRList.GetValueType(this)), Type.Type);
+                    }
+                    case Type.Array:
+                    {
+                        Push(uint(HRArray.GetValueType(this)), Type.Type);
+                    }
+                    default:
+                    {
+                        if (!IsReferenceType(vtype))
+                        {
+                            // box variant
+                            Push(uint(HRVariant.GetValueType(this)), Type.Type);
+                        }
+                        else
+                        {
+                            ErrorDump(10);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+                    }
+                } // switch
+                if (IsReferenceType(vtype))
+                {
+                    GC.Release(this);
+                }
+            }
             
             case SysCall.DictionaryNew:
             {   
@@ -2306,49 +2426,49 @@ unit HopperVM
             case SysCall.LongToBytes:
             {
                 Type htype;
-                uint l = Pop(ref htype);
+                uint this = Pop(ref htype);
 #ifdef CHECKED
                 AssertLong(htype);
 #endif
-                uint lst = HRLong.ToBytes(l);
+                uint lst = HRLong.ToBytes(this);
                 Push(lst, Type.List);  
-                GC.Release(l);
+                GC.Release(this);
             }
             
             case SysCall.FloatToLong:
             {
                 Type htype;
-                uint f = Pop(ref htype);
+                uint this = Pop(ref htype);
 #ifdef CHECKED
                 AssertFloat(htype);
 #endif
-                uint lng = External.FloatToLong(f);
+                uint lng = External.FloatToLong(this);
                 Push(lng, Type.Long);
-                GC.Release(f);
+                GC.Release(this);
             }
             case SysCall.FloatToUInt:
             {
                 Type htype;
-                uint f = Pop(ref htype);
+                uint this = Pop(ref htype);
 #ifdef CHECKED
                 AssertFloat(htype);
 #endif
-                uint ui = External.FloatToUInt(f);
+                uint ui = External.FloatToUInt(this);
                 Push(ui, Type.UInt);
-                GC.Release(f);
+                GC.Release(this);
             }
             
             case SysCall.LongGetByte:
             {
                 uint index = Pop();
                 Type htype;
-                uint l = Pop(ref htype);
+                uint this = Pop(ref htype);
 #ifdef CHECKED
                 AssertLong(htype);
 #endif
-                byte b = HRLong.GetByte(l, index);
+                byte b = HRLong.GetByte(this, index);
                 Push(b, Type.Byte);  
-                GC.Release(l);              
+                GC.Release(this);              
             }
             case SysCall.LongFromBytes:
             {
@@ -2380,43 +2500,47 @@ unit HopperVM
             case SysCall.FloatToBytes:
             {
                 Type htype;
-                uint l = Pop(ref htype);
+                uint this = Pop(ref htype);
 #ifdef CHECKED
                 AssertFloat(htype);
 #endif
-                uint lst = HRFloat.ToBytes(l);
-                Push(lst, Type.List);                
+                uint lst = HRFloat.ToBytes(this);
+                Push(lst, Type.List); 
+                GC.Release(this);
             }
             case SysCall.FloatToString:
             {
                 Type htype;
-                uint l = Pop(ref htype);
+                uint this = Pop(ref htype);
 #ifdef CHECKED
                 AssertFloat(htype);
 #endif
-                uint str = External.FloatToString(l);
-                Push(str, Type.String);                
+                uint str = External.FloatToString(this);
+                Push(str, Type.String);
+                GC.Release(this);
             }
             case SysCall.LongToString:
             {
                 Type htype;
-                uint l = Pop(ref htype);
+                uint this = Pop(ref htype);
 #ifdef CHECKED
                 AssertLong(htype);
 #endif
-                uint str = External.LongToString(l);
-                Push(str, Type.String);                
+                uint str = External.LongToString(this);
+                Push(str, Type.String); 
+                GC.Release(this);
             }
             case SysCall.FloatGetByte:
             {
                 uint index = Pop();
                 Type htype;
-                uint f = Pop(ref htype);
+                uint this = Pop(ref htype);
 #ifdef CHECKED
                 AssertFloat(htype);
 #endif
-                byte b = HRFloat.GetByte(f, index);
-                Push(b, Type.Byte);                
+                byte b = HRFloat.GetByte(this, index);
+                Push(b, Type.Byte); 
+                GC.Release(this);               
             }
             case SysCall.FloatFromBytes:
             {

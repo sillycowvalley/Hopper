@@ -18,6 +18,19 @@ unit Memory
     uint freeList;
     const byte mcbSize = 6;
     
+#ifdef MEMORYLEAKS
+    uint lwm;
+    TestMemory(uint instance)
+    {
+        uint available = Available();
+        if (available < lwm)
+        {
+            Write('M');WriteHex(PC);Write(':');WriteHex(available);Write(' ');Write('(');WriteUInt(instance);Write(')');WriteLn();
+            lwm = available;
+        }
+    }
+#endif       
+    
     uint FreeList  { get { return freeList; } }
     uint HeapStart { get { return heapStart; } }
     uint HeapSize  { get { return heapSize; } }
@@ -36,6 +49,9 @@ unit Memory
         WriteWord(freeList, heapSize);   // all memory is in this single free list record
         WriteWord(freeList+2, 0);        // next = null
         WriteWord(freeList+4, 0);        // prev = null
+#ifdef MEMORYLEAKS
+        lwm = Available();
+#endif
     }
     
     uint Allocate(uint size)

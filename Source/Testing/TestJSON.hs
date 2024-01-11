@@ -46,14 +46,17 @@ program TestJSON
                 PrintFailed("Serialize failed");    
                 break;
             }
+            
             file jf = File.Create(jsonPath);
             jf.Append(bjson);
             jf.Flush();
+            
             string ajson;
             if (!File.TryReadAllText(jsonPath, ref ajson))
             {
                 PrintFailed("Read failed");    
             }
+            
             if (bjson != ajson)
             {
                 PrintFailed("File roundtrip failed");
@@ -65,6 +68,7 @@ program TestJSON
                 PrintFailed("Deserialize failed");    
                 break;
             }
+            
             uint success = 0;
             foreach (var kv in returnDict)
             {
@@ -215,7 +219,9 @@ program TestJSON
     
     {
         TestManual();
-        TestFile();
+#ifndef SERIALCONSOLE        
+        TestFile(); // need to upload the test file to MCU ..
+#endif
         TestTime();
         TestSunset();
         

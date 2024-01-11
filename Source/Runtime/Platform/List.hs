@@ -40,6 +40,10 @@ unit HRList
         WriteWord(address+lsRecent+2, 0);         // iRecent
         return address;
     }
+    Type GetValueType(uint this)
+    {
+        return Type(ReadByte(this+lsType));
+    }
     
     uint Clone(uint original)
     {

@@ -125,6 +125,7 @@ unit SysCalls
         TypesValueTypeOf = 0x7F,
         TypesKeyTypeOf   = 0x80,
         TypesBoxTypeOf   = 0x81,
+        TypesVerifyValueTypes = 0x82,
         
         StringBuild      = 0x83,
         

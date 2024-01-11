@@ -644,11 +644,15 @@ UInt External_IntToUInt(Int i)
 }
 
 //#define HWM
+//#define LWM
 
 void HopperVM_InlinedExecuteWarp()
 {
 #ifdef HWM  
     UInt hmw = 0;
+#endif
+#ifdef LWM  
+    UInt lwm = 0xFFFF;
 #endif
     UInt isrCheck = 25;  // check for interrupt events every 25 instructions
     UInt watchDog = 100; // check for <ctrl><C> every 2500 instructions
@@ -658,6 +662,9 @@ void HopperVM_InlinedExecuteWarp()
         HopperVM_messagePC = HopperVM_pc;
 #endif
 #ifdef HWM
+        uint instructionPC = HopperVM_pc;
+#endif
+#ifdef LWM
         uint instructionPC = HopperVM_pc;
 #endif
         
@@ -685,9 +692,12 @@ void HopperVM_InlinedExecuteWarp()
         }
         
         InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[HopperVM_jumpTable + (codeMemoryBlock[HopperVM_pc++] << 2)]));
+#if defined(HWM) || defined(LWM)
 #ifdef HWM
         uint spb = HopperVM_sp;
+#endif
         bool goOn = instructionDelegate();
+#ifdef HWM
         if (HopperVM_sp > hmw)
         {
             Serial.print(instructionPC, HEX); Serial.print(" "); Serial.print(HopperVM_bp, HEX); Serial.print(":"); Serial.print(spb, HEX); Serial.print("->"), Serial.print(HopperVM_sp, HEX); Serial.println();
@@ -698,6 +708,22 @@ void HopperVM_InlinedExecuteWarp()
                 break;
             }
         }
+#endif
+#ifdef LWM        
+        UInt available = Memory_Available();
+        if (available < lwm)
+        {
+            UInt maximum = Memory_Maximum();
+
+            Serial.print(instructionPC, HEX); Serial.print(" "); Serial.print(":"); Serial.print(lwm, HEX); Serial.print("->"), Serial.print(available, HEX); Serial.print(" "); Serial.print(maximum, HEX); Serial.println();
+            lwm = available;
+            if (lwm <= 512)
+            {
+                Minimal_error = 0x0C; // out of memory
+                break;
+            }
+        }
+#endif
         if (goOn)
         {
             continue;

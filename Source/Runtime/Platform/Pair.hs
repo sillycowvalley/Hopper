@@ -35,6 +35,14 @@ unit HRPair
         WriteWord(address+ipValue, value);
         return address;
     }
+    Type GetKeyType(uint this)
+    {
+        return Type(ReadByte(this+ipKType));
+    }
+    Type GetValueType(uint this)
+    {
+        return Type(ReadByte(this+ipVType));
+    }
   
     uint Clone(uint original)
     {

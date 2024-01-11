@@ -9,7 +9,6 @@
 
 
 
-
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -4897,6 +4896,135 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(Byte(ttype), Type::eType);
         break;
     }
+    case SysCall::eTypesVerifyValueTypes:
+    {
+        Type ttype = (Type)0;
+        Type memberType = Type(HopperVM_Pop_R(ttype));
+        UInt _this = HopperVM_Pop_R(ttype);
+        Bool success = true;
+        switch (ttype)
+        {
+        case Type::eList:
+        {
+            UInt length = HRList_GetLength(_this);;
+            for (UInt i = 0x00; i < length; i++)
+            {
+                Type itype = (Type)0;
+                UInt item = HRList_GetItem_R(_this, i, itype);
+                if (Types_IsReferenceType(itype))
+                {
+                    GC_Release(item);
+                }
+                if (itype != memberType)
+                {
+                    success = false;
+                    break;;
+                }
+            }
+            break;
+        }
+        case Type::eDictionary:
+        {
+            UInt iterator = 0;
+            UInt hrpair = 0;
+            while (HRDictionary_Next_R(_this, iterator, hrpair))
+            {
+                Type vtype = HRPair_GetValueType(hrpair);
+                GC_Release(hrpair);
+                if (vtype != memberType)
+                {
+                    success = false;
+                    break;;
+                }
+            }
+            break;
+        }
+        default:
+        {
+            Runtime_ErrorDump(0x0C);
+            Minimal_Error_Set(0x0B);
+            break;
+        }
+        } // switch
+        HopperVM_Push((success) ? (0x01) : (0x00), Type::eBool);
+        GC_Release(_this);
+        break;
+    }
+    case SysCall::eTypesKeyTypeOf:
+    {
+        Type vtype = (Type)0;
+        UInt _this = HopperVM_Pop_R(vtype);
+        switch (vtype)
+        {
+        case Type::eDictionary:
+        {
+            HopperVM_Push(UInt(HRDictionary_GetKeyType(_this)), Type::eType);
+            break;
+        }
+        case Type::ePair:
+        {
+            HopperVM_Push(UInt(HRPair_GetKeyType(_this)), Type::eType);
+            break;
+        }
+        default:
+        {
+            Runtime_ErrorDump(0x0B);
+            Minimal_Error_Set(0x0B);
+            break;
+        }
+        } // switch
+        if (Types_IsReferenceType(vtype))
+        {
+            GC_Release(_this);
+        }
+        break;
+    }
+    case SysCall::eTypesValueTypeOf:
+    {
+        Type vtype = (Type)0;
+        UInt _this = HopperVM_Pop_R(vtype);
+        switch (vtype)
+        {
+        case Type::eDictionary:
+        {
+            HopperVM_Push(UInt(HRDictionary_GetValueType(_this)), Type::eType);
+            break;
+        }
+        case Type::ePair:
+        {
+            HopperVM_Push(UInt(HRPair_GetValueType(_this)), Type::eType);
+            break;
+        }
+        case Type::eList:
+        {
+            HopperVM_Push(UInt(HRList_GetValueType(_this)), Type::eType);
+            break;
+        }
+        case Type::eArray:
+        {
+            HopperVM_Push(UInt(HRArray_GetValueType(_this)), Type::eType);
+            break;
+        }
+        default:
+        {
+            if (!Types_IsReferenceType(vtype))
+            {
+                HopperVM_Push(UInt(HRVariant_GetValueType(_this)), Type::eType);
+            }
+            else
+            {
+                Runtime_ErrorDump(0x0A);
+                Minimal_Error_Set(0x0B);
+            }
+            break;
+        }
+        } // switch
+        if (Types_IsReferenceType(vtype))
+        {
+            GC_Release(_this);
+        }
+        break;
+    }
     case SysCall::eDictionaryNew:
     {
         Type stype = (Type)0;
@@ -5109,38 +5237,38 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     case SysCall::eLongToBytes:
     {
         Type htype = (Type)0;
-        UInt l = HopperVM_Pop_R(htype);
-        UInt lst = HRLong_ToBytes(l);
+        UInt _this = HopperVM_Pop_R(htype);
+        UInt lst = HRLong_ToBytes(_this);
         HopperVM_Push(lst, Type::eList);
-        GC_Release(l);
+        GC_Release(_this);
         break;
     }
     case SysCall::eFloatToLong:
     {
         Type htype = (Type)0;
-        UInt f = HopperVM_Pop_R(htype);
-        UInt lng = External_FloatToLong(f);
+        UInt _this = HopperVM_Pop_R(htype);
+        UInt lng = External_FloatToLong(_this);
         HopperVM_Push(lng, Type::eLong);
-        GC_Release(f);
+        GC_Release(_this);
         break;
     }
     case SysCall::eFloatToUInt:
     {
         Type htype = (Type)0;
-        UInt f = HopperVM_Pop_R(htype);
-        UInt ui = External_FloatToUInt(f);
+        UInt _this = HopperVM_Pop_R(htype);
+        UInt ui = External_FloatToUInt(_this);
         HopperVM_Push(ui, Type::eUInt);
-        GC_Release(f);
+        GC_Release(_this);
         break;
     }
     case SysCall::eLongGetByte:
     {
         UInt index = HopperVM_Pop();
         Type htype = (Type)0;
-        UInt l = HopperVM_Pop_R(htype);
-        Byte b = HRLong_GetByte(l, index);
+        UInt _this = HopperVM_Pop_R(htype);
+        Byte b = HRLong_GetByte(_this, index);
         HopperVM_Push(b, Type::eByte);
-        GC_Release(l);
+        GC_Release(_this);
         break;
     }
     case SysCall::eLongFromBytes:
@@ -5173,34 +5301,38 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     case SysCall::eFloatToBytes:
     {
         Type htype = (Type)0;
-        UInt l = HopperVM_Pop_R(htype);
-        UInt lst = HRFloat_ToBytes(l);
+        UInt _this = HopperVM_Pop_R(htype);
+        UInt lst = HRFloat_ToBytes(_this);
         HopperVM_Push(lst, Type::eList);
+        GC_Release(_this);
         break;
     }
     case SysCall::eFloatToString:
     {
         Type htype = (Type)0;
-        UInt l = HopperVM_Pop_R(htype);
-        UInt str = External_FloatToString(l);
+        UInt _this = HopperVM_Pop_R(htype);
+        UInt str = External_FloatToString(_this);
         HopperVM_Push(str, Type::eString);
+        GC_Release(_this);
         break;
     }
     case SysCall::eLongToString:
     {
         Type htype = (Type)0;
-        UInt l = HopperVM_Pop_R(htype);
-        UInt str = External_LongToString(l);
+        UInt _this = HopperVM_Pop_R(htype);
+        UInt str = External_LongToString(_this);
         HopperVM_Push(str, Type::eString);
+        GC_Release(_this);
         break;
     }
     case SysCall::eFloatGetByte:
     {
         UInt index = HopperVM_Pop();
         Type htype = (Type)0;
-        UInt f = HopperVM_Pop_R(htype);
-        Byte b = HRFloat_GetByte(f, index);
+        UInt _this = HopperVM_Pop_R(htype);
+        Byte b = HRFloat_GetByte(_this, index);
         HopperVM_Push(b, Type::eByte);
+        GC_Release(_this);
         break;
     }
     case SysCall::eFloatFromBytes:
@@ -5969,6 +6101,7 @@ UInt HRFile_Open(UInt hrpath)
         Memory_WriteWord(address + 6, HRString_Clone(hrpath));
         UInt hrsize = HRFile_GetSize(hrpath);
         UInt size = HRLong_ToUInt(hrsize);
+        GC_Release(hrsize);
         Memory_WriteWord(address + 8, 0x00);
         Memory_WriteWord(address + 12, size);
     }
@@ -6808,6 +6941,11 @@ UInt HRArray_GetCount(UInt _this)
     return Memory_ReadWord(_this + 2);
 }
 
+Type HRArray_GetValueType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 4));
+}
+
 UInt HRList_New(Type htype)
 {
     UInt address = GC_New(0x09, Type::eList);
@@ -7058,6 +7196,11 @@ Bool HRList_Contains(UInt _this, UInt item, Type itype)
     return false;
 }
 
+Type HRList_GetValueType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 4));
+}
+
 UInt HRList_Clone(UInt original)
 {
     Type etype = Type(Memory_ReadByte(original + 4));
@@ -7119,6 +7262,11 @@ UInt HRVariant_New(UInt value, Type vtype)
     }
     Memory_WriteWord(address + 3, value);
     return address;
+}
+
+Type HRVariant_GetValueType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 2));
 }
 
 UInt HRVariant_Clone(UInt original)
@@ -7288,6 +7436,16 @@ UInt HRPair_GetKey_R(UInt _this, Type & ktype)
     return key;
 }
 
+Type HRPair_GetValueType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 3));
+}
+
+Type HRPair_GetKeyType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 2));
+}
+
 UInt HRPair_Clone(UInt original)
 {
     Type dkType = Type(Memory_ReadByte(original + 2));
@@ -7295,6 +7453,31 @@ UInt HRPair_Clone(UInt original)
     UInt key = Memory_ReadWord(original + 4);
     UInt value = Memory_ReadWord(original + 6);
     return HRPair_New(dkType, key, dvType, value);
+}
+
+Bool HRDictionary_Next_R(UInt _this, UInt & iterator, UInt & hrpair)
+{
+    Type ktype = (Type)0;
+    UInt key = 0;
+    Type vtype = (Type)0;
+    UInt value = 0;
+    Bool found = HRDictionary_next_R(_this, iterator, ktype, key, vtype, value);
+    if (found && (0x00 != value) && (vtype == Type::eVariant))
+    {
+        value = HRVariant_UnBox_R(value, vtype);
+    }
+    hrpair = HRPair_New(ktype, key, vtype, value);
+    return found;
+}
+
+Type HRDictionary_GetKeyType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 2));
+}
+
+Type HRDictionary_GetValueType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 3));
 }
 
 UInt HRDictionary_New(Type ktype, Type vtype)
@@ -7381,21 +7564,6 @@ void HRDictionary_Set(UInt _this, UInt key, Type ktype, UInt value, Type vtype)
     {
         Memory_WriteWord(pEntry + 6, value);
     }
-}
-
-Bool HRDictionary_Next_R(UInt _this, UInt & iterator, UInt & hrpair)
-{
-    Type ktype = (Type)0;
-    UInt key = 0;
-    Type vtype = (Type)0;
-    UInt value = 0;
-    Bool found = HRDictionary_next_R(_this, iterator, ktype, key, vtype, value);
-    if (found && (0x00 != value) && (vtype == Type::eVariant))
-    {
-        value = HRVariant_UnBox_R(value, vtype);
-    }
-    hrpair = HRPair_New(ktype, key, vtype, value);
-    return found;
 }
 
 Bool HRDictionary_Contains(UInt _this, UInt key)

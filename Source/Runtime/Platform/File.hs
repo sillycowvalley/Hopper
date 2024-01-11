@@ -207,6 +207,7 @@ unit HRFile
             WriteWord(address+fiPath,    HRString.Clone(hrpath));
             uint hrsize = GetSize(hrpath);
             uint size = HRLong.ToUInt(hrsize);
+            GC.Release(hrsize);
             // buffer is probably empty string (doesn't matter)
             WriteWord(address+fiPos,  0);
             WriteWord(address+fiSize, size);

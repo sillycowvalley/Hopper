@@ -245,6 +245,7 @@ enum SysCall {
     eTypesValueTypeOf = 0x007F,
     eTypesKeyTypeOf = 0x0080,
     eTypesBoxTypeOf = 0x0081,
+    eTypesVerifyValueTypes = 0x0082,
     eStringBuild = 0x0083,
     eHttpClientGetRequest = 0x008A,
     eRuntimePCGet = 0x008B,
@@ -758,6 +759,7 @@ UInt HRArray_New(Type htype, UInt count);
 UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype);
 void HRArray_SetItem(UInt _this, UInt index, UInt value);
 UInt HRArray_GetCount(UInt _this);
+Type HRArray_GetValueType(UInt _this);
 UInt HRList_New(Type htype);
 UInt HRList_GetLength(UInt _this);
 void HRList_Append(UInt _this, UInt item, Type itype);
@@ -766,21 +768,27 @@ void HRList_Insert(UInt _this, UInt index, UInt item, Type itype);
 UInt HRList_GetItem_R(UInt _this, UInt index, Type & itype);
 void HRList_Remove(UInt _this, UInt index);
 Bool HRList_Contains(UInt _this, UInt item, Type itype);
+Type HRList_GetValueType(UInt _this);
 UInt HRList_Clone(UInt original);
 UInt HRList_createItem(UInt itemData, Type etype, Type itype);
 UInt HRVariant_CreateValueVariant(UInt value, Type vtype);
 UInt HRVariant_New(UInt value, Type vtype);
+Type HRVariant_GetValueType(UInt _this);
 UInt HRVariant_Clone(UInt original);
 UInt HRVariant_GetValue_R(UInt _this, Type & vtype);
 Bool HRVariant_IsEqual(UInt left, Type ltype, UInt right, Type rtype);
 UInt HRPair_New(Type ktype, UInt key, Type vtype, UInt value);
 UInt HRPair_GetValue_R(UInt _this, Type & vtype);
 UInt HRPair_GetKey_R(UInt _this, Type & ktype);
+Type HRPair_GetValueType(UInt _this);
+Type HRPair_GetKeyType(UInt _this);
 UInt HRPair_Clone(UInt original);
+Bool HRDictionary_Next_R(UInt _this, UInt & iterator, UInt & hrpair);
+Type HRDictionary_GetKeyType(UInt _this);
+Type HRDictionary_GetValueType(UInt _this);
 UInt HRDictionary_New(Type ktype, Type vtype);
 UInt HRDictionary_GetCount(UInt _this);
 void HRDictionary_Set(UInt _this, UInt key, Type ktype, UInt value, Type vtype);
-Bool HRDictionary_Next_R(UInt _this, UInt & iterator, UInt & hrpair);
 Bool HRDictionary_Contains(UInt _this, UInt key);
 UInt HRDictionary_Get_R(UInt _this, UInt key, Type & vtype);
 UInt HRDictionary_Clone(UInt original);
@@ -801,6 +809,7 @@ UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
 
 
 #endif // HOPPERRUNTIME_H
