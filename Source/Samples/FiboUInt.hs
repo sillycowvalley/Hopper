@@ -1,6 +1,6 @@
 program FiboUInt
 {
-#define SERIALCONSOLE
+#define SERIAL_CONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
     

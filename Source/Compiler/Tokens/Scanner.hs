@@ -16,8 +16,6 @@ unit Scanner
     long lastPos;
     bool lastPosSet;
     
-    bool dumpTokens;
-    
     <string,string> peekedToken;
     bool isPeekedToken = false;
     
@@ -119,10 +117,6 @@ unit Scanner
         }
     }        
     
-    DumpTokens(bool dump)
-    {
-        dumpTokens = true;
-    }
     bool isAtEnd()
     {
         //PrintLn("isAtEnd: currentPos=" + currentPos.ToString() + ", sourceLength=" + sourceLength.ToString());
@@ -486,7 +480,7 @@ unit Scanner
         loop
         {
             c = peek();
-            if (!c.IsLetter() && !c.IsDigit())
+            if (!c.IsLetter() && !c.IsDigit() && (c != '_'))
             {
                 if ((c == '.') && (dotSeen == 0))
                 {
@@ -758,10 +752,6 @@ unit Scanner
                 break;
             }
             break;
-        }
-        if (dumpTokens)
-        {
-            PrintLn("  " + Token.ToString(token), Color.Red, Color.Black);
         }
         return token;
     }

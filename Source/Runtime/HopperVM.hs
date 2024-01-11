@@ -37,7 +37,7 @@ unit HopperVM
     const uint dataMemoryStart = 0x0000; // data memory magically exists from 0x0000 to 0xFFFF
     
     
-#ifdef SERIALCONSOLE
+#ifdef SERIAL_CONSOLE
     const uint jumpTableSize   = 512; // 4 byte function pointer slots on Pi Pico
 #else    
     const uint jumpTableSize   = 256; // 2 byte delegate slots, highest OpCode is currently 0x6A (256 will do until 0x7F)
@@ -165,7 +165,7 @@ unit HopperVM
         
         dataMemory         = nextAddress;
         
-#ifdef SERIALCONSOLE        
+#ifdef SERIAL_CONSOLE        
         if (dataMemory < 0x0800)
         {
             dataMemory = 0x0800; // after our 'fake' stack pages
@@ -3028,7 +3028,7 @@ unit HopperVM
     }
     WriteERROR()
     {
-#ifndef SERIALCONSOLE                
+#ifndef SERIAL_CONSOLE                
         DumpStack(8);
 #endif        
         IO.WriteLn();
@@ -3319,10 +3319,10 @@ unit HopperVM
         opCode = OpCode(ReadCodeByte(pc));
         pc++;
 
-#ifndef SERIALCONSOLE                
+#ifndef SERIAL_CONSOLE                
         uint jump = ReadWord(jumpTable + (byte(opCode) << 1));
 #endif        
-#ifndef SERIALCONSOLE   
+#ifndef SERIAL_CONSOLE   
 #ifdef CHECKED
         if (0 == jump)
         {
@@ -3331,7 +3331,7 @@ unit HopperVM
         }
 #endif
 #endif
-#ifdef SERIALCONSOLE // on MCU
+#ifdef SERIAL_CONSOLE // on MCU
         return External.FunctionCall(jumpTable, byte(opCode));
 #else
         InstructionDelegate instructionDelegate = InstructionDelegate(jump);
@@ -3350,11 +3350,11 @@ unit HopperVM
             messagePC = PC;
 #endif
             byte bopCode = ReadCodeByte(pc);
-#ifndef SERIALCONSOLE
+#ifndef SERIAL_CONSOLE
             uint jump = ReadWord(jumpTable + (bopCode << 1));
 #endif
             pc++;
-#ifndef SERIALCONSOLE            
+#ifndef SERIAL_CONSOLE            
 #ifdef CHECKED
             if (0 == jump)
             {
@@ -3376,7 +3376,7 @@ unit HopperVM
                 }
             }
             
-#ifdef SERIALCONSOLE // on MCU
+#ifdef SERIAL_CONSOLE // on MCU
             if (External.FunctionCall(jumpTable, bopCode)) { continue; }
 #else
             InstructionDelegate instructionDelegate = InstructionDelegate(jump);

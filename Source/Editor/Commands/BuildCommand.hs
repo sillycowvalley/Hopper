@@ -13,7 +13,7 @@ unit BuildCommand
     uses "/Source/Compiler/Tokens/Dependencies"
     
     // reset during compile : 
-    //   -  checks for H6502 in compilation target symbols using CheckTarget(..) after preprocess step
+    //   -  checks for HOPPER_6502 in compilation target symbols using CheckTarget(..) after preprocess step
     // or, failing that, in GetBinaryPath()
     //   - checks if a ".hex" exists when a ".hexe" is not found
     
@@ -87,7 +87,7 @@ unit BuildCommand
                         {
                             // preprocessor symbols
                             <string,string> pdValues = kv.value;
-                            if (pdValues.Contains("H6502"))
+                            if (pdValues.Contains("HOPPER_6502"))
                             {
                                 target6502 = true;
                             }
@@ -318,7 +318,7 @@ unit BuildCommand
         Screen.Clear();
         if (!Target6502)
         {
-            Die(0x0B); // assume we only arrive here for H6502
+            Die(0x0B); // assume we only arrive here for HOPPER_6502
         }
         <string> arguments;
         string sourcePath = Editor.GetProjectPath(); 

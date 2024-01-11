@@ -2,8 +2,8 @@ program Snake
 {
     // https://www.geeksforgeeks.org/snake-game-in-c/
     
-#define SERIALCONSOLE
-#define RP2040PICOW
+#define SERIAL_CONSOLE
+#define RP2040_PICOW
     
     uses "/Source/Library/MCU"
     uses "/Source/Library/Graphics"

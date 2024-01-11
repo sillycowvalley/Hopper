@@ -72,6 +72,18 @@ unit Constant
                     } 
                     switch (operation)
                     {
+                        case HopperToken.BitOr:
+                        {
+                            uint ul = uint(left);
+                            uint ur = uint(right);
+                            lresult = (ul | ur);
+                        }
+                        case HopperToken.BitAnd:
+                        {
+                            uint ul = uint(left);
+                            uint ur = uint(right);
+                            lresult = (ul & ur);
+                        }
                         case HopperToken.Add:
                         {
                             lresult = left + right;
@@ -585,9 +597,94 @@ unit Constant
         return value;
     }
     
+    string parseConstantBitAnd(string typeExpected)
+    {
+        string value;
+        loop
+        {
+            value = parseConstantTerm(typeExpected);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            loop
+            {
+                if (Parser.Check(HopperToken.BitAnd))
+                {
+                    <string,string> operationToken = Parser.CurrentToken;
+                    HopperToken operation = Token.GetType(operationToken);
+                    
+                    if ((typeExpected != "uint") && (typeExpected != "byte"))
+                    {
+                        Parser.ErrorAtCurrent("bitwise constant operations only legal for unsigned integral numeric types");
+                        break;
+                    }
+                    Advance(); // &
+                    
+                    string rightValue = parseConstantTerm(typeExpected);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    value = constantOperation(value, rightValue, typeExpected, operation);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    continue;
+                }
+                break;
+            } // loop
+            break;
+        } // loop
+        return value;
+    }
+    string parseConstantBitOr(string typeExpected)
+    {
+        string value;
+        loop
+        {
+            value = parseConstantBitAnd(typeExpected);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            loop
+            {
+                if (Parser.Check(HopperToken.BitOr))
+                {
+                    <string,string> operationToken = Parser.CurrentToken;
+                    HopperToken operation = Token.GetType(operationToken);
+                    
+                    if ((typeExpected != "uint") && (typeExpected != "byte"))
+                    {
+                        Parser.ErrorAtCurrent("bitwise constant operations only legal for unsigned integral numeric types");
+                        break;
+                    }
+                    Advance(); // |
+                    
+                    string rightValue = parseConstantBitAnd(typeExpected);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    value = constantOperation(value, rightValue, typeExpected, operation);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    continue;
+                }
+                break;
+            } // loop
+            break;
+        } // loop
+        return value;
+    }
+    
     string ParseConstantExpression(string typeExpected)
     {
-        return parseConstantTerm(typeExpected);
+        return parseConstantBitOr(typeExpected);
     }
 
 }

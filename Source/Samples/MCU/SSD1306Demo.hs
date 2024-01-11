@@ -1,9 +1,9 @@
 program SSD1306Demo
 {
-    //#define TINY2040
-    #define RP2040PICOW
+    //#define PIMORONI_TINY2040
+    #define RP2040_PICOW
     
-    //#define DISPLAYDIAGNOSTICS
+    //#define DISPLAY_DIAGNOSTICS
     
     uses "/Source/Library/Displays/OLEDSSD1306"
     uses "/Source/Library/Fonts/Hitachi5x7"

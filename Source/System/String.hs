@@ -29,7 +29,7 @@ unit String
     
     uint Length { get system; }
     
-#ifdef H6502
+#ifdef HOPPER_6502
     string Replace(string original, string pattern, string replace)
     {
         uint patternLength;

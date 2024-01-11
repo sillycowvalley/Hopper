@@ -1186,7 +1186,7 @@ unit Types
         byte vt = Types.ToByte(castToType);
                         
         CodeStream.AddInstruction(Instruction.DUP, byte(0)); // copy of expression result
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
         CodeStream.AddInstruction(Instruction.DUP, byte(0)); // 2nd copy
 #endif
         CodeStream.AddInstructionSysCall0("Types", "TypeOf");
@@ -1194,7 +1194,7 @@ unit Types
         CodeStream.AddInstruction(Instruction.EQ);           // is it a variant?
         uint jumpValue = CodeStream.NextAddress;
         CodeStream.AddInstructionJump(Instruction.JZB); // if not, jump past to valuetype
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
         CodeStream.AddInstructionSysCall0("Types", "ValueTypeOf");// get the type of the variant value
         CodeStream.AddInstructionPUSHI(vt);
         CodeStream.AddInstruction(Instruction.EQ);
@@ -1208,7 +1208,7 @@ unit Types
 // valuetype: 
         uint valueAddress = CodeStream.NextAddress;
         CodeStream.PatchJump(jumpValue, valueAddress);
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
         CodeStream.AddInstructionSysCall0("Types", "TypeOf");
         CodeStream.AddInstructionPUSHI(vt);
         CodeStream.AddInstruction(Instruction.EQ);

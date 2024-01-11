@@ -1,7 +1,7 @@
 unit DisplayDriver
 {
-    #define DISPLAYDRIVER
-    #define I2CSCREENDRIVER
+    #define DISPLAY_DRIVER
+    #define I2C_SCREEN_DRIVER
     
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
@@ -9,35 +9,35 @@ unit DisplayDriver
     // Eventually got it working reliablty with a variation of the AdaFruit driver:
     //   https://github.com/adafruit/Adafruit_SSD1306/blob/master/Adafruit_SSD1306.cpp
     
-    const byte SSD1306MEMORYMODE      = 0x20;
-    const byte SSD1306COLUMNADDR      = 0x21;
-    const byte SSD1306PAGEADDR        = 0x22;
-    const byte SD1306DEACTIVATESCROLL = 0x2E;
+    const byte SSD1306_MEMORYMODE      = 0x20;
+    const byte SSD1306_COLUMNADDR      = 0x21;
+    const byte SSD1306_PAGEADDR        = 0x22;
+    const byte SSD1306_DEACTIVATESCROLL = 0x2E;
     
-    const byte SSD1306SETSTARTLINE    = 0x40;
+    const byte SSD1306_SETSTARTLINE    = 0x40;
     
-    const byte SSD1306SETCONTRAST     = 0x81;
-    const byte SSD1306CHARGEPUMP      = 0x8D;
+    const byte SSD1306_SETCONTRAST     = 0x81;
+    const byte SSD1306_CHARGEPUMP      = 0x8D;
 
-    const byte SSD1306SEGREMAP        = 0xA0;
-    const byte SSD1306SETSEGMENTREMAP = 0xA1;
-    const byte SSD1306DISPLAYALLONRESUME = 0xA4;
-    const byte SSD1306DISPLAYALLON    = 0xA5;
-    const byte SSD1306NORMALDISPLAY   = 0xA6;
-    const byte SSD1306INVERTDISPLAY   = 0xA7;
+    const byte SSD1306_SEGREMAP        = 0xA0;
+    const byte SSD1306_SETSEGMENTREMAP = 0xA1;
+    const byte SSD1306_DISPLAYALLONRESUME = 0xA4;
+    const byte SSD1306_DISPLAYALLON    = 0xA5;
+    const byte SSD1306_NORMALDISPLAY   = 0xA6;
+    const byte SSD1306_INVERTDISPLAY   = 0xA7;
 
-    const byte SSD1306SETMULTIPLEX    = 0xA8;
-    const byte SSD1306DISPLAYOFF      = 0xAE;
-    const byte SSD1306DISPLAYON       = 0xAF;
-    const byte SSD1306COMSCANINC      = 0xC0;
-    const byte SSD1306COMSCANDEC      = 0xC8;
+    const byte SSD1306_SETMULTIPLEX    = 0xA8;
+    const byte SSD1306_DISPLAYOFF      = 0xAE;
+    const byte SSD1306_DISPLAYON       = 0xAF;
+    const byte SSD1306_COMSCANINC      = 0xC0;
+    const byte SSD1306_COMSCANDEC      = 0xC8;
         
-    const byte SSD1306SETDISPLAYOFFSET   = 0xD3;
-    const byte SSD1306SETDISPLAYCLOCKDIV = 0xD5;
+    const byte SSD1306_SETDISPLAYOFFSET   = 0xD3;
+    const byte SSD1306_SETDISPLAYCLOCKDIV = 0xD5;
     
-    const byte SSD1306SETPRECHARGE       = 0xD9;
-    const byte SSD1306SETCOMPINS         = 0xDA;
-    const byte SSD1306SETVCOMDETECT      = 0xDB;
+    const byte SSD1306_SETPRECHARGE       = 0xD9;
+    const byte SSD1306_SETCOMPINS         = 0xDA;
+    const byte SSD1306_SETVCOMDETECT      = 0xDB;
     
     byte i2cAddress;
     bool resolutionSet;
@@ -98,7 +98,7 @@ unit DisplayDriver
             {
                 Wire.BeginTx(Display.I2CController, i2cAddress);
                 Wire.Write(Display.I2CController, 0x00);
-                Wire.Write(Display.I2CController, value ? SSD1306DISPLAYON : SSD1306DISPLAYOFF);
+                Wire.Write(Display.I2CController, value ? SSD1306_DISPLAYON : SSD1306_DISPLAYOFF);
                 byte result = Wire.EndTx(Display.I2CController);
                 if (result != 0)
                 {
@@ -110,7 +110,7 @@ unit DisplayDriver
     bool Begin()
     {
         i2cConfigured = false;
-#ifdef DISPLAYDIAGNOSTICS
+#ifdef DISPLAY_DIAGNOSTICS
         IO.Write("<OLEDSSD1306.Begin");
 #endif
         loop
@@ -131,10 +131,10 @@ unit DisplayDriver
             Wire.BeginTx(Display.I2CController, i2cAddress);
             
             Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306DISPLAYOFF);
-            Wire.Write(Display.I2CController, SSD1306SETDISPLAYCLOCKDIV);
+            Wire.Write(Display.I2CController, SSD1306_DISPLAYOFF);
+            Wire.Write(Display.I2CController, SSD1306_SETDISPLAYCLOCKDIV);
             Wire.Write(Display.I2CController, 0x80);
-            Wire.Write(Display.I2CController, SSD1306SETMULTIPLEX);
+            Wire.Write(Display.I2CController, SSD1306_SETMULTIPLEX);
             Wire.Write(Display.I2CController, byte(Display.PixelHeight-1));
             byte result = Wire.EndTx(Display.I2CController);
             if (result != 0)
@@ -145,10 +145,10 @@ unit DisplayDriver
             
             Wire.BeginTx(Display.I2CController, i2cAddress);
             Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306SETDISPLAYOFFSET);
+            Wire.Write(Display.I2CController, SSD1306_SETDISPLAYOFFSET);
             Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306SETSTARTLINE);
-            Wire.Write(Display.I2CController, SSD1306CHARGEPUMP); // Enable charge pump regulator (RESET = )
+            Wire.Write(Display.I2CController, SSD1306_SETSTARTLINE);
+            Wire.Write(Display.I2CController, SSD1306_CHARGEPUMP); // Enable charge pump regulator (RESET = )
             Wire.Write(Display.I2CController, 0x14);              // Generate the high voltage from the 3.3v line internally
             result = Wire.EndTx(Display.I2CController);
             if (result != 0)
@@ -159,10 +159,10 @@ unit DisplayDriver
             
             Wire.BeginTx(Display.I2CController, i2cAddress);
             Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306MEMORYMODE);
+            Wire.Write(Display.I2CController, SSD1306_MEMORYMODE);
             Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306SETSEGMENTREMAP);
-            Wire.Write(Display.I2CController, SSD1306COMSCANDEC);
+            Wire.Write(Display.I2CController, SSD1306_SETSEGMENTREMAP);
+            Wire.Write(Display.I2CController, SSD1306_COMSCANDEC);
              result = Wire.EndTx(Display.I2CController);
             if (result != 0)
             {
@@ -172,11 +172,11 @@ unit DisplayDriver
             
             Wire.BeginTx(Display.I2CController, i2cAddress);
             Wire.Write(0x00);
-            Wire.Write(Display.I2CController, SSD1306SETCOMPINS);
+            Wire.Write(Display.I2CController, SSD1306_SETCOMPINS);
             Wire.Write(Display.I2CController, (Display.PixelWidth > 2 * Display.PixelHeight) ? 0x02 : 0x12);
-            Wire.Write(Display.I2CController, SSD1306SETCONTRAST);
+            Wire.Write(Display.I2CController, SSD1306_SETCONTRAST);
             Wire.Write(Display.I2CController, 0xCF);
-            Wire.Write(Display.I2CController, SSD1306SETPRECHARGE);
+            Wire.Write(Display.I2CController, SSD1306_SETPRECHARGE);
             Wire.Write(Display.I2CController, 0xF1);
             result = Wire.EndTx(Display.I2CController);
             if (result != 0)
@@ -187,12 +187,12 @@ unit DisplayDriver
             
             Wire.BeginTx(Display.I2CController, i2cAddress);
             Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306SETVCOMDETECT);
+            Wire.Write(Display.I2CController, SSD1306_SETVCOMDETECT);
             Wire.Write(Display.I2CController, 0x40);
-            Wire.Write(Display.I2CController, SSD1306DISPLAYALLONRESUME);
-            Wire.Write(Display.I2CController, SSD1306NORMALDISPLAY);
-            Wire.Write(Display.I2CController, SD1306DEACTIVATESCROLL);
-            Wire.Write(Display.I2CController, SSD1306DISPLAYON);
+            Wire.Write(Display.I2CController, SSD1306_DISPLAYALLONRESUME);
+            Wire.Write(Display.I2CController, SSD1306_NORMALDISPLAY);
+            Wire.Write(Display.I2CController, SSD1306_DEACTIVATESCROLL);
+            Wire.Write(Display.I2CController, SSD1306_DISPLAYON);
             result = Wire.EndTx(Display.I2CController);
             if (result != 0)
             {
@@ -203,7 +203,7 @@ unit DisplayDriver
             i2cConfigured = true;
             break;
         }
-#ifdef DISPLAYDIAGNOSTICS
+#ifdef DISPLAY_DIAGNOSTICS
         IO.WriteLn(">");
 #endif        
         return i2cConfigured;
@@ -247,7 +247,7 @@ unit DisplayDriver
     
     UpdateDisplay()
     {
-#ifdef DISPLAYDIAGNOSTICS
+#ifdef DISPLAY_DIAGNOSTICS
         IO.Write("<OLEDSSD1306.UpdateDisplay");
 #endif
         if (i2cConfigured)
@@ -255,10 +255,10 @@ unit DisplayDriver
             // This re-initialization seems to keep the screen position in sync:
             Wire.BeginTx(Display.I2CController, i2cAddress);
             Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306PAGEADDR);   // Reset Page Address (for horizontal addressing)
+            Wire.Write(Display.I2CController, SSD1306_PAGEADDR);   // Reset Page Address (for horizontal addressing)
             Wire.Write(Display.I2CController, 0x00);
             Wire.Write(Display.I2CController, 0xFF);             //Wire.Write(byte((Display.PixelHeight/8)-1));
-            Wire.Write(Display.I2CController, SSD1306COLUMNADDR); // Reset Column Address (for horizontal addressing)
+            Wire.Write(Display.I2CController, SSD1306_COLUMNADDR); // Reset Column Address (for horizontal addressing)
             if (Display.PixelWidth == 64)
             {
                 Wire.Write(Display.I2CController, 32);
@@ -294,7 +294,7 @@ unit DisplayDriver
                 }
             }
         }
-#ifdef DISPLAYDIAGNOSTICS
+#ifdef DISPLAY_DIAGNOSTICS
         IO.WriteLn(">");
 #endif        
     }

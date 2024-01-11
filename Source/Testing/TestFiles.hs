@@ -1,6 +1,6 @@
 program TestFiles
 {
-#define SERIALCONSOLE
+#define SERIAL_CONSOLE
     uses "/Source/System/System"
     
     uses "/Source/System/IO"
@@ -259,7 +259,7 @@ program TestFiles
         
         WriteLn();
         WriteLn("TestSuite Ok");
-#ifndef SERIALCONSOLE
+#ifndef SERIAL_CONSOLE
         Key key = ReadKey();
 #endif
     }

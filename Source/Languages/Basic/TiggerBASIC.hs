@@ -10,12 +10,12 @@ program TiggerBASIC
     //#define DEBUG        // verbose listings showing the IL code, internal system checks
     
     #define MCU            // running on a microcontroller (CALLI vs CALL for example)
-    #define SERIALCONSOLE  // no Keyboard
+    #define SERIAL_CONSOLE  // no Keyboard
     //#define USELCD
     
     uses "/Source/System/System"    
 #ifdef MCU    
-    #define TINY2040
+    #define PIMORONI_TINY2040
     uses "/Source/Library/MCU"
     uses "/Source/Library/Screen"
 #else

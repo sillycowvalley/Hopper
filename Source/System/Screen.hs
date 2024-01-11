@@ -7,7 +7,7 @@ unit Screen
     byte Columns { get system; }
     byte Rows    { get system; }
     
-#ifndef H6502
+#ifndef HOPPER_6502
     Suspend() system;
     
     // if !isInteractive then Resume will pump messages (not needed if we are processing keystrokes)

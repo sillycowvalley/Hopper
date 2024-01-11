@@ -57,7 +57,7 @@ unit Int
             }
             else
             {
-#ifndef TINYHOPPER
+#ifndef TINY_HOPPER
                 long rv;
                 if (Long.TryParse(content, ref rv))
                 {

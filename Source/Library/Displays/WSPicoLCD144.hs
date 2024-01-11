@@ -1,7 +1,7 @@
 unit DisplayDriver
 {
-    #define DISPLAYDRIVER
-    #define SPISCREENDRIVER
+    #define DISPLAY_DRIVER
+    #define SPI_SCREEN_DRIVER
     
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
@@ -27,76 +27,80 @@ unit DisplayDriver
     const int xFudge = 2;
     const int yFudge = 1;
     
-    const byte TFTSLPOUT     = 0x11; //  Sleep Out
+    const byte TFT_SLPOUT     = 0x11; //  Sleep Out
     
-    const byte TFTCASET      = 0x2A;
-    const byte TFTPASET      = 0x2B;
-    const byte TFTRAMWR      = 0x2C;
-    const byte TFTRAMRD      = 0x2E;
+    const byte TFT_CASET      = 0x2A;
+    const byte TFT_PASET      = 0x2B;
+    const byte TFT_RAMWR      = 0x2C;
+    const byte TFT_RAMRD      = 0x2E;
     
-    const byte TFTMADCTL     = 0x36;
+    const byte TFT_MADCTL     = 0x36;
     
-    const byte MADCTLMY      = 0x80; // Bottom to top
-    const byte MADCTLMX      = 0x40; // Right to left
-    const byte MADCTLMV      = 0x20; // Reverse Mode
-    const byte MADCTLBGR     = 0x08; // Blue-Green-Red pixel order
-    const byte MADCTLRGB     = 0x00;
+    const byte MADCTL_MY     = 0x80; // Bottom to top
+    const byte MADCTL_MX     = 0x40; // Right to left
+    const byte MADCTL_MV     = 0x20; // Reverse Mode
+    const byte MADCTL_BGR    = 0x08; // Blue-Green-Red pixel order
+    const byte MADCTL_RGB    = 0x00;
     
-    const byte ST7735SWRESET = 0x01;
-    const byte ST7735NORON   = 0x13;
+    const byte ST7735_SWRESET = 0x01;
+    const byte ST7735_NORON   = 0x13;
     
-    const byte ST7735INVOFF  = 0x20;
-    const byte ST7735INVON   = 0x21;
-    const byte ST7735DISPON  = 0x29;
+    const byte ST7735_INVOFF  = 0x20;
+    const byte ST7735_INVON   = 0x21;
+    const byte ST7735_DISPON  = 0x29;
     
-    const byte ST7735COLMOD  = 0x3A;
+    const byte ST7735_COLMOD  = 0x3A;
     
-    const byte ST7735FRMCTR1 = 0xB1;
-    const byte ST7735FRMCTR2 = 0xB2;
-    const byte ST7735FRMCTR3 = 0xB3;
-    const byte ST7735INVCTR  = 0xB4;
+    const byte ST7735_FRMCTR1 = 0xB1;
+    const byte ST7735_FRMCTR2 = 0xB2;
+    const byte ST7735_FRMCTR3 = 0xB3;
+    const byte ST7735_INVCTR  = 0xB4;
     
-    const byte ST7735PWCTR1  = 0xC0;
-    const byte ST7735PWCTR2  = 0xC1;
-    const byte ST7735PWCTR3  = 0xC2;
-    const byte ST7735PWCTR4  = 0xC3;
-    const byte ST7735PWCTR5  = 0xC4;
-    const byte ST7735VMCTR1  = 0xC5;
+    const byte ST7735_PWCTR1  = 0xC0;
+    const byte ST7735_PWCTR2  = 0xC1;
+    const byte ST7735_PWCTR3  = 0xC2;
+    const byte ST7735_PWCTR4  = 0xC3;
+    const byte ST7735_PWCTR5  = 0xC4;
+    const byte ST7735_VMCTR1  = 0xC5;
     
-    const byte ST7735GMCTRP1 = 0xE0;
-    const byte ST7735GMCTRN1 = 0xE1;
+    const byte ST7735_GMCTRP1 = 0xE0;
+    const byte ST7735_GMCTRN1 = 0xE1;
     
     const string initCmdConst =
     {
       //  (COMMAND_BYTE), n, data_bytes....
-      TFTSLPOUT    , 0x80,     // Sleep exit
-      ST7735FRMCTR1, 3      ,  //  3: Frame rate ctrl - normal mode, 3 args:
+      TFT_SLPOUT    , 0x80,     // Sleep exit
+      ST7735_FRMCTR1, 3      ,  //  3: Frame rate ctrl - normal mode, 3 args:
         0x01, 0x2C, 0x2D,       //     Rate = fosc/(1x2+40) * (LINE+2C+2D)
-      ST7735FRMCTR2, 3      ,  //  4: Frame rate control - idle mode, 3 args:
+      ST7735_FRMCTR2, 3      ,  //  4: Frame rate control - idle mode, 3 args:
         0x01, 0x2C, 0x2D,       //     Rate = fosc/(1x2+40) * (LINE+2C+2D)
-      ST7735FRMCTR3, 6      ,  //  5: Frame rate ctrl - partial mode, 6 args:
+      ST7735_FRMCTR3, 6      ,  //  5: Frame rate ctrl - partial mode, 6 args:
         0x01, 0x2C, 0x2D,       //     Dot inversion mode
         0x01, 0x2C, 0x2D,       //     Line inversion mode
-      ST7735INVCTR , 1      ,  //  6: Display inversion ctrl, 1 arg, no delay:
+      ST7735_INVCTR , 1      ,  //  6: Display inversion ctrl, 1 arg, no delay:
         0x07,                   //     No inversion
-      ST7735PWCTR2 , 1      ,  //  8: Power control, 1 arg, no delay:
+      ST7735_PWCTR2 , 1      ,  //  8: Power control, 1 arg, no delay:
         0xC5,                   //     VGH25 = 2.4C VGSEL = -10 VGH = 3 * AVDD
-      ST7735PWCTR3 , 2      ,  //  9: Power control, 2 args, no delay:
+      ST7735_PWCTR3 , 2      ,  //  9: Power control, 2 args, no delay:
         0x0A,                   //     Opamp current small
         0x00,                   //     Boost frequency
-      ST7735VMCTR1 , 1      ,  // 12: Power control, 1 arg, no delay:
+      ST7735_VMCTR1 , 1      ,  // 12: Power control, 1 arg, no delay:
         0x0E,
       
       // Pico-LCD-1.44:
-      ST7735INVOFF , 0      ,  // 13: Don't invert display, no args, no delay
-      TFTMADCTL      , 1, (   MADCTLBGR),              // Memory Access Control
+      ST7735_INVOFF , 0      ,  // 13: Don't invert display, no args, no delay
+      TFT_MADCTL      , 1, (   MADCTL_BGR /*| MADCTLMY | MADCTLMV*/),              // Memory Access Control
+      
+      // Pico-LCD-0.96:
+      //ST7735INVON , 0      ,  // 13: Invert display, no args, no delay
+      //TFTMADCTL      , 1, (  MADCTLMY | MADCTLMV | MADCTLBGR),              // Memory Access Control : 
     
-      ST7735COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
+      ST7735_COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
         0x05,
-      ST7735GMCTRP1, 16      , 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10, // Set Gamma
-      ST7735GMCTRN1, 16      , 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10, // Set Gamma
-      ST7735NORON  ,    0x80, //  3: Normal display on, no args, w/delay
-      ST7735DISPON ,    0x80, //  4: Main screen turn on, no args w/delay
+      ST7735_GMCTRP1, 16      , 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10, // Set Gamma
+      ST7735_GMCTRN1, 16      , 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10, // Set Gamma
+      ST7735_NORON  ,    0x80, //  3: Normal display on, no args, w/delay
+      ST7735_DISPON ,    0x80, //  4: Main screen turn on, no args w/delay
       0x00                        // End of list
     };
     
@@ -151,21 +155,21 @@ unit DisplayDriver
         
         // Column address set
         MCU.DigitalWrite(dcPin, false);
-        SPI.WriteByte(spiController, TFTCASET);
+        SPI.WriteByte(spiController, TFT_CASET);
         MCU.DigitalWrite(dcPin, true);
         SPI.WriteWord(spiController, uint(x1));
         SPI.WriteWord(spiController, uint(x2));
         
         // Row address set
         MCU.DigitalWrite(dcPin, false);
-        SPI.WriteByte(spiController, TFTPASET);
+        SPI.WriteByte(spiController, TFT_PASET);
         MCU.DigitalWrite(dcPin, true);
         SPI.WriteWord(spiController, uint(y1));
         SPI.WriteWord(spiController, uint(y2));
         
         // Write or Read RAM
         MCU.DigitalWrite(dcPin, false);
-        SPI.WriteByte(spiController, write ? TFTRAMWR : TFTRAMRD);
+        SPI.WriteByte(spiController, write ? TFT_RAMWR : TFT_RAMRD);
         MCU.DigitalWrite(dcPin, true);
     }
     
@@ -179,8 +183,16 @@ unit DisplayDriver
     ClearDisplay(uint colour)
     {
         int  pw1 = pixelWidth-1;
-        uint pw2 = pixelWidth * 2;
-        
+        if (colour == 0xF000)
+        {
+            for (int y = 0; y < pixelHeight; y++)
+            {
+                rawHorizontalLine(0, y, pw1, colour);
+            }
+            return;
+        }
+
+        uint pw2 = pixelWidth * 2;        
         uint rgb565 = convertToRGB565(colour);
         byte lsb = byte(rgb565 & 0xFF);
         byte msb = byte(rgb565 >> 8);

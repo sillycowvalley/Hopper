@@ -82,7 +82,7 @@ unit JSON
                 }
                 default:
                 {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                     type tt = typeof(vv);
                     string ts = tt.ToString();
                     String.Build(ref content, "unsupported '");
@@ -207,7 +207,7 @@ unit JSON
                 }
                 default:
                 {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                     type tt = typeof(kv.value);
                     uint ut = uint(tt);
                     string ts = tt.ToString();
@@ -250,7 +250,7 @@ unit JSON
         bool first = true;
         loop
         {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
             if (Parser.HadError)
             {
                 break;
@@ -275,7 +275,7 @@ unit JSON
             }
             else
             {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                 Parser.ErrorAt(currentToken, "value type not implemented in readList");
 #endif
             }
@@ -289,7 +289,7 @@ unit JSON
         bool first = true;
         loop
         {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
             if (Parser.HadError)
             {
                 break;
@@ -323,7 +323,7 @@ unit JSON
             }
             else
             {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                 Parser.ErrorAt(currentToken, "value type not implemented in readBinaryString");
 #endif
             }
@@ -337,7 +337,7 @@ unit JSON
         bool first = true;
         loop
         {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
             if (Parser.HadError)
             {
                 break;
@@ -354,7 +354,7 @@ unit JSON
             }
             first = false;
             Parser.Consume(HopperToken.StringConstant, "key string expected");
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
             if (Parser.HadError)
             {
                 break;
@@ -363,7 +363,7 @@ unit JSON
             <string,string> previousToken = PreviousToken;
             string name = previousToken["lexeme"];
             Parser.Consume(HopperToken.Colon, ':');
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
             if (Parser.HadError)
             {
                 break;
@@ -385,7 +385,7 @@ unit JSON
                 }
                 else
                 {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                     Parser.ErrorAt(currentToken, "integer expected");
 #endif
                 }
@@ -403,7 +403,7 @@ unit JSON
                 }
                 else
                 {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                     Parser.ErrorAt(currentToken, "bool expected");
 #endif
                 }
@@ -428,7 +428,7 @@ unit JSON
             }
             else
             {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                 Parser.ErrorAt(currentToken, "value type not implemented in ReadDictionary for '" + dictionaryName + "'");
 #endif
             }
@@ -450,7 +450,7 @@ unit JSON
         bool first = true;
         loop
         {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
             if (Parser.HadError)
             {
                 break;
@@ -466,7 +466,7 @@ unit JSON
             }
             first = false;
             Parser.Consume(HopperToken.StringConstant, "section name expected");
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
             if (Parser.HadError)
             {
                 break;
@@ -475,7 +475,7 @@ unit JSON
             <string,string> previousToken = PreviousToken;
             string sectionName = previousToken["lexeme"];
             Parser.Consume(HopperToken.Colon, ':');
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
             if (Parser.HadError)
             {
                 break;
@@ -507,7 +507,7 @@ unit JSON
                 }
                 else
                 {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                     Parser.ErrorAt(currentToken, "integer expected");
 #endif
                 }
@@ -525,21 +525,21 @@ unit JSON
                 }
                 else
                 {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                     Parser.ErrorAt(currentToken, "bool expected");
 #endif
                 }
             }
             else
             {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                 Parser.ErrorAt(currentToken, "value type not implemented in Read");
 #endif
             }
 
         }   
         bool success = !Parser.HadError;
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
         if (Parser.HadError)
         {
             DumpPrevious();

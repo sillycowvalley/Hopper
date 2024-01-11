@@ -4,7 +4,7 @@ program Runtime
 //#define MEMORYLEAKS
 
 #define RUNTIME       // workaround special clipboard buffer for testing on Windows (that works without String)
-#define SERIALCONSOLE // Source/System/IO uses serial only (for MCU's etc)
+#define SERIAL_CONSOLE // Source/System/IO uses serial only (for MCU's etc)
 
     uses "/Source/Runtime/Emulation/Minimal" // minimal use of actual 'system' APIs
     uses "/Source/Runtime/Emulation/Memory"
@@ -989,7 +989,7 @@ program Runtime
         HopperVM.Release();
     }
     {
-#ifdef SERIALCONSOLE
+#ifdef SERIAL_CONSOLE
         MCU();
 #else        
         Windows();

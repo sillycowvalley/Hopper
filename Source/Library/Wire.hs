@@ -5,7 +5,7 @@ unit Wire
         bool success;
         loop
         {
-#if defined(RP2040PICO) || defined(RP2040PICOW)            // Pi Pico pin validation:
+#if defined(RP2040_PICO) || defined(RP2040_PICOW)            // Pi Pico pin validation:
             switch (i2cController)
             {
                 case 0:
@@ -39,7 +39,7 @@ unit Wire
                 }
             }
 #endif
-#if defined(TINY2040)
+#if defined(PIMORONI_TINY2040)
             switch (i2cController)
             {
                 case 0:

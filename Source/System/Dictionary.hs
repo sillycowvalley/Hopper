@@ -6,7 +6,7 @@ unit Dictionary
     V Get(<K,V> this, K key) system;
     Clear(<K,V> this) system;
     
-#ifdef H6502    
+#ifdef HOPPER_6502    
     long HashKey(string str) system;
 #endif    
 }

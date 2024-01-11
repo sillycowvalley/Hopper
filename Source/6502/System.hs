@@ -1,6 +1,6 @@
 unit System
 {
-    #define H6502
+    #define HOPPER_6502
     
     
     uses "/Source/6502/Firmware/Hardware"
@@ -12,7 +12,7 @@ unit System
     uses "/Source/System/Int"
     uses "/Source/System/UInt"
     
-#ifndef TINYHOPPER    
+#ifndef TINY_HOPPER    
     uses "/Source/System/Long"
     //uses "/Source/System/Float"
     uses "/Source/System/String"
@@ -32,7 +32,7 @@ unit System
     bool Trace { get system; set system; }
     bool Warp { get system; set system; }
 
-#ifdef TINYHOPPER    
+#ifdef TINY_HOPPER    
     // execute Hopper opCodes inline starting at 'address'
     //   (use & operator to determine offsets of locals and globals)
     uint Inline(uint address) system;

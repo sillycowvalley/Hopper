@@ -1,6 +1,6 @@
 program Blink
 {
-    #define TINYHOPPER
+    #define TINY_HOPPER
     
     uses "/Source/6502/System"
     

@@ -1,7 +1,7 @@
 program TestStrings
 {
-//#define TINYHOPPER
-#define SERIALCONSOLE
+//#define TINY_HOPPER
+#define SERIAL_CONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
@@ -266,7 +266,7 @@ program TestStrings
     }
     TestStringSystem()
     {
-        WriteLn("system 'string'"); // string methods written in Hopper (some specific to H6502)
+        WriteLn("system 'string'"); // string methods written in Hopper (some specific to HOPPER_6502)
         
         if (String.Compare("bbb", "aaa") != 1)
         {
@@ -844,7 +844,7 @@ program TestStrings
         WriteLn();
         WriteLn("TestStrings Ok");
 
-#ifndef SERIALCONSOLE
+#ifndef SERIAL_CONSOLE
         Key key = ReadKey();
 #endif
     }

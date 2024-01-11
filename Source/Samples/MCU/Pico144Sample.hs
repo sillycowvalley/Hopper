@@ -1,6 +1,6 @@
 program Pico144Sample
 {
-#define SERIALCONSOLE
+#define SERIAL_CONSOLE
 #define RP2040
     
     uses "/Source/Library/MCU"

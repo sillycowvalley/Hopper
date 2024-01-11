@@ -1,7 +1,7 @@
 program Shell
 {
         
-//#define TINYHOPPER  
+//#define TINY_HOPPER  
 
     uses "/Source/System/System"
     uses "/Source/System/Runtime"
@@ -465,7 +465,7 @@ program Shell
             
             if (redraw)
             {
-#ifdef TINYHOPPER                
+#ifdef TINY_HOPPER                
                 while (current > x)
                 {
                     Print(char(0x08) + " " + char(0x08));

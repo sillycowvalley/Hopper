@@ -1,10 +1,10 @@
 program TestNumbers
 {
-#define SERIALCONSOLE
+#define SERIAL_CONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
-#ifndef H6502
+#ifndef HOPPER_6502
 #define TESTFLOATS
 #endif
     
@@ -1747,7 +1747,7 @@ program TestNumbers
         
         WriteLn();
         WriteLn("TestNumbers Ok");
-#ifndef SERIALCONSOLE
+#ifndef SERIAL_CONSOLE
         Key key = ReadKey();
 #endif
     }

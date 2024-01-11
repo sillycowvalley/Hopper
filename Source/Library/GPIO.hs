@@ -2,7 +2,7 @@ unit GPIO
 {
     
 
-#ifdef WEMOSD1MINI
+#ifdef WEMOS_D1_MINI
 
     const byte d0 = 16;
     const byte d1 = 5;
@@ -19,7 +19,7 @@ unit GPIO
     const byte builtInLED = d4;    
 #endif
 
-#ifdef RP2040PICO
+#ifdef RP2040_PICO
     // Raspberry Pi Pico
     const byte a0         = 26; // A0
     const byte a1         = 27; // A1
@@ -30,7 +30,7 @@ unit GPIO
     
 #endif
 
-#ifdef RP2040PICOW
+#ifdef RP2040_PICOW
     // Raspberry Pi Pico
     const byte a0         = 26; // A0
     const byte a1         = 27; // A1
@@ -41,7 +41,7 @@ unit GPIO
     
 #endif
 
-#ifdef ADAFRUITQTPY
+#ifdef ADAFRUIT_QTPY
     // AdaFruit QT Py
     const byte a0         = 29; // A0
     const byte a1         = 28; // A1
@@ -49,7 +49,7 @@ unit GPIO
     const byte a3         = 26; // A3
 #endif
 
-#ifdef TINY2040
+#ifdef PIMORONI_TINY2040
     // Pimoroni Tiny 2040 
     const byte a0          = 26; // A0
     const byte a1          = 27; // A1
@@ -64,27 +64,27 @@ unit GPIO
     
 #endif
 
-#ifdef ARDUINONANORP2040
+#ifdef ARDUINO_NANO_RP2040
     const byte a0         = 26; // A0
     const byte a1         = 27; // A1
     
     const byte builtInLED = 6;
 #endif
-#ifdef WAVESHARERP2040ONE
+#ifdef WAVESHARE_RP2040_ONE
     const byte builtInLED = 16; // GP16 WS2812 RGB LED??
 #endif
-#ifdef SEEEDRP2040
+#ifdef SEEED_RP2040
     const byte builtInLED  = 17;
     const byte builtInLEDR = 17;
     const byte builtInLEDG = 16;
     const byte builtInLEDB = 25;
 #endif
 
-#ifdef ARDUINONANOESP32
+#ifdef ARDUINO_NANO_ESP32
     const byte builtInLED = 13;
 #endif
 
-#ifdef SEEEDRP2040
+#ifdef SEEED_RP2040
     bool LEDR
     { 
         set 
@@ -113,7 +113,7 @@ unit GPIO
 
     uint A0 { get { return MCU.AnalogRead(a0); } }
     uint A1 { get { return MCU.AnalogRead(a1); } }
-#ifndef ARDUINONANORP2040    
+#ifndef ARDUINO_NANO_RP2040    
     uint A2 { get { return MCU.AnalogRead(a2); } }
     uint A3 { get { return MCU.AnalogRead(a3); } }
 #endif
@@ -123,10 +123,10 @@ unit GPIO
         set 
         { 
             MCU.PinMode(builtInLED, MCU.PinModeOption.Output);
-#ifdef WEMOSD1MINI
+#ifdef WEMOS_D1_MINI
             value = !value; // false = ON?!
 #endif
-#ifdef TINY2040
+#ifdef PIMORONI_TINY2040
             value = !value; // false = ON?!
 #endif
             MCU.DigitalWrite(builtInLED, value); 

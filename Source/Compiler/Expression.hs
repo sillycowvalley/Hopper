@@ -1224,7 +1224,7 @@ unit Expression
                 }
                 else
                 {
-                    Parser.Error("H6502 has a limit of 16383 for function indices, (was '" + wiOverload.ToString() + "')");
+                    Parser.Error("HOPPER_6502 has a limit of 16383 for function indices, (was '" + wiOverload.ToString() + "')");
                 }
             }
             else if (CodeStream.IsShortCalls && (wiOverload < 256) && !IsTinyHopper)

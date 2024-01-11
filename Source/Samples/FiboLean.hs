@@ -1,7 +1,7 @@
 program FiboUInt
 {
 //#define CHECKED     // mainly stack checks, range checks and division by zero
-#define SERIALCONSOLE // Source/System/IO uses serial only (for MCU's etc)
+#define SERIAL_CONSOLE // Source/System/IO uses serial only (for MCU's etc)
 
     uses "/Source/Runtime/Emulation/Minimal" // minimal use of actual 'system' APIs
     uses "/Source/Runtime/Emulation/Memory"

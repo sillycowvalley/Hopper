@@ -5,7 +5,7 @@ unit Time
 #ifdef MCU
     Delay(uint ms) system;
 #else
-  #ifdef H6502
+  #ifdef HOPPER_6502
     Delay(uint ms) system;
   #else
     Delay(uint ms)

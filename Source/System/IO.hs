@@ -25,7 +25,7 @@ unit IO
     // Other content is buffered for Read(..)
     //   bool IsBreak() 
     //
-    // Wait for and read the next character from Serial for H6502 and from keyboard for Windows.
+    // Wait for and read the next character from Serial for HOPPER_6502 and from keyboard for Windows.
     // Non-printable keys are rejected except for <ctrl><C>, Enter, Backspace and Escape which
     // are transformed to their ASCII values. <ctrl><V> pastes the clipboard into the keyboard buffer
     // on the client (Windows) side:
@@ -36,7 +36,7 @@ unit IO
     //
     // Output methods similar to Print(..) and PrintLn(..).
     // On Windows, they only output to Screen.
-    // On H6502 generic Write outputs to Serial and
+    // On HOPPER_6502 generic Write outputs to Serial and
     // both=true sends output to both Serial and Screen (LCD):
     //
     //   Write(char c)      | WriteBoth(char c, bool both)
@@ -51,7 +51,7 @@ unit IO
     {
         get 
         { 
-#if defined(SERIALCONSOLE) || defined(H6502)
+#if defined(SERIAL_CONSOLE) || defined(HOPPER_6502)
             return 120;
 #else            
             return Screen.Columns-1;
@@ -60,7 +60,7 @@ unit IO
     }
     Clear()
     {
-#ifdef SERIALCONSOLE
+#ifdef SERIAL_CONSOLE
         Serial.WriteChar(char(0x0C)); // form feed
         if (echoToLCD)
         {
@@ -71,7 +71,7 @@ unit IO
 #endif
         }
 #else        
-    #ifdef H6502
+    #ifdef HOPPER_6502
         if (echoToLCD)
         {
             Screen.Clear();
@@ -122,7 +122,7 @@ unit IO
         byte lsb = byte(u & 0xFF);
         WriteHex(lsb);
     }
-#ifdef SERIALCONSOLE
+#ifdef SERIAL_CONSOLE
     Write(char c)
     {
         Serial.WriteChar(c);
@@ -201,7 +201,7 @@ unit IO
         WriteBoth(char(0x0D), both);
     }
     
-#ifdef H6502    
+#ifdef HOPPER_6502    
     WriteBoth(char c, bool both)
     {
 
@@ -286,7 +286,7 @@ unit IO
             }
             else
             {
-#if defined(SERIALCONSOLE) || defined(H6502)
+#if defined(SERIAL_CONSOLE) || defined(HOPPER_6502)
                 ch = Serial.ReadChar();
 #else                
                 Key key = Keyboard.ReadKey();
@@ -353,7 +353,7 @@ unit IO
     {
         get
         {
-#if defined(SERIALCONSOLE) || defined(H6502)
+#if defined(SERIAL_CONSOLE) || defined(HOPPER_6502)
             return (HaveKey()) || Serial.IsAvailable;
 #else
             return Keyboard.IsAvailable;
@@ -362,7 +362,7 @@ unit IO
     }
     bool IsBreak()
     {
-#if defined(SERIALCONSOLE) || defined(H6502)
+#if defined(SERIAL_CONSOLE) || defined(HOPPER_6502)
         while (Serial.IsAvailable)
         {
             char ch = Serial.ReadChar();
@@ -435,7 +435,7 @@ unit IO
     
 #else        
     
-#ifndef TINYHOPPER    
+#ifndef TINY_HOPPER    
     string keyboardBuffer; // used by Read(..)
 #endif        
     PushKey(char c)

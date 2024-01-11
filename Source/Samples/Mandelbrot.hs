@@ -1,7 +1,7 @@
 program Mandelbrot
 {
-//#define TINYHOPPER    
-#define SERIALCONSOLE
+//#define TINY_HOPPER    
+#define SERIAL_CONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
 

@@ -1,7 +1,7 @@
 program CD
 {
 
-#define TINYHOPPER // Shell Commands must work in TinyHopper
+//#define TINY_HOPPER // Shell Commands must work in Tiny Hopper
 
     uses "/Source/System/System"
     uses "/Source/System/Screen"

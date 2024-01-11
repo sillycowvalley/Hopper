@@ -28,8 +28,8 @@ unit CodeStream
     
     InitializeSymbolShortcuts()
     {
-        shortCallsDefined = DefineExists("SHORTCALLS");
-        h6502Defined      = DefineExists("H6502");
+        shortCallsDefined = DefineExists("SHORT_CALLS");
+        h6502Defined      = DefineExists("HOPPER_6502");
         mcuDefined        = DefineExists("MCU");
     }
     bool InUse { get { return currentStream.Length > 0; } } 

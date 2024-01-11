@@ -2044,7 +2044,7 @@ unit Symbols
                     }
                     default:
                     {
-#ifndef JSONEXPRESS
+#ifndef JSON_EXPRESS
                         PrintLn("case '" + kv.key + "' not supported in Symbols.Import");
 #endif
                     }

@@ -1273,7 +1273,7 @@ unit Instructions
             <string,variant> methodSymbols =  Code.GetMethodSymbols(methodKey);
             if ((methodSymbols.Count == 0) && methodKey.StartsWith("0xC"))
             {
-                // H6502 method indices marked with 0xCnnn before replaced with addresses
+                // HOPPER_6502 method indices marked with 0xCnnn before replaced with addresses
                 methodKey = methodKey.Replace("0xC", "0x0");
                 methodSymbols =  Code.GetMethodSymbols(methodKey);
             }

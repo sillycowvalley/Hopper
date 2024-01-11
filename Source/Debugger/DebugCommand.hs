@@ -255,7 +255,7 @@ unit DebugCommand
     }
     Reload()
     {
-        // load the ihex to the H6502
+        // load the ihex to the HOPPER_6502
         Monitor.UploadHex(Monitor.GetCurrentHexPath());
         Output.Clear();
         ConsoleCapture.ClearLog();

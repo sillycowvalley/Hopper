@@ -79,7 +79,7 @@ unit Long
         return success;
     }
     
-#ifndef H6502  
+#ifndef HOPPER_6502  
     string ToString(long this) system;
 #else    
     string ToString(long this)
@@ -119,7 +119,7 @@ unit Long
     byte GetByte(long this, byte index) system;
     long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     
-#ifndef H6502    
+#ifndef HOPPER_6502    
     float ToFloat(long this) system;
 #endif    
 

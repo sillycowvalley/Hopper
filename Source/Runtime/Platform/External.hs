@@ -426,7 +426,7 @@ unit External
     WatchDog()
     {
         // ping the MCU watchdog so it knows we are still alive
-#ifdef SERIALCONSOLE
+#ifdef SERIAL_CONSOLE
         // any code to prevent the optimizer from removing WatchDog()
         for (uint i = 0; i < 1; i++)
         {

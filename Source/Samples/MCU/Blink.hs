@@ -1,14 +1,14 @@
 program Blink
 {
-//#define TINYHOPPER
-//#define RP2040PICO
-#define RP2040PICOW
-//#define TINY2040
-//#define SEEEDRP2040
-//#define ARDUINONANORP2040
-//#define ARDUINONANOESP32
-//#define WEMOSD1MINI
-//#define WAVESHARERP2040ONE
+//#define TINY_HOPPER
+//#define RP2040_PICO
+#define RP2040_PICOW
+//#define PIMORONI_TINY2040
+//#define SEEED_RP2040
+//#define ARDUINO_NANO_RP2040
+//#define ARDUINO_NANO_ESP32
+//#define WEMOS_D1_MINI
+//#define WAVESHARE_RP2040_ONE
     
     uses "/Source/Library/MCU"
     

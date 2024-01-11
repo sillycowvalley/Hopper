@@ -1,8 +1,8 @@
 unit MCU
 {
 
-#if !defined(SERIALCONSOLE)
-  #define SERIALCONSOLE // for IO.hs if there is no alternative screen (like an LCD for example)
+#if !defined(SERIAL_CONSOLE)
+  #define SERIAL_CONSOLE // for IO.hs if there is no alternative screen (like an LCD for example)
 #endif
 
 #if !defined(MCU)
@@ -15,7 +15,7 @@ unit MCU
     uses "/Source/Library/Wire"
     uses "/Source/Library/SPI"
 
-#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(TINY2040) || defined(WAVESHARERP2040ONE) || defined(SEEEDRP2040) || defined(ARDUINONANORP2040) || defined(WEMOSD1MINI)
+#if defined(RP2040_PICO) || defined(RP2040_PICOW) || defined(PIMORONI_TINY2040) || defined(WAVESHARE_RP2040_ONE) || defined(SEEED_RP2040) || defined(ARDUINO_NANO_RP2040) || defined(WEMOS_D1_MINI)
     flags PinModeOption
     {
         Input         = 0x00,
@@ -25,7 +25,7 @@ unit MCU
     }
 #endif
             
-#ifdef ARDUINONANOESP32    
+#ifdef ARDUINO_NANO_ESP32    
     flags PinModeOption
     {
         Input         = 0x01,

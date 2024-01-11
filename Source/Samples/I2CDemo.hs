@@ -1,6 +1,6 @@
 program I2CDemo
 {
-#define SERIALCONSOLE
+#define SERIAL_CONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
     uses "/Source/System/Color"

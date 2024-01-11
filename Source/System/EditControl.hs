@@ -2,7 +2,7 @@ unit EditControl
 {
     uses "/Source/System/System"
     uses "/Source/System/Screen"
-#ifndef SERIALCONSOLE    
+#ifndef SERIAL_CONSOLE    
     uses "/Source/System/Keyboard"
 #endif    
     
@@ -22,7 +22,7 @@ unit EditControl
         backColor = back;
     }
 
-#ifdef SERIALCONSOLE
+#ifdef SERIAL_CONSOLE
     bool OnKey(char ch, uint leftX, uint fieldWidth, ref string textContent, ref uint currentX)
     {
         bool consumed = false;

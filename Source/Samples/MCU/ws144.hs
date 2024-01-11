@@ -1,6 +1,6 @@
 program WaveShareLCD144Demo
 {
-    #define RP2040PICOW
+    #define RP2040_PICOW
     
     uses "/Source/Library/Displays/WSPicoLCD144"
     

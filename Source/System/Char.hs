@@ -10,7 +10,7 @@ unit Char
     char ToDigit(byte d) system; // TODO : should be in Byte
     char ToHex(byte h) system;   // TODO : should be in Byte
     
-  #ifdef H6502
+  #ifdef HOPPER_6502
     string ToString(char this)
     {
         string result;

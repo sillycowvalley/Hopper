@@ -106,7 +106,7 @@ unit Token
         return tokenType;
     }
 
-#ifndef H6502        
+#ifndef HOPPER_6502        
     <string,bool> typeKeywords;           // blue
     <string,bool> statementKeywords;      // purple
     <string,bool> directiveKeywords;      // dark gray
@@ -294,6 +294,7 @@ unit Token
             switch (tokenType)
             {
                 case HopperToken.Identifier:
+                case HopperToken.DottedIdentifier:
                 {
                     content = content + " '" + token["lexeme"] + "'";
                 }

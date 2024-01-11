@@ -1,11 +1,11 @@
 program TestSuite
 {
-//#define TINYHOPPER
-#define SERIALCONSOLE
+//#define TINY_HOPPER
+#define SERIAL_CONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
-#ifndef H6502
+#ifndef HOPPER_6502
 #define TESTFLOATS
 #endif
     
@@ -21,7 +21,7 @@ program TestSuite
     PrintFailed(string message)
     {
       
-#ifdef H6502
+#ifdef HOPPER_6502
         WriteLn("  " + message);
 #else
         WriteLn("  " + message);
@@ -1766,7 +1766,7 @@ program TestSuite
         TestDictionary32();
         
         TestFor();
-#ifndef H6502
+#ifndef HOPPER_6502
         TestVariantDictionary(); // Variant.Box
 #endif           
         TestDictionaryExpandRR();
@@ -1783,7 +1783,7 @@ program TestSuite
         TestListOfDictionaries();
         TestDictionaryOfDictionaries();
                               
-#ifndef H6502   
+#ifndef HOPPER_6502   
 
 #ifdef TEXTBUFFER
         TestTextBuffer();
@@ -1792,7 +1792,7 @@ program TestSuite
 #endif
         WriteLn();
         WriteLn("TestSuite Ok");
-#ifndef SERIALCONSOLE
+#ifndef SERIAL_CONSOLE
         Key key = ReadKey();
 #endif
     }

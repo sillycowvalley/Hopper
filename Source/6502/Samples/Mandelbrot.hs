@@ -7,7 +7,7 @@ program Mandelbrot
 
     ClearScreen()
     {
-#ifdef H6502
+#ifdef HOPPER_6502
         Serial.WriteChar(char(0x0C)); // form feed
 #else
         Screen.Clear();
@@ -15,7 +15,7 @@ program Mandelbrot
     }
     NewLine()
     {
-#ifdef H6502
+#ifdef HOPPER_6502
         Serial.WriteChar(char(0x0D));
 #else
         PrintLn();
@@ -23,7 +23,7 @@ program Mandelbrot
     }
     OutChar(char ch)
     {
-#ifdef H6502
+#ifdef HOPPER_6502
         Serial.WriteChar(ch);
 #else
         Print(ch);
