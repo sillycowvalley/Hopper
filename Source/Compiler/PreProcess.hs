@@ -133,7 +133,7 @@ program PreProcess
                             break;   
                         }
                     }
-                    else if (((currentUnit == "System") || (currentUnit == "Runtime") || (currentUnit == "Wire")) && (typeString == "byte"))
+                    else if (((currentUnit == "System") || (currentUnit == "Runtime") || (currentUnit == "Wire") || (currentUnit == "SPI")) && (typeString == "byte"))
                     {
                         systemByteArray = true;
                     }
@@ -294,7 +294,6 @@ program PreProcess
                 break;
             }
             Symbols.AddConstant(idToken["lexeme"], value);   
-            
             Parser.Consume(HopperToken.SemiColon, "';' expected");
             break;                                 
        }          

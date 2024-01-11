@@ -2,6 +2,7 @@ unit Library
 {
     uses "/Source/Runtime/Platform/LibCalls"
     uses "/Source/Runtime/Platform/Wire"
+    uses "/Source/Runtime/Platform/SPI"
     
     delegate ISRDelegate();
     
@@ -189,7 +190,311 @@ unit Library
                 Push(result ? 1 : 0, Type.Bool);
                 isrExists = true;
             }
-          
+            
+            
+            case LibCall.SPIBegin:
+            {
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif   
+                }
+                bool result = HRSPI.Begin(byte(spiController));
+                Push(result ? 1 : 0, Type.Bool);
+            }
+            case LibCall.SPIBeginTransaction:
+            {
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif   
+                }
+                HRSPI.BeginTransaction(byte(spiController));
+            }
+            case LibCall.SPIEndTransaction:
+            {
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif   
+                }
+                HRSPI.EndTransaction(byte(spiController));
+            }
+            case LibCall.SPISetCSPin:
+            {
+                Type ptype;
+                uint pin = Pop(ref ptype);
+                Type ctype;
+                uint spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+                AssertByte(ctype, spiController);
+#endif   
+                HRSPI.SetCSPin(byte(spiController), byte(pin));
+            }
+            case LibCall.SPIGetCSPin:
+            {
+                Type ctype;
+                uint spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+                AssertByte(ctype, spiController);
+#endif   
+                byte pin = HRSPI.GetCSPin(byte(spiController));
+                Push(pin, Type.Byte);
+            }
+            case LibCall.SPISetClkPin:
+            {
+                Type ptype;
+                uint pin = Pop(ref ptype);
+                Type ctype;
+                uint spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+                AssertByte(ctype, spiController);
+#endif
+                HRSPI.SetClkPin(byte(spiController), byte(pin));
+            }
+            case LibCall.SPISetTxPin:
+            {
+                Type ptype;
+                uint pin = Pop(ref ptype);
+                Type ctype;
+                uint spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+                AssertByte(ctype, spiController);
+#endif
+                HRSPI.SetTxPin(byte(spiController), byte(pin));
+            }
+            case LibCall.SPISetRxPin:
+            {
+                Type ptype;
+                uint pin = Pop(ref ptype);
+                Type ctype;
+                uint spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+                AssertByte(ctype, spiController);
+#endif
+                HRSPI.SetRxPin(byte(spiController), byte(pin));
+            }
+            
+            case LibCall.SPICSPinGet:
+            {
+                byte value = HRSPI.GetCSPin(0);
+                Push(value, Type.Byte);
+            }
+            case LibCall.SPICSPinSet:
+            {
+                Type ptype;
+                uint pin = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+#endif
+                HRSPI.SetCSPin(0, byte(pin));
+            }
+            case LibCall.SPIClkPinSet:
+            {
+                Type ptype;
+                uint pin = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+#endif
+                HRSPI.SetClkPin(0, byte(pin));
+            }
+            case LibCall.SPITxPinSet:
+            {
+                Type ptype;
+                uint pin = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+#endif
+                HRSPI.SetTxPin(0, byte(pin));
+            }
+            case LibCall.SPIRxPinSet:
+            {
+                Type ptype;
+                uint pin = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+#endif
+                HRSPI.SetRxPin(0, byte(pin));
+            }
+            case LibCall.SPIReadByte:
+            {
+                Type dtype;
+                uint data = Pop(ref dtype);
+#ifdef CHECKED             
+                AssertByte(dtype, data);
+#endif
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif
+                }
+                data = HRSPI.ReadByte(byte(spiController));
+                Push(data, Type.Byte);
+            }
+            case LibCall.SPIWriteByte:
+            {
+                Type dtype;
+                uint data = Pop(ref dtype);
+#ifdef CHECKED             
+                AssertByte(dtype, data);
+#endif
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif
+                }
+                HRSPI.WriteByte(byte(spiController), byte(data));
+            }
+            case LibCall.SPIReadWord:
+            {
+                Type dtype;
+                uint data = Pop(ref dtype);
+#ifdef CHECKED             
+                AssertUInt(dtype, data);
+#endif
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif
+                }
+                data = HRSPI.ReadWord(byte(spiController));
+                Push(data, Type.UInt);
+            }
+            case LibCall.SPIWriteWord:
+            {
+                Type dtype;
+                uint data = Pop(ref dtype);
+#ifdef CHECKED             
+                AssertUInt(dtype, data);
+#endif
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif
+                }
+                HRSPI.WriteWord(byte(spiController), data);
+            }
+            case LibCall.SPIReadBuffer:
+            {
+                Type ltype;
+                uint length = Pop(ref ltype);
+                Type stype;
+                uint startIndex = Pop(ref stype);
+                Type dtype;
+                uint hrdata = Pop(ref dtype);
+#ifdef CHECKED             
+                AssertUInt(ltype, length);
+                AssertUInt(stype, startIndex);
+                if (dtype != Type.Array)
+                {
+                    ErrorDump(165);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif
+                }
+                HRSPI.ReadBuffer(byte(spiController), hrdata, startIndex, length);
+                GC.Release(hrdata);
+            }
+            case LibCall.SPIWriteBuffer:
+            {
+                Type ltype;
+                uint length = Pop(ref ltype);
+                Type stype;
+                uint startIndex = Pop(ref stype);
+                Type dtype;
+                uint hrdata = Pop(ref dtype);
+#ifdef CHECKED             
+                AssertUInt(ltype, length);
+                AssertUInt(stype, startIndex);
+                if (dtype != Type.Array)
+                {
+                    ErrorDump(165);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif
+                }
+                HRSPI.WriteBuffer(byte(spiController), hrdata, startIndex, length);
+                GC.Release(hrdata);
+            }
+            case LibCall.SPISettings:
+            {
+                // long speedMaximum, DataOrder dataOrder, DataMode dataMode
+                Type mtype;
+                DataMode dataMode = DataMode(Pop(ref mtype));
+                Type otype;
+                DataOrder dataOrder = DataOrder(Pop(ref otype));
+                Type stype;
+                uint hrspeed = Pop(ref stype);
+#ifdef CHECKED             
+                AssertByte(mtype, uint(dataMode));
+                AssertByte(otype, uint(dataOrder));
+                if (atypestype != Type.Long)
+                {
+                    ErrorDump(170);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif                   
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif   
+                }
+                HRSPI.Settings(byte(spiController), hrspeed, dataOrder, dataMode);
+                GC.Release(hrspeed);
+            }
             
             default:
             {

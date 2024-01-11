@@ -1654,19 +1654,19 @@ unit Expression
                         HopperToken ttype = Token.GetType(currentToken);
                         if (ttype != HopperToken.RBrace)
                         {
-                            if (ttype != HopperToken.Integer)
+                            value = ParseConstantExpression("byte");
+                            if (HadError)
                             {
-                                Parser.ErrorAtCurrent("hex character constant expected");
                                 break;
                             }
+                            
                             uint v;
-                            if (!UInt.TryParse(currentToken["lexeme"], ref v) || (v > 255))
+                            if (!UInt.TryParse(value, ref v) || (v > 255))
                             {
                                 Parser.ErrorAtCurrent("hex character constant expected");
                                 break;
                             }
                             String.Build(ref value, char(v));
-                            Parser.Advance();
                             currentToken = Parser.CurrentToken;
                             ttype = Token.GetType(currentToken);
                             if (ttype == HopperToken.Comma)

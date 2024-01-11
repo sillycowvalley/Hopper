@@ -5902,6 +5902,226 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         Library_isrExists = true;
         break;
     }
+    case LibCall::eSPIBegin:
+    {
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        Bool result = HRSPI_Begin(Byte(spiController));
+        HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
+    case LibCall::eSPIBeginTransaction:
+    {
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        HRSPI_BeginTransaction(Byte(spiController));
+        break;
+    }
+    case LibCall::eSPIEndTransaction:
+    {
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        HRSPI_EndTransaction(Byte(spiController));
+        break;
+    }
+    case LibCall::eSPISetCSPin:
+    {
+        Type ptype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ptype);
+        Type ctype = (Type)0;
+        UInt spiController = HopperVM_Pop_R(ctype);
+        HRSPI_SetCSPin(Byte(spiController), Byte(pin));
+        break;
+    }
+    case LibCall::eSPIGetCSPin:
+    {
+        Type ctype = (Type)0;
+        UInt spiController = HopperVM_Pop_R(ctype);
+        Byte pin = HRSPI_GetCSPin(Byte(spiController));
+        HopperVM_Push(pin, Type::eByte);
+        break;
+    }
+    case LibCall::eSPISetClkPin:
+    {
+        Type ptype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ptype);
+        Type ctype = (Type)0;
+        UInt spiController = HopperVM_Pop_R(ctype);
+        HRSPI_SetClkPin(Byte(spiController), Byte(pin));
+        break;
+    }
+    case LibCall::eSPISetTxPin:
+    {
+        Type ptype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ptype);
+        Type ctype = (Type)0;
+        UInt spiController = HopperVM_Pop_R(ctype);
+        HRSPI_SetTxPin(Byte(spiController), Byte(pin));
+        break;
+    }
+    case LibCall::eSPISetRxPin:
+    {
+        Type ptype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ptype);
+        Type ctype = (Type)0;
+        UInt spiController = HopperVM_Pop_R(ctype);
+        HRSPI_SetRxPin(Byte(spiController), Byte(pin));
+        break;
+    }
+    case LibCall::eSPICSPinGet:
+    {
+        Byte value = HRSPI_GetCSPin(0x00);
+        HopperVM_Push(value, Type::eByte);
+        break;
+    }
+    case LibCall::eSPICSPinSet:
+    {
+        Type ptype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ptype);
+        HRSPI_SetCSPin(0x00, Byte(pin));
+        break;
+    }
+    case LibCall::eSPIClkPinSet:
+    {
+        Type ptype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ptype);
+        HRSPI_SetClkPin(0x00, Byte(pin));
+        break;
+    }
+    case LibCall::eSPITxPinSet:
+    {
+        Type ptype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ptype);
+        HRSPI_SetTxPin(0x00, Byte(pin));
+        break;
+    }
+    case LibCall::eSPIRxPinSet:
+    {
+        Type ptype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ptype);
+        HRSPI_SetRxPin(0x00, Byte(pin));
+        break;
+    }
+    case LibCall::eSPIReadByte:
+    {
+        Type dtype = (Type)0;
+        UInt data = HopperVM_Pop_R(dtype);
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        data = HRSPI_ReadByte(Byte(spiController));
+        HopperVM_Push(data, Type::eByte);
+        break;
+    }
+    case LibCall::eSPIWriteByte:
+    {
+        Type dtype = (Type)0;
+        UInt data = HopperVM_Pop_R(dtype);
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        HRSPI_WriteByte(Byte(spiController), Byte(data));
+        break;
+    }
+    case LibCall::eSPIReadWord:
+    {
+        Type dtype = (Type)0;
+        UInt data = HopperVM_Pop_R(dtype);
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        data = HRSPI_ReadWord(Byte(spiController));
+        HopperVM_Push(data, Type::eUInt);
+        break;
+    }
+    case LibCall::eSPIWriteWord:
+    {
+        Type dtype = (Type)0;
+        UInt data = HopperVM_Pop_R(dtype);
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        HRSPI_WriteWord(Byte(spiController), data);
+        break;
+    }
+    case LibCall::eSPIReadBuffer:
+    {
+        Type ltype = (Type)0;
+        UInt length = HopperVM_Pop_R(ltype);
+        Type stype = (Type)0;
+        UInt startIndex = HopperVM_Pop_R(stype);
+        Type dtype = (Type)0;
+        UInt hrdata = HopperVM_Pop_R(dtype);
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        HRSPI_ReadBuffer(Byte(spiController), hrdata, startIndex, length);
+        GC_Release(hrdata);
+        break;
+    }
+    case LibCall::eSPIWriteBuffer:
+    {
+        Type ltype = (Type)0;
+        UInt length = HopperVM_Pop_R(ltype);
+        Type stype = (Type)0;
+        UInt startIndex = HopperVM_Pop_R(stype);
+        Type dtype = (Type)0;
+        UInt hrdata = HopperVM_Pop_R(dtype);
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        HRSPI_WriteBuffer(Byte(spiController), hrdata, startIndex, length);
+        GC_Release(hrdata);
+        break;
+    }
+    case LibCall::eSPISettings:
+    {
+        Type mtype = (Type)0;
+        DataMode dataMode = DataMode(HopperVM_Pop_R(mtype));
+        Type otype = (Type)0;
+        DataOrder dataOrder = DataOrder(HopperVM_Pop_R(otype));
+        Type stype = (Type)0;
+        UInt hrspeed = HopperVM_Pop_R(stype);
+        UInt spiController = 0x00;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            spiController = HopperVM_Pop_R(ctype);
+        }
+        HRSPI_Settings(Byte(spiController), hrspeed, dataOrder, dataMode);
+        GC_Release(hrspeed);
+        break;
+    }
     default:
     {
         IO_WriteHex(HopperVM_PC_Get());

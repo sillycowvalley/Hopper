@@ -4,6 +4,7 @@ unit Display
         
     uint pixelWidth; 
     uint pixelHeight;
+#ifdef I2CSCREENDRIVER    
     byte i2cAddress;
     byte i2cController; // conveniently defaults to zero
     byte sdaPin;        // zero implies use the default depending on controller
@@ -12,7 +13,8 @@ unit Display
     byte I2CAddress    { get { return i2cAddress; }    set { i2cAddress = value; } }
     byte I2CSDAPin     { get { return sdaPin; }        set { sdaPin = value; } }
     byte I2CSCLPin     { get { return sclPin; }        set { sclPin = value; } }
-    
+#endif
+
     uint PixelWidth  { get { return pixelWidth;  } set { pixelWidth  = value;  }}
     uint PixelHeight { get { return pixelHeight; } set { pixelHeight = value;  }}
     
@@ -39,7 +41,7 @@ unit Display
         }
         if (suspended == 0)
         {
-            Update(); // defined in current display driver
+            UpdateDisplay(); // defined in current display driver
         }
     }
     Suspend()
@@ -52,7 +54,7 @@ unit Display
         IO.Write("<Display.Clear");
 #endif        
         Suspend();
-        ClearBuffer(colour);
+        ClearDisplay(colour);
         Resume();
 #ifdef DISPLAYDIAGNOSTICS
         IO.WriteLn(">");
@@ -182,7 +184,7 @@ unit Display
     
     ScrollUp(uint lines)
     {
-        DisplayDriver.ScrollUp(lines);
+        DisplayDriver.ScrollUpDisplay(lines);
     }
     
 }

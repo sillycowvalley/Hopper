@@ -901,6 +901,7 @@ program Translate
             bool isExternal = methodName.StartsWith("External.") 
                            //|| methodName.StartsWith("HRScreen.") 
                            || methodName.StartsWith("HRWire.") 
+                           || methodName.StartsWith("HRSPI.") 
                            //|| methodName.StartsWith("HRGraphics.")
                            || methodName.Contains(".Inlined");
             

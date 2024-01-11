@@ -1,6 +1,7 @@
 unit DisplayDriver
 {
     #define DISPLAYDRIVER
+    #define I2CSCREENDRIVER
     
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
@@ -47,7 +48,7 @@ unit DisplayDriver
     
     byte[1024] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
     
-    ScrollUp(uint lines)
+    ScrollUpDisplay(uint lines)
     {
         uint pw8 = uint(pixelWidth/8);
         uint dy;
@@ -244,10 +245,10 @@ unit DisplayDriver
         }
     }
     
-    Update()
+    UpdateDisplay()
     {
 #ifdef DISPLAYDIAGNOSTICS
-        IO.Write("<OLEDSSD1306.Update");
+        IO.Write("<OLEDSSD1306.UpdateDisplay");
 #endif
         if (i2cConfigured)
         {
@@ -297,7 +298,7 @@ unit DisplayDriver
         IO.WriteLn(">");
 #endif        
     }
-    ClearBuffer(uint colour)
+    ClearDisplay(uint colour)
     {
         int size = pixelWidth * pixelHeight / 8;
         if (colour == Color.Black)

@@ -467,16 +467,32 @@ unit Source
                 case "string":
                 {
                     uint length = Pages.GetPageWord(value0+2);
+                    string str;
                     for (uint i = 0; i < length; i++)
                     {
-                        content = content + StringGetChar(value0, i);
+                        str = str + StringGetChar(value0, i);
                     }
-                    if ((content.Length > limit) && (limit > 4))
+                    if (IsHexDisplayMode)
                     {
-                        content = content.Substring(0, limit-4);
-                        content = content + "..";
+                        
+                        uint i = 0;
+                        loop
+                        {
+                            if (i == str.Length) { break; }
+                            content = content + (byte(str[i])).ToHexString(2) + " ";
+                            if (content.Length >= limit) { break; }
+                            i++;
+                        }
                     }
-                    content = '"' + content + '"';
+                    else
+                    {
+                        if ((str.Length > limit) && (limit > 4))
+                        {
+                            str = str.Substring(0, limit-4);
+                            str = str + "..";
+                        }
+                        content = '"' + str + '"';
+                    }
                 }
                 case "dictionary":
                 {

@@ -24,6 +24,28 @@ unit LibCalls
         addEntry("MCU", "AnalogWrite");
         addEntry("MCU", "AnalogWriteResolution");
         addEntry("MCU", "AttachToPin");
+        
+        addEntry("SPI", "Settings");
+        addEntry("SPI", "Begin");
+        addEntry("SPI", "BeginTransaction");
+        addEntry("SPI", "EndTransaction");
+        addEntry("SPI", "ReadByte");
+        addEntry("SPI", "ReadWord");
+        addEntry("SPI", "ReadBuffer");
+        addEntry("SPI", "WriteByte");
+        addEntry("SPI", "WriteWord");
+        addEntry("SPI", "WriteBuffer");
+        addEntry("SPI", "SetCSPin");
+        addEntry("SPI", "GetCSPin");
+        addEntry("SPI", "SetClkPin");
+        addEntry("SPI", "SetTxPin");
+        addEntry("SPI", "SetRxPin");
+        
+        addEntry("SPI", "CSPin_Get");
+        addEntry("SPI", "CSPin_Set");
+        addEntry("SPI", "ClkPin_Set");
+        addEntry("SPI", "TxPin_Set");
+        addEntry("SPI", "RxPin_Set");
     }
     
     bool TryParseLibCall(string name, ref byte index)

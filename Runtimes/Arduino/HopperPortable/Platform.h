@@ -115,4 +115,21 @@ void HRWire_Write(Byte controller, Byte data);
 void HRWire_Write(Byte controller, UInt hrarray, UInt startIndex, UInt length);
 void HRWire_Configure(Byte controller, Byte sdaPin, Byte sclPin);
 
+Bool HRSPI_Begin(Byte spiController);
+void HRSPI_BeginTransaction(Byte spiController);
+void HRSPI_EndTransaction(Byte spiController);
+void HRSPI_SetCSPin(Byte spiController, Byte csPin);
+void HRSPI_SetClkPin(Byte spiController, Byte clkPin);
+void HRSPI_SetTxPin(Byte spiController, Byte txPin);
+void HRSPI_SetRxPin(Byte spiController, Byte rxPin);
+Byte HRSPI_GetCSPin(Byte spiController);
+Byte HRSPI_ReadByte(Byte spiController);
+UInt HRSPI_ReadWord(Byte spiController);
+void HRSPI_ReadBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt length);
+void HRSPI_WriteByte(Byte spiController, Byte data);
+void HRSPI_WriteWord(Byte spiController, UInt data);
+void HRSPI_WriteBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt length);
+void HRSPI_Settings(Byte spiController, UInt hrspeedMaximum, DataOrder dataOrder, DataMode dataMode);
+
+
 #endif // HOPPERPLATFORM_H

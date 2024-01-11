@@ -342,6 +342,38 @@ enum LibCall {
     eMCUAnalogWrite = 0x0009,
     eMCUAnalogWriteResolution = 0x000A,
     eMCUAttachToPin = 0x000B,
+    eSPISettings = 0x000C,
+    eSPIBegin = 0x000D,
+    eSPIBeginTransaction = 0x000E,
+    eSPIEndTransaction = 0x000F,
+    eSPIReadByte = 0x0010,
+    eSPIReadWord = 0x0011,
+    eSPIReadBuffer = 0x0012,
+    eSPIWriteByte = 0x0013,
+    eSPIWriteWord = 0x0014,
+    eSPIWriteBuffer = 0x0015,
+    eSPISetCSPin = 0x0016,
+    eSPIGetCSPin = 0x0017,
+    eSPISetClkPin = 0x0018,
+    eSPISetTxPin = 0x0019,
+    eSPISetRxPin = 0x001A,
+    eSPICSPinGet = 0x001B,
+    eSPICSPinSet = 0x001C,
+    eSPIClkPinSet = 0x001D,
+    eSPITxPinSet = 0x001E,
+    eSPIRxPinSet = 0x001F,
+};
+
+enum DataOrder {
+    eLSBFirst = 0x0000,
+    eMSBFirst = 0x0001,
+};
+
+enum DataMode {
+    eMode0 = 0x0000,
+    eMode1 = 0x0001,
+    eMode2 = 0x0002,
+    eMode3 = 0x0003,
 };
 
 enum HopperFlags {
@@ -809,7 +841,6 @@ UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
-
 
 
 #endif // HOPPERRUNTIME_H

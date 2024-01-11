@@ -116,7 +116,7 @@ unit Screen
                 for (int x=0; x < cellWidth; x++)
                 {
                     uint colour = cellBuffer[x + y * cellWidth];
-                    SetPixel(x+x0, y+y0, colour);
+                    DisplayDriver.SetPixel(x+x0, y+y0, colour);
                 }
             }
             Display.Resume();

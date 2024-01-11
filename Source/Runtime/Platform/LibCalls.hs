@@ -15,5 +15,27 @@ unit LibCalls
         MCUAnalogWrite,
         MCUAnalogWriteResolution,
         MCUAttachToPin,
+        
+        SPISettings,
+        SPIBegin,
+        SPIBeginTransaction,
+        SPIEndTransaction,
+        SPIReadByte,
+        SPIReadWord,
+        SPIReadBuffer,
+        SPIWriteByte,
+        SPIWriteWord,
+        SPIWriteBuffer,
+        SPISetCSPin,
+        SPIGetCSPin,
+        SPISetClkPin,
+        SPISetTxPin,
+        SPISetRxPin,
+        
+        SPICSPinGet,
+        SPICSPinSet,
+        SPIClkPinSet,
+        SPITxPinSet,
+        SPIRxPinSet,
     }
 }
