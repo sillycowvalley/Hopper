@@ -1,26 +1,19 @@
 unit Display
 {
     uses "/Source/Library/Math.hs"
+    uses "/Source/Library/Screen"
         
     uint pixelWidth; 
     uint pixelHeight;
-    
-#ifdef I2C_SCREEN_DRIVER    
-    byte i2cAddress;
-    byte i2cController; // conveniently defaults to zero
-    byte sdaPin;        // zero implies use the default depending on controller
-    byte sclPin;        // zero implies use the default depending on controller
-    byte I2CController { get { return i2cController; } set { i2cController = value; } }
-    byte I2CAddress    { get { return i2cAddress; }    set { i2cAddress = value; } }
-    byte I2CSDAPin     { get { return sdaPin; }        set { sdaPin = value; } }
-    byte I2CSCLPin     { get { return sclPin; }        set { sclPin = value; } }
-#endif
 
     uint PixelWidth  { get { return pixelWidth;  } set { pixelWidth  = value;  }}
     uint PixelHeight { get { return pixelHeight; } set { pixelHeight = value;  }}
     
     bool Begin()
     {
+#ifdef FONT_EXISTS
+        Screen.FontData = Font.FontData;
+#endif        
         if (DisplayDriver.Begin())
         {
             DisplayDriver.Visible = true;

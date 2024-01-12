@@ -1,6 +1,11 @@
-unit HitachiFont5x7
+unit Font
 {
-    const string fontData = 
+    #define FONT_EXISTS
+    
+    const byte CellWidth    = 5;
+    const byte CellHeight   = 7;
+    
+    const string FontData = 
     {
         //  Hitachi HD44780A00
         //  https://www.eevblog.com/forum/projects/5x7-or-7x9-dot-matrix-font-files-in-cc/
@@ -101,6 +106,4 @@ unit HitachiFont5x7
         0x08, 0x08, 0x2A, 0x1C, 0x08 ,  // 7E 126  ~
         0x08, 0x1C, 0x2A, 0x08, 0x08    // 7F 127
     }
-    
-    string Data { get { return fontData; } }
 }

@@ -6,7 +6,10 @@ program SSD1306Demo
     //#define DISPLAY_DIAGNOSTICS
     
     uses "/Source/Library/Displays/OLEDSSD1306"
-    uses "/Source/Library/Fonts/Hitachi5x7"
+    //uses "/Source/Library/Fonts/Hitachi5x7"
+    uses "/Source/Library/Fonts/Verdana5x8"
+    //uses "/Source/Library/Fonts/System5x7"
+    //uses "/Source/Library/Fonts/Arduino6x8"
     
     TestDrawRect()
     {
@@ -88,19 +91,13 @@ program SSD1306Demo
     
     {
         EchoToLCD = true;
-        Screen.FontData = HitachiFont5x7.Data;
-        
-        Display.I2CAddress = 0x3C;
-        
-        Display.I2CController = 1;
-        Display.I2CSDAPin = 26; //14;
-        Display.I2CSCLPin = 27; //15;
-        
+
         if (!Display.Begin())
         {
             IO.WriteLn("Failed to initialize display");
             return;
         }
+        
         
         long start;
         long elapsed;
@@ -110,14 +107,16 @@ program SSD1306Demo
         loop
         {
             Display.Suspend();
-            WriteLn("Laps: " + laps.ToString());
+            WriteLn("Laps: ");
+            WriteLn(laps.ToString());
             Display.Resume();
             laps++;
             start = Millis;
             Display.Clear(Color.Black);
             elapsed = Millis - start;
             Display.Suspend();
-            WriteLn("Clear: " + elapsed.ToString());
+            WriteLn("Clear: ");
+            WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(1000);
             
@@ -125,7 +124,8 @@ program SSD1306Demo
             TestDrawRect();
             elapsed = Millis - start;
             Display.Suspend();
-            WriteLn("TestDrawRect: " + elapsed.ToString());
+            WriteLn("TestDrawRect: ");
+            WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(1000);
             
@@ -133,7 +133,8 @@ program SSD1306Demo
             TestFillRect();   
             elapsed = Millis - start;
             Display.Suspend();
-            WriteLn("TestFillRect: " + elapsed.ToString());
+            WriteLn("TestFillRect: ");
+            WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(1000);
             
@@ -141,7 +142,8 @@ program SSD1306Demo
             TestDrawLines();
             elapsed = Millis - start;
             Display.Suspend();
-            WriteLn("TestDrawLines: " + elapsed.ToString());
+            WriteLn("TestDrawLines: ");
+            WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(1000);
         }

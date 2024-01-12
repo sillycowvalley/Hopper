@@ -5,28 +5,31 @@ unit Screen
 #ifdef DISPLAY_DRIVER    
     uses "/Source/Library/Display"
 #endif
-    
-    const uint cellWidth = 6;
-    const uint cellHeight = 10;
-    
+
+#ifdef FONT_EXISTS
+    const uint cellWidth     = CellWidth +1;
+    const uint cellHeight    = CellHeight+1;
+    uint[cellWidth*cellHeight] cellBuffer;
+#endif
+
     byte cursorX;
     byte cursorY;
     string fontData;
-    uint[cellWidth*cellHeight] cellBuffer;
+    
     
     byte CursorX { get { cursorX; }}
     byte CursorY { get { cursorY; }}
-#ifdef DISPLAY_DRIVER
+#if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
     byte Columns { get { return byte(Display.PixelWidth / cellWidth); }}
     byte Rows    { get { return byte(Display.PixelHeight / cellHeight); }}
 #else
     byte Columns { get { return 0; }}
     byte Rows    { get { return 0; }}
 #endif
-    
+
+#if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
     string FontData { get { return fontData; } set { fontData = value; } }
-    
-    render6x8MonoCharacter(char chr, uint foreColour, uint backColour)
+    renderMonoCharacter(char chr, uint foreColour, uint backColour)
     {
         uint pixelb = ((backColour == 0x0000) || (backColour == 0xF000)) ? 0x0000 : 0x0FFF;
         uint pixelf = ((foreColour == 0x0000) || (foreColour == 0xF000)) ? 0x0000 : 0x0FFF;
@@ -39,26 +42,20 @@ unit Screen
             }
             return;
         }
-        uint bi = 0;
-        // top row
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
         
         uint addr = 0;
-        addr = addr + (5 * (byte(chr)-32));
-        byte[5] colColours;
-        for (byte x = 0; x < 5; x++)
+        addr = addr + (Font.CellWidth * (byte(chr)-32));
+        byte[Font.CellWidth] colColours;
+        for (byte x = 0; x < Font.CellWidth; x++)
         {
             colColours[x] = byte(fontData[addr]); addr++;
         }
-
-        for (byte y = 0; y < 8; y++)     // 0..7
+        
+        // This presumes fonts <= 8 pixels high (bytes per character == CellWidth)
+        uint bi = 0;
+        for (byte y = 0; y < Font.CellHeight; y++)     // 0..6
         {
-            for (byte x = 0; x < 5; x++) // 0..4
+            for (byte x = 0; x < Font.CellWidth; x++) // 0..4
             {
                 cellBuffer[bi] = (((colColours[x] & (1 << y)) != 0) ? pixelf : pixelb); bi++;
             }
@@ -67,19 +64,25 @@ unit Screen
         }
     
         // bottom row
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
-        cellBuffer[bi] = pixelb; bi++;
+        for (byte i = 0; i < cellWidth; i++)
+        {
+            cellBuffer[bi] = pixelb; bi++;
+        }
     }
-    
+#endif
+
     scrollOneLine()
     {
+        
+#ifdef FONT_EXISTS
+        byte scrollLines = cellHeight;
+#else
+        byte scrollLines = 8;
+#endif
+
 #ifdef DISPLAY_DRIVER
         Display.Suspend();
-        Display.ScrollUp(cellHeight);
+        Display.ScrollUp(scrollLines);
 #endif
         cursorY--;
 #ifdef DISPLAY_DRIVER
@@ -104,13 +107,13 @@ unit Screen
 
     DrawChar(uint col, uint row, char c, uint foreColour, uint backColour)
     {
-#ifdef DISPLAY_DRIVER
+#if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
         int x0 = int(col * cellWidth);
         int y0 = int(row * cellHeight);
         if (fontData.Length > 0)
         {
             Display.Suspend();
-            render6x8MonoCharacter(c, foreColour, backColour);
+            renderMonoCharacter(c, foreColour, backColour);
             for (int y=0; y < cellHeight; y++)
             {
                 for (int x=0; x < cellWidth; x++)

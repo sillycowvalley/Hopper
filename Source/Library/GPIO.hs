@@ -28,6 +28,10 @@ unit GPIO
     
     const byte builtInLED = 25; // different to the W
     
+    const byte DefaultI2CController = 0;
+    const byte DefaultI2CSDAPin     = 4;
+    const byte DefaultI2CSCLPin     = 5;
+    
 #endif
 
 #ifdef RP2040_PICOW
@@ -38,6 +42,10 @@ unit GPIO
     const byte a3         = 29; // VSYS/3 on Pi Pico
     
     const byte builtInLED = 32;
+    
+    const byte DefaultI2CController = 0;
+    const byte DefaultI2CSDAPin     = 4;
+    const byte DefaultI2CSCLPin     = 5;
     
 #endif
 
@@ -61,6 +69,10 @@ unit GPIO
     const byte builtInLEDR = 18;
     const byte builtInLEDG = 19;
     const byte builtInLEDB = 20;
+    
+    const byte DefaultI2CController = 1;
+    const byte DefaultI2CSDAPin     = 26;
+    const byte DefaultI2CSCLPin     = 27;
     
 #endif
 

@@ -39,12 +39,20 @@ unit DisplayDriver
     const byte SSD1306_SETCOMPINS         = 0xDA;
     const byte SSD1306_SETVCOMDETECT      = 0xDB;
     
-    byte i2cAddress;
+    byte i2cAddress = 0x3C; // typically a good default
     bool resolutionSet;
     bool i2cConfigured;
     
     int pixelWidth;
     int pixelHeight;
+    
+    byte i2cController = GPIO.DefaultI2CController;
+    byte sdaPin        = GPIO.DefaultI2CSDAPin;
+    byte sclPin        = GPIO.DefaultI2CSCLPin;
+    byte I2CController { get { return i2cController; } set { i2cController = value; } }
+    byte I2CAddress    { get { return i2cAddress; }    set { i2cAddress = value; } }
+    byte I2CSDAPin     { get { return sdaPin; }        set { sdaPin = value; } }
+    byte I2CSCLPin     { get { return sclPin; }        set { sclPin = value; } }
     
     byte[1024] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
     
@@ -96,10 +104,10 @@ unit DisplayDriver
         {
             if (i2cConfigured)
             {
-                Wire.BeginTx(Display.I2CController, i2cAddress);
-                Wire.Write(Display.I2CController, 0x00);
-                Wire.Write(Display.I2CController, value ? SSD1306_DISPLAYON : SSD1306_DISPLAYOFF);
-                byte result = Wire.EndTx(Display.I2CController);
+                Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
+                Wire.Write(DisplayDriver.I2CController, 0);
+                Wire.Write(DisplayDriver.I2CController, value ? SSD1306_DISPLAYON : SSD1306_DISPLAYOFF);
+                byte result = Wire.EndTx(DisplayDriver.I2CController);
                 if (result != 0)
                 {
                     IO.WriteLn("Visible failed: " + result.ToString());
@@ -116,84 +124,83 @@ unit DisplayDriver
         loop
         {
             Display.Reset();
-            i2cAddress = Display.I2CAddress;
             
             if (!resolutionSet)
             {
                 SetResolution(128, 64);
                 resolutionSet = true;
             }
-            if (!Wire.Initialize(Display.I2CController, Display.I2CSDAPin, Display.I2CSCLPin))
+            if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin))
             {
                 break;
             }
             
-            Wire.BeginTx(Display.I2CController, i2cAddress);
+            Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
             
-            Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306_DISPLAYOFF);
-            Wire.Write(Display.I2CController, SSD1306_SETDISPLAYCLOCKDIV);
-            Wire.Write(Display.I2CController, 0x80);
-            Wire.Write(Display.I2CController, SSD1306_SETMULTIPLEX);
-            Wire.Write(Display.I2CController, byte(Display.PixelHeight-1));
-            byte result = Wire.EndTx(Display.I2CController);
+            Wire.Write(DisplayDriver.I2CController, 0x00);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_DISPLAYOFF);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_SETDISPLAYCLOCKDIV);
+            Wire.Write(DisplayDriver.I2CController, 0x80);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_SETMULTIPLEX);
+            Wire.Write(DisplayDriver.I2CController, byte(Display.PixelHeight-1));
+            byte result = Wire.EndTx(DisplayDriver.I2CController);
             if (result != 0)
             {
                 IO.WriteLn("Init1 failed: " + result.ToString());
                 break;
             }
             
-            Wire.BeginTx(Display.I2CController, i2cAddress);
-            Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306_SETDISPLAYOFFSET);
-            Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306_SETSTARTLINE);
-            Wire.Write(Display.I2CController, SSD1306_CHARGEPUMP); // Enable charge pump regulator (RESET = )
-            Wire.Write(Display.I2CController, 0x14);              // Generate the high voltage from the 3.3v line internally
-            result = Wire.EndTx(Display.I2CController);
+            Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
+            Wire.Write(DisplayDriver.I2CController, 0x00);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_SETDISPLAYOFFSET);
+            Wire.Write(DisplayDriver.I2CController, 0x00);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_SETSTARTLINE);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_CHARGEPUMP); // Enable charge pump regulator (RESET = )
+            Wire.Write(DisplayDriver.I2CController, 0x14);              // Generate the high voltage from the 3.3v line internally
+            result = Wire.EndTx(DisplayDriver.I2CController);
             if (result != 0)
             {
                 IO.WriteLn("Init2 failed: " + result.ToString());
                 break;
             }
             
-            Wire.BeginTx(Display.I2CController, i2cAddress);
-            Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306_MEMORYMODE);
-            Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306_SETSEGMENTREMAP);
-            Wire.Write(Display.I2CController, SSD1306_COMSCANDEC);
-             result = Wire.EndTx(Display.I2CController);
+            Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
+            Wire.Write(DisplayDriver.I2CController, 0x00);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_MEMORYMODE);
+            Wire.Write(DisplayDriver.I2CController, 0x00);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_SETSEGMENTREMAP);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_COMSCANDEC);
+             result = Wire.EndTx(DisplayDriver.I2CController);
             if (result != 0)
             {
                 IO.WriteLn("Init3 failed: " + result.ToString());
                 break;
             }
             
-            Wire.BeginTx(Display.I2CController, i2cAddress);
+            Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
             Wire.Write(0x00);
-            Wire.Write(Display.I2CController, SSD1306_SETCOMPINS);
-            Wire.Write(Display.I2CController, (Display.PixelWidth > 2 * Display.PixelHeight) ? 0x02 : 0x12);
-            Wire.Write(Display.I2CController, SSD1306_SETCONTRAST);
-            Wire.Write(Display.I2CController, 0xCF);
-            Wire.Write(Display.I2CController, SSD1306_SETPRECHARGE);
-            Wire.Write(Display.I2CController, 0xF1);
-            result = Wire.EndTx(Display.I2CController);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_SETCOMPINS);
+            Wire.Write(DisplayDriver.I2CController, (Display.PixelWidth > 2 * Display.PixelHeight) ? 0x02 : 0x12);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_SETCONTRAST);
+            Wire.Write(DisplayDriver.I2CController, 0xCF);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_SETPRECHARGE);
+            Wire.Write(DisplayDriver.I2CController, 0xF1);
+            result = Wire.EndTx(DisplayDriver.I2CController);
             if (result != 0)
             {
                 IO.WriteLn("Init4 failed: " + result.ToString());
                 break;
             }
             
-            Wire.BeginTx(Display.I2CController, i2cAddress);
-            Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306_SETVCOMDETECT);
-            Wire.Write(Display.I2CController, 0x40);
-            Wire.Write(Display.I2CController, SSD1306_DISPLAYALLONRESUME);
-            Wire.Write(Display.I2CController, SSD1306_NORMALDISPLAY);
-            Wire.Write(Display.I2CController, SSD1306_DEACTIVATESCROLL);
-            Wire.Write(Display.I2CController, SSD1306_DISPLAYON);
-            result = Wire.EndTx(Display.I2CController);
+            Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
+            Wire.Write(DisplayDriver.I2CController, 0x00);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_SETVCOMDETECT);
+            Wire.Write(DisplayDriver.I2CController, 0x40);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_DISPLAYALLONRESUME);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_NORMALDISPLAY);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_DEACTIVATESCROLL);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_DISPLAYON);
+            result = Wire.EndTx(DisplayDriver.I2CController);
             if (result != 0)
             {
                 IO.WriteLn("Init5 failed: " + result.ToString());
@@ -235,10 +242,10 @@ unit DisplayDriver
     }
     sendCommandI2C(byte command)
     {
-        Wire.BeginTx(Display.I2CController, i2cAddress);
-        Wire.Write(Display.I2CController, 0x00);
-        Wire.Write(Display.I2CController, command);
-        byte result = Wire.EndTx(Display.I2CController);
+        Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
+        Wire.Write(DisplayDriver.I2CController, 0x00);
+        Wire.Write(DisplayDriver.I2CController, command);
+        byte result = Wire.EndTx(DisplayDriver.I2CController);
         if (result != 0)
         {
             IO.WriteLn("sendCommandI2C failed: " + result.ToString());
@@ -253,23 +260,23 @@ unit DisplayDriver
         if (i2cConfigured)
         {
             // This re-initialization seems to keep the screen position in sync:
-            Wire.BeginTx(Display.I2CController, i2cAddress);
-            Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, SSD1306_PAGEADDR);   // Reset Page Address (for horizontal addressing)
-            Wire.Write(Display.I2CController, 0x00);
-            Wire.Write(Display.I2CController, 0xFF);             //Wire.Write(byte((Display.PixelHeight/8)-1));
-            Wire.Write(Display.I2CController, SSD1306_COLUMNADDR); // Reset Column Address (for horizontal addressing)
+            Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
+            Wire.Write(DisplayDriver.I2CController, 0x00);
+            Wire.Write(DisplayDriver.I2CController, SSD1306_PAGEADDR);   // Reset Page Address (for horizontal addressing)
+            Wire.Write(DisplayDriver.I2CController, 0x00);
+            Wire.Write(DisplayDriver.I2CController, 0xFF);             //Wire.Write(byte((Display.PixelHeight/8)-1));
+            Wire.Write(DisplayDriver.I2CController, SSD1306_COLUMNADDR); // Reset Column Address (for horizontal addressing)
             if (Display.PixelWidth == 64)
             {
-                Wire.Write(Display.I2CController, 32);
-                Wire.Write(Display.I2CController, byte(32+Display.PixelWidth-1));
+                Wire.Write(DisplayDriver.I2CController, 32);
+                Wire.Write(DisplayDriver.I2CController, byte(32+Display.PixelWidth-1));
             }
             else
             {
-                Wire.Write(Display.I2CController, 0x00);
-                Wire.Write(Display.I2CController, byte(Display.PixelWidth-1));
+                Wire.Write(DisplayDriver.I2CController, 0x00);
+                Wire.Write(DisplayDriver.I2CController, byte(Display.PixelWidth-1));
             }
-            byte result = Wire.EndTx(Display.I2CController);
+            byte result = Wire.EndTx(DisplayDriver.I2CController);
             if (result != 0)
             {
                 IO.WriteLn("Update init failed: " + result.ToString());
@@ -282,12 +289,12 @@ unit DisplayDriver
             uint pw8 = Display.PixelWidth >> 3; // 128/8 = 16 bytes per transaction seems small enough
             for (int y = 0; y < pixelHeight; y++) 
             {
-                Wire.BeginTx(Display.I2CController, i2cAddress);
-                Wire.Write(Display.I2CController, 0x40);
-                //for (uint i=0; i < pw8; i++) { Wire.Write(Display.I2CController, monoFrameBuffer[address+i]); }
-                Wire.Write(Display.I2CController, monoFrameBuffer, address, pw8);
+                Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
+                Wire.Write(DisplayDriver.I2CController, 0x40);
+                //for (uint i=0; i < pw8; i++) { Wire.Write(DisplayDriver.I2CController, monoFrameBuffer[address+i]); }
+                Wire.Write(DisplayDriver.I2CController, monoFrameBuffer, address, pw8);
                 address += pw8;
-                result = Wire.EndTx(Display.I2CController);
+                result = Wire.EndTx(DisplayDriver.I2CController);
                 if (result != 0)
                 {
                     IO.WriteLn("Update failed: " + result.ToString());
