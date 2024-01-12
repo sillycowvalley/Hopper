@@ -72,6 +72,18 @@ unit Constant
                     } 
                     switch (operation)
                     {
+                        case HopperToken.ShiftLeft:
+                        {
+                            uint ul = uint(left);
+                            uint ur = uint(right);
+                            lresult = (ul << ur);
+                        }
+                        case HopperToken.ShiftRight:
+                        {
+                            uint ul = uint(left);
+                            uint ur = uint(right);
+                            lresult = (ul >> ur);
+                        }
                         case HopperToken.BitOr:
                         {
                             uint ul = uint(left);
@@ -555,14 +567,56 @@ unit Constant
         } // loop
         return value;
     }
+       
+    string parseConstantShift(string typeExpected)
+    {
+        string value;
+        loop
+        {
+            value = parseConstantFactor(typeExpected);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            loop
+            {
+                if (Parser.Check(HopperToken.ShiftRight) || Parser.Check(HopperToken.ShiftLeft))
+                {
+                    <string,string> operationToken = Parser.CurrentToken;
+                    HopperToken operation = Token.GetType(operationToken);
                     
+                    if ((typeExpected != "uint") && (typeExpected != "byte"))
+                    {
+                        Parser.ErrorAtCurrent("bitwise constant operations only legal for unsigned integral numeric types");
+                        break;
+                    }
+                    Advance(); // <<, >>
+                    
+                    string rightValue = parseConstantFactor(typeExpected);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    value = constantOperation(value, rightValue, typeExpected, operation);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    continue;
+                }
+                break;
+            } // loop
+            break;
+        } // loop
+        return value;
+    }       
     
     string parseConstantTerm(string typeExpected)
     {
         string value;
         loop
         {
-            value = parseConstantFactor(typeExpected);
+            value = parseConstantShift(typeExpected);
             if (Parser.HadError)
             {
                 break;
@@ -588,7 +642,7 @@ unit Constant
                     }
                     Advance(); // +, -
                     
-                    string rightValue = parseConstantFactor(typeExpected);
+                    string rightValue = parseConstantShift(typeExpected);
                     if (Parser.HadError)
                     {
                         break;

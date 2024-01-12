@@ -8,15 +8,16 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 //#define DIAGNOSTICS // turn on more Serial.print output
 //#define CHECKED
 
+// Raspberry Pi Pico W
+// - LittleFS for built-in Flash
+// - WiFi
+//#define RP2040PICOW
+
 // Raspberry Pi Pico
 // - LittleFS for built-in Flash
 // - no WiFi
 #define RP2040PICO
 
-// Raspberry Pi Pico W
-// - LittleFS for built-in Flash
-// - WiFi
-//#define RP2040PICOW
 
 // Arduino Connect RP2040
 // - LittleFS for built-in Flash

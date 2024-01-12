@@ -362,6 +362,12 @@ enum LibCall {
     eSPIClkPinSet = 0x001D,
     eSPITxPinSet = 0x001E,
     eSPIRxPinSet = 0x001F,
+    eNeoPixelBegin = 0x0020,
+    eNeoPixelBrightnessSet = 0x0021,
+    eNeoPixelBrightnessGet = 0x0022,
+    eNeoPixelSetColor = 0x0023,
+    eNeoPixelShow = 0x0024,
+    eNeoPixelLengthGet = 0x0025,
 };
 
 enum DataOrder {

@@ -3,6 +3,7 @@ unit Library
     uses "/Source/Runtime/Platform/LibCalls"
     uses "/Source/Runtime/Platform/Wire"
     uses "/Source/Runtime/Platform/SPI"
+    uses "/Source/Runtime/Platform/NeoPixel"
     
     delegate ISRDelegate();
     
@@ -484,6 +485,89 @@ unit Library
                 }
                 HRSPI.Settings(byte(spiController), hrspeed, dataOrder, dataMode);
                 GC.Release(hrspeed);
+            }
+            case LibCall.NeoPixelBegin:
+            {
+                Type ptype;
+                uint length = 1;
+                uint pixelType = ((1 << 6) | (1 << 4) | (0 << 2) | (2)); // GRB
+                if (iOverload == 2)
+                {
+                    // Begin(uint length, byte pin, PixelType pixelType)
+                    pixelType = Pop(ref ptype);
+#ifdef CHECKED             
+                    AssertUInt(ptype, pixelType);
+#endif
+                }
+                uint pin = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertByte(ptype, pin);
+#endif
+                if (iOverload != 0)
+                {
+                    // Begin(uint length, byte pin)
+                    // Begin(uint length, byte pin, PixelType pixelType)
+                    length = Pop(ref ptype);
+#ifdef CHECKED             
+                    AssertUInt(ptype, length);
+#endif
+                }
+                HRNeoPixel.Begin(length, byte(pin), pixelType);
+            }
+            case LibCall.NeoPixelBrightnessSet:
+            {
+                Type ptype;
+                uint brightness = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertByte(ptype, brightness);
+#endif
+                HRNeoPixel.SetBrightness(byte(brightness));        
+            }
+            case LibCall.NeoPixelBrightnessGet:
+            {
+                byte brightness = HRNeoPixel.GetBrightness(); 
+                Push(brightness, Type.Byte);
+            }
+            case LibCall.NeoPixelSetColor:
+            {
+                uint w = 0;
+                Type ptype;
+      
+                if (iOverload == 1)
+                {
+                    // SetColor(uint pixel, byte r, byte g, byte b, byte w)
+                    w = Pop(ref ptype);
+#ifdef CHECKED             
+                    AssertByte(ptype, w);
+#endif                    
+                }
+                // SetColor(uint pixel, byte r, byte g, byte b)
+                uint b = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertByte(ptype, b);
+#endif           
+                uint g = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertByte(ptype, g);
+#endif          
+                uint r = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertByte(ptype, r);
+#endif      
+                uint pixel = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertUInt(ptype, pixel);
+#endif      
+                HRNeoPixel.SetColor(pixel, byte(r), byte(g), byte(b), byte(w));                  
+            }
+            case LibCall.NeoPixelShow:
+            {
+                HRNeoPixel.Show();
+            }
+            case LibCall.NeoPixelLengthGet:
+            {
+                uint length = HRNeoPixel.GetLength(); 
+                Push(length, Type.UInt);
             }
             
             default:

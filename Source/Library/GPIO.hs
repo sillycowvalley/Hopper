@@ -19,7 +19,7 @@ unit GPIO
     const byte builtInLED = d4;    
 #endif
 
-#ifdef RP2040_PICO
+#if defined(RP2040_PICO) || defined(SPARKFUN_THING_PLUS_RP2040) || defined(SEEED_XIAO_RP2040) || defined(WAVESHARE_RP2040_MATRIX) || defined(WAVESHARE_RP2040_MATRIX)
     // Raspberry Pi Pico
     const byte a0         = 26; // A0
     const byte a1         = 27; // A1
@@ -47,6 +47,15 @@ unit GPIO
     const byte DefaultI2CSDAPin     = 4;
     const byte DefaultI2CSCLPin     = 5;
     
+#endif
+
+#if defined(ADAFRUIT_FEATHER_RP2040) || defined(ADAFRUIT_METRO_RP2040)
+    const byte a0         = 26; // A0
+    const byte a1         = 27; // A1
+    const byte a2         = 28; // A2
+    const byte a3         = 29; // VSYS/3 on Pi Pico
+    
+    const byte builtInLED = 13; // like the Uno ..
 #endif
 
 #ifdef ADAFRUIT_QTPY

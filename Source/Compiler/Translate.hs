@@ -902,6 +902,7 @@ program Translate
                            //|| methodName.StartsWith("HRScreen.") 
                            || methodName.StartsWith("HRWire.") 
                            || methodName.StartsWith("HRSPI.") 
+                           || methodName.StartsWith("HRNeoPixel.") 
                            //|| methodName.StartsWith("HRGraphics.")
                            || methodName.Contains(".Inlined");
             

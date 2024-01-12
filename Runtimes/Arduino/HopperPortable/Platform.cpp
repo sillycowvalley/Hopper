@@ -5,6 +5,19 @@
 #include <Wire.h>
 #include <SPI.h>
 
+#ifdef RP2040 // use ARDUINO_ARCH_RP2040?
+#include <Adafruit_NeoPixel.h>
+/*
+#define NEOPIN        16 // On Trinket or Gemma, suggest changing this to 1
+// How many NeoPixels are attached to the Arduino?
+#define NUMPIXELS 1 // Popular NeoPixel ring size
+Adafruit_NeoPixel pixels(NUMPIXELS, NEOPIN, NEO_GRB + NEO_KHZ800);
+*/
+Adafruit_NeoPixel * adafruit_NeoPixel = nullptr;
+#endif
+
+
+
 #ifdef LOLIND1MINI
 const size_t segmentPages = 0x30;  // size in words, 12K x2 on the Lolin D1 Mini
 #else
@@ -1184,4 +1197,71 @@ Byte HRSPI_GetCSPin(Byte spiController)
 }
 
 
-
+void HRNeoPixel_Begin(UInt length, Byte pin, UInt pixelType)
+{
+#ifdef RP2040
+    if (nullptr == adafruit_NeoPixel)
+    {
+        adafruit_NeoPixel = new Adafruit_NeoPixel(length, pin, pixelType);
+        adafruit_NeoPixel->begin();
+    }
+    else
+    {
+        // On the RP2040, you appear to only be able to call the constructor once during a session.
+        // Device needs to be restarted for new settings.
+        // I suspect this is because of the way PIO is claimed in the constructor (and never released).
+        //adafruit_NeoPixel->setPin(pin);
+        //adafruit_NeoPixel->updateLength(length);
+        //adafruit_NeoPixel->updateType(pixelType);
+    }
+#endif
+}
+void HRNeoPixel_SetBrightness(Byte brightness)
+{
+#ifdef RP2040
+    if (nullptr != adafruit_NeoPixel)
+    {
+        adafruit_NeoPixel->setBrightness(brightness);
+    }
+#endif
+}
+Byte HRNeoPixel_GetBrightness()
+{
+    Byte brightness = 0;
+#ifdef RP2040
+    if (nullptr != adafruit_NeoPixel)
+    {
+        brightness = adafruit_NeoPixel->getBrightness();
+    }
+#endif
+    return brightness;
+}
+void HRNeoPixel_SetColor(UInt pixel, Byte r, Byte g, Byte b, Byte w)
+{
+#ifdef RP2040
+    if (nullptr != adafruit_NeoPixel)
+    {
+        adafruit_NeoPixel->setPixelColor(pixel, r, g, b, w);
+    }
+#endif
+}
+void HRNeoPixel_Show()
+{
+#ifdef RP2040
+    if (nullptr != adafruit_NeoPixel)
+    {
+        adafruit_NeoPixel->show();
+    }
+#endif
+}
+UInt HRNeoPixel_GetLength()
+{
+    UInt length = 0;
+#ifdef RP2040
+    if (nullptr != adafruit_NeoPixel)
+    {
+        length = adafruit_NeoPixel->numPixels();
+    }
+#endif
+    return length;
+}

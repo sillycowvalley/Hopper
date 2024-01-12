@@ -37,5 +37,13 @@ unit LibCalls
         SPIClkPinSet,
         SPITxPinSet,
         SPIRxPinSet,
+        
+        NeoPixelBegin,
+        NeoPixelBrightnessSet,
+        NeoPixelBrightnessGet,
+        NeoPixelSetColor,
+        NeoPixelShow,
+        NeoPixelLengthGet,
+        
     }
 }

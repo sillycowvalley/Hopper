@@ -7,6 +7,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -6114,6 +6115,62 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         }
         HRSPI_Settings(Byte(spiController), hrspeed, dataOrder, dataMode);
         GC_Release(hrspeed);
+        break;
+    }
+    case LibCall::eNeoPixelBegin:
+    {
+        Type ptype = (Type)0;
+        UInt length = 0x01;
+        UInt pixelType = ((0x01 << 0x06) | (0x01 << 0x04) | (0x00 << 0x02) | (0x02));
+        if (iOverload == 0x02)
+        {
+            pixelType = HopperVM_Pop_R(ptype);
+        }
+        UInt pin = HopperVM_Pop_R(ptype);
+        if (iOverload != 0x00)
+        {
+            length = HopperVM_Pop_R(ptype);
+        }
+        HRNeoPixel_Begin(length, Byte(pin), pixelType);
+        break;
+    }
+    case LibCall::eNeoPixelBrightnessSet:
+    {
+        Type ptype = (Type)0;
+        UInt brightness = HopperVM_Pop_R(ptype);
+        HRNeoPixel_SetBrightness(Byte(brightness));
+        break;
+    }
+    case LibCall::eNeoPixelBrightnessGet:
+    {
+        Byte brightness = HRNeoPixel_GetBrightness();
+        HopperVM_Push(brightness, Type::eByte);
+        break;
+    }
+    case LibCall::eNeoPixelSetColor:
+    {
+        UInt w = 0x00;
+        Type ptype = (Type)0;
+        if (iOverload == 0x01)
+        {
+            w = HopperVM_Pop_R(ptype);
+        }
+        UInt b = HopperVM_Pop_R(ptype);
+        UInt g = HopperVM_Pop_R(ptype);
+        UInt r = HopperVM_Pop_R(ptype);
+        UInt pixel = HopperVM_Pop_R(ptype);
+        HRNeoPixel_SetColor(pixel, Byte(r), Byte(g), Byte(b), Byte(w));
+        break;
+    }
+    case LibCall::eNeoPixelShow:
+    {
+        HRNeoPixel_Show();
+        break;
+    }
+    case LibCall::eNeoPixelLengthGet:
+    {
+        UInt length = HRNeoPixel_GetLength();
+        HopperVM_Push(length, Type::eUInt);
         break;
     }
     default:

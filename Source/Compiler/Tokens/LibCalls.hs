@@ -46,6 +46,13 @@ unit LibCalls
         addEntry("SPI", "ClkPin_Set");
         addEntry("SPI", "TxPin_Set");
         addEntry("SPI", "RxPin_Set");
+        
+        addEntry("NeoPixel", "Begin");
+        addEntry("NeoPixel", "Brightness_Set");
+        addEntry("NeoPixel", "Brightness_Get");
+        addEntry("NeoPixel", "SetColor");
+        addEntry("NeoPixel", "Show");
+        addEntry("NeoPixel", "Length_Get");
     }
     
     bool TryParseLibCall(string name, ref byte index)

@@ -362,22 +362,11 @@ program PreProcess
                 if (Parser.Check(HopperToken.Assign))
                 {
                     Parser.Advance(); // =
-                    if (!Parser.Check(HopperToken.Integer))
-                    {
-                        Parser.ErrorAtCurrent("integer expected");       
-                        break;        
-                    }
-                    <string,string> valueToken = Parser.CurrentToken;
-                    valueString = valueToken["lexeme"];
-                    if (UInt.TryParse(valueString, ref currentValue))
-                    {
-                        
-                    }
-                    else
+                    valueString = ParseConstantExpression("uint");
+                    if (!UInt.TryParse(valueString, ref currentValue))
                     {
                         Parser.ErrorAtCurrent("'uint' constant expected"); 
                     }
-                    Advance();
                 }
                 
                 values[qualifiedName] = currentValue;

@@ -131,5 +131,13 @@ void HRSPI_WriteWord(Byte spiController, UInt data);
 void HRSPI_WriteBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt length);
 void HRSPI_Settings(Byte spiController, UInt hrspeedMaximum, DataOrder dataOrder, DataMode dataMode);
 
+void HRNeoPixel_Begin(UInt length, Byte pin, UInt pixelType);
+void HRNeoPixel_SetBrightness(Byte brightness);
+Byte HRNeoPixel_GetBrightness();
+void HRNeoPixel_SetColor(UInt pixel, Byte r, Byte g, Byte b, Byte w);
+void HRNeoPixel_Show();
+UInt HRNeoPixel_GetLength();
+
+
 
 #endif // HOPPERPLATFORM_H

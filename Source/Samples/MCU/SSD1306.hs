@@ -1,7 +1,7 @@
 program SSD1306Demo
 {
-    #define PIMORONI_TINY2040
-    //#define RP2040_PICOW
+    //#define PIMORONI_TINY2040
+    #define RP2040_PICOW
     
     //#define DISPLAY_DIAGNOSTICS
     
@@ -91,6 +91,10 @@ program SSD1306Demo
     
     {
         EchoToLCD = true;
+        
+        DisplayDriver.I2CController = 1;
+        DisplayDriver.I2CSDAPin = 14;
+        DisplayDriver.I2CSCLPin = 15;
 
         if (!Display.Begin())
         {
