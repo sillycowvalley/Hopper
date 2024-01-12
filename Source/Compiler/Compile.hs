@@ -36,6 +36,8 @@ program Compile
     
     uint iCurrentOverload;
     
+    string CurrentUnit { get { return ""; } }
+    
     uint spaces; 
     DebugComment(string caption, bool prev)
     {

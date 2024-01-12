@@ -30,9 +30,9 @@ program Shell
         else if (extension == ".")
         {
             string binaryname = command; // full path?
-            if (File.Exists(binaryname + hexeExtension))
+            if (File.Exists(binaryname + HexeExtension))
             {
-                 command = binaryname + hexeExtension;
+                 command = binaryname + HexeExtension;
             }
             else if (File.Exists(binaryname + ".cmd"))
             {
@@ -41,9 +41,9 @@ program Shell
             else
             {
                 binaryname = Path.Combine(CurrentDirectory, command);
-                if (File.Exists(binaryname + hexeExtension))
+                if (File.Exists(binaryname + HexeExtension))
                 {
-                    command = binaryname + hexeExtension;
+                    command = binaryname + HexeExtension;
                 }
                 else if (File.Exists(binaryname + ".cmd"))
                 {
@@ -52,9 +52,9 @@ program Shell
                 else
                 {
                     binaryname = Path.Combine("/bin", command);
-                    if (File.Exists(binaryname + hexeExtension))
+                    if (File.Exists(binaryname + HexeExtension))
                     {
-                        command = binaryname + hexeExtension;
+                        command = binaryname + HexeExtension;
                     }
                     else if (File.Exists(binaryname + ".cmd"))
                     {
@@ -197,7 +197,7 @@ program Shell
                 command = ExtendPath(command);
                 string extension = Path.GetExtension(command);
                 extension = extension.ToLower();
-                if (extension == hexeExtension)
+                if (extension == HexeExtension)
                 {
                     if (!Run(command, rawargs))
                     {

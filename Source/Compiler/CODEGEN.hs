@@ -180,7 +180,7 @@ program CODEGEN
             loop
             {
                 string extension = Path.GetExtension(codePath);
-                //string hexePath  = codePath.Replace(extension, hexeExtension);
+                //string hexePath  = codePath.Replace(extension, HexeExtension);
                 string hexePath  = codePath.Replace(extension, ".hexe");
                 
                 hexePath = Path.GetFileName(hexePath);

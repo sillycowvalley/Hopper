@@ -48,7 +48,7 @@ unit Output
         stack32 = false;
         if (isMCU)
         {
-            stack32 = (hopperFlags & HopperFlags.LongValues) == HopperFlags.LongValues;
+            stack32 = (hopperFlags & HopperFlags.StackSlot32Bit) == HopperFlags.StackSlot32Bit;
         }
         stack8 = ZeroPageContains("BP8");
     }

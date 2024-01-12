@@ -48,7 +48,7 @@ Bool External_AttachToPin(Byte pin, ISRDelegate gpioISRDelegate, Byte status)
         // pin is not valid for interrupt
         return false;
     }
-    pinMode(pin, INPUT_PULLUP);
+    //pinMode(pin, INPUT_PULLUP); // should this be here? should it be an option?
     uint param = gpioISRDelegate + (pin << 16) + (status << 24);
     attachInterruptParam(digitalPinToInterrupt(pin), pinISR, (PinStatus)status, (void*)param);
     return true;
@@ -993,22 +993,23 @@ void HRSPI_EndTransaction(Byte spiController)
 
 Byte HRSPI_ReadByte(Byte spiController)
 {
-switch (spiController)
+    Byte data = 0;
+    switch (spiController)
     {
         case 0:
-            return screenSPI0->transfer(0);
+            data = screenSPI0->transfer(data);
             break;
 #ifdef SPI1EXISTS
         case 1:
-            return screenSPI1->transfer(0);
+            data = screenSPI1->transfer(data);
             break;
 #endif
     }
-    return 0;
+    return data;
 }
 void HRSPI_WriteByte(Byte spiController, Byte data)
 {
-switch (spiController)
+    switch (spiController)
     {
         case 0:
             screenSPI0->transfer(data);
@@ -1023,18 +1024,19 @@ switch (spiController)
 
 UInt HRSPI_ReadWord(Byte spiController)
 {
-switch (spiController)
+    UInt data = 0;
+    switch (spiController)
     {
         case 0:
-            return screenSPI0->transfer16(0);
+            data = screenSPI0->transfer16(data);
             break;
 #ifdef SPI1EXISTS
         case 1:
-            return screenSPI1->transfer16(0);
+            data = screenSPI1->transfer16(data);
             break;
 #endif
     }
-    return 0;
+    return data;
 }
 void HRSPI_WriteWord(Byte spiController, UInt data)
 {

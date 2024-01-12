@@ -8,7 +8,7 @@ unit IO
 #ifndef MCU
     uses "/Source/System/Screen"
 #else    
-    uses "/Source/Library/Screen.hs"
+    uses "/Source/Library/Screen"
 #endif
     uses "/Source/System/Serial"
     uses "/Source/System/Keyboard"

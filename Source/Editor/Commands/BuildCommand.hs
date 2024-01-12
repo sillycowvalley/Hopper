@@ -30,10 +30,10 @@ unit BuildCommand
             path = Editor.GetProjectPath();
             path = Path.GetFileName(path);
             string extension = Path.GetExtension(path);
-            path = path.Replace(extension, hexeExtension);
+            path = path.Replace(extension, HexeExtension);
             path = Path.Combine("/Bin", path);
             target6502 = false;
-            string ihexPath = path.Replace(hexeExtension, ".hex");   
+            string ihexPath = path.Replace(HexeExtension, ".hex");   
             if (File.Exists(ihexPath))
             {
                 if (File.Exists(path)) 
@@ -158,7 +158,7 @@ unit BuildCommand
                 }
             }
             
-            string binaryPath ="/Bin/PreProcess" + hexeExtension;
+            string binaryPath ="/Bin/PreProcess" + HexeExtension;
             if (!File.Exists(binaryPath))
             {
                 Editor.SetStatusBarText("No PreProcessor: '" + binaryPath + "'");
@@ -171,8 +171,8 @@ unit BuildCommand
             
             string jsonPath = "/Debug/Obj/" + fileName + ".json";
             string codePath = "/Debug/Obj/" + fileName + ".code";
-            string hexePath = "/Bin/" + fileName + hexeExtension;
-            string hasmPath = "/Debug/Obj/" + fileName + hasmExtension;
+            string hexePath = "/Bin/" + fileName + HexeExtension;
+            string hasmPath = "/Debug/Obj/" + fileName + HasmExtension;
             
             Editor.SetStatusBarText("Preprocessing '" + sourcePath + "' -> '" + jsonPath + "'");
             
@@ -191,7 +191,7 @@ unit BuildCommand
                 break;
             }
             
-            binaryPath ="/Bin/Compile" + hexeExtension;
+            binaryPath ="/Bin/Compile" + HexeExtension;
             if (!File.Exists(binaryPath))
             {
                 Editor.SetStatusBarText("No Compiler: '" + binaryPath + "'");
@@ -231,7 +231,7 @@ unit BuildCommand
     
             if (BuildOptions.IsOptimizeEnabled())
             {        
-                binaryPath ="/Bin/Optimize" + hexeExtension;
+                binaryPath ="/Bin/Optimize" + HexeExtension;
                 if (!File.Exists(binaryPath))
                 {
                     Editor.SetStatusBarText("No Optimize: '" + binaryPath + "'");
@@ -252,7 +252,7 @@ unit BuildCommand
                 }
             }
             
-            binaryPath ="/Bin/CODEGEN" + hexeExtension;
+            binaryPath ="/Bin/CODEGEN" + HexeExtension;
             if (!File.Exists(binaryPath))
             {
                 Editor.SetStatusBarText("No CODEGEN: '" + binaryPath + "'");
@@ -282,7 +282,7 @@ unit BuildCommand
             
             if (BuildOptions.IsDisassembleEnabled())
             {       
-                binaryPath ="/Bin/DASM" + hexeExtension;
+                binaryPath ="/Bin/DASM" + HexeExtension;
                 if (!File.Exists(binaryPath))
                 {
                     Editor.SetStatusBarText("No DASM: '" + binaryPath + "'");
@@ -306,7 +306,7 @@ unit BuildCommand
             // debugger needs .hexe file, even for 6502
             //if (!Target6502)
             //{
-            //    string ihexPath = hexePath.Replace(hexeExtension, ".hex");
+            //    string ihexPath = hexePath.Replace(HexeExtension, ".hex");
             //    File.Delete(ihexPath);   // don't leave a stale .hex lying around (if we didn't just build it)
             //}
             Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'" + target);

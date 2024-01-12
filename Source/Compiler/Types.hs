@@ -14,6 +14,8 @@ unit Types
     uint iCurrentOverload;
     string currentNamespace;
     
+    string CurrentNamespace { get { return currentNamespace; } set { currentNamespace = value; } }
+    
     SetCurrentMethod(uint iOverload)
     {
         iCurrentOverload = iOverload;
@@ -840,6 +842,21 @@ unit Types
         return Symbols.QualifyEnum(identifier, currentNamespace);
     }
     
+    bool IsVisibleConstant(string constantIdentifier)
+    {
+        // assumes constantIdentifier is fully qualified (starts with "NameSpace.")
+        <string> parts = constantIdentifier.Split('.');
+        char f = (parts[1]).GetChar(0);
+        if (f.IsLower())
+        {
+            return parts[0] == currentNamespace;
+        }
+        return true;
+    }
+    string QualifyConstantIdentifier(string constantIdentifier)
+    {
+        return Symbols.QualifyConstantIdentifier(constantIdentifier, currentNamespace);
+    }
     string QualifyMethodName(string identifier)
     {
         return Symbols.QualifyMethodName(identifier, currentNamespace);
@@ -1003,6 +1020,7 @@ unit Types
         }
         return equal;
     }
+    
     uint FindVisibleOverload(string functionName, < <string> > arguments, ref string returnType)
     {
         uint iOverloadFound;

@@ -3191,7 +3191,6 @@ unit HopperVM
     
     DumpStack(uint limit)
     {
-        //return; // TODO REMOVE
         IO.WriteLn();
         limit = limit * 2;
         for (uint s = 0; s < sp; s = s + 2)

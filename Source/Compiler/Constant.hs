@@ -364,8 +364,19 @@ unit Constant
                             outerLoopBreak = true;
                             break;
                         }
-                        
-                        if (!Symbols.ConstantExists(name))
+                        string constantIdentifier = Types.QualifyConstantIdentifier(name);
+                        if (Symbols.ConstantExists(constantIdentifier))
+                        {
+                            if (!IsVisibleConstant(constantIdentifier))
+                            {
+                                Parser.ErrorAtCurrent("'" + constantIdentifier + "' is private");
+                                outerLoopBreak = true;
+                                break;
+                            }
+                            name = constantIdentifier; 
+                            break;
+                        }
+                        else
                         {
                             if (pass == 0)
                             {
@@ -376,16 +387,15 @@ unit Constant
                                     Parser.Advance(); // name
                                     Parser.Advance(); // dot
                                     <string, string> current = Parser.CurrentToken;
-                                    name = name + "." + current["lexeme"];
+                                    name = constantIdentifier + "." + current["lexeme"];
                                     pass++;
                                     continue;
                                 }
                             }
-                            Parser.ErrorAtCurrent("undefined constant identifier");
+                            Parser.ErrorAtCurrent("undefined constant identifier '" + constantIdentifier + "'");
                             outerLoopBreak = true;
                             break;
                         }
-                        break;
                     } // loop
                     if (outerLoopBreak)
                     {

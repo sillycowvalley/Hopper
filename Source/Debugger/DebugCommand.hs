@@ -157,7 +157,7 @@ unit DebugCommand
             path = Editor.GetProjectPath();
             path = Path.GetFileName(path);
             string extension = Path.GetExtension(path);
-            path = path.Replace(extension, hexeExtension);
+            path = path.Replace(extension, HexeExtension);
             path = Path.Combine("/Bin", path);
         }
         return path;

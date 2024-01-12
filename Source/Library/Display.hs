@@ -4,6 +4,7 @@ unit Display
         
     uint pixelWidth; 
     uint pixelHeight;
+    
 #ifdef I2C_SCREEN_DRIVER    
     byte i2cAddress;
     byte i2cController; // conveniently defaults to zero
@@ -27,7 +28,11 @@ unit Display
         }
         return false;
     }
-    
+#ifdef NO_SUSPEND_RESUME
+    Reset()   {}
+    Resume()  {}
+    Suspend() {}
+#else    
     int suspended;
     Reset()
     {
@@ -48,6 +53,7 @@ unit Display
     {
         suspended++;
     }
+#endif
     Clear(uint colour)
     {
 #ifdef DISPLAY_DIAGNOSTICS
@@ -77,13 +83,13 @@ unit Display
     {
 #ifdef DISPLAY_DIAGNOSTICS
         IO.Write("<Display.FilledRectangle");
-#endif                
-        int iw = int(w);
+#endif          
+        int x2 = x+int(w)-1;
         int ih = int(h);
         Suspend();
         for (int i=y; i < y+ih; i++)
         {
-            HorizontalLine(x, i, x+iw-1, colour);
+            HorizontalLine(x, i, x2, colour);
         }
         Resume();
 #ifdef DISPLAY_DIAGNOSTICS

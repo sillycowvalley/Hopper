@@ -4,17 +4,6 @@ unit Monitor
     uses "/Source/Debugger/Source"
     uses "/Source/Debugger/6502/Pages"
     
-    // Zero Page FLAGS:
-    const byte isTraceOn       = 0x01;
-    const byte isWarpSpeed     = 0x02; // on 6502, built without checks for <Ctrl><C>
-    const byte isLongValues    = 0x02; // on MCUs, 'float' and 'long' are value types
-    const byte isCheckedBuild  = 0x04;
-    const byte is8BitStack     = 0x08;
-    const byte isProfileBuild  = 0x10;
-    const byte isBreakpointSet = 0x20;
-    const byte isSingleStep    = 0x40;
-    const byte isMCUPlatform   = 0x80;
-    
     bool collectOutput;
     string serialOutput;
     string lastHexPath;
@@ -474,10 +463,10 @@ unit Monitor
         return lastHexPath;
     }
     
-    uint hopperFlags;
+    HopperFlags hopperFlags;
     
-    bool IsMCU { get { return (isMCUPlatform                 == (hopperFlags & isMCUPlatform)); } }
-    bool IsLV  { get { return ((isMCUPlatform | isWarpSpeed) == hopperFlags & (isMCUPlatform | isWarpSpeed) ) } }
+    bool IsMCU { get { return ( HopperFlags.MCUPlatform                               == (hopperFlags & HopperFlags.MCUPlatform)); } }
+    bool IsLV  { get { return ((HopperFlags.MCUPlatform | HopperFlags.StackSlot32Bit) == hopperFlags & (HopperFlags.MCUPlatform | HopperFlags.StackSlot32Bit) ) } }
     
     string GetHopperInfo()
     {
@@ -485,10 +474,10 @@ unit Monitor
         
         if (ZeroPageContains("FLAGS"))
         {
-            hopperFlags = GetZeroPage("FLAGS");
+            hopperFlags = HopperFlags(GetZeroPage("FLAGS"));
         }
         string info;
-        if (0 != hopperFlags & is8BitStack)
+        if (HopperFlags.SP8Bit == hopperFlags & HopperFlags.SP8Bit)
         {
             info = info + "8 bit SP and BP";
         }
@@ -496,22 +485,22 @@ unit Monitor
         {
             info = info + "16 bit SP and BP";
         }
-        if (isWarpSpeed == (hopperFlags & (isMCUPlatform | isWarpSpeed)))
+        if (HopperFlags.WarpSpeed == (hopperFlags & (HopperFlags.MCUPlatform | HopperFlags.WarpSpeed)))
         {
             info = info + ", Warp speed (no <ctrl><C>)";
         }
-        if (0 != (hopperFlags & isCheckedBuild))
+        if (HopperFlags.CheckedBuild == (hopperFlags & HopperFlags.CheckedBuild))
         {
             info = info + ", Checked Build";
         }
-        if (0 != (hopperFlags & isProfileBuild))
+        if (HopperFlags.ProfileBuild == (hopperFlags & HopperFlags.ProfileBuild))
         {
             info = info + ", Profile Build";
         }
-        if (isMCUPlatform == (hopperFlags & isMCUPlatform))
+        if (HopperFlags.MCUPlatform == (hopperFlags & HopperFlags.MCUPlatform))
         {
             info = info + ", MCU";
-            if (isLongValues == (hopperFlags & isLongValues))
+            if (HopperFlags.StackSlot32Bit == (hopperFlags & HopperFlags.StackSlot32Bit))
             {
                 info = info + ", Long Values";
             }

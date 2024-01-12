@@ -139,7 +139,7 @@ unit Symbols
         
         overloadsCompiled.Clear();
         
-    }   
+    }
     
     uint GetNamedTypesCount()
     {
@@ -621,6 +621,46 @@ unit Symbols
             isFlags = false;
         }
         return isFlags;
+    }
+    
+    string QualifyConstantIdentifier(string name, string currentNamespace)
+    {
+        if (!name.Contains('.'))
+        {
+            loop
+            {
+                string candidate = currentNamespace + "." + name;
+                if (cValues.Contains(candidate))
+                {
+                    name = candidate;
+                    break;
+                }
+                char f = name[0];
+                if (f.IsUpper()) // public constant names only
+                {
+                    uint winner = 0;
+                    foreach (var nameSpace in nameSpaces)
+                    {
+                        if (nameSpace == currentNamespace)             
+                        {
+                            continue;
+                        }
+                        candidate = nameSpace + "." + name;
+                        if (cValues.Contains(candidate))
+                        {
+                            name = candidate;
+                            winner++;
+                        }
+                    }
+                    if (winner > 1)
+                    {
+                        Parser.ErrorAtCurrent("ambiguous undecorated constant identifier");
+                    }
+                }
+                break;
+            }
+        }
+        return name;
     }
     
     string QualifyMethodName(string name, string currentNamespace)

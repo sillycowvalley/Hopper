@@ -335,11 +335,6 @@ unit Library
             }
             case LibCall.SPIReadByte:
             {
-                Type dtype;
-                uint data = Pop(ref dtype);
-#ifdef CHECKED             
-                AssertByte(dtype, data);
-#endif
                 uint spiController = 0;
                 if (iOverload == 1)
                 {
@@ -349,7 +344,7 @@ unit Library
                     AssertByte(ctype, spiController);
 #endif
                 }
-                data = HRSPI.ReadByte(byte(spiController));
+                byte data = HRSPI.ReadByte(byte(spiController));
                 Push(data, Type.Byte);
             }
             case LibCall.SPIWriteByte:
@@ -372,11 +367,6 @@ unit Library
             }
             case LibCall.SPIReadWord:
             {
-                Type dtype;
-                uint data = Pop(ref dtype);
-#ifdef CHECKED             
-                AssertUInt(dtype, data);
-#endif
                 uint spiController = 0;
                 if (iOverload == 1)
                 {
@@ -386,7 +376,7 @@ unit Library
                     AssertByte(ctype, spiController);
 #endif
                 }
-                data = HRSPI.ReadWord(byte(spiController));
+                uint data = HRSPI.ReadWord(byte(spiController));
                 Push(data, Type.UInt);
             }
             case LibCall.SPIWriteWord:

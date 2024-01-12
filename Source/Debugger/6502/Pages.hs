@@ -10,9 +10,9 @@ unit Pages
     {
         TraceOn        = 0x01,
         WarpSpeed      = 0x02, // on 6502, built without checks for <Ctrl><C>
-        LongValues     = 0x02, // on MCUs, 'float' and 'long' are value types
+        StackSlot32Bit = 0x02, // on MCUs, 'float' and 'long' are value types
         CheckedBuild   = 0x04,
-        Stack8Bit      = 0x08,
+        SP8Bit         = 0x08,
         ProfileBuild   = 0x10,
         BreakpointsSet = 0x20,
         SingleStep     = 0x40,
@@ -148,8 +148,8 @@ unit Pages
         }
         if (success)
         {
-            byte hopperFlags   = Pages.GetPageByte(0xBB);
-            zeroPage["FLAGS"]  = hopperFlags;
+            HopperFlags hopperFlags   = HopperFlags(Pages.GetPageByte(0xBB));
+            zeroPage["FLAGS"]  = Pages.GetPageByte(0xBB);
             zeroPage["ACC"]    = Pages.GetPageWord(0xC0);
             zeroPage["TOP"]    = Pages.GetPageWord(0xC2);
             zeroPage["NEXT"]   = Pages.GetPageWord(0xC4);
@@ -157,7 +157,7 @@ unit Pages
             zeroPage["IDY"]    = Pages.GetPageWord(0xC8);
             
             zeroPage["PC"]     = Pages.GetPageWord(0xB0);
-            if (0 != hopperFlags & is8BitStack)
+            if (HopperFlags.SP8Bit == hopperFlags & HopperFlags.SP8Bit)
             {
                 zeroPage["SP8"] = Pages.GetPageByte(0xB2);
                 zeroPage["BP8"] = Pages.GetPageByte(0xB6);

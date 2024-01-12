@@ -1,7 +1,7 @@
 unit DisplayDriver
 {
-    #define DISPLAY_DRIVER
     #define I2C_SCREEN_DRIVER
+    #define DISPLAY_DRIVER
     
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"

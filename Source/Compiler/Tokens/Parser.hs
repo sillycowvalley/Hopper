@@ -83,6 +83,14 @@ unit Parser
     
     <string, string> CurrentToken { get { return currentToken; }}    
     <string, string> PreviousToken { get { return previousToken; }}    
+    
+    // ["type"]    - HopperToken
+    // ["lexeme"]  - string
+    // ["line"]    - uint
+    // ["source"]  - string
+    // ["pos"]     - uint - index in current parsed content string
+    // ["literal"] - depends
+
 
     DumpToken(string name, <string,string> token)
     {

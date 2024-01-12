@@ -1,8 +1,8 @@
 unit System
 {
 
-    const string hexeExtension = ".hexe";
-   	const string hasmExtension = ".hasm";
+    const string HexeExtension = ".hexe";
+   	const string HasmExtension = ".hasm";
 
 
     uses "/Source/System/Char"

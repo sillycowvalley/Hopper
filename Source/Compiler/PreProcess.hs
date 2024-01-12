@@ -16,6 +16,9 @@ program PreProcess
   
   uses "/Source/Compiler/Directives" 
   
+  bool isExperimental;
+  bool IsExperimental { get { return isExperimental; } }
+    
   bool IsDebugger   { get { return false; } }
   bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
   
@@ -27,7 +30,6 @@ program PreProcess
   // - block comments aware of strings ("...*/...")
     
     <string, bool> unitsParsed;
-    string currentUnit;
         
     bool normalizeIdentifier(<string,string> idToken, ref string identifier, ref bool public, bool noDuplicates)
     {
@@ -46,7 +48,7 @@ program PreProcess
                 break;
             }
             public = Char.IsUpper(identifier[0]);
-            identifier = currentUnit + "." + identifier; // append current namespace
+            identifier = CurrentNamespace + "." + identifier; // append current namespace
             if (noDuplicates)
             {
                 if (Symbols.GlobalExists(identifier))
@@ -80,8 +82,8 @@ program PreProcess
     
     bool tryParseTypeString(ref string typeString)
     {
-        bool genericKAllowed = (currentUnit == "Dictionary") || (currentUnit == "Pair");
-        bool genericVAllowed = genericKAllowed || (currentUnit == "Array") || (currentUnit == "List");  
+        bool genericKAllowed = (CurrentNamespace == "Dictionary") || (CurrentNamespace == "Pair");
+        bool genericVAllowed = genericKAllowed || (CurrentNamespace == "Array") || (CurrentNamespace == "List");  
         
         bool success = false;
         loop
@@ -121,7 +123,7 @@ program PreProcess
                     // like byte[8192]
                     if (!IsValueType(typeString))
                     {
-                        if ((currentUnit == "Array") && (typeString == "V"))
+                        if ((CurrentNamespace == "Array") && (typeString == "V"))
                         {
                             // V[] for "this"
                             arrayUnitV = true;
@@ -133,7 +135,7 @@ program PreProcess
                             break;   
                         }
                     }
-                    else if (((currentUnit == "System") || (currentUnit == "Runtime") || (currentUnit == "Wire") || (currentUnit == "SPI")) && (typeString == "byte"))
+                    else if (((CurrentNamespace == "System") || (CurrentNamespace == "Runtime") || (CurrentNamespace == "Wire") || (CurrentNamespace == "SPI")) && (typeString == "byte"))
                     {
                         systemByteArray = true;
                     }
@@ -293,8 +295,13 @@ program PreProcess
             {
                 break;
             }
-            Symbols.AddConstant(idToken["lexeme"], value);   
-            Parser.Consume(HopperToken.SemiColon, "';' expected");
+            string constantName = CurrentNamespace + "." + idToken["lexeme"];
+            Symbols.AddConstant(constantName, value);   
+            <string,string> prev = Parser.PreviousToken;
+            if (prev["type"] != "RBrace") // no ';' after hex string constant
+            {
+                Parser.Consume(HopperToken.SemiColon, "';' expected");
+            }
             break;                                 
        }          
         
@@ -483,7 +490,7 @@ program PreProcess
                 break;
             }
             < <string > > arguments;
-            Symbols.AddMethod(currentUnit + ".main", arguments, blockPos);
+            Symbols.AddMethod(CurrentNamespace + ".main", arguments, blockPos);
             break;
         }
     }   
@@ -1104,8 +1111,8 @@ program PreProcess
               break;
           }
           <string,string> previousToken = Parser.PreviousToken;
-          currentUnit = previousToken["lexeme"];
-          AddNameSpace(currentUnit);
+          Types.CurrentNamespace = previousToken["lexeme"];
+          AddNameSpace(Types.CurrentNamespace);
           
           Parser.Consume(HopperToken.LBrace, '{');
           if (Parser.HadError)
@@ -1201,6 +1208,7 @@ program PreProcess
         PrintLn("Invalid arguments for PREPROCESS:");
         PrintLn("  PREPROCESS [args] <source file>");    
         PrintLn("    -g <c> <r> : called from GUI, not console");
+        PrintLn("    -x : use experimental features");
     }
     {  
         bool success = false;
@@ -1230,6 +1238,10 @@ program PreProcess
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));
+                      }
+                      case "-x":
+                      {
+                          isExperimental = true;   
                       }
                       default:
                       {

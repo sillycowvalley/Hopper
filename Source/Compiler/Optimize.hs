@@ -234,7 +234,7 @@ program Optimize
                 codeBefore = codeBefore + size;
             }
 #ifdef DIAGNOSTICS
-            bool logging = (methodIndex == 0x0000) && IsExperimental;
+            bool logging = (methodIndex == 0x0000);
             if (logging)
             {
                 CodePoints.DumpInstructions("Optimize: pass=" + pass.ToString() + ", methodIndex=" + methodIndex.ToHexString(4));

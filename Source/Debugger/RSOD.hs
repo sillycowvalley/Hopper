@@ -153,7 +153,7 @@ program  RedScreenOfDeath
                 BadArguments();
                 break;
             }
-            string ext = hexeExtension;
+            string ext = HexeExtension;
             string codePath = args[0];
             if (!File.Exists(ref codePath, ref ext, "/Bin/"))
             {
@@ -203,7 +203,7 @@ program  RedScreenOfDeath
                 }
                 
                 string extension = Path.GetExtension(codePath);
-                string hasmPath  = codePath.Replace(extension, hasmExtension);
+                string hasmPath  = codePath.Replace(extension, HasmExtension);
                 hasmPath = Path.GetFileName(hasmPath);
                 hasmPath = Path.Combine("/Debug/", hasmPath);
                 

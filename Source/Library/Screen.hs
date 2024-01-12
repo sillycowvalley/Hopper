@@ -2,7 +2,7 @@ unit Screen
 {
     // MCU version is in Hopper (no system calls)
     uses "/Source/System/Color"
-#ifdef DISPLAYDRIVER    
+#ifdef DISPLAY_DRIVER    
     uses "/Source/Library/Display"
 #endif
     
@@ -16,7 +16,7 @@ unit Screen
     
     byte CursorX { get { cursorX; }}
     byte CursorY { get { cursorY; }}
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
     byte Columns { get { return byte(Display.PixelWidth / cellWidth); }}
     byte Rows    { get { return byte(Display.PixelHeight / cellHeight); }}
 #else
@@ -77,19 +77,19 @@ unit Screen
     
     scrollOneLine()
     {
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         Display.Suspend();
         Display.ScrollUp(cellHeight);
 #endif
         cursorY--;
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         Display.Resume();
 #endif
     }
     
     Clear() 
     {
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         Display.Clear(Color.Black); 
 #endif
         cursorX = 0;
@@ -104,7 +104,7 @@ unit Screen
 
     DrawChar(uint col, uint row, char c, uint foreColour, uint backColour)
     {
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         int x0 = int(col * cellWidth);
         int y0 = int(row * cellHeight);
         if (fontData.Length > 0)
@@ -125,7 +125,7 @@ unit Screen
     }
     Print(char c,     uint foreColour, uint backColour)
     {
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         DrawChar(cursorX, cursorY, c, foreColour, backColour);
 #endif
         cursorX++;
@@ -142,14 +142,14 @@ unit Screen
     }
     Print(string s,   uint foreColour, uint backColour)
     {
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         Display.Suspend();
 #endif
         foreach (var c in s)
         {
             Print(c, foreColour, backColour);
         }
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         Display.Resume();
 #endif
     }
@@ -165,23 +165,23 @@ unit Screen
 
     PrintLn(char c,   uint foreColour, uint backColour)
     {
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         Display.Suspend();
 #endif
         Print(c, foreColour, backColour);
         PrintLn();
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         Display.Resume();
 #endif
     }
     PrintLn(string s, uint foreColour, uint backColour)
     {
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         Display.Suspend();
 #endif
         Print(s, foreColour, backColour);
         PrintLn();
-#ifdef DISPLAYDRIVER
+#ifdef DISPLAY_DRIVER
         Display.Resume();
 #endif
     }

@@ -292,9 +292,15 @@ unit TranslateExpression
                 }
             }
             
-            if (Symbols.ConstantExists(identifier))
+            string constantIdentifier = Types.QualifyConstantIdentifier(identifier);
+            if (Symbols.ConstantExists(constantIdentifier)) 
             {
-                content = translateConstant(identifier, expectedType, ref actualType);
+                if (!IsVisibleConstant(constantIdentifier))
+                {
+                    Parser.ErrorAtCurrent("'" + constantIdentifier + "' is private");
+                    break;
+                }
+                content    = translateConstant(constantIdentifier, expectedType, ref actualType);
                 break;
             }
             

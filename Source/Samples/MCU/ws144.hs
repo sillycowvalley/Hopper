@@ -1,19 +1,25 @@
 program WaveShareLCD144Demo
 {
-    #define RP2040_PICOW
+    uses "/Source/Library/Devices/WSPicoLCD144"
     
-    uses "/Source/Library/Displays/WSPicoLCD144"
+    ButtonISR(byte pin, PinStatus status) 
+    { 
+        IO.WriteLn("    Button " + (PinToButton(pin)).ToString()); 
+    }
     
     {
-        if (!Display.Begin())
+        // Setup code:
+        ISRDelegate buttonDelegate = ButtonISR;
+        if (!DeviceDriver.Begin(buttonDelegate))
         {
-            IO.WriteLn("Failed to initialize display");
+            IO.WriteLn("Failed to initialize Waveshare Pico-LCD-1.44");
             return;
         }
-        long start;
-        long elapsed;
-        long laps;
         
+        // Demo code:
+                
+        long start;
+        long laps;
         loop
         {
             WriteLn("Laps: " + laps.ToString());
@@ -21,28 +27,36 @@ program WaveShareLCD144Demo
             
             start = Millis;
             Display.Clear(Color.Black);
-            elapsed = Millis - start;
-            IO.WriteLn("Black Screen: " + elapsed.ToString());
-            //Delay(250);
+            IO.WriteLn("Black Screen: " + (Millis - start).ToString());
+            
+            start = Millis;
             
             start = Millis;
             Display.Clear(Color.Red);
-            elapsed = Millis - start;
-            IO.WriteLn("Red Screen: " + elapsed.ToString());
-            //Delay(250);
+            IO.WriteLn("Red Screen: " + (Millis - start).ToString());
             
             start = Millis;
             Display.Clear(Color.Green);
-            elapsed = Millis - start;
-            IO.WriteLn("Green Screen: " + elapsed.ToString());
-            //Delay(250);
+            IO.WriteLn("Green Screen: " + (Millis - start).ToString());
             
             start = Millis;
             Display.Clear(Color.Blue);
-            elapsed = Millis - start;
-            IO.WriteLn("Blue Screen: " + elapsed.ToString());
-            //Delay(250);
+            IO.WriteLn("Blue Screen: " + (Millis - start).ToString());
             
+            start = Millis;
+            TestFillRect();
+            IO.WriteLn("FilledRectangle: " + (Millis - start).ToString());
+            
+        }
+    }
+    
+    TestFillRect()
+    {
+        int ph = int(Display.PixelHeight);
+        int pw = int(Display.PixelWidth);
+        for(int i=0; i<ph / 2; i += 3)
+        {
+            FilledRectangle(i, i, uint(pw-i*2), uint(ph-i*2), (i/3 % 3 == 0) ? Color.Blue : (i/3 % 3 == 1) ? Color.Red : Color.Green);
         }
     }
 }

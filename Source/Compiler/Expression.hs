@@ -1351,9 +1351,15 @@ unit Expression
                 }
             }
             
-            if (Symbols.ConstantExists(identifier))
+            string constantIdentifier = Types.QualifyConstantIdentifier(identifier);
+            if (Symbols.ConstantExists(constantIdentifier))
             {
-                actualType = compileConstant(expectedType, identifier);
+                if (!IsVisibleConstant(constantIdentifier))
+                {
+                    Parser.ErrorAtCurrent("'" + constantIdentifier + "' is private");
+                    break;
+                }
+                actualType = compileConstant(expectedType, constantIdentifier);
                 break;
             }
             

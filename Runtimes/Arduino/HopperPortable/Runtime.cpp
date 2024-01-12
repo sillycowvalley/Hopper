@@ -7,8 +7,6 @@
 
 
 
-
-
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -6016,15 +6014,13 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     }
     case LibCall::eSPIReadByte:
     {
-        Type dtype = (Type)0;
-        UInt data = HopperVM_Pop_R(dtype);
         UInt spiController = 0x00;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
         }
-        data = HRSPI_ReadByte(Byte(spiController));
+        Byte data = HRSPI_ReadByte(Byte(spiController));
         HopperVM_Push(data, Type::eByte);
         break;
     }
@@ -6043,15 +6039,13 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     }
     case LibCall::eSPIReadWord:
     {
-        Type dtype = (Type)0;
-        UInt data = HopperVM_Pop_R(dtype);
         UInt spiController = 0x00;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
         }
-        data = HRSPI_ReadWord(Byte(spiController));
+        UInt data = HRSPI_ReadWord(Byte(spiController));
         HopperVM_Push(data, Type::eUInt);
         break;
     }

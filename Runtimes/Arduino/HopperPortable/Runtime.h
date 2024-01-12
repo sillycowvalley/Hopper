@@ -379,9 +379,9 @@ enum DataMode {
 enum HopperFlags {
     eTraceOn = 0x0001,
     eWarpSpeed = 0x0002,
-    eLongValues = 0x0002,
+    eStackSlot32Bit = 0x0002,
     eCheckedBuild = 0x0004,
-    eStack8Bit = 0x0008,
+    eSP8Bit = 0x0008,
     eProfileBuild = 0x0010,
     eBreakpointsSet = 0x0020,
     eSingleStep = 0x0040,
