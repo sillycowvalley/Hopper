@@ -180,6 +180,12 @@ unit Display
         }
         Resume();
     }
+    SetPixel(int x, int y, uint colour) 
+    { 
+        Suspend();
+        DisplayDriver.SetPixel(x, y, colour); 
+        Resume();
+    }
     
     ScrollUp(uint lines)
     {
