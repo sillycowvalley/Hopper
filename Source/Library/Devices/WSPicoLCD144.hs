@@ -1,22 +1,20 @@
 unit DeviceDriver
 {
     // https://www.waveshare.com/wiki/Pico-LCD-1.44
-    
     // Note: Color.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
     
 #if !defined(RP2040_PICOW) && !defined(RP2040_PICO)    
     // plugs directly into the Pi Pico or Pi PicoW so if neither was defined, assume Pico W for now
     #define RP2040_PICOW 
 #endif
-    
+
+    #define WAVESHARE_PICO_LCD_144
     uses "/Source/Library/Displays/ST7735Driver"
-    
     
     const int PixelWidth  = 128;
     const int PixelHeight = 128;
     
     const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
-    
     const byte DCPin   = 8;
     const byte CSPin   = 9;
     const byte ClkPin  = 10;
@@ -46,45 +44,29 @@ unit DeviceDriver
         bool success;
         loop
         {
-            if (!DeviceDriver.Begin())
-            {
-                break;
-            }
-            if (!AttachToPin(key0Pin, buttonDelegate, PinStatus.Rising))
-            {
-                break;
-            }
-            if (!AttachToPin(key1Pin, buttonDelegate, PinStatus.Rising))
-            {
-                break;
-            }
-            if (!AttachToPin(key2Pin, buttonDelegate, PinStatus.Rising))
-            {
-                break;
-            }     
-            if (!AttachToPin(key3Pin, buttonDelegate, PinStatus.Rising))
-            {
-                break;
-            } 
+            if (!DeviceDriver.Begin()) { break; }
+            if (!AttachToPin(key0Pin, buttonDelegate, PinStatus.Rising)) { break; }
+            if (!AttachToPin(key1Pin, buttonDelegate, PinStatus.Rising)) { break; }
+            if (!AttachToPin(key2Pin, buttonDelegate, PinStatus.Rising)) { break; }
+            if (!AttachToPin(key3Pin, buttonDelegate, PinStatus.Rising)) { break; }
             success = true;
             break;
         }
         return success;
     }
-    byte PinToButton(byte pin)
+    string PinToButton(byte pin)
     {
         switch (pin)
         {
-            case key0Pin: { return 0; }
-            case key1Pin: { return 1; }
-            case key2Pin: { return 2; }
-            case key3Pin: { return 3; }
+            case key0Pin: { return "Key0"; }
+            case key1Pin: { return "Key1"; }
+            case key2Pin: { return "Key2"; }
+            case key3Pin: { return "Key3"; }
         }
-        return 255;
+        return "";
     }
     bool Button0 { get { return !MCU.DigitalRead(key0Pin); } }
     bool Button1 { get { return !MCU.DigitalRead(key1Pin); } }
     bool Button2 { get { return !MCU.DigitalRead(key2Pin);  } }
     bool Button3 { get { return !MCU.DigitalRead(key3Pin);  } }
-    
 }

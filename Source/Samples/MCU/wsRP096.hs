@@ -1,26 +1,19 @@
-program WaveShareLCD144Demo
+program WaveShareRP2040LCD096Demo
 {
-    uses "/Source/Library/Devices/WSPicoLCD144"
+    uses "/Source/Library/Devices/WSRP2040LCD096"
     uses "/Source/Library/Fonts/Hitachi5x7"
-    
-    ButtonISR(byte pin, PinStatus status) 
-    { 
-        IO.WriteLn("    Pressed: '" + PinToButton(pin) + "'");  
-    }
     
     {
         EchoToLCD = true;
         
         // Setup code:
-        ISRDelegate buttonDelegate = ButtonISR;
-        if (!DeviceDriver.Begin(buttonDelegate))
+        if (!DeviceDriver.Begin())
         {
-            IO.WriteLn("Failed to initialize Waveshare Pico-LCD-1.44");
+            IO.WriteLn("Failed to initialize Waveshare RP2040-LCD-0.96");
             return;
         }
         
         // Demo code:
-                
         long start;
         long laps;
         loop
@@ -59,7 +52,7 @@ program WaveShareLCD144Demo
     {
         int ph = int(Display.PixelHeight);
         int pw = int(Display.PixelWidth);
-        for(int i=0; i<ph / 2; i += 3)
+        for(int i=0; i<pw / 2; i += 3)
         {
             FilledRectangle(i, i, uint(pw-i*2), uint(ph-i*2), (i/3 % 3 == 0) ? Color.Blue : (i/3 % 3 == 1) ? Color.Red : Color.Green);
         }

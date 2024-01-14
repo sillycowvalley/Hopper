@@ -7,7 +7,11 @@ void setup()
 
   Machine_Initialize();
   Platform_Initialize();
-  
+
+
+#ifndef RP2040PICO
+  // Flashing LED_BUILTIN causes grief when a Pi Pico device uses pin 25 for something else (like the backlight for the LCD for Waveshare RP2040-LCD-0.96)
+
 #if !defined(SEEEDESP32C3) && !defined(WAVESHARERP2040ONE)
   // flicker LED_BUILTIN to show that initialization completed
   pinMode(LED_BUILTIN, OUTPUT);
@@ -22,6 +26,8 @@ void setup()
 #ifdef LOLIND1MINI
   digitalWrite(LED_BUILTIN, HIGH); // high is "off" on the D1 Mini
 #endif  
+
+#endif
 
 }
 

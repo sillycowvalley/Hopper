@@ -109,11 +109,11 @@ program LED8x8Matrix
         {
             IO.WriteLn("Failed to initialize");
         }
+        Brightness = 8;
         
         loop
         {
             Display.Clear(Color.Black);
-            
             for (byte row = 0; row < 8; row++)
             {
                 for (byte column = 0; column < 8; column++)

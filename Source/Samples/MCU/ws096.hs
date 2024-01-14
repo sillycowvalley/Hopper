@@ -1,11 +1,11 @@
-program WaveShareLCD144Demo
+program WaveShareLCD096Demo
 {
-    uses "/Source/Library/Devices/WSPicoLCD144"
+    uses "/Source/Library/Devices/WSPicoLCD096"
     uses "/Source/Library/Fonts/Hitachi5x7"
     
     ButtonISR(byte pin, PinStatus status) 
     { 
-        IO.WriteLn("    Pressed: '" + PinToButton(pin) + "'");  
+        IO.WriteLn("    Pressed: '" + PinToButton(pin) + "'"); 
     }
     
     {
@@ -15,7 +15,7 @@ program WaveShareLCD144Demo
         ISRDelegate buttonDelegate = ButtonISR;
         if (!DeviceDriver.Begin(buttonDelegate))
         {
-            IO.WriteLn("Failed to initialize Waveshare Pico-LCD-1.44");
+            IO.WriteLn("Failed to initialize Waveshare Pico-LCD-0.96");
             return;
         }
         

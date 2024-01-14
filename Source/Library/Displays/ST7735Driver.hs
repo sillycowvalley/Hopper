@@ -6,8 +6,6 @@ unit DisplayDriver
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
     
-    bool deviceConfigured;
-    
     const byte TFT_SLPOUT     = 0x11; //  Sleep Out
     
     const byte TFT_CASET      = 0x2A;
@@ -46,7 +44,27 @@ unit DisplayDriver
     
     const byte ST7735_GMCTRP1 = 0xE0;
     const byte ST7735_GMCTRN1 = 0xE1;
-    
+
+#ifdef WAVESHARE_PICO_LCD_144 
+    // Pico-LCD-1.44 - Don't invert display
+    const byte INVERT = ST7735_INVOFF;
+    const byte MADCTL = MADCTL_BGR;
+#endif        
+#ifdef WAVESHARE_PICO_LCD_096
+    // Pico-LCD-0.96 - Invert display colours
+    const byte INVERT = ST7735_INVON;
+    const byte MADCTL = (  MADCTL_MY | MADCTL_MV | MADCTL_BGR);
+#endif
+#ifdef WAVESHARE_PICO_LCD_114
+    // Pico-LCD-1.14 - Invert display colours
+    const byte INVERT = ST7735_INVON;
+    const byte MADCTL = ( MADCTL_MX | MADCTL_MV | MADCTL_RGB);
+#endif
+#ifdef WAVESHARE_RP2040_LCD_096
+    // RP2040-LCD-0.96 - Invert display colours
+    const byte INVERT = ST7735_INVON;
+    const byte MADCTL = MADCTL_BGR;
+#endif
     const string initCmdConst =
     {
       //  (COMMAND_BYTE), n, data_bytes....
@@ -67,22 +85,19 @@ unit DisplayDriver
         0x00,                   //     Boost frequency
       ST7735_VMCTR1 , 1      ,  // 12: Power control, 1 arg, no delay:
         0x0E,
+
+// ---- Device specific options:
+      INVERT , 0      ,         // 13: 
+      TFT_MADCTL      , 1,      MADCTL,              // Memory Access Control
+// ---- 
       
-      // Pico-LCD-1.44:
-      ST7735_INVOFF , 0      ,  // 13: Don't invert display, no args, no delay
-      TFT_MADCTL      , 1,      MADCTL_BGR,              // Memory Access Control
-      
-      // Pico-LCD-0.96:
-      //ST7735INVON , 0      ,  // 13: Invert display, no args, no delay
-      //TFTMADCTL      , 1, (  MADCTL_MY | MADCTL_MV | MADCTL_BGR),              // Memory Access Control : 
-    
       ST7735_COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
         0x05,
       ST7735_GMCTRP1, 16      , 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10, // Set Gamma
       ST7735_GMCTRN1, 16      , 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10, // Set Gamma
       ST7735_NORON  ,    0x80, //  3: Normal display on, no args, w/delay
       ST7735_DISPON ,    0x80, //  4: Main screen turn on, no args w/delay
-      0x00                        // End of list
+       0x00                        // End of list
     }
     
     byte[DeviceDriver.PixelWidth*4] frameBuffer; // 4 bytes per pixel (for reading)
@@ -225,11 +240,6 @@ unit DisplayDriver
         bool success = false;
         loop
         {
-            if (!deviceConfigured)
-            {
-                //IO.WriteLn("DisplayDriver.Begin failed - device not configured");
-                //break;
-            }
             Display.PixelWidth  = DeviceDriver.PixelWidth;
             Display.PixelHeight = DeviceDriver.PixelHeight;
             
