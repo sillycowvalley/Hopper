@@ -5,7 +5,7 @@ unit Font
     const byte CellWidth    = 6;
     const byte CellHeight   = 8;
     
-    const string FontData = 
+    const byte[] FontData = 
     {
         //  https://github.com/alt236/LCD4884---Arduino/blob/master/font_6x8.h
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,   // sp
@@ -104,5 +104,5 @@ unit Font
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    }
+    };
 }

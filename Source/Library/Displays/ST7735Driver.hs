@@ -65,7 +65,7 @@ unit DisplayDriver
     const byte INVERT = ST7735_INVON;
     const byte MADCTL = MADCTL_BGR;
 #endif
-    const string initCmdConst =
+    const byte[] initCmdConst =
     {
       //  (COMMAND_BYTE), n, data_bytes....
       TFT_SLPOUT    , 0x80,     // Sleep exit
@@ -98,7 +98,7 @@ unit DisplayDriver
       ST7735_NORON  ,    0x80, //  3: Normal display on, no args, w/delay
       ST7735_DISPON ,    0x80, //  4: Main screen turn on, no args w/delay
        0x00                        // End of list
-    }
+    };
     
     byte[DeviceDriver.PixelWidth*4] frameBuffer; // 4 bytes per pixel (for reading)
     
@@ -217,7 +217,7 @@ unit DisplayDriver
         // TODO
     }
     
-    sendCommandSPI(byte commandByte, string dataBytes, uint startIndex, byte numDataBytes)
+    sendCommandSPI(byte commandByte, byte[] dataBytes, uint startIndex, byte numDataBytes)
     {
         SPI.BeginTransaction(DeviceDriver.SPIController);
         MCU.DigitalWrite(DeviceDriver.CSPin, false);
@@ -280,7 +280,7 @@ unit DisplayDriver
             MCU.DigitalWrite(DeviceDriver.RstPin, true);
             Time.Delay(200);
             
-            string initCmd = initCmdConst;
+            byte[] initCmd = initCmdConst;
             uint i = 0;
             loop
             {

@@ -5,7 +5,7 @@ unit Font
     const byte CellWidth    = 5;
     const byte CellHeight   = 7;
     
-    const string FontData = 
+    const byte[] FontData = 
     {
         //  https://github.com/Sagittarius21/glcd-arduino/blob/279fdfc6a3936c86f6e5ce9b544993569799cd54/glcd/fonts/SystemFont5x7.h
         0x00, 0x00, 0x00, 0x00, 0x00,// (space)
@@ -104,5 +104,5 @@ unit Font
         0x00, 0x41, 0x36, 0x08, 0x00,// }
         0x08, 0x08, 0x2A, 0x1C, 0x08,// ->
         0x08, 0x1C, 0x2A, 0x08, 0x08 // <-
-    }
+    };
 }

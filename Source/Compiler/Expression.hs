@@ -33,7 +33,11 @@ unit Expression
         else if (Types.IsArray(variableType))
         {
             // push size
-            uint sz = Types.GetArraySizeFromCollection(variableType);
+            uint sz = 0; 
+            if (!variableType.Contains("[]"))
+            {
+                sz = Types.GetArraySizeFromCollection(variableType); // expect strict size, don't infer
+            }
             CodeStream.AddInstructionPUSHI(sz);               
             
             // push value type

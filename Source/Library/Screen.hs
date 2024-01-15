@@ -14,7 +14,7 @@ unit Screen
 
     byte cursorX;
     byte cursorY;
-    string fontData;
+    byte[] fontData;
     
     
     byte CursorX { get { cursorX; }}
@@ -28,7 +28,7 @@ unit Screen
 #endif
 
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
-    string FontData { get { return fontData; } set { fontData = value; } }
+    byte[] FontData { get { return fontData; } set { fontData = value; } }
     renderMonoCharacter(char chr, uint foreColour, uint backColour)
     {
         uint pixelb = ((backColour == 0x0000) || (backColour == 0xF000)) ? 0x0000 : 0x0FFF;
@@ -110,7 +110,7 @@ unit Screen
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
         int x0 = int(col * cellWidth);
         int y0 = int(row * cellHeight);
-        if (fontData.Length > 0)
+        if (fontData.Count > 0)
         {
             Display.Suspend();
             renderMonoCharacter(c, foreColour, backColour);

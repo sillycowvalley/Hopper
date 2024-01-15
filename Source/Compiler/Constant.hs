@@ -489,13 +489,10 @@ unit Constant
                     Parser.ErrorAtCurrent("expected '" + enumExpected + "' enum constant, (was '" + enumActual + "')");
                 }
             }
-            else if (typeExpected.Contains("[]") && actualType.EndsWith(']'))
+            else if (Types.CanInferArrayCast(actualType, typeExpected))
             {
-                string baseType = typeExpected.Substring(0, typeExpected.Length-1);
-                if (!actualType.StartsWith(baseType))
-                {
-                    Parser.ErrorAtCurrent("expected '" + typeExpected + "' constant expression, (was '" + actualType + "')");
-                }
+                // ok
+                //PrintLn("Constant: " + actualType + "->" + typeExpected);
             }
             else
             {

@@ -1725,7 +1725,12 @@ program Compile
             }
             else if (expressionType != variableType)
             {
-                if (!Types.AutomaticUpCastTop(expressionType, variableType))
+                if (Types.CanInferArrayCast(expressionType, variableType))
+                {
+                    // ok
+                    //PrintLn("Assignment: " + expressionType + "->" + variableType + " " + variableName);
+                }
+                else if (!Types.AutomaticUpCastTop(expressionType, variableType))
                 {
                     bool isVerified = false;
                     if ((expressionType == "variant") || (expressionType == "K") || (expressionType == "V"))
@@ -1929,7 +1934,6 @@ program Compile
             else
             {
                 // call setter method with expression result on stack as argument
-                // PrintLn(); Print("A:" + variableName); // Method Call
                 string returnType = CompileMethodCall(variableName + "_Set", "", "");
                 if (Parser.HadError)
                 {
@@ -2430,7 +2434,6 @@ program Compile
 
     bool compile()
     {
-        
         <byte> globalCode = initializeGlobals();
         
         bool success = false;
@@ -2625,6 +2628,10 @@ program Compile
             global.Append(identifier);
             globals.Append(global);
             
+            // namespace required in case global is initialized from constant/s
+            <string> parts = identifier.Split('.');
+            Types.CurrentNamespace = parts[0];
+            
             // for reference times, initialize
             // to reserve slot
             InitializeVariable(variableType); // global
@@ -2652,7 +2659,12 @@ program Compile
                 }
                 if (actualType != variableType)
                 {
-                    if (Types.AutomaticUpCastTop(actualType, variableType))
+                    if (Types.CanInferArrayCast(actualType, variableType))
+                    {
+                        // ok
+                        //PrintLn("Global: " + actualType + "->" + variableType + " " + identifier);
+                    }
+                    else if (Types.AutomaticUpCastTop(actualType, variableType))
                     {
                         // ok
                     }

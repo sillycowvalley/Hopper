@@ -5,7 +5,7 @@ unit Font
     const byte CellWidth    = 5;
     const byte CellHeight   = 8;
     
-    const string FontData = 
+    const byte[] FontData = 
     {
       //  https://www.eevblog.com/forum/projects/5x7-or-7x9-dot-matrix-font-files-in-cc/msg3946555/#msg3946555
       0x00,0x00,0x00,0x00,0x00,  // space
@@ -104,5 +104,5 @@ unit Font
       0x81,0x81,0x76,0x08,0x00,  // }
       0x4c,0x72,0x02,0x72,0x4c,  // ~ (Omega character)
       0x55,0x2a,0x55,0x2a,0x55   // del
-    }
+    };
 }

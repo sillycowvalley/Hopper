@@ -148,7 +148,11 @@ program PreProcess
                     Parser.Advance(); // [
                     typeString = typeString + "[";
                     string value;
-                    if ((arrayUnitV || systemByteArray) && Parser.Check(HopperToken.RBracket))
+                    if (Parser.Check(HopperToken.RBracket))
+                    {
+                        // empty array range 
+                    }
+                    else if ((arrayUnitV || systemByteArray) && Parser.Check(HopperToken.RBracket)) // TODO REMOVE
                     {
                         // empty range: 
                         //   'V[]' for Array system methods
@@ -177,7 +181,7 @@ program PreProcess
                 Parser.Advance(); // <
                 // <byte> and <string,byte>
                 typeString = typeString + "<";
-                success = tryParseTypeString(ref typeString, false);
+                success = tryParseTypeString(ref typeString, false); // dictionary key
                 if (success)
                 {
                     if (Parser.Check(HopperToken.Comma))
@@ -185,7 +189,7 @@ program PreProcess
                         // TODO: make <byte,byte,byte> illegal
                         Parser.Advance(); // ,
                         typeString = typeString + ",";       
-                        success = tryParseTypeString(ref typeString, false);
+                        success = tryParseTypeString(ref typeString, false); // dictionary value
                     }
                 }
                 if (success)
@@ -277,12 +281,12 @@ program PreProcess
         loop
         {
             Parser.Advance(); // const
-            if (!tryParseTypeString(ref typeString, true))
+            if (!tryParseTypeString(ref typeString, true)) // constDeclaration
             {
                 Parser.ErrorAtCurrent("simple type expected");
                 break;
             }
-            if (   (!IsValueType(typeString) && (typeString != "float") && (typeString != "long") && (typeString != "string")&& (typeString != "byte[]"))
+            if (   (!IsValueType(typeString) && (typeString != "float") && (typeString != "long") && (typeString != "string")&& !typeString.StartsWith("byte["))
                 || (typeString == "delegate")) 
             {
                 Parser.ErrorAtCurrent("simple type expected");
@@ -529,7 +533,7 @@ program PreProcess
                 isReference = "ref";   
             }
             string typeString;   
-            if (!tryParseTypeString(ref typeString, false))
+            if (!tryParseTypeString(ref typeString, false)) // argumentsDeclaration
             {
                 if (!HadError)
                 {
@@ -960,7 +964,7 @@ program PreProcess
                     <string,string> peekNextToken = Parser.Peek();
                     if (HopperToken.LParen != Token.GetType(peekNextToken))
                     {           
-                        isType = tryParseTypeString(ref typeString, true);
+                        isType = tryParseTypeString(ref typeString, true); // declaration (global or return type?
                     }
                     if (isType)
                     {
@@ -969,18 +973,7 @@ program PreProcess
                             idToken = Parser.CurrentToken;
                             lastID = idToken["lexeme"];
                             Parser.Advance();
-                            if (typeString.Contains("[]"))
-                            {
-                                if (Parser.Check(HopperToken.Assign))
-                                {
-                                    isGlobal = true;
-                                }
-                                else
-                                {
-                                        Parser.Error("'=' expected");
-                                }
-                            }
-                            else if (Parser.Check(HopperToken.LParen))
+                            if (Parser.Check(HopperToken.LParen))
                             {
                                 // return type followed by function id and then '('
                                 isFunction = true;

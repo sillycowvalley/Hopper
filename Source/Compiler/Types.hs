@@ -303,7 +303,18 @@ unit Types
         }
         return ok;
     }
-    
+    bool CanInferArrayCast(string sourceType, string destinationType)
+    {
+        if (destinationType.Contains("[]") && sourceType.Contains('[') && sourceType.EndsWith(']'))
+        {
+            string baseType = destinationType.Substring(0, destinationType.Length-1);
+            if (sourceType.StartsWith(baseType))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     bool AutomaticUpCastTop(string actualType, string desiredType)
     {
         return AutomaticUpCast(actualType, desiredType, true, false);
@@ -595,14 +606,24 @@ unit Types
                     Parser.Advance(); // [
                     typeString = typeString + "[";
                     string actualType;
-                    string size = ParseConstantExpression("uint", ref actualType);
+                    
+                    string size = "";
+                    if (Parser.Check(HopperToken.RBracket))
+                    {
+                        // no size - must be possible to infer elsewhere ..
+                    }
+                    else
+                    {
+                        size = ParseConstantExpression("uint", ref actualType);
+                    }
+                    typeString = typeString + size;
                     
                     if (Parser.HadError)
                     {
                         success = false;
                         break;
                     }
-                    typeString = typeString + size;
+                    
                     if (!Parser.Check(HopperToken.RBracket))
                     {
                         Parser.ErrorAtCurrent(']');    
@@ -950,6 +971,13 @@ unit Types
                         {
                             equal = false;
                             break;          
+                        }
+                        else if (Types.CanInferArrayCast(actualList[1], targetList[1]))
+                        {
+                            // actual: the parameters passed by the caller
+                            // target: the arguments of the overload we are trying to match
+                            // match
+                            //PrintLn("Argument: " + actualList[1] +" " + actualList[2] + " -> " + targetList[1] + " " + targetList[2] );
                         }
                         else if (AutomaticUpCast(actualList[1], targetList[1], false, false))
                         {
