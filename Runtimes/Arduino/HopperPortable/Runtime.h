@@ -247,7 +247,6 @@ enum SysCall {
     eTypesBoxTypeOf = 0x0081,
     eTypesVerifyValueTypes = 0x0082,
     eStringBuild = 0x0083,
-    eHttpClientGetRequest = 0x008A,
     eRuntimePCGet = 0x008B,
     eRuntimeSPGet = 0x008C,
     eRuntimeBPGet = 0x008D,
@@ -369,6 +368,7 @@ enum LibCall {
     eNeoPixelSetColor = 0x0023,
     eNeoPixelShow = 0x0024,
     eNeoPixelLengthGet = 0x0025,
+    eHttpClientGetRequest = 0x0026,
 };
 
 enum DataOrder {
@@ -793,7 +793,6 @@ void HRString_TrimRight_R(UInt & _this);
 void HRString_TrimLeft_R(UInt & _this);
 UInt HRString_TrimLeft(UInt _this);
 Bool HRWiFi_Connect(UInt ssid, UInt password);
-Bool HRHttpClient_GetRequest_R(UInt url, UInt & content);
 UInt HRArray_New(Type htype, UInt count);
 UInt HRArray_NewFromConstant(UInt location, Type htype, UInt length);
 UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype);
@@ -849,7 +848,9 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+Bool HRHttpClient_GetRequest_R(UInt url, UInt & content);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
 
 
 

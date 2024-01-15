@@ -20,7 +20,6 @@ program Runtime
     uses "/Source/Runtime/Platform/File"
     uses "/Source/Runtime/Platform/Float"
     uses "/Source/Runtime/Platform/Int"
-    uses "/Source/Runtime/Platform/HttpClient"
     uses "/Source/Runtime/Platform/List"
     uses "/Source/Runtime/Platform/Long"
     uses "/Source/Runtime/Platform/Pair"

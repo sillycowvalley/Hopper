@@ -335,14 +335,14 @@ namespace HopperNET
 
         StringBuild = 0x83,
 
-        WebServerMethodGet = 0x84,
-        WebServerURLGet = 0x85,
-        WebServerArgumentsGet = 0x86,
-        WebServerOn = 0x87,
-        WebServerSend = 0x88,
-        WebServerClearHandlers = 0x89,
+        //WebServerMethodGet = 0x84,
+        //WebServerURLGet = 0x85,
+        //WebServerArgumentsGet = 0x86,
+        //WebServerOn = 0x87,
+        //WebServerSend = 0x88,
+        //WebServerClearHandlers = 0x89,
 
-        HttpClientGetRequest = 0x8A,
+        //HttpClientGetRequest = 0x8A,
 
         RuntimePCGet = 0x8B,
         RuntimeSPGet = 0x8C,
@@ -4082,6 +4082,7 @@ namespace HopperNET
         {
             switch (sysCall)
             {
+                /*
                 case SysCall.WebServerMethodGet:
                     Push(new HopperString(WebServer.Method));
                     break;
@@ -4167,7 +4168,7 @@ namespace HopperNET
                         PushBool(success);
                     }
                     break;
-
+                */
                 case SysCall.StringNew:
                     {
                         HopperString str = new HopperString();

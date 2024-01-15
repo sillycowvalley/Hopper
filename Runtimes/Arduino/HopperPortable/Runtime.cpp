@@ -11,6 +11,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -4651,19 +4652,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push((success) ? (0x01) : (0x00), Type::eBool);
         break;
     }
-    case SysCall::eHttpClientGetRequest:
-    {
-        Type htype = (Type)0;
-        UInt address = HopperVM_Pop_R(htype);
-        UInt content = HopperVM_Get_R(address, htype);
-        Type utype = (Type)0;
-        UInt url = HopperVM_Pop_R(utype);
-        Bool success = HRHttpClient_GetRequest_R(url, content);
-        HopperVM_Put(address, content, Type::eString);
-        GC_Release(url);
-        HopperVM_Push((success) ? (0x01) : (0x00), Type::eBool);
-        break;
-    }
     case SysCall::eArrayNew:
     {
         Type stype = (Type)0;
@@ -6192,6 +6180,19 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         HopperVM_Push(length, Type::eUInt);
         break;
     }
+    case LibCall::eHttpClientGetRequest:
+    {
+        Type htype = (Type)0;
+        UInt address = HopperVM_Pop_R(htype);
+        UInt content = HopperVM_Get_R(address, htype);
+        Type utype = (Type)0;
+        UInt url = HopperVM_Pop_R(utype);
+        Bool success = HRHttpClient_GetRequest_R(url, content);
+        HopperVM_Put(address, content, Type::eString);
+        GC_Release(url);
+        HopperVM_Push((success) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
     default:
     {
         IO_WriteHex(HopperVM_PC_Get());
@@ -7104,11 +7105,6 @@ UInt HRString_TrimLeft(UInt _this)
 Bool HRWiFi_Connect(UInt ssid, UInt password)
 {
     return External_WiFiConnect(ssid, password);
-}
-
-Bool HRHttpClient_GetRequest_R(UInt url, UInt & content)
-{
-    return External_HttpClientGetRequest_R(url, content);
 }
 
 UInt HRArray_New(Type htype, UInt count)
@@ -8211,8 +8207,14 @@ UInt HRInt_FromBytes(Byte b0, Byte b1)
     return b0 + (b1 << 0x08);
 }
 
+Bool HRHttpClient_GetRequest_R(UInt url, UInt & content)
+{
+    return External_HttpClientGetRequest_R(url, content);
+}
+
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
 {
     vtype = Type(Memory_ReadByte(_this + 2));
     return Memory_ReadWord(_this + 3);
 }
+

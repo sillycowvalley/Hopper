@@ -163,14 +163,14 @@ unit SysCalls
         
         addEntry("String", "Build");
         
-        addEntry("WebServer", "Method_Get");
-        addEntry("WebServer", "URL_Get");
-        addEntry("WebServer", "Arguments_Get");
-        addEntry("WebServer", "On");
-        addEntry("WebServer", "Send");
-        addEntry("WebServer", "ClearHandlers");
-        
-        addEntry("HttpClient", "GetRequest");
+        //legacy
+        addEntry("_WebServer", "Method_Get");
+        addEntry("_WebServer", "URL_Get");
+        addEntry("_WebServer", "Arguments_Get");
+        addEntry("_WebServer", "On");
+        addEntry("_WebServer", "Send");
+        addEntry("_WebServer", "ClearHandlers");
+        addEntry("_HttpClient", "GetRequest");
         
         addEntry("Runtime", "PC_Get");
         addEntry("Runtime", "SP_Get");
@@ -184,19 +184,19 @@ unit SysCalls
         addEntry("Runtime", "UserCode_Get");
         
         // legacy:
-        addEntry("Runtime", "Load");             // used by the windows shell debugger
-        addEntry("Runtime", "BytesLoaded_Get");  // used by the windows shell debugger
-        addEntry("Runtime", "Run");              // used by the windows shell debugger
-        addEntry("Runtime", "SetVisibility");    // Windows shell debugger: debug child window visible?
-        addEntry("Runtime", "SetStepping");
-        addEntry("Runtime", "StepInto");
-        addEntry("Runtime", "StepOver");
-        addEntry("Runtime", "StepRun");
-        addEntry("Runtime", "Waiting_Get");
-        addEntry("Runtime", "ClearBreakpoints");
-        addEntry("Runtime", "ClearStatements");
-        addEntry("Runtime", "SetBreakpoint");
-        addEntry("Runtime", "SetStatement");
+        addEntry("_Runtime", "Load");             // used by the windows shell debugger
+        addEntry("_Runtime", "BytesLoaded_Get");  // used by the windows shell debugger
+        addEntry("_Runtime", "Run");              // used by the windows shell debugger
+        addEntry("_Runtime", "SetVisibility");    // Windows shell debugger: debug child window visible?
+        addEntry("_Runtime", "SetStepping");
+        addEntry("_Runtime", "StepInto");
+        addEntry("_Runtime", "StepOver");
+        addEntry("_Runtime", "StepRun");
+        addEntry("_Runtime", "Waiting_Get");
+        addEntry("_Runtime", "ClearBreakpoints");
+        addEntry("_Runtime", "ClearStatements");
+        addEntry("_Runtime", "SetBreakpoint");
+        addEntry("_Runtime", "SetStatement");
         
         addEntry("Serial", "Connect");
         addEntry("Serial", "Close");

@@ -2,13 +2,11 @@ program WebClient
 {
     #define SERIAL_CONSOLE // use Serial, not Screen for Write, WriteLn, etc.
     #define RP2040_PICOW
-    uses "/Source/Library/MCU"
     
-    uses "/Source/System/WiFi"
-    uses "/Source/System/HttpClient"
     uses "/Source/System/Serialize"
     
-    uses "/Source/Samples/MCU/Connect"
+    uses "/Source/Library/MCU"
+    uses "/Source/Samples/MCU/Secrets/Connect"
     
     
     {

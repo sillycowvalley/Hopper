@@ -45,5 +45,7 @@ unit LibCalls
         NeoPixelShow,
         NeoPixelLengthGet,
         
+        HttpClientGetRequest,
+        
     }
 }

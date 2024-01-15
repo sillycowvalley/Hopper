@@ -129,8 +129,6 @@ unit SysCalls
         
         StringBuild      = 0x83,
         
-        HttpClientGetRequest = 0x8A,
-        
         RuntimePCGet  = 0x8B,
         RuntimeSPGet  = 0x8C,
         RuntimeBPGet  = 0x8D,

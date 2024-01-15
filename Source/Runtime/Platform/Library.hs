@@ -4,6 +4,8 @@ unit Library
     uses "/Source/Runtime/Platform/Wire"
     uses "/Source/Runtime/Platform/SPI"
     uses "/Source/Runtime/Platform/NeoPixel"
+    uses "/Source/Runtime/Platform/HttpClient"
+    
     
     delegate ISRDelegate();
     
@@ -568,6 +570,27 @@ unit Library
             {
                 uint length = HRNeoPixel.GetLength(); 
                 Push(length, Type.UInt);
+            }
+            
+            case LibCall.HttpClientGetRequest:
+            {
+                Type htype;    
+                uint address = HopperVM.Pop(ref htype);
+                uint content = HopperVM.Get(address, ref htype);
+                Type utype;    
+                uint url = Pop(ref utype);
+                
+#ifdef CHECKED
+                if ((htype != Type.String) || (utype != Type.String))
+                {
+                    ErrorDump(16);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif        
+                bool success = HRHttpClient.GetRequest(url, ref content);
+                HopperVM.Put(address, content, Type.String);
+                GC.Release(url);
+                Push(success ? 1 : 0, Type.Bool);
             }
             
             default:
