@@ -1409,12 +1409,6 @@ unit Expression
         string actualType;
         loop
         {
-            if (thisForDotCallType == "variant")
-            {
-                Parser.ErrorAtCurrent("'.' function calls don't work on variant types");
-                break;
-            }
-            
             Parser.Advance(); // consume '.'
             <string,string> currentToken = Parser.CurrentToken;
             string identifier = currentToken["lexeme"];

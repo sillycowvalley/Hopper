@@ -22,6 +22,7 @@ unit System
     uses "/Source/System/Path"
     uses "/Source/System/Directory"
     uses "/Source/System/Type"
+    uses "/Source/System/Variant"
     
     uint     HexeVersion { get system ; }
     <string> Arguments { get system; }

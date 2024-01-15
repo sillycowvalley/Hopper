@@ -9,4 +9,23 @@ unit Dictionary
 #ifdef HOPPER_6502    
     long HashKey(string str) system;
 #endif    
+
+    string ToString(<variant,variant> this)
+    {
+        string result;
+        foreach (var di in this)
+        {
+            if (result == "")
+            {
+                result = "<";
+            }
+            else
+            {
+                result += ", ";
+            }
+            result += "<" + (di.key).ToString() + ", " + (di.value).ToString() + ">";
+        }
+        result += ">";
+        return result;
+    }
 }

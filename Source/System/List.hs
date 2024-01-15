@@ -10,4 +10,22 @@ unit List
     
     bool Contains(<V> this, V value) system;
     
+    string ToString(<variant> this)
+    {
+        string result;
+        foreach (var vi in this)
+        {
+            if (result == "")
+            {
+                result = "<";
+            }
+            else
+            {
+                result += ", ";
+            }
+            result += vi.ToString();
+        }
+        result += ">";
+        return result;
+    }
 }
