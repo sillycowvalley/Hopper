@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -456,6 +457,8 @@ namespace HopperNET
 
         LongAddB = 0xEE,
         LongSubB = 0xEF,
+
+        ArrayNewFromConstant = 0xF0,
 
     };
 
@@ -4171,6 +4174,8 @@ namespace HopperNET
                         Push(str);
                     }
                     break;
+
+                
                 case SysCall.StringNewFromConstant:
                     switch (iOverload)
                     {
@@ -4725,6 +4730,25 @@ namespace HopperNET
                         Push(array);
                     }
                     break;
+
+                case SysCall.ArrayNewFromConstant:
+                    {
+                        HopperType type = (HopperType)Pop();
+                        ushort length = (ushort)Pop();
+                        ushort location = (ushort)Pop();
+                        location = (ushort)(location + currentContext.ConstantsStart);
+                        
+                        HopperArray arr = new HopperArray(type, length);
+
+                        for (ushort i = 0; i < length; i++)
+                        {
+                            arr.Value[i] = code[location + i];
+                        }
+                        
+                        Push(arr);
+                        break;
+                    }
+
                 case SysCall.ArraySetItem:
                     {
 #if UNDOINLINED

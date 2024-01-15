@@ -8,6 +8,9 @@
 
 
 
+
+
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -4670,6 +4673,17 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eArray);
         break;
     }
+    case SysCall::eArrayNewFromConstant:
+    {
+        Type stype = (Type)0;
+        Type ltype = (Type)0;
+        Type htype = Type(HopperVM_Pop_R(stype));
+        UInt length = HopperVM_Pop_R(stype);
+        UInt location = HopperVM_Pop_R(stype);
+        UInt address = HRArray_NewFromConstant(HopperVM_constAddress + location, htype, length);
+        HopperVM_Push(address, Type::eArray);
+        break;
+    }
     case SysCall::eArrayGetItem:
     {
         Type atype = (Type)0;
@@ -5711,6 +5725,11 @@ UInt GC_Clone(UInt original)
         return HRList_Clone(original);
         break;
     }
+    case Type::eArray:
+    {
+        return HRArray_Clone(original);
+        break;
+    }
     case Type::eDictionary:
     {
         return HRDictionary_Clone(original);
@@ -6693,7 +6712,7 @@ void HRString_ToUpper_R(UInt & _this)
 UInt HRString_ToLower(UInt _this)
 {
     UInt copy = HRString_Clone(_this);
-    HRString_ToUpper_R(copy);
+    HRString_ToLower_R(copy);
     return copy;
 }
 
@@ -7127,10 +7146,25 @@ UInt HRArray_New(Type htype, UInt count)
     return _this;
 }
 
+UInt HRArray_NewFromConstant(UInt location, Type htype, UInt length)
+{
+    UInt _this = HRArray_New(htype, length);;
+    for (UInt i = 0x00; i < length; i++)
+    {
+        Memory_WriteByte(_this + 5 + i, Memory_ReadCodeByte(location + i));
+    }
+    return _this;
+}
+
 UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype)
 {
     UInt elements = Memory_ReadWord(_this + 2);
     etype = Type(Memory_ReadByte(_this + 4));
+    if (index >= elements)
+    {
+        Minimal_Error_Set(0x02);
+        return 0x00;
+    }
     UInt address = _this + 5;
     UInt value = 0;
     switch (etype)
@@ -7170,6 +7204,11 @@ void HRArray_SetItem(UInt _this, UInt index, UInt value)
 {
     UInt elements = Memory_ReadWord(_this + 2);
     Type etype = Type(Memory_ReadByte(_this + 4));
+    if (index >= elements)
+    {
+        Minimal_Error_Set(0x02);
+        return;
+    }
     UInt address = _this + 5;
     switch (etype)
     {
@@ -7215,6 +7254,38 @@ UInt HRArray_GetCount(UInt _this)
 Type HRArray_GetValueType(UInt _this)
 {
     return Type(Memory_ReadByte(_this + 4));
+}
+
+UInt HRArray_Clone(UInt original)
+{
+    UInt count = Memory_ReadWord(original + 2);
+    Type etype = Type(Memory_ReadWord(original + 4));
+    UInt address = HRArray_New(etype, count);
+    UInt elementbytes = 0;
+    switch (etype)
+    {
+    case Type::eBool:
+    {
+        elementbytes = (count + 0x07) >> 0x03;
+        break;
+    }
+    case Type::eChar:
+    case Type::eByte:
+    {
+        elementbytes = count;
+        break;
+    }
+    default:
+    {
+        elementbytes = count * 0x02;
+        break;
+    }
+    } // switch;
+    for (UInt i = 0x00; i < elementbytes; i++)
+    {
+        Memory_WriteByte(address + 5 + i, Memory_ReadByte(original + 5 + i));
+    }
+    return address;
 }
 
 UInt HRList_New(Type htype)

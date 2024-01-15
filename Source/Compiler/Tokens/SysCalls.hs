@@ -302,6 +302,8 @@ unit SysCalls
         
         addEntry("Long", "AddB");
         addEntry("Long", "SubB");
+        
+        addEntry("Array", "NewFromConstant");
     }
     
     bool TryParseSysCall(string name, ref byte index)

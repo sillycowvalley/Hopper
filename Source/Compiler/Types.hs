@@ -594,7 +594,9 @@ unit Types
                     }
                     Parser.Advance(); // [
                     typeString = typeString + "[";
-                    string size = ParseConstantExpression("uint");
+                    string actualType;
+                    string size = ParseConstantExpression("uint", ref actualType);
+                    
                     if (Parser.HadError)
                     {
                         success = false;

@@ -13,6 +13,7 @@ unit Expression
     uses "/Source/Compiler/Symbols"
     uses "/Source/Compiler/Types"
     uses "/Source/Compiler/Constant"
+    uses "/Source/Compiler/Collection"
     
     PushTypeFromString(string typeName)
     {
@@ -24,6 +25,7 @@ unit Expression
     {
         string name;
         // initialize an empty global or local and leave new stack slot at [top]
+        
         if (Types.IsValueType(variableType) || Types.IsDelegate(variableType))
         {
             CodeStream.AddInstructionPUSHI(0);
@@ -710,7 +712,6 @@ unit Expression
         string actualType;
         loop
         {
-            //PrintLn(); Print("C:" + functionName); // Method Call
             actualType = CompileMethodCall(functionName, thisVariable, "");
             break;
         } // loop
@@ -723,73 +724,158 @@ unit Expression
         loop
         {
             string value = Symbols.GetConstantValue(constantName);
-            long l;
-            float f;
-            if (Long.TryParse(value, ref l))
+            string constantType = Symbols.GetConstantType(constantName);
+            if (constantType.Length > 0)
             {
-                if (l < -32768)
+                switch (constantType)
                 {
-                    uint constantAddress = CodeStream.CreateLongConstant(l);
-                    CodeStream.AddInstructionPUSHI(constantAddress);
-                    CodeStream.AddInstructionSysCall0("Long", "NewFromConstant");
-                    actualType = "long";
+                    case "bool":
+                    {
+                        if (value == "true")
+                        {
+                            CodeStream.AddInstructionPUSHI(1);
+                            actualType = "bool";
+                        }
+                        else if (value == "false")
+                        {
+                            CodeStream.AddInstructionPUSHI(0);
+                            actualType = "bool";
+                        }
+                    }
+                    case "string":
+                    {
+                        CodeStream.AddString(constantType, value);
+                        actualType = constantType;
+                    }
+                    default:
+                    {
+                        long l;
+                        float f;
+                            
+                        if (constantType.StartsWith("byte["))
+                        {
+                            CodeStream.AddString(constantType, value);
+                            actualType = constantType;
+                        }
+                        else if (Long.TryParse(value, ref l))
+                        {
+                            if (l < -32768)
+                            {
+                                uint constantAddress = CodeStream.CreateLongConstant(l);
+                                CodeStream.AddInstructionPUSHI(constantAddress);
+                                CodeStream.AddInstructionSysCall0("Long", "NewFromConstant");
+                                actualType = "long";
+                            }
+                            else if (l < 0)
+                            {
+                                Die(0x0A); // CODEGEN : push value
+                                actualType = "-int";
+                            }
+                            else if (l < 256)
+                            {
+                                uint ui = uint(l);
+                                CodeStream.AddInstructionPUSHI(ui);       
+                                actualType = "byte";
+                            }
+                            else if (l < 32768)
+                            {
+                                uint ui = uint(l);
+                                CodeStream.AddInstructionPUSHI(ui);       
+                                actualType = "+int";
+                            }
+                            else if (l <= 65535)
+                            {
+                                uint ui = uint(l);
+                                CodeStream.AddInstructionPUSHI(ui);       
+                                actualType = "uint";
+                            }
+                            else
+                            {
+                                uint constantAddress = CodeStream.CreateLongConstant(l);
+                                CodeStream.AddInstructionPUSHI(constantAddress);
+                                CodeStream.AddInstructionSysCall0("Long", "NewFromConstant");
+                                actualType = "long";
+                            }            
+                        }
+                        else if (Float.TryParse(value, ref f))
+                        {
+                            uint constantAddress = CodeStream.CreateFloatConstant(f);
+                            CodeStream.AddInstructionPUSHI(constantAddress);
+                            CodeStream.AddInstructionSysCall0("Float", "NewFromConstant");
+                            actualType = "float";
+                        }
+                    } // default
                 }
-                else if (l < 0)
-                {
-                    Die(0x0A); // CODEGEN : push value
-                    actualType = "-int";
-                }
-                else if (l < 256)
-                {
-                    uint ui = uint(l);
-                    CodeStream.AddInstructionPUSHI(ui);       
-                    actualType = "byte";
-                }
-                else if (l < 32768)
-                {
-                    uint ui = uint(l);
-                    CodeStream.AddInstructionPUSHI(ui);       
-                    actualType = "+int";
-                }
-                else if (l <= 65535)
-                {
-                    uint ui = uint(l);
-                    CodeStream.AddInstructionPUSHI(ui);       
-                    actualType = "uint";
-                }
-                else
-                {
-                    uint constantAddress = CodeStream.CreateLongConstant(l);
-                    CodeStream.AddInstructionPUSHI(constantAddress);
-                    CodeStream.AddInstructionSysCall0("Long", "NewFromConstant");
-                    actualType = "long";
-                }            
-            }
-            else if (value == "true")
-            {
-                CodeStream.AddInstructionPUSHI(1);
-                actualType = "bool";
-            }
-            else if (value == "false")
-            {
-                CodeStream.AddInstructionPUSHI(0);
-                actualType = "bool";
-            }
-            else if (Float.TryParse(value, ref f))
-            {
-                uint constantAddress = CodeStream.CreateFloatConstant(f);
-                CodeStream.AddInstructionPUSHI(constantAddress);
-                CodeStream.AddInstructionSysCall0("Float", "NewFromConstant");
-                actualType = "float";
             }
             else
             {
-                AddString(value);
-                actualType = "string";
+                long l;
+                float f;
+                if (Long.TryParse(value, ref l))
+                {
+                    if (l < -32768)
+                    {
+                        uint constantAddress = CodeStream.CreateLongConstant(l);
+                        CodeStream.AddInstructionPUSHI(constantAddress);
+                        CodeStream.AddInstructionSysCall0("Long", "NewFromConstant");
+                        actualType = "long";
+                    }
+                    else if (l < 0)
+                    {
+                        Die(0x0A); // CODEGEN : push value
+                        actualType = "-int";
+                    }
+                    else if (l < 256)
+                    {
+                        uint ui = uint(l);
+                        CodeStream.AddInstructionPUSHI(ui);       
+                        actualType = "byte";
+                    }
+                    else if (l < 32768)
+                    {
+                        uint ui = uint(l);
+                        CodeStream.AddInstructionPUSHI(ui);       
+                        actualType = "+int";
+                    }
+                    else if (l <= 65535)
+                    {
+                        uint ui = uint(l);
+                        CodeStream.AddInstructionPUSHI(ui);       
+                        actualType = "uint";
+                    }
+                    else
+                    {
+                        uint constantAddress = CodeStream.CreateLongConstant(l);
+                        CodeStream.AddInstructionPUSHI(constantAddress);
+                        CodeStream.AddInstructionSysCall0("Long", "NewFromConstant");
+                        actualType = "long";
+                    }            
+                }
+                else if (value == "true")
+                {
+                    CodeStream.AddInstructionPUSHI(1);
+                    actualType = "bool";
+                }
+                else if (value == "false")
+                {
+                    CodeStream.AddInstructionPUSHI(0);
+                    actualType = "bool";
+                }
+                else if (Float.TryParse(value, ref f))
+                {
+                    uint constantAddress = CodeStream.CreateFloatConstant(f);
+                    CodeStream.AddInstructionPUSHI(constantAddress);
+                    CodeStream.AddInstructionSysCall0("Float", "NewFromConstant");
+                    actualType = "float";
+                }
+                else
+                {
+                    CodeStream.AddString("string", value);
+                    actualType = "string";
+                }
             }
             break;
         }
-        
         return actualType;
     }
     
@@ -954,7 +1040,7 @@ unit Expression
         string actualType;
         loop
         {
-            // array/list/dictionary GetItem
+            // array/string/list/dictionary GetItem
             Parser.Advance(); // [
             if (Types.IsArray(typeString)) 
             {
@@ -1119,7 +1205,7 @@ unit Expression
             }
             else
             {
-                Parser.ErrorAtCurrent("identifier not array, list or dictionary type");
+                Parser.ErrorAtCurrent("identifier not string, array, list or dictionary type");
             }
             
             if (Parser.HadError)
@@ -1134,6 +1220,79 @@ unit Expression
             
             break;
         } // loop
+        return actualType;
+    }
+    string compileConstantCollectionAccessor(string identifier, string qualifiedName, string expectedType)
+    {
+        string actualType;
+        loop
+        {
+            // array or string constant item access:
+            Parser.Advance(); // [
+            string constantType = Symbols.GetConstantType(qualifiedName);
+            if ((constantType == "string") || constantType.StartsWith("byte["))
+            {
+                // push first argument: the string from the constant
+                string value = Symbols.GetConstantValue(qualifiedName);
+                
+                CodeStream.AddString(constantType, value);
+                
+                // second argument: the index
+                string indexType = CompileExpression("uint");
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (indexType != "uint")
+                {
+                    if (Types.AutomaticUpCastTop(indexType, "uint"))
+                    {
+                        indexType = "uint";
+                    }
+                }
+                if (indexType != "uint")
+                {
+                    Parser.ErrorAtCurrent("string index type invalid");
+                    break;
+                }
+                Parser.Consume(HopperToken.RBracket, ']');
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                if (constantType == "string")
+                {
+                    CodeStream.AddInstructionSysCall0("String", "GetChar");
+                    actualType = "char";  
+                }
+                else if (constantType.StartsWith("byte["))
+                {
+                    CodeStream.AddInstructionSysCall0("Array", "GetItem");
+                    actualType = "byte";  
+                }
+                else
+                {
+                    Parser.ErrorAtCurrent("invalid expected type (" + constantType + ") for constant collection accessor");
+                }
+            }
+            else
+            {
+                Parser.ErrorAtCurrent("identifier not array or string type (" + expectedType + ")");
+            }
+            
+            if (Parser.HadError)
+            {
+                break;
+            }
+            
+            if (Parser.Check(HopperToken.Dot))
+            {
+                actualType = compileDotFunctionCall(actualType, expectedType);
+            }
+            
+            break;
+        } // loop
+        
         return actualType;
     }
     
@@ -1359,7 +1518,16 @@ unit Expression
                     Parser.ErrorAtCurrent("'" + constantIdentifier + "' is private");
                     break;
                 }
-                actualType = compileConstant(expectedType, constantIdentifier);
+                if (Parser.Check(HopperToken.LBracket))
+                {
+                    // <constant identifier> [ <expression> ]
+                    actualType = compileConstantCollectionAccessor(identifier, constantIdentifier, expectedType);
+                }
+                else
+                {
+                    // <constant identifier>
+                    actualType = compileConstant(expectedType, constantIdentifier);
+                }
                 break;
             }
             
@@ -1643,53 +1811,17 @@ unit Expression
                 {
                     Parser.Advance();
                     actualType = "string";
-                    AddString(currentToken["lexeme"]);
+                    
+                    CodeStream.AddString(actualType, currentToken["lexeme"]);
                 }
                 case HopperToken.LBrace:
                 {
-                    string value;
-                    if (expectedType != "string")
-                    {
-                        Parser.ErrorAtCurrent("hex string constant expected");
-                        break;
-                    }
-                    Parser.Advance();
-                    loop
-                    {
-                        <string,string> currentToken = Parser.CurrentToken;
-                        HopperToken ttype = Token.GetType(currentToken);
-                        if (ttype != HopperToken.RBrace)
-                        {
-                            value = ParseConstantExpression("byte");
-                            if (HadError)
-                            {
-                                break;
-                            }
-                            
-                            uint v;
-                            if (!UInt.TryParse(value, ref v) || (v > 255))
-                            {
-                                Parser.ErrorAtCurrent("hex character constant expected");
-                                break;
-                            }
-                            String.Build(ref value, char(v));
-                            currentToken = Parser.CurrentToken;
-                            ttype = Token.GetType(currentToken);
-                            if (ttype == HopperToken.Comma)
-                            {
-                                Parser.Advance();
-                                continue;
-                            }
-                        }
-                        Parser.Consume(HopperToken.RBrace, "'}' expected");
-                        break;
-                    } // loop
-                    if (HadError)
+                    string value = Collection.ParseConstant(expectedType, ref actualType);
+                    if (Parser.HadError)
                     {
                         break;
                     }
-                    actualType = "string";
-                    AddString(value);
+                    CodeStream.AddString(actualType, value);
                 }
                 
                 case HopperToken.Float:

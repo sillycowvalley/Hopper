@@ -36,6 +36,10 @@ unit GC
             {
                 return HRList.Clone(original);
             }
+            case Type.Array:
+            {
+                return HRArray.Clone(original);
+            }
             case Type.Dictionary:
             {
                 return HRDictionary.Clone(original);

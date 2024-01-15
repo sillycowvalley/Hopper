@@ -69,7 +69,9 @@ unit Symbols
     <string, string> pdValues;
     
     // constants
+    <string, string> cDefinitions;
     <string, string> cValues;
+    <string, string> cTypes;
     
     // unit names
     <string> nameSpaces;
@@ -109,7 +111,10 @@ unit Symbols
         iNextOverload = 1; 
         
         pdValues.Clear();
+        
+        cDefinitions.Clear();
         cValues.Clear();
+        cTypes.Clear();
         
         gNames.Clear();
         gIndex.Clear();
@@ -390,9 +395,21 @@ unit Symbols
         }
         return value;
     }
-    AddConstant(string name, string value)
+    string GetConstantType(string name)
     {
-        cValues[name] = value;
+        string value;
+        if (ConstantExists(name))
+        {
+            value = cTypes[name];
+        }
+        return value;
+    }
+    AddConstant(string constantName, string actualType, string constantValue)
+    {
+        string key = actualType + " " + constantName;
+        cDefinitions[key] = constantValue;
+        cValues[constantName] = constantValue;
+        cTypes[constantName] = actualType;
     }
     
     bool GlobalExists(string name)
@@ -1604,7 +1621,7 @@ unit Symbols
             
             dict["units"]   = nameSpaces;
             dict["symbols"]   = pdValues;
-            dict["constants"] = cValues;
+            dict["constants"] = cDefinitions;
             
             <string, <string, variant> > edict;
             foreach (var en in eIndex)
@@ -1805,7 +1822,22 @@ unit Symbols
                     {
                         if (!onlyNamedTypes)
                         {
-                            cValues = kv.value;
+                            <string, string> constantDict = kv.value;
+                            foreach (var constant in constantDict)
+                            {
+                                string constantKey = constant.key;
+                                if (constantKey.Contains(' '))
+                                {
+                                    <string> parts = constantKey.Split(' ');
+                                    cValues[parts[1]] = constant.value;
+                                    cTypes[parts[1]] = parts[0];
+                                }
+                                else // TODO REMOVE
+                                {
+                                    cValues[constantKey] = constant.value;
+                                    cTypes[constantKey] = "";
+                                }
+                            }
                         }
                     }
                     case "symbols": // #define symbols

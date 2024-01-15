@@ -80,7 +80,7 @@ program PreProcess
         return found;
     }
     
-    bool tryParseTypeString(ref string typeString)
+    bool tryParseTypeString(ref string typeString, bool allowEmptyConstArrays)
     {
         bool genericKAllowed = (CurrentNamespace == "Dictionary") || (CurrentNamespace == "Pair");
         bool genericVAllowed = genericKAllowed || (CurrentNamespace == "Array") || (CurrentNamespace == "List");  
@@ -135,7 +135,13 @@ program PreProcess
                             break;   
                         }
                     }
-                    else if (((CurrentNamespace == "System") || (CurrentNamespace == "Runtime") || (CurrentNamespace == "Wire") || (CurrentNamespace == "SPI")) && (typeString == "byte"))
+                    else if (  ((CurrentNamespace == "System") 
+                             || (CurrentNamespace == "Runtime") 
+                             || (CurrentNamespace == "Wire") 
+                             || (CurrentNamespace == "SPI")
+                             || allowEmptyConstArrays
+                               ) 
+                            && (typeString == "byte"))
                     {
                         systemByteArray = true;
                     }
@@ -150,7 +156,8 @@ program PreProcess
                     }
                     else
                     {
-                        value = ParseConstantExpression("uint");
+                        string actualType;
+                        value = ParseConstantExpression("uint", ref actualType);
                     }
                     typeString = typeString + value;   
                     if (!Parser.Check(HopperToken.RBracket))
@@ -170,7 +177,7 @@ program PreProcess
                 Parser.Advance(); // <
                 // <byte> and <string,byte>
                 typeString = typeString + "<";
-                success = tryParseTypeString(ref typeString);
+                success = tryParseTypeString(ref typeString, false);
                 if (success)
                 {
                     if (Parser.Check(HopperToken.Comma))
@@ -178,7 +185,7 @@ program PreProcess
                         // TODO: make <byte,byte,byte> illegal
                         Parser.Advance(); // ,
                         typeString = typeString + ",";       
-                        success = tryParseTypeString(ref typeString);
+                        success = tryParseTypeString(ref typeString, false);
                     }
                 }
                 if (success)
@@ -270,13 +277,18 @@ program PreProcess
         loop
         {
             Parser.Advance(); // const
-            if (   !tryParseTypeString(ref typeString)
-                || (!IsValueType(typeString) && (typeString != "float") && (typeString != "long") && (typeString != "string"))
+            if (!tryParseTypeString(ref typeString, true))
+            {
+                Parser.ErrorAtCurrent("simple type expected");
+                break;
+            }
+            if (   (!IsValueType(typeString) && (typeString != "float") && (typeString != "long") && (typeString != "string")&& (typeString != "byte[]"))
                 || (typeString == "delegate")) 
             {
                 Parser.ErrorAtCurrent("simple type expected");
                 break;
-            }        
+            }   
+                        
             <string,string> idToken = Parser.CurrentToken;
             string identifier;
             bool public;
@@ -290,18 +302,21 @@ program PreProcess
             {
                 break;
             }    
-            string value = ParseConstantExpression(typeString);
+            string actualType;
+            string value = ParseConstantExpression(typeString, ref actualType);
             if (HadError)
             {
                 break;
             }
             string constantName = CurrentNamespace + "." + idToken["lexeme"];
-            Symbols.AddConstant(constantName, value);   
-            <string,string> prev = Parser.PreviousToken;
-            if (prev["type"] != "RBrace") // no ';' after hex string constant
-            {
-                Parser.Consume(HopperToken.SemiColon, "';' expected");
-            }
+            Symbols.AddConstant(constantName, actualType, value);   
+            
+            //<string,string> prev = Parser.PreviousToken;
+            //if (prev["type"] != "RBrace") // no ';' after hex string constant
+            //{
+            //    Parser.Consume(HopperToken.SemiColon, "';' expected");
+            //}
+            Parser.Consume(HopperToken.SemiColon, "';' expected");
             break;                                 
        }          
         
@@ -362,7 +377,8 @@ program PreProcess
                 if (Parser.Check(HopperToken.Assign))
                 {
                     Parser.Advance(); // =
-                    valueString = ParseConstantExpression("uint");
+                    string actualType;
+                    valueString = ParseConstantExpression("uint", ref actualType);
                     if (!UInt.TryParse(valueString, ref currentValue))
                     {
                         Parser.ErrorAtCurrent("'uint' constant expected"); 
@@ -513,7 +529,7 @@ program PreProcess
                 isReference = "ref";   
             }
             string typeString;   
-            if (!tryParseTypeString(ref typeString))
+            if (!tryParseTypeString(ref typeString, false))
             {
                 if (!HadError)
                 {
@@ -944,7 +960,7 @@ program PreProcess
                     <string,string> peekNextToken = Parser.Peek();
                     if (HopperToken.LParen != Token.GetType(peekNextToken))
                     {           
-                        isType = tryParseTypeString(ref typeString);
+                        isType = tryParseTypeString(ref typeString, true);
                     }
                     if (isType)
                     {
@@ -953,7 +969,18 @@ program PreProcess
                             idToken = Parser.CurrentToken;
                             lastID = idToken["lexeme"];
                             Parser.Advance();
-                            if (Parser.Check(HopperToken.LParen))
+                            if (typeString.Contains("[]"))
+                            {
+                                if (Parser.Check(HopperToken.Assign))
+                                {
+                                    isGlobal = true;
+                                }
+                                else
+                                {
+                                        Parser.Error("'=' expected");
+                                }
+                            }
+                            else if (Parser.Check(HopperToken.LParen))
                             {
                                 // return type followed by function id and then '('
                                 isFunction = true;

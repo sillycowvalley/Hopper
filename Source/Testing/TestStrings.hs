@@ -772,6 +772,225 @@ program TestStrings
         }
     }
     
+    const string constRegular  = "0123456789";
+    const string constHex      = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
+    const byte[] constHexBytes = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
+    
+    string globalRegular       = "0123456789";
+    string globalHex           = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
+    byte[10] globalHexBytes    = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
+    
+    TestHexStrings()
+    {
+        WriteLn("'hex' strings");
+        
+        string regular;
+        string hex;
+        foreach (var ch in constRegular)
+        {
+            regular += ch;
+        }
+        foreach (var  ch in constHex)
+        {
+            hex += ch;
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' strings failed 1");
+        }
+        if (hex != "0123456789")
+        {
+            PrintFailed("'hex' strings failed 2");
+        }
+        regular = "";
+        hex = "";
+        foreach (var ch in constRegular)
+        {
+            regular += ch;
+        }
+        foreach (var  b in constHexBytes)
+        {
+            hex += char(b);
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' bytes failed 1");
+        }
+        
+        regular = "";
+        hex = "";
+        for (uint i = 0; i < 10; i++)
+        {
+            regular += constRegular[i];
+        }
+        for (uint i = 0; i < 10; i++)
+        {
+            hex += constHex[i];
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' strings failed 3");
+        }
+        if (hex != "0123456789")
+        {
+            PrintFailed("'hex' strings failed 4");
+        }
+        regular = "";
+        hex = "";
+        for (uint i = 0; i < 10; i++)
+        {
+            regular += constRegular[i];
+        }
+        for (uint i = 0; i < 10; i++)
+        {
+            hex += char(constHexBytes[i]);
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' bytes failed 2");
+        }
+        
+        regular = "";
+        hex = "";
+        foreach (var ch in globalRegular)
+        {
+            regular += ch;
+        }
+        foreach (var  ch in globalHex)
+        {
+            hex += ch;
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' strings failed 5");
+        }
+        if (hex != "0123456789")
+        {
+            PrintFailed("'hex' strings failed 6");
+        }
+        regular = "";
+        hex = "";
+        foreach (var ch in globalRegular)
+        {
+            regular += ch;
+        }
+        foreach (var  b in globalHexBytes)
+        {
+            hex += char(b);
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' bytes failed 3");
+        }
+        
+        regular = "";
+        hex = "";
+        for (uint i = 0; i < 10; i++)
+        {
+            regular += globalRegular[i];
+        }
+        for (uint i = 0; i < 10; i++)
+        {
+            hex += globalHex[i];
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' strings failed 7");
+        }
+        if (hex != "0123456789")
+        {
+            PrintFailed("'hex' strings failed 8");
+        }
+        regular = "";
+        hex = "";
+        for (uint i = 0; i < 10; i++)
+        {
+            regular += globalRegular[i];
+        }
+        for (uint i = 0; i < 10; i++)
+        {
+            hex += char(globalHexBytes[i]);
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' bytes failed 4");
+        }
+        
+        
+        string   localRegular  = "0123456789";
+        string   localHex      = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
+        byte[10] localHexBytes = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
+    
+        regular = "";
+        hex = "";
+        foreach (var ch in localRegular)
+        {
+            regular += ch;
+        }
+        foreach (var  ch in localHex)
+        {
+            hex += ch;
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' strings failed 9");
+        }
+        if (hex != "0123456789")
+        {
+            PrintFailed("'hex' strings failed 10");
+        }
+        regular = "";
+        hex = "";
+        foreach (var ch in localRegular)
+        {
+            regular += ch;
+        }
+        foreach (var  b in localHexBytes)
+        {
+            hex += char(b);
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' bytes failed 5");
+        }
+        
+        
+        regular = "";
+        hex = "";
+        for (uint i = 0; i < 10; i++)
+        {
+            regular += localRegular[i];
+        }
+        for (uint i = 0; i < 10; i++)
+        {
+            hex += localHex[i];
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' strings failed 11");
+        }
+        if (hex != "0123456789")
+        {
+            PrintFailed("'hex' strings failed 12");
+        }
+        regular = "";
+        hex = "";
+        for (uint i = 0; i < 10; i++)
+        {
+            regular += localRegular[i];
+        }
+        for (uint i = 0; i < 10; i++)
+        {
+            hex += char(localHexBytes[i]);
+        }
+        if (hex != regular)
+        {
+            PrintFailed("'hex' bytes failed 6");
+        }
+        
+        
+    }
+    
     uint gindex = 0;
     TestRef()
     {
@@ -829,6 +1048,7 @@ program TestStrings
         TestStringTrim();
         TestString();
         TestStringCase();
+        TestHexStrings();
         
         // bool IndexOf(string this, string pattern, ref uint index)
         // bool IndexOf(string this, char pattern, uint startIndex, ref uint index)

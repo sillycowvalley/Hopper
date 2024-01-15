@@ -889,7 +889,8 @@ program Compile
 // next:         
                     if (!isDefault)
                     {   
-                        string caseConstant = ParseConstantExpression(switchType);
+                        string actualType;
+                        string caseConstant = ParseConstantExpression(switchType, ref actualType);
                         if (Parser.HadError)
                         {
                             break;
@@ -1174,14 +1175,15 @@ program Compile
 // next:         
                     if (!isDefault)
                     {   
-                        string caseConstant = ParseConstantExpression(switchType);
+                        string actualType;
+                        string caseConstant = ParseConstantExpression(switchType, ref actualType);
                         if (Parser.HadError)
                         {
                             break;
                         }
                         if (switchType == "string")
                         {
-                            CodeStream.AddString(caseConstant);
+                            CodeStream.AddString(switchType, caseConstant);
                         }
                         else if (switchType == "char")
                         {
@@ -1982,7 +1984,11 @@ program Compile
                 break;
             }
             // to reserve slot
-            InitializeVariable(variableType);
+            InitializeVariable(variableType); // local
+            if (HadError)
+            {
+                break;
+            }
             if (Block.LocalExists(identifier))
             {
                 Parser.ErrorAtCurrent("'" + identifier + "' already exists in this scope");
@@ -2431,6 +2437,10 @@ program Compile
         bool isMain = true;
         loop
         {
+            if (HadError)
+            {
+                break;
+            }
             // compile fIndex
             <string, string> startToken = Symbols.GetOverloadStart(iCurrentOverload);
             Scanner.Reset(startToken);
@@ -2617,7 +2627,11 @@ program Compile
             
             // for reference times, initialize
             // to reserve slot
-            InitializeVariable(variableType);
+            InitializeVariable(variableType); // global
+            if (HadError)
+            {
+                break;
+            }
             
             // compile gIndex
             <string, string> startToken = Symbols.GetGlobalStart(gIndex);

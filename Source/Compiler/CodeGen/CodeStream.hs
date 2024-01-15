@@ -638,9 +638,17 @@ unit CodeStream
             }
         }
     }
-    AddString(string value)
+    AddString(string typeName, string value)
     {
-        if (value.Length == 0)
+        if (typeName.StartsWith("byte["))
+        {
+            uint constantAddress = CodeStream.CreateStringConstant(value);
+            CodeStream.AddInstructionPUSHI(constantAddress);
+            CodeStream.AddInstructionPUSHI(value.Length);
+            CodeStream.AddInstructionPUSHI(ToByte("byte"));
+            CodeStream.AddInstructionSysCall("Array", "NewFromConstant", 0);
+        }
+        else if (value.Length == 0)
         {
             CodeStream.AddInstructionSysCall("String", "New", 0);
         }

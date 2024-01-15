@@ -8,6 +8,7 @@ unit Constant
     uses "/Source/Compiler/Tokens/Parser"
     uses "/Source/Compiler/Symbols"
     uses "/Source/Compiler/Types"
+    uses "/Source/Compiler/Collection"
     
     string constantOperation(string leftValue, string rightValue, string typeExpected, HopperToken operation)
     {
@@ -186,11 +187,10 @@ unit Constant
         return result;
     }
 
-    string parseConstantPrimary(string typeExpected)
+    string parseConstantPrimary(string typeExpected, ref string actualType)
     {
         <string,string> currentToken = Parser.CurrentToken;
         string value;
-        string actualType;
         HopperToken ttype = Token.GetType(currentToken);
         if (ttype == HopperToken.DottedIdentifier)
         {
@@ -222,48 +222,11 @@ unit Constant
                 }
                 case HopperToken.LBrace:
                 {
-                    if (typeExpected != "string")
-                    {
-                        Parser.ErrorAtCurrent("hex string constant expected");
-                        break;
-                    }
-                    Parser.Advance();
-                    
-                    loop
-                    {
-                        <string,string> currentToken = Parser.CurrentToken;
-                        HopperToken ttype = Token.GetType(currentToken);
-                        if (ttype != HopperToken.RBrace)
-                        {
-                            string byteStr = ParseConstantExpression("byte");
-                            if (HadError)
-                            {
-                                break;
-                            }
-                            
-                            uint v;
-                            if (!UInt.TryParse(byteStr, ref v) || (v > 255))
-                            {
-                                Parser.ErrorAtCurrent("hex character constant expected");
-                                break;
-                            }
-                            String.Build(ref value, char(v));
-                            currentToken = Parser.CurrentToken;
-                            ttype = Token.GetType(currentToken);
-                            if (ttype == HopperToken.Comma)
-                            {
-                                Parser.Advance();
-                                continue;
-                            }
-                        }
-                        Parser.Consume(HopperToken.RBrace, "'}' expected");
-                        break;
-                    } // loop
-                    if (HadError)
+                    value = Collection.ParseConstant(typeExpected, ref actualType);
+                    if (Parser.HadError)
                     {
                         break;
                     }
-                    actualType = "string";
                 }
                 case HopperToken.Char:
                 {
@@ -354,6 +317,7 @@ unit Constant
                     uint ivalue;
                     byte pass = 0;
                     bool outerLoopBreak = false;
+                    bool isCount;
                     loop
                     {
                         if (Types.EnumValue(name, ref typeName, ref valueName, ref ivalue))
@@ -376,7 +340,13 @@ unit Constant
                             outerLoopBreak = true;
                             break;
                         }
-                        string constantIdentifier = Types.QualifyConstantIdentifier(name);
+                        string constantIdentifier = name;
+                        if (constantIdentifier.EndsWith(".Count"))
+                        {
+                            constantIdentifier = constantIdentifier.Replace(".Count", "");
+                            isCount = true;
+                        }
+                        constantIdentifier = Types.QualifyConstantIdentifier(constantIdentifier);
                         if (Symbols.ConstantExists(constantIdentifier))
                         {
                             if (!IsVisibleConstant(constantIdentifier))
@@ -414,6 +384,10 @@ unit Constant
                         break;
                     }
                     value = Symbols.GetConstantValue(name);
+                    if (isCount)
+                    {
+                        value = (value.Length).ToString();
+                    }
                     switch (typeExpected)
                     {
                         case "byte":
@@ -467,24 +441,29 @@ unit Constant
                     }
                     else
                     {    
-                        Parser.ErrorAtCurrent("constant expected");
+                        if (!Parser.HadError)
+                        {   
+                            Parser.ErrorAtCurrent("constant expected");
+                        }
                         break;           
                     }
                 }
                 case HopperToken.LParen:
                 {
                     Parser.Advance(); // (
-                    value = ParseConstantExpression(typeExpected);
+                    value = ParseConstantExpression(typeExpected, ref actualType);
                     if (Parser.HadError)
                     {
                         break;
                     }
                     Parser.Consume(HopperToken.RParen, ')');
-                    actualType = typeExpected;
                 }
                 default:
                 {
-                    Parser.ErrorAtCurrent("constant expected");
+                    if (!Parser.HadError)
+                    {
+                        Parser.ErrorAtCurrent("constant expected");
+                    }
                     break;           
                 }
             } // switch
@@ -510,6 +489,14 @@ unit Constant
                     Parser.ErrorAtCurrent("expected '" + enumExpected + "' enum constant, (was '" + enumActual + "')");
                 }
             }
+            else if (typeExpected.Contains("[]") && actualType.EndsWith(']'))
+            {
+                string baseType = typeExpected.Substring(0, typeExpected.Length-1);
+                if (!actualType.StartsWith(baseType))
+                {
+                    Parser.ErrorAtCurrent("expected '" + typeExpected + "' constant expression, (was '" + actualType + "')");
+                }
+            }
             else
             {
                 Parser.ErrorAtCurrent("expected '" + typeExpected + "' constant expression, (was '" + actualType + "')");
@@ -518,12 +505,12 @@ unit Constant
         return value;
     }
     
-    string parseConstantFactor(string typeExpected)
+    string parseConstantFactor(string typeExpected, ref string actualType)
     {
         string value;
         loop
         {
-            value = parseConstantPrimary(typeExpected);
+            value = parseConstantPrimary(typeExpected, ref actualType);
             if (Parser.HadError)
             {
                 break;
@@ -549,7 +536,7 @@ unit Constant
                     }
                     Advance(); // *, /, %
                     
-                    string rightValue = parseConstantPrimary(typeExpected);
+                    string rightValue = parseConstantPrimary(typeExpected, ref actualType);
                     if (Parser.HadError)
                     {
                         break;
@@ -568,12 +555,12 @@ unit Constant
         return value;
     }
        
-    string parseConstantShift(string typeExpected)
+    string parseConstantShift(string typeExpected, ref string actualType)
     {
         string value;
         loop
         {
-            value = parseConstantFactor(typeExpected);
+            value = parseConstantFactor(typeExpected, ref actualType);
             if (Parser.HadError)
             {
                 break;
@@ -592,7 +579,7 @@ unit Constant
                     }
                     Advance(); // <<, >>
                     
-                    string rightValue = parseConstantFactor(typeExpected);
+                    string rightValue = parseConstantFactor(typeExpected, ref actualType);
                     if (Parser.HadError)
                     {
                         break;
@@ -611,12 +598,12 @@ unit Constant
         return value;
     }       
     
-    string parseConstantTerm(string typeExpected)
+    string parseConstantTerm(string typeExpected, ref string actualType)
     {
         string value;
         loop
         {
-            value = parseConstantShift(typeExpected);
+            value = parseConstantShift(typeExpected, ref actualType);
             if (Parser.HadError)
             {
                 break;
@@ -642,7 +629,7 @@ unit Constant
                     }
                     Advance(); // +, -
                     
-                    string rightValue = parseConstantShift(typeExpected);
+                    string rightValue = parseConstantShift(typeExpected, ref actualType);
                     if (Parser.HadError)
                     {
                         break;
@@ -661,12 +648,12 @@ unit Constant
         return value;
     }
     
-    string parseConstantBitAnd(string typeExpected)
+    string parseConstantBitAnd(string typeExpected, ref string actualType)
     {
         string value;
         loop
         {
-            value = parseConstantTerm(typeExpected);
+            value = parseConstantTerm(typeExpected, ref actualType);
             if (Parser.HadError)
             {
                 break;
@@ -685,7 +672,7 @@ unit Constant
                     }
                     Advance(); // &
                     
-                    string rightValue = parseConstantTerm(typeExpected);
+                    string rightValue = parseConstantTerm(typeExpected, ref actualType);
                     if (Parser.HadError)
                     {
                         break;
@@ -703,12 +690,12 @@ unit Constant
         } // loop
         return value;
     }
-    string parseConstantBitOr(string typeExpected)
+    string parseConstantBitOr(string typeExpected, ref string actualType)
     {
         string value;
         loop
         {
-            value = parseConstantBitAnd(typeExpected);
+            value = parseConstantBitAnd(typeExpected, ref actualType);
             if (Parser.HadError)
             {
                 break;
@@ -727,7 +714,7 @@ unit Constant
                     }
                     Advance(); // |
                     
-                    string rightValue = parseConstantBitAnd(typeExpected);
+                    string rightValue = parseConstantBitAnd(typeExpected, ref actualType);
                     if (Parser.HadError)
                     {
                         break;
@@ -746,9 +733,8 @@ unit Constant
         return value;
     }
     
-    string ParseConstantExpression(string typeExpected)
+    string ParseConstantExpression(string typeExpected, ref string actualType)
     {
-        return parseConstantBitOr(typeExpected);
+        return parseConstantBitOr(typeExpected, ref actualType);
     }
-
 }

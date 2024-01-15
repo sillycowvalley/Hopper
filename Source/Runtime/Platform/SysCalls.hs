@@ -211,5 +211,7 @@ unit SysCalls
         FloatToLong     = 0xED,
         LongAddB        = 0xEE,
         LongSubB        = 0xEF,
+        
+        ArrayNewFromConstant = 0xF0,
     }
 }

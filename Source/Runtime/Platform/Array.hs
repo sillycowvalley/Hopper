@@ -83,6 +83,49 @@ unit HRArray
         }
         return this;
     }
+    uint Clone(uint original)
+    {
+        uint count = ReadWord(original+aiCount);
+        Type etype = Type(ReadWord(original+aiType));
+        uint address = HRArray.New(etype, count);
+        uint elementbytes;
+        switch (etype)
+        {
+            case Type.Bool:
+            {
+                elementbytes = (count+7) >> 3;
+            }
+            case Type.Char:
+            case Type.Byte:
+            {
+                elementbytes = count;
+            }
+            default:
+            {
+                elementbytes = count *2;
+            }
+        }
+        for (uint i = 0; i < elementbytes; i++)
+        {
+            WriteByte(address+aiElements+i, ReadByte(original+aiElements+i));
+        }
+        return address;    
+    }
+    
+    uint NewFromConstant(uint location, Type htype, uint length)
+    {
+        uint this = HRArray.New(htype, length);
+        for (uint i = 0; i < length; i++)
+        {
+            WriteByte(this + aiElements + i, ReadCodeByte(location+i));
+        }
+        return this;
+    }
+    
+    
+    
+    
+    
     Type GetValueType(uint this)
     {
         return Type(ReadByte(this+aiType));
@@ -108,13 +151,11 @@ unit HRArray
     {
         uint elements = ReadWord(this+aiCount);
         etype    = Type(ReadByte(this+aiType));
-#ifdef CHECKED        
         if (index >= elements)
         {
             Error = 0x02; // array index out of range
             return 0;
         }
-#endif
         uint address = this + aiElements;
         uint value;
         switch (etype)
@@ -151,13 +192,11 @@ unit HRArray
     {
         uint elements = ReadWord(this+aiCount);
         Type etype    = Type(ReadByte(this+aiType));
-#ifdef CHECKED        
         if (index >= elements)
         { 
             Error  = 0x02; // array index out of range
             return;
         }
-#endif
         uint address = this + aiElements;
         switch (etype)
         {

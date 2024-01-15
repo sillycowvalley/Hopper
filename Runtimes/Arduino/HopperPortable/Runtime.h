@@ -305,6 +305,7 @@ enum SysCall {
     eFloatToLong = 0x00ED,
     eLongAddB = 0x00EE,
     eLongSubB = 0x00EF,
+    eArrayNewFromConstant = 0x00F0,
 };
 
 enum Type {
@@ -794,10 +795,12 @@ UInt HRString_TrimLeft(UInt _this);
 Bool HRWiFi_Connect(UInt ssid, UInt password);
 Bool HRHttpClient_GetRequest_R(UInt url, UInt & content);
 UInt HRArray_New(Type htype, UInt count);
+UInt HRArray_NewFromConstant(UInt location, Type htype, UInt length);
 UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype);
 void HRArray_SetItem(UInt _this, UInt index, UInt value);
 UInt HRArray_GetCount(UInt _this);
 Type HRArray_GetValueType(UInt _this);
+UInt HRArray_Clone(UInt original);
 UInt HRList_New(Type htype);
 UInt HRList_GetLength(UInt _this);
 void HRList_Append(UInt _this, UInt item, Type itype);
@@ -847,6 +850,7 @@ UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
 
 
 #endif // HOPPERRUNTIME_H

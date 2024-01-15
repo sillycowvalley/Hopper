@@ -1657,6 +1657,27 @@ unit HopperVM
                 uint address = HRArray.New(htype, count);
                 Push(address, Type.Array);
             }
+            case SysCall.ArrayNewFromConstant:
+            {   
+                Type stype;
+                Type ltype;
+                Type htype = Type(Pop(ref stype));
+#ifdef CHECKED
+                if (IsReferenceType(htype))
+                {
+                    ErrorDump(12);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                uint length = Pop(ref stype);
+                uint location = Pop(ref stype);
+#ifdef CHECKED
+                AssertUInt(stype, count);
+                AssertUInt(ltype, location);
+#endif
+                uint address = HRArray.NewFromConstant(constAddress + location, htype, length);
+                Push(address, Type.Array);
+            }
             
             case SysCall.ArrayGetItem:
             {

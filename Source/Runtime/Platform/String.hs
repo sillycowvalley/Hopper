@@ -508,7 +508,7 @@ unit HRString
     uint ToLower(uint this)
     {
         uint copy = Clone(this);
-        ToUpper(ref copy);
+        ToLower(ref copy);
         return copy;
     }
     ToLower(ref uint this)
