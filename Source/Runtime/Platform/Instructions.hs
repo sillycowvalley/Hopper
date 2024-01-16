@@ -629,13 +629,12 @@ unit Instructions
         if (CSP == 0)
         {
             PC = 0; // exit program
-            return false;
         }
         else
         {
             PC = PopCS();
         }
-        return true;
+        return PC != 0;
     }
     
     bool RetRes()
@@ -658,13 +657,12 @@ unit Instructions
         if (CSP == 0)
         {
             PC = 0; // exit program
-            return false;
         }
         else
         {
             PC = PopCS();
         }
-        return true;
+        return PC != 0;
     }
     bool NOP()
     {
@@ -1604,13 +1602,12 @@ unit Instructions
         if (CSP == 0)
         {
             PC = 0; // exit program
-            return false;
         }
         else
         {
             PC = PopCS();
         }
-        return true;
+        return PC != 0;
     }
     bool RetB()
     {
@@ -1629,13 +1626,12 @@ unit Instructions
         if (CSP == 0)
         {
             PC = 0; // exit program
-            return false;
         }
         else
         {
             PC = PopCS();
         }
-        return true;
+        return PC != 0;
     }
     
     bool Ret()
@@ -1655,13 +1651,12 @@ unit Instructions
         if (CSP == 0)
         {
             PC = 0; // exit program
-            return false;
         }
         else
         {
             PC = PopCS();
         }
-        return true;
+        return PC != 0;
     }
     
     bool EnterB()

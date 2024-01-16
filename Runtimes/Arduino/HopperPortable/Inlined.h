@@ -21,7 +21,7 @@ extern UInt HopperVM_jumpTable;
 extern Bool Library_isrExists;
 extern Byte Minimal_error;
 
-void HopperVM_InlinedExecuteWarp();
+bool HopperVM_InlinedExecuteWarp(bool logging);
 
 Bool Instructions_InlinedAdd();
 Bool Instructions_InlinedSub();

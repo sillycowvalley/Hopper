@@ -13,7 +13,6 @@ unit HopperVM
     uses "/Source/Runtime/Platform/Directory"
     uses "/Source/Runtime/Platform/File"
     uses "/Source/Runtime/Platform/Float"
-    uses "/Source/Runtime/Platform/HttpClient"
     uses "/Source/Runtime/Platform/Int"
     uses "/Source/Runtime/Platform/List"
     uses "/Source/Runtime/Platform/Long"
@@ -21,7 +20,6 @@ unit HopperVM
     uses "/Source/Runtime/Platform/String"
     uses "/Source/Runtime/Platform/UInt"
     uses "/Source/Runtime/Platform/Variant"
-    uses "/Source/Runtime/Platform/WiFi"
     
     uses "/Source/Runtime/Platform/External"
     uses "/Source/Runtime/Platform/Instructions"
@@ -1612,10 +1610,15 @@ unit HopperVM
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
-                bool success = HRWiFi.Connect(ssid, password);
+                bool success = External.WiFiConnect(ssid, password);
                 GC.Release(ssid);
                 GC.Release(password);
                 Push(success ? 1 : 0, Type.Bool);                
+            }
+            case SysCall.WiFiIPGet:
+            {
+                uint ip = External.WiFiIP();
+                Push(ip, Type.String);                
             }
             
             case SysCall.ArrayNew:
@@ -3249,8 +3252,9 @@ unit HopperVM
         }
     }  
     
-    ExecuteStepTo()
+    bool ExecuteStepTo()
     {
+        bool restart;
 #ifdef CHECKED
         messagePC = pc;
 #endif
@@ -3261,13 +3265,15 @@ unit HopperVM
         }
         else if (pc == 0) // returned from "main"
         {
-            Restart(); // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
+            restart = true; // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
         }
+        return restart;
     }
     
     
-    Execute()
+    bool Execute()
     {
+        bool restart;
         loop
         {
 #ifdef CHECKED
@@ -3281,8 +3287,8 @@ unit HopperVM
             }
             if (pc == 0) // returned from "main"
             {
-                Restart(); // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
-                break;     // clean exit of "main"
+                restart = true; // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
+                break;          // clean exit of "main"
             }
             if (IsBreak())
             {
@@ -3302,12 +3308,13 @@ unit HopperVM
                         {
                             SetBreakpoint(0, 0); // clear single step breakpoint
                         }
-                        return; // return control to Monitor
+                        return restart; // return control to Monitor
                     }
                 }
             }
             WatchDog();
         } // loop
+        return restart;
     }
     
     bool ExecuteOpCode()
@@ -3338,9 +3345,9 @@ unit HopperVM
 #endif
     }
     
-    InlinedExecuteWarp()
+    bool InlinedExecuteWarp(bool logging)
     {
-        
+        bool restart;
         uint watchDog = 2500;
         loop
         {
@@ -3359,7 +3366,7 @@ unit HopperVM
             {
                 opCode = OpCode(bopCode); // for error reporting of undefined opcodes
                 if (Instructions.Undefined()) {}
-                return;
+                return restart;
             }
 #endif
 #endif
@@ -3389,7 +3396,7 @@ unit HopperVM
             }
             if (PC == 0) // returned from "main"
             {
-                Restart(); // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
+                restart = true; // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
                 break;     // clean exit of "main"
             }
             if (IsBreak())
@@ -3398,6 +3405,7 @@ unit HopperVM
                 break;
             }
         } // loop
+        return restart;
     }
     
     uint pcStore;

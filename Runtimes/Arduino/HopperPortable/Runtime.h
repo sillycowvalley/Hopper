@@ -13,6 +13,7 @@ typedef           bool Bool;
 
 typedef Bool (*InstructionDelegate)();
 typedef UInt ISRDelegate;
+typedef UInt HandlerDelegate;
 
 // method definitions
 enum OpCode {
@@ -305,6 +306,7 @@ enum SysCall {
     eLongAddB = 0x00EE,
     eLongSubB = 0x00EF,
     eArrayNewFromConstant = 0x00F0,
+    eWiFiIPGet = 0x00F1,
 };
 
 enum Type {
@@ -368,7 +370,13 @@ enum LibCall {
     eNeoPixelSetColor = 0x0023,
     eNeoPixelShow = 0x0024,
     eNeoPixelLengthGet = 0x0025,
-    eHttpClientGetRequest = 0x0026,
+    eWebClientGetRequest = 0x0026,
+    eWebServerBegin = 0x0027,
+    eWebServerOn = 0x0028,
+    eWebServerOnNotFound = 0x0029,
+    eWebServerEvents = 0x002A,
+    eWebServerClose = 0x002B,
+    eWebServerSend = 0x002C,
 };
 
 enum DataOrder {
@@ -559,8 +567,8 @@ UInt HopperVM_CSP_Get();
 UInt HopperVM_SP_Get();
 UInt HopperVM_BP_Get();
 void HopperVM_FlashProgram(UInt codeLocation, UInt codeLength);
-void HopperVM_Execute();
-void HopperVM_ExecuteStepTo();
+Bool HopperVM_Execute();
+Bool HopperVM_ExecuteStepTo();
 void HopperVM_DumpStack(UInt limit);
 void HopperVM_DumpHeap(Bool display, UInt accountedFor);
 void HopperVM_Release();
@@ -792,7 +800,6 @@ UInt HRString_Trim(UInt _this);
 void HRString_TrimRight_R(UInt & _this);
 void HRString_TrimLeft_R(UInt & _this);
 UInt HRString_TrimLeft(UInt _this);
-Bool HRWiFi_Connect(UInt ssid, UInt password);
 UInt HRArray_New(Type htype, UInt count);
 UInt HRArray_NewFromConstant(UInt location, Type htype, UInt length);
 UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype);
@@ -848,9 +855,7 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
-Bool HRHttpClient_GetRequest_R(UInt url, UInt & content);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
-
 
 
 

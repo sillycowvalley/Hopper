@@ -45,7 +45,14 @@ unit LibCalls
         NeoPixelShow,
         NeoPixelLengthGet,
         
-        HttpClientGetRequest,
+        WebClientGetRequest,
+        
+        WebServerBegin,
+        WebServerOn,
+        WebServerOnNotFound,
+        WebServerEvents,
+        WebServerClose,
+        WebServerSend,
         
     }
 }

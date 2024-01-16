@@ -54,7 +54,14 @@ unit LibCalls
         addEntry("NeoPixel", "Show");
         addEntry("NeoPixel", "Length_Get");
         
-        addEntry("HttpClient", "GetRequest");
+        addEntry("WebClient", "GetRequest");
+        
+        addEntry("WebServer", "Begin");
+        addEntry("WebServer", "On");
+        addEntry("WebServer", "OnNotFound");
+        addEntry("WebServer", "Events");
+        addEntry("WebServer", "Close");
+        addEntry("WebServer", "Send");
     }
     
     bool TryParseLibCall(string name, ref byte index)

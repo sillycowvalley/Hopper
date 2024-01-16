@@ -211,5 +211,7 @@ unit SysCalls
         LongSubB        = 0xEF,
         
         ArrayNewFromConstant = 0xF0,
+        
+        WiFiIPGet            = 0xF1,
     }
 }

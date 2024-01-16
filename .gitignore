@@ -8,4 +8,5 @@
 \obj
 
 Runtimes/Windows/HopperNet/bin
-Source/Samples/MCU/Secrets
+Source/Samples/MCU/Secrets2
+Temp/Errors.txt

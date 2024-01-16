@@ -15,6 +15,9 @@ void Machine_Initialize();
 Bool Machine_GetExited();
 void Machine_SetExited(Bool value);
 
+void WebServer_Restart();
+void WebServer_Release();
+
 
 // lastError codes:
 //   0x00 - ok

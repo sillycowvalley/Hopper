@@ -145,6 +145,7 @@ void Platform_Initialize()
     //Serial.println((unsigned int)dataMemoryBlock, HEX);
     FileSystem_Initialize();
 
+    WebServer_Restart();
 }
 
 void Platform_Release()
@@ -162,6 +163,8 @@ void Platform_Release()
     dataMemoryBlock = nullptr;
     free(codeMemoryBlock);
     codeMemoryBlock = nullptr;
+
+    WebServer_Release();
 }
 
 void Serial_WriteChar(Char value)
@@ -660,8 +663,9 @@ UInt External_IntToUInt(Int i)
 //#define HWM
 //#define LWM
 
-void HopperVM_InlinedExecuteWarp()
+Bool HopperVM_InlinedExecuteWarp(bool logging)
 {
+    Bool restart = false;
 #ifdef HWM  
     UInt hmw = 0;
 #endif
@@ -704,6 +708,13 @@ void HopperVM_InlinedExecuteWarp()
                 }
             }
         }
+#ifdef DIAGNOSTICS   
+        if (logging)
+        {
+            Serial.print(" PC=0x");
+            Serial.print(HopperVM_pc, HEX);
+        }
+#endif
         
         InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[HopperVM_jumpTable + (codeMemoryBlock[HopperVM_pc++] << 2)]));
 #if defined(HWM) || defined(LWM)
@@ -754,7 +765,7 @@ void HopperVM_InlinedExecuteWarp()
         }
         if (HopperVM_pc== 0)
         {
-            HopperVM_Restart();
+            restart = true;
             break;
         }
         if (IO_IsBreak())
@@ -763,6 +774,7 @@ void HopperVM_InlinedExecuteWarp()
             break;
         }
     } // loop
+    return restart;
 }
 
 bool controller0Configured = false;

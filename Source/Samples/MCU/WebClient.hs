@@ -2,28 +2,41 @@ program WebClient
 {
     #define SERIAL_CONSOLE // use Serial, not Screen for Write, WriteLn, etc.
     #define RP2040_PICOW
+    //#define ARDUINO_NANO_RP2040
     
     uses "/Source/System/Serialize"
     
     uses "/Source/Library/MCU"
-    uses "/Source/Samples/MCU/Secrets/Connect"
+    uses "/Source/Samples/MCU/Secrets2/Connect"
     
     
     {
         
         WriteLn(); 
-        if (!WiFi.Connect(SSID, Password))
+        
+        uint attempts = 0;
+        loop
         {
-            WriteLn("Failed to connect");
+            bool success = WiFi.Connect(SSID, Password);
+            if (success)
+            {
+                WriteLn("Connected");
+                break;
+            }
+            Write(".");
+            attempts++;
+            if (attempts >= 10)
+            {
+                WriteLn("Failed to Connect");
+                return;
+            }
         }
-        else
-        {
-            WriteLn("Connected");
-        }
+        
+        WriteLn("IP: " + WiFi.IP);
         
         string timejson;
         <string, variant> time;
-        if (HttpClient.GetRequest("worldtimeapi.org/api/timezone/pacific/auckland", ref timejson))
+        if (WebClient.GetRequest("worldtimeapi.org/api/timezone/pacific/auckland", ref timejson))
         {
             uint iBrace;
             if (timejson.IndexOf('{', ref iBrace)) { }

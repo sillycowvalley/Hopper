@@ -4,10 +4,9 @@ unit Library
     uses "/Source/Runtime/Platform/Wire"
     uses "/Source/Runtime/Platform/SPI"
     uses "/Source/Runtime/Platform/NeoPixel"
-    uses "/Source/Runtime/Platform/HttpClient"
-    
     
     delegate ISRDelegate();
+    delegate HandlerDelegate(string uri, string method, <string,string> arguments);
     
     bool isrExists;
     bool ISRExists { get { return isrExists; } }
@@ -572,7 +571,7 @@ unit Library
                 Push(length, Type.UInt);
             }
             
-            case LibCall.HttpClientGetRequest:
+            case LibCall.WebClientGetRequest:
             {
                 Type htype;    
                 uint address = HopperVM.Pop(ref htype);
@@ -587,10 +586,77 @@ unit Library
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
-                bool success = HRHttpClient.GetRequest(url, ref content);
+                bool success = External.WebClientGetRequest(url, ref content);
                 HopperVM.Put(address, content, Type.String);
                 GC.Release(url);
                 Push(success ? 1 : 0, Type.Bool);
+                doNext = false;
+            }
+            case LibCall.WebServerBegin:
+            {
+                uint port = 80;
+                if (iOverload == 2)
+                {
+                    Type ptype; 
+                    port = Pop(ref ptype);
+#ifdef CHECKED             
+                    AssertUInt(ptype, port);
+#endif
+                }
+                External.WebServerBegin(port);
+                doNext = false;
+            }
+            
+            case LibCall.WebServerOn:
+            {
+                HandlerDelegate handlerDelegate = HandlerDelegate(Pop());
+                Type utype;    
+                uint url = Pop(ref utype);
+#ifdef CHECKED
+                if (utype != Type.String)
+                {
+                    ErrorDump(16);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif        
+                External.WebServerOn(url, handlerDelegate);
+                GC.Release(url);
+            }
+            case LibCall.WebServerOnNotFound:
+            {
+                HandlerDelegate handlerDelegate = HandlerDelegate(Pop());
+                External.WebServerOnNotFound(handlerDelegate);
+            }
+            case LibCall.WebServerEvents:
+            {
+                External.WebServerEvents();
+                doNext = false;
+            }
+            case LibCall.WebServerClose:
+            {
+                External.WebServerClose();
+                doNext = false;
+            }
+            case LibCall.WebServerSend:
+            {
+                Type ctype;    
+                uint content     = Pop(ref ctype);
+                Type ttype;    
+                uint contentType = Pop(ref ttype);
+                Type htype;    
+                uint httpCode = Pop(ref htype);
+#ifdef CHECKED
+                AssertUInt(htype, httpCode);
+                if ((ctype != Type.String) || (ttype != Type.String))
+                {
+                    ErrorDump(16);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif        
+                External.WebServerSend(httpCode, contentType, content);
+                GC.Release(contentType);
+                GC.Release(content);
+                doNext = false;
             }
             
             default:

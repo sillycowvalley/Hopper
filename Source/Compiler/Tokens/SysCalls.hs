@@ -304,6 +304,8 @@ unit SysCalls
         addEntry("Long", "SubB");
         
         addEntry("Array", "NewFromConstant");
+        
+        addEntry("WiFi", "IP_Get");
     }
     
     bool TryParseSysCall(string name, ref byte index)

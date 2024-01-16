@@ -9,9 +9,6 @@
 
 
 
-
-
-
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -62,7 +59,10 @@ void Runtime_MCU()
         HopperVM_Initialize(loadedAddress, codeLength);
         HopperVM_Restart();
         Runtime_loaded = true;
-        HopperVM_InlinedExecuteWarp();
+        if (HopperVM_InlinedExecuteWarp(false))
+        {
+            HopperVM_Restart();
+        }
     }
     Serial_WriteChar(Char(92));
     for (;;)
@@ -253,21 +253,26 @@ void Runtime_MCU()
                     case 'O':
                     {
                         Runtime_WaitForEnter();
+                        Bool restart = false;
                         UInt pc = HopperVM_PC_Get();
                         OpCode opCode = OpCode(Memory_ReadCodeByte(pc));
                         if ((opCode == OpCode::eCALL) || (opCode == OpCode::eCALLI))
                         {
                             HopperVM_SetBreakpoint(0x00, pc + 0x03);
-                            HopperVM_Execute();
+                            restart = HopperVM_Execute();
                         }
                         else if (opCode == OpCode::eCALLB)
                         {
                             HopperVM_SetBreakpoint(0x00, pc + 0x02);
-                            HopperVM_Execute();
+                            restart = HopperVM_Execute();
                         }
                         else
                         {
-                            HopperVM_ExecuteStepTo();
+                            restart = HopperVM_ExecuteStepTo();
+                        }
+                        if (restart)
+                        {
+                            HopperVM_Restart();
                         }
                         Serial_WriteChar(Char(92));
                         break;
@@ -275,21 +280,30 @@ void Runtime_MCU()
                     case 'I':
                     {
                         Runtime_WaitForEnter();
-                        HopperVM_ExecuteStepTo();
+                        if (HopperVM_ExecuteStepTo())
+                        {
+                            HopperVM_Restart();
+                        }
                         Serial_WriteChar(Char(92));
                         break;
                     }
                     case 'D':
                     {
                         Runtime_WaitForEnter();
-                        HopperVM_Execute();
+                        if (HopperVM_Execute())
+                        {
+                            HopperVM_Restart();
+                        }
                         Serial_WriteChar(Char(92));
                         break;
                     }
                     case 'X':
                     {
                         Runtime_WaitForEnter();
-                        HopperVM_InlinedExecuteWarp();
+                        if (HopperVM_InlinedExecuteWarp(false))
+                        {
+                            HopperVM_Restart();
+                        }
                         Serial_WriteChar(Char(92));
                         break;
                     }
@@ -917,8 +931,9 @@ void HopperVM_FlashProgram(UInt codeLocation, UInt codeLength)
     GC_Release(path);
 }
 
-void HopperVM_Execute()
+Bool HopperVM_Execute()
 {
+    Bool restart = false;
     for (;;)
     {
         Bool doNext = HopperVM_ExecuteOpCode();
@@ -929,7 +944,7 @@ void HopperVM_Execute()
         }
         if (HopperVM_pc == 0x00)
         {
-            HopperVM_Restart();
+            restart = true;
             break;;
         }
         if (IO_IsBreak())
@@ -949,16 +964,18 @@ void HopperVM_Execute()
                     {
                         HopperVM_SetBreakpoint(0x00, 0x00);
                     }
-                    return;
+                    return restart;
                 }
             }
         }
         External_WatchDog();
     }
+    return restart;
 }
 
-void HopperVM_ExecuteStepTo()
+Bool HopperVM_ExecuteStepTo()
 {
+    Bool restart = false;
     Bool doNext = HopperVM_ExecuteOpCode();
     if (Minimal_Error_Get() != 0x00)
     {
@@ -966,8 +983,9 @@ void HopperVM_ExecuteStepTo()
     }
     else if (HopperVM_pc == 0x00)
     {
-        HopperVM_Restart();
+        restart = true;
     }
+    return restart;
 }
 
 void HopperVM_DumpStack(UInt limit)
@@ -2490,13 +2508,12 @@ Bool Instructions_Ret0()
     if (HopperVM_CSP_Get() == 0x00)
     {
         HopperVM_PC_Set(0x00);
-        return false;
     }
     else
     {
         HopperVM_PC_Set(HopperVM_PopCS());
     }
-    return true;
+    return HopperVM_PC_Get() != 0x00;
 }
 
 Bool Instructions_PopLocalB00()
@@ -2777,13 +2794,12 @@ Bool Instructions_RetB()
     if (HopperVM_CSP_Get() == 0x00)
     {
         HopperVM_PC_Set(0x00);
-        return false;
     }
     else
     {
         HopperVM_PC_Set(HopperVM_PopCS());
     }
-    return true;
+    return HopperVM_PC_Get() != 0x00;
 }
 
 Bool Instructions_RetFast()
@@ -2962,13 +2978,12 @@ Bool Instructions_Ret()
     if (HopperVM_CSP_Get() == 0x00)
     {
         HopperVM_PC_Set(0x00);
-        return false;
     }
     else
     {
         HopperVM_PC_Set(HopperVM_PopCS());
     }
-    return true;
+    return HopperVM_PC_Get() != 0x00;
 }
 
 Bool Instructions_RetRes()
@@ -2991,13 +3006,12 @@ Bool Instructions_RetRes()
     if (HopperVM_CSP_Get() == 0x00)
     {
         HopperVM_PC_Set(0x00);
-        return false;
     }
     else
     {
         HopperVM_PC_Set(HopperVM_PopCS());
     }
-    return true;
+    return HopperVM_PC_Get() != 0x00;
 }
 
 Bool Instructions_TestBPB()
@@ -4646,10 +4660,16 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt password = HopperVM_Pop_R(ptype);
         Type stype = (Type)0;
         UInt ssid = HopperVM_Pop_R(stype);
-        Bool success = HRWiFi_Connect(ssid, password);
+        Bool success = External_WiFiConnect(ssid, password);
         GC_Release(ssid);
         GC_Release(password);
         HopperVM_Push((success) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
+    case SysCall::eWiFiIPGet:
+    {
+        UInt ip = External_WiFiIP();
+        HopperVM_Push(ip, Type::eString);
         break;
     }
     case SysCall::eArrayNew:
@@ -6180,17 +6200,71 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         HopperVM_Push(length, Type::eUInt);
         break;
     }
-    case LibCall::eHttpClientGetRequest:
+    case LibCall::eWebClientGetRequest:
     {
         Type htype = (Type)0;
         UInt address = HopperVM_Pop_R(htype);
         UInt content = HopperVM_Get_R(address, htype);
         Type utype = (Type)0;
         UInt url = HopperVM_Pop_R(utype);
-        Bool success = HRHttpClient_GetRequest_R(url, content);
+        Bool success = External_WebClientGetRequest_R(url, content);
         HopperVM_Put(address, content, Type::eString);
         GC_Release(url);
         HopperVM_Push((success) ? (0x01) : (0x00), Type::eBool);
+        doNext = false;
+        break;
+    }
+    case LibCall::eWebServerBegin:
+    {
+        UInt port = 0x50;
+        if (iOverload == 0x02)
+        {
+            Type ptype = (Type)0;
+            port = HopperVM_Pop_R(ptype);
+        }
+        External_WebServerBegin(port);
+        doNext = false;
+        break;
+    }
+    case LibCall::eWebServerOn:
+    {
+        HandlerDelegate handlerDelegate = HandlerDelegate(HopperVM_Pop());
+        Type utype = (Type)0;
+        UInt url = HopperVM_Pop_R(utype);
+        External_WebServerOn(url, handlerDelegate);
+        GC_Release(url);
+        break;
+    }
+    case LibCall::eWebServerOnNotFound:
+    {
+        HandlerDelegate handlerDelegate = HandlerDelegate(HopperVM_Pop());
+        External_WebServerOnNotFound(handlerDelegate);
+        break;
+    }
+    case LibCall::eWebServerEvents:
+    {
+        External_WebServerEvents();
+        doNext = false;
+        break;
+    }
+    case LibCall::eWebServerClose:
+    {
+        External_WebServerClose();
+        doNext = false;
+        break;
+    }
+    case LibCall::eWebServerSend:
+    {
+        Type ctype = (Type)0;
+        UInt content = HopperVM_Pop_R(ctype);
+        Type ttype = (Type)0;
+        UInt contentType = HopperVM_Pop_R(ttype);
+        Type htype = (Type)0;
+        UInt httpCode = HopperVM_Pop_R(htype);
+        External_WebServerSend(httpCode, contentType, content);
+        GC_Release(contentType);
+        GC_Release(content);
+        doNext = false;
         break;
     }
     default:
@@ -7100,11 +7174,6 @@ UInt HRString_TrimLeft(UInt _this)
     UInt copy = HRString_Clone(_this);
     HRString_TrimLeft_R(copy);
     return copy;
-}
-
-Bool HRWiFi_Connect(UInt ssid, UInt password)
-{
-    return External_WiFiConnect(ssid, password);
 }
 
 UInt HRArray_New(Type htype, UInt count)
@@ -8207,14 +8276,8 @@ UInt HRInt_FromBytes(Byte b0, Byte b1)
     return b0 + (b1 << 0x08);
 }
 
-Bool HRHttpClient_GetRequest_R(UInt url, UInt & content)
-{
-    return External_HttpClientGetRequest_R(url, content);
-}
-
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
 {
     vtype = Type(Memory_ReadByte(_this + 2));
     return Memory_ReadWord(_this + 3);
 }
-

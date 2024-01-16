@@ -460,6 +460,8 @@ namespace HopperNET
 
         ArrayNewFromConstant = 0xF0,
 
+        WiFiIPGet = 0xF1,
+
     };
 
     enum LibCall

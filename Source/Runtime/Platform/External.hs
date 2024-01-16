@@ -4,7 +4,6 @@ unit External
     uses "/Source/Runtime/Emulation/File.hs"
     uses "/Source/Runtime/Emulation/Float.hs"
     uses "/Source/Runtime/Emulation/Long.hs"
-    uses "/Source/Runtime/Emulation/HttpClient.hs"
     uses "/Source/Runtime/Emulation/WiFi.hs"
     
     ServiceInterrupts()
@@ -24,17 +23,37 @@ unit External
         string password = nativeStringFromHopperString(hrpassword);
         return WiFi.Connect(ssid, password);
     }
-    bool HttpClientGetRequest(uint hrurl, ref uint hrcontent)
+    uint WiFiIP()
     {
-        string url = nativeStringFromHopperString(hrurl);
-        string response;
-        if (HttpClient.GetRequest(url, ref response))
-        {
-            GC.Release(hrcontent);
-            hrcontent = hopperStringFromNativeString(response);
-            return true;
-        }
-        return false;
+        ErrorDump(156); Error = 0x0A; return 0;
+    }
+    bool WebClientGetRequest(uint hrurl, ref uint hrcontent)
+    {
+        ErrorDump(156); Error = 0x0A; return false;
+    }
+    WebServerBegin(uint port)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    WebServerClose()
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    WebServerEvents()
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    WebServerSend(uint uri, uint method, uint content)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    WebServerOn(uint uri, HandlerDelegate handler)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    WebServerOnNotFound(HandlerDelegate handler)
+    {
+        ErrorDump(156); Error = 0x0A;
     }
     
     bool LoadAuto { get { return true; } }

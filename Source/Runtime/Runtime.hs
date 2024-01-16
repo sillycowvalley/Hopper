@@ -27,7 +27,6 @@ program Runtime
     uses "/Source/Runtime/Platform/String"
     uses "/Source/Runtime/Platform/UInt"
     uses "/Source/Runtime/Platform/Variant"
-    uses "/Source/Runtime/Platform/WiFi"
     
     uses "/Source/Runtime/Platform/External"
     uses "/Source/Runtime/Platform/Instructions"
@@ -234,7 +233,10 @@ program Runtime
                         {
                             case 'D':
                             {
-                                HopperVM.Execute();
+                                if (HopperVM.Execute())
+                                {
+                                    HopperVM.Restart();
+                                }
                                 if (Error == 0)
                                 {
                                     HopperVM.DumpHeap(false, 0x22 + 0x0A + 0x0A + 0x10); // breakpoints, Array bit tables and CurrentDirectory
@@ -243,37 +245,44 @@ program Runtime
                             }
                             case 'I':
                             {
-                                HopperVM.ExecuteStepTo();
+                                if (HopperVM.ExecuteStepTo())
+                                {
+                                    HopperVM.Restart();
+                                }
                                 refresh = true;
                             }
                             case 'O':
                             {
                                 uint pc = HopperVM.PC;
                                 OpCode opCode = OpCode(ReadByte(pc));
-                                
+                                bool restart;
                                 if ((opCode == OpCode.CALLW) || (opCode == OpCode.CALLIW))
                                 {
                                     
                                     // set breakpoint[0] to PC+3
                                     HopperVM.SetBreakpoint(0, pc+3);
-                                    HopperVM.Execute();
+                                    restart = HopperVM.Execute();
                                 }
                                 else if (opCode == OpCode.CALLB)
                                 {
                                     // set breakpoint[0] to PC+2
                                     HopperVM.SetBreakpoint(0, pc+2);
-                                    HopperVM.Execute();
+                                    restart =HopperVM.Execute();
                                 }
                                 else if (opCode == OpCode.CALLREL)
                                 {
                                     // set breakpoint[0] to PC+1
                                     HopperVM.SetBreakpoint(0, pc+1);
-                                    HopperVM.Execute();
+                                    restart =HopperVM.Execute();
                                 }
                                 else
                                 {
                                     // use single step (set bit in HopperFlags)
-                                    HopperVM.ExecuteStepTo();
+                                    restart = HopperVM.ExecuteStepTo();
+                                }
+                                if (restart)
+                                {
+                                    HopperVM.Restart();
                                 }
                                 refresh = true;
                             }
@@ -289,7 +298,10 @@ program Runtime
                             }
                             case 'X':
                             {
-                                HopperVM.InlinedExecuteWarp();
+                                if (HopperVM.InlinedExecuteWarp(false))
+                                {
+                                    HopperVM.Restart();
+                                }
                                 refresh = true;
                             }
                             case 'W':
@@ -703,7 +715,10 @@ program Runtime
             HopperVM.Initialize(loadedAddress, codeLength);
             HopperVM.Restart();
             loaded = true;
-            HopperVM.InlinedExecuteWarp();
+            if (HopperVM.InlinedExecuteWarp(false))
+            {
+                HopperVM.Restart();
+            }
         }
 
         Serial.WriteChar(char(slash)); // ready
@@ -920,7 +935,7 @@ program Runtime
                                 case 'O': // Step Over | <F10>
                                 {
                                     WaitForEnter();
-                                    
+                                    bool restart;
                                     uint pc = HopperVM.PC;
                                     OpCode opCode = OpCode(ReadCodeByte(pc));
                                     
@@ -929,37 +944,50 @@ program Runtime
                                         
                                         // set breakpoint[0] to PC+3
                                         HopperVM.SetBreakpoint(0, pc+3);
-                                        HopperVM.Execute();
+                                        restart = HopperVM.Execute();
                                     }
                                     else if (opCode == OpCode.CALLB)
                                     {
                                         // set breakpoint[0] to PC+2
                                         HopperVM.SetBreakpoint(0, pc+2);
-                                        HopperVM.Execute();
+                                        restart = HopperVM.Execute();
                                     }
                                     else
                                     {
                                         // use single step (set bit in HopperFlags)
-                                        HopperVM.ExecuteStepTo();
+                                        restart = HopperVM.ExecuteStepTo();
+                                    }
+                                    if (restart)
+                                    {
+                                        HopperVM.Restart();
                                     }
                                     Serial.WriteChar(char(slash)); // confirm handing back control
                                 }
                                 case 'I': // Step Into | <F11>
                                 {
                                     WaitForEnter();
-                                    HopperVM.ExecuteStepTo();
+                                    if (HopperVM.ExecuteStepTo())
+                                    {
+                                        HopperVM.Restart();
+                                    }
                                     Serial.WriteChar(char(slash)); // confirm handing back control
                                 }
                                 case 'D': // Debug
                                 {
                                     WaitForEnter();
-                                    HopperVM.Execute();
+                                    if (HopperVM.Execute())
+                                    {
+                                        HopperVM.Restart();
+                                    }
                                     Serial.WriteChar(char(slash)); // confirm handing back control
                                 }
                                 case 'X': // Execute
                                 {
                                     WaitForEnter();
-                                    HopperVM.InlinedExecuteWarp();
+                                    if (HopperVM.InlinedExecuteWarp(false))
+                                    {
+                                        HopperVM.Restart();
+                                    }
                                     Serial.WriteChar(char(slash)); // confirm handing back control
                                 }
                                 case 'W': // Warm restart

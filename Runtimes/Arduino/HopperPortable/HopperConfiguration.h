@@ -18,11 +18,10 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - no WiFi
 //#define RP2040PICO
 
-
 // Arduino Connect RP2040
 // - LittleFS for built-in Flash
 // - WiFiNina
-//#define RP2040NANO 
+//#define ARDUINONANO_RP2040
 
 // Seeed XIA0 RP2040
 // - LittleFS for built-in Flash
@@ -63,7 +62,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - exit TERM then run HM!
 
 
-#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(RP2040NANO) || defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE)
+#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE)
 #define RP2040
 #endif
 

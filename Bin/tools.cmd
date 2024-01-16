@@ -30,4 +30,9 @@ Optimize Compile
 CODEGEN Compile -extended
 DASM Compile
 
+PreProcess Translate
+Compile Translate -o
+Optimize Translate
+CODEGEN Translate
+DASM Translate
 

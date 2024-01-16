@@ -15,10 +15,10 @@ unit MCU
     uses "/Source/Library/Wire"
     uses "/Source/Library/SPI"
 
-#if defined(CHALLENGER_RP2040_WIFI) || defined(RP2040_PICOW)    
+#if defined(CHALLENGER_RP2040_WIFI) || defined(RP2040_PICOW) || defined(ARDUINO_NANO_RP2040)   
     uses "/Source/System/WiFi"
-    uses "/Source/Library/HttpClient"
-    uses "/Source/Library/HttpServer"
+    uses "/Source/Library/WebClient"
+    uses "/Source/Library/WebServer"
 #endif
     
 #if defined(CHALLENGER_RP2040_WIFI) || defined(WAVESHARE_RP2040_ONE) || defined(WAVESHARE_RP2040_MATRIX) || defined(ADAFRUIT_FEATHER_RP2040) || defined(ADAFRUIT_METRO_RP2040) || defined(SPARKFUN_THING_PLUS_RP2040) || defined(SEEED_XIAO_RP2040)

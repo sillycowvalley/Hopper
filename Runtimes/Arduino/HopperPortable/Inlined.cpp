@@ -342,14 +342,13 @@ Bool Instructions_InlinedRetResB()
     if (HopperVM_csp == 0)
     {
         HopperVM_pc = 0;
-        return false;
     }
     else
     {
         HopperVM_csp -= 2;
         HopperVM_pc = *((UInt*)(&dataMemoryBlock[HopperVM_callStack + HopperVM_csp]));
     }
-    return true;
+    return HopperVM_pc != 0;
 }
 Bool Instructions_InlinedJZB()
 {
