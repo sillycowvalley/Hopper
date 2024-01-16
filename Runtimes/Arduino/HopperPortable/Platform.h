@@ -18,6 +18,9 @@ void Machine_SetExited(Bool value);
 void WebServer_Restart();
 void WebServer_Release();
 
+void HRString_FromString(UInt & hrstr, const String & str);
+void HRString_ToString(UInt hrstr, String & str);
+
 
 // lastError codes:
 //   0x00 - ok
@@ -141,6 +144,16 @@ void HRNeoPixel_SetColor(UInt pixel, Byte r, Byte g, Byte b, Byte w);
 void HRNeoPixel_Show();
 UInt HRNeoPixel_GetLength();
 
+Bool External_WebClientGetRequest_R(UInt hrurl, UInt& hrcontent);
+Bool External_WiFiConnect(UInt hrssid, UInt hrpassword);
+UInt External_WiFiIP();
+
+void External_WebServerBegin(UInt port);
+void External_WebServerClose();
+void External_WebServerEvents();
+void External_WebServerSend(UInt httpCode, UInt contentType, UInt content);
+void External_WebServerOn(UInt uri, UInt handler);
+void External_WebServerOnNotFound(UInt handler);
 
 
 #endif // HOPPERPLATFORM_H

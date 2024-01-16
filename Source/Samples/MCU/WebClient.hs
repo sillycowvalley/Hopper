@@ -1,8 +1,8 @@
 program WebClient
 {
     #define SERIAL_CONSOLE // use Serial, not Screen for Write, WriteLn, etc.
-    #define RP2040_PICOW
-    //#define ARDUINO_NANO_RP2040
+    //#define RP2040_PICOW
+    #define ARDUINO_NANO_RP2040
     
     uses "/Source/System/Serialize"
     

@@ -1277,3 +1277,31 @@ UInt HRNeoPixel_GetLength()
 #endif
     return length;
 }
+
+void HRString_FromString(UInt & hrstr, const String & str)
+{
+    if (hrstr != 0)
+    {
+        HRString_BuildClear_R(hrstr);
+    }
+    else
+    {
+        hrstr = HRString_New();
+    }
+    for (int i = 0; i < str.length(); i++)
+    {
+        HRString_BuildChar_R(hrstr, str.charAt(i));
+    }
+}
+
+void HRString_ToString(UInt hrstr, String & str)
+{
+    str = "";
+    if (0 != hrstr)
+    {
+        for (uint i = 0; i < HRString_GetLength(hrstr); i++)
+        {
+            str += (char)HRString_GetChar(hrstr, i);
+        }
+    }
+}
