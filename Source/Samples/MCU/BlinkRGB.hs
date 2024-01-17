@@ -7,18 +7,14 @@ program BlinkRGB
     //#define SPARKFUN_THING_PLUS_RP2040
     //#define SEEED_XIAO_RP2040
     #define CHALLENGER_RP2040_WIFI
-
-#ifdef WAVESHARE_RP2040_MATRIX
-    const uint totalPixels = 25; 
-#else
-    const uint totalPixels = 1; 
-#endif        
+    //#define MAKER_NANO_RP2040
             
     uses "/Source/Library/MCU"
     
     {
         NeoPixel.BuiltIn();
       
+        uint totalPixels = NeoPixel.Length;
         
         loop
         {
@@ -26,22 +22,22 @@ program BlinkRGB
             {
                 NeoPixel.SetColor(pixel, 255, 0, 0);
                 NeoPixel.Show();
-                WriteLn("R");
+                WriteLn(pixel.ToString() + "R");
                 Delay(500);
                 
                 NeoPixel.SetColor(pixel, 0, 255, 0);
                 NeoPixel.Show();
-                WriteLn("G");
+                WriteLn(pixel.ToString() + "G");
                 Delay(500);
                 
                 NeoPixel.SetColor(pixel, 0, 0, 255);
                 NeoPixel.Show();
-                WriteLn("B");
+                WriteLn(pixel.ToString() + "B");
                 Delay(500);
                 
                 NeoPixel.SetColor(pixel, 0, 0, 0);
                 NeoPixel.Show();
-                WriteLn("0");
+                WriteLn(pixel.ToString() + "0");
                 Delay(500);
             }
         }

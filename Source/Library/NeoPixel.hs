@@ -124,6 +124,17 @@ unit NeoPixel
     }
 #endif    
 
+#ifdef MAKER_NANO_RP2040
+    byte RGBLED { get { return 11; } } 
+    BuiltIn()
+    {
+        uint length = 2;
+        Begin(length, RGBLED, PixelType.RGB | PixelType.KHz800);
+        Brightness = 10;
+        Clear();
+    }
+#endif
+
 #if defined(SPARKFUN_THING_PLUS_RP2040)
     byte RGBLED { get { return 8; } } 
     BuiltIn()

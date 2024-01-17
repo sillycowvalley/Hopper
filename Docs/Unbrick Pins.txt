@@ -1,0 +1,30 @@
+Raspberry Pi
+    Pico
+        0..7 are low by default : suggest taking 0 high
+    Pico W
+        0..7 are low by default : suggest taking 0 high
+        
+Pimoroni
+    Tiny 2040
+        0..7 are low by default : suggest taking 0 high
+        
+Challenger
+    WiFi
+        0..3 and 6..7 are low by default: suggest taking 0 high
+    WiFi NB
+        
+Waveshare
+    RP2040-One
+        0..7 are low by default : suggest taking 0 high
+    RP2040-Matrix
+        0..7 are low by default : suggest taking 0 high
+    RP2040-Plus
+        0..7 are low by default : suggest taking 0 high
+        
+Adafruit
+    Trinkey RP2040
+        The boot button is also on GPIO 12. High by default, low when pressed.
+        
+Cytron
+    Maker Nano RP2040
+        0..7 are low by default : suggest taking 0 high  (lights up an LED)

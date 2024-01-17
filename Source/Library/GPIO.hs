@@ -19,7 +19,14 @@ unit GPIO
     const byte builtInLED = d4;    
 #endif
 
-#if defined(RP2040_PICO) || defined(SPARKFUN_THING_PLUS_RP2040) || defined(SEEED_XIAO_RP2040) || defined(WAVESHARE_RP2040_MATRIX) || defined(WAVESHARE_RP2040_MATRIX)
+#if defined(RP2040_PICO) || defined(SPARKFUN_THING_PLUS_RP2040) || defined(SEEED_XIAO_RP2040) || defined(WAVESHARE_RP2040_PLUS)
+#define PICO_COMMON
+#endif
+#if defined(WAVESHARE_RP2040_MATRIX) || defined(WAVESHARE_RP2040_MATRIX)
+#define PICO_COMMON
+#endif
+
+#ifdef PICO_COMMON
     // Raspberry Pi Pico
     const byte a0         = 26; // A0
     const byte a1         = 27; // A1
@@ -56,6 +63,17 @@ unit GPIO
     const byte a3         = 29; // VSYS/3 on Pi Pico
     
     const byte builtInLED = 13; // like the Uno ..
+#endif
+
+#ifdef CHALLENGER_RP2040_WIFI
+    const byte a0         = 26; // A0
+    const byte a1         = 27; // A1
+    const byte a2         = 28; // A2
+    const byte a3         = 29; // A3
+    //const byte a4         = 25; // A4
+    //const byte a5         = 21; // A5
+    
+    const byte builtInLED = 12;
 #endif
 
 #ifdef ADAFRUIT_QTPY
@@ -137,6 +155,10 @@ unit GPIO
 #ifndef ARDUINO_NANO_RP2040    
     uint A2 { get { return MCU.AnalogRead(a2); } }
     uint A3 { get { return MCU.AnalogRead(a3); } }
+#endif
+#ifdef CHALLENGER_RP2040_WIFI
+    //uint A4 { get { return MCU.AnalogRead(a4); } }
+    //uint A5 { get { return MCU.AnalogRead(a5); } }
 #endif
     
     bool LED 

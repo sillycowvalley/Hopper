@@ -104,6 +104,11 @@ void External_ServiceInterrupts()
 
 bool External_LoadAuto_Get()
 {
+    //if (loadAuto)
+    //{
+    //    PinStatus unbrickPin = digitalRead(0);
+    //    return (unbrickPin == LOW);
+    //}
     return loadAuto;
 }
 UInt External_GetSegmentPages()
@@ -938,7 +943,7 @@ Bool HRSPI_Begin(Byte spiController)
     switch (spiController)
     {
         case 0:
-            if (!spiCSPin0Set || !spiClkPin0Set)
+            if (/*!spiCSPin0Set || */!spiClkPin0Set)
             {
                 break;
             }
@@ -946,8 +951,11 @@ Bool HRSPI_Begin(Byte spiController)
             {
                 break;
             }
-            pinMode(spiCSPin0, OUTPUT);
-            digitalWrite(spiCSPin0, HIGH); // Deselect
+            if (spiCSPin0Set)
+            {
+                pinMode(spiCSPin0, OUTPUT);
+                digitalWrite(spiCSPin0, HIGH); // Deselect
+            }
 
             screenSPI0 = &SPI;
             screenSPI0->setSCK(spiClkPin0);
@@ -960,7 +968,7 @@ Bool HRSPI_Begin(Byte spiController)
             break;
 #ifdef SPI1EXISTS
         case 1:
-            if (!spiCSPin1Set || !spiClkPin1Set)
+            if (/*!spiCSPin1Set || */!spiClkPin1Set)
             {
                 break;
             }
@@ -968,8 +976,11 @@ Bool HRSPI_Begin(Byte spiController)
             {
                 break;
             }
-            pinMode(spiCSPin1, OUTPUT);
-            digitalWrite(spiCSPin1, HIGH); // Deselect
+            if (spiCSPin1Set)
+            {
+                pinMode(spiCSPin1, OUTPUT);
+                digitalWrite(spiCSPin1, HIGH); // Deselect
+            }
 
             screenSPI1 = &SPI1;
             screenSPI1->setSCK(spiClkPin1);

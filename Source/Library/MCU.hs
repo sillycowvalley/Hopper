@@ -21,11 +21,11 @@ unit MCU
     uses "/Source/Library/WebServer"
 #endif
     
-#if defined(CHALLENGER_RP2040_WIFI) || defined(WAVESHARE_RP2040_ONE) || defined(WAVESHARE_RP2040_MATRIX) || defined(ADAFRUIT_FEATHER_RP2040) || defined(ADAFRUIT_METRO_RP2040) || defined(SPARKFUN_THING_PLUS_RP2040) || defined(SEEED_XIAO_RP2040)
+#if defined(CHALLENGER_RP2040_WIFI) || defined(WAVESHARE_RP2040_ONE) || defined(MAKER_NANO_RP2040) || defined(WAVESHARE_RP2040_MATRIX) || defined(ADAFRUIT_FEATHER_RP2040) || defined(ADAFRUIT_METRO_RP2040) || defined(SPARKFUN_THING_PLUS_RP2040) || defined(SEEED_XIAO_RP2040)
     uses "/Source/Library/NeoPixel"
 #endif
 
-#if defined(RP2040_PICO) || defined(RP2040_PICOW) || defined(ADAFRUIT_FEATHER_RP2040) || defined(WAVESHARE_RP2040_MATRIX) || defined(CHALLENGER_RP2040_WIFI) || defined(PIMORONI_TINY2040) || defined(WAVESHARE_RP2040_ONE) || defined(SEEED_XIAO_RP2040) || defined(ARDUINO_NANO_RP2040) || defined(WEMOS_D1_MINI) || defined(ADAFRUIT_METRO_RP2040) || defined(SPARKFUN_THING_PLUS_RP2040)
+#if defined(RP2040_PICO) || defined(RP2040_PICOW) || defined(MAKER_NANO_RP2040) || defined(WAVESHARE_RP2040_PLUS) || defined(ADAFRUIT_FEATHER_RP2040) || defined(WAVESHARE_RP2040_MATRIX) || defined(CHALLENGER_RP2040_WIFI) || defined(PIMORONI_TINY2040) || defined(WAVESHARE_RP2040_ONE) || defined(SEEED_XIAO_RP2040) || defined(ARDUINO_NANO_RP2040) || defined(WEMOS_D1_MINI) || defined(ADAFRUIT_METRO_RP2040) || defined(SPARKFUN_THING_PLUS_RP2040)
     flags PinModeOption
     {
         Input         = 0x00,
