@@ -642,19 +642,19 @@ unit Library
                 Type ctype;    
                 uint content     = Pop(ref ctype);
                 Type ttype;    
-                uint contentType = Pop(ref ttype);
+                uint headerContent = Pop(ref ttype);
                 Type htype;    
                 uint httpCode = Pop(ref htype);
 #ifdef CHECKED
                 AssertUInt(htype, httpCode);
-                if ((ctype != Type.String) || (ttype != Type.String))
+                if ((ctype != Type.String) || (ttype != Type.Dictionary))
                 {
                     ErrorDump(16);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
-                External.WebServerSend(httpCode, contentType, content);
-                GC.Release(contentType);
+                External.WebServerSend(httpCode, headerContent, content);
+                GC.Release(headerContent);
                 GC.Release(content);
                 doNext = false;
             }

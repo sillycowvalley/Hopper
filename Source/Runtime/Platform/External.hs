@@ -43,7 +43,7 @@ unit External
     {
         ErrorDump(156); Error = 0x0A;
     }
-    WebServerSend(uint uri, uint method, uint content)
+    WebServerSend(uint uri, uint headerContent, uint content)
     {
         ErrorDump(156); Error = 0x0A;
     }

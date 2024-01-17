@@ -7,7 +7,13 @@ unit WebServer
     Close() library;
     Events() library;
     
-    Send(uint httpCode, string contentType, string content) library;
+    Send(uint httpCode, <string,string> headerContent, string content) library;
+    Send(uint httpCode, string contentType, string content)
+    {
+        <string,string> headerContent;
+        headerContent["Content-Type"] = contentType;
+        Send(httpCode, headerContent, content);
+    }
     Send(string content)
     {
         Send(200, "text/plain", content);

@@ -150,7 +150,7 @@ UInt External_WiFiIP();
 void External_WebServerBegin(UInt port);
 void External_WebServerClose();
 void External_WebServerEvents();
-void External_WebServerSend(UInt httpCode, UInt contentType, UInt content);
+void External_WebServerSend(UInt httpCode, UInt hrheaderContent, UInt content);
 void External_WebServerOn(UInt uri, UInt handler);
 void External_WebServerOnNotFound(UInt handler);
 

@@ -10,6 +10,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -6261,11 +6262,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         Type ctype = (Type)0;
         UInt content = HopperVM_Pop_R(ctype);
         Type ttype = (Type)0;
-        UInt contentType = HopperVM_Pop_R(ttype);
+        UInt headerContent = HopperVM_Pop_R(ttype);
         Type htype = (Type)0;
         UInt httpCode = HopperVM_Pop_R(htype);
-        External_WebServerSend(httpCode, contentType, content);
-        GC_Release(contentType);
+        External_WebServerSend(httpCode, headerContent, content);
+        GC_Release(headerContent);
         GC_Release(content);
         doNext = false;
         break;
@@ -8284,3 +8285,4 @@ UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
     vtype = Type(Memory_ReadByte(_this + 2));
     return Memory_ReadWord(_this + 3);
 }
+

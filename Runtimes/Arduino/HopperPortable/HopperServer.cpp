@@ -8,7 +8,7 @@ void External_WebServerOnNotFound(UInt handlerMethodIndex) { }
 void External_WebServerBegin(UInt port) { }
 void External_WebServerEvents()         { }
 void External_WebServerClose()          { }
-void External_WebServerSend(UInt httpCode, UInt hrcontentType, UInt hrcontent) {}
+void External_WebServerSend(UInt httpCode, UInt hrheaderContent, UInt hrcontent) {}
 
 #endif
 
@@ -21,7 +21,7 @@ UInt handlerDelegatePCs = 0;
 UInt currentRequestURI = 0;
 UInt currentRequestArguments = 0;
 UInt responseContent = 0;
-UInt responseType = 0;
+UInt headerContent = 0;
 
 bool WebServerMethodIsGET();
 UInt WebServerGetURI();
@@ -57,10 +57,10 @@ void External_WebServerRelease()
         GC_Release(responseContent);
         responseContent = 0;
     }
-    if (0 != responseType)
+    if (0 != headerContent)
     {
-        GC_Release(responseType);
-        responseType = 0;
+        GC_Release(headerContent);
+        headerContent = 0;
     }
 }
 
@@ -98,12 +98,20 @@ void handleNotFound()
     // push arguments onto stack:
     pushHandlerArguments(WebServerMethodIsGET());
 
-    UInt pcBefore = HopperVM_pc;
-    HopperVM_pc = notFoundDelegatePC;
-    bool cleanExit = HopperVM_InlinedExecuteWarp(false);
-    if (cleanExit)
+    responseCode = 404;
+    if (0 != notFoundDelegatePC)
     {
-        HopperVM_pc = pcBefore;
+        UInt pcBefore = HopperVM_pc;
+        HopperVM_pc = notFoundDelegatePC;
+        bool cleanExit = HopperVM_InlinedExecuteWarp(false);
+        if (cleanExit)
+        {
+            HopperVM_pc = pcBefore;
+        }
+    }
+    if (0 == responseContent)
+    {
+        HRString_FromString(responseContent, "404: Not Found");
     }
 }
 
@@ -240,14 +248,7 @@ void External_WebServerEvents()
                             handleNotFound();
                         }
 
-                        String responseTypeStr = "";
                         String responseStr = "";
-                        if (0 != responseType)
-                        {
-                            HRString_ToString(responseType, responseTypeStr);
-                            GC_Release(responseType);
-                            responseType = 0;
-                        }
                         if (0 != responseContent)
                         {
                             HRString_ToString(responseContent, responseStr);
@@ -257,7 +258,24 @@ void External_WebServerEvents()
 
                         // PLATFORM:
                         client.print("HTTP/1.1 "); client.print(responseCode); client.println(" OK");
-                        client.println("Content-type:" + responseTypeStr);
+                        if (0 != headerContent)
+                        {
+                            UInt iterator = 0;
+                            Type ktype = (Type)0;
+                            UInt key = 0;
+                            Type vtype = (Type)0;
+                            UInt value = 0;
+                            while (HRDictionary_next_R(headerContent, iterator, ktype, key, vtype, value))
+                            {
+                                String headerName = "";
+                                String headerValue = "";
+                                HRString_ToString(key, headerName);
+                                HRString_ToString(value, headerValue);
+                                client.println(headerName + ": " + headerValue);
+                            }
+                            GC_Release(headerContent);
+                            headerContent = 0;
+                        }
                         client.println();
                         // the content of the HTTP response follows the header:
                         client.print(responseStr);
@@ -317,7 +335,7 @@ void External_WebServerOn(UInt uri, UInt handlerMethodIndex)
 }
 
 
-void External_WebServerSend(UInt httpCode, UInt hrcontentType, UInt hrcontent)
+void External_WebServerSend(UInt httpCode, UInt hrheaderContent, UInt hrcontent)
 {
     if (!IsWiFiConnected()) { return; }
     responseCode = httpCode;
@@ -329,16 +347,13 @@ void External_WebServerSend(UInt httpCode, UInt hrcontentType, UInt hrcontent)
     {
         responseContent = HRString_New();
     }
-    if (0 != responseType)
-    {
-        HRString_BuildClear_R(responseType);
-    }
-    else
-    {
-        responseType = HRString_New();
-    }
-    HRString_BuildString_R(responseType, hrcontentType);
     HRString_BuildString_R(responseContent, hrcontent);
+    if (0 != headerContent)
+    {
+        GC_Release(headerContent);
+        headerContent = 0;
+    }
+    headerContent = HRDictionary_Clone(hrheaderContent);
 }
 
 void External_WebServerBegin(UInt port) { if (IsWiFiConnected()) { server.begin(); } } // PLATFORM
@@ -411,22 +426,28 @@ void External_WebServerOn(UInt uri, UInt handlerMethodIndex)
     }
 }
 
-void External_WebServerSend(UInt httpCode, UInt hrcontentType, UInt hrcontent)
+void External_WebServerSend(UInt httpCode, UInt hrheaderContent, UInt hrcontent)
 {
     if (IsWiFiConnected())
     {
-        String contentType;
         String content;
-        UInt length = HRString_GetLength(hrcontentType);
-        for (UInt i = 0; i < length; i++)
-        {
-            contentType += (char)HRString_GetChar(hrcontentType, i);
-        }
-        length = HRString_GetLength(hrcontent);
+        UInt length = HRString_GetLength(hrcontent);
         for (UInt i = 0; i < length; i++)
         {
             content += (char)HRString_GetChar(hrcontent, i);
         }
+
+        String contentType = "text/plain";
+        UInt hrContent = 0;
+        HRString_FromString(hrContent, "Content-Type");
+        if ((0 != hrheaderContent) && HRDictionary_Contains(hrheaderContent, hrContent))
+        {
+            Type vtype;
+            UInt hrcontentType = HRDictionary_Get_R(hrheaderContent, hrContent, vtype);
+            HRString_ToString(hrcontentType, contentType);
+            GC_Release(hrcontentType);
+        }
+        GC_Release(hrContent);
         server.send(httpCode, contentType, content); // PLATFORM
     }
 }

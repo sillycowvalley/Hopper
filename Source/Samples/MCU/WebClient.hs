@@ -33,7 +33,7 @@ program WebClient
             }
         }
         
-        // https://arduino.tips/asciilogo.txt
+        // http://arduino.tips/asciilogo.txt
         
         WriteLn("IP: " + WiFi.IP);
         
