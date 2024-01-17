@@ -67,6 +67,7 @@ void External_AnalogWrite(Byte pin, UInt value);
 void External_AnalogWriteResolution(Byte bits);
 Bool External_AttachToPin(Byte value, ISRDelegate gpioISRDelegate, Byte status);
 void External_ServiceInterrupts();
+void External_MCUReboot();
 
 Bool Serial_IsAvailable_Get();
 Char Serial_ReadChar();

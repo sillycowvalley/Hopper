@@ -24,6 +24,7 @@ unit LibCalls
         addEntry("MCU", "AnalogWrite");
         addEntry("MCU", "AnalogWriteResolution");
         addEntry("MCU", "AttachToPin");
+        addEntry("MCU", "Reboot");
         
         addEntry("SPI", "Settings");
         addEntry("SPI", "Begin");

@@ -192,7 +192,11 @@ unit Library
                 Push(result ? 1 : 0, Type.Bool);
                 isrExists = true;
             }
-            
+            case LibCall.MCUReboot:
+            {
+                External.MCUReboot();
+                doNext = false;
+            }
             
             case LibCall.SPIBegin:
             {

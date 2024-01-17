@@ -15,6 +15,7 @@ unit LibCalls
         MCUAnalogWrite,
         MCUAnalogWriteResolution,
         MCUAttachToPin,
+        MCUReboot,
         
         SPISettings,
         SPIBegin,

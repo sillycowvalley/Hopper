@@ -15,6 +15,10 @@ unit External
     {
         ErrorDump(156); Error = 0x0A; return false;
     }
+    MCUReboot()
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
     
     
     bool WiFiConnect(uint hrssid, uint hrpassword)

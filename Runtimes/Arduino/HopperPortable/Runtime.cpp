@@ -8,9 +8,6 @@
 
 
 
-
-
-
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -5932,6 +5929,12 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         Library_isrExists = true;
         break;
     }
+    case LibCall::eMCUReboot:
+    {
+        External_MCUReboot();
+        doNext = false;
+        break;
+    }
     case LibCall::eSPIBegin:
     {
         UInt spiController = 0x00;
@@ -8285,4 +8288,3 @@ UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
     vtype = Type(Memory_ReadByte(_this + 2));
     return Memory_ReadWord(_this + 3);
 }
-

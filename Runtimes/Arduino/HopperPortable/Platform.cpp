@@ -1314,3 +1314,12 @@ void HRString_ToString(UInt hrstr, String & str)
         }
     }
 }
+
+void External_MCUReboot()
+{
+#ifdef RP2040
+    Serial.println("Rebooting..");
+    RP2040 rp2040;
+    rp2040.reboot();
+#endif
+}

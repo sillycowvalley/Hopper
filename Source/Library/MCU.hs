@@ -65,4 +65,6 @@ unit MCU
     AnalogWriteResolution(byte bits) library;
     
     bool AttachToPin(byte pin, ISRDelegate gpioISR, PinStatus status) library;
+    
+    Reboot() library;
 }
