@@ -15,8 +15,7 @@ void Machine_Initialize();
 Bool Machine_GetExited();
 void Machine_SetExited(Bool value);
 
-void WebServer_Restart();
-void WebServer_Release();
+void External_WebServerRelease();
 
 void HRString_FromString(UInt & hrstr, const String & str);
 void HRString_ToString(UInt hrstr, String & str);

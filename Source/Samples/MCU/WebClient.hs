@@ -2,7 +2,8 @@ program WebClient
 {
     #define SERIAL_CONSOLE // use Serial, not Screen for Write, WriteLn, etc.
     //#define RP2040_PICOW
-    #define ARDUINO_NANO_RP2040
+    //#define ARDUINO_NANO_RP2040
+    #define CHALLENGER_RP2040_WIFI
     
     uses "/Source/System/Serialize"
     
@@ -31,6 +32,8 @@ program WebClient
                 return;
             }
         }
+        
+        // https://arduino.tips/asciilogo.txt
         
         WriteLn("IP: " + WiFi.IP);
         

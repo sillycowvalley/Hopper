@@ -6,12 +6,14 @@
 #include "Platform.h"
 #include "Inlined.h"
 
-#if defined(RP2040PICOW) || defined(ARDUINONANO_RP2040)
+#if defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
 #define USEWIFI       // WiFi for Raspberry Pi Pico W
+#define USESERVER
 #endif
 
 #ifndef USEWIFI
 #define USEWIFISTUBS    // no WiFi for Pi Pico, Seeed XIA0 RP2040 or Pimoroni Tiny 2040
+#define USERSERVERSTUBS
 #endif
 
 #ifdef RP2040PICOW
@@ -24,6 +26,12 @@
 #include <SPI.h>
 #include <WiFiNINA.h>
 #endif
+
+#ifdef CHALLENGER_RP2040_WIFI
+#include <ChallengerWiFi.h>
+#include <WiFiEspAT.h>
+#endif
+
 
 #ifdef USEWIFI
 Bool IsWiFiConnected();

@@ -11,12 +11,17 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // Raspberry Pi Pico W
 // - LittleFS for built-in Flash
 // - WiFi
-#define RP2040PICOW
+//#define RP2040PICOW
 
 // Raspberry Pi Pico
 // - LittleFS for built-in Flash
 // - no WiFi
-//#define RP2040PICO
+#define RP2040PICO
+
+// Challenger RP2040 WiFi
+// - LittleFS for built-in Flash
+// - WiFiNina
+//#define CHALLENGER_RP2040_WIFI
 
 // Arduino Connect RP2040
 // - LittleFS for built-in Flash
@@ -62,7 +67,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - exit TERM then run HM!
 
 
-#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE)
+#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE) || defined(CHALLENGER_RP2040_WIFI)
 #define RP2040
 #endif
 

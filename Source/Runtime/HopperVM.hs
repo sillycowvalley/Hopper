@@ -140,6 +140,7 @@ unit HopperVM
     DataMemoryReset()
     {
         HRArray.Release();  // in case we were already called
+        External.WebServerRelease();
         
         uint nextAddress   = dataMemoryStart;
         callStack          = nextAddress;
@@ -183,6 +184,8 @@ unit HopperVM
     Release()
     {
         HRArray.Release();
+        External.WebServerRelease();
+        
         Memory.Free(breakpoints);
         breakpoints = 0;
         if (currentDirectory != 0)

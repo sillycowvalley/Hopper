@@ -5,8 +5,8 @@ program BlinkRGB
     //#define ADAFRUIT_METRO_RP2040
     //#define ADAFRUIT_FEATHER_RP2040
     //#define SPARKFUN_THING_PLUS_RP2040
-    #define SEEED_XIAO_RP2040
-    //#define CHALLENGER_RP2040_WIFI
+    //#define SEEED_XIAO_RP2040
+    #define CHALLENGER_RP2040_WIFI
 
 #ifdef WAVESHARE_RP2040_MATRIX
     const uint totalPixels = 25; 

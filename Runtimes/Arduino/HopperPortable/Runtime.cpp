@@ -9,6 +9,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -1226,6 +1227,7 @@ void HopperVM_DumpHeap(Bool display, UInt accountedFor)
 void HopperVM_Release()
 {
     HRArray_Release();
+    External_WebServerRelease();
     Memory_Free(HopperVM_breakpoints);
     HopperVM_breakpoints = 0x00;
     if (HopperVM_currentDirectory != 0x00)
@@ -1280,6 +1282,7 @@ UInt HopperVM_Get_R(UInt address, Type & htype)
 void HopperVM_DataMemoryReset()
 {
     HRArray_Release();
+    External_WebServerRelease();
     UInt nextAddress = 0;
     HopperVM_callStack = nextAddress;
     nextAddress = nextAddress + 512;

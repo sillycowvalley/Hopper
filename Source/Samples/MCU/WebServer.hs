@@ -2,8 +2,10 @@ program WebServer
 {
     #define SERIAL_CONSOLE // use Serial, not Screen for Write, WriteLn, etc.
     
-    #define RP2040_PICOW
+    //#define RP2040_PICOW
     //#define ARDUINO_NANO_RP2040
+    #define CHALLENGER_RP2040_WIFI
+    
     uses "/Source/Library/MCU"
     uses "/Source/Samples/MCU/Secrets2/Connect"
     
@@ -12,13 +14,13 @@ program WebServer
     
     NotFound(string uri, string method, <string,string> arguments)
     {
-        //WebServer.Send("404 Page: " + uri);
         WebServer.Send(404, "text/plain", "Not Found");
+        WriteLn("404");
     }
     Root(string uri, string method, <string,string> arguments)
     {
-        //WebServer.Send("Success");
-        WebServer.Send(200, "text/plain", "Success");
+        WebServer.Send("Success");
+        WriteLn("200");
     }
     
     {

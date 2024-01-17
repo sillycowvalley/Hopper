@@ -144,8 +144,6 @@ void Platform_Initialize()
     }
     //Serial.println((unsigned int)dataMemoryBlock, HEX);
     FileSystem_Initialize();
-
-    WebServer_Restart();
 }
 
 void Platform_Release()
@@ -164,7 +162,7 @@ void Platform_Release()
     free(codeMemoryBlock);
     codeMemoryBlock = nullptr;
 
-    WebServer_Release();
+    External_WebServerRelease();
 }
 
 void Serial_WriteChar(Char value)

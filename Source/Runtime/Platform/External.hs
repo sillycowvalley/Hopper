@@ -55,6 +55,10 @@ unit External
     {
         ErrorDump(156); Error = 0x0A;
     }
+    WebServerRelease()
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
     
     bool LoadAuto { get { return true; } }
     uint hopperStringFromNativeString(string str)

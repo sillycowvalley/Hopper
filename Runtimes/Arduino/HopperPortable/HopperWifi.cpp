@@ -25,13 +25,12 @@ Bool IsWiFiConnected() { return wifiConnected; }
 
 WiFiClient wifiClient;
 
-
+#ifdef RP2040PICOW
 bool WifiConnect()
 {
     bool success = false;
 
     int status = WL_IDLE_STATUS;
-#ifdef RP2040PICOW
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid.c_str(), password.c_str());
     for (int count = 0; count < 5; count++)
@@ -49,8 +48,16 @@ bool WifiConnect()
         Serial.print("x");
         delay(1500);
     }  
-#endif // RP2040PICOW
+    return success;
+}
+#endif
+
 #ifdef ARDUINONANO_RP2040
+bool WifiConnect()
+{
+    bool success = false;
+
+    int status = WL_IDLE_STATUS;
     for (int count = 0; count < 5; count++)
     {
         status = WiFi.begin(ssid.c_str(), password.c_str());
@@ -66,9 +73,57 @@ bool WifiConnect()
         Serial.print("x");
         delay(500);
     } 
-#endif // ARDUINONANO_RP2040
     return success;
 }
+#endif // ARDUINONANO_RP2040
+
+#ifdef CHALLENGER_RP2040_WIFI
+bool WifiConnect()
+{
+    bool success = false;
+
+    for (;;)
+    {
+        if (!Challenger2040WiFi.reset())
+        {
+            Serial.println(F("Could not reset WiFi chip !"));
+            break;
+        }
+        
+        WiFi.init(Serial2);
+
+        if (WiFi.status() == WL_NO_MODULE) 
+        {
+            Serial.println("Communication with WiFi module failed!");
+            break;
+        }
+
+        WiFi.begin(ssid.c_str(), password.c_str());
+
+        int status = WL_IDLE_STATUS;
+        for (int count = 0; count < 10; count++)
+        {
+            status = WiFi.status();
+            if (status == WL_CONNECTED)
+            {
+#ifdef DIAGNOSTICS
+                Serial.println();
+                Serial.println("WiFi connected");
+#endif
+                success = true;
+                break;
+            }
+            Serial.print("x");
+            delay(1000);
+        } 
+        break;
+    }
+    return success;
+}
+#endif // CHALLENGER_RP2040_WIFI
+
+
+
 bool WebClient_GetRequest(UInt hrurl, UInt& hrcontent)
 {
     UInt length = HRString_GetLength(hrurl);
@@ -113,7 +168,10 @@ bool WebClient_GetRequest(UInt hrurl, UInt& hrcontent)
             return false; 
           } 
         } 
-        GC_Release(hrcontent);
+        if (0 != hrcontent)
+        {
+            GC_Release(hrcontent);
+        }
         hrcontent = HRString_New();
         while (wifiClient.available()) 
         {
@@ -154,7 +212,7 @@ Bool External_WiFiConnect(UInt hrssid, UInt hrpassword)
         }
         wifiConnected =  WifiConnect();
     }
-    WebServer_Restart(); // reconnected to WiFi so we can probably clear handlers
+    External_WebServerRelease(); // reconnected to WiFi so we can probably clear handlers
     return wifiConnected;
 }
 

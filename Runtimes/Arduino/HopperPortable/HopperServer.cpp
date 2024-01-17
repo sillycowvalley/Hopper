@@ -1,18 +1,18 @@
 #include "HopperWifi.h"
 
-#ifdef USEWIFISTUBS
+#ifdef USERSERVERSTUBS
 
-void WebServer_Restart()                { }
-void WebServer_Release()                { }
-void External_WebServerBegin(UInt port) { }
+void External_WebServerRelease()                { }
+void External_WebServerOn(UInt uri, UInt handlerMethodIndex) {}
 void External_WebServerOnNotFound(UInt handlerMethodIndex) { }
 void External_WebServerBegin(UInt port) { }
 void External_WebServerEvents()         { }
 void External_WebServerClose()          { }
+void External_WebServerSend(UInt httpCode, UInt hrcontentType, UInt hrcontent) {}
 
 #endif
 
-#ifdef USEWIFI
+#ifdef USESERVER
 bool currentRequestIsGet;
 UInt notFoundDelegatePC = 0;
 UInt responseCode = 0;
@@ -31,19 +31,11 @@ UInt WebServerGetArguments();
 WebServer server(80);
 #endif
 
-#ifdef ARDUINONANO_RP2040
+#if defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
 WiFiServer server(80);
-
 #endif
 
-void WebServer_Restart()
-{
-    if ((0 != handlerDelegatePCs) || (0 != currentRequestArguments) || (0 != currentRequestURI) || (0 != responseContent))
-    {
-        WebServer_Release();
-    }
-}
-void WebServer_Release()
+void External_WebServerRelease()
 {
     if (0 != handlerDelegatePCs)
     {
@@ -143,7 +135,8 @@ void handleRequest()
     GC_Release(uriStr);
 }
 
-#ifdef ARDUINONANO_RP2040
+
+#if defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
 
 UInt WebServerGetURI()
 {
@@ -191,14 +184,7 @@ UInt WebServerGetArguments()
     }
     return hrdict;
 }
-
-void External_WebServerOnNotFound(UInt handlerMethodIndex)
-{
-    if (IsWiFiConnected())
-    {
-        notFoundDelegatePC = HopperVM_LookupMethod(handlerMethodIndex);
-    }
-}
+bool WebServerMethodIsGET() { return currentRequestIsGet; }
 
 void External_WebServerEvents()
 {
@@ -255,9 +241,19 @@ void External_WebServerEvents()
                         }
 
                         String responseTypeStr = "";
-                        HRString_ToString(responseType, responseTypeStr);
                         String responseStr = "";
-                        HRString_ToString(responseContent, responseStr);
+                        if (0 != responseType)
+                        {
+                            HRString_ToString(responseType, responseTypeStr);
+                            GC_Release(responseType);
+                            responseType = 0;
+                        }
+                        if (0 != responseContent)
+                        {
+                            HRString_ToString(responseContent, responseStr);
+                            GC_Release(responseContent);
+                            responseContent = 0;
+                        }
 
                         // PLATFORM:
                         client.print("HTTP/1.1 "); client.print(responseCode); client.println(" OK");
@@ -268,14 +264,11 @@ void External_WebServerEvents()
                         // The HTTP response ends with another blank line:
                         client.println();
 
-                        GC_Release(responseType);
-                        responseType = 0;
-                        GC_Release(responseContent);
-                        responseContent = 0;
-
+#ifdef CHALLENGER_RP2040_WIFI
+                        client.flush(); // PLATFORM
+#endif
                         // close the connection after we return from the handler
                         client.stop(); // PLATFORM
-
                         break;
                     }
                     else 
@@ -303,6 +296,14 @@ void External_WebServerEvents()
     }
 }
 
+void External_WebServerOnNotFound(UInt handlerMethodIndex)
+{
+    if (IsWiFiConnected())
+    {
+        notFoundDelegatePC = HopperVM_LookupMethod(handlerMethodIndex);
+    }
+}
+
 void External_WebServerOn(UInt uri, UInt handlerMethodIndex)
 {
     if (!IsWiFiConnected()) { return; }
@@ -314,6 +315,7 @@ void External_WebServerOn(UInt uri, UInt handlerMethodIndex)
     }
     HRDictionary_Set(handlerDelegatePCs, uri, Type::eString, delegatePC, Type::eUInt);
 }
+
 
 void External_WebServerSend(UInt httpCode, UInt hrcontentType, UInt hrcontent)
 {
@@ -339,12 +341,22 @@ void External_WebServerSend(UInt httpCode, UInt hrcontentType, UInt hrcontent)
     HRString_BuildString_R(responseContent, hrcontent);
 }
 
-void External_WebServerClose() {}
-bool WebServerMethodIsGET() { return currentRequestIsGet; }
 void External_WebServerBegin(UInt port) { if (IsWiFiConnected()) { server.begin(); } } // PLATFORM
 
+#endif // defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
+
+#ifdef ARDUINONANO_RP2040
+
+void External_WebServerClose() {}
 
 #endif // ARDUINONANO_RP2040
+
+
+#ifdef CHALLENGER_RP2040_WIFI
+
+void External_WebServerClose() { if (IsWiFiConnected()) { server.end(); } }
+
+#endif // CHALLENGER_RP2040_WIFI
 
 
 #ifdef RP2040PICOW
@@ -424,6 +436,9 @@ void External_WebServerEvents()         { if (IsWiFiConnected()) { server.handle
 void External_WebServerClose()          { if (IsWiFiConnected()) { server.close(); } }
 
 #endif // RP2040PICOW
+
+
+
 
 
 #endif // USEWIFI
