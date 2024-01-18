@@ -13,14 +13,14 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - WiFi
 //
 //  BOARD_NAME == "RASPBERRY_PI_PICO_W"
-#define RP2040PICOW
+//#define RP2040PICOW
 
 // Raspberry Pi Pico
 // - LittleFS for built-in Flash
 // - no WiFi
 //
 //  BOARD_NAME == "RASPBERRY_PI_PICO"
-//#define RP2040PICO
+#define RP2040PICO
 
 // Challenger RP2040 WiFi
 // - LittleFS for built-in Flash

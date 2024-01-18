@@ -32,6 +32,7 @@ unsigned char * codeMemoryBlock = nullptr;
 
 Byte lastError;
 bool exited;
+bool interruptsEnabled;
 
 struct PinISRStruct
 {
@@ -64,7 +65,16 @@ Bool External_AttachToPin(Byte pin, ISRDelegate gpioISRDelegate, Byte status)
     //pinMode(pin, INPUT_PULLUP); // should this be here? should it be an option?
     uint param = gpioISRDelegate + (pin << 16) + (status << 24);
     attachInterruptParam(digitalPinToInterrupt(pin), pinISR, (PinStatus)status, (void*)param);
+    interruptsEnabled = true; // just in case it wasn't
     return true;
+}
+Bool External_MCUInterruptsEnabledGet()
+{
+    return interruptsEnabled;
+}
+void External_MCUInterruptsEnabledSet(Bool value)
+{
+    interruptsEnabled = value;
 }
 
 void External_ServiceInterrupts()
@@ -74,6 +84,10 @@ void External_ServiceInterrupts()
         if (isrQueue.empty())
         {
             break; // as fast as possible if empty? what's the overhead of noInterrupts() .. interrupts()?
+        }
+        if (!interruptsEnabled)
+        {
+            break;
         }
         noInterrupts();
         if (isrQueue.empty())
@@ -323,6 +337,7 @@ void Machine_Initialize()
 {
     lastError = 0;
     exited    = false;
+    interruptsEnabled = true;
 }
 Bool Machine_GetExited()
 {

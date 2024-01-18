@@ -192,6 +192,20 @@ unit Library
                 Push(result ? 1 : 0, Type.Bool);
                 isrExists = true;
             }
+            case LibCall.MCUInterruptsEnabledGet:
+            {
+                bool value = External.MCUInterruptsEnabledGet();
+                Push(value ? 1 : 0, Type.Bool);
+            }
+            case LibCall.MCUInterruptsEnabledSet:
+            {
+                Type ptype;
+                uint value = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertBool(ptype, value);
+#endif
+                External.MCUInterruptsEnabledSet(value != 0);
+            }
             case LibCall.MCUReboot:
             {
                 External.MCUReboot();

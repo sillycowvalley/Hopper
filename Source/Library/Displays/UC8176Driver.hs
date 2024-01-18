@@ -309,6 +309,7 @@ unit DisplayDriver
                 IO.WriteLn("DeviceDriver.Begin failed : unsupported resolution");
                 break;
             }
+            MCU.InterruptsEnabled = false;
             sendCommand(register.PSR, data);
             
             data = {
@@ -347,7 +348,7 @@ unit DisplayDriver
         
             sendCommand(register.POF); // power off
             busyWait();
-            
+            MCU.InterruptsEnabled = true;
             success = true;
             break;
         }
@@ -384,6 +385,7 @@ unit DisplayDriver
 #ifdef DISPLAY_DIAGNOSTICS
         IO.Write("<DisplayDriver.UpdateDisplay");
 #endif        
+        MCU.InterruptsEnabled = false;
         busyWait();
         sendCommand(register.PON); // turn on
         sendCommand(register.PTOU); // disable partial mode
@@ -392,6 +394,7 @@ unit DisplayDriver
         sendCommand(register.DRF); // start display refresh
         busyWait();
         sendCommand(register.POF); // turn off
+        MCU.InterruptsEnabled = true;
 #ifdef DISPLAY_DIAGNOSTICS
         IO.WriteLn("DisplayDriver.UpdateDisplay>");
 #endif        

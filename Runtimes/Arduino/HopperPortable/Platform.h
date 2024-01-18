@@ -66,6 +66,8 @@ UInt External_AnalogRead(Byte pin);
 void External_AnalogWrite(Byte pin, UInt value);
 void External_AnalogWriteResolution(Byte bits);
 Bool External_AttachToPin(Byte value, ISRDelegate gpioISRDelegate, Byte status);
+Bool External_MCUInterruptsEnabledGet();
+void External_MCUInterruptsEnabledSet(Bool value);
 void External_ServiceInterrupts();
 void External_MCUReboot();
 

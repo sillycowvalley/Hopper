@@ -66,5 +66,7 @@ unit MCU
     
     bool AttachToPin(byte pin, ISRDelegate gpioISR, PinStatus status) library;
     
+    bool InterruptsEnabled { get library; set library; }
+    
     Reboot() library;
 }

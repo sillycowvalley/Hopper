@@ -8,6 +8,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -5929,6 +5930,19 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         Library_isrExists = true;
         break;
     }
+    case LibCall::eMCUInterruptsEnabledGet:
+    {
+        Bool value = External_MCUInterruptsEnabledGet();
+        HopperVM_Push((value) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
+    case LibCall::eMCUInterruptsEnabledSet:
+    {
+        Type ptype = (Type)0;
+        UInt value = HopperVM_Pop_R(ptype);
+        External_MCUInterruptsEnabledSet(value != 0x00);
+        break;
+    }
     case LibCall::eMCUReboot:
     {
         External_MCUReboot();
@@ -8288,3 +8302,4 @@ UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
     vtype = Type(Memory_ReadByte(_this + 2));
     return Memory_ReadWord(_this + 3);
 }
+

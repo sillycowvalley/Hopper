@@ -250,6 +250,15 @@ unit External
         ErrorDump(170); Error = 0x0A; 
         return false;
     }
+    MCUInterruptsEnabledSet(bool value)
+    {
+        ErrorDump(170); Error = 0x0A; 
+    }
+    bool MCUInterruptsEnabledGet()
+    {
+        ErrorDump(170); Error = 0x0A; 
+        return false;
+    }
     
     
     uint IntToUInt(int value)

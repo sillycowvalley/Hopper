@@ -15,6 +15,8 @@ unit LibCalls
         MCUAnalogWrite,
         MCUAnalogWriteResolution,
         MCUAttachToPin,
+        MCUInterruptsEnabledGet,
+        MCUInterruptsEnabledSet,
         MCUReboot,
         
         SPISettings,
