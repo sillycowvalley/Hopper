@@ -11,8 +11,8 @@ unit DeviceDriver
     
     uses "/Source/Library/Displays/ST7735Driver"
     
-    const int PixelWidth  = 240;
-    const int PixelHeight = 135;
+    const int PW  = 240;
+    const int PH = 135;
     
     const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
     const byte DCPin   = 8;

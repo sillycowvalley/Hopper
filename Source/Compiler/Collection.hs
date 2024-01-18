@@ -34,7 +34,7 @@ unit Collection
                 if (ttype != HopperToken.RBrace)
                 {
                     string actualElementType;
-                    string byteStr = ParseConstantExpression("byte", ref actualElementType);
+                    string byteStr = ParseConstantExpression("byte", ref actualElementType, true);
                     if (HadError)
                     {
                         break;

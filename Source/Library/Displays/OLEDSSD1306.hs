@@ -46,6 +46,8 @@ unit DisplayDriver
     int pixelWidth;
     int pixelHeight;
     
+    
+    
     byte i2cController = GPIO.DefaultI2CController;
     byte sdaPin        = GPIO.DefaultI2CSDAPin;
     byte sclPin        = GPIO.DefaultI2CSCLPin;
@@ -60,10 +62,10 @@ unit DisplayDriver
     {
         uint pw8 = uint(pixelWidth/8);
         uint dy;
-        for (uint uy = lines; uy < Display.PixelHeight; uy++)
+        for (uint uy = lines; uy < uint(Display.PixelHeight); uy++)
         {
             dy = uy - lines;
-            for (uint ux = 0; ux < Display.PixelWidth; ux++)
+            for (uint ux = 0; ux < uint(Display.PixelWidth); ux++)
             {
                 uint soffset = ((uy & 0xFFF8) * pw8) + ux; 
                 uint doffset = ((dy & 0xFFF8) * pw8) + ux; 
@@ -80,8 +82,8 @@ unit DisplayDriver
         loop
         {
             dy++;
-            if (dy >= Display.PixelHeight) { break; }
-            for (uint ux = 0; ux < Display.PixelWidth; ux++)
+            if (dy >= uint(Display.PixelHeight)) { break; }
+            for (uint ux = 0; ux < uint(Display.PixelWidth); ux++)
             {
                 uint doffset = ((dy & 0xFFF8) * pw8) + ux; 
                 monoFrameBuffer[doffset] = monoFrameBuffer[doffset] & ~(1 << (dy & 0x07));
@@ -91,8 +93,9 @@ unit DisplayDriver
     
     SetResolution(int width, int height)
     {
-        Display.PixelWidth = uint(width);
-        Display.PixelHeight = uint(height);
+        Display.PixelWidth = width;
+        Display.PixelHeight = height;
+        
         pixelWidth = width;
         pixelHeight = height;
         resolutionSet = true;
@@ -286,7 +289,7 @@ unit DisplayDriver
             uint address = 0;
             byte written;
                 
-            uint pw8 = Display.PixelWidth >> 3; // 128/8 = 16 bytes per transaction seems small enough
+            uint pw8 = uint(Display.PixelWidth >> 3); // 128/8 = 16 bytes per transaction seems small enough
             for (int y = 0; y < pixelHeight; y++) 
             {
                 Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
@@ -336,26 +339,7 @@ unit DisplayDriver
         uint ux = uint(x);
         uint uy = uint(y);
         
-        uint offset = ((uy & 0xFFF8) * (Display.PixelWidth/8)) + ux;
-        if (colour == 0xF000) // Color.Invert
-        {
-            monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
-        }
-        else if (colour == 0x0000) // Color.Black
-        {
-            monoFrameBuffer[offset] = monoFrameBuffer[offset] & ~(1 << (uy & 0x07));
-        }
-        else
-        {
-            monoFrameBuffer[offset] = monoFrameBuffer[offset] | (1 << (uy & 0x07));
-        }
-    }
-    SetPixel(int x, int y, uint colour)
-    {
-        if ((x < 0) || (y < 0) || (x >= pixelWidth) || (y >= pixelHeight)) { return; }
-        uint ux = uint(x);
-        uint uy = uint(y);
-        uint offset = ((uy & 0xFFF8) * (Display.PixelWidth/8)) + ux;
+        uint offset = ((uy & 0xFFF8) * uint(Display.PixelWidth/8)) + ux;
         if (colour == 0xF000) // Color.Invert
         {
             monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
@@ -370,27 +354,9 @@ unit DisplayDriver
         }
     }
     
-    HorizontalLine(int x1, int y, int x2, uint colour)
+    RawHorizontalLine(int x1, int y, int x2, uint colour)
     {
-        if (x1 > x2)
-        {
-            int t = x1;
-            x1 = x2;
-            x2 = t;
-        }
-        // clip here so we can use RawSetPixel
-        if (x2 < 0) { return; }
-        if (y < 0) { return; }
-        int ymax = pixelHeight-1;
-        if (y > ymax) { return; }
-        
-        int xmax = pixelWidth-1;
-        if (x1 > xmax) { return; }
-        
-        if (x1 < 0) { x1 = 0; }
-        if (x2 >= xmax) { x2 = xmax; }
-        Suspend();
-        uint pw8 = Display.PixelWidth/8;
+        uint pw8 = uint(Display.PixelWidth/8);
         uint uy = uint(y);
         uint uyandpw8 = (uy & 0xFFF8) * pw8;
         uint ux1 = uint(x1);
@@ -421,32 +387,13 @@ unit DisplayDriver
                 monoFrameBuffer[offset] = monoFrameBuffer[offset] | uybit;
             }
         }
-        Resume();
     }
-    VerticalLine(int x, int y1, int y2, uint colour)
+    RawVerticalLine(int x, int y1, int y2, uint colour)
     {
-        if (y1 > y2)
-        {
-            int t = y1;
-            y1 = y2;
-            y2 = t;
-        }
-        // clip here so we can use RawSetPixel
-        if (y2 < 0) { return; }
-        if (x < 0) { return; }
-        int ymax = pixelHeight-1;
-        if (y1 > ymax) { return; }
-        
-        int xmax = pixelWidth-1;
-        if (x > xmax) { return; }
-        
-        if (y1 < 0) { y1 = 0; }
-        if (y2 >= ymax) { y2 = ymax; }
-        Suspend();
         uint ux  = uint(x);
         uint uy1 = uint(y1);
         uint uy2 = uint(y2);
-        uint pw8 = Display.PixelWidth/8;
+        uint pw8 = uint(Display.PixelWidth/8);
         if (colour == 0xF000) // Color.Invert
         {
             for (uint uy=uy1; uy <= uy2; uy++)
@@ -471,6 +418,5 @@ unit DisplayDriver
                 monoFrameBuffer[offset] = monoFrameBuffer[offset] | (1 << (uy & 0x07));
             }
         }
-        Resume();
     }
 }

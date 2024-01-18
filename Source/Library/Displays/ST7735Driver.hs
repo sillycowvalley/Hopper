@@ -100,7 +100,8 @@ unit DisplayDriver
        0x00                        // End of list
     };
     
-    byte[DeviceDriver.PixelWidth*4] frameBuffer; // 4 bytes per pixel (for reading)
+    const uint bufferSize = DeviceDriver.PW*4;
+    byte[bufferSize] frameBuffer; // 4 bytes per pixel (for reading)
     
     uint last444 = 0;
     uint last565 = 0;
@@ -179,17 +180,17 @@ unit DisplayDriver
     }
     ClearDisplay(uint colour)
     {
-        int  pw1 = DeviceDriver.PixelWidth-1;
+        int  pw1 = Display.PixelWidth-1;
         if (colour == Color.Invert)
         {
-            for (int y = 0; y < DeviceDriver.PixelHeight; y++)
+            for (int y = 0; y < Display.PixelHeight; y++)
             {
-                rawHorizontalLine(0, y, pw1, colour);
+                RawHorizontalLine(0, y, pw1, colour);
             }
             return;
         }
 
-        uint pw2 = uint(DeviceDriver.PixelWidth) * 2;        
+        uint pw2 = uint(Display.PixelWidth) * 2;        
         uint rgb565 = convertToRGB565(colour);
         byte lsb = byte(rgb565 & 0xFF);
         byte msb = byte(rgb565 >> 8);
@@ -198,7 +199,7 @@ unit DisplayDriver
             frameBuffer[i+1] = lsb;
             frameBuffer[i+0] = msb;
         }
-        for (int y = 0; y < DeviceDriver.PixelHeight; y++)
+        for (int y = 0; y < Display.PixelHeight; y++)
         {
             SPI.BeginTransaction(DeviceDriver.SPIController);
             MCU.DigitalWrite(DeviceDriver.CSPin, false);
@@ -240,12 +241,11 @@ unit DisplayDriver
         bool success = false;
         loop
         {
-            Display.PixelWidth  = DeviceDriver.PixelWidth;
-            Display.PixelHeight = DeviceDriver.PixelHeight;
+            Display.PixelWidth  = DeviceDriver.PW;
+            Display.PixelHeight = DeviceDriver.PH;
             
             Display.Reset();
-            uint pw4 = uint(DeviceDriver.PixelWidth)*4;
-            for (uint i = 0; i < pw4; i++)
+            for (uint i = 0; i < bufferSize; i++)
             {
                 frameBuffer[i] = 0;
             }
@@ -303,7 +303,7 @@ unit DisplayDriver
         }
         return success;
     }
-    RawPixel(int x, int y, uint colour)
+    RawSetPixel(int x, int y, uint colour)
     {
         uint rgb565;
         if (colour == Color.Invert) // Invert
@@ -329,13 +329,8 @@ unit DisplayDriver
         SPI.EndTransaction(DeviceDriver.SPIController);
         
     }
-    SetPixel(int x, int y, uint colour)
-    {
-        if ((x < 0) || (y < 0) || (x >= DeviceDriver.PixelWidth) || (y >= DeviceDriver.PixelHeight)) { return; }
-        RawPixel(x, y, colour);
-    }
     
-    rawHorizontalLine(int x1, int y, int x2, uint colour)
+    RawHorizontalLine(int x1, int y, int x2, uint colour)
     {
         int w2 = (x2-x1+1) * 2;
         if (colour == Color.Invert)
@@ -378,13 +373,13 @@ unit DisplayDriver
         MCU.DigitalWrite(DeviceDriver.CSPin, true);
         SPI.EndTransaction(DeviceDriver.SPIController);
     }
-    rawVerticalLine(int x, int y1, int y2, uint colour)
+    RawVerticalLine(int x, int y1, int y2, uint colour)
     {
         if (colour == Color.Invert)
         {
             for (int y = y1; y <= y2; y++)
             {
-                RawPixel(x, y, colour);
+                RawSetPixel(x, y, colour);
             }
         }
         else
@@ -406,47 +401,4 @@ unit DisplayDriver
             SPI.EndTransaction(DeviceDriver.SPIController);
         }
     }
-    HorizontalLine(int x1, int y, int x2, uint colour)
-    {
-        if (x1 > x2)
-        {
-            int t = x1;
-            x1 = x2;
-            x2 = t;
-        }
-        // clip here so we can use RawSetPixel
-        if (x2 < 0) { return; }
-        if (y < 0) { return; }
-        int ymax = DeviceDriver.PixelHeight-1;
-        if (y > ymax) { return; }
-        
-        int xmax = DeviceDriver.PixelWidth-1;
-        if (x1 > xmax) { return; }
-        
-        if (x1 < 0) { x1 = 0; }
-        if (x2 >= xmax) { x2 = xmax; }
-        rawHorizontalLine(x1, y, x2, colour);
-    }
-    VerticalLine(int x, int y1, int y2, uint colour)
-    {
-        if (y1 > y2)
-        {
-            int t = y1;
-            y1 = y2;
-            y2 = t;
-        }
-        // clip here so we can use RawSetPixel
-        if (y2 < 0) { return; }
-        if (x < 0) { return; }
-        int ymax = DeviceDriver.PixelHeight-1;
-        if (y1 > ymax) { return; }
-        
-        int xmax = DeviceDriver.PixelWidth-1;
-        if (x > xmax) { return; }
-        
-        if (y1 < 0) { y1 = 0; }
-        if (y2 >= ymax) { y2 = ymax; }
-        rawVerticalLine(x, y1, y2, colour);
-    }
-    
 }

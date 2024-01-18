@@ -159,4 +159,8 @@ unit Long
         }
         return result;
     }
+    
+    long Abs(long value) { return (value >= 0) ? value : -value; }
+    long Min(long a, long b) { return (a < b) ? a : b; }
+    long Max(long a, long b) { return (a > b) ? a : b; }
 }

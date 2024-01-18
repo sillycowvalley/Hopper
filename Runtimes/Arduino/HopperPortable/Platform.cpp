@@ -1318,8 +1318,9 @@ void HRString_ToString(UInt hrstr, String & str)
 void External_MCUReboot()
 {
 #ifdef RP2040
+#ifdef DIAGNOSTICS
     Serial.println("Rebooting..");
-    RP2040 rp2040;
+#endif
     rp2040.reboot();
 #endif
 }

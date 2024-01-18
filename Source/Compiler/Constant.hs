@@ -187,7 +187,7 @@ unit Constant
         return result;
     }
 
-    string parseConstantPrimary(string typeExpected, ref string actualType)
+    string parseConstantPrimary(string typeExpected, ref string actualType, bool weakEnums)
     {
         <string,string> currentToken = Parser.CurrentToken;
         string value;
@@ -325,6 +325,13 @@ unit Constant
                             Parser.Advance();
                             actualType = typeName;
                             value = ivalue.ToString();
+                            if (weakEnums && (typeExpected != actualType))
+                            {
+                                if ((typeExpected == "byte") && (ivalue >= 0) && (ivalue <= 255))
+                                {
+                                    actualType = "byte";
+                                }
+                            }
                             outerLoopBreak = true;
                             break;
                         }
@@ -337,6 +344,13 @@ unit Constant
                             Parser.Advance();
                             actualType = typeName;
                             value = ivalue.ToString();
+                            if (weakEnums && (typeExpected != actualType))
+                            {
+                                if ((typeExpected == "byte") && (ivalue >= 0) && (ivalue <= 255))
+                                {
+                                    actualType = "byte";
+                                }
+                            }
                             outerLoopBreak = true;
                             break;
                         }
@@ -451,7 +465,7 @@ unit Constant
                 case HopperToken.LParen:
                 {
                     Parser.Advance(); // (
-                    value = ParseConstantExpression(typeExpected, ref actualType);
+                    value = ParseConstantExpression(typeExpected, ref actualType, weakEnums);
                     if (Parser.HadError)
                     {
                         break;
@@ -502,12 +516,12 @@ unit Constant
         return value;
     }
     
-    string parseConstantFactor(string typeExpected, ref string actualType)
+    string parseConstantFactor(string typeExpected, ref string actualType, bool weakEnums)
     {
         string value;
         loop
         {
-            value = parseConstantPrimary(typeExpected, ref actualType);
+            value = parseConstantPrimary(typeExpected, ref actualType, weakEnums);
             if (Parser.HadError)
             {
                 break;
@@ -533,7 +547,7 @@ unit Constant
                     }
                     Advance(); // *, /, %
                     
-                    string rightValue = parseConstantPrimary(typeExpected, ref actualType);
+                    string rightValue = parseConstantPrimary(typeExpected, ref actualType, weakEnums);
                     if (Parser.HadError)
                     {
                         break;
@@ -552,12 +566,12 @@ unit Constant
         return value;
     }
        
-    string parseConstantShift(string typeExpected, ref string actualType)
+    string parseConstantShift(string typeExpected, ref string actualType, bool weakEnums)
     {
         string value;
         loop
         {
-            value = parseConstantFactor(typeExpected, ref actualType);
+            value = parseConstantFactor(typeExpected, ref actualType, weakEnums);
             if (Parser.HadError)
             {
                 break;
@@ -576,7 +590,7 @@ unit Constant
                     }
                     Advance(); // <<, >>
                     
-                    string rightValue = parseConstantFactor(typeExpected, ref actualType);
+                    string rightValue = parseConstantFactor(typeExpected, ref actualType, weakEnums);
                     if (Parser.HadError)
                     {
                         break;
@@ -595,12 +609,12 @@ unit Constant
         return value;
     }       
     
-    string parseConstantTerm(string typeExpected, ref string actualType)
+    string parseConstantTerm(string typeExpected, ref string actualType, bool weakEnums)
     {
         string value;
         loop
         {
-            value = parseConstantShift(typeExpected, ref actualType);
+            value = parseConstantShift(typeExpected, ref actualType, weakEnums);
             if (Parser.HadError)
             {
                 break;
@@ -626,7 +640,7 @@ unit Constant
                     }
                     Advance(); // +, -
                     
-                    string rightValue = parseConstantShift(typeExpected, ref actualType);
+                    string rightValue = parseConstantShift(typeExpected, ref actualType, weakEnums);
                     if (Parser.HadError)
                     {
                         break;
@@ -645,12 +659,12 @@ unit Constant
         return value;
     }
     
-    string parseConstantBitAnd(string typeExpected, ref string actualType)
+    string parseConstantBitAnd(string typeExpected, ref string actualType, bool weakEnums)
     {
         string value;
         loop
         {
-            value = parseConstantTerm(typeExpected, ref actualType);
+            value = parseConstantTerm(typeExpected, ref actualType, weakEnums);
             if (Parser.HadError)
             {
                 break;
@@ -669,7 +683,7 @@ unit Constant
                     }
                     Advance(); // &
                     
-                    string rightValue = parseConstantTerm(typeExpected, ref actualType);
+                    string rightValue = parseConstantTerm(typeExpected, ref actualType, weakEnums);
                     if (Parser.HadError)
                     {
                         break;
@@ -687,12 +701,12 @@ unit Constant
         } // loop
         return value;
     }
-    string parseConstantBitOr(string typeExpected, ref string actualType)
+    string parseConstantBitOr(string typeExpected, ref string actualType, bool weakEnums)
     {
         string value;
         loop
         {
-            value = parseConstantBitAnd(typeExpected, ref actualType);
+            value = parseConstantBitAnd(typeExpected, ref actualType, weakEnums);
             if (Parser.HadError)
             {
                 break;
@@ -711,7 +725,7 @@ unit Constant
                     }
                     Advance(); // |
                     
-                    string rightValue = parseConstantBitAnd(typeExpected, ref actualType);
+                    string rightValue = parseConstantBitAnd(typeExpected, ref actualType, weakEnums);
                     if (Parser.HadError)
                     {
                         break;
@@ -730,8 +744,12 @@ unit Constant
         return value;
     }
     
+    string ParseConstantExpression(string typeExpected, ref string actualType, bool weakEnums)
+    {
+        return parseConstantBitOr(typeExpected, ref actualType, weakEnums);
+    }
     string ParseConstantExpression(string typeExpected, ref string actualType)
     {
-        return parseConstantBitOr(typeExpected, ref actualType);
+        return parseConstantBitOr(typeExpected, ref actualType, false);
     }
 }

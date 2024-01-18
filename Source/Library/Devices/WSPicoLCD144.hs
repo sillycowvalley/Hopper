@@ -11,8 +11,8 @@ unit DeviceDriver
     #define WAVESHARE_PICO_LCD_144
     uses "/Source/Library/Displays/ST7735Driver"
     
-    const int PixelWidth  = 128;
-    const int PixelHeight = 128;
+    const int PW  = 128;
+    const int PH = 128;
     
     const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
     const byte DCPin   = 8;

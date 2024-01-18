@@ -61,7 +61,7 @@ program WaveShareLCD144Demo
         int pw = int(Display.PixelWidth);
         for(int i=0; i<ph / 2; i += 3)
         {
-            FilledRectangle(i, i, uint(pw-i*2), uint(ph-i*2), (i/3 % 3 == 0) ? Color.Blue : (i/3 % 3 == 1) ? Color.Red : Color.Green);
+            FilledRectangle(i, i, pw-i*2, ph-i*2, (i/3 % 3 == 0) ? Color.Blue : (i/3 % 3 == 1) ? Color.Red : Color.Green);
         }
     }
 }

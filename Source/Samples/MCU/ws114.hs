@@ -58,11 +58,11 @@ program WaveShareLCD096Demo
     
     TestFillRect()
     {
-        int ph = int(Display.PixelHeight);
-        int pw = int(Display.PixelWidth);
+        int ph = Display.PixelHeight;
+        int pw = Display.PixelWidth;
         for(int i=0; i<pw / 2; i += 3)
         {
-            FilledRectangle(i, i, uint(pw-i*2), uint(ph-i*2), (i/3 % 3 == 0) ? Color.Blue : (i/3 % 3 == 1) ? Color.Red : Color.Green);
+            FilledRectangle(i, i, pw-i*2, ph-i*2, (i/3 % 3 == 0) ? Color.Blue : (i/3 % 3 == 1) ? Color.Red : Color.Green);
         }
     }
 }

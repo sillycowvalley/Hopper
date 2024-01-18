@@ -1,6 +1,6 @@
 program TestNumbers
 {
-#define SERIAL_CONSOLE
+//#define SERIAL_CONSOLE
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     

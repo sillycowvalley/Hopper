@@ -14,31 +14,31 @@ program SSD1306Demo
     TestDrawRect()
     {
         Screen.Clear();
-        int ph = int(Display.PixelHeight);
-        int pw = int(Display.PixelWidth);
+        int ph = Display.PixelHeight;
+        int pw = Display.PixelWidth;
         for(int i=0; i< ph / 2; i += 2)
         {
-            Rectangle(i, i, uint(pw-2*i), uint(ph-2*i), Color.White);
+            Rectangle(i, i, pw-2*i, ph-2*i, Color.White);
         }
     }
 
     TestFillRect()
     {
         Screen.Clear();
-        int ph = int(Display.PixelHeight);
-        int pw = int(Display.PixelWidth);
+        int ph = Display.PixelHeight;
+        int pw = Display.PixelWidth;
         for(int i=0; i<ph / 2; i += 3)
         {
             // Color.Inverse is used so rectangles alternate white/black
-            FilledRectangle(i, i, uint(pw-i*2), uint(ph-i*2), Color.Invert);
+            FilledRectangle(i, i, pw-i*2, ph-i*2, Color.Invert);
         }
     }
     
     TestDrawLines() 
     {
         int i;
-        int ph = int(Display.PixelHeight);
-        int pw = int(Display.PixelWidth);
+        int ph = Display.PixelHeight;
+        int pw = Display.PixelWidth;
         Display.Suspend();
         Screen.Clear();
         for(i=0; i<pw; i += 4) 

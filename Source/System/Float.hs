@@ -108,8 +108,8 @@ unit Float
     
     byte GetByte(float this, byte index) system;
     float FromBytes(byte b0, byte b1, byte b2, byte b3) system;
-    float Abs(float value)
-    {
-        return (value >= 0) ? value : -value;
-    }
+    
+    float Abs(float value) { return (value >= 0) ? value : -value; }
+    float Min(float a, float b) { return (a < b) ? a : b; }
+    float Max(float a, float b) { return (a > b) ? a : b; }
 }

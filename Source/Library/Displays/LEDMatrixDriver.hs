@@ -23,7 +23,8 @@ unit DisplayDriver
     byte CSPin    { get { return csPin; }     set { csPin = value; pinsSet = pinsSet | 2;} }
     byte ClockPin { get { return clockPin; }  set { clockPin = value; pinsSet = pinsSet | 4;} }
     
-    byte[pixelWidth*pixelHeight/8] pixelBuffer;
+    const uint bufferSize = pixelWidth*pixelHeight/8;
+    byte[bufferSize] pixelBuffer;
     
     write(byte value)
     {
@@ -44,9 +45,9 @@ unit DisplayDriver
             {
                 break;
             }
-            Display.PixelWidth  = uint(pixelWidth);
-            Display.PixelHeight = uint(pixelHeight);
-        
+            Display.PixelWidth  = pixelWidth;
+            Display.PixelHeight = pixelHeight;
+            
             // one time setup
             PinMode(DataPin,  PinModeOption.Output);
             PinMode(CSPin,    PinModeOption.Output);
@@ -128,9 +129,8 @@ unit DisplayDriver
             }
         }
     }
-    SetPixel(int column, int row, uint colour)
+    RawSetPixel(int column, int row, uint colour)
     {
-        if ((column < 0) || (row < 0) || (column >= pixelWidth) || (row >= pixelHeight)) { return; }
         if (colour == 0xF000) // Color.Invert
         {
             pixelBuffer[row] = pixelBuffer[row] ^ (0x80 >> column);
@@ -159,19 +159,18 @@ unit DisplayDriver
             drow++;   
         }
     }
-    HorizontalLine(int x1, int y, int x2, uint colour)
+    RawHorizontalLine(int x1, int y, int x2, uint colour)
     {
         for (int x = x1; x <= x2; x++)
         {
-            SetPixel(x,y, colour);
+            RawSetPixel(x,y, colour);
         }
     }
-    VerticalLine(int x, int y1, int y2, uint colour)
+    RawVerticalLine(int x, int y1, int y2, uint colour)
     {
         for (int y = y1; y <= y2; y++)
         {
-            SetPixel(x,y, colour);
+            RawSetPixel(x,y, colour);
         }
     }
-    
 }

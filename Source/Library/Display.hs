@@ -1,13 +1,12 @@
 unit Display
 {
-    uses "/Source/Library/Math.hs"
     uses "/Source/Library/Screen"
         
-    uint pixelWidth; 
-    uint pixelHeight;
+    int pixelWidth; 
+    int pixelHeight;
 
-    uint PixelWidth  { get { return pixelWidth;  } set { pixelWidth  = value;  }}
-    uint PixelHeight { get { return pixelHeight; } set { pixelHeight = value;  }}
+    int PixelWidth  { get { return pixelWidth;  } set { pixelWidth  = value;  }}
+    int PixelHeight { get { return pixelHeight; } set { pixelHeight = value;  }}
     
     bool Begin()
     {
@@ -61,7 +60,61 @@ unit Display
     }
     bool Visible { set { DisplayDriver.Visible = value; } }
     
-    Rectangle(int x, int y, uint w, uint h, uint colour)
+    SetPixel(int x, int y, uint colour)
+    {
+        if ((x < 0) || (y < 0) || (x >= Display.PixelWidth) || (y >= Display.PixelHeight)) { return; }
+        Suspend();
+        DisplayDriver.RawSetPixel(x, y, colour);
+        Resume();
+    }
+    HorizontalLine(int x1, int y, int x2, uint colour)
+    {
+        if (x1 > x2)
+        {
+            int t = x1;
+            x1 = x2;
+            x2 = t;
+        }
+        // clip here so we can use RawSetPixel
+        if (x2 < 0) { return; }
+        if (y < 0) { return; }
+        int ymax = Display.PixelHeight-1;
+        if (y > ymax) { return; }
+        
+        int xmax = Display.PixelWidth-1;
+        if (x1 > xmax) { return; }
+        
+        if (x1 < 0) { x1 = 0; }
+        if (x2 >= xmax) { x2 = xmax; }
+        Suspend();
+        DisplayDriver.RawHorizontalLine(x1, y, x2, colour);
+        Resume();
+    }
+    VerticalLine(int x, int y1, int y2, uint colour)
+    {
+        if (y1 > y2)
+        {
+            int t = y1;
+            y1 = y2;
+            y2 = t;
+        }
+        // clip here so we can use RawSetPixel
+        if (y2 < 0) { return; }
+        if (x < 0) { return; }
+        int ymax = Display.PixelHeight-1;
+        if (y1 > ymax) { return; }
+        
+        int xmax = Display.PixelWidth-1;
+        if (x > xmax) { return; }
+        
+        if (y1 < 0) { y1 = 0; }
+        if (y2 >= ymax) { y2 = ymax; }
+        Suspend();
+        DisplayDriver.RawVerticalLine(x, y1, y2, colour);
+        Resume();
+    }
+    
+    Rectangle(int x, int y, int w, int h, uint colour)
     {
         int iw = int(w);
         int ih = int(h);
@@ -72,7 +125,7 @@ unit Display
         VerticalLine(x+iw-1,y,y+ih-1,colour);
         Resume();
     }
-    FilledRectangle(int x, int y, uint w, uint h, uint colour)
+    FilledRectangle(int x, int y, int w, int h, uint colour)
     {
 #ifdef DISPLAY_DIAGNOSTICS
         IO.Write("<Display.FilledRectangle");
@@ -155,7 +208,7 @@ unit Display
         if (x0 == x1)      { VerticalLine(x0, y0, y1, colour);   }
         else if (y0 == y1) { HorizontalLine(x0, y0, x1, colour); }
         
-        if (Math.Abs(y1-y0) < Math.Abs(x1-x0))
+        if (Int.Abs(y1-y0) < Int.Abs(x1-x0))
         //if (((y1-y0 < 0) ? -(y1-y0) : y1-y0) < ((x1-x0 < 0) ? -(x1-x0) : x1-x0))
         {
             if (x0 > x1)
@@ -180,16 +233,13 @@ unit Display
         }
         Resume();
     }
-    SetPixel(int x, int y, uint colour) 
-    { 
-        Suspend();
-        DisplayDriver.SetPixel(x, y, colour); 
-        Resume();
-    }
+    
     
     ScrollUp(uint lines)
     {
+        Suspend();
         DisplayDriver.ScrollUpDisplay(lines);
+        Resume();
     }
     
 }

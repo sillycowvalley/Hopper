@@ -161,6 +161,7 @@ unit GPIO
     //uint A5 { get { return MCU.AnalogRead(a5); } }
 #endif
     
+    bool ledState;
     bool LED 
     { 
         set 
@@ -173,6 +174,11 @@ unit GPIO
             value = !value; // false = ON?!
 #endif
             MCU.DigitalWrite(builtInLED, value); 
+            ledState = value;
         } 
+        get
+        {
+            return ledState;
+        }
     }
 }

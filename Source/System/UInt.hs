@@ -213,4 +213,6 @@ unit UInt
         return b0 + b1 << 8;
     }
     
+    uint Min(uint a, uint b) { return (a < b) ? a : b; }
+    uint Max(uint a, uint b) { return (a > b) ? a : b; }
 }

@@ -128,8 +128,7 @@ unit Int
     byte GetByte(int this, byte index) system;
     int FromBytes(byte b0, byte b1) system;
     
-    int Abs(int value)
-    {
-        return (value >= 0) ? value : -value;
-    }
+    int Abs(int value) { return (value >= 0) ? value : -value; }
+    int Min(int a, int b) { return (a < b) ? a : b; }
+    int Max(int a, int b) { return (a > b) ? a : b; }
 }

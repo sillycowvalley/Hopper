@@ -1,7 +1,7 @@
 program Blink
 {
 //#define TINY_HOPPER
-//#define RP2040_PICO
+#define RP2040_PICO
 //#define RP2040_PICOW
 //#define ARDUINO_NANO_RP2040
 //#define PIMORONI_TINY2040
@@ -10,7 +10,7 @@ program Blink
 //#define ARDUINO_NANO_ESP32
 //#define WEMOS_D1_MINI
 //#define WAVESHARE_RP2040_ONE
-#define WAVESHARE_RP2040_PLUS
+//#define WAVESHARE_RP2040_PLUS
 //#define CHALLENGER_RP2040_WIFI
     
     uses "/Source/Library/MCU"
