@@ -7,8 +7,6 @@
 
 
 
-
-
 Bool Runtime_loaded = false;
 Byte Minimal_error = 0;
 UInt Memory_heapStart = 0x8000;
@@ -1471,15 +1469,15 @@ void HRFile_Append(UInt _this, Byte b)
 {
     if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 4) != 0x00) && (Memory_ReadByte(_this + 5) == 0x00))
     {
-        UInt buffer = Memory_ReadWord(_this + 10);
+        UInt buffer = Memory_ReadWord(_this + 12);
         HRString_BuildChar_R(buffer, Char(b));
         UInt length = HRString_GetLength(buffer);
         if (length >= 0x0100)
         {
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer);
+            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
             HRString_BuildClear_R(buffer);
         }
-        Memory_WriteWord(_this + 10, buffer);
+        Memory_WriteWord(_this + 12, buffer);
     }
     else
     {
@@ -1493,13 +1491,14 @@ void HRFile_Flush(UInt _this)
     {
         if (Memory_ReadByte(_this + 5) == 0x00)
         {
-            UInt content = Memory_ReadWord(_this + 10);
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), content);
+            UInt content = Memory_ReadWord(_this + 12);
+            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), content, true);
             HRString_BuildClear_R(content);
         }
         else
         {
-            External_FileWriteAllCodeBytes(Memory_ReadWord(_this + 6), Memory_ReadWord(_this + 10), Memory_ReadWord(_this + 8));
+            UInt posLSW = Memory_ReadWord(_this + 8);
+            External_FileWriteAllCodeBytes(Memory_ReadWord(_this + 6), Memory_ReadWord(_this + 12), posLSW);
         }
     }
     else
@@ -1525,9 +1524,10 @@ UInt HRFile_CreateFromCode(UInt hrpath, UInt codeStart, UInt codeLength)
     Memory_WriteByte(address + 5, 0x01);
     GC_Release(Memory_ReadWord(address + 6));
     Memory_WriteWord(address + 6, HRString_Clone(hrpath));
-    GC_Release(Memory_ReadWord(address + 10));
+    GC_Release(Memory_ReadWord(address + 12));
     Memory_WriteWord(address + 8, codeLength);
-    Memory_WriteWord(address + 10, codeStart);
+    Memory_WriteWord(address + 8 + 0x02, 0x00);
+    Memory_WriteWord(address + 12, codeStart);
     return address;
 }
 
@@ -1538,15 +1538,17 @@ void HRFile_Delete(UInt path)
 
 UInt HRFile_New()
 {
-    UInt address = GC_New(0x0C, Type::eFile);
+    UInt address = GC_New(0x10, Type::eFile);
     Memory_WriteByte(address + 2, 0x00);
     Memory_WriteByte(address + 3, 0x00);
     Memory_WriteByte(address + 4, 0x00);
     Memory_WriteByte(address + 5, 0x00);
     Memory_WriteWord(address + 6, HRString_New());
     Memory_WriteWord(address + 8, 0x00);
-    Memory_WriteWord(address + 10, HRString_New());
-    Memory_WriteWord(address + 12, 0x00);
+    Memory_WriteWord(address + 8 + 0x02, 0x00);
+    Memory_WriteWord(address + 12, HRString_New());
+    Memory_WriteWord(address + 14, 0x00);
+    Memory_WriteWord(address + 14 + 0x02, 0x00);
     return address;
 }
 
@@ -3318,12 +3320,14 @@ void HRFile_Clear(UInt _this)
     GC_Release(Memory_ReadWord(_this + 6));
     Memory_WriteWord(_this + 6, 0x00);
     Memory_WriteWord(_this + 8, 0x00);
+    Memory_WriteWord(_this + 8 + 0x02, 0x00);
     if (!HRFile_IsCode(_this))
     {
-        GC_Release(Memory_ReadWord(_this + 10));
+        GC_Release(Memory_ReadWord(_this + 12));
     }
-    Memory_WriteWord(_this + 10, 0x00);
     Memory_WriteWord(_this + 12, 0x00);
+    Memory_WriteWord(_this + 14, 0x00);
+    Memory_WriteWord(_this + 14 + 0x02, 0x00);
 }
 
 Bool HRFile_IsCode(UInt _this)
@@ -6355,56 +6359,7 @@ Bool HRFile_IsValid(UInt _this)
 
 UInt HRFile_ReadLine(UInt _this)
 {
-    UInt str = HRString_New();
-    Bool isValid = false;
-    for (;;)
-    {
-        if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 3) != 0x00))
-        {
-            UInt pos = Memory_ReadWord(_this + 8);
-            UInt size = Memory_ReadWord(_this + 12);
-            if (pos < size)
-            {
-                isValid = true;
-                for (;;)
-                {
-                    if (pos == size)
-                    {
-                        if (HRString_GetLength(str) == 0x00)
-                        {
-                            isValid = false;
-                        }
-                        break;;
-                    }
-                    Byte b = 0;
-                    if (!External_TryFileReadByte_R(Memory_ReadWord(_this + 6), pos, b))
-                    {
-                        isValid = false;
-                        break;;
-                    }
-                    
-                    pos++;
-                    Memory_WriteWord(_this + 8, pos);
-                    if (b == 0x0D)
-                    {
-                        continue;;
-                    }
-                    if (b == 0x0A)
-                    {
-                        break;;
-                    }
-                    HRString_BuildChar_R(str, Char(b));
-                }
-                break;;
-            }
-        }
-        break;;
-    }
-    if (!isValid)
-    {
-        Memory_WriteByte(_this + 2, 0x00);
-    }
-    return str;
+    return External_ReadLine(_this);
 }
 
 Byte HRFile_Read(UInt _this)
@@ -6414,17 +6369,32 @@ Byte HRFile_Read(UInt _this)
     {
         if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 3) != 0x00))
         {
-            UInt pos = Memory_ReadWord(_this + 8);
-            UInt size = Memory_ReadWord(_this + 12);
-            if (pos < size)
+            UInt posLSW = Memory_ReadWord(_this + 8);
+            UInt posMSW = Memory_ReadWord(_this + 8 + 0x02);
+            UInt sizeLSW = Memory_ReadWord(_this + 14);
+            UInt sizeMSW = Memory_ReadWord(_this + 14 + 0x02);
+            if (HRFile_lt32(posLSW, posMSW, sizeLSW, sizeMSW))
             {
-                if (External_TryFileReadByte_R(Memory_ReadWord(_this + 6), pos, b))
+                UInt hrpos = HRLong_FromBytes(Memory_ReadByte(_this + 8 + 0x00), Memory_ReadByte(_this + 8 + 0x01), Memory_ReadByte(_this + 8 + 0x02), Memory_ReadByte(_this + 8 + 0x03));
+                if (External_TryFileReadByte_R(Memory_ReadWord(_this + 6), hrpos, b))
                 {
-                    
-                    pos++;
-                    Memory_WriteWord(_this + 8, pos);
+                    GC_Release(hrpos);
+                    if (posLSW == 0xFFFF)
+                    {
+                        posLSW = 0x00;
+                        
+                        posMSW++;
+                    }
+                    else
+                    {
+                        
+                        posLSW++;
+                    }
+                    Memory_WriteWord(_this + 8, posLSW);
+                    Memory_WriteWord(_this + 8 + 0x02, posMSW);
                     break;;
                 }
+                GC_Release(hrpos);
             }
         }
         Memory_WriteByte(_this + 2, 0x00);
@@ -6440,11 +6410,13 @@ Byte HRFile_Read(UInt _this, UInt hrseekpos)
     {
         if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 3) != 0x00))
         {
-            UInt seekpos = HRLong_ToUInt(hrseekpos);
-            UInt size = Memory_ReadWord(_this + 12);
-            if (seekpos < size)
+            UInt seekposLSW = HRLong_GetByte(hrseekpos, 0x00) + (HRLong_GetByte(hrseekpos, 0x01) << 0x08);
+            UInt seekposMSW = HRLong_GetByte(hrseekpos, 0x02) + (HRLong_GetByte(hrseekpos, 0x03) << 0x08);
+            UInt sizeLSW = Memory_ReadWord(_this + 14);
+            UInt sizeMSW = Memory_ReadWord(_this + 14 + 0x02);
+            if (HRFile_lt32(seekposLSW, seekposMSW, sizeLSW, sizeMSW))
             {
-                if (External_TryFileReadByte_R(Memory_ReadWord(_this + 6), seekpos, b))
+                if (External_TryFileReadByte_R(Memory_ReadWord(_this + 6), hrseekpos, b))
                 {
                     break;;
                 }
@@ -6460,15 +6432,15 @@ void HRFile_Append(UInt _this, UInt hrstr)
 {
     if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 4) != 0x00) && (Memory_ReadByte(_this + 5) == 0x00))
     {
-        UInt buffer = Memory_ReadWord(_this + 10);
+        UInt buffer = Memory_ReadWord(_this + 12);
         HRString_BuildString_R(buffer, hrstr);
         UInt length = HRString_GetLength(buffer);
         if (length >= 0x0100)
         {
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer);
+            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
             HRString_BuildClear_R(buffer);
         }
-        Memory_WriteWord(_this + 10, buffer);
+        Memory_WriteWord(_this + 12, buffer);
     }
     else
     {
@@ -6485,11 +6457,14 @@ UInt HRFile_Open(UInt hrpath)
         Memory_WriteByte(address + 3, 0x01);
         GC_Release(Memory_ReadWord(address + 6));
         Memory_WriteWord(address + 6, HRString_Clone(hrpath));
-        UInt hrsize = HRFile_GetSize(hrpath);
-        UInt size = HRLong_ToUInt(hrsize);
-        GC_Release(hrsize);
         Memory_WriteWord(address + 8, 0x00);
-        Memory_WriteWord(address + 12, size);
+        Memory_WriteWord(address + 8 + 0x02, 0x00);
+        UInt hrsize = HRFile_GetSize(hrpath);
+        Memory_WriteByte(address + 14 + 0x00, HRLong_GetByte(hrsize, 0x00));
+        Memory_WriteByte(address + 14 + 0x01, HRLong_GetByte(hrsize, 0x01));
+        Memory_WriteByte(address + 14 + 0x02, HRLong_GetByte(hrsize, 0x02));
+        Memory_WriteByte(address + 14 + 0x03, HRLong_GetByte(hrsize, 0x03));
+        GC_Release(hrsize);
     }
     return address;
 }
@@ -6506,23 +6481,38 @@ UInt HRFile_GetSize(UInt path)
 
 UInt HRFile_Clone(UInt original)
 {
-    UInt address = GC_New(0x0C, Type::eFile);
+    UInt address = GC_New(0x10, Type::eFile);
     Memory_WriteByte(address + 2, Memory_ReadByte(original + 2));
     Memory_WriteByte(address + 3, Memory_ReadByte(original + 3));
     Memory_WriteByte(address + 4, Memory_ReadByte(original + 4));
     Memory_WriteByte(address + 5, Memory_ReadByte(original + 5));
     Memory_WriteWord(address + 6, HRString_Clone(Memory_ReadWord(original + 6)));
     Memory_WriteWord(address + 8, Memory_ReadWord(original + 8));
+    Memory_WriteWord(address + 8 + 0x02, Memory_ReadWord(original + 8 + 0x02));
     if (HRFile_IsCode(original))
     {
-        Memory_WriteWord(address + 10, Memory_ReadWord(original + 10));
+        Memory_WriteWord(address + 12, Memory_ReadWord(original + 12));
     }
     else
     {
-        Memory_WriteWord(address + 10, HRString_Clone(Memory_ReadWord(original + 10)));
+        Memory_WriteWord(address + 12, HRString_Clone(Memory_ReadWord(original + 12)));
     }
-    Memory_WriteWord(address + 12, Memory_ReadWord(original + 12));
+    Memory_WriteWord(address + 14, Memory_ReadWord(original + 14));
+    Memory_WriteWord(address + 14 + 0x02, Memory_ReadWord(original + 14 + 0x02));
     return address;
+}
+
+Bool HRFile_lt32(UInt nextLSW, UInt nextMSW, UInt topLSW, UInt topMSW)
+{
+    if (nextMSW < topMSW)
+    {
+        return true;
+    }
+    if (nextMSW == topMSW)
+    {
+        return nextLSW < topLSW;
+    }
+    return false;
 }
 
 UInt HRDirectory_New()
@@ -8302,4 +8292,3 @@ UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
     vtype = Type(Memory_ReadByte(_this + 2));
     return Memory_ReadWord(_this + 3);
 }
-

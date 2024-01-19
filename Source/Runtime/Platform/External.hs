@@ -6,6 +6,95 @@ unit External
     uses "/Source/Runtime/Emulation/Long.hs"
     uses "/Source/Runtime/Emulation/WiFi.hs"
     
+    
+    const uint fiValid    = 2;
+    const uint fiReading  = 3;
+    //const uint fiWriting  = 4;
+    const uint fiPath     = 6;
+    const uint fiPos      = 8;
+    const uint fiSize     = 14; // reading
+    bool lt32(uint nextLSW, uint nextMSW, uint topLSW, uint topMSW)
+    {
+        if (nextMSW < topMSW)
+        {
+            return true;
+        }
+        if (nextMSW == topMSW)
+        {
+            return nextLSW < topLSW;
+        }
+        return false;
+    }
+    uint ReadLine(uint this)
+    {
+        uint str = HRString.New();
+        bool isValid = false;
+        loop
+        {
+            if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiReading) != 0))
+            {
+                uint posLSW    = ReadWord(this+fiPos);
+                uint posMSW    = ReadWord(this+fiPos+2);
+                uint sizeLSW   = ReadWord(this+fiSize);
+                uint sizeMSW   = ReadWord(this+fiSize+2);
+                if (lt32(posLSW, posMSW, sizeLSW, sizeMSW)) // pos < size
+                {
+                    isValid = true;
+                    loop
+                    {
+                        if ((posLSW == sizeLSW) && (posMSW == sizeMSW)) // pos == size
+                        {
+                            if (HRString.GetLength(str) == 0)
+                            {
+                                isValid = false; // EOF 
+                            }
+                            break;
+                        }
+                        byte b;
+                        uint hrpos  = HRLong.FromBytes(ReadByte(this+fiPos+0), ReadByte(this+fiPos+1), 
+                                                       ReadByte(this+fiPos+2), ReadByte(this+fiPos+3));
+                        if (!External.TryFileReadByte(ReadWord(this+fiPath), hrpos, ref b))
+                        {
+                            GC.Release(hrpos);
+                            isValid = false; // error?
+                            break;    
+                        }
+                        GC.Release(hrpos);
+                        
+                        if (posLSW == 0xFFFF)
+                        {
+                            posLSW = 0;
+                            posMSW++;
+                        }
+                        else
+                        {
+                            posLSW++;
+                        }
+                        WriteWord(this+fiPos,   posLSW);
+                        WriteWord(this+fiPos+2, posMSW);
+                        
+                        if (b == 0x0D)
+                        {
+                            continue;
+                        }
+                        if (b == 0x0A)
+                        {
+                            break;
+                        }
+                        HRString.BuildChar(ref str, char(b));
+                    } // line loop
+                    break;
+                } 
+            }
+            break;
+        } // valid loop
+        if (!isValid)
+        {
+            WriteByte(this+fiValid, 0);
+        }
+        return str;
+    }
+    
     ServiceInterrupts()
     {
         // does nothing under Windows
@@ -15,6 +104,8 @@ unit External
     {
         ErrorDump(156); Error = 0x0A; return false;
     }
+    
+    
     MCUReboot()
     {
         ErrorDump(156); Error = 0x0A;
@@ -168,10 +259,10 @@ unit External
     {
         string path = nativeStringFromHopperString(hrpath);
         long nativeTime = File.GetTime(path);
-        uint time = hopperLongFromNativeLong(nativeTime);
-        return time;
+        uint hrtime = hopperLongFromNativeLong(nativeTime);
+        return hrtime;
     }
-    FileWriteAllBytes(uint hrpath, uint buffer)
+    FileWriteAllBytes(uint hrpath, uint buffer, bool append)
     {
         string path = nativeStringFromHopperString(hrpath);
         file f = File.Create(path);
@@ -197,9 +288,10 @@ unit External
         f.Flush();
     }
     
-    bool TryFileReadByte(uint hrpath, uint seekpos, ref byte b)
+    bool TryFileReadByte(uint hrpath, uint hrseekpos, ref byte b)
     {
         string path = nativeStringFromHopperString(hrpath);
+        long seekpos = nativeLongFromHopperLong(hrseekpos);
         file f = File.Open(path);
         b = f.Read(seekpos);
         return f.IsValid();

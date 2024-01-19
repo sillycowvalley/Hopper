@@ -53,12 +53,12 @@ unit File
     }
     bool TryReadAllText(string path, ref string content)
     {
+        content = "";
         file tf = File.Open(path);
         if (!tf.IsValid())
         {
             return false;
         }
-        content = "";
         loop
         {
             char ch = char(tf.Read());

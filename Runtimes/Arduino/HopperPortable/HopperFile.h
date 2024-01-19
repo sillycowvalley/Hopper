@@ -7,7 +7,7 @@
 
 Bool External_FileExists(UInt hrpath);
 void External_FileDelete(UInt hrpath);
-void External_FileWriteAllBytes(UInt hrpath, UInt content);
+void External_FileWriteAllBytes(UInt hrpath, UInt content, Bool append);
 void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength);
 Bool External_TryFileReadByte_R(UInt hrpath, UInt seekpos, Byte & b);
 UInt External_FileGetTime(UInt hrpath);
@@ -22,6 +22,7 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index);
 UInt External_DirectoryGetDirectory(UInt hrpath, UInt index);
 
 Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLength);
+UInt External_ReadLine(UInt _this);
 
 
 #endif // HOPPERFILE_H

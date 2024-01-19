@@ -370,6 +370,7 @@ unit Monitor
             
             if (checkEcho(true)) { } // waits for \ confirmation    
             
+            long transfered;
             file dFile = File.Open(localPath);
             collectOutput = true; // just to toss it away   
             while (size != 0)
@@ -385,11 +386,12 @@ unit Monitor
                 {
                     Delay(1); // breathing room for serial comms
                 }
+                transfered++;
             }
             
             if (checkEcho(true)) // waits for \ confirmation    
             {
-                Output.Print("  Uploaded to '" + filePath + "'");
+                Output.Print("  Uploaded to '" + filePath + "' (" + transfered.ToString() + " bytes)");
             }
             break;
         } // loop

@@ -753,6 +753,7 @@ UInt HRFile_Open(UInt hrpath);
 UInt HRFile_GetTime(UInt path);
 UInt HRFile_GetSize(UInt path);
 UInt HRFile_Clone(UInt original);
+Bool HRFile_lt32(UInt nextLSW, UInt nextMSW, UInt topLSW, UInt topMSW);
 UInt HRDirectory_New();
 UInt HRDirectory_Open(UInt hrpath);
 Bool HRDirectory_IsValid(UInt _this);
@@ -859,6 +860,7 @@ UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
 
 
 #endif // HOPPERRUNTIME_H

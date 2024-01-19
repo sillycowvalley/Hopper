@@ -589,7 +589,7 @@ program HopperMonitor
         PrintPad("B x xxxx - set breakpoint 1..F", 4);
         if (Monitor.IsMCU)
         {
-            PrintPad("T        - transfer file to LittleFS on MCU", 4);
+            PrintPad("T        - transfer file to LittleFS on MCU: T <local path> <remote folder>", 4);
         }
         PrintLn();
         PrintPad("C        - emit Hopper call stack", 4);

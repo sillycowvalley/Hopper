@@ -1357,16 +1357,17 @@ unit Output
     uint WalkMemoryFile(file memoryFile, uint address, uint tp, uint indent)
     {
         // File memory map:
-        //   0000 heap allocator size
         //   0F   type = tFile
         //   00   GC reference count
         //   00   bool:   isValid
-        //   00   bool:   isReading
+        //   00   bool:   isReading: 32 bit pos is position of next byte to read (Read and ReadLine)
         //   00   bool:   isWriting
-        //   0000 string: path
-        //   0000 uint:   pos
-        //   0000 uint:   string (buffer)
-        //   0000 uint:   size
+        //   00   bool:   isCode:    16 bit pos is length and buffer is start in codeSegment
+        //   0000     string: path
+        //   00000000 uint32: pos
+        //   0000     uint:   string (buffer)
+        //   00000000 uint32: size: 32 bit file size in bytes used to read (Read and ReadLine)
+        
         accountedFor[address-2] = true;        
         string content;
         uint size = Pages.GetPageWord(address - 2);
@@ -1382,10 +1383,12 @@ unit Output
         content = content + ((isCode != 0) ? "Code" : "") + " ";
 
         uint path = Pages.GetPageWord(address + 6);
-        uint pos    = Pages.GetPageWord(address + 8);
-        uint sz     = Pages.GetPageWord(address + 12);
-        content = content + "0x" + pos.ToHexString(4) + " 0x" + sz.ToHexString(4) + " ";
-        uint buffer = Pages.GetPageWord(address + 10);
+        uint pos0 = Pages.GetPageWord(address + 8);
+        uint pos1 = Pages.GetPageWord(address + 10);
+        uint sz0   = Pages.GetPageWord(address + 14);
+        uint sz1   = Pages.GetPageWord(address + 16);
+        content = content + "0x" + pos1.ToHexString(4) + pos0.ToHexString(4) + " 0x" + sz1.ToHexString(4) + sz0.ToHexString(4) + " ";
+        uint buffer = Pages.GetPageWord(address + 12);
         
         SafePad(ref content, paddingWidth);
         content = content + " (" + size.ToString() + " bytes)";         
@@ -1574,6 +1577,56 @@ unit Output
         }
     }
     
+    uint WalkDumpFreeList(file memoryFile, uint indent)
+    {
+        uint size = 0;
+        uint heapStart  = Pages.GetZeroPage("HEAPSTART");
+        uint heapSize   = Pages.GetZeroPage("HEAPSIZE");
+        long heapPtr    = heapStart;
+        long heapEndPtr = long(heapStart) + long(heapSize);
+        loop
+        {
+            if (heapPtr >= heapEndPtr)
+            {
+                break;
+            }
+            uint blockSize = Pages.GetPageWord(heapPtr);
+            if (freeBlocks.Contains(heapPtr))
+            {
+                string content;
+                content = content.Pad(' ', indent);
+                
+                uint next = Pages.GetPageWord(heapPtr+2);
+                content = content + "0x" + heapPtr.ToHexString(4) + " 0x" + blockSize.ToHexString(4)+ " 0x" + next.ToHexString(4);
+
+                uint pCurrent = heapPtr+4;
+                uint more = blockSize - 4;
+                uint count = 0;
+                while (more > 0) // always?
+                {
+                    uint data = Pages.GetPageByte(pCurrent);
+                    content = content + " 0x";
+                    content = content +  data.ToHexString(2);
+                    more--;
+                    pCurrent++;
+                    count++;
+                    if (count == 16)
+                    {
+                        break;
+                    }
+                }
+                SafePad(ref content, paddingWidth);
+                content = content + " (" + blockSize.ToString() + " bytes)";
+                memoryFile.Append(content + char(0x0D));
+                DebugFlush(memoryFile);
+                memoryFile.Flush(); // TODO REMOVE
+                size = size + blockSize;
+            }
+            heapPtr = heapPtr + blockSize;
+        }
+        return size;
+    }
+    
     uint WalkHeap(file memoryFile, uint indent)
     {
         uint size = 0;
@@ -1593,15 +1646,15 @@ unit Output
                 break;
             }
             uint blockSize = Pages.GetPageWord(heapPtr);
-            if (freeBlocks.Contains(heapPtr))
-            {
-                // accounted for
-                OutputDebug("freePtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
-            }
-            else if (accountedFor.Contains(heapPtr))
+            if (accountedFor.Contains(heapPtr))
             {
                 // we already walked it
                 OutputDebug("stackPtr   = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
+            }
+            else if (freeBlocks.Contains(heapPtr))
+            {
+                // accounted for
+                OutputDebug("freePtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
             }
             else if (blockSize <= 2)
             {
@@ -1819,8 +1872,21 @@ unit Output
                 SafePad(ref content, paddingWidth);
                 content = content + " (" + size.ToString() + " bytes)";
                 memoryFile.Append(content + char(0x0D));
+                memoryFile.Append("" + char(0x0D));
                 DebugFlush(memoryFile);
             }
+            Parser.ProgressTick(".");
+            uint freeSize = WalkDumpFreeList(memoryFile, 4);
+            if (freeSize > 0)
+            {
+                size = size + freeSize;
+                content = "";
+                SafePad(ref content, paddingWidth);
+                content = content + " (" + size.ToString() + " bytes)";
+                memoryFile.Append(content + char(0x0D));
+                DebugFlush(memoryFile);
+            }
+            Parser.ProgressTick(".");
             
             if (memoryFile.IsValid())
             {
