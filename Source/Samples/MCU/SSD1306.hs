@@ -18,7 +18,7 @@ program SSD1306Demo
         int pw = Display.PixelWidth;
         for(int i=0; i< ph / 2; i += 2)
         {
-            Rectangle(i, i, pw-2*i, ph-2*i, Color.White);
+            Rectangle(i, i, pw-2*i, ph-2*i, Colour.White);
         }
     }
 
@@ -29,8 +29,8 @@ program SSD1306Demo
         int pw = Display.PixelWidth;
         for(int i=0; i<ph / 2; i += 3)
         {
-            // Color.Inverse is used so rectangles alternate white/black
-            FilledRectangle(i, i, pw-i*2, ph-i*2, Color.Invert);
+            // Colour.Inverse is used so rectangles alternate white/black
+            FilledRectangle(i, i, pw-i*2, ph-i*2, Colour.Invert);
         }
     }
     
@@ -43,11 +43,11 @@ program SSD1306Demo
         Screen.Clear();
         for(i=0; i<pw; i += 4) 
         {
-            Line(0, 0, i, ph-1, Color.White);
+            Line(0, 0, i, ph-1, Colour.White);
         }
         for(i=0; i< ph; i += 4) 
         {
-            Line(0, 0, pw-1, i, Color.White);
+            Line(0, 0, pw-1, i, Colour.White);
         }
         Display.Resume();
         
@@ -55,11 +55,11 @@ program SSD1306Demo
         Screen.Clear();
         for(i=0; i< pw; i += 4)
         {
-            Line(0, ph-1, i, 0, Color.Red);
+            Line(0, ph-1, i, 0, Colour.Red);
         }
         for(i= ph-1; i>=0; i -= 4)
         {
-            Line(0, ph-1, pw-1, i, Color.Red);
+            Line(0, ph-1, pw-1, i, Colour.Red);
         }
         Display.Resume();
         
@@ -67,11 +67,11 @@ program SSD1306Demo
         Screen.Clear();
         for(i= pw-1; i>=0; i -= 4)
         {
-            Line(pw-1, ph-1, i, 0, Color.Green);
+            Line(pw-1, ph-1, i, 0, Colour.Green);
         }
         for(i= ph-1; i>=0; i -= 4)
         {
-            Line(pw-1, ph-1, 0, i, Color.Green);
+            Line(pw-1, ph-1, 0, i, Colour.Green);
         }
         Display.Resume();
 
@@ -79,11 +79,11 @@ program SSD1306Demo
         Screen.Clear();
         for(i=0; i< ph; i += 4)
         {
-            Line(pw-1, 0, 0, i, Color.Blue);
+            Line(pw-1, 0, 0, i, Colour.Blue);
         }
         for(i=0; i< pw; i += 4)
         {
-            Line(pw-1, 0, i, ph-1, Color.Blue);
+            Line(pw-1, 0, i, ph-1, Colour.Blue);
         }
         Display.Resume();
     }
@@ -116,7 +116,7 @@ program SSD1306Demo
             Display.Resume();
             laps++;
             start = Millis;
-            Display.Clear(Color.Black);
+            Display.Clear(Colour.Black);
             elapsed = Millis - start;
             Display.Suspend();
             WriteLn("Clear: ");

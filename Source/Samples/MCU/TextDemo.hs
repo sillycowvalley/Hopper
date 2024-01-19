@@ -2,8 +2,6 @@ program TextDemo
 {
     uses "/Source/System/System"
     uses "/Source/System/IO"
-    uses "/Source/System/Color"
-    uses "/Source/System/Screen"
     
     uses "/Source/Library/Graphics"
 
@@ -95,9 +93,9 @@ program TextDemo
         //Screen.DrawChar(col, row, char(b), foreColour, backColour);
         
         //Graphics.DrawChar(col * cellWidth, row * cellHeight, char(b), 
-        //  ((row == 0) || (col <= 3)) ? Color.Black : Color.MatrixGreen, 
-        //  ((row == 0) || (col <= 3)) ? Color.MatrixGreen : Color.Black, scale, antialias);
-        //Screen.DrawChar(col, row, char(b), Color.White, Color.Black);
+        //  ((row == 0) || (col <= 3)) ? Colour.Black : Colour.MatrixGreen, 
+        //  ((row == 0) || (col <= 3)) ? Colour.MatrixGreen : Colour.Black, scale, antialias);
+        //Screen.DrawChar(col, row, char(b), Colour.White, Colour.Black);
     }
    
     TestText()
@@ -1662,7 +1660,7 @@ program TextDemo
         
             
             start = Millis;
-            Graphics.Clear(Color.Black);
+            Graphics.Clear(Colour.Black);
             elapsed = Millis - start;
             
             WriteLn("Blank: " + elapsed.ToString());

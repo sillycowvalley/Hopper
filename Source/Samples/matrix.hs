@@ -20,10 +20,10 @@ program Matrix
         int dy = 0;
         int width  = int(Width);
         int height = int(Height);
-        Graphics.Clear(Color.Black);
+        Graphics.Clear(Colour.Black);
         loop
         {
-            SetPixel(uint(x), uint(y), Color.Invert);
+            SetPixel(uint(x), uint(y), Colour.Invert);
             Delay(5);
             x = x + dx;
             y = y + dy;
@@ -55,34 +55,34 @@ program Matrix
     }
     PrettyLights()
     {
-        Graphics.Clear(Color.Black);
+        Graphics.Clear(Colour.Black);
         loop
         {
             for (byte y = 0; y < Height; y++)
             {
-                Line(0, 0, Width-1, y, Color.Invert);
+                Line(0, 0, Width-1, y, Colour.Invert);
                 Delay(100);
             }
             for (byte y = 0; y < Height; y++)
             {
-                Line(0, y, Width-1, 0, Color.Invert);
+                Line(0, y, Width-1, 0, Colour.Invert);
                 Delay(100);
             }
             for (byte y = 0; y < Height; y++)
             {
-                Line(0, Height-1, Width-1, y, Color.Invert);
+                Line(0, Height-1, Width-1, y, Colour.Invert);
                 Delay(100);
             }
             for (byte y = 0; y < Height; y++)
             {
-                Line(0, y, Width-1, Height-1, Color.Invert);
+                Line(0, y, Width-1, Height-1, Colour.Invert);
                 Delay(100);
             }
             for (byte y = 0; y < Height; y++)
             {
                 for (byte x = 0; x < Width; x++)
                 {
-                    SetPixel(x, y, Color.White);
+                    SetPixel(x, y, Colour.White);
                     Delay(10);
                 }
             }

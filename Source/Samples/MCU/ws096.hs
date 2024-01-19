@@ -29,22 +29,22 @@ program WaveShareLCD096Demo
             laps++;
             
             start = Millis;
-            Display.Clear(Color.Black);
+            Display.Clear(Colour.Black);
             IO.WriteLn("Black Screen: " + (Millis - start).ToString());
             Delay(250);
             
             start = Millis;
-            Display.Clear(Color.Red);
+            Display.Clear(Colour.Red);
             IO.WriteLn("Red Screen: " + (Millis - start).ToString());
             Delay(250);
             
             start = Millis;
-            Display.Clear(Color.Green);
+            Display.Clear(Colour.Green);
             IO.WriteLn("Green Screen: " + (Millis - start).ToString());
             Delay(250);
             
             start = Millis;
-            Display.Clear(Color.Blue);
+            Display.Clear(Colour.Blue);
             IO.WriteLn("Blue Screen: " + (Millis - start).ToString());
             Delay(250);
             
@@ -61,7 +61,7 @@ program WaveShareLCD096Demo
         int pw = Display.PixelWidth;
         for(int i=0; i<ph / 2; i += 3)
         {
-            FilledRectangle(i, i, pw-i*2, ph-i*2, (i/3 % 3 == 0) ? Color.Blue : (i/3 % 3 == 1) ? Color.Red : Color.Green);
+            FilledRectangle(i, i, pw-i*2, ph-i*2, (i/3 % 3 == 0) ? Colour.Blue : (i/3 % 3 == 1) ? Colour.Red : Colour.Green);
         }
     }
 }

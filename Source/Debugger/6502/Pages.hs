@@ -31,21 +31,22 @@ unit Pages
         }
         //OutputDebug("ClearPageData()");
     }
+    
     LoadPageData(byte page)
     {
         if (!pageLoaded[page])
         {
-            //OutputDebug("Loading: 0x"+page.ToHexString(2));
+            OutputDebug("Loading: 0x"+page.ToHexString(2));
             Monitor.Command("F" + page.ToHexString(2), true, true);
             if (Pages.ParseHexPage(page))
             {
                 pageLoaded[page] = true;
-                //OutputDebug("Loaded: 0x"+page.ToHexString(2));
+                OutputDebug("Loaded: 0x"+page.ToHexString(2));
             }
         }
         else
         {
-            //OutputDebug("Cached: 0x"+page.ToHexString(2));
+            OutputDebug("Cached: 0x"+page.ToHexString(2));
         }
     }
     byte GetPageByte(uint address)
@@ -144,6 +145,10 @@ unit Pages
         {
             Monitor.Command("F00", true, true);
             success = ParseHexPage(0);
+            if (!success)
+            {
+                OutputDebug("LoadZeroPage: failed");
+            }
             //OutputDebug("ReloadPageData(0x00)");
         }
         if (success)

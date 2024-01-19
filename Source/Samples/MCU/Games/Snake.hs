@@ -165,18 +165,18 @@ program Snake
     DrawBoard()
     {
         Screen.Suspend();
-        Graphics.Clear(Color.Black);
+        Graphics.Clear(Colour.Black);
         for (uint yi = 0; yi < height; yi++)
         {
             for (uint xi = 0; xi < width; xi++)
             {
                 if ((xi == 0) || (xi == width-1) || (yi == 0) || (yi == height-1))
                 {
-                    DrawBox(xi, yi, Color.White);
+                    DrawBox(xi, yi, Colour.White);
                 }
             }
         }
-        DrawFruit(fruitX, fruitY, Color.White);
+        DrawFruit(fruitX, fruitY, Colour.White);
         Screen.Resume(false);
     }
     DrawString(uint x, uint y, string str)
@@ -184,7 +184,7 @@ program Snake
         Screen.Suspend();
         foreach (var ch in str)
         {
-            Graphics.DrawChar(x, y, ch, Color.White, Color.Black, 1, false);
+            Graphics.DrawChar(x, y, ch, Colour.White, Colour.Black, 1, false);
             x += 5;
         }
         Screen.Resume(false);
@@ -203,7 +203,7 @@ program Snake
     Draw(uint x, uint y, bool show)
     {
         Screen.Suspend();
-        DrawSolid(x, y, show ? Color.White : Color.Black);
+        DrawSolid(x, y, show ? Colour.White : Colour.Black);
         Screen.Resume(false);
     }
     

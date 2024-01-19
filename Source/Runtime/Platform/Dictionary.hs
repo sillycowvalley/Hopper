@@ -698,7 +698,9 @@ unit HRDictionary
         uint pEntry = findEntry(pEntries, capacity, key, hash, valueKeys);
         if (!validEntry(pEntry, valueKeys))
         {
+#ifdef CHECKED            
             ErrorDump(89); 
+#endif
             Error = 0x03; // no entry for key in dictionary
             return 0;
         }

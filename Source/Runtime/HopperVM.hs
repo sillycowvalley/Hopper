@@ -59,8 +59,10 @@ unit HopperVM
     bool breakpointExists;
     
     uint currentDirectory;
+    uint currentArguments;
     
     uint pc;
+    uint gp; // floor for globals (matters for child processes)
     uint sp;
     uint bp;
     uint csp;
@@ -71,6 +73,7 @@ unit HopperVM
     
     uint PC  { get { return pc; }  set { pc = value; } }
     uint SP  { get { return sp; }  set { sp = value; } }
+    uint GP  { get { return gp; }  set { gp = value; } }
     uint CSP { get { return csp; } set { csp = value; } }
     bool CNP { get { return cnp; } set { cnp = value; } }
     uint BP  { get { return bp; }  set { bp = value; } }
@@ -179,7 +182,8 @@ unit HopperVM
         breakpoints   = Memory.Allocate(32);
         ClearBreakpoints(true);
         HRArray.Initialize();
-        currentDirectory = HRString.New();
+        currentDirectory = 0;
+        currentArguments = 0;
     }
     Release()
     {
@@ -193,9 +197,14 @@ unit HopperVM
             GC.Release(currentDirectory);
             currentDirectory = 0;
         }
+        if (currentArguments != 0)
+        {
+            GC.Release(currentArguments);
+            currentArguments = 0;
+        }
     }
 
-    uint GetAppName()
+    uint GetAppName(bool crc)
     {
         uint path = HRString.New();
         HRString.BuildChar(ref path, char('/'));
@@ -208,13 +217,21 @@ unit HopperVM
         HRString.BuildChar(ref path, char('t'));
         HRString.BuildChar(ref path, char('o'));
         HRString.BuildChar(ref path, char('.'));
-        HRString.BuildChar(ref path, char('h'));
-        HRString.BuildChar(ref path, char('e'));
-        HRString.BuildChar(ref path, char('x'));
-        HRString.BuildChar(ref path, char('e'));
+        if (crc)
+        {
+            HRString.BuildChar(ref path, char('c'));
+            HRString.BuildChar(ref path, char('r'));
+            HRString.BuildChar(ref path, char('c'));
+        }
+        else
+        {    
+            HRString.BuildChar(ref path, char('h'));
+            HRString.BuildChar(ref path, char('e'));
+            HRString.BuildChar(ref path, char('x'));
+            HRString.BuildChar(ref path, char('e'));
+        }
         return path;
     }
-
     DiskSetup()
     {
         uint path = HRString.New();
@@ -238,17 +255,20 @@ unit HopperVM
         }
         GC.Release(path);
     }
-    FlashProgram(uint codeLocation, uint codeLength)
+    FlashProgram(uint codeLocation, uint codeLength, uint crc)
     {
-        //Write('A');Write(':');WriteHex(Memory.Available());WriteLn();
-        //Write('M');Write(':');WriteHex(Memory.Maximum());WriteLn();
-        //Write('L');Write(':');WriteHex(codeLength);WriteLn();
-        
-        uint path = GetAppName();
+        uint path = GetAppName(false);
         uint appFile = HRFile.CreateFromCode(path, codeLocation, codeLength);
         HRFile.Flush(appFile);
         GC.Release(appFile);
-        GC.Release(path);    
+        GC.Release(path);   
+        path = GetAppName(true); 
+        uint crcFile = HRFile.Create(path);
+        HRFile.Append(crcFile, byte(crc & 0xFF));
+        HRFile.Append(crcFile, byte(crc >> 8));
+        HRFile.Flush(crcFile);
+        GC.Release(crcFile);
+        GC.Release(path);   
     }
     Restart()
     {
@@ -256,6 +276,7 @@ unit HopperVM
         DiskSetup();
         
         sp = 0;
+        gp = 0;
         bp = 0;
         csp = 0;
         Error = 0;
@@ -551,8 +572,20 @@ unit HopperVM
 #endif       
                 Memory.WriteWord(address, w);
             }
+            case SysCall.SystemArgumentsGet:
+            {
+                if (0 == currentArguments)
+                {
+                    currentArguments = HRList.New(Type.String);
+                }
+                Push(GC.Clone(currentArguments), Type.String);
+            }
             case SysCall.SystemCurrentDirectoryGet:
             {
+                if (0 == currentDirectory)
+                {
+                    currentDirectory = HRString.New();
+                }
                 Push(GC.Clone(currentDirectory), Type.String);
             }
             case SysCall.SystemCurrentDirectorySet:
@@ -566,7 +599,10 @@ unit HopperVM
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif     
-                GC.Release(currentDirectory);
+                if (0 != currentDirectory)
+                {
+                    GC.Release(currentDirectory);
+                }
                 currentDirectory = GC.Clone(str);
                 GC.Release(str);
             }
@@ -2847,18 +2883,18 @@ unit HopperVM
     }
     Put(uint address, uint value, Type htype)
     {
-        WriteWord(valueStack + address, value);
-        WriteWord(typeStack  + address, byte(htype));
+        WriteWord(valueStack + address + gp, value);
+        WriteWord(typeStack  + address + gp, byte(htype));
     }
     uint Get(uint address, ref Type htype)
     {
-        uint value  = ReadWord(valueStack + address);
-        htype  = Type(ReadWord(typeStack + address));
+        uint value  = ReadWord(valueStack + address + gp);
+        htype  = Type(ReadWord(typeStack + address + gp));
         return value;
     }
     uint Get(uint address)
     {
-        return ReadWord(valueStack + address);
+        return ReadWord(valueStack + address + gp);
     }
     PushI(int ivalue)
     {
@@ -2877,14 +2913,14 @@ unit HopperVM
     PutI(uint address, int ivalue, Type htype)
     {
         uint value = External.IntToUInt(ivalue);
-        WriteWord(valueStack + address, value);
-        WriteWord(typeStack  + address, byte(htype));
+        WriteWord(valueStack + address + gp, value);
+        WriteWord(typeStack  + address + gp, byte(htype));
     }
     PutI(uint address, int ivalue)
     {
         uint value = External.IntToUInt(ivalue);
-        WriteWord(valueStack + address, value);
-        WriteWord(typeStack  + address, byte(Type.Int));
+        WriteWord(valueStack + address + gp, value);
+        WriteWord(typeStack  + address + gp, byte(Type.Int));
     }
     
     int PopI(ref Type htype)
@@ -2915,13 +2951,13 @@ unit HopperVM
     }
     int GetI(uint address, ref Type htype)
     {
-        uint value  = ReadWord(valueStack + address);
-        htype  = Type(ReadWord(typeStack + address));
+        uint value  = ReadWord(valueStack + address + gp);
+        htype  = Type(ReadWord(typeStack + address + gp));
         return External.UIntToInt(value);
     }
     int GetI(uint address)
     {
-        uint value  = ReadWord(valueStack + address);
+        uint value  = ReadWord(valueStack + address + gp);
         return External.UIntToInt(value);
     }
     

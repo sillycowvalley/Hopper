@@ -1,4 +1,4 @@
-unit Color
+unit Colour
 {
     // Shades of Gray
     uint Black        { get { return 0x000; } }
@@ -9,7 +9,7 @@ unit Color
     uint White        { get { return 0xFFF; } }
     uint Invert       { get { return 0xF000; } }
     
-    // Boring generic colors
+    // Boring generic colours
     uint DarkBlue    { get { return 0x003; }}
     uint DarkGreen   { get { return 0x030; }}
     uint DarkCyan    { get { return 0x033; }}
@@ -44,15 +44,15 @@ unit Color
     uint ProgressFace        { get { return 0xDCB; } }
     uint ProgressHighlight   { get { return 0x3A8; }}
     
-    // UI colors (Editor and Debugger)
+    // UI colours (Editor and Debugger)
     uint MenuBlue            { get { return Denim; } }      // title bar background in editor
     uint MenuGreen           { get { return Viridian; } }   // title bar background in debugger
-    uint MenuTextBlue        { get { return HippieBlue; } } // menu text color in editor
-    uint MenuTextGreen       { get { return 0x242; } }      // menu text color in debugger
+    uint MenuTextBlue        { get { return HippieBlue; } } // menu text colour in editor
+    uint MenuTextGreen       { get { return 0x242; } }      // menu text colour in debugger
     
     
-    uint TitlePath    { get { return 0x9F6; } }        // path color in the title bar
-    uint ModifiedPath { get { return 0xF99; } }        // path color in the title bar if the file has been modified
+    uint TitlePath    { get { return 0x9F6; } }        // path colour in the title bar
+    uint ModifiedPath { get { return 0xF99; } }        // path colour in the title bar if the file has been modified
     uint AltKey       { get { return 0x066; } }
     
     uint ButtonFace   { get { return 0xDCB; } }

@@ -12,10 +12,10 @@ program Pico144Sample
         uint colour;
         switch (pin)
         {
-            case 15: { colour = Color.Red; }
-            case 17: { colour = Color.Green; }
-            case  2: { colour = Color.Blue; }
-            case  3: { colour = Color.Black; }
+            case 15: { colour = Colour.Red; }
+            case 17: { colour = Colour.Green; }
+            case  2: { colour = Colour.Blue; }
+            case  3: { colour = Colour.Black; }
         }
         Redraw("Pin " + pin.ToString(), colour); 
     }
@@ -32,7 +32,7 @@ program Pico144Sample
         {
             return;
         }
-        Redraw("Start", Color.Black);
+        Redraw("Start", Colour.Black);
         loop
         {
             // very tight loop

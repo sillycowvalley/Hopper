@@ -131,11 +131,11 @@ unit DisplayDriver
     }
     RawSetPixel(int column, int row, uint colour)
     {
-        if (colour == 0xF000) // Color.Invert
+        if (colour == 0xF000) // Colour.Invert
         {
             pixelBuffer[row] = pixelBuffer[row] ^ (0x80 >> column);
         }
-        else if (colour == 0x0000) // Color.Black
+        else if (colour == 0x0000) // Colour.Black
         {
             pixelBuffer[row] = pixelBuffer[row] & ~(0x80 >> column);
         }

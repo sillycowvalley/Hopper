@@ -704,10 +704,10 @@ program Optimize
                         } // kv
                         logFile.Flush();
                     }
-                    Print("Success, " + codeBefore.ToString() + "->" + codeAfter.ToString() + " bytes of code,", Color.ProgressText, Color.ProgressFace);
+                    Print("Success, " + codeBefore.ToString() + "->" + codeAfter.ToString() + " bytes of code,", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
-                    PrintLn("  " + seconds.ToString() + "s", Color.ProgressHighlight, Color.ProgressFace);
+                    PrintLn("  " + seconds.ToString() + "s", Colour.ProgressHighlight, Colour.ProgressFace);
                 }
                 else
                 {

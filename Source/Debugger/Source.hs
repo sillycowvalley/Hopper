@@ -7,6 +7,7 @@ unit Source
     
     <byte> code;
     bool symbolsLoaded;
+    bool SymbolsLoaded { get { return symbolsLoaded;  } }
     
     ClearSymbols()
     {
@@ -17,9 +18,9 @@ unit Source
         LibCalls.New();
         Symbols.New();
     }
-    LoadSymbols()
+    LoadSymbols(bool onlyNamedTypes)
     {
-        string ihexPath = Monitor.GetCurrentHexPath();
+        string ihexPath = Monitor.CurrentHexPath;
         if (!symbolsLoaded && (ihexPath.Length > 0))
         {
             Source.ClearSymbols();
@@ -65,7 +66,7 @@ unit Source
                 if (File.Exists(symbolsPath))
                 {
                     Editor.SetStatusBarText("Loading types '" + symbolsPath + "' ..");
-                    if (Symbols.Import(symbolsPath, true))
+                    if (Symbols.Import(symbolsPath, onlyNamedTypes))
                     {
                         uint namedTypes = Symbols.GetNamedTypesCount();
                         Editor.SetStatusBarText("Types loaded for " + namedTypes.ToString() + " named types.");

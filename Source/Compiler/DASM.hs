@@ -440,11 +440,11 @@ program DASM
                     {
                         codeSize -= codeOffset;
                     }
-                    Print("Success, " + codeSize.ToString() + " bytes of code, ", Color.ProgressText, Color.ProgressFace);
+                    Print("Success, " + codeSize.ToString() + " bytes of code, ", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
-                    PrintLn("  " + seconds.ToString() +"s", Color.ProgressHighlight, Color.ProgressFace);
-                    PrintLn("  " + instructionCount.ToString() + " instructions disassembled. ", Color.ProgressText, Color.ProgressFace);
+                    PrintLn("  " + seconds.ToString() +"s", Colour.ProgressHighlight, Colour.ProgressFace);
+                    PrintLn("  " + instructionCount.ToString() + " instructions disassembled. ", Colour.ProgressText, Colour.ProgressFace);
                 }
                 else
                 {

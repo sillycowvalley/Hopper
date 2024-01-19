@@ -53,7 +53,7 @@ unit PopupMenu
     Execute(<string, variant> this, <string, variant> menuBar, string selfName)
     {
         // draws the solid background
-        Panel.SetBackground(this, Color.ButtonFace);
+        Panel.SetBackground(this, Colour.ButtonFace);
         PopupMenu.Draw(this); 
         
         Key key = ReadKey();
@@ -163,7 +163,7 @@ unit PopupMenu
             {
                 string separator;
                 separator = separator.Pad('-', w-2);
-                Print(separator, Color.DarkGray, Color.ButtonFace);
+                Print(separator, Colour.DarkGray, Colour.ButtonFace);
             }
             else
             {
@@ -186,13 +186,13 @@ unit PopupMenu
                     {
                         if (keyIndex > 0)
                         {
-                            Print(label.Substring(0, keyIndex), Color.Black, Color.ButtonFace);
+                            Print(label.Substring(0, keyIndex), Colour.Black, Colour.ButtonFace);
                         }
                         string shortCut = label.Substring(keyIndex, 1);
-                        Print(shortCut, Color.AltKey, Color.ButtonFace);
+                        Print(shortCut, Colour.AltKey, Colour.ButtonFace);
                         if (keyIndex < label.Length - 1)
                         {
-                            Print(label.Substring(keyIndex+1), Color.Black, Color.ButtonFace);
+                            Print(label.Substring(keyIndex+1), Colour.Black, Colour.ButtonFace);
                         }
                         string sc = shortCut.ToUpper();
                         currentShortcuts[sc] = name;
@@ -207,12 +207,12 @@ unit PopupMenu
                     }
                     else
                     {
-                        Print(label, Color.Black, Color.ButtonFace);
+                        Print(label, Colour.Black, Colour.ButtonFace);
                     }
                 }
                 else
                 {
-                    Print(label, Color.DarkGray, Color.ButtonFace);
+                    Print(label, Colour.DarkGray, Colour.ButtonFace);
                 }
             }
             y++;

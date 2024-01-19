@@ -7,8 +7,8 @@ unit EditControl
 #endif    
     
     delegate bool ValidEditCharacter(char c);
-    uint foreColor = Color.MatrixGreen;
-    uint backColor = Color.Black;
+    uint foreColor = Colour.MatrixGreen;
+    uint backColor = Colour.Black;
     
     ValidEditCharacter validate;
 

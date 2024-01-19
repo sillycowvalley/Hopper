@@ -107,6 +107,13 @@ program PreProcess
                 else
                 {
                     isSimple = true; // on first pass, just assume it is a valid named value type
+                    
+                    string name = typeToken["lexeme"];
+                    if (!name.Contains('.') && name[0].IsLower())
+                    {
+                        // if it is a local named value type, it helps to qualify it for future resolution
+                        typeToken["lexeme"] = CurrentNamespace + "." + typeToken["lexeme"];
+                    }
                     Symbols.DeferValidation(typeToken);
                 }
             }
@@ -1330,10 +1337,10 @@ program PreProcess
               }
               if (!Parser.IsInteractive())
               {
-                  Print("Success. ", Color.ProgressText, Color.ProgressFace);
+                  Print("Success. ", Colour.ProgressText, Colour.ProgressFace);
                   long elapsedTime = Millis - startTime;
                   float seconds = elapsedTime / 1000.0;
-                  PrintLn("  " +seconds.ToString() + "s", Color.ProgressHighlight, Color.ProgressFace); 
+                  PrintLn("  " +seconds.ToString() + "s", Colour.ProgressHighlight, Colour.ProgressFace); 
               }
               else
               {

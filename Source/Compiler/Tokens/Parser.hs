@@ -51,7 +51,7 @@ unit Parser
         else
         {
             PrintLn();
-            PrintLn(errorMessage, Color.MatrixRed, Color.Black);
+            PrintLn(errorMessage, Colour.MatrixRed, Colour.Black);
         }
     }
     ProgressTick(string str)
@@ -59,7 +59,7 @@ unit Parser
         if (IsInteractive())
         {
             char c = progressTicks[currentTick];
-            DrawChar(tickColumn, tickRow, c, Color.StatusText, Color.StatusFace);
+            DrawChar(tickColumn, tickRow, c, Colour.StatusText, Colour.StatusFace);
             currentTick++;
             if (currentTick == progressTicks.Length)
             {
@@ -68,14 +68,14 @@ unit Parser
         }
         else
         {
-            Print(str, Color.ProgressTick, Color.ProgressBackground);
+            Print(str, Colour.ProgressTick, Colour.ProgressBackground);
         }
     }
     ProgressDone()
     {
         if (IsInteractive())
         {
-            DrawChar(tickColumn, tickRow, ' ', Color.ProgressText, Color.ProgressFace);
+            DrawChar(tickColumn, tickRow, ' ', Colour.ProgressText, Colour.ProgressFace);
         }
     }
         

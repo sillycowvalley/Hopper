@@ -21,7 +21,7 @@ unit StatusBar
     {
         <string, variant> instance = Panel.New(Editor.Left, Editor.Top + Editor.Height-1, Editor.Width, 1);
         
-        SetBackground(instance, Color.StatusFace);
+        SetBackground(instance, Colour.StatusFace);
         return instance;
     }
     
@@ -129,7 +129,7 @@ unit StatusBar
             uint y = Panel.GetY0(this);
             foreach (var c in content)
             {
-                DrawChar(x, y, c, Color.StatusText, backColour);
+                DrawChar(x, y, c, Colour.StatusText, backColour);
                 x++;
             }
         }
@@ -148,7 +148,7 @@ unit StatusBar
             {
                 if (x < xLimit)
                 {
-                    DrawChar(x, y, c, Color.StatusText, backColour);
+                    DrawChar(x, y, c, Colour.StatusText, backColour);
                 }
                 x++;
                 if (c == '[')

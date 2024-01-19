@@ -357,14 +357,14 @@ unit DisplayDriver
     
     ClearDisplay(uint colour)
     {
-        if (colour == 0xF000) // Color.Invert
+        if (colour == 0xF000) // Colour.Invert
         {
             for (uint i = 0; i < bufferSize; i++)
             {
                 frameBuffer[i] = ~frameBuffer[i];
             }
         }
-        else if (colour == 0x0000) // Color.Black
+        else if (colour == 0x0000) // Colour.Black
         {
             for (uint i = 0; i < bufferSize; i++)
             {
@@ -406,9 +406,9 @@ unit DisplayDriver
         uint offset = (uy / 8) + (ux * (Display.PixelHeight / 8));
         if (0 == (frameBuffer[offset] & (1 << (0x07 - (uy & 0x07)))))
         {
-            return Color.White;
+            return Colour.White;
         }
-        return Color.Black;
+        return Colour.Black;
     }
     RawSetPixel(int x, int y, uint colour)
     {
@@ -434,11 +434,11 @@ unit DisplayDriver
             offset = (ux / 8) + (uy * uint(Display.PixelWidth / 8));
             mask   = (1 << (0x07 - (ux & 0x07)));
         }
-        if (colour == 0xF000) // Color.Invert
+        if (colour == 0xF000) // Colour.Invert
         {
             frameBuffer[offset] = frameBuffer[offset] ^ mask;
         }
-        else if (colour == 0x0000) // Color.Black
+        else if (colour == 0x0000) // Colour.Black
         {
             frameBuffer[offset] = frameBuffer[offset] | mask; 
         }
@@ -465,7 +465,7 @@ unit DisplayDriver
             if (drow >= Display.PixelHeight) { break; }
             for (int x = 0; x < int(Display.PixelWidth-1); x++)
             {
-                RawSetPixel(x, int(drow), Color.White);
+                RawSetPixel(x, int(drow), Colour.White);
             }
             drow++;   
         }

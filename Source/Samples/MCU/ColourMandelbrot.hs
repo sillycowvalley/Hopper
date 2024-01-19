@@ -2,8 +2,6 @@ program ColourMandelbrot
 {
     uses "/Source/System/System"
     uses "/Source/System/IO"
-    uses "/Source/System/Color"
-    uses "/Source/System/Screen"
     
     uses "/Source/Library/Graphics"
     
@@ -62,8 +60,8 @@ program ColourMandelbrot
             case 4: { r = t; g = p; b = v; }
             case 5: { r = v; g = p; b = q; }
         }
-        uint color = (uint(r * 15) << 8) | (uint(g * 15) << 4) | (uint(b * 15));
-        return color;
+        uint colour = (uint(r * 15) << 8) | (uint(g * 15) << 4) | (uint(b * 15));
+        return colour;
     }
     Cell(uint x, uint y, uint iterations, bool isColour)
     {
@@ -78,7 +76,7 @@ program ColourMandelbrot
         }
         else if (iterations >= maxIterations)
         {
-            Graphics.SetPixel(x,y, Color.White);
+            Graphics.SetPixel(x,y, Colour.White);
         }
     }
     
@@ -145,7 +143,7 @@ program ColourMandelbrot
             WriteLn("Failed to initialize 2.8 TFT display");
             return;
         }
-        Graphics.Clear(Color.Black);
+        Graphics.Clear(Colour.Black);
         Screen.Suspend();
         Plot(true);
         Screen.Resume(false);
@@ -158,7 +156,7 @@ program ColourMandelbrot
             WriteLn("Failed to initialize OLED display");
             return;
         }
-        Graphics.Clear(Color.Black);
+        Graphics.Clear(Colour.Black);
         Screen.Suspend();
         Plot(false);   
         Screen.Resume(false);
@@ -171,7 +169,7 @@ program ColourMandelbrot
             WriteLn("Failed to initialize 1.44 TFT display");
             return;
         }
-        Graphics.Clear(Color.Black);
+        Graphics.Clear(Colour.Black);
         Screen.Suspend();
         Plot(true);
         Screen.Resume(false);

@@ -1,11 +1,16 @@
 unit Screen
 {
-    uses "/Source/System/Color"
+    uses "/Source/System/Colour"
 
     byte CursorX { get system; }
     byte CursorY { get system; }
     byte Columns { get system; }
     byte Rows    { get system; }
+    
+    uint defaultForeColour = Colour.MatrixGreen;
+    uint defaultBackColour = Colour.Black;
+    uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}
+    uint BackColour { get { return defaultBackColour; } set { defaultBackColour = value; }}
     
 #ifndef HOPPER_6502
     Suspend() system;
@@ -37,20 +42,20 @@ unit Screen
     
     Print(char c)
     {
-        Print(c, Color.MatrixGreen, Color.Black);
+        Print(c, ForeColour, BackColour);
     }
     Print(string s)
     {
-        Print(s, Color.MatrixGreen, Color.Black);
+        Print(s, ForeColour, BackColour);
     }
     PrintLn(char c)
     {  
-        Print(c, Color.MatrixGreen, Color.Black);
+        Print(c, ForeColour, BackColour);
         PrintLn();
     }
     PrintLn(string s)
     {  
-        Print(s, Color.MatrixGreen, Color.Black);
+        Print(s, ForeColour, BackColour);
         PrintLn();
     } 
 }

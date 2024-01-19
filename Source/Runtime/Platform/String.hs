@@ -74,13 +74,11 @@ unit HRString
     char GetChar(uint this, uint index)
     {
         uint length = GetLength(this);
-#ifdef CHECKED        
         if (index >= length)
         {
             Error = 0x05;
             return char(0);
         }
-#endif
         return char(ReadByte(this+siChars+index));     
     }
     uint Substring(uint this, uint start, uint limit)

@@ -64,7 +64,13 @@ Bool Instructions_InlinedDiv()
     HopperVM_sp -= 2;
     UInt sp2 = HopperVM_sp - 2;
     UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next / *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    UInt top = *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    if (top == 0)
+    {
+        Minimal_Error_Set(0x04);
+        return false;
+    }
+    *next = *next / top;
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
 #endif
     return true;
@@ -92,7 +98,13 @@ Bool Instructions_InlinedMod()
     HopperVM_sp -= 2;
     UInt sp2 = HopperVM_sp - 2;
     UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next % *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    UInt top = *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    if (top == 0)
+    {
+        Minimal_Error_Set(0x04);
+        return false;
+    }
+    *next = *next % top;
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
 #endif
     return true;
@@ -160,7 +172,13 @@ Bool Instructions_InlinedDivI()
     HopperVM_sp -= 2;
     UInt sp2 = HopperVM_sp - 2;
     Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next / *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    Int top = *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    if (top == 0)
+    {
+        Minimal_Error_Set(0x04);
+        return false;
+    }
+    *next = *next / top;
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x02; // Type::eInt;
 #endif
     return true;
@@ -209,7 +227,13 @@ Bool Instructions_InlinedModI()
     HopperVM_sp -= 2;
     UInt sp2 = HopperVM_sp - 2;
     Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next % *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    Int top = *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    if (top == 0)
+    {
+        Minimal_Error_Set(0x04);
+        return false;
+    }
+    *next = *next % top;
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x02; // Type::eInt;
 #endif
     return true;
@@ -661,7 +685,7 @@ Bool Instructions_InlinedDecLocalB()
 
 Bool Instructions_InlinedIncGlobalB()
 {
-    UInt address = codeMemoryBlock[HopperVM_pc++];
+    UInt address = codeMemoryBlock[HopperVM_pc++] + HopperVM_gp;
     Type itype = (Type)0;
     UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + address];
 #ifdef CHECKED
@@ -683,7 +707,7 @@ Bool Instructions_InlinedIncGlobalB()
 
 Bool Instructions_InlinedDecGlobalB()
 {
-    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + codeMemoryBlock[HopperVM_pc++]];
+    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + codeMemoryBlock[HopperVM_pc++] + HopperVM_gp];
 #ifdef CHECKED
     if (*value == 0)
     {
@@ -729,7 +753,7 @@ Bool Instructions_InlinedDecLocalIB()
 
 Bool Instructions_InlinedIncGlobalIB()
 {
-    UInt address = codeMemoryBlock[HopperVM_pc++];
+    UInt address = codeMemoryBlock[HopperVM_pc++] + HopperVM_gp;
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
 #ifdef CHECKED
     if (*ivalue == 32767)
@@ -745,7 +769,7 @@ Bool Instructions_InlinedIncGlobalIB()
 
 Bool Instructions_InlinedDecGlobalIB()
 {
-    UInt address = codeMemoryBlock[HopperVM_pc++];
+    UInt address = codeMemoryBlock[HopperVM_pc++] + HopperVM_gp;
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
 #ifdef CHECKED
     if (*ivalue == -32768)

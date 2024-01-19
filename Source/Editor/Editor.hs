@@ -82,11 +82,11 @@ unit Editor
         { 
             if (IsDebugger)
             {
-                return Color.MenuGreen;
+                return Colour.MenuGreen;
             }
             else
             {
-                return Color.MenuBlue; 
+                return Colour.MenuBlue; 
             }
         } 
     }
@@ -95,11 +95,11 @@ unit Editor
         { 
             if (IsDebugger)
             {
-                return Color.MenuTextGreen;
+                return Colour.MenuTextGreen;
             }
             else
             {
-                return Color.MenuTextBlue; 
+                return Colour.MenuTextBlue; 
             }
         } 
     }
@@ -125,7 +125,7 @@ unit Editor
         y0 = Editor.Top+1;
         width  = Editor.Width;
         height = (Editor.Height-2);
-        background = Color.LightestGray;
+        background = Colour.LightestGray;
         
         TextBuffer.Initialize();
         
@@ -1490,8 +1490,8 @@ unit Editor
             
             uint lineNumber = lineIndex+1;
             char bp = ' ';
-            uint breakColor = Color.Red;
-            uint runColor = Color.MarginFace;
+            uint breakColor = Colour.Red;
+            uint runColor = Colour.MarginFace;
 #ifdef DEBUGGER            
             bool isBreak = DebugCommand.IsBreakpoint(currentLower, lineNumber);
             if (isBreak)
@@ -1523,7 +1523,7 @@ unit Editor
                     uint digit = (lineNumber % 10) + 48; // '0'
                     character = char(digit);
                 }
-                Screen.DrawChar(x0+c, r+y0, character, Color.MarginText, Color.MarginFace); 
+                Screen.DrawChar(x0+c, r+y0, character, Colour.MarginText, Colour.MarginFace); 
                 lineNumber = lineNumber / 10;
             }
             
@@ -1572,7 +1572,7 @@ unit Editor
                     
                     foreach (var ch in perf)
                     {
-                        Screen.DrawChar(x0+xx, r+y0, ch, perfColor, Color.MarginFace); 
+                        Screen.DrawChar(x0+xx, r+y0, ch, perfColor, Colour.MarginFace); 
                         xx++;
                     }
                 }
@@ -1604,9 +1604,9 @@ unit Editor
                     uint bColor = background;
                     if (isSelected)
                     {
-                        bColor = Color.Gray;
+                        bColor = Colour.Gray;
                     }
-                    uint textColor = Color.Black;
+                    uint textColor = Colour.Black;
                     if (isHopperSource)
                     {
                         textColor = colours[colourOffset + c];
@@ -1615,13 +1615,13 @@ unit Editor
                     {
                         if (isBreak)
                         {
-                            bColor = Color.ActiveRed;
+                            bColor = Colour.ActiveRed;
                         }
                     }
 
                     if (currentIsActive && (lineIndex+1 == activeLine))
                     {
-                        bColor = Color.ActiveGray;
+                        bColor = Colour.ActiveGray;
                     }
                     Screen.DrawChar(c+x0+lineNumberWidth, r+y0, ln[c], textColor, bColor); 
                     c++;
@@ -1633,15 +1633,15 @@ unit Editor
 
                 if (IsDebugger && isBreak)
                 {
-                    bColor = Color.ActiveRed;
+                    bColor = Colour.ActiveRed;
                 }
 
                 if (currentIsActive && (lineIndex+1 == activeLine))
                 {
-                    bColor = Color.ActiveGray;
+                    bColor = Colour.ActiveGray;
                 }
                 // pad the rest of the line with blanks
-                Screen.DrawChar(c+x0+lineNumberWidth, r+y0, ' ', Color.Black, bColor); 
+                Screen.DrawChar(c+x0+lineNumberWidth, r+y0, ' ', Colour.Black, bColor); 
                 c++;
             }
         }

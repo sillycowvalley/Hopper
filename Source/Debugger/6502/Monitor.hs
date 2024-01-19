@@ -19,6 +19,35 @@ unit Monitor
     {
         serialOutput = "";
     }
+    
+    SendBreak()
+    {
+        // send a <ctrl><C> in case there is a program running
+        OutputDebug("Before 0x03");
+        Serial.WriteChar(char(0x03));
+        uint waitCount;
+        loop
+        {
+            if (waitCount >= 100) { break; }
+            if (Serial.IsAvailable)
+            {
+                // Typically: 
+                //    "\nBREAK/" if process was running
+                //    "/" if we aleady stopped in the debugger
+                // The waiting is in case we were in a long running system call
+                // when the <ctrl><C> arrived. I Delay(..) of >= 5000 would defeat this.
+                while (Serial.IsAvailable)
+                {
+                    char c = SerialReadChar(); 
+                    OutputDebug("After 0x03: " + (byte(c)).ToHexString(2));
+                }
+                break;
+            }
+            Delay(50);
+            waitCount++;   
+            if (waitCount % 10 == 0) { Print("."); }       
+        }
+    }
 #ifdef CAPTURESERIAL
 
     file captureFile;
@@ -282,10 +311,6 @@ unit Monitor
         sendCommand(commandLine);
         checkEchoRun(); // special version for execute
     }
-    EmptyCommand()
-    {
-        sendCommand(""); // empty : for <ctrl><C>?
-    }
     uint ReturnToDebugger(char currentCommand)
     {
         //OutputDebug("ReturnToDebugger()");
@@ -399,6 +424,30 @@ unit Monitor
         collectOutput = false;   
     }
     
+    bool FindCurrentHex(uint remoteCRC)
+    {
+        directory dir = Directory.Open("/Bin");
+        if (dir.IsValid())
+        {
+            uint count = dir.GetFileCount();
+            for (uint i = 0; i < count; i ++)
+            {
+                string filePath = dir.GetFile(i);
+                string extension = Path.GetExtension(filePath).ToLower();
+                if (extension == ".hex")
+                {
+                    uint localCRC = File.CRC16(filePath);
+                    if (localCRC == remoteCRC)
+                    {
+                        CurrentHexPath = filePath;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
     UploadHex(string ihexPath)
     {
         entryPCIsSet = false;  // only changes when we upload a new program
@@ -411,6 +460,17 @@ unit Monitor
         {
             Editor.SetStatusBarText("Uploading '" + ihexPath + "' ..");
         }
+        uint crc = File.CRC16(ihexPath);
+        SerialWriteChar(Char.ToHex(byte((crc >> 4) & 0xF))); 
+        if (checkEcho(false)) { }
+        SerialWriteChar(Char.ToHex(byte(crc & 0xF))); 
+        if (checkEcho(false)) { }
+        SerialWriteChar(Char.ToHex(byte(crc >> 12))); 
+        if (checkEcho(false)) { }
+        SerialWriteChar(Char.ToHex(byte((crc >> 8) & 0xF))); 
+        if (checkEcho(false)) { }
+        SerialWriteChar(char(0x0D));
+        if (checkEcho(false)) { }
 
         collectOutput = true; // just to toss it away    
         while (iFile.IsValid())
@@ -460,10 +520,7 @@ unit Monitor
         }
         collectOutput = false;
     }
-    string GetCurrentHexPath()
-    {
-        return lastHexPath;
-    }
+    string CurrentHexPath { get { return lastHexPath; } set {lastHexPath = value; } }
     
     HopperFlags hopperFlags;
     
@@ -522,14 +579,32 @@ unit Monitor
         }
         Monitor.Command("P", true, true);
         string serialOutput = Monitor.GetSerialOutput();
-        serialOutput = "0x" + serialOutput.Substring(1);
-        //Print(" " + serialOutput, MatrixRed, Black);
+        if ((serialOutput.Length == 5) && (serialOutput[0] == char(0x0A)))
+        {
+            serialOutput = serialOutput.Substring(1);
+        }
+        OutputDebug("GetCurrentPC: " + serialOutput);
         uint pc;
-        if (UInt.TryParse(serialOutput, ref pc))
+        if (UInt.TryParse("0x" + serialOutput, ref pc))
         {
             pc = pc - (GetZeroPage("CODESTART") << 8);
         }
         return pc;
+    }
+    uint GetCurrentCRC()
+    {
+        Monitor.Command("K", true, true);
+        string serialOutput = Monitor.GetSerialOutput();
+        if ((serialOutput.Length == 5) && (serialOutput[0] == char(0x0A)))
+        {
+            serialOutput = serialOutput.Substring(1);
+        }
+        OutputDebug("GetCurrentCRC: " + serialOutput);
+        uint crc;
+        if (UInt.TryParse("0x" + serialOutput, ref crc))
+        {
+        }
+        return crc;
     }
     uint GetEntryPC()
     {

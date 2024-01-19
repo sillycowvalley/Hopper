@@ -112,7 +112,7 @@ unit DebugCommand
         currentPath = currentPath.ToLower();
         uint currentLine = Editor.GetCurrentLineNumber();
         
-        Source.LoadSymbols();
+        Source.LoadSymbols(true);
         uint address = Code.GetLineAddress(currentPath, currentLine);
         if (address != 0)
         {
@@ -198,14 +198,26 @@ unit DebugCommand
             }
         }
     }
+    AttachDebugger()
+    {
+        debugCommand(char(0));        
+    }
     
     debugCommand(char c)
     {
-        Source.LoadSymbols();
+        Source.LoadSymbols(true);
         Editor.SetActiveLine(0, "", false);
-        Editor.SetStatusBarText("Running in debugger..");
-        Monitor.RunCommand(c);
-        uint pc = ReturnToDebugger(c);
+        uint pc;
+        if (c == char(0))
+        {
+            pc = Monitor.GetCurrentPC();
+        }
+        else
+        {
+            Editor.SetStatusBarText("Running in debugger..");
+            Monitor.RunCommand(c);
+            pc = ReturnToDebugger(c);
+        }
         if (DebugOptions.IsCaptureConsoleMode)
         {
             ConsoleCapture.FlushLog();
@@ -221,7 +233,7 @@ unit DebugCommand
         else
         {
             Editor.SetActiveLine(0, "", false);
-            Editor.SetStatusBarText("Program exited, session reset.");
+            Editor.SetStatusBarText("Program exited, session reset. A");
         }
     }
     
@@ -256,7 +268,7 @@ unit DebugCommand
     Reload()
     {
         // load the ihex to the HOPPER_6502
-        Monitor.UploadHex(Monitor.GetCurrentHexPath());
+        Monitor.UploadHex(Monitor.CurrentHexPath);
         Output.Clear();
         ConsoleCapture.ClearLog();
     }
@@ -274,7 +286,7 @@ unit DebugCommand
     }
     Profile() // like manually pressing <F11> until either the end of the program run or until <ctrl><C> is pressed
     {
-        Source.LoadSymbols();
+        Source.LoadSymbols(true);
         Editor.SetActiveLine(0, "", false);
         Editor.SetStatusBarText("Running in profiler..");
         watchWindow();   

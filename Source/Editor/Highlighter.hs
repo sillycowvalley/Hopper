@@ -1,6 +1,6 @@
 unit Highlighter
 {
-    uses "/Source/System/Color"
+    uses "/Source/System/Colour"
     uses "/Source/Compiler/Tokens/Token"
     
     string delimiters = ";,:?(){}[]<>=!&|~^+-*/%";
@@ -78,7 +78,7 @@ unit Highlighter
                         colour = HopperWord(word);
                         foreach (var ch in word)
                         {
-                            colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                            colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
                         }
                         word = "";
                     }
@@ -91,7 +91,7 @@ unit Highlighter
                         colour = HopperWord(word);
                         foreach (var ch in word)
                         {
-                            colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                            colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
                         }
                         word = "";
                     }
@@ -113,7 +113,7 @@ unit Highlighter
                     }
                     while (strLength > 0)
                     {
-                        colours.Append((blockCommentNesting == 0) ? Color.Constant : Color.Comment);
+                        colours.Append((blockCommentNesting == 0) ? Colour.Constant : Colour.Comment);
                         strLength--;
                     }
                     word = "";
@@ -127,7 +127,7 @@ unit Highlighter
                         colour = HopperWord(word);
                         foreach (var ch in word)
                         {
-                            colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                            colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
                         }
                         word = "";
                     }
@@ -151,7 +151,7 @@ unit Highlighter
                     i++;
                     while (charLength > 0)
                     {
-                        colours.Append((blockCommentNesting == 0) ? Color.Constant : Color.Comment);
+                        colours.Append((blockCommentNesting == 0) ? Colour.Constant : Colour.Comment);
                         charLength--;
                     }
                     word = "";
@@ -171,14 +171,14 @@ unit Highlighter
                             {
                                 i++;
                                 if (i >= length) { break; }
-                                colours.Append(Color.Comment);
+                                colours.Append(Colour.Comment);
                             }
                         }
                         else if ((i+1 < length) && (ln[i+1] == '*'))
                         {
                             // /*
-                            colours.Append(Color.Comment);
-                            colours.Append(Color.Comment);
+                            colours.Append(Colour.Comment);
+                            colours.Append(Colour.Comment);
                             blockCommentNesting++;
                             i++;
                         }
@@ -189,7 +189,7 @@ unit Highlighter
                                 colour = HopperWord(word);
                                 foreach (var ch in word)
                                 {
-                                    colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                                    colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
                                 }
                             }
                             word = "/";
@@ -202,15 +202,15 @@ unit Highlighter
                             colour = HopperWord(word);
                             foreach (var ch in word)
                             {
-                                colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                                colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
                             }
                         }
                         word = "";
                         if ((c == '*') && (i+1 < length) && (ln[i+1] == '/'))
                         {
                             // */
-                            colours.Append(Color.Comment);
-                            colours.Append(Color.Comment);
+                            colours.Append(Colour.Comment);
+                            colours.Append(Colour.Comment);
                             if (blockCommentNesting > 0)
                             {
                                 blockCommentNesting--;
@@ -220,7 +220,7 @@ unit Highlighter
                         else
                         {
                             colour = HopperWord(c.ToString());
-                            colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                            colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
                         }
                     }
                     else
@@ -236,7 +236,7 @@ unit Highlighter
             colour = HopperWord(word);
             foreach (var ch in word)
             {
-                colours.Append((blockCommentNesting == 0) ? colour : Color.Comment);
+                colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
             }
         }
         return colours;

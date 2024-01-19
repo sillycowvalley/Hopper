@@ -12,16 +12,16 @@ program Pico096Sample
         uint colour;
         switch (pin)
         {
-            case 15: { colour = Color.Red; }      // A
-            case 17: { colour = Color.Green; }    // B
+            case 15: { colour = Colour.Red; }      // A
+            case 17: { colour = Colour.Green; }    // B
             
-            case 16: { colour = Color.Blue; }      // Left
-            case 20: { colour = Color.DustyTeal; } // Right
+            case 16: { colour = Colour.Blue; }      // Left
+            case 20: { colour = Colour.DustyTeal; } // Right
             
-            case 2:  { colour = Color.Avocado; }   // Up
-            case 18: { colour = Color.Denim; }     // Down
+            case 2:  { colour = Colour.Avocado; }   // Up
+            case 18: { colour = Colour.Denim; }     // Down
             
-            case  3: { colour = Color.Black; }     // Press
+            case  3: { colour = Colour.Black; }     // Press
         }
         Redraw("Pin " + pin.ToString(), colour); 
     }
@@ -38,7 +38,7 @@ program Pico096Sample
         {
             return;
         }
-        Redraw("Start", Color.Black);
+        Redraw("Start", Colour.Black);
         loop
         {
             // very tight loop

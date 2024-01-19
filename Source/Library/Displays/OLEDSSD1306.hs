@@ -311,14 +311,14 @@ unit DisplayDriver
     ClearDisplay(uint colour)
     {
         int size = pixelWidth * pixelHeight / 8;
-        if (colour == Color.Black)
+        if (colour == Colour.Black)
         {
             for (int i = 0; i < size; i++)
             {
                 monoFrameBuffer[i] = 0;
             }
         }
-        else if (colour == Color.Invert)
+        else if (colour == Colour.Invert)
         {
             for (int i = 0; i < size; i++)
             {
@@ -340,11 +340,11 @@ unit DisplayDriver
         uint uy = uint(y);
         
         uint offset = ((uy & 0xFFF8) * uint(Display.PixelWidth/8)) + ux;
-        if (colour == 0xF000) // Color.Invert
+        if (colour == 0xF000) // Colour.Invert
         {
             monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
         }
-        else if (colour == 0x0000) // Color.Black
+        else if (colour == 0x0000) // Colour.Black
         {
             monoFrameBuffer[offset] = monoFrameBuffer[offset] & ~(1 << (uy & 0x07));
         }
@@ -362,7 +362,7 @@ unit DisplayDriver
         uint ux1 = uint(x1);
         uint ux2 = uint(x2);
         byte uybit = byte(1 << (uy & 0x07));
-        if (colour == 0xF000) // Color.Invert
+        if (colour == 0xF000) // Colour.Invert
         {
             for (uint ux=ux1; ux <= ux2; ux++)
             {
@@ -370,7 +370,7 @@ unit DisplayDriver
                 monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ uybit;
             }
         }
-        else if (colour == 0x0000) // Color.Black
+        else if (colour == 0x0000) // Colour.Black
         {
             uybit = ~uybit;
             for (uint ux=ux1; ux <= ux2; ux++)
@@ -394,7 +394,7 @@ unit DisplayDriver
         uint uy1 = uint(y1);
         uint uy2 = uint(y2);
         uint pw8 = uint(Display.PixelWidth/8);
-        if (colour == 0xF000) // Color.Invert
+        if (colour == 0xF000) // Colour.Invert
         {
             for (uint uy=uy1; uy <= uy2; uy++)
             {
@@ -402,7 +402,7 @@ unit DisplayDriver
                 monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
             }
         }
-        else if (colour == 0x0000) // Color.Black
+        else if (colour == 0x0000) // Colour.Black
         {
             for (uint uy=uy1; uy <= uy2; uy++)
             {

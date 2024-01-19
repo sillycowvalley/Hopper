@@ -17,6 +17,8 @@ unit IO
 #ifndef RUNTIME    
     uses  "/Source/System/String" // for keyboard buffer
 #endif
+
+    bool EchoToLCD { set { echoToLCD = value; } get { return echoToLCD; } }
    
     // Maximum width of lines on screen or serial console:
     //   uint LineMax
@@ -45,8 +47,7 @@ unit IO
     //   WriteLn()          | WriteLnBoth(bool both)
     //   WriteLn(int value) | WriteLnBoth(int value, bool both)
     
-    bool EchoToLCD { set { echoToLCD = value; } get { return echoToLCD; } }
-
+    
     uint LineMax
     {
         get 

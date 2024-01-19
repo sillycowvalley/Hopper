@@ -168,7 +168,7 @@ program  RedScreenOfDeath
                 file crashFile = File.Open(crashPath);
                 if (!crashFile.IsValid())
                 {
-                    PrintLn("Failed to open '" + crashPath + "'", Color.MatrixRed, Color.Black);
+                    PrintLn("Failed to open '" + crashPath + "'", Colour.MatrixRed, Colour.Black);
                     break;
                 }
                 uint li = 0;
@@ -198,7 +198,7 @@ program  RedScreenOfDeath
                 }
                 if (stackAddresses.Length == 0)
                 {
-                    PrintLn("No stack in '" + crashPath + "'", Color.MatrixRed, Color.Black);
+                    PrintLn("No stack in '" + crashPath + "'", Colour.MatrixRed, Colour.Black);
                     break;
                 }
                 
@@ -210,7 +210,7 @@ program  RedScreenOfDeath
                 file hasmFile = File.Open(hasmPath);
                 if (!hasmFile.IsValid())
                 {
-                    PrintLn("Failed to open '" + hasmPath + "'", Color.MatrixRed, Color.Black);
+                    PrintLn("Failed to open '" + hasmPath + "'", Colour.MatrixRed, Colour.Black);
                     break;
                 }
                 
@@ -220,7 +220,7 @@ program  RedScreenOfDeath
                 
                 if (!File.Exists(symbolsPath) || !ParseCode(symbolsPath, false, true))
                 {
-                    PrintLn("Failed to load '" + symbolsPath + "'", Color.MatrixRed, Color.Black);
+                    PrintLn("Failed to load '" + symbolsPath + "'", Colour.MatrixRed, Colour.Black);
                     break;
                 }
                 
@@ -366,12 +366,12 @@ program  RedScreenOfDeath
                 {
                     codeSize -= codeOffset;
                 }
-                Print("Success, " + codeSize.ToString() + " bytes of code, ", Color.ProgressText, Color.ProgressFace);
+                Print("Success, " + codeSize.ToString() + " bytes of code, ", Colour.ProgressText, Colour.ProgressFace);
                 long elapsedTime = Millis - startTime;
                 float seconds = elapsedTime / 1000.0;
-                PrintLn("  " + seconds.ToString() +"s", Color.ProgressHighlight, Color.ProgressFace);
-                PrintLn(errorMessage, Color.MatrixRed,  Color.Black);
-                PrintLn("Call stack:", Color.MatrixBlue,  Color.Black);
+                PrintLn("  " + seconds.ToString() +"s", Colour.ProgressHighlight, Colour.ProgressFace);
+                PrintLn(errorMessage, Colour.MatrixRed,  Colour.Black);
+                PrintLn("Call stack:", Colour.MatrixBlue,  Colour.Black);
                 uint max0 = 0;
                 uint max1 = 0;
                 for (uint i=0; i < stackAddresses.Length; i++)
@@ -395,16 +395,16 @@ program  RedScreenOfDeath
                 {
                     <string> parts = (stackLines[i]).Split('`'); 
                     string line = "  0x"  + (stackAddresses[i]).ToHexString(4) +  " ";
-                    Print(line, Color.MatrixBlue,  Color.Black);
+                    Print(line, Colour.MatrixBlue,  Colour.Black);
                     if  (parts.Length > 0)
                     {
                         line = parts[0];
                         line = line.Pad(' ', max0 + 2);
-                        Print(line, Color.MatrixBlue,  Color.Black);
+                        Print(line, Colour.MatrixBlue,  Colour.Black);
                         line = parts[1];
                         line = line.Pad(' ', max1 + 2);
-                        Print(line, Color.MatrixRed,  Color.Black);
-                        Print(parts[2], Color.LightestGray,  Color.Black);
+                        Print(line, Colour.MatrixRed,  Colour.Black);
+                        Print(parts[2], Colour.LightestGray,  Colour.Black);
                     }
                     PrintLn();
                 }

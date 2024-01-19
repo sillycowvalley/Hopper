@@ -1,7 +1,7 @@
 unit DeviceDriver
 {
     // https://www.waveshare.com/wiki/Pico-LCD-1.44
-    // Note: Color.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
+    // Note: Colour.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
     
 #if !defined(RP2040_PICOW) && !defined(RP2040_PICO)    
     // plugs directly into the Pi Pico or Pi PicoW so if neither was defined, assume Pico W for now

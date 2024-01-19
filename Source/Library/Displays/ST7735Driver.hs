@@ -91,7 +91,7 @@ unit DisplayDriver
       TFT_MADCTL      , 1,      MADCTL,              // Memory Access Control
 // ---- 
       
-      ST7735_COLMOD , 1      ,  // 15: set color mode, 1 arg, no delay:
+      ST7735_COLMOD , 1      ,  // 15: set colour mode, 1 arg, no delay:
         0x05,
       ST7735_GMCTRP1, 16      , 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10, // Set Gamma
       ST7735_GMCTRN1, 16      , 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10, // Set Gamma
@@ -181,7 +181,7 @@ unit DisplayDriver
     ClearDisplay(uint colour)
     {
         int  pw1 = Display.PixelWidth-1;
-        if (colour == Color.Invert)
+        if (colour == Colour.Invert)
         {
             for (int y = 0; y < Display.PixelHeight; y++)
             {
@@ -306,7 +306,7 @@ unit DisplayDriver
     RawSetPixel(int x, int y, uint colour)
     {
         uint rgb565;
-        if (colour == Color.Invert) // Invert
+        if (colour == Colour.Invert) // Invert
         {
             SPI.BeginTransaction(DeviceDriver.SPIController);
             MCU.DigitalWrite(DeviceDriver.CSPin, false);
@@ -333,7 +333,7 @@ unit DisplayDriver
     RawHorizontalLine(int x1, int y, int x2, uint colour)
     {
         int w2 = (x2-x1+1) * 2;
-        if (colour == Color.Invert)
+        if (colour == Colour.Invert)
         {
             SPI.BeginTransaction(DeviceDriver.SPIController);
             MCU.DigitalWrite(DeviceDriver.CSPin, false);
@@ -375,7 +375,7 @@ unit DisplayDriver
     }
     RawVerticalLine(int x, int y1, int y2, uint colour)
     {
-        if (colour == Color.Invert)
+        if (colour == Colour.Invert)
         {
             for (int y = y1; y <= y2; y++)
             {

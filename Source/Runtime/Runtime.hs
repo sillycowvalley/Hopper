@@ -84,6 +84,7 @@ program Runtime
     }
     
     bool loaded = false;
+    uint currentCRC;
     const uint codeMemoryStart = 0x0000; // code memory magically exists from 0x0000 to 0xFFFF
     
     bool LoadAuto(ref uint loadedAddress, ref uint codeLength)
@@ -93,12 +94,19 @@ program Runtime
         loadedAddress = codeMemoryStart;
         uint address = 0;
         
-        uint path = HopperVM.GetAppName();
+        uint path = HopperVM.GetAppName(false);
         if (HRFile.Exists(path))
         {
             success = ReadAllCodeBytes(path, loadedAddress, ref codeLength);
+            
+            GC.Release(path);
+            path = HopperVM.GetAppName(true);
+            uint crcFile = HRFile.Open(path);
+            byte crc0 = HRFile.Read(crcFile);
+            byte crc1 = HRFile.Read(crcFile);
+            currentCRC = crc0 + (crc1 << 8);
+            GC.Release(crcFile);
         }
-        
         GC.Release(path);
         return success;
     }
@@ -107,6 +115,7 @@ program Runtime
     {
         bool success = true;
         loadedAddress = codeMemoryStart;
+        
         
         codeLength = 0;
         loop
@@ -351,11 +360,33 @@ program Runtime
         bool success = true;
         loadedAddress = codeMemoryStart;
         
+        currentCRC = 0;
+        byte crc0;
+        byte crc1;
+        if (!TryReadSerialByte(ref crc0)) { success = false; }
+        if (success)
+        {
+            if(!TryReadSerialByte(ref crc1)) { success = false; }
+        }
+        if (success)
+        {
+            char eol = Serial.ReadChar();
+            if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
+            { 
+                success = false;
+            }
+            else
+            {
+                currentCRC = crc0 + (crc1 << 8);
+            }
+        }
+        
         uint codeLimit = External.GetSegmentPages() << 8;
         
         codeLength = 0;
         loop
         {
+            if (!success) { break; }
             char colon = Serial.ReadChar();
             if (colon != ':') { success = false; break; }
             
@@ -729,7 +760,11 @@ program Runtime
             {
                 ch = Serial.ReadChar();
             }
-            if (ch == char(escape)) // <esc> from Debugger
+            if (ch == char(0x03)) // <ctrl><C> from Debugger but we were not running 
+            {
+                Serial.WriteChar(char(slash));
+            }
+            else if (ch == char(escape)) // <esc> from Debugger
             {
                 Serial.WriteChar(char(slash)); // '\' response -> ready for command
                 ch = Serial.ReadChar(); // single letter command
@@ -780,6 +815,14 @@ program Runtime
                         
                         Serial.WriteChar(char(enter));
                         Out4Hex(HopperVM.PC);
+                        Serial.WriteChar(char(slash)); // confirm data
+                    }
+                    case 'K': // get CRC
+                    {
+                        WaitForEnter();
+                        
+                        Serial.WriteChar(char(enter));
+                        Out4Hex(currentCRC);
                         Serial.WriteChar(char(slash)); // confirm data
                     }
                     case 'R': // get Registers
@@ -923,7 +966,7 @@ program Runtime
                         
                         if (loaded)
                         {
-                            FlashProgram(loadedAddress, codeLength);
+                            FlashProgram(loadedAddress, codeLength, currentCRC);
                         }
                     } // L
                     default:

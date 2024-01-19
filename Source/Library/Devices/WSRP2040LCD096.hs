@@ -1,7 +1,7 @@
 unit DeviceDriver
 {
     // https://www.waveshare.com/wiki/RP2040-LCD-0.96
-    // Note: Color.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
+    // Note: Colour.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
     
     #define RP2040_PICO 
     #define WAVESHARE_RP2040_LCD_096

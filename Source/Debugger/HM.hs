@@ -203,10 +203,10 @@ program HopperMonitor
         content = content + ")";
         return content;
     }    
-    PrintColors(string colorContent)
+    PrintColors(string colourContent)
     {
         string contentBuffer;
-        foreach (var ch in colorContent)
+        foreach (var ch in colourContent)
         {
             if (ch == char(2))
             {
@@ -381,7 +381,7 @@ program HopperMonitor
             info = info + value.ToHexString(digits);
             
             PrintLn();
-            Print(info, Color.LightestGray, Color.Black);
+            Print(info, Colour.LightestGray, Colour.Black);
         }
     }
     ShowDisassembly(uint address, uint instructions)
@@ -409,7 +409,7 @@ program HopperMonitor
                             sourceLine = sourceLine.Pad(' ', 60);
                             PrintLn();
                             Print(sourceLine, White, Black);    
-                            Print("// " + sourceIndex, Color.Comment, Color.Black);
+                            Print("// " + sourceIndex, Colour.Comment, Colour.Black);
                         }
                     }
                     Instruction instruction = Instruction(Source.GetCode(address));
@@ -418,7 +418,7 @@ program HopperMonitor
                     PrintLn();
                     if (first)
                     {
-                        Print("PC -> ", Color.MatrixRed, Color.Black);
+                        Print("PC -> ", Colour.MatrixRed, Colour.Black);
                     }
                     else
                     {
@@ -432,8 +432,8 @@ program HopperMonitor
                         content = content.Substring(0, iComment);        
                         content = content.Pad(' ', 54);
                     }
-                    Print(content, Color.MatrixBlue, Color.Black);
-                    Print(comment, Color.MatrixGreen, Color.Black);
+                    Print(content, Colour.MatrixBlue, Colour.Black);
+                    Print(comment, Colour.MatrixGreen, Colour.Black);
                     if (wasReturn)
                     {
                         break;
@@ -510,10 +510,10 @@ program HopperMonitor
                         }
                         lines--;
                         sourceLine = Code.GetSourceLine(iCurrent);
-                        uint backColor = Color.LightestGray;
+                        uint backColor = Colour.LightestGray;
                         if (iCurrent == iLine)
                         {
-                            backColor = Color.LightGray;
+                            backColor = Colour.LightGray;
                         }
                         HopperLinePrinter(sourceLine, backColor);  
                         if (false && (iCurrent == iLine))
@@ -531,7 +531,7 @@ program HopperMonitor
                 }
                 
             }
-        }
+        } 
         Screen.Resume(true);
     }
     
@@ -651,13 +651,20 @@ program HopperMonitor
             Serial.Connect(comPort);
         }
         
-        // drain garbage from serial and header rubbish (like from the Seeed XAIO ESP32 C3)
-        //WaitForDeviceReady();
-        
         // send a <ctrl><C> in case there is a program running
-        Serial.WriteChar(char(0x03));
+        Monitor.SendBreak();
         
         Welcome();
+        
+        uint crc = Monitor.GetCurrentCRC();
+        PrintLn("CRC:" + crc.ToHexString(4));
+        if (crc != 0)
+        {
+            if (Monitor.FindCurrentHex(crc))
+            {
+                Source.LoadSymbols(true);
+            }
+        }
         
         bool sourceLevel = false; // Hopper source code level debugging
         bool symbolsLoaded = false; // running auto.hexe or was L used?
@@ -833,7 +840,7 @@ program HopperMonitor
                 else if (currentCommand == 'U') // gather usage data
                 {
                     PrintLn();
-                    string lastHexPath = Monitor.GetCurrentHexPath();
+                    string lastHexPath = Monitor.CurrentHexPath;
                     if (lastHexPath.Length == 0)
                     {
                         Print("Nothing loaded yet to profile.");
@@ -867,7 +874,7 @@ program HopperMonitor
                          || (currentCommand == 'O') // Step (next / over / F10)
                         )
                 {
-                    Source.LoadSymbols();
+                    Source.LoadSymbols(true);
                     Monitor.RunCommand(commandLine);
                     if (sourceLevel)
                     {
@@ -885,7 +892,7 @@ program HopperMonitor
                 }
                 else if (currentCommand == 'S') // Source
                 {
-                    Source.LoadSymbols();
+                    Source.LoadSymbols(true);
                     ShowCurrentInstruction(15);
                     refresh = true;
                 }
@@ -900,6 +907,11 @@ program HopperMonitor
                     refresh = true;
                 }
                 else if (currentCommand == 'P') // raw PC (mostly used internally)
+                {
+                    Monitor.Command(commandLine, false, true);
+                    refresh = true;
+                }
+                else if (currentCommand == 'K') // CRC
                 {
                     Monitor.Command(commandLine, false, true);
                     refresh = true;
@@ -931,7 +943,7 @@ program HopperMonitor
             {
                 // cancel commandline
                 commandLine = "";
-                Monitor.EmptyCommand();
+                //Monitor.EmptyCommand();
                 PrintLn("<ctrl><C>");
                 refresh = true;
             }
@@ -953,7 +965,7 @@ program HopperMonitor
                     if (clength == 0)
                     {
                         // first character must be command key
-                        if (String.Contains("?BCDFHILMOPQRSTUVWXZ", ch))
+                        if (String.Contains("?BCDFHIKLMOPQRSTUVWXZ", ch))
                         {
                             currentCommand = ch;
                         }

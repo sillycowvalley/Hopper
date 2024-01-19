@@ -47,8 +47,8 @@ program Badger
             EchoToLCD = false;
             start = Millis;
             Display.Suspend();
-            Display.Clear(Color.Black);
-            TestBox(Color.White);
+            Display.Clear(Colour.Black);
+            TestBox(Colour.White);
             LED = false;
             EchoToLCD = true;
             IO.WriteLn("Black Screen");
@@ -59,8 +59,8 @@ program Badger
             
             start = Millis;
             Display.Suspend();
-            Display.Clear(Color.White);
-            TestBox(Color.Black);
+            Display.Clear(Colour.White);
+            TestBox(Colour.Black);
             LED = true;
             EchoToLCD = true;
             IO.WriteLn("White Screen");

@@ -9,6 +9,7 @@ extern UInt HopperVM_messagePC;
 #endif
 extern UInt HopperVM_pc;
 extern UInt HopperVM_sp;
+extern UInt HopperVM_gp;
 extern UInt HopperVM_bp;
 extern UInt HopperVM_csp;
 extern Bool HopperVM_cnp;

@@ -67,4 +67,21 @@ unit File
         }
         return true;
     }
+    uint CRC16(string filepath)
+    {
+        uint crc = 0xFFFF;
+        file f = File.Open(filepath);
+        loop
+        {
+            byte data = f.Read();
+            if (!f.IsValid()) { break; }
+            
+            crc = crc ^ data;
+            for (byte k = 0; k < 8; k++)
+            {
+                crc = (crc & 1 != 0) ? ((crc >> 1) ^ 0xA001) : (crc >> 1);
+            }
+        }
+        return crc;
+    }
 }

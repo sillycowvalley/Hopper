@@ -493,7 +493,7 @@ unit Instructions
 
     bool PushGP()
     {
-        Push(0, Type.UInt);
+        Push(GP, Type.UInt);
         return true;
     }
     bool PushIW()
@@ -1672,9 +1672,9 @@ unit Instructions
     }
     bool PushGlobalB()
     {
-        byte offset     = ReadByteOperand();
-        uint value = ReadWord(ValueStack + offset);
-        Type htype = Type(ReadWord(TypeStack + offset));
+        uint address     = ReadByteOperand() + GP;
+        uint value = ReadWord(ValueStack + address);
+        Type htype = Type(ReadWord(TypeStack + address));
         Push(value, htype);
         if (IsReferenceType(htype))
         {
@@ -1685,9 +1685,9 @@ unit Instructions
 
     bool PushGlobal()
     {
-        uint offset     = ReadWordOperand();
-        uint value = ReadWord(ValueStack + offset);
-        Type htype = Type(ReadWord(TypeStack + offset));
+        uint address     = ReadWordOperand() + GP;
+        uint value = ReadWord(ValueStack + address);
+        Type htype = Type(ReadWord(TypeStack + address));
         Push(value, htype);
         if (IsReferenceType(htype))
         {
@@ -1705,19 +1705,19 @@ unit Instructions
         }
         else
         {
-            byte offset     = ReadByteOperand();
+            uint address     = ReadByteOperand() + GP;
             // this is the slot we are about to overwrite: decrease reference count if reference type
-            Type htype = Type(ReadWord(TypeStack  + offset));
+            Type htype = Type(ReadWord(TypeStack  + address));
             uint value;
             if (IsReferenceType(htype))
             {
-                value = ReadWord(ValueStack  + offset);
+                value = ReadWord(ValueStack  + address);
                 GC.Release(value);
             }
             
             value = Pop(ref htype);
-            WriteWord(ValueStack + offset, value);
-            WriteWord(TypeStack  + offset, uint(htype));
+            WriteWord(ValueStack + address, value);
+            WriteWord(TypeStack  + address, uint(htype));
         }
         return true;
     }
@@ -1731,19 +1731,19 @@ unit Instructions
         }
         else
         {
-            uint offset     = ReadWordOperand();
+            uint address     = ReadWordOperand() + GP;
             // this is the slot we are about to overwrite: decrease reference count if reference type
-            Type htype = Type(ReadWord(TypeStack  + offset));
+            Type htype = Type(ReadWord(TypeStack  + address));
             uint value;
             if (IsReferenceType(htype))
             {
-                value = ReadWord(ValueStack  + offset);
+                value = ReadWord(ValueStack  + address);
                 GC.Release(value);
             }
             
             value = Pop(ref htype);
-            WriteWord(ValueStack + offset, value);
-            WriteWord(TypeStack  + offset, uint(htype));
+            WriteWord(ValueStack + address, value);
+            WriteWord(TypeStack  + address, uint(htype));
         }
         return true;
     }
@@ -1800,10 +1800,10 @@ unit Instructions
     
     bool PopCopyGlobalB()
     {
-        byte offset     = ReadByteOperand();
+        uint address     = ReadByteOperand() + GP;
         // this is the slot we are about to overwrite: decrease reference count if reference type
         Type htype;
-        uint oldvalue = HopperVM.Get(offset, ref htype);
+        uint oldvalue = HopperVM.Get(address, ref htype);
         if (IsReferenceType(htype))
         {
             GC.Release(oldvalue);
@@ -1818,17 +1818,17 @@ unit Instructions
             // clone self, release the original
             uint newvalue = GC.Clone(value);
             GC.Release(value);
-            Put(offset, newvalue, htype); 
+            Put(address, newvalue, htype); 
         }
         return true;
     }
 
     bool PopCopyGlobal()
     {
-        uint offset     = ReadWordOperand();
+        uint address     = ReadWordOperand() + GP;
         // this is the slot we are about to overwrite: decrease reference count if reference type
         Type htype;
-        uint oldvalue = HopperVM.Get(offset, ref htype);
+        uint oldvalue = HopperVM.Get(address, ref htype);
         if (IsReferenceType(htype))
         {
             GC.Release(oldvalue);
@@ -1843,7 +1843,7 @@ unit Instructions
             // clone self, release the original
             uint newvalue = GC.Clone(value);
             GC.Release(value);
-            Put(offset, newvalue, htype); 
+            Put(address, newvalue, htype); 
         }
         return true;
     }
@@ -1941,8 +1941,8 @@ unit Instructions
     }
     bool IncGlobalBB()
     {
-        uint address0     = ReadByteOperand();
-        uint address1     = ReadByteOperand();
+        uint address0     = ReadByteOperand() + GP;
+        uint address1     = ReadByteOperand() + GP;
         Type type0;
         uint value = HopperVM.Get(address0, ref type0);
         Type type1;   
@@ -2000,7 +2000,7 @@ unit Instructions
     }
     bool InlinedIncGlobalB()
     {
-        uint address     = ReadByteOperand();
+        uint address     = ReadByteOperand() + GP;
         // INCGLOBALB is an optimization of "i = i + 1":
         // If it were done using ADDI or ADD, then the result pushed on the stack
         // would be tInt or tUInt, even if i was a tByte.
@@ -2019,14 +2019,14 @@ unit Instructions
     }
     bool InlinedIncGlobalIB()
     {
-        uint address     = ReadByteOperand();
+        uint address     = ReadByteOperand() + GP;
         int value = HopperVM.GetI(address);
         PutI(address, value+1);
         return true;
     }
     bool InlinedDecGlobalB()
     {
-        uint address     = ReadByteOperand();
+        uint address     = ReadByteOperand() + GP;
         Type itype;
         uint value = HopperVM.Get(address, ref itype);
         if (itype == Type.Byte)
@@ -2038,7 +2038,7 @@ unit Instructions
     }
     bool InlinedDecGlobalIB()
     {
-        uint address     = ReadByteOperand();
+        uint address     = ReadByteOperand() + GP;
         int value = HopperVM.GetI(address);
         PutI(address, value-1);
         return true;

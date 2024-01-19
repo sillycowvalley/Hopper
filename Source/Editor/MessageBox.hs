@@ -100,7 +100,7 @@ unit MessageBox
         
         
         <string, variant> instance = Panel.New(byte(x), byte(y), byte(width), byte(height));
-        Panel.SetBackground(instance, Color.PopupFace);
+        Panel.SetBackground(instance, Colour.PopupFace);
         
         
         instance["title"] = title;
@@ -132,7 +132,7 @@ unit MessageBox
         value = value.Pad(' ', editwidth);
         foreach (var c in value)
         {
-            DrawChar(x, y, c, Color.Black, Color.LightestGray);
+            DrawChar(x, y, c, Colour.Black, Colour.LightestGray);
             x++;
         }
         Resume(true); // interactive
@@ -161,14 +161,14 @@ unit MessageBox
                 buttonText = buttonText + " ";
             }
         }
-        uint forecolor = Color.Black;
+        uint forecolour = Colour.Black;
         if (!enabled)
         {
-            forecolor = Color.DarkGray;
+            forecolour = Colour.DarkGray;
         }
         foreach (var c in buttonText)
         {
-            DrawChar(x, y, c, forecolor, Color.ButtonFace);
+            DrawChar(x, y, c, forecolour, Colour.ButtonFace);
             x++;
         }
         Resume(true); // interactive
@@ -544,7 +544,7 @@ unit MessageBox
         Suspend();
         Panel.Draw(this);
         
-        uint backcolor = Panel.GetBackground(this);
+        uint backcolour = Panel.GetBackground(this);
         
         uint x0 = Panel.GetX0(this);
         uint y0 = Panel.GetY0(this);
@@ -578,12 +578,12 @@ unit MessageBox
         
         foreach (var c in title)
         {
-            DrawChar(x, y0, c, Color.PopupText, Editor.TitleColor);
+            DrawChar(x, y0, c, Colour.PopupText, Editor.TitleColor);
             x++;
         }
         x = x0 + 1;
         y = y0 + 2;
-        DrawMessage(this, x, y, message, backcolor);
+        DrawMessage(this, x, y, message, backcolour);
         y = y + messageRows - 1;
         
         <string,string> fieldvalues = this["fields"];
@@ -594,7 +594,7 @@ unit MessageBox
             x = x0 + w - extra.Length - 1;
             foreach (var c in extra)
             {
-                DrawChar(x, y, c, Color.LabelText, backcolor);
+                DrawChar(x, y, c, Colour.LabelText, backcolour);
                 x++;
             }
         }
@@ -608,7 +608,7 @@ unit MessageBox
             // field background area
             for (uint xb = 0; xb < editwidth; xb++)
             {
-                DrawChar(x+xb, y, ' ', Color.EditFace, Color.EditFace); 
+                DrawChar(x+xb, y, ' ', Colour.EditFace, Colour.EditFace); 
             }
             
             // field value
@@ -619,7 +619,7 @@ unit MessageBox
                 x = x0 + 1;
                 foreach (var c in extra)
                 {
-                    DrawChar(x, y, c, Color.LabelText, backcolor);
+                    DrawChar(x, y, c, Colour.LabelText, backcolour);
                     x++;
                 }
             }
@@ -665,7 +665,7 @@ unit MessageBox
             }
             foreach (var c in buttonText)
             {
-                DrawChar(x, y, c, Color.ButtonText, Color.ButtonFace);
+                DrawChar(x, y, c, Colour.ButtonText, Colour.ButtonFace);
                 x++;
             }
         }
@@ -673,7 +673,7 @@ unit MessageBox
         Resume(true); // interactive
     }
     
-    DrawMessage(<string, variant> this, uint xLeft, uint yTop, string message, uint backcolor)
+    DrawMessage(<string, variant> this, uint xLeft, uint yTop, string message, uint backcolour)
     {
         uint x0 = Panel.GetX0(this);
         uint y0 = Panel.GetY0(this);
@@ -693,27 +693,27 @@ unit MessageBox
         padString = padString.Pad(' ', padding);
         message = message + padString;
         
-        <uint> colors;
+        <uint> colours;
         bool doHighlight = this.Contains("doHighlight");
         if (doHighlight)
         {
-            backcolor = LightestGray;
+            backcolour = LightestGray;
             uint blockCommentNesting;
-            colors = Highlighter.Hopper(message, backcolor, ref blockCommentNesting);
+            colours = Highlighter.Hopper(message, backcolour, ref blockCommentNesting);
         }
         
         uint x = xLeft;
         uint y = yTop;   
         uint index = 0; 
-        uint fColor = Color.Black;
+        uint fColor = Colour.Black;
         foreach (var c in message)
         {
             if (doHighlight)
             {
-                fColor = colors[index];
+                fColor = colours[index];
                 index++;
             }
-            DrawChar(x, y, c, fColor, backcolor);
+            DrawChar(x, y, c, fColor, backcolour);
             
             x++;
             if (x > x0 + w)

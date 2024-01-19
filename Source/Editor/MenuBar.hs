@@ -280,7 +280,7 @@ unit MenuBar
         uint w = Panel.GetWidth(this);
         
         uint x = x0;
-        uint backcolor = Panel.GetBackground(this);
+        uint backcolour = Panel.GetBackground(this);
         string menutext;
 
         < < uint > > listOfAreas;
@@ -288,39 +288,39 @@ unit MenuBar
         foreach (var name in menuOrder)
         {
             <uint> area;
-            DrawChar(x, y, ' ', backcolor, backcolor);
+            DrawChar(x, y, ' ', backcolour, backcolour);
             x++;
             
             area.Append(x);
             area.Append(y);
             
-            uint textcolor = Editor.MenuTextColor;
+            uint textcolour = Editor.MenuTextColor;
             uint cw = 0;
             foreach (var c in name)
             {
                 if (c == '&')
                 {
-                    textcolor = Color.PopupText;
+                    textcolour = Colour.PopupText;
                 }
                 else
                 {
-                    DrawChar(x, y, c, textcolor, backcolor);
+                    DrawChar(x, y, c, textcolour, backcolour);
                     x++;
-                    textcolor = Editor.MenuTextColor;
+                    textcolour = Editor.MenuTextColor;
                     cw++;        
                 }
             }
             area.Append(cw);
             area.Append(uint(1));
-            DrawChar(x, y, ' ', backcolor, backcolor);
+            DrawChar(x, y, ' ', backcolour, backcolour);
             x++;
             listOfAreas.Append(area);
         }
         
-        uint pathColor = Color.TitlePath;
+        uint pathColor = Colour.TitlePath;
         if (Editor.CanUndo())
         {
-            pathColor = Color.ModifiedPath; // file has been modified
+            pathColor = Colour.ModifiedPath; // file has been modified
 #ifndef DEBUGGER            
             //BuildCommand.WasModified = true;
 #endif
@@ -334,7 +334,7 @@ unit MenuBar
         x = x0 + w - len - 1;
         foreach (var c in content)
         {
-            DrawChar(x, y, c, pathColor, backcolor);
+            DrawChar(x, y, c, pathColor, backcolour);
             x++;
         }
         if (titleText2 != "")
@@ -342,7 +342,7 @@ unit MenuBar
             content = " ['" + titleText2 + "']";
             foreach (var c in content)
             {
-                DrawChar(x, y, c, Color.TitlePath, backcolor);
+                DrawChar(x, y, c, Colour.TitlePath, backcolour);
                 x++;
             }   
         }

@@ -27,6 +27,8 @@ program Debug
     
     string optionsPath;
     string OptionsPath { get { return optionsPath; } }
+    bool attached;
+    bool Attached { get { return attached; } set { attached = value; } }
     
     bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
     
@@ -42,7 +44,7 @@ program Debug
         
         foreach (var argument in arguments)
         {
-            if (filePath.Length > 0)
+            if (filePath.Length > 0) // more than one?
             {
                 showHelp = true;
                 break;
@@ -53,14 +55,9 @@ program Debug
             }
         }
         
-        if (filePath.Length == 0)
-        {
-            showHelp = true;
-        }
-
         loop
         {
-            if (!showHelp)
+            if (!showHelp && (filePath.Length != 0))
             {
                 loop
                 {
@@ -100,7 +97,7 @@ program Debug
                 } // loop
             }
             string ihexPath;
-            if (!showHelp)
+            if (!showHelp && (filePath.Length != 0))
             {
                 ihexPath = Path.GetFileName(filePath);
                 string extension = Path.GetExtension(filePath);
@@ -167,14 +164,51 @@ program Debug
             }
             
             // send a <ctrl><C> in case there is a program running
-            Serial.WriteChar(char(0x03));
-                
+            Monitor.SendBreak();
+            
+            if (ihexPath.Length == 0)
+            {
+                Pages.LoadPageData(0);
+                uint crc = Monitor.GetCurrentCRC();
+                PrintLn("CRC:" + crc.ToHexString(4));
+                if (crc != 0)
+                {
+                    if (Monitor.FindCurrentHex(crc))
+                    {
+                        ihexPath = Monitor.CurrentHexPath;
+                    }
+                }
+                PrintLn("Found: '" + ihexPath + "'");
+            }
+            if (ihexPath.Length == 0)
+            {
+                break;
+            }
             Commands.Initialize();
            
             <string, variant> menubar   = MenuBar.New(); 
             <string, variant> statusbar = StatusBar.New(); 
             
             Editor.New(statusbar, menubar); 
+            
+            if (filePath.Length == 0)
+            {
+                Source.LoadSymbols(false);
+                if (Source.SymbolsLoaded)
+                {
+                    <uint> mainOverloads = Symbols.GetFunctionOverloads(0x0000); // main
+                    <string, string> mainStart = Symbols.GetOverloadStart(mainOverloads[0]);
+                    filePath = mainStart["source"];
+                    Source.ClearSymbols();
+                }
+                if (filePath.Length == 0)
+                {
+                    PrintLn("Source and symbols not found.");
+                    break;
+                }
+                Attached = true;
+            }
+            
             Editor.LoadFile(filePath);
             
             MenuBar.Draw(menubar);
@@ -185,8 +219,15 @@ program Debug
             ConsoleCapture.SetPath(ihexPath);
             ConsoleCapture.ClearLog();
             
-            // load the ihex to the HOPPER_6502
-            Monitor.UploadHex(ihexPath);
+            // load the ihex to the remove device
+            if (Attached)
+            {
+                DebugCommand.AttachDebugger();
+            }
+            else
+            {
+                Monitor.UploadHex(ihexPath);
+            }
             loop
             {
                 Key key = ReadKey();
@@ -227,6 +268,6 @@ program Debug
                 ConsoleCapture.FlushLog();
             }
             break;
-        } // loop
+        } // main loop
     }
 }

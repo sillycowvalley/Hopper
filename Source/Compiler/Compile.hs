@@ -2831,10 +2831,10 @@ program Compile
                 if (!IsInteractive())
                 {
                     PrintLn();
-                    Print("Success.", Color.ProgressText, Color.ProgressFace);
+                    Print("Success.", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
-                    PrintLn("  " + seconds.ToString() + "s", Color.ProgressHighlight, Color.ProgressFace);
+                    PrintLn("  " + seconds.ToString() + "s", Colour.ProgressHighlight, Colour.ProgressFace);
                 }
                 else
                 {

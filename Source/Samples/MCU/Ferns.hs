@@ -4,8 +4,6 @@ program Ferns
     
     uses "/Source/System/System"
     uses "/Source/System/IO"
-    uses "/Source/System/Color"
-    uses "/Source/System/Screen"
     
     uses "/Source/Library/Graphics"
     
@@ -80,7 +78,7 @@ program Ferns
                 xn = -0.15 * x + 0.28 * y;
                 yn =  0.26 * x + 0.24 * y + 0.44;
             }
-            SetPixel(uint(scale * yn), uint(offset + scale * xn), Color.Green);
+            SetPixel(uint(scale * yn), uint(offset + scale * xn), Colour.Green);
             x = xn;
             y = yn;
         }
@@ -96,7 +94,7 @@ program Ferns
             WriteLn("Failed to initialize TFT display");
             return;
         }
-        Graphics.Clear(Color.Black);
+        Graphics.Clear(Colour.Black);
         Screen.Suspend();
         BarnsleyFern(25000, Width * 0.333, 30);
         Screen.Resume(false);
@@ -109,7 +107,7 @@ program Ferns
             WriteLn("Failed to initialize OLED display");
             return;
         }
-        Graphics.Clear(Color.Black);
+        Graphics.Clear(Colour.Black);
         Screen.Suspend();
         BarnsleyFern(8000,  Width * 0.25, 10);   
         Screen.Resume(false);

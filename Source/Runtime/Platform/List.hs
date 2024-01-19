@@ -155,14 +155,14 @@ unit HRList
     {
         itype = Type(ReadByte(this+lsType));
         uint length = ReadWord(this+lsLength);
-#ifdef CHECKED
         if (index >= length)
         {
+#ifdef CHECKED
             ErrorDump(68);
+#endif
             Error = 0x01; // list index out of range
             return 0;
         }
-#endif
         uint i = 0;
         uint pCurrent = ReadWord(this+lsFirst);
         uint pRecent  = ReadWord(this+lsRecent);

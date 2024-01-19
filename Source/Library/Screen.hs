@@ -1,7 +1,7 @@
 unit Screen
 {
     // MCU version is in Hopper (no system calls)
-    uses "/Source/System/Color"
+    uses "/Source/System/Colour"
 #ifdef DISPLAY_DRIVER    
     uses "/Source/Library/Display"
 #endif
@@ -15,6 +15,11 @@ unit Screen
     byte cursorX;
     byte cursorY;
     byte[] fontData;
+    
+    uint defaultForeColour = Colour.MatrixGreen;
+    uint defaultBackColour = Colour.Black;
+    uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}
+    uint BackColour { get { return defaultBackColour; } set { defaultBackColour = value; }}
     
     
     byte CursorX { get { cursorX; }}
@@ -93,7 +98,7 @@ unit Screen
     Clear() 
     {
 #ifdef DISPLAY_DRIVER
-        Display.Clear(Color.Black); 
+        Display.Clear(BackColour); 
 #endif
         cursorX = 0;
         cursorY = 0;
@@ -191,18 +196,18 @@ unit Screen
     
     Print(char c)
     {
-        Print(c, Color.MatrixGreen, Color.Black);
+        Print(c, ForeColour, BackColour);
     }
     Print(string s)
     {
-        Print(s, Color.MatrixGreen, Color.Black);
+        Print(s, ForeColour, BackColour);
     }
     PrintLn(char c)
     {  
-        PrintLn(c, Color.MatrixGreen, Color.Black);
+        PrintLn(c, ForeColour, BackColour);
     }
     PrintLn(string s)
     {  
-        PrintLn(s, Color.MatrixGreen, Color.Black);
+        PrintLn(s, ForeColour, BackColour);
     }
 }

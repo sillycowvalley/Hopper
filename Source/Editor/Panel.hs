@@ -33,10 +33,10 @@ unit Panel
         uint background = values["background"];
         return background; 
     }
-    SetBackground(<string, variant> this, uint color) 
+    SetBackground(<string, variant> this, uint colour) 
     { 
         < string, uint> values = this["values"];
-        values["background"] = color;
+        values["background"] = colour;
         this["values"] = values;
     }
     
@@ -94,7 +94,7 @@ unit Panel
         Suspend();
         
         uint background = GetBackground(this);
-        //if (background != 0xFFFF) // color none
+        //if (background != 0xFFFF) // colour none
         //{
             uint x0 = GetX0(this);
             uint y0 = GetY0(this);

@@ -7,26 +7,6 @@ program Dir
     string wildcardStartsWith;
     string wildcardEndsWith;
     
-    uint FileCRC16(string filepath)
-    {
-        // stackoverflow.com/users/1180620/mark-adler .. more or less .. nice and simple.
-        // Not a good implementation when it comes to performance but that doesn't seem to matter for 'dir'
-        uint crc = 0xFFFF;
-        file f = File.Open(filepath);
-        loop
-        {
-            byte data = f.Read();
-            if (!f.IsValid()) { break; }
-            
-            crc = crc ^ data;
-            for (byte k = 0; k < 8; k++)
-            {
-                crc = (crc & 1 != 0) ? ((crc >> 1) ^ 0xA001) : (crc >> 1);
-            }
-        }
-        return crc;
-    }
-
     DirectoryListing(<string> options, <string> arguments, bool firstCall)
     {
         uint iFirstDot;
@@ -209,7 +189,7 @@ program Dir
                 PrintLn("Invalid arguments for DIR:");
                 PrintLn("  -f : full paths for each file");
                 PrintLn("  -t : include unix time stamp");
-                PrintLn("  -c : include crc-16 as checksum");
+                PrintLn("  -c : include crc-16 checksums");
                 PrintLn("  -s : this directory and all subdirectories");
                 break;
             }
@@ -233,7 +213,7 @@ program Dir
             
             if (firstCall)
             {
-                PrintLn(currentFolder, Color.MatrixBlue, Color.Black);
+                PrintLn(currentFolder, Colour.MatrixBlue, Colour.Black);
             }
             
             first = true;
@@ -243,7 +223,7 @@ program Dir
                 for (uint i = 0; i < directories; i++)
                 {
                     string directoryname = dir.GetDirectory(i);
-                    PrintLn(directoryname, Color.MatrixBlue, Color.Black);
+                    PrintLn(directoryname, Colour.MatrixBlue, Colour.Black);
                 }
             }
             files =  dir.GetFileCount();
@@ -286,16 +266,16 @@ program Dir
                 if (first && !fullpaths && !firstCall)
                 {
                     // only print the folder if there is at least one file listed in it
-                    PrintLn(currentFolder, Color.MatrixBlue, Color.Black);
+                    PrintLn(currentFolder, Colour.MatrixBlue, Colour.Black);
                     first = false;
                 }
                 if (!fullpaths)
                 {
-                    Print(" " + filename, Color.MatrixBlue, Color.Black);
+                    Print(" " + filename, Colour.MatrixBlue, Colour.Black);
                 }
                 else
                 {
-                    Print(filepath, Color.MatrixBlue, Color.Black);
+                    Print(filepath, Colour.MatrixBlue, Colour.Black);
                 }
                 if (showtime || showcrc)
                 {
@@ -308,12 +288,12 @@ program Dir
                 }
                 if (showtime)
                 {
-                    Print("  0x"  +  ft.ToHexString(8), Color.MatrixGreen, Color.Black);
+                    Print("  0x"  +  ft.ToHexString(8), Colour.MatrixGreen, Colour.Black);
                 }
                 if (showcrc)
                 {
-                    uint crc = FileCRC16(filepath);
-                    Print("  0x"  +  crc.ToHexString(4), Color.MatrixRed, Color.Black);
+                    uint crc = File.CRC16(filepath);
+                    Print("  0x"  +  crc.ToHexString(4), Colour.MatrixRed, Colour.Black);
                 }
                 PrintLn();
             } // file loop

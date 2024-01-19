@@ -88,17 +88,17 @@ unit Output
             
             for (byte r = outputTop; r < outputTop + outputHeight; r++)
             {
-                uint bcolor = Black;
+                uint bcolour = Black;
                 if (r >= outputTop + consoleHeight)
                 {
-                    bcolor = LightestGray;
+                    bcolour = LightestGray;
                 }
                 for (byte c = outputLeft; c < outputLeft + outputWidth; c++)
                 {
                     uint index  = r * Screen.Columns + c;
                     outputCharacters[index] = ' ';
-                    outputForeColors[index]  = bcolor;
-                    outputBackColors[index]  = bcolor;
+                    outputForeColors[index]  = bcolour;
+                    outputBackColors[index]  = bcolour;
                 }
             }
             Draw();
@@ -137,7 +137,7 @@ unit Output
         Screen.Suspend();
         for (byte r = outputTop; r < outputTop + outputHeight; r++)
         {
-            DrawChar(outputLeft-1, r, ' ',  Color.MarginFace, Color.MarginFace);
+            DrawChar(outputLeft-1, r, ' ',  Colour.MarginFace, Colour.MarginFace);
             for (byte c = outputLeft; c < outputLeft + outputWidth; c++)
             {
                 uint index  = r * Screen.Columns + c;
@@ -276,7 +276,7 @@ unit Output
         {
             content = content.Replace('`', ',');
             uint blockCommentNesting;
-            <uint> colors = Highlighter.Hopper(content, backColor, ref blockCommentNesting);
+            <uint> colours = Highlighter.Hopper(content, backColor, ref blockCommentNesting);
             
             for (byte i = 0; i < content.Length; i++)
             {
@@ -285,7 +285,7 @@ unit Output
                {
                    uint index  = row * Screen.Columns + col;
                    outputCharacters[index] = content[i];
-                   outputForeColors[index] = colors[i];
+                   outputForeColors[index] = colours[i];
                    outputBackColors[index] = backColor;
                }
             }
@@ -518,7 +518,7 @@ unit Output
                     methodString = methodString.Replace(namespacePlusDot, "");
                     trimming = true;
                 }
-                PrintWatch(0, yCurrent, methodString.Pad(' ', outputWidth), Black, Color.ListGray);
+                PrintWatch(0, yCurrent, methodString.Pad(' ', outputWidth), Black, Colour.ListGray);
                 //OutputDebug(bp.ToHexString(4) + " " + icsp.ToHexString(4) + " " + methodString);
                 yCurrent++;
             }
@@ -574,14 +574,14 @@ unit Output
                     content = sPad +"` " + content;
                 }
                 codeClicks[yCurrent] = sourceIndex;
-                PrintWatch(0, yCurrent, content.Pad(' ', outputWidth), Color.Black, Color.ActiveListGray);
+                PrintWatch(0, yCurrent, content.Pad(' ', outputWidth), Colour.Black, Colour.ActiveListGray);
                 yCurrent++;       
             }
         }
         else
         {
             codeClicks[yCurrent] = sourceIndex;
-            PrintWatch(0, yCurrent, methodString.Pad(' ', outputWidth), Color.Black, Color.ActiveListGray);
+            PrintWatch(0, yCurrent, methodString.Pad(' ', outputWidth), Colour.Black, Colour.ActiveListGray);
             yCurrent++;
         }
         
@@ -931,15 +931,15 @@ unit Output
                         uint y = kv.key;
                         if (y == index)
                         {
-                            ShadeWatch(byte(y), Color.ActiveListGray);
+                            ShadeWatch(byte(y), Colour.ActiveListGray);
                         }
                         else if ((index >= codeClickFirstCurrent) && (y >= codeClickFirstCurrent))
                         {
-                            ShadeWatch(byte(y), Color.ActiveListGray);
+                            ShadeWatch(byte(y), Colour.ActiveListGray);
                         }
                         else
                         {
-                            ShadeWatch(byte(y), Color.ListGray);
+                            ShadeWatch(byte(y), Colour.ListGray);
                         }    
                     }
                     Draw();
@@ -1787,7 +1787,7 @@ unit Output
             {
                 break;
             }
-            string hexPath = Monitor.GetCurrentHexPath();
+            string hexPath = Monitor.CurrentHexPath;
             if (hexPath.Length == 0)
             {
                 break;

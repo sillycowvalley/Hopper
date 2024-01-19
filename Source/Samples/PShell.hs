@@ -134,7 +134,7 @@ program Shell
                     continue; // ignore blank lines
                 }
                 string currentDirectory = CurrentDirectory;
-                Print(currentDirectory + ">", Color.MatrixBlue, Color.Black); // colour just to help with testing for now
+                Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black); // colour just to help with testing for now
                 Print(commandLine);
                 if (!RunCommandLine(commandLine, true))
                 {
@@ -328,12 +328,12 @@ program Shell
         
         EditControl.ValidEditCharacter validator = ValidCommandLineCharacter;
         EditControl.SetValidation(validator);
-        EditControl.SetColours(Color.MatrixGreen, Color.Black);
+        EditControl.SetColours(Colour.MatrixGreen, Colour.Black);
         
         < string > previousCommands;
         uint currentPreviousCommand = 0;
         
-        Print(currentDirectory + ">", Color.MatrixBlue, Color.Black); // colour just to help with testing for now
+        Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black); // colour just to help with testing for now
         uint x = currentDirectory.Length+1;
         uint w = 120;
         uint current = x;
@@ -393,7 +393,7 @@ program Shell
                     PrintLn();
                 }
                 currentDirectory = CurrentDirectory;
-                Print(currentDirectory + ">", Color.MatrixBlue, Color.Black); // colour just to help with testing for now
+                Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black); // colour just to help with testing for now
                 x = currentDirectory.Length+1;
                 current = x;
             }

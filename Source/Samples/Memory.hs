@@ -238,7 +238,7 @@ program Memory
             else
             {
                 address = 0; // failed to allocate
-                //DumpFreeList("Failed to Allocate " + size.ToString() + " bytes", Color.MatrixRed, Color.Black);
+                //DumpFreeList("Failed to Allocate " + size.ToString() + " bytes", Colour.MatrixRed, Colour.Black);
                 //PrintLn("Best:");
                 //PrintLn("  0x" + best.ToHexString(4) + ": bestPrev=0x" + bestPrev.ToHexString(4) + " bestNext=0x" + bestNext.ToHexString(4) + " (" + bestSize.ToString() + " bytes)");
                 //PrintLn("    bestSize=" + bestSize.ToString() + ", size=" + size.ToString());
@@ -315,12 +315,12 @@ program Memory
             }
             if ((current == 0) && (previous == 0))
             {
-                DumpFreeList("Free: no free list?", Color.MatrixRed, Color.Black);
+                DumpFreeList("Free: no free list?", Colour.MatrixRed, Colour.Black);
                 
-                PrintLn("    freeList=" + freeList.ToHexString(4), Color.MatrixRed, Color.Black);
-                PrintLn("    totalAllocated=" + totalAllocated.ToString(), Color.MatrixRed, Color.Black);
-                PrintLn("    allocations=" + allocations.ToString(), Color.MatrixRed, Color.Black);
-                PrintLn("    allocations=" + allocations.ToString(), Color.MatrixRed, Color.Black);
+                PrintLn("    freeList=" + freeList.ToHexString(4), Colour.MatrixRed, Colour.Black);
+                PrintLn("    totalAllocated=" + totalAllocated.ToString(), Colour.MatrixRed, Colour.Black);
+                PrintLn("    allocations=" + allocations.ToString(), Colour.MatrixRed, Colour.Black);
+                PrintLn("    allocations=" + allocations.ToString(), Colour.MatrixRed, Colour.Black);
                 
                 diagnostics = true;
             }
@@ -335,7 +335,7 @@ program Memory
                 currentPrev = ReadWord(current + 4);
                 if (currentPrev != previous)
                 {
-                    PrintLn("currentPrev != previous  : WTF?!", Color.MatrixRed, Color.Black);
+                    PrintLn("currentPrev != previous  : WTF?!", Colour.MatrixRed, Colour.Black);
                 }
             }
             if (diagnostics)
@@ -515,7 +515,7 @@ program Memory
     }
     DumpFreeList()
     {
-        DumpFreeList("", Color.MatrixGreen, Color.Black);
+        DumpFreeList("", Colour.MatrixGreen, Colour.Black);
     }
     DumpFreeList(string message, uint fore, uint back)
     {
@@ -605,7 +605,7 @@ program Memory
             }
             if (iterations % 1000 == 0)
             {
-                DumpFreeList("Lap " + iterations.ToString(), Color.MatrixGreen Color.Black);
+                DumpFreeList("Lap " + iterations.ToString(), Colour.MatrixGreen Colour.Black);
             }
         }
         foreach (var ptr in allocations3)    {       Free(ptr);        }

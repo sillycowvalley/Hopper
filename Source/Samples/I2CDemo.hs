@@ -3,8 +3,6 @@ program I2CDemo
 #define SERIAL_CONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
-    uses "/Source/System/Color"
-    uses "/Source/System/Screen"
     
     uses "/Source/Library/Graphics"
     
@@ -106,7 +104,7 @@ program I2CDemo
                 }
                 if (iteration == max)
                 {
-                    Graphics.SetPixel(xOffset + col, yOffset + row, Color.White);
+                    Graphics.SetPixel(xOffset + col, yOffset + row, Colour.White);
                 }
             }
         } 
@@ -114,18 +112,18 @@ program I2CDemo
     } 
     TestAxes()
     {
-        Line(10,10,10,40, Color.Red);
-        Line(10,40,15,20, Color.Red);
-        Line(10,10,40,10, Color.Blue);
-        Line(40,10,20,15, Color.Blue);
+        Line(10,10,10,40, Colour.Red);
+        Line(10,40,15,20, Colour.Red);
+        Line(10,10,40,10, Colour.Blue);
+        Line(40,10,20,15, Colour.Blue);
         Delay(2000);
         for (uint i = 0; i < 10; i++)
         {
             Delay(250);
-            Line(10,10,10,40, Color.Invert);
-            Line(10,40,15,20, Color.Invert);
-            Line(10,10,40,10, Color.Invert);
-            Line(40,10,20,15, Color.Invert);
+            Line(10,10,10,40, Colour.Invert);
+            Line(10,40,15,20, Colour.Invert);
+            Line(10,10,40,10, Colour.Invert);
+            Line(40,10,20,15, Colour.Invert);
         }
     }
     TestDrawLines() 
@@ -135,44 +133,44 @@ program I2CDemo
 
         for(i=0; i<int(Width); i = i + 4) 
         {
-            Line(0, 0, uint(i), Height-1, Color.White);
+            Line(0, 0, uint(i), Height-1, Colour.White);
         }
         for(i=0; i<int(Height); i = i + 4) 
         {
-            Line(0, 0, Width-1, uint(i), Color.White);
+            Line(0, 0, Width-1, uint(i), Colour.White);
         }
 
         Screen.Clear();
 
         for(i=0; i<int(Width); i = i + 4) 
         {
-            Line(0, Height-1, uint(i), 0, Color.Red);
+            Line(0, Height-1, uint(i), 0, Colour.Red);
         }
         for(i=int(Height)-1; i>=0; i = i - 4)
         {
-            Line(0, Height-1, Width-1, uint(i), Color.Red);
+            Line(0, Height-1, Width-1, uint(i), Colour.Red);
         }
  
         Screen.Clear();
 
         for(i=int(Width)-1; i>=0; i = i - 4) 
         {
-            Line(Width-1, Height-1, uint(i), 0, Color.Green);
+            Line(Width-1, Height-1, uint(i), 0, Colour.Green);
         }
         for(i=int(Height)-1; i>=0; i = i - 4) 
         {
-            Line(Width-1, Height-1, 0, uint(i), Color.Green);
+            Line(Width-1, Height-1, 0, uint(i), Colour.Green);
         }
 
         Clear();
 
         for(i=0; i<int(Height); i = i + 4) 
         {
-            Line(Width-1, 0, 0, uint(i), Color.Blue);
+            Line(Width-1, 0, 0, uint(i), Colour.Blue);
         }
         for(i=0; i<int(Width); i = i + 4)
         {
-            Line(Width-1, 0, uint(i), Height-1, Color.Blue);
+            Line(Width-1, 0, uint(i), Height-1, Colour.Blue);
         }
     }
     
@@ -181,7 +179,7 @@ program I2CDemo
         Clear();
         for(uint i=0; i< Height/2; i = i +2) 
         {
-            Rectangle(i, i, Width-2*i,Height-2*i, Color.White);
+            Rectangle(i, i, Width-2*i,Height-2*i, Colour.White);
         }
     }
 
@@ -190,8 +188,8 @@ program I2CDemo
         Clear();
         for(uint i=0; i<Height/2; i = i +3) 
         {
-            // Color.Inverse is used so rectangles alternate white/black
-            FilledRectangle(i, i, Width-i*2, Height-i*2, Color.Invert);
+            // Colour.Inverse is used so rectangles alternate white/black
+            FilledRectangle(i, i, Width-i*2, Height-i*2, Colour.Invert);
         }
     }
     
@@ -211,31 +209,31 @@ program I2CDemo
             Graphics.InvertDisplay(false);
             
             start = Millis;
-            Graphics.Clear(Color.White);
+            Graphics.Clear(Colour.White);
             elapsed = Millis - start;
             WriteLn("White: " + elapsed.ToString());
             Delay(500);
             
             start = Millis;
-            Graphics.Clear(Color.Red);
+            Graphics.Clear(Colour.Red);
             elapsed = Millis - start;
             WriteLn("Red: " + elapsed.ToString());
             Delay(500);
             
             start = Millis;
-            Graphics.Clear(Color.Green);
+            Graphics.Clear(Colour.Green);
             elapsed = Millis - start;
             WriteLn("Green: " + elapsed.ToString());
             Delay(500);
             
             start = Millis;
-            Graphics.Clear(Color.Blue);
+            Graphics.Clear(Colour.Blue);
             elapsed = Millis - start;
             WriteLn("Blue: " + elapsed.ToString());
             Delay(500);
             
             start = Millis;
-            Graphics.Clear(Color.Black);
+            Graphics.Clear(Colour.Black);
             elapsed = Millis - start;
             WriteLn("Blank: " + elapsed.ToString());
             Delay(500);
