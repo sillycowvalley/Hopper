@@ -107,14 +107,42 @@ unit Code
         return methodIndex;
     }
     
-    DumpMap()
+    DumpMap(uint pc)
     {
+        PrintLn("PC: 0x" + pc.ToHexString(4));
         foreach (var kv in codeMap)
         {
             uint address = kv.key;
-            PrintLn("0x" + address.ToHexString(4) + " " + kv.value);
+            int distance = int(pc) - int(address);
+            if (Int.Abs(distance) < 100)
+            {
+                PrintLn("0x" + address.ToHexString(4) + " " + distance.ToString() + " " + kv.value);
+            }
         }
     }
+    string GetClosestSourceIndex(uint pc)
+    {
+        string sourceIndex = Code.GetSourceIndex(pc);
+        if (sourceIndex.Length == 0)
+        {
+            uint closest = 10000;
+            foreach (var kv in codeMap)
+            {
+                uint address = kv.key;
+                if (pc >= address)
+                {
+                    uint distance = pc - address;
+                    if ((distance < closest) && (distance < 50))
+                    {
+                        sourceIndex = kv.value;
+                        closest = distance;
+                    }
+                }
+            }
+        }
+        return sourceIndex;
+    }
+    
     string GetSourceIndex(uint address)
     {
         // exact match for first address of code for source line

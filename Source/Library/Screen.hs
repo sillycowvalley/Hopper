@@ -36,12 +36,13 @@ unit Screen
     byte[] FontData { get { return fontData; } set { fontData = value; } }
     renderMonoCharacter(char chr, uint foreColour, uint backColour)
     {
-        uint pixelb = ((backColour == 0x0000) || (backColour == 0xF000)) ? 0x0000 : 0x0FFF;
-        uint pixelf = ((foreColour == 0x0000) || (foreColour == 0xF000)) ? 0x0000 : 0x0FFF;
+        uint pixelb = (backColour & 0x0FFF == 0) ? 0x0000 : 0x0FFF;
+        uint pixelf = (foreColour & 0x0FFF == 0) ? 0x0000 : 0x0FFF;
+        uint cellSize = cellWidth*cellHeight;
         if ((chr <= char(32)) || (chr > char(127)))
         {
             // ' '
-            for (uint i = 0; i < cellWidth*cellHeight; i++)
+            for (uint i = 0; i < cellSize; i++)
             {
                 cellBuffer[i] = pixelb;
             }
@@ -53,16 +54,17 @@ unit Screen
         byte[Font.CellWidth] colColours;
         for (byte x = 0; x < Font.CellWidth; x++)
         {
-            colColours[x] = byte(fontData[addr]); addr++;
+            colColours[x] = fontData[addr];  addr++;
         }
         
         // This presumes fonts <= 8 pixels high (bytes per character == CellWidth)
         uint bi = 0;
         for (byte y = 0; y < Font.CellHeight; y++)     // 0..6
         {
+            byte yMask = (1 << y);
             for (byte x = 0; x < Font.CellWidth; x++) // 0..4
             {
-                cellBuffer[bi] = (((colColours[x] & (1 << y)) != 0) ? pixelf : pixelb); bi++;
+                cellBuffer[bi] = (((colColours[x] & yMask) != 0) ? pixelf : pixelb); bi++;
             }
             // space on right
             cellBuffer[bi] = pixelb; bi++;
@@ -121,10 +123,11 @@ unit Screen
             renderMonoCharacter(c, foreColour, backColour);
             for (int y=0; y < cellHeight; y++)
             {
+                int deltaY = y * cellWidth;
+                int y1 = y+y0;
                 for (int x=0; x < cellWidth; x++)
                 {
-                    uint colour = cellBuffer[x + y * cellWidth];
-                    DisplayDriver.RawSetPixel(x+x0, y+y0, colour);
+                    DisplayDriver.RawSetPixel(x+x0, y1, cellBuffer[x + deltaY]);
                 }
             }
             Display.Resume();

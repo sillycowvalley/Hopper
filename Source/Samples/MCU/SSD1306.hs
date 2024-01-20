@@ -1,15 +1,11 @@
 program SSD1306Demo
 {
     //#define PIMORONI_TINY2040
-    #define RP2040_PICOW
-    
-    //#define DISPLAY_DIAGNOSTICS
+    //#define RP2040_PICOW
+    //#define RP2040_PICO
+    #define ADAFRUIT_METRO_RP2040
     
     uses "/Source/Library/Displays/OLEDSSD1306"
-    //uses "/Source/Library/Fonts/Hitachi5x7"
-    //uses "/Source/Library/Fonts/Verdana5x8"
-    //uses "/Source/Library/Fonts/System5x7"
-    uses "/Source/Library/Fonts/Arduino6x8"
     
     TestDrawRect()
     {
@@ -90,11 +86,11 @@ program SSD1306Demo
     
     
     {
-        EchoToLCD = true;
+        //EchoToLCD = true;
         
-        DisplayDriver.I2CController = 1;
-        DisplayDriver.I2CSDAPin = 14;
-        DisplayDriver.I2CSCLPin = 15;
+        DisplayDriver.I2CController = 0;
+        DisplayDriver.I2CSDAPin = 16;
+        DisplayDriver.I2CSCLPin = 17;
 
         if (!Display.Begin())
         {

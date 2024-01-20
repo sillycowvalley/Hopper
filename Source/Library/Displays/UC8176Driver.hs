@@ -188,7 +188,7 @@ unit DisplayDriver
     
     bool isBusy {get { return !DigitalRead(DeviceDriver.BusyPin); } }
 
-    busyWait() 
+    busyWait()
     {
         while(isBusy) 
         {
@@ -270,41 +270,37 @@ unit DisplayDriver
                 IO.WriteLn("DeviceDriver.Begin failed in SPI.Begin");
                 break;
             }
-             
-            
-            
-            
             
             // setup(0);
             // https://github.com/pimoroni/pimoroni-pico/blob/911cbb710ebb725d83065a21438c35783ef8b19c/drivers/uc8151_legacy/uc8151_legacy.cpp#L323
-            byte[] data = { pswFlags.LUT_OTP | pswFlags.FORMAT_BW | pswFlags.SHIFT_RIGHT | pswFlags.BOOSTER_ON | pswFlags.RESET_NONE };
+            byte[] pswData = { pswFlags.LUT_OTP | pswFlags.FORMAT_BW | pswFlags.SHIFT_RIGHT | pswFlags.BOOSTER_ON | pswFlags.RESET_NONE };
             if (    ((Display.PixelWidth == 400) && (Display.PixelHeight == 300))
                  || ((Display.PixelWidth == 300) && (Display.PixelHeight == 400))
                )
             {
                 alternateAspect = ((Display.PixelWidth == 300) && (Display.PixelHeight == 400));
-                data[0] = data[0] | byte(pswFlags.RES_400x300);
+                pswData[0] = pswData[0] | byte(pswFlags.RES_400x300);
             }
             else if (   ((Display.PixelWidth == 320) && (Display.PixelHeight == 300))
                      || ((Display.PixelWidth == 300) && (Display.PixelHeight == 320))
                )
             {
                 alternateAspect = ((Display.PixelWidth == 300) && (Display.PixelHeight == 320));
-                data[0] = data[0] | byte(pswFlags.RES_320x300);
+                pswData[0] = pswData[0] | byte(pswFlags.RES_320x300);
             }
             else if (   ((Display.PixelWidth == 320) && (Display.PixelHeight == 240))
                      || ((Display.PixelWidth == 240) && (Display.PixelHeight == 320))
                )
             {
                 alternateAspect = ((Display.PixelWidth == 240) && (Display.PixelHeight == 320));
-                data[0] = data[0] | byte(pswFlags.RES_320x240);
+                pswData[0] = pswData[0] | byte(pswFlags.RES_320x240);
             }
             else if (   ((Display.PixelWidth == 200)  && (Display.PixelHeight == 300))
                      || ((Display.PixelWidth == 300) && (Display.PixelHeight == 200))
                )
             {
                 alternateAspect = ((Display.PixelWidth == 300) && (Display.PixelHeight == 200));
-                data[0] = data[0] | byte(pswFlags.RES_200x300);
+                pswData[0] = pswData[0] | byte(pswFlags.RES_200x300);
             }
             else
             {
@@ -312,8 +308,10 @@ unit DisplayDriver
                 break;
             }
             MCU.InterruptsEnabled = false;
-            sendCommand(register.PSR, data);
+            busyWait();
+            sendCommand(register.PSR, pswData);
             
+            byte[]
             data = {
                         pwrFlags1.VDS_INTERNAL | pwrFlags1.VDG_INTERNAL,
                         pwrFlags2.VCOM_VD      | pwrFlags2.VGHL_16V,
@@ -347,16 +345,68 @@ unit DisplayDriver
            
             data = { pplFlags.HZ_100};
             sendCommand(register.PLL, data);
+            
+            // send it again..
+            busyWait();
+            sendCommand(register.PSR, pswData);
         
             sendCommand(register.POF); // power off
             busyWait();
             MCU.InterruptsEnabled = true;
+            
+            ph1 = uint(Display.PixelHeight - 1);
+            pw1 = uint(Display.PixelWidth  - 1);
+            ph8 = uint(Display.PixelHeight / 8);
+            pw8 = uint(Display.PixelWidth / 8);
+            
             success = true;
             break;
         }
         return success;
     }
     
+    uint ph1;
+    uint pw1;
+    uint ph8;
+    uint pw8;
+    
+    RawSetPixel(int x, int y, uint colour)
+    {
+        uint offset;
+        byte mask;
+        uint ux = uint(x);
+        uint uy = uint(y);
+        if (flipY)
+        {
+            uy = ph1 - uy;    
+        }
+        if (flipX)
+        {
+            ux = pw1 - ux;    
+        }
+        if (alternateAspect)
+        {
+            offset = (uy / 8) + (ux * ph8);
+            mask   = (1 << (0x07 - (uy & 0x07)));
+        }
+        else
+        {
+            offset = (ux / 8) + (uy * pw8);
+            mask   = (1 << (0x07 - (ux & 0x07)));
+        }
+        if (colour == 0x0000) // Colour.Black
+        {
+            frameBuffer[offset] = frameBuffer[offset] | mask; 
+        }
+        else if (colour == 0xF000) // Colour.Invert
+        {
+            frameBuffer[offset] = frameBuffer[offset] ^ mask;
+        }
+        else
+        {
+            frameBuffer[offset] = frameBuffer[offset] & ~mask;
+        }
+    }
     
     ClearDisplay(uint colour)
     {
@@ -414,44 +464,7 @@ unit DisplayDriver
         }
         return Colour.Black;
     }
-    RawSetPixel(int x, int y, uint colour)
-    {
-        uint offset;
-        byte mask;
-        uint ux = uint(x);
-        uint uy = uint(y);
-        if (flipY)
-        {
-            uy = uint(Display.PixelHeight-1) - uy;    
-        }
-        if (flipX)
-        {
-            ux = uint(Display.PixelWidth-1) - ux;    
-        }
-        if (alternateAspect)
-        {
-            offset = (uy / 8) + (ux * uint(Display.PixelHeight / 8));
-            mask = (1 << (0x07 - (uy & 0x07)));
-        }
-        else
-        {
-            offset = (ux / 8) + (uy * uint(Display.PixelWidth / 8));
-            mask   = (1 << (0x07 - (ux & 0x07)));
-        }
-        if (colour == 0xF000) // Colour.Invert
-        {
-            frameBuffer[offset] = frameBuffer[offset] ^ mask;
-        }
-        else if (colour == 0x0000) // Colour.Black
-        {
-            frameBuffer[offset] = frameBuffer[offset] | mask; 
-        }
-        else
-        {
-            frameBuffer[offset] = frameBuffer[offset] & ~mask;
-        }
-        
-    }
+    
     
     ScrollUpDisplay(uint lines)
     {

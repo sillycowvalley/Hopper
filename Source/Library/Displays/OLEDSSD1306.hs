@@ -301,6 +301,7 @@ unit DisplayDriver
                 if (result != 0)
                 {
                     IO.WriteLn("Update failed: " + result.ToString());
+                    break;
                 }
             }
         }

@@ -63,6 +63,10 @@ unit GPIO
     const byte a3         = 29; // VSYS/3 on Pi Pico
     
     const byte builtInLED = 13; // like the Uno ..
+    
+    const byte DefaultI2CController = 0;
+    const byte DefaultI2CSDAPin     = 4;
+    const byte DefaultI2CSCLPin     = 5;
 #endif
 
 #ifdef CHALLENGER_RP2040_WIFI

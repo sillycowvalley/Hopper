@@ -225,7 +225,7 @@ unit DebugCommand
         if (pc != 0)
         {
             Editor.SetStatusBarText("");
-            string sourceIndex = Code.GetSourceIndex(pc);
+            string sourceIndex = Code.GetClosestSourceIndex(pc);
             Output.GotoSourceIndex(sourceIndex, true);
             watchWindow();
             Editor.SetStatusBarText("Waiting in debugger..");
@@ -233,7 +233,7 @@ unit DebugCommand
         else
         {
             Editor.SetActiveLine(0, "", false);
-            Editor.SetStatusBarText("Program exited, session reset. A");
+            Editor.SetStatusBarText("Program exited, session reset.");
         }
     }
     

@@ -309,6 +309,8 @@ unit DisplayDriver
             }
             
             MCU.InterruptsEnabled = false;
+            
+            busyWait();
             sendCommand(register.PSR, data);
             data = {
                         pwrFlags1.VDS_INTERNAL | pwrFlags1.VDG_INTERNAL,
@@ -348,10 +350,58 @@ unit DisplayDriver
             busyWait();
             MCU.InterruptsEnabled = true;
             
+            ph1 = uint(Display.PixelHeight - 1);
+            pw1 = uint(Display.PixelWidth  - 1);
+            ph8 = uint(Display.PixelHeight / 8);
+            pw8 = uint(Display.PixelWidth / 8);
+            
             success = true;
             break;
         }
         return success;
+    }
+    
+    uint ph1;
+    uint pw1;
+    uint ph8;
+    uint pw8;
+    
+    RawSetPixel(int x, int y, uint colour)
+    {
+        uint offset;
+        byte mask;
+        uint ux = uint(x);
+        uint uy = uint(y);
+        if (flipY)
+        {
+            uy = ph1 - uy;    
+        }
+        if (flipX)
+        {
+            ux = pw1 - ux;    
+        }
+        if (alternateAspect)
+        {
+            offset = (uy / 8) + (ux * ph8);
+            mask = (1 << (0x07 - (uy & 0x07)));
+        }
+        else
+        {
+            offset = (ux / 8) + (uy * pw8);
+            mask   = (1 << (0x07 - (ux & 0x07)));
+        }
+        if (colour == 0xF000) // Colour.Invert
+        {
+            frameBuffer[offset] = frameBuffer[offset] ^ mask;
+        }
+        else if (colour == 0x0000) // Colour.Black
+        {
+            frameBuffer[offset] = frameBuffer[offset] | mask; 
+        }
+        else
+        {
+            frameBuffer[offset] = frameBuffer[offset] & ~mask;
+        }
     }
     
     
@@ -410,43 +460,7 @@ unit DisplayDriver
         }
         return Colour.Black;
     }
-    RawSetPixel(int x, int y, uint colour)
-    {
-        uint offset;
-        byte mask;
-        uint ux = uint(x);
-        uint uy = uint(y);
-        if (flipY)
-        {
-            uy = uint(Display.PixelHeight-1) - uy;    
-        }
-        if (flipX)
-        {
-            ux = uint(Display.PixelWidth-1) - ux;    
-        }
-        if (alternateAspect)
-        {
-            offset = (uy / 8) + (ux * uint(Display.PixelHeight / 8));
-            mask = (1 << (0x07 - (uy & 0x07)));
-        }
-        else
-        {
-            offset = (ux / 8) + (uy * uint(Display.PixelWidth / 8));
-            mask   = (1 << (0x07 - (ux & 0x07)));
-        }
-        if (colour == 0xF000) // Colour.Invert
-        {
-            frameBuffer[offset] = frameBuffer[offset] ^ mask;
-        }
-        else if (colour == 0x0000) // Colour.Black
-        {
-            frameBuffer[offset] = frameBuffer[offset] | mask; 
-        }
-        else
-        {
-            frameBuffer[offset] = frameBuffer[offset] & ~mask;
-        }
-    }
+    
     
     ScrollUpDisplay(uint lines)
     {
