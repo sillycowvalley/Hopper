@@ -1,6 +1,7 @@
 #include "Platform.h"
 #include "HopperFile.h"
 #include "HopperWiFi.h"
+#include "HopperTimer.h"
 #include "HopperScreen.h"
 
 #include "Inlined.h"

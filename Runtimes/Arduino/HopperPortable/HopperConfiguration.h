@@ -12,43 +12,32 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - LittleFS for built-in Flash
 // - WiFi
 //
-//  BOARD_NAME == "RASPBERRY_PI_PICO_W"
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #define RP2040PICOW
+#endif
 
 // Raspberry Pi Pico
 // - LittleFS for built-in Flash
 // - no WiFi
 //
-//  BOARD_NAME == "RASPBERRY_PI_PICO"
-//#define RP2040PICO
+#if defined(ARDUINO_RASPBERRY_PI_PICO)
+#define RP2040PICO
+#endif
 
 // Challenger RP2040 WiFi
 // - LittleFS for built-in Flash
-// - WiFiNina
+// - WiFiEspAT
 //
-//  BOARD_NAME == "CHALLENGER_2040_WIFI_RP2040"
-//#define CHALLENGER_RP2040_WIFI
+#if defined(ARDUINO_CHALLENGER_2040_WIFI_RP2040)
+#define CHALLENGER_RP2040_WIFI
+#endif
 
 // Arduino Connect RP2040
 // - LittleFS for built-in Flash
 // - WiFiNina
-//#define ARDUINONANO_RP2040
-
-// Seeed XIA0 RP2040
-// - LittleFS for built-in Flash
-// - no WiFi
-//#define RP2040XIAO
-
-// Pimoroni Tiny 2040
-// - LittleFS for built-in Flash
-// - no WiFi
-//#define TINY2040
-
-// Waveshare RP2040 One
-// - LittleFS for built-in Flash
-// - no WiFi
-//#define WAVESHARERP2040ONE
-
+#if defined(ARDUINO_NANO_RP2040_CONNECT)
+#define ARDUINONANO_RP2040
+#endif
 
 // Lolin Wemos D1 Mini, ESP 8266
 // - LittleFS for built-in Flash
@@ -56,7 +45,6 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 //#define LOLIND1MINI
 
 // Work in progress:
-//#define ARDUINONANOESP32
 //#define SEEEDESP32C3
 //#define LOLIN_C3_MINI
 //#define LOLIN_S2_PICO
@@ -72,10 +60,28 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - in Hopper, run TERM to drain the diagnostic info from serial
 // - exit TERM then run HM!
 
-
-#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(RP2040XIAO) || defined(TINY2040) || defined(WAVESHARERP2040ONE) || defined(CHALLENGER_RP2040_WIFI)
+// Just use 'ARDUINO_ARCH_RP2040' ?
+#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
 #define RP2040
 #endif
+
+// Seems to be "ARDUINO_" + BOARD_NAME when using Pico board manager
+// ARDUINO_NANO_RP2040_CONNECT 
+//
+// ARDUINO_ARCH_RP2040
+// ARDUINO_RASPBERRY_PI_PICO_W
+// ARDUINO_RASPBERRY_PI_PICO
+// ARDUINO_CHALLENGER_2040_UWB_RP2040 
+// ARDUINO_CHALLENGER_2040_WIFI_RP2040
+// ARDUINO_CHALLENGER_2040_LTE_RP2040 
+// ARDUINO_CHALLENGER_2040_SUBGHZ_RP2040
+// ARDUINO_ADAFRUIT_QTPY_RP2040 
+// ARDUINO_ADAFRUIT_METRO_RP2040
+// ARDUINO_ADAFRUIT_KB2040_RP2040
+// ARDUINO_ADAFRUIT_FEATHER_RP2040
+// ARDUINO_ADAFRUIT_ITSYBITSY_RP2040
+// etc.
+
 
 
 #endif // HOPPERCONFIGURATION_H

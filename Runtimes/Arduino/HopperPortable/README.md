@@ -50,24 +50,26 @@ https://github.com/earlephilhower/arduino-pico/releases/download/global/package_
 From the *Board Manager* panel, make sure *Raspberry Pi Pico / Pico W* by Earle F. Philhower, III is installed.
 
 From the *Library Manager* panel, install the following libraries:
-*Adafruit NeoPixel* by Adafruit
-*WiFiNINA* by Arduino if you are building for the Arduino Nano
-*WiFiEspAT* by Juraj Andrássy if you are using a board from the Challenger series (not sure if this is included with Earle's board package)
+- *Adafruit NeoPixel* by Adafruit
+- *WiFiNINA* by Arduino if you are building for the Arduino Nano
+- *WiFiEspAT* by Juraj Andrássy if you are using a board from the Challenger series (not sure if this is included with Earle's board package)
 
-(a *LittleFS* library may be required if you're not targetting an RP2040 device)
-
-In `HopperConfiguration.h` you'll select the board profile you are targeting. The choices that are currently well tested are:
-- `RP2040PICOW`
-- `RP2040PICO`
-- `CHALLENGER_RP2040_WIFI`
-- `ARDUINONANO_RP2040`
-
-Make sure only one of these is uncommented.
+(a *LittleFS* library may be required if you're not targeting an RP2040 device)
 
 **Important Arduino IDE Settings**
 
 1. On the *Tools* menu, choose your *Board*.
 2. On the *Tools* menu, choose *Flash Size* to split Flash between firmware and the file system. Choose the smallest possible firmware size to get the largest possible file system.
 3. On the *Tools* menu, choose *Optimize* and select the `Fast (-OFast)` option for best performance.
+
+In `HopperConfiguration.h` you'll select the board profile you are targeting. The choices that are currently well tested and automatically
+selected based on your choice of *Board* on the *Tools* menu are:
+- `RP2040PICOW`
+- `RP2040PICO`
+- `CHALLENGER_RP2040_WIFI`
+- `ARDUINONANO_RP2040`
+
+This is why you should choose generic *Raspberry Pi Pico* for most RP2040 boards (WiFi support being the exception).
+The board-specific code is all in the Hopper libraries (see `/Source/Library/MCU.hs` for notes on this).
 
  You should be ready to build now.
