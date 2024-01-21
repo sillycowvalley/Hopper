@@ -1,6 +1,6 @@
 unit DeviceDriver
 {
-    //#define RP2040_PICO // not the 'W' version
+    #define RP2040_PICO // not the 'W' version
     
     uses "/Source/Library/Displays/UC8151Driver"
     

@@ -3,24 +3,26 @@ program Mandelbrot
     uses "/Source/Library/Devices/WSPicoePaper4200"
     uses "/Source/Library/Fonts/Hitachi5x7"
         
+    ButtonISR(byte pin, PinStatus status) 
+    { 
+        string pinName = PinToButton(pin);
+        IO.WriteLn("    Pressed: '" + PinToButton(pin) + "'");  
+        Mandelbrot(pinName == "1");
+    }
+    
+    Mandelbrot(bool invert)
     {
+        LED = true;
+        
         EchoToLCD = true;
-        
-        Screen.ForeColour = Colour.Black;
-        Screen.BackColour = Colour.White;
-        DisplayDriver.FlipY = true;
-        if (!DeviceDriver.Begin())
-        {
-            IO.WriteLn("Failed to initialize Waveshare Pico-ePaper-4.2");
-            return;
-        }
-        
+        Screen.ForeColour = invert ? Colour.White : Colour.Black;
+        Screen.BackColour = invert ? Colour.Black : Colour.White;
         Display.Suspend();
         IO.Clear();
+        
         IO.WriteLn();
         
         // https://www.dos4ever.com/SCMP/NIBL.html
-        
         IO.WriteLn(" Mandelbrot - ported from Gordon's TinyBasic - Integers");
         IO.WriteLn("    Ported to Hopper, running a VM/Runtime written in Hopper.");
         IO.WriteLn();
@@ -32,6 +34,7 @@ program Mandelbrot
         int q; int p; int t; int s; byte i;
         int y; int x;
         int f = 50;
+        
         for (y = -15; y <= 15; y++)
         {
             for (x = -44; x <= 19; x++)
@@ -63,5 +66,29 @@ program Mandelbrot
         long ms = (Millis - start); 
         IO.WriteLn(ms.ToString() + " " + " ms");
         Display.Resume();
+        EchoToLCD = false;
+        
+        LED = false;
+    }
+    {
+        // Setup code:
+        ISRDelegate buttonDelegate = ButtonISR;
+        DisplayDriver.FlipY = true;
+        if (!DeviceDriver.Begin(buttonDelegate))
+        {
+            IO.WriteLn("Failed to initialize Waveshare Pico-ePaper-4.2");
+            return;
+        }
+        
+        
+        LED = false;
+        Display.Clear(Colour.White);
+        // Infinite loop: (events ..)
+        loop
+        {
+            Delay(10);
+        }
+        
+        
     }
 }

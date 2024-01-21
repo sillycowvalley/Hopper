@@ -2,9 +2,9 @@ program WebServer
 {
     #define SERIAL_CONSOLE // use Serial, not Screen for Write, WriteLn, etc.
     
-    //#define RP2040_PICOW
+    #define RP2040_PICOW
     //#define ARDUINO_NANO_RP2040
-    #define CHALLENGER_RP2040_WIFI
+    //#define CHALLENGER_RP2040_WIFI
     
     uses "/Source/Library/MCU"
     uses "/Source/Samples/MCU/Secrets2/Connect"
@@ -13,13 +13,13 @@ program WebServer
     NotFound(string uri, string method, <string,string> arguments)
     {
         WebServer.Send(404, "text/plain", "Not Found");
-        WriteLn("404");
+        WriteLn("404 : NotFound");
     }
     
     Root(string uri, string method, <string,string> arguments)
     {
         WebServer.Send("Success");
-        WriteLn("200");
+        WriteLn("200: Root");
     }
     Reloader(string uri, string method, <string,string> arguments)
     {
@@ -29,7 +29,7 @@ program WebServer
         headerContent["Connection"]   = "close"; // The connection will be closed after completion of the response.
         
         WebServer.Send(200, headerContent, "Reloading .. " + counter.ToString());
-        WriteLn("200 " +counter.ToString());
+        WriteLn("200: Reloader " +counter.ToString());
         counter++;
     }
     AnyPage(string uri, string method, <string,string> arguments)
@@ -43,6 +43,7 @@ program WebServer
             }
         }
         WebServer.Send(content);
+        WriteLn("200: AnyPage");
     }
     
     {
