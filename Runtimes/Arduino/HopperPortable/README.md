@@ -1,6 +1,4 @@
-# Hopper
-
-## Getting Started
+# Microcontroller Firmware - Getting Started
 
 First, you don't need to build this project if the current release
 satisfies your needs.
@@ -20,12 +18,12 @@ and this is supported by `HopperChallengerWiFi.uf2`
 
 If your needs are still not satisfied, read **Build Instructions** below.
 
-## Build Instructions
+# Build Instructions
 
 Again, the pre-created versions of `Runtime.h` and `Runtime.cpp` will probably satisfy your needs
 and that means you can skip the next section and move on to **Building in Arduino**
 
-## Generating the Runtime##
+## Generating the Runtime
 
 The *Portable Runtime* is actually written in Hopper and there it can run on Hopper on Windows in
 emulation mode which is very handy for testing and debugging. That project can be found here: `/Hopper/Source/Runtime/`
@@ -42,7 +40,7 @@ This step needs to be automated but, for now, be careful to just replace the gen
 
 Now you are ready to build ..
 
-## Building in Arduino ##
+## Building in Arduino
 
 We use Arduino IDE 2.0 to build this project and we require a few 3rd party libraries to be installed.
 
@@ -66,7 +64,7 @@ In `HopperConfiguration.h` you'll select the board profile you are targeting. Th
 
 Make sure only one of these is uncommented.
 
-**Important Settings**
+**Important Arduino IDE Settings**
 
 1. On the *Tools* menu, choose your *Board*.
 2. On the *Tools* menu, choose *Flash Size* to split Flash between firmware and the file system. Choose the smallest possible firmware size to get the largest possible file system.
