@@ -13,6 +13,7 @@ namespace HopperNET
         static bool continueSerial;
         static SerialPort serialPort;
         static string lastPort;
+        static List<string> btPorts = new List<string>();
 
         public static void Connect()
         {
@@ -28,22 +29,31 @@ namespace HopperNET
         public static List<String> GetPorts()
         {
             List<String> list = new List<string>();
-            //String[] names = SerialPort.GetPortNames();
-            //foreach (string name in names)
-            //{
-            //    list.Add(name);
-            //}
-
-            // stop adding Bluetooth ports to the list of COM ports (because the timeout on failing to connect is >= 1 minute)
-            ManagementObjectSearcher serialSearcher = new ManagementObjectSearcher("root\\CIMV2","SELECT * FROM Win32_SerialPort");
-            var query = from ManagementObject s in serialSearcher.Get() select new { Name = s["Name"], DeviceID = s["DeviceID"], PNPDeviceID = s["PNPDeviceID"] };
-            foreach (var port in query)
+            if (btPorts.Count > 0)
             {
-                //Console.WriteLine("{0} - {1}", port.DeviceID, port.Name);
-                var pnpDeviceId = port.PNPDeviceID.ToString();
-                if (!pnpDeviceId.Contains("BTHENUM"))
+                String[] names = SerialPort.GetPortNames();
+                foreach (string name in names)
                 {
-                    list.Add(port.DeviceID as String);                                        
+                    list.Add(name);
+                }
+            }
+            else
+            {
+                // stop adding Bluetooth ports to the list of COM ports (because the timeout on failing to connect is >= 1 minute)
+                ManagementObjectSearcher serialSearcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_SerialPort");
+                var query = from ManagementObject s in serialSearcher.Get() select new { Name = s["Name"], DeviceID = s["DeviceID"], PNPDeviceID = s["PNPDeviceID"] };
+                foreach (var port in query)
+                {
+                    //Console.WriteLine("{0} - {1}", port.DeviceID, port.Name);
+                    var pnpDeviceId = port.PNPDeviceID.ToString();
+                    if (!pnpDeviceId.Contains("BTHENUM"))
+                    {
+                        list.Add(port.DeviceID as String);
+                    }
+                    else
+                    {
+                        btPorts.Add(port.DeviceID as String); // cache the results since this is a slow process
+                    }
                 }
             }
 

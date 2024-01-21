@@ -436,9 +436,6 @@ unit IO
     
 #else        
     
-#ifndef TINY_HOPPER    
-    string keyboardBuffer; // used by Read(..)
-#endif        
     PushKey(char c)
     {
         keyboardBuffer = keyboardBuffer + c;

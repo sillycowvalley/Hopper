@@ -1,6 +1,8 @@
 program FiboUInt
 {
-#define SERIAL_CONSOLE
+    //#define TINY_HOPPER
+    #define SERIAL_CONSOLE
+    
     uses "/Source/System/System"
     uses "/Source/System/IO"
     

@@ -1,8 +1,6 @@
 program Shell
 {
         
-//#define TINY_HOPPER  
-
     uses "/Source/System/System"
     uses "/Source/System/Runtime"
     uses "/Source/System/Screen"
@@ -465,15 +463,6 @@ program Shell
             
             if (redraw)
             {
-#ifdef TINY_HOPPER                
-                while (current > x)
-                {
-                    Print(char(0x08) + " " + char(0x08));
-                    current--;
-                }
-                Print(commandLine);
-                current = current + commandLine.Length;
-#else
                 Screen.Suspend();
                 uint y = Screen.CursorY;
                 uint padWidth = 0;
@@ -491,8 +480,6 @@ program Shell
                 current = x + commandLine.Length;
                 Screen.SetCursor(current, y);
                 Screen.Resume(true);
-#endif                
-                
             }
         } // loop
     }

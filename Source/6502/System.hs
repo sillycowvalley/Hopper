@@ -12,7 +12,6 @@ unit System
     uses "/Source/System/Int"
     uses "/Source/System/UInt"
     
-#ifndef TINY_HOPPER    
     uses "/Source/System/Long"
     //uses "/Source/System/Float"
     uses "/Source/System/String"
@@ -21,7 +20,6 @@ unit System
     uses "/Source/System/Dictionary"
     uses "/Source/System/Pair"
     uses "/Source/System/Type"
-#endif
     
     uses "/Source/System/Screen"
     uses "/Source/System/Diagnostics" // for Diagnostics.Die and Diagnostics.Trace
@@ -32,13 +30,7 @@ unit System
     bool Trace { get system; set system; }
     bool Warp { get system; set system; }
 
-#ifdef TINY_HOPPER    
-    // execute Hopper opCodes inline starting at 'address'
-    //   (use & operator to determine offsets of locals and globals)
-    uint Inline(uint address) system;
-#else    
     // execute an array of Hopper opCodes inline (starting at the opcode at 'index')
     //   (use & operator to determine offsets of locals and globals)
     uint Inline(byte[] code, uint index) system;
-#endif 
 }

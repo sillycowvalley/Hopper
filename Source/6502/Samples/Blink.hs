@@ -1,9 +1,6 @@
 program Blink
 {
-    #define TINY_HOPPER
-    
     uses "/Source/6502/System"
-    
     {
         loop
         {

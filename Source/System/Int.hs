@@ -57,7 +57,6 @@ unit Int
             }
             else
             {
-#ifndef TINY_HOPPER
                 long rv;
                 if (Long.TryParse(content, ref rv))
                 {
@@ -67,7 +66,6 @@ unit Int
                         success = true;
                     }
                 }
-#endif
             }
             break;
         }
