@@ -15,6 +15,9 @@ unit DebugCommand
     <string> breakpoints;
     <uint>   breakpointAddresses;
     
+    bool serialConnectionLost;
+    bool SerialConnectionLost { get { return serialConnectionLost; } }
+    
     Register()
     {
         Commands.CommandExecuteDelegate runCommand = DebugCommand.Run;
@@ -215,8 +218,14 @@ unit DebugCommand
         else
         {
             Editor.SetStatusBarText("Running in debugger..");
-            Monitor.RunCommand(c);
-            pc = ReturnToDebugger(c);
+            if (!Monitor.RunCommand(c))
+            {
+                serialConnectionLost = true;
+            }
+            else
+            {
+                pc = ReturnToDebugger(c, ref serialConnectionLost);
+            }
         }
         if (DebugOptions.IsCaptureConsoleMode)
         {
@@ -228,12 +237,26 @@ unit DebugCommand
             string sourceIndex = Code.GetClosestSourceIndex(pc);
             Output.GotoSourceIndex(sourceIndex, true);
             watchWindow();
-            Editor.SetStatusBarText("Waiting in debugger..");
+            if (serialConnectionLost)
+            {
+                Editor.SetStatusBarText("Serial connection lost.");
+            }
+            else
+            {
+                Editor.SetStatusBarText("Waiting in debugger..");
+            }
         }
         else
         {
             Editor.SetActiveLine(0, "", false);
-            Editor.SetStatusBarText("Program exited, session reset.");
+            if (serialConnectionLost)
+            {
+                Editor.SetStatusBarText("Serial connection lost.");
+            }
+            else
+            {
+                Editor.SetStatusBarText("Program exited, session reset.");
+            }
         }
     }
     
@@ -245,9 +268,19 @@ unit DebugCommand
     Run()
     {
         Editor.SetStatusBarText("Running..");
-        Monitor.RunCommand("X");
+        if (!Monitor.RunCommand("X"))
+        {
+            serialConnectionLost = true;
+        }
         Editor.SetActiveLine(0, "", false);
-        Editor.SetStatusBarText("Program exited, session reset.");
+        if (serialConnectionLost)
+        {
+            Editor.SetStatusBarText("Serial connection lost.");
+        }
+        else
+        {
+            Editor.SetStatusBarText("Program exited, session reset.");
+        }
         if (DebugOptions.IsCaptureConsoleMode)
         {
             ConsoleCapture.FlushLog();
@@ -311,8 +344,19 @@ unit DebugCommand
                 maxpc = ppc;
             }
             start = Time.Millis;   
-            Monitor.RunCommand('I');
-            uint pc = ReturnToDebugger('I');
+            if (!Monitor.RunCommand('I'))
+            {
+                serialConnectionLost = true;
+            }
+            uint pc;
+            if (!serialConnectionLost)
+            {
+                pc = ReturnToDebugger('I', ref serialConnectionLost);
+            }
+            if (serialConnectionLost)
+            {
+                break;
+            }
             
             elapsed = Time.Millis - start;
             if (!lineTimes.Contains(ppc))
@@ -352,7 +396,14 @@ unit DebugCommand
         
         watchWindow();
         Editor.SetActiveLine(0, "", false);
-        Editor.SetStatusBarText("Program exited, session reset.");
+        if (serialConnectionLost)
+        {
+            Editor.SetStatusBarText("Serial connection lost.");
+        }
+        else
+        {
+            Editor.SetStatusBarText("Program exited, session reset.");
+        }
     }    
     
 }

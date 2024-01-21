@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO.Ports;
+using System.Management;
 
 namespace HopperNET
 {
@@ -27,11 +28,25 @@ namespace HopperNET
         public static List<String> GetPorts()
         {
             List<String> list = new List<string>();
-            String[] names = SerialPort.GetPortNames();
-            foreach (string name in names)
+            //String[] names = SerialPort.GetPortNames();
+            //foreach (string name in names)
+            //{
+            //    list.Add(name);
+            //}
+
+            // stop adding Bluetooth ports to the list of COM ports (because the timeout on failing to connect is >= 1 minute)
+            ManagementObjectSearcher serialSearcher = new ManagementObjectSearcher("root\\CIMV2","SELECT * FROM Win32_SerialPort");
+            var query = from ManagementObject s in serialSearcher.Get() select new { Name = s["Name"], DeviceID = s["DeviceID"], PNPDeviceID = s["PNPDeviceID"] };
+            foreach (var port in query)
             {
-                list.Add(name);
+                //Console.WriteLine("{0} - {1}", port.DeviceID, port.Name);
+                var pnpDeviceId = port.PNPDeviceID.ToString();
+                if (!pnpDeviceId.Contains("BTHENUM"))
+                {
+                    list.Add(port.DeviceID as String);                                        
+                }
             }
+
             return list;
         }
         static void  connect(string portName)
@@ -39,6 +54,7 @@ namespace HopperNET
             if ((null != serialPort) && serialPort.IsOpen)
             {
                 serialPort.Close(); // if it is already connected, close it first
+                serialPort = null;
             }
 
             serialPort = new SerialPort();
@@ -55,6 +71,12 @@ namespace HopperNET
 
             serialPort.ReadTimeout = 500;
             serialPort.WriteTimeout = 500;
+
+            List<String> ports = GetPorts();
+            if (!ports.Contains(portName))
+            {
+                return; // port doesn't exist so don't waste 60 seconds trying to connect to it
+            }
 
             try
             {

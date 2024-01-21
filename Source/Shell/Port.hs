@@ -48,57 +48,65 @@ program Port
     }
     
     {
-        <string> ports = Serial.Ports;
-        uint comCurrent = LoadPort();
-        bool currentExists;
-        uint i;
-        char defCh;
-        PrintLn("COM Ports:");
-        string currentPort = "COM" + comCurrent.ToString();
-        foreach (var port in ports)
+        loop
         {
-            i++;
-            string content = "  " + (i.ToString()).LeftPad(' ', 3) + ": " + port;
-            if (port == currentPort)
+            <string> ports = Serial.Ports;
+            if (ports.Length == 0)
             {
-                content = content + " (current)";
-                defCh = char(48+i);    
-                currentExists = true;
+                PrintLn("No COM ports found.", Colour.MatrixRed, Colour.Black);
+                break;
             }
-            if ((defCh == char(0)) && (i == ports.Length))
+            uint comCurrent = LoadPort();
+            bool currentExists;
+            uint i;
+            char defCh;
+            PrintLn("COM Ports:");
+            string currentPort = "COM" + comCurrent.ToString();
+            foreach (var port in ports)
             {
-                content = content + " (default)";
-                defCh = char(48+i);
-            }
-            PrintLn(content);
-        }
-        uint iport;        
-        if (!currentExists)
-        {
-            // current port no longer exists
-            SavePort(iport);
-        }
-        
-        PrintLn("Press number to select COM port (or <enter> for default)");
-        Key key = ReadKey();
-        char ch = Keyboard.ToChar(key);
-        if (key == Key.Enter)
-        {
-            ch = defCh;
-        }
-        if ((ch >= '1') && (ch <= '9'))
-        {
-            i = uint(ch) - 49;
-            if (i < ports.Length)
-            {
-                string port = (ports[i]).Replace("COM", "");
-                if (UInt.TryParse(port, ref iport))
+                i++;
+                string content = "  " + (i.ToString()).LeftPad(' ', 3) + ": " + port;
+                if (port == currentPort)
                 {
-                    SavePort(iport);
-                    PrintLn("COM" + iport.ToString() + " is now the Debug / Hopper Monitor port");
+                    content = content + " (current)";
+                    defCh = char(48+i);    
+                    currentExists = true;
+                }
+                if ((defCh == char(0)) && (i == ports.Length))
+                {
+                    content = content + " (default)";
+                    defCh = char(48+i);
+                }
+                PrintLn(content);
+            }
+            uint iport;        
+            if (!currentExists)
+            {
+                // current port no longer exists
+                SavePort(iport);
+            }
+        
+            PrintLn("Press number to select COM port (or <enter> for default)");
+            Key key = ReadKey();
+            char ch = Keyboard.ToChar(key);
+            if (key == Key.Enter)
+            {
+                ch = defCh;
+            }
+            if ((ch >= '1') && (ch <= '9'))
+            {
+                i = uint(ch) - 49;
+                if (i < ports.Length)
+                {
+                    string port = (ports[i]).Replace("COM", "");
+                    if (UInt.TryParse(port, ref iport))
+                    {
+                        SavePort(iport);
+                        PrintLn("COM" + iport.ToString() + " is now the Debug / Hopper Monitor port");
+                    }
                 }
             }
-        }
-        
+            break;
+        } // loop
     }
 }

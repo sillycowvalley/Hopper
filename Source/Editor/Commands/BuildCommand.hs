@@ -323,6 +323,7 @@ unit BuildCommand
         <string> arguments;
         string sourcePath = Editor.GetProjectPath(); 
         arguments.Append(sourcePath); // Debugger takes the .hs source path
+        arguments.Append("-g"); // Interactive mode (not launched directly from command line)
         uint error = Runtime.Execute("Debug", arguments);
         Editor.DrawAll();
     }

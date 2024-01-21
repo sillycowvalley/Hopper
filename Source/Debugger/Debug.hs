@@ -30,6 +30,10 @@ program Debug
     bool attached;
     bool Attached { get { return attached; } set { attached = value; } }
     
+    bool interactive;
+    bool IsInteractive { get { return interactive; } set { interactive = value; } }
+    
+    
     bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
     
     {
@@ -42,17 +46,40 @@ program Debug
         Parser.SetInteractive(Editor.Left+1, Editor.Top + Editor.Height-1);
         Output.Locate(Screen.Columns-consoleWidth, 0, consoleWidth, Screen.Rows);
         
-        foreach (var argument in arguments)
+        <string> rawArgs = System.Arguments;
+        <string> args;
+          
+        for (uint iArg = 0; iArg < rawArgs.Length; iArg++)
         {
-            if (filePath.Length > 0) // more than one?
-            {
-                showHelp = true;
-                break;
-            }
-            else
-            {
-                filePath = argument;
-            }
+          string arg = rawArgs[iArg];
+          if ((arg.Length == 2) && (arg[0] == '-'))
+          {
+              arg = arg.ToLower();
+              switch (arg)
+              {
+                  case "-g":
+                  {
+                      IsInteractive = true;
+                  }
+                  default:
+                  {
+                      args.Clear();
+                      break;
+                  }
+              }
+          }
+          else
+          {
+              args.Append(arg);
+          }
+        }
+        if (args.Length > 1)
+        {
+            showHelp = true;
+        }
+        else if (args.Length == 1)
+        {
+            filePath = args[0];
         }
         
         loop
@@ -152,15 +179,9 @@ program Debug
                     }
                 }
             }
-            
-            
-            if (comPort == 0)
+            if (!Monitor.Connect(comPort))
             {
-                Serial.Connect(); // use the serial port with the highest number
-            }
-            else
-            {
-                Serial.Connect(comPort);
+                break;
             }
             
             // send a <ctrl><C> in case there is a program running

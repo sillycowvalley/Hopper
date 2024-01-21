@@ -39,7 +39,6 @@ unit Monitor
                 while (Serial.IsAvailable)
                 {
                     char c = SerialReadChar(); 
-                    OutputDebug("After 0x03: " + (byte(c)).ToHexString(2));
                 }
                 break;
             }
@@ -148,6 +147,11 @@ unit Monitor
                 {
                     break;
                 }
+                if (!Serial.IsValid())
+                {
+                    success = false;
+                    break; // lost the connection?
+                }
                 continue;
             }
             char c = SerialReadChar();
@@ -183,14 +187,20 @@ unit Monitor
         return success;
     }
     
-    checkEchoRun()
+    bool checkEchoRun()
     {
+        bool success = true;
         string keyboardBuffer;
         bool waitingForPrompt = false;
         loop
         {
             if (!Serial.IsAvailable)
             {
+                if (!Serial.IsValid())
+                {
+                    success = false;
+                    break; // lost the connection?
+                }
                 if ((keyboardBuffer.Length != 0) && !waitingForPrompt)
                 {
                     char ch = keyboardBuffer[0];
@@ -260,6 +270,7 @@ unit Monitor
                 }
             }
         }
+        return success;
     }
     
     sendCommand(string commandLine)
@@ -302,21 +313,22 @@ unit Monitor
             collectOutput = false;     
         }
     }
-    RunCommand(char ch)
+    bool RunCommand(char ch)
     {
-        RunCommand(ch.ToString());
+        return RunCommand(ch.ToString());
     }
-    RunCommand(string commandLine)
+    bool RunCommand(string commandLine)
     {
         sendCommand(commandLine);
-        checkEchoRun(); // special version for execute
+        return checkEchoRun(); // special version for execute
     }
-    uint ReturnToDebugger(char currentCommand)
+    uint ReturnToDebugger(char currentCommand, ref bool serialConnectionLost)
     {
         //OutputDebug("ReturnToDebugger()");
         uint pc = GetCurrentPC();
         uint entry = GetEntryPC();
         bool showSource = true;
+        serialConnectionLost = false;
         loop
         {
             string sourceIndex = Code.GetSourceIndex(pc);
@@ -334,14 +346,22 @@ unit Monitor
             // keep stepping ..
             if (currentCommand == 'I')
             {
-                Monitor.RunCommand("I");
+                if (!Monitor.RunCommand("I"))
+                {
+                    serialConnectionLost = true;
+                    break;
+                }
             }
             else // 'D' or 'O'
             {
-                Monitor.RunCommand("O");
+                if (!Monitor.RunCommand("O"))
+                {
+                    serialConnectionLost = true;
+                    break;
+                }
             }
             pc = GetCurrentPC();
-        }
+        } // loop
         if (showSource)
         {
             return pc;
@@ -621,5 +641,57 @@ unit Monitor
             entryPCIsSet = true;
         }
         return entryPC;
+    }
+    
+    
+    bool Connect(uint comPort)
+    {
+        bool success;
+        loop
+        {
+            if (comPort == 0)
+            {
+                // use the serial port with the highest number
+                <string> ports = Serial.Ports;
+                if (ports.Length != 0)
+                {
+                    string name = ports[ports.Length-1];
+                    name = name.Replace("COM", "");
+                    if (UInt.TryParse(name, ref comPort))
+                    {
+                    }
+                }
+            }
+            if (comPort != 0)
+            {
+                Serial.Connect(comPort);
+                if (Serial.IsValid())
+                {
+                    success = true;
+                    break; // success
+                }
+            }
+            string message = "Failed to connect to " + "COM" + comPort.ToString() + ".";
+            if (comPort == 0)
+            {
+                message = "No COM ports found.";
+            }
+            PrintLn(message, Colour.MatrixRed, Colour.Black);
+            if (!IsInteractive)
+            {
+                // invoked from command line
+                break; 
+            }
+            Key k;
+            Print("  <enter> to retry, <esc> to exit.", Colour.MatrixRed, Colour.Black);
+            loop
+            {
+                k = ReadKey();
+                if ((k == Key.Escape) || (k == Key.Enter)) { break; }
+            }
+            PrintLn();
+            if (k == Key.Escape) { break; }
+        } // loop
+        return success;
     }
 }

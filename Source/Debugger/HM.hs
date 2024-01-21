@@ -21,6 +21,7 @@ program HopperMonitor
     string OptionsPath { get { return string optionsPath; } }
     
     bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
+    bool IsInteractive { get { return false; } } // for Monitor.Connect(..)
     
     <Key> keyboardBuffer;
     InjectKey(Key key)
@@ -642,13 +643,9 @@ program HopperMonitor
             }
         }
         
-        if (comPort == 0)
+        if (!Monitor.Connect(comPort))
         {
-            Serial.Connect(); // use the serial port with the highest number
-        }
-        else
-        {
-            Serial.Connect(comPort);
+            return;
         }
         
         // send a <ctrl><C> in case there is a program running
@@ -866,7 +863,10 @@ program HopperMonitor
                 
                 else if (currentCommand == 'X') // Execute (run with Warp)
                 {
-                    Monitor.RunCommand(commandLine);
+                    if (!Monitor.RunCommand(commandLine))
+                    {
+                        PrintLn(" serial connection lost", Colour.MatrixRed, Colour.Black);
+                    }
                     refresh = true;
                 }
                 else if (   (currentCommand == 'D') // Debug (run with !Warp)
@@ -875,10 +875,18 @@ program HopperMonitor
                         )
                 {
                     Source.LoadSymbols(true);
-                    Monitor.RunCommand(commandLine);
+                    if (!Monitor.RunCommand(commandLine))
+                    {
+                        PrintLn(" serial connection lost", Colour.MatrixRed, Colour.Black);
+                    }
                     if (sourceLevel)
                     {
-                        uint pc = Monitor.ReturnToDebugger(currentCommand);
+                        bool serialConnectionLost;
+                        uint pc = Monitor.ReturnToDebugger(currentCommand, ref serialConnectionLost);
+                        if (serialConnectionLost)
+                        {
+                            PrintLn(" serial connection lost", Colour.MatrixRed, Colour.Black);
+                        }
                         if (pc != 0)
                         {
                             ShowCurrentSource(Screen.Rows / 2, pc);
@@ -1161,13 +1169,13 @@ program HopperMonitor
         loop // execution block
         {
             if (invalidArguments)
-        		  {
-        			     PrintLn("Invalid arguments for HopperMonitor:");
-        			     PrintLn("  -l <name> : load IHex image to 6502 machine");
-        			     PrintLn("  -x        : execute without debugging and exit (<ctrl><F5>)");
-        			     PrintLn("  -d        : execute with debugging and exit (<F5>)");
-        			     break;
-        		  }
+            {
+                 PrintLn("Invalid arguments for HopperMonitor:");
+                 PrintLn("  -l <name> : load IHex image to 6502 machine");
+                 PrintLn("  -x        : execute without debugging and exit (<ctrl><F5>)");
+                 PrintLn("  -d        : execute with debugging and exit (<F5>)");
+                 break;
+            }
             if (uploadHex)
             {
                 string fileName = Path.GetFileName(ihexPath);
