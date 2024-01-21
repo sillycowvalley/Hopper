@@ -219,6 +219,7 @@ unit Token
         directiveKeywords["#endif"] = true;
         directiveKeywords["#define"] = true;
         directiveKeywords["#if"] = true;
+        directiveKeywords["#error"] = true;
         directiveKeywords["defined"] = true;
         
         statementKeywords["break"] = true;

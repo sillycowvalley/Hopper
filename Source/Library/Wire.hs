@@ -1,11 +1,28 @@
 unit Wire
 {
+#if defined(RP2040_PICO) || defined(RP2040_PICOW)
+    const byte DefaultI2CController = 0;
+    const byte DefaultI2CSDAPin     = 4;
+    const byte DefaultI2CSCLPin     = 5;
+    #define USES_I2C
+#endif
+
+#if defined(PIMORONI_TINY2040)
+    const byte DefaultI2CController = 1;
+    const byte DefaultI2CSDAPin     = 26;
+    const byte DefaultI2CSCLPin     = 27;
+    #define USES_I2C
+#endif
+
+#if !defined(USES_I2C)
+    #error "TODO: Defaults and validation code needs to be added for this board. See above."
+#endif
     bool Initialize(byte i2cController, byte sdaPin, byte sclPin)
     {
         bool success;
         loop
         {
-#if defined(RP2040_PICO) || defined(RP2040_PICOW)            // Pi Pico pin validation:
+#if defined(RP2040_PICO) || defined(RP2040_PICOW)
             switch (i2cController)
             {
                 case 0:

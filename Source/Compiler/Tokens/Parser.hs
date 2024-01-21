@@ -125,7 +125,7 @@ unit Parser
     {
         currentToken = Scanner.Next();
     }   
-    ErrorAt(<string, string> token, string message)
+    ErrorAt(<string, string> token, string message, bool prefix)
     {
         if (!hadError)
         {
@@ -140,28 +140,36 @@ unit Parser
             HopperToken ttype = Token.GetType(token);
             if (ttype == HopperToken.EOF)
             {
-                errorMessage = errorMessage + " Error at end";
+                errorMessage = errorMessage + " Error at end:";
             }
             else if (ttype == HopperToken.Error)
             {
                 // nothing
             }
-            else if (lexeme.Length > 0)
+            else if ((lexeme.Length > 0) && prefix)
             {
-                errorMessage = errorMessage + " Error at '" + lexeme + "'";
+                errorMessage = errorMessage + " Error at '" + lexeme + "':";
             }
-            errorMessage = errorMessage + ": " + message;
+            errorMessage = errorMessage + " " + message;
             EmitError(errorMessage);
         }
         hadError = true;
+    }
+    ErrorAt(<string, string> token, string message)
+    {
+        ErrorAt(token, message, true);
     }
     Error(char ch)
     {
         ErrorAt(previousToken, "'" + ch + "' expected");
     }
+    Error(string message, bool prefix)
+    {
+        ErrorAt(previousToken, message, prefix);
+    }
     Error(string message)
     {
-        ErrorAt(previousToken, message);
+        ErrorAt(previousToken, message, true);
     }
     ErrorAtCurrent(char ch)
     {
@@ -169,7 +177,11 @@ unit Parser
     }
     ErrorAtCurrent(string message)
     {
-        ErrorAt(currentToken, message);
+        ErrorAt(currentToken, message, true);
+    }
+    ErrorAtCurrent(string message, bool prefix)
+    {
+        ErrorAt(currentToken, message, prefix);
     }
     
     Advance()

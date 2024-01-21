@@ -302,12 +302,27 @@ unit Directives
                    break;
                }
             }
+            else if (directive == "#error")
+            {
+                string actualType;
+                string message = ParseConstantExpression("string", ref actualType);
+                if (actualType != "string")
+                {
+                    Parser.ErrorAtCurrent("string constant expected");
+                    break;
+                }
+                if (IsAllDefined())
+                {
+                    Parser.Error(message, false);
+                }
+                break;
+            }
             <string,string> currentToken = Parser.CurrentToken;
             if (currentToken["line"] == ln)
             {
                 Parser.ErrorAtCurrent("unexpected content after directive");
             }
             break;
-        }
+        } // loop
     }
 }

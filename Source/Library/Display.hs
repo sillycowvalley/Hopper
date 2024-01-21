@@ -1,5 +1,8 @@
 unit Display
 {
+#if !defined(DISPLAY_DRIVER)
+    #error "To use 'Display' unit, use a display driver from '/Source/Library/Displays'"
+#endif
     uses "/Source/Library/Screen"
         
     int pixelWidth; 
