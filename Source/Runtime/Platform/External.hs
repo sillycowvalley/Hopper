@@ -111,6 +111,42 @@ unit External
         ErrorDump(156); Error = 0x0A;
     }
     
+    TimerRelease()
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    TimerInitialize()
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    uint TimerStart(uint msInterval, TimerISRDelegate timerISR)
+    {
+        ErrorDump(156); Error = 0x0A;
+        return 0;
+    }
+    uint TimerStartLong(long msInterval, TimerISRDelegate timerISR)
+    {
+        ErrorDump(156); Error = 0x0A;
+        return 0;
+    }
+    uint TimerAlarm(uint msInterval, TimerISRDelegate timerISR)
+    {
+        ErrorDump(156); Error = 0x0A;
+        return 0;
+    }
+    uint TimerAlarmLong(long msInterval, TimerISRDelegate timerISR)
+    {
+        ErrorDump(156); Error = 0x0A;
+        return 0;
+    }
+    TimerStop(uint timerID)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    TimerCancel(uint alarmID)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
     
     bool WiFiConnect(uint hrssid, uint hrpassword)
     {
@@ -337,7 +373,7 @@ unit External
         ErrorDump(169); Error = 0x0A; 
     }
     
-    bool AttachToPin(byte pin, ISRDelegate isrDelegate, byte state)
+    bool AttachToPin(byte pin, PinISRDelegate isrDelegate, HopperPinStatus state)
     {
         ErrorDump(170); Error = 0x0A; 
         return false;

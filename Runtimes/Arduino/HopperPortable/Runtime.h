@@ -12,7 +12,8 @@ typedef   signed char  Int8;
 typedef           bool Bool;
 
 typedef Bool (*InstructionDelegate)();
-typedef UInt ISRDelegate;
+typedef UInt PinISRDelegate;
+typedef UInt TimerISRDelegate;
 typedef UInt HandlerDelegate;
 
 // method definitions
@@ -331,6 +332,14 @@ enum Type {
     eListItem = 0x001A,
 };
 
+enum HopperPinStatus {
+    eLow = 0x0000,
+    eHigh = 0x0001,
+    eChange = 0x0002,
+    eFalling = 0x0003,
+    eRising = 0x0004,
+};
+
 enum LibCall {
     eWireBegin = 0x0000,
     eWireBeginTx = 0x0001,
@@ -347,39 +356,43 @@ enum LibCall {
     eMCUInterruptsEnabledGet = 0x000C,
     eMCUInterruptsEnabledSet = 0x000D,
     eMCUReboot = 0x000E,
-    eSPISettings = 0x000F,
-    eSPIBegin = 0x0010,
-    eSPIBeginTransaction = 0x0011,
-    eSPIEndTransaction = 0x0012,
-    eSPIReadByte = 0x0013,
-    eSPIReadWord = 0x0014,
-    eSPIReadBuffer = 0x0015,
-    eSPIWriteByte = 0x0016,
-    eSPIWriteWord = 0x0017,
-    eSPIWriteBuffer = 0x0018,
-    eSPISetCSPin = 0x0019,
-    eSPIGetCSPin = 0x001A,
-    eSPISetClkPin = 0x001B,
-    eSPISetTxPin = 0x001C,
-    eSPISetRxPin = 0x001D,
-    eSPICSPinGet = 0x001E,
-    eSPICSPinSet = 0x001F,
-    eSPIClkPinSet = 0x0020,
-    eSPITxPinSet = 0x0021,
-    eSPIRxPinSet = 0x0022,
-    eNeoPixelBegin = 0x0023,
-    eNeoPixelBrightnessSet = 0x0024,
-    eNeoPixelBrightnessGet = 0x0025,
-    eNeoPixelSetColor = 0x0026,
-    eNeoPixelShow = 0x0027,
-    eNeoPixelLengthGet = 0x0028,
-    eWebClientGetRequest = 0x0029,
-    eWebServerBegin = 0x002A,
-    eWebServerOn = 0x002B,
-    eWebServerOnNotFound = 0x002C,
-    eWebServerEvents = 0x002D,
-    eWebServerClose = 0x002E,
-    eWebServerSend = 0x002F,
+    eTimerStart = 0x000F,
+    eTimerStop = 0x0010,
+    eTimerAlarm = 0x0011,
+    eTimerCancel = 0x0012,
+    eSPISettings = 0x0013,
+    eSPIBegin = 0x0014,
+    eSPIBeginTransaction = 0x0015,
+    eSPIEndTransaction = 0x0016,
+    eSPIReadByte = 0x0017,
+    eSPIReadWord = 0x0018,
+    eSPIReadBuffer = 0x0019,
+    eSPIWriteByte = 0x001A,
+    eSPIWriteWord = 0x001B,
+    eSPIWriteBuffer = 0x001C,
+    eSPISetCSPin = 0x001D,
+    eSPIGetCSPin = 0x001E,
+    eSPISetClkPin = 0x001F,
+    eSPISetTxPin = 0x0020,
+    eSPISetRxPin = 0x0021,
+    eSPICSPinGet = 0x0022,
+    eSPICSPinSet = 0x0023,
+    eSPIClkPinSet = 0x0024,
+    eSPITxPinSet = 0x0025,
+    eSPIRxPinSet = 0x0026,
+    eNeoPixelBegin = 0x0027,
+    eNeoPixelBrightnessSet = 0x0028,
+    eNeoPixelBrightnessGet = 0x0029,
+    eNeoPixelSetColor = 0x002A,
+    eNeoPixelShow = 0x002B,
+    eNeoPixelLengthGet = 0x002C,
+    eWebClientGetRequest = 0x002D,
+    eWebServerBegin = 0x002E,
+    eWebServerOn = 0x002F,
+    eWebServerOnNotFound = 0x0030,
+    eWebServerEvents = 0x0031,
+    eWebServerClose = 0x0032,
+    eWebServerSend = 0x0033,
 };
 
 enum DataOrder {

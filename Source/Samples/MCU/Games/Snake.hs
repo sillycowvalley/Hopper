@@ -262,7 +262,7 @@ program Snake
     }
     
     {
-        ISRDelegate buttonDelegate = ButtonISR;
+        PinISRDelegate buttonDelegate = ButtonISR;
         if (!Pico096.Initialize(buttonDelegate))
         {
             WriteLn("Setup failed");

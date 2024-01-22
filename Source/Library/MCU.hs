@@ -93,6 +93,7 @@ unit MCU
     uses "/Source/Library/GPIO"
     uses "/Source/Library/Wire"
     uses "/Source/Library/SPI"
+    uses "/Source/Library/Timer"
 
 #if defined(USES_WIFI)
     uses "/Source/System/WiFi"
@@ -139,7 +140,7 @@ unit MCU
         Falling = 3,
         Rising = 4,
     }
-    delegate ISRDelegate(byte pin, PinStatus status);
+    delegate PinISRDelegate(byte pin, PinStatus status);
 
     PinMode(byte pin, PinModeOption pinMode) library;
     bool DigitalRead(byte pin) library;
@@ -148,7 +149,7 @@ unit MCU
     AnalogWrite(byte pin, uint value) library;
     AnalogWriteResolution(byte bits) library;
     
-    bool AttachToPin(byte pin, ISRDelegate gpioISR, PinStatus status) library;
+    bool AttachToPin(byte pin, PinISRDelegate gpioISR, PinStatus status) library;
     
     bool InterruptsEnabled { get library; set library; }
     

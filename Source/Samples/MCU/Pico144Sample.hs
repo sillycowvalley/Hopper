@@ -27,7 +27,7 @@ program Pico144Sample
     }
     
     {
-        ISRDelegate buttonDelegate = ButtonISR;
+        PinISRDelegate buttonDelegate = ButtonISR;
         if (!Pico144.Initialize(buttonDelegate))
         {
             return;

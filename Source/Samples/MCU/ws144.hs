@@ -12,7 +12,7 @@ program WaveShareLCD144Demo
         EchoToLCD = true;
         
         // Setup code:
-        ISRDelegate buttonDelegate = ButtonISR;
+        PinISRDelegate buttonDelegate = ButtonISR;
         if (!DeviceDriver.Begin(buttonDelegate))
         {
             IO.WriteLn("Failed to initialize Waveshare Pico-LCD-1.44");

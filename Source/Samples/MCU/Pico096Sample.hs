@@ -33,7 +33,7 @@ program Pico096Sample
     }
     
     {
-        ISRDelegate buttonDelegate = ButtonISR;
+        PinISRDelegate buttonDelegate = ButtonISR;
         if (!Pico096.Initialize(buttonDelegate))
         {
             return;

@@ -27,7 +27,7 @@ program Badger
     
     {
         // Setup code:
-        ISRDelegate buttonDelegate = ButtonISR;
+        PinISRDelegate buttonDelegate = ButtonISR;
         //DisplayDriver.IsPortrait = true;
         //DisplayDriver.FlipX = true;
         DisplayDriver.FlipY = true;

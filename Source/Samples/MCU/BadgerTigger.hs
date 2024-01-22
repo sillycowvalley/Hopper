@@ -22,7 +22,7 @@ program Badger
     
     {
         // Setup code:
-        ISRDelegate buttonDelegate = ButtonISR;
+        PinISRDelegate buttonDelegate = ButtonISR;
         Screen.ForeColour = Colour.Black;
         Screen.BackColour = Colour.White;
         if (!DeviceDriver.Begin(buttonDelegate))

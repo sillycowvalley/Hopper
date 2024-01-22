@@ -9,6 +9,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -912,6 +913,7 @@ void HopperVM_Restart()
 {
     HopperVM_DataMemoryReset();
     HopperVM_DiskSetup();
+    External_TimerRelease();
     HopperVM_sp = 0x00;
     HopperVM_gp = 0x00;
     HopperVM_bp = 0x00;
@@ -6132,11 +6134,75 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     case LibCall::eMCUAttachToPin:
     {
         Byte state = Byte(HopperVM_Pop());
-        ISRDelegate isrDelegate = ISRDelegate(HopperVM_Pop());
+        PinISRDelegate isrDelegate = PinISRDelegate(HopperVM_Pop());
         Byte pin = Byte(HopperVM_Pop());
-        Bool result = External_AttachToPin(pin, isrDelegate, state);
+        Bool result = External_AttachToPin(pin, isrDelegate, HopperPinStatus(state));
         HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
         Library_isrExists = true;
+        break;
+    }
+    case LibCall::eTimerStart:
+    {
+        TimerISRDelegate isrDelegate = TimerISRDelegate(HopperVM_Pop());
+        Type itype = (Type)0;
+        UInt interval = HopperVM_Pop_R(itype);
+        if (iOverload == 0x00)
+        {
+        }
+        else
+        {
+        }
+        UInt timerID = 0;
+        if (itype == Type::eLong)
+        {
+            timerID = External_TimerStartLong(interval, isrDelegate);
+            GC_Release(interval);
+        }
+        else
+        {
+            timerID = External_TimerStart(interval, isrDelegate);
+        }
+        HopperVM_Push(timerID, Type::eUInt);
+        Library_isrExists = true;
+        break;
+    }
+    case LibCall::eTimerAlarm:
+    {
+        TimerISRDelegate isrDelegate = TimerISRDelegate(HopperVM_Pop());
+        Type itype = (Type)0;
+        UInt interval = HopperVM_Pop_R(itype);
+        if (iOverload == 0x00)
+        {
+        }
+        else
+        {
+        }
+        UInt alarmID = 0;
+        if (itype == Type::eLong)
+        {
+            alarmID = External_TimerAlarmLong(interval, isrDelegate);
+            GC_Release(interval);
+        }
+        else
+        {
+            alarmID = External_TimerAlarm(interval, isrDelegate);
+        }
+        HopperVM_Push(alarmID, Type::eUInt);
+        Library_isrExists = true;
+        break;
+    }
+    case LibCall::eTimerStop:
+    {
+        Type itype = (Type)0;
+        UInt timerID = HopperVM_Pop_R(itype);
+        External_TimerStop(timerID);
+        break;
+    }
+    case LibCall::eTimerCancel:
+    {
+        Type itype = (Type)0;
+        UInt alarmID = HopperVM_Pop_R(itype);
+        External_TimerCancel(alarmID);
         break;
     }
     case LibCall::eMCUInterruptsEnabledGet:

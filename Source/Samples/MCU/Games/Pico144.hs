@@ -9,7 +9,7 @@ unit Pico144
         DisplayState result = Begin();
         return (result == DisplayState.OK);
     }
-    bool Initialize(ISRDelegate buttonDelegate)
+    bool Initialize(PinISRDelegate buttonDelegate)
     {
         bool success;
         loop

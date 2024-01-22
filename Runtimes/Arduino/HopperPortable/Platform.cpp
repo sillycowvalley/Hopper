@@ -1,6 +1,7 @@
 #include "Platform.h"
 #include "Inlined.h"
 #include "HopperScreen.h"
+#include "HopperTimer.h"
 
 #include <Wire.h>
 #include <SPI.h>
@@ -34,28 +35,23 @@ Byte lastError;
 bool exited;
 bool interruptsEnabled;
 
-struct PinISRStruct
-{
-    Byte pin;
-    Byte status;
-    UInt isrDelegate;
-};
-
-std::queue<PinISRStruct> isrQueue;
+std::queue<HopperISRStruct> isrQueue;
 
 void pinISR(void * param)
 {
     uint lparam          = (uint)(param);
 
-    PinISRStruct isrStruct;
+    HopperISRStruct isrStruct;
 
-    isrStruct.pin         = (UInt)((lparam >> 16) & 0xFF);
-    isrStruct.status      = (UInt)((lparam >> 24) & 0xFF);
-    isrStruct.isrDelegate = (UInt)(lparam &0xFFFF);
-    isrQueue.push(isrStruct);
+    isrStruct.interruptType = InterruptType::ePin;
+    isrStruct.timerID       = 0;
+    isrStruct.pin           = (UInt)((lparam >> 16) & 0xFF);
+    isrStruct.status        = (UInt)((lparam >> 24) & 0xFF);
+    isrStruct.isrDelegate   = (UInt)(lparam &0xFFFF);
+    isrQueue.push(isrStruct); // assuming interrupts are disabled inside an ISR so no conflict with External_ServiceInterrupts(..)
 }
 
-Bool External_AttachToPin(Byte pin, ISRDelegate gpioISRDelegate, Byte status)
+Bool External_AttachToPin(Byte pin, PinISRDelegate gpioISRDelegate, Byte status)
 {
     if (digitalPinToInterrupt(pin) == -1)
     {
@@ -89,27 +85,60 @@ void External_ServiceInterrupts()
         {
             break;
         }
+        
+        HopperISRStruct isrStruct;
+
         noInterrupts();
+            
         if (isrQueue.empty())
         {
             interrupts();
             break;
         }
-        PinISRStruct isrStruct = isrQueue.front();
+        isrStruct = isrQueue.front();
         isrQueue.pop();
+
         interrupts();
 
-        // construct a delegate call
+        // find the delegate method
         uint methodIndex = isrStruct.isrDelegate;
-        HopperVM_PushCS(HopperVM_PC_Get());
         uint methodAddress = HopperVM_LookupMethod(methodIndex);
-        
-        // arguments
-        HopperVM_Push(isrStruct.pin,    Type::eByte);
-        HopperVM_Push(isrStruct.status, Type::eByte);
 
-        // make the call
-        HopperVM_PC_Set(methodAddress);
+#ifdef DIAGNOSTICS
+        Serial.print((isrStruct.interruptType == InterruptType::ePin) ? "P: 0x" : "T: 0x");
+        Serial.print(methodIndex, HEX);
+        Serial.print(" -> ");
+        Serial.println(methodAddress, HEX);
+#endif    
+      
+        if (isrStruct.interruptType == InterruptType::ePin)
+        {
+            // construct a delegate call
+            HopperVM_PushCS(HopperVM_PC_Get());
+            
+            // arguments:
+            //
+            // delegate PinISRDelegate(byte pin, PinStatus status);
+
+            HopperVM_Push(isrStruct.pin,    Type::eByte);
+            HopperVM_Push(isrStruct.status, Type::eByte);
+
+            // make the call
+            HopperVM_PC_Set(methodAddress);
+        }
+        else if (isrStruct.interruptType == InterruptType::eTimer)
+        {
+            // construct a delegate call
+            HopperVM_PushCS(HopperVM_PC_Get());
+            
+            // arguments:
+            //
+            // delegate TimerISRDelegate(uint timerID);
+            HopperVM_Push(isrStruct.timerID, Type::eUInt);
+            
+            // make the call
+            HopperVM_PC_Set(methodAddress);
+        }
         break;
     } // for (;;)
 }
@@ -144,6 +173,7 @@ void External_WatchDog()
 
 void Platform_Initialize()
 {
+    External_TimerInitialize();
     if (nullptr != dataMemoryBlock)
     {
         Platform_Release();
@@ -167,6 +197,7 @@ void Platform_Initialize()
 
 void Platform_Release()
 {
+    External_TimerRelease();
 #ifdef USELITTLEFS  
     LittleFS.end(); // unmount the file system
 #endif
@@ -335,6 +366,7 @@ UInt External_AnalogRead(Byte pin)
 // Machine
 void Machine_Initialize()
 {
+    // called once near the start of setup()
     lastError = 0;
     exited    = false;
     interruptsEnabled = true;

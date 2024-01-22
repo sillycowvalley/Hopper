@@ -134,7 +134,7 @@ program Badger
     
     {
         // Setup code:
-        ISRDelegate buttonDelegate = ButtonISR;
+        PinISRDelegate buttonDelegate = ButtonISR;
         //DeviceDriver.IsPortrait = true;
         //DisplayDriver.FlipX = true;
         //DisplayDriver.FlipY = true;

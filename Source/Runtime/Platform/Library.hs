@@ -4,8 +4,19 @@ unit Library
     uses "/Source/Runtime/Platform/Wire"
     uses "/Source/Runtime/Platform/SPI"
     uses "/Source/Runtime/Platform/NeoPixel"
+    uses "/Source/Runtime/Platform/External"
     
-    delegate ISRDelegate();
+    enum HopperPinStatus
+    {
+        Low = 0,
+        High = 1,
+        Change = 2,
+        Falling = 3,
+        Rising = 4,
+    }
+    
+    delegate PinISRDelegate(byte pin, HopperPinStatus status);
+    delegate TimerISRDelegate(uint timerID);
     delegate HandlerDelegate(string uri, string method, <string,string> arguments);
     
     bool isrExists;
@@ -186,12 +197,105 @@ unit Library
             case LibCall.MCUAttachToPin:
             {
                 byte state = byte(Pop());
-                ISRDelegate isrDelegate = ISRDelegate(Pop());
+                PinISRDelegate isrDelegate = PinISRDelegate(Pop());
                 byte pin = byte(Pop());
-                bool result = External.AttachToPin(pin, isrDelegate, state);
+                bool result = External.AttachToPin(pin, isrDelegate, HopperPinStatus(state));
                 Push(result ? 1 : 0, Type.Bool);
                 isrExists = true;
             }
+            case LibCall.TimerStart:
+            {
+                TimerISRDelegate isrDelegate = TimerISRDelegate(Pop());
+                Type itype;
+                uint interval = Pop(ref itype);
+                if (iOverload == 0)
+                {
+                    // uint Start(uint msInterval, TimerISRDelegate timerISR) library;
+#ifdef CHECKED
+                    AssertUInt(itype, interval);
+#endif
+                }
+                else
+                {
+                    // uint Start(long msInterval, TimerISRDelegate timerISR) library;
+#ifdef CHECKED
+                    if (itype != Type.Long)
+                    {
+                        ErrorDump(16);
+                        Error = 0x0B; // system failure (internal error)
+                    }
+#endif
+                }
+                uint timerID;
+                if (itype == Type.Long)
+                {
+                    timerID = External.TimerStartLong(interval, isrDelegate);
+                    GC.Release(interval);
+                }
+                else
+                {
+                    timerID = External.TimerStart(interval, isrDelegate);
+                }
+                Push(timerID, Type.UInt);
+                isrExists = true;
+            }
+            case LibCall.TimerAlarm:
+            {
+                TimerISRDelegate isrDelegate = TimerISRDelegate(Pop());
+                Type itype;
+                uint interval = Pop(ref itype);
+                if (iOverload == 0)
+                {
+                    // uint Alarm(uint msInterval, TimerISRDelegate timerISR) library;
+#ifdef CHECKED
+                    AssertUInt(itype, interval);
+#endif
+                }
+                else
+                {
+                    // uint Alarm(long msInterval, TimerISRDelegate timerISR) library;
+#ifdef CHECKED
+                    if (itype != Type.Long)
+                    {
+                        ErrorDump(16);
+                        Error = 0x0B; // system failure (internal error)
+                    }
+#endif
+                }
+                uint alarmID;
+                if (itype == Type.Long)
+                {
+                    alarmID = External.TimerAlarmLong(interval, isrDelegate);
+                    GC.Release(interval);
+                }
+                else
+                {
+                    alarmID = External.TimerAlarm(interval, isrDelegate);
+                }
+                Push(alarmID, Type.UInt);
+                isrExists = true;
+            }
+            
+            case LibCall.TimerStop:
+            {
+                Type itype;
+                uint timerID = Pop(ref itype);
+#ifdef CHECKED
+                AssertUInt(itype, timerID);
+#endif
+                External.TimerStop(timerID);
+            }
+            case LibCall.TimerCancel:
+            {
+                Type itype;
+                uint alarmID = Pop(ref itype);
+#ifdef CHECKED
+                AssertUInt(itype, alarmID);
+#endif
+                External.TimerCancel(alarmID);
+            }
+            
+            
             case LibCall.MCUInterruptsEnabledGet:
             {
                 bool value = External.MCUInterruptsEnabledGet();

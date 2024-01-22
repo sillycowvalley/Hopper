@@ -6,6 +6,25 @@
 #include <Arduino.h>
 #include "Runtime.h"
 
+enum InterruptType 
+{
+    eUndefinedInterruptType = 0,
+    ePin,
+    eTimer,
+};
+
+struct HopperISRStruct
+{
+    InterruptType interruptType;
+    Byte pin;
+    UInt timerID;
+    Byte status;
+    UInt isrDelegate;
+};
+
+
+extern std::queue<HopperISRStruct> isrQueue;
+
 // Machine
 
 extern unsigned char * dataMemoryBlock;
@@ -65,7 +84,7 @@ Byte External_DigitalRead(Byte pin);
 UInt External_AnalogRead(Byte pin);
 void External_AnalogWrite(Byte pin, UInt value);
 void External_AnalogWriteResolution(Byte bits);
-Bool External_AttachToPin(Byte value, ISRDelegate gpioISRDelegate, Byte status);
+Bool External_AttachToPin(Byte value, PinISRDelegate gpioISRDelegate, Byte status);
 Bool External_MCUInterruptsEnabledGet();
 void External_MCUInterruptsEnabledSet(Bool value);
 void External_ServiceInterrupts();

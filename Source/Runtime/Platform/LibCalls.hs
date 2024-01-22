@@ -19,6 +19,11 @@ unit LibCalls
         MCUInterruptsEnabledSet,
         MCUReboot,
         
+        TimerStart,
+        TimerStop,
+        TimerAlarm,
+        TimerCancel,
+        
         SPISettings,
         SPIBegin,
         SPIBeginTransaction,

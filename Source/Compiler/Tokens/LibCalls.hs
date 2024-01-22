@@ -28,6 +28,11 @@ unit LibCalls
         addEntry("MCU", "InterruptsEnabled_Set");
         addEntry("MCU", "Reboot");
         
+        addEntry("Timer", "Start");
+        addEntry("Timer", "Stop");
+        addEntry("Timer", "Alarm");
+        addEntry("Timer", "Cancel");
+        
         addEntry("SPI", "Settings");
         addEntry("SPI", "Begin");
         addEntry("SPI", "BeginTransaction");

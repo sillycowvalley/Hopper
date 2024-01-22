@@ -72,7 +72,7 @@ program Mandelbrot
     }
     {
         // Setup code:
-        ISRDelegate buttonDelegate = ButtonISR;
+        PinISRDelegate buttonDelegate = ButtonISR;
         DisplayDriver.FlipY = true;
         if (!DeviceDriver.Begin(buttonDelegate))
         {
