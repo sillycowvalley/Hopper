@@ -44,10 +44,10 @@ bool timerCallback(struct repeating_timer *repeatingTime)
     isrQueue.push(isrStruct); // assuming interrupts are disabled inside an ISR so no conflict with External_ServiceInterrupts(..)
 
 #ifdef DIAGNOSTICS
-    Serial.print("T: 0x");
-    Serial.print(isrStruct.isrDelegate, HEX);
-    Serial.print(" ");
-    Serial.println(isrStruct.timerID);
+    //Serial.print("T: 0x");
+    //Serial.print(isrStruct.isrDelegate, HEX);
+    //Serial.print(" ");
+    //Serial.println(isrStruct.timerID);
 #endif    
 
 
@@ -69,10 +69,10 @@ int64_t alarmCallback(alarm_id_t id, void *user_data)
     alarmSlots[isrStruct.timerID] = -1; // free up this slot
 
 #ifdef DIAGNOSTICS
-    Serial.print("A: 0x");
-    Serial.print(isrStruct.isrDelegate, HEX);
-    Serial.print(" ");
-    Serial.println(isrStruct.timerID);
+    //Serial.print("A: 0x");
+    //Serial.print(isrStruct.isrDelegate, HEX);
+    //Serial.print(" ");
+    //Serial.println(isrStruct.timerID);
 #endif    
 
     return 0; // 0 to not reschedule the alarm
@@ -105,6 +105,7 @@ void External_TimerRelease()
 #ifdef DIAGNOSTICS
     Serial.print("<Timer_Release");
 #endif    
+    isrQueue = std::queue<HopperISRStruct>(); // clear()
 
     for (UInt i = 1; i <= MAX_HOPPER_ALARMS; i++)
     {
@@ -120,6 +121,8 @@ void External_TimerRelease()
             External_TimerStop(i);
         }
     }
+
+    isrQueue = std::queue<HopperISRStruct>(); // another event may have fired before we got to stopping it
   
 #ifdef DIAGNOSTICS
     Serial.println(">");
@@ -131,6 +134,7 @@ UInt External_TimerStart(UInt msInterval, TimerISRDelegate timerISRDelegate)
 {
 #ifdef DIAGNOSTICS
     Serial.print("<TimerStart ");
+    Serial.print(timerInitialized ? "true " : "false ");
     Serial.print(msInterval);
 #endif    
     UInt timerID = 0;

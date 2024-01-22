@@ -274,7 +274,7 @@ unit HopperVM
     {
         DataMemoryReset();
         DiskSetup();
-        External.TimerRelease();
+        External.TimerInitialize();
         
         sp = 0;
         gp = 0;

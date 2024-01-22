@@ -105,10 +105,10 @@ void External_ServiceInterrupts()
         uint methodAddress = HopperVM_LookupMethod(methodIndex);
 
 #ifdef DIAGNOSTICS
-        Serial.print((isrStruct.interruptType == InterruptType::ePin) ? "P: 0x" : "T: 0x");
-        Serial.print(methodIndex, HEX);
-        Serial.print(" -> ");
-        Serial.println(methodAddress, HEX);
+        //Serial.print((isrStruct.interruptType == InterruptType::ePin) ? "P: 0x" : "T: 0x");
+        //Serial.print(methodIndex, HEX);
+        //Serial.print(" -> ");
+        //Serial.println(methodAddress, HEX);
 #endif    
       
         if (isrStruct.interruptType == InterruptType::ePin)

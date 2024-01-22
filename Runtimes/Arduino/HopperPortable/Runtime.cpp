@@ -8,8 +8,6 @@
 
 
 
-
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -913,7 +911,7 @@ void HopperVM_Restart()
 {
     HopperVM_DataMemoryReset();
     HopperVM_DiskSetup();
-    External_TimerRelease();
+    External_TimerInitialize();
     HopperVM_sp = 0x00;
     HopperVM_gp = 0x00;
     HopperVM_bp = 0x00;
