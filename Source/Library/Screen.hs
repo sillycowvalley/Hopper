@@ -115,6 +115,15 @@ unit Screen
 
     DrawChar(uint col, uint row, char c, uint foreColour, uint backColour)
     {
+#if !defined(FONT_EXISTS)
+    // one-shot runtime warning?
+    //#error "uses \"/Source/Library/Font/xxx\" required"
+#endif
+#if !defined(DISPLAY_DRIVER)
+    // one-shot runtime warning?
+    //#error "uses \"/Source/Library/Displays/xxx\" required"
+#endif
+
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
         int x0 = int(col * cellWidth);
         int y0 = int(row * cellHeight);

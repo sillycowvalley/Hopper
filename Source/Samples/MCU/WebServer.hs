@@ -1,8 +1,6 @@
 program WebServer
 {
-    #define SERIAL_CONSOLE // use Serial, not Screen for Write, WriteLn, etc.
-    
-    #define RP2040_PICOW
+    //#define RP2040_PICOW
     //#define ARDUINO_NANO_RP2040
     //#define CHALLENGER_RP2040_WIFI
     
@@ -47,6 +45,9 @@ program WebServer
     }
     
     {
+#if !defined(USES_WIFI)
+        #error "WiFi capable board required for this sample (see options at top of file)"
+#endif            
         WriteLn(); 
         uint attempts = 0;
         loop

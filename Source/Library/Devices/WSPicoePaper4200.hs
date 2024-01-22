@@ -33,7 +33,7 @@ unit DeviceDriver
         MCU.PinMode(key1Pin, PinModeOption.InputPullup);
         return success;
     }
-    bool Begin(ISRDelegate buttonDelegate)
+    bool Begin(PinISRDelegate buttonDelegate)
     {
         bool success;
         loop

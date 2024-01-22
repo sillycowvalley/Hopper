@@ -1,17 +1,18 @@
 program WebClient
 {
-    #define SERIAL_CONSOLE // use Serial, not Screen for Write, WriteLn, etc.
     //#define RP2040_PICOW
     //#define ARDUINO_NANO_RP2040
-    #define CHALLENGER_RP2040_WIFI
+    //#define CHALLENGER_RP2040_WIFI
     
     uses "/Source/System/Serialize"
     
     uses "/Source/Library/MCU"
     uses "/Source/Samples/MCU/Secrets2/Connect"
     
-    
     {
+#if !defined(USES_WIFI)
+        #error "WiFi capable board required for this sample (see options at top of file)"
+#endif            
         
         WriteLn(); 
         

@@ -93,6 +93,7 @@ unit MCU
     uses "/Source/Library/GPIO"
     uses "/Source/Library/Wire"
     uses "/Source/Library/SPI"
+    //uses "/Source/Library/SD"
     uses "/Source/Library/Timer"
 
 #if defined(USES_WIFI)
