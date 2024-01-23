@@ -34,7 +34,10 @@ namespace HopperNET
                 String[] names = SerialPort.GetPortNames();
                 foreach (string name in names)
                 {
-                    list.Add(name);
+                    if (!btPorts.Contains(name))
+                    {
+                        list.Add(name);
+                    }
                 }
             }
             else

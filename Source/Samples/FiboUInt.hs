@@ -1,10 +1,7 @@
 program FiboUInt
 {
-    //#define TINY_HOPPER
-    #define SERIAL_CONSOLE
-    
-    uses "/Source/System/System"
-    uses "/Source/System/IO"
+    #define RP2040_PICOW
+    uses "/Source/Library/MCU"
     
     // https://forums.raspberrypi.com/viewtopic.php?t=303458
     

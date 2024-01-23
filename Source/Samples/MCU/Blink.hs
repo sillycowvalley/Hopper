@@ -1,17 +1,13 @@
 program Blink
 {
-    #define RP2040_PICO
+    #define RP2040_PICOW
     uses "/Source/Library/MCU"
-    
     {
         loop
         {
-            LED = true;
-            Write('+');
+            Write(LED ? '+' : '-');
             Delay(500);
-            LED = false;    
-            Write('-');
-            Delay(500);
+            LED = !LED;
         }
     }
 }

@@ -1,11 +1,7 @@
 program Mandelbrot
 {
-    //#define TINY_HOPPER
-    #define SERIAL_CONSOLE
-    
-    uses "/Source/System/System"
-    uses "/Source/System/IO"
-
+    #define RP2040_PICOW
+    uses "/Source/Library/MCU"
         
     {
         IO.Clear();
