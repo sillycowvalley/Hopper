@@ -26,8 +26,10 @@ unit Editor
     uint cursorX;
     uint cursorY;
     
-    uint selectionX;
-    uint selectionY;
+    uint selectionStartX;
+    uint selectionStartY;
+    uint selectionEndX;
+    uint selectionEndY;
     bool selectionActive;
     
     uint bufferTopLeftX;
@@ -157,32 +159,40 @@ unit Editor
         Resume(true); // probably interactive (waiting for a key)
     }
     
+    bool HasSelection() 
+    {
+        return selectionActive && ((selectionStartY != cursorY) || (selectionStartX != cursorX));
+    }
+    bool HasOneLineSelection()
+    {
+        return selectionActive && (selectionStartY == cursorY) && (selectionStartX != cursorX);
+    }
     bool IsSelected(uint column, uint row)
     {
         bool selected = false;
         if (selectionActive)
         {
-            if (selectionY == cursorY) // simple case
+            if (selectionStartY == cursorY) // simple case
             {
                 if (row == cursorY)
                 {
-                    if (selectionX < cursorX)
+                    if (selectionStartX < cursorX)
                     {
-                        selected = (column >= selectionX) && (column < cursorX);
+                        selected = (column >= selectionStartX) && (column < cursorX);
                     }
-                    else if (cursorX < selectionX)
+                    else if (cursorX < selectionStartX)
                     {
-                        selected = (column >= cursorX) && (column < selectionX);
+                        selected = (column >= cursorX) && (column < selectionStartX);
                     }
                 }
             }
-            else if (selectionY < cursorY)
+            else if (selectionStartY < cursorY)
             {
-                if ((row >= selectionY) && (row <= cursorY))
+                if ((row >= selectionStartY) && (row <= cursorY))
                 {
-                    if (row == selectionY)
+                    if (row == selectionStartY)
                     {
-                        selected = column >= selectionX;
+                        selected = column >= selectionStartX;
                     }
                     else if (row == cursorY)
                     {
@@ -194,17 +204,17 @@ unit Editor
                     }
                 }
             }
-            else if (cursorY < selectionY)
+            else if (cursorY < selectionStartY)
             {
-                if ((row >= cursorY) && (row <= selectionY))
+                if ((row >= cursorY) && (row <= selectionStartY))
                 {
                     if (row == cursorY)
                     {
                         selected = column >= cursorX;
                     }
-                    else if (row == selectionY)
+                    else if (row == selectionStartY)
                     {
-                        selected = column < selectionX;
+                        selected = column < selectionStartX;
                     }
                     else
                     {
@@ -215,39 +225,41 @@ unit Editor
         }
         return selected;
     }
-    uint  NormalizeSelection()
+    StartSelection()
+    {
+        selectionStartX = cursorX;
+        selectionStartY = cursorY;
+        selectionEndX   = cursorX;
+        selectionEndY   = cursorY;
+        selectionActive = true;
+    }
+    uint NormalizeSelection()
     {
         uint length = 0;
-        if (selectionY == cursorY) // simple case
+        if (selectionStartY == cursorY) // simple case
         {
-            if (selectionX < cursorX)
+            if (selectionStartX < cursorX)
             {
-                uint tmp = selectionX;
-                selectionX = cursorX;
-                cursorX = tmp;
+                UInt.Swap(ref selectionStartX, ref cursorX);
             }
-            length = selectionX - cursorX;
+            length = selectionStartX - cursorX;
         }
         else 
         {
-            if (selectionY < cursorY)
+            if (selectionStartY < cursorY)
             {
-                uint tmp = selectionX;
-                selectionX = cursorX;
-                cursorX = tmp;
-                tmp = selectionY;
-                selectionY = cursorY;
-                cursorY = tmp;
+                UInt.Swap(ref selectionStartX, ref cursorX);
+                UInt.Swap(ref selectionStartY, ref cursorY);
             }
             length = TextBuffer.GetLineLength(cursorY)-cursorX+1;
-            if (selectionY - cursorY > 1)
+            if (selectionStartY - cursorY > 1)
             {
-                for (uint i= cursorY+1; i < selectionY; i++)
+                for (uint i= cursorY+1; i < selectionStartY; i++)
                 {
                     length = length + TextBuffer.GetLineLength(i)+1;
                 }
             }
-            length = length + selectionX;
+            length = length + selectionStartX;
         }
         return length;
     }
@@ -334,10 +346,7 @@ unit Editor
         }
         return false;
     }
-    bool HasSelection() 
-    {
-        return selectionActive && ((selectionY != cursorY) || (selectionX != cursorX));
-    }
+    
     string GetSelectedText()
     {
         string text = "";
@@ -463,8 +472,8 @@ unit Editor
     SelectAll()
     {
         selectionActive = true;
-        selectionX = 0;
-        selectionY = 0;
+        selectionStartX = 0;
+        selectionStartY = 0;
         uint lineCount = TextBuffer.GetLineCount();
         cursorX = TextBuffer.GetLineLength(lineCount-1);
         cursorY = lineCount-1;
@@ -514,8 +523,8 @@ unit Editor
         TextBuffer.StartJournal();
         uint x = cursorX;
         uint y = cursorY;
-        selectionX = x;
-        selectionY = y;
+        selectionStartX = x;
+        selectionStartY = y;
         string clipboardText;
         if (Clipboard.HasText)
         {
@@ -684,18 +693,16 @@ unit Editor
         bool isControlled = (Key.Control == (key & Key.Control));
         bool isAlted = (Key.Alt == (key & Key.Alt));
 
-        uint x = cursorX;
-        uint y = cursorY;
+        uint   x = cursorX;
+        uint   y = cursorY;
         
-        bool draw = false;
+        bool   draw = false;
         string currentLine = TextBuffer.GetLine(cursorY);
-
-        //string clickstring;
+        bool   hasSelection = HasSelection();
+        
         Key unmaskedKey = (key & Key.Mask);
         if (unmaskedKey == Key.Click)
         {
-            //clickstring = " [" + ToClickString() + "]";
-            
             uint cx = ClickX;
             uint cy = ClickY;
             if (!Contains(cx, cy))
@@ -703,12 +710,16 @@ unit Editor
                 ignoreNextClick = true; // this click is not for you
             }
         }
+        if ((unmaskedKey == Key.Scroll) && hasSelection)
+        {
+            uint cx = ClickX;
+            uint cy = ClickY;
+            if (Contains(cx, cy))
+            {
+                ignoreNextClick = true; // unshifted scrolling should not cancel selection
+            }
+        }
         
-        //string keystring = KeyToString(key);
-        //string modifiers = ModifiersToString(key);
-        //OutputDebug("OnKey: " + keystring + ", " + modifiers + clickstring);
-        
-        bool hasSelection = HasSelection();
         if (!isShifted && !ignoreNextClick)
         {
             // any key without shift down clears the selection
@@ -794,28 +805,27 @@ unit Editor
                                 // isShifted - select
                                 if (!selectionActive)
                                 {
-                                    selectionX = cursorX; 
-                                    selectionY = cursorY;
+                                    StartSelection();
                                 }
                                 selectionActive = true;
                             }
                             else if (ClickDouble && (currentLine.Length > 0) && (x > 0) && (x < currentLine.Length) && !IsWordDelimiter(currentLine[x]))
                             {
                                 // select current word
-                                selectionX = x; 
-                                selectionY = y; 
+                                selectionStartX = x; 
+                                selectionStartY = y; 
                                 selectionActive = true;
                                 
                                 // find the left end of the current word
                                 loop
                                 {
-                                    uint iLeft = selectionX-1;
+                                    uint iLeft = selectionStartX-1;
                                     if (IsWordDelimiter(currentLine[iLeft]))
                                     {
                                         break;
                                     }
-                                    selectionX = iLeft;
-                                    if (selectionX == 0)
+                                    selectionStartX = iLeft;
+                                    if (selectionStartX == 0)
                                     {
                                         break;
                                     }
@@ -843,8 +853,8 @@ unit Editor
                             else if (wasDown)
                             {
                                 // click-drag-release to select
-                                selectionX = downX; selectionY = downY; 
-                                selectionActive = (x != selectionX) || (y != selectionY);
+                                selectionStartX = downX; selectionStartY = downY; 
+                                selectionActive = (x != selectionStartX) || (y != selectionStartY);
                                 wasDown = false;
                             }
                         }
@@ -875,13 +885,13 @@ unit Editor
                         //     - <Shift><Tab> : remove 4 spaces on left side of selection (if they exist) - all selected lines
                         uint ymin = y;
                         uint ymax = y;
-                        if (selectionY < ymin)
+                        if (selectionStartY < ymin)
                         {
-                            ymin = selectionY;
+                            ymin = selectionStartY;
                         }
-                        if (selectionY > ymax)
+                        if (selectionStartY > ymax)
                         {
-                            ymax = selectionY;
+                            ymax = selectionStartY;
                         }
                         uint yt = ymin;
                         if (!isShifted)
@@ -901,7 +911,7 @@ unit Editor
                                 }
                                 yt++;
                             }
-                            selectionX = selectionX + 4;
+                            selectionStartX = selectionStartX + 4;
                             x = x + 4; // to cause update below
                         }
                         else
@@ -932,9 +942,9 @@ unit Editor
                                 {
                                     x--;
                                 }
-                                if (selectionX > 0)
+                                if (selectionStartX > 0)
                                 {
-                                    selectionX--;
+                                    selectionStartX--;
                                 }
                             }
                         }
@@ -975,10 +985,8 @@ unit Editor
                 {
                     if (!selectionActive)
                     {
-                        selectionX = cursorX; 
-                        selectionY = cursorY;
+                        StartSelection();
                     }
-                    selectionActive = true;
                 }
                 if (isControlled)
                 {
@@ -1016,9 +1024,8 @@ unit Editor
                 {
                     if (!selectionActive)
                     {
-                        selectionX = cursorX; selectionY = cursorY; 
+                        StartSelection(); 
                     }
-                    selectionActive = true;
                 }
                 if (isControlled)
                 {
@@ -1036,9 +1043,8 @@ unit Editor
                 {
                     if (!selectionActive)
                     {
-                        selectionX = cursorX; selectionY = cursorY; 
+                        StartSelection();
                     }
-                    selectionActive = true;
                 }
                 if (x > 0) 
                 {
@@ -1087,9 +1093,8 @@ unit Editor
                 {
                     if (!selectionActive)
                     {
-                        selectionX = cursorX; selectionY = cursorY; 
+                        StartSelection(); 
                     }
-                    selectionActive = true;
                 }
                 if (x < currentLine.Length) 
                 {   
@@ -1142,7 +1147,7 @@ unit Editor
             {
                 if (isShifted && !selectionActive)
                 {
-                    selectionX = cursorX; selectionY = cursorY; selectionActive = true;
+                    StartSelection();
                 }
                 if (y > 0) 
                 {
@@ -1168,7 +1173,7 @@ unit Editor
             {
                 if (isShifted && !selectionActive)
                 {
-                    selectionX = cursorX; selectionY = cursorY; selectionActive = true;
+                    StartSelection();
                 }
                 if (isControlled)
                 {
@@ -1191,7 +1196,7 @@ unit Editor
             {
                 if (isShifted && !selectionActive)
                 {
-                    selectionX = cursorX; selectionY = cursorY; selectionActive = true;
+                    StartSelection();
                 }
                 y = y + height;
                 if (y > TextBuffer.GetLineCount()-1)
@@ -1203,7 +1208,7 @@ unit Editor
             {
                 if (isShifted && !selectionActive)
                 {
-                    selectionX = cursorX; selectionY = cursorY; selectionActive = true;
+                    StartSelection();
                 }
                 if (y > height)
                 {
@@ -1389,7 +1394,7 @@ unit Editor
             {
                 TextBufferUpdated(x, y, draw);
             }
-            if ((Key.Click == unmaskedKey) && ClickDouble && HasSelection() && (selectionY == cursorY)) // one line selection?
+            if ((Key.Click == unmaskedKey) && ClickDouble && HasOneLineSelection())
             {
                 string candidate = GetSelectedText();
                 if (candidate.Contains("/"))
@@ -1600,7 +1605,7 @@ unit Editor
                 }
                 while ((c < ln.Length) && (c < width - lineNumberWidth))
                 {
-                    bool isSelected = IsSelected(c, lineIndex);
+                    bool isSelected = IsSelected(colourOffset + c, lineIndex);
                     uint bColor = background;
                     if (isSelected)
                     {
@@ -1618,7 +1623,6 @@ unit Editor
                             bColor = Colour.ActiveRed;
                         }
                     }
-
                     if (currentIsActive && (lineIndex+1 == activeLine))
                     {
                         bColor = Colour.ActiveGray;
@@ -1630,12 +1634,10 @@ unit Editor
             while (c < width- lineNumberWidth)
             {
                 uint bColor = background;
-
                 if (IsDebugger && isBreak)
                 {
                     bColor = Colour.ActiveRed;
                 }
-
                 if (currentIsActive && (lineIndex+1 == activeLine))
                 {
                     bColor = Colour.ActiveGray;
@@ -1878,11 +1880,12 @@ unit Editor
             uint iFind;
             if (currentLine.IndexOf(findString, currentX, ref iFind))
             {
-                selectionX = iFind;
-                selectionY = currentY;
+                selectionStartX = iFind;
+                selectionStartY = currentY;
                 selectionActive = true;
                 cursorX = iFind + findString.Length;
                 cursorY = currentY;
+                
                 bool success = Editor.GotoLineNumber(cursorY + 1, cursorX+1);
                 cursorX = iFind + findString.Length; // GotoLineNumber munts cursorX
                 DisplayCursor(true);
@@ -1914,7 +1917,7 @@ unit Editor
         <string, string> fields = mb["fields"];
         
         string initialText = ""; // findString; <- never useful
-        if (HasSelection() && (selectionY == cursorY)) // one line selection?
+        if (HasOneLineSelection())
         {
             initialText = GetSelectedText();
         }
@@ -1971,7 +1974,7 @@ unit Editor
             {
                 initialText = suggestedPath;
             }
-            else if (HasSelection() && (selectionY == cursorY)) // one line selection?
+            else if (HasOneLineSelection())
             {
                 string candidate = GetSelectedText();
                 if (candidate.Contains("/"))
