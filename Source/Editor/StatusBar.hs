@@ -58,39 +58,8 @@ unit StatusBar
                     }
                     if (winner)
                     {
-                        <string> parts = clickPath.Split(':');
-                        if (parts.Length == 2)
-                        {
-                            string sourcePath = parts[0];
-                            string currentPath = Editor.GetCurrentPath();
-                            uint ln;
-                            bool gotoLine = false;
-                            if (UInt.TryParse(parts[1], ref ln))
-                            {
-                                gotoLine = true;
-                            }
-                            
-                            if (sourcePath.ToLower() != currentPath.ToLower())
-                            {
-                                if (Editor.CanUndo())
-                                {
-                                    Editor.OpenPath(sourcePath); // offer undo
-                                }
-                                else
-                                {
-                                    Editor.LoadFile(sourcePath);
-                                }
-                                currentPath = Editor.GetCurrentPath();
-                                gotoLine = (sourcePath.ToLower() == currentPath.ToLower());
-                            }
-                            OutputDebug(ln.ToString());
-                            if (gotoLine)
-                            {
-                                if (Editor.GotoLineNumber(ln))
-                                {
-                                }
-                            }
-                        }
+                        ClickStack.Push(Editor.GetCurrentPath(), Editor.GetCurrentLineNumber());
+                        ClickStack.Load(clickPath);
                         return true; // consumed key
                     }
                 }

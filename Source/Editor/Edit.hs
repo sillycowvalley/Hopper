@@ -34,7 +34,6 @@ program Edit
                 filePath = argument;
             }
         }
-        
         if (filePath.Length == 0)
         {
             showHelp = true;

@@ -10,6 +10,7 @@ unit Editor
     uses "/Source/Editor/MessageBox"
     uses "/Source/Editor/Highlighter"
     uses "/Source/System/Diagnostics"
+    uses "/Source/Editor/ClickStack"
     
     uses "/Source/Compiler/Tokens/Dependencies"
 
@@ -77,7 +78,6 @@ unit Editor
     byte editorTop;
     byte editorWidth;
     byte editorHeight;
-    
 
     uint TitleColor 
     {   get 
@@ -700,7 +700,7 @@ unit Editor
         {
             key = Key.Space;
         }
-        
+                
         bool isShifted = (Key.Shift == (key & Key.Shift));
         bool isControlled = (Key.Control == (key & Key.Control));
         bool isAlted = (Key.Alt == (key & Key.Alt));
@@ -891,7 +891,7 @@ unit Editor
         case Key.Tab:
             {
                 if (IsEditor)
-                {
+                {                    
                     TextBuffer.StartJournal();
                     if (hasSelection)
                     {
@@ -1298,6 +1298,19 @@ unit Editor
                     TextBuffer.EndJournal();
                     draw = true;
                 } // IsEditor
+            }
+        case Key.ModBackspace:
+            {
+                if (IsEditor)
+                {
+                    if (isControlled && !isAlted && !isShifted)
+                    {
+                        ClickStack.Pop();
+                        x = cursorX;
+                        y = cursorY;
+                        selectionActive = false;
+                    }
+                }
             }
         case Key.Backspace:
             {
@@ -1785,8 +1798,12 @@ unit Editor
             }
         }
         
-#endif        
-    
+#endif       
+        if (currentPath.Length != 0)
+        { 
+            ClickStack.Push(currentPath, Editor.GetCurrentLineNumber());
+        }
+        
         TextBuffer.Clear();
         
         file textFile = File.Open(path);
