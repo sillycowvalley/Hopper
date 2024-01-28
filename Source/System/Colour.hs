@@ -4,6 +4,7 @@ unit Colour
     uint Black        { get { return 0x000; } }
     uint DarkGray     { get { return 0x666; } }
     uint Gray         { get { return 0x888; } }
+	uint LessGray     { get { return 0xBBB; } }
     uint LightGray    { get { return 0xDDD; } }
     uint LightestGray { get { return 0xEEE; }}
     uint White        { get { return 0xFFF; } }
@@ -76,14 +77,15 @@ unit Colour
     
     
     // Highlighter: used for syntax highlighting
-    uint Comment     { get { return 0x360; }}
-    uint Statement   { get { return 0x60C; }}
-    uint Type        { get { return 0x33F; }}
-    uint Delimiter   { get { return 0x636; }}
-    uint Constant    { get { return 0x900; }}
-    uint Private     { get { return 0x330; }}
-    uint Public      { get { return 0x036; }}
-    uint Directive   { get { return 0x666; }}
+    uint Comment     { get { return 0x0360; }}
+    uint Statement   { get { return 0x060C; }}
+    uint Type        { get { return 0x033F; }}
+    uint Delimiter   { get { return 0x0636; }}
+    uint Constant    { get { return 0x0900; }}
+    uint Private     { get { return 0x0330; }}
+    uint Public      { get { return 0x0036; }}
+    uint Directive   { get { return 0x0666; }}
+    uint Selected    { get { return 0x8000; }} // high bit set
     
     
     

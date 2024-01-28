@@ -5,21 +5,20 @@ unit Highlighter
     
     string delimiters = ";,:?(){}[]<>=!&|~^+-*/%";
     
-    uint HopperWord(string word)
+    uint HopperWord(string word, string selectedWord)
     {
         uint colour;
-        
         if (IsStatementKeyword(word))
         {
-            colour = Statement;
+            colour = Colour.Statement;
         }
         else if (IsDirectiveKeyword(word))
         {
-            colour = Directive;
+            colour = Colour.Directive;
         }
         else if (IsTypeKeyword(word))
         {
-            colour = Type;
+            colour = Colour.Type;
         }
         else
         {
@@ -27,37 +26,41 @@ unit Highlighter
             uint h;
             if (word.StartsWith('"'))
             {
-                colour = Constant;
+                colour = Colour.Constant;
             }
             else if (word.StartsWith('\''))
             {
-                colour = Constant;
+                colour = Colour.Constant;
             }
             else if (delimiters.Contains(word))
             {
-                colour = Delimiter;
+                colour = Colour.Delimiter;
             }
             else if (Long.TryParse(word, ref l))
             {
-                colour = Constant;
+                colour = Colour.Constant;
             }
             else
             {
                 char w0 = word.GetChar(0);
                 if (w0.IsUpper())
                 {
-                    colour = Public;
+                    colour = Colour.Public;
                 }
                 else
                 {
-                    colour = Private;
+                    colour = Colour.Private;
                 }
             }
+        }
+        if ((selectedWord.Length != 0) && (word == selectedWord))
+        {
+            colour = colour | Colour.Selected;
         }
         return colour;
     }
     
-    <uint> Hopper(string ln, uint backColor, ref uint blockCommentNesting)
+    <uint> Hopper(string ln, string selectedWord, uint backColor, ref uint blockCommentNesting)
     {
         <uint> colours;
         uint colour;
@@ -75,7 +78,7 @@ unit Highlighter
                 {
                     if (word.Length > 0)
                     {
-                        colour = HopperWord(word);
+                        colour = HopperWord(word, selectedWord);
                         foreach (var ch in word)
                         {
                             colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
@@ -88,7 +91,7 @@ unit Highlighter
                 {
                     if (word.Length > 0)
                     {
-                        colour = HopperWord(word);
+                        colour = HopperWord(word, selectedWord);
                         foreach (var ch in word)
                         {
                             colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
@@ -124,7 +127,7 @@ unit Highlighter
                 {
                     if (word.Length > 0)
                     {
-                        colour = HopperWord(word);
+                        colour = HopperWord(word, selectedWord);
                         foreach (var ch in word)
                         {
                             colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
@@ -186,7 +189,7 @@ unit Highlighter
                         {
                             if (word.Length > 0)
                             {
-                                colour = HopperWord(word);
+                                colour = HopperWord(word, selectedWord);
                                 foreach (var ch in word)
                                 {
                                     colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
@@ -199,7 +202,7 @@ unit Highlighter
                     {
                         if (word.Length > 0)
                         {
-                            colour = HopperWord(word);
+                            colour = HopperWord(word, selectedWord);
                             foreach (var ch in word)
                             {
                                 colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
@@ -219,7 +222,7 @@ unit Highlighter
                         }
                         else
                         {
-                            colour = HopperWord(c.ToString());
+                            colour = HopperWord(c.ToString(), selectedWord);
                             colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
                         }
                     }
@@ -233,7 +236,7 @@ unit Highlighter
         } // loop
         if (word.Length > 0)
         {
-            colour = HopperWord(word);
+            colour = HopperWord(word, selectedWord);
             foreach (var ch in word)
             {
                 colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);

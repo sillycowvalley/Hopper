@@ -225,6 +225,16 @@ unit Editor
     {
         return selectionActive && (selectionStartY == selectionEndY) && (selectionStartX != selectionEndX);
     }
+    string GetSelectedWord()
+    {
+        string selectedWord;
+        if (HasOneLineSelection())
+        {
+            string text = GetSelectedText();
+            selectedWord = text;
+        }
+        return selectedWord;
+    }
     StartSelection()
     {
         selectionStartX = cursorX;
@@ -236,30 +246,30 @@ unit Editor
     uint NormalizeSelection()
     {
         uint length = 0;
-        if (selectionStartY == selectionEndY) // simple case
+        if (selectionStartY == selectionEndY) // simple case : single line
         {
-            if (selectionStartX < selectionEndX)
+            if (selectionStartX > selectionEndX)
             {
                 UInt.Swap(ref selectionStartX, ref selectionEndX);
             }
-            length = selectionStartX - selectionEndX;
+            length = selectionEndX - selectionStartX;
         }
         else 
         {
-            if (selectionStartY < selectionEndY)
+            if (selectionStartY > selectionEndY)
             {
                 UInt.Swap(ref selectionStartX, ref selectionEndX);
                 UInt.Swap(ref selectionStartY, ref selectionEndY);
             }
-            length = TextBuffer.GetLineLength(selectionEndY)-selectionEndX+1;
-            if (selectionStartY - cursorY > 1)
+            length = TextBuffer.GetLineLength(selectionStartY)-selectionStartX+1; // first line in selection
+            if (selectionEndY - selectionStartY > 1)
             {
-                for (uint i= selectionEndY+1; i < selectionStartY; i++)
+                for (uint i= selectionStartY+1; i < selectionEndY; i++)
                 {
                     length = length + TextBuffer.GetLineLength(i)+1;
                 }
             }
-            length = length + selectionStartX;
+            length = length + selectionEndX;
         }
         return length;
     }
@@ -544,8 +554,8 @@ unit Editor
     {
         TextBuffer.StartJournal();
         uint length = NormalizeSelection();
-        uint cX = selectionEndX;
-        uint cY = selectionEndY;
+        uint cX = selectionStartX;
+        uint cY = selectionStartY;
         while (length > 0)
         {
             bool success = TextBuffer.Delete(ref cX, ref cY);
@@ -1463,6 +1473,7 @@ unit Editor
         Suspend();
         
         string currentLower = currentPath.ToLower();
+        string selectedWord;
         bool currentIsActive = (activePath == currentLower);
         
         uint blockCommentNesting;
@@ -1470,17 +1481,21 @@ unit Editor
         // render the text buffer
         uint lineCount = TextBuffer.GetLineCount();
         
-        if (isHopperSource && (bufferTopLeftY > 0))
+        if (isHopperSource)
         {
-            // what if /* and| or */ appear before the visible content?
-            for (uint i = 0; i < bufferTopLeftY; i++)
+            selectedWord = GetSelectedWord();
+            if (bufferTopLeftY > 0)
             {
-                if (i < lineCount)
+                // what if /* and| or */ appear before the visible content?
+                for (uint i = 0; i < bufferTopLeftY; i++)
                 {
-                    string ln = TextBuffer.GetLine(i);
-                    if (ln.Contains("/*") || ln.Contains("*/"))
+                    if (i < lineCount)
                     {
-                        colours = Highlighter.Hopper(ln, background, ref blockCommentNesting);
+                        string ln = TextBuffer.GetLine(i);
+                        if (ln.Contains("/*") || ln.Contains("*/"))
+                        {
+                            colours = Highlighter.Hopper(ln, selectedWord, background, ref blockCommentNesting);
+                        }
                     }
                 }
             }
@@ -1588,7 +1603,7 @@ unit Editor
             {
                 if (isHopperSource)
                 {
-                    colours = Highlighter.Hopper(ln, background, ref blockCommentNesting);
+                    colours = Highlighter.Hopper(ln, selectedWord, background, ref blockCommentNesting);
                 }
                 uint colourOffset = 0;
                 
@@ -1612,7 +1627,11 @@ unit Editor
                     uint textColor = Colour.Black;
                     if (isHopperSource)
                     {
-                        textColor = colours[colourOffset + c];
+                        textColor = colours[colourOffset + c] & 0x0FFF;
+                        if (!isSelected && (0 != (colours[colourOffset + c] & Colour.Selected)))
+                        {
+                            bColor = Colour.LessGray;
+                        }
                     }
                     if (IsDebugger)
                     {
