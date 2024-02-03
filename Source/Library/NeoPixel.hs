@@ -65,6 +65,12 @@ unit NeoPixel
         BGWR = ((2 << 6) | (3 << 4) | (1 << 2) | (0)),
         BGRW = ((3 << 6) | (2 << 4) | (1 << 2) | (0)),
     }
+#if defined(NEOPIXEL_DEVICE_DRIVER)
+    Begin()
+    {
+        NeoPixelDeviceDriver.Begin();
+    }
+#endif
     
     Begin(byte pin) library;
     Begin(uint length, byte pin) library;

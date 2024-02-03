@@ -14,6 +14,13 @@ unit Wire
     #define USES_I2C
 #endif
 
+#if defined(ADAFRUIT_FEATHER_RP2040)
+    const byte DefaultI2CController = 1;
+    const byte DefaultI2CSDAPin     = 2; // also the STEMMA QT connector
+    const byte DefaultI2CSCLPin     = 3;
+    #define USES_I2C
+#endif
+
 #if !defined(USES_I2C)
     #error "TODO: Defaults and validation code needs to be added for this board. See above."
 #endif
@@ -74,6 +81,40 @@ unit Wire
                     if (sclPin == 0) { sclPin = 27; }
                     if (    ((sdaPin == 2) && (sclPin == 3))
                          || ((sdaPin == 6) && (sclPin == 7))
+                         || ((sdaPin == 26) && (sclPin == 27))
+                       ) { } else { break; }
+                }
+                default:
+                {
+                    break;
+                }
+            }
+#endif
+#if defined(ADAFRUIT_FEATHER_RP2040)
+            // This is untested:
+            switch (i2cController)
+            {
+                case 0:
+                {
+                    if ((sdaPin == 0) && (sclPin == 0)) { sdaPin = 24; } // zero is a legit value for SDA for controller 0
+                    if (sclPin == 0) { sclPin = 25; }
+                    if (    ((sdaPin == 0) && (sclPin == 1))
+                         || ((sdaPin == 8) && (sclPin == 9))
+                         || ((sdaPin == 12) && (sclPin == 13))
+                         || ((sdaPin == 20) && (sclPin == 21))
+                         || ((sdaPin == 24) && (sclPin == 25))
+                         || ((sdaPin == 28) && (sclPin == 29))
+                       ) { } else { break; }
+                     
+                }
+                case 1:
+                {
+                    if (sdaPin == 0) { sdaPin = 2; }
+                    if (sclPin == 0) { sclPin = 3; }
+                    if (    ((sdaPin ==  2) && (sclPin == 3))
+                         || ((sdaPin ==  6) && (sclPin == 7))
+                         || ((sdaPin == 10) && (sclPin == 11))
+                         || ((sdaPin == 18) && (sclPin == 19))
                          || ((sdaPin == 26) && (sclPin == 27))
                        ) { } else { break; }
                 }

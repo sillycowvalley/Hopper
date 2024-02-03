@@ -12,28 +12,29 @@ unit Screen
     const uint cellHeight    = CellHeight+1;
     uint[cellWidth*cellHeight] cellBuffer;
 #endif
-
+    
+#if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
     byte cursorX;
     byte cursorY;
-    byte[] fontData;
-    
     uint defaultForeColour = Colour.MatrixGreen;
     uint defaultBackColour = Colour.Black;
     uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}
     uint BackColour { get { return defaultBackColour; } set { defaultBackColour = value; }}
-    
-    
     byte CursorX { get { cursorX; }}
     byte CursorY { get { cursorY; }}
-#if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
     byte Columns { get { return byte(Display.PixelWidth / cellWidth); }}
     byte Rows    { get { return byte(Display.PixelHeight / cellHeight); }}
 #else
     byte Columns { get { return 0; }}
     byte Rows    { get { return 0; }}
+    byte CursorX { get { 0; }}
+    byte CursorY { get { 0; }}
+    uint ForeColour { get { return Colour.MatrixGreen; } }
+    uint BackColour { get { return Colour.Black; } }
 #endif
 
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
+    byte[] fontData;
     byte[] FontData { get { return fontData; } set { fontData = value; } }
     renderMonoCharacter(char chr, uint foreColour, uint backColour)
     {
