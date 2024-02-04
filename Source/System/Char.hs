@@ -7,8 +7,6 @@ unit Char
     bool IsLower(char this) system;
     bool IsUpper(char this) system;
     char ToLower(char this) system;
-    char ToDigit(byte d) system; // TODO : should be in Byte
-    char ToHex(byte h) system;   // TODO : should be in Byte
     
   #ifdef HOPPER_6502
     string ToString(char this)

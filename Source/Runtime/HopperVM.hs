@@ -2375,7 +2375,7 @@ unit HopperVM
                 Push(byte(HRChar.IsHexDigit(char(ch))), Type.Bool);
             }
             
-            case SysCall.CharToDigit:
+            case SysCall.ByteToDigit:
             {
                 Type htype;
                 uint b = byte(Pop(ref htype));
@@ -2386,9 +2386,9 @@ unit HopperVM
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif
-                Push(byte(HRChar.ToDigit(byte(b))), Type.Char);
+                Push(byte(HRByte.ToDigit(byte(b))), Type.Char);
             }
-            case SysCall.CharToHex:
+            case SysCall.ByteToHex:
             {
                 Type htype;
                 uint b = byte(Pop(ref htype));
@@ -2399,7 +2399,7 @@ unit HopperVM
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif
-                Push(byte(HRChar.ToHex(byte(b))), Type.Char);
+                Push(byte(HRByte.ToHex(byte(b))), Type.Char);
             }
             
             case SysCall.UIntToLong:

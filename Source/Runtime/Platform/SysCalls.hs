@@ -165,8 +165,8 @@ unit SysCalls
         CharIsDigit = 0xBA,
         CharIsLetterOrDigit = 0xBB,
         CharIsLower = 0xBC,
-        CharToDigit = 0xBD,
-        CharToHex = 0xBE,
+        ByteToDigit = 0xBD,
+        ByteToHex = 0xBE,
         CharIsHexDigit = 0xBF,
         CharToLower = 0xC0,
         

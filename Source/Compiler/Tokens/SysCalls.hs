@@ -233,8 +233,8 @@ unit SysCalls
         addEntry("Char", "IsDigit");
         addEntry("Char", "IsLetterOrDigit");
         addEntry("Char", "IsLower");
-        addEntry("Char", "ToDigit");
-        addEntry("Char", "ToHex");
+        addEntry("Byte", "ToDigit");
+        addEntry("Byte", "ToHex");
         addEntry("Char", "IsHexDigit");
         addEntry("Char", "ToLower");
         

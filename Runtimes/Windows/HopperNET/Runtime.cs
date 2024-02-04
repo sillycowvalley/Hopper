@@ -391,8 +391,8 @@ namespace HopperNET
         CharIsDigit = 0xBA,
         CharIsLetterOrDigit = 0xBB,
         CharIsLower = 0xBC,
-        CharToDigit = 0xBD,
-        CharToHex = 0xBE,
+        ByteToDigit = 0xBD,
+        ByteToHex = 0xBE,
         CharIsHexDigit = 0xBF,
         CharToLower = 0xC0,
         StringStartsWith = 0xC1,
@@ -4703,13 +4703,13 @@ namespace HopperNET
                 case SysCall.CharIsLetterOrDigit:
                     PushBool(Char.IsLetterOrDigit((char)Pop()));
                     break;
-                case SysCall.CharToDigit:
+                case SysCall.ByteToDigit:
                     {
                         uint d = Pop() + 48; // +0
                         Push((char)d, HopperType.tChar);
                     }
                     break;
-                case SysCall.CharToHex:
+                case SysCall.ByteToHex:
                     {
                         uint h = Pop();
                         if (h < 10)

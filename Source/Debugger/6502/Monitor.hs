@@ -481,13 +481,13 @@ unit Monitor
             Editor.SetStatusBarText("Uploading '" + ihexPath + "' ..");
         }
         uint crc = File.CRC16(ihexPath);
-        SerialWriteChar(Char.ToHex(byte((crc >> 4) & 0xF))); 
+        SerialWriteChar(Byte.ToHex(byte((crc >> 4) & 0xF))); 
         if (checkEcho(false)) { }
-        SerialWriteChar(Char.ToHex(byte(crc & 0xF))); 
+        SerialWriteChar(Byte.ToHex(byte(crc & 0xF))); 
         if (checkEcho(false)) { }
-        SerialWriteChar(Char.ToHex(byte(crc >> 12))); 
+        SerialWriteChar(Byte.ToHex(byte(crc >> 12))); 
         if (checkEcho(false)) { }
-        SerialWriteChar(Char.ToHex(byte((crc >> 8) & 0xF))); 
+        SerialWriteChar(Byte.ToHex(byte((crc >> 8) & 0xF))); 
         if (checkEcho(false)) { }
         SerialWriteChar(char(0x0D));
         if (checkEcho(false)) { }

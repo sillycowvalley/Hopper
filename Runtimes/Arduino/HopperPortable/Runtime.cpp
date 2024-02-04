@@ -8,6 +8,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -740,21 +741,21 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
 void Runtime_Out4Hex(UInt value)
 {
     Byte b = Byte(value >> 0x0C);
-    Serial_WriteChar(HRChar_ToHex(b));
+    Serial_WriteChar(HRByte_ToHex(b));
     b = Byte((value >> 0x08) & 0x0F);
-    Serial_WriteChar(HRChar_ToHex(b));
+    Serial_WriteChar(HRByte_ToHex(b));
     b = Byte((value >> 0x04) & 0x0F);
-    Serial_WriteChar(HRChar_ToHex(b));
+    Serial_WriteChar(HRByte_ToHex(b));
     b = Byte(value & 0x0F);
-    Serial_WriteChar(HRChar_ToHex(b));
+    Serial_WriteChar(HRByte_ToHex(b));
 }
 
 void Runtime_Out2Hex(Byte value)
 {
     Byte b = Byte((value >> 0x04) & 0x0F);
-    Serial_WriteChar(HRChar_ToHex(b));
+    Serial_WriteChar(HRByte_ToHex(b));
     b = Byte(value & 0x0F);
-    Serial_WriteChar(HRChar_ToHex(b));
+    Serial_WriteChar(HRByte_ToHex(b));
 }
 
 Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength)
@@ -2092,7 +2093,7 @@ UInt GC_New(UInt size, Type htype)
     return address;
 }
 
-Char HRChar_ToHex(Byte h)
+Char HRByte_ToHex(Byte h)
 {
     if (h < 0x0A)
     {
@@ -2163,9 +2164,9 @@ void IO_WriteHex(UInt u)
 void IO_WriteHex(Byte b)
 {
     Byte msn = ((b >> 0x04) & 0x0F);
-    IO_Write(HRChar_ToHex(msn));
+    IO_Write(HRByte_ToHex(msn));
     Byte lsn = b & 0x0F;
-    IO_Write(HRChar_ToHex(lsn));
+    IO_Write(HRByte_ToHex(lsn));
 }
 
 void IO_WriteUInt(UInt _this)
@@ -2207,7 +2208,7 @@ void IO_PushKey(Char c)
 void IO_writeDigit(UInt uthis)
 {
     UInt digit = uthis % 0x0A;
-    Char c = HRChar_ToDigit(Byte(digit));
+    Char c = HRByte_ToDigit(Byte(digit));
     uthis = uthis / 0x0A;
     if (uthis != 0x00)
     {
@@ -3897,7 +3898,7 @@ void HRVariant_Dump(UInt address, UInt indent)
     IO_WriteHex(value);
 }
 
-Char HRChar_ToDigit(Byte d)
+Char HRByte_ToDigit(Byte d)
 {
     d = d + 0x30;
     return Char(d);
@@ -5405,18 +5406,18 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(Byte(HRChar_IsHexDigit(Char(ch))), Type::eBool);
         break;
     }
-    case SysCall::eCharToDigit:
+    case SysCall::eByteToDigit:
     {
         Type htype = (Type)0;
         UInt b = Byte(HopperVM_Pop_R(htype));
-        HopperVM_Push(Byte(HRChar_ToDigit(Byte(b))), Type::eChar);
+        HopperVM_Push(Byte(HRByte_ToDigit(Byte(b))), Type::eChar);
         break;
     }
-    case SysCall::eCharToHex:
+    case SysCall::eByteToHex:
     {
         Type htype = (Type)0;
         UInt b = Byte(HopperVM_Pop_R(htype));
-        HopperVM_Push(Byte(HRChar_ToHex(Byte(b))), Type::eChar);
+        HopperVM_Push(Byte(HRByte_ToHex(Byte(b))), Type::eChar);
         break;
     }
     case SysCall::eUIntToLong:
@@ -8475,3 +8476,4 @@ UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
     vtype = Type(Memory_ReadByte(_this + 2));
     return Memory_ReadWord(_this + 3);
 }
+

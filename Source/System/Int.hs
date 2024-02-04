@@ -92,7 +92,7 @@ unit Int
         while (uthis != 0)
         {
             digit = uthis % 10;
-            c = Char.ToDigit(byte(digit));
+            c = Byte.ToDigit(byte(digit));
             String.BuildFront(ref result, c);
             uthis = uthis / 10;
         }
@@ -114,7 +114,7 @@ unit Int
         for (i = digits; i > 0; i--)
         {
             digit = this % 16;
-            c = Char.ToHex(byte(digit));
+            c = Byte.ToHex(byte(digit));
             String.BuildFront(ref result, c);
             this = this / 16;
         }

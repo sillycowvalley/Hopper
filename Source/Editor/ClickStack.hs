@@ -202,7 +202,16 @@ unit ClickStack
             }
             if (firstClick && (firstWord.Length != 0))
             {
-                
+                if (IsSimpleType(firstWord))
+                {
+                    string path = Symbols.GetNamespaceLocation(Types.ToNamespace(firstWord));
+                    if (path.Length > 0)
+                    {
+                        // clicked on a simply type like 'byte' -> uint Byte
+                        location = path + ":1";
+                        break;
+                    }
+                }
                 uint iOverload;
                 if ((firstWord[0]).IsLower() && Symbols.TryFindMethod(clickLocation, ref iOverload))
                 {

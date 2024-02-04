@@ -36,23 +36,6 @@ unit HRChar
                ((b >= 65) && (b <= 90)) || // A..Z
                ((b >= 97) && (b <= 122));  // a..z
     }
-    char ToHex(byte h) // TODO : should be in Byte
-    {
-        if (h < 10)
-        {
-            h = h + 48; // +0
-        }
-        else
-        {
-            h = h + 55; // +A - 10
-        }
-        return char(h);
-    }
-    char ToDigit(byte d) // TODO : should be in Byte
-    {
-        d = d + 48; // +0
-        return char(d);
-    }
     char ToLower(char this) 
     {
         byte b;

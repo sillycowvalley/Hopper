@@ -24,6 +24,7 @@ program Runtime
     uses "/Source/Runtime/Platform/Long"
     uses "/Source/Runtime/Platform/Pair"
     uses "/Source/Runtime/Platform/Char"
+    uses "/Source/Runtime/Platform/Byte"
     uses "/Source/Runtime/Platform/String"
     uses "/Source/Runtime/Platform/UInt"
     uses "/Source/Runtime/Platform/Variant"
@@ -457,13 +458,13 @@ program Runtime
     Out4Hex(uint value)
     {
         byte b = byte(value >> 12);
-        Serial.WriteChar(ToHex(b));
+        Serial.WriteChar(HRByte.ToHex(b));
         b = byte((value >> 8) & 0x0F); 
-        Serial.WriteChar(ToHex(b));
+        Serial.WriteChar(HRByte.ToHex(b));
         b = byte((value >> 4) & 0x0F); 
-        Serial.WriteChar(ToHex(b));
+        Serial.WriteChar(HRByte.ToHex(b));
         b = byte(value & 0x0F); 
-        Serial.WriteChar(ToHex(b));
+        Serial.WriteChar(HRByte.ToHex(b));
     }
     
     Out2Hex(byte value)
@@ -471,7 +472,7 @@ program Runtime
         byte b = byte((value >> 4) & 0x0F); 
         Serial.WriteChar(ToHex(b));
         b = byte(value & 0x0F); 
-        Serial.WriteChar(ToHex(b));
+        Serial.WriteChar(HRByte.ToHex(b));
     }
     
     DumpPage(byte iPage, bool includeAddresses)

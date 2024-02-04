@@ -80,12 +80,14 @@ program PreProcess
         return found;
     }
     
-    bool tryParseTypeString(ref string typeString, bool allowEmptyConstArrays)
+    bool tryParseTypeString(ref string typeString, ref bool deferred, bool allowEmptyConstArrays)
     {
         bool genericKAllowed = (CurrentNamespace == "Dictionary") || (CurrentNamespace == "Pair");
         bool genericVAllowed = genericKAllowed || (CurrentNamespace == "Array") || (CurrentNamespace == "List");  
         
         bool success = false;
+        
+        deferred = false;
         loop
         {
             bool isSimple = false;
@@ -115,6 +117,7 @@ program PreProcess
                         typeToken["lexeme"] = CurrentNamespace + "." + typeToken["lexeme"];
                     }
                     Symbols.DeferValidation(typeToken);
+                    deferred = true;
                 }
             }
             if (isSimple)
@@ -159,12 +162,6 @@ program PreProcess
                     {
                         // empty array range 
                     }
-                    else if ((arrayUnitV || systemByteArray) && Parser.Check(HopperToken.RBracket)) // TODO REMOVE
-                    {
-                        // empty range: 
-                        //   'V[]' for Array system methods
-                        //   'byte[]' for System.Call(..)
-                    }
                     else
                     {
                         string actualType;
@@ -188,15 +185,25 @@ program PreProcess
                 Parser.Advance(); // <
                 // <byte> and <string,byte>
                 typeString = typeString + "<";
-                success = tryParseTypeString(ref typeString, false); // dictionary key
+                bool deferred;
+                success = tryParseTypeString(ref typeString, ref deferred, false); // dictionary key
                 if (success)
                 {
+                    if (deferred)
+                    {
+                        // TODO ?
+                    }
                     if (Parser.Check(HopperToken.Comma))
                     {
                         // TODO: make <byte,byte,byte> illegal
                         Parser.Advance(); // ,
                         typeString = typeString + ",";       
-                        success = tryParseTypeString(ref typeString, false); // dictionary value
+                        success = tryParseTypeString(ref typeString, ref deferred, false); // dictionary value
+                        if (success && deferred)
+                        {
+                            // TODO ?
+                        }
+                        
                     }
                 }
                 if (success)
@@ -291,7 +298,8 @@ program PreProcess
         loop
         {
             Parser.Advance(); // const
-            if (!tryParseTypeString(ref typeString, true)) // constDeclaration
+            bool deferred;
+            if (!tryParseTypeString(ref typeString, ref deferred, true) || deferred) // constDeclaration
             {
                 Parser.ErrorAtCurrent("simple type expected");
                 break;
@@ -547,7 +555,8 @@ program PreProcess
                 isReference = "ref";   
             }
             string typeString;   
-            if (!tryParseTypeString(ref typeString, false)) // argumentsDeclaration
+            bool deferred;
+            if (!tryParseTypeString(ref typeString, ref deferred, false)) // argumentsDeclaration
             {
                 if (!HadError)
                 {
@@ -990,11 +999,12 @@ program PreProcess
                     bool isType = false;
                   
                     <string,string> peekNextToken = Parser.Peek();
+                    bool deferred;
                     if (HopperToken.LParen != Token.GetType(peekNextToken))
                     {           
-                        isType = tryParseTypeString(ref typeString, true); // declaration (global or return type?
+                        isType = tryParseTypeString(ref typeString, ref deferred, true); // declaration (global or return type?)
                     }
-                    if (isType)
+                    if (isType) // could be assuming a named type that has not been defined yet
                     {
                         if (Parser.Check(HopperToken.Identifier) || Parser.Check(HopperToken.DottedIdentifier))
                         {
@@ -1021,6 +1031,10 @@ program PreProcess
                                 Parser.Error("'(' or ';' expected");
                                 break;
                             }
+                        }
+                        else if (deferred && Parser.Check(HopperToken.LBrace))
+                        {
+                            Parser.ErrorAtCurrent("unexpected '{'");
                         }
                         else
                         {

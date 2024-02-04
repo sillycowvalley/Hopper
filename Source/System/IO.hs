@@ -86,7 +86,7 @@ unit IO
     writeDigit(uint uthis)
     {
         uint digit = uthis % 10;
-        char c = HRChar.ToDigit(byte(digit));
+        char c = HRByte.ToDigit(byte(digit));
         uthis = uthis / 10;
         if (uthis != 0)
         {

@@ -102,7 +102,7 @@ unit Long
         {
             digit = this % 10;
             udigit = uint(digit);
-            c = Char.ToDigit(byte(udigit));
+            c = Byte.ToDigit(byte(udigit));
             String.BuildFront(ref result, c);
             this = this / 10;
         }
@@ -134,7 +134,7 @@ unit Long
         {
             digit = this % 16;
             idigit = int(digit);
-            c = Char.ToHex(byte(idigit));
+            c = Byte.ToHex(byte(idigit));
             String.BuildFront(ref result, c);
             this = this / 16;
         }

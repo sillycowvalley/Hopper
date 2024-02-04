@@ -7,6 +7,8 @@ program Dir
     string wildcardStartsWith;
     string wildcardEndsWith;
     
+    string CommandName { get { return "DIR"; } }
+    
     DirectoryListing(<string> options, <string> arguments, bool firstCall)
     {
         uint iFirstDot;
@@ -172,7 +174,7 @@ program Dir
                         }
                         if (invalidWildcards)
                         {
-                            PrintLn("Invalid wildcard for DIR:");
+                            PrintLn("Invalid wildcard for " + CommandName + ":");
                             PrintLn("  '*.*' : all");
                             PrintLn("  'xxx.*' : all with name 'xxx'");
                             PrintLn("  '*.xxx' : all with extension 'xxx'");
@@ -186,7 +188,7 @@ program Dir
             
             if (invalidArguments)
             {
-                PrintLn("Invalid arguments for DIR:");
+                PrintLn("Invalid arguments for " + CommandName + ":");
                 PrintLn("  -f : full paths for each file");
                 PrintLn("  -t : include unix time stamp");
                 PrintLn("  -c : include crc-16 checksums");
@@ -309,7 +311,7 @@ program Dir
                 }
             }
             break;
-        }
+        } // loop
     }
     {
         <string> rawargs = System.Arguments;

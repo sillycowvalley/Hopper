@@ -15,10 +15,14 @@ unit Byte
         for (i = digits; i > 0; i--)
         {
             digit = this % 16;
-            c = Char.ToHex(byte(digit));
+            c = Byte.ToHex(byte(digit));
             String.BuildFront(ref result, c);
             this = this / 16;
         }
         return result;
     }
+    
+    char ToHex(byte this) system; 
+    char ToDigit(byte this) system;
+    
 }

@@ -175,7 +175,7 @@ unit UInt
         string result;
         for (; digits > 0; digits--)
         {
-            String.BuildFront(ref result, Char.ToHex(byte(this % 16)));
+            String.BuildFront(ref result, Byte.ToHex(byte(this % 16)));
             this = this / 16;
         }
         return result;

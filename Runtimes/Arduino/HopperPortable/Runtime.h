@@ -276,8 +276,8 @@ enum SysCall {
     eCharIsDigit = 0x00BA,
     eCharIsLetterOrDigit = 0x00BB,
     eCharIsLower = 0x00BC,
-    eCharToDigit = 0x00BD,
-    eCharToHex = 0x00BE,
+    eByteToDigit = 0x00BD,
+    eByteToHex = 0x00BE,
     eCharIsHexDigit = 0x00BF,
     eCharToLower = 0x00C0,
     eTimeDelay = 0x00C6,
@@ -632,7 +632,7 @@ void GC_Release(UInt address);
 void GC_Dump(UInt address);
 void GC_Dump(UInt address, UInt indent);
 UInt GC_New(UInt size, Type htype);
-Char HRChar_ToHex(Byte h);
+Char HRByte_ToHex(Byte h);
 void Minimal_Error_Set(Byte value);
 Byte Minimal_Error_Get();
 Bool IO_IsBreak();
@@ -736,7 +736,7 @@ void HRPair_Clear(UInt _this);
 void HRPair_Dump(UInt address, UInt indent);
 void HRVariant_Clear(UInt _this);
 void HRVariant_Dump(UInt address, UInt indent);
-Char HRChar_ToDigit(Byte d);
+Char HRByte_ToDigit(Byte d);
 OpCode HopperVM_CurrentOpCode_Get();
 UInt HopperVM_Pop_R(Type & htype);
 Bool HopperVM_CNP_Get();
@@ -876,6 +876,7 @@ UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
 
 
 #endif // HOPPERRUNTIME_H
