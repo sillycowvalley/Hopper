@@ -147,6 +147,10 @@ unit Editor
     {
         return wordDelimiters.Contains(c);
     }
+    bool IsWordDelimiterNoDot(char c)
+    {
+        return (c != '.') && wordDelimiters.Contains(c);
+    }
     bool HasClipboardText()
     {
         return Clipboard.HasText;
@@ -291,7 +295,7 @@ unit Editor
 
         cursorX = x;
         cursorY = y;
-            
+        
         if (x < bufferTopLeftX)
         {
             bufferTopLeftX = x;
@@ -611,6 +615,7 @@ unit Editor
         // gotoColumn    : first nonSpace on line
         uint x = cursorX;
         uint y = cursorY;
+        
         if (defaultLine)
         {
             gotoLine = TextBuffer.GetLineCount();
@@ -696,7 +701,7 @@ unit Editor
         
     bool OnKey(Key key)
     {
-        if ((key & (Key.Mask | Key.Alt)) == Key.ModSpace) // mask away Key.Shift and Key.Control but not Key.Alt
+        if ((key & (Key.Mask | Key.Alt)) == Keyboard.Key.ModSpace) // mask away Key.Shift and Key.Control but not Key.Alt
         {
             key = Key.Space;
         }
@@ -788,6 +793,84 @@ unit Editor
                     }
                 }
             }
+        case Key.ClickRight:
+            {
+                if (ignoreNextClick)
+                {
+                    ignoreNextClick = false;
+                }
+                else
+                {
+                    uint cx = ClickX;
+                    uint cy = ClickY;
+                        
+                    if (Contains(cx, cy))
+                    {
+                        
+                        
+                        uint cX = cx - x0 - lineNumberWidth + bufferTopLeftX;
+                        uint cY = cy - y0 + bufferTopLeftY;
+                        if (cY > TextBuffer.GetLineCount()-1)
+                        {
+                            // clicked below the content of the file
+                        }
+                        else if (ClickUp)
+                        {
+                            string clickedLine = TextBuffer.GetLine(cY);
+                            if ((clickedLine.Length > 0) && (cX > 0) && (cX < clickedLine.Length) && !Editor.IsWordDelimiterNoDot(clickedLine[cX]))
+                            {
+                                // find current word
+                                uint startX = cX; 
+                                uint endX   = cX;
+                                loop
+                                {
+                                    // find the left end of the current word
+                                    uint iLeft = startX-1;
+                                    if (Editor.IsWordDelimiterNoDot(clickedLine[iLeft]))
+                                    {
+                                        break;
+                                    }
+                                    startX = iLeft;
+                                    if (startX == 0)
+                                    {
+                                        break;
+                                    }
+                                }
+                                if (endX < clickedLine.Length)
+                                {
+                                    // find right end of current word
+                                    loop
+                                    {
+                                        uint iRight = endX + 1;
+                                        if ((iRight < clickedLine.Length) && Editor.IsWordDelimiterNoDot(clickedLine[iRight]))
+                                        {
+                                            endX = iRight;
+                                            break;
+                                        }
+                                        endX = iRight;
+                                        if (endX == clickedLine.Length)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (endX != startX)
+                                {
+                                    string contextWord = clickedLine.Substring(startX, endX-startX);
+                                    string beforeWord  = clickedLine.Substring(0,startX).Trim();
+                                    string afterWord   = clickedLine.Substring(endX).Trim();
+                                    if (ClickStack.ContextClick(contextWord, beforeWord, afterWord, cX-startX, cY+1))
+                                    {
+                                        x = cursorX;
+                                        y = cursorY;
+                                        selectionActive = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         case Key.Click:
             {
                 if (ignoreNextClick)
@@ -820,7 +903,7 @@ unit Editor
                                     StartSelection();
                                 }
                             }
-                            else if (ClickDouble && (currentLine.Length > 0) && (x > 0) && (x < currentLine.Length) && !IsWordDelimiter(currentLine[x]))
+                            else if (ClickDouble && (currentLine.Length > 0) && (x > 0) && (x < currentLine.Length) && !Editor.IsWordDelimiter(currentLine[x]))
                             {
                                 // select current word
                                 selectionStartX = x; selectionEndX = x;
@@ -830,7 +913,7 @@ unit Editor
                                 {
                                     // find the left end of the current word
                                     uint iLeft = selectionStartX-1;
-                                    if (IsWordDelimiter(currentLine[iLeft]))
+                                    if (Editor.IsWordDelimiter(currentLine[iLeft]))
                                     {
                                         break;
                                     }
@@ -846,7 +929,7 @@ unit Editor
                                     loop
                                     {
                                         uint iRight = x + 1;
-                                        if ((iRight < currentLine.Length) && IsWordDelimiter(currentLine[iRight]))
+                                        if ((iRight < currentLine.Length) && Editor.IsWordDelimiter(currentLine[iRight]))
                                         {
                                             x = iRight;
                                             break;
@@ -1065,7 +1148,7 @@ unit Editor
                             {
                                 break;
                             }
-                            if (IsWordDelimiter(currentLine[iLeftEnd]))
+                            if (Editor.IsWordDelimiter(currentLine[iLeftEnd]))
                             {
                                 if (nonDelimiterSeen)
                                 {
@@ -1108,7 +1191,7 @@ unit Editor
                         {
                             // jump to the right end of the current word
                             uint iRightEnd = x+1;
-                            bool startedAtDelimiter = IsWordDelimiter(currentLine[x]);
+                            bool startedAtDelimiter = Editor.IsWordDelimiter(currentLine[x]);
                             bool nonDelimiterSeen = false;
                             loop
                             {
@@ -1117,7 +1200,7 @@ unit Editor
                                     iRightEnd++;
                                     break;
                                 }
-                                if (IsWordDelimiter(currentLine[iRightEnd]))
+                                if (Editor.IsWordDelimiter(currentLine[iRightEnd]))
                                 {
                                     if (nonDelimiterSeen)
                                     {
@@ -1301,8 +1384,8 @@ unit Editor
             }
         case Key.ModBackspace:
             {
-                if (IsEditor)
-                {
+                //if (IsEditor)
+                //{
                     if (isControlled && !isAlted && !isShifted)
                     {
                         ClickStack.Pop();
@@ -1310,7 +1393,7 @@ unit Editor
                         y = cursorY;
                         selectionActive = false;
                     }
-                }
+                //}
             }
         case Key.Backspace:
             {
@@ -2361,6 +2444,7 @@ unit Editor
             return false;
         }
         string fileTimeHex = fileTime.ToHexString(8);
+        /*
         if  (fileTimeHex > youngestSourceTimeHex)
         {
             OutputDebug("IsYoungerThanSource: '" + candidatePath + "' 0x" + fileTimeHex + " YES");
@@ -2371,6 +2455,7 @@ unit Editor
             OutputDebug("IsYoungerThanSource: '" + candidatePath + "' 0x" + fileTimeHex + " NO");
             OutputDebug("       YoungestFile: '" + youngestSourcePath + "' 0x" + youngestSourceTimeHex);
         }
+        */
         return (fileTimeHex > youngestSourceTimeHex);
     }
     
@@ -2386,7 +2471,7 @@ unit Editor
                 if (Dependencies.TryGetYoungest(sources, ref youngestSourcePath, ref youngestSourceTime))
                 {
                     youngestSourceTimeHex = youngestSourceTime.ToHexString(8);
-                    OutputDebug("UpdateYoungestFile: '" + youngestSourcePath + "' 0x" + youngestSourceTimeHex);
+                    //OutputDebug("UpdateYoungestFile: '" + youngestSourcePath + "' 0x" + youngestSourceTimeHex);
                 }
             }
         }

@@ -46,26 +46,26 @@ unit BuildCommand
                     if (hexFileTimeHex >= hexeFileTimeHex)
                     {
                         // .hex is younger than .hexe
-                        OutputDebug("HEX 1 " + path + " " + ihexPath + " " + hexeFileTimeHex + " " + hexFileTimeHex);
+                        //OutputDebug("HEX 1 " + path + " " + ihexPath + " " + hexeFileTimeHex + " " + hexFileTimeHex);
                         path = ihexPath;
                         target6502 = true;
                     }
                     else
                     {
-                        OutputDebug("HEXE 2 " + path + " " + ihexPath + " " + hexeFileTimeHex + " " + hexFileTimeHex);
+                        //OutputDebug("HEXE 2 " + path + " " + ihexPath + " " + hexeFileTimeHex + " " + hexFileTimeHex);
                     }
                 }
                 else
                 {
                     // only .hex exists
-                    OutputDebug("HEX 2 " + path + " " + ihexPath);
+                    //OutputDebug("HEX 2 " + path + " " + ihexPath);
                     path = ihexPath;
                     target6502 = true;
                 }
             }
             else
             {
-                OutputDebug("HEXE 1 " + path + " " + ihexPath);
+                //OutputDebug("HEXE 1 " + path + " " + ihexPath);
             }
         }
         return path;
@@ -175,6 +175,7 @@ unit BuildCommand
             string hasmPath = "/Debug/Obj/" + fileName + HasmExtension;
             
             Editor.SetStatusBarText("Preprocessing '" + sourcePath + "' -> '" + jsonPath + "'");
+            Source.DefinitionSymbolsLoaded = false; // reload after Preprocessing..
             
             byte col = Editor.Left + 1;
             byte row = Editor.Top + Editor.Height - 1;

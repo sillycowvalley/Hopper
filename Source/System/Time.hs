@@ -2,12 +2,9 @@ unit Time
 {
     long Millis  { get system; }
 
-#ifdef MCU
+#if defined(MCU) || defined(HOPPER_6502)
     Delay(uint ms) system;
 #else
-  #ifdef HOPPER_6502
-    Delay(uint ms) system;
-  #else
     Delay(uint ms)
     {
         long endTime = Millis + ms;
@@ -19,6 +16,5 @@ unit Time
             }
         }
     }
-  #endif
 #endif
 }

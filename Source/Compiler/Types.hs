@@ -454,6 +454,23 @@ unit Types
         isValue = simpleTypes.Contains(keyString);
         return isValue;
     }
+    
+    string ToNamespace(string typeDefinition)
+    {
+        string thisNamespace;
+        if (typeDefinition == "uint")
+        {
+            thisNamespace = "UInt"; // special case: two uppercase letters
+        }
+        else
+        {
+            byte b = Types.ToByte(typeDefinition);
+            thisNamespace = Type.ToString(type(b));
+            thisNamespace = (thisNamespace[0]).ToUpper() + thisNamespace.Substring(1);
+        }
+        return thisNamespace;
+    }
+    
     byte ToByte(string typeName)
     {
         switch (typeName)

@@ -23,7 +23,7 @@ unit Monitor
     SendBreak()
     {
         // send a <ctrl><C> in case there is a program running
-        OutputDebug("Before 0x03");
+        //OutputDebug("Before 0x03");
         Serial.WriteChar(char(0x03));
         uint waitCount;
         loop
@@ -603,7 +603,7 @@ unit Monitor
         {
             serialOutput = serialOutput.Substring(1);
         }
-        OutputDebug("GetCurrentPC: " + serialOutput);
+        //OutputDebug("GetCurrentPC: " + serialOutput);
         uint pc;
         if (UInt.TryParse("0x" + serialOutput, ref pc))
         {
@@ -619,7 +619,7 @@ unit Monitor
         {
             serialOutput = serialOutput.Substring(1);
         }
-        OutputDebug("GetCurrentCRC: " + serialOutput);
+        //OutputDebug("GetCurrentCRC: " + serialOutput);
         uint crc;
         if (UInt.TryParse("0x" + serialOutput, ref crc))
         {

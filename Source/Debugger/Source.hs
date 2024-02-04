@@ -7,7 +7,9 @@ unit Source
     
     <byte> code;
     bool symbolsLoaded;
+    bool definitionSymbolsLoaded;
     bool SymbolsLoaded { get { return symbolsLoaded;  } }
+    bool DefinitionSymbolsLoaded { get { return definitionSymbolsLoaded; } set {  definitionSymbolsLoaded = value; } }
     
     ClearSymbols()
     {
@@ -18,6 +20,25 @@ unit Source
         LibCalls.New();
         Symbols.New();
     }
+    
+    bool LoadDefinitions(string symbolsPath)
+    {
+        // before calling Symbols.Import
+        SysCalls.New();
+        LibCalls.New();
+        Symbols.New();
+        definitionSymbolsLoaded = false;
+        
+        Editor.SetStatusBarText("Loading symbols '" + symbolsPath + "' ..");
+        if (Symbols.Import(symbolsPath))
+        {
+            uint symbolsLoaded = Symbols.GetSymbolsCount();
+            Editor.SetStatusBarText("Definitions loaded for " + symbolsLoaded.ToString() + " symbols.");
+            definitionSymbolsLoaded = true;
+        }
+        return definitionSymbolsLoaded;
+    }
+    
     LoadSymbols(bool onlyNamedTypes)
     {
         string ihexPath = Monitor.CurrentHexPath;
@@ -68,8 +89,12 @@ unit Source
                     Editor.SetStatusBarText("Loading types '" + symbolsPath + "' ..");
                     if (Symbols.Import(symbolsPath, onlyNamedTypes))
                     {
-                        uint namedTypes = Symbols.GetNamedTypesCount();
-                        Editor.SetStatusBarText("Types loaded for " + namedTypes.ToString() + " named types.");
+                        if (onlyNamedTypes)
+                        {
+                            uint namedTypes = Symbols.GetNamedTypesCount();
+                            Editor.SetStatusBarText("Types loaded for " + namedTypes.ToString() + " named types.");
+                            definitionSymbolsLoaded = false; // rest of symbols may have been 'unloaded'
+                        }
                     }
                 }
             }

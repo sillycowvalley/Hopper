@@ -238,7 +238,10 @@ program PreProcess
           }
           if (isSystem)
           {
-              // empty blockPos implies syscall or libcall
+              // zero pos implies no source (syscall or libcall)
+              blockPos.Append("0");
+              blockPos.Append(currentToken["line"]);
+              blockPos.Append(currentToken["source"]);
           }
           else
           {
@@ -321,6 +324,7 @@ program PreProcess
             }
             string constantName = CurrentNamespace + "." + idToken["lexeme"];
             Symbols.AddConstant(constantName, actualType, value);   
+            Symbols.AddLocation(constantName, idToken["source"] + ":" + idToken["line"]);
             
             //<string,string> prev = Parser.PreviousToken;
             //if (prev["type"] != "RBrace") // no ';' after hex string constant
@@ -350,6 +354,7 @@ program PreProcess
             {
                 break;   
             }
+            Symbols.AddLocation(identifier, idToken["source"] + ":" + idToken["line"]);
             
             Parser.Advance(); // identifier           
             
@@ -382,6 +387,7 @@ program PreProcess
                 }
                 
                 <string,string> entryToken = Parser.CurrentToken;
+                
                 string qualifiedName = identifier + "." + entryToken["lexeme"];
                 string valueString;
                 Parser.Advance();
@@ -395,8 +401,9 @@ program PreProcess
                         Parser.ErrorAtCurrent("'uint' constant expected"); 
                     }
                 }
-                
                 values[qualifiedName] = currentValue;
+                Symbols.AddLocation(qualifiedName, entryToken["source"] + ":" + entryToken["line"]);
+                
                 currentValue++;
                 bool expectComma = false;
                 if (!Parser.Check(HopperToken.RBrace))
@@ -586,6 +593,10 @@ program PreProcess
             {
                 break;   
             }
+            if (isDelegate)
+            {
+                Symbols.AddLocation(identifier, idToken["source"] + ":" + idToken["line"]);
+            }
             < <string > > arguments = argumentsDeclaration();
             if (HadError)
             {
@@ -620,6 +631,10 @@ program PreProcess
             if (!normalizeIdentifier(idToken, ref identifier, ref public, false))
             {
                 break;   
+            }
+            if (isDelegate)
+            {
+                Symbols.AddLocation(identifier, idToken["source"] + ":" + idToken["line"]);
             }
             
             < <string > > arguments = argumentsDeclaration();
@@ -825,9 +840,9 @@ program PreProcess
                 break;
             }
             <string> blockPos;
+            <string,string> currentToken = Parser.CurrentToken;
             if (Parser.Check(HopperToken.Assign))
             {
-                <string,string> currentToken = Parser.CurrentToken;
                 long pos;
                 if (Long.TryParse(currentToken["pos"], ref pos))
                 {
@@ -840,6 +855,12 @@ program PreProcess
                 pos = pos + 1; // one beyond '='
                 
                 blockPos.Append(pos.ToString());
+                blockPos.Append(currentToken["line"]);
+                blockPos.Append(currentToken["source"]);
+            }
+            else
+            {
+                blockPos.Append("0");
                 blockPos.Append(currentToken["line"]);
                 blockPos.Append(currentToken["source"]);
             }
@@ -1128,7 +1149,7 @@ program PreProcess
           }
           <string,string> previousToken = Parser.PreviousToken;
           Types.CurrentNamespace = previousToken["lexeme"];
-          AddNameSpace(Types.CurrentNamespace);
+          AddNameSpace(Types.CurrentNamespace, sourcePath);
           
           Parser.Consume(HopperToken.LBrace, '{');
           if (Parser.HadError)

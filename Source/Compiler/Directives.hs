@@ -209,6 +209,7 @@ unit Directives
                     break;
                 }
                 Symbols.AddDefine(idToken["lexeme"], value);
+                Symbols.AddLocation(idToken["lexeme"], idToken["source"] + ":" + idToken["line"]);
             }
             break;
         }

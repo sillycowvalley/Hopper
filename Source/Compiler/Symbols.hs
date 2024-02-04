@@ -75,6 +75,10 @@ unit Symbols
     
     // unit names
     <string> nameSpaces;
+    <string,string> sourceNameSpaces;
+    
+    // locations for context help
+    <string,string> locations;
     
     < <string, string> > deferredTypes;
          
@@ -124,6 +128,9 @@ unit Symbols
         gSourcePath.Clear();
                                                                                          
         nameSpaces.Clear();
+        sourceNameSpaces.Clear();
+        
+        locations.Clear();
         
         fdNames.Clear();
         fdIndex.Clear();
@@ -153,6 +160,69 @@ unit Symbols
         count = count + eIndex.Count;
         count = count + flIndex.Count;
         return count;
+    }
+    uint GetSymbolsCount()
+    {
+        uint count;
+        count = count + fNames.Length;
+        count = count + fSysCall.Count;
+        count = count + fLibCall.Count;
+        count = count + pdValues.Count;
+        count = count + gNames.Length;
+        count = count + fdNames.Length;
+        count = count + eIndex.Count;
+        count = count + flIndex.Count;
+        count = count + cDefinitions.Count;
+        count = count + nameSpaces.Length;
+        return count;
+    }
+    
+    string GetNamespace(string sourcePath)
+    {
+        string namespace;
+        sourcePath = sourcePath.ToLower();
+        if (sourceNameSpaces.Contains(sourcePath))
+        {
+            namespace = sourceNameSpaces[sourcePath];
+        }
+        return namespace;
+    }
+    string GetNamespaceLocation(string namespace)
+    {
+        foreach (var kv in sourceNameSpaces)
+        {
+            if (kv.value == namespace)
+            {
+                return kv.key;
+            }
+        }
+        return "";
+    }
+    
+    string GetLocation(string symbolName)
+    {
+        string location;
+        if (locations.Contains(symbolName))
+        {
+            location = locations[symbolName];
+        }
+        return location;
+    }
+    AddLocation(string symbolName, string location)
+    {
+        if (locations.Contains(symbolName))
+        {
+            Parser.ErrorAtCurrent("duplicate symbol location for '" + symbolName + "'");
+        }
+        else
+        {
+            uint iFirst; uint iLast;
+            if (symbolName.IndexOf('.', ref iFirst) && symbolName.LastIndexOf('.', ref iLast) && (iFirst != iLast))
+            {
+                symbolName = symbolName.Substring(iFirst+1); // "Keyboard.Key.Backspace" -> "Key.Backspace":
+            }
+            locations[symbolName] = location;
+        }
     }
     
     string GetNamespace(uint oi)
@@ -346,11 +416,13 @@ unit Symbols
         return found;
     }
     
-    AddNameSpace(string name)
+    AddNameSpace(string name, string sourcePath)
     {
         if (!nameSpaces.Contains(name))
         {
             nameSpaces.Append(name);
+            sourcePath = sourcePath.ToLower();
+            sourceNameSpaces[sourcePath] = name;
         }
     }
     
@@ -478,14 +550,27 @@ unit Symbols
         <string, string> startToken;
         if (gStartPos.Contains(iGlobal))
         {
-            // -1 so that the next call to Advance() returns the opening '{'
-            long isp = gStartPos[iGlobal] - 1;
-            startToken["pos"]    = isp.ToString();
-            uint isl = gStartLine[iGlobal];
-            startToken["line"]   = isl.ToString();
-            startToken["source"] = gSourcePath[iGlobal];     
+            if (gStartPos[iGlobal]  != 0)
+            {
+                // -1 so that the next call to Advance() returns the opening '{'
+                long isp = gStartPos[iGlobal] - 1;
+                startToken["pos"]    = isp.ToString();
+                uint isl = gStartLine[iGlobal];
+                startToken["line"]   = isl.ToString();
+                startToken["source"] = gSourcePath[iGlobal];     
+            }
         }
         return startToken;
+    }
+    string GetGlobalLocation(uint iGlobal)
+    {
+        string location;
+        if (gStartPos.Contains(iGlobal))
+        {
+            uint isl = gStartLine[iGlobal];
+            location = gSourcePath[iGlobal] + ":" + isl.ToString();
+        }
+        return location;
     }
     
     bool IsEnumType(string name, string currentNamespace)
@@ -989,6 +1074,72 @@ unit Symbols
         return success;
     }
     
+    bool TryFindMethod(string currentLocation, ref uint iBest)
+    {
+        bool found;
+        uint closest = 0xFFFF;
+        
+        <string> parts = currentLocation.Split(':');
+        string sourcePath = (parts[0]).ToLower();
+        uint currentLine;
+        if (UInt.TryParse(parts[1], ref currentLine)) {} 
+        
+        foreach (var sourcekv in fSourcePath)
+        {
+            if ((sourcekv.value).ToLower() == sourcePath)
+            {
+                uint iOverload = sourcekv.key;
+                uint startLine = fStartLine[iOverload];
+                if (startLine <= currentLine)
+                {
+                    uint delta = currentLine - startLine;
+                    if (delta < closest)
+                    {
+                        closest = delta;
+                        found = true;
+                        iBest = iOverload;
+                    }
+                }
+            }
+        }
+        return found;
+    }
+    
+    bool TryFindMethod(string currentNamespace, ref string name, ref bool setter, ref bool getter)
+    {
+        setter = false;
+        getter = false;
+        string methodNameCandidate = Symbols.QualifyMethodName(name, currentNamespace);
+        bool found = fNames.Contains(methodNameCandidate);
+        if (found)
+        {
+            name = methodNameCandidate;
+        }
+        else
+        {
+            methodNameCandidate = Symbols.QualifyMethodName(name + "_Get", currentNamespace);
+            if (fNames.Contains(methodNameCandidate))
+            {
+                getter = true; found = true;
+                name = methodNameCandidate.Replace("_Get", "");
+            }
+            methodNameCandidate = Symbols.QualifyMethodName(name + "_Set", currentNamespace);
+            if (fNames.Contains(methodNameCandidate))
+            {
+                setter = true; found = true;
+                name = methodNameCandidate.Replace("_Set", "");
+            }
+        }
+        return found;
+    }
+    
+    string GetMethodLocation(uint iOverload)
+    {
+        string location = fSourcePath[iOverload] + ":" + (fStartLine[iOverload]).ToString();
+        return location;   
+    }
+    
+    
     bool GetFunctionIndex(string name, ref uint index)
     {
         // returnType == void
@@ -1097,7 +1248,7 @@ unit Symbols
         return returnType;
     }
       
-    < < string > > GetOverloadArguments(uint iOverload) 
+    < < string > > GetOverloadArguments(uint iOverload)
     {
         < < string > > arguments = fArgumentNamesAndTypes[iOverload];
         return arguments;
@@ -1179,7 +1330,7 @@ unit Symbols
                 uint startLine;
                 if (Long.TryParse(blockPos[0], ref startPos))
                 {
-                    gStartPos[iGlobal] = startPos; // location of method block '{'
+                    gStartPos[iGlobal] = startPos; // location of method block '{', zero if no initialization
                 }
                 if (UInt.TryParse(blockPos[1], ref startLine))
                 {
@@ -1257,9 +1408,9 @@ unit Symbols
             fArgumentNamesAndTypes[iCurrentOverload] = arguments;
             fReturnTypes[iCurrentOverload] = returnType;
             
-            if (blockPos.Length > 0) // not system
+            long startPos;
+            if (blockPos.Length > 0)
             {
-                long startPos;
                 uint startLine;
                 if (Long.TryParse(blockPos[0], ref startPos))
                 {
@@ -1271,7 +1422,8 @@ unit Symbols
                 }
                 fSourcePath[iCurrentOverload] = blockPos[2];
             }
-            else
+            
+            if (startPos == 0) // system or library
             {
                 byte iSysCall;
                 if (SysCalls.TryParseSysCall(name, ref iSysCall))
@@ -1619,9 +1771,17 @@ unit Symbols
         {
             <string, variant> dict;
             
-            dict["units"]   = nameSpaces;
+            <string,string> ndict;
+            foreach (var nkv in sourceNameSpaces)
+            {
+                ndict[nkv.value] = nkv.key;
+            }
+            dict["units"]   = ndict;
+            
             dict["symbols"]   = pdValues;
             dict["constants"] = cDefinitions;
+            
+            dict["locations"]   = locations;
             
             <string, <string, variant> > edict;
             foreach (var en in eIndex)
@@ -1914,7 +2074,7 @@ unit Symbols
                                     blockPos.Append(values["line"]);
                                     blockPos.Append(values["source"]);
                                 }
-                                AddGlobalMember(name, typeString, blockPos);    
+                                Symbols.AddGlobalMember(name, typeString, blockPos);    
                             }
                         } // !onlyNamedTypes
                     }
@@ -2108,12 +2268,32 @@ unit Symbols
                     }
                     case "units":
                     {
-                        <string> ulist = kv.value;
-                        foreach (var name in ulist)
+                        if (typeof(kv.value) == list)
                         {
-                            AddNameSpace(name);
+                            <string> ulist = kv.value;
+                            foreach (var name in ulist)
+                            {
+                                AddNameSpace(name, "");
+                            }
+                        }
+                        else if (typeof(kv.value) == dictionary)
+                        {
+                            <string,string> udict = kv.value;
+                            foreach (var namekv in udict)
+                            {
+                                AddNameSpace(namekv.key, namekv.value);
+                            }
                         }
                     }
+                    case "locations":
+                    {
+                        <string,string> ldict = kv.value;
+                        foreach (var locationkv in ldict)
+                        {
+                            AddLocation(locationkv.key, locationkv.value);
+                        }
+                    }
+                    
                     default:
                     {
 #ifndef JSON_EXPRESS
@@ -2173,7 +2353,7 @@ unit Symbols
     {
         string lastSource;
         <string, string> lastToken = Symbols.GetOverloadStart(iLastOverload);
-        if (lastToken.Count > 0)
+        if ((lastToken.Count > 0) && (lastToken["pos"] != "0"))
         {
             lastSource = lastToken["source"];
             lastSource = lastSource.ToLower();

@@ -1,6 +1,8 @@
 *.hasm
 *.hex
 *.options
+*.log
+*.mem.txt
 
 *.suo
 *.vsidx
