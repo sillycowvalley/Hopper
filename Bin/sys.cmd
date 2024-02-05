@@ -48,7 +48,7 @@ codegen port
 codegen hm
 codegen debug -extended
 codegen rsod
-codegen edit
+codegen edit -extended
 
 dasm show
 dasm shell

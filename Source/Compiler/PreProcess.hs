@@ -1337,7 +1337,6 @@ program PreProcess
           sourcePath = Path.GetFullPath(sourcePath);
           
           long startTime = Millis;
-          
           loop
           {
               string extension = Path.GetExtension(sourcePath);

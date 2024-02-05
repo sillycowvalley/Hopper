@@ -294,6 +294,16 @@ program Optimize
 #endif
                 modified = true;
             }
+            if (CodePoints.OptimizeSymmetricCompare())
+            {
+#ifdef DIAGNOSTICS
+                if (logging)
+                {
+                    CodePoints.DumpInstructions("OptimizeSymetricCompare");
+                }
+#endif
+                modified = true;
+            }
             if (CodePoints.OptimizeUnconditionalJumps())
             {
 #ifdef DIAGNOSTICS

@@ -1297,7 +1297,7 @@ unit CodePoints
                 break;
             }
             Instruction opCode = iCodes[iIndex];
-            if (IsConditionalJumpInstruction(opCode) && !IsTargetOfJumps(iIndex-1))
+            if (IsConditionalJumpInstruction(opCode) && !IsTargetOfJumps(iIndex-0))
             {
                 bool jumpPathIsValid = true;
                 bool mainPathIsValid = true;
@@ -1306,7 +1306,7 @@ unit CodePoints
                 byte nopCount = 0;
                 Instruction opCodePrev     = iCodes[iIndex-1];
                 Instruction opCodePrevPrev = Instruction.DIE; // unknown
-                if ((iIndex >= 2) && !IsTargetOfJumps(iIndex-2))
+                if ((iIndex >= 2) && !IsTargetOfJumps(iIndex-1))
                 {
                     opCodePrevPrev = iCodes[iIndex-2];
                 }
@@ -2390,6 +2390,98 @@ unit CodePoints
                     //Print("-1 ");
                     modified = true;
                     continue;
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    
+    bool OptimizeSymmetricCompare()
+    {
+        bool modified;
+        if (iCodes.Count < 3)
+        {
+            return false;
+        }
+        uint iIndex = 2;
+        uint hits = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            Instruction opCode2 = iCodes[iIndex-2];   
+            Instruction opCode1 = iCodes[iIndex-1];   
+            Instruction opCode0 = iCodes[iIndex]; 
+            
+            if (   ((opCode0 == Instruction.NE) || (opCode0 == Instruction.EQ))
+                && IsSinglePUSHInstruction(opCode1)
+                && ((opCode2 == Instruction.PUSHI0) || (opCode2 == Instruction.PUSHI0))
+               )
+            {
+                // opCode1 and opCode0 not jump targets?
+                if (!IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
+                {
+                    // swap the order of the PUSH instructions to aid EQ|NE -> JNZ|JZ optimization
+                    iCodes.SetItem   (iIndex-2, opCode1);
+                    iLengths.SetItem (iIndex-2, iLengths [iIndex-1]);
+                    iOperands.SetItem(iIndex-2, iOperands[iIndex-1]);
+                    iCodes.SetItem   (iIndex-1, opCode2);
+                    iLengths.SetItem (iIndex-1, 1);
+                    modified = true;
+                }
+            }
+            if ((opCode0 == Instruction.LT) && IsSinglePUSHInstruction(opCode1) && (opCode2 == Instruction.PUSHI0))
+            {
+                // opCode1 and opCode0 not jump targets?
+                if (!IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
+                {
+                    // swap the order of the PUSH instructions to aid "0 < A" -> "A > 0" EQ|NE -> JNZ|JZ optimization
+                    iCodes.SetItem   (iIndex-2, opCode1);
+                    iLengths.SetItem (iIndex-2, iLengths [iIndex-1]);
+                    iOperands.SetItem(iIndex-2, iOperands[iIndex-1]);
+                    iCodes.SetItem   (iIndex-1, opCode2);
+                    iLengths.SetItem (iIndex-1, 1);
+                    iCodes.SetItem   (iIndex-0, Instruction.GT);
+                    modified = true;
+                    Print(" Z ");
+            }
+            }
+            if ((opCode0 == Instruction.GT) && (opCode1 == Instruction.PUSHI0))
+            {
+                if (!IsTargetOfJumps(iIndex))
+                {
+                    // for unsigned '>' (GT),  "> 0" means the same thing as "!= 0"
+                    iCodes.SetItem   (iIndex, Instruction.NE);
+                    modified = true;
+                }
+            }
+            if ((opCode0 == Instruction.GE) && (opCode1 == Instruction.PUSHI0) && IsSinglePUSHInstruction(opCode2))
+            {
+                // for unsigned '>=' (GE),  ">= 0" is always true
+                if (!IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
+                {
+                    // NOP : replace comparison with PUSHI1 (always true)
+                    iCodes.SetItem   (iIndex-2, Instruction.PUSHI1);
+                    iLengths.SetItem (iIndex-2, 1);
+                    RemoveInstruction(iIndex);
+                    RemoveInstruction(iIndex-1);
+                    modified = true;
+                }
+            }
+            if ((opCode0 == Instruction.LE) && IsSinglePUSHInstruction(opCode1) && (opCode2 == Instruction.PUSHI0))
+            {
+                // for unsigned '<=' (LE),  "0 <=" is always true
+                if (!IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
+                {
+                    // NOP : replace comparison with PUSHI1 (always true)
+                    iCodes.SetItem   (iIndex-2, Instruction.PUSHI1);
+                    iLengths.SetItem (iIndex-2, 1);
+                    RemoveInstruction(iIndex);
+                    RemoveInstruction(iIndex-1);
+                    modified = true;
                 }
             }
             iIndex++;
