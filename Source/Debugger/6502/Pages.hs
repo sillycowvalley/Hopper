@@ -81,7 +81,7 @@ unit Pages
         loop
         {
             ln = ln.Trim();
-            if (ln.Length > 0)
+            if (ln.Length != 0)
             {
                 for (byte i = 0; i < 8; i++)
                 {

@@ -74,7 +74,7 @@ unit Platform
         //PrintLn("pushReturn=" + address.ToHexString(4) + " (" + (address + Runtime.UserCode).ToHexString(4) + ")");
         address = address + Runtime.UserCode;
 #ifdef DYNAMICSTACK
-        if (gCallStack.Length == callStackLimit)
+        if (gCallStack.Count == callStackLimit)
         {
             error(7); // out of memory for call stack
             return false;
@@ -94,13 +94,13 @@ unit Platform
     uint popReturn()
     {
 #ifdef DYNAMICSTACK
-        if (gCallStack.Length == 0)
+        if (gCallStack.Count == 0)
         {
             error(8); // RETURN without GOSUB
             return 0;
         }
-        uint address = gCallStack[gCallStack.Length-1];
-        gCallStack.Remove(gCallStack.Length-1);
+        uint address = gCallStack[gCallStack.Count-1];
+        gCallStack.Remove(gCallStack.Count-1);
 #else
         if (gosubCSP == 0)
         {

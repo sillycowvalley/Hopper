@@ -52,7 +52,7 @@ unit Peephole
     {
         while (remove > 0)
         {
-            currentStream.Remove(currentStream.Length-1);
+            currentStream.Remove(currentStream.Count-1);
             remove--;
         }
     }

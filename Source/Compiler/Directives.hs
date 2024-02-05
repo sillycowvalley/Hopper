@@ -13,12 +13,12 @@ unit Directives
         defineNesting.Clear();
     }
     
-    bool IsStillOpen { get { return (defineNesting.Length != 0); }}
+    bool IsStillOpen { get { return (defineNesting.Count != 0); }}
     
     bool IsAllDefined()
     {
         bool allDefined = true;
-        if (defineNesting.Length > 0)
+        if (defineNesting.Count != 0)
         {
             foreach (var isDefined in defineNesting)
             {
@@ -227,24 +227,22 @@ unit Directives
     }
     bool NestingPopTail()
     {
-        if (defineNesting.Length != 0)
+        if (defineNesting.Count != 0)
         {
-            defineNesting.Remove(defineNesting.Length-1);
+            defineNesting.Remove(defineNesting.Count-1);
             return true;
         }
         return false;
     }
     bool NestingFlipTail()
     {
-        if (defineNesting.Length != 0)
+        if (defineNesting.Count != 0)
         {
-            defineNesting.SetItem(defineNesting.Length-1, !defineNesting[defineNesting.Length-1]);
+            defineNesting.SetItem(defineNesting.Count-1, !defineNesting[defineNesting.Count-1]);
             return true;
         }
         return false;
     }
-    
-    
     
     Directive()
     {

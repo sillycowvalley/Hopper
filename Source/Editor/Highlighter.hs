@@ -76,7 +76,7 @@ unit Highlighter
             {
             case ' ':
                 {
-                    if (word.Length > 0)
+                    if (word.Length != 0)
                     {
                         colour = HopperWord(word, selectedWord);
                         foreach (var ch in word)
@@ -89,7 +89,7 @@ unit Highlighter
                 }
             case '"':
                 {
-                    if (word.Length > 0)
+                    if (word.Length != 0)
                     {
                         colour = HopperWord(word, selectedWord);
                         foreach (var ch in word)
@@ -125,7 +125,7 @@ unit Highlighter
                 }
             case '\'':
                 {
-                    if (word.Length > 0)
+                    if (word.Length != 0)
                     {
                         colour = HopperWord(word, selectedWord);
                         foreach (var ch in word)
@@ -187,7 +187,7 @@ unit Highlighter
                         }
                         else 
                         {
-                            if (word.Length > 0)
+                            if (word.Length != 0)
                             {
                                 colour = HopperWord(word, selectedWord);
                                 foreach (var ch in word)
@@ -200,7 +200,7 @@ unit Highlighter
                     }
                     else if (delimiters.Contains(c) || (word == "/"))
                     {
-                        if (word.Length > 0)
+                        if (word.Length != 0)
                         {
                             colour = HopperWord(word, selectedWord);
                             foreach (var ch in word)
@@ -234,7 +234,7 @@ unit Highlighter
             }
             i++;
         } // loop
-        if (word.Length > 0)
+        if (word.Length != 0)
         {
             colour = HopperWord(word, selectedWord);
             foreach (var ch in word)

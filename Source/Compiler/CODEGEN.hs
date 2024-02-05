@@ -106,7 +106,7 @@ program CODEGEN
                 Parser.ProgressTick("x");
             }
         }
-        if (buffer.Length > 0)
+        if (buffer.Length != 0)
         {
             emitBuffer(ihexFile, emitAddress, buffer);
         }
@@ -121,7 +121,7 @@ program CODEGEN
             bool doIHex = false;
             <string> rawArgs = System.Arguments;
             <string> args;
-            for (uint iArg = 0; iArg < rawArgs.Length; iArg++)
+            for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
                 string arg = rawArgs[iArg];
                 if ((arg.Length >= 2) && (arg[0] == '-'))
@@ -164,7 +164,7 @@ program CODEGEN
                 }
             }
           
-            if (args.Length != 1)
+            if (args.Count != 1)
             {
                 BadArguments();
                 break;
@@ -217,7 +217,7 @@ program CODEGEN
                 
                 <byte> constantData = Code.GetConstantData();
                 
-                uint mainOffset = constOffset + constantData.Length;
+                uint mainOffset = constOffset + constantData.Count;
                 
                 lsb = (mainOffset & 0xFF);
                 msb = (mainOffset >> 8);

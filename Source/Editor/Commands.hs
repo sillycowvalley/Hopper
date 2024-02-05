@@ -165,7 +165,7 @@ unit Commands
                 break; // winner
             }
         }
-        if (winner.Length > 0)
+        if (winner.Length != 0)
         {
             if (!IsEnabled(winner))
             {

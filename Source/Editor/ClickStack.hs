@@ -115,12 +115,12 @@ unit ClickStack
                 secondClick = clickPos >= iDot;
                 firstWord   = contextWord.Substring(0, iDot);
                 secondWord  = contextWord.Substring(iDot+1);
-                if ((firstWord.Length > 0) && (secondWord.Length > 0))
+                if ((firstWord.Length != 0) && (secondWord.Length != 0))
                 {
                     if (firstClick && (firstWord[0]).IsUpper())
                     {
                         string path = Symbols.GetNamespaceLocation(firstWord);
-                        if (path.Length > 0)
+                        if (path.Length != 0)
                         {
                             // clicked on the namespace qualifier part of an identifier
                             location = path + ":1";
@@ -205,7 +205,7 @@ unit ClickStack
                 if (IsSimpleType(firstWord))
                 {
                     string path = Symbols.GetNamespaceLocation(Types.ToNamespace(firstWord));
-                    if (path.Length > 0)
+                    if (path.Length != 0)
                     {
                         // clicked on a simply type like 'byte' -> uint Byte
                         location = path + ":1";

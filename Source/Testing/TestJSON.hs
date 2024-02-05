@@ -117,7 +117,7 @@ program TestJSON
                     case "list":
                     {
                         <string> la = kv.value;
-                        if (la.Length != 3)
+                        if (la.Count != 3)
                         {
                             success = 5;
                             break;

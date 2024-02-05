@@ -15,7 +15,7 @@ program ChallengerDemo
     Root(string uri, string method, <string,string> arguments)
     {
         string content = "Success at " + uri;
-        if (arguments.Count > 0)
+        if (arguments.Count != 0)
         {
             foreach (var argument in arguments)
             {

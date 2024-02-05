@@ -86,7 +86,7 @@ unit MessageBox
         {
             width = extra.Length + 2;
         }
-        if (extra.Length > 0)
+        if (extra.Length != 0)
         {
             height = height + 1;
         }
@@ -192,7 +192,7 @@ unit MessageBox
         bool hasEdit = false;
         uint currentField = 0; // will tab between them
         <string,string> fieldvalues = this["fields"];
-        if (fieldvalues.Count > 0)
+        if (fieldvalues.Count != 0)
         {
             hasEdit = true;
         }
@@ -332,7 +332,7 @@ unit MessageBox
                 }
                 case Key.Home:
                 {
-                    if (fieldvalues.Count > 0)
+                    if (fieldvalues.Count != 0)
                     {
                         if (cursorX > xf)
                         {
@@ -344,7 +344,7 @@ unit MessageBox
                 }
                 case Key.End:
                 {
-                    if (fieldvalues.Count > 0)
+                    if (fieldvalues.Count != 0)
                     {
                         cursorX = xf + currentValue.Length;
                         Screen.SetCursor(cursorX, cursorY);
@@ -353,7 +353,7 @@ unit MessageBox
                 }
                 case Key.Left:
                 {
-                    if (fieldvalues.Count > 0)
+                    if (fieldvalues.Count != 0)
                     {
                         if (cursorX > xf)
                         {
@@ -365,7 +365,7 @@ unit MessageBox
                 }
                 case Key.Right:
                 {
-                    if (fieldvalues.Count > 0)
+                    if (fieldvalues.Count != 0)
                     {
                         if (cursorX < xf + currentValue.Length)
                         {
@@ -377,7 +377,7 @@ unit MessageBox
                 }
                 case Key.Delete:
                 {
-                    if (fieldvalues.Count > 0)
+                    if (fieldvalues.Count != 0)
                     {
                         if (cursorX < xf + currentValue.Length)
                         {
@@ -399,7 +399,7 @@ unit MessageBox
                 }
                 case Key.Backspace:
                 {
-                    if (fieldvalues.Count > 0)
+                    if (fieldvalues.Count != 0)
                     {
                         if (cursorX > xf)
                         {
@@ -442,7 +442,7 @@ unit MessageBox
                                     bool ok = true;
                                     foreach (var cc in ctext)
                                     {
-                                        if (allowed.Length > 0)
+                                        if (allowed.Length != 0)
                                         {
                                             ok = allowed.Contains(cc);
                                         }
@@ -588,7 +588,7 @@ unit MessageBox
         
         <string,string> fieldvalues = this["fields"];
         
-        if ((extra.Length > 0) && (fieldvalues.Count == 0))
+        if ((extra.Length != 0) && (fieldvalues.Count == 0))
         {
             y++;
             x = x0 + w - extra.Length - 1;
@@ -613,7 +613,7 @@ unit MessageBox
             
             // field value
             DrawField(x, y, value, editwidth);
-            if (firstField && (extra.Length > 0))
+            if (firstField && (extra.Length != 0))
             {
                 y++;
                 x = x0 + 1;

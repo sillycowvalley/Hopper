@@ -551,7 +551,7 @@ unit Output
             uint iParen;
             string sPad;
             <string> parts = methodString.Split('`');
-            for (uint i = 0; i < parts.Length; i++)
+            for (uint i = 0; i < parts.Count; i++)
             {
                 string content = parts[i];
                 if (i == 0)
@@ -612,7 +612,7 @@ unit Output
                 }
             }
         }
-        for (uint iLocal = 0; iLocal < winningRanges.Length; iLocal++)
+        for (uint iLocal = 0; iLocal < winningRanges.Count; iLocal++)
         {
             string range = winningRanges[iLocal];
             <string> localList = localCandidates[range];
@@ -806,7 +806,7 @@ unit Output
         {
             uint goffset = kv.key;
             <string> globalList = kv.value;
-            if (globalList.Length == 0)
+            if (globalList.Count == 0)
             {
                 continue;
             }
@@ -875,7 +875,7 @@ unit Output
     
     GotoSourceIndex(string sourceIndex, bool setActiveLine)
     {
-        if (sourceIndex.Length > 0)
+        if (sourceIndex.Length != 0)
         {
             <string> parts = sourceIndex.Split(':');
             string hsPath = parts[0];
@@ -1130,7 +1130,7 @@ unit Output
             
             index++;
         } // loop
-        if (content.Length > 0)
+        if (content.Length != 0)
         {
             SafePad(ref content, paddingWidth);
             memoryFile.Append(content + char(0x0A));
@@ -1814,7 +1814,7 @@ unit Output
             {
                 break;
             }
-            uint l = stackValues0.Length;
+            uint l = stackValues0.Count;
             uint size = 0;
             string content;
             for (uint i = 0; i < l; i++)

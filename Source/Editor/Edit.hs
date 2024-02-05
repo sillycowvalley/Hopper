@@ -29,7 +29,7 @@ program Edit
         
         foreach (var argument in arguments)
         {
-            if (filePath.Length > 0)
+            if (filePath.Length != 0)
             {
                 showHelp = true;
                 break;
@@ -142,7 +142,7 @@ program Edit
                 else
                 {
                     string commandName = Commands.KeyToCommand(key);
-                    if (commandName.Length > 0) // checks IsEnabled too
+                    if (commandName.Length != 0) // checks IsEnabled too
                     {
                         Commands.Execute(commandName);
                     }

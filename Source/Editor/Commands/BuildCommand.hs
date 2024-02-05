@@ -125,7 +125,7 @@ unit BuildCommand
         {
             file errorFile = File.Open("/Temp/Errors.txt");
             string errorText = errorFile.ReadLine();
-            if (errorText.Length > 0)
+            if (errorText.Length != 0)
             {
                 message = message + ": " + errorText;
             }

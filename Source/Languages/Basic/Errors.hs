@@ -45,7 +45,7 @@ unit Errors
         Write("Error " + number.ToString());
 #ifndef TERSE
         string message = getMessage(number);
-        if (message.Length > 0)
+        if (message.Length != 0)
         {
             Write(": " + message);
             wasContent = true;

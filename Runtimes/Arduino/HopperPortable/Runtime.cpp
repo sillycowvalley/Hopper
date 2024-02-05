@@ -7,8 +7,6 @@
 #include "Inlined.h"
 
 
-
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -4945,13 +4943,13 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eList);
         break;
     }
-    case SysCall::eListLengthGet:
+    case SysCall::eListCountGet:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        UInt length = HRList_GetLength(_this);
+        UInt count = HRList_GetCount(_this);
         GC_Release(_this);
-        HopperVM_Push(length, Type::eUInt);
+        HopperVM_Push(count, Type::eUInt);
         break;
     }
     case SysCall::eListAppend:
@@ -5139,8 +5137,8 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
         case Type::eList:
         {
-            UInt length = HRList_GetLength(_this);;
-            for (UInt i = 0x00; i < length; i++)
+            UInt count = HRList_GetCount(_this);;
+            for (UInt i = 0x00; i < count; i++)
             {
                 Type itype = (Type)0;
                 UInt item = HRList_GetItem_R(_this, i, itype);
@@ -6633,7 +6631,7 @@ UInt HRList_New(Type htype)
     return address;
 }
 
-UInt HRList_GetLength(UInt _this)
+UInt HRList_GetCount(UInt _this)
 {
     return Memory_ReadWord(_this + 2);
 }
@@ -6666,16 +6664,16 @@ void HRList_Append(UInt _this, UInt item, Type itype)
         }
         Memory_WriteWord(pCurrentItem + 2, pNewItem);
     }
-    UInt length = Memory_ReadWord(_this + 2) + 0x01;
-    Memory_WriteWord(_this + 2, length);
+    UInt count = Memory_ReadWord(_this + 2) + 0x01;
+    Memory_WriteWord(_this + 2, count);
     Memory_WriteWord(_this + 7, pNewItem);
-    Memory_WriteWord(_this + 7 + 0x02, length - 0x01);
+    Memory_WriteWord(_this + 7 + 0x02, count - 0x01);
 }
 
 void HRList_SetItem(UInt _this, UInt index, UInt item, Type itype)
 {
     Type etype = Type(Memory_ReadByte(_this + 4));
-    UInt length = Memory_ReadWord(_this + 2);
+    UInt count = Memory_ReadWord(_this + 2);
     UInt pData = item;
     if (Types_IsReferenceType(etype))
     {
@@ -6723,9 +6721,9 @@ void HRList_SetItem(UInt _this, UInt index, UInt item, Type itype)
 void HRList_Insert(UInt _this, UInt index, UInt item, Type itype)
 {
     Type etype = Type(Memory_ReadByte(_this + 4));
-    UInt length = Memory_ReadWord(_this + 2);
+    UInt count = Memory_ReadWord(_this + 2);
     UInt pFirst = Memory_ReadWord(_this + 5);
-    if (index >= length)
+    if (index >= count)
     {
         HRList_Append(_this, item, itype);
     }
@@ -6734,7 +6732,7 @@ void HRList_Insert(UInt _this, UInt index, UInt item, Type itype)
         UInt pItem = HRList_createItem(item, etype, itype);
         Memory_WriteWord(pItem + 2, pFirst);
         Memory_WriteWord(_this + 5, pItem);
-        Memory_WriteWord(_this + 2, length + 0x01);
+        Memory_WriteWord(_this + 2, count + 0x01);
         Memory_WriteWord(_this + 7, 0x00);
         Memory_WriteWord(_this + 7 + 0x02, 0x00);
     }
@@ -6759,7 +6757,7 @@ void HRList_Insert(UInt _this, UInt index, UInt item, Type itype)
                 Memory_WriteWord(pPrevious + 2, pItem);
                 Memory_WriteWord(_this + 7, pItem);
                 Memory_WriteWord(_this + 7 + 0x02, count);
-                Memory_WriteWord(_this + 2, length + 0x01);
+                Memory_WriteWord(_this + 2, count + 0x01);
                 break;;
             }
             pPrevious = pCurrent;
@@ -6773,8 +6771,8 @@ void HRList_Insert(UInt _this, UInt index, UInt item, Type itype)
 UInt HRList_GetItem_R(UInt _this, UInt index, Type & itype)
 {
     itype = Type(Memory_ReadByte(_this + 4));
-    UInt length = Memory_ReadWord(_this + 2);
-    if (index >= length)
+    UInt count = Memory_ReadWord(_this + 2);
+    if (index >= count)
     {
         Minimal_Error_Set(0x01);
         return 0x00;
@@ -6823,7 +6821,7 @@ UInt HRList_GetItem_R(UInt _this, UInt index, Type & itype)
 void HRList_Remove(UInt _this, UInt index)
 {
     Type etype = Type(Memory_ReadByte(_this + 4));
-    UInt length = Memory_ReadWord(_this + 2);
+    UInt count = Memory_ReadWord(_this + 2);
     UInt pCurrent = Memory_ReadWord(_this + 5);
     if (index == 0x00)
     {
@@ -6846,8 +6844,8 @@ void HRList_Remove(UInt _this, UInt index)
         Memory_WriteWord(pPrevious + 2, Memory_ReadWord(pCurrent + 2));
         HRList_clearItem(pCurrent, etype);
     }
-    length = Memory_ReadWord(_this + 2) - 0x01;
-    Memory_WriteWord(_this + 2, length);
+    count = Memory_ReadWord(_this + 2) - 0x01;
+    Memory_WriteWord(_this + 2, count);
     Memory_WriteWord(_this + 7, 0x00);
     Memory_WriteWord(_this + 7 + 0x02, 0x00);
 }

@@ -79,7 +79,7 @@ unit DebugCommand
             
             <string> commands;
             commands.Append("BX"); // clear existing breakpoints
-            for (uint i = 0; i < breakpointAddresses.Length; i++)
+            for (uint i = 0; i < breakpointAddresses.Count; i++)
             {
                 uint address = breakpointAddresses[i];
                 if (address > 0)

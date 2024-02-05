@@ -1124,7 +1124,7 @@ unit Instructions
                     }
                 }
             }
-            if (content.Length > 0)
+            if (content.Length != 0)
             {
                 String.Build(ref content, char(0x0A));
                 String.Build(ref disassembledContent, widePadding);
@@ -1277,7 +1277,7 @@ unit Instructions
                 methodKey = methodKey.Replace("0xC", "0x0");
                 methodSymbols =  Code.GetMethodSymbols(methodKey);
             }
-            if (methodSymbols.Count > 0)
+            if (methodSymbols.Count != 0)
             {
                 string name = methodSymbols["name"];
                 if (instruction == Instruction.CALLB)

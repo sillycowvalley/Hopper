@@ -1,8 +1,6 @@
 unit List
 {
-    uint Length  { get system; }
     uint Count   { get system; }
-    
     Append(<V> this, V value) system;
     Remove(<V> this, uint index) system;
     V GetItem(<V> this, uint index) system;

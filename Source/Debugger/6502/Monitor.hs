@@ -277,7 +277,7 @@ unit Monitor
     {
         SerialWriteChar(char(0x1B)); // to break VM if it is running
         _ = checkEcho(true);
-        if (commandLine.Length > 0)
+        if (commandLine.Length != 0)
         {
             foreach (var ch in commandLine)
             {
@@ -332,7 +332,7 @@ unit Monitor
         loop
         {
             string sourceIndex = Code.GetSourceIndex(pc);
-            if (sourceIndex.Length > 0)
+            if (sourceIndex.Length != 0)
             {
                 break; // stop when we arrive at the next source line
             }

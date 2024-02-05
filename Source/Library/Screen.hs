@@ -20,15 +20,15 @@ unit Screen
     uint defaultBackColour = Colour.Black;
     uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}
     uint BackColour { get { return defaultBackColour; } set { defaultBackColour = value; }}
-    byte CursorX { get { cursorX; }}
-    byte CursorY { get { cursorY; }}
+    byte CursorX { get { cursorX; } set { cursorX = value; }}
+    byte CursorY { get { cursorY; } set { cursorY = value; }}
     byte Columns { get { return byte(Display.PixelWidth / cellWidth); }}
     byte Rows    { get { return byte(Display.PixelHeight / cellHeight); }}
 #else
     byte Columns { get { return 0; }}
     byte Rows    { get { return 0; }}
-    byte CursorX { get { 0; }}
-    byte CursorY { get { 0; }}
+    byte CursorX { get { return 0; } set { } }
+    byte CursorY { get { return 0; } set { } }
     uint ForeColour { get { return Colour.MatrixGreen; } }
     uint BackColour { get { return Colour.Black; } }
 #endif
@@ -93,7 +93,7 @@ unit Screen
         Display.Suspend();
         Display.ScrollUp(scrollLines);
 #endif
-        cursorY--;
+        CursorY--;
 #ifdef DISPLAY_DRIVER
         Display.Resume();
 #endif
@@ -104,14 +104,14 @@ unit Screen
 #ifdef DISPLAY_DRIVER
         Display.Clear(BackColour); 
 #endif
-        cursorX = 0;
-        cursorY = 0;
+        CursorX = 0;
+        CursorY = 0;
     }
     
     SetCursor(uint col, uint row)
     {
-        cursorX = col;
-        cursorY = row;
+        CursorX = col;
+        CursorY = row;
     }
 
     DrawChar(uint col, uint row, char c, uint foreColour, uint backColour)
@@ -128,7 +128,7 @@ unit Screen
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
         int x0 = int(col * cellWidth);
         int y0 = int(row * cellHeight);
-        if (fontData.Count > 0)
+        if (fontData.Count != 0)
         {
             Display.Suspend();
             renderMonoCharacter(c, foreColour, backColour);
@@ -150,12 +150,12 @@ unit Screen
 #ifdef DISPLAY_DRIVER
         DrawChar(cursorX, cursorY, c, foreColour, backColour);
 #endif
-        cursorX++;
-        if (cursorX >= Columns)
+        CursorX++;
+        if (CursorX >= Columns)
         {
-            cursorX = 0;
-            cursorY++;
-            if (cursorY == Rows)
+            CursorX = 0;
+            CursorY++;
+            if (CursorY == Rows)
             {
                 scrollOneLine();
             }
@@ -177,9 +177,9 @@ unit Screen
     }
     PrintLn()
     {
-        cursorX = 0;
-        cursorY++;
-        if (cursorY == Rows)
+        CursorX = 0;
+        CursorY++;
+        if (CursorY == Rows)
         {
             scrollOneLine();
         }

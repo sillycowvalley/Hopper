@@ -342,7 +342,7 @@ program GIBL
                         }
                         nCount++;
                     }
-                    if (nCount > 0)
+                    if (nCount != 0)
                     {
                         numberString = inputLine.Substring(0, nCount);
                         inputLine = inputLine.Substring(nCount);
@@ -354,7 +354,7 @@ program GIBL
                         Source.Add(lineNumber, inputLine); // calls HopperCode.Clear()
                         break;
                     }
-                    if ((Condition == Conditions.None) && (inputLine.Length > 0))
+                    if ((Condition == Conditions.None) && (inputLine.Length != 0))
                     {
                         immediate(inputLine);
                     }
@@ -373,7 +373,7 @@ program GIBL
         loop
         {
             getInputLine(ref inputLine);
-            if (inputLine.Length > 0)
+            if (inputLine.Length != 0)
             {
                 if (execute(ref inputLine))
                 {

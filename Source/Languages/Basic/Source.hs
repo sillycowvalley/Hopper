@@ -55,7 +55,7 @@ unit Source
             HopperCode.Clear(); // discard current tokenized program when source changes
         }
         sourceLines[lineNumber] = sourceLine;
-        if (sourceLine.Length > 0)
+        if (sourceLine.Length != 0)
         {
             sourceLineExists[lineNumber] = true;
             if ((lineNumber > lastLine)  && (lineNumber <= lineLimit))

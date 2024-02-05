@@ -32,12 +32,12 @@ unit CodeStream
         h6502Defined      = DefineExists("HOPPER_6502");
         mcuDefined        = DefineExists("MCU");
     }
-    bool InUse { get { return currentStream.Length > 0; } } 
+    bool InUse { get { return currentStream.Count != 0; } } 
     
     Instruction GetLastInstruction()
     { 
         Instruction last = Instruction.NOP;
-        if (LastInstructionIndex < currentStream.Length)
+        if (LastInstructionIndex < currentStream.Count)
         {
             byte instr = currentStream[LastInstructionIndex];
             last = Instruction(instr); 
@@ -49,7 +49,7 @@ unit CodeStream
     { 
         get 
         { 
-            return currentStream.Length;
+            return currentStream.Count;
         } 
     }
         
@@ -59,7 +59,7 @@ unit CodeStream
         {
             currentStream.Append(b);        
         }
-        UpdatePeepholeBoundary(currentStream.Length);
+        UpdatePeepholeBoundary(currentStream.Count);
     }
     
     byte IntToByte(int offset)
@@ -103,8 +103,8 @@ unit CodeStream
         uint constantAddress;
         loop
         {
-            uint length = constantStream.Length;
-            uint candidateLength = data.Length;
+            uint length = constantStream.Count;
+            uint candidateLength = data.Count;
             uint iStart = 0;
             bool found = false;
             loop
@@ -135,7 +135,7 @@ unit CodeStream
                 break;
             }
             // not found
-            constantAddress = constantStream.Length;
+            constantAddress = constantStream.Count;
             foreach (var b in data)
             {
                 constantStream.Append(b);
@@ -174,7 +174,7 @@ unit CodeStream
     {
         loop
         {
-            uint iLast = currentStream.Length - 1;
+            uint iLast = currentStream.Count - 1;
             currentStream.Remove(iLast);
             pops--;
             if (pops == 0)
@@ -235,7 +235,7 @@ unit CodeStream
                 uint phb = PeepholeBoundary;
                 if (jumpAddress > phb)
                 {
-                  UpdatePeepholeBoundary(currentStream.Length);
+                  UpdatePeepholeBoundary(currentStream.Count);
                 }
                 currentStream.SetItem(jumpAddress+0, byte(shortInstruction));
                 currentStream.SetItem(jumpAddress+1, byte(lsb));
@@ -267,7 +267,7 @@ unit CodeStream
             if (GetFunctionIndex(name, ref fIndex))
             {
                 <uint> iOverloads = GetFunctionOverloads(fIndex);
-                if (iOverloads.Length == 1)
+                if (iOverloads.Count == 1)
                 {
                     uint iOverload = iOverloads[0];
                     if (!IsSysCall(iOverload))
@@ -392,7 +392,7 @@ unit CodeStream
     AddInstructionJump(Instruction jumpInstruction)
     {
         // before jump (since this placeholder patch location is locked in already)
-        UpdatePeepholeBoundary(currentStream.Length);
+        UpdatePeepholeBoundary(currentStream.Count);
         
         switch (jumpInstruction)
         {
@@ -418,7 +418,7 @@ unit CodeStream
     AddInstructionJumpOffset(Instruction jumpInstruction, byte offset)
     {
         AddInstruction(jumpInstruction, offset);
-        UpdatePeepholeBoundary(currentStream.Length);
+        UpdatePeepholeBoundary(currentStream.Count);
     }
     AddInstructionJump(Instruction jumpInstruction, uint jumpToAddress)
     {
@@ -471,7 +471,7 @@ unit CodeStream
                 AddInstruction(jumpInstruction, op);
             }
         }
-        UpdatePeepholeBoundary(currentStream.Length);
+        UpdatePeepholeBoundary(currentStream.Count);
     }
     
     
@@ -479,7 +479,7 @@ unit CodeStream
     {
         byte instr = byte(instruction);
         currentStream.Append(instr);
-        LastInstructionIndex = currentStream.Length-1;
+        LastInstructionIndex = currentStream.Count-1;
     }
     
     AddInstruction(Instruction instruction)

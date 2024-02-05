@@ -142,7 +142,7 @@ program TiggerBASIC
             }
             break;
         } // loop
-        if (success && ((lineNumber == 0) || (lineNumber > lineLimit)) )
+        if (success && ((lineNumber == 0) || (lineNumber > Source.LineLimit)) )
         {
             Error(2); // Bad line number
             success = false;
@@ -237,7 +237,7 @@ program TiggerBASIC
     
     listing()
     {
-        for (uint i=1; i <= lineLimit; i++)
+        for (uint i=1; i <= Source.LineLimit; i++)
         {
             if (Source.LineExists(i))
             {
@@ -305,7 +305,7 @@ program TiggerBASIC
                         }
                         nCount++;
                     }
-                    if (nCount > 0)
+                    if (nCount != 0)
                     {
                         numberString = inputLine.Substring(0, nCount);
                         inputLine = inputLine.Substring(nCount);
@@ -317,7 +317,7 @@ program TiggerBASIC
                         Source.Add(lineNumber, inputLine); // calls HopperCode.Clear()
                         break;
                     }
-                    if ((Condition == Conditions.None) && (inputLine.Length > 0))
+                    if ((Condition == Conditions.None) && (inputLine.Length != 0))
                     {
                         immediate(inputLine);
                     }
@@ -361,7 +361,7 @@ program TiggerBASIC
         loop
         {
             getInputLine(ref inputLine);
-            if (inputLine.Length > 0)
+            if (inputLine.Length != 0)
             {
                 if (execute(ref inputLine))
                 {

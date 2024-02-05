@@ -24,7 +24,7 @@ program Command
     
     {
         <string> args = Arguments;
-        if (args.Length == 0)
+        if (args.Count == 0)
         {
             WriteLn(" " + System.CurrentDirectory, Colour.MatrixBlue);
         }

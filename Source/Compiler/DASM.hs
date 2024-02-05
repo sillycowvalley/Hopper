@@ -56,7 +56,7 @@ program DASM
             {
                 iline--;
             }
-            if (sourceLines.Length > iline)
+            if (sourceLines.Count > iline)
             {
                 sourceLine = sourceLines[iline];
             }
@@ -71,7 +71,7 @@ program DASM
         string src;
         string srcName;
         string content;
-        uint length = code.Length;
+        uint length = code.Count;
 
         for (uint address = 0; address < length; address++)
         {
@@ -83,7 +83,7 @@ program DASM
                     
                 string methodIndex = methodNames[actualAddress];
                 <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
-                if (methodSymbols.Count > 0)
+                if (methodSymbols.Count != 0)
                 {
                     src = methodSymbols["source"];
                     srcName = Path.GetFileName(src);
@@ -114,7 +114,7 @@ program DASM
                 string dln = debugInfo[debugAddress];
                 hasmFile.Append("" + char(0x0A)); 
                 string sourceLine = GetSourceLine(src, dln);
-                if (sourceLine.Length > 0)
+                if (sourceLine.Length != 0)
                 {
                     string commentStart;
                     commentStart = commentStart.Pad(' ', 24) + "//";
@@ -146,7 +146,7 @@ program DASM
     DisassembleData(file hasmFile, <byte> code, uint startAddress)
     {
         string content;
-        uint length = code.Length;
+        uint length = code.Count;
         string literal;
         for (uint address = 0; address < length; address++)
         {
@@ -179,7 +179,7 @@ program DASM
             hasmFile.Append(content);
         }
         content = "";
-        if (literal.Length > 0)
+        if (literal.Length != 0)
         {
             uint padding = 16 - literal.Length;
             padding = padding * 5 + 1;
@@ -205,7 +205,7 @@ program DASM
         {
             <string> rawArgs = System.Arguments;
             <string> args;
-            for (uint iArg = 0; iArg < rawArgs.Length; iArg++)
+            for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
                 string arg = rawArgs[iArg];
                 if ((arg.Length == 2) && (arg[0] == '-'))
@@ -240,7 +240,7 @@ program DASM
                 }
             }
           
-            if (args.Length != 1)
+            if (args.Count != 1)
             {
                 BadArguments();
                 break;
@@ -388,7 +388,7 @@ program DASM
                     break;
                 }
                 <byte> code;
-                if (constLength > 0)
+                if (constLength != 0)
                 {
                     if (methodNames.Contains(address))
                     {
@@ -411,8 +411,8 @@ program DASM
                         }   
                     }
                     DisassembleData(hasmFile, code, address);
-                    address = address + code.Length;
-                    codeSize = codeSize + code.Length;
+                    address = address   + code.Count;
+                    codeSize = codeSize + code.Count;
                     Parser.ProgressTick(".");
                 }
                 code.Clear();
@@ -430,7 +430,7 @@ program DASM
                     address = 0;
                 }
                 DisassembleCode(hasmFile, code, address, methodNames);
-                codeSize = codeSize + code.Length;
+                codeSize = codeSize + code.Count;
                 Parser.ProgressTick(".");
                 hasmFile.Flush();
                 if (!Parser.IsInteractive())

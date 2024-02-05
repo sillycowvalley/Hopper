@@ -1044,7 +1044,7 @@ program TestNumbers
         int localIntNeg = 0 - localInt;
         
         <byte> lb = localInt.ToBytes();
-        if (lb.Length != 2)
+        if (lb.Count != 2)
         {
             PrintFailed("'int' ToBytes 1 failed");        
         }

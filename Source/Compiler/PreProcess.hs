@@ -1,6 +1,5 @@
 program PreProcess
 {
-
   uses "/Source/System/System"
   uses "/Source/System/Diagnostics"
   uses "/Source/System/Screen"
@@ -539,7 +538,7 @@ program PreProcess
                 Parser.Advance(); // )
                 break; // done
             }
-            if (arguments.Length != 0)
+            if (arguments.Count != 0)
             {
                 if (!Parser.Check(HopperToken.Comma))
                 {
@@ -1208,7 +1207,7 @@ program PreProcess
           {
               // can't "Consume" at the end of the file
               string message = "'}' expected";
-              if (lastID.Length > 0)
+              if (lastID.Length != 0)
               {
                   message = " missing '}', opening '{' in " + lastID;
               }
@@ -1268,7 +1267,7 @@ program PreProcess
           <string> rawArgs = System.Arguments;
           <string> args;
           
-          for (uint iArg = 0; iArg < rawArgs.Length; iArg++)
+          for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
           {
               string arg = rawArgs[iArg];
               if ((arg.Length == 2) && (arg[0] == '-'))
@@ -1307,7 +1306,7 @@ program PreProcess
               }
           }
           
-          if (args.Length != 1)
+          if (args.Count != 1)
           {
               BadArguments();
               break;

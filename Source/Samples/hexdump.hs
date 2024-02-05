@@ -13,7 +13,7 @@ program HexDump
         
         foreach (var argument in arguments)
         {
-            if (filePath.Length > 0)
+            if (filePath.Length != 0)
             {
                 showHelp = true;
                 break;

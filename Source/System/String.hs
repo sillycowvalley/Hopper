@@ -111,7 +111,7 @@ unit String
     }
     bool EndsWith(string original, char pattern)
     {
-        return (original.Length > 0) && (original[original.Length-1] == pattern);
+        return (original.Length != 0) && (original[original.Length-1] == pattern);
     }
     bool EndsWith(string original, string pattern)
     {
@@ -181,7 +181,7 @@ unit String
     }
     bool StartsWith(string this, char pattern)
     {
-        return (this.Length > 0) && (this[0] == pattern);
+        return (this.Length != 0) && (this[0] == pattern);
     }
     bool StartsWith(string this, string pattern)
     {
@@ -411,7 +411,7 @@ unit String
             }
             if (delim)
             {
-                if (accumulator.Length > 0)
+                if (accumulator.Length != 0)
                 {
                     stringList.Append(accumulator);
                     accumulator = "";
@@ -422,7 +422,7 @@ unit String
                 Build(ref accumulator, c);
             }
         }
-        if (accumulator.Length > 0)
+        if (accumulator.Length != 0)
         {
             stringList.Append(accumulator);
         }
@@ -441,7 +441,7 @@ unit String
             ch = this[i];
             if (ch == delimiter)
             {
-                if (accumulator.Length > 0)
+                if (accumulator.Length != 0)
                 {
                     stringList.Append(accumulator);
                     accumulator = "";
@@ -452,7 +452,7 @@ unit String
                 Build(ref accumulator, ch);
             }
         }
-        if (accumulator.Length > 0)
+        if (accumulator.Length != 0)
         {
             stringList.Append(accumulator);
         }

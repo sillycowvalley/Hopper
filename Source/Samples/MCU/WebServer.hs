@@ -33,7 +33,7 @@ program WebServer
     AnyPage(string uri, string method, <string,string> arguments)
     {
         string content = "AnyPage:";
-        if (arguments.Count > 0)
+        if (arguments.Count != 0)
         {
             foreach (var argument in arguments)
             {

@@ -306,9 +306,6 @@ unit SysCalls
         addEntry("Array", "NewFromConstant");
         
         addEntry("WiFi", "IP_Get");
-        
-        addEntry("List", "Length_Get");
-        
     }
     
     bool TryParseSysCall(string name, ref byte index)

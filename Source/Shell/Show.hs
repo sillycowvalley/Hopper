@@ -70,7 +70,7 @@ program Show
                 ln = ln.Substring(0,iComment);
             }
         }
-        if (ln.Length > 0)
+        if (ln.Length != 0)
         {
             if (!allComment && (ln.Length >= 6)) 
             {
@@ -91,7 +91,7 @@ program Show
                 ln = ln.Substring(17);
                 
                 // leading space
-                while ((ln.Length > 0) &&  (ln[0] == ' '))
+                while ((ln.Length != 0) &&  (ln[0] == ' '))
                 {
                     Print(' ', opcodeColor, backColor);
                     ln = ln.Substring(1);
@@ -109,7 +109,7 @@ program Show
                 }
             }
         }
-        if (comment.Length > 0)
+        if (comment.Length != 0)
         {
             Print(comment, listingCommentColor, backColor);
         }
@@ -151,7 +151,7 @@ program Show
             {
                 wide = true;
             }
-            else if (filePath.Length > 0)
+            else if (filePath.Length != 0)
             {
                 showHelp = true;
                 break;

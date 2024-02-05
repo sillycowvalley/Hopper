@@ -1200,7 +1200,7 @@ unit Code
             success = true;
             break;
         } // loop
-        if (keepSymbols && (methodStart.Count > 0))
+        if (keepSymbols && (methodStart.Count != 0))
         {
             MapSource();
         }
@@ -1213,7 +1213,7 @@ unit Code
         
         <string, variant> dict;
         
-        if (constantData.Length > 0)
+        if (constantData.Count != 0)
         {
             <string, variant> cdict;
             cdict["data"] = constantData;
@@ -1288,7 +1288,7 @@ unit Code
                     <string,string> gdict;
                     gdict["name"] = glist[1];
                     gdict["type"] = glist[0];
-                    if (glist.Length > 2)
+                    if (glist.Count > 2)
                     {
                         gdict["definition"] = glist[2];
                     }

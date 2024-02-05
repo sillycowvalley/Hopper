@@ -103,7 +103,7 @@ program Translate
             string returnType = "void";
             <string,variant> blockContext = Block.GetMethodBlock();
             uint returnBytes = 0;
-            if (blockContext.Count > 0)
+            if (blockContext.Count != 0)
             {
                 if (blockContext.Contains("returntype"))
                 {
@@ -1145,7 +1145,7 @@ program Translate
             
             // compile gIndex
             <string, string> startToken = Symbols.GetGlobalStart(gIndex);
-            if (startToken.Count > 0)
+            if (startToken.Count != 0)
             {
                 // execute initialization code if there is any
                 Scanner.Reset(startToken);

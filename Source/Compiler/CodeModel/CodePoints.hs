@@ -65,7 +65,7 @@ unit CodePoints
     {
         inlineMethodCandidates.Clear();
     }
-    bool InlineCandidatesExist { get { return inlineMethodCandidates.Count > 0; } }
+    bool InlineCandidatesExist { get { return inlineMethodCandidates.Count != 0; } }
     
     <Instruction> iCodes;
     <uint>        iLengths;
@@ -194,7 +194,7 @@ unit CodePoints
         indexDebugInfo = newDebugInfo;
         
         // update all jumpTargets:
-        uint iCodeLength = iCodes.Length;
+        uint iCodeLength = iCodes.Count;
         for (uint iIndex = 0; iIndex < iCodeLength; iIndex++)
         {
             <uint> jumpTargets = iJumpTargets[iIndex];
@@ -226,7 +226,7 @@ unit CodePoints
                 found = true;
                 break;
             }
-            if (index >= iLengths.Length)
+            if (index >= iLengths.Count)
             {
                 break;
             }
@@ -263,7 +263,7 @@ unit CodePoints
     
     InitializeJumpTargets()
     {
-        uint iCodesLength = iCodes.Length;
+        uint iCodesLength = iCodes.Count;
         uint iIndex;
         loop
         {
@@ -339,7 +339,7 @@ unit CodePoints
                 
                 byte switchCase = byte(operand & 0xFF);
                 uint iOffset = 2;
-                uint jumpTableLength = jumpTable.Length;
+                uint jumpTableLength = jumpTable.Count;
                 loop
                 {
                     if (iOffset == jumpTableLength)
@@ -374,7 +374,7 @@ unit CodePoints
     AppendJIXInstruction(uint iIndex, ref <byte> code)
     {
         // at this point only the opCode has been appended
-        uint myAddress      = code.Length-1;
+        uint myAddress      = code.Count-1;
         
         Instruction opCode  = iCodes[iIndex];
         uint operand        = iOperands[iIndex];
@@ -419,7 +419,7 @@ unit CodePoints
 #ifdef DIAGNOSTICS
     DumpInstructions(string description)
     {
-        uint icodesLength = iCodes.Length;
+        uint icodesLength = iCodes.Count;
         PrintLn(description + ", length=" + icodesLength.ToString());
 
         uint iIndex = 0;
@@ -478,7 +478,7 @@ unit CodePoints
         iReachable.Clear();
         
         <byte> code = Code.GetMethodCode(currentMethod);
-        uint codeLength = code.Length;
+        uint codeLength = code.Count;
         uint i = 0;
         loop
         {
@@ -555,7 +555,7 @@ unit CodePoints
     uint Save()
     {
         <byte> code;
-        uint instructionCount = iCodes.Length;
+        uint instructionCount = iCodes.Count;
         uint index;
         loop
         {
@@ -640,7 +640,7 @@ unit CodePoints
         Code.SetMethodDebugInfo(currentMethod, debugInfo);
         ProgessNudge();
         
-        return code.Length;
+        return code.Count;
     }
     
     string pathLoaded;
@@ -677,7 +677,7 @@ unit CodePoints
             {
                 iline--;
             }
-            if (sourceLines.Length > iline)
+            if (sourceLines.Count > iline)
             {
                 sourceLine = sourceLines[iline];
             }
@@ -708,7 +708,7 @@ unit CodePoints
         dumpFile.Append(mname);  
         dumpFile.Append("" + char(0x0A)); 
         
-        uint icodesLength = iCodes.Length;
+        uint icodesLength = iCodes.Count;
         uint iIndex;
         loop
         {
@@ -744,7 +744,7 @@ unit CodePoints
             
             uint instructionLength = iLengths[iIndex];
             <uint> jumpTargets = iJumpTargets[iIndex];
-            if (jumpTargets.Length > 0)
+            if (jumpTargets.Count != 0)
             {
                 foreach (var jt in jumpTargets)
                 {
@@ -796,7 +796,7 @@ unit CodePoints
     CollectMethodCalls(ref <uint,bool> methodsCalled)
     {
         uint iIndex;
-        uint icodesLength = iCodes.Length;
+        uint icodesLength = iCodes.Count;
         loop
         {
             if (iIndex == icodesLength)
@@ -825,7 +825,7 @@ unit CodePoints
     MarkReachableInstructions()
     {
         uint iIndex = 0;
-        uint icodesLength = iCodes.Length;
+        uint icodesLength = iCodes.Count;
         
         // reset
         iReachable.Clear();
@@ -932,7 +932,7 @@ unit CodePoints
             } // loop
             
             iIndex = 0;
-            while (tailCalls.Length > 0)
+            while (tailCalls.Count != 0)
             {
                 iIndex = tailCalls[0];
                 tailCalls.Remove(0);
@@ -951,7 +951,7 @@ unit CodePoints
     
     bool OptimizeDECSPRET()
     {
-        if (iCodes.Length < 3)
+        if (iCodes.Count < 3)
         {
             return false;
         }
@@ -959,7 +959,7 @@ unit CodePoints
         uint iIndex = 2;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -993,7 +993,7 @@ unit CodePoints
     
     bool OptimizeENTERPUSHI0()
     {
-        if (iCodes.Length < 2)
+        if (iCodes.Count < 2)
         {
             return false;
         }
@@ -1001,7 +1001,7 @@ unit CodePoints
         uint iIndex = 0;
         loop
         {
-            if (iIndex == iCodes.Length)
+            if (iIndex == iCodes.Count)
             {
                 break;
             }
@@ -1021,7 +1021,7 @@ unit CodePoints
                 uint eIndex = iIndex;
                 uint removals = 0;
                 iIndex++;
-                while ((iIndex < iCodes.Length) && (iCodes[iIndex] == Instruction.PUSHI0))
+                while ((iIndex < iCodes.Count) && (iCodes[iIndex] == Instruction.PUSHI0))
                 {
                     if (IsTargetOfJumps(iIndex))
                     {
@@ -1055,7 +1055,7 @@ unit CodePoints
     // remove ENTER and use RETFAST if there are no locals, no arguments and no CALLs
     bool OptimizeFrameRemoval()
     {
-        if (iCodes.Length < 2)
+        if (iCodes.Count < 2)
         {
             return false;
         }
@@ -1068,7 +1068,7 @@ unit CodePoints
         
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -1117,7 +1117,7 @@ unit CodePoints
                 uint retIndex = 0;
                 loop
                 {
-                    if (iIndex >= iCodes.Length)
+                    if (iIndex >= iCodes.Count)
                     {
                         break;
                     }
@@ -1147,7 +1147,7 @@ unit CodePoints
                 RemoveInstruction(0); // ENTER
                 modified = true;
                 
-                if ((hasRET0 == 1) && (retIndex == iCodes.Length)) 
+                if ((hasRET0 == 1) && (retIndex == iCodes.Count)) 
                 {
                     if (byteLength <= 4)
                     {
@@ -1168,7 +1168,7 @@ unit CodePoints
     bool ReplaceMergedRET0(ref <byte> rawCode)
     {
         bool replaced;
-        uint iCodesLength = iCodes.Length;
+        uint iCodesLength = iCodes.Count;
         if (iCodesLength < 2)
         {
             return false;
@@ -1195,7 +1195,7 @@ unit CodePoints
     }
     bool InlineSmallMethods(ref <byte> rawCode)
     {
-        uint iCodesLength = iCodes.Length;
+        uint iCodesLength = iCodes.Count;
         if (iCodesLength < 2)
         {
             return false;
@@ -1238,6 +1238,11 @@ unit CodePoints
                             
                             // fill the space with the bytes from the method (could be trailing NOPs to remove later)
                             <byte> inlineCode = Code.GetMethodCode(methodIndex);
+                            while (inlineCode.Count < sizeInBytes)
+                            {
+                                inlineCode.Append(byte(Instruction.NOP));
+                            }
+                            
                             for (uint i=0; i < sizeInBytes; i++)
                             {
                                 byte bCode = inlineCode[i];
@@ -1258,7 +1263,7 @@ unit CodePoints
         uint iIndex = 0;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -1278,7 +1283,7 @@ unit CodePoints
     
     bool OptimizeUnconditionalJumps()
     {
-        uint iCodesLength = iCodes.Length;
+        uint iCodesLength = iCodes.Count;
         if (iCodesLength < 2)
         {
             return false;
@@ -1449,7 +1454,7 @@ unit CodePoints
     // not just NOP, also JMP -> JMP + 1, can cause more short JumpToJump's to work
     bool OptimizeRemoveNOPs()
     {
-        if (iCodes.Length < 1)
+        if (iCodes.Count < 1)
         {
             return false;
         }
@@ -1457,7 +1462,7 @@ unit CodePoints
         uint iIndex = 0;
         loop
         {
-            if (iIndex == iCodes.Length)
+            if (iIndex == iCodes.Count)
             {
                 break;
             }
@@ -1487,7 +1492,7 @@ unit CodePoints
     }
     bool OptimizeCOPYPOP()
     {
-        if (iCodes.Length < 2)
+        if (iCodes.Count < 2)
         {
             return false;
         }
@@ -1495,7 +1500,7 @@ unit CodePoints
         uint iIndex = 1;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -1520,7 +1525,7 @@ unit CodePoints
     }
     bool OptimizeJumpW()
     {
-        if (iCodes.Length < 1)
+        if (iCodes.Count < 1)
         {
             return false;
         }
@@ -1528,7 +1533,7 @@ unit CodePoints
         uint iIndex = 0;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -1568,7 +1573,7 @@ unit CodePoints
     }
     bool OptimizePUSHPUSHSWAP()
     {
-        if (iCodes.Length < 3)
+        if (iCodes.Count < 3)
         {
             return false;
         }
@@ -1576,7 +1581,7 @@ unit CodePoints
         uint iIndex = 2;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -1610,7 +1615,7 @@ unit CodePoints
     }
     bool OptimizeJumpToJump()
     {
-        if (iCodes.Length < 2)
+        if (iCodes.Count < 2)
         {
             return false;
         }
@@ -1618,7 +1623,7 @@ unit CodePoints
         uint iIndex = 0;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -1627,7 +1632,7 @@ unit CodePoints
             {
                 <uint> jumpTargets = iJumpTargets[iIndex];
                 uint jumpTarget = jumpTargets[0];
-                if (jumpTarget >= iCodes.Length)
+                if (jumpTarget >= iCodes.Count)
                 {
                     // BAD CODEGEN?
                 }
@@ -1705,7 +1710,7 @@ unit CodePoints
     }
     bool OptimizePUSHRETRES()
     {
-        if (iCodes.Length < 3)
+        if (iCodes.Count < 3)
         {
             return false;
         }
@@ -1713,7 +1718,7 @@ unit CodePoints
         uint iIndex = 2;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -1766,7 +1771,7 @@ unit CodePoints
     }
     bool OptimizePUSH01LEEQ()
     {
-        if (iCodes.Length < 3)
+        if (iCodes.Count < 3)
         {
             return false;
         }
@@ -1774,7 +1779,7 @@ unit CodePoints
         uint iIndex = 2;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -1810,7 +1815,7 @@ unit CodePoints
     }
     bool OptimizeCommutativeSWAP()
     {
-        if (iCodes.Length < 3)
+        if (iCodes.Count < 3)
         {
             return false;
         }
@@ -1818,7 +1823,7 @@ unit CodePoints
         uint iIndex = 1;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -1859,7 +1864,7 @@ unit CodePoints
     // str = str.Trim() -> Trim(ref str),  str = str.Append(x) -> Build(ref str, x), etc.
     bool OptimizeStringRef()
     {
-        if (iCodes.Length < 5)
+        if (iCodes.Count < 5)
         {
             return false;
         }
@@ -1867,7 +1872,7 @@ unit CodePoints
         uint iIndex = 4; // start at 5th instruction
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -2139,7 +2144,7 @@ unit CodePoints
     
     bool OptimizeSetters()
     {
-        if (iCodes.Length < 4)
+        if (iCodes.Count < 4)
         {
             return false;
         }
@@ -2148,7 +2153,7 @@ unit CodePoints
         bool modified = false;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -2180,7 +2185,7 @@ unit CodePoints
     bool OptimizeLongAddSub()
     {
         bool modified;
-        if (iCodes.Length < 3)
+        if (iCodes.Count < 3)
         {
             return false;
         }
@@ -2188,7 +2193,7 @@ unit CodePoints
         uint hits = 0;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }
@@ -2227,7 +2232,7 @@ unit CodePoints
     bool OptimizeINCDEC()
     {
         bool modified;
-        if (iCodes.Length < 4)
+        if (iCodes.Count < 4)
         {
             return false;
         }
@@ -2235,7 +2240,7 @@ unit CodePoints
         uint hits = 0;
         loop
         {
-            if (iIndex >= iCodes.Length)
+            if (iIndex >= iCodes.Count)
             {
                 break;
             }

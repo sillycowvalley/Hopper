@@ -158,7 +158,7 @@ unit HopperCode
     
     uint fixup(uint ln, bool immediate)
     {
-        if ((ln < 1) || (ln > lineLimit))
+        if ((ln < 1) || (ln > Source.LineLimit))
         {
             if (immediate && (ln >= 10000) && (ln <= 10002))
             {

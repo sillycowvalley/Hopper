@@ -35,14 +35,14 @@ unit StatusBar
         
     bool OnKey(<string, variant> this, Key key)
     {
-        if ((key == Key.Click) && (clickPath.Length > 0))
+        if ((key == Key.Click) && (clickPath.Length != 0))
         {
             uint x = ClickX;
             uint y = ClickY;
             if (ClickUp && ClickDouble)
             {
                 bool winner = false;
-                if (clickAreas.Count > 0)
+                if (clickAreas.Count != 0)
                 {
                     <uint> area = clickAreas[0];
                     uint xm = area[0];
@@ -141,7 +141,7 @@ unit StatusBar
                     }
                 }
             }
-            if (clickPath.Length > 0)
+            if (clickPath.Length != 0)
             {
                 clickAreas.Append(area);
             }

@@ -51,7 +51,7 @@ program Term
         {
             i++;
             string content = "  " + (i.ToString()).LeftPad(' ', 3) + ": " + port;
-            if (i == ports.Length)
+            if (i == ports.Count)
             {
                 content = content + " (default)";
                 defCh = char(48+i);
@@ -68,7 +68,7 @@ program Term
         if ((ch >= '1') && (ch <= '9'))
         {
             i = uint(ch) - 49;
-            if (i < ports.Length)
+            if (i < ports.Count)
             {
                 string port = (ports[i]).Replace("COM", "");
                 uint iport;
@@ -96,10 +96,10 @@ program Term
         
         loop
         {
-            if ((Keyboard.IsAvailable) || (keyboardBuffer.Length > 0))
+            if ((Keyboard.IsAvailable) || (keyboardBuffer.Length != 0))
             {
                 char ch;    
-                if (keyboardBuffer.Length > 0)
+                if (keyboardBuffer.Length != 0)
                 {
                     ch = keyboardBuffer[0];
                     keyboardBuffer = keyboardBuffer.Substring(1);

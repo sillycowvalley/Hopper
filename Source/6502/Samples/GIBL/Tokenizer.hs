@@ -90,7 +90,7 @@ unit Tokenizer
         
         if (Condition == Conditions.None)
         {
-            if (localLoopStack.Length > 0)
+            if (localLoopStack.Length != 0)
             {
                 string next = localLoopStack[localLoopStack.Length-1];
                 uint startLine = localLoopLineStack[localLoopLineStack.Length-1];
@@ -159,7 +159,7 @@ unit Tokenizer
         
         if (Condition == Conditions.None)
         {
-            if (loopStack.Length > 0)
+            if (loopStack.Length != 0)
             {
                 string next = loopStack[loopStack.Length-1];
                 uint startLine = loopLineStack[loopLineStack.Length-1];
@@ -775,7 +775,7 @@ unit Tokenizer
             TrimFront(0, ref content);
             if (!content.StartsWith(':') && (basicInstruction != Basic.Rem))
             {
-                if (content.Length > 0)
+                if (content.Length != 0)
                 {
                     Error(9, content[0]);
                 }

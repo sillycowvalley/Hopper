@@ -153,7 +153,7 @@ enum SysCall {
     eArrayGetItem = 0x000D,
     eArraySetItem = 0x000E,
     eListNew = 0x000F,
-    eListLengthGet = 0x0010,
+    eListCountGet = 0x0010,
     eListAppend = 0x0011,
     eListInsert = 0x0012,
     eListGetItem = 0x0013,
@@ -767,7 +767,7 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload);
 UInt Memory_Available();
 UInt Memory_Maximum();
 UInt HRList_New(Type htype);
-UInt HRList_GetLength(UInt _this);
+UInt HRList_GetCount(UInt _this);
 void HRList_Append(UInt _this, UInt item, Type itype);
 void HRList_SetItem(UInt _this, UInt index, UInt item, Type itype);
 void HRList_Insert(UInt _this, UInt index, UInt item, Type itype);

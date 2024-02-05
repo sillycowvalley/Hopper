@@ -42,7 +42,7 @@ unit Source
     LoadSymbols(bool onlyNamedTypes)
     {
         string ihexPath = Monitor.CurrentHexPath;
-        if (!symbolsLoaded && (ihexPath.Length > 0))
+        if (!symbolsLoaded && (ihexPath.Length != 0))
         {
             Source.ClearSymbols();
                 

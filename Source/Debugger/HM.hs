@@ -99,7 +99,7 @@ program HopperMonitor
             if (c == char(0x0D))
             {
                 ln = ln.Trim();
-                if (ln.Length > 0)
+                if (ln.Length != 0)
                 {
                     string addressString = "0x" + ln.Substring(0, 4);
                     uint address;
@@ -401,10 +401,10 @@ program HopperMonitor
                 if ((address > 0) && (address < Source.GetCodeLength()))
                 {
                     string sourceIndex = Code.GetSourceIndex(address);
-                    if (sourceIndex.Length > 0)
+                    if (sourceIndex.Length != 0)
                     {
                         string sourceLine = Code.GetSourceLine(sourceIndex);
-                        if (sourceLine.Length > 0)
+                        if (sourceLine.Length != 0)
                         {
                             sourceLine = "      " + sourceLine.Trim();
                             sourceLine = sourceLine.Pad(' ', 60);
@@ -485,10 +485,10 @@ program HopperMonitor
         Screen.Suspend();
         Screen.Clear();
         string sourceIndex = Code.GetSourceIndex(address);
-        if (sourceIndex.Length > 0)
+        if (sourceIndex.Length != 0)
         {
             string sourceLine = Code.GetSourceLine(sourceIndex);
-            if (sourceLine.Length > 0)
+            if (sourceLine.Length != 0)
             {
                 <string> parts = sourceIndex.Split(':');
                 string lNum = parts[1];
@@ -683,7 +683,7 @@ program HopperMonitor
             }
             
             Key key;
-            if (keyboardBuffer.Count > 0)
+            if (keyboardBuffer.Count != 0)
             {
                 key = keyboardBuffer[0];
                 keyboardBuffer.Remove(0);
@@ -958,7 +958,7 @@ program HopperMonitor
             else if (key == Key.Backspace)
             {
                 // back up one
-                if (commandLine.Length > 0)
+                if (commandLine.Length != 0)
                 {
                     commandLine = commandLine.Substring(0, commandLine.Length-1);
                     SetCursor(0, Screen.CursorY);

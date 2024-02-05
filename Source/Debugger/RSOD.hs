@@ -50,7 +50,7 @@ program  RedScreenOfDeath
             {
                 iline--;
             }
-            if (sourceLines.Length > iline)
+            if (sourceLines.Count > iline)
             {
                 sourceLine = sourceLines[iline];
             }
@@ -67,7 +67,7 @@ program  RedScreenOfDeath
         string content;
         string sourceLine;
         string methodName;
-        uint length = code.Length;
+        uint length = code.Count;
         for (uint address = 0; address < length; address++)
         {
             uint actualAddress = startAddress + address;
@@ -75,7 +75,7 @@ program  RedScreenOfDeath
             {
                 string methodIndex = methodNames[actualAddress];
                 <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
-                if (methodSymbols.Count > 0)
+                if (methodSymbols.Count != 0)
                 {
                     src = methodSymbols["source"];
                     srcName = Path.GetFileName(src);
@@ -92,7 +92,7 @@ program  RedScreenOfDeath
             {
                 string dln = debugInfo[debugAddress];
                 string sourceCode = GetSourceLine(src, dln);
-                if (sourceCode.Length > 0)
+                if (sourceCode.Length != 0)
                 {
                     sourceLine = srcName + ":" + dln;
                     sourceLine += '`';
@@ -103,7 +103,7 @@ program  RedScreenOfDeath
             }
             if ((sourceLine.Length  > 0)  &&  stackAddresses.Contains(actualAddress))
             {
-                for  (uint i=0; i < stackAddresses.Length; i++)
+                for  (uint i=0; i < stackAddresses.Count; i++)
                 {
                     if  (stackAddresses[i] == actualAddress)
                     {
@@ -127,7 +127,7 @@ program  RedScreenOfDeath
         {
             <string> rawArgs = System.Arguments;
             <string> args;
-            for (uint iArg = 0; iArg < rawArgs.Length; iArg++)
+            for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
                 string arg = rawArgs[iArg];
                 if ((arg.Length == 2) && (arg[0] == '-'))
@@ -148,7 +148,7 @@ program  RedScreenOfDeath
                 }
             }
             
-            if (args.Length != 1)
+            if (args.Count != 1)
             {
                 BadArguments();
                 break;
@@ -196,7 +196,7 @@ program  RedScreenOfDeath
                     }
                     li++;
                 }
-                if (stackAddresses.Length == 0)
+                if (stackAddresses.Count == 0)
                 {
                     PrintLn("No stack in '" + crashPath + "'", Colour.MatrixRed, Colour.Black);
                     break;
@@ -321,7 +321,7 @@ program  RedScreenOfDeath
                     Parser.ProgressTick(".");
                 }
                 
-                if (constLength > 0)
+                if (constLength != 0)
                 {
                     address = address + constLength;
                     codeSize = codeSize + constLength;
@@ -358,7 +358,7 @@ program  RedScreenOfDeath
                 
                 DisassembleCode(code, address, methodNames);
                 
-                codeSize = codeSize + code.Length;
+                codeSize = codeSize + code.Count;
                 Parser.ProgressTick(".");
                 
                 PrintLn();
@@ -374,10 +374,10 @@ program  RedScreenOfDeath
                 PrintLn("Call stack:", Colour.MatrixBlue,  Colour.Black);
                 uint max0 = 0;
                 uint max1 = 0;
-                for (uint i=0; i < stackAddresses.Length; i++)
+                for (uint i=0; i < stackAddresses.Count; i++)
                 {
                    <string> parts = (stackLines[i]).Split('`'); 
-                   if  (parts.Length > 0)
+                   if  (parts.Count != 0)
                    {
                        string part0 = parts[0];
                        if (part0.Length > max0)
@@ -391,12 +391,12 @@ program  RedScreenOfDeath
                        }
                    }
                 }
-                for (uint i=0; i < stackAddresses.Length; i++)
+                for (uint i=0; i < stackAddresses.Count; i++)
                 {
                     <string> parts = (stackLines[i]).Split('`'); 
                     string line = "  0x"  + (stackAddresses[i]).ToHexString(4) +  " ";
                     Print(line, Colour.MatrixBlue,  Colour.Black);
-                    if  (parts.Length > 0)
+                    if  (parts.Count != 0)
                     {
                         line = parts[0];
                         line = line.Pad(' ', max0 + 2);

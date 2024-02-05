@@ -18,7 +18,7 @@ unit Block
     
     <string,variant> Top()
     {
-        uint iLast = blockList.Length;
+        uint iLast = blockList.Count;
         iLast--;
         <string,variant> blockContext = blockList[iLast];
         return blockContext;
@@ -26,7 +26,7 @@ unit Block
     <string,variant> GetMethodBlock()
     {
         <string,variant> methodBlock;
-        uint iBlock = blockList.Length;
+        uint iBlock = blockList.Count;
         loop
         {   
             if (iBlock == 0)
@@ -48,7 +48,7 @@ unit Block
         bool exists;
         <string,variant> top = Top();
         < <string> > locals = top["locals"];
-        uint nlocals = locals.Length;   
+        uint nlocals = locals.Count;   
         for (uint i=0; i < nlocals; i++)
         {
             <string> local = locals[i]; // <type, name>
@@ -61,7 +61,7 @@ unit Block
         if (top.Contains("arguments"))
         {
             < <string> > arguments = top["arguments"];
-            uint narguments = arguments.Length;   
+            uint narguments = arguments.Count;   
             for (uint i=0; i < narguments; i++)
             {
                 <string> argument = arguments[i]; // <ref, type, name>
@@ -90,7 +90,7 @@ unit Block
     
     ReplaceTop(<string,variant> blockContext)
     {
-        uint iLast = blockList.Length;
+        uint iLast = blockList.Count;
         iLast--;
         blockList.SetItem(iLast, blockContext);
     }
@@ -98,7 +98,7 @@ unit Block
     bool AddBreakPatch(uint address)
     {
         bool success = false;
-        uint iLoop = blockList.Length;
+        uint iLoop = blockList.Count;
         loop
         {
             if (iLoop == 0)
@@ -123,7 +123,7 @@ unit Block
     bool AddContinuePatch(uint address)
     {
         bool success = false;
-        uint iLoop = blockList.Length;
+        uint iLoop = blockList.Count;
         loop
         {
             if (iLoop == 0)
@@ -157,7 +157,7 @@ unit Block
         }
         < <string> > locals;
         blockContext["locals"] = locals;
-        if (blockList.Length == 0)
+        if (blockList.Count == 0)
         {
             < <string> > globals;
             blockContext["globals"] = globals;
@@ -173,7 +173,7 @@ unit Block
     }
     PopBlock(uint continueTarget, uint breakTarget)
     {
-        uint iLast = blockList.Length;
+        uint iLast = blockList.Count;
         iLast--;
         Export(iLast);
         
@@ -277,7 +277,7 @@ unit Block
     uint GetBytesToPop(bool toLoop, bool isContinue)
     {
         uint bytesToPop = 0;
-        uint iLast = blockList.Length;
+        uint iLast = blockList.Count;
         loop
         {
             if (iLast == 0)
@@ -290,17 +290,17 @@ unit Block
             if (blockContext.Contains("arguments"))
             {
                 < < string > > arguments = blockContext["arguments"];
-                popMore = popMore + arguments.Length * 2; // 2 bytes per stack slot for arguments
+                popMore = popMore + arguments.Count * 2; // 2 bytes per stack slot for arguments
             }
             if (blockContext.Contains("locals"))
             {
                 < < string > > locals = blockContext["locals"];
-                popMore = popMore + locals.Length * 2; // 2 bytes per stack slot for locals
+                popMore = popMore + locals.Count * 2; // 2 bytes per stack slot for locals
             }
             if (blockContext.Contains("globals"))
             {
                 < < string > > globals = blockContext["globals"];
-                popMore = popMore + globals.Length * 2; // 2 bytes per stack slot for globals
+                popMore = popMore + globals.Count * 2; // 2 bytes per stack slot for globals
             }
             bytesToPop = bytesToPop + popMore;
             if (!toLoop)
@@ -323,7 +323,7 @@ unit Block
     uint GetLocalsToPop(bool andArguments, bool andGlobals)
     {
         uint localsToPop = 0;
-        uint iLast = blockList.Length;
+        uint iLast = blockList.Count;
         loop
         {
             if (iLast == 0)
@@ -335,17 +335,17 @@ unit Block
             if (blockContext.Contains("locals"))
             {
                 < < string > > locals = blockContext["locals"];
-                localsToPop = localsToPop + locals.Length * 2; // 2 bytes per stack slot for locals
+                localsToPop = localsToPop + locals.Count * 2; // 2 bytes per stack slot for locals
             }
             if (andArguments && blockContext.Contains("arguments"))
             {
                 < < string > > arguments = blockContext["arguments"];
-                localsToPop = localsToPop + arguments.Length * 2; // 2 bytes per stack slot for arguments
+                localsToPop = localsToPop + arguments.Count * 2; // 2 bytes per stack slot for arguments
             }
             if (andGlobals && blockContext.Contains("globals"))
             {
                 < < string > > globals = blockContext["globals"];
-                localsToPop = localsToPop + globals.Length * 2; // 2 bytes per stack slot for globals
+                localsToPop = localsToPop + globals.Count * 2; // 2 bytes per stack slot for globals
             }
         }
         return localsToPop;
@@ -357,7 +357,7 @@ unit Block
     {
         int offset;
         bool found;
-        uint iCurrent = blockList.Length;
+        uint iCurrent = blockList.Count;
         < < string > > members;
         isRef = false;
         loop
@@ -371,7 +371,7 @@ unit Block
             if (blockContext.Contains("locals"))
             {
                 members = blockContext["locals"];        
-                uint nlocals = members.Length;   
+                uint nlocals = members.Count;   
                 for (uint i=0; i < nlocals; i++)
                 {
                     <string> local = members[i];
@@ -387,7 +387,7 @@ unit Block
             if (blockContext.Contains("arguments"))
             {
                 members = blockContext["arguments"];
-                uint narguments = members.Length;
+                uint narguments = members.Count;
                 for (uint i=0; i < narguments; i++)
                 {
                     <string> argument = members[i];
@@ -405,7 +405,7 @@ unit Block
                         }
                         offset = (int(narguments) - int(i)) * 2;
                         offset = 0 - offset;
-                        if (reference.Length > 0)
+                        if (reference.Length != 0)
                         {
                             isRef = true; // content of the stack slot is an absolute stack address
                         }
@@ -435,7 +435,7 @@ unit Block
                 if (blockContext.Contains("locals"))
                 {
                     members = blockContext["locals"];
-                    uint nlocals = members.Length;
+                    uint nlocals = members.Count;
                     offset = offset + int(nlocals) * 2;
                 }
             }
@@ -464,7 +464,7 @@ unit Block
         string name;
         <string,variant> blockContext;
         < <string> > members;
-        uint iCurrent = blockList.Length;
+        uint iCurrent = blockList.Count;
         loop
         {
             if (iCurrent == 0)
@@ -530,7 +530,7 @@ unit Block
         {
             locals = blockContext["locals"];
         }
-        if (locals.Length > 0)
+        if (locals.Count != 0)
         {
             < <string> > localNamesAndTypes;
             

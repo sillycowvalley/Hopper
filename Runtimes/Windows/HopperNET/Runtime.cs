@@ -217,10 +217,7 @@ namespace HopperNET
         ArrayGetItem = 0x0D,
         ArraySetItem = 0x0E,
         ListNew = 0x0F,
-
-        ListLengthGet = 0xF2,
         ListCountGet  = 0x10,
-        
         ListAppend = 0x11,
         ListInsert = 0x12,
         ListGetItem = 0x13,
@@ -5094,7 +5091,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.ListCountGet:
-                case SysCall.ListLengthGet:
                     {
                         HopperList _this_ = (HopperList)PopVariant(HopperType.tList);
                         Push((ushort)_this_.Value.Count, HopperType.tUInt);

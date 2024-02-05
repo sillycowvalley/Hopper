@@ -152,7 +152,7 @@ unit Serialize
             }
             str = "";
             success = false;
-            while (input.Length > 0)
+            while (input.Length != 0)
             {
                 char ch = input[0];
                 input = input.Substring(1);
@@ -183,7 +183,7 @@ unit Serialize
             string str = "";
             success = false;
             bool hasDigits = false;
-            while (input.Length > 0)
+            while (input.Length != 0)
             {
                 char ch = input[0];
                 if (ch.IsWhitespace())
@@ -351,7 +351,7 @@ unit Serialize
                 if (input.Length == 0)                      { success = false; break; }
                 if (input[0] == ']')                        { input = input.Substring(1); break; }
             
-                if (jsonArray.Length != 0)
+                if (jsonArray.Count != 0)
                 {
                     if (!consume(',', ref input))           { success = false; break; }        
                 }

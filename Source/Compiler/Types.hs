@@ -930,8 +930,8 @@ unit Types
         bool equal = true;
         loop
         {
-            uint lActual = actual.Length;
-            uint lTarget = target.Length;
+            uint lActual = actual.Count;
+            uint lTarget = target.Count;
             if (lActual != lTarget)
             {
                 equal = false;
@@ -941,12 +941,12 @@ unit Types
             {
                 <string> actualList = actual[i];
                 <string> targetList = target[i];
-                if (actualList.Length != 3)
+                if (actualList.Count != 3)
                 {
                     equal = false;
                     break;
                 }
-                if (targetList.Length != 3)
+                if (targetList.Count != 3)
                 {
                     equal = false;
                     break;
@@ -1141,7 +1141,7 @@ unit Types
                 // consider delegates (variables, not methods)
                 string qualifiedName;
                 string variableType = Types.GetTypeString(functionName, false, ref qualifiedName);
-                if (variableType.Length > 0)
+                if (variableType.Length != 0)
                 {
                     if (!Types.IsDelegate(variableType))
                     {
@@ -1199,11 +1199,11 @@ unit Types
     {
         // walk the block stack to find local or global and determine type
         string variableType = Block.GetType(variableName);
-        if (variableType.Length > 0)
+        if (variableType.Length != 0)
         {
             fullName = variableName; // local? 
         }
-        if ((variableType.Length == 0) && !variableName.Contains('.') && (variableName.Length > 0))
+        if ((variableType.Length == 0) && !variableName.Contains('.') && (variableName.Length != 0))
         {
             char f = variableName[0];
             bool private = f.IsLower();
@@ -1211,7 +1211,7 @@ unit Types
             // try current namespace first
             string qualifiedName = currentNamespace + "." + variableName;
             string qVariableType = Block.GetType(qualifiedName);
-            if (qVariableType.Length > 0)
+            if (qVariableType.Length != 0)
             {
                 variableType = qVariableType;
                 fullName = qualifiedName;
@@ -1225,7 +1225,7 @@ unit Types
                 {
                     qualifiedName = nameSpace + "." + variableName;
                     qVariableType = Block.GetType(qualifiedName);
-                    if (qVariableType.Length > 0)
+                    if (qVariableType.Length != 0)
                     {
                         variableType = qVariableType;
                         fullName = qualifiedName;

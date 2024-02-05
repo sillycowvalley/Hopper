@@ -1,6 +1,6 @@
 program Blink
 {
-    #define RP2040_PICOW
+    #define RP2040_PICO
     uses "/Source/Library/MCU"
     {
         loop
@@ -11,3 +11,4 @@ program Blink
         }
     }
 }
+

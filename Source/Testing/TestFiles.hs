@@ -247,7 +247,7 @@ program TestFiles
     
     {
         EchoToLCD = true;
-        Screen.Clear();
+        //Screen.Clear();
         
         TestDirectories();
         TestFiles();

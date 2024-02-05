@@ -157,7 +157,7 @@ program Compile
             string returnType = "void";
             <string,variant> blockContext = Block.GetMethodBlock();
             uint returnBytes = 0;
-            if (blockContext.Count > 0)
+            if (blockContext.Count != 0)
             {
                 if (blockContext.Contains("returntype"))
                 {
@@ -1308,7 +1308,7 @@ program Compile
                     break;
                 }
                 <uint> overloads = Symbols.GetFunctionOverloads(fIndex);
-                if (overloads.Length != 1)
+                if (overloads.Count != 1)
                 {
                     Parser.ErrorAtCurrent("setter method should only have one overload");   
                     break;
@@ -1316,7 +1316,7 @@ program Compile
                 iOverload = overloads[0];
                 < < string > > arguments = Symbols.GetOverloadArguments(iOverload); 
                 
-                if (arguments.Length != 1)
+                if (arguments.Count != 1)
                 {
                     Parser.ErrorAtCurrent("setter method should only have one argument");   
                     break;
@@ -1458,7 +1458,7 @@ program Compile
                 break;
             }
             <uint> goverloads = Symbols.GetFunctionOverloads(fgIndex);
-            if (goverloads.Length != 1)
+            if (goverloads.Count != 1)
             {
                 Parser.ErrorAtCurrent("getter method should only have one overload");   
                 break;
@@ -1466,7 +1466,7 @@ program Compile
             uint igOverload = goverloads[0];
             < < string > > garguments = Symbols.GetOverloadArguments(igOverload); 
             
-            if (garguments.Length == 1)
+            if (garguments.Count == 1)
             {
                 Parser.ErrorAtCurrent("getter method should only have zero arguments");   
                 break;
@@ -1662,7 +1662,7 @@ program Compile
                 }
                 
                 <uint> overloads = Symbols.GetFunctionOverloads(fIndex);
-                if (overloads.Length != 1)
+                if (overloads.Count != 1)
                 {
                     Parser.ErrorAt(leftToken, "setter method should only have one overload");   
                     break;
@@ -1670,7 +1670,7 @@ program Compile
                 iOverload = overloads[0];
                 < < string > > arguments = Symbols.GetOverloadArguments(iOverload); 
                 
-                if (arguments.Length != 1)
+                if (arguments.Count != 1)
                 {
                     Parser.ErrorAt(leftToken, "setter method should only have one argument");   
                     break;
@@ -2469,7 +2469,7 @@ program Compile
             Directives.New();
             CodeStream.New();
             
-            if (globalCode.Length > 0)
+            if (globalCode.Count != 0)
             {
                 CodeStream.AppendCode(globalCode);
                 globalCode.Clear();
@@ -2660,7 +2660,7 @@ program Compile
             
             // compile gIndex
             <string, string> startToken = Symbols.GetGlobalStart(gIndex);
-            if (startToken.Count > 0)
+            if (startToken.Count != 0)
             {
                 // execute initialization code if there is any
                 Scanner.Reset(startToken);
@@ -2728,7 +2728,7 @@ program Compile
             bool checkedBuild = true;
             bool touchesTree = false;
           
-            for (uint iArg = 0; iArg < rawArgs.Length; iArg++)
+            for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
                 string arg = rawArgs[iArg];
                 if ((arg.Length == 2) && (arg[0] == '-'))
@@ -2775,7 +2775,7 @@ program Compile
                 }
             }
           
-            if (args.Length != 1)
+            if (args.Count != 1)
             {
                 BadArguments();
                 break;
@@ -2811,7 +2811,7 @@ program Compile
                     break;
                 }
                 <uint> mOverloads = Symbols.GetFunctionOverloads(mIndex);
-                if (mOverloads.Length != 1)
+                if (mOverloads.Count != 1)
                 {
                     Parser.Error("'main' has overloads?");
                     break;

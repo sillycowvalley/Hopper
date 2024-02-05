@@ -88,10 +88,10 @@ unit Tokenizer
         
         if (Condition == Conditions.None)
         {
-            if (localLoopStack.Length > 0)
+            if (localLoopStack.Count != 0)
             {
-                string next = localLoopStack[localLoopStack.Length-1];
-                uint startLine = localLoopLineStack[localLoopLineStack.Length-1];
+                string next = localLoopStack[localLoopStack.Count-1];
+                uint startLine = localLoopLineStack[localLoopLineStack.Count-1];
                 if (next.StartsWith("UNTIL"))
                 {
                     Error(19); // DO without UNTIL
@@ -157,10 +157,10 @@ unit Tokenizer
         
         if (Condition == Conditions.None)
         {
-            if (loopStack.Length > 0)
+            if (loopStack.Count != 0)
             {
-                string next = loopStack[loopStack.Length-1];
-                uint startLine = loopLineStack[loopLineStack.Length-1];
+                string next = loopStack[loopStack.Count-1];
+                uint startLine = loopLineStack[loopLineStack.Count-1];
                 if (next.StartsWith("UNTIL"))
                 {
                     Error(19, char(0), startLine); // DO without UNTIL
@@ -388,11 +388,11 @@ unit Tokenizer
             
             if (ParseFlags.Until == parseFlags & ParseFlags.Until)
             {
-                if (loopStack.Length == 0) { Error(20);  break; }            // UNTIL without DO
-                string untilContent = loopStack[loopStack.Length-1];
+                if (loopStack.Count == 0) { Error(20);  break; }            // UNTIL without DO
+                string untilContent = loopStack[loopStack.Count-1];
                 if (!untilContent.StartsWith("UNTIL")) { Error(20); break; } // UNTIL without DO
-                loopStack.Remove(loopStack.Length-1);
-                loopLineStack.Remove(loopLineStack.Length-1);
+                loopStack.Remove(loopStack.Count-1);
+                loopLineStack.Remove(loopLineStack.Count-1);
                 HopperCode.InsertBreakCheck();
                 expressionType = ParseExpression(ref content);
                 if (Condition != Conditions.None) { break; }
@@ -413,11 +413,11 @@ unit Tokenizer
                 }
                 variableName = variableName + content[0];
                 variableName = variableName.ToUpper();
-                if (loopStack.Length == 0)  { Error(14); break; }           // NEXT without FOR
-                string nextContent = loopStack[loopStack.Length-1];
+                if (loopStack.Count == 0)  { Error(14); break; }           // NEXT without FOR
+                string nextContent = loopStack[loopStack.Count-1];
                 if (!nextContent.StartsWith("NEXT"))  { Error(14); break; } // NEXT without FOR
-                loopStack.Remove(loopStack.Length-1);
-                loopLineStack.Remove(loopLineStack.Length-1);
+                loopStack.Remove(loopStack.Count-1);
+                loopLineStack.Remove(loopLineStack.Count-1);
                 string replace = "NEXT " + variableName + ":";
                 if (!nextContent.StartsWith(replace)) { Error(14); break; } // NEXT without FOR
                 nextContent = nextContent.Replace(replace, "");
@@ -538,7 +538,7 @@ unit Tokenizer
                             <string> limitParts = limit.Split("STEP");
                             
                             string incrementCode = variableName + "++:";
-                            if (limitParts.Length == 2)
+                            if (limitParts.Count == 2)
                             {
                                 limit = limitParts[0];
                                 step  = limitParts[1];
@@ -774,7 +774,7 @@ unit Tokenizer
             TrimFront(0, ref content);
             if (!content.StartsWith(':') && (basicInstruction != Basic.Rem))
             {
-                if (content.Length > 0)
+                if (content.Length != 0)
                 {
                     Error(9, content[0]);
                 }

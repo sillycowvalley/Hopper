@@ -136,14 +136,14 @@ unit Common
                 string filepath = dir.GetFile(fi);
                 string filename = Path.GetFileName(filepath);
                 string filenameLower = filename.ToLower();
-                if (maskEndsWith.Length > 0)
+                if (maskEndsWith.Length != 0)
                 {
                     if (!filenameLower.EndsWith(maskEndsWith))
                     {
                         continue;
                     }
                 }
-                if (maskStartsWith.Length > 0)
+                if (maskStartsWith.Length != 0)
                 {
                     if (!filenameLower.StartsWith(maskStartsWith))
                     {

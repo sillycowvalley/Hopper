@@ -2038,8 +2038,8 @@ unit HopperVM
                     case Type.List:
                     {
                         // verify that all members of the list are of type valueType
-                        uint length = HRList.GetLength(this);
-                        for (uint i = 0; i < length; i++)
+                        uint count = HRList.GetCount(this);
+                        for (uint i = 0; i < count; i++)
                         {
                             Type itype;
                             uint item = HRList.GetItem(this, i, ref itype);

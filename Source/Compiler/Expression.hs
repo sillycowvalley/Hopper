@@ -85,7 +85,7 @@ unit Expression
             Parser.ErrorAtCurrent("not implemented");
             Die(0x0A);
         }
-        if (name.Length > 0)
+        if (name.Length != 0)
         {
             CodeStream.AddInstructionSysCall0(name, "New");
         }
@@ -412,7 +412,7 @@ unit Expression
             // consider delegates (variables, not methods)
             string qualifiedName;
             string variableType = Types.GetTypeString(methodName, false, ref qualifiedName);
-            if (variableType.Length > 0)
+            if (variableType.Length != 0)
             {
                 if (Types.IsDelegate(variableType))
                 {
@@ -434,10 +434,10 @@ unit Expression
             
             if (methodName.EndsWith("_Get"))
             {
-                if ((thisVariable.Length > 0) || (dotThisType.Length > 0))
+                if ((thisVariable.Length != 0) || (dotThisType.Length != 0))
                 {
                     
-                    if (thisVariable.Length > 0) 
+                    if (thisVariable.Length != 0) 
                     {
                         string qualifiedThis;
                         string thisType = Types.GetTypeString(thisVariable, true, ref qualifiedThis);
@@ -470,7 +470,7 @@ unit Expression
                 break;
             }
             uint fIndex;
-            if (!isDelegateType && !GetFunctionIndex(methodName, ref fIndex) && (methodName.Length > 0))
+            if (!isDelegateType && !GetFunctionIndex(methodName, ref fIndex) && (methodName.Length != 0))
             {
                 char fChar = methodName[0];
                 if (fChar.IsLower() && methodName.Contains('.') && (thisVariable.Length == 0))
@@ -516,10 +516,10 @@ unit Expression
             }
         
             uint n = 0;
-            if ( (thisVariable.Length > 0) || (dotThisType.Length > 0))
+            if ( (thisVariable.Length != 0) || (dotThisType.Length != 0))
             {
                 string thisType = dotThisType;
-                if (thisVariable.Length > 0)
+                if (thisVariable.Length != 0)
                 {
                     string qualifiedThis;
                     thisType = Types.GetTypeString(thisVariable, true, ref qualifiedThis);
@@ -617,10 +617,10 @@ unit Expression
             Symbols.AddFunctionCall(iOverload);   // CompileMethodCall(methodName)
             if (Symbols.IsSysCall(iOverload))
             {
-                if (collectionValueType.Length > 0)
+                if (collectionValueType.Length != 0)
                 {
                     < < string > > overloadArguments = Symbols.GetOverloadArguments(iOverload);
-                    uint argCount = overloadArguments.Length;
+                    uint argCount = overloadArguments.Count;
                     if (argCount > 1)
                     {
                         <string> templateArgument = overloadArguments[argCount-1];
@@ -729,7 +729,7 @@ unit Expression
         {
             string value = Symbols.GetConstantValue(constantName);
             string constantType = Symbols.GetConstantType(constantName);
-            if (constantType.Length > 0)
+            if (constantType.Length != 0)
             {
                 switch (constantType)
                 {
@@ -1548,7 +1548,7 @@ unit Expression
                 {
                     break;
                 }
-                if (parts.Length < 2)
+                if (parts.Count < 2)
                 {
                     Parser.Error("invalid identifier");
                     break;
@@ -1584,7 +1584,7 @@ unit Expression
                     // no '(' : getter?
                     functionName = functionName + "_Get";
                 }
-                if (thisTypeString.Length > 0)
+                if (thisTypeString.Length != 0)
                 {
                     // "this" case
                     if (Types.IsDictionaryOrPair(thisTypeString))
@@ -1629,7 +1629,7 @@ unit Expression
                         }
                     }
 
-                    if (qualifiedName.Length > 0)
+                    if (qualifiedName.Length != 0)
                     {
                         // "this": method qualified by the type/namespace of the variable
                         actualType = compileFunctionCall(qualifiedName, expectedType, thisVariable);
@@ -1660,7 +1660,7 @@ unit Expression
                             break;
                         }
                     }
-                    if (qualifiedName.Length > 0)
+                    if (qualifiedName.Length != 0)
                     {
                         uint fIndex;
                         if (GetFunctionIndex(qualifiedName, ref fIndex))
@@ -1736,7 +1736,7 @@ unit Expression
                                 break;
                             }
                         }    
-                        if (actualType.Length > 0)
+                        if (actualType.Length != 0)
                         {
                             break;
                         }
@@ -1977,7 +1977,7 @@ unit Expression
                     {
                         Parser.Advance();
                         <uint> overloads = GetFunctionOverloads(fIndex);
-                        if (overloads.Length != 1)
+                        if (overloads.Count != 1)
                         {
                             Parser.ErrorAtCurrent("'&' not implemented for overloaded methods");
                             break;

@@ -249,7 +249,7 @@ unit Symbols
                     break;
                 }
             }
-            if (namespace.Length > 0)
+            if (namespace.Length != 0)
             {
                 break;
             }
@@ -276,7 +276,7 @@ unit Symbols
                     break;
                 }
             }
-            if (name.Length > 0)
+            if (name.Length != 0)
             {
                 break;
             }
@@ -373,7 +373,7 @@ unit Symbols
                 if (flagValue == (value & flagValue))
                 {
                     value = value - flagValue;
-                    if (result.Length > 0)
+                    if (result.Length != 0)
                     {
                         result = result + " | ";
                     }
@@ -384,7 +384,7 @@ unit Symbols
                     }
                 }
             }
-            if (useZero && (zeroValue.Length > 0))
+            if (useZero && (zeroValue.Length != 0))
             {
                 result = zeroValue;
             }
@@ -530,7 +530,7 @@ unit Symbols
     }
     uint GetGlobalCount()
     {
-        return gNames.Length;
+        return gNames.Count;
     }
     string GetGlobalName(uint index)
     {
@@ -1146,7 +1146,7 @@ unit Symbols
         bool found = false;
         if (fNames.Contains(name))
         {
-            uint length = fNames.Length;
+            uint length = fNames.Count;
             for (uint i=0; i < length; i++)
             {
                 if (name == fNames[i])
@@ -1272,7 +1272,7 @@ unit Symbols
         bool found = false;
         if (fdNames.Contains(name))
         {
-            uint length = fdNames.Length;
+            uint length = fdNames.Count;
             for (uint i=0; i < length; i++)
             {
                 if (name == fdNames[i])
@@ -1321,10 +1321,10 @@ unit Symbols
                 break;
             }     
             gNames.Append(name);
-            uint iGlobal = gNames.Length-1;
+            uint iGlobal = gNames.Count-1;
             gIndex[name] = iGlobal;
             gTypes[iGlobal] = typeString;
-            if (blockPos.Length > 0) // has initialization code?
+            if (blockPos.Count != 0) // has initialization code?
             {
                 long startPos;
                 uint startLine;
@@ -1364,7 +1364,7 @@ unit Symbols
         if (!GetFunctionIndex(name, ref index))
         {
             fNames.Append(name);
-            index = fNames.Length-1;
+            index = fNames.Count-1;
             fIndex[name] = index;
         }
         bool isMain = name.EndsWith(".main");
@@ -1409,7 +1409,7 @@ unit Symbols
             fReturnTypes[iCurrentOverload] = returnType;
             
             long startPos;
-            if (blockPos.Length > 0)
+            if (blockPos.Count != 0)
             {
                 uint startLine;
                 if (Long.TryParse(blockPos[0], ref startPos))
@@ -1511,7 +1511,7 @@ unit Symbols
             uint   key = kv.value;
             string value = kv.key;
             membersReversed[key] = value;
-            uint slength = membersSorted.Length;
+            uint slength = membersSorted.Count;
             
             bool inserted = false;
             for (uint i=0; i < slength; i++)
@@ -1549,7 +1549,7 @@ unit Symbols
         if (!GetFunctionDelegateIndex(name, ref index))
         {
             fdNames.Append(name);
-            index = fdNames.Length-1;
+            index = fdNames.Count-1;
             fdIndex[name] = index;
         }
         <uint> overloads;
@@ -1633,7 +1633,7 @@ unit Symbols
             <string, variant> dict;
             
             <byte> constantStream = CodeStream.GetConstantStream();
-            if (constantStream.Length != 0)
+            if (constantStream.Count != 0)
             {
                 <string,variant> cdict;
                 cdict["data"] = constantStream;    
@@ -1644,7 +1644,7 @@ unit Symbols
             // <uint,string> gTypes;
 
             <string, <string,string> > globals;
-            uint gNamesCount = gNames.Length;
+            uint gNamesCount = gNames.Count;
             for (uint i = 0; i < gNamesCount; i++)
             {
                 uint offset = i * 2;
@@ -1668,7 +1668,7 @@ unit Symbols
                 
                 globals[offset.ToString()] = gDict;
             }
-            if (globals.Count > 0)
+            if (globals.Count != 0)
             {
                 dict["globals"] = globals;
             }
@@ -1694,7 +1694,7 @@ unit Symbols
                 if (fCodeStream.Contains(iUsedOverload))
                 {
                     < < string > > argsAndTypes = fArgumentNamesAndTypes[iUsedOverload];
-                    uint argCount = argsAndTypes.Length;
+                    uint argCount = argsAndTypes.Count;
                     int acount;
                     
                     <string, <string, string> > argdicts;
@@ -1722,7 +1722,7 @@ unit Symbols
                         argdicts[offset.ToString()] = argdict;
                         acount++;
                     }
-                    if (argdicts.Count > 0)
+                    if (argdicts.Count != 0)
                     {
                         mdict["arguments"]   = argdicts;
                     }
@@ -1742,7 +1742,7 @@ unit Symbols
                             localdict["offset"] = loffset;
                             localdicts[lrange] = localdict;
                         }
-                        if (localdicts.Count > 0)
+                        if (localdicts.Count != 0)
                         {
                             mdict["locals"]   = localdicts;
                         }
@@ -1792,7 +1792,7 @@ unit Symbols
                 eentry["members"] = eMembers[index];                
                 edict[en.key] = eentry;
             }
-            if (edict.Count > 0)
+            if (edict.Count != 0)
             {
                 dict["enums"] = edict;
             }
@@ -1805,7 +1805,7 @@ unit Symbols
                 flentry["members"] = flMembers[index];
                 fldict[fl.key] = flentry;
             }
-            if (fldict.Count > 0)
+            if (fldict.Count != 0)
             {
                 dict["flags"] = fldict;
             }
@@ -1824,7 +1824,7 @@ unit Symbols
                 }
                 gdict[g.key] = gentry;
             }
-            if (gdict.Count > 0)
+            if (gdict.Count != 0)
             {
                 dict["globals"] = gdict;           
             }
@@ -1859,14 +1859,14 @@ unit Symbols
                             string rf = ls[0];
                             string tp = ls[1];
                             string nm = ls[2];
-                            if (rf.Length > 0)
+                            if (rf.Length != 0)
                             {
                                 tp = rf + " " + tp;
                             }
                             args[ai.ToString() + ":" + nm] = tp;        
                             ai++;
                         }
-                        if (args.Count > 0)
+                        if (args.Count != 0)
                         {
                             odict["arguments"] = args;
                         }
@@ -1875,7 +1875,7 @@ unit Symbols
                 }
                 fddict[fd.key] = fdentry;
             }
-            if (fddict.Count > 0)
+            if (fddict.Count != 0)
             {
                 dict["delegates"] = fddict;
             }
@@ -1910,14 +1910,14 @@ unit Symbols
                             string rf = ls[0];
                             string tp = ls[1];
                             string nm = ls[2];
-                            if (rf.Length > 0)
+                            if (rf.Length != 0)
                             {
                                 tp = rf + " " + tp;
                             }
                             args[ai.ToString() + ":" + nm] = tp;
                             ai++;
                         }
-                        if (args.Count > 0)
+                        if (args.Count != 0)
                         {
                             odict["arguments"] = args;
                         }
@@ -1942,7 +1942,7 @@ unit Symbols
                 }
                 fdict[f.key] = fentry;
             }
-            if (fdict.Count > 0)
+            if (fdict.Count != 0)
             {
                 dict["functions"] = fdict;
             }
@@ -2354,7 +2354,7 @@ unit Symbols
     {
         string lastSource;
         <string, string> lastToken = Symbols.GetOverloadStart(iLastOverload);
-        if ((lastToken.Count > 0) && (lastToken["pos"] != "0"))
+        if ((lastToken.Count != 0) && (lastToken["pos"] != "0"))
         {
             lastSource = lastToken["source"];
             lastSource = lastSource.ToLower();
@@ -2403,7 +2403,7 @@ unit Symbols
                     break;
                 }
             }
-            if (name.Length > 0)
+            if (name.Length != 0)
             {
                 break;
             }
@@ -2436,7 +2436,7 @@ unit Symbols
         if (fCodeStream.Contains(iFrom))
         {
             <byte> codeStream = fCodeStream[iFrom];
-            cSizeSelf = codeStream.Length;
+            cSizeSelf = codeStream.Count;
         }
         cSize = cSize + cSizeSelf;
         string content = pad + fromName;

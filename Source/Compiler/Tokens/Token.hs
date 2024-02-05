@@ -290,7 +290,7 @@ unit Token
     {
         HopperToken tokenType;
         string content = "Undefined";
-        if (token.Count > 0)
+        if (token.Count != 0)
         {
             content = token["type"];
             tokenType = Token.GetType(token);

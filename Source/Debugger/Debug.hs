@@ -269,7 +269,7 @@ program Debug
                 else
                 {
                     string commandName = Commands.KeyToCommand(key);
-                    if (commandName.Length > 0) // checks IsEnabled too
+                    if (commandName.Length != 0) // checks IsEnabled too
                     {
                         Commands.Execute(commandName);
                     }

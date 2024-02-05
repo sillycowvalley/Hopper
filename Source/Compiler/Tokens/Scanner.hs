@@ -157,7 +157,7 @@ unit Scanner
             
             current = currentStartPos;
             iLine = iCurrentSourceLine;
-            maxLines = sourceLines.Length;
+            maxLines = sourceLines.Count;
             loop
             {
                 ln = sourceLines[iLine];
@@ -405,7 +405,7 @@ unit Scanner
                 {
                     // binary
                 }
-                else if ((c == '.') && !floatOk && (value.Length > 0))
+                else if ((c == '.') && !floatOk && (value.Length != 0))
                 {
                     floatOk = true;
                 }

@@ -51,7 +51,7 @@ program Port
         loop
         {
             <string> ports = Serial.Ports;
-            if (ports.Length == 0)
+            if (ports.Count == 0)
             {
                 PrintLn("No COM ports found.", Colour.MatrixRed, Colour.Black);
                 break;
@@ -72,7 +72,7 @@ program Port
                     defCh = char(48+i);    
                     currentExists = true;
                 }
-                if ((defCh == char(0)) && (i == ports.Length))
+                if ((defCh == char(0)) && (i == ports.Count))
                 {
                     content = content + " (default)";
                     defCh = char(48+i);
@@ -96,7 +96,7 @@ program Port
             if ((ch >= '1') && (ch <= '9'))
             {
                 i = uint(ch) - 49;
-                if (i < ports.Length)
+                if (i < ports.Count)
                 {
                     string port = (ports[i]).Replace("COM", "");
                     if (UInt.TryParse(port, ref iport))

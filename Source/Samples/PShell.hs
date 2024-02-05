@@ -93,12 +93,12 @@ program Shell
         bool success = false;
         loop
         {
-            if (options.Length > 0)
+            if (options.Length != 0)
             {
                 PrintLn("Batch scripts don't support options.", MatrixRed, Black);
                 break;
             }
-            if (arguments.Length > 0)
+            if (arguments.Length != 0)
             {
                 PrintLn("Batch scripts don't support arguments.", MatrixRed, Black);
                 break;

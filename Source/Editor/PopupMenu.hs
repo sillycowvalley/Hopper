@@ -29,7 +29,7 @@ unit PopupMenu
                 length--;
             }
             string accelerator = Commands.GetAcceleratorName(name);
-            if (accelerator.Length > 0)
+            if (accelerator.Length != 0)
             {
                 length = length + accelerator.Length + 2;
             }
@@ -41,7 +41,7 @@ unit PopupMenu
         }
         width = width + 2;
         
-        <string, variant> instance = Panel.New(x, y, byte(width), byte(menuitems.Length));
+        <string, variant> instance = Panel.New(x, y, byte(width), byte(menuitems.Count));
         
         instance["menuitems"] = menuitems;
 
@@ -67,7 +67,7 @@ unit PopupMenu
             {
                 < <uint> > areas = this["clickareas"];
                 bool winner = false;
-                uint nmenus = areas.Length;
+                uint nmenus = areas.Count;
                 foreach (var area in areas)
                 {
                     uint xm = area[0];

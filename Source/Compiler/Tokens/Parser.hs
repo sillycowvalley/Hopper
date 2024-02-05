@@ -146,7 +146,7 @@ unit Parser
             {
                 // nothing
             }
-            else if ((lexeme.Length > 0) && prefix)
+            else if ((lexeme.Length != 0) && prefix)
             {
                 errorMessage = errorMessage + " Error at '" + lexeme + "':";
             }

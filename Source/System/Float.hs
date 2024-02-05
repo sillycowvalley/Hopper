@@ -20,7 +20,7 @@ unit Float
                 {
                     parts = content.Split('e');
                 }
-                if (parts.Length == 2)
+                if (parts.Count == 2)
                 {
                     int exponent;
                     if (Float.TryParse(parts[0], ref returnValue) && Int.TryParse(parts[1], ref exponent))

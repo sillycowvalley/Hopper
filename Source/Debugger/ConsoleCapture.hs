@@ -30,7 +30,7 @@ unit ConsoleCapture
     {
         if (logFile.IsValid())
         {
-            if (captureBuffer.Length > 0)
+            if (captureBuffer.Length != 0)
             {
                 logFile.Append(captureBuffer);
                 String.Build(ref captureBuffer);

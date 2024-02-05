@@ -215,7 +215,7 @@ unit JSON
 #endif
                 }
             }
-            if (content.Length > 0)
+            if (content.Length != 0)
             {
                 String.Build(ref content, char(0x0A));
                 jsonFile.Append(content);

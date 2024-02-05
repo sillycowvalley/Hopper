@@ -86,12 +86,12 @@ program Shell
         bool success = false;
         loop
         {
-            if (options.Count > 0)
+            if (options.Count != 0)
             {
                 PrintLn("Batch scripts don't support options.", MatrixRed, Black);
                 break;
             }
-            if (arguments.Count > 0)
+            if (arguments.Count != 0)
             {
                 PrintLn("Batch scripts don't support arguments.", MatrixRed, Black);
                 break;
@@ -311,7 +311,7 @@ program Shell
                 case Key.Up:
                 {
                     // <up> - clear the current commandLine and replace with previous command
-                    if (previousCommands.Count > 0) // previous commands exist
+                    if (previousCommands.Count != 0) // previous commands exist
                     {
                         loop
                         {
@@ -334,7 +334,7 @@ program Shell
                 case Key.Down:
                 {
                     // <down> - clear the current commandLine and replace with next previous command
-                    if (previousCommands.Count > 0) // previous commands exist
+                    if (previousCommands.Count != 0) // previous commands exist
                     {
                         loop
                         {

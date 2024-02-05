@@ -330,7 +330,7 @@ unit TranslateExpression
                     // no '(' : getter?
                     functionName = functionName + "_Get";
                 }
-                if (thisTypeString.Length > 0)
+                if (thisTypeString.Length != 0)
                 {
                     // "this" case
                     if (Types.IsEnum(thisTypeString) || Types.IsFlags(thisTypeString))
@@ -363,7 +363,7 @@ unit TranslateExpression
                         }
                     }
 
-                    if (qualifiedName.Length > 0)
+                    if (qualifiedName.Length != 0)
                     {
                         // "this": method qualified by the type/namespace of the variable
                         content = translateFunctionCall(qualifiedName, thisVariable, expectedType, ref actualType);
@@ -390,7 +390,7 @@ unit TranslateExpression
                             break;
                         }
                     }
-                    if (qualifiedName.Length > 0)
+                    if (qualifiedName.Length != 0)
                     {
                         uint fIndex;
                         if (GetFunctionIndex(qualifiedName, ref fIndex))
@@ -463,7 +463,7 @@ unit TranslateExpression
                                 break;
                             }
                         }    
-                        if (content.Length > 0)
+                        if (content.Length != 0)
                         {
                             break;
                         }
@@ -1086,7 +1086,7 @@ unit TranslateExpression
             // consider delegates (variables, not methods)
             string qualifiedName;
             string variableType = Types.GetTypeString(methodName, false, ref qualifiedName);
-            if (variableType.Length > 0)
+            if (variableType.Length != 0)
             {
                 if (Types.IsDelegate(variableType))
                 {
@@ -1109,9 +1109,9 @@ unit TranslateExpression
             if (methodName.EndsWith("_Get"))
             {
                 content = TranslateIdentifier(methodName) + "(";
-                if ((thisVariable.Length > 0) || (dotThisType.Length > 0))
+                if ((thisVariable.Length != 0) || (dotThisType.Length != 0))
                 {
-                    if (thisVariable.Length > 0) 
+                    if (thisVariable.Length != 0) 
                     {
                         thisType = Types.GetTypeString(thisVariable, true, ref qualifiedThis);
                         hasThisArgument = true;
@@ -1146,7 +1146,7 @@ unit TranslateExpression
                 break;
             }
             uint fIndex;
-            if (!isDelegateType && !GetFunctionIndex(methodName, ref fIndex) && (methodName.Length > 0))
+            if (!isDelegateType && !GetFunctionIndex(methodName, ref fIndex) && (methodName.Length != 0))
             {
                 char fChar = methodName[0];
                 if (fChar.IsLower() && methodName.Contains('.') && (thisVariable.Length == 0))
@@ -1178,10 +1178,10 @@ unit TranslateExpression
             content = "";
         
             uint n = 0;
-            if ( (thisVariable.Length > 0) || (dotThisType.Length > 0))
+            if ( (thisVariable.Length != 0) || (dotThisType.Length != 0))
             {
                 string thisType = dotThisType;
-                if (thisVariable.Length > 0)
+                if (thisVariable.Length != 0)
                 {
                     thisType = Types.GetTypeString(thisVariable, true, ref qualifiedThis);
                     content = content + TranslateIdentifier(qualifiedThis);

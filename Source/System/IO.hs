@@ -450,7 +450,7 @@ unit IO
     }
     bool HaveKey()
     {
-        return keyboardBuffer.Length > 0;
+        return keyboardBuffer.Length != 0;
     }    
 #endif    
     

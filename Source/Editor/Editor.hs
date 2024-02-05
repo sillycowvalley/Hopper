@@ -403,7 +403,7 @@ unit Editor
         bool draw = false;
         uint x = cursorX;
         uint y = cursorY;
-        uint ri = record.Length;
+        uint ri = record.Count;
         loop // reverse order
         {
             if (ri == 0) 
@@ -518,7 +518,7 @@ unit Editor
                 wasSelected = isSelected;
             }
         }
-        if (clipboardText.Length > 0)
+        if (clipboardText.Length != 0)
         {
             Clipboard.SetText(clipboardText);
         }
@@ -817,7 +817,7 @@ unit Editor
                         else if (ClickUp)
                         {
                             string clickedLine = TextBuffer.GetLine(cY);
-                            if ((clickedLine.Length > 0) && (cX > 0) && (cX < clickedLine.Length) && !Editor.IsWordDelimiterNoDot(clickedLine[cX]))
+                            if ((clickedLine.Length != 0) && (cX > 0) && (cX < clickedLine.Length) && !Editor.IsWordDelimiterNoDot(clickedLine[cX]))
                             {
                                 // find current word
                                 uint startX = cX; 
@@ -903,7 +903,7 @@ unit Editor
                                     StartSelection();
                                 }
                             }
-                            else if (ClickDouble && (currentLine.Length > 0) && (x > 0) && (x < currentLine.Length) && !Editor.IsWordDelimiter(currentLine[x]))
+                            else if (ClickDouble && (currentLine.Length != 0) && (x > 0) && (x < currentLine.Length) && !Editor.IsWordDelimiter(currentLine[x]))
                             {
                                 // select current word
                                 selectionStartX = x; selectionEndX = x;
@@ -1022,7 +1022,7 @@ unit Editor
                                 for (uint i=0; i < 4; i++)
                                 {
                                    string indentLine = TextBuffer.GetLine(ytr);
-                                   if ((indentLine.Length > 0) && (indentLine[0] == ' '))
+                                   if ((indentLine.Length != 0) && (indentLine[0] == ' '))
                                    {
                                        xt = 0;
                                        bool success = TextBuffer.Delete(ref xt, ref ytr);
@@ -1063,7 +1063,7 @@ unit Editor
                             uint xt = 0;
                             uint yt = y;
                             string indentLine = TextBuffer.GetLine(y);
-                            if ((indentLine.Length > 0) && (indentLine[0] == ' '))
+                            if ((indentLine.Length != 0) && (indentLine[0] == ' '))
                             {
                                 bool success = TextBuffer.Delete(ref xt, ref yt);
                                 if (x > 0)
@@ -1087,7 +1087,7 @@ unit Editor
                 {
                     y = 0; x = 0;
                 }
-                else if (currentLine.Length > 0)
+                else if (currentLine.Length != 0)
                 {
                     // go to first non whitespace first, then start of line
                     uint iNonSpace = 0;
@@ -1137,7 +1137,7 @@ unit Editor
                 }
                 if (x > 0) 
                 {
-                    if (isControlled && (currentLine.Length > 0) && (x > 1))
+                    if (isControlled && (currentLine.Length != 0) && (x > 1))
                     {
                         // jump to the left end of the current word
                         uint iLeftEnd = x-1;
@@ -1187,7 +1187,7 @@ unit Editor
                     uint dx = 1;
                     if (isControlled)
                     {
-                        if ((currentLine.Length > 0) && (x+1 < currentLine.Length-1))
+                        if ((currentLine.Length != 0) && (x+1 < currentLine.Length-1))
                         {
                             // jump to the right end of the current word
                             uint iRightEnd = x+1;
@@ -1978,12 +1978,12 @@ unit Editor
     bool CheckNotEmpty(string content)
     {
         content = content.Trim();
-        return content.Length > 0;
+        return content.Length != 0;
     }
     
     bool HasFind()
     {
-        return findString.Length > 0;
+        return findString.Length != 0;
     }
     FindNext()
     {

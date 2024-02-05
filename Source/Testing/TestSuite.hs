@@ -782,7 +782,7 @@ program TestSuite
         stringList.Append("item 2");
         stringList.Append("item 3");
         
-        if (stringList.Length != 3)
+        if (stringList.Count != 3)
         {
             PrintFailed("List String: Length failed");
         }
@@ -808,7 +808,7 @@ program TestSuite
         }
         
         stringList.Clear();
-        if (stringList.Length != 0)
+        if (stringList.Count != 0)
         {
             PrintFailed("List String: Clear failed");
         }
@@ -818,7 +818,7 @@ program TestSuite
         boolList.Append(false);
         boolList.Append(false);
         
-        if (boolList.Length != 3)
+        if (boolList.Count != 3)
         {
             PrintFailed("List Boolean: Length failed");
         }
@@ -855,7 +855,7 @@ program TestSuite
         }
         
         boolList.Clear();
-        if (boolList.Length != 0)
+        if (boolList.Count != 0)
         {
             PrintFailed("List Boolean: Clear failed");
         }
@@ -878,7 +878,7 @@ program TestSuite
         {
             PrintFailed("List : < < string > > GetItem failed");
         }
-        uint count = listOfLists.Length;
+        uint count = listOfLists.Count;
         if (count != 1)
         {
             PrintFailed("List : < < string > > Length failed");
@@ -893,7 +893,7 @@ program TestSuite
         }
                 
         listOfLists.Clear();
-        count = listOfLists.Length;
+        count = listOfLists.Count;
         if (count != 0)
         {
             PrintFailed("List : < < string > > Clear failed");
@@ -902,19 +902,19 @@ program TestSuite
 
         
         plainlist.Remove(1);
-        if (plainlist.Length != 2)
+        if (plainlist.Count != 2)
         {
             PrintFailed("List : Remove failed 1");
         }
         
         plainlist.Remove(0);
-        if (plainlist.Length != 1)
+        if (plainlist.Count != 1)
         {
             PrintFailed("List : Remove failed 2");
         }
 
         plainlist.Remove(0);
-        if (plainlist.Length != 0)
+        if (plainlist.Count != 0)
         {
             PrintFailed("List : Remove failed 3");
         }
