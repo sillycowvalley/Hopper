@@ -216,7 +216,7 @@ unit MenuBar
             if (ClickUp && !ClickDouble)
             {
                 < <uint> > clickAreas = this["clickareas"];
-                uint nmenus = menuOrder.Length;
+                uint nmenus = menuOrder.Count;
                 bool winner = false;
                 string clickkey;
                 for (uint i=0; i < nmenus; i++)

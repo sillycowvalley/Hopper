@@ -276,7 +276,7 @@ unit Monitor
     sendCommand(string commandLine)
     {
         SerialWriteChar(char(0x1B)); // to break VM if it is running
-        if (checkEcho(true))  { }
+        _ = checkEcho(true);
         if (commandLine.Length > 0)
         {
             foreach (var ch in commandLine)
@@ -284,7 +284,7 @@ unit Monitor
                 SerialWriteChar(ch);
             }
             SerialWriteChar(char(0x0D));
-            if (checkEcho(true)) { }
+            _ = checkEcho(true);
         }
     }
     Command(string commandLine, bool collect, bool hasData)
@@ -305,7 +305,7 @@ unit Monitor
             sendCommand(commandLine);
             if (hasData)
             {
-                if (checkEcho(true)) { }
+                _ = checkEcho(true);
             }
         }
         if (collect)
@@ -413,7 +413,7 @@ unit Monitor
                 SerialWriteChar(c); 
             }
             
-            if (checkEcho(true)) { } // waits for \ confirmation    
+            _ = checkEcho(true); // waits for \ confirmation    
             
             long transfered;
             file dFile = File.Open(localPath);
@@ -482,15 +482,15 @@ unit Monitor
         }
         uint crc = File.CRC16(ihexPath);
         SerialWriteChar(Byte.ToHex(byte((crc >> 4) & 0xF))); 
-        if (checkEcho(false)) { }
+        _ = checkEcho(false);
         SerialWriteChar(Byte.ToHex(byte(crc & 0xF))); 
-        if (checkEcho(false)) { }
+        _ = checkEcho(false);
         SerialWriteChar(Byte.ToHex(byte(crc >> 12))); 
-        if (checkEcho(false)) { }
+        _ = checkEcho(false);
         SerialWriteChar(Byte.ToHex(byte((crc >> 8) & 0xF))); 
-        if (checkEcho(false)) { }
+        _ = checkEcho(false);
         SerialWriteChar(char(0x0D));
-        if (checkEcho(false)) { }
+        _ = checkEcho(false);
 
         collectOutput = true; // just to toss it away    
         while (iFile.IsValid())
@@ -499,10 +499,10 @@ unit Monitor
             foreach (var c in ln)
             {
                 SerialWriteChar(c); 
-                if (checkEcho(false)) { }
+                _ = checkEcho(false);
             }
             SerialWriteChar(char(0x0D));
-            if (checkEcho(false)) { }
+            _ = checkEcho(false);
             if (IsDebugger)
             {
                 Parser.ProgressTick(".");
@@ -653,9 +653,9 @@ unit Monitor
             {
                 // use the serial port with the highest number
                 <string> ports = Serial.Ports;
-                if (ports.Length != 0)
+                if (ports.Count != 0)
                 {
-                    string name = ports[ports.Length-1];
+                    string name = ports[ports.Count-1];
                     name = name.Replace("COM", "");
                     if (UInt.TryParse(name, ref comPort))
                     {

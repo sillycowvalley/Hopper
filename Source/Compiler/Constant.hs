@@ -448,10 +448,50 @@ unit Constant
                     string name = currentToken["lexeme"];
                     if (Token.IsTypeKeyword(name))
                     {
-                        byte b = Types.ToByte(name);
-                        value = b.ToString();
-                        actualType = "type";
-                        Parser.Advance();       
+                        Parser.Advance(); // type name
+                        if (Types.IsSimpleType(name) && Parser.Check(HopperToken.LParen))
+                        {
+                            Parser.Advance(); // '('
+                         
+                            // simple static constant casts:
+                            string supportedType = typeExpected;
+                            switch (typeExpected)
+                            {
+                                case "char": { supportedType = "byte"; }
+                                default:
+                                {
+                                    Parser.ErrorAtCurrent("invalid simple constant cast: '" + name + "'");
+                                    break;
+                                }
+                            }
+                            value = ParseConstantExpression(supportedType, ref actualType, weakEnums);
+                            
+                            switch (typeExpected)
+                            {
+                                case "char":
+                                {
+                                    uint bv;
+                                    if (!UInt.TryParse(value, ref bv) || (bv > 255))
+                                    {
+                                        Parser.ErrorAtCurrent("failed to cast '" + value + "' to char");
+                                        break;
+                                    }
+                                    value = "" + char(bv);
+                                    actualType = "char";
+                                }
+                            }
+                            if (Parser.HadError)
+                            {
+                                break;
+                            }
+                            Parser.Consume(HopperToken.RParen, ')');
+                        }
+                        else
+                        {
+                            byte b = Types.ToByte(name);
+                            value = b.ToString();
+                            actualType = "type";
+                        }
                     }
                     else
                     {    

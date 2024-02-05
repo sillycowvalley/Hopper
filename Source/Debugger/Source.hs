@@ -135,7 +135,7 @@ unit Source
     }
     uint GetCodeLength()
     {
-        return code.Length;
+        return code.Count;
     }
     byte GetCode(uint address)
     {

@@ -358,7 +358,7 @@ unit Code
             {
                 iLine--;
             }
-            if (sourceLines.Length > iLine)
+            if (sourceLines.Count > iLine)
             {
                 sourceLine = sourceLines[iLine];
             }
@@ -372,7 +372,7 @@ unit Code
         {
             iLine--;
         }
-        if (sourceLines.Length > iLine)
+        if (sourceLines.Count > iLine)
         {
             sourceLine = sourceLines[iLine];
         }

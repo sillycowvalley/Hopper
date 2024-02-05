@@ -13,7 +13,7 @@ unit Directives
         defineNesting.Clear();
     }
     
-    bool IsStillOpen { get { return (defineNesting.Length > 0); }}
+    bool IsStillOpen { get { return (defineNesting.Length != 0); }}
     
     bool IsAllDefined()
     {

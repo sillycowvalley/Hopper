@@ -539,13 +539,13 @@ program Compile
             
             bool isRef;
             byte identifierOffset = CodeStream.IntToByte(Block.GetOffset(identifier, ref isRef));
-            byte iteratorOffset = CodeStream.IntToByte(Block.GetOffset(identifier+"_i", ref isRef));
+            byte iteratorOffset   = CodeStream.IntToByte(Block.GetOffset(identifier+"_i", ref isRef));
             byte collectionOffset = CodeStream.IntToByte(Block.GetOffset(identifier+"_c", ref isRef));
 
 // next:
             uint nextAddress = CodeStream.NextAddress;            
             CodeStream.AddInstructionPushLocal(collectionOffset); // list collection object
-            CodeStream.AddInstructionSysCall("List", "Length_Get", 0);
+            CodeStream.AddInstructionSysCall("List", "Count_Get", 0);
             CodeStream.AddInstructionPushLocal(iteratorOffset);
             CodeStream.AddInstruction(Instruction.EQ);
             uint jumpExit = CodeStream.NextAddress;
@@ -1542,7 +1542,8 @@ program Compile
         bool success = false;
         loop
         {
-            <string,string> leftToken = PreviousToken;
+            <string,string> leftToken   = PreviousToken;
+            HopperToken leftTokenType   = Token.GetType(leftToken); 
             HopperToken assignOperation = HopperToken.Assign;
             if (Parser.Check(HopperToken.Assign))
             {
@@ -1587,15 +1588,25 @@ program Compile
             {
                 Parser.ErrorAtCurrent("'=' expected"); 
             }
-            
             if (Parser.HadError)
             {
                 break;
             }
             
-            // uses Blocks, respects namespaces, Parser.Error on failure
             string qualifiedName;
-            string variableType = Types.GetTypeString(variableName, false, ref qualifiedName);
+            string variableType;
+            if (leftTokenType == HopperToken.Discarder)
+            {
+                if (assignOperation != HopperToken.Assign)
+                {
+                    Parser.ErrorAtCurrent("'=' expected for '_' discard"); 
+                }
+            }
+            else
+            {
+                // uses Blocks, respects namespaces, Parser.Error on failure
+                variableType = Types.GetTypeString(variableName, false, ref qualifiedName);
+            }
             if (Parser.HadError)
             {
                 break;
@@ -1638,7 +1649,7 @@ program Compile
                     }
                 }
             }
-            if (variableType.Length == 0)
+            if ((variableType.Length == 0) && (leftTokenType != HopperToken.Discarder))
             {
                 // perhaps it is a setter
                 string setterMethod = variableName + "_Set";
@@ -1723,7 +1734,7 @@ program Compile
                     break;
                 }
             }
-            else if (expressionType != variableType)
+            else if ((expressionType != variableType) && (leftTokenType != HopperToken.Discarder))
             {
                 if (Types.CanInferArrayCast(expressionType, variableType))
                 {
@@ -1926,8 +1937,11 @@ program Compile
                     CodeStream.AddInstruction(Instruction.BITOR);
                 }
             }
-            
-            if (!isSetter)
+            if (leftTokenType == HopperToken.Discarder)
+            {
+                CodeStream.AddInstruction(Instruction.DECSP, 2); // discard the stack slot
+            }
+            else if (!isSetter)
             {
                 CodeStream.AddInstructionPopVariable(variableType, qualifiedName);
             }
@@ -2085,7 +2099,10 @@ program Compile
             }
             default:
             {
-                if ((tokenType == HopperToken.Identifier) || (tokenType == HopperToken.DottedIdentifier))
+                if (   (tokenType == HopperToken.Identifier) 
+                    || (tokenType == HopperToken.DottedIdentifier)
+                    || (tokenType == HopperToken.Discarder)
+                   )
                 {
                     bool isDotted = (tokenType == HopperToken.DottedIdentifier);
                     <string,string> nextToken = Parser.Peek();
@@ -2403,6 +2420,7 @@ program Compile
                         if (   (tokenType == HopperToken.Keyword)           // simple type, "if", "while", ...
                             || (tokenType == HopperToken.LT)                // compound type
                             || (tokenType == HopperToken.Identifier)        // assignment, procedure call
+                            || (tokenType == HopperToken.Discarder)         // assignment   
                             || (tokenType == HopperToken.DottedIdentifier) 
                             )
                         {

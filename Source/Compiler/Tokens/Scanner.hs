@@ -634,6 +634,7 @@ unit Scanner
                     case '~': { htoken = HopperToken.BitNot; }
                     case '^': { htoken = HopperToken.BitXor; }
                     case '?': { htoken = HopperToken.Question; }
+                    case '_': { htoken = HopperToken.Discarder; }
                     
                     case '*':
                     {

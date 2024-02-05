@@ -253,7 +253,7 @@ unit MessageBox
                     if (ClickUp && !ClickDouble)
                     {
                         < <uint> > buttonAreas = this["buttonareas"];
-                        uint nbuttons = buttons.Length;
+                        uint nbuttons = buttons.Count;
                         bool winner = false;
                         for (uint i=0; i < nbuttons; i++)
                         {
@@ -294,7 +294,7 @@ unit MessageBox
                         result = "Cancel";
                         break;
                     }
-                    else if (buttons.Contains("OK") && (buttons.Length == 1)) // <esc> should close trivial MessageBoxes
+                    else if (buttons.Contains("OK") && (buttons.Count == 1)) // <esc> should close trivial MessageBoxes
                     {
                         result = "OK";
                         break;

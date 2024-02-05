@@ -18,7 +18,7 @@ unit SysCalls
         ArrayGetItem       = 0x0D,
         ArraySetItem       = 0x0E,
         ListNew            = 0x0F,
-        ListLengthGet      = 0x10,
+        ListCountGet       = 0x10,
         ListAppend         = 0x11,
         ListInsert         = 0x12,
         ListGetItem        = 0x13,

@@ -683,7 +683,7 @@ program HopperMonitor
             }
             
             Key key;
-            if (keyboardBuffer.Length > 0)
+            if (keyboardBuffer.Count > 0)
             {
                 key = keyboardBuffer[0];
                 keyboardBuffer.Remove(0);
@@ -768,7 +768,7 @@ program HopperMonitor
                 {
                     string arguments = commandLine.Substring(2);
                     <string> paths = arguments.Split(' ');
-                    if (paths.Length == 2)
+                    if (paths.Count == 2)
                     {
                         string localFile  = paths[0];
                         string remotePath = paths[1]; 
@@ -1113,7 +1113,7 @@ program HopperMonitor
         bool debugAndExit = false;
         loop // option block
         {
-            for (uint i = 0; i < rawArgs.Length; i++)
+            for (uint i = 0; i < rawArgs.Count; i++)
             {
 			             string arg = rawArgs[i];
          			    if ((arg.Length == 2) && arg.StartsWith('-'))
@@ -1130,7 +1130,7 @@ program HopperMonitor
                 				else if (arg == "-l")
                					{
 					                   i++;
-						                  if (i == rawArgs.Length)
+						                  if (i == rawArgs.Count)
 						                  {
 						                      invalidArguments = true;
                       				  break;

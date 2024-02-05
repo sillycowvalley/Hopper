@@ -1694,7 +1694,7 @@ unit HopperVM
                 uint length = Pop(ref stype);
                 uint location = Pop(ref stype);
 #ifdef CHECKED
-                AssertUInt(stype, count);
+                AssertUInt(stype, length);
                 AssertUInt(ltype, location);
 #endif
                 uint address = HRArray.NewFromConstant(constAddress + location, htype, length);
@@ -1763,7 +1763,7 @@ unit HopperVM
                 uint address = HRList.New(htype);
                 Push(address, Type.List);
             }
-            case SysCall.ListLengthGet:
+            case SysCall.ListCountGet:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -1774,9 +1774,9 @@ unit HopperVM
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif    
-                uint length = HRList.GetLength(this);
+                uint count = HRList.GetCount(this);
                 GC.Release(this);
-                Push(length, Type.UInt);
+                Push(count, Type.UInt);
             }
             case SysCall.ListAppend:
             {
@@ -3367,21 +3367,18 @@ unit HopperVM
 
 #ifndef SERIAL_CONSOLE                
         uint jump = ReadWord(jumpTable + (byte(opCode) << 1));
-#endif        
-#ifndef SERIAL_CONSOLE   
 #ifdef CHECKED
         if (0 == jump)
         {
-            if (Instructions.Undefined()) {}
+            _ = Instructions.Undefined();
             return false;
         }
 #endif
-#endif
-#ifdef SERIAL_CONSOLE // on MCU
-        return External.FunctionCall(jumpTable, byte(opCode));
-#else
         InstructionDelegate instructionDelegate = InstructionDelegate(jump);
         return instructionDelegate();
+#else
+        // on MCU
+        return External.FunctionCall(jumpTable, byte(opCode));
 #endif
     }
     
@@ -3405,7 +3402,7 @@ unit HopperVM
             if (0 == jump)
             {
                 opCode = OpCode(bopCode); // for error reporting of undefined opcodes
-                if (Instructions.Undefined()) {}
+                _ = Instructions.Undefined();
                 return restart;
             }
 #endif

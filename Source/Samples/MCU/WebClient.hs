@@ -43,7 +43,7 @@ program WebClient
         if (WebClient.GetRequest("worldtimeapi.org/api/timezone/pacific/auckland", ref timejson))
         {
             uint iBrace;
-            if (timejson.IndexOf('{', ref iBrace)) { }
+            _ = timejson.IndexOf('{', ref iBrace);
             timejson = timejson.Substring(iBrace);
             if (!Serialize.TryFromJSON(timejson, ref time))
             {

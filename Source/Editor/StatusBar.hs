@@ -42,7 +42,7 @@ unit StatusBar
             if (ClickUp && ClickDouble)
             {
                 bool winner = false;
-                if (clickAreas.Length > 0)
+                if (clickAreas.Count > 0)
                 {
                     <uint> area = clickAreas[0];
                     uint xm = area[0];

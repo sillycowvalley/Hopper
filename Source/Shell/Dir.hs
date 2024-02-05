@@ -1,333 +1,71 @@
-program Dir
+program Command
 {
-    uses "/Source/System/System"
-    uses "/Source/System/Screen"
-    uses "/Source/System/Keyboard"
+    uses "/Source/Shell/Common"
     
-    string wildcardStartsWith;
-    string wildcardEndsWith;
+    string Name                 { get { return "DIR";  } }
+    string Description          { get { return "list files and subdirectories of a directory (alias LS)"; } }
     
-    string CommandName { get { return "DIR"; } }
+    bool   SupportsSource       { get { return true;  } } // directory with or without mask as source
+    bool   SupportsSourceFile   { get { return true;  } } // single file as source (never confirm)
+    bool   SupportsDestination  { get { return false; } }
+    bool   SupportsMask         { get { return true;  } } // *.*
+    bool   SupportsRecursive    { get { return true;  } } // -s
+    bool   SupportsConfirmation { get { return false; } } // -y
     
-    DirectoryListing(<string> options, <string> arguments, bool firstCall)
+    bool doFullPaths;
+    bool doTimeStamp;
+    bool doCheckSum;
+    
+    ShowArguments()
     {
-        uint iFirstDot;
-        bool invalidArguments;
-        bool first;
-        uint directories;
-        uint files;
-        bool recursive = false;
-        bool fullpaths = false; 
-        bool showtime = false;
-        bool showcrc = false;
-        directory dir;
-        string currentFolder = CurrentDirectory;
-        loop
-        {
-            foreach (var option in options)
-            {
-                if (option == "-s")
-                {
-                    recursive = true;
-                }
-                else if (option == "-f")
-                {
-                    fullpaths = true;
-                }
-                else if (option == "-t")
-                {
-                    showtime = true;
-                }
-                else if (option == "-c")
-                {
-                    showcrc = true;
-                }
-                else
-                {
-                    invalidArguments = true;
-                    break;
-                }
-            }
-            
-            if (arguments.Length > 1)
-            {   
-                invalidArguments = true;
-            }
-            if (!invalidArguments && (arguments.Length == 1))
-            {
-                currentFolder = arguments[0];
-            }
-            
-            if (currentFolder.IndexOf('.', ref iFirstDot))
-            {   
-                uint iLastDot;
-                if (currentFolder.IndexOf('.', ref iLastDot))
-                {
-                }
-                if (!invalidArguments && (iFirstDot != iLastDot))
-                {
-                    invalidArguments = true; // either one dot or no dots;
-                }
-            }
-            if (!invalidArguments && firstCall)
-            {
-                wildcardStartsWith = "";
-                wildcardEndsWith = "";
-                string wildcards;
-                uint iStar;
-                if (currentFolder.IndexOf('*', ref iStar))
-                {
-                    uint iLastSlash;
-                    bool lastSlashFound;
-                    if (currentFolder.LastIndexOf('/', ref iLastSlash))
-                    {
-                        lastSlashFound = true;
-                        if (iLastSlash > iStar)
-                        {
-                            invalidArguments = true; // only allow wildcard in filename
-                        }
-                    }
-                    if (!invalidArguments)
-                    {
-                        bool invalidWildcards = false;
-                        if (!lastSlashFound)
-                        {
-                            wildcards = currentFolder;
-                            currentFolder = "";
-                        }
-                        else
-                        {
-                            wildcards = currentFolder.Substring(iStar);
-                            currentFolder = currentFolder.Substring(0,iStar);
-                        }
-                        uint iWDot;
-                        bool dotFound;
-                        uint iLastStar;
-                        bool starFound;
-                        if (wildcards.IndexOf('.', ref iWDot))
-                        {
-                            dotFound = true;
-                        }
-                        if (wildcards.IndexOf('*', ref iStar))
-                        {
-                            starFound = true;
-                            if (wildcards.LastIndexOf('*', ref iLastStar))
-                            {
-                            }
-                        }
-                        if (wildcards == "*.*")
-                        {
-                            wildcards = ""; // all
-                        }
-                        else if (starFound && (iStar != iLastStar))
-                        {
-                            invalidWildcards = true; // only one '*' if not '*.*'
-                        }
-                        else if (!dotFound)
-                        {
-                            if (wildcards.Length < 2)
-                            {
-                                invalidWildcards = true;
-                            }
-                            else if (wildcards.StartsWith('*'))
-                            {
-                                // *xxxx
-                                wildcardEndsWith = wildcards.Substring(1);
-                                wildcardEndsWith = wildcardEndsWith.ToLower();
-                            }
-                            else if (wildcards.EndsWith('*'))
-                            {
-                                // xxxx*
-                                wildcardStartsWith = wildcards.Substring(0, iStar);
-                                wildcardStartsWith = wildcardStartsWith.ToLower();
-                            }
-                            else
-                            {
-                                invalidWildcards = true; // no '.', then must start or end with '*'
-                            }
-                        }
-                        else
-                        {
-                            <string> parts = wildcards.Split('.');
-                            invalidWildcards = parts.Length != 2;
-                            if (!invalidWildcards)
-                            {
-                                string fileprefix = parts[0];
-                                string extension  = parts[1];
-                                if (fileprefix == "*")
-                                {
-                                    // *.xxx
-                                     wildcardEndsWith = "." + extension;
-                                     wildcardEndsWith = wildcardEndsWith.ToLower();
-                                }
-                                else if (extension == "*")
-                                {
-                                    // xxx.*
-                                    wildcardStartsWith = fileprefix + ".";
-                                    wildcardStartsWith = wildcardStartsWith.ToLower();
-                                }
-                                else
-                                {
-                                    invalidWildcards = true;
-                                }
-                            }
-                        }
-                        if (invalidWildcards)
-                        {
-                            PrintLn("Invalid wildcard for " + CommandName + ":");
-                            PrintLn("  '*.*' : all");
-                            PrintLn("  'xxx.*' : all with name 'xxx'");
-                            PrintLn("  '*.xxx' : all with extension 'xxx'");
-                            PrintLn("  'xxx*' : all with name.ext starting with 'xxx'");
-                            PrintLn("  '*xxx' : all with name.ext ending with 'xxx'");
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            if (invalidArguments)
-            {
-                PrintLn("Invalid arguments for " + CommandName + ":");
-                PrintLn("  -f : full paths for each file");
-                PrintLn("  -t : include unix time stamp");
-                PrintLn("  -c : include crc-16 checksums");
-                PrintLn("  -s : this directory and all subdirectories");
-                break;
-            }
-            dir = Directory.Open(currentFolder);
-            if (!dir.IsValid())
-            {
-                if (!firstCall)
-                {
-                    break;
-                }
-                string subFolder = Path.Combine(CurrentDirectory, currentFolder);
-                dir = Directory.Open(subFolder);
-                if (!dir.IsValid())
-                {
-                    PrintLn("Invalid directory '" + currentFolder + "'.");
-                    break;
-                }
-                currentFolder = subFolder;
-            }
-            //PrintLn("'" + currentFolder + "','" + wildcardStartsWith +  "','" + wildcardEndsWith + "'");
-            
-            if (firstCall)
-            {
-                PrintLn(currentFolder, Colour.MatrixBlue, Colour.Black);
-            }
-            
-            first = true;
-            directories =  dir.GetDirectoryCount();
-            if (!recursive && (wildcardEndsWith.Length == 0) && (wildcardStartsWith.Length == 0))
-            {
-                for (uint i = 0; i < directories; i++)
-                {
-                    string directoryname = dir.GetDirectory(i);
-                    PrintLn(directoryname, Colour.MatrixBlue, Colour.Black);
-                }
-            }
-            files =  dir.GetFileCount();
-            uint maxLength = 0;
-            if (showtime || showcrc)
-            {
-                for (uint i = 0; i < files; i++)
-                {
-                    string filepath = dir.GetFile(i);
-                    string filename = Path.GetFileName(filepath);
-                    if (filename.Length > maxLength)
-                    {
-                        maxLength = filename.Length;
-                    }
-                }
-            }
-            for (uint i = 0; i < files; i++)
-            {
-                string filepath = dir.GetFile(i);
-                string filename = Path.GetFileName(filepath);
-                string filenameLower = filename.ToLower();
-                
-                long ft = File.GetTime(filepath);
-                
-                
-                if (wildcardEndsWith.Length > 0)
-                {
-                    if (!filenameLower.EndsWith(wildcardEndsWith))
-                    {
-                        continue;
-                    }
-                }
-                if (wildcardStartsWith.Length > 0)
-                {
-                    if (!filenameLower.StartsWith(wildcardStartsWith))
-                    {
-                        continue;
-                    }
-                }
-                if (first && !fullpaths && !firstCall)
-                {
-                    // only print the folder if there is at least one file listed in it
-                    PrintLn(currentFolder, Colour.MatrixBlue, Colour.Black);
-                    first = false;
-                }
-                if (!fullpaths)
-                {
-                    Print(" " + filename, Colour.MatrixBlue, Colour.Black);
-                }
-                else
-                {
-                    Print(filepath, Colour.MatrixBlue, Colour.Black);
-                }
-                if (showtime || showcrc)
-                {
-                    uint pad = maxLength - filename.Length;
-                    while (pad  != 0)
-                    {
-                        Print(' ');
-                        pad--;
-                    }
-                }
-                if (showtime)
-                {
-                    Print("  0x"  +  ft.ToHexString(8), Colour.MatrixGreen, Colour.Black);
-                }
-                if (showcrc)
-                {
-                    uint crc = File.CRC16(filepath);
-                    Print("  0x"  +  crc.ToHexString(4), Colour.MatrixRed, Colour.Black);
-                }
-                PrintLn();
-            } // file loop
-            
-            if (recursive)
-            {
-                for (uint i = 0; i < directories; i++)
-                {
-                    string directoryname = dir.GetDirectory(i);
-                    <string> recursiveargument;
-                    recursiveargument.Append(directoryname);
-                    DirectoryListing(options, recursiveargument, false);
-                }
-            }
-            break;
-        } // loop
-    }
+        WriteLn("  -f : show full paths for each file");
+        WriteLn("  -t : include unix time stamp");
+        WriteLn("  -c : include crc-16 checksums");
+    }  
+    bool Argument(string arg)
     {
-        <string> rawargs = System.Arguments;
-        <string> options;
-        <string> args;
-        foreach (var arg in rawargs)
+        switch(arg)
         {
-            if ((arg.Length == 2) && arg.StartsWith('-'))
-            {
-                options.Append(arg.ToLower());
-            }
-            else
-            {
-                args.Append(arg);
-            }
+            case "-f": { doFullPaths = true; }
+            case "-t": { doTimeStamp = true; }
+            case "-c": { doCheckSum  = true; }
+            default:   { return false;       }
         }
-        DirectoryListing(options, args, true);
+        return true;
+    }
+    bool OnFile(string path, bool first, uint maxLength)
+    {
+        string filename = path;
+        if (!doFullPaths)
+        {
+            filename  = Path.GetFileName(path);
+            maxLength = maxLength + filename.Length - path.Length;
+            Write(" ");
+        }
+        Write(filename.Pad(' ', maxLength), Colour.MatrixBlue);
+        if (doTimeStamp)
+        {
+            long ft = File.GetTime(path);
+            Write("  0x"  +  ft.ToHexString(8), Colour.MatrixGreen);
+        }
+        if (doCheckSum)
+        {
+            uint crc = File.CRC16(path);
+            Write("  0x"  +  crc.ToHexString(4), Colour.MatrixRed);
+        }
+        WriteLn();
+        return true;
+    } 
+    bool OnDirectory(string path, bool empty)
+    {
+        if (!doFullPaths)
+        {
+            WriteLn(path, Colour.MatrixBlue);   
+        }
+        return true;
+    }
+    
+    {
+        if (Common.Arguments()) { Common.Walk(); }
     }
 }

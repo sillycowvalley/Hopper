@@ -1,71 +1,36 @@
-program CD
+program Command
 {
-
-    uses "/Source/System/System"
-    uses "/Source/System/Screen"
+    uses "/Source/Shell/Common"
+    
+    string Name                 { get { return "CD";  } }
+    string Description          { get { return "display the name of or change the current directory"; } }
+    
+    bool   SupportsSource       { get { return true;  } } // directory with or without mask as source
+    bool   SupportsSourceFile   { get { return false; } } // single file as source (never confirm)
+    bool   SupportsDestination  { get { return false; } }
+    bool   SupportsMask         { get { return false; } } // *.*
+    bool   SupportsRecursive    { get { return false; } } // -s
+    bool   SupportsConfirmation { get { return false; } } // -y
+    
+    ShowArguments() {}
+    bool Argument(string arg) { return false; }
+    bool OnFile(string path, bool first, uint maxLength) { return true; }
+    
+    bool OnDirectory(string path, bool empty) 
+    { 
+        System.CurrentDirectory = path;
+        return true; 
+    }
     
     {
-        <string> arguments = Arguments;
-        loop
+        <string> args = Arguments;
+        if (args.Length == 0)
         {
-            bool found = false;
-            if (arguments.Length != 1) 
-            {
-                // zero arguments or spaces between more than one part
-                PrintLn("Invalid arguments for CD.");
-                break;
-            }
-            string path = arguments[0];
-            if (!path.EndsWith('/'))
-            {
-                path = path + '/';
-            }
-            
-            if (path == "./")
-            {
-                break;
-            }
-            if (path == "../")
-            {
-                string upPath = CurrentDirectory;
-                upPath = Path.GetDirectoryName(upPath);
-                if (upPath.Length == 0)
-                {
-                    break;
-                }
-                else if (Directory.Exists(upPath))
-                {
-                    path = upPath;
-                    found = true;
-                }
-                else
-                {
-                    break; // do nothing?
-                }
-            }
-            if (!found && !path.StartsWith('/'))
-            {
-                string fullPath = Path.Combine(CurrentDirectory, path);
-                if (Directory.Exists(fullPath))
-                {
-                    path = fullPath;
-                    found = true;
-                }
-            }
-            if (!found && Directory.Exists(path))
-            {
-                found = true;
-            }
-            if (found)
-            {
-                CurrentDirectory = path;
-            }
-            else
-            {
-                PrintLn("Invalid arguments for CD."); // System.Beep();
-            }
-            break;
+            WriteLn(" " + System.CurrentDirectory, Colour.MatrixBlue);
         }
-        
+        else
+        {
+            if (Common.Arguments()) { Walk(); }
+        }
     }
 }

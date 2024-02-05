@@ -24,19 +24,19 @@ unit SourceStream
     }
     Append(string str, int trim)
     {
-        string line = sourceStream[sourceStream.Length-1];
+        string line = sourceStream[sourceStream.Count-1];
         if ((trim == -1) && line.StartsWith("    "))
         {
             line = line.Substring(4);
         }
         line = line + str;
-        sourceStream[sourceStream.Length-1] = line;    
+        sourceStream[sourceStream.Count-1] = line;    
     }
     Append(string str)
     {
-        string line = sourceStream[sourceStream.Length-1];
+        string line = sourceStream[sourceStream.Count-1];
         line = line + str;
-        sourceStream[sourceStream.Length-1] = line;
+        sourceStream[sourceStream.Count-1] = line;
     }
     AppendHeader(string str)
     {

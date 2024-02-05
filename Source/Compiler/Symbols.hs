@@ -156,7 +156,7 @@ unit Symbols
     uint GetNamedTypesCount()
     {
         uint count;
-        count = count + fdNames.Length;
+        count = count + fdNames.Count;
         count = count + eIndex.Count;
         count = count + flIndex.Count;
         return count;
@@ -164,16 +164,16 @@ unit Symbols
     uint GetSymbolsCount()
     {
         uint count;
-        count = count + fNames.Length;
+        count = count + fNames.Count;
         count = count + fSysCall.Count;
         count = count + fLibCall.Count;
         count = count + pdValues.Count;
-        count = count + gNames.Length;
-        count = count + fdNames.Length;
+        count = count + gNames.Count;
+        count = count + fdNames.Count;
         count = count + eIndex.Count;
         count = count + flIndex.Count;
         count = count + cDefinitions.Count;
-        count = count + nameSpaces.Length;
+        count = count + nameSpaces.Count;
         return count;
     }
     
@@ -1082,7 +1082,7 @@ unit Symbols
         <string> parts = currentLocation.Split(':');
         string sourcePath = (parts[0]).ToLower();
         uint currentLine;
-        if (UInt.TryParse(parts[1], ref currentLine)) {} 
+        _ = UInt.TryParse(parts[1], ref currentLine);
         
         foreach (var sourcekv in fSourcePath)
         {
@@ -1426,6 +1426,7 @@ unit Symbols
             if (startPos == 0) // system or library
             {
                 byte iSysCall;
+                
                 if (SysCalls.TryParseSysCall(name, ref iSysCall))
                 {
                     if (!fSysCallCount.Contains(name))
@@ -1632,7 +1633,7 @@ unit Symbols
             <string, variant> dict;
             
             <byte> constantStream = CodeStream.GetConstantStream();
-            if (constantStream.Length > 0)
+            if (constantStream.Length != 0)
             {
                 <string,variant> cdict;
                 cdict["data"] = constantStream;    

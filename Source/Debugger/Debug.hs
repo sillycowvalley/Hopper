@@ -49,7 +49,7 @@ program Debug
         <string> rawArgs = System.Arguments;
         <string> args;
           
-        for (uint iArg = 0; iArg < rawArgs.Length; iArg++)
+        for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
         {
           string arg = rawArgs[iArg];
           if ((arg.Length == 2) && (arg[0] == '-'))
@@ -73,11 +73,11 @@ program Debug
               args.Append(arg);
           }
         }
-        if (args.Length > 1)
+        if (args.Count > 1)
         {
             showHelp = true;
         }
-        else if (args.Length == 1)
+        else if (args.Count == 1)
         {
             filePath = args[0];
         }

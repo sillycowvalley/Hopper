@@ -926,7 +926,7 @@ unit Expression
             //    array|bool|byte|char|const|directory|delegate|dictionary|enum|file|flags|float|int|list|long|pair|ref|string|type|uint|variant|var
             
             string sourceType;
-            if (Parser.Check(HopperToken.LParen, "'(' expected"))
+            if (Parser.Check(HopperToken.LParen))
             {
                 if (!IsValueType(typeName)) // bool|byte|char|uint|int|type|delegate|<enum-type-name>|<flags-type-name>|<delegate-type-name>
                 {
@@ -952,11 +952,11 @@ unit Expression
                 {
                     break;
                 }
-                if (!Parser.Check(HopperToken.RParen, "')' expected"))
+                Parser.Consume(HopperToken.RParen, ')'); // )
+                if (Parser.HadError)
                 {
                     break;
                 }
-                Parser.Advance(); // )
                 typeId = false;
             }
             else if (typeId)
@@ -1546,6 +1546,11 @@ unit Expression
                 string thisTypeString = Types.GetTypeString(thisVariable, false, ref qualifiedThis);
                 if (Parser.HadError)
                 {
+                    break;
+                }
+                if (parts.Length < 2)
+                {
+                    Parser.Error("invalid identifier");
                     break;
                 }
                 string functionName = parts[1];

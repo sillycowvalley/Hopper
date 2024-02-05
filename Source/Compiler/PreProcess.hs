@@ -1309,8 +1309,8 @@ program PreProcess
           
           if (args.Length != 1)
           {
-            BadArguments();
-            break;
+              BadArguments();
+              break;
           }
           bool sourceFound;
           string sourcePath = args[0];

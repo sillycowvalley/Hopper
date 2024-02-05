@@ -9,6 +9,8 @@ program Shell
     uses "/Source/System/EditControl"
     uses "/Source/System/Runtime"
     
+    uses "/Source/Shell/Common"
+    
     bool exiting;
     bool loaded = false;
     
@@ -73,12 +75,6 @@ program Shell
                 break;
             }
             uint result = Runtime.Execute(command, arguments);
-            // TODO REMOVE
-            if (result != 0)
-            {
-                string content = result.ToString() + " " + command;
-                OutputDebug(content); 
-            }
             success = (result == 0);
             break;
         }
@@ -90,12 +86,12 @@ program Shell
         bool success = false;
         loop
         {
-            if (options.Length > 0)
+            if (options.Count > 0)
             {
                 PrintLn("Batch scripts don't support options.", MatrixRed, Black);
                 break;
             }
-            if (arguments.Length > 0)
+            if (arguments.Count > 0)
             {
                 PrintLn("Batch scripts don't support arguments.", MatrixRed, Black);
                 break;
@@ -171,21 +167,14 @@ program Shell
                 args.Append(arg);
             }
         }
-        switch (command.ToUpper())
+        command = Common.SwitchAlias(command);
+        switch (command)
         {
             // built-ins:
-            case "CLS":
+            case "exit":
             {
-                ClearScreen(options, args);
-            }
-            case "EXIT":
-            {
-                ClearScreen(options, args);
+                Screen.Clear();
                 exiting = true;
-            }
-            case "CD":
-            {
-                ChangeDirectory(options, args);
             }
             
             // hexes and cmds:
@@ -229,83 +218,6 @@ program Shell
         return success;
     }
     
-    ChangeDirectory(<string> options, <string> arguments)
-    {
-        loop
-        {
-            bool found = false;
-            if ((arguments.Length != 1) || (options.Length != 0))
-            {
-                // zero arguments or spaces between more than one part
-                PrintLn("Invalid arguments for CD.", MatrixRed, Black);
-                break;
-            }
-            string path = arguments[0];
-            if (!path.EndsWith('/'))
-            {
-                path = path + '/';
-            }
-            
-            if (path == "./")
-            {
-                break;
-            }
-            if (path == "../")
-            {
-                string upPath = CurrentDirectory;
-                upPath = Path.GetDirectoryName(upPath);
-                if (upPath.Length == 0)
-                {
-                    break;
-                }
-                else if (Directory.Exists(upPath))
-                {
-                    path = upPath;
-                    found = true;
-                }
-                else
-                {
-                    break; // do nothing?
-                }
-            }
-            if (!found && !path.StartsWith('/'))
-            {
-                string fullPath = Path.Combine(CurrentDirectory, path);
-                if (Directory.Exists(fullPath))
-                {
-                    path = fullPath;
-                    found = true;
-                }
-            }
-            if (!found && Directory.Exists(path))
-            {
-                found = true;
-            }
-            if (found)
-            {
-                CurrentDirectory = path;
-            }
-            else
-            {
-                PrintLn("Invalid arguments for CD.", MatrixRed, Black); // System.Beep();
-            }
-            break;
-        }
-        
-    }
-    
-    ClearScreen(<string> options, <string> arguments)
-    {
-        if ((arguments.Length != 0) || (options.Length != 0))
-        {
-            PrintLn("Invalid arguments.", MatrixRed, Black);
-        }
-        else
-        {
-            Screen.Clear();
-        }
-    }
-    
     bool ValidCommandLineCharacter(char c)
     {
         if (IsValidPathCharacter(c) 
@@ -318,7 +230,6 @@ program Shell
         }
         return false;
     }
-    
     
     {
         string currentDirectory = CurrentDirectory;
@@ -350,7 +261,7 @@ program Shell
                         // if it exists in the list already, move it to the front
                         uint iFound = 0;
                         bool wasFound = false;
-                        for (uint i=0; i < previousCommands.Length; i++)
+                        for (uint i=0; i < previousCommands.Count; i++)
                         {
                             string currentString = previousCommands[i];
                             if (commandLine == currentString)
@@ -400,11 +311,11 @@ program Shell
                 case Key.Up:
                 {
                     // <up> - clear the current commandLine and replace with previous command
-                    if (previousCommands.Length > 0) // previous commands exist
+                    if (previousCommands.Count > 0) // previous commands exist
                     {
                         loop
                         {
-                            uint length = previousCommands.Length;
+                            uint length = previousCommands.Count;
                             if (currentPreviousCommand < length)
                             {
                                 string currentString = previousCommands[currentPreviousCommand];
@@ -423,11 +334,11 @@ program Shell
                 case Key.Down:
                 {
                     // <down> - clear the current commandLine and replace with next previous command
-                    if (previousCommands.Length > 0) // previous commands exist
+                    if (previousCommands.Count > 0) // previous commands exist
                     {
                         loop
                         {
-                            uint length = previousCommands.Length;
+                            uint length = previousCommands.Count;
                             if ((currentPreviousCommand > 0) && (currentPreviousCommand-1 < length))
                             {
                                 currentPreviousCommand--;
@@ -453,10 +364,7 @@ program Shell
                 // Edit keys:
                 default:
                 {
-                    if (!EditControl.OnKey(key, x, w-x, ref commandLine, ref current))
-                    {
-                        // not consumed
-                    }
+                    _ = EditControl.OnKey(key, x, w-x, ref commandLine, ref current);
                 } // default
                 
             } // switch (key)

@@ -11,7 +11,7 @@ program NeoPixelFeather
         if (index == 3) { index = 0; }
         return now.GetByte(index) ^ now.GetByte(index+1);
     }
-    
+       
     {
         byte bi = 0;
         byte gi = 1;

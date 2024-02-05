@@ -14,7 +14,7 @@ unit Block
     
     < <string,variant> > blockList;
     
-    uint BlockDepth() { return blockList.Length; }
+    uint BlockDepth() { return blockList.Count; }
     
     <string,variant> Top()
     {

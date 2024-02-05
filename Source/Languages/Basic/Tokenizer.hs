@@ -397,9 +397,9 @@ unit Tokenizer
                 expressionType = ParseExpression(ref content);
                 if (Condition != Conditions.None) { break; }
                 if (expressionType != ExpressionType.Boolean) { Error(23); break; }          // Boolean expression expected
-                uint iA; if (untilContent.IndexOf('a', ref iA)) {}
+                uint iA; _ = untilContent.IndexOf('a', ref iA);
                 untilContent = untilContent.Substring(iA+1);
-                int address; if (Int.TryParse(untilContent, ref address)) {}
+                int address; _ = Int.TryParse(untilContent, ref address);
                 HopperCode.UntilJump(address); // is always Instruction.JZW
             }
             else if (ParseFlags.Next == parseFlags & ParseFlags.Next)

@@ -84,7 +84,7 @@ unit TranslateExpression
             //    array|bool|byte|char|const|directory|delegate|dictionary|enum|file|flags|float|int|list|long|pair|ref|string|type|uint|variant|var
             
             string expressionContent;
-            if (Parser.Check(HopperToken.LParen, "'(' expected"))
+            if (Parser.Check(HopperToken.LParen))
             {
                 if (!IsValueType(typeName)) // bool|byte|char|uint|int|type|delegate|<enum-type-name>|<flags-type-name>|<delegate-type-name>
                 {
@@ -103,11 +103,11 @@ unit TranslateExpression
                 {
                     break;
                 }
-                if (!Parser.Check(HopperToken.RParen, "')' expected"))
+                Parser.Consume(HopperToken.RParen, ')'); // )
+                if (Parser.HadError)
                 {
                     break;
                 }
-                Parser.Advance(); // )
                 expressionContent = "(" + expressionContent + ")";
                 typeId = false;
             }

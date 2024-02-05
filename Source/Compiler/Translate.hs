@@ -557,20 +557,30 @@ program Translate
         loop
         {
             <string,string> leftToken = PreviousToken;
+            HopperToken leftTokenType = Token.GetType(leftToken); 
             Parser.Consume(HopperToken.Assign, '=');
             if (Parser.HadError)
             {
                 break;
             }
             
-            // uses Blocks, respects namespaces, Parser.Error on failure
             string qualifiedName;
-            string variableType = Types.GetTypeString(variableName, false, ref qualifiedName);
+            string variableType;
+            if (leftTokenType != HopperToken.Discarder)
+            {
+                // uses Blocks, respects namespaces, Parser.Error on failure
+                variableType = Types.GetTypeString(variableName, false, ref qualifiedName);
+            }
+            if (Parser.HadError)
+            {
+                break;
+            }
+            
             bool isSetter = false;
             uint iOverload;
             
             string setterMethod;
-            if (variableType.Length == 0)
+            if ((variableType.Length == 0) && (leftTokenType != HopperToken.Discarder))
             {
                 // perhaps it is a setter
                 setterMethod = variableName + "_Set";
@@ -583,7 +593,7 @@ program Translate
                 }
                 
                 <uint> overloads = Symbols.GetFunctionOverloads(fIndex);
-                if (overloads.Length != 1)
+                if (overloads.Count != 1)
                 {
                     Parser.ErrorAt(leftToken, "setter method should only have one overload");   
                     break;
@@ -591,7 +601,7 @@ program Translate
                 iOverload = overloads[0];
                 < < string > > arguments = Symbols.GetOverloadArguments(iOverload); 
                 
-                if (arguments.Length != 1)
+                if (arguments.Count != 1)
                 {
                     Parser.ErrorAt(leftToken, "setter method should only have one argument");   
                     break;
@@ -608,7 +618,11 @@ program Translate
                 break;
             }
             string content;
-            if (!isSetter)
+            if (leftTokenType == HopperToken.Discarder)
+            {
+                content = expressionContent;
+            }
+            else if (!isSetter)
             {
                 content = TranslateIdentifier(qualifiedName) + " = " + expressionContent;
             }
@@ -1183,7 +1197,7 @@ program Translate
             <string> args;
             bool toC = true;
             
-            for (uint iArg = 0; iArg < rawArgs.Length; iArg++)
+            for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
                 string arg = rawArgs[iArg];
                 if ((arg.Length == 2) && (arg[0] == '-'))
@@ -1222,7 +1236,7 @@ program Translate
                 }
             }
           
-            if (args.Length != 1)
+            if (args.Count != 1)
             {
                 BadArguments();
                 break;
@@ -1257,7 +1271,7 @@ program Translate
                     break;
                 }
                 <uint> mOverloads = Symbols.GetFunctionOverloads(mIndex);
-                if (mOverloads.Length != 1)
+                if (mOverloads.Count != 1)
                 {
                     Parser.Error("'main' has overloads?");
                     break;

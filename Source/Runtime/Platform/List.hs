@@ -18,7 +18,7 @@ unit HRList
 //   xxxx inline for value types, pData for reference types and when item type is variant
 //   0000 pNext
         
-    const uint lsLength = 2;
+    const uint lsCount = 2;
     const uint lsType   = 4;
     const uint lsFirst  = 5;
     const uint lsRecent = 7;
@@ -33,7 +33,7 @@ unit HRList
     uint New(Type htype)
     {
         uint address = GC.New(9, Type.List);
-        WriteWord(address+lsLength, 0);           // number of items
+        WriteWord(address+lsCount, 0);           // number of items
         WriteByte(address+lsType, byte(htype));   // type of items
         WriteWord(address+lsFirst,    0);         // pFirst
         WriteWord(address+lsRecent,   0);         // pRecent
@@ -106,7 +106,7 @@ unit HRList
         {
             clearAllItems(pFirst, etype);
         }
-        WriteWord(this+lsLength,   0);         // number of items
+        WriteWord(this+lsCount,    0);         // number of items
         WriteWord(this+lsFirst,    0);         // pFirst
         WriteWord(this+lsRecent,   0);         // pRecent
         WriteWord(this+lsRecent+2, 0);         // iRecent    
@@ -146,16 +146,16 @@ unit HRList
         return pitem;
     }
     
-    uint GetLength(uint this)
+    uint GetCount(uint this)
     {
-        return ReadWord(this+lsLength);
+        return ReadWord(this+lsCount);
     }
     
     uint GetItem(uint this, uint index, ref Type itype)
     {
         itype = Type(ReadByte(this+lsType));
-        uint length = ReadWord(this+lsLength);
-        if (index >= length)
+        uint count = ReadWord(this+lsCount);
+        if (index >= count)
         {
 #ifdef CHECKED
             ErrorDump(68);
@@ -210,9 +210,9 @@ unit HRList
     SetItem(uint this, uint index, uint item, Type itype)
     {
         Type etype = Type(ReadByte(this+lsType));
-        uint length = ReadWord(this+lsLength);
+        uint count = ReadWord(this+lsCount);
 #ifdef CHECKED
-        if (index >= length)
+        if (index >= count)
         {
             ErrorDump(70);
             Error = 0x01; // list index out of range
@@ -277,9 +277,9 @@ unit HRList
     Insert(uint this, uint index, uint item, Type itype)
     {
         Type etype = Type(ReadByte(this+lsType));
-        uint length = ReadWord(this+lsLength);
+        uint count = ReadWord(this+lsCount);
         uint pFirst  = ReadWord(this+lsFirst);
-        if (index >= length)
+        if (index >= count)
         {
             Append(this, item, itype);
         }
@@ -289,7 +289,7 @@ unit HRList
             WriteWord(pItem+liNext, pFirst);
             WriteWord(this+lsFirst, pItem);
             
-            WriteWord(this+lsLength,   length+1); 
+            WriteWord(this+lsCount,    count+1); 
             WriteWord(this+lsRecent,   0);
             WriteWord(this+lsRecent+2, 0);
         }
@@ -318,7 +318,7 @@ unit HRList
                     
                     WriteWord(this+lsRecent,   pItem);
                     WriteWord(this+lsRecent+2, count);
-                    WriteWord(this+lsLength,   length+1); 
+                    WriteWord(this+lsCount,    count+1); 
                     break;
                 }
                 pPrevious = pCurrent;
@@ -356,10 +356,10 @@ unit HRList
             }
             WriteWord(pCurrentItem+liNext, pNewItem);
         }
-        uint length = ReadWord(this+lsLength)+1;
-        WriteWord(this+lsLength,   length);         // number of items
+        uint count = ReadWord(this+lsCount)+1;
+        WriteWord(this+lsCount,    count);         // number of items
         WriteWord(this+lsRecent,   pNewItem);           // pRecent
-        WriteWord(this+lsRecent+2, length-1);       // iRecent  
+        WriteWord(this+lsRecent+2, count-1);       // iRecent  
     }
     
     bool Contains(uint this, uint item, Type itype)
@@ -387,9 +387,9 @@ unit HRList
     Remove(uint this, uint index)
     {
         Type etype = Type(ReadByte(this+lsType));
-        uint length = ReadWord(this+lsLength);
+        uint count = ReadWord(this+lsCount);
 #ifdef CHECKED
-        if (index >= length)
+        if (index >= count)
         {
             ErrorDump(73);
             Error = 0x01; // list index out of range
@@ -417,8 +417,8 @@ unit HRList
             WriteWord(pPrevious+liNext, ReadWord(pCurrent+liNext));
             clearItem(pCurrent, etype);
         }
-        length = ReadWord(this+lsLength)-1;
-        WriteWord(this+lsLength,   length);  // number of items
+        count = ReadWord(this+lsCount)-1;
+        WriteWord(this+lsCount,    count);  // number of items
         WriteWord(this+lsRecent,   0);       // pRecent
         WriteWord(this+lsRecent+2, 0);       // iRecent   
     }
@@ -434,7 +434,7 @@ unit HRList
             indent = indent + 2;
         }
         
-        uint elements = ReadWord(address+lsLength);
+        uint elements = ReadWord(address+lsCount);
         byte etype    = ReadByte(address+lsType);
         IO.WriteHex(elements); IO.Write(' '); IO.WriteHex(etype);
         

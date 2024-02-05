@@ -29,7 +29,7 @@ unit SysCalls
         addEntry("Array", "SetItem");
         
         addEntry("List", "New");
-        addEntry("List", "Length_Get");
+        addEntry("List", "Count_Get");
         addEntry("List", "Append");
         addEntry("List", "Insert");
         addEntry("List", "GetItem");
@@ -306,6 +306,9 @@ unit SysCalls
         addEntry("Array", "NewFromConstant");
         
         addEntry("WiFi", "IP_Get");
+        
+        addEntry("List", "Length_Get");
+        
     }
     
     bool TryParseSysCall(string name, ref byte index)

@@ -217,7 +217,10 @@ namespace HopperNET
         ArrayGetItem = 0x0D,
         ArraySetItem = 0x0E,
         ListNew = 0x0F,
-        ListLengthGet = 0x10,
+
+        ListLengthGet = 0xF2,
+        ListCountGet  = 0x10,
+        
         ListAppend = 0x11,
         ListInsert = 0x12,
         ListGetItem = 0x13,
@@ -461,6 +464,8 @@ namespace HopperNET
         ArrayNewFromConstant = 0xF0,
 
         WiFiIPGet = 0xF1,
+
+        
 
     };
 
@@ -5088,6 +5093,7 @@ namespace HopperNET
                         Push(list);
                     }
                     break;
+                case SysCall.ListCountGet:
                 case SysCall.ListLengthGet:
                     {
                         HopperList _this_ = (HopperList)PopVariant(HopperType.tList);

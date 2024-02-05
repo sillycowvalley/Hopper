@@ -57,7 +57,7 @@ unit TextBuffer
     }
     uint GetLineCount()
     {
-        uint count = textBuffer.Length;
+        uint count = textBuffer.Count;
         return count;
     }
     uint GetLineLength(uint lineIndex)
@@ -68,11 +68,11 @@ unit TextBuffer
     
     bool CanUndo()
     {
-        return undo.Length > 0;
+        return undo.Count != 0;
     }
     bool CanRedo()
     {
-        return redo.Length > 0;
+        return redo.Count != 0;
     }
     
     Clear()
@@ -88,7 +88,7 @@ unit TextBuffer
     
     < <string, uint > > GetUndo()
     {
-        uint undoLength = undo.Length;
+        uint undoLength = undo.Count;
         < <string, uint > > record = undo[undoLength-1];
         undo.Remove(undoLength-1);
         redo.Append(record);
@@ -96,7 +96,7 @@ unit TextBuffer
     }
     < <string, uint > > GetRedo()
     {
-        uint redoLength = redo.Length;
+        uint redoLength = redo.Count;
         < <string, uint > > record = redo[redoLength-1];
         redo.Remove(redoLength-1);
         undo.Append(record);
@@ -109,7 +109,7 @@ unit TextBuffer
     }
     EndJournal()
     {
-        if (currentRecord.Length > 0)
+        if (currentRecord.Count != 0)
         {
             undo.Append(currentRecord);
             redo = JournalEntry.NewJournalRecord(); // clear
@@ -135,7 +135,7 @@ unit TextBuffer
                 remainder = yLine.Substring(x);
                 textBuffer.SetItem(y, yLine.Substring(0, x));
             }
-            if ((y+1 == textBuffer.Length) || (textBuffer.Length == 0))
+            if ((y+1 == textBuffer.Count) || (textBuffer.Count == 0))
             {
                 textBuffer.Append(remainder);
             }
@@ -181,7 +181,7 @@ unit TextBuffer
             textBuffer.SetItem(y, yLine);
             success = true;
         }
-        else if (y < textBuffer.Length -1)
+        else if (y < textBuffer.Count -1)
         {
             <string, uint> entry;
             entry["x"] = x;

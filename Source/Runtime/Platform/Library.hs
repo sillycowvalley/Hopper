@@ -373,7 +373,6 @@ unit Library
                 Type ctype;
                 uint spiController = Pop(ref ctype);
 #ifdef CHECKED             
-                AssertByte(ptype, pin);
                 AssertByte(ctype, spiController);
 #endif   
                 byte pin = HRSPI.GetCSPin(byte(spiController));
@@ -591,7 +590,7 @@ unit Library
 #ifdef CHECKED             
                 AssertByte(mtype, uint(dataMode));
                 AssertByte(otype, uint(dataOrder));
-                if (atypestype != Type.Long)
+                if (stype != Type.Long)
                 {
                     ErrorDump(170);
                     Error = 0x0B; // system failure (internal error)

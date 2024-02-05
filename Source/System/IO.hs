@@ -243,8 +243,6 @@ unit IO
     
     
 #endif
-
-
  
     char TransformKey(Key key)
     {
@@ -338,6 +336,10 @@ unit IO
             {
                 // from above : ok
             }
+            else if (ch == char(0x03))
+            {
+                // <ctrl><C> from Read() ?
+            }
             else if ((ch >= ' ') && (ch <= '~')) 
             {
                 // ASCII 32 to 126 : ok
@@ -394,8 +396,8 @@ unit IO
 
     // top 256 bytes circular keyboard buffer
     uint keyboardBufferBase;
-    uint  keyboardInPointer;
-    uint  keyboardOutPointer;
+    uint keyboardInPointer;
+    uint keyboardOutPointer;
     AssignKeyboardBuffer(uint buffer)
     {
         keyboardBufferBase = buffer;
@@ -435,7 +437,7 @@ unit IO
     
     
 #else        
-    
+    string keyboardBuffer;
     PushKey(char c)
     {
         keyboardBuffer = keyboardBuffer + c;

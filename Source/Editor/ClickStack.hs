@@ -14,7 +14,7 @@ unit ClickStack
     }
     Pop()
     {
-        uint length = clickStack.Length;
+        uint length = clickStack.Count;
         if (0 != length)
         {
             string location = clickStack[length-1];
@@ -23,7 +23,7 @@ unit ClickStack
             ClickStack.Load(location);
             
             // don't keep this Load(..) in the stack:
-            length = clickStack.Length;
+            length = clickStack.Count;
             if (0 != length)
             {
                 clickStack.Remove(length-1);
@@ -33,7 +33,7 @@ unit ClickStack
     Load(string location)
     {
         <string> parts = location.Split(':');
-        if (parts.Length == 2)
+        if (parts.Count == 2)
         {
             string sourcePath = parts[0];
             string currentPath = Editor.GetCurrentPath();
@@ -291,15 +291,15 @@ unit ClickStack
                     break;
                 }
                 <uint> overloads = Symbols.GetFunctionOverloads(fIndex);
-                if (overloads.Length == 0)
+                if (overloads.Count == 0)
                 {
                     Editor.SetStatusBarText("Failed overloads for '" + contextWord + "'");
                     break;
                 }
                 
-                if (overloads.Length > 1)
+                if (overloads.Count > 1)
                 {
-                    Editor.SetStatusBarText((overloads.Length).ToString() + " overloads found for '" + contextWord + "', jumping to first overload.");
+                    Editor.SetStatusBarText((overloads.Count).ToString() + " overloads found for '" + contextWord + "', jumping to first overload.");
                     //break;
                 }
                 // found a method call, setter or getter (source, syscall or libcall)

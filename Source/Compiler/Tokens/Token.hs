@@ -9,6 +9,7 @@ unit Token
 
         DottedIdentifier, // Key.Enter, Keyboard.Key.Enter
         Identifier,       // privateIndentifier, PublicIdentifier
+        Discarder,        // _
         Dot,
         Keyword,          // "system"
         Directive,        // #ifdef
@@ -129,6 +130,7 @@ unit Token
         hopperTokenTypes["Keyword"] = HopperToken.Keyword;
         hopperTokenTypes["Directive"] = HopperToken.Directive;
         hopperTokenTypes["Identifier"] = HopperToken.Identifier;
+        hopperTokenTypes["Discarder"]  = HopperToken.Discarder;
         hopperTokenTypes["DottedIdentifier"] = HopperToken.DottedIdentifier;
         hopperTokenTypes["Integer"] = HopperToken.Integer;
         hopperTokenTypes["Float"] = HopperToken.Float;
@@ -296,6 +298,7 @@ unit Token
             {
                 case HopperToken.Identifier:
                 case HopperToken.DottedIdentifier:
+                case HopperToken.Discarder:
                 {
                     content = content + " '" + token["lexeme"] + "'";
                 }

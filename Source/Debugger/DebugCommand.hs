@@ -96,7 +96,7 @@ unit DebugCommand
     
     bool BreakpointsExist()
     {
-        return breakpoints.Length > 0;
+        return breakpoints.Count != 0;
     }
     DeleteBreakpoints()
     {
@@ -122,7 +122,7 @@ unit DebugCommand
             string breakpoint = currentPath + ":" + currentLine.ToString();
             bool toggledOff = false;
             bool changed = false;
-            for (uint index = 0; index < breakpoints.Length; index++)
+            for (uint index = 0; index < breakpoints.Count; index++)
             {
                 if (breakpoints[index] == breakpoint)
                 {
@@ -135,7 +135,7 @@ unit DebugCommand
             }
             if (!toggledOff)
             {
-                if (breakpoints.Length == 15)
+                if (breakpoints.Count == 15)
                 {
                     breakpoints.Remove(0);
                     breakpointAddresses.Remove(0);
