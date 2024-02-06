@@ -48,13 +48,13 @@ unit SysCalls
         addEntry("Dictionary", "Clear");
         
         addEntry("Pair", "New");
-        addEntry("Pair", "Set");
+        addEntry("_Pair", "Set");
         addEntry("Pair", "Key");
-        addEntry("Pair", "KeyType");
+        addEntry("_Pair", "KeyType");
         addEntry("Pair", "Value");
-        addEntry("Pair", "ValueType");
+        addEntry("_Pair", "ValueType");
         
-        addEntry("Variant", "Type");
+        addEntry("_Variant", "Type");
         addEntry("Variant", "Box");
         addEntry("Variant", "UnBox");
         

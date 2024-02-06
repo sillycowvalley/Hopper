@@ -417,7 +417,6 @@ unit Types
         }
         return upperBound != 0;
     }
-    
     bool IsValueType(string typeString)
     {
         bool isValue;
@@ -470,115 +469,123 @@ unit Types
         }
         return thisNamespace;
     }
-    
     byte ToByte(string typeName)
+    {
+        return byte(ToType(typeName));
+    }
+    type ToType(string typeName)
     {
         switch (typeName)
         {
             case "byte":
             {
-                return byte(byte);
+                return byte;
             }
             case "char":
             {
-                return byte(char);   
+                return char;   
             }
             case "bool":
             {
-                return byte(bool);
+                return bool;
             }
             case "int":
             {
-                return byte(int);
+                return int;
             }
             case "uint":
             {
-                return byte(uint);
+                return uint;
             }
             case "long":
             {
-                return byte(long);
+                return long;
             }
             case "float":
             {
-                return byte(float);
+                return float;
             }
             case "file":
             {
-                return byte(file);
+                return file;
             }
             case "directory":
             {
-                return byte(directory);
+                return directory;
             }
             case "string":
             {
-                return byte(string);
+                return string;
             }
             case "variant":
             {
-                return byte(variant);
+                return variant;
             }
             case "type":
             {
-                return byte(type);
+                return type;
             }
             case "list":
+            case "record": // RECORD : same type id as list
             {
-                return byte(list);
+                return list;
             }
             case "array":
             {
-                return byte(array);
+                return array;
             }
             case "dictionary":
             {
-                return byte(dictionary);
+                return dictionary;
             }
             case "enum":
             {
-                return byte(enum);
+                return enum;
             }
             case "flags":
             {
-                return byte(flags);
+                return flags;
             }
             case "pair":
             {
-                return byte(pair);
+                return pair;
             }
             case "delegate":
             {
-                return byte(delegate);
+                return delegate;
             }
             default:
             {
                 // compound types
                 if (Types.IsList(typeName))
                 {
-                    return byte(list);
+                    return list;
+                }
+                else if (Types.IsRecord(typeName))
+                {
+                    return list; // RECORD
                 }
                 else if (Types.IsArray(typeName))
                 {
-                    return byte(array);
+                    return array;
                 }
                 else if (Types.IsDictionaryOrPair(typeName))
                 {
-                    return byte(dictionary);
+                    return dictionary;
                 }
                 
                 // named types
                 else if (Types.IsEnum(typeName))
                 {
-                    return byte(enum);
+                    return enum;
                 }
                 else if (Types.IsFlags(typeName))
                 {
-                    return byte(flags);
+                    return flags;
                 }
                 else if (Types.IsDelegate(typeName))
                 {
-                    return byte(delegate);
+                    return delegate;
                 }
                 else
                 {
@@ -586,7 +593,7 @@ unit Types
                 }
             }
         }
-        return byte(0);
+        return type(0);
     }
     bool tryParseTypeString(ref string typeString)
     {
@@ -602,7 +609,8 @@ unit Types
             else if (Parser.Check(HopperToken.Identifier) || Parser.Check(HopperToken.DottedIdentifier))
             {
                 // enum or flags?
-                isSimple = Types.IsEnum(typeToken["lexeme"]) 
+                isSimple = Types.IsRecord(typeToken["lexeme"]) 
+                        || Types.IsEnum(typeToken["lexeme"]) 
                         || Types.IsFlags(typeToken["lexeme"])
                         || Types.IsDelegate(typeToken["lexeme"]);
             }
@@ -786,6 +794,10 @@ unit Types
             // '<string>' -> 'string'
             iteratorType = collectionType.Substring(1, collectionType.Length-2);
         }
+        else if (IsRecord(collectionType))
+        {
+            iteratorType = "variant";
+        }
         else
         {
             Parser.ErrorAtCurrent("invalid collection type for iterator '" + collectionType + "'");
@@ -873,6 +885,10 @@ unit Types
         return typeString.Contains('[');
     }
     
+    string QualifyRecord(string identifier)
+    {
+        return Symbols.QualifyRecord(identifier, currentNamespace);
+    }
     string QualifyFlags(string identifier)
     {
         return Symbols.QualifyFlags(identifier, currentNamespace);
@@ -904,6 +920,11 @@ unit Types
     string QualifyDelegateName(string identifier)
     {
         return Symbols.QualifyDelegate(identifier, currentNamespace);
+    }
+    
+    bool IsRecord(string identifier)
+    {
+        return Symbols.IsRecordType(identifier, currentNamespace);
     }
     
     bool IsEnum(string identifier)

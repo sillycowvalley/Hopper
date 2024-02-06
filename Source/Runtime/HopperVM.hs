@@ -1968,6 +1968,22 @@ unit HopperVM
                 uint address = HRVariant.New(value, vtype);
                 Push(address, Type.Variant);
             }
+            case SysCall.VariantUnBox:
+            {
+                Type vType;
+                uint this = Pop(ref vType);
+#ifdef CHECKED
+                if (vType != Type.Variant)
+                {
+                    ErrorDump(81);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                Type mType;
+                uint member = HRVariant.UnBox(this, ref mType);
+                Push(member, mType);
+                GC.Release(this);
+            }
             
             case SysCall.PairValue:
             {
@@ -1979,7 +1995,7 @@ unit HopperVM
                     ErrorDump(81);
                     Error = 0x0B; // system failure (internal error)
                 }
-#endif    
+#endif
                 Type vtype;
                 uint value = HRPair.GetValue(this, ref vtype);
                 GC.Release(this);

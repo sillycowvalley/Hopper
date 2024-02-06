@@ -61,7 +61,7 @@ unit Type
             {
                 result = "array";
             }
-            case list:
+            case list: // same value as 'record' for now : RECORD
             {
                 result = "list";
             }
@@ -76,6 +76,10 @@ unit Type
             case delegate:
             {
                 result = "delegate";
+            }
+            case type:
+            {
+                result = "type";
             }
             default:
             {

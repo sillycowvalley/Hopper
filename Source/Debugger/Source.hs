@@ -410,8 +410,11 @@ unit Source
         }
         return item;
     }
-    
     string TypeToString(uint value0, uint value1, string vtype, bool isReference, uint limit)
+    {
+        return TypeToString(value0, value1, vtype, isReference, limit, "");
+    }
+    string TypeToString(uint value0, uint value1, string vtype, bool isReference, uint limit, string recordMemberType)
     {
         string content;
         if (isReference)
@@ -419,7 +422,8 @@ unit Source
             uint refValue = Pages.GetPageWord(value0);
             //uint taddress = TypeAddressFromValueAddress(value);
             // TODO : validate against byte refType = pageData[taddress];
-            content = TypeToString(refValue, 0, vtype, false, limit);
+            PrintLn(vtype + " " + recordMemberType);
+            content = TypeToString(refValue, 0, vtype, false, limit, recordMemberType);
         }
         else
         {
@@ -427,7 +431,11 @@ unit Source
             string kType;
             string tname = vtype;
             
-            if (IsListType(vtype, ref vType))
+            if (Types.IsRecord(vtype))
+            {
+                vtype = "record";
+            }
+            else if (IsListType(vtype, ref vType))
             {
                 vtype = "list";
             }
@@ -505,7 +513,7 @@ unit Source
                         loop
                         {
                             if (i == str.Length) { break; }
-                            content = content + (byte(str[i])).ToHexString(2) + " ";
+                            content += (byte(str[i])).ToHexString(2) + " ";
                             if (content.Length >= limit) { break; }
                             i++;
                         }
@@ -533,26 +541,105 @@ unit Source
                     uint kValue;
                     uint vValue0;
                     uint vValue1;
+                    
+                    if (dktype == Types.ToType(kType))
+                    {
+                        dktypes = kType;
+                    }
+                    if (dvtype == Types.ToType(vType))
+                    {
+                        dvtypes = vType;
+                    }
                     while (DictionaryNextItem(value0, ref iterator, ref kValue, ref vValue0, ref vValue1))
                     {
                         if (!first)
                         {
-                            content = content + ", ";
+                            content += ", ";
                         }
                         if (content.Length >= limit)
                         {
-                            content = content + "..";
+                            content += "..";
                             break;
                         }
-                        content = content + "<";
-                        content = content + TypeToString(kValue, 0, dktypes, false, limit);
-                        content = content + ", ";
-                        content = content + TypeToString(vValue0, vValue1, dvtypes, false, limit);
-                        content = content + ">";
+                        content += "<";
+                        content += TypeToString(kValue, 0, dktypes, false, limit);
+                        content += ", ";
+                        content += TypeToString(vValue0, vValue1, dvtypes, false, limit);
+                        content += ">";
                         first = false;
                     }
-                    content = content + ">";
+                    content += ">";
                     
+                }
+                case "record": // RECORD
+                {
+                    tname = Types.QualifyRecord(tname);
+                    < <string> > members;
+                    _ = FindRecord(tname, ref members);
+                    
+                    content = "{";
+                    type   lvtype  = type(Pages.GetPageByte(value0+4));
+                    string lvtypes = lvtype.ToString();
+                    uint pCurrent = Pages.GetPageWord(value0+5);
+                    if (lvtypes != "variant")
+                    {
+                        Die(0x0B); // record members are always variant for now
+                    }
+
+                    uint iMember;
+                    while (pCurrent != 0)
+                    {
+                        if (iMember != 0)
+                        {
+                            content += ", ";
+                        }
+                        if (content.Length >= limit)
+                        {
+                            content += "..";
+                            break;
+                        }
+                        string mtypes     = lvtypes;
+                        
+                        bool mReferenceType = false;
+                        if (members.Count > iMember)
+                        {
+                            <string> member = members[iMember];
+                            content += member[0] + ": ";
+                            mtypes = member[1];
+                            mReferenceType = IsMachineReferenceType(mtypes);
+                        }
+                        uint pItem1;
+                        uint pItem0 = ListGetNextItem(ref pCurrent, ref pItem1);
+                        if (mReferenceType)
+                        {
+                            content += TypeToString(pItem0, 0, mtypes, false, limit);    
+                        }
+                        else
+                        {
+                            content += TypeToString(pItem0, 0, lvtypes, false, limit, mtypes); // variant    
+                        }
+                        iMember++;
+                    }
+                    // RECORD if empty, placeholder content (and don't recurse)
+                    if (iMember == 0)
+                    {
+                        bool first = true;
+                        foreach (var member in members)
+                        {
+                            if (!first)
+                            {
+                                content += ", ";
+                            }
+                            if (content.Length >= limit)
+                            {
+                                content += "..";
+                                break;
+                            }
+                            content += member[0] + ": ";
+                            first = false;
+                        }
+                    }
+                    content += "}";
                 }
                 case "list":
                 {
@@ -563,30 +650,35 @@ unit Source
                     bool first = true;
                     bool iValueType = !IsMachineReferenceType(lvtypes);
                     
+                    if (lvtype == Types.ToType(vType))
+                    {
+                        lvtypes = vType;
+                    }
+                    
                     while (pCurrent != 0)
                     {
                         if (!first)
                         {
-                            content = content + ", ";
+                            content += ", ";
                         }
                         if (content.Length >= limit)
                         {
-                            content = content + "..";
+                            content += "..";
                             break;
                         }
                         uint pItem1;
                         uint pItem0 = ListGetNextItem(ref pCurrent, ref pItem1);
                         if (iValueType)
                         {
-                            content = content + TypeToString(pItem0, pItem1, lvtypes, false, limit);
+                            content += TypeToString(pItem0, pItem1, lvtypes, false, limit);
                         }
                         else
                         {
-                            content = content + TypeToString(pItem0, 0, lvtypes, false, limit);    
+                            content += TypeToString(pItem0, 0, lvtypes, false, limit);    
                         }
                         first = false;
                     }
-                    content = content + ">";
+                    content += ">";
                 }
                 case "variant":
                 {
@@ -602,7 +694,11 @@ unit Source
                         {
                             uint pMember0 = Pages.GetPageWord(value0+3);
                             uint pMember1 = Is32BitStackSlot ? Pages.GetPageWord(value1+3) : 0;
-                            content = content + TypeToString(pMember0, pMember1, mtypes, false, limit);    
+                            if (recordMemberType.Length != 0)
+                            {
+                                mtypes = recordMemberType;
+                            }
+                            content += TypeToString(pMember0, pMember1, mtypes, false, limit);   
                         }
                         else
                         {
@@ -615,7 +711,7 @@ unit Source
                         if (!mValueType)
                         {
                             // reference type other than variant
-                            content = content + TypeToString(value0, value1, mtypes, false, limit); 
+                            content += TypeToString(value0, value1, mtypes, false, limit); 
                         }
                         else
                         {
@@ -634,19 +730,19 @@ unit Source
                     {
                         if (!first)
                         {
-                            content = content + ", ";
+                            content += ", ";
                         }
                         if (content.Length >= limit)
                         {
-                            content = content + "..";
+                            content += "..";
                             break;
                         }
                         uint item = ArrayGetItem(value0, i);
-                        content = content + TypeToString(item, 0, avtypes, false, limit);
+                        content += TypeToString(item, 0, avtypes, false, limit);
                         uint cl = content.Length;
                         first = false;
                     }
-                    content = content + "]";
+                    content += "]";
                 }
                 case "int":
                 {
@@ -699,11 +795,23 @@ unit Source
                 {
                     tname = Types.QualifyEnum(tname);
                     content = Symbols.DecodeEnum(tname, value0);
+                    uint iFirst; uint iLast;
+                    if (content.IndexOf('.', ref iFirst) && content.LastIndexOf('.', ref iLast) && (iFirst != iLast))
+                    {
+                        // "Keyboard.Key.Enter" -> "Key.Enter"
+                        content = content.Substring(iFirst+1);
+                    }
                 }
                 case "flags":
                 {
                     tname = Types.QualifyFlags(tname);
                     content = Symbols.DecodeFlags(tname, value0);
+                    uint iFirst; uint iLast;
+                    if (!content.Contains('|') && content.IndexOf('.', ref iFirst) && content.LastIndexOf('.', ref iLast) && (iFirst != iLast))
+                    {
+                        // "Keyboard.Key.Enter" -> "Key.Enter"
+                        content = content.Substring(iFirst+1);
+                    }
                 }
                 case "delegate":
                 {

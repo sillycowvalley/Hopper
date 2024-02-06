@@ -93,16 +93,20 @@ unit Token
     
     HopperToken GetType(<string, string> token)
     {
-        // <string, HopperToken> hopperTokenTypes;
-        string name = token["type"];
         HopperToken tokenType = HopperToken.Undefined;
-        if (hopperTokenTypes.Contains(name))
+        if (token.Contains("type"))
         {
-            tokenType = hopperTokenTypes[name];
-        }
-        else
-        {
-            PrintLn("TODO : token not implemented in Token.GetType");
+            // <string, HopperToken> hopperTokenTypes;
+            string name = token["type"];
+            
+            if (hopperTokenTypes.Contains(name))
+            {
+                tokenType = hopperTokenTypes[name];
+            }
+            else
+            {
+                PrintLn("TODO : token not implemented in Token.GetType");
+            }
         }
         return tokenType;
     }
@@ -207,6 +211,7 @@ unit Token
         typeKeywords["string"] = true;
         typeKeywords["type"] = true;
         typeKeywords["variant"] = true;
+        typeKeywords["record"] = true;
         
         typeKeywords["const"] = true;
         typeKeywords["ref"] = true;

@@ -173,6 +173,7 @@ enum SysCall {
     ePairKey = 0x0022,
     ePairValue = 0x0024,
     eVariantBox = 0x0027,
+    eVariantUnBox = 0x0028,
     eScreenPrint = 0x0029,
     eScreenPrintLn = 0x002A,
     eScreenClear = 0x002B,
@@ -840,6 +841,7 @@ Type HRArray_GetValueType(UInt _this);
 UInt HRArray_Clone(UInt original);
 UInt HRVariant_CreateValueVariant(UInt value, Type vtype);
 UInt HRVariant_New(UInt value, Type vtype);
+UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
 Type HRVariant_GetValueType(UInt _this);
 UInt HRVariant_Clone(UInt original);
 UInt HRVariant_GetValue_R(UInt _this, Type & vtype);
@@ -875,7 +877,7 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
-UInt HRVariant_UnBox_R(UInt _this, Type & vtype);
+
 
 
 

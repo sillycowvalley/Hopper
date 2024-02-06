@@ -7,6 +7,7 @@
 #include "Inlined.h"
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -5080,6 +5081,16 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eVariant);
         break;
     }
+    case SysCall::eVariantUnBox:
+    {
+        Type vType = (Type)0;
+        UInt _this = HopperVM_Pop_R(vType);
+        Type mType = (Type)0;
+        UInt member = HRVariant_UnBox_R(_this, mType);
+        HopperVM_Push(member, mType);
+        GC_Release(_this);
+        break;
+    }
     case SysCall::ePairValue:
     {
         Type ttype = (Type)0;
@@ -7865,6 +7876,12 @@ UInt HRVariant_New(UInt value, Type vtype)
     return address;
 }
 
+UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
+{
+    vtype = Type(Memory_ReadByte(_this + 2));
+    return Memory_ReadWord(_this + 3);
+}
+
 Type HRVariant_GetValueType(UInt _this)
 {
     return Type(Memory_ReadByte(_this + 2));
@@ -8469,9 +8486,4 @@ UInt HRInt_FromBytes(Byte b0, Byte b1)
     return b0 + (b1 << 0x08);
 }
 
-UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
-{
-    vtype = Type(Memory_ReadByte(_this + 2));
-    return Memory_ReadWord(_this + 3);
-}
 

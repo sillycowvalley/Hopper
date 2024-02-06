@@ -399,11 +399,11 @@ unit Editor
     
     Undo()
     {
-        < <string, uint > > record = TextBuffer.GetUndo();
+        < <string, uint > > rec = TextBuffer.GetUndo();
         bool draw = false;
         uint x = cursorX;
         uint y = cursorY;
-        uint ri = record.Count;
+        uint ri = rec.Count;
         loop // reverse order
         {
             if (ri == 0) 
@@ -411,7 +411,7 @@ unit Editor
                 break;
             }
             ri--;
-            <string, uint > entry = record.GetItem(ri);
+            <string, uint > entry = rec.GetItem(ri);
             if (entry["t"] == 0)
             {
                 // was insertion so undo is a deletion
@@ -448,8 +448,8 @@ unit Editor
         bool draw = false;
         uint x = cursorX;
         uint y = cursorY;
-        < <string, uint > > record = TextBuffer.GetRedo();
-        foreach (var entry in record) // reverse reverse order -> regular order
+        < <string, uint > > rec = TextBuffer.GetRedo();
+        foreach (var entry in rec) // reverse reverse order -> regular order
         {
             if (entry["t"] == 0)
             {

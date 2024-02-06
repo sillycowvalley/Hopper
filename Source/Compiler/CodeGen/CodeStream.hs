@@ -479,6 +479,11 @@ unit CodeStream
     {
         byte instr = byte(instruction);
         currentStream.Append(instr);
+#ifdef TRANSLATE    
+        DumpCurrent();    
+        Parser.ErrorAt(Parser.PreviousToken, "translate should not be generating code!!");
+        Die(0x0B);
+#endif
         LastInstructionIndex = currentStream.Count-1;
     }
     

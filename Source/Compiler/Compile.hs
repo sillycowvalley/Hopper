@@ -796,6 +796,10 @@ program Compile
             {
                 success = compileForEachList(identifier, iteratorType, collectionType);
             }
+            else if (Types.IsRecord(collectionType)) // RECORD : foreach iteration
+            {
+                success = compileForEachList(identifier, iteratorType, collectionType);
+            }
             else if (Types.IsArray(collectionType))
             {
                 success = compileForEachArray(identifier, iteratorType, collectionType);
@@ -1613,6 +1617,8 @@ program Compile
             }
             
             bool isSetter = false;
+            bool isMember = false;
+            
             bool isStringAppend = false;
             uint iOverload;
             
@@ -1649,6 +1655,50 @@ program Compile
                     }
                 }
             }
+            if (variableName.Contains('.') && (variableType.Length == 0) && (leftTokenType != HopperToken.Discarder))
+            {
+                <string> parts = variableName.Split('.');
+                string recordName = parts[0];
+                string functionName = parts[1];
+                
+                string qualifiedThis;
+                string thisTypeString = Types.GetTypeString(recordName, false, ref qualifiedThis);
+                if (thisTypeString != "")
+                {
+                    thisTypeString = Types.QualifyRecord(thisTypeString);
+                    
+                    < <string> > members;
+                    bool success;
+                    if (FindRecord(thisTypeString, ref members))
+                    {
+                        // RECORD : if list is empty, lazy initialize here
+                        Expression.LazyInitializeRecordMembers(recordName, thisTypeString);
+                                
+                        // RECORD : assignment : find the member
+                        byte iMember;
+                        foreach (var v in members)
+                        {
+                            string memberName = v[0];
+                            string memberType = v[1];
+                            if (memberName == functionName)
+                            {
+                                variableType = memberType;
+                                isMember = true;
+                                CodeStream.AddInstructionPushVariable(recordName);
+                                CodeStream.AddInstructionPUSHI(iMember);
+                                break;
+                            }
+                            iMember++;
+                        }
+                        if (!isMember)
+                        {
+                            Parser.Error("invalid record member");
+                            break;
+                        }
+                    }
+                }
+            }
+            
             if ((variableType.Length == 0) && (leftTokenType != HopperToken.Discarder))
             {
                 // perhaps it is a setter
@@ -1679,7 +1729,6 @@ program Compile
                 variableType = argument[1];   
                 isSetter = true;
                 Symbols.OverloadToCompile(iOverload);
-                
             }
             
             if (assignOperation != HopperToken.Assign)
@@ -1940,6 +1989,10 @@ program Compile
             if (leftTokenType == HopperToken.Discarder)
             {
                 CodeStream.AddInstruction(Instruction.DECSP, 2); // discard the stack slot
+            }
+            else if (isMember)
+            {
+                CodeStream.AddInstructionSysCall0("List", "SetItem");
             }
             else if (!isSetter)
             {

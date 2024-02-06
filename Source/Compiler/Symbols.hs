@@ -52,7 +52,11 @@ unit Symbols
     <uint, < < string > > > fdArgumentNamesAndTypes;
     
     uint idNextOverload; // not needed after first pass
-                
+        
+    // records      
+    <string, uint> rIndex;
+    <uint, < <string> > > rMembers;
+          
     // enums
     <string, <string, uint> > eValues;
     <string, uint> eIndex;
@@ -139,6 +143,9 @@ unit Symbols
         fdArgumentNamesAndTypes.Clear();
         idNextOverload = 0; 
         
+        rIndex.Clear();
+        rMembers.Clear();
+        
         eValues.Clear();
         eIndex.Clear();
         eMembers.Clear();
@@ -156,24 +163,26 @@ unit Symbols
     uint GetNamedTypesCount()
     {
         uint count;
-        count = count + fdNames.Count;
-        count = count + eIndex.Count;
-        count = count + flIndex.Count;
+        count += fdNames.Count;
+        count += rIndex.Count;
+        count += eIndex.Count;
+        count += flIndex.Count;
         return count;
     }
     uint GetSymbolsCount()
     {
         uint count;
-        count = count + fNames.Count;
-        count = count + fSysCall.Count;
-        count = count + fLibCall.Count;
-        count = count + pdValues.Count;
-        count = count + gNames.Count;
-        count = count + fdNames.Count;
-        count = count + eIndex.Count;
-        count = count + flIndex.Count;
-        count = count + cDefinitions.Count;
-        count = count + nameSpaces.Count;
+        count += fNames.Count;
+        count += fSysCall.Count;
+        count += fLibCall.Count;
+        count += pdValues.Count;
+        count += gNames.Count;
+        count += fdNames.Count;
+        count += rIndex.Count;
+        count += eIndex.Count;
+        count += flIndex.Count;
+        count += cDefinitions.Count;
+        count += nameSpaces.Count;
         return count;
     }
     
@@ -352,6 +361,18 @@ unit Symbols
         return found;
     }
     
+    bool FindRecord(string recordName, ref < <string> > members)
+    {
+        bool found = false;
+        if (rIndex.Contains(recordName))
+        {            
+            uint index = rIndex[recordName];
+            members = rMembers[index];
+            found = true;
+        }            
+        return found;
+    }
+    
     string DecodeFlags(string flagsName, uint value)
     {
         string fallback = flagsName + "(0x" + value.ToHexString(4) + ")"; // fallback
@@ -497,6 +518,10 @@ unit Symbols
             {
                 break;       
             }
+            if (rIndex.Contains(name))
+            {
+                break;
+            }
             if (eIndex.Contains(name))
             {
                 break;
@@ -573,6 +598,94 @@ unit Symbols
         return location;
     }
     
+    bool IsRecordType(string name, string currentNamespace)
+    {
+        bool isRecord = false;
+        uint winner = 0;
+        loop
+        {
+            if (!name.Contains('.') && (name.Length != 0))
+            {
+                string candidate = currentNamespace + "." + name;
+                if (eIndex.Contains(candidate))
+                {
+                    winner++;
+                }
+                if (rIndex.Contains(candidate))
+                {
+                    winner++;
+                    isRecord = true;
+                }
+                if (flIndex.Contains(candidate))
+                {
+                    winner++;
+                }
+                if (fdNames.Contains(candidate))
+                {
+                    winner++;
+                }
+                if (isRecord && (winner == 1))
+                {
+                    break; // don't look at other namespaces if current wins
+                }
+                char f = name[0];
+                if (f.IsUpper())
+                {
+                    foreach (var nameSpace in nameSpaces)
+                    {
+                        if (currentNamespace == nameSpace)
+                        {
+                            continue;
+                        }
+                        candidate = nameSpace + "." + name;
+                        if (eIndex.Contains(candidate))
+                        {
+                            winner++;
+                        }
+                        if (rIndex.Contains(candidate))
+                        {
+                            winner++;
+                            isRecord = true;
+                        }
+                        if (flIndex.Contains(candidate))
+                        {
+                            winner++;
+                        }
+                        if (fdNames.Contains(candidate))
+                        {
+                            winner++;
+                        }
+                    }
+                }
+                break;
+            }
+            if (eIndex.Contains(name))
+            {
+                winner++;
+            }
+            if (rIndex.Contains(name))
+            {
+                winner++;
+                isRecord = true;
+            }
+            if (flIndex.Contains(name))
+            {
+                winner++;
+            }
+            if (fdNames.Contains(name))
+            {
+                winner++;
+            }
+            break;
+        }
+        if (winner > 1)
+        {
+            Parser.ErrorAtCurrent("ambiguous undecorated named type name");
+            isRecord = false;
+        }
+        return isRecord;
+    }
+    
     bool IsEnumType(string name, string currentNamespace)
     {
         bool isEnum = false;
@@ -586,6 +699,10 @@ unit Symbols
                 {
                     winner++;
                     isEnum = true;
+                }
+                if (rIndex.Contains(candidate))
+                {
+                    winner++;
                 }
                 if (flIndex.Contains(candidate))
                 {
@@ -614,6 +731,10 @@ unit Symbols
                             winner++;
                             isEnum = true;
                         }
+                        if (rIndex.Contains(candidate))
+                        {
+                            winner++;
+                        }
                         if (flIndex.Contains(candidate))
                         {
                             winner++;
@@ -630,6 +751,10 @@ unit Symbols
             {
                 winner++;
                 isEnum = true;
+            }
+            if (rIndex.Contains(name))
+            {
+                winner++;
             }
             if (flIndex.Contains(name))
             {
@@ -657,6 +782,10 @@ unit Symbols
             if (!name.Contains('.') && (name.Length != 0))
             {
                 string candidate = currentNamespace + "." + name;
+                if (rIndex.Contains(candidate))
+                {
+                    winner++;
+                }
                 if (eIndex.Contains(candidate))
                 {
                     winner++;
@@ -685,6 +814,10 @@ unit Symbols
                             continue;
                         }
                         candidate = nameSpace + "." + name;
+                        if (rIndex.Contains(candidate))
+                        {
+                            winner++;
+                        }
                         if (eIndex.Contains(candidate))
                         {
                             winner++;
@@ -701,6 +834,10 @@ unit Symbols
                     }
                 }
                 break;
+            }
+            if (rIndex.Contains(name))
+            {
+                winner++;
             }
             if (eIndex.Contains(name))
             {
@@ -840,6 +977,40 @@ unit Symbols
         return name;
     }
     
+    string QualifyRecord(string name, string currentNamespace)
+    {
+        if (!name.Contains('.') && (name != ""))
+        {
+            loop
+            {
+                string candidate = currentNamespace + "." + name;
+                if (rIndex.Contains(candidate))
+                {
+                    name = candidate;
+                    break;
+                }
+                char f = name[0];
+                if (f.IsUpper())
+                {
+                    foreach (var nameSpace in nameSpaces)
+                    {
+                        if (nameSpace == currentNamespace)             
+                        {
+                            continue;
+                        }
+                        candidate = nameSpace + "." + name;
+                        if (rIndex.Contains(candidate))
+                        {
+                            name = candidate;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        return name;
+    }
     string QualifyEnum(string name, string currentNamespace)
     {
         if (!name.Contains('.'))
@@ -911,7 +1082,11 @@ unit Symbols
     }
     string QualifiedNamedType(string name, string currentNamespace)
     {
-        if (IsEnumType(name, currentNamespace))
+        if (IsRecordType(name, currentNamespace))
+        {
+            name = QualifyRecord(name, currentNamespace);
+        }
+        else if (IsEnumType(name, currentNamespace))
         {
             name = QualifyEnum(name, currentNamespace);
         }
@@ -1019,6 +1194,10 @@ unit Symbols
                     {
                         winner++;
                     }
+                    if (rIndex.Contains(candidate))
+                    {
+                        winner++;
+                    }
                     if (flIndex.Contains(candidate))
                     {
                         winner++;
@@ -1031,6 +1210,10 @@ unit Symbols
                 break;
             }
             if (eIndex.Contains(name))
+            {
+                winner++;
+            }
+            if (rIndex.Contains(name))
             {
                 winner++;
             }
@@ -1465,6 +1648,15 @@ unit Symbols
     {
         AddFunction(methodName, arguments, "void", blockPos); // 'void' is only used internally
     }
+    
+    AddRecord(string identifier, < <string> > members)
+    {
+        // <string, uint> rIndex;
+        // <string, < <string> > > rMembers;
+        uint iNext = rIndex.Count;
+        rIndex[identifier] = iNext;
+        rMembers[iNext] = members;
+    }
  
     AddEnum(string identifier, <string, uint> members)
     {
@@ -1494,8 +1686,7 @@ unit Symbols
         uint index = flIndex[name];
         return flMembers[index];
     }
-    
-    
+        
     AddFlags(string identifier, <string, uint> members)
     {
         // <string, <string, uint> > flValues;
@@ -1784,6 +1975,27 @@ unit Symbols
             
             dict["locations"]   = locations;
             
+            <string, <string, variant> > rdict;
+            foreach (var rc in rIndex)
+            {
+                <string, variant> rentry;
+                uint index = rc.value;
+                uint mIndex = 0;
+                foreach (var mkv in rMembers[index])
+                {
+                    <string> recordParts = mkv;
+                    <string,string> recordmember;
+                    recordmember[recordParts[0]] = recordParts[1];
+                    rentry[mIndex.ToString()] = recordmember;
+                    mIndex++;
+                }
+                rdict[rc.key] = rentry;
+            }
+            if (rdict.Count != 0)
+            {
+                dict["records"] = rdict;
+            }
+            
             <string, <string, variant> > edict;
             foreach (var en in eIndex)
             {
@@ -2006,6 +2218,30 @@ unit Symbols
                         if (!onlyNamedTypes)
                         {
                             pdValues = kv.value;
+                        }
+                    }
+                    case "records":
+                    {
+                        <string, variant> rdict = kv.value;
+                        foreach (var kv2 in rdict)
+                        {
+                            string name = kv2.key;
+                            <string, variant> values = kv2.value;
+                            
+                            < <string> > members;
+                            foreach (var kv3 in values)
+                            {
+                                <string,string> member = kv3.value;
+                                
+                                foreach (var kv4 in member)
+                                {
+                                    <string> memberList;
+                                    memberList.Append(kv4.key);
+                                    memberList.Append(kv4.value);
+                                    members.Append(memberList);
+                                }
+                            } 
+                            AddRecord(name, members);      
                         }
                     }
                     case "enums":

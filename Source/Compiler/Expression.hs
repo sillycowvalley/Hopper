@@ -24,6 +24,7 @@ unit Expression
     InitializeVariable(string variableType)
     {
         string name;
+        string recordName;
         // initialize an empty global or local and leave new stack slot at [top]
         
         if (Types.IsValueType(variableType) || Types.IsDelegate(variableType))
@@ -46,12 +47,18 @@ unit Expression
 
             name = "Array";            
         }
+        else if (Types.IsRecord(variableType))
+        {
+            recordName = variableType;
+            PushTypeFromString("variant");
+            name = "List";
+        }
         else if (Types.IsList(variableType))
         {
             // push value type
             string valueType = Types.GetValueFromCollection(variableType);
             PushTypeFromString(valueType);
-            name = "List";            
+            name = "List";
         }
         else if (Types.IsDictionaryOrPair(variableType))
         {
@@ -81,8 +88,7 @@ unit Expression
         }
         else
         {
-            PrintLn(variableType);
-            Parser.ErrorAtCurrent("not implemented");
+            Parser.ErrorAtCurrent("not implemented for '" + variableType + "'");
             Die(0x0A);
         }
         if (name.Length != 0)
@@ -90,6 +96,31 @@ unit Expression
             CodeStream.AddInstructionSysCall0(name, "New");
         }
     }
+    
+    LazyInitializeRecordMembers(string recordVariable, string recordTypeName)
+    {
+        CodeStream.AddInstructionPushVariable(recordVariable);
+        CodeStream.AddInstructionSysCall0("List", "Count_Get");
+        uint jumpPast = CodeStream.NextAddress;
+        CodeStream.AddInstructionJump(Instruction.JNZ);
+        
+        < <string> > members;
+        if (FindRecord(recordTypeName, ref members))
+        {
+            // RECORD : initialize the list using members from record definition
+            foreach (var v in members)
+            {
+                string memberName = v[0];
+                string memberType = v[1];
+                CodeStream.AddInstructionPushVariable(recordVariable);
+                InitializeVariable(memberType); // new variable at [top]
+                CodeStream.AddInstructionSysCall0("List", "Append");
+            }
+        }
+        uint pastAddress = CodeStream.NextAddress;
+        CodeStream.PatchJump(jumpPast, pastAddress);
+    }
+    
     CompileDynamicCast(string sourceType, string castToType)
     {
         switch (sourceType)
@@ -1575,6 +1606,40 @@ unit Expression
                     if (Parser.Check(HopperToken.Dot))
                     {
                         actualType = compileDotFunctionCall(actualType, expectedType);
+                    }
+                    break;
+                }
+                if (Types.IsRecord(thisTypeString))
+                {
+                    string recordName = Types.QualifyRecord(thisTypeString);
+                    < <string> > members;
+                    bool success;
+                    if (FindRecord(recordName, ref members))
+                    {
+                        // RECORD : if list is empty, lazy initialize here
+                        Expression.LazyInitializeRecordMembers(qualifiedThis, recordName);
+                        
+                        // RECORD : find the member and push to stack
+                        byte iMember;
+                        foreach (var v in members)
+                        {
+                            string memberName = v[0];
+                            string memberType = v[1];
+                            if (memberName == functionName)
+                            {
+                                actualType = memberType;
+                                CodeStream.AddInstructionPushVariable(qualifiedThis);
+                                CodeStream.AddInstructionPUSHI(iMember);
+                                CodeStream.AddInstructionSysCall0("List", "GetItem");
+                                success = true;
+                                break;
+                            }
+                            iMember++;
+                        }
+                    }
+                    if (!success)
+                    {
+                        Parser.Error("invalid record member");
                     }
                     break;
                 }

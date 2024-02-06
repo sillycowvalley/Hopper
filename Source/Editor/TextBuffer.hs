@@ -89,18 +89,18 @@ unit TextBuffer
     < <string, uint > > GetUndo()
     {
         uint undoLength = undo.Count;
-        < <string, uint > > record = undo[undoLength-1];
+        < <string, uint > > rec = undo[undoLength-1];
         undo.Remove(undoLength-1);
-        redo.Append(record);
-        return record;
+        redo.Append(rec);
+        return rec;
     }
     < <string, uint > > GetRedo()
     {
         uint redoLength = redo.Count;
-        < <string, uint > > record = redo[redoLength-1];
+        < <string, uint > > rec = redo[redoLength-1];
         redo.Remove(redoLength-1);
-        undo.Append(record);
-        return record;
+        undo.Append(rec);
+        return rec;
     }
     
     StartJournal()

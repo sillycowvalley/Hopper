@@ -318,7 +318,7 @@ unit Output
             {
                 if (!first)
                 {
-                    content = content + "` ";
+                    content += "` ";
                 }
                 <string> argumentList = kv.value;
                 
@@ -334,7 +334,7 @@ unit Output
                 if (voffset >= 0x4000) // 16K
                 {
                     OutputDebug("generateMethodString: " + methodIndex.ToHexString(4) + " " + bp.ToHexString(4) + " " + delta.ToString());
-                    content = content + "t? n? = v?";
+                    content += "t? n? = v?";
                     continue;
                 }
                 uint value0 = GetPageWord(voffset);
@@ -345,17 +345,17 @@ unit Output
                 {
                     if (isReference)
                     {
-                        content = content + "ref ";
+                        content += "ref ";
                     }
-                    content = content + vtype + " ";
+                    content += vtype + " ";
                 }
-                content = content + argumentList[2] + "=";
-                content = content + TypeToString(value0, value1, vtype, isReference, maxDataWidth);
+                content += argumentList[2] + "=";
+                content += TypeToString(value0, value1, vtype, isReference, maxDataWidth);
                 
                 first = false;
             }
         }
-        content = content + ")";
+        content += ")";
         return content;
     }   
     
@@ -1039,11 +1039,11 @@ unit Output
     {
         string content;
         uint heapSize = Pages.GetPageWord(address - 2);
-        content = content + "0x" + heapSize.ToHexString(4) + " ";   
+        content += "0x" + heapSize.ToHexString(4) + " ";   
         byte tp = Pages.GetPageByte(address + 0);
-        content = content + "0x" + tp.ToHexString(2) + " ";   
+        content += "0x" + tp.ToHexString(2) + " ";   
         byte referenceCount = Pages.GetPageByte(address + 1);
-        content = content + "0x" + referenceCount.ToHexString(2) + " ";   
+        content += "0x" + referenceCount.ToHexString(2) + " ";   
         return content;
     }
     byte[8] setSlots;
@@ -1054,11 +1054,11 @@ unit Output
         string content;
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
-        content = content + WalkHeader(address);
+        content += WalkHeader(address);
         uint count = Pages.GetPageWord(address + 2);
-        content = content + "0x" + count.ToHexString(4) + " ";
+        content += "0x" + count.ToHexString(4) + " ";
         byte memberType = Pages.GetPageByte(address + 4);
-        content = content + "0x" + memberType.ToHexString(2) + " ";
+        content += "0x" + memberType.ToHexString(2) + " ";
         uint memberBits = 16;
         uint columns = 8;
         if ((memberType == 1) || (memberType == 3))
@@ -1072,7 +1072,7 @@ unit Output
             columns = 32;
         }
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";         
+        content += " (" + size.ToString() + " bytes)";         
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         indent = indent + 2;
@@ -1096,28 +1096,28 @@ unit Output
                     data = data & mask;
                     if (data != 0)
                     {
-                        content = content + "1 ";
+                        content += "1 ";
                     }
                     else
                     {
-                        content = content + "0 ";
+                        content += "0 ";
                     }
                 }
                 case 8:
                 {
                     byte data = Pages.GetPageByte(address + 5 + index);           
-                    content = content + "0x" + data.ToHexString(2) + " ";
+                    content += "0x" + data.ToHexString(2) + " ";
                 }
                 case 16:
                 {
                     uint data = Pages.GetPageWord(address + 5 + index*2);           
-                    content = content + "0x" + data.ToHexString(4) + " ";
+                    content += "0x" + data.ToHexString(4) + " ";
                 }
             }
             laps++;
             if (laps == columns)
             {
-                content = content + " ";
+                content += " ";
             }
             else if (laps == columns*2)
             {
@@ -1144,17 +1144,17 @@ unit Output
         string content;
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
-        content = content + WalkHeader(address);
+        content += WalkHeader(address);
         uint count = Pages.GetPageWord(address + 4);
-        content = content + "0x" + count.ToHexString(4) + " ";
+        content += "0x" + count.ToHexString(4) + " ";
         uint capacity = Pages.GetPageWord(address + 6);
-        content = content + "0x" + capacity.ToHexString(4) + " ";
+        content += "0x" + capacity.ToHexString(4) + " ";
         uint pEntries = Pages.GetPageWord(address + 8);
-        content = content + "0x" + pEntries.ToHexString(4) + " ";
+        content += "0x" + pEntries.ToHexString(4) + " ";
         byte keyType = Pages.GetPageByte(address + 2);
-        content = content + "0x" + keyType.ToHexString(2) + " ";
+        content += "0x" + keyType.ToHexString(2) + " ";
         byte valueType = Pages.GetPageByte(address + 3);
-        content = content + "0x" + valueType.ToHexString(2) + " ";
+        content += "0x" + valueType.ToHexString(2) + " ";
         
         if (pEntries != 0)
         {
@@ -1162,14 +1162,14 @@ unit Output
             size = size + Pages.GetPageWord(pEntries - 2);
         }
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";         
+        content += " (" + size.ToString() + " bytes)";         
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         if (pEntries != 0)
         {
             content = "";
             content = content.Pad(' ', indent+2);
-            content = content +  WalkHeader(pEntries);
+            content +=  WalkHeader(pEntries);
             memoryFile.Append(content + char(0x0A));
             DebugFlush(memoryFile);
         }
@@ -1193,11 +1193,11 @@ unit Output
                 valueText = valueText +  vValue1.ToHexString(4);
             }
             valueText = valueText + vValue0.ToHexString(4);
-            content = content + keyText;
+            content += keyText;
         
             if (!IsMachineReferenceType(valueType))    
             {
-                content = content + " -> " + valueText + " " + ValueTypeToString(valueType, vValue0, vValue1);
+                content += " -> " + valueText + " " + ValueTypeToString(valueType, vValue0, vValue1);
             }
          
             memoryFile.Append(content + char(0x0A));
@@ -1211,7 +1211,7 @@ unit Output
             {
                 content = "";
                 content = content.Pad(' ', indent);
-                content = content + valueText;
+                content += valueText;
                 memoryFile.Append(content + char(0x0A));
                 DebugFlush(memoryFile);
                 if (vValue0 != 0) // reference types
@@ -1224,7 +1224,7 @@ unit Output
         } // next item
         content = "";
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";         
+        content += " (" + size.ToString() + " bytes)";         
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         return size;   
@@ -1249,21 +1249,21 @@ unit Output
             uint pData0  = Pages.GetPageWord(address + 0);
             uint pData1  = Is32BitStackSlot ? Pages.GetPageWord(address + 2) : 0;
             uint pNext   = Is32BitStackSlot ? Pages.GetPageWord(address + 4) : Pages.GetPageWord(address + 2);
-            content = content + "0x" + address.ToHexString(4) + " ";
-            content = content + "0x";
+            content += "0x" + address.ToHexString(4) + " ";
+            content += "0x";
             if (Is32BitStackSlot && ((listItemTypes == 0x0D) || (listItemTypes == 0x0E)))
             {
-                content = content + pData1.ToHexString(4);
+                content += pData1.ToHexString(4);
             }
-            content = content + pData0.ToHexString(4) + " ";
-            content = content + "0x" + pNext.ToHexString(4) + " ";
+            content += pData0.ToHexString(4) + " ";
+            content += "0x" + pNext.ToHexString(4) + " ";
             if (!IsMachineReferenceType(listItemTypes))
             {
-                content = content + ValueTypeToString(byte(listItemTypes), pData0, pData1) + " ";
+                content += ValueTypeToString(byte(listItemTypes), pData0, pData1) + " ";
             }
             
             SafePad(ref content, paddingWidth);
-            content = content + " (" + itemSize.ToString() + " bytes)";         
+            content += " (" + itemSize.ToString() + " bytes)";         
             memoryFile.Append(content + char(0x0A));
             DebugFlush(memoryFile);
             if (IsMachineReferenceType(listItemTypes) && (pData0 != 0)) // reference types
@@ -1296,20 +1296,20 @@ unit Output
         string content;
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
-        content = content + WalkHeader(address);
+        content += WalkHeader(address);
         uint length = Pages.GetPageWord(address + 2);
-        content = content + "0x" + length.ToHexString(4) + " ";
+        content += "0x" + length.ToHexString(4) + " ";
         byte listItemTypes = Pages.GetPageByte(address + 4);
-        content = content + "0x" + listItemTypes.ToHexString(2) + " ";
+        content += "0x" + listItemTypes.ToHexString(2) + " ";
         
         uint pFirst  = Pages.GetPageWord(address + 5);
         uint pRecent = Pages.GetPageWord(address + 7);
         uint iRecent = Pages.GetPageWord(address + 9);
-        content = content + "0x" + pFirst.ToHexString(4) + " ";
-        content = content + "0x" + pRecent.ToHexString(4) + " ";
-        content = content + "0x" + iRecent.ToHexString(4) + " ";
+        content += "0x" + pFirst.ToHexString(4) + " ";
+        content += "0x" + pRecent.ToHexString(4) + " ";
+        content += "0x" + iRecent.ToHexString(4) + " ";
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";         
+        content += " (" + size.ToString() + " bytes)";         
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         if (pFirst != 0)
@@ -1318,7 +1318,7 @@ unit Output
         }
         content = "";
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";         
+        content += " (" + size.ToString() + " bytes)";         
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         return size;   
@@ -1335,12 +1335,12 @@ unit Output
         string content;
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
-        content = content + WalkHeader(address);
+        content += WalkHeader(address);
         uint isValid = Pages.GetPageByte(address + 2);
-        content = content + ((isValid != 0) ? "Valid" : "Invalid") + " ";
+        content += ((isValid != 0) ? "Valid" : "Invalid") + " ";
         uint path = Pages.GetPageWord(address + 3);
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";         
+        content += " (" + size.ToString() + " bytes)";         
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         if (isValid != 0)
@@ -1349,7 +1349,7 @@ unit Output
         }
         content = "";
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";         
+        content += " (" + size.ToString() + " bytes)";         
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         return size;   
@@ -1372,26 +1372,26 @@ unit Output
         string content;
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
-        content = content + WalkHeader(address); // heapsize type referencecount (0x000E 0x15 0x01)
+        content += WalkHeader(address); // heapsize type referencecount (0x000E 0x15 0x01)
         uint isValid = Pages.GetPageByte(address + 2);
-        content = content + ((isValid != 0) ? "Valid" : "Invalid") + " ";
+        content += ((isValid != 0) ? "Valid" : "Invalid") + " ";
         uint isReading = Pages.GetPageByte(address + 3);
-        content = content + ((isReading != 0) ? "Reading" : "") + " ";
+        content += ((isReading != 0) ? "Reading" : "") + " ";
         uint isWriting = Pages.GetPageByte(address + 4);
-        content = content + ((isWriting != 0) ? "Writing" : "") + " ";
+        content += ((isWriting != 0) ? "Writing" : "") + " ";
          uint isCode = Pages.GetPageByte(address + 5);
-        content = content + ((isCode != 0) ? "Code" : "") + " ";
+        content += ((isCode != 0) ? "Code" : "") + " ";
 
         uint path = Pages.GetPageWord(address + 6);
         uint pos0 = Pages.GetPageWord(address + 8);
         uint pos1 = Pages.GetPageWord(address + 10);
         uint sz0   = Pages.GetPageWord(address + 14);
         uint sz1   = Pages.GetPageWord(address + 16);
-        content = content + "0x" + pos1.ToHexString(4) + pos0.ToHexString(4) + " 0x" + sz1.ToHexString(4) + sz0.ToHexString(4) + " ";
+        content += "0x" + pos1.ToHexString(4) + pos0.ToHexString(4) + " 0x" + sz1.ToHexString(4) + sz0.ToHexString(4) + " ";
         uint buffer = Pages.GetPageWord(address + 12);
         
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";         
+        content += " (" + size.ToString() + " bytes)";         
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         if (isValid != 0)
@@ -1401,7 +1401,7 @@ unit Output
         }
         content = "";
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";         
+        content += " (" + size.ToString() + " bytes)";         
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         return size;   
@@ -1413,25 +1413,25 @@ unit Output
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
         uint length = Pages.GetPageWord(address + 2);
-        content = content + "0x" + address.ToHexString(4) + " ";
-        content = content + WalkHeader(address);
-        content = content + "0x" + length.ToHexString(4) + " " + '"';
+        content += "0x" + address.ToHexString(4) + " ";
+        content += WalkHeader(address);
+        content += "0x" + length.ToHexString(4) + " " + '"';
         uint characters = address + 4;
         for (uint i = 0; i < length; i++)
         {
             byte b = Pages.GetPageByte(characters + i);
             if (b > 31)
             {
-                content = content + char(b);
+                content += char(b);
             }
             else
             {
-                content = content + ' ';
+                content += ' ';
             }
         }
-        content = content + '"';
+        content += '"';
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";
+        content += " (" + size.ToString() + " bytes)";
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         return size;
@@ -1442,20 +1442,20 @@ unit Output
         string content;
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
-        content = content + WalkHeader(address);
+        content += WalkHeader(address);
         byte b0 = Pages.GetPageByte(address + 2 + 0);
         byte b1 = Pages.GetPageByte(address + 2 + 1);
         byte b2 = Pages.GetPageByte(address + 2 + 2);
         byte b3 = Pages.GetPageByte(address + 2 + 3);
-        content = content + b3.ToHexString(2);
-        content = content + b2.ToHexString(2);
-        content = content + b1.ToHexString(2);
-        content = content + b0.ToHexString(2);
-        content = content + ' ';
+        content += b3.ToHexString(2);
+        content += b2.ToHexString(2);
+        content += b1.ToHexString(2);
+        content += b0.ToHexString(2);
+        content += ' ';
         long l = Long.FromBytes(b0, b1, b2, b3);
-        content = content + l.ToString();
+        content += l.ToString();
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";
+        content += " (" + size.ToString() + " bytes)";
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         return size;
@@ -1467,22 +1467,22 @@ unit Output
         
         accountedFor[address-2] = true;
         uint size = Pages.GetPageWord(address - 2);
-        content = content + WalkHeader(address);
+        content += WalkHeader(address);
         byte b0 = Pages.GetPageByte(address + 2 + 0);
         byte b1 = Pages.GetPageByte(address + 2 + 1);
         byte b2 = Pages.GetPageByte(address + 2 + 2);
         byte b3 = Pages.GetPageByte(address + 2 + 3);
     
-        content = content + b3.ToHexString(2);
-        content = content + b2.ToHexString(2);
-        content = content + b1.ToHexString(2);
-        content = content + b0.ToHexString(2);
-        content = content + ' ';
+        content += b3.ToHexString(2);
+        content += b2.ToHexString(2);
+        content += b1.ToHexString(2);
+        content += b0.ToHexString(2);
+        content += ' ';
         float f = Float.FromBytes(b0, b1, b2, b3);
-        content = content + f.ToString();
+        content += f.ToString();
         
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";
+        content += " (" + size.ToString() + " bytes)";
     
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
@@ -1494,17 +1494,17 @@ unit Output
         string content;
         uint size = Pages.GetPageWord(address - 2);
         content = content.Pad(' ', indent);
-        content = content + WalkHeader(address);
+        content += WalkHeader(address);
         byte vt = Pages.GetPageByte(address + 2 + 0);
-        content = content + vt.ToHexString(2);   
-        content = content + ' ';
+        content += vt.ToHexString(2);   
+        content += ' ';
         byte b0 = Pages.GetPageByte(address + 2 + 1);
         byte b1 = Pages.GetPageByte(address + 2 + 2);
-        content = content + b1.ToHexString(2);   
-        content = content + b0.ToHexString(2);   
+        content += b1.ToHexString(2);   
+        content += b0.ToHexString(2);   
         
         SafePad(ref content, paddingWidth);
-        content = content + " (" + size.ToString() + " bytes)";
+        content += " (" + size.ToString() + " bytes)";
         memoryFile.Append(content + char(0x0A));
         DebugFlush(memoryFile);
         return size;
@@ -1597,7 +1597,7 @@ unit Output
                 content = content.Pad(' ', indent);
                 
                 uint next = Pages.GetPageWord(heapPtr+2);
-                content = content + "0x" + heapPtr.ToHexString(4) + " 0x" + blockSize.ToHexString(4)+ " 0x" + next.ToHexString(4);
+                content += "0x" + heapPtr.ToHexString(4) + " 0x" + blockSize.ToHexString(4)+ " 0x" + next.ToHexString(4);
 
                 uint pCurrent = heapPtr+4;
                 uint more = blockSize - 4;
@@ -1605,8 +1605,8 @@ unit Output
                 while (more > 0) // always?
                 {
                     uint data = Pages.GetPageByte(pCurrent);
-                    content = content + " 0x";
-                    content = content +  data.ToHexString(2);
+                    content += " 0x";
+                    content +=  data.ToHexString(2);
                     more--;
                     pCurrent++;
                     count++;
@@ -1616,7 +1616,7 @@ unit Output
                     }
                 }
                 SafePad(ref content, paddingWidth);
-                content = content + " (" + blockSize.ToString() + " bytes)";
+                content += " (" + blockSize.ToString() + " bytes)";
                 memoryFile.Append(content + char(0x0A));
                 DebugFlush(memoryFile);
                 memoryFile.Flush(); // TODO REMOVE
@@ -1667,15 +1667,15 @@ unit Output
                 // allocated by Memory.Allocate(..) so not reachable from the stack
                 string content;
                 content = content.Pad(' ', indent);
-                content = content + "0x" + heapPtr.ToHexString(4) + " 0x" + blockSize.ToHexString(4);
+                content += "0x" + heapPtr.ToHexString(4) + " 0x" + blockSize.ToHexString(4);
                 uint pCurrent = heapPtr+2;
                 uint more = blockSize - 2;
                 uint count = 0;
                 while (more > 0) // always?
                 {
                     uint data = Pages.GetPageByte(pCurrent);
-                    content = content + " 0x";
-                    content = content +  data.ToHexString(2);
+                    content += " 0x";
+                    content +=  data.ToHexString(2);
                     more--;
                     pCurrent++;
                     count++;
@@ -1685,7 +1685,7 @@ unit Output
                     }
                 }
                 SafePad(ref content, paddingWidth);
-                content = content + " (" + blockSize.ToString() + " bytes)";
+                content += " (" + blockSize.ToString() + " bytes)";
                 memoryFile.Append(content + char(0x0A));
                 DebugFlush(memoryFile);
                 memoryFile.Flush(); // TODO REMOVE
@@ -1827,10 +1827,10 @@ unit Output
                 string content = "0x" + i2.ToHexString(2) + " 0x";
                 if (Is32BitStackSlot)
                 {
-                    content = content + v1.ToHexString(4);
+                    content += v1.ToHexString(4);
                 }
-                content = content + v0.ToHexString(4);
-                content = content + " 0x" + t.ToHexString(2);
+                content += v0.ToHexString(4);
+                content += " 0x" + t.ToHexString(2);
                 if (i2 == bp)
                 {
                     content = "BP  " + content;
@@ -1841,13 +1841,13 @@ unit Output
                 }
                 if (!IsMachineReferenceType(t))
                 {
-                    content = content + " " + ValueTypeToString(byte(t), v0, v1);
+                    content += " " + ValueTypeToString(byte(t), v0, v1);
                 }
                 string key = i2.ToString();
                 if (globalLists.Contains(key))
                 {
                     <string> globalList = globalLists[key];
-                    content = content + "  // " + globalList[2] + " " + globalList[1];
+                    content += "  // " + globalList[2] + " " + globalList[1];
                 }
                 memoryFile.Append(content + char(0x0A));
                 DebugFlush(memoryFile);
@@ -1856,7 +1856,7 @@ unit Output
             }
             content = "";
             SafePad(ref content, paddingWidth);
-            content = content + " (" + size.ToString() + " bytes)";
+            content += " (" + size.ToString() + " bytes)";
             memoryFile.Append(content + char(0x0A));
             memoryFile.Append("" + char(0x0A));
             DebugFlush(memoryFile);
@@ -1870,7 +1870,7 @@ unit Output
                 size = size + heapExtras;
                 content = "";
                 SafePad(ref content, paddingWidth);
-                content = content + " (" + size.ToString() + " bytes)";
+                content += " (" + size.ToString() + " bytes)";
                 memoryFile.Append(content + char(0x0A));
                 memoryFile.Append("" + char(0x0A));
                 DebugFlush(memoryFile);
@@ -1882,7 +1882,7 @@ unit Output
                 size = size + freeSize;
                 content = "";
                 SafePad(ref content, paddingWidth);
-                content = content + " (" + size.ToString() + " bytes)";
+                content += " (" + size.ToString() + " bytes)";
                 memoryFile.Append(content + char(0x0A));
                 DebugFlush(memoryFile);
             }

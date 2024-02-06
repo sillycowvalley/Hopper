@@ -1,6 +1,6 @@
 program WebClient
 {
-    //#define RP2040_PICOW
+    #define RP2040_PICOW
     //#define ARDUINO_NANO_RP2040
     //#define CHALLENGER_RP2040_WIFI
     

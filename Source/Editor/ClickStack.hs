@@ -202,9 +202,12 @@ unit ClickStack
             }
             if (firstClick && (firstWord.Length != 0))
             {
-                if (IsSimpleType(firstWord))
+                if (Token.IsTypeKeyword(firstWord))
                 {
-                    string path = Symbols.GetNamespaceLocation(Types.ToNamespace(firstWord));
+                    string namespace = Types.ToNamespace(firstWord);
+                    string path = Symbols.GetNamespaceLocation(namespace);
+                    
+                    PrintLn(firstWord + " " + namespace + " " + path);
                     if (path.Length != 0)
                     {
                         // clicked on a simply type like 'byte' -> uint Byte

@@ -162,8 +162,8 @@ unit Block
             < <string> > globals;
             blockContext["globals"] = globals;
         }
-        blockList.Append(blockContext);  
-        
+        blockList.Append(blockContext);
+        <string,string> currToken = CurrentToken;
     }    
     
         
@@ -179,6 +179,10 @@ unit Block
         
         if (CodeStream.InUse)
         {
+#ifdef TRANSLATE
+            Parser.ErrorAt(Parser.PreviousToken, "translate should not be generating code!!");
+            Die(0x0B);
+#endif
             uint bytesToPop = GetBytesToPop();
             if (bytesToPop > 0)
             {
@@ -212,26 +216,27 @@ unit Block
                     {
                         breakTarget = breakTarget + 2; // break past the above DECSP
                     }
-                    
-                    //uint breakOffset = 0;
-                    //while (bytesToPop > 0)
-                    //{
-                    //    if (bytesToPop > 254)
-                    //    {
-                    //        CodeStream.AddInstruction(Instruction.DECSP, 254);
-                    //        bytesToPop = bytesToPop - 254;
-                    //    }
-                    //    else
-                    //    {
-                    //        CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
-                    //        bytesToPop = 0;
-                    //    }
-                    //    breakOffset = breakOffset + 2;
-                    //}
-                    //if (breakTarget != 0)
-                    //{
-                    //    breakTarget = breakTarget + breakOffset; // break past the above DECSP's
-                    //}
+                    /*
+                    uint breakOffset = 0;
+                    while (bytesToPop > 0)
+                    {
+                        if (bytesToPop > 254)
+                        {
+                            CodeStream.AddInstruction(Instruction.DECSP, 254);
+                            bytesToPop = bytesToPop - 254;
+                        }
+                        else
+                        {
+                            CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
+                            bytesToPop = 0;
+                        }
+                        breakOffset = breakOffset + 2;
+                    }
+                    if (breakTarget != 0)
+                    {
+                        breakTarget = breakTarget + breakOffset; // break past the above DECSP's
+                    }
+                    */
                 }
             }
             

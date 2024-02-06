@@ -124,7 +124,7 @@ unit External
         ErrorDump(156); Error = 0x0A;
         return 0;
     }
-    uint TimerStartLong(long msInterval, TimerISRDelegate timerISR)
+    uint TimerStartLong(uint msInterval, TimerISRDelegate timerISR)
     {
         ErrorDump(156); Error = 0x0A;
         return 0;
@@ -134,7 +134,7 @@ unit External
         ErrorDump(156); Error = 0x0A;
         return 0;
     }
-    uint TimerAlarmLong(long msInterval, TimerISRDelegate timerISR)
+    uint TimerAlarmLong(uint msInterval, TimerISRDelegate timerISR)
     {
         ErrorDump(156); Error = 0x0A;
         return 0;

@@ -12,14 +12,10 @@ unit List
     
     string ToString(<variant> this)
     {
-        string result;
+        string result = "<";
         foreach (var vi in this)
         {
-            if (result == "")
-            {
-                result = "<";
-            }
-            else
+            if (result != "<")
             {
                 result += ", ";
             }

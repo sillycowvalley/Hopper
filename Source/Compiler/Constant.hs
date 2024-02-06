@@ -528,7 +528,7 @@ unit Constant
             if (Types.IsFlags(typeExpected) && Types.IsFlags(actualType))
             {
                 string flagsExpected = Types.QualifyFlags(typeExpected);
-                string flagsActual = Types.QualifyFlags(actualType);
+                string flagsActual   = Types.QualifyFlags(actualType);
                 if (flagsExpected != flagsActual)
                 {
                     Parser.ErrorAtCurrent("expected '" + flagsExpected + "' flags constant, (was '" + flagsActual + "')");
@@ -537,7 +537,7 @@ unit Constant
             else if (Types.IsEnum(typeExpected) && Types.IsEnum(actualType))
             {
                 string enumExpected = Types.QualifyEnum(typeExpected);
-                string enumActual = Types.QualifyEnum(actualType);
+                string enumActual   = Types.QualifyEnum(actualType);
                 if (enumExpected != enumActual)
                 {
                     Parser.ErrorAtCurrent("expected '" + enumExpected + "' enum constant, (was '" + enumActual + "')");

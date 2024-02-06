@@ -1,6 +1,6 @@
 program Blink
 {
-    #define RP2040_PICO
+    #define CHALLENGER_RP2040_WIFI
     uses "/Source/Library/MCU"
     {
         loop

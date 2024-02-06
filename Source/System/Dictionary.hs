@@ -12,14 +12,10 @@ unit Dictionary
 
     string ToString(<variant,variant> this)
     {
-        string result;
+        string result = "<";
         foreach (var di in this)
         {
-            if (result == "")
-            {
-                result = "<";
-            }
-            else
+            if (result != "<")
             {
                 result += ", ";
             }

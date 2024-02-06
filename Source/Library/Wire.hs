@@ -21,6 +21,13 @@ unit Wire
     #define USES_I2C
 #endif
 
+#if defined(CHALLENGER_RP2040_WIFI) // TODO : verify validation below
+    const byte DefaultI2CController = 0;
+    const byte DefaultI2CSDAPin     = 4;
+    const byte DefaultI2CSCLPin     = 5;
+    #define USES_I2C
+#endif
+    
 #if !defined(USES_I2C)
     #error "TODO: Defaults and validation code needs to be added for this board. See above."
 #endif
@@ -29,7 +36,7 @@ unit Wire
         bool success;
         loop
         {
-#if defined(RP2040_PICO) || defined(RP2040_PICOW)
+#if defined(RP2040_PICO) || defined(RP2040_PICOW) || defined(CHALLENGER_RP2040_WIFI)
             switch (i2cController)
             {
                 case 0:
