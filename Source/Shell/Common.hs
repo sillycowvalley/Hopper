@@ -23,6 +23,8 @@ unit Common
     string startFolder;
     string singleFile;
     
+    bool starDotStarAdded;
+    
     string SwitchAlias(string command)
     {
         switch (command.ToLower())
@@ -156,7 +158,7 @@ unit Common
                     length = filepath.Length;
                 }
             }
-            if (!Command.OnDirectory(currentFolder, fileList.Count == 0))
+            if (!Command.OnDirectory(currentFolder))
             {
                 cancelled = true;
             }
@@ -195,13 +197,22 @@ unit Common
                     first = false;
                 }
             }
-            if (!cancelled && doRecursive)
+            if (!cancelled)
             {
                 uint dirs = dir.GetDirectoryCount();
                 for (uint di = 0; di < dirs; di++)
                 {
                     string subFolder = dir.GetDirectory(di);
-                    Walk(subFolder);
+                    if (doRecursive)
+                    {
+                        Walk(subFolder);
+                    }
+                    else if (Command.Name == "DIR")
+                    {
+                        // oh, what a lovely hack .. 
+                        // (but what other command is interested in subFolders when not recursive?)
+                        cancelled = !Command.OnDirectory(subFolder);
+                    }
                     if (cancelled) { break; }
                 }
             }
@@ -234,7 +245,8 @@ unit Common
         bool starFound;
         loop
         {
-            if (!SupportsMask && (mask != "*.*")) // default 'all' mask
+            //WriteLn("'" + mask + "'", Colour.MatrixCyan);
+            if (!SupportsMask && !starDotStarAdded)
             {
                 errorMessage = "<mask> not supported: '" + mask + "'";
                 break;
@@ -466,6 +478,7 @@ unit Common
             if (startFolder.Length == 0)
             {
                 startFolder = "*.*";
+                starDotStarAdded = true;
             }
             if (startFolder.StartsWith('.') && !startFolder.StartsWith(".."))
             {
@@ -497,6 +510,7 @@ unit Common
                     startFolder += "/";
                 }
                 startFolder += "*.*"; // default mask which is later truncated to "" to mean 'all'
+                starDotStarAdded = true;
             }
             uint iSlash;
             if (startFolder.LastIndexOf('/', ref iSlash))

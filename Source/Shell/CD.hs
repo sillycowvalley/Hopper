@@ -17,7 +17,7 @@ program Command
     bool Argument(string arg) { return false; }
     bool OnFile(string path, bool first, uint maxLength) { return true; }
     
-    bool OnDirectory(string path, bool empty) 
+    bool OnDirectory(string path) 
     { 
         System.CurrentDirectory = path;
         return true; 

@@ -14,7 +14,7 @@ program Command
     
     ShowArguments() {}
     bool Argument(string arg) { return false; }
-    bool OnDirectory(string path, bool empty) { return true; }
+    bool OnDirectory(string path) { return true; }
     bool OnFile(string path, bool first, uint maxLength) { return true; }
     
     {

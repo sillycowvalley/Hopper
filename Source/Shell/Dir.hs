@@ -56,7 +56,7 @@ program Command
         WriteLn();
         return true;
     } 
-    bool OnDirectory(string path, bool empty)
+    bool OnDirectory(string path)
     {
         if (!doFullPaths)
         {

@@ -924,9 +924,9 @@ unit Constant
     <byte> ParseRange(string expectedType)
     {
         <byte> range;
+        <byte,bool> rangeSet;
         loop
         {
-            <byte,bool> rangeSet;
             if (expectedType == "char")
             {
                 ParseCharRange(rangeSet);
@@ -943,16 +943,27 @@ unit Constant
             {
                 break;
             }
-            foreach (var kv in rangeSet)
-            {
-                range.Append(kv.key);
-            }
             if (Parser.Check(HopperToken.Comma))
             {
                 Parser.Advance(); // ,
                 continue;
             }
             break;
+        }
+        //if (IsExperimental)
+        //{
+        //    PrintLn();
+        //}
+        if (!Parser.HadError)
+        {
+            foreach (var kv in rangeSet)
+            {
+                range.Append(kv.key);
+                //if (IsExperimental)
+                //{
+                //    Print((kv.key).ToString() + " ");
+                //}
+            }
         }
         return range;
     }
