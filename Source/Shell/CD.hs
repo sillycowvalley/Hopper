@@ -12,6 +12,7 @@ program Command
     bool   SupportsRecursive    { get { return false; } } // -s
     bool   SupportsConfirmation { get { return false; } } // -y
     
+    
     ShowArguments() {}
     bool Argument(string arg) { return false; }
     bool OnFile(string path, bool first, uint maxLength) { return true; }
@@ -22,6 +23,7 @@ program Command
         return true; 
     }
     
+    Hopper()
     {
         <string> args = Arguments;
         if (args.Count == 0)

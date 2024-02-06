@@ -31,6 +31,7 @@ program PreProcess
   // - block comments aware of strings ("...*/...")
     
     <string, bool> unitsParsed;
+    string programNamespace;
         
     bool normalizeIdentifier(<string,string> idToken, ref string identifier, ref bool public, bool noDuplicates)
     {
@@ -614,13 +615,20 @@ program PreProcess
     {
         loop
         {
+            if (programNamespace != Types.CurrentNamespace)
+            {
+                Parser.ErrorAtCurrent("identifier expected"); // {.. } entry point only allowed in 'program'
+                break;
+            }
+            
             <string> blockPos = walkBlock();
             if (HadError)
             {
                 break;
             }
+            
             < <string > > arguments;
-            Symbols.AddMethod(CurrentNamespace + ".main", arguments, blockPos);
+            Symbols.AddMethod(CurrentNamespace + ".Hopper", arguments, blockPos);
             break;
         }
     }   
@@ -701,6 +709,16 @@ program PreProcess
             {
                 break;   
             }
+            
+            if (idToken["lexeme"] == "Hopper")
+            {
+                if (programNamespace != Types.CurrentNamespace)
+                {
+                    Parser.ErrorAtCurrent("'Hopper()' is reserved for entry point in 'program " + programNamespace + "'");
+                    break;
+                }
+            }
+            
             if (isDelegate)
             {
                 Symbols.AddLocation(identifier, idToken["source"] + ":" + idToken["line"]);
@@ -709,6 +727,14 @@ program PreProcess
             if (HadError)
             {
                 break;
+            }
+            if (idToken["lexeme"] == "Hopper")
+            {
+                if (arguments.Count != 0)
+                {
+                    Parser.ErrorAt(idToken, "the entry point, should not have arguments.");
+                    break;
+                }
             }
             if (isDelegate)
             {
@@ -740,6 +766,21 @@ program PreProcess
             {
                 break;   
             }
+            
+            if (idToken["lexeme"] == "Hopper")
+            {
+                if (programNamespace != Types.CurrentNamespace)
+                {
+                    Parser.ErrorAtCurrent("'Hopper()' is reserved for entry point in 'program " + programNamespace + "'.");
+                    break;
+                }
+                else
+                {
+                    Parser.ErrorAtCurrent("'Hopper()', the entry point, should not have a return value.");
+                    break;
+                }
+            }
+            
             if (isDelegate)
             {
                 Symbols.AddLocation(identifier, idToken["source"] + ":" + idToken["line"]);
@@ -1269,6 +1310,11 @@ program PreProcess
           Types.CurrentNamespace = previousToken["lexeme"];
           AddNameSpace(Types.CurrentNamespace, sourcePath);
           
+          if (firstUnit)
+          {
+              programNamespace = Types.CurrentNamespace;
+          }
+          
           Parser.Consume(HopperToken.LBrace, '{');
           if (Parser.HadError)
           {
@@ -1322,7 +1368,7 @@ program PreProcess
           else
           {
               uint mIndex;
-              if (!Symbols.GetFunctionIndex("main", ref mIndex))
+              if (!Symbols.GetFunctionIndex("Hopper", ref mIndex))
               {
                   Parser.Error("program requires entry point");
                   success = false;

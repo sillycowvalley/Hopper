@@ -196,6 +196,7 @@ program DASM
         PrintLn("  DASM <hexe file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
     }
+    
     {
         SysCalls.New();
         LibCalls.New();
@@ -324,7 +325,7 @@ program DASM
                 }
                 
                 uint codeOffset = lsb + (msb << 8);
-                hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + codeOffset.ToHexString(4) + " // 'main' entry point offset" + char(0x0A));
+                hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + codeOffset.ToHexString(4) + " // 'Hopper' entry point offset" + char(0x0A));
                 address = address + 2;
                 
                 codeSize = codeSize + 6;

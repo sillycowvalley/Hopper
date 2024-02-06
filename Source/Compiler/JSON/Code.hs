@@ -1174,7 +1174,7 @@ unit Code
                         if (UInt.TryParse(methodIndex, ref index))
                         {
                         }
-                        if (name.EndsWith(".main"))
+                        if (name.EndsWith(".Hopper"))
                         {
                             entryIndex = index;
                         }

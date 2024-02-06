@@ -1550,7 +1550,7 @@ unit Symbols
             index = fNames.Count-1;
             fIndex[name] = index;
         }
-        bool isMain = name.EndsWith(".main");
+        bool isMain = name.EndsWith(".Hopper");
     
         <uint> overloads;
         
@@ -1565,13 +1565,21 @@ unit Symbols
             {
                 if (Types.ArgumentsEqual(fArgumentNamesAndTypes[overload], arguments, false, false))
                 {
+                    // blockPos : <1234,39,/source/shell/CD.hs>
+                    <string,string> locationToken;
+                    locationToken["lexeme"] = "{";
+                    locationToken["line"]   = blockPos[1];                        
+                    locationToken["source"] = blockPos[2];
+                    
+                    string name = ((returnType == "void") ? "method" : "function");
+                    
                     if (fReturnTypes[overload] == returnType)
                     {
-                        Parser.ErrorAtCurrent("duplicate function definition");
+                        Parser.ErrorAt(locationToken, "duplicate " + name + " definition");
                     }
                     else
                     {
-                        Parser.ErrorAtCurrent("function definitions differ only by return type");
+                        Parser.ErrorAt(locationToken, name + " definitions differ only by return type");
                     }
                     break;
                 }

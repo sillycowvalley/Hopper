@@ -60,7 +60,7 @@ unit Highlighter
         return colour;
     }
     
-    <uint> Hopper(string ln, string selectedWord, uint backColor, ref uint blockCommentNesting)
+    <uint> HopperSource(string ln, string selectedWord, uint backColor, ref uint blockCommentNesting)
     {
         <uint> colours;
         uint colour;

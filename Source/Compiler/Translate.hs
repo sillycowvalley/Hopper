@@ -1266,15 +1266,15 @@ program Translate
                 
                 
                 uint mIndex;
-                if (!Symbols.GetFunctionIndex("main", ref mIndex))   
+                if (!Symbols.GetFunctionIndex("Hopper", ref mIndex))
                 {
-                    Parser.Error("where is 'main'?");
+                    Parser.Error("where is 'Hopper'?");
                     break;
                 }
                 <uint> mOverloads = Symbols.GetFunctionOverloads(mIndex);
                 if (mOverloads.Count != 1)
                 {
-                    Parser.Error("'main' has overloads?");
+                    Parser.Error("'Hopper' has overloads?");
                     break;
                 }
                 

@@ -1590,7 +1590,7 @@ unit Editor
                         string ln = TextBuffer.GetLine(i);
                         if (ln.Contains("/*") || ln.Contains("*/"))
                         {
-                            colours = Highlighter.Hopper(ln, selectedWord, background, ref blockCommentNesting);
+                            colours = Highlighter.HopperSource(ln, selectedWord, background, ref blockCommentNesting);
                         }
                     }
                 }
@@ -1699,7 +1699,7 @@ unit Editor
             {
                 if (isHopperSource)
                 {
-                    colours = Highlighter.Hopper(ln, selectedWord, background, ref blockCommentNesting);
+                    colours = Highlighter.HopperSource(ln, selectedWord, background, ref blockCommentNesting);
                 }
                 uint colourOffset = 0;
                 
@@ -1984,6 +1984,44 @@ unit Editor
     bool HasFind()
     {
         return findString.Length != 0;
+    }
+    FindPrev()
+    {
+        uint lineCount = TextBuffer.GetLineCount();
+        uint currentX = cursorX;
+        uint currentY = cursorY;
+        loop
+        {
+            if (currentY == 0)
+            {
+                currentY = lineCount;
+            }
+            currentY--;
+            currentX = 0;
+            if (currentY == cursorY)
+            {   
+                break; 
+            }
+            
+            string currentLine = TextBuffer.GetLine(currentY);
+            uint iFind;
+            if (currentLine.IndexOf(findString, currentX, ref iFind))
+            {
+                selectionStartX = iFind;
+                selectionStartY = currentY;
+                cursorX = iFind + findString.Length;
+                cursorY = currentY;
+                selectionEndX = cursorX;
+                selectionEndY = cursorY;
+                selectionActive = true;
+                
+                bool success = Editor.GotoLineNumber(cursorY + 1, cursorX+1);
+                cursorX = selectionEndX; // GotoLineNumber munts cursorX
+                DisplayCursor(true);
+                TextBufferUpdated(cursorX, cursorY, true);
+                break;
+            }
+        }
     }
     FindNext()
     {
@@ -2401,6 +2439,9 @@ unit Editor
         Commands.CommandEnabledDelegate findAgainEnabled = Editor.HasFind;
         key = Key.F3;
         InstallCommand("FindNext", "", findNext, findAgainEnabled, key);
+        Commands.CommandExecuteDelegate findPrev = Editor.FindPrev;
+        key = (Key.F3 | Key.Shift);
+        InstallCommand("FindPrev", "",  findPrev, findAgainEnabled, key);
                 
         if (!IsDebugger)
         {
