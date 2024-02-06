@@ -887,63 +887,91 @@ program Compile
                 
                 loop
                 {
-                    
-                    
                     Parser.Advance(); // "case" or "default"
 // next:         
                     if (!isDefault)
                     {   
-                        string actualType;
-                        string caseConstant = ParseConstantExpression(switchType, ref actualType);
-                        if (Parser.HadError)
+                        <byte> range;
+                        if (switchType == "byte")
                         {
-                            break;
-                        }
-                        byte caseConstantByte;
-                        if (switchType == "char")
-                        {
-                            char c = caseConstant[0];
-                            caseConstantByte = byte(c);
-                        }
-                        else if (switchType == "bool")
-                        {
-                            caseConstantByte = 0;
-                            if (caseConstant == "true")
+                            range = ParseRange("byte");
+                            if (Parser.HadError)    
                             {
-                                caseConstantByte = 1;
+                                break;    
+                            }
+                        }
+                        else if (switchType == "char")
+                        {
+                            range = ParseRange("char");
+                            if (Parser.HadError)
+                            {
+                                break;
                             }
                         }
                         else
                         {
-                            uint cc;
-                            if (UInt.TryParse(caseConstant, ref cc))
+                            string actualType;
+                            string caseConstant = ParseConstantExpression(switchType, ref actualType);
+                            if (Parser.HadError)
                             {
-                                if (cc > upperBound)
+                                break;
+                            }
+                            byte caseConstantByte;
+                            if (switchType == "char")
+                            {
+                                char c = caseConstant[0];
+                                caseConstantByte = byte(c);
+                            }
+                            else if (switchType == "bool")
+                            {
+                                caseConstantByte = 0;
+                                if (caseConstant == "true")
                                 {
-                                    Parser.Error("'case' constant '" + caseConstant + "' out of range");
-                                }
-                                else
-                                {
-                                    caseConstantByte = byte(cc);
+                                    caseConstantByte = 1;
                                 }
                             }
                             else
                             {
-                                Parser.Error("unexpected 'case' constant '" + caseConstant + "'");
+                                uint cc;
+                                if (UInt.TryParse(caseConstant, ref cc))
+                                {
+                                    if (cc > upperBound)
+                                    {
+                                        Parser.Error("'case' constant '" + caseConstant + "' out of range");
+                                    }
+                                    else
+                                    {
+                                        caseConstantByte = byte(cc);
+                                    }
+                                }
+                                else
+                                {
+                                    Parser.Error("unexpected 'case' constant '" + caseConstant + "'");
+                                }
+                            }
+                            if (Parser.HadError)
+                            {
+                                break;
+                            }
+                            range.Append(caseConstantByte);
+                        }
+                        foreach (var caseByte in range)
+                        {
+                            if (caseOffsets.Contains(caseByte) || (caseByte > upperBound))
+                            {
+                                string caseName = caseByte.ToString();
+                                if (switchType == "char") { caseName = "" + char(caseByte); }
+                                if (switchType == "bool") { caseName = ((caseByte == 0) ? "false" : "true"); }
+                                
+                                Parser.Error("duplicate 'case' constant '" + caseName + "'");
+                                break;
+                            }
+                            else
+                            {
+                                caseOffsets[caseByte] = CodeStream.NextAddress - switchBaseline;
                             }
                         }
-                        if (Parser.HadError)
-                        {
-                            break;
-                        }
-                        if (caseOffsets.Contains(caseConstantByte))
-                        {
-                            Parser.Error("duplicate 'case' constant '" + caseConstant + "'");
-                        }
-                        else
-                        {
-                            caseOffsets[caseConstantByte] = CodeStream.NextAddress - switchBaseline;
-                        }
+                        
                     } // !isDefault
                     else
                     {
@@ -2855,7 +2883,8 @@ program Compile
                 }
                 CodeStream.InitializeSymbolShortcuts();
                 
-                isTinyHopper = DefineExists("TINY_HOPPER");
+                isTinyHopper   = DefineExists("TINY_HOPPER");
+                isExperimental = isExperimental || DefineExists("EXPERIMENTAL");
                 
                 uint mIndex;
                 if (!Symbols.GetFunctionIndex("Hopper", ref mIndex))

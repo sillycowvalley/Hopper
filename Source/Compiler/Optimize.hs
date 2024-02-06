@@ -61,22 +61,19 @@ program Optimize
     {
         foreach (var kv in symbols)
         {
-            switch (kv.key)
+            if (kv.key == "symbols")
             {
-                case "symbols":
+                // preprocessor symbols
+                <string,string> pdValues = kv.value;
+                if (pdValues.Contains("HOPPER_6502"))
                 {
-                    // preprocessor symbols
-                    <string,string> pdValues = kv.value;
-                    if (pdValues.Contains("HOPPER_6502"))
-                    {
-                        target6502 = true;
-                    }
-                    if (pdValues.Contains("TINY_HOPPER"))
-                    {
-                        isTinyHopper = true;
-                    }
-                    break;
+                    target6502 = true;
                 }
+                if (pdValues.Contains("TINY_HOPPER"))
+                {
+                    isTinyHopper = true;
+                }
+                break;
             }
         } // kv
     }
@@ -702,14 +699,11 @@ program Optimize
                         <string,variant> gValues;
                         foreach (var kv in symbols)
                         {
-                            switch (kv.key)
+                            if (kv.key == "globals")
                             {
-                                case "globals":
-                                {
-                                    // globals
-                                    gValues = kv.value;
-                                    break;
-                                }
+                                // globals
+                                gValues = kv.value;
+                                break;
                             }
                         } // kv
                         logFile.Flush();

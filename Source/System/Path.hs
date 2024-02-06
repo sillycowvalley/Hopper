@@ -9,9 +9,6 @@ unit Path
             switch (c)
             {
                 case '/':
-                {
-                    valid = true;
-                }
                 case '.':
                 {
                     valid = true;

@@ -792,4 +792,168 @@ unit Constant
     {
         return parseConstantBitOr(typeExpected, ref actualType, false);
     }
+    
+    ParseByteRange(<byte,bool> rangeSet)
+    {
+        loop
+        {
+            string actualType;
+            string caseConstant = ParseConstantExpression("byte", ref actualType);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            if (actualType != "byte")
+            {
+                Parser.Error("'byte' constant expected");
+                break;
+            }
+            uint ui;
+            _ = UInt.TryParse(caseConstant, ref ui);
+            byte constantByte1 = byte(ui);
+            <string, string> currentToken = Parser.CurrentToken;
+            HopperToken currentType = Token.GetType(currentToken);
+            if (currentType != HopperToken.Dot)
+            {
+                rangeSet[constantByte1] = true;
+                break;
+            }
+            Parser.Advance(); // .
+            currentToken = Parser.CurrentToken;
+            currentType = Token.GetType(currentToken);
+            if (currentType != HopperToken.Dot)
+            {
+                break;
+            }
+            Parser.Advance(); // .
+            caseConstant = ParseConstantExpression("byte", ref actualType);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            if (actualType != "byte")
+            {
+                Parser.Error("'byte' constant expected");
+                break;
+            }
+            _ = UInt.TryParse(caseConstant, ref ui);
+            byte constantByte2 = byte(ui);
+            
+            if (constantByte1 > constantByte2)
+            {
+                Parser.Error("invalid 'byte' range: order");
+                break;
+            }
+            byte currentByte = constantByte1;
+            loop
+            {
+                if (currentByte > constantByte2)
+                {
+                    break;
+                }
+                rangeSet[currentByte] = true;
+                currentByte++;
+            }
+            break;
+        } // loop
+    }
+    
+    ParseCharRange(<byte,bool> rangeSet)
+    {
+        loop
+        {
+            string actualType;
+            string caseConstant = ParseConstantExpression("char", ref actualType);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            if (actualType != "char")
+            {
+                Parser.Error("'char' constant expected");
+                break;
+            }
+            char c1 = caseConstant[0];
+            byte constantByte1 = byte(c1);
+            <string, string> currentToken = Parser.CurrentToken;
+            HopperToken currentType = Token.GetType(currentToken);
+            if (currentType != HopperToken.Dot)
+            {
+                rangeSet[constantByte1] = true;
+                break;
+            }
+            Parser.Advance(); // .
+            currentToken = Parser.CurrentToken;
+            currentType = Token.GetType(currentToken);
+            if (currentType != HopperToken.Dot)
+            {
+                break;
+            }
+            Parser.Advance(); // .
+            caseConstant = ParseConstantExpression("char", ref actualType);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            if (actualType != "char")
+            {
+                Parser.Error("'char' constant expected");
+                break;
+            }
+            char c2 = caseConstant[0];
+            byte constantByte2 = byte(c2);
+            if (constantByte1 > constantByte2)
+            {
+                Parser.Error("invalid 'char' range: order");
+                break;
+            }
+            byte currentByte = constantByte1;
+            loop
+            {
+                if (currentByte > constantByte2)
+                {
+                    break;
+                }
+                rangeSet[currentByte] = true;
+                currentByte++;
+            }
+            break;
+        } // loop
+    }
+    
+    <byte> ParseRange(string expectedType)
+    {
+        <byte> range;
+        loop
+        {
+            <byte,bool> rangeSet;
+            if (expectedType == "char")
+            {
+                ParseCharRange(rangeSet);
+            }
+            else if (expectedType == "byte")
+            {
+                ParseByteRange(rangeSet);
+            }
+            else
+            {
+                Die(0x0B);
+            }
+            if (Parser.HadError)
+            {
+                break;
+            }
+            foreach (var kv in rangeSet)
+            {
+                range.Append(kv.key);
+            }
+            if (Parser.Check(HopperToken.Comma))
+            {
+                Parser.Advance(); // ,
+                continue;
+            }
+            break;
+        }
+        return range;
+    }
 }

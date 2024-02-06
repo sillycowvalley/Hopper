@@ -193,11 +193,7 @@ unit CodeStream
         switch (jumpInstruction)
         {
             case Instruction.JB:
-            {
-            }
             case Instruction.JZB:
-            {
-            }
             case Instruction.JNZB:
             {
             }

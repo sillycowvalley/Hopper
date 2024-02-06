@@ -81,18 +81,15 @@ unit BuildCommand
             {
                 foreach (var kv in dict)
                 {
-                    switch (kv.key)
+                    if (kv.key == "symbols")
                     {
-                        case "symbols":
+                        // preprocessor symbols
+                        <string,string> pdValues = kv.value;
+                        if (pdValues.Contains("HOPPER_6502"))
                         {
-                            // preprocessor symbols
-                            <string,string> pdValues = kv.value;
-                            if (pdValues.Contains("HOPPER_6502"))
-                            {
-                                target6502 = true;
-                            }
-                            break;
+                            target6502 = true;
                         }
+                        break;
                     }
                 } // kv
             }    

@@ -81,7 +81,7 @@ unit Parser
         
     bool HadError { get { return hadError; } }
     
-    <string, string> CurrentToken { get { return currentToken; }}    
+        <string, string> CurrentToken { get { return currentToken; }}    
     <string, string> PreviousToken { get { return previousToken; }}    
     
     // ["type"]    - HopperToken
