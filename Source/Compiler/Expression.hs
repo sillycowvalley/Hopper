@@ -96,11 +96,31 @@ unit Expression
             CodeStream.AddInstructionSysCall0(name, "New");
         }
     }
+    uint   lastRecordSet;
+    string lastRecordSetName;
     
-    LazyInitializeRecordMembers(string recordVariable, string recordTypeName)
+    RecordSetLastSetItem(uint value, string name)
     {
+        lastRecordSet = value;
+        lastRecordSetName = name;
+    }
+    
+    RecordLazyInitializeMembers(string recordVariable, string recordTypeName, bool isGet)
+    {
+        uint nextAddress = CodeStream.NextAddress;
+        if (isGet)
+        {
+        }
+        else
+        {
+            if ((lastRecordSetName == recordVariable) && (nextAddress == lastRecordSet))
+            {
+                return;
+            }
+        }
+    
         CodeStream.AddInstructionPushVariable(recordVariable);
-        CodeStream.AddInstructionSysCall0("List", "Count_Get");
+        CodeStream.AddInstructionSysCall0("List", "Count_Get"); // RecordLazyInitializeMembers
         uint jumpPast = CodeStream.NextAddress;
         CodeStream.AddInstructionJump(Instruction.JNZ);
         
@@ -114,7 +134,7 @@ unit Expression
                 string memberType = v[1];
                 CodeStream.AddInstructionPushVariable(recordVariable);
                 InitializeVariable(memberType); // new variable at [top]
-                CodeStream.AddInstructionSysCall0("List", "Append");
+                CodeStream.AddInstructionSysCall0("List", "Append"); // RecordLazyInitializeMembers
             }
         }
         uint pastAddress = CodeStream.NextAddress;
@@ -1235,7 +1255,7 @@ unit Expression
                 {
                     break;
                 }
-                CodeStream.AddInstructionSysCall0("List", "GetItem");
+                CodeStream.AddInstructionSysCall0("List", "GetItem"); // compileCollectionAccessor: .. = list[i]
                 actualType = valueType;
             }
             else
@@ -1617,7 +1637,7 @@ unit Expression
                     if (FindRecord(recordName, ref members))
                     {
                         // RECORD : if list is empty, lazy initialize here
-                        Expression.LazyInitializeRecordMembers(qualifiedThis, recordName);
+                        Expression.RecordLazyInitializeMembers(qualifiedThis, recordName, true);
                         
                         // RECORD : find the member and push to stack
                         byte iMember;
@@ -1630,7 +1650,7 @@ unit Expression
                                 actualType = memberType;
                                 CodeStream.AddInstructionPushVariable(qualifiedThis);
                                 CodeStream.AddInstructionPUSHI(iMember);
-                                CodeStream.AddInstructionSysCall0("List", "GetItem");
+                                CodeStream.AddInstructionSysCall0("List", "GetItem"); // .. = record.member;
                                 success = true;
                                 break;
                             }

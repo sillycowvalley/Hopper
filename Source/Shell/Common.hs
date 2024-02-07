@@ -173,12 +173,15 @@ unit Common
     }
     Walk(ShellObject currentDirectory)
     {
-        directory dir = Directory.Open(currentDirectory.Path);
+        string currentPath         = currentDirectory.Path;
+        uint currentFileCount      = currentDirectory.FileCount;
+        uint currentDirectoryCount = currentDirectory.DirectoryCount;
+        directory dir = Directory.Open(currentPath);
         if (dir.IsValid())
         {
             uint length;
             <ShellObject> objectList;
-            for (uint fi = 0; fi < currentDirectory.FileCount; fi++)
+            for (uint fi = 0; fi < currentFileCount; fi++)
             {
                 string filePath = dir.GetFile(fi);
                 string filename = Path.GetFileName(filePath);
@@ -207,7 +210,7 @@ unit Common
                     }
                 }
             }
-            for (uint di = 0; di < currentDirectory.DirectoryCount; di++)
+            for (uint di = 0; di < currentDirectoryCount; di++)
             {
                 string subFolder = dir.GetDirectory(di);
                 ShellObject directoryDir;

@@ -504,20 +504,10 @@ unit Scanner
         }
         if (Token.IsKeyword(value))
         {
-            switch (value)
+            ttype = HopperToken.Keyword;
+            if  ((value == "true") || (value == "false"))
             {
-                case "true":
-                {
-                    ttype = HopperToken.Bool;
-                }
-                case "false":
-                {
-                    ttype = HopperToken.Bool;
-                }
-                default:
-                {
-                    ttype = HopperToken.Keyword;
-                }
+                ttype = HopperToken.Bool;
             }
         }
         if (Token.IsDirectiveKeyword(value))
@@ -581,92 +571,64 @@ unit Scanner
                     
                     case '*':
                     {
-                        if (match('='))
-                        { htoken = HopperToken.AssignMultiply; }
-                        else
-                        { htoken = HopperToken.Multiply; }
+                        htoken = HopperToken.Multiply;
+                        if (match('=')) { htoken = HopperToken.AssignMultiply; }
                     }
                     case '/':
                     {
-                        if (match('='))
-                        { htoken = HopperToken.AssignDivide; }
-                        else
-                        { htoken = HopperToken.Divide; }
+                        htoken = HopperToken.Divide;
+                        if (match('=')) { htoken = HopperToken.AssignDivide; }
                     }
                     case '%':
                     {
-                        if (match('='))
-                        { htoken = HopperToken.AssignModulus; }
-                        else
-                        { htoken = HopperToken.Modulus; }
+                        htoken = HopperToken.Modulus;
+                        if (match('=')) { htoken = HopperToken.AssignModulus; }
                     }
                     case '-':
                     {
-                        if (match('-'))
-                        { htoken = HopperToken.Decrement; }
-                        else if (match('='))
-                        { htoken = HopperToken.AssignSubtract; }
-                        else
-                        { htoken = HopperToken.Subtract; }
+                        htoken = HopperToken.Subtract;
+                        if (match('-'))      { htoken = HopperToken.Decrement; }
+                        else if (match('=')) { htoken = HopperToken.AssignSubtract; }
                     }
                     case '+':
                     {
-                        if (match('+'))
-                        { htoken = HopperToken.Increment; }
-                        else if (match('='))
-                        { htoken = HopperToken.AssignAdd; }
-                        else
-                        { htoken = HopperToken.Add; }
+                        htoken = HopperToken.Add;
+                        if (match('+'))      { htoken = HopperToken.Increment; }
+                        else if (match('=')) { htoken = HopperToken.AssignAdd; }
                     }
                     case '!':
                     {
-                        if (match('='))
-                        { htoken = HopperToken.NE; }
-                        else
-                        { htoken = HopperToken.BooleanNot; }
+                        htoken = HopperToken.BooleanNot;
+                        if (match('=')) { htoken = HopperToken.NE; }
                     }
                     case '=':
                     {
-                        if (match('='))
-                        { htoken = HopperToken.EQ; }
-                        else
-                        { htoken = HopperToken.Assign; }
+                        htoken = HopperToken.Assign;
+                        if (match('=')) { htoken = HopperToken.EQ; }
                     }
                     case '<':
                     {
-                        if (match('='))
-                        { htoken = HopperToken.LE; }
-                        else if (match('<'))
-                        { htoken = HopperToken.ShiftLeft; }
-                        else
-                        { htoken = HopperToken.LT; }
+                        htoken = HopperToken.LT;
+                        if (match('='))      { htoken = HopperToken.LE; }
+                        else if (match('<')) { htoken = HopperToken.ShiftLeft; }
                     }
                     case '>':
                     {
-                        if (match('='))
-                        { htoken = HopperToken.GE; }
-                        else if (match('>'))
-                        { htoken = HopperToken.ShiftRight; }
-                        else
-                        { htoken = HopperToken.GT; }
+                        htoken = HopperToken.GT;
+                        if (match('='))      { htoken = HopperToken.GE; }
+                        else if (match('>')) { htoken = HopperToken.ShiftRight; }
                     }
                     case '|':
                     {
-                        if (match('|'))
-                        { htoken = HopperToken.BooleanOr; }
-                        else if (match('='))
-                        { htoken = HopperToken.AssignBitOr; }
-                        else
-                        { htoken = HopperToken.BitOr; }
+                        htoken = HopperToken.BitOr;
+                        if (match('|'))      { htoken = HopperToken.BooleanOr; }
+                        else if (match('=')) { htoken = HopperToken.AssignBitOr; }
                     }
                     case '&':
                     {
-                        if (match('&'))
-                        { htoken = HopperToken.BooleanAnd; }
-                        else if (match('='))
-                        { htoken = HopperToken.AssignBitAnd; }
-                        else
-                        { htoken = HopperToken.BitAnd; }
+                        htoken = HopperToken.BitAnd;
+                        if (match('&'))      { htoken = HopperToken.BooleanAnd; }
+                        else if (match('=')) { htoken = HopperToken.AssignBitAnd; }
                     }
                     case '"':
                     {

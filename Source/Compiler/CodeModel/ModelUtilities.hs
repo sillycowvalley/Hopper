@@ -192,6 +192,7 @@ unit ModelUtilities
         }
         return false;
     }
+    
     bool IsSinglePUSHInstruction(Instruction opCode)
     {
         switch (opCode)

@@ -52,7 +52,7 @@ unit CodeStream
             return currentStream.Count;
         } 
     }
-        
+     
     AppendCode(<byte> code)
     {
         foreach (var b in code)

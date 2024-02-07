@@ -545,7 +545,7 @@ program Compile
 // next:
             uint nextAddress = CodeStream.NextAddress;            
             CodeStream.AddInstructionPushLocal(collectionOffset); // list collection object
-            CodeStream.AddInstructionSysCall("List", "Count_Get", 0);
+            CodeStream.AddInstructionSysCall("List", "Count_Get", 0); // foreach
             CodeStream.AddInstructionPushLocal(iteratorOffset);
             CodeStream.AddInstruction(Instruction.EQ);
             uint jumpExit = CodeStream.NextAddress;
@@ -557,12 +557,12 @@ program Compile
             if (iteratorType == "variant")
             {
                 // int type is not known at compile time
-                CodeStream.AddInstructionSysCall("List", "GetItemAsVariant", 0);
+                CodeStream.AddInstructionSysCall("List", "GetItemAsVariant", 0); // foreach
             }
             else
             {
                 // item type is known at compile time
-                CodeStream.AddInstructionSysCall("List", "GetItem", 0);
+                CodeStream.AddInstructionSysCall("List", "GetItem", 0); // foreach
             }
             
             // identifier <- collection[iterator]
@@ -1646,6 +1646,7 @@ program Compile
             
             bool isSetter = false;
             bool isMember = false;
+            string recordName;
             
             bool isStringAppend = false;
             uint iOverload;
@@ -1686,7 +1687,7 @@ program Compile
             if (variableName.Contains('.') && (variableType.Length == 0) && (leftTokenType != HopperToken.Discarder))
             {
                 <string> parts = variableName.Split('.');
-                string recordName = parts[0];
+                recordName = parts[0];
                 string functionName = parts[1];
                 
                 string qualifiedThis;
@@ -1699,7 +1700,7 @@ program Compile
                     if (FindRecord(thisTypeString, ref members))
                     {
                         // RECORD : if list is empty, lazy initialize here
-                        Expression.LazyInitializeRecordMembers(recordName, thisTypeString);
+                        Expression.RecordLazyInitializeMembers(recordName, thisTypeString, false);
                                 
                         // RECORD : assignment : find the member
                         byte iMember;
@@ -2019,7 +2020,8 @@ program Compile
             }
             else if (isMember)
             {
-                CodeStream.AddInstructionSysCall0("List", "SetItem");
+                CodeStream.AddInstructionSysCall0("List", "SetItem"); // compileAssignment: record.member = ..
+                Expression.RecordSetLastSetItem(CodeStream.NextAddress, recordName);
             }
             else if (!isSetter)
             {
@@ -2388,7 +2390,7 @@ program Compile
                                 }
                                 else if (isList)
                                 {
-                                    CodeStream.AddInstructionSysCall0("List", "SetItem");
+                                    CodeStream.AddInstructionSysCall0("List", "SetItem"); // compileStatement: list[i] = ..
                                 }
                                 else
                                 {
