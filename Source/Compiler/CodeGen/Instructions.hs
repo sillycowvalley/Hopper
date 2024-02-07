@@ -1060,9 +1060,9 @@ unit Instructions
                 for (uint it = 0; it < tableSize/2; it++)
                 {
                     address++;
-                    byte lsb = code[address];
+                    lsb = code[address];
                     address++;
-                    byte msb = code[address];
+                    msb = code[address];
                     uint offset = (lsb + msb << 8);
                     if (doLabels)
                     {

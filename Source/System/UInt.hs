@@ -37,7 +37,7 @@ unit UInt
                 {
                     returnValue = 0;
                     success = true;
-                    for (uint i=0; i < length; i++)
+                    for (i=0; i < length; i++)
                     {
                         b = byte(content[i]);
                         returnValue = returnValue * 10;

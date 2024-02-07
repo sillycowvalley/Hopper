@@ -1131,8 +1131,8 @@ unit CodePoints
                         // check for TESTBPB
                         if (iIndex > 0)
                         {
-                            Instruction opCode = iCodes[iIndex-1];
-                            if (opCode == Instruction.TESTBPB)
+                            Instruction opCode1 = iCodes[iIndex-1];
+                            if (opCode1 == Instruction.TESTBPB)
                             {
                                 RemoveInstruction(iIndex-1);    
                                 iIndex--;

@@ -4667,7 +4667,7 @@ namespace HopperNET
                     {
                         HopperString top = (HopperString)PopVariant(HopperType.tString);
                         HopperString next = (HopperString)PopVariant(HopperType.tString);
-                        short result = (short)string.Compare(next.Value, top.Value);
+                        short result = (short)string.Compare(next.Value, top.Value, StringComparison.Ordinal);
                         PushInt(result);
                     }
                     break;
@@ -4970,14 +4970,12 @@ namespace HopperNET
                             uint value = Pop();
                             HopperString key = (HopperString)PopVariant(HopperType.tString);
                             HopperStringDictionary _this_ = (HopperStringDictionary)PopVariant(HopperType.tDictionary);
+                            HopperType vType = _this_.VType;
                             if (_this_.VType == HopperType.tVariant)
                             {
-                                _this_.Value[key.Value] = new HopperValue(value, valueType);
+                                vType = valueType;
                             }
-                            else
-                            {
-                                _this_.Value[key.Value] = new HopperValue(value, _this_.VType);
-                            }
+                            _this_.Value[key.Value] = new HopperValue(value, vType);
                         }
                         else if (Type_IsValueType(valueType) && (keyType != HopperType.tString))
                         {
@@ -5107,7 +5105,12 @@ namespace HopperNET
 #if DEBUG
                             Diagnostics.ASSERT(_this_.VType == topType, "correct value type for list?");
 #endif
-                            _this_.Value.Insert(index, new HopperValue(value, _this_.VType));
+                            HopperType valueType = _this_.VType;
+                            if (_this_.VType == HopperType.tVariant)
+                            {
+                                valueType = topType;
+                            }
+                            _this_.Value.Insert(index, new HopperValue(value, valueType));
                         }
                         else
                         {
@@ -5203,7 +5206,12 @@ namespace HopperNET
                                     break;
                             }
 #endif
-                            _this_.Value.Add(new HopperValue(value, _this_.VType));
+                            HopperType valueType = _this_.VType;
+                            if (_this_.VType == HopperType.tVariant)
+                            {
+                                valueType = topType;
+                            }
+                            _this_.Value.Add(new HopperValue(value, valueType));
                         }
                         else
                         {
@@ -5241,7 +5249,12 @@ namespace HopperNET
                         }
                         if (Type_IsValueType(topType))
                         {
-                            _this_.Value[(int)index] = new HopperValue(value, _this_.VType);
+                            HopperType valueType = _this_.VType;
+                            if (_this_.VType == HopperType.tVariant)
+                            {
+                                valueType = topType;
+                            }
+                            _this_.Value[(int)index] = new HopperValue(value, valueType);
                         }
                         else
                         {
@@ -5262,6 +5275,18 @@ namespace HopperNET
                         {
                             HopperValue value = (HopperValue)_this_.Value[index];
                             Push(value.Value, value.Type);
+                        }
+                        else if (_this_.VType == HopperType.tVariant)
+                        {
+                            HopperValue value = _this_.Value[index] as HopperValue;
+                            if (value != null)
+                            {
+                                Push(value.Value, value.Type);
+                            }
+                            else
+                            {
+                                Push(_this_.Value[index].Clone());
+                            }
                         }
                         else
                         {

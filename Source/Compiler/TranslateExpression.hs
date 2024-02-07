@@ -413,10 +413,10 @@ unit TranslateExpression
                         oneDot = false;
                         Parser.Advance(); // consume '.'
                         
-                        <string,string> currentToken = Parser.CurrentToken;
-                        identifier = currentToken["lexeme"];
+                        <string,string> memberNameToken = Parser.CurrentToken;
+                        identifier = memberNameToken["lexeme"];
                         
-                        HopperToken tokenType = Token.GetType(currentToken);
+                        HopperToken tokenType = Token.GetType(memberNameToken);
                         if (tokenType != HopperToken.Identifier)
                         {
                             Parser.ErrorAtCurrent("member name identifier expected");
@@ -1180,7 +1180,7 @@ unit TranslateExpression
             uint n = 0;
             if ( (thisVariable.Length != 0) || (dotThisType.Length != 0))
             {
-                string thisType = dotThisType;
+                thisType = dotThisType;
                 if (thisVariable.Length != 0)
                 {
                     thisType = Types.GetTypeString(thisVariable, true, ref qualifiedThis);

@@ -1,5 +1,6 @@
 program Command
 {
+//#define SERIAL_CONSOLE
     uses "/Source/Shell/Common"
     
     string Name                 { get { return "DIR";  } }
@@ -33,8 +34,9 @@ program Command
         }
         return true;
     }
-    bool OnFile(string path, bool first, uint maxLength)
+    bool OnFile(ShellObject shellObject, bool first, uint maxLength)
     {
+        string path = shellObject.Path;
         string filename = path;
         if (!doFullPaths)
         {
@@ -56,11 +58,11 @@ program Command
         WriteLn();
         return true;
     } 
-    bool OnDirectory(string path)
+    bool OnDirectory(ShellObject shellObject)
     {
         if (!doFullPaths)
         {
-            WriteLn(path, Colour.MatrixBlue);   
+            WriteLn(shellObject.Path, Colour.MatrixBlue);   
         }
         return true;
     }

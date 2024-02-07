@@ -15,11 +15,11 @@ program Command
     
     ShowArguments() {}
     bool Argument(string arg) { return false; }
-    bool OnFile(string path, bool first, uint maxLength) { return true; }
+    bool OnFile(ShellObject shellObject, bool first, uint maxLength) { return true; }
     
-    bool OnDirectory(string path) 
+    bool OnDirectory(ShellObject shellObject) 
     { 
-        System.CurrentDirectory = path;
+        System.CurrentDirectory = shellObject.Path;
         return true; 
     }
     

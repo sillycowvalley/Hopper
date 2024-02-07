@@ -411,10 +411,10 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index)
             }
             if (!file.isDirectory())
             {
+                String name = file.name();
+                if (name == "_") { continue; }
                 if (count == index)
                 {
-                    String name = file.name();
-                    if (name == "_") { continue; }
                     UInt str = HRString_New();
                     uint plen = strlen(buffer);
                     for (uint i=0; i < plen; i++)
@@ -442,11 +442,10 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index)
     {
         if (!dir.isDirectory())  
         {
+            String name = dir.fileName();
+            if (name == "_") continue; // ignore
             if (count == index)
             {
-                String name = dir.fileName();
-                if (name == "_") continue;
-
                 UInt str = HRString_New();
                 uint plen = strlen(buffer);
                 for (uint i=0; i < plen; i++)

@@ -1571,15 +1571,15 @@ unit Symbols
                     locationToken["line"]   = blockPos[1];                        
                     locationToken["source"] = blockPos[2];
                     
-                    string name = ((returnType == "void") ? "method" : "function");
+                    string errorName = ((returnType == "void") ? "method" : "function");
                     
                     if (fReturnTypes[overload] == returnType)
                     {
-                        Parser.ErrorAt(locationToken, "duplicate " + name + " definition");
+                        Parser.ErrorAt(locationToken, "duplicate " + errorName + " definition");
                     }
                     else
                     {
-                        Parser.ErrorAt(locationToken, name + " definitions differ only by return type");
+                        Parser.ErrorAt(locationToken, errorName + " definitions differ only by return type");
                     }
                     break;
                 }

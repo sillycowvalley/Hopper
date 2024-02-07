@@ -43,37 +43,7 @@ unit Block
         }
         return methodBlock;
     }
-    bool LocalExists(string identifier)
-    {
-        bool exists;
-        <string,variant> top = Top();
-        < <string> > locals = top["locals"];
-        uint nlocals = locals.Count;   
-        for (uint i=0; i < nlocals; i++)
-        {
-            <string> local = locals[i]; // <type, name>
-            string name = local[1];
-            if (name == identifier)
-            {
-                return true;
-            }
-        }
-        if (top.Contains("arguments"))
-        {
-            < <string> > arguments = top["arguments"];
-            uint narguments = arguments.Count;   
-            for (uint i=0; i < narguments; i++)
-            {
-                <string> argument = arguments[i]; // <ref, type, name>
-                string name = argument[2];
-                if (name == identifier)
-                {
-                    return true;
-                }
-            }
-        }        
-        return false;
-    }
+    
     AddLocal(string variableType, string identifier)
     {
         <string,variant> top = Top();
@@ -527,6 +497,85 @@ unit Block
         return typeString;
     }
     
+    bool LocalExists(string identifier)
+    {
+        bool localExists;
+        string name;
+        <string,variant> blockContext;
+        < <string> > members;
+        uint iCurrent = blockList.Count;
+        loop
+        {
+            if (iCurrent == 0)
+            {
+                break;
+            }
+            iCurrent--;
+            blockContext = blockList[iCurrent];
+            if (blockContext.Contains("arguments"))
+            {
+                // arguments: < <ref,type,name> >
+                members = blockContext["arguments"];
+                foreach (var argument in members)
+                {
+                    name = argument[2];
+                    if (name == identifier)
+                    {
+                        localExists = true;
+                        break;
+                    }        
+                }
+            }       
+            if (blockContext.Contains("locals"))
+            {
+                // locals: < <type,name> >
+                members = blockContext["locals"];
+                foreach (var local in members)
+                {
+                    name = local[1];
+                    if (name == identifier)
+                    {
+                        localExists = true;
+                        break;
+                    }            
+                }   
+            }   
+        } // loop    
+        return localExists;
+    }
+    /*
+    bool LocalExists(string identifier)
+    {
+        bool exists;
+        <string,variant> top = Top();
+        < <string> > locals = top["locals"];
+        uint nlocals = locals.Count;   
+        for (uint i=0; i < nlocals; i++)
+        {
+            <string> local = locals[i]; // <type, name>
+            string name = local[1];
+            if (name == identifier)
+            {
+                return true;
+            }
+        }
+        if (top.Contains("arguments"))
+        {
+            < <string> > arguments = top["arguments"];
+            uint narguments = arguments.Count;   
+            for (uint i=0; i < narguments; i++)
+            {
+                <string> argument = arguments[i]; // <ref, type, name>
+                string name = argument[2];
+                if (name == identifier)
+                {
+                    return true;
+                }
+            }
+        }        
+        return false;
+    }
+    */
     Export(uint iBlock)
     {
         <string,variant> blockContext = blockList[iBlock]; 

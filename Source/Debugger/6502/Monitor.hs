@@ -421,7 +421,7 @@ unit Monitor
             while (size != 0)
             {
                 byte b = dFile.Read();
-                string str = b.ToHexString(2);
+                str = b.ToHexString(2);
                 foreach (var c in str)
                 {
                     SerialWriteChar(c); 

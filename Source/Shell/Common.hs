@@ -1,7 +1,7 @@
 unit Common
 {
     
-#ifndef SERIAL_CONSOLE    
+#ifndef SERIAL_CONSOLE
     uses "/Source/System/Runtime"
 #endif
 
@@ -24,6 +24,47 @@ unit Common
     string singleFile;
     
     bool starDotStarAdded;
+    
+    record ShellObject
+    {
+        string Path;
+        bool   IsDirectory; // false by default -> File
+        
+        // directory members    
+        uint FileCount;
+        uint DirectoryCount;
+    }
+    
+    int CompareShellObjects(<ShellObject> this, uint ai, uint bi)
+    {
+        ShellObject a = this.GetItem(ai);
+        ShellObject b = this.GetItem(bi);
+        return String.Compare((a.Path).ToLower(), (b.Path).ToLower());
+    }
+    
+    bool TryDirectoryFromPath(string path, ShellObject dirObject)
+    {
+        directory dir = Directory.Open(path);
+        bool valid = dir.IsValid();
+        if (valid)
+        {
+            dirObject.Path           = path;
+            dirObject.IsDirectory    = true;
+            dirObject.FileCount      = dir.GetFileCount();
+            dirObject.DirectoryCount = dir.GetDirectoryCount();
+        }
+        return valid;
+    }
+    bool TryFileFromPath(string path, ShellObject fileObject)
+    {
+        file fl = File.Open(path);
+        bool valid = fl.IsValid();
+        if (valid)
+        {
+            fileObject.Path           = path;
+        }
+        return valid;
+    }
     
     string SwitchAlias(string command)
     {
@@ -125,18 +166,17 @@ unit Common
         IO.WriteLn("    'xxx*' : all with name.ext starting with 'xxx'");
         IO.WriteLn("    '*xxx' : all with name.ext ending with 'xxx'");
     }
-    Walk(string currentFolder)
+    Walk(ShellObject currentDirectory)
     {
-        directory dir = Directory.Open(currentFolder);
+        directory dir = Directory.Open(currentDirectory.Path);
         if (dir.IsValid())
         {
-            uint files =  dir.GetFileCount();
             uint length;
-            <string> fileList;
-            for (uint fi = 0; fi < files; fi++)
+            <ShellObject> objectList;
+            for (uint fi = 0; fi < currentDirectory.FileCount; fi++)
             {
-                string filepath = dir.GetFile(fi);
-                string filename = Path.GetFileName(filepath);
+                string filePath = dir.GetFile(fi);
+                string filename = Path.GetFileName(filePath);
                 string filenameLower = filename.ToLower();
                 if (maskEndsWith.Length != 0)
                 {
@@ -152,85 +192,103 @@ unit Common
                         continue;
                     }
                 }
-                fileList.Append(filepath);
-                if (filepath.Length > length)
+                ShellObject fileObject;
+                if (Common.TryFileFromPath(filePath, fileObject))
                 {
-                    length = filepath.Length;
+                    objectList.Append(fileObject);
+                    if (filePath.Length > length)
+                    {
+                        length = filePath.Length;
+                    }
                 }
             }
-            if (!Command.OnDirectory(currentFolder))
+            for (uint di = 0; di < currentDirectory.DirectoryCount; di++)
+            {
+                string subFolder = dir.GetDirectory(di);
+                ShellObject directoryDir;
+                if (Common.TryDirectoryFromPath(subFolder, directoryDir))
+                {
+                    objectList.Append(directoryDir);
+                }
+            }
+            if (!Command.OnDirectory(currentDirectory))
             {
                 cancelled = true;
             }
             if (!cancelled)
             {
+                ListCompareDelegate comparer = CompareShellObjects;
+                objectList.Sort(comparer);
                 bool first = true;
-                foreach (var filepath in fileList)
+                foreach (var shellObject in objectList)
                 {
-                    if (Command.SupportsConfirmation)
+                    if (shellObject.IsDirectory)
                     {
-                        if (!skipConfirmation)
+                        if (doRecursive)
                         {
-                            bool skip;
-                            loop
-                            {
-                                Common.Write(Command.Name + " " + filepath + " Y/N?", Colour.MatrixBlue);
-                                char c = (IO.Read()).ToUpper();
-                                IO.WriteLn();
-                                switch (c)
-                                {
-                                    case 'Y':        { break; }
-                                    case 'N':        { skip = true; break; }
-                                    case char(0x03): { cancelled = true; break; }
-                                }
-                            }
-                            if (skip)      { continue; }
-                            if (cancelled) { break; }
+                            Walk(shellObject);
+                        }
+                        else if (Command.Name == "DIR")
+                        {
+                            // oh, what a lovely hack .. 
+                            // (but what other command is interested in subFolders when not recursive?)
+                            cancelled = !Command.OnDirectory(shellObject);
                         }
                     }
-                    
-                    if (!Command.OnFile(filepath, first, length))
+                    else
                     {
-                        cancelled = true;
-                        break;
-                    }
-                    first = false;
-                }
-            }
-            if (!cancelled)
-            {
-                uint dirs = dir.GetDirectoryCount();
-                for (uint di = 0; di < dirs; di++)
-                {
-                    string subFolder = dir.GetDirectory(di);
-                    if (doRecursive)
-                    {
-                        Walk(subFolder);
-                    }
-                    else if (Command.Name == "DIR")
-                    {
-                        // oh, what a lovely hack .. 
-                        // (but what other command is interested in subFolders when not recursive?)
-                        cancelled = !Command.OnDirectory(subFolder);
+                        if (Command.SupportsConfirmation)
+                        {
+                            if (!skipConfirmation)
+                            {
+                                bool skip;
+                                loop
+                                {
+                                    Common.Write(Command.Name + " " + shellObject.Path + " Y/N?", Colour.MatrixBlue);
+                                    char c = (IO.Read()).ToUpper();
+                                    IO.WriteLn();
+                                    switch (c)
+                                    {
+                                        case 'Y':        { break; }
+                                        case 'N':        { skip = true; break; }
+                                        case char(0x03): { cancelled = true; break; }
+                                    }
+                                }
+                                if (skip)      { continue; }
+                                if (cancelled) { break; }
+                            }
+                        }
+                        if (!Command.OnFile(shellObject, first, length))
+                        {
+                            cancelled = true;
+                        }
+                        first = false;
                     }
                     if (cancelled) { break; }
                 }
             }
-        }
+        } // dir.IsValid()
     }
     Walk()
     {
+        ShellObject shellObject;
         if (singleFile.Length != 0)
         {
-            _ = Command.OnFile(singleFile, true, singleFile.Length);
+            if (Common.TryFileFromPath(singleFile, shellObject))
+            {
+                _ = Command.OnFile(shellObject, true, singleFile.Length);
+            }
         }
         else
         {
-            Walk(startFolder);
-            if (cancelled)
+            if (Common.TryDirectoryFromPath(startFolder, shellObject))
             {
-                Common.WriteLn("* cancelled *", Colour.MatrixRed);
+                Walk(shellObject);
             }
+        }
+        if (cancelled)
+        {
+            Common.WriteLn("* cancelled *", Colour.MatrixRed);
         }
     }
     
@@ -521,7 +579,6 @@ unit Common
                 {
                     startFolder = "/";
                 }
-                uint iStar;
                 if (startFolder.IndexOf('*', ref iStar))
                 {
                     errorMessage = "invalid character '*' in directory path";

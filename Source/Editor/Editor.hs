@@ -1606,13 +1606,15 @@ unit Editor
             char bp = ' ';
             uint breakColor = Colour.Red;
             uint runColor = Colour.MarginFace;
-#ifdef DEBUGGER            
-            bool isBreak = DebugCommand.IsBreakpoint(currentLower, lineNumber);
+            
+#ifdef DEBUGGER                
+            isBreak = DebugCommand.IsBreakpoint(currentLower, lineNumber);
             if (isBreak)
             {
                 bp = char(0x95);
             }
 #endif
+
             
             // draw line number column on left
             uint c = lineNumberWidth-1;

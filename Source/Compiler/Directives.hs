@@ -316,8 +316,8 @@ unit Directives
                 }
                 break;
             }
-            <string,string> currentToken = Parser.CurrentToken;
-            if (currentToken["line"] == ln)
+            <string,string> nextToken = Parser.CurrentToken;
+            if (nextToken["line"] == ln)
             {
                 Parser.ErrorAtCurrent("unexpected content after directive");
             }

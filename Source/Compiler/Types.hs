@@ -1024,6 +1024,7 @@ unit Types
                         else
                         {
                             string targetString = targetList[1];
+                            string actualString = actualList[1];
                             if ( (targetString == "K") 
                               || (targetString == "V")
                               || (targetString == "<K,V>")
@@ -1033,10 +1034,18 @@ unit Types
                             {
                                 // generics : TODO : better matching?
                             }
+                            else if (   (actualString == "K") 
+                                  // || (actualString == "V")
+                                  // || (actualString == "<K,V>")
+                                     || (actualString == "<V>") // ListCompareDelegate
+                                  // || (actualString == "V[]")
+                                    )
+                            {
+                                // generics : TODO : better matching?
+                            }
                             else if (targetString == "byte[]")
                             {
                                 // for System.Call(byte[] code)
-                                string actualString = actualList[1];
                                 if (!actualString.StartsWith("byte["))
                                 {
                                     equal = false;
@@ -1081,7 +1090,6 @@ unit Types
                             }
                         }
                     } // !IsDebugger
-
                 }
             }
             break;
@@ -1142,14 +1150,19 @@ unit Types
                             found = true;
                             iOverloadFound = iOverload;
                             returnType = GetOverloadReturnType(iOverload);
-                            //if (functionName == "CodeStream.AddInstruction")
-                            //{
-                            //    OutputDebug(functionName + ":" + pass.ToString() + ":FOUND:" + iOverloadFound.ToHexString(4));
-                            //    OutputDebug(arguments);
-                            //    OutputDebug(overloadArguments);    
-                            //}
                             break;
                        }
+                       /*
+                       else
+                       {
+                           if (functionName.Contains("CompareShellObjects"))
+                           {
+                               OutputDebug(functionName + ":" + pass.ToString() + ":NOT FOUND:" + iOverloadFound.ToHexString(4));
+                               OutputDebug(arguments);
+                               OutputDebug(overloadArguments);    
+                           }
+                       }
+                       */
                     }
                     if (found)
                     {
@@ -1189,6 +1202,17 @@ unit Types
                                 returnType = GetDelegateReturnType(iOverload);
                                 break;
                            }
+                           /*
+                           else
+                           {
+                               if (functionName.Contains("CompareShellObjects"))
+                               {
+                                   OutputDebug(functionName + ":" + pass.ToString() + ":DELEGATE NOT FOUND:" + iOverloadFound.ToHexString(4));
+                                   OutputDebug(arguments);
+                                   OutputDebug(overloadArguments);    
+                               }
+                           }
+                           */
                         }
                         if (found)
                         {

@@ -1752,10 +1752,10 @@ unit Expression
                         oneDot = false;
                         Parser.Advance(); // consume '.'
                         
-                        <string,string> currentToken = Parser.CurrentToken;
-                        identifier = currentToken["lexeme"];
+                        <string,string> typeToken = Parser.CurrentToken;
+                        identifier = typeToken["lexeme"];
                         
-                        HopperToken tokenType = Token.GetType(currentToken);
+                        HopperToken tokenType = Token.GetType(typeToken);
                         if (tokenType != HopperToken.Identifier)
                         {
                             Parser.ErrorAtCurrent("member name identifier expected");

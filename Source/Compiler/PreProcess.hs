@@ -187,11 +187,11 @@ program PreProcess
                 Parser.Advance(); // <
                 // <byte> and <string,byte>
                 typeString = typeString + "<";
-                bool deferred;
-                success = tryParseTypeString(ref typeString, ref deferred, false); // dictionary key
+                bool memberDeferred;
+                success = tryParseTypeString(ref typeString, ref memberDeferred, false); // dictionary key
                 if (success)
                 {
-                    if (deferred)
+                    if (memberDeferred)
                     {
                         // TODO ?
                     }
@@ -200,8 +200,8 @@ program PreProcess
                         // TODO: make <byte,byte,byte> illegal
                         Parser.Advance(); // ,
                         typeString = typeString + ",";       
-                        success = tryParseTypeString(ref typeString, ref deferred, false); // dictionary value
-                        if (success && deferred)
+                        success = tryParseTypeString(ref typeString, ref memberDeferred, false); // dictionary value
+                        if (success && memberDeferred)
                         {
                             // TODO ?
                         }
@@ -393,9 +393,6 @@ program PreProcess
                     Parser.ErrorAtCurrent("unexpected end of file in record declaration");
                     break;
                 }   
-                
-                DumpPrevious();
-                DumpCurrent();
                 
                 string typeString;   
                 bool deferred;

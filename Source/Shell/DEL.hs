@@ -14,10 +14,11 @@ program Command
     
     ShowArguments() {}
     bool Argument(string arg) { return false; }
-    bool OnDirectory(string path) { return true; }
+    bool OnDirectory(ShellObject shellObject) { return true; }
     
-    bool OnFile(string path, bool first, uint maxLength)
+    bool OnFile(ShellObject shellObject, bool first, uint maxLength)
     {
+        string path = shellObject.Path;
         Write(path.Pad(' ', maxLength), Colour.MatrixBlue);
         File.Delete(path);
         WriteLn(" deleted", Colour.MatrixRed);

@@ -326,7 +326,6 @@ unit DebugCommand
         
         <uint,long> lineTimes;
         <uint,long> lineHits;
-        string sourceIndex;
         uint ppc;
         uint minpc = 32000;
         uint maxpc = 0;

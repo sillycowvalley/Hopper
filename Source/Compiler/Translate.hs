@@ -779,11 +779,13 @@ program Translate
         } // switch (tokenType)
         if (success && !noSemiColon)
         {
+            /*
             if (!Parser.Check(HopperToken.SemiColon))
             {
                 DumpPrevious();
                 DumpCurrent();
             }
+            */
             Parser.Consume(HopperToken.SemiColon, ';');
             SourceStream.Append(";");
         }

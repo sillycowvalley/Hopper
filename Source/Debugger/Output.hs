@@ -782,7 +782,6 @@ unit Output
                 cPtr = lvalue0;
             }
             lcontent = lcontent.Replace(namespacePlusDot, "");
-            uint iDot;
             string dcontent = ltype + " " + lname + "=" + lcontent;
             if (ltype.IndexOf('.', ref iDot))
             {
@@ -844,7 +843,6 @@ unit Output
                 gcontent = gcontent.Replace(namespacePlusDot, "");
                 trimming = true;
             }
-            uint iDot;
             if (gtype.IndexOf('.', ref iDot))
             {
                 string namedTypePlusDot = gtype.Substring(0, iDot+1); // qualified enum or flags name
@@ -1824,7 +1822,7 @@ unit Output
                 uint t = stackTypes[i];
                 uint i2 = i * 2;
                 
-                string content = "0x" + i2.ToHexString(2) + " 0x";
+                content = "0x" + i2.ToHexString(2) + " 0x";
                 if (Is32BitStackSlot)
                 {
                     content += v1.ToHexString(4);

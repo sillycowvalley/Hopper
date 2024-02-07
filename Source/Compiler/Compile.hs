@@ -1696,7 +1696,6 @@ program Compile
                     thisTypeString = Types.QualifyRecord(thisTypeString);
                     
                     < <string> > members;
-                    bool success;
                     if (FindRecord(thisTypeString, ref members))
                     {
                         // RECORD : if list is empty, lazy initialize here
@@ -2435,11 +2434,13 @@ program Compile
         } // switch (tokenType)
         if (success && !noSemiColon)
         {
+            /*
             if (!Parser.Check(HopperToken.SemiColon))
             {
                 DumpPrevious();
                 DumpCurrent();
             }
+            */
             Parser.Consume(HopperToken.SemiColon, ';');
         }
         return success;
