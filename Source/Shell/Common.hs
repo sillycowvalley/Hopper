@@ -8,7 +8,12 @@ unit Common
     uses "/Source/System/System"
     uses "/Source/System/IO"
     
+    
+#ifdef SERIAL_CONSOLE    
+    bool doRecursive = true; // TODO REMOVE : MCU testing
+#else
     bool doRecursive;
+#endif
     bool skipConfirmation;
     
     bool cancelled;

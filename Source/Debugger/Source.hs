@@ -23,18 +23,21 @@ unit Source
     
     bool LoadDefinitions(string symbolsPath)
     {
-        // before calling Symbols.Import
-        SysCalls.New();
-        LibCalls.New();
-        Symbols.New();
-        definitionSymbolsLoaded = false;
-        
-        Editor.SetStatusBarText("Loading symbols '" + symbolsPath + "' ..");
-        if (Symbols.Import(symbolsPath))
+        if (!definitionSymbolsLoaded)
         {
-            uint symbolsLoaded = Symbols.GetSymbolsCount();
-            Editor.SetStatusBarText("Definitions loaded for " + symbolsLoaded.ToString() + " symbols.");
-            definitionSymbolsLoaded = true;
+            // before calling Symbols.Import
+            SysCalls.New();
+            LibCalls.New();
+            Symbols.New();
+            definitionSymbolsLoaded = false;
+            
+            Editor.SetStatusBarText("Loading definitions '" + symbolsPath + "' ..");
+            if (Symbols.Import(symbolsPath))
+            {
+                uint symbolsLoaded = Symbols.GetSymbolsCount();
+                Editor.SetStatusBarText("Definitions loaded for " + symbolsLoaded.ToString() + " symbols.");
+                definitionSymbolsLoaded = true;
+            }
         }
         return definitionSymbolsLoaded;
     }
@@ -86,16 +89,7 @@ unit Source
                 symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
                 if (File.Exists(symbolsPath))
                 {
-                    Editor.SetStatusBarText("Loading types '" + symbolsPath + "' ..");
-                    if (Symbols.Import(symbolsPath, onlyNamedTypes))
-                    {
-                        if (onlyNamedTypes)
-                        {
-                            uint namedTypes = Symbols.GetNamedTypesCount();
-                            Editor.SetStatusBarText("Types loaded for " + namedTypes.ToString() + " named types.");
-                            definitionSymbolsLoaded = false; // rest of symbols may have been 'unloaded'
-                        }
-                    }
+                    _ = LoadDefinitions(symbolsPath);
                 }
             }
         }
@@ -422,7 +416,6 @@ unit Source
             uint refValue = Pages.GetPageWord(value0);
             //uint taddress = TypeAddressFromValueAddress(value);
             // TODO : validate against byte refType = pageData[taddress];
-            PrintLn(vtype + " " + recordMemberType);
             content = TypeToString(refValue, 0, vtype, false, limit, recordMemberType);
         }
         else
@@ -578,47 +571,54 @@ unit Source
                     _ = FindRecord(tname, ref members);
                     
                     content = "{";
+                    uint iMember;
                     type   lvtype  = type(Pages.GetPageByte(value0+4));
                     string lvtypes = lvtype.ToString();
                     uint pCurrent = Pages.GetPageWord(value0+5);
                     if (lvtypes != "variant")
                     {
-                        Die(0x0B); // record members are always variant for now
+                        content += "??? " + lvtypes + " ???";
+                        // record members are always variant for now
+#ifdef DEBUGGER
+                        OutputDebug("TypeToString: " + tname + " " + lvtypes + " " + 
+                                    Editor.GetCurrentPath() + ":" + Editor.GetCurrentLineNumber().ToString());
+#endif                
                     }
-
-                    uint iMember;
-                    while (pCurrent != 0)
+                    else
                     {
-                        if (iMember != 0)
+                        while (pCurrent != 0)
                         {
-                            content += ", ";
+                            if (iMember != 0)
+                            {
+                                content += ", ";
+                            }
+                            if (content.Length >= limit)
+                            {
+                                content += "..";
+                                break;
+                            }
+                            string mtypes     = lvtypes;
+                            
+                            bool mReferenceType = false;
+                            if (members.Count > iMember)
+                            {
+                                <string> member = members[iMember];
+                                content += member[0] + ": ";
+                                mtypes = member[1];
+                                mReferenceType = IsMachineReferenceType(mtypes);
+                            }
+                            uint pItem1;
+                            uint pItem0 = ListGetNextItem(ref pCurrent, ref pItem1);
+                            if (mReferenceType)
+                            {
+                                content += TypeToString(pItem0, 0, mtypes, false, limit);    
+                            }
+                            else
+                            {
+                                content += TypeToString(pItem0, 0, lvtypes, false, limit, mtypes); // variant    
+                            }
+                            iMember++;
                         }
-                        if (content.Length >= limit)
-                        {
-                            content += "..";
-                            break;
-                        }
-                        string mtypes     = lvtypes;
-                        
-                        bool mReferenceType = false;
-                        if (members.Count > iMember)
-                        {
-                            <string> member = members[iMember];
-                            content += member[0] + ": ";
-                            mtypes = member[1];
-                            mReferenceType = IsMachineReferenceType(mtypes);
-                        }
-                        uint pItem1;
-                        uint pItem0 = ListGetNextItem(ref pCurrent, ref pItem1);
-                        if (mReferenceType)
-                        {
-                            content += TypeToString(pItem0, 0, mtypes, false, limit);    
-                        }
-                        else
-                        {
-                            content += TypeToString(pItem0, 0, lvtypes, false, limit, mtypes); // variant    
-                        }
-                        iMember++;
                     }
                     // RECORD if empty, placeholder content (and don't recurse)
                     if (iMember == 0)

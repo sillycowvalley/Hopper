@@ -312,8 +312,11 @@ unit Output
         string content = methodName + "(";
         if (methodSymbols.Contains("arguments"))
         {
+            < < string > > overloadArguments = Symbols.GetOverloadArguments(methodIndex);
+            
             <string, <string> > argumentInfo = methodSymbols["arguments"];
-            bool first = true;
+            bool first = true;     
+            uint iArgument;
             foreach (var kv in argumentInfo)
             {
                 if (!first)
@@ -321,6 +324,7 @@ unit Output
                     content += "` ";
                 }
                 <string> argumentList = kv.value;
+                <string> overloadArgument = overloadArguments[iArgument];
                 
                 int delta;
                 if (Int.TryParse(kv.key, ref delta))
@@ -339,7 +343,7 @@ unit Output
                 }
                 uint value0 = GetPageWord(voffset);
                 uint value1 = Is32BitStackSlot ? GetPageWord(voffset+2) : 0;
-                string vtype = argumentList[1];
+                string vtype = overloadArgument[1]; //argumentList[1];
                 bool isReference = (argumentList[0] == "true");
                 if (verbose)
                 {
@@ -353,6 +357,7 @@ unit Output
                 content += TypeToString(value0, value1, vtype, isReference, maxDataWidth);
                 
                 first = false;
+                iArgument++;
             }
         }
         content += ")";
@@ -663,8 +668,7 @@ unit Output
                 lcontent = "'" + ch + "'";
             }
             else if (lname.EndsWith("_c") && Source.IsListType(ltype, ref vType) && (vType != ""))
-            {
-                // foreach (var item in <str>) case
+            {                // foreach (var item in <str>) case
                 lvalue0 = Pages.GetPageWord(bp + offset);
                 string irange = winningRanges[iLocal+1];
                 <string> ilocalList = localCandidates[irange];
