@@ -25,7 +25,7 @@ unit DeviceDriver
     const byte keyEPin = 11;
     const byte userPin = 23;
     
-    const int PW  = 296;
+    const int PW = 296;
     const int PH = 128;
             
     bool Begin()

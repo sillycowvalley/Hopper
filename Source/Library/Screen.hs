@@ -147,7 +147,7 @@ unit Screen
     }
     Print(char c,     uint foreColour, uint backColour)
     {
-#ifdef DISPLAY_DRIVER
+#if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
         DrawChar(cursorX, cursorY, c, foreColour, backColour);
 #endif
         CursorX++;

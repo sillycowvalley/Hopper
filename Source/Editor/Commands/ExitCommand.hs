@@ -27,15 +27,26 @@ unit ExitCommand
                 }
             }
             exiting = true;
-            Screen.Clear();
-            SetCursor(0,0);
-            if (IsDebugger)
+            if (Editor.IsEditor)
             {
-                PrintLn("Hopper Debugger exited.", Colour.MatrixGreen, Colour.Black);
-            }
-            else
-            {
+                Screen.Clear();
+                SetCursor(0,0);
                 PrintLn("Hopper Editor exited.", Colour.MatrixGreen, Colour.Black);
+            }
+            else 
+            {
+                // debugger
+                if (IsInteractive)
+                {
+                    // launched from editor
+                }
+                else
+                {
+                    // launched from command line
+                    Screen.Clear();
+                    SetCursor(0,0);
+                    PrintLn("Hopper Debugger exited.", Colour.MatrixGreen, Colour.Black);
+                }
             }
             break;
         }

@@ -207,7 +207,6 @@ unit ClickStack
                     string namespace = Types.ToNamespace(firstWord);
                     string path = Symbols.GetNamespaceLocation(namespace);
                     
-                    PrintLn(firstWord + " " + namespace + " " + path);
                     if (path.Length != 0)
                     {
                         // clicked on a simply type like 'byte' -> uint Byte

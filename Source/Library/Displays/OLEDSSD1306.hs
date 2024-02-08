@@ -48,9 +48,9 @@ unit DisplayDriver
     
     
     
-    byte i2cController = GPIO.DefaultI2CController;
-    byte sdaPin        = GPIO.DefaultI2CSDAPin;
-    byte sclPin        = GPIO.DefaultI2CSCLPin;
+    byte i2cController = Wire.DefaultI2CController;
+    byte sdaPin        = Wire.DefaultI2CSDAPin;
+    byte sclPin        = Wire.DefaultI2CSCLPin;
     byte I2CController { get { return i2cController; } set { i2cController = value; } }
     byte I2CAddress    { get { return i2cAddress; }    set { i2cAddress = value; } }
     byte I2CSDAPin     { get { return sdaPin; }        set { sdaPin = value; } }

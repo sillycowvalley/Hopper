@@ -66,9 +66,9 @@ unit NeoPixel
         BGRW = ((3 << 6) | (2 << 4) | (1 << 2) | (0)),
     }
 #if defined(NEOPIXEL_DEVICE_DRIVER)
-    Begin()
+    bool Begin()
     {
-        NeoPixelDeviceDriver.Begin();
+        return DeviceDriver.Begin();
     }
 #endif
     
