@@ -1002,14 +1002,52 @@ Bool HRSPI_Begin(Byte spiController)
             {
                 pinMode(spiCSPin0, OUTPUT);
                 digitalWrite(spiCSPin0, HIGH); // Deselect
+#ifdef DIAGNOSTICS
+                //Serial.print("pinMode(");
+                //Serial.print(spiCSPin0);
+                //Serial.println(", OUTPUT)");
+                //Serial.print("digitalWrite(");
+                //Serial.print(spiCSPin0);
+                //Serial.println(", HIGH)");
+#endif
             }
 
             screenSPI0 = &SPI;
             screenSPI0->setSCK(spiClkPin0);
-            if (spiTxPin0Set) { screenSPI0->setTX(spiTxPin0); }
-            if (spiRxPin0Set) { screenSPI0->setRX(spiRxPin0); }
+#ifdef DIAGNOSTICS
+            //Serial.print("screenSPI0->setSCK(");
+            //Serial.print(spiClkPin0);
+            //Serial.println(")");
+#endif
+            if (spiTxPin0Set) 
+            { 
+                screenSPI0->setTX(spiTxPin0); 
+#ifdef DIAGNOSTICS
+                //Serial.print("screenSPI0->setTX(");
+                //Serial.print(spiTxPin0);
+                //Serial.println(")");
+#endif
+            }
+            if (spiRxPin0Set) 
+            { 
+                screenSPI0->setRX(spiRxPin0); 
+#ifdef DIAGNOSTICS
+                //Serial.print("screenSPI0->setRX(");
+                //Serial.print(spiRxPin0);
+                //Serial.println(")");
+#endif
+            }
             
             screenSPISettings0 = SPISettings(speedMaximum0, dataOrder0, dataMode0);
+#ifdef DIAGNOSTICS
+            //Serial.print("screenSPISettings0 = SPISettings(");
+            //Serial.print(speedMaximum0);
+            //Serial.print(",");
+            //Serial.print(dataOrder0);
+            //Serial.print(",");
+            //Serial.print(dataMode0);
+            //Serial.println(")");
+#endif
             screenSPI0->begin();
             success = true;
             break;
@@ -1093,7 +1131,15 @@ void HRSPI_WriteByte(Byte spiController, Byte data)
     switch (spiController)
     {
         case 0:
+#ifdef DIAGNOSTICS
+            //Serial.print("screenSPI0->transfer(");
+            //Serial.print(data, HEX);
+            //Serial.println(")");
+#endif        
             screenSPI0->transfer(data);
+#ifdef DIAGNOSTICS
+            //Serial.println(")");
+#endif
             break;
 #ifdef SPI1EXISTS
         case 1:

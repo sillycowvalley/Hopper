@@ -324,7 +324,13 @@ unit Output
                     content += "` ";
                 }
                 <string> argumentList = kv.value;
-                <string> overloadArgument = overloadArguments[iArgument];
+                <string> overloadArgument;
+                string vtype = argumentList[1];
+                if (overloadArguments.Count > iArgument)
+                {
+                    overloadArgument = overloadArguments[iArgument];
+                    vtype = overloadArgument[1];
+                }
                 
                 int delta;
                 if (Int.TryParse(kv.key, ref delta))
@@ -343,7 +349,7 @@ unit Output
                 }
                 uint value0 = GetPageWord(voffset);
                 uint value1 = Is32BitStackSlot ? GetPageWord(voffset+2) : 0;
-                string vtype = overloadArgument[1]; //argumentList[1];
+                
                 bool isReference = (argumentList[0] == "true");
                 if (verbose)
                 {

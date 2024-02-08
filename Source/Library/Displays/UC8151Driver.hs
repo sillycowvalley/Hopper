@@ -243,7 +243,6 @@ unit DisplayDriver
                 Display.PixelHeight = Int.Min(DeviceDriver.PW, DeviceDriver.PH);
             }
             
-            
             Display.Reset();
             for (uint i = 0; i < bufferSize; i++)
             {

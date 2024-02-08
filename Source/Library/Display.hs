@@ -8,8 +8,8 @@ unit Display
     int pixelWidth; 
     int pixelHeight;
 
-    int PixelWidth  { get { return pixelWidth;  } set { pixelWidth  = value;  }}
-    int PixelHeight { get { return pixelHeight; } set { pixelHeight = value;  }}
+    int  PixelWidth   { get { return pixelWidth;  } set { pixelWidth  = value;  }}
+    int  PixelHeight  { get { return pixelHeight; } set { pixelHeight = value;  }}
     
     bool Begin()
     {
@@ -41,7 +41,7 @@ unit Display
         }
         if (suspended == 0)
         {
-            UpdateDisplay(); // defined in current display driver
+            DisplayDriver.UpdateDisplay(); // defined in current display driver
         }
     }
     Suspend()
@@ -55,7 +55,7 @@ unit Display
         IO.Write("<Display.Clear");
 #endif        
         Suspend();
-        ClearDisplay(colour);
+        DisplayDriver.ClearDisplay(colour);
         Resume();
 #ifdef DISPLAY_DIAGNOSTICS
         IO.WriteLn(">");

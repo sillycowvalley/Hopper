@@ -1,6 +1,5 @@
 unit DisplayDriver
 {
-    #define I2C_SCREEN_DRIVER
     #define DISPLAY_DRIVER
     
     uses "/Source/Library/MCU"
@@ -333,7 +332,6 @@ unit DisplayDriver
                 monoFrameBuffer[i] = 0xFF;
             }
         }
-        
     }
     RawSetPixel(int x, int y, uint colour)
     {

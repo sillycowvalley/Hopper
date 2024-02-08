@@ -20,8 +20,8 @@ unit Screen
     uint defaultBackColour = Colour.Black;
     uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}
     uint BackColour { get { return defaultBackColour; } set { defaultBackColour = value; }}
-    byte CursorX { get { cursorX; } set { cursorX = value; }}
-    byte CursorY { get { cursorY; } set { cursorY = value; }}
+    byte CursorX { get { return cursorX; } set { cursorX = value; } }
+    byte CursorY { get { return cursorY; } set { cursorY = value; } }
     byte Columns { get { return byte(Display.PixelWidth / cellWidth); }}
     byte Rows    { get { return byte(Display.PixelHeight / cellHeight); }}
 #else
