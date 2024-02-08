@@ -30,6 +30,8 @@ unit Dependencies
     
     bool TryGetSources(string primaryPath, ref <string> sources)
     {
+        OutputDebug("TryGetSources: " + primaryPath);
+        
         sources.Clear();
         Directives.New();
         <string,bool> usesPathsToParse;
@@ -54,6 +56,7 @@ unit Dependencies
             }
             usesPathsToParse[nextPath] = false; // we are parsing it
             file textFile = File.Open(nextPath);
+            OutputDebug("TryGetSources: Open: " + nextPath);
             if (!textFile.IsValid())
             {
                 return false;
@@ -93,11 +96,6 @@ unit Dependencies
                         {
                             usesPathsToParse[ln] = true;
                             sources.Append(ln);
-                            //OutputDebug("    " + ln);
-                        }
-                        else
-                        {
-                            //OutputDebug("    // " + ln);
                         }
                     }
                 }
@@ -106,36 +104,29 @@ unit Dependencies
                     if (ln.StartsWith("#define"))
                     {
                         string symbol = ln.Substring(7);
-                        //OutputDebug("  #define " + symbol);
                         Symbols.AddDefine(symbol, "true");
                     }
                     else if (ln.StartsWith("#ifdef"))
                     {
                         string symbol = ln.Substring(6);
-                        //OutputDebug("  #ifdef " + symbol);
                         Directives.NestingAppend(symbol, true);
                     }
                     else if (ln.StartsWith("#ifndef"))
                     {
                         string symbol = ln.Substring(7);
-                        //OutputDebug("  #ifndef " + symbol);
                         Directives.NestingAppend(symbol, false);
                     }
                     else if (ln.StartsWith("#else"))
                     {
-                        //OutputDebug("  #else");
                         if (!Directives.NestingFlipTail())
                         {
-                            //OutputDebug("      FAILED");
                             return false;
                         }
                     }
                     else if (ln.StartsWith("#endif"))
                     {
-                        //OutputDebug("  #endif");
                         if (!Directives.NestingPopTail())
                         {
-                            //OutputDebug("      FAILED");
                             return false;
                         }
                     }

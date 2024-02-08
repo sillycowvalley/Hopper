@@ -4667,7 +4667,23 @@ namespace HopperNET
                     {
                         HopperString top = (HopperString)PopVariant(HopperType.tString);
                         HopperString next = (HopperString)PopVariant(HopperType.tString);
-                        short result = (short)string.Compare(next.Value, top.Value, StringComparison.Ordinal);
+                        short result    = (short)string.Compare(next.Value, top.Value, StringComparison.Ordinal);
+                        if (result < 0)
+                        {
+                            result = -1;
+                        }
+                        else if (result > 0)
+                        {
+                            result =  1;
+                        }
+                        /*
+                        short oldresult = (short)string.Compare(next.Value, top.Value);
+                        if (oldresult != result)
+                        {
+                            if (next.Value.ToLower() == top.Value.ToLower())
+                            Diagnostics.OutputDebug("\n" + next.Value + " " + top.Value + " " + oldresult.ToString() + " " + result.ToString());
+                        }
+                        */
                         PushInt(result);
                     }
                     break;

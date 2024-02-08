@@ -2487,7 +2487,6 @@ unit Editor
             return false;
         }
         string fileTimeHex = fileTime.ToHexString(8);
-        /*
         if  (fileTimeHex > youngestSourceTimeHex)
         {
             OutputDebug("IsYoungerThanSource: '" + candidatePath + "' 0x" + fileTimeHex + " YES");
@@ -2498,12 +2497,12 @@ unit Editor
             OutputDebug("IsYoungerThanSource: '" + candidatePath + "' 0x" + fileTimeHex + " NO");
             OutputDebug("       YoungestFile: '" + youngestSourcePath + "' 0x" + youngestSourceTimeHex);
         }
-        */
         return (fileTimeHex > youngestSourceTimeHex);
     }
     
     UpdateYoungestFile()
     {
+        OutputDebug("UpdateYoungestFile:");
         youngestSourcePath = "";
         youngestSourceTime = 0;
         if (isHopperSource)
@@ -2514,7 +2513,7 @@ unit Editor
                 if (Dependencies.TryGetYoungest(sources, ref youngestSourcePath, ref youngestSourceTime))
                 {
                     youngestSourceTimeHex = youngestSourceTime.ToHexString(8);
-                    //OutputDebug("UpdateYoungestFile: '" + youngestSourcePath + "' 0x" + youngestSourceTimeHex);
+                    OutputDebug("UpdateYoungestFile: '" + youngestSourcePath + "' 0x" + youngestSourceTimeHex);
                 }
             }
         }

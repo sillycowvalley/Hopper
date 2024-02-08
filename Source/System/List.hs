@@ -39,18 +39,21 @@ unit List
     Sort(<V> this, ListCompareDelegate comparer)
     {
         uint count = this.Count;
-        for (uint i = 0; i < count - 1; i++) 
+        if (count > 1)
         {
-            bool swapped; 
-            for (uint j = 0; j < count - i - 1; j++) 
+            for (uint i = 0; i < count - 1; i++) 
             {
-                if (comparer(this, j, j+1) > 0) 
+                bool swapped; 
+                for (uint j = 0; j < count - i - 1; j++) 
                 {
-                    swap(this, j, j + 1);
-                    swapped = true;
+                    if (comparer(this, j, j+1) > 0) 
+                    {
+                        swap(this, j, j + 1);
+                        swapped = true;
+                    }
                 }
+                if (!swapped) { break; }
             }
-            if (!swapped) { break; }
         }
     }
 }
