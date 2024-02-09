@@ -138,8 +138,6 @@ program Badger
         //DeviceDriver.IsPortrait = true;
         //DisplayDriver.FlipX = true;
         //DisplayDriver.FlipY = true;
-        Screen.ForeColour = Colour.Black;
-        Screen.BackColour = Colour.White;
         if (!DeviceDriver.Begin(buttonDelegate))
         {
             IO.WriteLn("Failed to initialize Badger 2040");

@@ -1,11 +1,13 @@
 program SSD1306Demo
-{
+{   
+    //#define ADAFRUIT_FEATHER_RP2040
     //#define PIMORONI_TINY2040
-    //#define RP2040_PICOW
+    #define RP2040_PICOW
     //#define RP2040_PICO
-    #define ADAFRUIT_METRO_RP2040
+    //#define ADAFRUIT_METRO_RP2040
     
-    uses "/Source/Library/Displays/OLEDSSD1306"
+    uses "/Source/Library/Displays/OLEDSSD1306"    
+    uses "/Source/Library/Fonts/Hitachi5x7"
     
     TestDrawRect()
     {
@@ -86,11 +88,9 @@ program SSD1306Demo
     
     
     {
-        //EchoToLCD = true;
-        
-        DisplayDriver.I2CController = 0;
-        DisplayDriver.I2CSDAPin = 16;
-        DisplayDriver.I2CSCLPin = 17;
+        DisplayDriver.I2CController = 1;
+        DisplayDriver.I2CSDAPin = 14;
+        DisplayDriver.I2CSCLPin = 15;
 
         if (!Display.Begin())
         {
@@ -124,7 +124,9 @@ program SSD1306Demo
             TestDrawRect();
             elapsed = Millis - start;
             Display.Suspend();
+            EchoToLCD = true;
             WriteLn("TestDrawRect: ");
+            EchoToLCD = false;
             WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(1000);
@@ -133,7 +135,9 @@ program SSD1306Demo
             TestFillRect();   
             elapsed = Millis - start;
             Display.Suspend();
+            EchoToLCD = true;
             WriteLn("TestFillRect: ");
+            EchoToLCD = false;
             WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(1000);
@@ -142,7 +146,9 @@ program SSD1306Demo
             TestDrawLines();
             elapsed = Millis - start;
             Display.Suspend();
+            EchoToLCD = true;
             WriteLn("TestDrawLines: ");
+            EchoToLCD = false;
             WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(1000);

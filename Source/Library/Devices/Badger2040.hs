@@ -30,6 +30,9 @@ unit DeviceDriver
             
     bool Begin()
     {
+        Screen.ForeColour = Colour.Black;
+        Screen.BackColour = Colour.White;
+        
         bool success = Display.Begin();
         MCU.PinMode(keyAPin, PinModeOption.InputPulldown);
         MCU.PinMode(keyBPin, PinModeOption.InputPulldown);
@@ -43,7 +46,7 @@ unit DeviceDriver
         
         return success;
     }
-    bool Begin(ISRDelegate buttonDelegate)
+    bool Begin(PinISRDelegate buttonDelegate)
     {
         bool success;
         loop

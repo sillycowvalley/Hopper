@@ -38,8 +38,9 @@ unit Screen
     byte[] FontData { get { return fontData; } set { fontData = value; } }
     renderMonoCharacter(char chr, uint foreColour, uint backColour)
     {
-        uint pixelb = (backColour & 0x0FFF == 0) ? 0x0000 : 0x0FFF;
-        uint pixelf = (foreColour & 0x0FFF == 0) ? 0x0000 : 0x0FFF;
+        uint pixelb = backColour;
+        uint pixelf = foreColour;
+        
         uint cellSize = cellWidth*cellHeight;
         if ((chr <= char(32)) || (chr > char(127)))
         {

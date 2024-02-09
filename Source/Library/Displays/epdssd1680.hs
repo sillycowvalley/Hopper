@@ -196,7 +196,8 @@ unit DisplayDriver
         buf[0] = 0xF4;
         epdCommand(SSD1680_DISP_CTRL2, buf, 1);
         epdCommand(SSD1680_MASTER_ACTIVATE);
-        Delay(1500);
+        DelaySeconds(1);
+        Delay(500);
     }
     
     setRAMAddress() 
@@ -255,7 +256,15 @@ unit DisplayDriver
         Delay(2);
         setRAMAddress();
 #ifdef EPD_TWO_BUFFERS
-        writeRAMFramebufferToEPD(colourBuffer, roundedBufferSize, 1);
+        //writeRAMFramebufferToEPD(colourBuffer, roundedBufferSize, 1);
+        writeRAMCommand(1);
+        dcHigh();
+        for (uint i = 0; i < roundedBufferSize; i++) 
+        {
+            byte d = colourBuffer[i];
+            spiTransfer(d);
+        }
+        csHigh();
 #else
         //writeRAMFramebufferToEPD(blackBuffer, roundedBufferSize, 1);
         writeRAMCommand(1);
@@ -273,7 +282,7 @@ unit DisplayDriver
         //{
         //    powerDown();
         //}
-        Delay(DeviceDriver.DefaultRefreshDelay);
+        DelaySeconds(DeviceDriver.DefaultRefreshDelay);
     }
     
     powerUp() 
@@ -415,7 +424,8 @@ unit DisplayDriver
         {
             colourBuffer[i] = bit1 ? 0x00 : 0xFF;
         }
-#endif        
+#endif   
+        int wtf = 0;     
     } 
     RawSetPixel(int vx, int vy, uint colour)
     {

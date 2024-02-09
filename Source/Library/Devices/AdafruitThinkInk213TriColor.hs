@@ -1,41 +1,32 @@
 unit DeviceDriver
 {
+    #define EPD_TWO_BUFFERS
+    
     uses "/Source/Library/Displays/EPDSSD1680.hs"
     
     const int PW = 250;
     const int PH = 122;
     
-    const byte DCPin = 10;
-    const byte CSPin = 9;
+    const byte DCPin  = 10;
+    const byte CSPin  = 9;
     const byte ClkPin = 18;
     const byte TxPin  = 19;
     const byte RxPin  = 20;
     const byte SPIController  = 0;
     
-    const bool BlackInverted     = true;
-    const bool ColourInverted    = false;
-    const byte BlackBufferIndex  = 0;
-    const byte ColourBufferIndex = 1;
+    const uint DefaultRefreshDelay   = 16; // seconds
     
-    const uint DefaultRefreshDelay   = 16000;
+    const bool EPDBlack0 =  true;
+    const bool EPDRed0   = false;
+    const bool EPDWhite0 = false;
     
-    
-    flags EPDColour
-    {
-        Clear     = 0b00,
-        BlackBit  = 0b01,
-        ColourBit = 0b10,
-        
-        White = 0b00,
-        Black = 0b01,
-        Red   = 0b10,
-        Gray  = 0b10,
-        Light = 0b00,
-        Dark  = 0b01,
-    }
+    const bool EPDBlack1 =  true;
+    const bool EPDRed1   = false;
+    const bool EPDWhite1 =  true;
     
     bool Begin()
     {
         return Display.Begin();
     }
+    
 }

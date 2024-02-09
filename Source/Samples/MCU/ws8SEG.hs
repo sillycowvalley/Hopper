@@ -20,7 +20,7 @@ program Waveshare8SEGLED
     {
         Pico8SEGLED.Hex = true;
         Pico8SEGLED.DecimalPosition = 0;
-        Pico8SEGLED.LeadingZeroes = false;
+        Pico8SEGLED.LeadingZeroes = true;
         for (long value = 0; value <= 0xFFFF; value++)
         {
             Pico8SEGLED.Show(value);

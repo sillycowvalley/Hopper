@@ -12,7 +12,7 @@ unit DeviceDriver
     const byte RxPin  = 20;
     const byte SPIController  = 0;
     
-    const uint DefaultRefreshDelay   = 1000;
+    const uint DefaultRefreshDelay   = 1; // seconds
     
     const bool EPDBlack0 = true;
     const bool EPDRed0   = true;

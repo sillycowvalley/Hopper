@@ -85,8 +85,10 @@ unit Pico8SEGLED
     sendCommand(byte digit, byte segments) 
     {
         DigitalWrite(RClkPin, true);
+        SPI.BeginTransaction(SPIController);
         SPI.WriteByte(SPIController, digit);
         SPI.WriteByte(SPIController, segments);
+        SPI.EndTransaction(SPIController);
         DigitalWrite(RClkPin, false);
         Delay(1);
         DigitalWrite(RClkPin, true);

@@ -198,15 +198,18 @@ unit DisplayDriver
     
     sendCommand(register reg)
     {
+        SPI.BeginTransaction(DeviceDriver.SPIController);
         MCU.DigitalWrite(DeviceDriver.CSPin, false);
         MCU.DigitalWrite(DeviceDriver.DCPin, false); // command mode
         SPI.WriteByte(DeviceDriver.SPIController,  byte(reg));
         MCU.DigitalWrite(DeviceDriver.CSPin, true);
+        SPI.EndTransaction(DeviceDriver.SPIController);
     }
     
     sendCommand(register reg, byte[] data)
     {
         uint length = data.Count;
+        SPI.BeginTransaction(DeviceDriver.SPIController);
         MCU.DigitalWrite(DeviceDriver.CSPin, false);
         MCU.DigitalWrite(DeviceDriver.DCPin, false); // command mode
         SPI.WriteByte(DeviceDriver.SPIController,  byte(reg));
@@ -216,16 +219,19 @@ unit DisplayDriver
             SPI.WriteBuffer(DeviceDriver.SPIController,  data, 0, length);
         }
         MCU.DigitalWrite(DeviceDriver.CSPin, true);
+        SPI.EndTransaction(DeviceDriver.SPIController);
     }
     sendData(byte[] data)
     {
         uint length = data.Count;
         if (length > 0)
         {
+            SPI.BeginTransaction(DeviceDriver.SPIController);
             MCU.DigitalWrite(DeviceDriver.CSPin, false);
             MCU.DigitalWrite(DeviceDriver.DCPin, true); // data mode
             SPI.WriteBuffer(DeviceDriver.SPIController,  data, 0, length);
             MCU.DigitalWrite(DeviceDriver.CSPin, true);
+            SPI.EndTransaction(DeviceDriver.SPIController);
         }
     }
     
