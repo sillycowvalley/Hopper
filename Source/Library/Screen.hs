@@ -25,12 +25,13 @@ unit Screen
     byte Columns { get { return byte(Display.PixelWidth / cellWidth); }}
     byte Rows    { get { return byte(Display.PixelHeight / cellHeight); }}
 #else
+    // stubs so code compiles even if it can't draw text (with no font)
     byte Columns { get { return 0; }}
     byte Rows    { get { return 0; }}
     byte CursorX { get { return 0; } set { } }
     byte CursorY { get { return 0; } set { } }
-    uint ForeColour { get { return Colour.MatrixGreen; } }
-    uint BackColour { get { return Colour.Black; } }
+    uint ForeColour { get { return Colour.MatrixGreen; } set { } }
+    uint BackColour { get { return Colour.Black; } set { } }
 #endif
 
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)

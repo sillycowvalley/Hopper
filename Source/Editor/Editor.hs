@@ -19,6 +19,7 @@ unit Editor
 #else
     bool IsEditor   { get { return true; } }
     bool IsDebugger { get { return false; } }
+    bool IsInteractive { get { return true; } }
 #endif    
 
     // '/' excluded  on purpose to make path selection easier

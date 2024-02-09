@@ -4,8 +4,8 @@ unit Colour
     uint Black        { get { return 0x000; } }
     uint DarkGray     { get { return 0x666; } }
     uint Gray         { get { return 0x888; } }
-	uint LessGray     { get { return 0xBBB; } }
-    uint LightGray    { get { return 0xDDD; } }
+	   uint LessGray     { get { return 0xBBB; } }
+    uint LightGray    { get { return 0xCCC; } }
     uint LightestGray { get { return 0xEEE; }}
     uint White        { get { return 0xFFF; } }
     uint Invert       { get { return 0xF000; } }
