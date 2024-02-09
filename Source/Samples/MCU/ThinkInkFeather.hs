@@ -1,23 +1,23 @@
 program ThinkInkFeatherwing
 {   
-    #define ADAFRUIT_FEATHER_RP2040
+    //#define ADAFRUIT_FEATHER_RP2040
     //#define CHALLENGER_RP2040_WIFI
+    #define SPARKFUN_THING_PLUS_RP2040
     
     //uses "/Source/Library/Devices/AdafruitThinkInk213Mono"
     //uses "/Source/Library/Devices/AdafruitThinkInk213TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290TriColor"
     uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
+    
     uses "/Source/Library/Fonts/Hitachi5x7"
     
     const string lorumIpsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse iaculis tortor vitae imperdiet tempus. Quisque eget sapien ex. Donec molestie tincidunt sem imperdiet condimentum. Nulla facilisi. Class aptent taciti sociosqu ad litora vestibulum.";
 
-    /*    
     ButtonISR(byte pin, PinStatus status) 
     { 
         string pinName = PinToButton(pin);
         IO.WriteLn("    Pressed: '" + PinToButton(pin) + "'");
     }
-    */
     
     DrawText()
     {
@@ -91,22 +91,21 @@ program ThinkInkFeatherwing
         //DisplayDriver.IsPortrait = true;
         //DisplayDriver.FlipX = true;
         //DisplayDriver.FlipY = true;
-        if (!DeviceDriver.Begin())
-        {
-            IO.WriteLn("Failed to initialize display");
-            return;
-        }
-        
-        /*
+     
+#ifdef EPD_HAS_BUTTONS        
         PinISRDelegate buttonDelegate = ButtonISR;
         if (!DeviceDriver.Begin(buttonDelegate))
         {
             IO.WriteLn("Failed to initialize display");
             return;
         }
-        */
-        
-        
+#else
+        if (!DeviceDriver.Begin())
+        {
+            IO.WriteLn("Failed to initialize display");
+            return;
+        }
+#endif
         
         long start;
         long elapsed;
@@ -121,28 +120,29 @@ program ThinkInkFeatherwing
             Delay(250);
             
             start = Millis;
-            DrawShades();
-            elapsed = Millis - start;
-            WriteLn("Elapsed: " + elapsed.ToString());
-            DelaySeconds(1);
-            
-            start = Millis;
             DrawText();
             elapsed = Millis - start;
             WriteLn("Elapsed: " + elapsed.ToString());
-            DelaySeconds(1);
+            DelaySeconds(2);
+            
+            start = Millis;
+            DrawShades();
+            elapsed = Millis - start;
+            WriteLn("Elapsed: " + elapsed.ToString());
+            DelaySeconds(2);
+            
             
             start = Millis;
             DrawBoxes(Colour.Black);
             elapsed = Millis - start;
             WriteLn("Elapsed: " + elapsed.ToString());
-            DelaySeconds(1);
+            DelaySeconds(2);
             
             start = Millis;
             DrawBoxes(Colour.White);
             elapsed = Millis - start;
             WriteLn("Elapsed: " + elapsed.ToString());
-            DelaySeconds(1);
+            DelaySeconds(2);
             
             start = Millis;
             DrawBoxes(Colour.Red);

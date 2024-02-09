@@ -2,11 +2,11 @@ program BlinkRGB
 {
     //#define WAVESHARE_RP2040_ONE
     //#define WAVESHARE_RP2040_MATRIX
-    //#define ADAFRUIT_METRO_RP2040
+    #define ADAFRUIT_METRO_RP2040
     //#define ADAFRUIT_FEATHER_RP2040
     //#define SPARKFUN_THING_PLUS_RP2040
     //#define SEEED_XIAO_RP2040
-    #define CHALLENGER_RP2040_WIFI
+    //#define CHALLENGER_RP2040_WIFI
     //#define MAKER_NANO_RP2040
             
     uses "/Source/Library/MCU"

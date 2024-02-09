@@ -21,10 +21,27 @@ unit Wire
     #define USES_I2C
 #endif
 
-#if defined(CHALLENGER_RP2040_WIFI) // TODO : verify validation below
+#if defined(CHALLENGER_RP2040_WIFI) 
+    // TODO : verify pins and validation below
     const byte DefaultI2CController = 0;
     const byte DefaultI2CSDAPin     = 4;
     const byte DefaultI2CSCLPin     = 5;
+    #define USES_I2C
+#endif
+
+#if defined(SPARKFUN_THING_PLUS_RP2040) 
+    // TODO : verify pins and validation below
+    const byte DefaultI2CController = 0;
+    const byte DefaultI2CSDAPin     = 6;
+    const byte DefaultI2CSCLPin     = 7;
+    #define USES_I2C
+#endif
+
+#if defined(ADAFRUIT_METRO_RP2040) 
+    // TODO : verify pins and validation below
+    const byte DefaultI2CController = 0;
+    const byte DefaultI2CSDAPin     = 16;
+    const byte DefaultI2CSCLPin     = 17;
     #define USES_I2C
 #endif
     

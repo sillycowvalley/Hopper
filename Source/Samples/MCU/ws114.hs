@@ -1,4 +1,4 @@
-program WaveShareLCD096Demo
+program WaveShareLCD114Demo
 {
     uses "/Source/Library/Devices/WSPicoLCD114"
     uses "/Source/Library/Fonts/Arduino6x8"
