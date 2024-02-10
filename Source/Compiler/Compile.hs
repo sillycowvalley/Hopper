@@ -18,6 +18,7 @@ program Compile
     uses "/Source/Compiler/Types"
     uses "/Source/Compiler/Expression"
     uses "/Source/Compiler/Constant"
+    uses "/Source/Compiler/Record"
     
     uses "/Source/Compiler/Directives"
     
@@ -1328,6 +1329,34 @@ program Compile
             {
                 break;
             }
+            
+            bool isMember;
+            byte iMember;
+            string qualifiedThis;
+            if ((variableType.Length == 0) && variableName.Contains('.'))
+            {
+                // this?
+                <string> parts = variableName.Split('.');
+                if (parts.Count == 2)
+                {
+                    string thisVariable = parts[0];
+                    string memberName   = parts[1];
+                    string thisTypeString = Types.GetTypeString(thisVariable, false, ref qualifiedThis);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    if (Record.FindMember(thisTypeString, thisVariable, memberName, ref iMember, ref variableType))
+                    {
+                        isMember = true;
+                    }
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                }
+            }
+            
             if (variableType.Length == 0)
             {
                 // perhaps it is a setter
@@ -1336,7 +1365,7 @@ program Compile
                 uint fIndex;
                 if (!Symbols.GetFunctionIndex(setterMethod, ref fIndex))
                 {
-                    Parser.ErrorAtCurrent("undefined identifier");   
+                    Parser.ErrorAtCurrent("undefined identifier '" + variableName + "'");   
                     break;
                 }
                 <uint> overloads = Symbols.GetFunctionOverloads(fIndex);
@@ -1359,13 +1388,12 @@ program Compile
                 Symbols.OverloadToCompile(iOverload);
             }
             
-            
             if (!Types.IsNumericType(variableType))
             {
                 Parser.ErrorAtCurrent("++ and -- operations only legal for numeric types");
                 break;
             }
-            if (!isSetter && ((variableType == "uint") || (variableType == "byte") || (variableType == "int")))
+            if (!isSetter && !isMember && ((variableType == "uint") || (variableType == "byte") || (variableType == "int")))
             {
                 if (!Symbols.GlobalMemberExists(qualifiedName))
                 {
@@ -1393,6 +1421,14 @@ program Compile
                 {
                     break;
                 }
+            }
+            else if (isMember)
+            {
+                CodeStream.AddInstructionPushVariable(qualifiedThis);
+                CodeStream.AddInstructionPUSHI(iMember);
+                CodeStream.AddInstructionPushVariable(qualifiedThis);
+                CodeStream.AddInstructionPUSHI(iMember);
+                CodeStream.AddInstructionSysCall0("List", "GetItem");
             }
             else
             {
@@ -1465,6 +1501,10 @@ program Compile
                 {
                     Die(0x0B);
                 }
+            }
+            else if (isMember)
+            {
+                CodeStream.AddInstructionSysCall0("List", "SetItem");
             }
             else
             {
@@ -1646,7 +1686,7 @@ program Compile
             
             bool isSetter = false;
             bool isMember = false;
-            string recordName;
+            string recordThis;
             
             bool isStringAppend = false;
             uint iOverload;
@@ -1687,42 +1727,28 @@ program Compile
             if (variableName.Contains('.') && (variableType.Length == 0) && (leftTokenType != HopperToken.Discarder))
             {
                 <string> parts = variableName.Split('.');
-                recordName = parts[0];
-                string functionName = parts[1];
-                
-                string qualifiedThis;
-                string thisTypeString = Types.GetTypeString(recordName, false, ref qualifiedThis);
-                if (thisTypeString != "")
+                if (parts.Count == 2)
                 {
-                    thisTypeString = Types.QualifyRecord(thisTypeString);
+                    recordThis        = parts[0];
+                    string memberName = parts[1];
                     
-                    < <string> > members;
-                    if (FindRecord(thisTypeString, ref members))
+                    string qualifiedThis;
+                    string thisTypeString = Types.GetTypeString(recordThis, false, ref qualifiedThis);
+                    byte iMember;
+                    if (Record.FindMember(thisTypeString, qualifiedThis, memberName, ref iMember, ref variableType))
                     {
-                        // RECORD : if list is empty, lazy initialize here
-                        Expression.RecordLazyInitializeMembers(recordName, thisTypeString, false);
-                                
-                        // RECORD : assignment : find the member
-                        byte iMember;
-                        foreach (var v in members)
+                        CodeStream.AddInstructionPushVariable(qualifiedThis);
+                        CodeStream.AddInstructionPUSHI(iMember);
+                        if (assignOperation != HopperToken.Assign)
                         {
-                            string memberName = v[0];
-                            string memberType = v[1];
-                            if (memberName == functionName)
-                            {
-                                variableType = memberType;
-                                isMember = true;
-                                CodeStream.AddInstructionPushVariable(recordName);
-                                CodeStream.AddInstructionPUSHI(iMember);
-                                break;
-                            }
-                            iMember++;
+                            CodeStream.AddInstructionPushVariable(qualifiedThis);
+                            CodeStream.AddInstructionPUSHI(iMember);
                         }
-                        if (!isMember)
-                        {
-                            Parser.Error("invalid record member");
-                            break;
-                        }
+                        isMember = true;
+                    }
+                    if (Parser.HadError)
+                    {
+                        break;
                     }
                 }
             }
@@ -1784,13 +1810,16 @@ program Compile
                     break;
                 }
                 
-                
                 if (isSetter)
                 {
                     if (!callGetter(variableName + "_Get", variableType))
                     {
                         break;
                     }
+                }
+                else if (isMember)
+                {
+                    CodeStream.AddInstructionSysCall0("List", "GetItem");
                 }
                 else
                 {
@@ -2013,7 +2042,7 @@ program Compile
                 {
                     CodeStream.AddInstruction(Instruction.BITOR);
                 }
-            }
+            } // switch
             if (leftTokenType == HopperToken.Discarder)
             {
                 CodeStream.AddInstruction(Instruction.DECSP, 2); // discard the stack slot
@@ -2021,7 +2050,6 @@ program Compile
             else if (isMember)
             {
                 CodeStream.AddInstructionSysCall0("List", "SetItem"); // compileAssignment: record.member = ..
-                Expression.RecordSetLastSetItem(CodeStream.NextAddress, recordName);
             }
             else if (!isSetter)
             {
@@ -2040,7 +2068,6 @@ program Compile
                     Die(0x0B);
                 }
             }
-            
             success = true;
             break;
         }    
@@ -2084,7 +2111,7 @@ program Compile
                 break;
             }
             // to reserve slot
-            InitializeVariable(variableType); // local
+            InitializeVariable(variableType, false); // local
             if (HadError)
             {
                 break;
@@ -2736,7 +2763,7 @@ program Compile
             
             // for reference times, initialize
             // to reserve slot
-            InitializeVariable(variableType); // global
+            InitializeVariable(variableType, false); // global
             if (HadError)
             {
                 break;

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Media;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -91,7 +93,9 @@ namespace HopperNET
             ConstantsStart = (ushort)(code[2] + (code[3] << 8));
             EntryPoint     = (ushort)(code[4] + (code[5] << 8));
 
-            if ((fileSize - EntryPoint) > 0xFFFF)
+            
+            long codeSegmentSize = fileSize - EntryPoint;
+            if (codeSegmentSize > 0xFFFF)
             {
                 screen.PrintLn(ProgramPath + " is " + fileSize.ToString() + " bytes, more than 64K of code!!", 0xF77, 0);
             }
@@ -118,6 +122,7 @@ namespace HopperNET
             }
             MethodTable = new ushort[maxCallIndex + 1];
             iMethod = 6;
+            uint methodTableSize = 0;
             for (; ; )
             {
                 if (iMethod == ConstantsStart)
@@ -128,7 +133,11 @@ namespace HopperNET
                 ushort callAddress = (ushort)(code[iMethod + 2] + (code[iMethod + 3] << 8));
                 MethodTable[callIndex] = callAddress;
                 iMethod += 4;
+                methodTableSize += 4;
             }
+            int constantsSize = EntryPoint - ConstantsStart;
+            Trace.Write("\n" + ProgramPath + " has " + codeSegmentSize.ToString() + " bytes of code, method table is " +methodTableSize.ToString() + " bytes, constant segment is " + constantsSize.ToString() + " bytes");
+
         }
     }
     public class HopperSystem

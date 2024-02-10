@@ -66,7 +66,7 @@ unit Common
         bool valid = fl.IsValid();
         if (valid)
         {
-            fileObject.Path           = path;
+            fileObject.Path = path;
         }
         return valid;
     }

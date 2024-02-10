@@ -5234,14 +5234,14 @@ namespace HopperNET
                             uint value = Pop();
                             ushort index = (ushort)Pop();
                             HopperList _this_ = (HopperList)PopVariant(HopperType.tList);
-#if DEBUG
-                            Diagnostics.ASSERT(_this_.VType == topType, "correct value type for list?");
-#endif
                             HopperType valueType = _this_.VType;
                             if (_this_.VType == HopperType.tVariant)
                             {
                                 valueType = topType;
                             }
+#if DEBUG
+                            Diagnostics.ASSERT(_this_.VType == topType, "correct value type for list?");
+#endif
                             _this_.Value.Insert(index, new HopperValue(value, valueType));
                         }
                         else
@@ -5266,8 +5266,14 @@ namespace HopperNET
                         {
                             uint value = Pop();
                             HopperList _this_ = (HopperList)PopVariant(HopperType.tList);
+
+                            HopperType valueType = _this_.VType;
+                            if (_this_.VType == HopperType.tVariant)
+                            {
+                                valueType = topType;
+                            }
 #if DEBUG
-                            switch (_this_.VType)
+                            switch (valueType)
                             {
                                 case HopperType.tBool:
                                     switch (topType)
@@ -5285,12 +5291,12 @@ namespace HopperNET
                                         case HopperType.tInt:
                                             if (value > 1)
                                             {
-                                                Diagnostics.ASSERT(_this_.VType == topType, "correct value type for tBool list?");
+                                                Diagnostics.ASSERT(valueType == topType, "correct value type for tBool list?");
                                             }
                                             break;
 
                                         default:
-                                            Diagnostics.ASSERT(_this_.VType == topType, "correct value type for tBool list?");
+                                            Diagnostics.ASSERT(valueType == topType, "correct value type for tBool list?");
                                             break;
                                     }
                                     break;
@@ -5309,11 +5315,11 @@ namespace HopperNET
                                         case HopperType.tInt:
                                             if (value > 255)
                                             {
-                                                Diagnostics.ASSERT(_this_.VType == topType, "correct value type for tByte list?");
+                                                Diagnostics.ASSERT(valueType == topType, "correct value type for tByte list?");
                                             }
                                             break;
                                         default:
-                                            Diagnostics.ASSERT(_this_.VType == topType, "correct value type for tByte list?");
+                                            Diagnostics.ASSERT(valueType == topType, "correct value type for tByte list?");
                                             break;
                                     }
                                     break;
@@ -5329,20 +5335,16 @@ namespace HopperNET
                                             // all unsigned types smaller than tUInt
                                             break;
                                         default:
-                                            Diagnostics.ASSERT(_this_.VType == topType, "correct value type for list?");
+                                            Diagnostics.ASSERT(valueType == topType, "correct value type for list?");
                                             break;
                                     }
                                     break;
                                 default:
-                                    Diagnostics.ASSERT(_this_.VType == topType, "correct value type for list?");
+                                    Diagnostics.ASSERT(valueType == topType, "correct value type for list?");
                                     break;
                             }
 #endif
-                            HopperType valueType = _this_.VType;
-                            if (_this_.VType == HopperType.tVariant)
-                            {
-                                valueType = topType;
-                            }
+                            
                             _this_.Value.Add(new HopperValue(value, valueType));
                         }
                         else

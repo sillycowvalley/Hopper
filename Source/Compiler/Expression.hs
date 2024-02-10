@@ -14,6 +14,7 @@ unit Expression
     uses "/Source/Compiler/Types"
     uses "/Source/Compiler/Constant"
     uses "/Source/Compiler/Collection"
+    uses "/Source/Compiler/Record"
     
     PushTypeFromString(string typeName)
     {
@@ -21,7 +22,7 @@ unit Expression
         CodeStream.AddInstructionPUSHI(b);
     }
     
-    InitializeVariable(string variableType)
+    InitializeVariable(string variableType, bool lazy)
     {
         string name;
         string recordName;
@@ -94,51 +95,11 @@ unit Expression
         if (name.Length != 0)
         {
             CodeStream.AddInstructionSysCall0(name, "New");
-        }
-    }
-    uint   lastRecordSet;
-    string lastRecordSetName;
-    
-    RecordSetLastSetItem(uint value, string name)
-    {
-        lastRecordSet = value;
-        lastRecordSetName = name;
-    }
-    
-    RecordLazyInitializeMembers(string recordVariable, string recordTypeName, bool isGet)
-    {
-        uint nextAddress = CodeStream.NextAddress;
-        if (isGet)
-        {
-        }
-        else
-        {
-            if ((lastRecordSetName == recordVariable) && (nextAddress == lastRecordSet))
+            if (!lazy && (recordName.Length != 0))
             {
-                return;
+                Record.InitializeMembers(recordName);
             }
         }
-    
-        CodeStream.AddInstructionPushVariable(recordVariable);
-        CodeStream.AddInstructionSysCall0("List", "Count_Get"); // RecordLazyInitializeMembers
-        uint jumpPast = CodeStream.NextAddress;
-        CodeStream.AddInstructionJump(Instruction.JNZ);
-        
-        < <string> > members;
-        if (FindRecord(recordTypeName, ref members))
-        {
-            // RECORD : initialize the list using members from record definition
-            foreach (var v in members)
-            {
-                string memberName = v[0];
-                string memberType = v[1];
-                CodeStream.AddInstructionPushVariable(recordVariable);
-                InitializeVariable(memberType); // new variable at [top]
-                CodeStream.AddInstructionSysCall0("List", "Append"); // RecordLazyInitializeMembers
-            }
-        }
-        uint pastAddress = CodeStream.NextAddress;
-        CodeStream.PatchJump(jumpPast, pastAddress);
     }
     
     CompileDynamicCast(string sourceType, string castToType)
@@ -1631,38 +1592,21 @@ unit Expression
                     }
                     break;
                 }
-                if (Types.IsRecord(thisTypeString))
+                byte iMember;
+                if (Record.FindMember(thisTypeString, qualifiedThis, functionName, ref iMember, ref actualType))
                 {
-                    string recordName = Types.QualifyRecord(thisTypeString);
-                    < <string> > members;
-                    bool success;
-                    if (FindRecord(recordName, ref members))
+                    CodeStream.AddInstructionPushVariable(qualifiedThis);
+                    CodeStream.AddInstructionPUSHI(iMember);
+                    CodeStream.AddInstructionSysCall0("List", "GetItem");
+                    if (Types.IsRecord(actualType))
                     {
-                        // RECORD : if list is empty, lazy initialize here
-                        Expression.RecordLazyInitializeMembers(qualifiedThis, recordName, true);
-                        
-                        // RECORD : find the member and push to stack
-                        byte iMember;
-                        foreach (var v in members)
-                        {
-                            string memberName = v[0];
-                            string memberType = v[1];
-                            if (memberName == functionName)
-                            {
-                                actualType = memberType;
-                                CodeStream.AddInstructionPushVariable(qualifiedThis);
-                                CodeStream.AddInstructionPUSHI(iMember);
-                                CodeStream.AddInstructionSysCall0("List", "GetItem"); // .. = record.member;
-                                success = true;
-                                break;
-                            }
-                            iMember++;
-                        }
+                        // if the member is also a record type, make sure its members exist
+                        Record.LazyInitializeMembers(actualType);
                     }
-                    if (!success)
-                    {
-                        Parser.Error("invalid record member");
-                    }
+                    break;
+                }
+                if (Parser.HadError)
+                {
                     break;
                 }
                 

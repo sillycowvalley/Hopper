@@ -2631,9 +2631,11 @@ unit CodePoints
                     for (uint i = 0; i < pairList.Count; i++)
                     {
                         OpCodePair current = pairList[i];
-                        if ((current.opCode0 == opCode0) && (current.opCode1 == opCode1) && (current.opCode2 == opCode2))
+                        if ((current.OpCode0 == opCode0) && (current.OpCode1 == opCode1) && (current.OpCode2 == opCode2))
                         {
-                            current.count = current.count + 1;
+                            //current.Count++;
+                            //current.Count += 2*2;
+                            current.Count = current.Count + 1;
                             pairList[i] = current;
                             found = true;
                             break;
@@ -2642,10 +2644,10 @@ unit CodePoints
                     if (!found)
                     {
                         OpCodePair codePair;
-                        codePair.opCode0 = opCode0;
-                        codePair.opCode1 = opCode1;
-                        codePair.opCode2 = opCode2;
-                        codePair.count = 1;
+                        codePair.OpCode0 = opCode0;
+                        codePair.OpCode1 = opCode1;
+                        codePair.OpCode2 = opCode2;
+                        codePair.Count = 1;
                         pairList.Append(codePair);
                     }
                     found = false;
@@ -2658,9 +2660,9 @@ unit CodePoints
                     for (uint i = 0; i < pairList.Count; i++)
                     {
                         OpCodePair current = pairList[i];
-                        if ((current.opCode0 == opCode0) && (current.opCode1 == opCode1) && (current.opCode2 == Instruction.NOP))
+                        if ((current.OpCode0 == opCode0) && (current.OpCode1 == opCode1) && (current.OpCode2 == Instruction.NOP))
                         {
-                            current.count = current.count + 1;
+                            current.Count += 1;
                             pairList[i] = current;
                             found = true;
                             break;
@@ -2669,10 +2671,10 @@ unit CodePoints
                     if (!found)
                     {
                         OpCodePair codePair;
-                        codePair.opCode0 = opCode0;
-                        codePair.opCode1 = opCode1;
-                        codePair.opCode2 = Instruction.NOP;
-                        codePair.count = 1;
+                        codePair.OpCode0 = opCode0;
+                        codePair.OpCode1 = opCode1;
+                        codePair.OpCode2 = Instruction.NOP;
+                        codePair.Count = 1;
                         pairList.Append(codePair);
                     }
                 }

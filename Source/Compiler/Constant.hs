@@ -950,19 +950,11 @@ unit Constant
             }
             break;
         }
-        //if (IsExperimental)
-        //{
-        //    PrintLn();
-        //}
         if (!Parser.HadError)
         {
             foreach (var kv in rangeSet)
             {
                 range.Append(kv.key);
-                //if (IsExperimental)
-                //{
-                //    Print((kv.key).ToString() + " ");
-                //}
             }
         }
         return range;
