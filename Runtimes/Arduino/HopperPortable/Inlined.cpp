@@ -280,6 +280,23 @@ Bool Instructions_InlinedPushIB()
 #endif
     return true;
 }
+Bool Instructions_InlinedPushIBB()
+{
+#ifdef CHECKED
+    HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
+    HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
+#else
+    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeMemoryBlock[HopperVM_pc++];
+    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
+    HopperVM_sp += 2;
+    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeMemoryBlock[HopperVM_pc++];
+    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
+    HopperVM_sp += 2;
+#endif
+    return true;
+}
+
+
 Bool Instructions_InlinedPushLocalB00()
 {
     UInt * vp  = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_bp];

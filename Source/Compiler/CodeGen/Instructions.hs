@@ -168,6 +168,13 @@ unit Instructions
         INCGLOBALIB = 0xA5,
         DECLOCALIB  = 0xA6,
         DECGLOBALIB = 0xA7,
+        
+        SYSCALLB0   = 0xA8, // PUSHIB SYSCALL0
+        SYSCALL00   = 0xA9, // SYSCALL0 SYSCALL0
+        PUSHIBB     = 0xAA, // PUSHIB PUSHIB
+        SYSCALLB1   = 0xAB, // PUSHIB   SYSCALL1
+        SYSCALL01   = 0xAC, // SYSCALL0 SYSCALL1
+        SYSCALL10   = 0xAD, // SYSCALL1 SYSCALL0
 
         MERGEDRET0  = 0xFF, // placeholder for 'optimize'
         UNDEFINED,
@@ -323,6 +330,13 @@ unit Instructions
             case Instruction.JIXB:
             case Instruction.JIX:
             case Instruction.CALLI:
+            
+            case Instruction.SYSCALLB0:
+            case Instruction.SYSCALLB1:
+            case Instruction.SYSCALL00:
+            case Instruction.SYSCALL01:
+            case Instruction.SYSCALL10:
+            case Instruction.PUSHIBB:
             {
                 width = 2;
             }
@@ -456,6 +470,13 @@ unit Instructions
             case Instruction.JIXB:
             case Instruction.JIX:
             case Instruction.CALLI:
+            
+            case Instruction.SYSCALLB0:
+            case Instruction.SYSCALLB1:
+            case Instruction.SYSCALL00:
+            case Instruction.SYSCALL01:
+            case Instruction.SYSCALL10:
+            case Instruction.PUSHIBB:
             {
                 result = 2;
             }
@@ -469,6 +490,30 @@ unit Instructions
         string result;
         switch (instruction)
         {
+            case Instruction.SYSCALLB0:
+            {
+                result = "SYSCALLB0";
+            }
+            case Instruction.SYSCALLB1:
+            {
+                result = "SYSCALLB1";
+            }
+            case Instruction.SYSCALL00:
+            {
+                result = "SYSCALL00";
+            }
+            case Instruction.SYSCALL01:
+            {
+                result = "SYSCALL01";
+            }
+            case Instruction.SYSCALL10:
+            {
+                result = "SYSCALL10";
+            }
+            case Instruction.PUSHIBB:
+            {
+                result = "PUSHIBB";
+            }
             case Instruction.CAST:
             {
                 result = "CAST";

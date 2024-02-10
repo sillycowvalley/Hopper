@@ -62,7 +62,7 @@ unit Peephole
         // peepholeOptimization takes place before boundary is updated after jump instructions
         // but after operands have been emitted
         
-        if ((!CodeStream.CheckedBuild || DefineExists("PEEPHOLEOPT")) && !IsTinyHopper)
+        if ((!CodeStream.CheckedBuild || DefineExists("PEEPHOLEOPT")) && !NoPackedInstructions)
         {
             loop
             {

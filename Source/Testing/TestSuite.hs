@@ -1,6 +1,7 @@
 program TestSuite
 {
 #define SERIAL_CONSOLE
+//#define EXPERIMENTAL
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     

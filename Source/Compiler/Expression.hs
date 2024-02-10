@@ -419,7 +419,7 @@ unit Expression
                 if (isRef)
                 {
                     // push the content of the variable (already an address) to the stack
-                    if ((offset > -129) && (offset < 128) && !IsTinyHopper)
+                    if ((offset > -129) && (offset < 128) && !NoPackedInstructions)
                     {
                         byte operand =  CodeStream.IntToByte(offset);
                         CodeStream.AddInstruction(Instruction.PUSHLOCALB, operand);
@@ -433,7 +433,7 @@ unit Expression
                 else
                 {
                     // push the stack address of the variable to the stack
-                    if ((offset > -129) && (offset < 128) && !IsTinyHopper)
+                    if ((offset > -129) && (offset < 128) && !NoPackedInstructions)
                     {
                         byte operand =  CodeStream.IntToByte(offset);
                         CodeStream.AddInstruction(Instruction.PUSHSTACKADDRB, operand);
@@ -698,12 +698,14 @@ unit Expression
                                 Parser.ErrorAtCurrent("type mismatch in argument, expect '" + collectionValueType + "', was '" + expressionType + "'");       
                                 break;
                             }
+                            /*
                             if (before != CodeStream.GetLastInstruction())
                             {
                                 OutputDebug(methodName + ":" + collectionValueType);
                                 OutputDebug(templateArgument);
                                 OutputDebug(actualArgument);
                             }
+                            */
                         }
                     }
                 }
@@ -714,11 +716,11 @@ unit Expression
                 {
                     // done
                 }
-                else if (!IsTinyHopper && (iSysOverload == 0))
+                else if (!NoPackedInstructions && (iSysOverload == 0))
                 {
                     CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
                 }
-                else if (!IsTinyHopper && (iSysOverload == 1))
+                else if (!NoPackedInstructions && (iSysOverload == 1))
                 {
                     CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
                 }
@@ -732,11 +734,11 @@ unit Expression
             {
                 byte iLibCall = Symbols.GetLibCallIndex(iOverload);
                 byte iLibOverload = Symbols.GetLibCallOverload(iOverload);
-                if (!IsTinyHopper && (iLibOverload == 0))
+                if (!NoPackedInstructions && (iLibOverload == 0))
                 {
                     CodeStream.AddInstruction(Instruction.LIBCALL0, iLibCall);
                 }
-                else if (!IsTinyHopper && (iLibOverload == 1))
+                else if (!NoPackedInstructions && (iLibOverload == 1))
                 {
                     CodeStream.AddInstruction(Instruction.LIBCALL1, iLibCall);
                 }
@@ -748,7 +750,7 @@ unit Expression
             }
             else
             {
-                if (CodeStream.IsShortCalls && (iOverload < 256) && !IsTinyHopper)
+                if (CodeStream.IsShortCalls && (iOverload < 256) && !NoPackedInstructions)
                 {
                     CodeStream.AddInstruction(Instruction.CALLB, byte(iOverload));
                 }
@@ -1441,7 +1443,7 @@ unit Expression
                     Parser.Error("HOPPER_6502 has a limit of 16383 for function indices, (was '" + wiOverload.ToString() + "')");
                 }
             }
-            else if (CodeStream.IsShortCalls && (wiOverload < 256) && !IsTinyHopper)
+            else if (CodeStream.IsShortCalls && (wiOverload < 256) && !NoPackedInstructions)
             {
                 CodeStream.AddInstruction(Instruction.PUSHDB, byte(wiOverload));
             }

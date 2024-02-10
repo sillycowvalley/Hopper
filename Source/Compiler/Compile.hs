@@ -31,8 +31,8 @@ program Compile
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; } }
     
-    bool isTinyHopper;
-    bool IsTinyHopper { get { return isTinyHopper; } }
+    bool noPackedInstructions;
+    bool NoPackedInstructions { get { return noPackedInstructions; } }
     
     uint iCurrentOverload;
     
@@ -60,7 +60,7 @@ program Compile
         {
             content = content + "," + lineToken["type"];
         }
-        OutputDebug(content);
+        OutputDebug(content); // DebugComment
     } 
     
     bool compileIfStatement()
@@ -187,14 +187,14 @@ program Compile
             
             // bytesToPop = locals + arguments
             uint bytesToPop = Block.GetLocalsToPop(true, false);
-            if (!IsTinyHopper && (bytesToPop == 0))
+            if (!NoPackedInstructions && (bytesToPop == 0))
             {
                 // if there is a return value, then it is already exactly where it needs to be
                 CodeStream.AddInstruction(Instruction.RET0);
             }
             else if (returnBytes > 0)
             {
-                if (!IsTinyHopper && (bytesToPop < 256))
+                if (!NoPackedInstructions && (bytesToPop < 256))
                 {
                     CodeStream.AddInstruction(Instruction.RETRESB, byte(bytesToPop));
                 }
@@ -205,7 +205,7 @@ program Compile
             }
             else
             {
-                if (!IsTinyHopper && (bytesToPop < 256))
+                if (!NoPackedInstructions && (bytesToPop < 256))
                 {
                     CodeStream.AddInstruction(Instruction.RETB, byte(bytesToPop));
                 }
@@ -1121,7 +1121,7 @@ program Compile
             
             
             byte upperBound;
-            if (!IsTinyHopper && Types.IsByteRange(switchType, ref upperBound))
+            if (!NoPackedInstructions && Types.IsByteRange(switchType, ref upperBound))
             {
                 success = compileFastSwitch(switchType, upperBound);
                 break;
@@ -1521,11 +1521,11 @@ program Compile
                 {
                     // done
                 }
-                else if (!IsTinyHopper && (iSysOverload == 0))
+                else if (!NoPackedInstructions && (iSysOverload == 0))
                 {
                     CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
                 }
-                else if (!IsTinyHopper && (iSysOverload == 1))
+                else if (!NoPackedInstructions && (iSysOverload == 1))
                 {
                     CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
                 }
@@ -1539,11 +1539,11 @@ program Compile
             {
                 byte iLibCall = Symbols.GetLibCallIndex(igOverload);
                 byte iLibOverload = Symbols.GetLibCallOverload(igOverload);
-                if (!IsTinyHopper && (iLibOverload == 0))
+                if (!NoPackedInstructions && (iLibOverload == 0))
                 {
                     CodeStream.AddInstruction(Instruction.LIBCALL0, iLibCall);
                 }
-                else if (!IsTinyHopper && (iLibOverload == 1))
+                else if (!NoPackedInstructions && (iLibOverload == 1))
                 {
                     CodeStream.AddInstruction(Instruction.LIBCALL1, iLibCall);
                 }
@@ -2656,11 +2656,11 @@ program Compile
                 }
 
                 uint bytesToPop = Block.GetLocalsToPop(true, isMain);
-                if (!IsTinyHopper && (bytesToPop == 0))
+                if (!NoPackedInstructions && (bytesToPop == 0))
                 {
                     CodeStream.AddInstruction(Instruction.RET0);
                 }
-                else if (!IsTinyHopper && (bytesToPop < 256))
+                else if (!NoPackedInstructions && (bytesToPop < 256))
                 {
                     CodeStream.AddInstruction(Instruction.RETB, byte(bytesToPop));
                 }
@@ -2777,7 +2777,7 @@ program Compile
                     }
                 }
                 uint globalAddress = Symbols.GetGlobalAddress(identifier);
-                if (!IsTinyHopper && (globalAddress < 256))
+                if (!NoPackedInstructions && (globalAddress < 256))
                 {
                     CodeStream.AddInstruction(Instruction.POPGLOBALB, byte(globalAddress));
                 }
@@ -2886,8 +2886,8 @@ program Compile
                 }
                 CodeStream.InitializeSymbolShortcuts();
                 
-                isTinyHopper   = DefineExists("TINY_HOPPER");
-                isExperimental = isExperimental || DefineExists("EXPERIMENTAL");
+                noPackedInstructions = DefineExists("NO_PACKED_INSTRUCTIONS");
+                isExperimental       = isExperimental || DefineExists("EXPERIMENTAL");
                 
                 uint mIndex;
                 if (!Symbols.GetFunctionIndex("Hopper", ref mIndex))

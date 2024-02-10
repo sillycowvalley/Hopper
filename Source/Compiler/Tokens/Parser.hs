@@ -94,7 +94,7 @@ unit Parser
 
     DumpToken(string name, <string,string> token)
     {
-        OutputDebug(name + ":");
+        OutputDebug(name + ":"); // DumpToken() DumpCurrent() DumpPrevious() DumpPeek()
         foreach (var kv in token)
         {
             OutputDebug("  " + kv.key + "->" + kv.value);

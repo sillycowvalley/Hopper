@@ -226,7 +226,7 @@ unit CodeStream
             uint op = Types.IntToUInt(offset);
             uint lsb = op & 0xFF;
             uint msb = op >> 8;
-            if ((shortInstruction == Instruction.JB) && (offset >= 0) && (offset <= 127) && !IsTinyHopper)
+            if ((shortInstruction == Instruction.JB) && (offset >= 0) && (offset <= 127) && !NoPackedInstructions)
             {
                 uint phb = PeepholeBoundary;
                 if (jumpAddress > phb)
@@ -288,7 +288,7 @@ unit CodeStream
     
     AddInstructionPushLocal(byte offset)
     {
-        if (IsTinyHopper)
+        if (NoPackedInstructions)
         {
             uint uoffset = (offset & 0x80 != 0) ? (byte(offset) | 0xFF00) : offset; // sign extend if -ve
             AddInstruction(Instruction.PUSHLOCAL, uoffset);
@@ -300,7 +300,7 @@ unit CodeStream
     }
     AddInstructionPopLocal(byte offset)
     {
-        if (IsTinyHopper)
+        if (NoPackedInstructions)
         {
             uint uoffset = (offset & 0x80 != 0) ? (byte(offset) | 0xFF00) : offset; // sign extend if -ve
             AddInstruction(Instruction.POPLOCAL, uoffset);
@@ -313,7 +313,7 @@ unit CodeStream
     
     AddInstructionIncLocal(byte offset, bool signed)
     {
-        if (IsTinyHopper)
+        if (NoPackedInstructions)
         {
             uint uoffset = (offset & 0x80 != 0) ? (byte(offset) | 0xFF00) : offset; // sign extend if -ve
             AddInstruction(Instruction.PUSHLOCAL, uoffset);
@@ -332,7 +332,7 @@ unit CodeStream
     }
     AddInstructionDecLocal(byte offset, bool signed)
     {
-        if (IsTinyHopper)
+        if (NoPackedInstructions)
         {
             uint uoffset = (offset & 0x80 != 0) ? (byte(offset) | 0xFF00) : offset; // sign extend if -ve
             AddInstruction(Instruction.PUSHLOCAL, uoffset);
@@ -364,11 +364,11 @@ unit CodeStream
                 PrintLn("'" + name + "' not found");
                 Die(0x03); // key not found
             }
-            if (!IsTinyHopper && (iSysOverload == 0))
+            if (!NoPackedInstructions && (iSysOverload == 0))
             {
                 CodeStream.AddInstruction(Instruction.SYSCALL0, iSysCall);
             }
-            else if (!IsTinyHopper && (iSysOverload == 1))
+            else if (!NoPackedInstructions && (iSysOverload == 1))
             {
                 CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
             }
@@ -426,7 +426,7 @@ unit CodeStream
         {
             uint jumpAddress = NextAddress;
             int offset = int(jumpToAddress) - int(jumpAddress);
-            if ((offset >= -128) && (offset <= 127) && !IsTinyHopper)
+            if ((offset >= -128) && (offset <= 127) && !NoPackedInstructions)
             {
                 byte op = IntToByte(offset);
                 switch (jumpInstruction)
@@ -476,7 +476,7 @@ unit CodeStream
         byte instr = byte(instruction);
         currentStream.Append(instr);
 #ifdef TRANSLATE    
-        DumpCurrent();    
+        //DumpCurrent();    
         Parser.ErrorAt(Parser.PreviousToken, "translate should not be generating code!!");
         Die(0x0B);
 #endif
@@ -519,7 +519,7 @@ unit CodeStream
     }
     AddInstructionPUSHI(uint operand)
     {
-        if ((operand < 256) && !IsTinyHopper)
+        if ((operand < 256) && !NoPackedInstructions)
         {
             if (operand == 0)
             {
@@ -547,7 +547,7 @@ unit CodeStream
         if (Symbols.GlobalMemberExists(fullName))
         {
             uint globalAddress = Symbols.GetGlobalAddress(fullName);
-            if ((globalAddress < 256) && !IsTinyHopper)
+            if ((globalAddress < 256) && !NoPackedInstructions)
             {
                 CodeStream.AddInstruction(Instruction.PUSHGLOBALB, byte(globalAddress));
             }
@@ -560,7 +560,7 @@ unit CodeStream
         {
             bool isRef;
             int offset = Block.GetOffset(variableName, ref isRef);
-            if ((offset > -129) && (offset < 128) && !IsTinyHopper)
+            if ((offset > -129) && (offset < 128) && !NoPackedInstructions)
             {
                 byte operand =  CodeStream.IntToByte(offset);
                 if (isRef)
@@ -600,7 +600,7 @@ unit CodeStream
         if (Symbols.GlobalMemberExists(fullName))
         {
             uint globalAddress = Symbols.GetGlobalAddress(fullName);
-            if ((globalAddress < 256) && !IsTinyHopper)
+            if ((globalAddress < 256) && !NoPackedInstructions)
             {
                 CodeStream.AddInstruction(Instruction.POPGLOBALB, byte(globalAddress));
             }
@@ -613,7 +613,7 @@ unit CodeStream
         {
             bool isRef;
             int offset = Block.GetOffset(variableName, ref isRef);
-            if ((offset > -129) && (offset < 128) && !IsTinyHopper)
+            if ((offset > -129) && (offset < 128) && !NoPackedInstructions)
             {
                 byte operand =  CodeStream.IntToByte(offset);
                 if (isRef)

@@ -77,6 +77,8 @@ unit Instructions
         
         instructionDelegate = Instructions.InlinedPushIB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHIB), instructionDelegate);
+        instructionDelegate = Instructions.InlinedPushIBB;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIBB), instructionDelegate);
         instructionDelegate = Instructions.PopLocalB;
         WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB), instructionDelegate);
         instructionDelegate = Instructions.InlinedPushLocalB;
@@ -119,6 +121,17 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL0), instructionDelegate);
         instructionDelegate = Instructions.SysCall1;
         WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL1), instructionDelegate);
+        instructionDelegate = Instructions.SysCall00;
+        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL00), instructionDelegate);
+        instructionDelegate = Instructions.SysCall01;
+        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL01), instructionDelegate);
+        instructionDelegate = Instructions.SysCall10;
+        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL10), instructionDelegate);
+        instructionDelegate = Instructions.SysCallB0;
+        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALLB0), instructionDelegate);
+        instructionDelegate = Instructions.SysCallB1;
+        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALLB1), instructionDelegate);
+        
         
         instructionDelegate = Instructions.PushGlobalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBALBB), instructionDelegate);
@@ -487,6 +500,12 @@ unit Instructions
     
     bool InlinedPushIB()
     {
+        Push(ReadByteOperand(), Type.Byte);
+        return true;
+    }
+    bool InlinedPushIBB()
+    {
+        Push(ReadByteOperand(), Type.Byte);
         Push(ReadByteOperand(), Type.Byte);
         return true;
     }
@@ -863,7 +882,7 @@ unit Instructions
         }
         else
         {
-            int offset     = ReadByteOffsetOperand();
+            offset     = ReadByteOffsetOperand();
         
             // this is the slot we are about to overwrite: decrease reference count if reference type
             Type htype = Type(ReadWord(uint(int(TypeStack) + int(BP) + offset)));
@@ -891,7 +910,7 @@ unit Instructions
         }
         else
         {
-            int offset     = ReadWordOffsetOperand();
+            offset     = ReadWordOffsetOperand();
         
             // this is the slot we are about to overwrite: decrease reference count if reference type
             Type htype = Type(ReadWord(uint(int(TypeStack) + int(BP) + offset)));
@@ -1354,6 +1373,42 @@ unit Instructions
     }
     bool SysCall1()
     {
+        byte iSysCall = ReadByteOperand();  
+        return ExecuteSysCall(iSysCall, 1);
+    }
+    bool SysCall00()
+    {
+        byte iSysCall = ReadByteOperand();  
+        bool doNext0 = ExecuteSysCall(iSysCall, 0);
+        iSysCall = ReadByteOperand();  
+        bool doNext1 = ExecuteSysCall(iSysCall, 0);
+        return doNext0 && doNext1;
+    }
+    bool SysCall01()
+    {
+        byte iSysCall = ReadByteOperand();  
+        bool doNext0 = ExecuteSysCall(iSysCall, 0);
+        iSysCall = ReadByteOperand();  
+        bool doNext1 = ExecuteSysCall(iSysCall, 1);
+        return doNext0 && doNext1;
+    }
+    bool SysCall10()
+    {
+        byte iSysCall = ReadByteOperand();  
+        bool doNext0 = ExecuteSysCall(iSysCall, 1);
+        iSysCall = ReadByteOperand();  
+        bool doNext1 = ExecuteSysCall(iSysCall, 0);
+        return doNext0 && doNext1;
+    }
+    bool SysCallB0()
+    {
+        Push(ReadByteOperand(), Type.Byte);
+        byte iSysCall = ReadByteOperand();  
+        return ExecuteSysCall(iSysCall, 0);
+    }
+    bool SysCallB1()
+    {
+        Push(ReadByteOperand(), Type.Byte);
         byte iSysCall = ReadByteOperand();  
         return ExecuteSysCall(iSysCall, 1);
     }

@@ -20,7 +20,7 @@ program HopperMonitor
     string optionsPath;
     string OptionsPath { get { return string optionsPath; } }
     
-    bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
+    bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
     bool IsInteractive { get { return false; } } // for Monitor.Connect(..)
     
     <Key> keyboardBuffer;

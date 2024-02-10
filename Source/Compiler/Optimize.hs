@@ -25,9 +25,10 @@ program Optimize
     
     <uint,bool> methodsCalled;
     
+    
     bool     verbose;
     bool     showSizes;
-    bool     experimental;
+    bool     isExperimental;
     <string> outputLinesRemoved;
     <string> outputLinesSizes;
     uint     totalBytesRemoved;
@@ -50,10 +51,10 @@ program Optimize
     { 
         get { return target6502; }
     }
-    bool isTinyHopper;
+    bool noPackedInstructions;
     bool mergedRET0Exists;
-    bool IsTinyHopper { get { return isTinyHopper; }}
-    bool IsExperimental { get { return experimental; }}
+    bool NoPackedInstructions { get { return noPackedInstructions; }}
+    bool IsExperimental { get { return isExperimental; }}
     
     bool MergedRET0Exists { get { return mergedRET0Exists; } set { mergedRET0Exists = value; }}
     
@@ -69,9 +70,13 @@ program Optimize
                 {
                     target6502 = true;
                 }
-                if (pdValues.Contains("TINY_HOPPER"))
+                if (pdValues.Contains("NO_PACKED_INSTRUCTIONS"))
                 {
-                    isTinyHopper = true;
+                    noPackedInstructions = true;
+                }
+                if (pdValues.Contains("EXPERIMENTAL"))
+                {
+                    isExperimental = true;
                 }
                 break;
             }
@@ -199,6 +204,8 @@ program Optimize
     {
         //PrintLn("Optimize: " + pass.ToString());
         
+        pairList.Clear();
+        
         bool modified = false;
         <uint> indices = Code.GetMethodIndices();
         methodsCalled.Clear();
@@ -238,9 +245,9 @@ program Optimize
             }
 #endif            
             CodePoints.MarkReachableInstructions();
-            if (!IsTinyHopper)
+            if (!NoPackedInstructions)
             {
-                if (!IsTinyHopper && CodePoints.OptimizeINCDEC())
+                if (!NoPackedInstructions && CodePoints.OptimizeINCDEC())
                 {
 #ifdef DIAGNOSTICS
                     if (logging)
@@ -311,7 +318,7 @@ program Optimize
 #endif
                 modified = true;
             }
-            if (!IsTinyHopper)
+            if (!NoPackedInstructions)
             {
                 if (CodePoints.OptimizeJumpW()) // W->B
                 {
@@ -434,12 +441,32 @@ program Optimize
 #endif
                 modified = true;
             }
-            if (!IsTinyHopper && CodePoints.OptimizeCOPYPOP())
+            if (!NoPackedInstructions && CodePoints.OptimizeCOPYPOP())
             {
 #ifdef DIAGNOSTICS
                 if (logging)
                 {
                     CodePoints.DumpInstructions("OptimizeCOPYPOP");
+                }
+#endif                
+                modified = true;
+            }
+            if (!NoPackedInstructions && CodePoints.OptimizeSYSCALL00())
+            {
+#ifdef DIAGNOSTICS
+                if (logging)
+                {
+                    CodePoints.DumpInstructions("OptimizeSYSCALL00");
+                }
+#endif                
+                modified = true;
+            }
+            if (!NoPackedInstructions && CodePoints.OptimizePUSHIBB())
+            {
+#ifdef DIAGNOSTICS
+                if (logging)
+                {
+                    CodePoints.DumpInstructions("OptimizePUSHIBB");
                 }
 #endif                
                 modified = true;
@@ -458,6 +485,11 @@ program Optimize
                 }
             }
             CodePoints.CollectMethodCalls(ref methodsCalled);
+            
+            if (IsExperimental)
+            {
+                CodePoints.CountPairs(pairList);
+            }
             
             size = CodePoints.Save();
             codeAfter = codeAfter + size;
@@ -494,6 +526,29 @@ program Optimize
             ReportMethodSizes();
         }
         methodsCalled.Clear(); // just to be sure ..
+        if (IsExperimental)
+        {
+            ListCompareDelegate sorter = CompairPair;
+            pairList.Sort(sorter);
+            uint topN = 15;
+            PrintLn();
+            foreach (var opcodepair in pairList)
+            {
+                Instruction opCode0 = opcodepair.opCode0;
+                Instruction opCode1 = opcodepair.opCode1;
+                Instruction opCode2 = opcodepair.opCode2;
+                
+                Print((opcodepair.count).ToString());
+                if (opCode2 != Instruction.NOP)
+                {
+                    Print(" " + Instructions.ToString(opCode2)); 
+                }
+                PrintLn(" " + Instructions.ToString(opCode1) 
+                            + " " + Instructions.ToString(opCode0));
+                topN--;
+                if (topN == 0) { break; }
+            }
+        }
         
         if (CodePoints.InlineCandidatesExist)
         {
@@ -516,6 +571,29 @@ program Optimize
         return modified;
     }
     
+    record OpCodePair
+    {
+        Instruction opCode0;
+        Instruction opCode1;
+        Instruction opCode2;
+        long   count;
+    }
+    <OpCodePair> pairList;
+    int CompairPair(<OpCodePair> pairList, uint ai, uint bi)
+    {
+        int result;
+        
+        OpCodePair a = pairList[ai];
+        OpCodePair b = pairList[bi];
+        long aCount = a.count;
+        long bCount = b.count;
+        
+        // descending order:
+        if      (aCount < bCount) { result = +1; }
+        else if (aCount > bCount) { result = -1; }
+        return result;
+    }
+    
     BadArguments()
     {
         PrintLn("Invalid arguments for Optimize:");
@@ -524,7 +602,6 @@ program Optimize
         PrintLn("    -v         : verbose output");
         PrintLn("    -t         : method size after optimization");
         PrintLn("    -x         : experimental");
-        
     }
     
     {
@@ -551,7 +628,7 @@ program Optimize
                         }
                         case "-x":
                         {
-                            experimental = true;
+                            isExperimental = true;
                         }
                         case "-g":
                         {

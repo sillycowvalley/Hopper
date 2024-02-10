@@ -1,5 +1,11 @@
 unit ModelUtilities
 {
+    bool IsJumpOrExitInstruction(Instruction opCode)
+    {
+        return IsJumpInstruction(opCode)
+            || IsJumpIXInstruction(opCode)
+            || IsMethodExitInstruction(opCode);
+    }
     bool IsJumpInstruction(Instruction opCode)
     {
         switch (opCode)
@@ -16,6 +22,7 @@ unit ModelUtilities
         }
         return false;
     }
+    
     bool IsJumpIXInstruction(Instruction opCode)
     {
         switch (opCode)

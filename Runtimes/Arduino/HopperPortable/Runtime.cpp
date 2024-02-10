@@ -8,6 +8,8 @@
 
 
 
+
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -181,24 +183,24 @@ void Runtime_MCU()
                 UInt destinationName = HRString_New();
                 for (;;)
                 {
-                    Char ch = Serial_ReadChar();
-                    if (ch == Char(13))
+                    Char rc = Serial_ReadChar();
+                    if (rc == Char(13))
                     {
                         break;;
                     }
-                    HRString_BuildChar_R(destinationName, ch);
+                    HRString_BuildChar_R(destinationName, rc);
                 }
                 Serial_WriteChar(Char(13));
                 Serial_WriteChar(Char(92));
                 UInt destinationFolder = HRString_New();
                 for (;;)
                 {
-                    Char ch = Serial_ReadChar();
-                    if (ch == Char(13))
+                    Char rc = Serial_ReadChar();
+                    if (rc == Char(13))
                     {
                         break;;
                     }
-                    HRString_BuildChar_R(destinationFolder, ch);
+                    HRString_BuildChar_R(destinationFolder, rc);
                 }
                 Serial_WriteChar(Char(13));
                 Serial_WriteChar(Char(92));
@@ -229,14 +231,14 @@ void Runtime_MCU()
             {
                 Runtime_WaitForEnter();
                 loadedAddress = 0x00;
-                UInt codeLength = 0;
-                Runtime_loaded = Runtime_SerialLoadIHex_R(loadedAddress, codeLength);
+                UInt loadCodeLength = 0;
+                Runtime_loaded = Runtime_SerialLoadIHex_R(loadedAddress, loadCodeLength);
                 Serial_WriteChar(Char(13));
                 if (Runtime_loaded)
                 {
-                    HopperVM_Initialize(loadedAddress, codeLength);
+                    HopperVM_Initialize(loadedAddress, loadCodeLength);
                     HopperVM_Restart();
-                    Runtime_Out4Hex(codeLength);
+                    Runtime_Out4Hex(loadCodeLength);
                     Serial_WriteChar(' ');
                     Runtime_Out4Hex(Memory_HeapStart_Get());
                     Serial_WriteChar(' ');
@@ -256,7 +258,7 @@ void Runtime_MCU()
                 Serial_WriteChar(Char(92));
                 if (Runtime_loaded)
                 {
-                    HopperVM_FlashProgram(loadedAddress, codeLength, Runtime_currentCRC);
+                    HopperVM_FlashProgram(loadedAddress, loadCodeLength, Runtime_currentCRC);
                 }
                 break;
             }
@@ -2341,6 +2343,8 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eLEI), instructionDelegate);
     instructionDelegate = &Instructions_InlinedPushIB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIB), instructionDelegate);
+    instructionDelegate = &Instructions_InlinedPushIBB;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHIBB), instructionDelegate);
     instructionDelegate = &Instructions_PopLocalB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePOPLOCALB), instructionDelegate);
     instructionDelegate = &Instructions_InlinedPushLocalB;
@@ -2381,6 +2385,16 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL0), instructionDelegate);
     instructionDelegate = &Instructions_SysCall1;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL1), instructionDelegate);
+    instructionDelegate = &Instructions_SysCall00;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL00), instructionDelegate);
+    instructionDelegate = &Instructions_SysCall01;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL01), instructionDelegate);
+    instructionDelegate = &Instructions_SysCall10;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALL10), instructionDelegate);
+    instructionDelegate = &Instructions_SysCallB0;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALLB0), instructionDelegate);
+    instructionDelegate = &Instructions_SysCallB1;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eSYSCALLB1), instructionDelegate);
     instructionDelegate = &Instructions_PushGlobalBB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::ePUSHGLOBALBB), instructionDelegate);
     instructionDelegate = &Instructions_PushLocalBB;
@@ -2548,7 +2562,7 @@ Bool Instructions_PopLocalB()
     }
     else
     {
-        Int offset = HopperVM_ReadByteOffsetOperand();
+        offset = HopperVM_ReadByteOffsetOperand();
         Type htype = Type(Memory_ReadWord(UInt(Int(HopperVM_TypeStack_Get()) + Int(HopperVM_BP_Get()) + offset)));
         UInt value = 0;
         if (Types_IsReferenceType(htype))
@@ -2743,6 +2757,47 @@ Bool Instructions_SysCall0()
 
 Bool Instructions_SysCall1()
 {
+    Byte iSysCall = HopperVM_ReadByteOperand();
+    return HopperVM_ExecuteSysCall(iSysCall, 0x01);
+}
+
+Bool Instructions_SysCall00()
+{
+    Byte iSysCall = HopperVM_ReadByteOperand();
+    Bool doNext0 = HopperVM_ExecuteSysCall(iSysCall, 0x00);
+    iSysCall = HopperVM_ReadByteOperand();
+    Bool doNext1 = HopperVM_ExecuteSysCall(iSysCall, 0x00);
+    return doNext0 && doNext1;
+}
+
+Bool Instructions_SysCall01()
+{
+    Byte iSysCall = HopperVM_ReadByteOperand();
+    Bool doNext0 = HopperVM_ExecuteSysCall(iSysCall, 0x00);
+    iSysCall = HopperVM_ReadByteOperand();
+    Bool doNext1 = HopperVM_ExecuteSysCall(iSysCall, 0x01);
+    return doNext0 && doNext1;
+}
+
+Bool Instructions_SysCall10()
+{
+    Byte iSysCall = HopperVM_ReadByteOperand();
+    Bool doNext0 = HopperVM_ExecuteSysCall(iSysCall, 0x01);
+    iSysCall = HopperVM_ReadByteOperand();
+    Bool doNext1 = HopperVM_ExecuteSysCall(iSysCall, 0x00);
+    return doNext0 && doNext1;
+}
+
+Bool Instructions_SysCallB0()
+{
+    HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
+    Byte iSysCall = HopperVM_ReadByteOperand();
+    return HopperVM_ExecuteSysCall(iSysCall, 0x00);
+}
+
+Bool Instructions_SysCallB1()
+{
+    HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
     Byte iSysCall = HopperVM_ReadByteOperand();
     return HopperVM_ExecuteSysCall(iSysCall, 0x01);
 }
@@ -2991,7 +3046,7 @@ Bool Instructions_PopLocal()
     }
     else
     {
-        Int offset = HopperVM_ReadWordOffsetOperand();
+        offset = HopperVM_ReadWordOffsetOperand();
         Type htype = Type(Memory_ReadWord(UInt(Int(HopperVM_TypeStack_Get()) + Int(HopperVM_BP_Get()) + offset)));
         UInt value = 0;
         if (Types_IsReferenceType(htype))
@@ -3729,18 +3784,18 @@ void HRDictionary_Dump(UInt address, UInt indent)
     {
         IO_WriteLn();
         UInt capacity = Memory_ReadWord(address + 6);
-        UInt pEntries = Memory_ReadWord(address + 8);;
+        pEntries = Memory_ReadWord(address + 8);;
         for (UInt i = 0x00; i < capacity; i++)
         {
             IO_WriteHex(pEntries);
             IO_Write(':');
-            UInt key = Memory_ReadWord(pEntries + 0);
+            key = Memory_ReadWord(pEntries + 0);
             IO_WriteHex(key);
             IO_Write('-');
             UInt hash = Memory_ReadWord(pEntries + 2);
             IO_WriteHex(hash);
             IO_Write('-');
-            UInt value = Memory_ReadWord(pEntries + 6);
+            value = Memory_ReadWord(pEntries + 6);
             IO_WriteHex(value);
             pEntries = pEntries + 8;
             IO_Write(' ');
@@ -6753,7 +6808,7 @@ void HRList_Insert(UInt _this, UInt index, UInt item, Type itype)
         UInt pPrevious = 0x00;
         UInt pRecent = Memory_ReadWord(_this + 7);
         UInt iRecent = Memory_ReadWord(_this + 7 + 0x02);
-        UInt count = 0x00;
+        count = 0x00;
         if ((iRecent != 0x00) && (index > iRecent))
         {
             pCurrent = pRecent;
@@ -6844,7 +6899,7 @@ void HRList_Remove(UInt _this, UInt index)
     {
         UInt pPrevious = pCurrent;
         pCurrent = Memory_ReadWord(pCurrent + 2);
-        UInt count = 0x01;
+        count = 0x01;
         while (count < index)
         {
             pPrevious = pCurrent;
@@ -8485,5 +8540,3 @@ UInt HRInt_FromBytes(Byte b0, Byte b1)
 {
     return b0 + (b1 << 0x08);
 }
-
-

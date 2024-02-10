@@ -310,17 +310,17 @@ unit HRDictionary
         {
             WriteLn();
             uint capacity = ReadWord(address+idCapacity);
-            uint pEntries = ReadWord(address+idEntries);
+            pEntries = ReadWord(address+idEntries);
             for (uint i = 0; i < capacity; i++)
             {
                 
                 WriteHex(pEntries); Write(':');
-                uint key = ReadWord(pEntries+ieKey);
+                key = ReadWord(pEntries+ieKey);
                 WriteHex(key); Write('-');
                 uint hash = ReadWord(pEntries+ieHash);
                 WriteHex(hash);
                 Write('-');
-                uint value = ReadWord(pEntries+ieValue);
+                value = ReadWord(pEntries+ieValue);
                 WriteHex(value);
                 
                 pEntries = pEntries + entrySize;

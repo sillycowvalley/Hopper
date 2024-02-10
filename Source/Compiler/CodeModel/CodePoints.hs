@@ -2488,4 +2488,196 @@ unit CodePoints
         } // loop
         return modified;
     }
+    bool OptimizePUSHIBB()
+    {
+        bool modified;
+        if (iCodes.Count < 2)
+        {
+            return modified;
+        }
+        uint iIndex = 1;
+        uint hits = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            Instruction opCode1 = iCodes[iIndex-1];
+            Instruction opCode0 = iCodes[iIndex]; 
+            if ((opCode1 == Instruction.PUSHIB) && (opCode0 == Instruction.PUSHIB))
+            {
+                if (!IsTargetOfJumps(iIndex))
+                {
+                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                    
+                    iCodes.SetItem   (iIndex-1, Instruction.PUSHIBB);
+                    iOperands.SetItem(iIndex-1, operand);
+                    iLengths.SetItem (iIndex-1, 3);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                    continue;
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    bool OptimizeSYSCALL00()
+    {
+        bool modified;
+        if (iCodes.Count < 2)
+        {
+            return modified;
+        }
+        uint iIndex = 1;
+        uint hits = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            Instruction opCode1 = iCodes[iIndex-1];
+            Instruction opCode0 = iCodes[iIndex]; 
+            if (!IsTargetOfJumps(iIndex))
+            {
+                if ((opCode1 == Instruction.PUSHIB) && (opCode0 == Instruction.SYSCALL0))
+                {
+                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                    
+                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALLB0);
+                    iOperands.SetItem(iIndex-1, operand);
+                    iLengths.SetItem (iIndex-1, 3);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                    continue;
+                }
+                if ((opCode1 == Instruction.PUSHIB) && (opCode0 == Instruction.SYSCALL1))
+                {
+                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                    
+                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALLB1);
+                    iOperands.SetItem(iIndex-1, operand);
+                    iLengths.SetItem (iIndex-1, 3);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                    continue;
+                }
+                if ((opCode1 == Instruction.SYSCALL0) && (opCode0 == Instruction.SYSCALL0))
+                {
+                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALL00);
+                    iOperands.SetItem(iIndex-1, operand);
+                    iLengths.SetItem (iIndex-1, 3);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                    continue;
+                }
+                if ((opCode1 == Instruction.SYSCALL0) && (opCode0 == Instruction.SYSCALL1))
+                {
+                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALL01);
+                    iOperands.SetItem(iIndex-1, operand);
+                    iLengths.SetItem (iIndex-1, 3);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                    continue;
+                }
+                if ((opCode1 == Instruction.SYSCALL1) && (opCode0 == Instruction.SYSCALL0))
+                {
+                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALL10);
+                    iOperands.SetItem(iIndex-1, operand);
+                    iLengths.SetItem (iIndex-1, 3);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                    continue;
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;  
+    }
+    
+    CountPairs(<OpCodePair> pairList)
+    {
+        if (iCodes.Count < 3)
+        {
+            return;
+        }
+        uint iIndex = 2;
+        uint hits = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            Instruction opCode2 = iCodes[iIndex-2];
+            Instruction opCode1 = iCodes[iIndex-1];
+            Instruction opCode0 = iCodes[iIndex]; 
+            
+            uint iLength2 = iLengths[iIndex-2];
+            uint iLength1 = iLengths[iIndex-1];
+            uint iLength0 = iLengths[iIndex];
+            
+            bool found = false;
+            if (iLength0 + iLength1 + iLength2 - 2 <= 3)
+            {
+                if (   !IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1) 
+                    && !IsJumpOrExitInstruction(opCode2) && !IsJumpOrExitInstruction(opCode1))
+                {
+                    for (uint i = 0; i < pairList.Count; i++)
+                    {
+                        OpCodePair current = pairList[i];
+                        if ((current.opCode0 == opCode0) && (current.opCode1 == opCode1) && (current.opCode2 == opCode2))
+                        {
+                            current.count = current.count + 1;
+                            pairList[i] = current;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        OpCodePair codePair;
+                        codePair.opCode0 = opCode0;
+                        codePair.opCode1 = opCode1;
+                        codePair.opCode2 = opCode2;
+                        codePair.count = 1;
+                        pairList.Append(codePair);
+                    }
+                    found = false;
+                }
+            }
+            if (iLength0 + iLength1 - 1 <= 3)
+            {
+                if (!IsTargetOfJumps(iIndex) && !IsJumpOrExitInstruction(opCode1))
+                {
+                    for (uint i = 0; i < pairList.Count; i++)
+                    {
+                        OpCodePair current = pairList[i];
+                        if ((current.opCode0 == opCode0) && (current.opCode1 == opCode1) && (current.opCode2 == Instruction.NOP))
+                        {
+                            current.count = current.count + 1;
+                            pairList[i] = current;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        OpCodePair codePair;
+                        codePair.opCode0 = opCode0;
+                        codePair.opCode1 = opCode1;
+                        codePair.opCode2 = Instruction.NOP;
+                        codePair.count = 1;
+                        pairList.Append(codePair);
+                    }
+                }
+            }
+            iIndex++;
+        }
+    }
 }

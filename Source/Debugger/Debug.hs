@@ -34,7 +34,7 @@ program Debug
     bool IsInteractive { get { return interactive; } set { interactive = value; } }
     
     
-    bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
+    bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
     
     {
         <string> arguments = System.Arguments;

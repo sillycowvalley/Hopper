@@ -117,6 +117,12 @@ enum OpCode {
     eDECGLOBALIB = 0x00A7,
     eINCLOCALBB = 0x003F,
     eINCLOCALIBB = 0x00A3,
+    eSYSCALLB0 = 0x00A8,
+    eSYSCALL00 = 0x00A9,
+    ePUSHIBB = 0x00AA,
+    eSYSCALLB1 = 0x00AB,
+    eSYSCALL01 = 0x00AC,
+    eSYSCALL10 = 0x00AD,
     ePUSHILT = 0x0055,
     ePUSHLOCALBB = 0x0056,
     ePOPCOPYLOCALB = 0x0057,
@@ -668,6 +674,11 @@ Bool Instructions_PopLocalB00();
 Bool Instructions_PopLocalB02();
 Bool Instructions_SysCall0();
 Bool Instructions_SysCall1();
+Bool Instructions_SysCall00();
+Bool Instructions_SysCall01();
+Bool Instructions_SysCall10();
+Bool Instructions_SysCallB0();
+Bool Instructions_SysCallB1();
 Bool Instructions_PushGlobalBB();
 Bool Instructions_PushLocalBB();
 Bool Instructions_PopCopyLocalB();
@@ -877,8 +888,6 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
-
-
 
 
 #endif // HOPPERRUNTIME_H

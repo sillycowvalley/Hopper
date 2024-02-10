@@ -134,6 +134,13 @@ unit OpCodes
         INCLOCALBB = 0x3F,
         INCLOCALIBB = 0xA3,
         
+        SYSCALLB0   = 0xA8, // PUSHIB SYSCALL0
+        SYSCALL00   = 0xA9, // SYSCALL0 SYSCALL0
+        PUSHIBB     = 0xAA, // PUSHIB PUSHIB
+        SYSCALLB1   = 0xAB, // PUSHIB   SYSCALL1
+        SYSCALL01   = 0xAC, // SYSCALL0 SYSCALL1
+        SYSCALL10   = 0xAD, // SYSCALL1 SYSCALL0
+        
         PUSHILT = 0x55,
         PUSHLOCALBB     = 0x56,
         POPCOPYLOCALB   = 0x57,

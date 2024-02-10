@@ -301,7 +301,7 @@ unit HRList
             uint pRecent  = ReadWord(this+lsRecent);
             uint iRecent  = ReadWord(this+lsRecent+2);    
         
-            uint count = 0;
+            count = 0;
             if ((iRecent != 0) && (index > iRecent)) // > means previous will be set
             {
                 pCurrent= pRecent;
@@ -407,7 +407,7 @@ unit HRList
             uint pPrevious = pCurrent;            // 0th item
             pCurrent = ReadWord(pCurrent+liNext); // 1st item
             
-            uint count = 1;
+            count = 1;
             while (count < index)
             {
                 pPrevious = pCurrent;

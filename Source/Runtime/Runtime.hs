@@ -872,12 +872,12 @@ program Runtime
                         uint destinationName = HRString.New();
                         loop
                         {
-                            char ch = Serial.ReadChar();
-                            if (ch == char(enter))
+                            char rc = Serial.ReadChar();
+                            if (rc == char(enter))
                             {
                                 break;
                             }
-                            HRString.BuildChar(ref destinationName, ch);
+                            HRString.BuildChar(ref destinationName, rc);
                         }
                         Serial.WriteChar(char(enter));
                         Serial.WriteChar(char(slash));
@@ -886,12 +886,12 @@ program Runtime
                         uint destinationFolder = HRString.New();
                         loop
                         {
-                            char ch = Serial.ReadChar();
-                            if (ch == char(enter))
+                            char rc = Serial.ReadChar();
+                            if (rc == char(enter))
                             {
                                 break;
                             }
-                            HRString.BuildChar(ref destinationFolder, ch);
+                            HRString.BuildChar(ref destinationFolder, rc);
                         }
                         Serial.WriteChar(char(enter));
                         Serial.WriteChar(char(slash));
@@ -929,17 +929,17 @@ program Runtime
                         WaitForEnter();
                         
                         loadedAddress = 0;
-                        uint codeLength;
+                        uint loadCodeLength;
                     
-                        loaded = SerialLoadIHex(ref loadedAddress, ref codeLength);
+                        loaded = SerialLoadIHex(ref loadedAddress, ref loadCodeLength);
                         Serial.WriteChar(char(enter));
                         if (loaded)
                         {
-                            HopperVM.Initialize(loadedAddress, codeLength);
+                            HopperVM.Initialize(loadedAddress, loadCodeLength);
                             HopperVM.Restart();
                             
-                            // codeLength
-                            Out4Hex(codeLength);
+                            // loadCodeLength
+                            Out4Hex(loadCodeLength);
                             Serial.WriteChar(' ');
                             
                             // heapStart
@@ -967,7 +967,7 @@ program Runtime
                         
                         if (loaded)
                         {
-                            FlashProgram(loadedAddress, codeLength, currentCRC);
+                            FlashProgram(loadedAddress, loadCodeLength, currentCRC);
                         }
                     } // L
                     default:

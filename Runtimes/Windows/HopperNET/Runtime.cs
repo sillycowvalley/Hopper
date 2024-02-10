@@ -196,6 +196,13 @@ namespace HopperNET
         DECLOCALIB  = 0xA6,
         DECGLOBALIB = 0xA7,
 
+        SYSCALLB0   = 0xA8, // PUSHIB   SYSCALL0
+        SYSCALL00   = 0xA9, // SYSCALL0 SYSCALL0
+        PUSHIBB     = 0xAA, // PUSHIB   PUSHIB
+        SYSCALLB1   = 0xAB, // PUSHIB   SYSCALL1
+        SYSCALL01   = 0xAC, // SYSCALL0 SYSCALL1
+        SYSCALL10   = 0xAD, // SYSCALL1 SYSCALL0
+
         UNDEFINED,
     };
 
@@ -1719,6 +1726,8 @@ namespace HopperNET
                             SystemCall(currentContext, (SysCall)operand, (byte)Pop());
                         }
                         break;
+
+
                     case Instruction.SYSCALL0:
                         {
                             operand = code[pc + currentContext.CodeOffset];
@@ -1726,6 +1735,84 @@ namespace HopperNET
                             SystemCall(currentContext, (SysCall)operand, 0);
                         }
                         break;
+
+                    case Instruction.SYSCALLB0:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+#if UNDOINLINED
+                            Push(operand, HopperType.tByte);
+#else
+                            {
+                                ushort sp2 = (ushort)(sp >> 1);
+                                stack[sp2].value = operand;
+                                stack[sp2].type = HopperType.tByte;
+                                sp += 2;
+                            }
+#endif
+
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, 0);
+                        }
+                        break;
+
+                    case Instruction.SYSCALLB1:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+#if UNDOINLINED
+                            Push(operand, HopperType.tByte);
+#else
+                            {
+                                ushort sp2 = (ushort)(sp >> 1);
+                                stack[sp2].value = operand;
+                                stack[sp2].type = HopperType.tByte;
+                                sp += 2;
+                            }
+#endif
+
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, 1);
+                        }
+                        break;
+
+                    case Instruction.SYSCALL00:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, 0);
+
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, 0);
+                        }
+                        break;
+
+                    case Instruction.SYSCALL01:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, 0);
+
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, 1);
+                        }
+                        break;
+                    case Instruction.SYSCALL10:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, 1);
+
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, 0);
+                        }
+                        break;
+
                     case Instruction.SYSCALL1:
                         {
                             operand = code[pc + currentContext.CodeOffset];
@@ -1747,6 +1834,35 @@ namespace HopperNET
                             pc++;
 #if UNDOINLINED
                         Push(operand, HopperType.tByte);
+#else
+                            {
+                                ushort sp2 = (ushort)(sp >> 1);
+                                stack[sp2].value = operand;
+                                stack[sp2].type = HopperType.tByte;
+                                sp += 2;
+                            }
+#endif
+                        }
+                        break;
+
+                    case Instruction.PUSHIBB:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+#if UNDOINLINED
+                            Push(operand, HopperType.tByte);
+#else
+                            {
+                                ushort sp2 = (ushort)(sp >> 1);
+                                stack[sp2].value = operand;
+                                stack[sp2].type = HopperType.tByte;
+                                sp += 2;
+                            }
+#endif
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+#if UNDOINLINED
+                            Push(operand, HopperType.tByte);
 #else
                             {
                                 ushort sp2 = (ushort)(sp >> 1);

@@ -21,7 +21,7 @@ program PreProcess
   bool IsExperimental { get { return isExperimental; } }
     
   bool IsDebugger   { get { return false; } }
-  bool IsTinyHopper { get { return false; } } // to keep peephole code happy (even though it is not used)
+  bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
   
   // Documentation:
   // - documentation comments

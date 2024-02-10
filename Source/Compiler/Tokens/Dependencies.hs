@@ -30,7 +30,7 @@ unit Dependencies
     
     bool TryGetSources(string primaryPath, ref <string> sources)
     {
-        OutputDebug("TryGetSources: " + primaryPath);
+        //OutputDebug("TryGetSources: " + primaryPath);
         
         sources.Clear();
         Directives.New();
@@ -56,7 +56,7 @@ unit Dependencies
             }
             usesPathsToParse[nextPath] = false; // we are parsing it
             file textFile = File.Open(nextPath);
-            OutputDebug("TryGetSources: Open: " + nextPath);
+            //OutputDebug("TryGetSources: Open: " + nextPath);
             if (!textFile.IsValid())
             {
                 return false;

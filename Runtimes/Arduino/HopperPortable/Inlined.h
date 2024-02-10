@@ -54,6 +54,7 @@ Bool Instructions_InlinedSubB();
 Bool Instructions_InlinedPushI0();
 Bool Instructions_InlinedPushI1();
 Bool Instructions_InlinedPushIB();
+Bool Instructions_InlinedPushIBB();
 Bool Instructions_InlinedPushLocalB();
 Bool Instructions_InlinedPushLocalB00();
 Bool Instructions_InlinedPushLocalB02();
