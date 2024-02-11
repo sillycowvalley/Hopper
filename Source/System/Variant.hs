@@ -1,5 +1,7 @@
 unit Variant
 {
+    uses "/Source/System/Diagnostics"
+    
     string ToString(variant vr)
     {
         string result;
@@ -34,6 +36,37 @@ unit Variant
             case delegate:
             {
                 result = "Variant.ToString(..) not implemented for " + (typeof(vr)).ToString();
+            }
+        }
+        return result;
+    }
+    long ToLong(variant vr)
+    {
+        long result;
+        switch (typeof(vr))
+        {
+            case int:    
+            { 
+                int i = int(vr); 
+                result = i;
+            }
+            case uint:   
+            { 
+                uint ui = uint(vr); 
+                result = ui;
+            }
+            case byte:   
+            { 
+                byte b = byte(vr);
+                result = b;
+            }
+            case long:   
+            { 
+                result = vr; 
+            }
+            default:
+            {
+                Diagnostics.Die(0x09); // invalid variant type
             }
         }
         return result;

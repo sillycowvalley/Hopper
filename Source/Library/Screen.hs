@@ -110,13 +110,13 @@ unit Screen
         CursorY = 0;
     }
     
-    SetCursor(uint col, uint row)
+    SetCursor(byte col, byte row)
     {
         CursorX = col;
         CursorY = row;
     }
 
-    DrawChar(uint col, uint row, char c, uint foreColour, uint backColour)
+    DrawChar(byte col, byte row, char c, uint foreColour, uint backColour)
     {
 #if !defined(FONT_EXISTS)
     // one-shot runtime warning?

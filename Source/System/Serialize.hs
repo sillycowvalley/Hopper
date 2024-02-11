@@ -400,6 +400,7 @@ unit Serialize
     bool TryFromJSON(string input, ref <string, variant> jsonObject)
     {
         bool success = true;
+        jsonObject.Clear(); // in case this object is being reused
         loop
         {
             // unescape everything except the quotes (substitute rarely used alternate character ` for them)

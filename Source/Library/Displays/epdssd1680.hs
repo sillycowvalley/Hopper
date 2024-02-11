@@ -286,6 +286,11 @@ unit DisplayDriver
         epdCommand(SSD1680_DRIVER_CONTROL, buf, 3);
     }
     
+    PowerDown()
+    {
+        powerDown();
+    }
+    
     powerDown() 
     {
         epdCommand(SSD1680_SW_RESET);

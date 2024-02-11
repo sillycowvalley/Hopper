@@ -148,6 +148,10 @@ bool WebClient_GetRequest(UInt hrurl, UInt& hrcontent)
     {
         url += (char)HRString_GetChar(hrurl, i);
     }
+    if (url.length() == 0)
+    {
+        url = "/";
+    }
 
     if (wifiClient.connect(host.c_str(), 80))
     {

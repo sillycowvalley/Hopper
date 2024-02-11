@@ -322,6 +322,11 @@ unit DisplayDriver
         epdCommand(IL0373_RESOLUTION, buf, 3);
     }
     
+    PowerDown()
+    {
+        powerDown();
+    }
+    
     powerDown() 
     {
         byte[4] buf;
