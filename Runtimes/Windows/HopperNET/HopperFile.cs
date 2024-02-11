@@ -89,6 +89,53 @@ namespace HopperNET
             }
             return result;
         }
+        public static bool ValidatePath(string path)
+        {
+            foreach (char ch in path)
+            {
+                if ((ch >= '0') && (ch <= '9'))
+                {
+                    // ok
+                }
+                else if ((ch >= 'a') && (ch <= 'z'))
+                {
+                    // ok
+                }
+                else if ((ch >= 'A') && (ch <= 'Z'))
+                {
+                    // ok
+                }
+                else if (ch == '/')
+                {
+                    // ok
+                }
+                else if (ch == '.')
+                {
+                    // ok
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            int iSlash = path.LastIndexOf('/');
+            if (iSlash != -1)
+            {
+                int iDot = path.LastIndexOf('.', iSlash);
+                if (iDot != -1)
+                {
+                    if (iSlash > iDot)
+                    {
+                        return false; // '.' is in a folder name (not allowed be possible in Hopper)
+                    }
+                }
+            }
+            if (path.Contains(@"/."))
+            {
+                return false; // empty filenames are not allowed in Hopper
+            }
+            return true;
+        }
     }
     public class HopperFile : Variant
     {
@@ -124,24 +171,31 @@ namespace HopperNET
         bool writing;
         public static bool Exists(string path)
         {
+            if (!HopperPath.ValidatePath(path)) return false;
             return File.Exists(HopperPath.ToWindowsPath(path));
         }
         public static void Delete(string path)
         {
-            path = HopperPath.ToWindowsPath(path);
-            if (File.Exists(path))
+            if (HopperPath.ValidatePath(path))
             {
-                File.Delete(path);
+                path = HopperPath.ToWindowsPath(path);
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
             }
         }
         public static Int32 GetSize(string path)
         {
             long length = 0;
-            path = HopperPath.ToWindowsPath(path);
-            if (File.Exists(path))
+            if (HopperPath.ValidatePath(path))
             {
-                FileInfo fi = new FileInfo(path);
-                length = fi.Length;
+                path = HopperPath.ToWindowsPath(path);
+                if (File.Exists(path))
+                {
+                    FileInfo fi = new FileInfo(path);
+                    length = fi.Length;
+                }
             }
             return (Int32)length;
         }
@@ -248,43 +302,52 @@ namespace HopperNET
 
         public static HopperFile Open(string path)
         {
-            path = HopperPath.ToWindowsPath(path);
             HopperFile hopperFile = new HopperFile();
-            if (File.Exists(path))
+            if (HopperPath.ValidatePath(path))
             {
-                hopperFile.bytes = File.ReadAllBytes(path);
-                hopperFile.isValid = true;
-                hopperFile.reading = true;
-                hopperFile.writing = false;
+                path = HopperPath.ToWindowsPath(path);
+                if (File.Exists(path))
+                {
+                    hopperFile.bytes = File.ReadAllBytes(path);
+                    hopperFile.isValid = true;
+                    hopperFile.reading = true;
+                    hopperFile.writing = false;
+                }
             }
             return hopperFile;
         }
         public static HopperFile Create(string path)
         {
-            path = HopperPath.ToWindowsPath(path);
             HopperFile hopperFile = new HopperFile();
-            if (File.Exists(path))
+            if (HopperPath.ValidatePath(path))
             {
-                File.Delete(path);
+                path = HopperPath.ToWindowsPath(path);
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                    hopperFile.isValid = true;
+                }
+                hopperFile.path = path;
                 hopperFile.isValid = true;
+                hopperFile.reading = false;
+                hopperFile.writing = true;
+                hopperFile.content = new List<Byte>();
             }
-            hopperFile.path = path;
-            hopperFile.isValid = true;
-            hopperFile.reading = false;
-            hopperFile.writing = true;
-            hopperFile.content = new List<Byte>();
             return hopperFile;
         }
         public static Int32 GetTime(string path)
         {
             long filetime = 0;
-            path = HopperPath.ToWindowsPath(path);
-            if (File.Exists(path))
+            if (HopperPath.ValidatePath(path))
             {
-                FileInfo fi = new FileInfo(path);
-                DateTime dt = fi.LastWriteTime;
-                long unixTime = ((DateTimeOffset)dt).ToUnixTimeSeconds();
-                filetime = unixTime;
+                path = HopperPath.ToWindowsPath(path);
+                if (File.Exists(path))
+                {
+                    FileInfo fi = new FileInfo(path);
+                    DateTime dt = fi.LastWriteTime;
+                    long unixTime = ((DateTimeOffset)dt).ToUnixTimeSeconds();
+                    filetime = unixTime;
+                }
             }
             return (Int32)filetime;
         }
@@ -296,13 +359,16 @@ namespace HopperNET
         public static Int32 GetTime(string path)
         {
             long filetime = 0;
-            path = HopperPath.ToWindowsPath(path);
-            if (Directory.Exists(path))
+            if (HopperPath.ValidatePath(path))
             {
-                FileInfo fi = new FileInfo(path);
-                DateTime dt = fi.LastWriteTime;
-                long unixTime = ((DateTimeOffset)dt).ToUnixTimeSeconds();
-                filetime = unixTime;
+                path = HopperPath.ToWindowsPath(path);
+                if (Directory.Exists(path))
+                {
+                    FileInfo fi = new FileInfo(path);
+                    DateTime dt = fi.LastWriteTime;
+                    long unixTime = ((DateTimeOffset)dt).ToUnixTimeSeconds();
+                    filetime = unixTime;
+                }
             }
             return (Int32)filetime;
         }
@@ -329,20 +395,24 @@ namespace HopperNET
 
         public static bool Exists(string path)
         {
+            if (!HopperPath.ValidatePath(path)) return false;
             return Directory.Exists(HopperPath.ToWindowsPath(path));
         }
         public static HopperDirectory Open(string fullDirectoryPath)
         {
             HopperDirectory directory = new HopperDirectory();
-            if (!HopperPath.IsCanonicalFullPath(fullDirectoryPath))
+            if (HopperPath.ValidatePath(fullDirectoryPath))
             {
-                return directory;
-            }
-            string path = HopperPath.ToWindowsPath(fullDirectoryPath);
-            if (Directory.Exists(path))
-            {
-                directory.isValid = true;
-                directory.path = path;
+                if (!HopperPath.IsCanonicalFullPath(fullDirectoryPath))
+                {
+                    return directory;
+                }
+                string path = HopperPath.ToWindowsPath(fullDirectoryPath);
+                if (Directory.Exists(path))
+                {
+                    directory.isValid = true;
+                    directory.path = path;
+                }
             }
             return directory;
         }
@@ -352,52 +422,50 @@ namespace HopperNET
         }
         public static void Create(string path)
         {
-            path = HopperPath.ToWindowsPath(path);
             HopperDirectory directory = new HopperDirectory();
-            if (Directory.Exists(path))
+            if (HopperPath.ValidatePath(path))
             {
-                directory.isValid = true;
-                directory.path = path;
-            }
-            else
-            {
-                try
+                path = HopperPath.ToWindowsPath(path);
+                if (Directory.Exists(path))
                 {
-                    DirectoryInfo info = Directory.CreateDirectory(path);
-                    directory.path = path;
                     directory.isValid = true;
+                    directory.path = path;
                 }
-                catch (IOException)
+                else
                 {
-                    // something went wrong so !isValid
+                    try
+                    {
+                        DirectoryInfo info = Directory.CreateDirectory(path);
+                        directory.path = path;
+                        directory.isValid = true;
+                    }
+                    catch (IOException)
+                    {
+                        // something went wrong so !isValid
+                    }
                 }
             }
         }
         public static void Delete(string path)
         {
-            path = HopperPath.ToWindowsPath(path);
-            if (Directory.Exists(path))
+            if (HopperPath.ValidatePath(path))
             {
-                try
+                path = HopperPath.ToWindowsPath(path);
+                if (Directory.Exists(path))
                 {
-                    Directory.Delete(path);
-                }
-                catch (IOException)
-                {
-                    // something went wrong
+                    try
+                    {
+                        Directory.Delete(path);
+                    }
+                    catch (IOException)
+                    {
+                        // something went wrong
+                    }
                 }
             }
         }
 
-        public ushort GetDirectoryCount()
-        {
-            ushort count = 0;
-            if (isValid)
-            {
-                count = (ushort)Directory.GetDirectories(path).Length; // this API correctly does not return pseudo directories ".." and "."
-            }
-            return count;
-        }
+        
 
         public HopperString GetDirectory(ushort index)
         {
@@ -405,18 +473,22 @@ namespace HopperNET
             if (isValid)
             {
                 ushort count = 0;
-                foreach (String dir in Directory.GetDirectories(path))
+                foreach (String windowsPath in Directory.GetDirectories(path))
                 {
-                    if (count == index)
+                    string hopperPath = HopperPath.ToHopperPath(windowsPath);
+                    if (HopperPath.ValidatePath(hopperPath))
                     {
-                        directory.Value = HopperPath.ToHopperPath(dir);
-                        if (!dir.EndsWith(@"\"))
+                        if (count == index)
                         {
-                            directory.Value += "/";
+                            directory.Value = hopperPath;
+                            if (!windowsPath.EndsWith(@"\"))
+                            {
+                                directory.Value += "/";
+                            }
+                            break;
                         }
-                        break;
+                        count++;
                     }
-                    count++;
                 }
             }
             return directory; // full hopper path, leading and trailing /
@@ -428,17 +500,38 @@ namespace HopperNET
             if (isValid)
             {
                 ushort count = 0;
-                foreach (String f in Directory.GetFiles(path))
+                foreach (String windowsPath in Directory.GetFiles(path))
                 {
-                    if (count == index)
+                    string hopperPath = HopperPath.ToHopperPath(windowsPath);
+                    if (HopperPath.ValidatePath(hopperPath))
                     {
-                        file.Value = HopperPath.ToHopperPath(f);
-                        break;
+                        if (count == index)
+                        {
+                            file.Value = hopperPath;
+                            break;
+                        }
+                        count++;
                     }
-                    count++;
                 }
             }
             return file; // full hopper path
+        }
+
+        public ushort GetDirectoryCount()
+        {
+            ushort count = 0;
+            if (isValid)
+            {
+                foreach (String windowsPath in Directory.GetDirectories(path))
+                {
+                    string hopperPath = HopperPath.ToHopperPath(windowsPath);
+                    if (HopperPath.ValidatePath(hopperPath))
+                    {
+                        count++; // TODO : ignore .. and .
+                    }
+                }
+            }
+            return count;
         }
 
         public ushort GetFileCount()
@@ -446,7 +539,14 @@ namespace HopperNET
             ushort count = 0;
             if (isValid)
             {
-                count = (ushort)Directory.GetFiles(path).Length;
+                foreach (String windowsPath in Directory.GetFiles(path))
+                {
+                    string hopperPath = HopperPath.ToHopperPath(windowsPath);
+                    if (HopperPath.ValidatePath(hopperPath))
+                    {
+                        count++;
+                    }
+                }
             }
             return count;
         }
