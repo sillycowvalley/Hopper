@@ -1,6 +1,6 @@
 program Blink
 {
-    #define RP2040_PICO
+    #define ADAFRUIT_FEATHER_RP2040
     uses "/Source/Library/MCU"
     {
         loop

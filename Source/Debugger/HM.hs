@@ -591,6 +591,7 @@ program HopperMonitor
         if (Monitor.IsMCU)
         {
             PrintPad("T        - transfer file to LittleFS on MCU: T <local path> <remote folder>", 4);
+            PrintPad("E        - enter Boot Select mode (only for RP2040), and quit Hopper Monitor", 4);
         }
         PrintLn();
         PrintPad("C        - emit Hopper call stack", 4);
@@ -861,6 +862,16 @@ program HopperMonitor
                     refresh = true;
                 } // case 'U'
                 
+                else if (currentCommand == 'E') // enter Boot Select mode on the RP2040 then quit
+                {
+                    if (!Monitor.RunCommand(commandLine))
+                    {
+                        PrintLn(" entering BOOTSEL mode..");
+                        break;      
+                    }
+                    // failed
+                    refresh = true;
+                }
                 else if (currentCommand == 'X') // Execute (run with Warp)
                 {
                     if (!Monitor.RunCommand(commandLine))
@@ -973,13 +984,13 @@ program HopperMonitor
                     if (clength == 0)
                     {
                         // first character must be command key
-                        if (String.Contains("?BCDFHIKLMOPQRSTUVWXZ", ch))
+                        if (String.Contains("?BCDEFHIKLMOPQRSTUVWXZ", ch))
                         {
                             currentCommand = ch;
                         }
-                        else if (Monitor.IsMCU && String.Contains("T", ch))
+                        else if (Monitor.IsMCU && String.Contains("ET", ch))
                         {
-                            currentCommand = ch; // MCU-only command
+                            currentCommand = ch; // MCU-only commands
                         }
                         else
                         {

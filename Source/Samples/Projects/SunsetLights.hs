@@ -10,6 +10,8 @@ program SunsetLights
     uses "/Source/Samples/MCU/Secrets2/Connect" // WiFi password
     uses "/Source/System/Serialize"             // to parse the JSON returned by the time webservice
     
+    uses "/Source/Samples/Projects/DateTime"
+    
     
     const uint minutesPerCycle   = 1440;  // this is intended to be 24 hours (1440 minutes) but short cycles are nice for testing 
     const uint secondsPerLap     = 30;    // how often do we check the times and update the relay?
@@ -22,69 +24,46 @@ program SunsetLights
     bool redLED = false;     // red while updating the ePaper
     bool greenLED = false;   // green while getting the time from the web
     bool blueLED = false;    // blue while connecting to WiFi
+                             // cyan (green+blue) while processing a valid response from WebClient.GetRequest(..)
     bool builtInLED = false; // 'alive' pulse on each lap in the cycle
     
     bool   wifiConnected = false;
     bool   lightsOn = false;
     string wifiIP;
     string wifiZone;
+    byte   lastError;
     
     bool timeRetrieved = false;
-    <string, variant> time;
     uint weekOfYear; // 1..52?
-    bool daylightSavings;
-    long dstOffsetMinutes;
-    long utcOffsetMinutes;
     long utcTimeAtUpdate;
     long mcuTimeAtUpdateMinutes;
     long localTimeAtUpdateMinutes;
+    bool daylightSavings;                  // good defaults for NZ in case the time server doesn't provide 
+    long dstOffsetMinutes           = 60;  //  3600 seconds
+    long utcOffsetMinutes           = 720; // 43200 seconds
     
-    <byte, <string> > timesForNelson;
-    
+    <byte, <string> > mySunsetTimes;
     InitializeTimes()
     {
-        timesForNelson.Clear();
+        mySunsetTimes.Clear();
         <string> times;
         times.Clear(); times.Append("20:00"); times.Append("22:30");
-        for (byte i = 0; i <= 6; i++)   { timesForNelson[i] = times; }
-        for (byte i = 47; i <= 53; i++) { timesForNelson[i] = times; }
+        for (byte i = 0; i <= 6; i++)   { mySunsetTimes[i] = times; }
+        for (byte i = 47; i <= 53; i++) { mySunsetTimes[i] = times; }
         times.Clear(); times.Append("20:00"); times.Append("22:00");
-        for (byte i = 7; i <= 9; i++)   { timesForNelson[i] = times; }
-        for (byte i = 44; i <= 46; i++) { timesForNelson[i] = times; }
+        for (byte i = 7; i <= 9; i++)   { mySunsetTimes[i] = times; }
+        for (byte i = 44; i <= 46; i++) { mySunsetTimes[i] = times; }
         times.Clear(); times.Append("19:30"); times.Append("21:00");
-        for (byte i = 11; i <= 13; i++) { timesForNelson[i] = times; }
-        for (byte i = 40; i <= 43; i++) { timesForNelson[i] = times; }
+        for (byte i = 11; i <= 13; i++) { mySunsetTimes[i] = times; }
+        for (byte i = 40; i <= 43; i++) { mySunsetTimes[i] = times; }
         times.Clear(); times.Append("18:30"); times.Append("20:30");
-        for (byte i = 14; i <= 39; i++) { timesForNelson[i] = times; }
+        for (byte i = 14; i <= 39; i++) { mySunsetTimes[i] = times; }
     }
-    <string> GetWeekTimes(uint weekOfYear)
+    <string> GetSunsetTimes(uint weekOfYear)
     {
-        return timesForNelson[weekOfYear];
+        return mySunsetTimes[weekOfYear];
     }
-    string MinutesToTime(long dayMinutes)
-    {
-        long hours   = dayMinutes / 60;
-        long minutes = dayMinutes % 60;
-        return (hours.ToString()).LeftPad('0', 2) + ":" + (minutes.ToString()).LeftPad('0', 2);
-    }
-    long TimeToMinutes(string time)
-    {
-        uint hours;
-        uint minutes;
-        uint iT;
-        if (time.IndexOf('T', ref iT)) { time = time.Substring(iT+1); }
-        _ = UInt.TryParse(time.Substring(0, 2), ref hours);
-        _ = UInt.TryParse(time.Substring(3, 2), ref minutes);
-        long totalMinutes = hours * 60 + minutes;
-        return totalMinutes;
-    }
-    long NormalizeMinutes(long minutes)
-    {
-        while (minutes > 24*60) { minutes -= 24*60; }
-        while (minutes < 0)     { minutes += 24*60; }
-        return minutes;
-    } 
-    
+       
     UpdateLEDs()
     {
         LED = builtInLED;
@@ -137,10 +116,9 @@ program SunsetLights
             Screen.SetCursor(3,10);
             Screen.Print("Lights Off: ", Colour.Black, Colour.White);
             
-            
             long nowMinutes     = Millis / 60000;
             long deltaMinutes   = nowMinutes - mcuTimeAtUpdateMinutes;
-            long currentMinutes = NormalizeMinutes(localTimeAtUpdateMinutes + deltaMinutes);
+            long currentMinutes = DateTime.NormalizeMinutes(localTimeAtUpdateMinutes + deltaMinutes);
             
             // Data:
             Screen.SetCursor(11,4);
@@ -149,17 +127,17 @@ program SunsetLights
             Screen.SetCursor(18,6);
             if (timeRetrieved)
             {
-                Screen.Print(MinutesToTime(localTimeAtUpdateMinutes), Colour.Red, Colour.White);
+                Screen.Print(DateTime.MinutesToTime(localTimeAtUpdateMinutes), Colour.Red, Colour.White);
                 Screen.SetCursor(18,7);
-                Screen.Print(MinutesToTime(currentMinutes) + " (" + (daylightSavings ? "DST" : "No DST") + ")", Colour.Red, Colour.White);
+                Screen.Print(DateTime.MinutesToTime(currentMinutes) + " (" + (daylightSavings ? "DST" : "No DST") + ")", Colour.Red, Colour.White);
             }
             else
             {
-                Screen.Print("Failed");
+                Screen.Print("Failed: 0x" + lastError.ToHexString(2));
             }
             
             Screen.SetCursor(18,9);
-            <string> times = GetWeekTimes(weekOfYear);
+            <string> times = GetSunsetTimes(weekOfYear);
             Screen.Print(times[0], Colour.Red, Colour.White);
             Screen.SetCursor(18,10);
             Screen.Print(times[1], Colour.Red, Colour.White);
@@ -188,23 +166,29 @@ program SunsetLights
             if (success)
             {
                 WriteLn("WiFi connected");
-                wifiZone = "Garage";
                 wifiIP = WiFi.IP;
                 WriteLn("IP: " + wifiIP);
-                WriteLn("Zone: " + wifiZone);
-                wifiConnected = true;
-                break;
+                if (wifiIP.Contains('.')) // has IP
+                {
+                    wifiZone = "Garage";
+                    WriteLn("Zone: " + wifiZone);
+                    wifiConnected = true;
+                    break;
+                }
             }
             success = WiFi.Connect(SSID, Password);
             if (success)
             {
                 WriteLn("WiFi connected");
-                wifiZone = "House";
                 wifiIP = WiFi.IP;
                 WriteLn("IP: " + wifiIP);
-                WriteLn("Zone: " + wifiZone);
-                wifiConnected = true;
-                break;
+                if (wifiIP.Contains('.')) // has IP
+                {
+                    wifiZone = "House";
+                    WriteLn("Zone: " + wifiZone);
+                    wifiConnected = true;
+                    break;
+                }
             }
             Write(".");
             attempts++;
@@ -217,38 +201,211 @@ program SunsetLights
         Delay(500); // at least 0.5 seconds so that we can see it
         blueLED = false;  UpdateLEDs();
     }
-    
     UpdateTime()
     {
         greenLED = true;  UpdateLEDs();
         loop
-        {
+        {   
+            lastError = 0;      
             WiFiConnect();
             if (!wifiConnected)
             {
+                lastError = 0x01;
                 break;
             }
             Write("Updating Time");
             if (updateTime)
             {
-                string timejson;
-                if (WebClient.GetRequest("worldtimeapi.org/api/timezone/pacific/auckland", ref timejson))
+                // get GMT from any http response header
+                string timetext;
+                if (WebClient.GetRequest("arduino.tips/asciilogo.txt", ref timetext))
                 {
+                    blueLED = true;  UpdateLEDs();
+                    
+                    uint iDate;
+                    if (timetext.IndexOf("Date:", ref iDate))
+                    {
+                        timetext = timetext.Substring(iDate+5);
+                    }
+                    else
+                    {
+                        WriteLn(": GET no 'Date:'");
+                        lastError = 0x03;
+                        break;
+                    }
+                    uint iGMT;
+                    if (timetext.IndexOf(" GMT", ref iGMT))
+                    {
+                        timetext = timetext.Substring(0, iGMT);
+                    }
+                    else
+                    {
+                        WriteLn(": GET no ' GMT'");
+                        lastError = 0x04;
+                        break;
+                    }
+                    timetext = timetext.Trim();
+                    WriteLn("'" + timetext + "'");
+                }
+                else
+                {
+                    WriteLn(": GET request failed");
+                    lastError = 0x02;
+                    break;
+                }
+                
+                mcuTimeAtUpdateMinutes = Millis;
+                mcuTimeAtUpdateMinutes /= 60000;
+                timeRetrieved = true;
+                WriteLn(": success");
+                
+                // 'Tue, 15 Nov 1994 08:12:31'
+                string timestring = timetext.Substring(timetext.Length-8);
+                string datestring = timetext.Substring(0, timetext.Length-9).Trim();
+                
+                uint minutes;
+                _ = DateTime.TryTimeToMinutes(timestring, ref minutes);
+                utcTimeAtUpdate = minutes; 
+                
+                // 'Tue, 15 Nov 1994'
+                uint days;
+                _ = DateTime.TryDateToDays(datestring, ref days);
+                _ = DateTime.TryDSTFromDay(days, ref daylightSavings);
+                weekOfYear = (days / 7) + 1;
+                
+                localTimeAtUpdateMinutes = DateTime.NormalizeMinutes(utcTimeAtUpdate + utcOffsetMinutes + (daylightSavings ? dstOffsetMinutes : 0));
+            } // updateTime
+            else
+            {
+                WriteLn(": skipped"); 
+            }
+            break;
+        }
+        Delay(500); // at least 0.5 seconds so that we can see it
+        greenLED = false;  UpdateLEDs();
+    }
+    
+    /*
+    UpdateTime()
+    {
+        greenLED = true;  UpdateLEDs();
+        loop
+        {   
+            lastError = 0;
+            WiFiConnect();
+            if (!wifiConnected)
+            {
+                lastError = 0x01;
+                break;
+            }
+            Write("Updating Time");
+            if (updateTime)
+            {
+                <string, variant> time;
+                string timejson;
+                if (WebClient.GetRequest("time.jsontest.com", ref timejson))
+                {
+                    blueLED = true;  UpdateLEDs();
                     uint iBrace;
                     if (!timejson.IndexOf('{', ref iBrace))
                     {
                         WriteLn(": no JSON in response");
+                        lastError = 0x03;
                         break;
                     }
                     timejson = timejson.Substring(iBrace);
                     if (!Serialize.TryFromJSON(timejson, ref time))
                     {
                         WriteLn(": deserialize failed");    
+                        lastError = 0x04;
                         break;
                     }
                 }
                 else
                 {
+                    WriteLn(": GET request failed");    
+                    lastError = 0x02;
+                    break;
+                }
+                
+                mcuTimeAtUpdateMinutes = Millis;
+                mcuTimeAtUpdateMinutes /= 60000;
+                timeRetrieved = true;
+                WriteLn(": success");
+                
+                foreach(var kv in time)
+                {
+                    switch (kv.key)
+                    {
+                        case "date": // "02-11-2024"
+                        {
+                            string utcDate = kv.value;
+                            uint days;
+                            _ = DateTime.TryDateToDays(utcDate, ref days);
+                            _ = DateTime.TryDSTFromDay(days, ref daylightSavings);
+                            weekOfYear = (days / 7) + 1;
+                        }
+                        case "time": // "08:31:56 PM"
+                        { 
+                            string utcTime = kv.value;
+                            uint minutes;
+                            _ = DateTime.TryTimeToMinutes(utcTime, ref minutes);
+                            utcTimeAtUpdate = minutes; 
+                        }
+                    }
+                }
+                localTimeAtUpdateMinutes = DateTime.NormalizeMinutes(utcTimeAtUpdate + utcOffsetMinutes + (daylightSavings ? dstOffsetMinutes : 0));
+            } // updateTime
+            else
+            {
+                WriteLn(": skipped"); 
+            }
+            break;
+        }
+        Delay(500); // at least 0.5 seconds so that we can see it
+        greenLED = false;  UpdateLEDs();
+    }
+    */
+    
+    /*
+    UpdateTime()
+    {
+        greenLED = true;  UpdateLEDs();
+        loop
+        {
+            lastError = 0;
+            WiFiConnect();
+            if (!wifiConnected)
+            {
+                lastError = 1;
+                break;
+            }
+            Write("Updating Time");
+            if (updateTime)
+            {
+                <string, variant> time;
+                string timejson;
+                if (WebClient.GetRequest("worldtimeapi.org/api/timezone/pacific/auckland", ref timejson))
+                {
+                    blueLED = true;  UpdateLEDs();
+                    uint iBrace;
+                    if (!timejson.IndexOf('{', ref iBrace))
+                    {
+                        lastError = 0x03;
+                        WriteLn(": no JSON in response");
+                        break;
+                    }
+                    timejson = timejson.Substring(iBrace);
+                    if (!Serialize.TryFromJSON(timejson, ref time))
+                    {
+                        lastError = 0x04;
+                        WriteLn(": deserialize failed");    
+                        break;
+                    }
+                }
+                else
+                {
+                    lastError = 0x02;
                     WriteLn(": GET request failed");    
                     break;
                 }
@@ -278,13 +435,13 @@ program SunsetLights
                         case "utc_datetime":    
                         { 
                             string utcDateTime = kv.value;
-                            uint minutes = TimeToMinutes(utcDateTime);
+                            uint minutes;
+                            _ = DateTime.TryTimeToMinutes(utcDateTime, ref minutes);
                             utcTimeAtUpdate = minutes; 
                         }
                     }
                 }
-                localTimeAtUpdateMinutes = NormalizeMinutes(utcTimeAtUpdate + utcOffsetMinutes + dstOffsetMinutes);
-            } // updateTime
+                localTimeAtUpdateMinutes = DateTime.NormalizeMinutes(utcTimeAtUpdate + utcOffsetMinutes + (daylightSavings ? dstOffsetMinutes : 0));            } // updateTime
             else
             {
                 WriteLn(": skipped"); 
@@ -294,7 +451,7 @@ program SunsetLights
         Delay(500); // at least 0.5 seconds so that we can see it
         greenLED = false;  UpdateLEDs();
     }
-    
+    */
     {
         WriteLn();
         
@@ -303,6 +460,14 @@ program SunsetLights
         MCU.DigitalWrite(RelayPin, false);
         
         UpdateLEDs();
+        
+        // allowing debugger to break-in before time call
+        for (uint i=0; i < 20; i++)
+        {
+            Delay(250);
+            Write('-');
+        }
+        WriteLn();
         
         InitializeTimes();
         
@@ -326,18 +491,18 @@ program SunsetLights
         {
             long nowMinutes     = Millis / 60000;
             long deltaMinutes   = nowMinutes - mcuTimeAtUpdateMinutes;
-            long currentMinutes = NormalizeMinutes(localTimeAtUpdateMinutes + deltaMinutes);
+            long currentMinutes = DateTime.NormalizeMinutes(localTimeAtUpdateMinutes + deltaMinutes);
             
             uint elapsedMinutes = nowMinutes - start;
             lap++;
             WriteLn("Elapsed: " + elapsedMinutes.ToString() + " minutes, " + lap.ToString());
-            WriteLn("  CurrentTime: " + MinutesToTime(currentMinutes));
+            WriteLn("  CurrentTime: " + DateTime.MinutesToTime(currentMinutes));
             
             // Reboots?
             if (elapsedMinutes >= minutesPerCycle)
             {
                 WriteLn("Rebooting");
-                MCU.Reboot();
+                MCU.Reboot(false);
             }
             
             // Update the time from the web?
@@ -351,9 +516,11 @@ program SunsetLights
             bool oldState = lightsOn;
             if (timeRetrieved)
             {
-                <string> times = GetWeekTimes(weekOfYear);
-                long onTime  = TimeToMinutes(times[0]);
-                long offTime = TimeToMinutes(times[1]);
+                <string> times = GetSunsetTimes(weekOfYear);
+                uint onTime;  
+                uint offTime; 
+                _ = DateTime.TryTimeToMinutes(times[0], ref onTime);
+                _ = DateTime.TryTimeToMinutes(times[1], ref offTime);
                 
                 lightsOn = (currentMinutes >= onTime) && (currentMinutes <= offTime);
             }

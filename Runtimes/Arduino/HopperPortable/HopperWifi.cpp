@@ -188,7 +188,10 @@ bool WebClient_GetRequest(UInt hrurl, UInt& hrcontent)
     {
 #ifdef DIAGNOSTICS
         Serial.println("wifiClient: failed to connect");
+        Serial.print("Host: "); Serial.println(host);
+        Serial.print("URL: "); Serial.println(url);
 #endif
+        return false; 
     }
     return true;
 }

@@ -3117,30 +3117,28 @@ unit Expression
                 {
                     break;
                 }
-// end:
-                uint endAddress = CodeStream.NextAddress;
-                CodeStream.PatchJump(jumpEnd, endAddress);
                
                 actualType = falseExpressionType;
                 if (trueExpressionType != falseExpressionType)
                 {
+                    // AutomaticUpCastTop(string actualType, string desiredType)
                     if (Types.AutomaticUpCastTop(falseExpressionType, trueExpressionType))
                     {
                         actualType = trueExpressionType;  
                     }
-                    else if (Types.AutomaticUpCastNext(trueExpressionType, falseExpressionType))
-                    {
-                        actualType = falseExpressionType;    
-                    }
                     else
                     {
-                        Parser.ErrorAtCurrent("expected 'true' and 'false' expressions to be of the same type");
+                        Parser.ErrorAtCurrent("'true' and 'false' expressions must be of the same type");
                     }
                 }
                 if (Parser.HadError)
                 {
                     break;
                 }
+// end:
+                uint endAddress = CodeStream.NextAddress;
+                CodeStream.PatchJump(jumpEnd, endAddress);
+                
                 
             } // ?
             break;

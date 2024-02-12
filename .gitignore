@@ -2,7 +2,7 @@
 *.hex
 *.options
 *.log
-*.mem.txt
+*.mem
 
 *.suo
 *.vsidx

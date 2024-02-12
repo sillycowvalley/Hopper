@@ -8,8 +8,6 @@
 
 
 
-
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -142,6 +140,12 @@ void Runtime_MCU()
                 Serial_WriteChar(Char(13));
                 Runtime_Out4Hex(Runtime_currentCRC);
                 Serial_WriteChar(Char(92));
+                break;
+            }
+            case 'E':
+            {
+                Runtime_WaitForEnter();
+                External_MCUReboot(true);
                 break;
             }
             case 'R':
@@ -6283,7 +6287,9 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     }
     case LibCall::eMCUReboot:
     {
-        External_MCUReboot();
+        Type ptype = (Type)0;
+        UInt value = HopperVM_Pop_R(ptype);
+        External_MCUReboot(value != 0x00);
         doNext = false;
         break;
     }

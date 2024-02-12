@@ -47,6 +47,45 @@ unit Common
         return String.Compare((a.Path).ToLower(), (b.Path).ToLower());
     }
     
+    string ResolveCommandPath(string command)
+    {
+        string extension = Path.GetExtension(command);
+        extension = extension.ToLower();
+        if ((extension == ".hexe") || (extension == ".cmd")) 
+        {
+            if (File.Exists(command)) { } // already good
+            else
+            {
+                string binaryname = Path.Combine(CurrentDirectory, command); // current directory?
+                if (File.Exists(binaryname)) { command = binaryname; }
+                else
+                {
+                    binaryname = Path.Combine("/bin", command); // bin folder?
+                    if (File.Exists(binaryname)) { command = binaryname; }
+                }
+            }
+        }
+        else if (extension == ".")
+        {
+            string binaryname = command; // full path?
+            if (File.Exists(binaryname + HexeExtension))     { command = binaryname + HexeExtension; }
+            else if (File.Exists(binaryname + ".cmd"))       { command = binaryname + ".cmd";        }
+            else
+            {
+                binaryname = Path.Combine(CurrentDirectory, command); // current directory?
+                if (File.Exists(binaryname + HexeExtension)) { command = binaryname + HexeExtension; }
+                else if (File.Exists(binaryname + ".cmd"))   { command = binaryname + ".cmd";        }
+                else
+                {
+                    binaryname = Path.Combine("/bin", command); // bin folder?
+                    if (File.Exists(binaryname + HexeExtension)) { command = binaryname + HexeExtension; }
+                    else if (File.Exists(binaryname + ".cmd"))   { command = binaryname + ".cmd";        }
+                }
+            }
+        }
+        return command;        
+    }
+    
     bool TryDirectoryFromPath(string path, ShellObject dirObject)
     {
         directory dir = Directory.Open(path);

@@ -1408,12 +1408,22 @@ void HRString_ToString(UInt hrstr, String & str)
     }
 }
 
-void External_MCUReboot()
+void External_MCUReboot(Bool bootsel)
 {
 #ifdef RP2040
+    if (bootsel)
+    {
 #ifdef DIAGNOSTICS
-    Serial.println("Rebooting..");
+        Serial.println("Entering Boot Select mode..");
 #endif
-    rp2040.reboot();
+        reset_usb_boot(0,0);
+    }
+    else
+    {
+#ifdef DIAGNOSTICS
+        Serial.println("Rebooting..");
+#endif
+        rp2040.reboot();
+    }
 #endif
 }

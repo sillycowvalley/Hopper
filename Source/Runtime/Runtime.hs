@@ -826,6 +826,11 @@ program Runtime
                         Out4Hex(currentCRC);
                         Serial.WriteChar(char(slash)); // confirm data
                     }
+                    case 'E': // enter Boot Select mode
+                    {
+                        WaitForEnter();
+                        External.MCUReboot(true);
+                    }
                     case 'R': // get Registers
                     {
                         WaitForEnter();

@@ -154,5 +154,5 @@ unit MCU
     
     bool InterruptsEnabled { get library; set library; }
     
-    Reboot() library;
+    Reboot(bool bootsel) library;
 }

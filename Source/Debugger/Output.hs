@@ -1804,7 +1804,7 @@ unit Output
             string extension = Path.GetExtension(fileName);
             fileName = fileName.Replace(extension, "");
             
-            string memoryPath = "/Debug/" + fileName + ".mem.txt";
+            string memoryPath = "/Debug/" + fileName + ".mem";
             File.Delete(memoryPath);
             file memoryFile = File.Create(memoryPath);
             if (!memoryFile.IsValid())

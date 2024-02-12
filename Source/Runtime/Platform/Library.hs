@@ -312,7 +312,12 @@ unit Library
             }
             case LibCall.MCUReboot:
             {
-                External.MCUReboot();
+                Type ptype;
+                uint value = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertBool(ptype, value);
+#endif
+                External.MCUReboot(value != 0);
                 doNext = false;
             }
             

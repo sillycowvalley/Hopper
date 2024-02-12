@@ -11,60 +11,6 @@ program Shell
     
     uses "/Source/Shell/Common"
     
-    bool exiting;
-    bool loaded = false;
-    
-    string ExtendPath(string command)
-    {
-        string extension = Path.GetExtension(command);
-        extension = extension.ToLower();
-        if (extension == ".hexe")
-        {
-            // good
-        }
-        else if (extension == ".cmd")
-        {
-            // good
-        }
-        else if (extension == ".")
-        {
-            string binaryname = command; // full path?
-            if (File.Exists(binaryname + HexeExtension))
-            {
-                 command = binaryname + HexeExtension;
-            }
-            else if (File.Exists(binaryname + ".cmd"))
-            {
-                command = binaryname + ".cmd";        
-            }
-            else
-            {
-                binaryname = Path.Combine(CurrentDirectory, command);
-                if (File.Exists(binaryname + HexeExtension))
-                {
-                    command = binaryname + HexeExtension;
-                }
-                else if (File.Exists(binaryname + ".cmd"))
-                {
-                    command = binaryname + ".cmd";        
-                }
-                else
-                {
-                    binaryname = Path.Combine("/bin", command);
-                    if (File.Exists(binaryname + HexeExtension))
-                    {
-                        command = binaryname + HexeExtension;
-                    }
-                    else if (File.Exists(binaryname + ".cmd"))
-                    {
-                        command = binaryname + ".cmd";        
-                    }   
-                }
-            }
-        }
-        return command;        
-    }
-    
     bool Run(string command, <string> arguments)
     {
         bool success = false;
@@ -81,19 +27,19 @@ program Shell
         return success;
     }
     
-    bool RunBatch(string command, <string> options, <string> arguments)
+    bool RunScript(string command, <string> options, <string> arguments, ref bool wasExit)
     {
         bool success = false;
         loop
         {
             if (options.Count != 0)
             {
-                PrintLn("Batch scripts don't support options.", MatrixRed, Black);
+                PrintLn("Scripts don't support options.", MatrixRed, Black);
                 break;
             }
             if (arguments.Count != 0)
             {
-                PrintLn("Batch scripts don't support arguments.", MatrixRed, Black);
+                PrintLn("Scripts don't support arguments.", MatrixRed, Black);
                 break;
             }
             if (!File.Exists(command))
@@ -127,13 +73,17 @@ program Shell
                     continue; // ignore blank lines
                 }
                 string currentDirectory = CurrentDirectory;
-                Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black); // colour just to help with testing for now
+                Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black);
                 Print(commandLine);
-                if (!RunCommandLine(commandLine, true))
+                if (!RunCommandLine(commandLine, true, ref wasExit))
                 {
                     PrintLn("Failure in batch script '" + command + "':", MatrixRed, Black);
                     PrintLn("  '" + commandLine + "' ", MatrixRed, Black);
                     break;    
+                }
+                if (wasExit)
+                {
+                    break;
                 }
             }
             break;
@@ -141,7 +91,7 @@ program Shell
         return success;
     }    
     
-    bool RunCommandLine(string commandLine, bool inBatch)
+    bool RunCommandLine(string commandLine, bool inScript, ref bool wasExit)
     {
         bool success = true;
         PrintLn();
@@ -174,20 +124,20 @@ program Shell
             case "exit":
             {
                 Screen.Clear();
-                exiting = true;
+                wasExit = true;
             }
             
             // hexes and cmds:
             default:
             {
-                command = ExtendPath(command);
+                command = ResolveCommandPath(command);
                 string extension = Path.GetExtension(command);
                 extension = extension.ToLower();
                 if (extension == HexeExtension)
                 {
                     if (!Run(command, rawargs))
                     {
-                        if (!inBatch)
+                        if (!inScript)
                         {
                             PrintLn("Failed to run '" + command + "'", MatrixRed, Black);
                         }
@@ -196,9 +146,9 @@ program Shell
                 }
                 else if (extension == ".cmd")
                 {
-                    if (!RunBatch(command, options, args))
+                    if (!RunScript(command, options, args, ref wasExit))
                     {
-                        if (!inBatch)
+                        if (!inScript)
                         {
                             PrintLn("Failed to run '" + command + "'", MatrixRed, Black);
                         }
@@ -207,7 +157,7 @@ program Shell
                 }
                 else
                 {
-                    if (!inBatch)
+                    if (!inScript)
                     {
                         PrintLn("Unknown command '" + command + "'", MatrixRed, Black);
                     }
@@ -220,15 +170,7 @@ program Shell
     
     bool ValidCommandLineCharacter(char c)
     {
-        if (IsValidPathCharacter(c) 
-          || (c == ' ') 
-          || (c == '-')
-          || (c == '*')
-           )
-        {
-            return true;
-        }
-        return false;
+        return (IsValidPathCharacter(c) || (c == ' ') || (c == '-') || (c == '*'));
     }
     
     {
@@ -241,7 +183,7 @@ program Shell
         < string > previousCommands;
         uint currentPreviousCommand = 0;
         
-        Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black); // colour just to help with testing for now
+        Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black);
         uint x = currentDirectory.Length+1;
         uint w = Screen.Columns;
         uint current = x;
@@ -289,11 +231,12 @@ program Shell
                     }
                     
                     if (commandLine.Length != 0)
-                    {
-                        if (RunCommandLine(commandLine, false))
+                    {         
+                        bool wasExit;       
+                        if (RunCommandLine(commandLine, false, ref wasExit))
                         {
                         }
-                        if (exiting)
+                        if (wasExit)
                         {
                             break;
                         }

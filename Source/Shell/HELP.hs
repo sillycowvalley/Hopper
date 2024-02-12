@@ -4,7 +4,7 @@ program Help
     
     {
         <string> args = Arguments;
-        if (args.Length == 0)
+        if (args.Count == 0)
         {
             // Inspiration:
             // https://static-bcrf.biochem.wisc.edu/tutorials/unix/basic_unix/dos_and_unix_commands.html
@@ -17,6 +17,7 @@ program Help
             WriteLn("    DIR        LS       Lists files and subdirectories of a directory.");
             WriteLn("    HELP       MAN      Provides help information for Hopper Shell commands.");
             WriteLn("    MORE       TYPE     Displays syntax highlighted file one screen at a time.");
+            WriteLn("    SHELL               Launch a nested Hopper Shell within the current one.");
             WriteLn("    EXIT                Quit the current Hopper Shell.");
             // TODO
             //           MEM        FREE
@@ -29,7 +30,7 @@ program Help
             // 
         }
         
-        else if (args.Length == 1)
+        else if (args.Count == 1)
         {
             string command = (args[0]).ToLower();
             command = SwitchAlias(command);

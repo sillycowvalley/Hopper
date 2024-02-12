@@ -88,7 +88,7 @@ Bool External_AttachToPin(Byte value, PinISRDelegate gpioISRDelegate, Byte statu
 Bool External_MCUInterruptsEnabledGet();
 void External_MCUInterruptsEnabledSet(Bool value);
 void External_ServiceInterrupts();
-void External_MCUReboot();
+void External_MCUReboot(Bool bootsel);
 
 Bool Serial_IsAvailable_Get();
 Char Serial_ReadChar();

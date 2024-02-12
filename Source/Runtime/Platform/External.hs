@@ -105,8 +105,7 @@ unit External
         ErrorDump(156); Error = 0x0A; return false;
     }
     
-    
-    MCUReboot()
+    MCUReboot(bool bootsel)
     {
         ErrorDump(156); Error = 0x0A;
     }
