@@ -6,6 +6,9 @@ Bool External_WiFiConnect(UInt hrssid, UInt hrpassword)
 {
     return false;
 }
+void External_WiFiDisconnect()
+{
+}
 Bool External_WebClientGetRequest_R(UInt hrurl, UInt& hrcontent)
 {
     return false;
@@ -13,6 +16,10 @@ Bool External_WebClientGetRequest_R(UInt hrurl, UInt& hrcontent)
 UInt External_WiFiIP()
 {
     return HRString_New();    
+}
+UInt External_WiFiStatus()
+{
+    return 255; // WL_NO_SHIELD;
 }
 #endif
 
@@ -24,6 +31,52 @@ bool wifiConnected = false;
 Bool IsWiFiConnected() { return wifiConnected; }
 
 WiFiClient wifiClient;
+
+UInt External_WiFiStatus()
+{
+    Byte status = WiFi.status();
+    switch (status)
+    {
+      case WL_NO_SHIELD:
+          status = 255;
+          break;
+      case WL_IDLE_STATUS:
+          status = 0;
+          break;
+      case WL_CONNECTED:
+          status = 1;
+          break;
+      case WL_CONNECT_FAILED:
+          status = 2;
+          break;
+      case WL_CONNECTION_LOST:
+          status = 3;
+          break;
+      case WL_DISCONNECTED:
+          status = 4;
+          break;
+      case WL_AP_LISTENING:
+          status = 5;
+          break;
+      case WL_AP_CONNECTED:
+          status = 6;
+          break;
+      case WL_AP_FAILED:
+          status = 7;
+          break;
+    }
+    return status;
+}
+
+void External_WiFiDisconnect()
+{
+    if (wifiConnected)
+    {
+        WiFi.disconnect();
+        wifiConnected = false;
+    }
+}
+
 
 #ifdef RP2040PICOW
 bool WifiConnect()
@@ -47,9 +100,10 @@ bool WifiConnect()
         }
         Serial.print("x");
         delay(1500);
-    }  
+    }
     return success;
 }
+
 #endif
 
 #ifdef ARDUINONANO_RP2040

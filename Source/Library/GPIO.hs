@@ -66,6 +66,17 @@ unit GPIO
     const byte builtInLED = 12;
 #endif
 
+#ifdef CHALLENGER_RP2040_SDRTC
+    const byte a0         = 26; // A0
+    const byte a1         = 27; // A1
+    const byte a2         = 28; // A2
+    const byte a3         = 29; // A3
+   //const byte a4        = 25; // A4
+   //const byte a5        = 21; // A5
+    
+    const byte builtInLED = 24;
+#endif
+
 #ifdef ADAFRUIT_QTPY
     // AdaFruit QT Py
     const byte a0         = 29; // A0

@@ -109,6 +109,16 @@ unit External
     {
         ErrorDump(156); Error = 0x0A;
     }
+    uint MCUHeapFree()
+    {
+        ErrorDump(156); Error = 0x0A;
+        return 0;
+    }
+    uint MCUStackFree()
+    {
+        ErrorDump(156); Error = 0x0A;
+        return 0;
+    }
     
     TimerRelease()
     {
@@ -156,6 +166,14 @@ unit External
     uint WiFiIP()
     {
         ErrorDump(156); Error = 0x0A; return 0;
+    }
+    uint WiFiStatus()
+    {
+        ErrorDump(156); Error = 0x0A; return 0;
+    }
+    WiFiDisconnect()
+    {
+        ErrorDump(156); Error = 0x0A;
     }
     bool WebClientGetRequest(uint hrurl, ref uint hrcontent)
     {

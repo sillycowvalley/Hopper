@@ -320,6 +320,16 @@ unit Library
                 External.MCUReboot(value != 0);
                 doNext = false;
             }
+            case LibCall.MCUHeapFree:
+            {
+                uint hrlong = External.MCUHeapFree();
+                Push(hrlong, Type.Long);
+            }
+            case LibCall.MCUStackFree:
+            {
+                uint hrlong = External.MCUStackFree();
+                Push(hrlong, Type.Long);
+            }
             
             case LibCall.SPIBegin:
             {

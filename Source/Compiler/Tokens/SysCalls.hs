@@ -48,15 +48,15 @@ unit SysCalls
         addEntry("Dictionary.Clear");
         
         addEntry("Pair.New");
-        addEntry("_Pair.Set");
+        addEntry("_Pair.Set"); // unused
         addEntry("Pair.Key");
-        addEntry("_Pair.KeyType");
+        addEntry("_Pair.KeyType"); // unused
         addEntry("Pair.Value");
-        addEntry("_Pair.ValueType");
+        addEntry("_Pair.ValueType"); // unused
         
-        addEntry("_Variant.Type");
+        addEntry("_Variant.Type"); // unused
         addEntry("Variant.Box");
-        addEntry("Variant.UnBox");
+        addEntry("Variant.UnBox"); // unused
         
         addEntry("Screen.Print");
         addEntry("Screen.PrintLn");
@@ -163,14 +163,15 @@ unit SysCalls
         
         addEntry("String.Build");
         
-        //legacy
-        addEntry("_WebServer.Method_Get");
-        addEntry("_WebServer.URL_Get");
-        addEntry("_WebServer.Arguments_Get");
-        addEntry("_WebServer.On");
-        addEntry("_WebServer.Send");
-        addEntry("_WebServer.ClearHandlers");
-        addEntry("_HttpClient.GetRequest");
+        addEntry("WiFi.Connect");
+        addEntry("WiFi.IP_Get");
+        addEntry("WiFi.Status_Get");
+        addEntry("WiFi.Disconnect");
+        
+        addEntry("Array.NewFromConstant");
+        
+        addEntry("Directory.Create");
+        addEntry("Directory.Delete");
         
         addEntry("Runtime.PC_Get");
         addEntry("Runtime.SP_Get");
@@ -183,7 +184,7 @@ unit SysCalls
         addEntry("Runtime.Inline");
         addEntry("Runtime.UserCode_Get");
         
-        // legacy:
+        // placeholders:
         addEntry("_Runtime.Load");             // used by the windows shell debugger
         addEntry("_Runtime.BytesLoaded_Get");  // used by the windows shell debugger
         addEntry("_Runtime.Run");              // used by the windows shell debugger
@@ -291,11 +292,11 @@ unit SysCalls
         addEntry("Serial.Ports_Get");
         
         addEntry("System.HexeVersion_Get");
-        
-        addEntry("Directory.Create");
-        addEntry("Directory.Delete");
-        
-        addEntry("WiFi.Connect");
+
+        // placeholders:        
+        addEntry("_Directory.Create");
+        addEntry("_Directory.Delete");
+        addEntry("_WiFi.Connect");
         
         addEntry("Float.ToUInt");
         addEntry("Float.ToLong");
@@ -303,9 +304,8 @@ unit SysCalls
         addEntry("Long.AddB");
         addEntry("Long.SubB");
         
-        addEntry("Array.NewFromConstant");
         
-        addEntry("WiFi.IP_Get");
+        
     }
     
     bool TryParseSysCall(string name, ref byte index)
@@ -336,5 +336,4 @@ unit SysCalls
     {
         return syscalls;
     }
-    
 }

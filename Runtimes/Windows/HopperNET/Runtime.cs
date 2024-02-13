@@ -342,14 +342,15 @@ namespace HopperNET
 
         StringBuild = 0x83,
 
-        //WebServerMethodGet = 0x84,
-        //WebServerURLGet = 0x85,
-        //WebServerArgumentsGet = 0x86,
-        //WebServerOn = 0x87,
-        //WebServerSend = 0x88,
-        //WebServerClearHandlers = 0x89,
+        WiFiConnect = 0x84,
+        WiFiIPGet = 0x85,
+        WiFiStatusGet = 0x86,
+        WiFiDisconnect = 0x87,
 
-        //HttpClientGetRequest = 0x8A,
+        ArrayNewFromConstant = 0x88,
+
+        DirectoryCreate = 0x89,
+        DirectoryDelete = 0x8A,
 
         RuntimePCGet = 0x8B,
         RuntimeSPGet = 0x8C,
@@ -454,22 +455,11 @@ namespace HopperNET
         SerialPortsGet = 0xE7,
         SystemHexeVersionGet = 0xE8,
 
-        DirectoryCreate = 0xE9,
-        DirectoryDelete = 0xEA,
-
-        WiFiConnect = 0xEB,
-
         FloatToUInt = 0xEC,
         FloatToLong = 0xED,
 
         LongAddB = 0xEE,
         LongSubB = 0xEF,
-
-        ArrayNewFromConstant = 0xF0,
-
-        WiFiIPGet = 0xF1,
-
-        
 
     };
 

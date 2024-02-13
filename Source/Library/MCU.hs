@@ -4,7 +4,7 @@ unit MCU
 #if defined(RP2040_PICO) || defined(RP2040_PICOW) || defined(MAKER_NANO_RP2040) || defined(WAVESHARE_RP2040_PLUS) || defined(PIMORONI_PICOLIPO)
     #define PICO_PINS // Raspberry Pi Pico form factor and pins
 #endif
-#if defined(ADAFRUIT_FEATHER_RP2040) || defined(CHALLENGER_RP2040_WIFI) || defined(SPARKFUN_THING_PLUS_RP2040)
+#if defined(ADAFRUIT_FEATHER_RP2040) || defined(CHALLENGER_RP2040_WIFI) || defined(CHALLENGER_RP2040_SDRTC) || defined(SPARKFUN_THING_PLUS_RP2040)
     #define FEATHER_PINS // Adafruit Feather form factor and pins
 #endif
 #if defined(WAVESHARE_RP2040_MATRIX) || defined(ARDUINO_NANO_RP2040) ||  defined(ARDUINO_NANO_ESP32) || defined(ADAFRUIT_METRO_RP2040) || defined(WEMOS_D1_MINI) || defined(PIMORONI_TINY2040) || defined(WAVESHARE_RP2040_ONE) || defined(SEEED_XIAO_RP2040) 
@@ -155,4 +155,8 @@ unit MCU
     bool InterruptsEnabled { get library; set library; }
     
     Reboot(bool bootsel) library;
+    
+    // Use these two APIs to keep an eye on the health of your MCU memory:
+    long HeapFree() library;  // Is there a leak in the system level stuff? 
+    long StackFree() library; // Are we close to the stack limit?
 }

@@ -3096,6 +3096,9 @@ unit Expression
                 // if false jump past
                 uint jumpPast = CodeStream.NextAddress;
                 CodeStream.AddInstructionJump(Instruction.JZ);
+                
+                <byte> mainStream = CodeStream.CurrentStream;
+                CodeStream.New();
             
                 Parser.Advance(); // ?
                 string trueExpressionType = CompileExpression(expectedType);
@@ -3105,6 +3108,32 @@ unit Expression
                     break;
                 }
                 
+                <byte> trueStream = CodeStream.CurrentStream;
+                CodeStream.New();
+                
+                
+                
+                string falseExpressionType = CompileExpression(expectedType);
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                
+                <byte> falseStream = CodeStream.CurrentStream;
+                
+                CodeStream.New(mainStream);
+                CodeStream.AppendCode(trueStream);
+                
+                actualType = trueExpressionType;
+                if (trueExpressionType != falseExpressionType)
+                {
+                    // AutomaticUpCastTop(string actualType, string desiredType)
+                    if (Types.AutomaticUpCastTop(trueExpressionType, falseExpressionType))
+                    {
+                        actualType = falseExpressionType;
+                    }
+                }
+                
                 // jump end (past a potential "else" block)
                 uint jumpEnd = CodeStream.NextAddress;
                 CodeStream.AddInstructionJump(Instruction.J);
@@ -3112,17 +3141,12 @@ unit Expression
                 uint pastAddress = CodeStream.NextAddress;
                 CodeStream.PatchJump(jumpPast, pastAddress); 
                 
-                string falseExpressionType = CompileExpression(expectedType);
-                if (Parser.HadError)
-                {
-                    break;
-                }
-               
-                actualType = falseExpressionType;
-                if (trueExpressionType != falseExpressionType)
+                CodeStream.AppendCode(falseStream);
+                
+                if (actualType != falseExpressionType)
                 {
                     // AutomaticUpCastTop(string actualType, string desiredType)
-                    if (Types.AutomaticUpCastTop(falseExpressionType, trueExpressionType))
+                    if (Types.AutomaticUpCastTop(falseExpressionType, actualType))
                     {
                         actualType = trueExpressionType;  
                     }

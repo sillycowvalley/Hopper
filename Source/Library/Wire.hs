@@ -29,6 +29,14 @@ unit Wire
     #define USES_I2C
 #endif
 
+#if defined(CHALLENGER_RP2040_SDRTC) 
+    // TODO : verify pins and validation below
+    const byte DefaultI2CController = 0;
+    const byte DefaultI2CSDAPin     = 4;
+    const byte DefaultI2CSCLPin     = 5;
+    #define USES_I2C
+#endif
+
 #if defined(SPARKFUN_THING_PLUS_RP2040) 
     // TODO : verify pins and validation below
     const byte DefaultI2CController = 0;

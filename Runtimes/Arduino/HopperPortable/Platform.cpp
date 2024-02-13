@@ -1427,3 +1427,22 @@ void External_MCUReboot(Bool bootsel)
     }
 #endif
 }
+UInt External_MCUHeapFree()
+{
+    long result = 0;
+#ifdef RP2040    
+    result = rp2040.getFreeHeap();
+#endif
+    UInt hrlong = hopperLongFromNativeLong(result);
+    return hrlong;
+}
+UInt External_MCUStackFree()
+{
+    long result = 0;
+#ifdef RP2040    
+    result = rp2040.getFreeStack();
+#endif
+    UInt hrlong = hopperLongFromNativeLong(result);
+    return hrlong;
+}
+

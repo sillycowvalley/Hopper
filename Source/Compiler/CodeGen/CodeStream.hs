@@ -86,10 +86,7 @@ unit CodeStream
         currentStream = starterStream;
         Peephole.Initialize();
     }
-    GetCurrentStream(ref <byte> rCurrentStream)
-    {
-        rCurrentStream = currentStream;
-    }
+    
     <byte> CurrentStream { get { return currentStream; } }
     <string,string> DebugInfo { get { return debugInfo; } }
     ClearDebugInfo()

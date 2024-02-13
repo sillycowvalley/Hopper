@@ -4942,6 +4942,17 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(ip, Type::eString);
         break;
     }
+    case SysCall::eWiFiStatusGet:
+    {
+        UInt status = External_WiFiStatus();
+        HopperVM_Push(status, Type::eUInt);
+        break;
+    }
+    case SysCall::eWiFiDisconnect:
+    {
+        External_WiFiDisconnect();
+        break;
+    }
     case SysCall::eArrayNew:
     {
         Type stype = (Type)0;
@@ -6291,6 +6302,18 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt value = HopperVM_Pop_R(ptype);
         External_MCUReboot(value != 0x00);
         doNext = false;
+        break;
+    }
+    case LibCall::eMCUHeapFree:
+    {
+        UInt hrlong = External_MCUHeapFree();
+        HopperVM_Push(hrlong, Type::eLong);
+        break;
+    }
+    case LibCall::eMCUStackFree:
+    {
+        UInt hrlong = External_MCUStackFree();
+        HopperVM_Push(hrlong, Type::eLong);
         break;
     }
     case LibCall::eSPIBegin:

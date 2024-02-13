@@ -19,6 +19,9 @@ unit LibCalls
         MCUInterruptsEnabledSet,
         MCUReboot,
         
+        MCUHeapFree,
+        MCUStackFree,
+        
         TimerStart,
         TimerStop,
         TimerAlarm,

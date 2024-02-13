@@ -129,6 +129,16 @@ unit SysCalls
         
         StringBuild      = 0x83,
         
+        WiFiConnect    = 0x84,
+        WiFiIPGet      = 0x85,
+        WiFiStatusGet  = 0x86,
+        WiFiDisconnect = 0x87,
+        
+        ArrayNewFromConstant = 0x88,
+        
+        DirectoryCreate  = 0x89,
+        DirectoryDelete  = 0x8A,
+        
         RuntimePCGet  = 0x8B,
         RuntimeSPGet  = 0x8C,
         RuntimeBPGet  = 0x8D,
@@ -200,18 +210,10 @@ unit SysCalls
         FloatFromBytes   = 0xE5,
         UIntToFloat      = 0xE6,
         
-        DirectoryCreate  = 0xE9,
-        DirectoryDelete  = 0xEA,
-        
-        WiFiConnect      = 0xEB,
-        
         FloatToUInt     = 0xEC,
         FloatToLong     = 0xED,
         LongAddB        = 0xEE,
         LongSubB        = 0xEF,
         
-        ArrayNewFromConstant = 0xF0,
-        
-        WiFiIPGet            = 0xF1,
     }
 }

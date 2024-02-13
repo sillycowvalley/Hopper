@@ -1660,6 +1660,15 @@ unit HopperVM
                 uint ip = External.WiFiIP();
                 Push(ip, Type.String);                
             }
+            case SysCall.WiFiStatusGet:
+            {
+                uint status = External.WiFiStatus();
+                Push(status, Type.UInt);                
+            }
+            case SysCall.WiFiDisconnect:
+            {
+                External.WiFiDisconnect();
+            }
             
             case SysCall.ArrayNew:
             {   

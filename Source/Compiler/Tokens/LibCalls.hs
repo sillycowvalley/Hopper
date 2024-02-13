@@ -28,6 +28,9 @@ unit LibCalls
         addEntry("MCU.InterruptsEnabled_Set");
         addEntry("MCU.Reboot");
         
+        addEntry("MCU.HeapFree");
+        addEntry("MCU.StackFree");
+        
         addEntry("Timer.Start");
         addEntry("Timer.Stop");
         addEntry("Timer.Alarm");

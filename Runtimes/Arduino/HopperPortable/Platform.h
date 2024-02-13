@@ -89,6 +89,9 @@ Bool External_MCUInterruptsEnabledGet();
 void External_MCUInterruptsEnabledSet(Bool value);
 void External_ServiceInterrupts();
 void External_MCUReboot(Bool bootsel);
+UInt External_MCUHeapFree();
+UInt External_MCUStackFree();
+
 
 Bool Serial_IsAvailable_Get();
 Char Serial_ReadChar();
@@ -166,8 +169,11 @@ void HRNeoPixel_Show();
 UInt HRNeoPixel_GetLength();
 
 Bool External_WebClientGetRequest_R(UInt hrurl, UInt& hrcontent);
+
 Bool External_WiFiConnect(UInt hrssid, UInt hrpassword);
+void External_WiFiDisconnect();
 UInt External_WiFiIP();
+UInt External_WiFiStatus();
 
 void External_WebServerBegin(UInt port);
 void External_WebServerClose();

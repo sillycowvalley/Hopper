@@ -1,6 +1,6 @@
 program TestFiles
 {
-#define SERIAL_CONSOLE
+//#define SERIAL_CONSOLE
     uses "/Source/System/System"
     
     uses "/Source/System/IO"
