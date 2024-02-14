@@ -3,9 +3,9 @@ unit DeviceDriver
     // https://www.waveshare.com/wiki/Pico-LCD-1.14
     // Note: Colour.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
     
-#if !defined(RP2040_PICOW) && !defined(RP2040_PICO)    
-    // plugs directly into the Pi Pico or Pi PicoW so if neither was defined, assume Pico W for now
-    #define RP2040_PICOW 
+#if !defined(MCU_BOARD_DEFINED)
+    // plugs directly into the Pi Pico so no board defined, assume generic Pi Pico
+    uses "/Source/Library/Boards/PiPico"
 #endif
     #define WAVESHARE_PICO_LCD_114
     
@@ -15,12 +15,12 @@ unit DeviceDriver
     const int PH = 135;
     
     const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
-    const byte DCPin   = 8;
-    const byte CSPin   = 9;
-    const byte ClkPin  = 10;
-    const byte TxPin   = 11;
-    const byte RstPin  = 12;
-    const byte BlPin   = 13;
+    byte DCPin   { get { return Board.D8; } }
+    byte CSPin   { get { return Board.D9; } }
+    byte ClkPin  { get { return Board.D10; } }
+    byte TxPin   { get { return Board.D11; } }
+    byte RstPin  { get { return Board.D12; } }
+    byte BlPin   { get { return Board.D13; } }
     
     const byte keyAPin      = 15;
     const byte keyBPin      = 17;

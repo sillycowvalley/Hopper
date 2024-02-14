@@ -18,7 +18,10 @@ unit IO
     uses  "/Source/System/String" // for keyboard buffer
 #endif
 
-    bool EchoToLCD { set { echoToLCD = value; } get { return echoToLCD; } }
+    bool EchoToLCD     { set { echoToLCD = value; } get { return echoToLCD; } }
+#ifdef MCU
+    bool EchoToDisplay { set { echoToLCD = value; } get { return echoToLCD; } } // for clarity
+#endif    
    
     // Maximum width of lines on screen or serial console:
     //   uint LineMax

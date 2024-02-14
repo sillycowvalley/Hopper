@@ -591,7 +591,10 @@ program HopperMonitor
         if (Monitor.IsMCU)
         {
             PrintPad("T        - transfer file to LittleFS on MCU: T <local path> <remote folder>", 4);
-            PrintPad("E        - enter Boot Select mode (only for RP2040), and quit Hopper Monitor", 4);
+            PrintPad("E        - extra functions for microcontrollers:", 4);
+            PrintPad("           B - enter Boot Select mode (only for RP2040), and quit Hopper Monitor", 4);
+            PrintPad("           W - write the current local Windows date and time to the microcontroller RTC", 4);
+            PrintPad("           R - read the date and time from the microcontroller RTC", 4);
         }
         PrintLn();
         PrintPad("C        - emit Hopper call stack", 4);
@@ -864,12 +867,52 @@ program HopperMonitor
                 
                 else if (currentCommand == 'E') // enter Boot Select mode on the RP2040 then quit
                 {
-                    if (!Monitor.RunCommand(commandLine))
+                    PrintLn(" Microcontroller functions:");
+                    PrintLn("  B     - enter Boot Select mode (only for RP2040), and quit Hopper Monitor");
+                    PrintLn("  W - write the current local Windows date and time to the microcontroller RTC");
+                    PrintLn("  R - read the date and time from the microcontroller RTC");
+                    
+                    PrintLn("  <Esc> - cancel");
+                    Print  (" >");
+                    loop
                     {
-                        PrintLn(" entering BOOTSEL mode..");
-                        break;      
+                        Key mkey  = ReadKey();
+                        if (mkey == Key.Escape)
+                        {
+                            PrintLn(" * cancelled *", Colour.MatrixRed, Colour.Black);
+                        }
+                        else
+                        {
+                            char mch = mkey.ToChar();
+                            mch = mch.ToUpper();
+                            if (mch == 'B')
+                            {
+                                if (!Monitor.RunCommand(commandLine))
+                                {
+                                    PrintLn(mch + " entering BOOTSEL mode..");
+                                    break;      
+                                }
+                                // failed
+                            }
+                            else if (mch == 'W')
+                            {
+                                string time = Time.Time;
+                                string date = Time.Date;
+                                PrintLn(mch + " '" + date + " " + time + "' -> writing date and time ..");
+                                // TODO : set the date and time
+                            }
+                            else if (mch == 'R')
+                            {
+                                PrintLn(mch + " reading date and time ..");
+                                // TODO : set the date and time
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                        break;
                     }
-                    // failed
                     refresh = true;
                 }
                 else if (currentCommand == 'X') // Execute (run with Warp)

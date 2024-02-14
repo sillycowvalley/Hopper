@@ -271,7 +271,7 @@ unit DisplayDriver
             
             SPI.Settings(DeviceDriver.SPIController, 12000000, DataOrder.MSBFirst, DataMode.Mode0);
             
-            if (!SPI.Begin(DeviceDriver.SPIController))
+            if (!SPI.Initialize(DeviceDriver.SPIController))
             {
                 IO.WriteLn("DeviceDriver.Begin failed in SPI.Begin");
                 break;

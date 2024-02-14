@@ -1,5 +1,8 @@
 unit DeviceDriver
 {
+#if !defined(MCU_BOARD_DEFINED)
+    uses "/Source/Library/Boards/AdafruitFeather"
+#endif
     #define NEOPIXEL_DEVICE_DRIVER
     uses "/Source/Library/Displays/MatrixDriver"
     
@@ -41,7 +44,7 @@ unit DeviceDriver
     bool Begin()
     {
         NeoPixel.Begin(32 // number of LEDs
-                     , 8  // data GPIO pin
+                     , Board.D6  // data GPIO pin
                      , PixelType.GRB | PixelType.KHz800);
         NeoPixel.Brightness = 1;
         NeoPixel.Clear();

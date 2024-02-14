@@ -1,10 +1,9 @@
 program WebServer
 {
-    //#define RP2040_PICOW
-    //#define ARDUINO_NANO_RP2040
-    //#define CHALLENGER_RP2040_WIFI
+    //uses "/Source/Library/Boards/PiPicoW"
+    uses "/Source/Library/Boards/Challenger2040WiFi"
+    //uses "/Source/Library/Boards/ArduinoNanoConnect"
     
-    uses "/Source/Library/MCU"
     uses "/Source/Samples/MCU/Secrets2/Connect"
     
     uint counter;
@@ -45,9 +44,9 @@ program WebServer
     }
     
     {
-#if !defined(USES_WIFI)
+#if !defined(BOARD_HAS_WIFI)
         #error "WiFi capable board required for this sample (see options at top of file)"
-#endif            
+#endif                        
         WriteLn(); 
         uint attempts = 0;
         loop

@@ -184,11 +184,12 @@ unit SysCalls
         addEntry("Runtime.Inline");
         addEntry("Runtime.UserCode_Get");
         
+        
+        addEntry("Time.Time_Get");
+        addEntry("Time.Time_Set");
+        addEntry("Time.Date_Get");
+        addEntry("Time.Date_Set");
         // placeholders:
-        addEntry("_Runtime.Load");             // used by the windows shell debugger
-        addEntry("_Runtime.BytesLoaded_Get");  // used by the windows shell debugger
-        addEntry("_Runtime.Run");              // used by the windows shell debugger
-        addEntry("_Runtime.SetVisibility");    // Windows shell debugger: debug child window visible?
         addEntry("_Runtime.SetStepping");
         addEntry("_Runtime.StepInto");
         addEntry("_Runtime.StepOver");

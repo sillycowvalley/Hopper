@@ -1,7 +1,6 @@
 program FiboUInt
 {
-    #define RP2040_PICOW
-    uses "/Source/Library/MCU"
+    uses "/Source/Library/Boards/PiPico"
     
     // https://forums.raspberrypi.com/viewtopic.php?t=303458
     

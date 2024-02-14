@@ -8,9 +8,9 @@ unit DisplayDriver
     // Eventually got it working reliablty with a variation of the AdaFruit driver:
     //   https://github.com/adafruit/Adafruit_SSD1306/blob/master/Adafruit_SSD1306.cpp
     
-    const byte SSD1306_MEMORYMODE      = 0x20;
-    const byte SSD1306_COLUMNADDR      = 0x21;
-    const byte SSD1306_PAGEADDR        = 0x22;
+    const byte SSD1306_MEMORYMODE       = 0x20;
+    const byte SSD1306_COLUMNADDR       = 0x21;
+    const byte SSD1306_PAGEADDR         = 0x22;
     const byte SSD1306_DEACTIVATESCROLL = 0x2E;
     
     const byte SSD1306_SETSTARTLINE    = 0x40;

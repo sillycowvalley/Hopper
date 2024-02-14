@@ -26,10 +26,10 @@ unit WebTime
     bool DST                    { get { return daylightSavings; } }
     
     long MCUTimeAtStart         { get { return mcuStartMinutes;          } }
-    long MCUTimeNow             { get { return Millis / 60000;          } }
+    long MCUTimeNow             { get { return Millis / 60000;           } }
     long MCUTimeAtUpdate        { get { return mcuTimeAtUpdateMinutes;   } }
     long LocalTimeAtUpdate      { get { return localTimeAtUpdateMinutes; } }
-    long LocalTimeNow           { get { return DateTime.NormalizeMinutes(LocalTimeAtUpdate + MCUTimeNow - MCUTimeAtStart); } }
+    long LocalTimeNow           { get { return DateTime.NormalizeMinutes(LocalTimeAtUpdate + MCUTimeNow - MCUTimeAtUpdate); } }
     
     long MinutesSinceLastUpdate { get { return MCUTimeNow - mcuTimeAtUpdateMinutes; } }
     
@@ -64,7 +64,9 @@ unit WebTime
         loop
         {
             bool success;
-            success = WiFi.Connect(SSID2, Password2);
+            //success = WiFi.Connect(SSID2, Password2);
+            success = WiFi.Connect(SSID, Password);
+            WriteLn("Using: " + SSID);
             wifiStatus = WiFi.Status;
             if (success)
             {

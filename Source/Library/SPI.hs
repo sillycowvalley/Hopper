@@ -13,7 +13,22 @@ unit SPI
         Mode3 = 3,
     }
     
-    // SPI APIs : this first ones assume only one SPI controller
+#if !defined(BOARD_HAS_NO_SPI0)
+    const byte DefaultCSPin0     = Board.SPI0SCK;
+    const byte DefaultClkPin0    = Board.SPI0SCK;
+    const byte DefaultTxPin0     = Board.SPI0Tx;
+    const byte DefaultRxPin0     = Board.SPI0Rx;
+#endif
+    
+#if !defined(BOARD_HAS_NO_SPI1)
+    const byte DefaultCSPin1     = Board.SPI1SS;
+    const byte DefaultClkPin1    = Board.SPI1SCK;
+    const byte DefaultTxPin1     = Board.SPI1Tx;
+    const byte DefaultRxPin1     = Board.SPI1Rx;
+#endif
+
+    
+    // SPI APIs : these first ones assume SPI0 controller
     byte CSPin  { set library; get library; } // CS
     byte ClkPin { set library; }              // SCK
     byte TxPin  { set library; }              // MOSI
@@ -33,10 +48,10 @@ unit SPI
     WriteBuffer(byte[] data, uint startIndex, uint length) library;
     
     // These APIs support more than one SPI controller
-    SetCSPin(byte spiController, byte csPin) library;
+    SetCSPin(byte spiController,  byte csPin) library;
     SetClkPin(byte spiController, byte clkPin) library;
-    SetTxPin(byte spiController, byte txPin) library;
-    SetRxPin(byte spiController, byte rxPin) library;
+    SetTxPin(byte spiController,  byte txPin) library;
+    SetRxPin(byte spiController,  byte rxPin) library;
     
     Settings(byte spiController, long speedMaximum, DataOrder dataOrder, DataMode dataMode)  library;
     

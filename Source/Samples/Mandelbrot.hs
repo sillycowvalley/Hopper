@@ -1,7 +1,6 @@
 program Mandelbrot
 {
-    #define RP2040_PICOW
-    uses "/Source/Library/MCU"
+    uses "/Source/Library/Boards/PiPico"
         
     {
         IO.Clear();

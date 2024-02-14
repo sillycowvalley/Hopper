@@ -11,6 +11,10 @@ unit Display
     int  PixelWidth   { get { return pixelWidth;  } set { pixelWidth  = value;  }}
     int  PixelHeight  { get { return pixelHeight; } set { pixelHeight = value;  }}
     
+    uint ForeColour { get { return Screen.ForeColour; } set { Screen.ForeColour = value; }}
+    uint BackColour { get { return Screen.BackColour; } set { Screen.BackColour = value; }}
+    
+    
     bool Begin()
     {
 #ifdef FONT_EXISTS
@@ -49,6 +53,10 @@ unit Display
         suspended++;
     }
 #endif
+    Clear()
+    {
+        Clear(Screen.BackColour);
+    }
     Clear(uint colour)
     {
 #ifdef DISPLAY_DIAGNOSTICS

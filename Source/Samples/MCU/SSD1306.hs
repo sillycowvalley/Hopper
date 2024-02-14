@@ -1,11 +1,6 @@
 program SSD1306Demo
 {   
-    //#define ADAFRUIT_FEATHER_RP2040
-    //#define PIMORONI_TINY2040
-    #define RP2040_PICOW
-    //#define RP2040_PICO
-    //#define ADAFRUIT_METRO_RP2040
-    
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     uses "/Source/Library/Displays/OLEDSSD1306"    
     uses "/Source/Library/Fonts/Hitachi5x7"
     
@@ -88,9 +83,9 @@ program SSD1306Demo
     
     
     {
-        DisplayDriver.I2CController = 1;
-        DisplayDriver.I2CSDAPin = 14;
-        DisplayDriver.I2CSCLPin = 15;
+        //DisplayDriver.I2CController = 0;
+        //DisplayDriver.I2CSDAPin = 0;
+        //DisplayDriver.I2CSCLPin = 1;
 
         if (!Display.Begin())
         {

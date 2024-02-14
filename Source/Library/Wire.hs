@@ -1,73 +1,39 @@
 unit Wire
 {
-#if defined(RP2040_PICO) || defined(RP2040_PICOW)
-    const byte DefaultI2CController = 0;
-    const byte DefaultI2CSDAPin     = 4;
-    const byte DefaultI2CSCLPin     = 5;
-    #define USES_I2C
-#endif
-
-#if defined(PIMORONI_TINY2040)
+#if defined(BOARD_HAS_NO_I2C0) || defined(BOARD_I2C1_IS_DEFAULT)
     const byte DefaultI2CController = 1;
-    const byte DefaultI2CSDAPin     = 26;
-    const byte DefaultI2CSCLPin     = 27;
-    #define USES_I2C
-#endif
-
-#if defined(ADAFRUIT_FEATHER_RP2040)
-    const byte DefaultI2CController = 1;
-    const byte DefaultI2CSDAPin     = 2; // also the STEMMA QT connector
-    const byte DefaultI2CSCLPin     = 3;
-    #define USES_I2C
-#endif
-
-#if defined(CHALLENGER_RP2040_WIFI) 
-    // TODO : verify pins and validation below
+    const byte DefaultI2CSDAPin     = Board.I2CSDA1;
+    const byte DefaultI2CSCLPin     = Board.I2CSCL1;
+#else
     const byte DefaultI2CController = 0;
-    const byte DefaultI2CSDAPin     = 4;
-    const byte DefaultI2CSCLPin     = 5;
-    #define USES_I2C
+    const byte DefaultI2CSDAPin     = Board.I2CSDA0;
+    const byte DefaultI2CSCLPin     = Board.I2CSCL0;
 #endif
 
-#if defined(CHALLENGER_RP2040_SDRTC) 
-    // TODO : verify pins and validation below
-    const byte DefaultI2CController = 0;
-    const byte DefaultI2CSDAPin     = 4;
-    const byte DefaultI2CSCLPin     = 5;
-    #define USES_I2C
-#endif
-
-#if defined(SPARKFUN_THING_PLUS_RP2040) 
-    // TODO : verify pins and validation below
-    const byte DefaultI2CController = 0;
-    const byte DefaultI2CSDAPin     = 6;
-    const byte DefaultI2CSCLPin     = 7;
-    #define USES_I2C
-#endif
-
-#if defined(ADAFRUIT_METRO_RP2040) 
-    // TODO : verify pins and validation below
-    const byte DefaultI2CController = 0;
-    const byte DefaultI2CSDAPin     = 16;
-    const byte DefaultI2CSCLPin     = 17;
-    #define USES_I2C
-#endif
-    
-#if !defined(USES_I2C)
-    #error "TODO: Defaults and validation code needs to be added for this board. See above."
-#endif
+    bool Initialize()
+    {
+        return Initialize(DefaultI2CController, DefaultI2CSDAPin, DefaultI2CSCLPin);
+    }
     bool Initialize(byte i2cController, byte sdaPin, byte sclPin)
     {
         bool success;
         loop
         {
-#if defined(RP2040_PICO) || defined(RP2040_PICOW) || defined(CHALLENGER_RP2040_WIFI)
+#if defined(MCU_BOARD_RP2040)
+            // While all of these combinations may not be valid,
+            // they are the only possible superset.
             switch (i2cController)
             {
                 case 0:
                 {
-                    if ((sdaPin == 0) && (sclPin == 0)) { sdaPin = 4; } // zero is a legit value for SDA for controller 0
-                    if (sclPin == 0) { sclPin = 5; }
+#if defined(BOARD_HAS_NO_I2C0)
+                    break;
+#else
+                    if ((sdaPin == 0) && (sclPin == 0)) 
+                    { 
+                        sdaPin = Board.I2CSDA0; 
+                        sclPin = Board.I2CSCL0;
+                    }
                     if (    ((sdaPin == 0) && (sclPin == 1))
                          || ((sdaPin == 4) && (sclPin == 5))
                          || ((sdaPin == 8) && (sclPin == 9))
@@ -75,12 +41,18 @@ unit Wire
                          || ((sdaPin == 16) && (sclPin == 17))
                          || ((sdaPin == 20) && (sclPin == 21))
                        ) { } else { break; }
-                     
+#endif                     
                 }
                 case 1:
                 {
-                    if (sdaPin == 0) { sdaPin = 26; }
-                    if (sclPin == 0) { sclPin = 27; }
+#if defined(BOARD_HAS_NO_I2C1)
+                    break;
+#else
+                    if ((sdaPin == 0) && (sclPin == 0)) 
+                    { 
+                        sdaPin = Board.I2CSDA1; 
+                        sclPin = Board.I2CSCL1;
+                    }
                     if (    ((sdaPin == 2) && (sclPin == 3))
                          || ((sdaPin == 6) && (sclPin == 7))
                          || ((sdaPin == 10) && (sclPin == 11))
@@ -88,67 +60,7 @@ unit Wire
                          || ((sdaPin == 18) && (sclPin == 19))
                          || ((sdaPin == 26) && (sclPin == 27))
                        ) { } else { break; }
-                }
-                default:
-                {
-                    break;
-                }
-            }
 #endif
-#if defined(PIMORONI_TINY2040)
-            switch (i2cController)
-            {
-                case 0:
-                {
-                    if ((sdaPin == 0) && (sclPin == 0)) { sdaPin = 4; } // zero is a legit value for SDA for controller 0
-                    if (sclPin == 0) { sclPin = 5; }
-                    if (    ((sdaPin == 0) && (sclPin == 1))
-                         || ((sdaPin == 4) && (sclPin == 5))
-                       ) { } else { break; }
-                     
-                }
-                case 1:
-                {
-                    if (sdaPin == 0) { sdaPin = 26; }
-                    if (sclPin == 0) { sclPin = 27; }
-                    if (    ((sdaPin == 2) && (sclPin == 3))
-                         || ((sdaPin == 6) && (sclPin == 7))
-                         || ((sdaPin == 26) && (sclPin == 27))
-                       ) { } else { break; }
-                }
-                default:
-                {
-                    break;
-                }
-            }
-#endif
-#if defined(ADAFRUIT_FEATHER_RP2040)
-            // This is untested:
-            switch (i2cController)
-            {
-                case 0:
-                {
-                    if ((sdaPin == 0) && (sclPin == 0)) { sdaPin = 24; } // zero is a legit value for SDA for controller 0
-                    if (sclPin == 0) { sclPin = 25; }
-                    if (    ((sdaPin == 0) && (sclPin == 1))
-                         || ((sdaPin == 8) && (sclPin == 9))
-                         || ((sdaPin == 12) && (sclPin == 13))
-                         || ((sdaPin == 20) && (sclPin == 21))
-                         || ((sdaPin == 24) && (sclPin == 25))
-                         || ((sdaPin == 28) && (sclPin == 29))
-                       ) { } else { break; }
-                     
-                }
-                case 1:
-                {
-                    if (sdaPin == 0) { sdaPin = 2; }
-                    if (sclPin == 0) { sclPin = 3; }
-                    if (    ((sdaPin ==  2) && (sclPin == 3))
-                         || ((sdaPin ==  6) && (sclPin == 7))
-                         || ((sdaPin == 10) && (sclPin == 11))
-                         || ((sdaPin == 18) && (sclPin == 19))
-                         || ((sdaPin == 26) && (sclPin == 27))
-                       ) { } else { break; }
                 }
                 default:
                 {

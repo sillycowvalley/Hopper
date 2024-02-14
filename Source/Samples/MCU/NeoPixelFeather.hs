@@ -1,6 +1,6 @@
 program NeoPixelFeather
 {
-    #define ADAFRUIT_FEATHER_RP2040
+    //uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     uses "/Source/Library/Devices/AdafruitNeoPixelFeatherWing"
 
     byte ColorComponent(ref byte index)
@@ -35,7 +35,7 @@ program NeoPixelFeather
             WriteLn("Initialization Failed");
         }
         
-        bool doDisplay = true; // Use Display driver:  draw lines, rectangles, text, etc. in RGB444 12-bit colour
+        bool doDisplay = false; // Use Display driver:  draw lines, rectangles, text, etc. in RGB444 12-bit colour
         bool doPixels  = true; // Use NeoPixel driver: light pixels on string in RGB888 24-bit colour
         
         loop

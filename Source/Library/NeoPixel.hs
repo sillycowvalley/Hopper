@@ -114,85 +114,18 @@ unit NeoPixel
         }
         Show();
     }
-    
-    // built-in board RGB LED configuration
-#if defined(WAVESHARE_RP2040_ONE) || defined(WAVESHARE_RP2040_MATRIX)
-    byte RGBLED { get { return 16; } } 
+
+#if defined(BOARD_HAS_NEOPIXEL)
     BuiltIn()
     {
-        uint length = 1;
-#ifdef WAVESHARE_RP2040_MATRIX
-        length = 25;
+#if defined(BOARD_HAS_NEOPIXEL_POWER)        
+        MCU.PinMode(Board.BuiltInNeoPixelPower, PinModeOption.Output);
+        MCU.DigitalWrite(Board.BuiltInNeoPixelPower, true);
 #endif
-        Begin(length, RGBLED, PixelType.RGB | PixelType.KHz800);
-        Brightness = 10;
-        Clear();
-    }
-#endif    
-
-#ifdef MAKER_NANO_RP2040
-    byte RGBLED { get { return 11; } } 
-    BuiltIn()
-    {
-        uint length = 2;
-        Begin(length, RGBLED, PixelType.RGB | PixelType.KHz800);
-        Brightness = 10;
-        Clear();
-    }
-#endif
-
-#if defined(SPARKFUN_THING_PLUS_RP2040)
-    byte RGBLED { get { return 8; } } 
-    BuiltIn()
-    {
-        Begin(1, RGBLED, PixelType.GRB | PixelType.KHz800);
-        Brightness = 10;
-        Clear();
-    }
-#endif 
-
-#if defined(SEEED_XIAO_RP2040)
-    byte RGBLED { get { return 12; } } 
-    BuiltIn()
-    {
-        // https://wiki.seeedstudio.com/XIAO-RP2040-with-Arduino/#rgb-led
-        MCU.PinMode(11, PinModeOption.Output);
-        MCU.DigitalWrite(11, true);
-        
-        Begin(1, RGBLED, PixelType.GRB | PixelType.KHz800);
-        Brightness = 10;
-        Clear();
-    }
-#endif 
-
-#if defined(CHALLENGER_RP2040_WIFI)
-    byte RGBLED { get { return 11; } } 
-    BuiltIn()
-    {
-        Begin(1, RGBLED, PixelType.GRB | PixelType.KHz800);
+        Begin(Board.BuiltInNeoPixelLength, Board.BuiltInNeoPixel, PixelType.GRB | PixelType.KHz800);
         Brightness = 10;
         Clear();
     }
 #endif         
-
-#if defined(ADAFRUIT_METRO_RP2040)
-    byte RGBLED { get { return 14; } } 
-    BuiltIn()
-    {
-        Begin(1, RGBLED, PixelType.GRB | PixelType.KHz800);
-        Brightness = 10;
-        Clear();
-    }
-#endif 
-
-#if defined(ADAFRUIT_FEATHER_RP2040)
-    byte RGBLED { get { return 16; } } 
-    BuiltIn()
-    {
-        Begin(1, RGBLED, PixelType.GRB | PixelType.KHz800);
-        Brightness = 10;
-        Clear();
-    }
-#endif
 
  }

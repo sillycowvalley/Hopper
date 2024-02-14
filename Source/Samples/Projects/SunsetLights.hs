@@ -1,23 +1,22 @@
 program SunsetLights
 {   
-    #define CHALLENGER_RP2040_WIFI
-    
-    const byte RelayPin = 10;
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     
     uses "/Source/Library/Devices/AdafruitThinkInk213TriColor"
     uses "/Source/Library/Fonts/Verdana5x8"
     
-//#define HTTP_HEADER_TIME // just use the server time in the HTTP response headers (GMT) 
-#define UTC_TIME         // time server that serves up GMT time and date
+#define HTTP_HEADER_TIME // just use the server time in the HTTP response headers (GMT) 
+//#define UTC_TIME         // time server that serves up GMT time and date
 //#define COMPLETE_TIME    // time server that serves up UTC, time zone offset, and daylight savings (flag and offset)
     
     uses "/Source/Samples/Projects/DateTime"
     uses "/Source/Samples/Projects/WebTime"
     
+    byte RelayPin { get { return Board.D13; } }
     
     const uint minutesPerCycle   = 1440;  // this is intended to be 24 hours (1440 minutes) but short cycles are nice for testing 
     const uint secondsPerLap     = 30;    // how often do we check the times and update the relay?
-    const uint minutesPerRefresh = 15; // 15;    // how often to refresh the ePaper?
+    const uint minutesPerRefresh = 15;    // how often to refresh the ePaper?
     const uint minutesPerUpdate  = 60; // 360;   // how often do we check the time?
     
     // 4 LED 'signals' for diagnostics:
@@ -135,7 +134,7 @@ program SunsetLights
     }
     
         
-       {
+    {
         WriteLn();
         
         NeoPixel.BuiltIn();
@@ -145,7 +144,7 @@ program SunsetLights
         UpdateLEDs();
         
         // allowing debugger to break-in before time call
-        for (uint i=0; i < 20; i++)
+        for (uint i=0; i < 10; i++)
         {
             Delay(250);
             Write('-');
@@ -155,8 +154,8 @@ program SunsetLights
         InitializeTimes();
         
         //DisplayDriver.IsPortrait = true;
-        //DisplayDriver.FlipX = true;
-        //DisplayDriver.FlipY = true;
+        DisplayDriver.FlipX = true;
+        DisplayDriver.FlipY = true;
      
         if (!DeviceDriver.Begin())
         {
@@ -178,7 +177,7 @@ program SunsetLights
             WriteLn("Elapsed: " + elapsedMinutes.ToString() + " minutes, " + lap.ToString());
             WriteLn("  CurrentTime: " + DateTime.MinutesToTime(WebTime.LocalTimeNow));
             
-            // Reboots?
+            // Health Reboots?
             if ((elapsedMinutes >= minutesPerCycle) && (WebTime.LastError == 0))
             {
                 WriteLn("Rebooting");
@@ -216,7 +215,7 @@ program SunsetLights
             if (refreshEPaper || (oldState != lightsOn) || (WebTime.MCUTimeNow - lastRefreshMinutes >= minutesPerRefresh))
             {
                 redLED = true; UpdateLEDs();
-                //RefreshEPaper();
+                RefreshEPaper();
                 redLED = false; UpdateLEDs();
                 lastRefreshMinutes = WebTime.MCUTimeNow;
                 refreshEPaper = false;

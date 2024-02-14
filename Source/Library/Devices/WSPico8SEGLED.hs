@@ -2,17 +2,15 @@ unit Pico8SEGLED
 {
     // https://www.waveshare.com/wiki/Pico-8SEG-LED
     
-#if !defined(RP2040_PICOW) && !defined(RP2040_PICO)    
-    // plugs directly into the Pi Pico or Pi PicoW so if neither was defined, assume Pico W for now
-    #define RP2040_PICOW 
+#if !defined(MCU_BOARD_DEFINED)
+    // plugs directly into the Pi Pico so no board defined, assume generic Pi Pico
+    uses "/Source/Library/Boards/PiPico"
 #endif
-
-    uses "/Source/Library/MCU"
     
-    const byte RClkPin       =  9;
-    const byte ClkPin        = 10;
-    const byte TxPin         = 11;
-    const byte SPIController  = 1; // this device uses SPI1 on Raspberry Pi Pico
+    byte RClkPin       { get { return Board.D9; } }
+    byte ClkPin        { get { return Board.D10; } }
+    byte TxPin         { get { return Board.D11; } }
+    const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
     
     const byte THOUSANDS = 0xFE;
     const byte HUNDREDS  = 0xFD;

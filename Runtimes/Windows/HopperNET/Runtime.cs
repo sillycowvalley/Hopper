@@ -366,6 +366,12 @@ namespace HopperNET
 
         RuntimeUserCodeGet = 0x94,
 
+        TimeTime_Get = 0x95,
+        TimeTime_Set = 0x96,
+        TimeDate_Get = 0x97,
+        TimeDate_Set = 0x98,
+
+
         SerialConnect = 0xA2,
         SerialClose = 0xA3,
         SerialIsValid = 0xA4,
@@ -5868,6 +5874,31 @@ namespace HopperNET
                 //    UInt16 seconds = HopperTime.Seconds;
                 //    Push(seconds, HopperType.tUInt);
                 //    break;
+
+                case SysCall.TimeTime_Get:
+                    {
+                        HopperString tm = new HopperString();
+                        tm.Value = DateTime.Now.ToString("HH:mm:ss");
+                        Push(tm);
+                    }
+                    break;
+                case SysCall.TimeTime_Set:
+                    {
+                        PopVariant(HopperType.tString);
+                        Diagnostics.Die(0x0B, this); // illegal on Windows
+                    }
+                    break;
+                case SysCall.TimeDate_Get:
+                    HopperString dt = new HopperString();
+                    dt.Value = DateTime.Now.ToString("yyyy-MM-dd");
+                    Push(dt);
+                    break;
+                case SysCall.TimeDate_Set:
+                    {
+                        PopVariant(HopperType.tString);
+                        Diagnostics.Die(0x0B, this); // illegal on Windows
+                    }
+                    break;
 
                 case SysCall.LongNew:
                     Push(0, HopperType.tLong);
