@@ -43,4 +43,7 @@ unit Board // Pimoroni Tiny2040
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Pimoroni Tiny2040"; } }
+
 }

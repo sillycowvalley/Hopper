@@ -186,12 +186,14 @@ unit SysCalls
         
         
         addEntry("Time.Time_Get");
-        addEntry("Time.Time_Set");
         addEntry("Time.Date_Get");
-        addEntry("Time.Date_Set");
+        
+        
         // placeholders:
-        addEntry("_Runtime.SetStepping");
-        addEntry("_Runtime.StepInto");
+        addEntry("_Time.Time_Set");
+        addEntry("_Time.Date_Set");
+        addEntry("_Time.RTC");
+        addEntry("_Time.RTC_Set");
         addEntry("_Runtime.StepOver");
         addEntry("_Runtime.StepRun");
         addEntry("_Runtime.Waiting_Get");

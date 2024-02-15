@@ -367,10 +367,8 @@ namespace HopperNET
         RuntimeUserCodeGet = 0x94,
 
         TimeTime_Get = 0x95,
-        TimeTime_Set = 0x96,
-        TimeDate_Get = 0x97,
-        TimeDate_Set = 0x98,
-
+        TimeDate_Get = 0x96,
+        
 
         SerialConnect = 0xA2,
         SerialClose = 0xA3,
@@ -4292,7 +4290,7 @@ namespace HopperNET
                     }
                     break;
 
-                
+
                 case SysCall.StringNewFromConstant:
                     switch (iOverload)
                     {
@@ -4315,8 +4313,8 @@ namespace HopperNET
                         case 1:
                             {
                                 ushort content = (ushort)Pop();
-                                byte   lsb = (byte)(content & 0xFF);
-                                byte   msb = (byte)(content >> 8);
+                                byte lsb = (byte)(content & 0xFF);
+                                byte msb = (byte)(content >> 8);
                                 string value = ((char)lsb).ToString();
                                 if (msb != 0)
                                 {
@@ -4504,7 +4502,7 @@ namespace HopperNET
                                 HopperString build = stack[address].reference as HopperString;
                                 while (build.Value.EndsWith(" "))
                                 {
-                                    build.Value = build.Value.Substring(0, build.Value.Length-1);
+                                    build.Value = build.Value.Substring(0, build.Value.Length - 1);
                                 }
                                 stack[address].reference = build;
                             }
@@ -4722,7 +4720,7 @@ namespace HopperNET
                                 Push(str);
                             }
                             break;
-                            // Substring(ref string build, uint start) system;
+                        // Substring(ref string build, uint start) system;
                         case 2:
                             {
                                 ushort start = (ushort)Pop();
@@ -4761,7 +4759,7 @@ namespace HopperNET
                     }
                     break;
 
-                
+
                 case SysCall.StringGetChar:
                     {
                         ushort index = (ushort)Pop();
@@ -4779,14 +4777,14 @@ namespace HopperNET
                     {
                         HopperString top = (HopperString)PopVariant(HopperType.tString);
                         HopperString next = (HopperString)PopVariant(HopperType.tString);
-                        short result    = (short)string.Compare(next.Value, top.Value, StringComparison.Ordinal);
+                        short result = (short)string.Compare(next.Value, top.Value, StringComparison.Ordinal);
                         if (result < 0)
                         {
                             result = -1;
                         }
                         else if (result > 0)
                         {
-                            result =  1;
+                            result = 1;
                         }
                         /*
                         short oldresult = (short)string.Compare(next.Value, top.Value);
@@ -4818,7 +4816,7 @@ namespace HopperNET
                 case SysCall.CharIsHexDigit:
                     {
                         uint b = Pop();
-                        bool isHex =  ((b >= 48) && (b <= 57)) || // 0..9
+                        bool isHex = ((b >= 48) && (b <= 57)) || // 0..9
                                       ((b >= 65) && (b <= 70)) || // A..F
                                       ((b >= 97) && (b <= 102));  // a..f
                         PushBool(isHex);
@@ -4870,14 +4868,14 @@ namespace HopperNET
                         ushort length = (ushort)Pop();
                         ushort location = (ushort)Pop();
                         location = (ushort)(location + currentContext.ConstantsStart);
-                        
+
                         HopperArray arr = new HopperArray(type, length);
 
                         for (ushort i = 0; i < length; i++)
                         {
                             arr.Value[i] = code[location + i];
                         }
-                        
+
                         Push(arr);
                         break;
                     }
@@ -4892,7 +4890,7 @@ namespace HopperNET
                         uint sp2 = (uint)(sp >> 1);
                         uint value = stack[sp2 - 1].value;
                         uint index = stack[sp2 - 2].value;
-                        HopperArray _this_  = stack[sp2 - 3].reference as HopperArray;
+                        HopperArray _this_ = stack[sp2 - 3].reference as HopperArray;
                         sp -= 6;
 #endif
                         ushort[] array = _this_.Value;
@@ -4964,9 +4962,9 @@ namespace HopperNET
                             Diagnostics.Die(0x0B, this); // nested call to inline code?
                             break;
                         }
-                        pcStore  = pc;
-                        spStore  = sp;
-                        bpStore  = bp;
+                        pcStore = pc;
+                        spStore = sp;
+                        bpStore = bp;
                         cspStore = csp;
                         codeStore = code;
                         ushort[] inlineCode = inlineCodeArray.Value;
@@ -5340,7 +5338,7 @@ namespace HopperNET
                                     break;
                             }
 #endif
-                            
+
                             _this_.Value.Add(new HopperValue(value, valueType));
                         }
                         else
@@ -5579,7 +5577,7 @@ namespace HopperNET
                 case SysCall.ScreenRowsGet:
                     Push(this.screen.Rows, HopperType.tByte);
                     break;
-                
+
                 case SysCall.ScreenCursorXGet:
                     Push(this.screen.CursorX, HopperType.tByte);
                     break;
@@ -5634,7 +5632,7 @@ namespace HopperNET
 
                 case SysCall.RuntimeGetStackWord:
                     {
-                        
+
                         ushort offset = (ushort)Pop();
                         ushort value = (ushort)GetStack(offset); // doesn't work for long and float on Windows
                         Push(value, HopperType.tUInt);
@@ -5882,23 +5880,13 @@ namespace HopperNET
                         Push(tm);
                     }
                     break;
-                case SysCall.TimeTime_Set:
-                    {
-                        PopVariant(HopperType.tString);
-                        Diagnostics.Die(0x0B, this); // illegal on Windows
-                    }
-                    break;
                 case SysCall.TimeDate_Get:
                     HopperString dt = new HopperString();
                     dt.Value = DateTime.Now.ToString("yyyy-MM-dd");
                     Push(dt);
                     break;
-                case SysCall.TimeDate_Set:
-                    {
-                        PopVariant(HopperType.tString);
-                        Diagnostics.Die(0x0B, this); // illegal on Windows
-                    }
-                    break;
+                
+
 
                 case SysCall.LongNew:
                     Push(0, HopperType.tLong);

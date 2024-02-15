@@ -36,4 +36,7 @@ unit Board // Adafruit Macropad2040
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Adafruit Macropad2040"; } }
+
 }

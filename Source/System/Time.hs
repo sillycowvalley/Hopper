@@ -25,6 +25,9 @@ unit Time
             Delay(500); // allows debugger to break into long delays
         }
     }
-    string Time { get system; set system; }
-    string Date { get system; set system; }
+#if !defined(MCU)    
+    string Time      { get system; }
+    string Date      { get system; }
+#endif
+
 }

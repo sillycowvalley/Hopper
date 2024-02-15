@@ -144,6 +144,8 @@ Byte HRWire_EndTx(Byte controller);
 void HRWire_Write(Byte controller, Byte data);
 void HRWire_Write(Byte controller, UInt hrarray, UInt startIndex, UInt length);
 void HRWire_Configure(Byte controller, Byte sdaPin, Byte sclPin);
+Byte HRWire_RequestFrom(Byte controller, Byte address, Byte bytes);
+Byte HRWire_Read(Byte controller);
 
 Bool HRSPI_Begin(Byte spiController);
 void HRSPI_BeginTransaction(Byte spiController);

@@ -62,4 +62,7 @@ unit Board // Challenger 2040 UWB
     const byte D18 = 24;
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Challenger 2040 UWB"; } }
+
 }

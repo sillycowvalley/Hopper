@@ -6,10 +6,12 @@ unit Board // Adafruit Feather
     #define MCU_BOARD_RP2040
     #define FORMFACTOR_FEATHER
 
+    // https://learn.adafruit.com/adafruit-feather-rp2040-pico/pinouts
+
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED
+    #define BOARD_I2C1_IS_DEFAULT
     #define BOARD_HAS_I2C
-    #define BOARD_HAS_NO_I2C0
     #define BOARD_HAS_NO_SPI1
     #define BOARD_HAS_SPI
     #define BOARD_HAS_A0
@@ -27,6 +29,8 @@ unit Board // Adafruit Feather
     const byte BuiltInA3 = 29;
     const byte ADCResolution = 12;
 
+    const byte I2CSDA0 = 24;
+    const byte I2CSCL0 = 25;
     const byte I2CSDA1 = 2;
     const byte I2CSCL1 = 3;
 
@@ -54,12 +58,15 @@ unit Board // Adafruit Feather
     const byte D18 = 18; // SPI0SCK
     const byte D19 = 19; // SPI0Tx
     const byte D20 = 20; // SPI0Rx
-    const byte D24 = 24;
-    const byte D25 = 25;
+    const byte D24 = 24; // I2CSDA0
+    const byte D25 = 25; // I2CSCL0
     const byte D26 = 26; // BuiltInA0
     const byte D27 = 27; // BuiltInA1
     const byte D28 = 28; // BuiltInA2
     const byte D29 = 29; // BuiltInA3
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Adafruit Feather"; } }
+
 }

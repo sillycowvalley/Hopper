@@ -42,4 +42,7 @@ unit Board // Pimoroni PGA2040
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Pimoroni PGA2040"; } }
+
 }

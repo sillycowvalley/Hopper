@@ -60,4 +60,7 @@ unit Board // Adafruit QT Py
     const byte D29 = 29; // UART1Rx
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Adafruit QT Py"; } }
+
 }

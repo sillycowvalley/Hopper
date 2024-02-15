@@ -43,4 +43,7 @@ unit Board // Sparkfun ThingPlus RP2040
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Sparkfun ThingPlus RP2040"; } }
+
 }

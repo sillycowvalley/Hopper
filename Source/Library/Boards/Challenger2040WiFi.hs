@@ -64,4 +64,7 @@ unit Board // Challenger 2040 WiFi
     const byte D17 = 19; // UART1Rx
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Challenger 2040 WiFi"; } }
+
 }

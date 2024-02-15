@@ -137,6 +137,32 @@ unit Library
 #endif
                 HRWire.Configure(byte(controller), byte(sdaPin), byte(sclPin));
             }
+            case LibCall.WireRequestFrom:
+            {
+                Type btype;
+                uint bytes = Pop(ref btype);
+                Type atype;
+                uint address = Pop(ref atype);
+                Type ctype;
+                uint controller = Pop(ref ctype);          
+#ifdef CHECKED             
+                AssertByte(ctype,  controller);
+                AssertByte(atype, address);
+                AssertByte(btype, bytes);
+#endif                
+                bytes = HRWire.RequestFrom(byte(controller), byte(address), byte(bytes));
+                Push(bytes, Type.UInt);
+            }
+            case LibCall.WireRead:
+            {
+                Type ctype;
+                uint controller = Pop(ref ctype);          
+#ifdef CHECKED             
+                AssertByte(ctype,  controller);
+#endif                
+                byte data = HRWire.Read(byte(controller));
+                Push(data, Type.Byte);
+            }
             case LibCall.WireEndTx:
             {
                 switch (iOverload)

@@ -39,4 +39,7 @@ unit Board // DFRobot Beetle RP2040
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "DFRobot Beetle RP2040"; } }
+
 }

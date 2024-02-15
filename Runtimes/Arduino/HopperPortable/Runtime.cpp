@@ -6147,6 +6147,26 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         HRWire_Configure(Byte(controller), Byte(sdaPin), Byte(sclPin));
         break;
     }
+    case LibCall::eWireRequestFrom:
+    {
+        Type btype = (Type)0;
+        UInt bytes = HopperVM_Pop_R(btype);
+        Type atype = (Type)0;
+        UInt address = HopperVM_Pop_R(atype);
+        Type ctype = (Type)0;
+        UInt controller = HopperVM_Pop_R(ctype);
+        bytes = HRWire_RequestFrom(Byte(controller), Byte(address), Byte(bytes));
+        HopperVM_Push(bytes, Type::eUInt);
+        break;
+    }
+    case LibCall::eWireRead:
+    {
+        Type ctype = (Type)0;
+        UInt controller = HopperVM_Pop_R(ctype);
+        Byte data = HRWire_Read(Byte(controller));
+        HopperVM_Push(data, Type::eByte);
+        break;
+    }
     case LibCall::eWireEndTx:
     {
         switch (iOverload)

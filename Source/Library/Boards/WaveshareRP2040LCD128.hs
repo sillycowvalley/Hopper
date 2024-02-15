@@ -39,4 +39,7 @@ unit Board // Waveshare RP2040 LCD 1.28
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Waveshare RP2040 LCD 1.28"; } }
+
 }

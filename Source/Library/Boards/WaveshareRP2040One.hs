@@ -43,4 +43,7 @@ unit Board // Waveshare RP2040 One
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Waveshare RP2040 One"; } }
+
 }

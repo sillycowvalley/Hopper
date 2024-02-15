@@ -40,4 +40,7 @@ unit Board // Cytron Maker Nano RP2040
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Cytron Maker Nano RP2040"; } }
+
 }

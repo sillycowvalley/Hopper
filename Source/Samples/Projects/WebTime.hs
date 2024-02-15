@@ -64,10 +64,11 @@ unit WebTime
         loop
         {
             bool success;
-            //success = WiFi.Connect(SSID2, Password2);
-            success = WiFi.Connect(SSID, Password);
-            WriteLn("Using: " + SSID);
+            string ssdi = SSID2;
+            string password = Password2;
+            success = WiFi.Connect(ssdi, password);
             wifiStatus = WiFi.Status;
+            WriteLn("Using: " + ssdi + " (" + WiFi.ToString(wifiStatus) + ")");
             if (success)
             {
                 WriteLn("WiFi " + WiFi.ToString(wifiStatus));

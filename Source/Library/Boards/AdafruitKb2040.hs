@@ -40,4 +40,7 @@ unit Board // Adafruit Kb2040
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Adafruit Kb2040"; } }
+
 }

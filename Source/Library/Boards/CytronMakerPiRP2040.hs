@@ -42,4 +42,7 @@ unit Board // Cytron Maker Pi RP2040
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Cytron Maker Pi RP2040"; } }
+
 }

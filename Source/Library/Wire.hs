@@ -88,5 +88,8 @@ unit Wire
     Write(byte i2cController, byte data) library;
     Write(byte i2cController, byte[] data, uint startIndex, uint length) library;
     
+    byte RequestFrom(byte i2cController, byte address, byte bytes) library;
+    byte Read(byte i2cController) library;
+    
     Configure(byte i2cController, byte sdaPin, byte sclPin) library;
 }

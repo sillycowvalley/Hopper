@@ -6,6 +6,8 @@ unit Board // Adafruit TrinkeyRP2040QT
     #define MCU_BOARD_RP2040
     #define FORMFACTOR_USBA_STICK
 
+    // https://learn.adafruit.com/adafruit-trinkey-qt2040/pinouts
+
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
@@ -39,4 +41,7 @@ unit Board // Adafruit TrinkeyRP2040QT
     const byte D27 = 27;
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Adafruit TrinkeyRP2040QT"; } }
+
 }

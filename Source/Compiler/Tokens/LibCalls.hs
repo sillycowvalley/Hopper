@@ -16,6 +16,8 @@ unit LibCalls
         addEntry("Wire.EndTx");
         addEntry("Wire.Write");
         addEntry("Wire.Configure");
+        addEntry("Wire.Read");
+        addEntry("Wire.RequestFrom");
         
         addEntry("MCU.PinMode");
         addEntry("MCU.DigitalRead");

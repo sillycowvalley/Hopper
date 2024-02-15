@@ -41,4 +41,7 @@ unit Board // Sparkfun ProMicro RP2040
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Sparkfun ProMicro RP2040"; } }
+
 }

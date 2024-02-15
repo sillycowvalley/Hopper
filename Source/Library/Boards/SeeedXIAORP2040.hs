@@ -56,4 +56,7 @@ unit Board // Seeed XIAO RP2040
     const byte D10 = 3;
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Seeed XIAO RP2040"; } }
+
 }

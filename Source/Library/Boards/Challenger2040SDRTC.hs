@@ -59,4 +59,7 @@ unit Board // Challenger 2040 SDRTC
     const byte D18 = 24;
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Challenger 2040 SDRTC"; } }
+
 }

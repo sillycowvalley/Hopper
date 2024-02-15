@@ -6,6 +6,8 @@ unit Board // Adafruit Feather DVI
     #define MCU_BOARD_RP2040
     #define FORMFACTOR_FEATHER
 
+    // https://learn.adafruit.com/adafruit-feather-rp2040-pico/pinouts
+
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
@@ -40,4 +42,7 @@ unit Board // Adafruit Feather DVI
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Adafruit Feather DVI"; } }
+
 }

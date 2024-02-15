@@ -42,4 +42,7 @@ unit Board // Adafruit ItsyBitsy
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Adafruit ItsyBitsy"; } }
+
 }

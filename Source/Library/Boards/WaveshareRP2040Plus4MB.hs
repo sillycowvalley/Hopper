@@ -6,6 +6,8 @@ unit Board // Waveshare RP2040 Plus 4MB
     #define MCU_BOARD_RP2040
     #define FORMFACTOR_PICO
 
+    // https://mischianti.org/raspberry-pi-pico-high-resolution-pinout-and-specs/
+
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
     #define BOARD_HAS_SPI
@@ -73,4 +75,7 @@ unit Board // Waveshare RP2040 Plus 4MB
     const byte D29 = 29; // BuiltInA3 (input:  used in ADC mode (A3) to measure VSYS/3)
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Waveshare RP2040 Plus 4MB"; } }
+
 }

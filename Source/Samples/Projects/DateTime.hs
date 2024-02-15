@@ -85,20 +85,39 @@ unit DateTime
                 return false;
             }   
         }
-        else
+        else if (date.Length == 10)
         {
-            // '02-28-2024' : MM-DD-YYYY from http://time.jsontest.com/
-            if (!UInt.TryParse(date.Substring(0, 2), ref month))
+            if (date[4] == '-')
             {
-                return false;
+                // '2024-02-28' : 
+                if (!UInt.TryParse(date.Substring(0, 4), ref year))
+                {
+                    return false;
+                }
+                if (!UInt.TryParse(date.Substring(5, 2), ref month))
+                {
+                    return false;
+                }
+                if (!UInt.TryParse(date.Substring(8, 2), ref day))
+                {
+                    return false;
+                }   
             }
-            if (!UInt.TryParse(date.Substring(3, 2), ref day))
+            else if (date[2] == '-')
             {
-                return false;
-            }
-            if (!UInt.TryParse(date.Substring(6, 4), ref year))
-            {
-                return false;
+                // '02-28-2024' : MM-DD-YYYY from http://time.jsontest.com/
+                if (!UInt.TryParse(date.Substring(0, 2), ref month))
+                {
+                    return false;
+                }
+                if (!UInt.TryParse(date.Substring(3, 2), ref day))
+                {
+                    return false;
+                }
+                if (!UInt.TryParse(date.Substring(6, 4), ref year))
+                {
+                    return false;
+                }
             }
         }
         uint currentMonth = 1;

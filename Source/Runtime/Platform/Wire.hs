@@ -30,5 +30,15 @@ unit HRWire
     {
         ErrorDump(136); Error = 0x0A; // not implemented on Windows
     }
+    byte RequestFrom(byte controller, byte address, byte bytes)
+    {
+        ErrorDump(136); Error = 0x0A; // not implemented on Windows
+        return 0;
+    }
+    byte Read(byte controller)
+    {
+        ErrorDump(136); Error = 0x0A; // not implemented on Windows
+        return 0;
+    }
     
 }

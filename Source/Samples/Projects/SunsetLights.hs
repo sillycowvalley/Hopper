@@ -5,9 +5,9 @@ program SunsetLights
     uses "/Source/Library/Devices/AdafruitThinkInk213TriColor"
     uses "/Source/Library/Fonts/Verdana5x8"
     
-#define HTTP_HEADER_TIME // just use the server time in the HTTP response headers (GMT) 
+//#define HTTP_HEADER_TIME // just use the server time in the HTTP response headers (GMT) 
 //#define UTC_TIME         // time server that serves up GMT time and date
-//#define COMPLETE_TIME    // time server that serves up UTC, time zone offset, and daylight savings (flag and offset)
+#define COMPLETE_TIME    // time server that serves up UTC, time zone offset, and daylight savings (flag and offset)
     
     uses "/Source/Samples/Projects/DateTime"
     uses "/Source/Samples/Projects/WebTime"
@@ -17,7 +17,7 @@ program SunsetLights
     const uint minutesPerCycle   = 1440;  // this is intended to be 24 hours (1440 minutes) but short cycles are nice for testing 
     const uint secondsPerLap     = 30;    // how often do we check the times and update the relay?
     const uint minutesPerRefresh = 15;    // how often to refresh the ePaper?
-    const uint minutesPerUpdate  = 60; // 360;   // how often do we check the time?
+    const uint minutesPerUpdate  = 360;   // how often do we check the time?
     
     // 4 LED 'signals' for diagnostics:
     bool redLED = false;     // red while updating the ePaper
@@ -90,7 +90,7 @@ program SunsetLights
             Screen.SetCursor(3,4);
             Screen.Print("WiFi: ", Colour.Black, Colour.White);
             Screen.SetCursor(3,6);
-            Screen.Print("Last Update:", Colour.Black, Colour.White);
+            Screen.Print("Time Updated:", Colour.Black, Colour.White);
             Screen.SetCursor(3,7);
             Screen.Print("Last Refresh:", Colour.Black, Colour.White);
             

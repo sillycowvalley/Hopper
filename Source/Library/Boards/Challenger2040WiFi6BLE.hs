@@ -71,4 +71,7 @@ unit Board // Challenger 2040 WiFi6 BLE
     const byte D21 = 24; // SPI0SS
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Challenger 2040 WiFi6 BLE"; } }
+
 }

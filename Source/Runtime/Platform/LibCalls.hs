@@ -7,6 +7,8 @@ unit LibCalls
         WireEndTx,
         WireWrite,
         WireConfigure,
+        WireRead,
+        WireRequestFrom,
         
         MCUPinMode,
         MCUDigitalRead,

@@ -938,6 +938,24 @@ void HRWire_Write(Byte controller, UInt hrarray, UInt startIndex, UInt length)
     Wire.write(data, length);
 #endif
 }
+Byte HRWire_RequestFrom(Byte controller, Byte address, Byte bytes)
+{
+#ifdef RP2040
+    bytes = (controller == 0) ? Wire.requestFrom(address, bytes): Wire1.requestFrom(address, bytes);
+#else
+    bytes = Wire.read();
+#endif
+    return bytes;
+}
+Byte HRWire_Read(Byte controller)
+{
+#ifdef RP2040
+    Byte data = (controller == 0) ? Wire.read(): Wire1.read();
+#else
+    Byte data = Wire.read();
+#endif
+    return data;
+}
 
 bool External_FunctionCall(UInt jumpTable, Byte opCode)
 {

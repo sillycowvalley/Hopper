@@ -72,4 +72,7 @@ unit Board // Arduino Nano Connect
     const byte D29 = 14; // BuiltInA3
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Arduino Nano Connect"; } }
+
 }

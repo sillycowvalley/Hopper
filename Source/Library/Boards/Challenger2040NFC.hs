@@ -60,4 +60,7 @@ unit Board // Challenger 2040 NFC
     const byte D18 = 24;
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Challenger 2040 NFC"; } }
+
 }

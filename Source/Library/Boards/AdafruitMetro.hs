@@ -40,4 +40,7 @@ unit Board // Adafruit Metro
 
 
     uses "/Source/Library/MCU"
+
+    string BoardName { get { return "Adafruit Metro"; } }
+
 }
