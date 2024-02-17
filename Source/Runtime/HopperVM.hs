@@ -70,6 +70,7 @@ unit HopperVM
 #ifdef CHECKED
     uint messagePC;
 #endif    
+    bool inDebugger;
     
     uint PC  { get { return pc; }  set { pc = value; } }
     uint SP  { get { return sp; }  set { sp = value; } }
@@ -459,6 +460,16 @@ unit HopperVM
             {
                 Push(programSize, Type.UInt);
             }
+            case SysCall.RuntimeInDebuggerGet:
+            {
+                Push(inDebugger ? 1 : 0, Type.Bool);
+            }
+            case SysCall.RuntimeDateTimeGet:
+            {
+                uint dateTime = RuntimeDateTime();
+                Push(dateTime, Type.String);
+            }
+            
             case SysCall.MemoryAvailable:
             {
                 uint size = Memory.Available();
@@ -3320,6 +3331,7 @@ unit HopperVM
     bool ExecuteStepTo()
     {
         bool restart;
+        inDebugger = true;
 #ifdef CHECKED
         messagePC = pc;
 #endif
@@ -3332,6 +3344,7 @@ unit HopperVM
         {
             restart = true; // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
         }
+        inDebugger = false;
         return restart;
     }
     
@@ -3339,6 +3352,7 @@ unit HopperVM
     bool Execute()
     {
         bool restart;
+        inDebugger = true;
         loop
         {
 #ifdef CHECKED
@@ -3373,12 +3387,14 @@ unit HopperVM
                         {
                             SetBreakpoint(0, 0); // clear single step breakpoint
                         }
+                        inDebugger = false;
                         return restart; // return control to Monitor
                     }
                 }
             }
             WatchDog();
         } // loop
+        inDebugger = false;
         return restart;
     }
     
@@ -3469,9 +3485,28 @@ unit HopperVM
         } // loop
         return restart;
     }
+    uint RuntimeDateTime()
+    {
+        Serial.WriteChar(char(0x07)); // Bell
+        Serial.WriteChar('D'); // DateTime
+        while (!Serial.IsAvailable)
+        {
+            External.Delay(10);    
+        }   
+        uint hrstring = HRString.New();
+        loop
+        {
+            char ch = Serial.ReadChar();
+            if (ch == char(0x0D))
+            {
+                break;
+            }
+            HRString.BuildChar(ref hrstring, ch);
+        }
+        return hrstring;
+    }
     
     uint pcStore;
-    
     bool RunInline()
     {
         Type stype;

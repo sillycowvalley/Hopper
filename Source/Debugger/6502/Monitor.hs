@@ -187,6 +187,22 @@ unit Monitor
         return success;
     }
     
+    monitorCommand(char command)
+    {
+        switch (command)
+        {
+            case 'D': //     process command like Runtime.DateTime
+            {
+                string dateTime = Time.Date + " " + Time.Time;
+                foreach (var ch in dateTime)
+                {
+                    SerialWriteChar(ch);
+                }
+            }
+        }
+        SerialWriteChar(char(0x0D));
+    }
+    
     bool checkEchoRun()
     {
         bool success = true;
@@ -229,7 +245,6 @@ unit Monitor
                             }
                         }
                     }
-                      
                     if ((key == Key.ControlV) && Clipboard.HasText)
                     {
                         string clipboardText = Clipboard.GetText();
@@ -243,7 +258,8 @@ unit Monitor
                     }
                 }
                 continue;
-            }
+            } // !Serial.IsAvailable
+            
             char c = SerialReadChar();
             if ((c == char(0x0D)) || (c == char(0x0A)))
             {
@@ -251,6 +267,7 @@ unit Monitor
             }
             else
             {
+                
                 if (c == '\\')
                 {
                     break;
@@ -258,6 +275,12 @@ unit Monitor
                 if (c == char(0x0C)) // form feed
                 {
                     Output.Clear();
+                }
+                else if (c == char(0x07)) // bell
+                {
+                    // get next character
+                    c = SerialReadChar();
+                    monitorCommand(c);
                 }
                 else
                 {

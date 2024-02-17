@@ -153,6 +153,13 @@ unit SysCalls
         
         RuntimeUserCodeGet = 0x94,
         
+        // Windows only
+        //TimeTime_Get = 0x95,
+        //TimeDate_Get = 0x96,
+        
+        RuntimeInDebuggerGet = 0x97,
+        RuntimeDateTimeGet = 0x98,
+        
         SerialIsAvailableGet = 0xA5,
         SerialReadChar       = 0xA6,
         SerialWriteChar      = 0xA7,

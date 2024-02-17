@@ -188,10 +188,10 @@ unit SysCalls
         addEntry("Time.Time_Get");
         addEntry("Time.Date_Get");
         
+        addEntry("Runtime.InDebugger_Get");
+        addEntry("Runtime.DateTime_Get");
         
         // placeholders:
-        addEntry("_Time.Time_Set");
-        addEntry("_Time.Date_Set");
         addEntry("_Time.RTC");
         addEntry("_Time.RTC_Set");
         addEntry("_Runtime.StepOver");

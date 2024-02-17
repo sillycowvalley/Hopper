@@ -14,6 +14,7 @@ unit MCU
 #endif
 
     uses "/Source/System/System"
+    uses "/Source/System/Runtime"
     uses "/Source/System/IO"
     uses "/Source/Library/GPIO"
     uses "/Source/Library/SPI"

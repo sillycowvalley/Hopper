@@ -16,6 +16,7 @@ typedef UInt PinISRDelegate;
 typedef UInt TimerISRDelegate;
 typedef UInt HandlerDelegate;
 
+
 // method definitions
 enum OpCode {
     eLIBCALL = 0x0008,
@@ -273,6 +274,8 @@ enum SysCall {
     eRuntimeExecute = 0x0092,
     eRuntimeInline = 0x0093,
     eRuntimeUserCodeGet = 0x0094,
+    eRuntimeInDebuggerGet = 0x0097,
+    eRuntimeDateTimeGet = 0x0098,
     eSerialIsAvailableGet = 0x00A5,
     eSerialReadChar = 0x00A6,
     eSerialWriteChar = 0x00A7,
@@ -779,6 +782,7 @@ Int HopperVM_ReadWordOffsetOperand();
 Bool HopperVM_ExitInline();
 void HopperVM_PushI(Int ivalue);
 Bool HopperVM_RunInline();
+UInt HopperVM_RuntimeDateTime();
 void GC_AddReference(UInt address);
 UInt GC_Clone(UInt original);
 Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload);
@@ -894,6 +898,7 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+
 
 
 

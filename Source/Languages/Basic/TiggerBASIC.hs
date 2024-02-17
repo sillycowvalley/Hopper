@@ -15,8 +15,7 @@ program TiggerBASIC
     
     uses "/Source/System/System"    
 #ifdef MCU    
-    #define PIMORONI_TINY2040
-    uses "/Source/Library/MCU"
+    uses "/Source/Library/Boards/PiPico"
     uses "/Source/Library/Screen"
 #else
     uses "/Source/System/Diagnostics"

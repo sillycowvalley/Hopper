@@ -8,6 +8,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -36,6 +37,7 @@ UInt HopperVM_sp = 0;
 UInt HopperVM_bp = 0;
 UInt HopperVM_csp = 0;
 Bool HopperVM_cnp = false;
+Bool HopperVM_inDebugger = false;
 OpCode HopperVM_opCode = (OpCode)0;
 UInt HopperVM_jumpTable = 0;
 UInt HopperVM_pcStore = 0;
@@ -1012,6 +1014,7 @@ void HopperVM_FlashProgram(UInt codeLocation, UInt codeLength, UInt crc)
 Bool HopperVM_Execute()
 {
     Bool restart = false;
+    HopperVM_inDebugger = true;
     for (;;)
     {
         Bool doNext = HopperVM_ExecuteOpCode();
@@ -1042,18 +1045,21 @@ Bool HopperVM_Execute()
                     {
                         HopperVM_SetBreakpoint(0x00, 0x00);
                     }
+                    HopperVM_inDebugger = false;
                     return restart;
                 }
             }
         }
         External_WatchDog();
     }
+    HopperVM_inDebugger = false;
     return restart;
 }
 
 Bool HopperVM_ExecuteStepTo()
 {
     Bool restart = false;
+    HopperVM_inDebugger = true;
     Bool doNext = HopperVM_ExecuteOpCode();
     if (Minimal_Error_Get() != 0x00)
     {
@@ -1063,6 +1069,7 @@ Bool HopperVM_ExecuteStepTo()
     {
         restart = true;
     }
+    HopperVM_inDebugger = false;
     return restart;
 }
 
@@ -4103,6 +4110,17 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(HopperVM_programSize, Type::eUInt);
         break;
     }
+    case SysCall::eRuntimeInDebuggerGet:
+    {
+        HopperVM_Push((HopperVM_inDebugger) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
+    case SysCall::eRuntimeDateTimeGet:
+    {
+        UInt dateTime = HopperVM_RuntimeDateTime();
+        HopperVM_Push(dateTime, Type::eString);
+        break;
+    }
     case SysCall::eMemoryAvailable:
     {
         UInt size = Memory_Available();
@@ -5979,6 +5997,27 @@ Bool HopperVM_RunInline()
     }
     GC_Release(inlineCodeArray);
     return true;
+}
+
+UInt HopperVM_RuntimeDateTime()
+{
+    Serial_WriteChar(Char(0x07));
+    Serial_WriteChar('D');
+    while (!Serial_IsAvailable_Get())
+    {
+        External_Delay(0x0A);
+    }
+    UInt hrstring = HRString_New();
+    for (;;)
+    {
+        Char ch = Serial_ReadChar();
+        if (ch == Char(0x0D))
+        {
+            break;;
+        }
+        HRString_BuildChar_R(hrstring, ch);
+    }
+    return hrstring;
 }
 
 void GC_AddReference(UInt address)
@@ -8589,3 +8628,4 @@ UInt HRInt_FromBytes(Byte b0, Byte b1)
 {
     return b0 + (b1 << 0x08);
 }
+

@@ -180,8 +180,9 @@ unit HopperCode
         }
         return lineNumberAddresses[ln];
     }
-    uint GetCurrentLineNumber() // only used for error reporting (speed doen't matter)
+    uint GetCurrentLineNumber() // only used for error reporting (speed doesn't matter)
     {
+        // how can this possibly work!? PC will be here, not error location
         uint pc = Runtime.PC - Runtime.UserCode;
         
         uint bestDelta = 10000;

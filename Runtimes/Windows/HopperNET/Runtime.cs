@@ -368,7 +368,10 @@ namespace HopperNET
 
         TimeTime_Get = 0x95,
         TimeDate_Get = 0x96,
-        
+
+        RuntimeInDebuggerGet = 0x97,
+        RuntimeDateTimeGet = 0x98,
+
 
         SerialConnect = 0xA2,
         SerialClose = 0xA3,

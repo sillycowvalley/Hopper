@@ -277,13 +277,13 @@ program Runtime
                                 {
                                     // set breakpoint[0] to PC+2
                                     HopperVM.SetBreakpoint(0, pc+2);
-                                    restart =HopperVM.Execute();
+                                    restart = HopperVM.Execute();
                                 }
                                 else if (opCode == OpCode.CALLREL)
                                 {
                                     // set breakpoint[0] to PC+1
                                     HopperVM.SetBreakpoint(0, pc+1);
-                                    restart =HopperVM.Execute();
+                                    restart = HopperVM.Execute();
                                 }
                                 else
                                 {
