@@ -1832,6 +1832,11 @@ program Compile
             {
                 break;
             }
+            if ((leftTokenType == HopperToken.Discarder) && (expressionType == "void"))
+            {
+                Parser.ErrorAt(leftToken, "type mismatch in discard assignment, expect expression, was statement'");       
+                break;
+            }
             if (isStringAppend)
             {
                 if ((expressionType != "string") && (expressionType != "char"))
@@ -2213,10 +2218,15 @@ program Compile
                     || (tokenType == HopperToken.Discarder)
                    )
                 {
-                    bool isDotted = (tokenType == HopperToken.DottedIdentifier);
+                    bool isDotted    = (tokenType == HopperToken.DottedIdentifier);
+                    bool isDiscarder = (tokenType == HopperToken.Discarder);
                     <string,string> nextToken = Parser.Peek();
                     HopperToken nextTokenType = Token.GetType(nextToken);   
-                    if (Types.IsEnum(tokenString) || Types.IsFlags(tokenString))
+                    if (isDiscarder && (nextTokenType != HopperToken.Assign))
+                    {
+                        Parser.ErrorAtCurrent("'=' expected");
+                    }
+                    else if (Types.IsEnum(tokenString) || Types.IsFlags(tokenString))
                     {
                         success = compileLocalDeclaration();
                     }

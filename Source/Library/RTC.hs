@@ -68,8 +68,15 @@ unit RTC
     
     // also clears the trigger
     bool AlarmWasTriggered(byte iAlarm) { return RTCDriver.RawAlarmWasTriggered(iAlarm); }
-    
+ 
+#if defined(RTC_HAS_TEMPERATURE)       
     // several RTC chips include a temperature sensor
     float Temperature { get { return RTCDriver.RawTemperature;  } }
-    
+#endif
+ 
+#if defined(RTC_HAS_RAM)   
+    // several RTCs have some convenient non-volatile RAM    
+    byte RAMCount { get { return RTCDriver.RawRAMCount; } }
+    byte[] RAM    { get { return RTCDriver.RawRAM; } set { RTCDriver.RawRAM = value; } }
+#endif
 }

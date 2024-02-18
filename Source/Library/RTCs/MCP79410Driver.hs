@@ -1,71 +1,46 @@
 unit RTCDriver
 {
-    // The DS3231 is a low-cost, extremely accurate, I2Creal-time clock (RTC).
-    
     uses "/Source/System/DateTime"
     uses "/Source/Library/RTC"
     
-    #define RTC_HAS_TEMPERATURE
+    // https://sensorian.github.io/c_docs/_example1_2_m_c_p79410_8c_source.html
+    // https://sensorian.github.io/c_docs/_m_c_p79410___r_t_c_c_2_example4_2main_8c_source.html
     
+    #define RTC_HAS_RAM
     
-    const byte DS3231_TIME        = 0x00;
-    const byte DS3231_ALARM1      = 0x07;
-    const byte DS3231_ALARM2      = 0x0B;
-    const byte DS3231_CONTROL     = 0x0E;
-    const byte DS3231_STATUS      = 0x0F;
-    const byte DS3231_TEMPERATURE = 0x11; // (high byte - low byte is at 0x12), 10-bittemperature value                        
-    
+    const byte RTC_LOCATION   = 0x00;  
+    const byte RAM_LOCATION   = 0x20;
+      
     byte     iControllerRTC;
     byte     addressRTC;
     bool     initialized;
     byte[19] registersRTC;
     
     bool Begin(byte i2cController, byte sdaPin, byte sclPin, byte address)
-    {
+    {        
+        
         bool success = Wire.Initialize(i2cController, sdaPin, sclPin);
         addressRTC = address;
         iControllerRTC = i2cController;
-        
-        // good default : square wave off, alarms disabled
-        byte control = 0b00011100;
-        Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_CONTROL);
-        Wire.Write(iControllerRTC, control);
-        _ = Wire.EndTx(iControllerRTC);
-        
-        Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_STATUS);
-        _ = Wire.EndTx(iControllerRTC);
-        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
-        byte status = Wire.Read(iControllerRTC);
-        bool triggered = 0 != (status & 0b00000011);
-        if (triggered)
-        {
-            // clear the flags
-            status &= ~0b00000011;
-            Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
-            Wire.Write(iControllerRTC, status);
-            _ = Wire.EndTx(iControllerRTC);
-        }
         
         initialized = success;
         return success;
     }
     RawClearLostPower()
     {
+        // TODO ?!
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_STATUS);
+        Wire.Write(iControllerRTC, 0x03);
         _ = Wire.EndTx(iControllerRTC);
         _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
         byte status = Wire.Read(iControllerRTC);
-        bool lastPower = 0 != (status & 0b10000000);
+        bool lastPower = 0 != (status & 0b00010000);
         if (lastPower)
         {
             // clear the flags
-            status &= ~0b10000000;
+            status &= ~0b00010000;
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
+            Wire.Write(iControllerRTC, 0x03);
             Wire.Write(iControllerRTC, status);
             _ = Wire.EndTx(iControllerRTC);
         }
@@ -75,13 +50,14 @@ unit RTCDriver
     { 
         get
         { 
+            // TODO ?!
+            byte status;
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
+            Wire.Write(iControllerRTC, 0x03);
             _ = Wire.EndTx(iControllerRTC);
             _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
-            byte status = Wire.Read(iControllerRTC);
-            
-            return 0 != (status & 0b10000000); 
+            status = Wire.Read(iControllerRTC);
+            return 0 != (status & 0b00010000); 
         }
     }
     
@@ -155,30 +131,19 @@ unit RTCDriver
             iDayOfWeek++; // 0..6 -> 1..7 : Sunday is 1, not 0
             
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_TIME); // set register pointer to 0
-            
+            Wire.Write(iControllerRTC, RTC_LOCATION); // start location
             Wire.Write(iControllerRTC, toBCD(seconds));
             Wire.Write(iControllerRTC, toBCD(minutes));
             Wire.Write(iControllerRTC, toBCD(hours));
-            
-            Wire.Write(iControllerRTC, toBCD(iDayOfWeek));
-            
+            Wire.Write(iControllerRTC, 0b10000000 | toBCD(iDayOfWeek)); // enable battery backup
             Wire.Write(iControllerRTC, toBCD(day));
-            Wire.Write(iControllerRTC, 0b10000000 | toBCD(month)); // hardcoded to mean 2000 +
+            Wire.Write(iControllerRTC, toBCD(month));
             Wire.Write(iControllerRTC, toBCD(year));
-            
             _ = Wire.EndTx(iControllerRTC);
             
-            // clear OSF bit
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
-            _ = Wire.EndTx(iControllerRTC);
-            _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
-            byte status = Wire.Read(iControllerRTC);
-            status &= ~0b10000000; 
-            Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
-            Wire.Write(iControllerRTC, status);
+            Wire.Write(iControllerRTC, RTC_LOCATION); // start location
+            Wire.Write(iControllerRTC, 0b10000000 | toBCD(seconds)); // start clock
             _ = Wire.EndTx(iControllerRTC);
             
             success = true;
@@ -191,49 +156,54 @@ unit RTCDriver
         bool success;
         loop
         {
-            if ((iAlarm != 1) && (iAlarm != 2))
+            // TODO
+            /*
+            if (iAlarm != 1)
             {
                 // bad alarm
                 break;
             }
             
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_CONTROL);
+            Wire.Write(iControllerRTC, PCF8523_CONTROL_1);
             _ = Wire.EndTx(iControllerRTC);
             _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
             byte control = Wire.Read(iControllerRTC);
-            byte mask    = (iAlarm == 1) ? 0b11111110 : 0b11111101;
             
             // clear the bit
-            control &= mask;
+            control &= 0b11111101;
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_CONTROL);
+            Wire.Write(iControllerRTC, PCF8523_CONTROL_1);
             Wire.Write(iControllerRTC, control);
             _ = Wire.EndTx(iControllerRTC);
         
             success = true;
+            */
             break;
         }
         return success;
     }
     bool AlarmWasTriggered(byte iAlarm)
     {
+        bool triggered;
+        // TODO
+        /*
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_STATUS);
+        Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
         _ = Wire.EndTx(iControllerRTC);
         _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
         byte status = Wire.Read(iControllerRTC);
-        byte mask = (iAlarm == 1) ? 0b00000001 : 0b00000010;
-        bool triggered = 0 != (mask & status);
+        triggered = 0 != (0b00001000 & status);
         if (triggered)
         {
             // clear the flag
-            status &= ~mask;
+            status &= ~0b00001000;
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
+            Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
             Wire.Write(iControllerRTC, status);
             _ = Wire.EndTx(iControllerRTC);
         }
+        */
         return triggered;
     }
     bool setAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match, bool alarmInterrupts)
@@ -246,14 +216,6 @@ unit RTCDriver
                 // bad alarm
                 break;
             }
-            if (iAlarm == 2)
-            {
-                if ((match == AlarmMatch.SecondsMatch) || (second != 0))
-                {
-                    // invalid options
-                    break;
-                }
-            }
             if (!disableAlarm(iAlarm))
             {
                 break;
@@ -262,78 +224,74 @@ unit RTCDriver
             if (match != AlarmMatch.None)
             {
                 byte alarmOn;
-                byte secondsMask;
-                byte minutesMatch;
-                byte hoursMatch;
-                byte daysMatch;
-                byte dateMatch;
-                
-                if (iAlarm == 1)
+                byte alarmMask    = 0b11100000;
+                switch (match)
                 {
-                    switch (match)
+                    case AlarmMatch.SecondsMatch:
                     {
-                        case AlarmMatch.SecondsMatch:
+                        if ((minute == 0) && (hour == 0) && (day == 0) && (month == 0))
                         {
-                            minutesMatch = 0b10000000;
-                            hoursMatch   = 0b10000000;
-                            daysMatch    = 0b10000000;
-                        }
-                        case AlarmMatch.MinutesAndSecondsMatch:
-                        {
-                            hoursMatch   = 0b10000000;
-                            daysMatch    = 0b10000000;
-                        }
-                        case AlarmMatch.HoursMinutesAndSecondsMatch:
-                        {
-                            daysMatch    = 0b10000000;
-                        }
-                        case AlarmMatch.DateHoursMinutesAndSecondsMatch:
-                        {
-                        }
-                        case AlarmMatch.DayHoursMinutesAndSecondsMatch:
-                        {
-                            dateMatch    = 0b01000000;
+                            alarmMask    = 0b00000000;
                         }
                     }
+                    case AlarmMatch.MinutesAndSecondsMatch:
+                    {
+                        if ((second == 0) && (hour == 0) && (day == 0) && (month == 0))
+                        {
+                            alarmMask    = 0b00100000;
+                        }
+                    }                        
+                    case AlarmMatch.HoursMinutesAndSecondsMatch:
+                    {
+                        if ((second == 0) && (minute == 0) && (day == 0) && (month == 0))
+                        {
+                            alarmMask    = 0b01000000;
+                        }
+                    }
+                    case AlarmMatch.DayHoursMinutesAndSecondsMatch:
+                    {
+                        if ((second == 0) && (minute == 0) && (hour == 0) && (month == 0))
+                        {
+                            alarmMask    = 0b01100000;
+                        }
+                    }
+                    case AlarmMatch.DateHoursMinutesAndSecondsMatch:
+                    {
+                        if ((second == 0) && (minute == 0) && (hour == 0) && (month == 0))
+                        {
+                            alarmMask    = 0b10000000;
+                        }
+                    }
+                    
+                }
+                if (iAlarm == 1)
+                {
                     Wire.BeginTx(iControllerRTC, addressRTC);
-                    Wire.Write(iControllerRTC, 0x07);              
-                    Wire.Write(iControllerRTC, (toBCD(second) & 0b01111111) | secondsMask);
-                    Wire.Write(iControllerRTC, (toBCD(minute) & 0b01111111) | minutesMatch); 
-                    Wire.Write(iControllerRTC, (toBCD(hour)   & 0b00111111) | hoursMatch);
-                    Wire.Write(iControllerRTC, (toBCD(day)    & 0b00111111) | (dateMatch | daysMatch));
+                    Wire.Write(iControllerRTC, 0x0A);              
+                    Wire.Write(iControllerRTC, toBCD(second));
+                    Wire.Write(iControllerRTC, toBCD(minute)); 
+                    Wire.Write(iControllerRTC, toBCD(hour));
+                    Wire.Write(iControllerRTC, alarmMask | toBCD(day)); // weekDay
+                    Wire.Write(iControllerRTC, toBCD(day));
+                    Wire.Write(iControllerRTC, 0); // month
                     _ = Wire.EndTx(iControllerRTC);
                     alarmOn = 0b00000001;
                 }
                 else // iAlarm = 2
                 {
-                    switch (match)
-                    {
-                        case AlarmMatch.MinutesAndSecondsMatch:
-                        {
-                            hoursMatch   = 0b10000000;
-                            daysMatch    = 0b10000000;
-                        }
-                        case AlarmMatch.HoursMinutesAndSecondsMatch:
-                        {
-                            daysMatch    = 0b10000000;
-                        }
-                        case AlarmMatch.DateHoursMinutesAndSecondsMatch:
-                        {
-                        }
-                        case AlarmMatch.DayHoursMinutesAndSecondsMatch:
-                        {
-                            dateMatch    = 0b10000000;
-                        }
-                    }
                     Wire.BeginTx(iControllerRTC, addressRTC);
-                    Wire.Write(iControllerRTC, 0x0B);              
-                    Wire.Write(iControllerRTC, (toBCD(minute) & 0b01111111) | minutesMatch); 
-                    Wire.Write(iControllerRTC, (toBCD(hour)   & 0b00111111) | hoursMatch);
-                    Wire.Write(iControllerRTC, (toBCD(day)    & 0b00111111) | (dateMatch | daysMatch));
-                    _= Wire.EndTx(iControllerRTC);
+                    Wire.Write(iControllerRTC, 0x11);              
+                    Wire.Write(iControllerRTC, toBCD(second));
+                    Wire.Write(iControllerRTC, toBCD(minute)); 
+                    Wire.Write(iControllerRTC, toBCD(hour));
+                    Wire.Write(iControllerRTC, alarmMask | toBCD(day)); // weekDay
+                    Wire.Write(iControllerRTC, toBCD(day));
+                    Wire.Write(iControllerRTC, 0); // month
+                    _ = Wire.EndTx(iControllerRTC);
                     alarmOn = 0b00000010;
                 }
-                
+                // TODO
+                /*
                 // enable
                 Wire.BeginTx(iControllerRTC, addressRTC);
                 Wire.Write(iControllerRTC, DS3231_CONTROL);
@@ -352,6 +310,7 @@ unit RTCDriver
                 Wire.Write(iControllerRTC, DS3231_CONTROL);
                 Wire.Write(iControllerRTC, control);
                 _ = Wire.EndTx(iControllerRTC);
+                */
             }
             success = true;
             break;
@@ -373,41 +332,11 @@ unit RTCDriver
             }
             MCU.PinMode(pin, PinModeOption.InputPullup);
             success = MCU.AttachToPin(pin, alarmDelegate, PinStatus.Rising);
+            success = true;
             break;
         }
         return success;
     }
-    
-    float RawTemperature
-    {
-        get
-        {
-            float temperature;
-            loop
-            {
-                if (!initialized)
-                {
-                    WriteLn("No call to RTCDevice.Begin()?");
-                    break;
-                }
-                Wire.BeginTx(iControllerRTC, addressRTC);
-                Wire.Write(iControllerRTC, DS3231_TEMPERATURE);
-                _ = Wire.EndTx(iControllerRTC);
-                byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, 2);
-                if (bytesReceived < 2)
-                {
-                    break;
-                }
-                byte msb = Wire.Read(iControllerRTC);
-                byte lsb = (Wire.Read(iControllerRTC) >> 6);
-                
-                temperature = msb + lsb * 0.25;
-                break;
-            }
-            return temperature;
-        }
-    }
-    
        
     bool readRTC()
     {   
@@ -421,22 +350,17 @@ unit RTCDriver
             }
             
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_TIME); // set register pointer to 0
+            Wire.Write(iControllerRTC, RTC_LOCATION);
             _ = Wire.EndTx(iControllerRTC);
-            byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, 19);
-            if (bytesReceived < 19)
+            byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, 7);
+            if (bytesReceived < 7)
             {
                 break;
             }
-            for (byte i = 0; i < 19; i++)
+            for (byte i = 0; i < 7; i++)
             {
                 registersRTC[i] = Wire.Read(iControllerRTC);
             }
-            /*
-            WriteLn("Control: " + (registersRTC[0x0E]).ToHexString(2) 
-                + ", Status: "  + (registersRTC[0x0F]).ToHexString(2)
-                + ", DofW: "    + (registersRTC[0x03]).ToHexString(2));
-            */
             success = true;
             break;
         } // loop
@@ -459,7 +383,7 @@ unit RTCDriver
                     break;
                 }
                 
-                byte day         = fromBCD(registersRTC[0x04]);
+                byte day         = fromBCD(registersRTC[0x04] & 0b00011111);
                 byte month       = fromBCD(registersRTC[0x05] & 0b00011111);
                 uint year        = 2000 + fromBCD(registersRTC[0x06]);
                              
@@ -510,6 +434,38 @@ unit RTCDriver
             string date = Date; // preserve current date
             _ = setRTC(date + " " + value);            
         }
+    }
+    
+    byte RawRAMCount { get { return 64; } }
+    byte[] RawRAM    
+    { 
+        get 
+        { 
+            byte[64] ram; 
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, RAM_LOCATION);
+            _ = Wire.EndTx(iControllerRTC);
+            byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, 64);
+            if (bytesReceived == 64)
+            {
+                for (byte i = 0; i < 64; i++)
+                {
+                    ram[i] = Wire.Read(iControllerRTC);
+                }
+            }
+            byte[] flexram = ram;
+            return flexram; 
+        } 
+        set 
+        { 
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, RAM_LOCATION);
+            for (byte i = 0; i < 64; i++)
+            {
+                Wire.Write(iControllerRTC, value[i]);
+            }
+            _ = Wire.EndTx(iControllerRTC);
+        } 
     }
 
 }

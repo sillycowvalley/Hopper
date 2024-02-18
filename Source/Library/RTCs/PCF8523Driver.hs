@@ -1,7 +1,5 @@
 unit RTCDriver
 {
-    // The DS3231 is a low-cost, extremely accurate, I2Creal-time clock (RTC).
-    
     uses "/Source/System/DateTime"
     uses "/Source/Library/RTC"
     
@@ -304,7 +302,6 @@ unit RTCDriver
                 Wire.Write(iControllerRTC, PCF8523_CONTROL_1);
                 Wire.Write(iControllerRTC, control);
                 _ = Wire.EndTx(iControllerRTC);
-                Write("Control: " + control.ToHexString(2));
                 
                 Wire.BeginTx(iControllerRTC, addressRTC);
                 Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
@@ -346,15 +343,6 @@ unit RTCDriver
             break;
         }
         return success;
-    }
-    
-    float RawTemperature
-    {
-        get
-        {
-            float temperature;
-            return temperature;
-        }
     }
        
     bool readRTC()
