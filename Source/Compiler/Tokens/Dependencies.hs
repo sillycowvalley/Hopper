@@ -28,7 +28,7 @@ unit Dependencies
         return true;
     }
     
-    bool TryGetSources(string primaryPath, ref <string> sources)
+    bool TryGetSources(string primaryPath, <string> sources)
     {
         //OutputDebug("TryGetSources: " + primaryPath);
         

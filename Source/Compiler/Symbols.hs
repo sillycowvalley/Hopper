@@ -361,16 +361,15 @@ unit Symbols
         return found;
     }
     
-    bool FindRecord(string recordName, ref < <string> > members)
+    < <string> > FindRecord(string recordName)
     {
-        bool found = false;
+        < <string> > members;
         if (rIndex.Contains(recordName))
         {            
             uint index = rIndex[recordName];
             members = rMembers[index];
-            found = true;
         }            
-        return found;
+        return members;
     }
     
     string DecodeFlags(string flagsName, uint value)
@@ -2642,7 +2641,7 @@ unit Symbols
         }
         return name;
     }
-    uint ExportTouchTree(ref <string> contentLines, uint iFrom, uint indent, ref <uint> touchesDone)
+    uint ExportTouchTree(<string> contentLines, uint iFrom, uint indent, <uint> touchesDone)
     {
         string pad;
         pad = pad.Pad(' ', indent);
@@ -2659,7 +2658,7 @@ unit Symbols
                 uint iTo = t;
                 if (!touchesDone.Contains(iTo))
                 {
-                    cSize = cSize + ExportTouchTree(ref contentLines, iTo, indent+2, ref touchesDone);
+                    cSize = cSize + ExportTouchTree(contentLines, iTo, indent+2, touchesDone);
                     isLeaf = false;
                 }
             }
@@ -2695,7 +2694,7 @@ unit Symbols
             uint iFrom = kv.key;
             if (!touchesDone.Contains(iFrom))
             {
-                cSize = cSize + ExportTouchTree(ref contentLines, iFrom, 0, ref touchesDone);
+                cSize = cSize + ExportTouchTree(contentLines, iFrom, 0, touchesDone);
             }
         }
         if (File.Exists(path))

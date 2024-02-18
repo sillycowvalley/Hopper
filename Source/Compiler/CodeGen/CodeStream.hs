@@ -497,13 +497,13 @@ unit CodeStream
             }
         }
         internalAddInstruction(instruction);
-        PeepholeOptimize(ref currentStream);
+        PeepholeOptimize(currentStream);
     }
     AddInstruction(Instruction instruction, byte operand)
     {
         internalAddInstruction(instruction);
         currentStream.Append(operand);
-        PeepholeOptimize(ref currentStream);
+        PeepholeOptimize(currentStream);
     }
     AddInstruction(Instruction instruction, uint operand)
     {
@@ -512,7 +512,7 @@ unit CodeStream
         currentStream.Append(byte(lsb));
         uint msb = operand >> 8;
         currentStream.Append(byte(msb));
-        PeepholeOptimize(ref currentStream);
+        PeepholeOptimize(currentStream);
     }
     AddInstructionPUSHI(uint operand)
     {
@@ -589,7 +589,7 @@ unit CodeStream
         {
             // what follows is a pop of a reference into a variable - should we make a copy?
             CodeStream.internalAddInstruction(Instruction.COPYNEXTPOP);
-            PeepholeOptimize(ref currentStream);
+            PeepholeOptimize(currentStream);
         }
         string fullName;
         string variableType2 = Types.GetTypeString(variableName, true, ref fullName);

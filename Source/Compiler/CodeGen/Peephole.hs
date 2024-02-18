@@ -48,7 +48,7 @@ unit Peephole
        }
     }
     
-    TrimTail(ref <byte> currentStream, uint remove)
+    TrimTail(<byte> currentStream, uint remove)
     {
         while (remove > 0)
         {
@@ -57,7 +57,7 @@ unit Peephole
         }
     }
     
-    PeepholeOptimize(ref <byte> currentStream)
+    PeepholeOptimize(<byte> currentStream)
     {
         // peepholeOptimization takes place before boundary is updated after jump instructions
         // but after operands have been emitted
@@ -69,7 +69,7 @@ unit Peephole
                 // at least 1 instruction
                 if (lastInstruction0 > peephholeBoundary) 
                 {
-                    if (peepholeOptimize1(ref currentStream))
+                    if (peepholeOptimize1(currentStream))
                     {
                         continue; // hunt for more
                     }
@@ -79,7 +79,7 @@ unit Peephole
                 {
                     if (lastInstruction1 != lastInstruction0) // why?! it does happen
                     {
-                        if (peepholeOptimize2(ref currentStream))
+                        if (peepholeOptimize2(currentStream))
                         {
                             continue; // hunt for more
                         }
@@ -88,7 +88,7 @@ unit Peephole
                 // at least 3 instructions
                 if (lastInstruction2 > peephholeBoundary) 
                 {
-                    if (peepholeOptimize3(ref currentStream))
+                    if (peepholeOptimize3(currentStream))
                     {
                         continue; // hunt for more
                     }
@@ -98,7 +98,7 @@ unit Peephole
                 {
                     if (lastInstruction1 != lastInstruction0) // why?!
                     {
-                        if (peepholeOptimize4(ref currentStream))
+                        if (peepholeOptimize4(currentStream))
                         {
                             continue; // hunt for more
                         }
@@ -109,7 +109,7 @@ unit Peephole
         }
     }
     
-    bool IsPushGlobalB(ref <byte> currentStream, uint index, ref byte offset, ref byte length)
+    bool IsPushGlobalB(<byte> currentStream, uint index, ref byte offset, ref byte length)
     {
         Instruction opCode = Instruction(currentStream[index]);
         if (opCode == Instruction.PUSHGLOBALB)
@@ -121,7 +121,7 @@ unit Peephole
         return false;
     }
     
-    bool IsPopGlobalB(ref <byte> currentStream, uint index, ref byte offset, ref byte length)
+    bool IsPopGlobalB(<byte> currentStream, uint index, ref byte offset, ref byte length)
     {
         Instruction opCode = Instruction(currentStream[index]);
         if (opCode == Instruction.POPGLOBALB)
@@ -133,7 +133,7 @@ unit Peephole
         return false;
     }
     
-    bool IsPushLocalB(ref <byte> currentStream, uint index, ref byte offset, ref byte length)
+    bool IsPushLocalB(<byte> currentStream, uint index, ref byte offset, ref byte length)
     {
         Instruction opCode = Instruction(currentStream[index]);
         switch (opCode)
@@ -160,7 +160,7 @@ unit Peephole
         return false;
     }
     
-    bool IsPopLocalB(ref <byte> currentStream, uint index, ref byte offset, ref byte length)
+    bool IsPopLocalB(<byte> currentStream, uint index, ref byte offset, ref byte length)
     {
         Instruction opCode = Instruction(currentStream[index]);
         switch (opCode)
@@ -186,7 +186,7 @@ unit Peephole
         }
         return false;
     }
-    bool peepholeOptimize3(ref <byte> currentStream)
+    bool peepholeOptimize3(<byte> currentStream)
     {
         if (    (currentStream[lastInstruction2] == byte(Instruction.PUSHI0))
              && (currentStream[lastInstruction1] == byte(Instruction.PUSHI1))
@@ -196,7 +196,7 @@ unit Peephole
             // PUSHI0 PUSHI1 SUBI -> PUSHIM1
             // i2     i1     i0      i2
             currentStream.SetItem(lastInstruction2,   byte(Instruction.PUSHIM1));
-            TrimTail(ref currentStream, 2);
+            TrimTail(currentStream, 2);
             lastInstruction0 = lastInstruction2;
             lastInstruction1 = lastInstruction3;
             lastInstruction2 = lastInstruction4;
@@ -206,17 +206,17 @@ unit Peephole
         }
         return false;
     }
-    bool peepholeOptimize4(ref <byte> currentStream)
+    bool peepholeOptimize4(<byte> currentStream)
     {
         byte offset3 = 0;
         byte length3 = 0;
-        bool isPushLocalB3  = IsPushLocalB (ref currentStream, lastInstruction3, ref offset3, ref length3);
-        bool isPushGlobalB3 = IsPushGlobalB(ref currentStream, lastInstruction3, ref offset3, ref length3);
+        bool isPushLocalB3  = IsPushLocalB (currentStream, lastInstruction3, ref offset3, ref length3);
+        bool isPushGlobalB3 = IsPushGlobalB(currentStream, lastInstruction3, ref offset3, ref length3);
         
         byte offset0 = 0;
         byte length0 = 0;
-        bool isPopLocalB0  = IsPopLocalB (ref currentStream, lastInstruction0, ref offset0, ref length0);
-        bool isPopGlobalB0 = IsPopGlobalB(ref currentStream, lastInstruction0, ref offset0, ref length0);
+        bool isPopLocalB0  = IsPopLocalB (currentStream, lastInstruction0, ref offset0, ref length0);
+        bool isPopGlobalB0 = IsPopGlobalB(currentStream, lastInstruction0, ref offset0, ref length0);
         
         if (isPushGlobalB3 && isPopGlobalB0)
         {
@@ -231,7 +231,7 @@ unit Peephole
                 currentStream.SetItem(lastInstruction3+1, offset0);
                 // 6 -> 2 = -4
                 uint remove = (length0-1) + (length3-1) + 2;
-                TrimTail(ref currentStream, remove);
+                TrimTail(currentStream, remove);
                 lastInstruction0 = lastInstruction3;
                 lastInstruction1 = lastInstruction4;
                 lastInstruction2 = 0;
@@ -250,7 +250,7 @@ unit Peephole
                 currentStream.SetItem(lastInstruction3+1, offset0);
                 // 6 -> 2 = -4
                 uint remove = (length0-1) + (length3-1) + 2;
-                TrimTail(ref currentStream, remove);
+                TrimTail(currentStream, remove);
                 lastInstruction0 = lastInstruction3;
                 lastInstruction1 = lastInstruction4;
                 lastInstruction2 = 0;
@@ -272,7 +272,7 @@ unit Peephole
                 currentStream.SetItem(lastInstruction3+1, offset0);
                 // 6 -> 2 = -4
                 uint remove = (length0-1) + (length3-1) + 2;
-                TrimTail(ref currentStream, remove);
+                TrimTail(currentStream, remove);
                 lastInstruction0 = lastInstruction3;
                 lastInstruction1 = lastInstruction4;
                 lastInstruction2 = 0;
@@ -282,7 +282,7 @@ unit Peephole
             }
             byte offset2 = 0;
             byte length2 = 0;
-            bool isPushLocalB2 = IsPushLocalB(ref currentStream, lastInstruction2, ref offset2, ref length2);
+            bool isPushLocalB2 = IsPushLocalB(currentStream, lastInstruction2, ref offset2, ref length2);
         
             if (isPushLocalB2 
              && ((offset3 == offset0) || (offset2 == offset0))
@@ -304,7 +304,7 @@ unit Peephole
                 
                 // 7 -> 3 = -4
                 uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
-                TrimTail(ref currentStream, remove);
+                TrimTail(currentStream, remove);
                 lastInstruction0 = lastInstruction3;
                 lastInstruction1 = lastInstruction4;
                 lastInstruction2 = 0;
@@ -316,7 +316,7 @@ unit Peephole
         return false;   
     }
    	
-    bool peepholeOptimize1(ref <byte> currentStream)
+    bool peepholeOptimize1(<byte> currentStream)
     {
         if (currentStream[lastInstruction0] == byte(Instruction.PUSHI))
         {
@@ -324,7 +324,7 @@ unit Peephole
             if (operand <= 255)
             {
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHIB));
-                TrimTail(ref currentStream, 1); // MSB
+                TrimTail(currentStream, 1); // MSB
                 return true; // hunt for more
             }
         }
@@ -334,20 +334,20 @@ unit Peephole
             if (operand == 0)
             {
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHI0));
-                TrimTail(ref currentStream, 1); // '0'
+                TrimTail(currentStream, 1); // '0'
                 return true; // hunt for more
             }
             if (operand == 1)
             {
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHI1));
-                TrimTail(ref currentStream, 1); // '1'
+                TrimTail(currentStream, 1); // '1'
                 return true; // hunt for more
             }
         }
         
         byte offset0 = 0;
         byte length0 = 0;
-        bool isPushLocalB = IsPushLocalB(ref currentStream, lastInstruction0, ref offset0, ref length0);
+        bool isPushLocalB = IsPushLocalB(currentStream, lastInstruction0, ref offset0, ref length0);
         
         if (isPushLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 2)))
         {
@@ -363,11 +363,11 @@ unit Peephole
                 // i0         -> i0
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB02));
             }
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             return true; // hunt for more
         }
         
-        bool isPopLocalB = IsPopLocalB(ref currentStream, lastInstruction0, ref offset0, ref length0);
+        bool isPopLocalB = IsPopLocalB(currentStream, lastInstruction0, ref offset0, ref length0);
         if (isPopLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 2)))
         {
             if (offset0 == 0)
@@ -382,13 +382,13 @@ unit Peephole
                 // i0         -> i0
                 currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB02));
             }
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             return true; // hunt for more
         }
         return false;
     }
     
-    bool peepholeOptimize2(ref <byte> currentStream)
+    bool peepholeOptimize2(<byte> currentStream)
     {    
         if (
             (currentStream[lastInstruction1] == byte(Instruction.PUSHI)) 
@@ -398,7 +398,7 @@ unit Peephole
             // PUSHI LE -> PUSHILE
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHILE));
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;
             lastInstruction2 = lastInstruction3;
@@ -414,7 +414,7 @@ unit Peephole
             // PUSHIB LE -> PUSHIBLE
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIBLE));
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;
             lastInstruction2 = lastInstruction3;
@@ -430,7 +430,7 @@ unit Peephole
             // PUSHIB EQ -> PUSHIBEQ
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIBEQ));
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;
             lastInstruction2 = lastInstruction3;
@@ -446,7 +446,7 @@ unit Peephole
             // PUSHIB ADD -> ADDB
             // i1     i0  -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.ADDB));
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;
             lastInstruction2 = lastInstruction3;
@@ -462,7 +462,7 @@ unit Peephole
             // PUSHIB ADD -> ADDB
             // i1     i0  -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.SUBB));
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;
             lastInstruction2 = lastInstruction3;
@@ -478,7 +478,7 @@ unit Peephole
             // PUSHI LEI -> PUSHILEI
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHILEI));
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;
             lastInstruction2 = lastInstruction3;
@@ -494,7 +494,7 @@ unit Peephole
             // PUSHI LT -> PUSHILT
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHILT));
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;
             lastInstruction2 = lastInstruction3;
@@ -514,7 +514,7 @@ unit Peephole
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHGLOBALBB));
             currentStream.SetItem(lastInstruction1+2, offset0);
             
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;
             lastInstruction2 = lastInstruction3;
@@ -535,7 +535,7 @@ unit Peephole
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHLOCALBB));
             currentStream.SetItem(lastInstruction1+2, offset0);
             
-            TrimTail(ref currentStream, 1);
+            TrimTail(currentStream, 1);
             lastInstruction0 = lastInstruction1;
             lastInstruction1 = lastInstruction2;
             lastInstruction2 = lastInstruction3;

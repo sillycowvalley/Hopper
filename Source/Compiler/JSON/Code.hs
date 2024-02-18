@@ -158,7 +158,7 @@ unit Code
     {
         return debugSymbols;
     }
-    SetDebugSymbols(ref <string, <string,variant> > newDebugSymbols)
+    SetDebugSymbols(<string, <string,variant> > newDebugSymbols)
     {
         debugSymbols = newDebugSymbols;
     }

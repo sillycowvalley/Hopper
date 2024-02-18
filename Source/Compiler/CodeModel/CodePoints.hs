@@ -371,7 +371,7 @@ unit CodePoints
             iIndex++;
         }
     }
-    AppendJIXInstruction(uint iIndex, ref <byte> code)
+    AppendJIXInstruction(uint iIndex, <byte> code)
     {
         // at this point only the opCode has been appended
         uint myAddress      = code.Count-1;
@@ -567,7 +567,7 @@ unit CodePoints
             {
                 if (IsJumpIXInstruction(opCode))
                 {
-                    AppendJIXInstruction(index, ref code);
+                    AppendJIXInstruction(index, code);
                 }
                 else
                 {

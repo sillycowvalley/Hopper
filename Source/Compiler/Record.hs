@@ -2,9 +2,9 @@ unit Record
 {
     uses "/Source/Compiler/Symbols"
     
-    bool Find(string recordName, ref < <string> > members)
+    < <string> > Find(string recordName)
     {
-        return Symbols.FindRecord(recordName, ref members);
+        return Symbols.FindRecord(recordName);
     }
     
     // record ShellObject {
@@ -20,9 +20,9 @@ unit Record
                 break;
             }
             string recordName = Types.QualifyRecord(thisTypeString);
-            < <string> > members;
+            < <string> > members = Record.Find(recordName);
             bool memberFound;
-            if (Record.Find(recordName, ref members))
+            if (members.Count != 0)
             {
                 iMember = 0;
                 foreach (var v in members)
@@ -58,18 +58,15 @@ unit Record
     InitializeMembers(string thisTypeString)
     {
         bool success;
-        < <string> > members;
         string recordName = Types.QualifyRecord(thisTypeString);
-        if (Record.Find(recordName, ref members))
+        < <string> > members = Record.Find(recordName);
+        foreach (var v in members)
         {
-            foreach (var v in members)
-            {
-                string memberName = v[0];
-                string memberType = v[1];
-                CodeStream.AddInstruction(Instruction.DUP, byte(0));
-                Expression.InitializeVariable(memberType, true); // new variable at [top]
-                CodeStream.AddInstructionSysCall0("List", "Append");
-            }
+            string memberName = v[0];
+            string memberType = v[1];
+            CodeStream.AddInstruction(Instruction.DUP, byte(0));
+            Expression.InitializeVariable(memberType, true); // new variable at [top]
+            CodeStream.AddInstructionSysCall0("List", "Append");
         }
     }
     
@@ -81,18 +78,15 @@ unit Record
         uint jumpPast = CodeStream.NextAddress;
         CodeStream.AddInstructionJump(Instruction.JNZ);
         
-        < <string> > members;
         string recordName = Types.QualifyRecord(thisTypeString);
-        if (Record.Find(recordName, ref members))
+        < <string> > members = Record.Find(recordName);
+        foreach (var v in members)
         {
-            foreach (var v in members)
-            {
-                string memberName = v[0];
-                string memberType = v[1];
-                CodeStream.AddInstruction(Instruction.DUP, byte(0));
-                InitializeVariable(memberType, true); // new variable at [top]
-                CodeStream.AddInstructionSysCall0("List", "Append");
-            }
+            string memberName = v[0];
+            string memberType = v[1];
+            CodeStream.AddInstruction(Instruction.DUP, byte(0));
+            InitializeVariable(memberType, true); // new variable at [top]
+            CodeStream.AddInstructionSysCall0("List", "Append");
         }
         uint pastAddress = CodeStream.NextAddress;
         CodeStream.PatchJump(jumpPast, pastAddress);

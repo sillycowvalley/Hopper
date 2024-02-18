@@ -2511,7 +2511,7 @@ unit Editor
         if (isHopperSource)
         {
             <string> sources;
-            if (Dependencies.TryGetSources(GetProjectPath(), ref sources))
+            if (Dependencies.TryGetSources(GetProjectPath(), sources))
             {
                 if (Dependencies.TryGetYoungest(sources, ref youngestSourcePath, ref youngestSourceTime))
                 {

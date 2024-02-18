@@ -567,8 +567,7 @@ unit Source
                 case "record": // RECORD
                 {
                     tname = Types.QualifyRecord(tname);
-                    < <string> > members;
-                    _ = FindRecord(tname, ref members);
+                    < <string> > members = FindRecord(tname);
                     
                     content = "{";
                     uint iMember;

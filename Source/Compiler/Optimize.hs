@@ -192,7 +192,7 @@ program Optimize
             {
                 newDebugSymbols["globals"] = debugSymbols["globals"];
             }
-            SetDebugSymbols(ref newDebugSymbols);
+            SetDebugSymbols(newDebugSymbols);
             
         }
         return removed;
@@ -234,7 +234,7 @@ program Optimize
             uint size = CodePoints.Load(methodIndex, "before pass " + pass.ToString());
             if (pass == 0)
             {
-                codeBefore = codeBefore + size;
+                codeBefore += size;
             }
 #ifdef DIAGNOSTICS
             bool logging = (methodIndex == 0x0000);
