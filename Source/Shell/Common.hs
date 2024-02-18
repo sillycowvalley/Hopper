@@ -38,6 +38,7 @@ unit Common
         // directory members    
         uint FileCount;
         uint DirectoryCount;
+        uint Skipped;
     }
     
     int CompareShellObjects(<ShellObject> this, uint ai, uint bi)
@@ -92,10 +93,13 @@ unit Common
         bool valid = dir.IsValid();
         if (valid)
         {
+            uint skippedFiles;
+            uint skippedDirectories;
             dirObject.Path           = path;
             dirObject.IsDirectory    = true;
-            dirObject.FileCount      = dir.GetFileCount();
-            dirObject.DirectoryCount = dir.GetDirectoryCount();
+            dirObject.FileCount      = dir.GetFileCount(ref skippedFiles);
+            dirObject.DirectoryCount = dir.GetDirectoryCount(ref skippedDirectories);
+            dirObject.Skipped        = skippedFiles + skippedDirectories;
         }
         return valid;
     }
@@ -279,6 +283,7 @@ unit Common
                         {
                             // oh, what a lovely hack .. 
                             // (but what other command is interested in subFolders when not recursive?)
+                            shellObject.Skipped = 0;
                             cancelled = !Command.OnDirectory(shellObject);
                         }
                     }

@@ -5807,12 +5807,7 @@ namespace HopperNET
                         PushBool(directory.IsValid());
                     }
                     break;
-                case SysCall.DirectoryGetDirectoryCount:
-                    {
-                        HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
-                        Push(directory.GetDirectoryCount(), HopperType.tUInt);
-                    }
-                    break;
+                
                 case SysCall.DirectoryGetDirectory:
                     {
                         ushort index = (ushort)Pop();
@@ -5827,10 +5822,59 @@ namespace HopperNET
                         Push(directory.GetFile(index));
                     }
                     break;
+                case SysCall.DirectoryGetDirectoryCount:
+                    {
+                        switch (iOverload)
+                        {
+                            case 0:
+                                {
+                                    HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
+                                    Push(directory.GetDirectoryCount(), HopperType.tUInt);
+                                    break;
+                                }
+                            case 1:
+                                {
+                                    uint reference = Pop();
+                                    uint address = reference >> 1;
+#if DEBUG
+                                    Diagnostics.ASSERT(stack[address].type == HopperType.tUInt, "uint ref expected");
+#endif
+                                    ushort skipped = (ushort)stack[address].value;
+                                    HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
+                                    Push(directory.GetDirectoryCount(ref skipped), HopperType.tUInt);
+                                    stack[address].value = skipped;
+                                    stack[address].type = HopperType.tUInt;
+                                    break;
+                                }
+                        }
+                    }
+                    break;
                 case SysCall.DirectoryGetFileCount:
                     {
-                        HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
-                        Push(directory.GetFileCount(), HopperType.tUInt);
+                        switch (iOverload)
+                        {
+                            case 0:
+                                {
+                                    HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
+                                    Push(directory.GetFileCount(), HopperType.tUInt);
+                                    break;
+                                }
+                            case 1:
+                                {
+                                    uint reference = Pop();
+                                    uint address = reference >> 1;
+#if DEBUG
+                                    Diagnostics.ASSERT(stack[address].type == HopperType.tUInt, "uint ref expected");
+#endif
+                                    ushort skipped = (ushort)stack[address].value;
+                                    HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
+                                    Push(directory.GetFileCount(ref skipped), HopperType.tUInt);
+
+                                    stack[address].value = skipped;
+                                    stack[address].type = HopperType.tUInt;
+                                    break;
+                                }
+                        }
                     }
                     break;
                 case SysCall.DirectoryGetTime:

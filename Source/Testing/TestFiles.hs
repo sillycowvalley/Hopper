@@ -1,12 +1,10 @@
 program TestFiles
 {
-//#define SERIAL_CONSOLE
+#define SERIAL_CONSOLE
     uses "/Source/System/System"
     
     uses "/Source/System/IO"
     uses "/Source/System/Diagnostics"
-    uses "/Source/System/Screen"
-    uses "/Source/System/Keyboard"
     
     PrintFailed(string message)
     {
@@ -246,7 +244,7 @@ program TestFiles
     }
     
     {
-        EchoToLCD = true;
+        //EchoToLCD = true;
         //Screen.Clear();
         
         TestDirectories();

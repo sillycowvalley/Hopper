@@ -16,8 +16,8 @@ Bool External_DirectoryExists(UInt hrpath);
 void External_DirectoryDelete(UInt hrpath);
 void External_DirectoryCreate(UInt hrpath);
 UInt External_DirectoryGetTime(UInt hrpath);
-UInt External_DirectoryGetFileCount(UInt hrpath);
-UInt External_DirectoryGetDirectoryCount(UInt hrpath);
+UInt External_DirectoryGetFileCount_R(UInt hrpath, UInt & skipped);
+UInt External_DirectoryGetDirectoryCount_R(UInt hrpath, UInt & skipped);
 UInt External_DirectoryGetFile(UInt hrpath, UInt index);
 UInt External_DirectoryGetDirectory(UInt hrpath, UInt index);
 

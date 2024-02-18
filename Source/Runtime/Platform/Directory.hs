@@ -66,11 +66,21 @@ unit HRDirectory
     }
     uint GetFileCount(uint hrdir)
     {
-        return IsValid(hrdir) ? External.DirectoryGetFileCount(ReadWord(hrdir+diPath)) : 0;
+        uint skipped;
+        return IsValid(hrdir) ? External.DirectoryGetFileCount(ReadWord(hrdir+diPath), ref skipped) : 0;
+    }
+    uint GetFileCount(uint hrdir, ref uint skipped)
+    {
+        return IsValid(hrdir) ? External.DirectoryGetFileCount(ReadWord(hrdir+diPath), ref skipped) : 0;
     }
     uint GetDirectoryCount(uint hrdir)
     {
-        return IsValid(hrdir) ? External.DirectoryGetDirectoryCount(ReadWord(hrdir+diPath)) : 0;
+        uint skipped;
+        return IsValid(hrdir) ? External.DirectoryGetDirectoryCount(ReadWord(hrdir+diPath), ref skipped) : 0;
+    }
+    uint GetDirectoryCount(uint hrdir, ref uint skipped)
+    {
+        return IsValid(hrdir) ? External.DirectoryGetDirectoryCount(ReadWord(hrdir+diPath), ref skipped) : 0;
     }
     uint GetFile(uint hrdir, uint index)
     {

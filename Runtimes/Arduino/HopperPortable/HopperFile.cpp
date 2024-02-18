@@ -316,8 +316,9 @@ UInt External_DirectoryGetTime(UInt hrpath)
 #endif    
     return HRLong_New();
 }
-UInt External_DirectoryGetFileCount(UInt hrpath)
+UInt External_DirectoryGetFileCount_R(UInt hrpath, UInt & skipped)
 {
+    skipped = 0;
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
     UInt count = 0;
@@ -357,11 +358,12 @@ UInt External_DirectoryGetFileCount(UInt hrpath)
 #endif    
     return count;
 }
-UInt External_DirectoryGetDirectoryCount(UInt hrpath)
+UInt External_DirectoryGetDirectoryCount_R(UInt hrpath, UInt & skipped)
 {
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
     UInt count = 0;
+    skipped = 0;
 #ifdef ESP32LITTLEFS
     File dir = LittleFS.open(buffer);
     if (dir.isDirectory())

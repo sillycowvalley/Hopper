@@ -809,7 +809,9 @@ UInt HRDirectory_New();
 UInt HRDirectory_Open(UInt hrpath);
 Bool HRDirectory_IsValid(UInt _this);
 UInt HRDirectory_GetFileCount(UInt hrdir);
+UInt HRDirectory_GetFileCount_R(UInt hrdir, UInt & skipped);
 UInt HRDirectory_GetDirectoryCount(UInt hrdir);
+UInt HRDirectory_GetDirectoryCount_R(UInt hrdir, UInt & skipped);
 UInt HRDirectory_GetFile(UInt hrdir, UInt index);
 UInt HRDirectory_GetDirectory(UInt hrdir, UInt index);
 void HRDirectory_Delete(UInt hrpath);
@@ -898,7 +900,6 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
-
 
 
 

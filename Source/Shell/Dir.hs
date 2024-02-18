@@ -62,7 +62,12 @@ program Command
     {
         if (!doFullPaths)
         {
-            WriteLn(shellObject.Path, Colour.MatrixBlue);   
+            WriteLn(shellObject.Path, Colour.MatrixBlue);
+            if (shellObject.Skipped != 0)
+            {
+                string plural = (shellObject.Skipped == 1) ? "" : "s";
+                WriteLn("  " + (shellObject.Skipped).ToString() + " non Hopper compliant path" + plural + " ignored under " + shellObject.Path, Colour.MatrixOrange);
+            }
         }
         return true;
     }

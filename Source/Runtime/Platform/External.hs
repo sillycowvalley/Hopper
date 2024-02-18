@@ -229,23 +229,23 @@ unit External
         return str;
     }
     
-    uint DirectoryGetFileCount(uint hrpath) 
+    uint DirectoryGetFileCount(uint hrpath, ref uint skipped) 
     {
         string path = nativeStringFromHopperString(hrpath);
         directory dir = Directory.Open(path);
         if (dir.IsValid())
         {
-            return dir.GetFileCount();
+            return dir.GetFileCount(ref skipped);
         }
         return 0;
     }
-    uint DirectoryGetDirectoryCount(uint hrpath) 
+    uint DirectoryGetDirectoryCount(uint hrpath, ref uint skipped) 
     {
         string path = nativeStringFromHopperString(hrpath);
         directory dir = Directory.Open(path);
         if (dir.IsValid())
         {
-            return dir.GetDirectoryCount();
+            return dir.GetDirectoryCount(ref skipped);
         }
         return 0;
     }

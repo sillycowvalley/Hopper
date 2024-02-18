@@ -6,7 +6,9 @@ unit Directory
     directory Open(string fullpath) system;
     Create(string path) system;
     uint GetDirectoryCount(directory this) system;
+    uint GetDirectoryCount(directory this, ref uint skipped) system;
     uint GetFileCount(directory this) system;
+    uint GetFileCount(directory this, ref uint skipped) system;
     string GetDirectory(directory this, uint index) system;
     string GetFile(directory this, uint index) system;
     long GetTime(string path) system;

@@ -35,6 +35,7 @@ unit Colour
     // Console Colors (assuming a black background, Screen.Print(..) defaults)
     uint MatrixGreen         { get { return 0x7F7; } }
     uint MatrixBlue          { get { return 0x88F; } }
+    uint MatrixOrange        { get { return 0xF80; } }
     uint MatrixCyan          { get { return 0x0AE; } }
     uint MatrixRed           { get { return 0xF77; } }
     

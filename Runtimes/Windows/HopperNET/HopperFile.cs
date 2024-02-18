@@ -519,6 +519,11 @@ namespace HopperNET
 
         public ushort GetDirectoryCount()
         {
+            ushort skipped = 0;
+            return GetDirectoryCount(ref skipped);
+        }
+        public ushort GetDirectoryCount(ref ushort skipped)
+        {
             ushort count = 0;
             if (isValid)
             {
@@ -529,12 +534,20 @@ namespace HopperNET
                     {
                         count++; // TODO : ignore .. and .
                     }
+                    else
+                    {
+                        skipped++;
+                    }
                 }
             }
             return count;
         }
-
         public ushort GetFileCount()
+        {
+            ushort skipped = 0;
+            return GetFileCount(ref skipped);
+        }
+        public ushort GetFileCount(ref ushort skipped)
         {
             ushort count = 0;
             if (isValid)
@@ -545,6 +558,10 @@ namespace HopperNET
                     if (HopperPath.ValidatePath(hopperPath))
                     {
                         count++;
+                    }
+                    else
+                    {
+                        skipped++;
                     }
                 }
             }

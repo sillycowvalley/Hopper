@@ -4420,20 +4420,60 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     }
     case SysCall::eDirectoryGetFileCount:
     {
-        Type stype = (Type)0;
-        UInt hrdir = HopperVM_Pop_R(stype);
-        UInt result = HRDirectory_GetFileCount(hrdir);
-        HopperVM_Push(result, Type::eUInt);
-        GC_Release(hrdir);
+        switch (iOverload)
+        {
+        case 0x00:
+        {
+            Type stype = (Type)0;
+            UInt hrdir = HopperVM_Pop_R(stype);
+            UInt result = HRDirectory_GetFileCount(hrdir);
+            HopperVM_Push(result, Type::eUInt);
+            GC_Release(hrdir);
+            break;
+        }
+        case 0x01:
+        {
+            Type utype = (Type)0;
+            UInt address = HopperVM_Pop_R(utype);
+            UInt skipped = HopperVM_Get_R(address, utype);
+            Type stype = (Type)0;
+            UInt hrdir = HopperVM_Pop_R(stype);
+            UInt result = HRDirectory_GetFileCount_R(hrdir, skipped);
+            HopperVM_Push(result, Type::eUInt);
+            HopperVM_Put(address, skipped, Type::eUInt);
+            GC_Release(hrdir);
+            break;
+        }
+        } // switch
         break;
     }
     case SysCall::eDirectoryGetDirectoryCount:
     {
-        Type stype = (Type)0;
-        UInt hrdir = HopperVM_Pop_R(stype);
-        UInt result = HRDirectory_GetDirectoryCount(hrdir);
-        HopperVM_Push(result, Type::eUInt);
-        GC_Release(hrdir);
+        switch (iOverload)
+        {
+        case 0x00:
+        {
+            Type stype = (Type)0;
+            UInt hrdir = HopperVM_Pop_R(stype);
+            UInt result = HRDirectory_GetDirectoryCount(hrdir);
+            HopperVM_Push(result, Type::eUInt);
+            GC_Release(hrdir);
+            break;
+        }
+        case 0x01:
+        {
+            Type utype = (Type)0;
+            UInt address = HopperVM_Pop_R(utype);
+            UInt skipped = HopperVM_Get_R(address, utype);
+            Type stype = (Type)0;
+            UInt hrdir = HopperVM_Pop_R(stype);
+            UInt result = HRDirectory_GetDirectoryCount_R(hrdir, skipped);
+            HopperVM_Push(result, Type::eUInt);
+            HopperVM_Put(address, skipped, Type::eUInt);
+            GC_Release(hrdir);
+            break;
+        }
+        } // switch
         break;
     }
     case SysCall::eDirectoryGetFile:
@@ -7186,12 +7226,24 @@ Bool HRDirectory_IsValid(UInt _this)
 
 UInt HRDirectory_GetFileCount(UInt hrdir)
 {
-    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetFileCount(Memory_ReadWord(hrdir + 3))) : (0x00);
+    UInt skipped = 0;
+    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetFileCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
+}
+
+UInt HRDirectory_GetFileCount_R(UInt hrdir, UInt & skipped)
+{
+    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetFileCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
 }
 
 UInt HRDirectory_GetDirectoryCount(UInt hrdir)
 {
-    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetDirectoryCount(Memory_ReadWord(hrdir + 3))) : (0x00);
+    UInt skipped = 0;
+    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetDirectoryCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
+}
+
+UInt HRDirectory_GetDirectoryCount_R(UInt hrdir, UInt & skipped)
+{
+    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetDirectoryCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
 }
 
 UInt HRDirectory_GetFile(UInt hrdir, UInt index)
@@ -8628,4 +8680,3 @@ UInt HRInt_FromBytes(Byte b0, Byte b1)
 {
     return b0 + (b1 << 0x08);
 }
-

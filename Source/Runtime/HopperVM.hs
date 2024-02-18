@@ -898,33 +898,85 @@ unit HopperVM
             }
             case SysCall.DirectoryGetFileCount:
             {
-                Type stype;
-                uint hrdir = Pop(ref stype);
-#ifdef CHECKED
-                if (stype != Type.Directory)
+                switch (iOverload)
                 {
-                    ErrorDump(120);
-                    Error = 0x0B; // system failure (internal error)
-                }
+                    case 0:
+                    {
+                        Type stype;
+                        uint hrdir = Pop(ref stype);
+#ifdef CHECKED
+                        if (stype != Type.Directory)
+                        {
+                            ErrorDump(120);
+                            Error = 0x0B; // system failure (internal error)
+                        }
 #endif       
-                uint result = HRDirectory.GetFileCount(hrdir);
-                Push(result, Type.UInt);        
-                GC.Release(hrdir);         
+                        uint result = HRDirectory.GetFileCount(hrdir);
+                        Push(result, Type.UInt);        
+                        GC.Release(hrdir);         
+                    }
+                    case 1:
+                    {
+                        Type utype;
+                        uint address = Pop(ref utype);
+                        uint skipped = Get(address, ref utype);
+                        
+                        Type stype;
+                        uint hrdir = Pop(ref stype);
+#ifdef CHECKED
+                        if (stype != Type.Directory)
+                        {
+                            ErrorDump(120);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif       
+                        uint result = HRDirectory.GetFileCount(hrdir, ref skipped);
+                        Push(result, Type.UInt);       
+                        Put(address, skipped, Type.UInt); 
+                        GC.Release(hrdir);         
+                    }
+                }
             }
             case SysCall.DirectoryGetDirectoryCount:
             {
-                Type stype;
-                uint hrdir = Pop(ref stype);
-#ifdef CHECKED
-                if (stype != Type.Directory)
+                switch (iOverload)
                 {
-                    ErrorDump(121);
-                    Error = 0x0B; // system failure (internal error)
-                }
+                    case 0:
+                    {
+                        Type stype;
+                        uint hrdir = Pop(ref stype);
+#ifdef CHECKED
+                        if (stype != Type.Directory)
+                        {
+                            ErrorDump(121);
+                            Error = 0x0B; // system failure (internal error)
+                        }
 #endif       
-                uint result = HRDirectory.GetDirectoryCount(hrdir);
-                Push(result, Type.UInt);        
-                GC.Release(hrdir);         
+                        uint result = HRDirectory.GetDirectoryCount(hrdir);
+                        Push(result, Type.UInt);        
+                        GC.Release(hrdir);         
+                    }
+                    case 1:
+                    {
+                        Type utype;
+                        uint address = Pop(ref utype);
+                        uint skipped = Get(address, ref utype);
+                        
+                        Type stype;
+                        uint hrdir = Pop(ref stype);
+#ifdef CHECKED
+                        if (stype != Type.Directory)
+                        {
+                            ErrorDump(121);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif       
+                        uint result = HRDirectory.GetDirectoryCount(hrdir, ref skipped);
+                        Push(result, Type.UInt);    
+                        Put(address, skipped, Type.UInt);     
+                        GC.Release(hrdir);         
+                    }
+                }
             }
             case SysCall.DirectoryGetFile:
             {
