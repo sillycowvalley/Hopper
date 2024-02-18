@@ -197,7 +197,7 @@ unit WebTime
                     break;
                 }
                 timejson = timejson.Substring(iBrace);
-                if (!Serialize.TryFromJSON(timejson, ref time))
+                if (!Serialize.TryFromJSON(timejson, time))
                 {
                     WriteLn(": deserialize failed");    
                     lastError = 0x04;
@@ -266,7 +266,7 @@ unit WebTime
                     break;
                 }
                 timejson = timejson.Substring(iBrace);
-                if (!Serialize.TryFromJSON(timejson, ref time))
+                if (!Serialize.TryFromJSON(timejson, time))
                 {
                     lastError = 0x04;
                     WriteLn(": deserialize failed");    

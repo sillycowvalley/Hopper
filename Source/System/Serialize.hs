@@ -294,13 +294,13 @@ unit Serialize
                 case '[':
                 {
                     <variant> jsonArray;
-                    success = arrayFromJSON(ref input, ref jsonArray);
+                    success = arrayFromJSON(ref input, jsonArray);
                     value = jsonArray;    
                 }
                 case '{':
                 {
                     <string, variant> jsonObject;
-                    success = objectFromJSON(ref input, ref jsonObject);
+                    success = objectFromJSON(ref input, jsonObject);
                     value = jsonObject;
                 }
                 case 't':
@@ -338,7 +338,7 @@ unit Serialize
         return success;
     }
     
-    bool arrayFromJSON(ref string input, ref <variant> jsonArray)
+    bool arrayFromJSON(ref string input, <variant> jsonArray)
     {
         bool success = true;
         loop
@@ -366,7 +366,7 @@ unit Serialize
         return success;
     }
     
-    bool objectFromJSON(ref string input, ref <string, variant> jsonObject)
+    bool objectFromJSON(ref string input, <string, variant> jsonObject)
     {
         bool success = true;
         loop
@@ -397,7 +397,7 @@ unit Serialize
         return success;
     }
     
-    bool TryFromJSON(string input, ref <string, variant> jsonObject)
+    bool TryFromJSON(string input, <string, variant> jsonObject)
     {
         bool success = true;
         jsonObject.Clear(); // in case this object is being reused
@@ -445,7 +445,7 @@ unit Serialize
                 }
             }
             if (inQuotes) { success = false; break; }
-            success = objectFromJSON(ref unescaped, ref jsonObject);
+            success = objectFromJSON(ref unescaped, jsonObject);
             break;
         } // loop
         return success;

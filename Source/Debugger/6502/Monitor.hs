@@ -159,7 +159,7 @@ unit Monitor
             {
                 if (collectOutput)
                 {
-                    Build(ref serialOutput, c);
+                    String.Build(ref serialOutput, c);
                 }
                 else
                 {
@@ -175,7 +175,7 @@ unit Monitor
                 }
                 if (collectOutput)
                 {
-                    Build(ref serialOutput, c);
+                    String.Build(ref serialOutput, c);
                 }
                 else
                 {

@@ -145,7 +145,7 @@ program HopperMonitor
             }
             else
             {
-                Build(ref ln, c);
+                String.Build(ref ln, c);
             }
         } // for
         profileFile.Flush();

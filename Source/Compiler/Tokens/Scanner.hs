@@ -53,7 +53,7 @@ unit Scanner
                     {
                         break; // EOF
                     }
-                    Build(ref ln, char(b));
+                    String.Build(ref ln, char(b));
                     if (b == 0x0A)
                     {
                         break;

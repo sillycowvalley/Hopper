@@ -132,7 +132,7 @@ unit Pages
             }
             else
             {
-                Build(ref ln, c);
+                String.Build(ref ln, c);
             }
         } // for
         return true; // success

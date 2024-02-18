@@ -44,7 +44,7 @@ program WebClient
             uint iBrace;
             _ = timejson.IndexOf('{', ref iBrace);
             timejson = timejson.Substring(iBrace);
-            if (!Serialize.TryFromJSON(timejson, ref time))
+            if (!Serialize.TryFromJSON(timejson, time))
             {
                 WriteLn("Deserialize failed");    
             }

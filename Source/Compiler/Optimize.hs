@@ -483,7 +483,7 @@ program Optimize
 #endif                
                 }
             }
-            CodePoints.CollectMethodCalls(ref methodsCalled);
+            CodePoints.CollectMethodCalls(methodsCalled);
             
             if (IsExperimental)
             {
@@ -556,7 +556,7 @@ program Optimize
             {
                 uint size = CodePoints.Load(methodIndex, "after pass " + pass.ToString());
                 <byte> rawCode = Code.GetMethodCode(methodIndex);
-                if (InlineSmallMethods(ref rawCode))
+                if (InlineSmallMethods(rawCode))
                 {
                     // update the method with the optimized code: no size change, pure replacement          
                     Code.SetMethodCode(methodIndex, rawCode);
@@ -711,7 +711,7 @@ program Optimize
                     {
                         uint size = CodePoints.Load(methodIndex, "replacing MERGEDRET0");
                         <byte> rawCode = Code.GetMethodCode(methodIndex);
-                        if (ReplaceMergedRET0(ref rawCode))
+                        if (ReplaceMergedRET0(rawCode))
                         {
                             Code.SetMethodCode(methodIndex, rawCode);
                         }

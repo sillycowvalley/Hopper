@@ -793,7 +793,7 @@ unit CodePoints
     }
     
     
-    CollectMethodCalls(ref <uint,bool> methodsCalled)
+    CollectMethodCalls(<uint,bool> methodsCalled)
     {
         uint iIndex;
         uint icodesLength = iCodes.Count;
@@ -1165,7 +1165,7 @@ unit CodePoints
         }
         return modified;
     }
-    bool ReplaceMergedRET0(ref <byte> rawCode)
+    bool ReplaceMergedRET0(<byte> rawCode)
     {
         bool replaced;
         uint iCodesLength = iCodes.Count;
@@ -1193,7 +1193,7 @@ unit CodePoints
         }   
         return replaced;
     }
-    bool InlineSmallMethods(ref <byte> rawCode)
+    bool InlineSmallMethods(<byte> rawCode)
     {
         uint iCodesLength = iCodes.Count;
         if (iCodesLength < 2)

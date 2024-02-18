@@ -63,7 +63,7 @@ program TestJSON
                 break;
             }
             <string, variant> returnDict;
-            if (!Serialize.TryFromJSON(ajson, ref returnDict))
+            if (!Serialize.TryFromJSON(ajson, returnDict))
             {
                 PrintFailed("Deserialize failed");    
                 break;
@@ -158,7 +158,7 @@ program TestJSON
         WriteLn("TestTime");
         <string, variant> time;
         string content = "{\"abbreviation\":\"NZDT\",\"client_ip\":\"206.83.102.48\",\"datetime\":\"2023-11-15T15:43:00.302348+13:00\",\"day_of_week\":3,\"day_of_year\":319,\"dst\":true,\"dst_from\":\"2023-09-23T14:00:00+00:00\",\"dst_offset\":3600,\"dst_until\":\"2024-04-06T14:00:00+00:00\",\"raw_offset\":43200,\"timezone\":\"Pacific/Auckland\",\"unixtime\":1700016180,\"utc_datetime\":\"2023-11-15T02:43:00.302348+00:00\",\"utc_offset\":\"+13:00\",\"week_number\":46}";
-        if (!Serialize.TryFromJSON(content, ref time))
+        if (!Serialize.TryFromJSON(content, time))
         {
             PrintFailed("Time deserialize failed");    
         }
@@ -168,7 +168,7 @@ program TestJSON
         WriteLn("TestSunset");
         <string, variant> sunset;
         string content = "{\"results\":{\"sunrise\":\"2023-11-14T16:57:02+00:00\",\"sunset\":\"2023-11-15T07:25:27+00:00\",\"solar_noon\":\"2023-11-15T00:11:15+00:00\",\"day_length\":52105,\"civil_twilight_begin\":\"2023-11-14T16:27:25+00:00\",\"civil_twilight_end\":\"2023-11-15T07:55:05+00:00\",\"nautical_twilight_begin\":\"2023-11-14T15:48:43+00:00\",\"nautical_twilight_end\":\"2023-11-15T08:33:47+00:00\",\"astronomical_twilight_begin\":\"2023-11-14T15:05:36+00:00\",\"astronomical_twilight_end\":\"2023-11-15T09:16:54+00:00\"},\"status\":\"OK\"}";
-        if (!Serialize.TryFromJSON(content, ref sunset))
+        if (!Serialize.TryFromJSON(content, sunset))
         {
             PrintFailed("Sunset deserialize failed");    
         }
@@ -186,7 +186,7 @@ program TestJSON
                 break;
             }
             <string, variant> jsonObject;
-            if (!Serialize.TryFromJSON(contentBefore, ref jsonObject))
+            if (!Serialize.TryFromJSON(contentBefore, jsonObject))
             {
                 PrintFailed("Deserialize failed");    
                 break;
