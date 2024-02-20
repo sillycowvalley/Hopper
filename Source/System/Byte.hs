@@ -21,6 +21,21 @@ unit Byte
         }
         return result;
     }
+    string ToBinaryString(byte this)
+    {
+        int digit;
+        char c;
+        int i;
+        string result;
+        for (i = 8; i > 0; i--)
+        {
+            digit = this % 2;
+            c = Byte.ToHex(byte(digit));
+            String.BuildFront(ref result, c);
+            this = this / 2;
+        }
+        return result;
+    }
     
     char ToHex(byte this) system; 
     char ToDigit(byte this) system;

@@ -34,7 +34,10 @@ unit RTC
         }
         return false;
     }
-    bool LostPower { get { return RTCDriver.RawLostPower;  } }
+    ClearLostPower()     { RTCDriver.RawClearLostPower(); }
+    bool   LostPower     { get { return RTCDriver.RawLostPower;  } }
+    string LastLostPower { get { return RTCDriver.RawLastLostPower;  } }
+    
     string Date    { get { return RTCDriver.RawDate;       } set { RTCDriver.RawDate = value; } }
     string Time    { get { return RTCDriver.RawTime;       } set { RTCDriver.RawTime = value; } }
     

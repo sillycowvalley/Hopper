@@ -2,7 +2,8 @@ program BlinkRGB
 {
     //uses "/Source/Library/Boards/WaveshareRP2040Matrix"
     //uses "/Source/Library/Boards/AdafruitFeather"
-    uses "/Source/Library/Boards/SeeedXIAORP2040"
+    //uses "/Source/Library/Boards/SeeedXIAORP2040"
+    uses "/Source/Library/Boards/AdafruitQTPy"
     
     {
         NeoPixel.BuiltIn();

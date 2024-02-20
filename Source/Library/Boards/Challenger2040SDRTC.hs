@@ -41,6 +41,7 @@ unit Board // Challenger 2040 SDRTC
     const byte UART1Tx = 16;
     const byte UART1Rx = 17;
 
+    const byte D25 = 25; // output: RTC interrupt pin
     const byte D0 = 16;  // I2CSDA0
     const byte D1 = 17;  // I2CSCL0
     const byte D2 = 20;

@@ -472,7 +472,6 @@ unit RTCDriver
         }
         set
         { 
-            // TODO 
             string time = Time; // preserve current time
             _ = setRTC(value + " " + time);
         }

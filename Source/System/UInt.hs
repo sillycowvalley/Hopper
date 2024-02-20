@@ -180,6 +180,21 @@ unit UInt
         }
         return result;
     }
+    string ToBinaryString(uint this)
+    {
+        int digit;
+        char c;
+        int i;
+        string result;
+        for (i = 16; i > 0; i--)
+        {
+            digit = this % 2;
+            c = Byte.ToHex(byte(digit));
+            String.BuildFront(ref result, c);
+            this = this / 2;
+        }
+        return result;
+    }
     <byte> ToBytes(uint this)
     {
         <byte> lst;
