@@ -23,6 +23,8 @@ unit LibCalls
         
         MCUHeapFree,
         MCUStackFree,
+        MCUOverclockGet,
+        MCUOverclockSet,
         
         TimerStart,
         TimerStop,

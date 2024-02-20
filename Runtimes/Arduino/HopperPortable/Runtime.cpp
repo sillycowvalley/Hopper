@@ -6395,6 +6395,19 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         External_MCUInterruptsEnabledSet(value != 0x00);
         break;
     }
+    case LibCall::eMCUOverclockGet:
+    {
+        Bool value = External_MCUOverclockGet();
+        HopperVM_Push((value) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
+    case LibCall::eMCUOverclockSet:
+    {
+        Type ptype = (Type)0;
+        UInt value = HopperVM_Pop_R(ptype);
+        External_MCUOverclockSet(value != 0x00);
+        break;
+    }
     case LibCall::eMCUReboot:
     {
         Type ptype = (Type)0;

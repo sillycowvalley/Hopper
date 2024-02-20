@@ -404,6 +404,17 @@ unit External
         ErrorDump(170); Error = 0x0A; 
         return false;
     }
+    MCUOverclockSet(bool value)
+    {
+        ErrorDump(170); Error = 0x0A; 
+    }
+    bool MCUOverclockGet()
+    {
+        ErrorDump(170); Error = 0x0A; 
+        return false;
+    }
+    
+    
     
     
     uint IntToUInt(int value)

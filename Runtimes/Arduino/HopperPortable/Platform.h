@@ -92,6 +92,9 @@ void External_MCUReboot(Bool bootsel);
 UInt External_MCUHeapFree();
 UInt External_MCUStackFree();
 
+Bool External_MCUOverclockGet();
+void External_MCUOverclockSet(Bool value);
+
 
 Bool Serial_IsAvailable_Get();
 Char Serial_ReadChar();

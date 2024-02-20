@@ -32,6 +32,9 @@ unit LibCalls
         
         addEntry("MCU.HeapFree");
         addEntry("MCU.StackFree");
+        addEntry("MCU.Overclock_Get");
+        addEntry("MCU.Overclock_Set");
+        
         
         addEntry("Timer.Start");
         addEntry("Timer.Stop");

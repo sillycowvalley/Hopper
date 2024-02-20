@@ -6,6 +6,9 @@
 #include <Wire.h>
 #include <SPI.h>
 
+#include "pico/stdlib.h"
+
+
 #ifdef RP2040 // use ARDUINO_ARCH_RP2040?
 #include <Adafruit_NeoPixel.h>
 /*
@@ -50,6 +53,25 @@ void pinISR(void * param)
     isrStruct.isrDelegate   = (UInt)(lparam &0xFFFF);
     isrQueue.push(isrStruct); // assuming interrupts are disabled inside an ISR so no conflict with External_ServiceInterrupts(..)
 }
+
+bool overclocking = false;
+Bool External_MCUOverclockGet()
+{
+    return overclocking;
+}
+void External_MCUOverclockSet(Bool value)
+{
+    overclocking = value;
+    if (overclocking)
+    {
+        set_sys_clock_khz(270000, true); // 158us
+    }
+    else
+    {
+        set_sys_clock_khz(130000, true); // 330us
+    }
+}
+
 
 Bool External_AttachToPin(Byte pin, PinISRDelegate gpioISRDelegate, Byte status)
 {
@@ -335,6 +357,8 @@ void External_PinMode(Byte pin, Byte value)
 {
     pinMode(pin, value);
 }
+
+
 
 void External_DigitalWrite(Byte pin, Byte value)
 {

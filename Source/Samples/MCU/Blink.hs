@@ -1,6 +1,6 @@
 program Blink
 {
-    uses "/Source/Library/Boards/AdafruitFeather"
+    uses "/Source/Library/Boards/PiPico"
     
     {
         loop

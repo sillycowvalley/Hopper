@@ -336,6 +336,23 @@ unit Library
 #endif
                 External.MCUInterruptsEnabledSet(value != 0);
             }
+            
+            
+            case LibCall.MCUOverclockGet:
+            {
+                bool value = External.MCUOverclockGet();
+                Push(value ? 1 : 0, Type.Bool);
+            }
+            case LibCall.MCUOverclockSet:
+            {
+                Type ptype;
+                uint value = Pop(ref ptype);
+#ifdef CHECKED             
+                AssertBool(ptype, value);
+#endif
+                External.MCUOverclockSet(value != 0);
+            }
+        
             case LibCall.MCUReboot:
             {
                 Type ptype;

@@ -68,4 +68,8 @@ unit MCU
     // Use these two APIs to keep an eye on the health of your MCU memory:
     long HeapFree() library;  // Is there a leak in the system level stuff? 
     long StackFree() library; // Are we close to the stack limit?
+    
+    // default for Pi Pico is 130 MHz (not 133 MHz)
+    // overclock sets clock to 270 MHz
+    bool Overclock { get library; set library; }
 }
