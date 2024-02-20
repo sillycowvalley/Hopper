@@ -42,22 +42,22 @@ unit Board // Adafruit QT Py
     const byte UART2Tx = 20;
     const byte UART2Rx = 5;
 
-    const byte D3 = 3;   // SPI0Tx
-    const byte D4 = 4;   // SPI0Rx
-    const byte D5 = 5;   // UART2Rx
-    const byte D6 = 6;   // SPI0SCK
-    const byte D11 = 11; // BuiltInNeoPixelPower
-    const byte D12 = 12; // BuiltInNeoPixel
-    const byte D20 = 20; // UART2Tx
-    const byte D21 = 21; // Button
-    const byte D22 = 22; // I2CSDA1 (STEMMA)
-    const byte D23 = 23; // I2CSCL1 (STEMMA)
-    const byte D24 = 24; // I2CSDA0
-    const byte D25 = 25; // I2CSCL0
-    const byte D26 = 26; // BuiltInA3
-    const byte D27 = 27; // BuiltInA2
-    const byte D28 = 28; // UART1Tx
-    const byte D29 = 29; // UART1Rx
+    const byte GP3 = 3;   // SPI0Tx
+    const byte GP4 = 4;   // SPI0Rx
+    const byte GP5 = 5;   // UART2Rx
+    const byte GP6 = 6;   // SPI0SCK
+    const byte GP11 = 11; // BuiltInNeoPixelPower
+    const byte GP12 = 12; // BuiltInNeoPixel
+    const byte GP20 = 20; // UART2Tx
+    const byte GP21 = 21; // Button
+    const byte GP22 = 22; // I2CSDA1 (STEMMA)
+    const byte GP23 = 23; // I2CSCL1 (STEMMA)
+    const byte GP24 = 24; // I2CSDA0
+    const byte GP25 = 25; // I2CSCL0
+    const byte GP26 = 26; // BuiltInA3
+    const byte GP27 = 27; // BuiltInA2
+    const byte GP28 = 28; // UART1Tx
+    const byte GP29 = 29; // UART1Rx
 
     uses "/Source/Library/MCU"
 

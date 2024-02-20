@@ -41,25 +41,25 @@ unit Board // Challenger 2040 UWB
     const byte UART1Tx = 16;
     const byte UART1Rx = 17;
 
-    const byte D0 = 16;  // I2CSDA0
-    const byte D1 = 17;  // I2CSCL0
-    const byte D2 = 20;
-    const byte D3 = 23;
-    const byte D4 = 22;
-    const byte D5 = 2;
-    const byte D6 = 3;
-    const byte D7 = 0;
-    const byte D8 = 1;
-    const byte D9 = 4;   // SPI1SS
-    const byte D10 = 5;  // SPI1SCK
-    const byte D11 = 6;  // SPI1Tx
-    const byte D12 = 7;  // SPI1Rx
-    const byte D13 = 8;
-    const byte D14 = 13;
-    const byte D15 = 14;
-    const byte D16 = 15; // UART1Tx
-    const byte D17 = 18; // UART1Rx
-    const byte D18 = 24;
+    const byte GP0 = 16;  // I2CSDA0
+    const byte GP1 = 17;  // I2CSCL0
+    const byte GP2 = 20;
+    const byte GP3 = 23;
+    const byte GP4 = 22;
+    const byte GP5 = 2;
+    const byte GP6 = 3;
+    const byte GP7 = 0;
+    const byte GP8 = 1;
+    const byte GP9 = 4;   // SPI1SS
+    const byte GP10 = 5;  // SPI1SCK
+    const byte GP11 = 6;  // SPI1Tx
+    const byte GP12 = 7;  // SPI1Rx
+    const byte GP13 = 8;
+    const byte GP14 = 13;
+    const byte GP15 = 14;
+    const byte GP16 = 15; // UART1Tx
+    const byte GP17 = 18; // UART1Rx
+    const byte GP18 = 24;
 
     uses "/Source/Library/MCU"
 

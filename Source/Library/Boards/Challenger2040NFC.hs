@@ -42,22 +42,22 @@ unit Board // Challenger 2040 NFC
     const byte UART1Tx = 16;
     const byte UART1Rx = 17;
 
-    const byte D0 = 16;  // I2CSDA0
-    const byte D1 = 17;  // I2CSCL0
-    const byte D2 = 20;
-    const byte D3 = 23;
-    const byte D4 = 22;
-    const byte D5 = 2;
-    const byte D6 = 3;
-    const byte D7 = 0;
-    const byte D8 = 1;
-    const byte D9 = 4;
-    const byte D10 = 5;  // I2CSDA1
-    const byte D11 = 6;  // I2CSCL1
-    const byte D12 = 7;
-    const byte D13 = 8;
-    const byte D14 = 13; // BuiltInNeoPixel
-    const byte D18 = 24;
+    const byte GP0 = 16;  // I2CSDA0
+    const byte GP1 = 17;  // I2CSCL0
+    const byte GP2 = 20;
+    const byte GP3 = 23;
+    const byte GP4 = 22;
+    const byte GP5 = 2;
+    const byte GP6 = 3;
+    const byte GP7 = 0;
+    const byte GP8 = 1;
+    const byte GP9 = 4;
+    const byte GP10 = 5;  // I2CSDA1
+    const byte GP11 = 6;  // I2CSCL1
+    const byte GP12 = 7;
+    const byte GP13 = 8;
+    const byte GP14 = 13; // BuiltInNeoPixel
+    const byte GP18 = 24;
 
     uses "/Source/Library/MCU"
 

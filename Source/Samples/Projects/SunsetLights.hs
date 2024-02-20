@@ -12,7 +12,7 @@ program SunsetLights
     uses "/Source/Samples/Projects/DateTime"
     uses "/Source/Samples/Projects/WebTime"
     
-    byte RelayPin { get { return Board.D13; } }
+    byte RelayPin { get { return Board.GP13; } }
     
     const uint minutesPerCycle   = 1440;  // this is intended to be 24 hours (1440 minutes) but short cycles are nice for testing 
     const uint secondsPerLap     = 30;    // how often do we check the times and update the relay?

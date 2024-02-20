@@ -42,28 +42,28 @@ unit Board // Adafruit Feather
     const byte UART1Tx = 0;
     const byte UART1Rx = 1;
 
-    const byte D0 = 0;   // UART1Tx
-    const byte D1 = 1;   // UART1Rx
-    const byte D2 = 2;   // I2CSDA1 (STEMMA)
-    const byte D3 = 3;   // I2CSCL1 (STEMMA)
-    const byte D6 = 6;
-    const byte D7 = 7;
-    const byte D8 = 8;
-    const byte D9 = 9;
-    const byte D10 = 10;
-    const byte D11 = 11;
-    const byte D12 = 12;
-    const byte D13 = 13; // BuiltInLED
-    const byte D16 = 16; // BuiltInNeoPixel
-    const byte D18 = 18; // SPI0SCK
-    const byte D19 = 19; // SPI0Tx
-    const byte D20 = 20; // SPI0Rx
-    const byte D24 = 24; // I2CSDA0
-    const byte D25 = 25; // I2CSCL0
-    const byte D26 = 26; // BuiltInA0
-    const byte D27 = 27; // BuiltInA1
-    const byte D28 = 28; // BuiltInA2
-    const byte D29 = 29; // BuiltInA3
+    const byte GP0 = 0;   // UART1Tx
+    const byte GP1 = 1;   // UART1Rx
+    const byte GP2 = 2;   // I2CSDA1 (STEMMA)
+    const byte GP3 = 3;   // I2CSCL1 (STEMMA)
+    const byte GP6 = 6;
+    const byte GP7 = 7;
+    const byte GP8 = 8;
+    const byte GP9 = 9;
+    const byte GP10 = 10;
+    const byte GP11 = 11;
+    const byte GP12 = 12;
+    const byte GP13 = 13; // BuiltInLED
+    const byte GP16 = 16; // BuiltInNeoPixel
+    const byte GP18 = 18; // SPI0SCK
+    const byte GP19 = 19; // SPI0Tx
+    const byte GP20 = 20; // SPI0Rx
+    const byte GP24 = 24; // I2CSDA0
+    const byte GP25 = 25; // I2CSCL0
+    const byte GP26 = 26; // BuiltInA0
+    const byte GP27 = 27; // BuiltInA1
+    const byte GP28 = 28; // BuiltInA2
+    const byte GP29 = 29; // BuiltInA3
 
     uses "/Source/Library/MCU"
 

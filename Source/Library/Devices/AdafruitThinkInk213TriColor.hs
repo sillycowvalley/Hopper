@@ -8,8 +8,8 @@ unit DeviceDriver
     const int PH = 122;
 
 #if defined(CHALLENGER_2040_WIFI) || defined(CHALLENGER_NB_2040_WIFI)
-    const byte DCPin  = Board.D10;
-    const byte CSPin  = Board.D9;
+    const byte DCPin  = Board.GP10;
+    const byte CSPin  = Board.GP9;
     const byte ClkPin = Board.SPI0SCK;
     const byte TxPin  = Board.SPI0Tx;
     const byte RxPin  = 20;
@@ -29,8 +29,8 @@ unit DeviceDriver
     
 #if !defined(EPD_PINS_DEFINED)
     // ADAFRUIT_FEATHER
-    const byte DCPin  = Board.D10; 
-    const byte CSPin  = Board.D9;  
+    const byte DCPin  = Board.GP10; 
+    const byte CSPin  = Board.GP9;  
     const byte ClkPin = Board.SPI0SCK;
     const byte TxPin  = Board.SPI0Tx;
     const byte RxPin  = Board.SPI0Rx;

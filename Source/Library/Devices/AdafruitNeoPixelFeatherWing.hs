@@ -44,7 +44,7 @@ unit DeviceDriver
     bool Begin()
     {
         NeoPixel.Begin(32 // number of LEDs
-                     , Board.D6  // data GPIO pin
+                     , Board.GP6  // data GPIO pin
                      , PixelType.GRB | PixelType.KHz800);
         NeoPixel.Brightness = 1;
         NeoPixel.Clear();

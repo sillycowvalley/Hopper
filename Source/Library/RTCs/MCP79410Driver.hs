@@ -1,12 +1,11 @@
 unit RTCDriver
 {
-    uses "/Source/System/DateTime"
-    uses "/Source/Library/RTC"
-    
-    // https://sensorian.github.io/c_docs/_example1_2_m_c_p79410_8c_source.html
-    // https://sensorian.github.io/c_docs/_m_c_p79410___r_t_c_c_2_example4_2main_8c_source.html
     
     #define RTC_HAS_RAM
+    #define RTC_HAS_LOSTPOWER
+    
+    uses "/Source/System/DateTime"
+    uses "/Source/Library/RTC"
     
     const byte RTC_CONTROL    = 0x07;
     const byte RTC_LOCATION   = 0x00;  
@@ -67,6 +66,10 @@ unit RTCDriver
         _ = Wire.EndTx(iControllerRTC);
 
     }
+    RawResetStatus()
+    {
+    }
+    
     RawClearLostPower()
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
@@ -513,22 +516,5 @@ unit RTCDriver
             }
             _ = Wire.EndTx(iControllerRTC);
         } 
-    }
-    Dump()
-    {   
-        Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, 0);
-        _ = Wire.EndTx(iControllerRTC);
-        byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, 0x11);
-        if (bytesReceived == 0x11)
-        {
-            for (byte i = 0; i < 0x11; i++)
-            {
-                byte d = Wire.Read(iControllerRTC);
-                WriteLn(i.ToHexString(2) +"h " + d.ToHexString(2) + " " + d.ToBinaryString());
-            }
-        }
-        
-        uint wtf = 0;
     }
 }

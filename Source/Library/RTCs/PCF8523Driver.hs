@@ -1,5 +1,8 @@
 unit RTCDriver
 {
+    
+    #define RTC_HAS_COUNTDOWN
+    
     uses "/Source/System/DateTime"
     uses "/Source/Library/RTC"
     
@@ -53,7 +56,7 @@ unit RTCDriver
         initialized = success;
         return success;
     }
-    RawClearLostPower()
+    RawResetStatus()
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
         Wire.Write(iControllerRTC, PCF8523_STATUS);
@@ -71,20 +74,6 @@ unit RTCDriver
             _ = Wire.EndTx(iControllerRTC);
         }
     }
-    
-    bool RawLostPower 
-    { 
-        get
-        { 
-            Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, PCF8523_STATUS);
-            _ = Wire.EndTx(iControllerRTC);
-            _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
-            byte status = Wire.Read(iControllerRTC);
-            return 0 != (status & 0b10000000); 
-        }
-    }
-    
     
     byte toBCD(uint decimal)
     {
@@ -308,15 +297,12 @@ unit RTCDriver
                 _ = Wire.EndTx(iControllerRTC);
                 _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
                 control = Wire.Read(iControllerRTC);
-                Write(" " + control.ToHexString(2));
                 
                 Wire.BeginTx(iControllerRTC, addressRTC);
                 Wire.Write(iControllerRTC, PCF8523_CONTROL_3);
                 _ = Wire.EndTx(iControllerRTC);
                 _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
                 control = Wire.Read(iControllerRTC);
-                WriteLn(" " + control.ToHexString(2));
-                
             }
             success = true;
             
@@ -445,6 +431,125 @@ unit RTCDriver
             string date = Date; // preserve current date
             _ = setRTC(date + " " + value);            
         }
+    }
+    
+    bool RawSetTimer(byte iTimer, byte ticks, TimerTickLength tickLength)
+    {
+        bool success = false;
+        loop
+        {
+            if ((iTimer != 1) && (iTimer != 2))
+            {
+                break;
+            }
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, PCF8523_CLKCONTROL);
+            _ = Wire.EndTx(iControllerRTC);
+            _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+            byte control = Wire.Read(iControllerRTC);
+            if (iTimer == 1)
+            {
+                control |= 0b10000010; // TAM : pulsed interrupt for timer A, TAC : timer A is configured as countdown timer
+            }
+            if (iTimer == 2)
+            {
+                control |= 0b01000001; // TBM : pulsed interrupt for timer B, TBC : timer B is configured as countdown timer
+            }
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, PCF8523_CLKCONTROL);
+            Wire.Write(iControllerRTC, control);
+            _ = Wire.EndTx(iControllerRTC);
+            
+            
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, (iTimer == 1) ? 0x10 : 0x12);              
+            Wire.Write(iControllerRTC, byte(tickLength)); 
+            Wire.Write(iControllerRTC, ticks); 
+            _ = Wire.EndTx(iControllerRTC);
+            
+            success = true;
+            break;
+        }
+        return success;
+    }
+    bool RawSetTimer(byte iTimer, byte ticks, TimerTickLength tickLength, PinISRDelegate timerDelegate, byte pin)
+    {
+        bool success = false;
+        loop
+        {
+            if (!RawSetTimer(iTimer, ticks, tickLength))
+            {
+                break;
+            }
+            MCU.PinMode(pin, PinModeOption.InputPullup);
+            success = MCU.AttachToPin(pin, timerDelegate, PinStatus.Rising);
+            
+            byte mask = (iTimer == 1) ? 0b00000010 : 0b00000001;
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
+            _ = Wire.EndTx(iControllerRTC);
+            _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+            byte status = Wire.Read(iControllerRTC);
+            
+            // set the CTAIE / CTBIE bit
+            status |= mask;
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
+            Wire.Write(iControllerRTC, status);
+            _ = Wire.EndTx(iControllerRTC);
+            
+            break;
+        }
+        return success;
+    }
+    
+    RawStopTimer(byte iTimer)
+    {
+        if ((iTimer == 1) || (iTimer == 2))
+        {
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, PCF8523_CLKCONTROL);
+            _ = Wire.EndTx(iControllerRTC);
+            _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+            byte control = Wire.Read(iControllerRTC);
+            if (iTimer == 1)
+            {
+                control &= ~0b10000011; // TAM, TAC : timer A is disabled
+            }
+            if (iTimer == 2)
+            {
+                control &= ~0b01000001; // TBM, TBC : timer B is disabled
+            }
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, PCF8523_CLKCONTROL);
+            Wire.Write(iControllerRTC, control);
+            _ = Wire.EndTx(iControllerRTC);
+        }
+    }
+    
+    bool RawTimerWasTriggered(byte iTimer)
+    {
+        bool triggered;
+        if ((iTimer == 1) || (iTimer == 2))
+        {
+            byte mask = (iTimer == 1) ? 0b01000000 : 0b00100000;
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
+            _ = Wire.EndTx(iControllerRTC);
+            _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+            byte status = Wire.Read(iControllerRTC);
+            triggered = 0 != (mask & status);
+            if (triggered)
+            {
+                // clear the flag
+                status &= ~mask;
+                Wire.BeginTx(iControllerRTC, addressRTC);
+                Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
+                Wire.Write(iControllerRTC, status);
+                _ = Wire.EndTx(iControllerRTC);
+            }
+        }
+        return triggered;
     }
 
 }

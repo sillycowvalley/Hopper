@@ -7,9 +7,9 @@ unit Pico8SEGLED
     uses "/Source/Library/Boards/PiPico"
 #endif
     
-    byte RClkPin       { get { return Board.D9; } }
-    byte ClkPin        { get { return Board.D10; } }
-    byte TxPin         { get { return Board.D11; } }
+    byte RClkPin       { get { return Board.GP9; } }
+    byte ClkPin        { get { return Board.GP10; } }
+    byte TxPin         { get { return Board.GP11; } }
     const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
     
     const byte THOUSANDS = 0xFE;

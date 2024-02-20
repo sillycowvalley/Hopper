@@ -35,10 +35,10 @@ unit Board // Adafruit TrinkeyRP2040QT
     const byte UART1Tx = 16;
     const byte UART1Rx = 17;
 
-    const byte D12 = 12; // Button
-    const byte D16 = 16; // UART1Tx (STEMMA)
-    const byte D17 = 17; // UART1Rx (STEMMA)
-    const byte D27 = 27;
+    const byte GP12 = 12; // Button
+    const byte GP16 = 16; // UART1Tx (STEMMA)
+    const byte GP17 = 17; // UART1Rx (STEMMA)
+    const byte GP27 = 27;
 
     uses "/Source/Library/MCU"
 

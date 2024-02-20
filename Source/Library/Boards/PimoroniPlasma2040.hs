@@ -33,17 +33,17 @@ unit Board // Pimoroni Plasma2040
     const byte I2CSDA1 = 20;
     const byte I2CSCL1 = 21;
 
-    const byte D0 = 26;
-    const byte D1 = 27;
-    const byte D2 = 28;
-    const byte D3 = 29;
-    const byte D4 = 6;
-    const byte D5 = 7;
-    const byte D6 = 0;
-    const byte D7 = 1;
-    const byte D8 = 2;
-    const byte D9 = 4;
-    const byte D10 = 3;
+    const byte GP0 = 26;
+    const byte GP1 = 27;
+    const byte GP2 = 28;
+    const byte GP3 = 29;
+    const byte GP4 = 6;
+    const byte GP5 = 7;
+    const byte GP6 = 0;
+    const byte GP7 = 1;
+    const byte GP8 = 2;
+    const byte GP9 = 4;
+    const byte GP10 = 3;
 
     uses "/Source/Library/MCU"
 

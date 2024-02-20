@@ -15,12 +15,12 @@ unit DeviceDriver
     const int PH = 135;
     
     const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
-    byte DCPin   { get { return Board.D8; } }
-    byte CSPin   { get { return Board.D9; } }
-    byte ClkPin  { get { return Board.D10; } }
-    byte TxPin   { get { return Board.D11; } }
-    byte RstPin  { get { return Board.D12; } }
-    byte BlPin   { get { return Board.D13; } }
+    byte DCPin   { get { return Board.GP8; } }
+    byte CSPin   { get { return Board.GP9; } }
+    byte ClkPin  { get { return Board.GP10; } }
+    byte TxPin   { get { return Board.GP11; } }
+    byte RstPin  { get { return Board.GP12; } }
+    byte BlPin   { get { return Board.GP13; } }
     
     const byte keyAPin      = 15;
     const byte keyBPin      = 17;
