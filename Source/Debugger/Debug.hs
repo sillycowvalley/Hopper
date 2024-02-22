@@ -23,7 +23,7 @@ program Debug
     
     uses "/Source/Debugger/ConsoleCapture"
     
-    const byte consoleWidth = 56;
+    
     
     string optionsPath;
     string OptionsPath { get { return optionsPath; } }
@@ -32,6 +32,16 @@ program Debug
     
     bool interactive;
     bool IsInteractive { get { return interactive; } set { interactive = value; } }
+    
+    byte ConsoleWidth
+    {
+        get
+        {
+            uint consoleWidth = uint(Screen.Columns) * 4;
+            consoleWidth /= 10; // 56 when 140
+            return byte(consoleWidth);
+        }
+    }
     
     
     bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
@@ -42,6 +52,7 @@ program Debug
         string filePath;
         bool showHelp;
         
+        byte consoleWidth = ConsoleWidth;
         Editor.Locate(0, 0, Screen.Columns-consoleWidth, Screen.Rows);
         Parser.SetInteractive(Editor.Left+1, Editor.Top + Editor.Height-1);
         Output.Locate(Screen.Columns-consoleWidth, 0, consoleWidth, Screen.Rows);

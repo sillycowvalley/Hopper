@@ -10,7 +10,6 @@ unit Output
     
     bool passThrough;
     
-    const byte remoteConsoleHeight = 24; //30; // 24 is ideal here
     const byte maxDataWidth = 40;
     const uint paddingWidth = 120;
     
@@ -42,6 +41,16 @@ unit Output
     bool isMCU;
     bool IsMCU { get { return isMCU; } }
     
+    byte RemoteConsoleHeight
+    {
+        get 
+        { 
+            uint remoteConsoleHeight = Screen.Rows * 11;
+            remoteConsoleHeight /= 20;
+            return byte(remoteConsoleHeight); // 24 when 44
+        } 
+    }
+    
     Initialize()
     {
         HopperFlags hopperFlags = HopperFlags(Pages.GetZeroPage("FLAGS"));
@@ -64,7 +73,7 @@ unit Output
         outputTop    = top;
         outputWidth  = width-1;
         outputHeight = height;
-        consoleHeight = remoteConsoleHeight;
+        consoleHeight = RemoteConsoleHeight;
         if (consoleHeight > height)
         {
             consoleHeight = height;
@@ -874,7 +883,7 @@ unit Output
         if (   (x >= outputLeft) 
             && (x <= outputLeft+outputWidth)
             && (y >= outputTop) 
-            && (y <  outputTop+remoteConsoleHeight)
+            && (y <  outputTop+RemoteConsoleHeight)
            )
         {
             return true;
@@ -928,7 +937,7 @@ unit Output
             uint yClick = Keyboard.ClickY;
             if (   (xClick >= outputLeft) 
                 && (xClick <= outputLeft+outputWidth)
-                && (yClick >= outputTop+remoteConsoleHeight) 
+                && (yClick >= outputTop+RemoteConsoleHeight) 
                 && (yClick <  outputTop+outputHeight)
                )
             {
