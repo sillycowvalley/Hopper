@@ -26,6 +26,8 @@ unit DisplayDriver
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
     
+    friend Display, Screen;
+    
     const byte SSD1680_DRIVER_CONTROL = 0x01;
     const byte SSD1680_GATE_VOLTAGE = 0x03;
     const byte SSD1680_SOURCE_VOLTAGE = 0x04;
@@ -60,9 +62,9 @@ unit DisplayDriver
     bool FlipY { get { return flipY; } set { flipY = value; }}
     bool IsPortrait { get { return isPortrait; } set { isPortrait = value; } }
     
-    byte [DeviceDriver.PW*(DeviceDriver.PH+8)/8] blackBuffer;
+    byte [DeviceDriver.pw*(DeviceDriver.ph+8)/8] blackBuffer;
 #ifdef EPD_TWO_BUFFERS
-    byte [DeviceDriver.PW*(DeviceDriver.PH+8)/8] colourBuffer;
+    byte [DeviceDriver.pw*(DeviceDriver.ph+8)/8] colourBuffer;
 #endif
 
     uint roundedPH;         // PH rounded up to the nearest multiple of 8
@@ -84,7 +86,7 @@ unit DisplayDriver
         0xFE
     };
     
-    bool Visible
+    bool visible
     {
         set
         {
@@ -95,10 +97,10 @@ unit DisplayDriver
     
     csHigh()
     {
-        MCU.DigitalWrite(DeviceDriver.CSPin, true);
+        MCU.DigitalWrite(DeviceDriver.csPin, true);
         if (inTransaction) 
         {
-            SPI.EndTransaction(DeviceDriver.SPIController);
+            SPI.EndTransaction(DeviceDriver.spiController);
             inTransaction = false;
         }
     }
@@ -106,18 +108,18 @@ unit DisplayDriver
     {
         if (!inTransaction)
         {
-            SPI.BeginTransaction(DeviceDriver.SPIController);
+            SPI.BeginTransaction(DeviceDriver.spiController);
             inTransaction = true;
         }
-        MCU.DigitalWrite(DeviceDriver.CSPin, false);
+        MCU.DigitalWrite(DeviceDriver.csPin, false);
     }
     dcHigh()
     {
-        MCU.DigitalWrite(DeviceDriver.DCPin, true);
+        MCU.DigitalWrite(DeviceDriver.dcPin, true);
     }
     dcLow()
     {
-        MCU.DigitalWrite(DeviceDriver.DCPin, false);
+        MCU.DigitalWrite(DeviceDriver.dcPin, false);
     }
     
     epdCommandList(byte [] initCode) 
@@ -148,7 +150,7 @@ unit DisplayDriver
     spiTransfer(byte tx)
     {
         csLow();   
-        SPI.WriteByte(DeviceDriver.SPIController, tx);
+        SPI.WriteByte(DeviceDriver.spiController, tx);
         csHigh();
     }
     epdCommand(byte cmd, byte[] buffer, uint length)
@@ -189,17 +191,6 @@ unit DisplayDriver
         csHigh();
     }
     
-    update() 
-    {
-        byte[1] buf;
-        // display update sequence
-        buf[0] = 0xF4;
-        epdCommand(SSD1680_DISP_CTRL2, buf, 1);
-        epdCommand(SSD1680_MASTER_ACTIVATE);
-        DelaySeconds(1);
-        Delay(500);
-    }
-    
     setRAMAddress() 
     {
       byte[2] buf;
@@ -225,15 +216,17 @@ unit DisplayDriver
         }
     }
     
-    UpdateDisplay()
-    {
+    update()
+    {      
+        byte[1] buf;
+        
         powerUp();
         setRAMAddress();
         
         writeRAMCommand(0);
         dcHigh();
         csLow();   
-        SPI.WriteBuffer(DeviceDriver.SPIController, blackBuffer, 0, roundedBufferSize);
+        SPI.WriteBuffer(DeviceDriver.spiController, blackBuffer, 0, roundedBufferSize);
         csHigh();
         
         Delay(2);
@@ -242,22 +235,24 @@ unit DisplayDriver
         writeRAMCommand(1);
         dcHigh();
         csLow();   
-        SPI.WriteBuffer(DeviceDriver.SPIController, colourBuffer, 0, roundedBufferSize);
+        SPI.WriteBuffer(DeviceDriver.spiController, colourBuffer, 0, roundedBufferSize);
         csHigh();
 #else
         writeRAMCommand(1);
         dcHigh();
         csLow();   
-        SPI.WriteBuffer(DeviceDriver.SPIController, blackBuffer, 0, roundedBufferSize);
+        SPI.WriteBuffer(DeviceDriver.spiController, blackBuffer, 0, roundedBufferSize);
         csHigh();
 #endif
         
-        update();
-        //if (sleep) 
-        //{
-        //    powerDown();
-        //}
-        DelaySeconds(DeviceDriver.DefaultRefreshDelay);
+        // display update sequence
+        buf[0] = 0xF4;
+        epdCommand(SSD1680_DISP_CTRL2, buf, 1);
+        epdCommand(SSD1680_MASTER_ACTIVATE);
+        DelaySeconds(1);
+        Delay(500);
+        
+        DelaySeconds(DeviceDriver.defaultRefreshDelay);
     }
     
     powerUp() 
@@ -275,20 +270,15 @@ unit DisplayDriver
         // Set ram Y start/end postion
         buf[0] = 0x00;
         buf[1] = 0x00;
-        buf[2] = byte(DeviceDriver.PW - 1);
-        buf[3] = byte((DeviceDriver.PW - 1) >> 8);
+        buf[2] = byte(DeviceDriver.pw - 1);
+        buf[3] = byte((DeviceDriver.pw - 1) >> 8);
         epdCommand(SSD1680_SET_RAMYPOS, buf, 4);
         
         // Set display size and driver output control
-        buf[0] = byte(DeviceDriver.PW - 1);
-        buf[1] = byte((DeviceDriver.PW - 1) >> 8);
+        buf[0] = byte(DeviceDriver.pw - 1);
+        buf[1] = byte((DeviceDriver.pw - 1) >> 8);
         buf[2] = 0x00;
         epdCommand(SSD1680_DRIVER_CONTROL, buf, 3);
-    }
-    
-    PowerDown()
-    {
-        powerDown();
     }
     
     powerDown() 
@@ -297,37 +287,39 @@ unit DisplayDriver
         Delay(500);
     }
     
-    bool Begin()
+    bool begin()
     {
         bool success = false;
         loop
         {
             if (DisplayDriver.IsPortrait)
             {
-                Display.PixelWidth  = Int.Min(DeviceDriver.PW, DeviceDriver.PH);
-                Display.PixelHeight = Int.Max(DeviceDriver.PW, DeviceDriver.PH);
+                Display.PixelWidth  = Int.Min(DeviceDriver.pw, DeviceDriver.ph);
+                Display.PixelHeight = Int.Max(DeviceDriver.pw, DeviceDriver.ph);
             }
             else
             {
-                Display.PixelWidth  = Int.Max(DeviceDriver.PW, DeviceDriver.PH);
-                Display.PixelHeight = Int.Min(DeviceDriver.PW, DeviceDriver.PH);
+                Display.PixelWidth  = Int.Max(DeviceDriver.pw, DeviceDriver.ph);
+                Display.PixelHeight = Int.Min(DeviceDriver.pw, DeviceDriver.ph);
             }
-            roundedPH = uint(DeviceDriver.PH);
+            roundedPH = uint(DeviceDriver.ph);
             if ((roundedPH % 8) != 0) { roundedPH = roundedPH + 8 - (roundedPH % 8); }
-            roundedBufferSize = roundedPH * PW / 8;
+            roundedBufferSize = roundedPH * DeviceDriver.pw / 8;
             
             Screen.ForeColour = Colour.Black;
             Screen.BackColour = Colour.White;
             
-            MCU.PinMode(DeviceDriver.CSPin, PinModeOption.Output);
-            MCU.PinMode(DeviceDriver.DCPin, PinModeOption.Output);
-            MCU.DigitalWrite(DeviceDriver.CSPin, true);
+            MCU.PinMode(DeviceDriver.csPin, PinModeOption.Output);
+            MCU.PinMode(DeviceDriver.dcPin, PinModeOption.Output);
+            MCU.DigitalWrite(DeviceDriver.csPin, true);
             
-            SPI.SetClkPin(DeviceDriver.SPIController, DeviceDriver.ClkPin);
-            SPI.SetTxPin (DeviceDriver.SPIController, DeviceDriver.TxPin);
-            SPI.SetRxPin (DeviceDriver.SPIController, DeviceDriver.RxPin);
-            //SPI.Settings(DeviceDriver.SPIController, 4000000, DataOrder.MSBFirst, DataMode.Mode0);// these are the defaults
-            if (!SPI.Begin(DeviceDriver.SPIController))
+            SPI.SetClkPin(DeviceDriver.spiController, DeviceDriver.clkPin);
+            SPI.SetTxPin (DeviceDriver.spiController, DeviceDriver.txPin);
+#if !defined(EPD_NO_RX)
+            SPI.SetRxPin (DeviceDriver.spiController, DeviceDriver.rxPin);
+#endif            
+            //SPI.Settings(DeviceDriver.spiController, 4000000, DataOrder.MSBFirst, DataMode.Mode0);// these are the defaults
+            if (!SPI.Begin(DeviceDriver.spiController))
             {
                 IO.WriteLn("DisplayDriver.Begin failed in SPI.Begin");
                 return false;
@@ -341,7 +333,7 @@ unit DisplayDriver
         }
         return success;
     }
-    ScrollUpDisplay(uint lines)
+    scrollUp(uint lines)
     {
         /*
         uint drow;
@@ -349,7 +341,7 @@ unit DisplayDriver
         {
             for (int x = 0; x < int(Display.PixelWidth-1); x++)
             {
-                RawSetPixel(x, int(drow), RawGetPixel(x, int(row)));
+                setPixel(x, int(drow), getPixel(x, int(row)));
             }
             drow++;    
         }
@@ -358,48 +350,48 @@ unit DisplayDriver
             if (drow >= int(Display.PixelHeight)) { break; }
             for (int x = 0; x < int(Display.PixelWidth-1); x++)
             {
-                RawSetPixel(x, int(drow), Colour.White);
+                setPixel(x, int(drow), Colour.White);
             }
             drow++;   
         }
         */    }
-    bool ColourToBit0(uint colour)
+    bool colourToBit0(uint colour)
     {
         bool bit0;
         switch (colour)
         {
             case 0x0000: 
             { 
-                bit0 = EPDBlack0; 
+                bit0 = DeviceDriver.epdBlack0; 
             }
             case 0x0F00: 
             {
-                bit0 = EPDRed0;   
+                bit0 = DeviceDriver.epdRed0;   
             }
-            default:     { bit0 = EPDWhite0; }
+            default:     { bit0 = DeviceDriver.epdWhite0; }
         }
         return bit0;
     }
-    bool ColourToBit1(uint colour)
+    bool colourToBit1(uint colour)
     {
         bool bit1;
         switch (colour)
         {
-            case 0x0000: { bit1 = EPDBlack1; }
-            case 0x0F00: { bit1 = EPDRed1;   }
-            default:     { bit1 = EPDWhite1; }
+            case 0x0000: { bit1 = DeviceDriver.epdBlack1; }
+            case 0x0F00: { bit1 = DeviceDriver.epdRed1;   }
+            default:     { bit1 = DeviceDriver.epdWhite1; }
         }
         return bit1;
     }
-    ClearDisplay(uint colour)
+    clear(uint colour)
     {
-        bool bit0 = ColourToBit0(colour);
+        bool bit0 = colourToBit0(colour);
         for (uint i = 0; i < roundedBufferSize; i++)
         {
             blackBuffer[i] = bit0 ? 0x00 : 0xFF;
         }
 #ifdef EPD_TWO_BUFFERS
-        bool bit1 = ColourToBit1(colour);
+        bool bit1 = colourToBit1(colour);
         for (uint i = 0; i < roundedBufferSize; i++)
         {
             colourBuffer[i] = bit1 ? 0x00 : 0xFF;
@@ -407,7 +399,7 @@ unit DisplayDriver
 #endif   
         int wtf = 0;     
     } 
-    RawSetPixel(int vx, int vy, uint colour)
+    setPixel(int vx, int vy, uint colour)
     {
         if (FlipX)
         {
@@ -425,12 +417,12 @@ unit DisplayDriver
             y = vx;
         }
         // deal with non-8-bit heights
-        uint address = ((uint(DeviceDriver.PW) - 1 - uint(x)) * roundedPH + uint(y)) / 8;
+        uint address = ((uint(DeviceDriver.pw) - 1 - uint(x)) * roundedPH + uint(y)) / 8;
         
-        bool bit0 = ColourToBit0(colour);
+        bool bit0 = colourToBit0(colour);
         
 #ifdef EPD_TWO_BUFFERS
-        bool bit1 = ColourToBit1(colour);
+        bool bit1 = colourToBit1(colour);
         if (bit1) 
         {
             colourBuffer[address] = colourBuffer[address] & ~(1 << (7 - y % 8));
@@ -449,18 +441,18 @@ unit DisplayDriver
             blackBuffer[address] = blackBuffer[address] | (1 << (7 - y % 8));
         }
     }  
-    RawHorizontalLine(int x1, int y, int x2, uint colour)
+    horizontalLine(int x1, int y, int x2, uint colour)
     {
         for (int x = x1; x <= x2; x++)
         {
-            RawSetPixel(x, y, colour);
+            setPixel(x, y, colour);
         }
     }
-    RawVerticalLine(int x, int y1, int y2, uint colour)
+    verticalLine(int x, int y1, int y2, uint colour)
     {
         for (int y = y1; y <= y2; y++)
         {
-            RawSetPixel(x, y, colour);
+            setPixel(x, y, colour);
         }
     }
 }

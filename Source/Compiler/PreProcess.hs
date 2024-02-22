@@ -18,7 +18,7 @@ program PreProcess
   uses "/Source/Compiler/Directives" 
   
   bool isExperimental;
-  bool IsExperimental { get { return isExperimental; } }
+  bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
     
   bool IsDebugger   { get { return false; } }
   bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
@@ -293,6 +293,31 @@ program PreProcess
         }
         return blockPos;      
     }
+    
+    friendDeclaration()
+    {
+        
+        Parser.Advance(); // friend
+        loop
+        {
+            Parser.Consume(HopperToken.Identifier, "Unit name identifier expected");
+            if (Parser.HadError)
+            {
+                break;
+            }
+            <string,string> previousToken = Parser.PreviousToken;
+            
+            Symbols.AddFriend(previousToken["lexeme"], CurrentNamespace); 
+            
+            if (Parser.Check(HopperToken.Comma))
+            {
+                Parser.Advance(); // ,
+                continue;
+            }
+            Parser.Consume(HopperToken.SemiColon, "';' expected");
+            break;   
+        }
+    }
 
     constDeclaration()
     {
@@ -494,6 +519,12 @@ program PreProcess
                 <string,string> entryToken = Parser.CurrentToken;
                 
                 string qualifiedName = identifier + "." + entryToken["lexeme"];
+                if (values.Contains(qualifiedName))
+                {
+                    Parser.ErrorAtCurrent("duplicate member identifier"); 
+                    break;
+                }
+                
                 string valueString;
                 Parser.Advance();
                 if (Parser.Check(HopperToken.Assign))
@@ -506,6 +537,7 @@ program PreProcess
                         Parser.ErrorAtCurrent("'uint' constant expected"); 
                     }
                 }
+                                
                 values[qualifiedName] = currentValue;
                 Symbols.AddLocation(qualifiedName, entryToken["source"] + ":" + entryToken["line"]);
                 
@@ -1115,6 +1147,10 @@ program PreProcess
             {
                 recordDeclaration();
                 curlyDeclarations++;
+            }
+            else if (Parser.Check(HopperToken.Keyword, "friend"))
+            {
+                friendDeclaration();
             }
             else if (Parser.Check(HopperToken.Keyword, "uses"))
             {

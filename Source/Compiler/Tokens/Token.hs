@@ -251,6 +251,7 @@ unit Token
         statementKeywords["unit"] = true;
         statementKeywords["uses"] = true;
         statementKeywords["while"] = true;
+        statementKeywords["friend"] = true;
     }
     bool IsDirectiveKeyword(string candidate)
     {

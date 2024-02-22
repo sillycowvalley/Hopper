@@ -273,6 +273,7 @@ unit HopperVM
     }
     Restart()
     {
+        External.MCUClockSpeedSet(133); // RP2040 default
         DataMemoryReset();
         DiskSetup();
         External.TimerInitialize();

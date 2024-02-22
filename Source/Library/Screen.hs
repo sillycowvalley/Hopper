@@ -140,7 +140,7 @@ unit Screen
                 int y1 = y+y0;
                 for (int x=0; x < cellWidth; x++)
                 {
-                    DisplayDriver.RawSetPixel(x+x0, y1, cellBuffer[x + deltaY]);
+                    DisplayDriver.setPixel(x+x0, y1, cellBuffer[x + deltaY]);
                 }
             }
             Display.Resume();

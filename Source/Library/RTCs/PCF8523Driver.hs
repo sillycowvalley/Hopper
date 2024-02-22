@@ -6,6 +6,8 @@ unit RTCDriver
     uses "/Source/System/DateTime"
     uses "/Source/Library/RTC"
     
+    friend RTC, RTCDevice;
+    
     
     const byte PCF8523_CONTROL_1  = 0x00;
     const byte PCF8523_CONTROL_2  = 0x01;
@@ -20,7 +22,7 @@ unit RTCDriver
     bool     initialized;
     byte[19] registersRTC;
     
-    bool Begin(byte i2cController, byte sdaPin, byte sclPin, byte address)
+    bool begin(byte i2cController, byte sdaPin, byte sclPin, byte address)
     {        
         
         bool success = Wire.Initialize(i2cController, sdaPin, sclPin);
@@ -56,7 +58,7 @@ unit RTCDriver
         initialized = success;
         return success;
     }
-    RawResetStatus()
+    resetStatus()
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
         Wire.Write(iControllerRTC, PCF8523_STATUS);
@@ -196,7 +198,25 @@ unit RTCDriver
         }
         return success;
     }
-    bool AlarmWasTriggered(byte iAlarm)
+    clearInterrupts()
+    {
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
+        _ = Wire.EndTx(iControllerRTC);
+        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+        byte status = Wire.Read(iControllerRTC);
+        bool triggered = 0 != (0b01111000 & status);
+        if (triggered)
+        {
+            // clear the flags
+            status &= ~0b01111000;
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
+            Wire.Write(iControllerRTC, status);
+            _ = Wire.EndTx(iControllerRTC);
+        }
+    }
+    bool alarmWasTriggered(byte iAlarm)
     {
         bool triggered;
         Wire.BeginTx(iControllerRTC, addressRTC);
@@ -292,17 +312,19 @@ unit RTCDriver
                 Wire.Write(iControllerRTC, control);
                 _ = Wire.EndTx(iControllerRTC);
                 
+                // reading PCF8523_CONTROL_2 clears WTAF
                 Wire.BeginTx(iControllerRTC, addressRTC);
                 Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
                 _ = Wire.EndTx(iControllerRTC);
                 _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
-                control = Wire.Read(iControllerRTC);
-                
+                _ = Wire.Read(iControllerRTC);
+                /*
                 Wire.BeginTx(iControllerRTC, addressRTC);
                 Wire.Write(iControllerRTC, PCF8523_CONTROL_3);
                 _ = Wire.EndTx(iControllerRTC);
                 _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
                 control = Wire.Read(iControllerRTC);
+                */
             }
             success = true;
             
@@ -310,11 +332,38 @@ unit RTCDriver
         }
         return success;
     }
-    bool RawSetAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match)
+    /*
+    Dump()
+    {
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, PCF8523_CONTROL_1);
+        _ = Wire.EndTx(iControllerRTC);
+        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+        byte control = Wire.Read(iControllerRTC);
+        Write("1:" + control.ToBinaryString());
+        
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, PCF8523_CONTROL_2);
+        _ = Wire.EndTx(iControllerRTC);
+        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+        control = Wire.Read(iControllerRTC);
+        
+        Write(" 2:" + control.ToBinaryString());
+        
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, PCF8523_CONTROL_3);
+        _ = Wire.EndTx(iControllerRTC);
+        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+        control = Wire.Read(iControllerRTC);
+        
+        WriteLn(" 3:" + control.ToBinaryString());
+    }
+    */
+    bool setAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match)
     {
         return setAlarm(iAlarm, second, minute, hour, day, match, false);
     }
-    bool RawSetAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match, PinISRDelegate alarmDelegate, byte pin)
+    bool setAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match, PinISRDelegate alarmDelegate, byte pin)
     {
         bool success;
         loop
@@ -365,7 +414,7 @@ unit RTCDriver
         return success;
     }
     
-    string RawDate 
+    string date 
     { 
         get
         { 
@@ -398,7 +447,7 @@ unit RTCDriver
             _ = setRTC(value + " " + time);
         }
     }
-    string RawTime
+    string time
     { 
         get
         { 
@@ -433,7 +482,7 @@ unit RTCDriver
         }
     }
     
-    bool RawSetTimer(byte iTimer, byte ticks, TimerTickLength tickLength)
+    bool setTimer(byte iTimer, byte ticks, TimerTickLength tickLength)
     {
         bool success = false;
         loop
@@ -472,12 +521,12 @@ unit RTCDriver
         }
         return success;
     }
-    bool RawSetTimer(byte iTimer, byte ticks, TimerTickLength tickLength, PinISRDelegate timerDelegate, byte pin)
+    bool setTimer(byte iTimer, byte ticks, TimerTickLength tickLength, PinISRDelegate timerDelegate, byte pin)
     {
         bool success = false;
         loop
         {
-            if (!RawSetTimer(iTimer, ticks, tickLength))
+            if (!setTimer(iTimer, ticks, tickLength))
             {
                 break;
             }
@@ -503,7 +552,7 @@ unit RTCDriver
         return success;
     }
     
-    RawStopTimer(byte iTimer)
+    stopTimer(byte iTimer)
     {
         if ((iTimer == 1) || (iTimer == 2))
         {
@@ -527,7 +576,7 @@ unit RTCDriver
         }
     }
     
-    bool RawTimerWasTriggered(byte iTimer)
+    bool timerWasTriggered(byte iTimer)
     {
         bool triggered;
         if ((iTimer == 1) || (iTimer == 2))

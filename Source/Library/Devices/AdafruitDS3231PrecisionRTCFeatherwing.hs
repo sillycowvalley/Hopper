@@ -10,7 +10,7 @@ unit RTCDevice
     bool Begin()
     {
         // Wire defaults should be correct since it is a FeatherWing:
-        return RTCDriver.Begin(Wire.DefaultI2CController, Wire.DefaultI2CSDAPin, Wire.DefaultI2CSCLPin, 0x68);
+        return RTCDriver.begin(Wire.DefaultI2CController, Wire.DefaultI2CSDAPin, Wire.DefaultI2CSCLPin, 0x68);
     }
     
 }

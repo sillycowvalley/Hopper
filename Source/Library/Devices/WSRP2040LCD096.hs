@@ -6,19 +6,21 @@ unit DeviceDriver
     uses "/Source/Library/Boards/WaveshareRP2040LCD096"
     uses "/Source/Library/Displays/ST7735Driver"
     
-    const int PW  = 80;
-    const int PH = 160;
+    friend DisplayDriver;
     
-    const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
-    const byte DCPin   = 8;
-    const byte CSPin   = 9;
-    const byte ClkPin  = 10;
-    const byte TxPin   = 11;
-    const byte RstPin  = 12;
-    const byte BlPin   = 13;
+    const int pw  = 80;
+    const int ph = 160;
     
-    const int XFudge = 26;
-    const int YFudge = 1;
+    const byte spiController = 1; // this device uses SPI1 on Raspberry Pi Pico
+    const byte dcPin   = 8;
+    const byte csPin   = 9;
+    const byte clkPin  = 10;
+    const byte txPin   = 11;
+    const byte rstPin  = 12;
+    const byte blPin   = 13;
+    
+    const int xFudge = 26;
+    const int yFudge = 1;
     
     bool Begin()
     {

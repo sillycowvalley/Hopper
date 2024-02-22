@@ -897,18 +897,6 @@ unit Types
     {
         return Symbols.QualifyEnum(identifier, currentNamespace);
     }
-    
-    bool IsVisibleConstant(string constantIdentifier)
-    {
-        // assumes constantIdentifier is fully qualified (starts with "NameSpace.")
-        <string> parts = constantIdentifier.Split('.');
-        char f = (parts[1]).GetChar(0);
-        if (f.IsLower())
-        {
-            return parts[0] == currentNamespace;
-        }
-        return true;
-    }
     string QualifyConstantIdentifier(string constantIdentifier)
     {
         return Symbols.QualifyConstantIdentifier(constantIdentifier, currentNamespace);
@@ -1097,6 +1085,31 @@ unit Types
         return equal;
     }
     
+    bool IsVisibleConstant(string constantIdentifier)
+    {
+        bool visible = true;
+        // assumes constantIdentifier is fully qualified (starts with "NameSpace.")
+        <string> parts = constantIdentifier.Split('.');
+        char f = (parts[1]).GetChar(0);
+        if (f.IsLower())
+        {
+            visible = (parts[0] == currentNamespace);
+            if (!visible)
+            {
+                <string> friendUnits = Symbols.GetFriends(currentNamespace);
+                foreach (var friendUnit in friendUnits)
+                {
+                    if (parts[0] == friendUnit)
+                    {
+                        visible = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return visible;
+    }
+    
     uint FindVisibleOverload(string functionName, < <string> > arguments, ref string returnType)
     {
         uint iOverloadFound;
@@ -1113,7 +1126,20 @@ unit Types
                 ch = functionName[iDot+1];
                 if (ch.IsLower())
                 {
-                    if (!functionName.StartsWith(currentNamespace + "."))
+                    bool visible = functionName.StartsWith(currentNamespace + ".");
+                    if (!visible)
+                    {
+                        <string> friendUnits = Symbols.GetFriends(currentNamespace);
+                        foreach (var friendUnit in friendUnits)
+                        {
+                            if (functionName.StartsWith(friendUnit + "."))
+                            {
+                                visible = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!visible)
                     {
                         Parser.Error("'" + functionName + "' is private"); 
                         break;

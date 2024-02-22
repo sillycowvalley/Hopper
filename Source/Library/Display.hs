@@ -20,9 +20,9 @@ unit Display
 #ifdef FONT_EXISTS
         Screen.FontData = Font.FontData;
 #endif        
-        if (DisplayDriver.Begin())
+        if (DisplayDriver.begin())
         {
-            DisplayDriver.Visible = true;
+            DisplayDriver.visible = true;
             return true;
         }
         return false;
@@ -45,7 +45,7 @@ unit Display
         }
         if (suspended == 0)
         {
-            DisplayDriver.UpdateDisplay(); // defined in current display driver
+            DisplayDriver.update(); // defined in current display driver
         }
     }
     Suspend()
@@ -63,19 +63,19 @@ unit Display
         IO.Write("<Display.Clear");
 #endif        
         Suspend();
-        DisplayDriver.ClearDisplay(colour);
+        DisplayDriver.clear(colour);
         Resume();
 #ifdef DISPLAY_DIAGNOSTICS
         IO.WriteLn(">");
 #endif                        
     }
-    bool Visible { set { DisplayDriver.Visible = value; } }
+    bool Visible { set { DisplayDriver.visible = value; } }
     
     SetPixel(int x, int y, uint colour)
     {
         if ((x < 0) || (y < 0) || (x >= Display.PixelWidth) || (y >= Display.PixelHeight)) { return; }
         Suspend();
-        DisplayDriver.RawSetPixel(x, y, colour);
+        DisplayDriver.setPixel(x, y, colour);
         Resume();
     }
     HorizontalLine(int x1, int y, int x2, uint colour)
@@ -86,7 +86,7 @@ unit Display
             x1 = x2;
             x2 = t;
         }
-        // clip here so we can use RawSetPixel
+        // clip here so we can use DisplayDriver.setPixel
         if (x2 < 0) { return; }
         if (y < 0) { return; }
         int ymax = Display.PixelHeight-1;
@@ -98,7 +98,7 @@ unit Display
         if (x1 < 0) { x1 = 0; }
         if (x2 >= xmax) { x2 = xmax; }
         Suspend();
-        DisplayDriver.RawHorizontalLine(x1, y, x2, colour);
+        DisplayDriver.horizontalLine(x1, y, x2, colour);
         Resume();
     }
     VerticalLine(int x, int y1, int y2, uint colour)
@@ -109,7 +109,7 @@ unit Display
             y1 = y2;
             y2 = t;
         }
-        // clip here so we can use RawSetPixel
+        // clip here so we can use DisplayDriver.setPixel
         if (y2 < 0) { return; }
         if (x < 0) { return; }
         int ymax = Display.PixelHeight-1;
@@ -121,7 +121,7 @@ unit Display
         if (y1 < 0) { y1 = 0; }
         if (y2 >= ymax) { y2 = ymax; }
         Suspend();
-        DisplayDriver.RawVerticalLine(x, y1, y2, colour);
+        DisplayDriver.verticalLine(x, y1, y2, colour);
         Resume();
     }
     
@@ -249,7 +249,7 @@ unit Display
     ScrollUp(uint lines)
     {
         Suspend();
-        DisplayDriver.ScrollUpDisplay(lines);
+        DisplayDriver.scrollUp(lines);
         Resume();
     }
     

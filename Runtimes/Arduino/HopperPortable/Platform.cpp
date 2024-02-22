@@ -54,22 +54,16 @@ void pinISR(void * param)
     isrQueue.push(isrStruct); // assuming interrupts are disabled inside an ISR so no conflict with External_ServiceInterrupts(..)
 }
 
-bool overclocking = false;
-Bool External_MCUOverclockGet()
+UInt clockSpeed = 0;
+UInt External_MCUClockSpeedGet()
 {
-    return overclocking;
+    return (clockSpeed == 0) ? 133 : clockSpeed;
 }
-void External_MCUOverclockSet(Bool value)
+void External_MCUClockSpeedSet(UInt value)
 {
-    overclocking = value;
-    if (overclocking)
-    {
-        set_sys_clock_khz(270000, true); // 158us
-    }
-    else
-    {
-        set_sys_clock_khz(130000, true); // 330us
-    }
+    clockSpeed = value;
+    uint32_t freq_khz = (uint32_t)clockSpeed * 1000;
+    set_sys_clock_khz(freq_khz, true); // 158us
 }
 
 
@@ -195,6 +189,7 @@ void External_WatchDog()
 
 void Platform_Initialize()
 {
+    External_MCUClockSpeedSet(133);
     External_TimerInitialize();
     if (nullptr != dataMemoryBlock)
     {

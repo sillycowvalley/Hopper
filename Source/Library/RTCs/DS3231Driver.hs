@@ -7,6 +7,8 @@ unit RTCDriver
     uses "/Source/System/DateTime"
     uses "/Source/Library/RTC"
     
+    friend RTC, RTCDevice;
+    
     const byte DS3231_TIME        = 0x00;
     const byte DS3231_ALARM1      = 0x07;
     const byte DS3231_ALARM2      = 0x0B;
@@ -19,14 +21,14 @@ unit RTCDriver
     bool     initialized;
     byte[19] registersRTC;
     
-    bool Begin(byte i2cController, byte sdaPin, byte sclPin, byte address)
+    bool begin(byte i2cController, byte sdaPin, byte sclPin, byte address)
     {
         bool success = Wire.Initialize(i2cController, sdaPin, sclPin);
         addressRTC = address;
         iControllerRTC = i2cController;
         
         // good default : square wave off, alarms disabled
-        byte control = 0b00011100;
+        byte control = 0b00000100;
         Wire.BeginTx(iControllerRTC, addressRTC);
         Wire.Write(iControllerRTC, DS3231_CONTROL);
         Wire.Write(iControllerRTC, control);
@@ -48,10 +50,59 @@ unit RTCDriver
             _ = Wire.EndTx(iControllerRTC);
         }
         
+        // make sure all alarm registers are cleared
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, 0x07);
+        
+        Wire.Write(iControllerRTC, 0);
+        Wire.Write(iControllerRTC, 0);
+        Wire.Write(iControllerRTC, 0);
+        Wire.Write(iControllerRTC, 0);
+        
+        Wire.Write(iControllerRTC, 0);
+        Wire.Write(iControllerRTC, 0);
+        Wire.Write(iControllerRTC, 0);
+        _ = Wire.EndTx(iControllerRTC);
+        
         initialized = success;
         return success;
     }
-    RawClearLostPower()
+    resetStatus()
+    {
+    }
+    clearInterrupts()
+    {
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, DS3231_STATUS);
+        _ = Wire.EndTx(iControllerRTC);
+        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+        byte status = Wire.Read(iControllerRTC);
+        status &= 0b11111100;
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, DS3231_STATUS);
+        Wire.Write(iControllerRTC, status);
+        _ = Wire.EndTx(iControllerRTC);
+    }
+    
+    Dump()
+    {
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, DS3231_CONTROL);
+        _ = Wire.EndTx(iControllerRTC);
+        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+        byte control = Wire.Read(iControllerRTC);
+        
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, DS3231_STATUS);
+        _ = Wire.EndTx(iControllerRTC);
+        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+        byte status = Wire.Read(iControllerRTC);
+        
+        
+        WriteLn(control.ToBinaryString() + " " + status.ToBinaryString());
+    }
+    
+    clearLostPower()
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
         Wire.Write(iControllerRTC, DS3231_STATUS);
@@ -70,7 +121,7 @@ unit RTCDriver
         }
     }
     
-    bool RawLostPower 
+    bool lostPower 
     { 
         get
         { 
@@ -215,7 +266,7 @@ unit RTCDriver
         }
         return success;
     }
-    bool AlarmWasTriggered(byte iAlarm)
+    bool alarmWasTriggered(byte iAlarm)
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
         Wire.Write(iControllerRTC, DS3231_STATUS);
@@ -357,11 +408,11 @@ unit RTCDriver
         }
         return success;
     }
-    bool RawSetAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match)
+    bool setAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match)
     {
         return setAlarm(iAlarm, second, minute, hour, day, match, false);
     }
-    bool RawSetAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match, PinISRDelegate alarmDelegate, byte pin)
+    bool setAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match, PinISRDelegate alarmDelegate, byte pin)
     {
         bool success;
         loop
@@ -371,13 +422,13 @@ unit RTCDriver
                 break;
             }
             MCU.PinMode(pin, PinModeOption.InputPullup);
-            success = MCU.AttachToPin(pin, alarmDelegate, PinStatus.Rising);
+            success = MCU.AttachToPin(pin, alarmDelegate, PinStatus.Falling);
             break;
         }
         return success;
     }
     
-    float RawTemperature
+    float temperature
     {
         get
         {
@@ -442,7 +493,7 @@ unit RTCDriver
         return success;
     }
     
-    string RawDate 
+    string date 
     { 
         get
         { 
@@ -475,7 +526,7 @@ unit RTCDriver
             _ = setRTC(value + " " + time);
         }
     }
-    string RawTime
+    string time
     { 
         get
         { 

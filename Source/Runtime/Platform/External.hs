@@ -404,14 +404,14 @@ unit External
         ErrorDump(170); Error = 0x0A; 
         return false;
     }
-    MCUOverclockSet(bool value)
+    MCUClockSpeedSet(uint value)
     {
         ErrorDump(170); Error = 0x0A; 
     }
-    bool MCUOverclockGet()
+    uint MCUClockSpeedGet()
     {
         ErrorDump(170); Error = 0x0A; 
-        return false;
+        return 0;
     }
     
     

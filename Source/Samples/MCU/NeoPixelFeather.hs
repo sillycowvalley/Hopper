@@ -1,6 +1,6 @@
 program NeoPixelFeather
 {
-    //uses "/Source/Library/Boards/ChallengerNB2040WiFi"
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     uses "/Source/Library/Devices/AdafruitNeoPixelFeatherWing"
 
     byte ColorComponent(ref byte index)

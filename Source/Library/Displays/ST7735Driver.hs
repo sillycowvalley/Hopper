@@ -6,6 +6,8 @@ unit DisplayDriver
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
     
+    friend Display, Screen;
+    
     const byte TFT_SLPOUT     = 0x11; //  Sleep Out
     
     const byte TFT_CASET      = 0x2A;
@@ -100,7 +102,7 @@ unit DisplayDriver
        0x00                        // End of list
     };
     
-    const uint bufferSize = DeviceDriver.PW*4;
+    const uint bufferSize = DeviceDriver.pw*4;
     byte[bufferSize] frameBuffer; // 4 bytes per pixel (for reading)
     
     uint last444 = 0;
@@ -136,56 +138,56 @@ unit DisplayDriver
         byte g;
         byte b;
         
-        r = SPI.ReadByte(DeviceDriver.SPIController);
-        r = SPI.ReadByte(DeviceDriver.SPIController);
-        g = SPI.ReadByte(DeviceDriver.SPIController);
-        b = SPI.ReadByte(DeviceDriver.SPIController);
+        r = SPI.ReadByte(DeviceDriver.spiController);
+        r = SPI.ReadByte(DeviceDriver.spiController);
+        g = SPI.ReadByte(DeviceDriver.spiController);
+        b = SPI.ReadByte(DeviceDriver.spiController);
     
         return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
     }
     setAddrWindowSPI(int x1, int y1, int x2, int y2, bool write)
     {
-        x1 += DeviceDriver.XFudge;
-        x2 += DeviceDriver.XFudge;
-        y1 += DeviceDriver.YFudge;
-        y2 += DeviceDriver.YFudge;
+        x1 += DeviceDriver.xFudge;
+        x2 += DeviceDriver.xFudge;
+        y1 += DeviceDriver.yFudge;
+        y2 += DeviceDriver.yFudge;
         
         // Column address set
-        MCU.DigitalWrite(DeviceDriver.DCPin, false);
-        SPI.WriteByte(DeviceDriver.SPIController, TFT_CASET);
-        MCU.DigitalWrite(DeviceDriver.DCPin, true);
-        SPI.WriteWord(DeviceDriver.SPIController, uint(x1));
-        SPI.WriteWord(DeviceDriver.SPIController, uint(x2));
+        MCU.DigitalWrite(DeviceDriver.dcPin, false);
+        SPI.WriteByte(DeviceDriver.spiController, TFT_CASET);
+        MCU.DigitalWrite(DeviceDriver.dcPin, true);
+        SPI.WriteWord(DeviceDriver.spiController, uint(x1));
+        SPI.WriteWord(DeviceDriver.spiController, uint(x2));
         
         // Row address set
-        MCU.DigitalWrite(DeviceDriver.DCPin, false);
-        SPI.WriteByte(DeviceDriver.SPIController, TFT_PASET);
-        MCU.DigitalWrite(DeviceDriver.DCPin, true);
-        SPI.WriteWord(DeviceDriver.SPIController, uint(y1));
-        SPI.WriteWord(DeviceDriver.SPIController, uint(y2));
+        MCU.DigitalWrite(DeviceDriver.dcPin, false);
+        SPI.WriteByte(DeviceDriver.spiController, TFT_PASET);
+        MCU.DigitalWrite(DeviceDriver.dcPin, true);
+        SPI.WriteWord(DeviceDriver.spiController, uint(y1));
+        SPI.WriteWord(DeviceDriver.spiController, uint(y2));
         
         // Write or Read RAM
-        MCU.DigitalWrite(DeviceDriver.DCPin, false);
+        MCU.DigitalWrite(DeviceDriver.dcPin, false);
         byte rw = write ? TFT_RAMWR : TFT_RAMRD;
-        SPI.WriteByte(DeviceDriver.SPIController, rw);
-        MCU.DigitalWrite(DeviceDriver.DCPin, true);
+        SPI.WriteByte(DeviceDriver.spiController, rw);
+        MCU.DigitalWrite(DeviceDriver.dcPin, true);
     }
     
-    bool Visible
+    bool visible
     {
         set
         {
-            MCU.DigitalWrite(DeviceDriver.BlPin, value); // backlight on|off ?
+            MCU.DigitalWrite(DeviceDriver.blPin, value); // backlight on|off ?
         }
     }
-    ClearDisplay(uint colour)
+    clear(uint colour)
     {
         int  pw1 = Display.PixelWidth-1;
         if (colour == Colour.Invert)
         {
             for (int y = 0; y < Display.PixelHeight; y++)
             {
-                RawHorizontalLine(0, y, pw1, colour);
+                horizontalLine(0, y, pw1, colour);
             }
             return;
         }
@@ -201,48 +203,45 @@ unit DisplayDriver
         }
         for (int y = 0; y < Display.PixelHeight; y++)
         {
-            SPI.BeginTransaction(DeviceDriver.SPIController);
-            MCU.DigitalWrite(DeviceDriver.CSPin, false);
+            SPI.BeginTransaction(DeviceDriver.spiController);
+            MCU.DigitalWrite(DeviceDriver.csPin, false);
             setAddrWindowSPI(0, y, pw1, y, true);
-            SPI.WriteBuffer(DeviceDriver.SPIController, frameBuffer, 0, pw2);
-            MCU.DigitalWrite(DeviceDriver.CSPin, true);
-            SPI.EndTransaction(DeviceDriver.SPIController);
+            SPI.WriteBuffer(DeviceDriver.spiController, frameBuffer, 0, pw2);
+            MCU.DigitalWrite(DeviceDriver.csPin, true);
+            SPI.EndTransaction(DeviceDriver.spiController);
         }
     }
-    UpdateDisplay()
-    {
-        // NOP for TFT
-    }
-    ScrollUpDisplay(uint lines)
+    
+    scrollUp(uint lines)
     {
         // TODO
     }
     
     sendCommandSPI(byte commandByte, byte[] dataBytes, uint startIndex, byte numDataBytes)
     {
-        SPI.BeginTransaction(DeviceDriver.SPIController);
-        MCU.DigitalWrite(DeviceDriver.CSPin, false);
+        SPI.BeginTransaction(DeviceDriver.spiController);
+        MCU.DigitalWrite(DeviceDriver.csPin, false);
     
-        MCU.DigitalWrite(DeviceDriver.DCPin, false); // Command mode
-        SPI.WriteByte(DeviceDriver.SPIController, commandByte);     // Send the command byte
+        MCU.DigitalWrite(DeviceDriver.dcPin, false); // Command mode
+        SPI.WriteByte(DeviceDriver.spiController, commandByte);     // Send the command byte
     
-        MCU.DigitalWrite(DeviceDriver.DCPin, true);
+        MCU.DigitalWrite(DeviceDriver.dcPin, true);
         for (uint i = 0; i < numDataBytes; i++)
         {
-            SPI.WriteByte(DeviceDriver.SPIController, byte(dataBytes[startIndex+i])); // Send the data bytes
+            SPI.WriteByte(DeviceDriver.spiController, byte(dataBytes[startIndex+i])); // Send the data bytes
         }
     
-        MCU.DigitalWrite(DeviceDriver.CSPin, true);
-        SPI.EndTransaction(DeviceDriver.SPIController);
+        MCU.DigitalWrite(DeviceDriver.csPin, true);
+        SPI.EndTransaction(DeviceDriver.spiController);
     }
     
-    bool Begin()
+    bool begin()
     {
         bool success = false;
         loop
         {
-            Display.PixelWidth  = DeviceDriver.PW;
-            Display.PixelHeight = DeviceDriver.PH;
+            Display.PixelWidth  = DeviceDriver.pw;
+            Display.PixelHeight = DeviceDriver.ph;
             
             Display.Reset();
             for (uint i = 0; i < bufferSize; i++)
@@ -250,34 +249,34 @@ unit DisplayDriver
                 frameBuffer[i] = 0;
             }
             
-            SPI.SetCSPin(DeviceDriver.SPIController,  DeviceDriver.CSPin);
-            SPI.SetTxPin(DeviceDriver.SPIController,  DeviceDriver.TxPin);
-            //SPI.SetRxPin(DeviceDriver.SPIController,  DeviceDriver.DCPin);
-            SPI.SetClkPin(DeviceDriver.SPIController, DeviceDriver.ClkPin);
+            SPI.SetCSPin(DeviceDriver.spiController,  DeviceDriver.csPin);
+            SPI.SetTxPin(DeviceDriver.spiController,  DeviceDriver.txPin);
+            //SPI.SetRxPin(DeviceDriver.spiController,  DeviceDriver.dcPin);
+            SPI.SetClkPin(DeviceDriver.spiController, DeviceDriver.clkPin);
             
-            MCU.PinMode(DeviceDriver.BlPin, PinModeOption.Output);
-            MCU.DigitalWrite(DeviceDriver.BlPin, true);
+            MCU.PinMode(DeviceDriver.blPin, PinModeOption.Output);
+            MCU.DigitalWrite(DeviceDriver.blPin, true);
             
-            MCU.PinMode(DeviceDriver.CSPin, PinModeOption.Output);
-            MCU.DigitalWrite(DeviceDriver.CSPin, true); // Deselect
-            MCU.PinMode(DeviceDriver.DCPin, PinModeOption.Output);
-            MCU.DigitalWrite(DeviceDriver.DCPin, true); // Data mode
+            MCU.PinMode(DeviceDriver.csPin, PinModeOption.Output);
+            MCU.DigitalWrite(DeviceDriver.csPin, true); // Deselect
+            MCU.PinMode(DeviceDriver.dcPin, PinModeOption.Output);
+            MCU.DigitalWrite(DeviceDriver.dcPin, true); // Data mode
             
-            //SPI.Settings(DeviceDriver.SPIController, 4000000, DataOrder.MSBFirst, DataMode.Mode0);// these are the defaults
+            //SPI.Settings(DeviceDriver.spiController, 4000000, DataOrder.MSBFirst, DataMode.Mode0);// these are the defaults
             
-            if (!SPI.Begin(DeviceDriver.SPIController))
+            if (!SPI.Begin(DeviceDriver.spiController))
             {
                 IO.WriteLn("DeviceDriver.Begin failed in SPI.Begin");
                 break;
             }
             
             // hardware reset
-            MCU.PinMode(DeviceDriver.RstPin, PinModeOption.Output);
-            MCU.DigitalWrite(DeviceDriver.RstPin, true);
+            MCU.PinMode(DeviceDriver.rstPin, PinModeOption.Output);
+            MCU.DigitalWrite(DeviceDriver.rstPin, true);
             Time.Delay(100);
-            MCU.DigitalWrite(DeviceDriver.RstPin, false);
+            MCU.DigitalWrite(DeviceDriver.rstPin, false);
             Time.Delay(100);
-            MCU.DigitalWrite(DeviceDriver.RstPin, true);
+            MCU.DigitalWrite(DeviceDriver.rstPin, true);
             Time.Delay(200);
             
             byte[] initCmd = initCmdConst;
@@ -303,17 +302,17 @@ unit DisplayDriver
         }
         return success;
     }
-    RawSetPixel(int x, int y, uint colour)
+    setPixel(int x, int y, uint colour)
     {
         uint rgb565;
         if (colour == Colour.Invert) // Invert
         {
-            SPI.BeginTransaction(DeviceDriver.SPIController);
-            MCU.DigitalWrite(DeviceDriver.CSPin, false);
+            SPI.BeginTransaction(DeviceDriver.spiController);
+            MCU.DigitalWrite(DeviceDriver.csPin, false);
             setAddrWindowSPI(x, y, x, y, false);
             rgb565 = readColorSPI();
-            MCU.DigitalWrite(DeviceDriver.CSPin, true);
-            SPI.EndTransaction(DeviceDriver.SPIController);
+            MCU.DigitalWrite(DeviceDriver.csPin, true);
+            SPI.EndTransaction(DeviceDriver.spiController);
         
             rgb565 = ~rgb565;
         }
@@ -321,26 +320,26 @@ unit DisplayDriver
         {
             rgb565 = convertToRGB565(colour);
         }
-        SPI.BeginTransaction(DeviceDriver.SPIController);
-        MCU.DigitalWrite(DeviceDriver.CSPin, false);
+        SPI.BeginTransaction(DeviceDriver.spiController);
+        MCU.DigitalWrite(DeviceDriver.csPin, false);
         setAddrWindowSPI(x, y, x, y, true);
-        SPI.WriteWord(DeviceDriver.SPIController, rgb565);
-        MCU.DigitalWrite(DeviceDriver.CSPin, true);
-        SPI.EndTransaction(DeviceDriver.SPIController);
+        SPI.WriteWord(DeviceDriver.spiController, rgb565);
+        MCU.DigitalWrite(DeviceDriver.csPin, true);
+        SPI.EndTransaction(DeviceDriver.spiController);
         
     }
     
-    RawHorizontalLine(int x1, int y, int x2, uint colour)
+    horizontalLine(int x1, int y, int x2, uint colour)
     {
         int w2 = (x2-x1+1) * 2;
         if (colour == Colour.Invert)
         {
-            SPI.BeginTransaction(DeviceDriver.SPIController);
-            MCU.DigitalWrite(DeviceDriver.CSPin, false);
+            SPI.BeginTransaction(DeviceDriver.spiController);
+            MCU.DigitalWrite(DeviceDriver.csPin, false);
             setAddrWindowSPI(x1, y, x2, y, false);
-            SPI.ReadBuffer(DeviceDriver.SPIController, frameBuffer, 0, uint(w2*2));
-            MCU.DigitalWrite(DeviceDriver.CSPin, true);
-            SPI.EndTransaction(DeviceDriver.SPIController); 
+            SPI.ReadBuffer(DeviceDriver.spiController, frameBuffer, 0, uint(w2*2));
+            MCU.DigitalWrite(DeviceDriver.csPin, true);
+            SPI.EndTransaction(DeviceDriver.spiController); 
             int s = 0;
             for (int d=0; d < w2; d += 2)
             {
@@ -366,20 +365,20 @@ unit DisplayDriver
                 frameBuffer[i+0] = msb;
             }
         }
-        SPI.BeginTransaction(DeviceDriver.SPIController);
-        MCU.DigitalWrite(DeviceDriver.CSPin, false);
+        SPI.BeginTransaction(DeviceDriver.spiController);
+        MCU.DigitalWrite(DeviceDriver.csPin, false);
         setAddrWindowSPI(x1, y, x2, y, true);
-        SPI.WriteBuffer(DeviceDriver.SPIController, frameBuffer, 0, uint(w2));
-        MCU.DigitalWrite(DeviceDriver.CSPin, true);
-        SPI.EndTransaction(DeviceDriver.SPIController);
+        SPI.WriteBuffer(DeviceDriver.spiController, frameBuffer, 0, uint(w2));
+        MCU.DigitalWrite(DeviceDriver.csPin, true);
+        SPI.EndTransaction(DeviceDriver.spiController);
     }
-    RawVerticalLine(int x, int y1, int y2, uint colour)
+    verticalLine(int x, int y1, int y2, uint colour)
     {
         if (colour == Colour.Invert)
         {
             for (int y = y1; y <= y2; y++)
             {
-                RawSetPixel(x, y, colour);
+                setPixel(x, y, colour);
             }
         }
         else
@@ -393,12 +392,12 @@ unit DisplayDriver
                 frameBuffer[i+1] = lsb;
                 frameBuffer[i+0] = msb;
             }
-            SPI.BeginTransaction(DeviceDriver.SPIController);
-            MCU.DigitalWrite(DeviceDriver.CSPin, false);
+            SPI.BeginTransaction(DeviceDriver.spiController);
+            MCU.DigitalWrite(DeviceDriver.csPin, false);
             setAddrWindowSPI(x, y1, x, y2, true);
-            SPI.WriteBuffer(DeviceDriver.SPIController, frameBuffer, 0, uint(h2));
-            MCU.DigitalWrite(DeviceDriver.CSPin, true);
-            SPI.EndTransaction(DeviceDriver.SPIController);
+            SPI.WriteBuffer(DeviceDriver.spiController, frameBuffer, 0, uint(h2));
+            MCU.DigitalWrite(DeviceDriver.csPin, true);
+            SPI.EndTransaction(DeviceDriver.spiController);
         }
     }
 }

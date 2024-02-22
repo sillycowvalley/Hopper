@@ -5,7 +5,9 @@ unit DisplayDriver
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
     
-    // Eventually got it working reliablty with a variation of the AdaFruit driver:
+    friend Display, Screen;
+    
+    // Eventually got it working reliably with a variation of the AdaFruit driver:
     //   https://github.com/adafruit/Adafruit_SSD1306/blob/master/Adafruit_SSD1306.cpp
     
     const byte SSD1306_MEMORYMODE       = 0x20;
@@ -57,7 +59,7 @@ unit DisplayDriver
     
     byte[1024] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
     
-    ScrollUpDisplay(uint lines)
+    scrollUp(uint lines)
     {
         uint pw8 = uint(pixelWidth/8);
         uint dy;
@@ -100,7 +102,7 @@ unit DisplayDriver
         resolutionSet = true;
     }
     
-    bool Visible
+    bool visible
     {
         set
         {
@@ -117,7 +119,7 @@ unit DisplayDriver
             }
         }
     }
-    bool Begin()
+    bool begin()
     {
         i2cConfigured = false;
 #ifdef DISPLAY_DIAGNOSTICS
@@ -254,7 +256,7 @@ unit DisplayDriver
         }
     }
     
-    UpdateDisplay()
+    update()
     {
 #ifdef DISPLAY_DIAGNOSTICS
         IO.Write("<OLEDSSD1306.UpdateDisplay");
@@ -308,7 +310,7 @@ unit DisplayDriver
         IO.WriteLn(">");
 #endif        
     }
-    ClearDisplay(uint colour)
+    clear(uint colour)
     {
         int size = pixelWidth * pixelHeight / 8;
         if (colour == Colour.Black)
@@ -333,7 +335,7 @@ unit DisplayDriver
             }
         }
     }
-    RawSetPixel(int x, int y, uint colour)
+    setPixel(int x, int y, uint colour)
     {
         uint ux = uint(x);
         uint uy = uint(y);
@@ -353,7 +355,7 @@ unit DisplayDriver
         }
     }
     
-    RawHorizontalLine(int x1, int y, int x2, uint colour)
+    horizontalLine(int x1, int y, int x2, uint colour)
     {
         uint pw8 = uint(Display.PixelWidth/8);
         uint uy = uint(y);
@@ -387,7 +389,7 @@ unit DisplayDriver
             }
         }
     }
-    RawVerticalLine(int x, int y1, int y2, uint colour)
+    verticalLine(int x, int y1, int y2, uint colour)
     {
         uint ux  = uint(x);
         uint uy1 = uint(y1);

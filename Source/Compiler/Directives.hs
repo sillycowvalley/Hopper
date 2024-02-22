@@ -208,6 +208,10 @@ unit Directives
                     Parser.ErrorAtCurrent("preprocessor symbol can only be defined once");
                     break;
                 }
+                if (idToken["lexeme"] == "EXPERIMENTAL")
+                {
+                    IsExperimental = true;
+                }
                 Symbols.AddDefine(idToken["lexeme"], value);
                 Symbols.AddLocation(idToken["lexeme"], idToken["source"] + ":" + idToken["line"]);
             }

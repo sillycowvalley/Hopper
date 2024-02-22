@@ -77,6 +77,9 @@ unit Symbols
     <string, string> cValues;
     <string, string> cTypes;
     
+    // friends
+    <string, <string> > frValues;
+    
     // unit names
     <string> nameSpaces;
     <string,string> sourceNameSpaces;
@@ -155,6 +158,8 @@ unit Symbols
         flMembers.Clear();
         flMembersReversed.Clear();
         flMembersSorted.Clear();
+        
+        frValues.Clear();
         
         overloadsCompiled.Clear();
         
@@ -502,6 +507,29 @@ unit Symbols
         cDefinitions[key] = constantValue;
         cValues[constantName] = constantValue;
         cTypes[constantName] = actualType;
+    }
+    
+    AddFriend(string friendUnit, string currentUnit)
+    {
+        <string> friendUnits;
+        if (frValues.Contains(friendUnit))
+        {
+            friendUnits = frValues[friendUnit];
+        }
+        if (!friendUnits.Contains(currentUnit))
+        {
+            friendUnits.Append(currentUnit);
+            frValues[friendUnit] = friendUnits;
+        }
+    }
+    <string> GetFriends(string currentNamespace)
+    {
+        <string> friendUnits;
+        if (frValues.Contains(currentNamespace))
+        {
+            friendUnits = frValues[currentNamespace];
+        }
+        return friendUnits;
     }
     
     bool GlobalExists(string name)
@@ -1874,8 +1902,7 @@ unit Symbols
             {
                 dict["globals"] = globals;
             }
-        
-            
+                     
             foreach (var iUsedOverload in usedOverloads)
             {
                 <string,variant> mdict;
@@ -1980,6 +2007,11 @@ unit Symbols
                 ndict[nkv.value] = nkv.key;
             }
             dict["units"]   = ndict;
+            
+            if (frValues.Count != 0)
+            {
+                dict["friends"] = frValues;
+            }
             
             dict["symbols"]   = pdValues;
             dict["constants"] = cDefinitions;
@@ -2514,6 +2546,18 @@ unit Symbols
                             foreach (var namekv in udict)
                             {
                                 AddNameSpace(namekv.key, namekv.value);
+                            }
+                        }
+                    }
+                    case "friends":
+                    {
+                        <string, <string> > fdict = kv.value;
+                        foreach (var friendkv in fdict)
+                        {
+                            <string> friendList = friendkv.value;
+                            foreach (var friendUnit in friendList)
+                            {
+                                AddFriend(friendkv.key, friendUnit);
                             }
                         }
                     }

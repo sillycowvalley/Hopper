@@ -7,6 +7,8 @@ unit RTCDriver
     uses "/Source/System/DateTime"
     uses "/Source/Library/RTC"
     
+    friend RTC, RTCDevice;
+ 
     const byte RTC_CONTROL    = 0x07;
     const byte RTC_LOCATION   = 0x00;  
     const byte RAM_LOCATION   = 0x20;
@@ -16,7 +18,7 @@ unit RTCDriver
     bool     initialized;
     byte[19] registersRTC;
     
-    bool Begin(byte i2cController, byte sdaPin, byte sclPin, byte address)
+    bool begin(byte i2cController, byte sdaPin, byte sclPin, byte address)
     {        
         
         bool success = Wire.Initialize(i2cController, sdaPin, sclPin);
@@ -64,13 +66,31 @@ unit RTCDriver
         Wire.Write(iControllerRTC, RTC_CONTROL);
         Wire.Write(iControllerRTC, control);
         _ = Wire.EndTx(iControllerRTC);
-
     }
-    RawResetStatus()
+    
+    Dump()
+    {
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, RTC_CONTROL);
+        _ = Wire.EndTx(iControllerRTC);
+        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+        byte control = Wire.Read(iControllerRTC);
+        Write(control.ToBinaryString());
+        
+        Wire.BeginTx(iControllerRTC, addressRTC);
+        Wire.Write(iControllerRTC, 0x0D);
+        _ = Wire.EndTx(iControllerRTC);
+        _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
+        byte status = Wire.Read(iControllerRTC);
+        WriteLn(" " + status.ToBinaryString());
+        
+    }
+    
+    resetStatus()
     {
     }
     
-    RawClearLostPower()
+    clearLostPower()
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
         Wire.Write(iControllerRTC, 0x03);
@@ -91,7 +111,7 @@ unit RTCDriver
     }
     
     string lastPowerFailure;
-    bool RawLostPower 
+    bool lostPower 
     { 
         get
         { 
@@ -117,7 +137,7 @@ unit RTCDriver
             return powerFailed; 
         }
     }
-    string RawLastLostPower { get { return lastPowerFailure; } }
+    string lastLostPower { get { return lastPowerFailure; } }
     
     
     byte toBCD(uint decimal)
@@ -230,7 +250,7 @@ unit RTCDriver
     AlarmMatch lastMatch1;
     AlarmMatch lastMatch2;
     
-    bool AlarmWasTriggered(byte iAlarm)
+    bool alarmWasTriggered(byte iAlarm)
     {
         bool triggered;
         Wire.BeginTx(iControllerRTC, addressRTC);
@@ -254,6 +274,11 @@ unit RTCDriver
             _ = Wire.EndTx(iControllerRTC);
         }
         return triggered;
+    }
+    clearInterrupts()
+    {
+        _= alarmWasTriggered(1);
+        _= alarmWasTriggered(2);
     }
     bool setAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match, bool alarmInterrupts)
     {
@@ -368,11 +393,11 @@ unit RTCDriver
         }
         return success;
     }
-    bool RawSetAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match)
+    bool setAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match)
     {
         return setAlarm(iAlarm, second, minute, hour, day, match, false);
     }
-    bool RawSetAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match, PinISRDelegate alarmDelegate, byte pin)
+    bool setAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match, PinISRDelegate alarmDelegate, byte pin)
     {
         bool success;
         loop
@@ -418,7 +443,7 @@ unit RTCDriver
         return success;
     }
     
-    string RawDate 
+    string date 
     { 
         get
         { 
@@ -451,7 +476,7 @@ unit RTCDriver
             _ = setRTC(value + " " + time);
         }
     }
-    string RawTime
+    string time
     { 
         get
         { 
@@ -486,8 +511,8 @@ unit RTCDriver
         }
     }
     
-    byte RawRAMCount { get { return 64; } }
-    byte[] RawRAM    
+    byte ramCount { get { return 64; } }
+    byte[] ram
     { 
         get 
         { 

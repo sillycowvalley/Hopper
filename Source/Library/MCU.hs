@@ -62,14 +62,27 @@ unit MCU
     bool AttachToPin(byte pin, PinISRDelegate gpioISR, PinStatus status) library;
     
     bool InterruptsEnabled { get library; set library; }
-    
+
+#if defined(MCU_BOARD_RP2040)    
     Reboot(bool bootsel) library;
     
     // Use these two APIs to keep an eye on the health of your MCU memory:
     long HeapFree() library;  // Is there a leak in the system level stuff? 
     long StackFree() library; // Are we close to the stack limit?
     
-    // default for Pi Pico is 130 MHz (not 133 MHz)
-    // overclock sets clock to 270 MHz
-    bool Overclock { get library; set library; }
+    enum RP2040ClockSpeed // enum so that tested good values are obvious:
+    {
+        Slow48       =  48,   // have not managed to reliably go slower than this
+        Slow50       =  50,   
+        Default133   = 133,   // default for Pi Pico
+        Overclock240 = 240,   // overclock sets clock to 240 MHz
+        Overclock250 = 250,   // overclock sets clock to 250 MHz
+        Overclock270 = 270,   // overclock sets clock to 270 MHz
+        //Overclock275 = 275, // doesn't work on USB voltage
+        //Overclock300 = 300, // doesn't work on USB voltage
+    }
+    
+    RP2040ClockSpeed ClockSpeed { get library; set library; }
+#endif
+
 }

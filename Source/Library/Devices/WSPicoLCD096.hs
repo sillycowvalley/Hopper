@@ -3,24 +3,26 @@ unit DeviceDriver
     // https://www.waveshare.com/wiki/Pico-LCD-0.96
     // Note: Colour.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
     
-#if !defined(RP2040_PICOW) && !defined(RP2040_PICO)    
-    // plugs directly into the Pi Pico or Pi PicoW so if neither was defined, assume Pico W for now
-    #define RP2040_PICOW 
+#if !defined(MCU_BOARD_DEFINED)
+    // plugs directly into the Pi Pico so no board defined, assume generic Pi Pico
+    uses "/Source/Library/Boards/PiPico"
 #endif
     #define WAVESHARE_PICO_LCD_096
     
     uses "/Source/Library/Displays/ST7735Driver"
     
-    const int PW  = 160;
-    const int PH =  80;
+    friend DisplayDriver;
     
-    const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
-    const byte DCPin   = 8;
-    const byte CSPin   = 9;
-    const byte ClkPin  = 10;
-    const byte TxPin   = 11;
-    const byte RstPin  = 12;
-    const byte BlPin   = 13;
+    const int pw  = 160;
+    const int ph =  80;
+    
+    const byte spiController = 1; // this device uses SPI1 on Raspberry Pi Pico
+    const byte dcPin   = 8;
+    const byte csPin   = 9;
+    const byte clkPin  = 10;
+    const byte txPin   = 11;
+    const byte rstPin  = 12;
+    const byte blPin   = 13;
     
     const byte keyAPin      = 15;
     const byte keyBPin      = 17;
@@ -30,8 +32,8 @@ unit DeviceDriver
     const byte keyRightPin  = 20;
     const byte keyButtonPin = 3;
     
-    const int XFudge = 1;
-    const int YFudge = 26;
+    const int xFudge = 1;
+    const int yFudge = 26;
     
     bool Begin()
     {

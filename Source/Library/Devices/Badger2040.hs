@@ -1,17 +1,19 @@
 unit DeviceDriver
 {
-    #define RP2040_PICO // not the 'W' version
+    uses "/Source/Library/Boards/PiPico"
     
     uses "/Source/Library/Displays/UC8151Driver"
     
-    const byte SPIController = 0;
+    friend DisplayDriver;
     
-    const byte DCPin   = 20;
-    const byte CSPin   = 17;
-    const byte ClkPin  = 18;
-    const byte TxPin   = 19;
-    const byte RstPin  = 21;
-    const byte BusyPin = 26;
+    const byte spiController = 0;
+    
+    const byte dcPin   = 20;
+    const byte csPin   = 17;
+    const byte clkPin  = 18;
+    const byte txPin   = 19;
+    const byte rstPin  = 21;
+    const byte busyPin = 26;
     
     
     const byte vbusDetectPin = 24;
@@ -25,8 +27,8 @@ unit DeviceDriver
     const byte keyEPin = 11;
     const byte userPin = 23;
     
-    const int PW = 296;
-    const int PH = 128;
+    const int pw = 296;
+    const int ph = 128;
             
     bool Begin()
     {

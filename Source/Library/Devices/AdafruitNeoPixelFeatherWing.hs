@@ -6,13 +6,15 @@ unit DeviceDriver
     #define NEOPIXEL_DEVICE_DRIVER
     uses "/Source/Library/Displays/MatrixDriver"
     
-    const int PW = 8;
-    const int PH = 4;
-    uint[PW*PH] pixelBuffer;
+    friend DisplayDriver;
     
-    UpdateDisplay()
+    const int pw = 8;
+    const int ph = 4;
+    uint[pw*ph] pixelBuffer;
+    
+    update()
     {
-        for (uint address = 0; address < PW*PH; address++)
+        for (uint address = 0; address < pw*ph; address++)
         {
             uint rgb444 = pixelBuffer[address];
             byte rColor = byte((rgb444 >> 8) << 4);
@@ -35,9 +37,9 @@ unit DeviceDriver
         NeoPixel.Show();
     }
     
-    SetPixel(int x, int y, uint rgb444)
+    setPixel(int x, int y, uint rgb444)
     {
-        uint address = uint(y * PW + x);
+        uint address = uint(y * pw + x);
         pixelBuffer[address] = (rgb444 == Colour.Invert) ? ~pixelBuffer[address] : rgb444;
     }
     

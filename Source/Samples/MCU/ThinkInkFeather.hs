@@ -1,11 +1,12 @@
 program ThinkInkFeatherwing
 {   
     uses "/Source/Library/Boards/ChallengerNB2040WiFi"
+    //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
     
     //uses "/Source/Library/Devices/AdafruitThinkInk213Mono"
-    uses "/Source/Library/Devices/AdafruitThinkInk213TriColor"
+    //uses "/Source/Library/Devices/AdafruitThinkInk213TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290TriColor"
-    //uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
+    uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
     
     uses "/Source/Library/Fonts/Hitachi5x7"
     
@@ -130,6 +131,8 @@ program ThinkInkFeatherwing
             elapsed = Millis - start;
             WriteLn("Elapsed: " + elapsed.ToString());
             DelaySeconds(2);
+            
+            break;
             
             
             start = Millis;

@@ -338,19 +338,19 @@ unit Library
             }
             
             
-            case LibCall.MCUOverclockGet:
+            case LibCall.MCUClockSpeedGet:
             {
-                bool value = External.MCUOverclockGet();
-                Push(value ? 1 : 0, Type.Bool);
+                uint value = External.MCUClockSpeedGet();
+                Push(value, Type.UInt);
             }
-            case LibCall.MCUOverclockSet:
+            case LibCall.MCUClockSpeedSet:
             {
                 Type ptype;
                 uint value = Pop(ref ptype);
 #ifdef CHECKED             
-                AssertBool(ptype, value);
+                AssertUInt(ptype, value);
 #endif
-                External.MCUOverclockSet(value != 0);
+                External.MCUClockSpeedSet(value);
             }
         
             case LibCall.MCUReboot:

@@ -917,6 +917,7 @@ UInt Colour_Black_Get()
 
 void HopperVM_Restart()
 {
+    External_MCUClockSpeedSet(0x85);
     HopperVM_DataMemoryReset();
     HopperVM_DiskSetup();
     External_TimerInitialize();
@@ -6395,17 +6396,17 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         External_MCUInterruptsEnabledSet(value != 0x00);
         break;
     }
-    case LibCall::eMCUOverclockGet:
+    case LibCall::eMCUClockSpeedGet:
     {
-        Bool value = External_MCUOverclockGet();
-        HopperVM_Push((value) ? (0x01) : (0x00), Type::eBool);
+        UInt value = External_MCUClockSpeedGet();
+        HopperVM_Push(value, Type::eUInt);
         break;
     }
-    case LibCall::eMCUOverclockSet:
+    case LibCall::eMCUClockSpeedSet:
     {
         Type ptype = (Type)0;
         UInt value = HopperVM_Pop_R(ptype);
-        External_MCUOverclockSet(value != 0x00);
+        External_MCUClockSpeedSet(value);
         break;
     }
     case LibCall::eMCUReboot:

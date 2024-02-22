@@ -5,6 +5,8 @@ unit DisplayDriver
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
     
+    friend Display, Screen;
+    
     // https://www.waveshare.com/wiki/Pico-ePaper-4.2
     
     flags pswFlags
@@ -175,10 +177,10 @@ unit DisplayDriver
     bool IsPortrait { get { return isPortrait; } set { isPortrait = value; } }
     
     bool alternateAspect;
-    const uint bufferSize = DeviceDriver.PW / 8 * DeviceDriver.PH;
+    const uint bufferSize = DeviceDriver.pw / 8 * DeviceDriver.ph;
     byte [bufferSize] frameBuffer; // 296*128/8 = 4736 bytes
     
-    bool Visible
+    bool visible
     {
         set
         {
@@ -186,7 +188,7 @@ unit DisplayDriver
         }
     }
     
-    bool isBusy {get { return !DigitalRead(DeviceDriver.BusyPin); } }
+    bool isBusy {get { return !DigitalRead(DeviceDriver.busyPin); } }
 
     busyWait()
     {
@@ -198,57 +200,57 @@ unit DisplayDriver
     
     sendCommand(register reg)
     {
-        SPI.BeginTransaction(DeviceDriver.SPIController);
-        MCU.DigitalWrite(DeviceDriver.CSPin, false);
-        MCU.DigitalWrite(DeviceDriver.DCPin, false); // command mode
-        SPI.WriteByte(DeviceDriver.SPIController,  byte(reg));
-        MCU.DigitalWrite(DeviceDriver.CSPin, true);
-        SPI.EndTransaction(DeviceDriver.SPIController);
+        SPI.BeginTransaction(DeviceDriver.spiController);
+        MCU.DigitalWrite(DeviceDriver.csPin, false);
+        MCU.DigitalWrite(DeviceDriver.dcPin, false); // command mode
+        SPI.WriteByte(DeviceDriver.spiController,  byte(reg));
+        MCU.DigitalWrite(DeviceDriver.csPin, true);
+        SPI.EndTransaction(DeviceDriver.spiController);
     }
     
     sendCommand(register reg, byte[] data)
     {
         uint length = data.Count;
-        SPI.BeginTransaction(DeviceDriver.SPIController);
-        MCU.DigitalWrite(DeviceDriver.CSPin, false);
-        MCU.DigitalWrite(DeviceDriver.DCPin, false); // command mode
-        SPI.WriteByte(DeviceDriver.SPIController,  byte(reg));
+        SPI.BeginTransaction(DeviceDriver.spiController);
+        MCU.DigitalWrite(DeviceDriver.csPin, false);
+        MCU.DigitalWrite(DeviceDriver.dcPin, false); // command mode
+        SPI.WriteByte(DeviceDriver.spiController,  byte(reg));
         if (length > 0)
         {
-            MCU.DigitalWrite(DeviceDriver.DCPin, true); // data mode
-            SPI.WriteBuffer(DeviceDriver.SPIController,  data, 0, length);
+            MCU.DigitalWrite(DeviceDriver.dcPin, true); // data mode
+            SPI.WriteBuffer(DeviceDriver.spiController,  data, 0, length);
         }
-        MCU.DigitalWrite(DeviceDriver.CSPin, true);
-        SPI.EndTransaction(DeviceDriver.SPIController);
+        MCU.DigitalWrite(DeviceDriver.csPin, true);
+        SPI.EndTransaction(DeviceDriver.spiController);
     }
     sendData(byte[] data)
     {
         uint length = data.Count;
         if (length > 0)
         {
-            SPI.BeginTransaction(DeviceDriver.SPIController);
-            MCU.DigitalWrite(DeviceDriver.CSPin, false);
-            MCU.DigitalWrite(DeviceDriver.DCPin, true); // data mode
-            SPI.WriteBuffer(DeviceDriver.SPIController,  data, 0, length);
-            MCU.DigitalWrite(DeviceDriver.CSPin, true);
-            SPI.EndTransaction(DeviceDriver.SPIController);
+            SPI.BeginTransaction(DeviceDriver.spiController);
+            MCU.DigitalWrite(DeviceDriver.csPin, false);
+            MCU.DigitalWrite(DeviceDriver.dcPin, true); // data mode
+            SPI.WriteBuffer(DeviceDriver.spiController,  data, 0, length);
+            MCU.DigitalWrite(DeviceDriver.csPin, true);
+            SPI.EndTransaction(DeviceDriver.spiController);
         }
     }
     
-    bool Begin()
+    bool begin()
     {
         bool success = false;
         loop
         {
             if (DisplayDriver.IsPortrait)
             {
-                Display.PixelWidth  = Int.Min(DeviceDriver.PW, DeviceDriver.PH);
-                Display.PixelHeight = Int.Max(DeviceDriver.PW, DeviceDriver.PH);
+                Display.PixelWidth  = Int.Min(DeviceDriver.pw, DeviceDriver.ph);
+                Display.PixelHeight = Int.Max(DeviceDriver.pw, DeviceDriver.ph);
             }
             else
             {
-                Display.PixelWidth  = Int.Max(DeviceDriver.PW, DeviceDriver.PH);
-                Display.PixelHeight = Int.Min(DeviceDriver.PW, DeviceDriver.PH);
+                Display.PixelWidth  = Int.Max(DeviceDriver.pw, DeviceDriver.ph);
+                Display.PixelHeight = Int.Min(DeviceDriver.pw, DeviceDriver.ph);
             }
             
             Display.Reset();
@@ -257,21 +259,21 @@ unit DisplayDriver
                 frameBuffer[i] = 0;
             }
             
-            SPI.SetCSPin(DeviceDriver.SPIController,  DeviceDriver.CSPin);
-            SPI.SetTxPin(DeviceDriver.SPIController,  DeviceDriver.TxPin);
-            SPI.SetClkPin(DeviceDriver.SPIController, DeviceDriver.ClkPin);
+            SPI.SetCSPin(DeviceDriver.spiController,  DeviceDriver.csPin);
+            SPI.SetTxPin(DeviceDriver.spiController,  DeviceDriver.txPin);
+            SPI.SetClkPin(DeviceDriver.spiController, DeviceDriver.clkPin);
             
-            MCU.PinMode(DeviceDriver.CSPin, PinModeOption.Output);
-            MCU.DigitalWrite(DeviceDriver.CSPin, true); // Deselect
-            MCU.PinMode(DeviceDriver.DCPin, PinModeOption.Output);
-            MCU.DigitalWrite(DeviceDriver.DCPin, true); // Data mode
-            MCU.PinMode(DeviceDriver.RstPin, PinModeOption.Output);
-            MCU.DigitalWrite(DeviceDriver.RstPin, true);
-            MCU.PinMode(DeviceDriver.BusyPin, PinModeOption.InputPullup);
+            MCU.PinMode(DeviceDriver.csPin, PinModeOption.Output);
+            MCU.DigitalWrite(DeviceDriver.csPin, true); // Deselect
+            MCU.PinMode(DeviceDriver.dcPin, PinModeOption.Output);
+            MCU.DigitalWrite(DeviceDriver.dcPin, true); // Data mode
+            MCU.PinMode(DeviceDriver.rstPin, PinModeOption.Output);
+            MCU.DigitalWrite(DeviceDriver.rstPin, true);
+            MCU.PinMode(DeviceDriver.busyPin, PinModeOption.InputPullup);
             
-            SPI.Settings(DeviceDriver.SPIController, 12000000, DataOrder.MSBFirst, DataMode.Mode0);
+            SPI.Settings(DeviceDriver.spiController, 12000000, DataOrder.MSBFirst, DataMode.Mode0);
             
-            if (!SPI.Initialize(DeviceDriver.SPIController))
+            if (!SPI.Begin(DeviceDriver.spiController))
             {
                 IO.WriteLn("DeviceDriver.Begin failed in SPI.Begin");
                 break;
@@ -376,7 +378,7 @@ unit DisplayDriver
     uint ph8;
     uint pw8;
     
-    RawSetPixel(int x, int y, uint colour)
+    setPixel(int x, int y, uint colour)
     {
         uint offset;
         byte mask;
@@ -414,7 +416,7 @@ unit DisplayDriver
         }
     }
     
-    ClearDisplay(uint colour)
+    clear(uint colour)
     {
         if (colour == 0xF000) // Colour.Invert
         {
@@ -438,7 +440,7 @@ unit DisplayDriver
             }
         }
     }
-    UpdateDisplay()
+    update()
     {
 #ifdef DISPLAY_DIAGNOSTICS
         IO.Write("<DisplayDriver.UpdateDisplay");
@@ -457,7 +459,7 @@ unit DisplayDriver
         IO.WriteLn("DisplayDriver.UpdateDisplay>");
 #endif        
     }
-    uint RawGetPixel(int x, int y)
+    uint getPixel(int x, int y)
     {
         uint ux = uint(x);
         uint uy = uint(y);
@@ -472,7 +474,7 @@ unit DisplayDriver
     }
     
     
-    ScrollUpDisplay(uint lines)
+    scrollUp(uint lines)
     {
         /*
         uint drow;
@@ -480,7 +482,7 @@ unit DisplayDriver
         {
             for (int x = 0; x < int(Display.PixelWidth-1); x++)
             {
-                RawSetPixel(x, int(drow), RawGetPixel(x, int(row)));
+                setPixel(x, int(drow), getPixel(x, int(row)));
             }
             drow++;    
         }
@@ -489,25 +491,25 @@ unit DisplayDriver
             if (drow >= int(Display.PixelHeight)) { break; }
             for (int x = 0; x < int(Display.PixelWidth-1); x++)
             {
-                RawSetPixel(x, int(drow), Colour.White);
+                setPixel(x, int(drow), Colour.White);
             }
             drow++;   
         }
         */
     }
     
-    RawHorizontalLine(int x1, int y, int x2, uint colour)
+    horizontalLine(int x1, int y, int x2, uint colour)
     {
         for (int x = x1; x <= x2; x++)
         {
-            RawSetPixel(x, y, colour);
+            setPixel(x, y, colour);
         }
     }
-    RawVerticalLine(int x, int y1, int y2, uint colour)
+    verticalLine(int x, int y1, int y2, uint colour)
     {
         for (int y = y1; y <= y2; y++)
         {
-            RawSetPixel(x, y, colour);
+            setPixel(x, y, colour);
         }
     }
 }

@@ -144,7 +144,7 @@ unit DisplayDriver
             pixelBuffer[row] = pixelBuffer[row] | (0x80 >> column);
         }
     }
-    ScrollUpDisplay(uint lines)
+    scrollUp(uint lines)
     {
         uint drow;
         for (uint row = lines; row < pixelHeight; row++)

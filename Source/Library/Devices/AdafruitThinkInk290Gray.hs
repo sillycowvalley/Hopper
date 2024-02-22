@@ -5,64 +5,36 @@ unit DeviceDriver
     
     uses "/Source/Library/Displays/EPDIL0373.hs"
     
-    const int PW = 296;
-    const int PH = 128;
+    friend DisplayDriver;
     
-#ifdef CHALLENGER_RP2040_WIFI
-    const byte DCPin  = 7;
-    const byte CSPin  = 6;
-    const byte ClkPin = 22;
-    const byte TxPin  = 23;
-    const byte RxPin  = 20;
-    const byte SPIController  = 0;
+    const int pw = 296;
+    const int ph = 128;
     
-    const byte keyAPin = 8;
-    const byte keyBPin = 9;
-    const byte keyCPin = 10;
-    #define EPD_PINS_DEFINED
-#endif
-
-#ifdef SPARKFUN_THING_PLUS_RP2040
-    const byte DCPin  = 19;
-    const byte CSPin  = 20;
-    const byte ClkPin = 2;
-    const byte TxPin  = 3;
-    const byte RxPin  = 4;
-    const byte SPIController  = 0;
+    #define EPD_NO_RX
     
-    const byte keyAPin = 18;
-    const byte keyBPin = 17;
-    const byte keyCPin = 16;
-    #define EPD_PINS_DEFINED
-#endif
-
-#if !defined(EPD_PINS_DEFINED)
-    // ADAFRUIT_FEATHER_RP2040
-    const byte DCPin  = 10;
-    const byte CSPin  = 9;
-    const byte ClkPin = 18;
-    const byte TxPin  = 19;
-    const byte RxPin  = 20;
-    const byte SPIController  = 0;
+    const byte dcPin  = Board.GP10;
+    const byte csPin  = Board.GP9;
+    const byte clkPin = Board.SPI0SCK;
+    const byte txPin  = Board.SPI0Tx;
+    const byte spiController  = 0;
     
-    const byte keyAPin = 11;
-    const byte keyBPin = 12;
-    const byte keyCPin = 13;
-#endif
+    const byte keyAPin = Board.GP11;
+    const byte keyBPin = Board.GP12;
+    const byte keyCPin = Board.GP13;
     
-    const uint DefaultRefreshDelay   = 1; // seconds (800ms)
+    const uint defaultRefreshDelay   = 1; // seconds (800ms)
     
-    const bool EPDBlack0 =  true;
-    const bool EPDRed0   =  true;
-    const bool EPDWhite0 = false;
-    const bool EPDLight0 = false;
-    const bool EPDDark0  =  true;
+    const bool epdBlack0 =  true;
+    const bool epdRed0   =  true;
+    const bool epdWhite0 = false;
+    const bool epdLight0 = false;
+    const bool epdDark0  =  true;
     
-    const bool EPDBlack1 =  true;
-    const bool EPDRed1   = false;
-    const bool EPDWhite1 = false;
-    const bool EPDLight1 =  true;
-    const bool EPDDark1  = false;
+    const bool epdBlack1 =  true;
+    const bool epdRed1   = false;
+    const bool epdWhite1 = false;
+    const bool epdLight1 =  true;
+    const bool epdDark1  = false;
         
     bool Begin()
     {

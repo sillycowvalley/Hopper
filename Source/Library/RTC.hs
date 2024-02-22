@@ -52,7 +52,7 @@ unit RTC
             // "YYYY-MM-DD HH:MM:SS"
             RTC.Date = dateTime.Substring(0, 10);
             RTC.Time = dateTime.Substring(11);
-            RTCDriver.RawResetStatus();
+            RTCDriver.resetStatus();
             WriteLn("Set From Debugger");
             success = true;
             break;
@@ -60,15 +60,15 @@ unit RTC
         return false;
     }
     
-    string Date    { get { return RTCDriver.RawDate;       } set { RTCDriver.RawDate = value; } }
-    string Time    { get { return RTCDriver.RawTime;       } set { RTCDriver.RawTime = value; } }
+    string Date    { get { return RTCDriver.date;       } set { RTCDriver.date = value; } }
+    string Time    { get { return RTCDriver.time;       } set { RTCDriver.time = value; } }
     
     bool SetAlarm(byte iAlarm, byte minute, byte hour, AlarmMatch match)
     {
         bool success;
         if ((AlarmMatch.MinutesMatch == match) || (AlarmMatch.HoursAndMinutesMatch == match))
         {
-            success = RTCDriver.RawSetAlarm(iAlarm, 0, minute, hour, 0, match);
+            success = RTCDriver.setAlarm(iAlarm, 0, minute, hour, 0, match);
         }
         return success;
     }
@@ -77,57 +77,59 @@ unit RTC
         bool success;
         if ((AlarmMatch.MinutesMatch == match) || (AlarmMatch.HoursAndMinutesMatch == match))
         {
-            success = RTCDriver.RawSetAlarm(iAlarm, 0, minute, hour, 0, match, alarmDelegate, pin);
+            success = RTCDriver.setAlarm(iAlarm, 0, minute, hour, 0, match, alarmDelegate, pin);
         }
         return success;
     }
     
     bool SetAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match)
     {
-        return RTCDriver.RawSetAlarm(iAlarm, second, minute, hour, day, match);
+        return RTCDriver.setAlarm(iAlarm, second, minute, hour, day, match);
     }
     bool SetAlarm(byte iAlarm, byte second, byte minute, byte hour, byte day, AlarmMatch match, PinISRDelegate alarmDelegate, byte pin)
     {
-        return RTCDriver.RawSetAlarm(iAlarm, second, minute, hour, day, match, alarmDelegate, pin);
+        return RTCDriver.setAlarm(iAlarm, second, minute, hour, day, match, alarmDelegate, pin);
     }
     DisableAlarm(byte iAlarm)
     {
-        _ = RTCDriver.RawSetAlarm(iAlarm, 0, 0, 0, 0, AlarmMatch.None);
+        _ = RTCDriver.setAlarm(iAlarm, 0, 0, 0, 0, AlarmMatch.None);
     }
     
     // also clears the trigger
-    bool AlarmWasTriggered(byte iAlarm) { return RTCDriver.RawAlarmWasTriggered(iAlarm); }
+    bool AlarmWasTriggered(byte iAlarm) { return RTCDriver.alarmWasTriggered(iAlarm); }
+    
+    ClearInterrupts() { RTCDriver.clearInterrupts(); }
     
 #if defined(RTC_HAS_COUNTDOWN)
     bool SetTimer(byte iTimer, byte ticks, TimerTickLength tickLength)
     {
-        return RTCDriver.RawSetTimer(iTimer, ticks, tickLength);
+        return RTCDriver.setTimer(iTimer, ticks, tickLength);
     }
     bool SetTimer(byte iTimer, byte ticks, TimerTickLength tickLength, PinISRDelegate timerDelegate, byte pin)
     {
-        return RTCDriver.RawSetTimer(iTimer, ticks, tickLength, timerDelegate, pin);
+        return RTCDriver.setTimer(iTimer, ticks, tickLength, timerDelegate, pin);
     }
     StopTimer(byte iAlarm)
     {
-        RTCDriver.RawStopTimer(iTimer);
+        RTCDriver.stopTimer(iTimer);
     }
-    bool TimerWasTriggered(byte iTimer) { return RTCDriver.RawTimerWasTriggered(iTimer); }
+    bool TimerWasTriggered(byte iTimer) { return RTCDriver.timerWasTriggered(iTimer); }
 #endif
  
 #if defined(RTC_HAS_LOSTPOWER)    
-    ClearLostPower()     { RTCDriver.RawClearLostPower(); }
-    bool   LostPower     { get { return RTCDriver.RawLostPower;  } }
-    string LastLostPower { get { return RTCDriver.RawLastLostPower;  } }
+    ClearLostPower()     { RTCDriver.clearLostPower(); }
+    bool   LostPower     { get { return RTCDriver.lostPower;  } }
+    string LastLostPower { get { return RTCDriver.lastLostPower;  } }
 #endif
 
 #if defined(RTC_HAS_TEMPERATURE)       
     // several RTC chips include a temperature sensor
-    float Temperature { get { return RTCDriver.RawTemperature;  } }
+    float Temperature { get { return RTCDriver.temperature;  } }
 #endif
  
 #if defined(RTC_HAS_RAM)   
     // several RTCs have some convenient non-volatile RAM    
-    byte RAMCount { get { return RTCDriver.RawRAMCount; } }
-    byte[] RAM    { get { return RTCDriver.RawRAM; } set { RTCDriver.RawRAM = value; } }
+    byte RAMCount { get { return RTCDriver.ramCount; } }
+    byte[] RAM    { get { return RTCDriver.ram; } set { RTCDriver.ram = value; } }
 #endif
 }

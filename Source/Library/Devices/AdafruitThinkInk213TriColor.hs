@@ -4,48 +4,28 @@ unit DeviceDriver
     
     uses "/Source/Library/Displays/EPDSSD1680.hs"
     
-    const int PW = 250;
-    const int PH = 122;
-
-#if defined(CHALLENGER_2040_WIFI) || defined(CHALLENGER_NB_2040_WIFI)
-    const byte DCPin  = Board.GP10;
-    const byte CSPin  = Board.GP9;
-    const byte ClkPin = Board.SPI0SCK;
-    const byte TxPin  = Board.SPI0Tx;
-    const byte RxPin  = 20;
-    const byte SPIController  = 0;
-    #define EPD_PINS_DEFINED
-#endif
-
-#if defined(SPARKFUN_THINGPLUSRP2040)
-    const byte DCPin  = 19;
-    const byte CSPin  = 20;
-    const byte ClkPin = Board.SPI0SCK;
-    const byte TxPin  = Board.SPI0Tx;
-    const byte RxPin  = Board.SPI0Rx;
-    const byte SPIController  = 0;
-    #define EPD_PINS_DEFINED
-#endif
+    friend DisplayDriver;
     
-#if !defined(EPD_PINS_DEFINED)
-    // ADAFRUIT_FEATHER
-    const byte DCPin  = Board.GP10; 
-    const byte CSPin  = Board.GP9;  
-    const byte ClkPin = Board.SPI0SCK;
-    const byte TxPin  = Board.SPI0Tx;
-    const byte RxPin  = Board.SPI0Rx;
-    const byte SPIController  = 0;
-#endif
+    const int pw = 250;
+    const int ph = 122;
     
-    const uint DefaultRefreshDelay   = 16; // seconds
+    #define EPD_NO_RX
     
-    const bool EPDBlack0 =  true;
-    const bool EPDRed0   = false;
-    const bool EPDWhite0 = false;
+    const byte dcPin  = Board.GP10;
+    const byte csPin  = Board.GP9;
+    const byte clkPin = Board.SPI0SCK;
+    const byte txPin  = Board.SPI0Tx;
+    const byte spiController  = 0;
     
-    const bool EPDBlack1 =  true;
-    const bool EPDRed1   = false;
-    const bool EPDWhite1 =  true;
+    const uint defaultRefreshDelay   = 16; // seconds
+    
+    const bool epdBlack0 =  true;
+    const bool epdRed0   = false;
+    const bool epdWhite0 = false;
+    
+    const bool epdBlack1 =  true;
+    const bool epdRed1   = false;
+    const bool epdWhite1 =  true;
     
     bool Begin()
     {

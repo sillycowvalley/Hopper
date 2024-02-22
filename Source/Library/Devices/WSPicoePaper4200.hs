@@ -1,30 +1,32 @@
 unit DeviceDriver
 {
     
-    #define RP2040_PICO // not the 'W' version
+#if !defined(MCU_BOARD_DEFINED)
+    // plugs directly into the Pi Pico so no board defined, assume generic Pi Pico
+    uses "/Source/Library/Boards/PiPico"
+#endif
     
     // https://www.waveshare.com/wiki/Pico-ePaper-4.2
     #define WAVESHARE_PICO_ePAPER_4200
     
     uses "/Source/Library/Displays/UC8176Driver"
     
-    const int PW  = 400;
-    const int PH = 300;
+    friend DisplayDriver;
     
-    const byte SPIController = 1;
+    const int pw = 400;
+    const int ph = 300;
     
-    const byte DCPin   =  8;
-    const byte CSPin   =  9;
-    const byte ClkPin  = 10;
-    const byte TxPin   = 11;
-    const byte RstPin  = 12;
-    const byte BusyPin = 13;
+    const byte spiController = 1;
+    
+    const byte dcPin   =  8;
+    const byte csPin   =  9;
+    const byte clkPin  = 10;
+    const byte txPin   = 11;
+    const byte rstPin  = 12;
+    const byte busyPin = 13;
     
     const byte key0Pin = 15;
     const byte key1Pin = 17;
-    
-    bool isPortrait;
-    bool IsPortrait { get { return isPortrait; } set { isPortrait = value; } }
     
     bool Begin()
     {

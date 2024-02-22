@@ -41,6 +41,25 @@ unit Board // Sparkfun ThingPlus RP2040
     const byte UART1Tx = 0;
     const byte UART1Rx = 1;
 
+    const byte GP0 = 0;   // UART1Tx
+    const byte GP1 = 1;   // UART1Rx
+    const byte GP2 = 6;   // SPI0SCK
+    const byte GP3 = 7;   // SPI0Tx
+    const byte GP6 = 8;   // I2CSDA1
+    const byte GP7 = 22;  // I2CSCL1
+    const byte GP8 = 21;  // BuiltInNeoPixel
+    const byte GP9 = 20;  // SPI1SS
+    const byte GP10 = 19;
+    const byte GP11 = 18;
+    const byte GP12 = 17; // SPI1Rx
+    const byte GP13 = 16;
+    const byte GP20 = 4;
+    const byte GP19 = 3;
+    const byte GP18 = 2;
+    const byte GP26 = 26; // BuiltInA0
+    const byte GP27 = 27; // BuiltInA1
+    const byte GP28 = 28; // BuiltInA2
+    const byte GP29 = 29; // BuiltInA3
 
     uses "/Source/Library/MCU"
 

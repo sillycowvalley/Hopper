@@ -11,24 +11,26 @@ unit DeviceDriver
     #define WAVESHARE_PICO_LCD_144
     uses "/Source/Library/Displays/ST7735Driver"
     
-    const int PW  = 128;
-    const int PH = 128;
+    friend DisplayDriver;
     
-    const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
-    byte DCPin   { get { return Board.GP8; } }
-    byte CSPin   { get { return Board.GP9; } }
-    byte ClkPin  { get { return Board.GP10; } }
-    byte TxPin   { get { return Board.GP11; } }
-    byte RstPin  { get { return Board.GP12; } }
-    byte BlPin   { get { return Board.GP13; } }
+    const int pw  = 128;
+    const int ph = 128;
+    
+    const byte spiController = 1; // this device uses SPI1 on Raspberry Pi Pico
+    byte dcPin   { get { return Board.GP8; } }
+    byte csPin   { get { return Board.GP9; } }
+    byte clkPin  { get { return Board.GP10; } }
+    byte txPin   { get { return Board.GP11; } }
+    byte rstPin  { get { return Board.GP12; } }
+    byte blPin   { get { return Board.GP13; } }
     
     const byte key0Pin = 15;
     const byte key1Pin = 17;
     const byte key2Pin = 2;
     const byte key3Pin = 3;
     
-    const int XFudge = 2;
-    const int YFudge = 1;
+    const int xFudge = 2;
+    const int yFudge = 1;
     
     bool Begin()
     {

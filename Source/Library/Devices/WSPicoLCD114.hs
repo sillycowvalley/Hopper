@@ -11,16 +11,18 @@ unit DeviceDriver
     
     uses "/Source/Library/Displays/ST7735Driver"
     
-    const int PW  = 240;
-    const int PH = 135;
+    friend DisplayDriver;
     
-    const byte SPIController = 1; // this device uses SPI1 on Raspberry Pi Pico
-    byte DCPin   { get { return Board.GP8; } }
-    byte CSPin   { get { return Board.GP9; } }
-    byte ClkPin  { get { return Board.GP10; } }
-    byte TxPin   { get { return Board.GP11; } }
-    byte RstPin  { get { return Board.GP12; } }
-    byte BlPin   { get { return Board.GP13; } }
+    const int pw = 240;
+    const int ph = 135;
+    
+    const byte spiController = 1; // this device uses SPI1 on Raspberry Pi Pico
+    byte dcPin   { get { return Board.GP8; } }
+    byte csPin   { get { return Board.GP9; } }
+    byte clkPin  { get { return Board.GP10; } }
+    byte txPin   { get { return Board.GP11; } }
+    byte rstPin  { get { return Board.GP12; } }
+    byte blPin   { get { return Board.GP13; } }
     
     const byte keyAPin      = 15;
     const byte keyBPin      = 17;
@@ -30,8 +32,8 @@ unit DeviceDriver
     const byte keyRightPin  = 20;
     const byte keyButtonPin = 3;
     
-    const int XFudge = 40;
-    const int YFudge = 53;
+    const int xFudge = 40;
+    const int yFudge = 53;
     
     bool Begin()
     {
