@@ -29,7 +29,8 @@ unit Output
     <uint, string> dataClicks;
     uint codeClickFirstCurrent;
     
-    const uint arraySize     = 8192; // > Screen.Rows*Screen.Columns
+    //const uint arraySize     = 8192; // > Screen.Rows*Screen.Columns
+    const uint arraySize     = 32768; // > 66 * 240?
     char[arraySize] outputCharacters;
     uint[arraySize] outputForeColors;
     uint[arraySize] outputBackColors;

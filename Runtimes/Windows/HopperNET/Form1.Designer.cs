@@ -42,13 +42,13 @@ namespace HopperNET
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
-            this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Hopper";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "Hopper .NET Runtime";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Hopper_FormClosing);
             this.Load += new System.EventHandler(this.Hopper_Load);
+            this.ClientSizeChanged += new System.EventHandler(this.Hopper_ClientSizeChanged);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.Hopper_Paint);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Hopper_KeyDown);
             this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Hopper_KeyPress);

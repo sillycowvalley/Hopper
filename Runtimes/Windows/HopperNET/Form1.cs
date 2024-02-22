@@ -57,13 +57,6 @@ namespace HopperNET
             Invalidate();
         }
 
-        private void Hopper_Load(object sender, EventArgs e)
-        {
-            worker = new BackgroundWorker();
-            worker.DoWork += Worker_DoWork;
-            worker.RunWorkerAsync();
-        }
-
         private void Worker_DoWork(object sender, DoWorkEventArgs e)
         {
             Screen.Clear();
@@ -75,18 +68,7 @@ namespace HopperNET
             System.Windows.Forms.Application.Exit();
         }
 
-        private void Hopper_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if ((Hopper.ModifierKeys == Keys.Alt) || (Hopper.ModifierKeys == Keys.F4)) // <-- this looks like a mistake?
-            {
-                e.Cancel = true; // we don't want <Alt><F4> to close the main window (by mistake)
-                return;
-            }
-            Exiting = true;
-            httpServer.Stop();
-            Console.ConsoleFree();
-            Keyboard.Free();
-        }
+       
 
         private void Hopper_Paint(object sender, PaintEventArgs e)
         {
@@ -244,5 +226,46 @@ namespace HopperNET
                 return clipboardText;
             }
         }
+
+        private void Hopper_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if ((Hopper.ModifierKeys == Keys.Alt) || (Hopper.ModifierKeys == Keys.F4)) // <-- this looks like a mistake?
+            {
+                e.Cancel = true; // we don't want <Alt><F4> to close the main window (by mistake)
+                return;
+            }
+            Exiting = true;
+            httpServer.Stop();
+            Console.ConsoleFree();
+            Keyboard.Free();
+            Settings.Default.Maximized = (WindowState == FormWindowState.Maximized);
+            Settings.Default.Save();
+        }
+
+        private void Hopper_Load(object sender, EventArgs e)
+        {
+            if (Settings.Default.Maximized)
+            {
+                WindowState = FormWindowState.Maximized;
+            }
+            worker = new BackgroundWorker();
+            worker.DoWork += Worker_DoWork;
+            worker.RunWorkerAsync();
+        }
+
+        private void Hopper_ClientSizeChanged(object sender, EventArgs e)
+        {   
+            uint rows    = (uint)(this.ClientRectangle.Height / Console.TextCellHeight);
+            uint columns = (uint)(this.ClientRectangle.Width  / Console.TextCellWidth);
+            if ((rows != Console.Rows) || (columns != Console.Columns))
+            {
+                Console.Rows    = rows;
+                Console.Columns = columns;
+                Console.Resize();
+                HopperInvalidate();
+            }
+        }
+
+
     }
 }

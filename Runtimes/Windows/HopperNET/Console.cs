@@ -23,12 +23,7 @@ namespace HopperNET
 
         const int uiScale = 1;
 
-        const uint textColumns = 140;
-        const uint textRows = 44;
         
-        // for videos
-        //const uint textColumns = 100;
-        //const uint textRows = 30;
         
         const int hAdvance = 8;
         const int vAdvance = 16;
@@ -55,7 +50,28 @@ namespace HopperNET
         bool graphicsMode = false;
 
         const ushort invertColour = 0xF000;
-        
+
+        //const uint textColumns = 140;
+        //const uint textRows = 44;
+
+        static uint textColumns = 140;
+        static uint textRows = 44;
+
+
+        static public uint TextCellWidth  { get { return textCellWidth; } }
+        static public uint TextCellHeight { get { return textCellHeight; } }
+
+        static public uint Columns
+        {
+            get { return textColumns; }
+            set { textColumns = value; }
+        }
+        static public uint Rows
+        {
+            get { return textRows; }
+            set { textRows = value; }
+        }
+
 
         static public uint CanvasWidth // width in pixels
         {
@@ -309,14 +325,7 @@ namespace HopperNET
             }
         }
 
-        static public uint Columns
-        {
-            get { return textColumns; }
-        }
-        static public uint Rows
-        {
-            get { return textRows; }
-        }
+        
 
         
         public uint CursorX { get { return hardwareCursorX; } } // TODO
@@ -464,22 +473,25 @@ namespace HopperNET
             }
             if (cursorVisible && cursorToggle)
             {
-                ConsoleCell consoleCell = consoleBuffer[cursorCellIndex];
-                Color color = ToColor(consoleCell.backColor);
-                color = Color.FromArgb((byte)~color.R, (byte)~color.G, (byte)~color.B);
-
-                consoleCache[cursorCellIndex].character = (char)0; // force this cell to be drawn again even if the cursor moves (like CLS)
-
-                int dx = 0;
-                if (CursorX == Columns)
+                if (cursorCellIndex < consoleBuffer.Length)
                 {
-                    dx = -1;
+                    ConsoleCell consoleCell = consoleBuffer[cursorCellIndex];
+                    Color color = ToColor(consoleCell.backColor);
+                    color = Color.FromArgb((byte)~color.R, (byte)~color.G, (byte)~color.B);
+
+                    consoleCache[cursorCellIndex].character = (char)0; // force this cell to be drawn again even if the cursor moves (like CLS)
+
+                    int dx = 0;
+                    if (CursorX == Columns)
+                    {
+                        dx = -1;
+                    }
+
+                    RectangleF cursor = new RectangleF((int)(CursorX * cellWidth + dx), (int)(CursorY * cellHeight), 2, (int)cellHeight);
+
+                    SolidBrush backgroundBrush = new SolidBrush(color);
+                    graphics.FillRectangle(backgroundBrush, cursor);
                 }
-
-                RectangleF cursor = new RectangleF((int)(CursorX * cellWidth + dx), (int)(CursorY * cellHeight), 2, (int)cellHeight);
-
-                SolidBrush backgroundBrush = new SolidBrush(color);
-                graphics.FillRectangle(backgroundBrush, cursor);
             }
         }
 
@@ -514,13 +526,7 @@ namespace HopperNET
                 }
             }
         }
-        public void Reset()
-        {
-            for (int i = 0; i < textColumns * textRows; i++)
-            {
-                consoleCache[i].character = (char)0;
-            }
-        }
+        
 
 
         public void EnterBuffering(bool reset)
@@ -557,13 +563,27 @@ namespace HopperNET
             hardwareCursorX = 0;
             hardwareCursorY = 0;
 
+            Resize();
+        }
+        public void Resize()
+        {
             consoleCache = new ConsoleCell[textColumns * textRows];
             consoleBuffer = new ConsoleCell[textColumns * textRows];
 
             graphicsBitmap = new Bitmap((int)CanvasWidth, (int)CanvasHeight);
 
             ClearPixels(0x000);
+            Reset();
         }
+
+        public void Reset()
+        {
+            for (int i = 0; i < textColumns * textRows; i++)
+            {
+                consoleCache[i].character = (char)0;
+            }
+        }
+
         public IHopper Hopper { get { return hopper; } }
 
         public void ConsoleFree()
