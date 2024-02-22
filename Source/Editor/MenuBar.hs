@@ -184,7 +184,6 @@ unit MenuBar
                     menuitems.Append("Checked");
                     menuitems.Append("Optimize");
                     menuitems.Append("Extended");
-                    menuitems.Append("GenerateIHex");
                     menuitems.Append("Disassemble");
                     menuitems.Append("AutoSave");
                 }

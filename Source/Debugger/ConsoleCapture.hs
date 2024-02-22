@@ -12,7 +12,7 @@ unit ConsoleCapture
     {
         capturePath = Path.GetFileName(currentIHexPath);
         capturePath = capturePath.ToLower();
-        capturePath = capturePath.Replace(".hex", ".log");
+        capturePath = capturePath.Replace(".ihex", ".log");
         capturePath = Path.Combine("/Debug", capturePath);
     }
     ClearLog()

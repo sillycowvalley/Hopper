@@ -2,7 +2,10 @@ program Badger
 {
     //#define DISPLAY_DIAGNOSTICS
     
-    uses "/Source/Library/Devices/WSPicoePaper4200"
+    uses "/Source/Library/Boards/PiPico"
+    
+    //uses "/Source/Library/Devices/WSPicoePaper4200"
+    uses "/Source/Library/Devices/WSPicoePaper290"
     uses "/Source/Library/Fonts/Hitachi5x7"
     
     bool exit;

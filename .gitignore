@@ -1,5 +1,6 @@
 *.hasm
 *.hex
+*.ihex
 *.options
 *.log
 *.mem

@@ -1,12 +1,14 @@
 program ThinkInkFeatherwing
 {   
-    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
+    uses "/Source/Library/Boards/AdafruitFeather"
+    //uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
     
     //uses "/Source/Library/Devices/AdafruitThinkInk213Mono"
     //uses "/Source/Library/Devices/AdafruitThinkInk213TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290TriColor"
-    uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
+    //uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
+    uses "/Source/Library/Devices/WSPicoePaper290"
     
     uses "/Source/Library/Fonts/Hitachi5x7"
     
@@ -20,7 +22,6 @@ program ThinkInkFeatherwing
     
     DrawText()
     {
-        LED = true;
         IO.WriteLn("  DrawText");
         Display.Suspend();
         EchoToLCD = true;
@@ -33,26 +34,24 @@ program ThinkInkFeatherwing
         IO.WriteLn(lorumIpsum);
         Screen.ForeColour = Colour.Black;
         EchoToLCD = false;
+        IO.WriteLn("  Resume");
         Display.Resume();
-        LED = false;
     }
     
     DrawShades()
     {
-        LED = true;
         IO.WriteLn("  DrawShades");
         Display.Suspend();
         FilledRectangle(0,                      0, Display.PixelWidth/4, Display.PixelHeight, Colour.White);
         FilledRectangle(Display.PixelWidth/4,   0, Display.PixelWidth/4, Display.PixelHeight, Colour.LightGray);
         FilledRectangle(Display.PixelWidth/2,   0, Display.PixelWidth/4, Display.PixelHeight, Colour.DarkGray);
         FilledRectangle(Display.PixelWidth*3/4, 0, Display.PixelWidth/4, Display.PixelHeight, Colour.Black);
+        IO.WriteLn("  Resume");
         Display.Resume(); 
-        LED = false;
     }
     
     DrawBoxes(uint colour)
     {
-        LED = true;
         uint backColour;
         if (colour == Colour.Black)
         {
@@ -80,8 +79,8 @@ program ThinkInkFeatherwing
         Rectangle(0, 0, Display.PixelWidth, Display.PixelHeight, colour);
         VerticalLine(Display.PixelWidth/3, 0, Display.PixelHeight-1, colour);
         HorizontalLine(0, Display.PixelHeight/3, Display.PixelWidth-1, colour);
+        IO.WriteLn("  Resume");
         Display.Resume();
-        LED = false;
     }
     
     {
@@ -117,7 +116,7 @@ program ThinkInkFeatherwing
             WriteLn(laps.ToString());
             laps++;
             Delay(250);
-            
+            /*
             start = Millis;
             DrawText();
             elapsed = Millis - start;
@@ -125,7 +124,7 @@ program ThinkInkFeatherwing
             DelaySeconds(2);
             
             break;
-            
+            */
             start = Millis;
             DrawShades();
             elapsed = Millis - start;

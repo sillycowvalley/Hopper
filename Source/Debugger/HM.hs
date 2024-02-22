@@ -37,6 +37,7 @@ program HopperMonitor
             switch (ch) // lame solution for Key key = Key(ch):
             {
                 case ' ': { key = Key.Space; }
+                case '.': { key = Key.Period; }
                 case 'A': { key = Key.A; }
                 case 'B': { key = Key.B; }
                 case 'C': { key = Key.C; }
@@ -77,6 +78,7 @@ program HopperMonitor
                 
                 default:
                 {
+                    PrintLn((byte(ch)).ToHexString(2));
                     Die(0x0A); // not implemented
                 }
             }
@@ -857,7 +859,7 @@ program HopperMonitor
                         Monitor.Command(commands, true, true);
                         string profilePath = Path.GetFileName(lastHexPath);
                         profilePath = profilePath.ToLower();
-                        profilePath = profilePath.Replace(".hex", ".csv");
+                        profilePath = profilePath.Replace(".ihex", ".csv");
                         profilePath = Path.Combine("/Debug", profilePath);
                         Profile(GetSerialOutput(), profilePath);
                         Print("Profile data saved to '" + profilePath  + "'");
@@ -1120,9 +1122,9 @@ program HopperMonitor
             extension = extension.ToLower();
             if (extension == ".")
             {
-                ihexPath = ihexPath + ".hex";
+                ihexPath = ihexPath + ".ihex";
             }
-            else if (extension != ".hex")
+            else if (extension != ".ihex")
             {
                 break;
             }
@@ -1194,9 +1196,9 @@ program HopperMonitor
                         if (!uploadHex)
                         {
                             string extension = Path.GetExtension(ihexPath);
-                            if (extension != ".hex")
+                            if (extension != ".ihex")
                             {
-                                PrintLn("IHex file should have .hex extension.");
+                                PrintLn("IHex file should have .ihex extension.");
                                 invalidArguments = true;
                         						  break;
                             }

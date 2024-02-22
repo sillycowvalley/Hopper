@@ -13,14 +13,19 @@ unit BuildCommand
     uses "/Source/Compiler/Tokens/Dependencies"
     
     // reset during compile : 
-    //   -  checks for HOPPER_6502 in compilation target symbols using CheckTarget(..) after preprocess step
+    //   -  checks for 'HOPPER_6502' or 'MCU' in compilation target symbols using CheckTarget(..) after preprocess step
     // or, failing that, in GetBinaryPath()
-    //   - checks if a ".hex" exists when a ".hexe" is not found
+    //   - checks if a ".ihex" exists when a ".hexe" is not found
     
-    bool target6502 = false;
-    bool Target6502 
+    bool generateIHex = false;
+    bool GenerateIHex 
     { 
-        get { return target6502; }
+        get { return generateIHex; } set { generateIHex = value; }
+    }
+    bool launchIHex = false;
+    bool LaunchIHex 
+    { 
+        get { return launchIHex; } set { launchIHex = value; }
     }
     string GetBinaryPath() // used in Run(..), Debug(..), CanRun(..) and CanDebug(..)
     {
@@ -32,40 +37,30 @@ unit BuildCommand
             string extension = Path.GetExtension(path);
             path = path.Replace(extension, HexeExtension);
             path = Path.Combine("/Bin", path);
-            target6502 = false;
-            string ihexPath = path.Replace(HexeExtension, ".hex");   
+            LaunchIHex = false;
+            string ihexPath = path.Replace(HexeExtension, ".ihex");   
             if (File.Exists(ihexPath))
             {
                 if (File.Exists(path)) 
                 {
-                    // both .hexe and .hex exist    
+                    // both .hexe and .ihex exist    
                     long hexeFileTime = File.GetTime(path);
                     long hexFileTime  = File.GetTime(ihexPath);
                     string hexeFileTimeHex = hexeFileTime.ToHexString(8);
                     string hexFileTimeHex  = hexFileTime.ToHexString(8);
                     if (hexFileTimeHex >= hexeFileTimeHex)
                     {
-                        // .hex is younger than .hexe
-                        //OutputDebug("HEX 1 " + path + " " + ihexPath + " " + hexeFileTimeHex + " " + hexFileTimeHex);
+                        // .ihex is younger than .hexe
                         path = ihexPath;
-                        target6502 = true;
-                    }
-                    else
-                    {
-                        //OutputDebug("HEXE 2 " + path + " " + ihexPath + " " + hexeFileTimeHex + " " + hexFileTimeHex);
+                        LaunchIHex = true;
                     }
                 }
                 else
                 {
-                    // only .hex exists
-                    //OutputDebug("HEX 2 " + path + " " + ihexPath);
+                    // only .ihex exists
                     path = ihexPath;
-                    target6502 = true;
+                    LaunchIHex = true;
                 }
-            }
-            else
-            {
-                //OutputDebug("HEXE 1 " + path + " " + ihexPath);
             }
         }
         return path;
@@ -73,7 +68,7 @@ unit BuildCommand
     
     CheckTarget(string symbolsPath)
     {
-        target6502 = false;
+        GenerateIHex = false;
         if (File.Exists(symbolsPath))
         {
             <string,variant> dict;
@@ -85,9 +80,13 @@ unit BuildCommand
                     {
                         // preprocessor symbols
                         <string,string> pdValues = kv.value;
-                        if (pdValues.Contains("HOPPER_6502"))
+                        if (pdValues.Contains("MCU"))
                         {
-                            target6502 = true;
+                            GenerateIHex = true;
+                        }
+                        else if (pdValues.Contains("HOPPER_6502"))
+                        {
+                            GenerateIHex = true;
                         }
                         break;
                     }
@@ -202,6 +201,10 @@ unit BuildCommand
             {
                 target = " for 6502";
             }
+            if (TargetMCU)
+            {
+                target = " for MCU";
+            }
             
             arguments.Clear();
             arguments.Append(jsonPath);
@@ -263,12 +266,17 @@ unit BuildCommand
             arguments.Append("-g");
             arguments.Append(col.ToString());
             arguments.Append(row.ToString());
-            if (Target6502 || BuildOptions.IsGenerateIHexEnabled())
+            if (GenerateIHex)
             {
                 arguments.Append("-ihex");
             }
             if (BuildOptions.IsExtendedEnabled())
             {
+                if (GenerateIHex)
+                {
+                    Editor.SetStatusBarText("Option 'Extended Code Segment' only valid for Windows Runtime");
+                    break;
+                }
                 arguments.Append("-extended");
             }
             error = Runtime.Execute(binaryPath, arguments);
@@ -302,11 +310,10 @@ unit BuildCommand
                 }
             }
             // debugger needs .hexe file, even for 6502
-            //if (!Target6502)
-            //{
-            //    string ihexPath = hexePath.Replace(HexeExtension, ".hex");
-            //    File.Delete(ihexPath);   // don't leave a stale .hex lying around (if we didn't just build it)
-            //}
+            if (GenerateIHex)
+            {
+                hexePath = hexePath.Replace(".hexe", ".ihex");
+            }
             Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'" + target);
             break;   
         }
@@ -314,9 +321,9 @@ unit BuildCommand
     Debug()
     {
         Screen.Clear();
-        if (!Target6502)
+        if (!GenerateIHex)
         {
-            Die(0x0B); // assume we only arrive here for HOPPER_6502
+            Die(0x0B); // assume we only arrive here for HOPPER_6502 and MCU
         }
         <string> arguments;
         string sourcePath = Editor.GetProjectPath(); 
@@ -329,8 +336,8 @@ unit BuildCommand
     {
         Screen.Clear();
         <string> arguments;
-        string path = GetBinaryPath();
-        if (Target6502) // target was checked during the successful build
+        string path = GetBinaryPath(); // updates LaunchIHex
+        if (LaunchIHex) // target was checked during the successful build
         {
             arguments.Append("-x"); // <ctrl><F5>
             arguments.Append("-l");
@@ -356,7 +363,7 @@ unit BuildCommand
     
     bool CanRun()
     {
-        string path = GetBinaryPath();
+        string path = GetBinaryPath(); // updates LaunchIHex
         bool canRun = File.Exists(path);
         if (canRun)
         {
@@ -370,11 +377,11 @@ unit BuildCommand
     }
     bool CanDebug()
     {
-        string path = GetBinaryPath();
+        string path = GetBinaryPath(); // updates LaunchIHex
         bool canRun = File.Exists(path);
         if (canRun)
         {
-            canRun = !Editor.CanUndo() && Target6502;
+            canRun = !Editor.CanUndo() && LaunchIHex;
             if (canRun)
             {
                 canRun = Editor.IsYoungerThanSource(path);

@@ -36,37 +36,8 @@ unit Commands
 #endif        
         Editor.RegisterCommands();
         
-        // TODO : these should all eventually be Commands.Register() calls
-        
         acceleratorKey["Replace"] = (Key.Control | Key.ModH);
         menuText["Replace"] = "Rep&lace";
-        
-        //acceleratorKey["StartDebugging"] = Key.F5;
-        //menuText["StartDebugging"] = "&Start Debugging";
-
-        //acceleratorKey["StartWithoutDebugging"] = (Key.Control | Key.F5);
-        //menuText["StartWithoutDebugging"] = "Start Wit&hout Debugging";
-
-        //acceleratorKey["StopDebugging"] = (Key.Shift | Key.F5);
-        //menuText["StopDebugging"] = "Stop &Debugging";
-
-        //acceleratorKey["StepInto"] = Key.F11;
-        //menuText["StepInto"] = "Step &Into";
-
-        //acceleratorKey["StepOver"] = Key.F10;
-        //menuText["StepOver"] = "Step &Over";
-
-        //acceleratorKey["StepOut"] = (Key.Shift | Key.F11);
-        //menuText["StepOut"] = "Step Ou&t";
-
-        //acceleratorKey["ToggleBreakpoint"] = Key.F9;
-        //menuText["ToggleBreakpoint"] = "To&ggle Breakpoint";
-
-        //acceleratorKey["DeleteAllBreakpoints"] = (Key.Control | Key.Shift | Key.F9);
-        //menuText["DeleteAllBreakpoints"] = "Delete &All Breakpoints";
-        
-        //acceleratorKey["Build"] = Key.F7;
-        //menuText["Build"] = "&Build";
     }
     
     string cleanName(string name)

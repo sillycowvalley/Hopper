@@ -139,7 +139,7 @@ program Debug
             {
                 ihexPath = Path.GetFileName(filePath);
                 string extension = Path.GetExtension(filePath);
-                ihexPath = ihexPath.Replace(extension, ".hex");
+                ihexPath = ihexPath.Replace(extension, ".ihex");
                 ihexPath = Path.Combine("/bin", ihexPath);
                 if (!File.Exists(ihexPath))
                 {

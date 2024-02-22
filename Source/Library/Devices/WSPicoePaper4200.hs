@@ -18,15 +18,15 @@ unit DeviceDriver
     
     const byte spiController = 1;
     
-    const byte dcPin   =  8;
-    const byte csPin   =  9;
-    const byte clkPin  = 10;
-    const byte txPin   = 11;
-    const byte rstPin  = 12;
-    const byte busyPin = 13;
+    const byte dcPin   = Board.GP8;
+    const byte csPin   = Board.GP9;
+    const byte clkPin  = Board.GP10;
+    const byte txPin   = Board.GP11;
+    const byte rstPin  = Board.GP12;
+    const byte busyPin = Board.GP13;
     
-    const byte key0Pin = 15;
-    const byte key1Pin = 17;
+    const byte key0Pin = Board.GP15;
+    const byte key1Pin = Board.GP17;
     
     bool Begin()
     {

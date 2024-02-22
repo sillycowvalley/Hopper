@@ -477,7 +477,7 @@ unit Monitor
             {
                 string filePath = dir.GetFile(i);
                 string extension = Path.GetExtension(filePath).ToLower();
-                if (extension == ".hex")
+                if (extension == ".ihex")
                 {
                     uint localCRC = File.CRC16(filePath);
                     if (localCRC == remoteCRC)

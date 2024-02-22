@@ -12,7 +12,6 @@ unit BuildOptions
     <string, string> buildOptions;
     bool IsCheckedEnabled()      { return buildOptions["checkedBuild"]        != "false"; }
     bool IsOptimizeEnabled()     { return buildOptions["runOptimizer"]        != "false"; }
-    bool IsGenerateIHexEnabled() { return buildOptions["generateIHex"]        != "false"; }
     bool IsDisassembleEnabled()  { return buildOptions["runDisassembler"]     != "false"; }
     bool IsAutoSaveEnabled()     { return buildOptions["autoSaveOnBuild"]     != "false"; }
     bool IsExtendedEnabled()     { return buildOptions["extendedCodeSegment"] != "false"; }
@@ -21,7 +20,6 @@ unit BuildOptions
     {
         buildOptions["checkedBuild"]        = "false";
         buildOptions["runOptimizer"]        = "false";
-        buildOptions["generateIHex"]        = "false";
         buildOptions["runDisassembler"]     = "false";
         buildOptions["autoSaveOnBuild"]     = "false";
         buildOptions["extendedCodeSegment"] = "false";
@@ -36,9 +34,6 @@ unit BuildOptions
         Commands.CommandExecuteDelegate extendedCommand = BuildOptions.Extended;
         Commands.CommandEnabledDelegate extendedEnabled = BuildOptions.AlwaysEnabled;
         Commands.CommandCheckedDelegate extendedIsChecked = BuildOptions.IsExtendedEnabled;
-        Commands.CommandExecuteDelegate ihexCommand = BuildOptions.GenerateIHex;
-        Commands.CommandEnabledDelegate ihexEnabled = BuildOptions.AlwaysEnabled;
-        Commands.CommandCheckedDelegate ihexIsChecked = BuildOptions.IsGenerateIHexEnabled;
         Commands.CommandExecuteDelegate disassembleCommand = BuildOptions.Disassemble;
         Commands.CommandEnabledDelegate disassembleEnabled = BuildOptions.AlwaysEnabled;
         Commands.CommandCheckedDelegate disassembleIsChecked = BuildOptions.IsDisassembleEnabled;
@@ -52,8 +47,6 @@ unit BuildOptions
         InstallChecked("Optimize", optimizeIsChecked);
         InstallCommand("Extended",    "[ ] E&xtended Code Segment", extendedCommand, extendedEnabled, Key.NoKey);
         InstallChecked("Extended", extendedIsChecked);
-        InstallCommand("GenerateIHex", "[ ] Generate &IHex", ihexCommand, ihexEnabled, Key.NoKey);
-        InstallChecked("GenerateIHex", ihexIsChecked);
         InstallCommand("Disassemble", "[ ] Run &Disassembler", disassembleCommand, disassembleEnabled, Key.NoKey);
         InstallChecked("Disassemble", disassembleIsChecked);
         InstallCommand("AutoSave", "[ ] &Save on Build", autosaveCommand, autosaveEnabled, Key.NoKey);
@@ -120,18 +113,6 @@ unit BuildOptions
         else
         {
             buildOptions["extendedCodeSegment"] = "false";
-        }
-        saveOptions();
-    }
-    GenerateIHex()
-    {
-        if (buildOptions["generateIHex"] == "false")
-        {
-            buildOptions["generateIHex"] = "true";
-        }
-        else
-        {
-            buildOptions["generateIHex"] = "false";
         }
         saveOptions();
     }

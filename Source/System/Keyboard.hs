@@ -19,6 +19,7 @@ unit Keyboard
         Tab       = 0xE00D,
         Enter     = 0x000D,
         Escape    = 0x001B,
+        Period    = 0x002E,
 
         ModSpace     = 0xE029,
         ModEscape    = 0xE076,

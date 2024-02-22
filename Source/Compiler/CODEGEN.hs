@@ -67,7 +67,7 @@ program CODEGEN
         // https://en.wikipedia.org/wikie/Intel_HEX#Format
         // convert the .hexe into IHEX
         string extension = Path.GetExtension(hexePath);
-        string ihexPath = hexePath.Replace(extension, ".hex");
+        string ihexPath = hexePath.Replace(extension, ".ihex");
         if (File.Exists(ihexPath))
         {
             File.Delete(ihexPath);

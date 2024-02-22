@@ -3,6 +3,8 @@ unit DeviceDriver
     #define EPD_HAS_BUTTONS
     #define HAS_BUTTONS
     
+    #define EPD_GRAY
+    
     uses "/Source/Library/Displays/EPDIL0373.hs"
     
     friend DisplayDriver;
@@ -16,6 +18,7 @@ unit DeviceDriver
     const byte csPin  = Board.GP9;
     const byte clkPin = Board.SPI0SCK;
     const byte txPin  = Board.SPI0Tx;
+    //const byte rxPin  = Board.SPI0Rx;
     const byte spiController  = 0;
     
     const byte keyAPin = Board.GP11;
