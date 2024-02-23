@@ -1,6 +1,7 @@
 #include "Inlined.h"
 
 #ifdef CHECKED
+/*
 void HopperVM_AssertBool(Type htype, UInt value)
 {
     if (htype != Type::eBool)
@@ -13,6 +14,7 @@ void HopperVM_AssertBool(Type htype, UInt value)
         Minimal_Error_Set(0x0B);
     }
 }
+*/
 #endif
 
 Bool Instructions_InlinedAdd()

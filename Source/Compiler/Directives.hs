@@ -218,6 +218,10 @@ unit Directives
             break;
         }
     }
+    NestingAppend(bool condition)
+    {
+        defineNesting.Append(condition);
+    }
     NestingAppend(string symbol, bool positive)
     {
         if (positive) // #ifdef

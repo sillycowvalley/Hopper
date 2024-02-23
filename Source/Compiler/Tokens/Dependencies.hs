@@ -4,6 +4,149 @@ unit Dependencies
     uses "/Source/Compiler/Symbols"
     uses "/Source/Compiler/Directives"
     
+    // Examples:
+    //    '!defined(SERIAL_CONSOLE)&&defined(MCU)'  
+    //    '!defined(DISPLAY_DRIVER)'
+    
+    bool parsePrimary(ref string expression, ref bool condition)
+    {
+        //OutputDebug("parsePrimary: " + expression);
+        bool result;
+        loop
+        {
+            if (expression.StartsWith("defined"))
+            {
+                expression = expression.Substring(7);
+                if (!expression.StartsWith("("))
+                {
+                    break;
+                }
+                expression = expression.Substring(1);
+                uint iClose;
+                if (!expression.IndexOf(')', ref iClose))
+                {
+                    break;
+                }
+                string symbol = expression.Substring(0, iClose);
+                expression = expression.Substring(iClose+1);
+                condition = Symbols.DefineExists(symbol);
+                //OutputDebug(symbol + " " + (condition ? "TRUE" : "FALSE"));
+                result = true;
+            }
+            else if (expression.StartsWith("("))
+            {
+                expression = expression.Substring(1);
+                result = parseExpression(ref expression, ref condition);
+                if (!result)
+                {
+                    break;
+                }
+                if (!expression.StartsWith(")"))
+                {
+                    result = false;
+                    break;
+                }
+                expression = expression.Substring(1);
+            }
+            break;
+        } // loop
+        return result;
+    }  
+    bool parseUnary(ref string expression, ref bool condition)
+    {
+        //OutputDebug("parseUnary: " + expression);
+        bool result;
+        loop
+        {
+            bool isNot = false;
+            if (expression.StartsWith("!"))
+            {
+                expression = expression.Substring(1);
+                isNot = true;
+            }
+            result = parsePrimary(ref expression, ref condition);
+            if (!result)
+            {
+                break;
+            }
+            if (isNot)
+            {
+                condition = !condition;
+            }
+            break;
+        } // loop
+        return result;
+    }
+    
+    bool parseBooleanAnd(ref string expression, ref bool condition)
+    {
+        //OutputDebug("parseBooleanAnd: " + expression);
+        bool result;
+        loop
+        {
+            result = parseUnary(ref expression, ref condition);
+            if (!result)
+            {
+                break;
+            }
+            loop
+            {
+                if (!expression.StartsWith("&&"))
+                {
+                    break;
+                }
+                expression = expression.Substring(2);
+                bool rightCondition;
+                result = parseUnary(ref expression, ref rightCondition);
+                condition = condition && rightCondition;
+                if (!result)
+                {
+                    break;
+                }
+                continue;
+            } // loop
+            break;
+        } // loop
+        return result;
+    }
+    
+    bool parseBooleanOr(ref string expression, ref bool condition)
+    {
+        //OutputDebug("parseBooleanOr: " + expression);
+        bool result;
+        loop
+        {
+            result = parseBooleanAnd(ref expression, ref condition);
+            if (!result)
+            {
+                break;
+            }
+            loop
+            {
+                if (!expression.StartsWith("||"))
+                {
+                    break;
+                }
+                expression = expression.Substring(2);
+                bool rightCondition;
+                result = parseBooleanAnd(ref expression, ref rightCondition);
+                condition = condition || rightCondition;
+                if (!result)
+                {
+                    break;
+                }
+                continue;
+            } // loop
+            break;
+        } // loop
+        return result;
+    }
+    bool parseExpression(ref string expression, ref bool condition)
+    {
+        //OutputDebug("parseExpression: " + expression);
+        return parseBooleanOr(ref expression, ref condition);
+    }
+    
     bool TryGetYoungest(<string> sources, ref string youngestPath, ref long youngest)
     {
         youngest = 0;
@@ -59,9 +202,11 @@ unit Dependencies
             //OutputDebug("TryGetSources: Open: " + nextPath);
             if (!textFile.IsValid())
             {
+                OutputDebug("TryGetSources Failed A: " + nextPath);
                 return false;
             }
             bool isAllDefined = true; // reset for each new file
+            uint lineNumber;
             loop
             {
                 string ln = textFile.ReadLine();
@@ -72,6 +217,7 @@ unit Dependencies
                         break;
                     }
                 }
+                lineNumber++;
                 ln = ln.Replace(" ", "");
                 uint iComment;
                 if (ln.IndexOf("//", ref iComment))
@@ -116,10 +262,24 @@ unit Dependencies
                         string symbol = ln.Substring(7);
                         Directives.NestingAppend(symbol, false);
                     }
+                    else if (ln.StartsWith("#if"))
+                    {
+                        bool condition;
+                        string expression = ln.Substring(3);
+                        string expressionBefore = expression;
+                        if (!parseExpression(ref expression, ref condition))
+                        {
+                            OutputDebug("TryGetSources Failed D: '" + expressionBefore + "' " + nextPath + ":" + lineNumber.ToString());
+                            return false;
+                        }
+                        //OutputDebug(expressionBefore + " " + (condition ? "TRUE" : "FALSE"));
+                        NestingAppend(condition);
+                    }
                     else if (ln.StartsWith("#else"))
                     {
                         if (!Directives.NestingFlipTail())
                         {
+                            OutputDebug("TryGetSources Failed B: " + nextPath + ":" + lineNumber.ToString());
                             return false;
                         }
                     }
@@ -127,6 +287,7 @@ unit Dependencies
                     {
                         if (!Directives.NestingPopTail())
                         {
+                            OutputDebug("TryGetSources Failed C: " + nextPath + ":" + lineNumber.ToString());
                             return false;
                         }
                     }

@@ -168,7 +168,19 @@ unit BuildCommand
             string jsonPath = "/Debug/Obj/" + fileName + ".json";
             string codePath = "/Debug/Obj/" + fileName + ".code";
             string hexePath = "/Bin/" + fileName + HexeExtension;
+            string ihexPath = hexePath.Replace(".hexe", ".ihex");
             string hasmPath = "/Debug/Obj/" + fileName + HasmExtension;
+            
+            // delete old versions so we don't run them by mistake if the build failed
+            File.Delete(hexePath);
+            File.Delete(ihexPath);
+
+            // also, let's not get confused by stale versions
+            File.Delete(codePath);
+            File.Delete(hasmPath);
+            
+            // except for .json : useful for <right><click> help even if stale
+            // File.Delete(jsonPath);
             
             Editor.SetStatusBarText("Preprocessing '" + sourcePath + "' -> '" + jsonPath + "'");
             Source.DefinitionSymbolsLoaded = false; // reload after Preprocessing..
@@ -303,7 +315,7 @@ unit BuildCommand
             // debugger needs .hexe file, even for 6502
             if (GenerateIHex)
             {
-                hexePath = hexePath.Replace(".hexe", ".ihex");
+                hexePath = ihexPath;
             }
             Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'" + target);
             break;   

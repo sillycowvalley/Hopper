@@ -88,27 +88,26 @@ program Runtime
     uint currentCRC;
     const uint codeMemoryStart = 0x0000; // code memory magically exists from 0x0000 to 0xFFFF
     
-    bool LoadAuto(ref uint loadedAddress, ref uint codeLength)
+    bool LoadHexe(uint path, uint startAddress, ref uint loadedAddress, ref uint codeLength, bool doCRC)
     {
         bool success;
         
-        loadedAddress = codeMemoryStart;
+        loadedAddress = startAddress;
         uint address = 0;
-        
-        uint path = HopperVM.GetAppName(false);
         if (HRFile.Exists(path))
         {
             success = ReadAllCodeBytes(path, loadedAddress, ref codeLength);
-            
-            GC.Release(path);
-            path = HopperVM.GetAppName(true);
-            uint crcFile = HRFile.Open(path);
-            byte crc0 = HRFile.Read(crcFile);
-            byte crc1 = HRFile.Read(crcFile);
-            currentCRC = crc0 + (crc1 << 8);
-            GC.Release(crcFile);
+            if (doCRC)
+            {
+                uint crcpath = HopperVM.GetAppName(true);
+                uint crcFile = HRFile.Open(path);
+                byte crc0 = HRFile.Read(crcFile);
+                byte crc1 = HRFile.Read(crcFile);
+                currentCRC = crc0 + (crc1 << 8);
+                GC.Release(crcFile);
+                GC.Release(crcpath);
+            }
         }
-        GC.Release(path);
         return success;
     }
     
@@ -739,18 +738,27 @@ program Runtime
         HopperVM.Restart();
         bool refresh = true;
         
-        // load 'auto.hexe' if it exists
-        uint loadedAddress;
-        uint codeLength;
-        if (External.LoadAuto && Runtime.LoadAuto(ref loadedAddress, ref codeLength))
+        
+        
+        if (External.LoadAuto)
         {
-            HopperVM.Initialize(loadedAddress, codeLength);
-            HopperVM.Restart();
-            loaded = true;
-            if (HopperVM.InlinedExecuteWarp(false))
+            uint loadedAddress;
+            uint codeLength;
+            uint startAddress = codeMemoryStart;
+            
+            // load 'auto.hexe' if it exists
+            uint autoPath = HopperVM.GetAppName(false);
+            if (Runtime.LoadHexe(autoPath, startAddress, ref loadedAddress, ref codeLength, true))
             {
+                HopperVM.Initialize(loadedAddress, codeLength);
                 HopperVM.Restart();
+                loaded = true;
+                if (HopperVM.InlinedExecuteWarp(false))
+                {
+                    HopperVM.Restart();
+                }
             }
+            GC.Release(autoPath);
         }
 
         Serial.WriteChar(char(slash)); // ready
@@ -933,18 +941,18 @@ program Runtime
                     {
                         WaitForEnter();
                         
-                        loadedAddress = 0;
-                        uint loadCodeLength;
+                        uint loadedAddress = 0;
+                        uint codeLength;
                     
-                        loaded = SerialLoadIHex(ref loadedAddress, ref loadCodeLength);
+                        loaded = SerialLoadIHex(ref loadedAddress, ref codeLength);
                         Serial.WriteChar(char(enter));
                         if (loaded)
                         {
-                            HopperVM.Initialize(loadedAddress, loadCodeLength);
+                            HopperVM.Initialize(loadedAddress, codeLength);
                             HopperVM.Restart();
                             
                             // loadCodeLength
-                            Out4Hex(loadCodeLength);
+                            Out4Hex(codeLength);
                             Serial.WriteChar(' ');
                             
                             // heapStart
@@ -972,7 +980,7 @@ program Runtime
                         
                         if (loaded)
                         {
-                            FlashProgram(loadedAddress, loadCodeLength, currentCRC);
+                            FlashProgram(loadedAddress, codeLength, currentCRC);
                         }
                     } // L
                     default:

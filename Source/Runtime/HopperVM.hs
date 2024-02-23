@@ -69,6 +69,7 @@ unit HopperVM
     uint sp;
     uint bp;
     uint csp;
+    uint cspStart;
     bool cnp;
 #ifdef CHECKED
     uint messagePC;
@@ -79,6 +80,7 @@ unit HopperVM
     uint SP  { get { return sp; }  set { sp = value; } }
     uint GP  { get { return gp; }  set { gp = value; } }
     uint CSP { get { return csp; } set { csp = value; } }
+    uint CSPStart { get { return cspStart; } set { cspStart = value; } }
     bool CNP { get { return cnp; } set { cnp = value; } }
     uint BP  { get { return bp; }  set { bp = value; } }
     
@@ -285,6 +287,7 @@ unit HopperVM
         gp = 0;
         bp = 0;
         csp = 0;
+        cspStart = csp;
         Error = 0;
         cnp = false;
         
@@ -301,6 +304,77 @@ unit HopperVM
             programOffset = 0;
         }
         External.SetCodeStartAddress(programOffset);
+    }
+    
+    uint RuntimeExecute(uint hrpath, uint hrargs)
+    {
+        uint result;
+        
+        
+        // store
+        uint previousArguments = currentArguments;
+        currentArguments = hrargs;
+        
+        uint pcBefore = pc;
+        uint spBefore = sp;
+        uint bpBefore = bp;
+        uint gpBefore = gp;
+        uint cspBefore = csp;
+        uint cspStartBefore = cspStart;
+        
+        // modified by Initialize(..)
+        uint binaryAddressBefore = binaryAddress;
+        uint programSizeBefore   = programSize;
+        uint constAddressBefore  = constAddress;
+        uint methodTableBefore   = methodTable;
+        uint programOffsetBefore = programOffset;
+        
+        uint loadedAddress;
+        uint codeLength;
+        uint startAddress = binaryAddress + programSize;
+        if (LoadHexe(hrpath, startAddress, ref loadedAddress, ref codeLength, false))
+        {
+            
+            binaryAddress = loadedAddress;
+            programSize   = codeLength;
+            constAddress  = ReadCodeWord(binaryAddress + 0x0002) + startAddress;
+            programOffset = ReadCodeWord(binaryAddress + 0x0004) + startAddress;
+            External.SetCodeStartAddress(programOffset);
+            methodTable   = binaryAddress + 0x0006;
+            
+            Error = 0;
+            cnp = false;
+            gp = sp;
+            cspStart = csp;
+            pc = 0;
+            
+            bool restart = HopperVM.InlinedExecuteWarp(false);
+        }
+        
+        result = Error;
+        
+        // restore
+        binaryAddress = binaryAddressBefore;
+        programSize   = programSizeBefore;
+        constAddress  = constAddressBefore;
+        methodTable   = methodTableBefore;
+        programOffset = programOffsetBefore;
+        External.SetCodeStartAddress(programOffset);
+        pc = pcBefore;
+        gp = gpBefore;
+        cspStart = cspStartBefore;
+            
+        if (result != 0) 
+        {
+            // Die happened, otherwise they should already be correct
+            csp = cspBefore;
+            sp  = spBefore;
+            bp  = bpBefore;
+            Error = 0;
+        }
+        
+        currentArguments = previousArguments;
+        return result;
     }
     
     
@@ -472,6 +546,30 @@ unit HopperVM
                     ErrorDump(165); Error= 0x0B; // nested call to inline code?
                     doNext = false;
                 }
+            }
+            case SysCall.RuntimeExecute:
+            {
+                Type ltype;
+                uint args = Pop(ref ltype);
+                Type stype;
+                uint path = Pop(ref stype);
+#ifdef CHECKED
+                if (ltype != Type.List)
+                {
+                    ErrorDump(101);
+                    Error = 0x0B; // system failure (internal error)
+                }
+                if (stype != Type.String)
+                {
+                    ErrorDump(101);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif     
+                uint result = RuntimeExecute(path, args);
+                GC.Release(args);
+                GC.Release(path);
+                Push(result, Type.UInt);
+                doNext = false;
             }
             case SysCall.RuntimeUserCodeGet:
             {
@@ -2987,21 +3085,23 @@ unit HopperVM
         }
         return doNext && (Error == 0);
     }
+    
     Put(uint address, uint value, Type htype)
     {
-        WriteWord(valueStack + address + gp, value);
-        WriteWord(typeStack  + address + gp, byte(htype));
+        WriteWord(valueStack + address, value);
+        WriteWord(typeStack  + address, byte(htype));
     }
     uint Get(uint address, ref Type htype)
     {
-        uint value  = ReadWord(valueStack + address + gp);
-        htype  = Type(ReadWord(typeStack + address + gp));
+        uint value  = ReadWord(valueStack + address);
+        htype  = Type(ReadWord(typeStack + address));
         return value;
     }
     uint Get(uint address)
     {
-        return ReadWord(valueStack + address + gp);
+        return ReadWord(valueStack + address);
     }
+    
     PushI(int ivalue)
     {
         uint value = External.IntToUInt(ivalue);
@@ -3019,14 +3119,14 @@ unit HopperVM
     PutI(uint address, int ivalue, Type htype)
     {
         uint value = External.IntToUInt(ivalue);
-        WriteWord(valueStack + address + gp, value);
-        WriteWord(typeStack  + address + gp, byte(htype));
+        WriteWord(valueStack + address, value);
+        WriteWord(typeStack  + address, byte(htype));
     }
     PutI(uint address, int ivalue)
     {
         uint value = External.IntToUInt(ivalue);
-        WriteWord(valueStack + address + gp, value);
-        WriteWord(typeStack  + address + gp, byte(Type.Int));
+        WriteWord(valueStack + address, value);
+        WriteWord(typeStack  + address, byte(Type.Int));
     }
     
     int PopI(ref Type htype)
@@ -3057,13 +3157,13 @@ unit HopperVM
     }
     int GetI(uint address, ref Type htype)
     {
-        uint value  = ReadWord(valueStack + address + gp);
-        htype  = Type(ReadWord(typeStack + address + gp));
+        uint value  = ReadWord(valueStack + address);
+        htype  = Type(ReadWord(typeStack + address));
         return External.UIntToInt(value);
     }
     int GetI(uint address)
     {
-        uint value  = ReadWord(valueStack + address + gp);
+        uint value  = ReadWord(valueStack + address);
         return External.UIntToInt(value);
     }
     
@@ -3471,7 +3571,6 @@ unit HopperVM
     {
         ServiceInterrupts();
         
-        //WriteLn(); WriteHex(pc);
         opCode = OpCode(ReadProgramByte(pc));
         pc++;
 

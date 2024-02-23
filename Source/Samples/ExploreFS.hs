@@ -1,6 +1,6 @@
 program ExploreFS
 {
-    #define SERIAL_CONSOLE
+    #define MCU
     uses "/Source/System/System"
     uses "/Source/System/IO"
     

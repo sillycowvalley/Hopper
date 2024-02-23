@@ -645,7 +645,7 @@ unit Instructions
         }
         Push(value, rtype);
         BP = PopCS();
-        if (CSP == 0)
+        if (CSP == CSPStart)
         {
             PC = 0; // exit program
         }
@@ -673,7 +673,7 @@ unit Instructions
         }
         Push(value, rtype);
         BP = PopCS();
-        if (CSP == 0)
+        if (CSP == CSPStart)
         {
             PC = 0; // exit program
         }
@@ -1654,7 +1654,7 @@ unit Instructions
     bool Ret0()
     {
         BP = PopCS();
-        if (CSP == 0)
+        if (CSP == CSPStart)
         {
             PC = 0; // exit program
         }
@@ -1678,7 +1678,7 @@ unit Instructions
             popBytes = popBytes - 2;
         }
         BP = PopCS();
-        if (CSP == 0)
+        if (CSP == CSPStart)
         {
             PC = 0; // exit program
         }
@@ -1703,7 +1703,7 @@ unit Instructions
             popBytes = popBytes - 2;
         }
         BP = PopCS();
-        if (CSP == 0)
+        if (CSP == CSPStart)
         {
             PC = 0; // exit program
         }

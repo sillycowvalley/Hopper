@@ -7,9 +7,6 @@
 #include "Inlined.h"
 
 
-
-
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -38,6 +35,7 @@ UInt HopperVM_gp = 0;
 UInt HopperVM_sp = 0;
 UInt HopperVM_bp = 0;
 UInt HopperVM_csp = 0;
+UInt HopperVM_cspStart = 0;
 Bool HopperVM_cnp = false;
 Bool HopperVM_inDebugger = false;
 OpCode HopperVM_opCode = (OpCode)0;
@@ -60,17 +58,23 @@ void Runtime_MCU()
     Runtime_loaded = false;
     HopperVM_Restart();
     Bool refresh = true;
-    UInt loadedAddress = 0;
-    UInt codeLength = 0;
-    if (External_LoadAuto_Get() && Runtime_LoadAuto_R(loadedAddress, codeLength))
+    if (External_LoadAuto_Get())
     {
-        HopperVM_Initialize(loadedAddress, codeLength);
-        HopperVM_Restart();
-        Runtime_loaded = true;
-        if (HopperVM_InlinedExecuteWarp(false))
+        UInt loadedAddress = 0;
+        UInt codeLength = 0;
+        UInt startAddress = 0;
+        UInt autoPath = HopperVM_GetAppName(false);
+        if (Runtime_LoadHexe_R(autoPath, startAddress, loadedAddress, codeLength, true))
         {
+            HopperVM_Initialize(loadedAddress, codeLength);
             HopperVM_Restart();
+            Runtime_loaded = true;
+            if (HopperVM_InlinedExecuteWarp(false))
+            {
+                HopperVM_Restart();
+            }
         }
+        GC_Release(autoPath);
     }
     Serial_WriteChar(Char(92));
     for (;;)
@@ -238,15 +242,15 @@ void Runtime_MCU()
             case 'L':
             {
                 Runtime_WaitForEnter();
-                loadedAddress = 0x00;
-                UInt loadCodeLength = 0;
-                Runtime_loaded = Runtime_SerialLoadIHex_R(loadedAddress, loadCodeLength);
+                UInt loadedAddress = 0x00;
+                UInt codeLength = 0;
+                Runtime_loaded = Runtime_SerialLoadIHex_R(loadedAddress, codeLength);
                 Serial_WriteChar(Char(13));
                 if (Runtime_loaded)
                 {
-                    HopperVM_Initialize(loadedAddress, loadCodeLength);
+                    HopperVM_Initialize(loadedAddress, codeLength);
                     HopperVM_Restart();
-                    Runtime_Out4Hex(loadCodeLength);
+                    Runtime_Out4Hex(codeLength);
                     Serial_WriteChar(' ');
                     Runtime_Out4Hex(Memory_HeapStart_Get());
                     Serial_WriteChar(' ');
@@ -266,7 +270,7 @@ void Runtime_MCU()
                 Serial_WriteChar(Char(92));
                 if (Runtime_loaded)
                 {
-                    HopperVM_FlashProgram(loadedAddress, loadCodeLength, Runtime_currentCRC);
+                    HopperVM_FlashProgram(loadedAddress, codeLength, Runtime_currentCRC);
                 }
                 break;
             }
@@ -363,24 +367,25 @@ void Runtime_MCU()
     HopperVM_Release();
 }
 
-Bool Runtime_LoadAuto_R(UInt & loadedAddress, UInt & codeLength)
+Bool Runtime_LoadHexe_R(UInt path, UInt startAddress, UInt & loadedAddress, UInt & codeLength, Bool doCRC)
 {
     Bool success = false;
-    loadedAddress = 0;
+    loadedAddress = startAddress;
     UInt address = 0x00;
-    UInt path = HopperVM_GetAppName(false);
     if (HRFile_Exists(path))
     {
         success = External_ReadAllCodeBytes_R(path, loadedAddress, codeLength);
-        GC_Release(path);
-        path = HopperVM_GetAppName(true);
-        UInt crcFile = HRFile_Open(path);
-        Byte crc0 = HRFile_Read(crcFile);
-        Byte crc1 = HRFile_Read(crcFile);
-        Runtime_currentCRC = crc0 + (crc1 << 0x08);
-        GC_Release(crcFile);
+        if (doCRC)
+        {
+            UInt crcpath = HopperVM_GetAppName(true);
+            UInt crcFile = HRFile_Open(path);
+            Byte crc0 = HRFile_Read(crcFile);
+            Byte crc1 = HRFile_Read(crcFile);
+            Runtime_currentCRC = crc0 + (crc1 << 0x08);
+            GC_Release(crcFile);
+            GC_Release(crcpath);
+        }
     }
-    GC_Release(path);
     return success;
 }
 
@@ -927,6 +932,7 @@ void HopperVM_Restart()
     HopperVM_gp = 0x00;
     HopperVM_bp = 0x00;
     HopperVM_csp = 0x00;
+    HopperVM_cspStart = HopperVM_csp;
     Minimal_Error_Set(0x00);
     HopperVM_cnp = false;
     UInt version = Memory_ReadCodeWord(HopperVM_binaryAddress + 0x00);
@@ -942,6 +948,35 @@ void HopperVM_Restart()
         HopperVM_programOffset = 0x00;
     }
     External_SetCodeStartAddress(HopperVM_programOffset);
+}
+
+UInt HopperVM_GetAppName(Bool crc)
+{
+    UInt path = HRString_New();
+    HRString_BuildChar_R(path, Char('/'));
+    HRString_BuildChar_R(path, Char('B'));
+    HRString_BuildChar_R(path, Char('i'));
+    HRString_BuildChar_R(path, Char('n'));
+    HRString_BuildChar_R(path, Char('/'));
+    HRString_BuildChar_R(path, Char('A'));
+    HRString_BuildChar_R(path, Char('u'));
+    HRString_BuildChar_R(path, Char('t'));
+    HRString_BuildChar_R(path, Char('o'));
+    HRString_BuildChar_R(path, Char('.'));
+    if (crc)
+    {
+        HRString_BuildChar_R(path, Char('c'));
+        HRString_BuildChar_R(path, Char('r'));
+        HRString_BuildChar_R(path, Char('c'));
+    }
+    else
+    {
+        HRString_BuildChar_R(path, Char('h'));
+        HRString_BuildChar_R(path, Char('e'));
+        HRString_BuildChar_R(path, Char('x'));
+        HRString_BuildChar_R(path, Char('e'));
+    }
+    return path;
 }
 
 void HopperVM_Initialize(UInt loadedAddress, UInt loadedSize)
@@ -1341,35 +1376,6 @@ void HopperVM_Release()
     }
 }
 
-UInt HopperVM_GetAppName(Bool crc)
-{
-    UInt path = HRString_New();
-    HRString_BuildChar_R(path, Char('/'));
-    HRString_BuildChar_R(path, Char('B'));
-    HRString_BuildChar_R(path, Char('i'));
-    HRString_BuildChar_R(path, Char('n'));
-    HRString_BuildChar_R(path, Char('/'));
-    HRString_BuildChar_R(path, Char('A'));
-    HRString_BuildChar_R(path, Char('u'));
-    HRString_BuildChar_R(path, Char('t'));
-    HRString_BuildChar_R(path, Char('o'));
-    HRString_BuildChar_R(path, Char('.'));
-    if (crc)
-    {
-        HRString_BuildChar_R(path, Char('c'));
-        HRString_BuildChar_R(path, Char('r'));
-        HRString_BuildChar_R(path, Char('c'));
-    }
-    else
-    {
-        HRString_BuildChar_R(path, Char('h'));
-        HRString_BuildChar_R(path, Char('e'));
-        HRString_BuildChar_R(path, Char('x'));
-        HRString_BuildChar_R(path, Char('e'));
-    }
-    return path;
-}
-
 Bool HopperVM_BreakpointExists_Get()
 {
     return HopperVM_breakpointExists;
@@ -1387,8 +1393,8 @@ UInt HopperVM_GetCS(UInt address)
 
 UInt HopperVM_Get_R(UInt address, Type & htype)
 {
-    UInt value = Memory_ReadWord(HopperVM_valueStack + address + HopperVM_gp);
-    htype = Type(Memory_ReadWord(HopperVM_typeStack + address + HopperVM_gp));
+    UInt value = Memory_ReadWord(HopperVM_valueStack + address);
+    htype = Type(Memory_ReadWord(HopperVM_typeStack + address));
     return value;
 }
 
@@ -1500,6 +1506,129 @@ Bool HopperVM_IsOnFreeList(UInt pCandidate)
     return false;
 }
 
+void GC_Release(UInt address)
+{
+    Byte referenceCount = Memory_ReadByte(address + 0x01);
+    
+    referenceCount--;
+    Memory_WriteByte(address + 0x01, referenceCount);
+    Type htype = Type(Memory_ReadByte(address));
+    if (referenceCount == 0x00)
+    {
+        switch (htype)
+        {
+        case Type::eArray:
+        case Type::eLong:
+        case Type::eFloat:
+        case Type::eString:
+        {
+            Memory_Free(address);
+            break;
+        }
+        case Type::eDirectory:
+        {
+            HRDirectory_Clear(address);
+            Memory_Free(address);
+            break;
+        }
+        case Type::eFile:
+        {
+            HRFile_Clear(address);
+            Memory_Free(address);
+            break;
+        }
+        case Type::eList:
+        {
+            HRList_Clear(address);
+            Memory_Free(address);
+            break;
+        }
+        case Type::eDictionary:
+        {
+            HRDictionary_Clear(address);
+            Memory_Free(address);
+            break;
+        }
+        case Type::ePair:
+        {
+            HRPair_Clear(address);
+            Memory_Free(address);
+            break;
+        }
+        case Type::eVariant:
+        {
+            HRVariant_Clear(address);
+            Memory_Free(address);
+            break;
+        }
+        default:
+        {
+            break;
+        }
+        } // switch
+    }
+}
+
+void GC_Dump(UInt address)
+{
+    GC_Dump(address, 0x00);
+}
+
+void GC_Dump(UInt address, UInt indent)
+{
+    if (indent > 0x00)
+    {;
+        for (UInt i = 0x00; i < indent; i++)
+        {
+            IO_Write(' ');
+        }
+        indent = indent + 0x02;
+    }
+    Type htype = Type(Memory_ReadByte(address));
+    switch (htype)
+    {
+    case Type::eLong:
+    {
+        HRLong_Dump(address, indent);
+        break;
+    }
+    case Type::eString:
+    {
+        HRString_Dump(address, indent);
+        break;
+    }
+    case Type::eArray:
+    {
+        HRArray_Dump(address, indent);
+        break;
+    }
+    case Type::eList:
+    {
+        HRList_Dump(address, indent);
+        break;
+    }
+    case Type::ePair:
+    {
+        HRPair_Dump(address, indent);
+        break;
+    }
+    case Type::eVariant:
+    {
+        HRVariant_Dump(address, indent);
+        break;
+    }
+    case Type::eDictionary:
+    {
+        HRDictionary_Dump(address, indent);
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    } // switch
+}
+
 UInt HRString_New()
 {
     UInt address = HRString_new(0x00);
@@ -1524,6 +1653,25 @@ void HRString_BuildChar_R(UInt & _this, Char ch)
 void HRString_BuildClear_R(UInt & _this)
 {
     Memory_WriteWord(_this + 2, 0x00);
+}
+
+void HRString_Dump(UInt address, UInt indent)
+{;
+    for (UInt i = 0x00; i < indent; i++)
+    {
+        IO_Write(' ');
+    }
+    IO_Write(Char(0x27));
+    UInt length = Memory_ReadWord(address + 2);
+    if (length > 0x28)
+    {
+        length = 0x28;
+    };
+    for (UInt i = 0x00; i < length; i++)
+    {
+        IO_Write(Char(Memory_ReadByte(address + 4 + i)));
+    }
+    IO_Write(Char(0x27));
 }
 
 UInt HRString_new(UInt size)
@@ -1566,6 +1714,12 @@ void HRDirectory_Create(UInt hrpath)
 Bool HRDirectory_Exists(UInt hrpath)
 {
     return External_DirectoryExists(hrpath);
+}
+
+void HRDirectory_Clear(UInt _this)
+{
+    Memory_WriteByte(_this + 2, 0x00);
+    GC_Release(Memory_ReadWord(_this + 3));
 }
 
 UInt HRFile_Create(UInt hrpath)
@@ -1710,6 +1864,24 @@ UInt HRFile_CreateFromCode(UInt hrpath, UInt codeStart, UInt codeLength)
     return address;
 }
 
+void HRFile_Clear(UInt _this)
+{
+    Memory_WriteByte(_this + 2, 0x00);
+    Memory_WriteByte(_this + 3, 0x00);
+    Memory_WriteByte(_this + 4, 0x00);
+    GC_Release(Memory_ReadWord(_this + 6));
+    Memory_WriteWord(_this + 6, 0x00);
+    Memory_WriteWord(_this + 8, 0x00);
+    Memory_WriteWord(_this + 8 + 0x02, 0x00);
+    if (!HRFile_IsCode(_this))
+    {
+        GC_Release(Memory_ReadWord(_this + 12));
+    }
+    Memory_WriteWord(_this + 12, 0x00);
+    Memory_WriteWord(_this + 14, 0x00);
+    Memory_WriteWord(_this + 14 + 0x02, 0x00);
+}
+
 void HRFile_Delete(UInt path)
 {
     External_FileDelete(path);
@@ -1747,6 +1919,11 @@ Bool HRFile_lt32(UInt nextLSW, UInt nextMSW, UInt topLSW, UInt topMSW)
         return nextLSW < topLSW;
     }
     return false;
+}
+
+Bool HRFile_IsCode(UInt _this)
+{
+    return (Memory_ReadByte(_this + 5) != 0x00);
 }
 
 UInt Memory_HeapStart_Get()
@@ -1987,137 +2164,6 @@ void Memory_Set(UInt memory, Byte value, UInt size)
     {
         Memory_WriteByte(memory + i, value);
     }
-}
-
-void GC_Release(UInt address)
-{
-    Byte referenceCount = Memory_ReadByte(address + 0x01);
-    
-    referenceCount--;
-    Memory_WriteByte(address + 0x01, referenceCount);
-    Type htype = Type(Memory_ReadByte(address));
-    if (referenceCount == 0x00)
-    {
-        switch (htype)
-        {
-        case Type::eArray:
-        case Type::eLong:
-        case Type::eFloat:
-        case Type::eString:
-        {
-            Memory_Free(address);
-            break;
-        }
-        case Type::eDirectory:
-        {
-            HRDirectory_Clear(address);
-            Memory_Free(address);
-            break;
-        }
-        case Type::eFile:
-        {
-            HRFile_Clear(address);
-            Memory_Free(address);
-            break;
-        }
-        case Type::eList:
-        {
-            HRList_Clear(address);
-            Memory_Free(address);
-            break;
-        }
-        case Type::eDictionary:
-        {
-            HRDictionary_Clear(address);
-            Memory_Free(address);
-            break;
-        }
-        case Type::ePair:
-        {
-            HRPair_Clear(address);
-            Memory_Free(address);
-            break;
-        }
-        case Type::eVariant:
-        {
-            HRVariant_Clear(address);
-            Memory_Free(address);
-            break;
-        }
-        default:
-        {
-            break;
-        }
-        } // switch
-    }
-}
-
-void GC_Dump(UInt address)
-{
-    GC_Dump(address, 0x00);
-}
-
-void GC_Dump(UInt address, UInt indent)
-{
-    if (indent > 0x00)
-    {;
-        for (UInt i = 0x00; i < indent; i++)
-        {
-            IO_Write(' ');
-        }
-        indent = indent + 0x02;
-    }
-    Type htype = Type(Memory_ReadByte(address));
-    switch (htype)
-    {
-    case Type::eLong:
-    {
-        HRLong_Dump(address, indent);
-        break;
-    }
-    case Type::eString:
-    {
-        HRString_Dump(address, indent);
-        break;
-    }
-    case Type::eArray:
-    {
-        HRArray_Dump(address, indent);
-        break;
-    }
-    case Type::eList:
-    {
-        HRList_Dump(address, indent);
-        break;
-    }
-    case Type::ePair:
-    {
-        HRPair_Dump(address, indent);
-        break;
-    }
-    case Type::eVariant:
-    {
-        HRVariant_Dump(address, indent);
-        break;
-    }
-    case Type::eDictionary:
-    {
-        HRDictionary_Dump(address, indent);
-        break;
-    }
-    default:
-    {
-        break;
-    }
-    } // switch
-}
-
-UInt GC_New(UInt size, Type htype)
-{
-    UInt address = Memory_Allocate(size + 0x02);
-    Memory_WriteByte(address, Byte(htype));
-    Memory_WriteByte(address + 0x01, 0x01);
-    return address;
 }
 
 Char HRByte_ToHex(Byte h)
@@ -2718,7 +2764,7 @@ Bool Instructions_JB()
 Bool Instructions_Ret0()
 {
     HopperVM_BP_Set(HopperVM_PopCS());
-    if (HopperVM_CSP_Get() == 0x00)
+    if (HopperVM_CSP_Get() == HopperVM_CSPStart_Get())
     {
         HopperVM_PC_Set(0x00);
     }
@@ -3045,7 +3091,7 @@ Bool Instructions_RetB()
         popBytes = popBytes - 0x02;
     }
     HopperVM_BP_Set(HopperVM_PopCS());
-    if (HopperVM_CSP_Get() == 0x00)
+    if (HopperVM_CSP_Get() == HopperVM_CSPStart_Get())
     {
         HopperVM_PC_Set(0x00);
     }
@@ -3229,7 +3275,7 @@ Bool Instructions_Ret()
         popBytes = popBytes - 0x02;
     }
     HopperVM_BP_Set(HopperVM_PopCS());
-    if (HopperVM_CSP_Get() == 0x00)
+    if (HopperVM_CSP_Get() == HopperVM_CSPStart_Get())
     {
         HopperVM_PC_Set(0x00);
     }
@@ -3257,7 +3303,7 @@ Bool Instructions_RetRes()
     }
     HopperVM_Push(value, rtype);
     HopperVM_BP_Set(HopperVM_PopCS());
-    if (HopperVM_CSP_Get() == 0x00)
+    if (HopperVM_CSP_Get() == HopperVM_CSPStart_Get())
     {
         HopperVM_PC_Set(0x00);
     }
@@ -3530,87 +3576,6 @@ Bool Instructions_PopCopyGlobal()
         HopperVM_Put(address, newvalue, htype);
     }
     return true;
-}
-
-UInt HRString_Clone(UInt original)
-{
-    return HRString_clone(original, 0x00);
-}
-
-void HRString_Dump(UInt address, UInt indent)
-{;
-    for (UInt i = 0x00; i < indent; i++)
-    {
-        IO_Write(' ');
-    }
-    IO_Write(Char(0x27));
-    UInt length = Memory_ReadWord(address + 2);
-    if (length > 0x28)
-    {
-        length = 0x28;
-    };
-    for (UInt i = 0x00; i < length; i++)
-    {
-        IO_Write(Char(Memory_ReadByte(address + 4 + i)));
-    }
-    IO_Write(Char(0x27));
-}
-
-Byte HRLong_GetByte(UInt ichunk, UInt i)
-{
-    return Memory_ReadByte(ichunk + 0x02 + i);
-}
-
-UInt HRLong_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3)
-{
-    UInt address = GC_New(0x04, Type::eLong);
-    Memory_WriteByte(address + 0x02, b0);
-    Memory_WriteByte(address + 0x02 + 0x01, b1);
-    Memory_WriteByte(address + 0x02 + 0x02, b2);
-    Memory_WriteByte(address + 0x02 + 0x03, b3);
-    return address;
-}
-
-void HRLong_Dump(UInt address, UInt indent)
-{;
-    for (UInt i = 0x00; i < indent; i++)
-    {
-        IO_Write(' ');
-    }
-    UInt lsw = Memory_ReadWord(address + 0x02);
-    UInt msw = Memory_ReadWord(address + 0x04);
-    IO_WriteHex(msw);
-    IO_WriteHex(lsw);
-    IO_Write(' ');
-}
-
-void HRDirectory_Clear(UInt _this)
-{
-    Memory_WriteByte(_this + 2, 0x00);
-    GC_Release(Memory_ReadWord(_this + 3));
-}
-
-void HRFile_Clear(UInt _this)
-{
-    Memory_WriteByte(_this + 2, 0x00);
-    Memory_WriteByte(_this + 3, 0x00);
-    Memory_WriteByte(_this + 4, 0x00);
-    GC_Release(Memory_ReadWord(_this + 6));
-    Memory_WriteWord(_this + 6, 0x00);
-    Memory_WriteWord(_this + 8, 0x00);
-    Memory_WriteWord(_this + 8 + 0x02, 0x00);
-    if (!HRFile_IsCode(_this))
-    {
-        GC_Release(Memory_ReadWord(_this + 12));
-    }
-    Memory_WriteWord(_this + 12, 0x00);
-    Memory_WriteWord(_this + 14, 0x00);
-    Memory_WriteWord(_this + 14 + 0x02, 0x00);
-}
-
-Bool HRFile_IsCode(UInt _this)
-{
-    return (Memory_ReadByte(_this + 5) != 0x00);
 }
 
 void HRList_Clear(UInt _this)
@@ -3978,6 +3943,118 @@ void HRVariant_Dump(UInt address, UInt indent)
     IO_WriteHex(value);
 }
 
+void HRLong_Dump(UInt address, UInt indent)
+{;
+    for (UInt i = 0x00; i < indent; i++)
+    {
+        IO_Write(' ');
+    }
+    UInt lsw = Memory_ReadWord(address + 0x02);
+    UInt msw = Memory_ReadWord(address + 0x04);
+    IO_WriteHex(msw);
+    IO_WriteHex(lsw);
+    IO_Write(' ');
+}
+
+Byte HRLong_GetByte(UInt ichunk, UInt i)
+{
+    return Memory_ReadByte(ichunk + 0x02 + i);
+}
+
+UInt HRLong_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3)
+{
+    UInt address = GC_New(0x04, Type::eLong);
+    Memory_WriteByte(address + 0x02, b0);
+    Memory_WriteByte(address + 0x02 + 0x01, b1);
+    Memory_WriteByte(address + 0x02 + 0x02, b2);
+    Memory_WriteByte(address + 0x02 + 0x03, b3);
+    return address;
+}
+
+UInt GC_New(UInt size, Type htype)
+{
+    UInt address = Memory_Allocate(size + 0x02);
+    Memory_WriteByte(address, Byte(htype));
+    Memory_WriteByte(address + 0x01, 0x01);
+    return address;
+}
+
+void GC_AddReference(UInt address)
+{
+    Byte referenceCount = Memory_ReadByte(address + 0x01);
+    
+    referenceCount++;
+    Memory_WriteByte(address + 0x01, referenceCount);
+}
+
+UInt GC_Clone(UInt original)
+{
+    Type htype = Type(Memory_ReadByte(original));
+    switch (htype)
+    {
+    case Type::eLong:
+    {
+        return HRLong_Clone(original);
+        break;
+    }
+    case Type::eDirectory:
+    {
+        return HRDirectory_Clone(original);
+        break;
+    }
+    case Type::eFile:
+    {
+        return HRFile_Clone(original);
+        break;
+    }
+    case Type::eFloat:
+    {
+        return HRFloat_Clone(original);
+        break;
+    }
+    case Type::eString:
+    {
+        return HRString_Clone(original);
+        break;
+    }
+    case Type::eList:
+    {
+        return HRList_Clone(original);
+        break;
+    }
+    case Type::eArray:
+    {
+        return HRArray_Clone(original);
+        break;
+    }
+    case Type::eDictionary:
+    {
+        return HRDictionary_Clone(original);
+        break;
+    }
+    case Type::ePair:
+    {
+        return HRPair_Clone(original);
+        break;
+    }
+    case Type::eVariant:
+    {
+        return HRVariant_Clone(original);
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    } // switch
+    return 0x00;
+}
+
+UInt HRString_Clone(UInt original)
+{
+    return HRString_clone(original, 0x00);
+}
+
 Char HRByte_ToDigit(Byte d)
 {
     d = d + 0x30;
@@ -4031,8 +4108,8 @@ UInt HopperVM_ValueStack_Get()
 
 void HopperVM_Put(UInt address, UInt value, Type htype)
 {
-    Memory_WriteWord(HopperVM_valueStack + address + HopperVM_gp, value);
-    Memory_WriteWord(HopperVM_typeStack + address + HopperVM_gp, Byte(htype));
+    Memory_WriteWord(HopperVM_valueStack + address, value);
+    Memory_WriteWord(HopperVM_typeStack + address, Byte(htype));
 }
 
 void HopperVM_Push(UInt value, Type htype)
@@ -4100,6 +4177,11 @@ UInt HopperVM_PopCS()
     return Memory_ReadWord(HopperVM_callStack + HopperVM_csp);
 }
 
+UInt HopperVM_CSPStart_Get()
+{
+    return HopperVM_cspStart;
+}
+
 Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
 {
     Bool doNext = true;
@@ -4118,6 +4200,19 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             Minimal_Error_Set(0x0B);
             doNext = false;
         }
+        break;
+    }
+    case SysCall::eRuntimeExecute:
+    {
+        Type ltype = (Type)0;
+        UInt args = HopperVM_Pop_R(ltype);
+        Type stype = (Type)0;
+        UInt path = HopperVM_Pop_R(stype);
+        UInt result = HopperVM_RuntimeExecute(path, args);
+        GC_Release(args);
+        GC_Release(path);
+        HopperVM_Push(result, Type::eUInt);
+        doNext = false;
         break;
     }
     case SysCall::eRuntimeUserCodeGet:
@@ -6054,6 +6149,61 @@ Bool HopperVM_RunInline()
     return true;
 }
 
+UInt HopperVM_RuntimeExecute(UInt hrpath, UInt hrargs)
+{
+    UInt result = 0;
+    UInt previousArguments = HopperVM_currentArguments;
+    HopperVM_currentArguments = hrargs;
+    UInt pcBefore = HopperVM_pc;
+    UInt spBefore = HopperVM_sp;
+    UInt bpBefore = HopperVM_bp;
+    UInt gpBefore = HopperVM_gp;
+    UInt cspBefore = HopperVM_csp;
+    UInt cspStartBefore = HopperVM_cspStart;
+    UInt binaryAddressBefore = HopperVM_binaryAddress;
+    UInt programSizeBefore = HopperVM_programSize;
+    UInt constAddressBefore = HopperVM_constAddress;
+    UInt methodTableBefore = HopperVM_methodTable;
+    UInt programOffsetBefore = HopperVM_programOffset;
+    UInt loadedAddress = 0;
+    UInt codeLength = 0;
+    UInt startAddress = HopperVM_binaryAddress + HopperVM_programSize;
+    if (Runtime_LoadHexe_R(hrpath, startAddress, loadedAddress, codeLength, false))
+    {
+        HopperVM_binaryAddress = loadedAddress;
+        HopperVM_programSize = codeLength;
+        HopperVM_constAddress = Memory_ReadCodeWord(HopperVM_binaryAddress + 0x02) + startAddress;
+        HopperVM_programOffset = Memory_ReadCodeWord(HopperVM_binaryAddress + 0x04) + startAddress;
+        External_SetCodeStartAddress(HopperVM_programOffset);
+        HopperVM_methodTable = HopperVM_binaryAddress + 0x06;
+        Minimal_Error_Set(0x00);
+        HopperVM_cnp = false;
+        HopperVM_gp = HopperVM_sp;
+        HopperVM_cspStart = HopperVM_csp;
+        HopperVM_pc = 0x00;
+        Bool restart = HopperVM_InlinedExecuteWarp(false);
+    }
+    result = Minimal_Error_Get();
+    HopperVM_binaryAddress = binaryAddressBefore;
+    HopperVM_programSize = programSizeBefore;
+    HopperVM_constAddress = constAddressBefore;
+    HopperVM_methodTable = methodTableBefore;
+    HopperVM_programOffset = programOffsetBefore;
+    External_SetCodeStartAddress(HopperVM_programOffset);
+    HopperVM_pc = pcBefore;
+    HopperVM_gp = gpBefore;
+    HopperVM_cspStart = cspStartBefore;
+    if (result != 0x00)
+    {
+        HopperVM_csp = cspBefore;
+        HopperVM_sp = spBefore;
+        HopperVM_bp = bpBefore;
+        Minimal_Error_Set(0x00);
+    }
+    HopperVM_currentArguments = previousArguments;
+    return result;
+}
+
 UInt HopperVM_RuntimeDateTime()
 {
     Serial_WriteChar(Char(0x07));
@@ -6073,77 +6223,6 @@ UInt HopperVM_RuntimeDateTime()
         HRString_BuildChar_R(hrstring, ch);
     }
     return hrstring;
-}
-
-void GC_AddReference(UInt address)
-{
-    Byte referenceCount = Memory_ReadByte(address + 0x01);
-    
-    referenceCount++;
-    Memory_WriteByte(address + 0x01, referenceCount);
-}
-
-UInt GC_Clone(UInt original)
-{
-    Type htype = Type(Memory_ReadByte(original));
-    switch (htype)
-    {
-    case Type::eLong:
-    {
-        return HRLong_Clone(original);
-        break;
-    }
-    case Type::eDirectory:
-    {
-        return HRDirectory_Clone(original);
-        break;
-    }
-    case Type::eFile:
-    {
-        return HRFile_Clone(original);
-        break;
-    }
-    case Type::eFloat:
-    {
-        return HRFloat_Clone(original);
-        break;
-    }
-    case Type::eString:
-    {
-        return HRString_Clone(original);
-        break;
-    }
-    case Type::eList:
-    {
-        return HRList_Clone(original);
-        break;
-    }
-    case Type::eArray:
-    {
-        return HRArray_Clone(original);
-        break;
-    }
-    case Type::eDictionary:
-    {
-        return HRDictionary_Clone(original);
-        break;
-    }
-    case Type::ePair:
-    {
-        return HRPair_Clone(original);
-        break;
-    }
-    case Type::eVariant:
-    {
-        return HRVariant_Clone(original);
-        break;
-    }
-    default:
-    {
-        break;
-    }
-    } // switch
-    return 0x00;
 }
 
 Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
@@ -6799,47 +6878,307 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     return doNext && (Minimal_Error_Get() == 0x00);
 }
 
-UInt Memory_Available()
+UInt HRLong_Clone(UInt original)
 {
-    UInt available = 0;
-    UInt current = Memory_freeList;
-    for (;;)
-    {
-        if (0x00 == current)
-        {
-            break;;
-        }
-        available = available + Memory_ReadWord(current) - 0x02;
-        current = Memory_ReadWord(current + 0x02);
-    }
-    return available;
+    UInt address = GC_New(0x04, Type::eLong);
+    Memory_WriteWord(address + 0x02, Memory_ReadWord(original + 0x02));
+    Memory_WriteWord(address + 0x04, Memory_ReadWord(original + 0x04));
+    return address;
 }
 
-UInt Memory_Maximum()
+UInt HRLong_NewFromConstant(UInt location)
 {
-    UInt available = 0;
-    UInt current = Memory_freeList;
+    UInt address = GC_New(0x04, Type::eLong);
+    Memory_WriteWord(address + 0x02, Memory_ReadCodeWord(location));
+    Memory_WriteWord(address + 0x04, Memory_ReadCodeWord(location + 0x02));
+    return address;
+}
+
+UInt HRLong_ToBytes(UInt ichunk)
+{
+    UInt lst = HRList_New(Type::eByte);;
+    for (Byte i = 0x00; i < 0x04; i++)
+    {
+        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
+        HRList_Append(lst, b, Type::eByte);
+    }
+    return lst;
+}
+
+UInt HRLong_ToUInt(UInt _this)
+{
+    UInt value = Memory_ReadWord(_this + 0x04);
+    return Memory_ReadWord(_this + 0x02);
+}
+
+UInt HRLong_LongNegate(UInt top)
+{
+    UInt zero = HRUInt_ToLong(0x00);
+    UInt result = External_LongSub(zero, top);
+    GC_Release(zero);
+    return result;
+}
+
+UInt HRLong_LongAddB(UInt next, UInt top)
+{
+    UInt argument = HRUInt_ToLong(top);
+    UInt result = External_LongAdd(next, argument);
+    GC_Release(argument);
+    return result;
+}
+
+UInt HRLong_LongSubB(UInt next, UInt top)
+{
+    UInt argument = HRUInt_ToLong(top);
+    UInt result = External_LongSub(next, argument);
+    GC_Release(argument);
+    return result;
+}
+
+UInt HRLong_New()
+{
+    UInt address = GC_New(0x04, Type::eLong);
+    Memory_WriteWord(address + 0x02, 0x00);
+    Memory_WriteWord(address + 0x04, 0x00);
+    return address;
+}
+
+UInt HRDirectory_Clone(UInt original)
+{
+    UInt address = GC_New(0x03, Type::eDirectory);
+    Memory_WriteByte(address + 2, Memory_ReadByte(original + 2));
+    Memory_WriteWord(address + 3, HRString_Clone(Memory_ReadWord(original + 3)));
+    return address;
+}
+
+UInt HRDirectory_New()
+{
+    UInt address = GC_New(0x03, Type::eDirectory);
+    Memory_WriteByte(address + 2, 0x00);
+    Memory_WriteWord(address + 3, HRString_New());
+    return address;
+}
+
+UInt HRDirectory_Open(UInt hrpath)
+{
+    UInt address = HRDirectory_New();
+    Memory_WriteWord(address + 3, HRString_Clone(hrpath));
+    if (HRDirectory_Exists(hrpath))
+    {
+        Memory_WriteByte(address + 2, 0x01);
+    }
+    return address;
+}
+
+Bool HRDirectory_IsValid(UInt _this)
+{
+    return (Memory_ReadByte(_this + 2) != 0x00);
+}
+
+UInt HRDirectory_GetFileCount(UInt hrdir)
+{
+    UInt skipped = 0;
+    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetFileCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
+}
+
+UInt HRDirectory_GetFileCount_R(UInt hrdir, UInt & skipped)
+{
+    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetFileCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
+}
+
+UInt HRDirectory_GetDirectoryCount(UInt hrdir)
+{
+    UInt skipped = 0;
+    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetDirectoryCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
+}
+
+UInt HRDirectory_GetDirectoryCount_R(UInt hrdir, UInt & skipped)
+{
+    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetDirectoryCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
+}
+
+UInt HRDirectory_GetFile(UInt hrdir, UInt index)
+{
+    if (!HRDirectory_IsValid(hrdir))
+    {
+        return HRString_New();
+    }
+    return External_DirectoryGetFile(Memory_ReadWord(hrdir + 3), index);
+}
+
+UInt HRDirectory_GetDirectory(UInt hrdir, UInt index)
+{
+    if (!HRDirectory_IsValid(hrdir))
+    {
+        return HRString_New();
+    }
+    return External_DirectoryGetDirectory(Memory_ReadWord(hrdir + 3), index);
+}
+
+void HRDirectory_Delete(UInt hrpath)
+{
+    External_DirectoryDelete(hrpath);
+}
+
+UInt HRDirectory_GetTime(UInt hrpath)
+{
+    return External_DirectoryGetTime(hrpath);
+}
+
+UInt HRFile_Clone(UInt original)
+{
+    UInt address = GC_New(0x10, Type::eFile);
+    Memory_WriteByte(address + 2, Memory_ReadByte(original + 2));
+    Memory_WriteByte(address + 3, Memory_ReadByte(original + 3));
+    Memory_WriteByte(address + 4, Memory_ReadByte(original + 4));
+    Memory_WriteByte(address + 5, Memory_ReadByte(original + 5));
+    Memory_WriteWord(address + 6, HRString_Clone(Memory_ReadWord(original + 6)));
+    Memory_WriteWord(address + 8, Memory_ReadWord(original + 8));
+    Memory_WriteWord(address + 8 + 0x02, Memory_ReadWord(original + 8 + 0x02));
+    if (HRFile_IsCode(original))
+    {
+        Memory_WriteWord(address + 12, Memory_ReadWord(original + 12));
+    }
+    else
+    {
+        Memory_WriteWord(address + 12, HRString_Clone(Memory_ReadWord(original + 12)));
+    }
+    Memory_WriteWord(address + 14, Memory_ReadWord(original + 14));
+    Memory_WriteWord(address + 14 + 0x02, Memory_ReadWord(original + 14 + 0x02));
+    return address;
+}
+
+Bool HRFile_IsValid(UInt _this)
+{
+    return (Memory_ReadByte(_this + 2) != 0x00);
+}
+
+UInt HRFile_ReadLine(UInt _this)
+{
+    return External_ReadLine(_this);
+}
+
+Byte HRFile_Read(UInt _this, UInt hrseekpos)
+{
+    Byte b = 0;
     for (;;)
     {
-        if (0x00 == current)
+        if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 3) != 0x00))
+        {
+            UInt seekposLSW = HRLong_GetByte(hrseekpos, 0x00) + (HRLong_GetByte(hrseekpos, 0x01) << 0x08);
+            UInt seekposMSW = HRLong_GetByte(hrseekpos, 0x02) + (HRLong_GetByte(hrseekpos, 0x03) << 0x08);
+            UInt sizeLSW = Memory_ReadWord(_this + 14);
+            UInt sizeMSW = Memory_ReadWord(_this + 14 + 0x02);
+            if (HRFile_lt32(seekposLSW, seekposMSW, sizeLSW, sizeMSW))
+            {
+                if (External_TryFileReadByte_R(Memory_ReadWord(_this + 6), hrseekpos, b))
+                {
+                    break;;
+                }
+            }
+        }
+        Memory_WriteByte(_this + 2, 0x00);
+        break;;
+    }
+    return b;
+}
+
+void HRFile_Append(UInt _this, UInt hrstr)
+{
+    if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 4) != 0x00) && (Memory_ReadByte(_this + 5) == 0x00))
+    {
+        UInt buffer = Memory_ReadWord(_this + 12);
+        HRString_BuildString_R(buffer, hrstr);
+        UInt length = HRString_GetLength(buffer);
+        if (length >= 0x0100)
+        {
+            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
+            HRString_BuildClear_R(buffer);
+        }
+        Memory_WriteWord(_this + 12, buffer);
+    }
+    else
+    {
+        Memory_WriteByte(_this + 2, 0x00);
+    }
+}
+
+UInt HRFile_GetTime(UInt path)
+{
+    return External_FileGetTime(path);
+}
+
+UInt HRFloat_Clone(UInt original)
+{
+    UInt address = GC_New(0x04, Type::eFloat);
+    Memory_WriteWord(address + 0x02, Memory_ReadWord(original + 0x02));
+    Memory_WriteWord(address + 0x04, Memory_ReadWord(original + 0x04));
+    return address;
+}
+
+UInt HRFloat_NewFromConstant(UInt location)
+{
+    UInt address = GC_New(0x04, Type::eFloat);
+    Memory_WriteWord(address + 0x02, Memory_ReadCodeWord(location));
+    Memory_WriteWord(address + 0x04, Memory_ReadCodeWord(location + 0x02));
+    return address;
+}
+
+UInt HRFloat_ToBytes(UInt ichunk)
+{
+    UInt lst = HRList_New(Type::eByte);;
+    for (Byte i = 0x00; i < 0x04; i++)
+    {
+        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
+        HRList_Append(lst, b, Type::eByte);
+    }
+    return lst;
+}
+
+Byte HRFloat_GetByte(UInt ichunk, UInt i)
+{
+    return Memory_ReadByte(ichunk + 0x02 + i);
+}
+
+UInt HRFloat_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3)
+{
+    UInt address = GC_New(0x04, Type::eFloat);
+    Memory_WriteByte(address + 0x02, b0);
+    Memory_WriteByte(address + 0x03, b1);
+    Memory_WriteByte(address + 0x04, b2);
+    Memory_WriteByte(address + 0x05, b3);
+    return address;
+}
+
+UInt HRFloat_New()
+{
+    UInt address = GC_New(0x04, Type::eFloat);
+    Memory_WriteWord(address + 0x02, 0x00);
+    Memory_WriteWord(address + 0x04, 0x00);
+    return address;
+}
+
+UInt HRList_Clone(UInt original)
+{
+    Type etype = Type(Memory_ReadByte(original + 4));
+    UInt clone = HRList_New(etype);
+    UInt pCurrentItem = Memory_ReadWord(original + 5);
+    for (;;)
+    {
+        if (pCurrentItem == 0x00)
         {
             break;;
         }
-        UInt size = Memory_ReadWord(current + 0x00);
-        if (size > available)
+        UInt itemData = Memory_ReadWord(pCurrentItem + 0);
+        Type itype = etype;
+        if (Types_IsReferenceType(etype))
         {
-            available = size;
+            itype = Type(Memory_ReadByte(itemData));
         }
-        current = Memory_ReadWord(current + 0x02);
+        HRList_Append(clone, itemData, itype);
+        pCurrentItem = Memory_ReadWord(pCurrentItem + 2);
     }
-    if (available > 0x00)
-    {
-        
-        available--;
-        
-        available--;
-    }
-    return available;
+    return clone;
 }
 
 UInt HRList_New(Type htype)
@@ -7102,29 +7441,6 @@ Type HRList_GetValueType(UInt _this)
     return Type(Memory_ReadByte(_this + 4));
 }
 
-UInt HRList_Clone(UInt original)
-{
-    Type etype = Type(Memory_ReadByte(original + 4));
-    UInt clone = HRList_New(etype);
-    UInt pCurrentItem = Memory_ReadWord(original + 5);
-    for (;;)
-    {
-        if (pCurrentItem == 0x00)
-        {
-            break;;
-        }
-        UInt itemData = Memory_ReadWord(pCurrentItem + 0);
-        Type itype = etype;
-        if (Types_IsReferenceType(etype))
-        {
-            itype = Type(Memory_ReadByte(itemData));
-        }
-        HRList_Append(clone, itemData, itype);
-        pCurrentItem = Memory_ReadWord(pCurrentItem + 2);
-    }
-    return clone;
-}
-
 UInt HRList_createItem(UInt itemData, Type etype, Type itype)
 {
     UInt pData = itemData;
@@ -7145,284 +7461,754 @@ UInt HRList_createItem(UInt itemData, Type etype, Type itype)
     return pitem;
 }
 
-Bool HRFile_IsValid(UInt _this)
+UInt HRArray_Clone(UInt original)
 {
-    return (Memory_ReadByte(_this + 2) != 0x00);
+    UInt count = Memory_ReadWord(original + 2);
+    Type etype = Type(Memory_ReadWord(original + 4));
+    UInt address = HRArray_New(etype, count);
+    UInt elementbytes = 0;
+    switch (etype)
+    {
+    case Type::eBool:
+    {
+        elementbytes = (count + 0x07) >> 0x03;
+        break;
+    }
+    case Type::eChar:
+    case Type::eByte:
+    {
+        elementbytes = count;
+        break;
+    }
+    default:
+    {
+        elementbytes = count * 0x02;
+        break;
+    }
+    } // switch;
+    for (UInt i = 0x00; i < elementbytes; i++)
+    {
+        Memory_WriteByte(address + 5 + i, Memory_ReadByte(original + 5 + i));
+    }
+    return address;
 }
 
-UInt HRFile_ReadLine(UInt _this)
+UInt HRArray_New(Type htype, UInt count)
 {
-    return External_ReadLine(_this);
+    UInt elementbytes = 0;
+    switch (htype)
+    {
+    case Type::eBool:
+    {
+        elementbytes = (count + 0x07) >> 0x03;
+        break;
+    }
+    case Type::eChar:
+    case Type::eByte:
+    {
+        elementbytes = count;
+        break;
+    }
+    default:
+    {
+        elementbytes = count * 0x02;
+        break;
+    }
+    } // switch
+    UInt _this = GC_New(0x03 + elementbytes, Type::eArray);
+    Memory_WriteWord(_this + 2, count);
+    Memory_WriteByte(_this + 4, Byte(htype));
+    UInt address = _this + 5;;
+    for (UInt i = 0x00; i < elementbytes; i++)
+    {
+        Memory_WriteByte(address, 0x00);
+        
+        address++;
+    }
+    return _this;
 }
 
-Byte HRFile_Read(UInt _this, UInt hrseekpos)
+UInt HRArray_NewFromConstant(UInt location, Type htype, UInt length)
 {
-    Byte b = 0;
+    UInt _this = HRArray_New(htype, length);;
+    for (UInt i = 0x00; i < length; i++)
+    {
+        Memory_WriteByte(_this + 5 + i, Memory_ReadCodeByte(location + i));
+    }
+    return _this;
+}
+
+UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype)
+{
+    UInt elements = Memory_ReadWord(_this + 2);
+    etype = Type(Memory_ReadByte(_this + 4));
+    if (index >= elements)
+    {
+        Minimal_Error_Set(0x02);
+        return 0x00;
+    }
+    UInt address = _this + 5;
+    UInt value = 0;
+    switch (etype)
+    {
+    case Type::eBool:
+    {
+        UInt offset = address + (index >> 0x03);
+        Byte slotIndex = Byte(index & 0x07);
+        Byte b = Memory_ReadByte(offset);
+        Byte mask = Memory_ReadByte(HRArray_setSlots + slotIndex);
+        value = b & mask;
+        if (value != 0x00)
+        {
+            value = 0x01;
+        }
+        break;
+    }
+    case Type::eChar:
+    case Type::eByte:
+    {
+        value = Memory_ReadByte(address + index);
+        break;
+    }
+    default:
+    {
+        UInt offset = address + (index << 0x01);
+        Byte lsb = Memory_ReadByte(offset);
+        Byte msb = Memory_ReadByte(offset + 0x01);
+        value = (msb << 0x08) | lsb;
+        break;
+    }
+    } // switch
+    return value;
+}
+
+void HRArray_SetItem(UInt _this, UInt index, UInt value)
+{
+    UInt elements = Memory_ReadWord(_this + 2);
+    Type etype = Type(Memory_ReadByte(_this + 4));
+    if (index >= elements)
+    {
+        Minimal_Error_Set(0x02);
+        return;
+    }
+    UInt address = _this + 5;
+    switch (etype)
+    {
+    case Type::eBool:
+    {
+        UInt offset = address + (index >> 0x03);
+        Byte slotIndex = Byte(index & 0x07);
+        Byte b = Memory_ReadByte(offset);
+        if (value == 0x00)
+        {
+            Byte mask = Memory_ReadByte(HRArray_clearSlots + slotIndex);
+            b = b & mask;
+        }
+        else
+        {
+            Byte mask = Memory_ReadByte(HRArray_setSlots + slotIndex);
+            b = b | mask;
+        }
+        Memory_WriteByte(offset, b);
+        break;
+    }
+    case Type::eChar:
+    case Type::eByte:
+    {
+        Memory_WriteByte(address + index, Byte(value & 0xFF));
+        break;
+    }
+    default:
+    {
+        UInt offset = address + (index << 0x01);
+        Memory_WriteByte(offset, Byte(value & 0xFF));
+        Memory_WriteByte(offset + 0x01, Byte(value >> 0x08));
+        break;
+    }
+    } // switch
+}
+
+UInt HRArray_GetCount(UInt _this)
+{
+    return Memory_ReadWord(_this + 2);
+}
+
+Type HRArray_GetValueType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 4));
+}
+
+UInt HRDictionary_Clone(UInt original)
+{
+    Type dkType = Type(Memory_ReadByte(original + 2));
+    Type dvType = Type(Memory_ReadByte(original + 3));
+    UInt clone = HRDictionary_New(dkType, dvType);
+    UInt iterator = 0;
+    Type ktype = (Type)0;
+    UInt key = 0;
+    Type vtype = (Type)0;
+    UInt value = 0;
+    while (HRDictionary_next_R(original, iterator, ktype, key, vtype, value))
+    {
+        HRDictionary_Set(clone, key, ktype, value, vtype);
+    }
+    return clone;
+}
+
+Bool HRDictionary_Next_R(UInt _this, UInt & iterator, UInt & hrpair)
+{
+    Type ktype = (Type)0;
+    UInt key = 0;
+    Type vtype = (Type)0;
+    UInt value = 0;
+    Bool found = HRDictionary_next_R(_this, iterator, ktype, key, vtype, value);
+    if (found && (0x00 != value) && (vtype == Type::eVariant))
+    {
+        value = HRVariant_UnBox_R(value, vtype);
+    }
+    hrpair = HRPair_New(ktype, key, vtype, value);
+    return found;
+}
+
+Type HRDictionary_GetKeyType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 2));
+}
+
+Type HRDictionary_GetValueType(UInt _this)
+{
+    return Type(Memory_ReadByte(_this + 3));
+}
+
+UInt HRDictionary_New(Type ktype, Type vtype)
+{
+    UInt address = GC_New(0x08, Type::eDictionary);
+    Memory_WriteByte(address + 2, Byte(ktype));
+    Memory_WriteByte(address + 3, Byte(vtype));
+    Memory_WriteWord(address + 4, 0x00);
+    Memory_WriteWord(address + 6, 0x00);
+    Memory_WriteWord(address + 8, 0x00);
+    return address;
+}
+
+UInt HRDictionary_GetCount(UInt _this)
+{
+    return Memory_ReadWord(_this + 4);
+}
+
+void HRDictionary_Set(UInt _this, UInt key, Type ktype, UInt value, Type vtype)
+{
+    Type dkType = Type(Memory_ReadByte(_this + 2));
+    Type dvType = Type(Memory_ReadByte(_this + 3));
+    UInt count = Memory_ReadWord(_this + 4);
+    UInt capacity = Memory_ReadWord(_this + 6);
+    Bool valueKeys = (dkType != Type::eString);
+    if (0x04 * (count + 0x01) > capacity * 0x03)
+    {
+        UInt newCapacity = 0x20;
+        if (capacity >= 0x80)
+        {
+            newCapacity = capacity + 0x20;
+        }
+        else if (capacity > 0x00)
+        {
+            newCapacity = capacity * 0x02;
+        }
+        HRDictionary_adjustCapacity(_this, newCapacity);
+    }
+    UInt pEntries = Memory_ReadWord(_this + 8);
+    capacity = Memory_ReadWord(_this + 6);
+    UInt hash = 0;
+    if (!valueKeys)
+    {
+        hash = HRDictionary_hashKey16(key);
+    }
+    UInt pEntry = HRDictionary_findEntry(pEntries, capacity, key, hash, valueKeys);
+    UInt ekey = Memory_ReadWord(pEntry + 0);
+    UInt evalue = Memory_ReadWord(pEntry + 6);
+    Bool isNewKey = (ekey == 0x00);
+    Bool existingValue = evalue != 0x00;
+    if (valueKeys)
+    {
+        Bool isOccupied = Memory_ReadByte(pEntry + 2) != 0x00;
+        isNewKey = !isOccupied;
+        existingValue = existingValue && isOccupied;
+    }
+    if (isNewKey && (evalue == 0x00))
+    {
+        Memory_WriteWord(_this + 4, Memory_ReadWord(_this + 4) + 0x01);
+    }
+    if (valueKeys)
+    {
+        Memory_WriteWord(pEntry + 0, key);
+        Memory_WriteWord(pEntry + 2, 0x01);
+    }
+    else
+    {
+        if (0x00 != ekey)
+        {
+            GC_Release(ekey);
+        }
+        Memory_WriteWord(pEntry + 0, GC_Clone(key));
+        Memory_WriteWord(pEntry + 2, hash);
+    }
+    if (Types_IsReferenceType(dvType))
+    {
+        if (existingValue)
+        {
+            GC_Release(evalue);
+        }
+        Memory_WriteWord(pEntry + 6, GC_Clone(value));
+    }
+    else
+    {
+        Memory_WriteWord(pEntry + 6, value);
+    }
+}
+
+Bool HRDictionary_Contains(UInt _this, UInt key)
+{
+    Type dkType = Type(Memory_ReadByte(_this + 2));
+    Bool valueKeys = (dkType != Type::eString);
+    UInt pEntries = Memory_ReadWord(_this + 8);
+    UInt capacity = Memory_ReadWord(_this + 6);
+    UInt hash = 0;
+    if (!valueKeys)
+    {
+        hash = HRDictionary_hashKey16(key);
+    }
+    UInt pEntry = HRDictionary_findEntry(pEntries, capacity, key, hash, valueKeys);
+    return HRDictionary_validEntry(pEntry, valueKeys);
+}
+
+UInt HRDictionary_Get_R(UInt _this, UInt key, Type & vtype)
+{
+    Type dkType = Type(Memory_ReadByte(_this + 2));
+    Bool valueKeys = (dkType != Type::eString);
+    UInt pEntries = Memory_ReadWord(_this + 8);
+    UInt capacity = Memory_ReadWord(_this + 6);
+    UInt hash = 0;
+    if (!valueKeys)
+    {
+        hash = HRDictionary_hashKey16(key);
+    }
+    UInt pEntry = HRDictionary_findEntry(pEntries, capacity, key, hash, valueKeys);
+    if (!HRDictionary_validEntry(pEntry, valueKeys))
+    {
+        Minimal_Error_Set(0x03);
+        return 0x00;
+    }
+    Type dvType = Type(Memory_ReadByte(_this + 3));
+    UInt value = Memory_ReadWord(pEntry + 6);
+    vtype = dvType;
+    if (0x00 != value)
+    {
+        if (vtype == Type::eVariant)
+        {
+            vtype = Type(Memory_ReadByte(value));
+        }
+        if (vtype == Type::eVariant)
+        {
+            value = HRVariant_GetValue_R(value, vtype);
+        }
+        else if (Types_IsReferenceType(vtype))
+        {
+            vtype = Type(Memory_ReadByte(value));
+            value = GC_Clone(value);
+        }
+    }
+    return value;
+}
+
+void HRDictionary_adjustCapacity(UInt _this, UInt newCapacity)
+{
+    Type dkType = Type(Memory_ReadByte(_this + 2));
+    Bool valueKeys = (dkType != Type::eString);
+    UInt sizeRequired = 8 * newCapacity;
+    UInt pNewEntries = Memory_Allocate(sizeRequired);
+    Memory_Set(pNewEntries, 0x00, sizeRequired);
+    UInt pOldEntries = Memory_ReadWord(_this + 8);
+    UInt capacity = Memory_ReadWord(_this + 6);
+    UInt count = 0x00;;
+    for (UInt i = 0x00; i < capacity; i++)
+    {
+        UInt pOldEntry = pOldEntries + i * 8;
+        if (!HRDictionary_validEntry(pOldEntry, valueKeys))
+        {
+            continue;;
+        }
+        UInt key = Memory_ReadWord(pOldEntry + 0);
+        UInt hash = Memory_ReadWord(pOldEntry + 2);
+        UInt pNewEntry = HRDictionary_findEntry(pNewEntries, newCapacity, key, hash, valueKeys);
+        Memory_WriteWord(pNewEntry + 0, key);
+        Memory_WriteWord(pNewEntry + 2, hash);
+        Memory_WriteWord(pNewEntry + 6, Memory_ReadWord(pOldEntry + 6));
+        
+        count++;
+    }
+    if (0x00 != pOldEntries)
+    {
+        Memory_Free(pOldEntries);
+    }
+    Memory_WriteWord(_this + 4, count);
+    Memory_WriteWord(_this + 6, newCapacity);
+    Memory_WriteWord(_this + 8, pNewEntries);
+}
+
+UInt HRDictionary_hashKey16(UInt key)
+{
+    UInt length = Memory_ReadWord(key + 0x02);
+    UInt hash = 0x9DC5;;
+    for (UInt i = 0x00; i < length; i++)
+    {
+        UInt ch = Memory_ReadByte(key + 0x04 + i);
+        hash = hash ^ ch;
+        hash = hash * 0x0193;
+    }
+    return hash;
+}
+
+UInt HRDictionary_findEntry(UInt pEntries, UInt capacity, UInt key, UInt hash, Bool valueKeys)
+{
+    UInt index = 0;
+    if (valueKeys)
+    {
+        index = key % capacity;
+    }
+    else
+    {
+        index = hash % capacity;
+    }
+    UInt tombstone = 0x00;
     for (;;)
     {
-        if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 3) != 0x00))
+        UInt pEntry = pEntries + index * 8;
+        UInt ekey = Memory_ReadWord(pEntry + 0);
+        if (valueKeys)
         {
-            UInt seekposLSW = HRLong_GetByte(hrseekpos, 0x00) + (HRLong_GetByte(hrseekpos, 0x01) << 0x08);
-            UInt seekposMSW = HRLong_GetByte(hrseekpos, 0x02) + (HRLong_GetByte(hrseekpos, 0x03) << 0x08);
-            UInt sizeLSW = Memory_ReadWord(_this + 14);
-            UInt sizeMSW = Memory_ReadWord(_this + 14 + 0x02);
-            if (HRFile_lt32(seekposLSW, seekposMSW, sizeLSW, sizeMSW))
+            Bool isOccupied = Memory_ReadByte(pEntry + 2) != 0x00;
+            if (!isOccupied)
             {
-                if (External_TryFileReadByte_R(Memory_ReadWord(_this + 6), hrseekpos, b))
+                UInt value = Memory_ReadWord(pEntry + 6);
+                if (value == 0x00)
                 {
-                    break;;
+                    return (tombstone != 0x00) ? (tombstone) : (pEntry);
+                }
+                else
+                {
+                    if (tombstone == 0x00)
+                    {
+                        tombstone = pEntry;
+                    }
                 }
             }
+            else if (ekey == key)
+            {
+                return pEntry;
+            }
         }
-        Memory_WriteByte(_this + 2, 0x00);
-        break;;
-    }
-    return b;
-}
-
-void HRFile_Append(UInt _this, UInt hrstr)
-{
-    if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 4) != 0x00) && (Memory_ReadByte(_this + 5) == 0x00))
-    {
-        UInt buffer = Memory_ReadWord(_this + 12);
-        HRString_BuildString_R(buffer, hrstr);
-        UInt length = HRString_GetLength(buffer);
-        if (length >= 0x0100)
+        else
         {
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
-            HRString_BuildClear_R(buffer);
+            if (ekey == 0x00)
+            {
+                UInt value = Memory_ReadWord(pEntry + 6);
+                if (value == 0x00)
+                {
+                    return (tombstone != 0x00) ? (tombstone) : (pEntry);
+                }
+                else
+                {
+                    if (tombstone == 0x00)
+                    {
+                        tombstone = pEntry;
+                    }
+                }
+            }
+            else if (HRString_Compare(ekey, key) == 0x00)
+            {
+                return pEntry;
+            }
         }
-        Memory_WriteWord(_this + 12, buffer);
+        index = (index + 0x01) % capacity;
+    }
+    return 0x00;
+}
+
+Bool HRDictionary_validEntry(UInt pEntry, Bool valueKeys)
+{
+    if (pEntry == 0x00)
+    {
+        return false;
+    }
+    else if (valueKeys)
+    {
+        return Memory_ReadByte(pEntry + 2) != 0x00;
     }
     else
     {
-        Memory_WriteByte(_this + 2, 0x00);
+        return Memory_ReadWord(pEntry + 0) != 0x00;
     }
+    return false;
 }
 
-UInt HRFile_GetTime(UInt path)
+UInt HRPair_Clone(UInt original)
 {
-    return External_FileGetTime(path);
+    Type dkType = Type(Memory_ReadByte(original + 2));
+    Type dvType = Type(Memory_ReadByte(original + 3));
+    UInt key = Memory_ReadWord(original + 4);
+    UInt value = Memory_ReadWord(original + 6);
+    return HRPair_New(dkType, key, dvType, value);
 }
 
-UInt HRFile_Clone(UInt original)
+UInt HRPair_New(Type ktype, UInt key, Type vtype, UInt value)
 {
-    UInt address = GC_New(0x10, Type::eFile);
-    Memory_WriteByte(address + 2, Memory_ReadByte(original + 2));
-    Memory_WriteByte(address + 3, Memory_ReadByte(original + 3));
-    Memory_WriteByte(address + 4, Memory_ReadByte(original + 4));
-    Memory_WriteByte(address + 5, Memory_ReadByte(original + 5));
-    Memory_WriteWord(address + 6, HRString_Clone(Memory_ReadWord(original + 6)));
-    Memory_WriteWord(address + 8, Memory_ReadWord(original + 8));
-    Memory_WriteWord(address + 8 + 0x02, Memory_ReadWord(original + 8 + 0x02));
-    if (HRFile_IsCode(original))
+    UInt address = GC_New(0x06, Type::ePair);
+    Memory_WriteByte(address + 2, Byte(ktype));
+    Memory_WriteByte(address + 3, Byte(vtype));
+    if (Types_IsReferenceType(ktype) && (0x00 != key))
     {
-        Memory_WriteWord(address + 12, Memory_ReadWord(original + 12));
+        key = GC_Clone(key);
     }
-    else
+    if (Types_IsReferenceType(vtype) && (0x00 != value))
     {
-        Memory_WriteWord(address + 12, HRString_Clone(Memory_ReadWord(original + 12)));
+        value = GC_Clone(value);
     }
-    Memory_WriteWord(address + 14, Memory_ReadWord(original + 14));
-    Memory_WriteWord(address + 14 + 0x02, Memory_ReadWord(original + 14 + 0x02));
+    Memory_WriteWord(address + 4, key);
+    Memory_WriteWord(address + 6, value);
     return address;
 }
 
-UInt HRDirectory_New()
+UInt HRPair_GetValue_R(UInt _this, Type & vtype)
 {
-    UInt address = GC_New(0x03, Type::eDirectory);
-    Memory_WriteByte(address + 2, 0x00);
-    Memory_WriteWord(address + 3, HRString_New());
-    return address;
-}
-
-UInt HRDirectory_Open(UInt hrpath)
-{
-    UInt address = HRDirectory_New();
-    Memory_WriteWord(address + 3, HRString_Clone(hrpath));
-    if (HRDirectory_Exists(hrpath))
+    vtype = Type(Memory_ReadByte(_this + 3));
+    UInt value = Memory_ReadWord(_this + 6);
+    if (vtype == Type::eVariant)
     {
-        Memory_WriteByte(address + 2, 0x01);
+        value = HRVariant_GetValue_R(value, vtype);
     }
-    return address;
-}
-
-Bool HRDirectory_IsValid(UInt _this)
-{
-    return (Memory_ReadByte(_this + 2) != 0x00);
-}
-
-UInt HRDirectory_GetFileCount(UInt hrdir)
-{
-    UInt skipped = 0;
-    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetFileCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
-}
-
-UInt HRDirectory_GetFileCount_R(UInt hrdir, UInt & skipped)
-{
-    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetFileCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
-}
-
-UInt HRDirectory_GetDirectoryCount(UInt hrdir)
-{
-    UInt skipped = 0;
-    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetDirectoryCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
-}
-
-UInt HRDirectory_GetDirectoryCount_R(UInt hrdir, UInt & skipped)
-{
-    return (HRDirectory_IsValid(hrdir)) ? (External_DirectoryGetDirectoryCount_R(Memory_ReadWord(hrdir + 3), skipped)) : (0x00);
-}
-
-UInt HRDirectory_GetFile(UInt hrdir, UInt index)
-{
-    if (!HRDirectory_IsValid(hrdir))
+    else if (Types_IsReferenceType(vtype))
     {
-        return HRString_New();
+        value = GC_Clone(value);
+        vtype = Type(Memory_ReadByte(value));
     }
-    return External_DirectoryGetFile(Memory_ReadWord(hrdir + 3), index);
+    return value;
 }
 
-UInt HRDirectory_GetDirectory(UInt hrdir, UInt index)
+UInt HRPair_GetKey_R(UInt _this, Type & ktype)
 {
-    if (!HRDirectory_IsValid(hrdir))
+    ktype = Type(Memory_ReadByte(_this + 2));
+    UInt key = Memory_ReadWord(_this + 4);
+    if (Types_IsReferenceType(ktype))
     {
-        return HRString_New();
+        key = GC_Clone(key);
+        ktype = Type(Memory_ReadByte(key));
     }
-    return External_DirectoryGetDirectory(Memory_ReadWord(hrdir + 3), index);
+    return key;
 }
 
-void HRDirectory_Delete(UInt hrpath)
+Type HRPair_GetValueType(UInt _this)
 {
-    External_DirectoryDelete(hrpath);
+    return Type(Memory_ReadByte(_this + 3));
 }
 
-UInt HRDirectory_GetTime(UInt hrpath)
+Type HRPair_GetKeyType(UInt _this)
 {
-    return External_DirectoryGetTime(hrpath);
+    return Type(Memory_ReadByte(_this + 2));
 }
 
-UInt HRDirectory_Clone(UInt original)
+UInt HRVariant_Clone(UInt original)
 {
-    UInt address = GC_New(0x03, Type::eDirectory);
-    Memory_WriteByte(address + 2, Memory_ReadByte(original + 2));
-    Memory_WriteWord(address + 3, HRString_Clone(Memory_ReadWord(original + 3)));
+    Type vtype = Type(Memory_ReadByte(original + 2));
+    UInt value = Memory_ReadWord(original + 3);
+    return HRVariant_New(value, vtype);
+}
+
+UInt HRVariant_CreateValueVariant(UInt value, Type vtype)
+{
+    UInt address = GC_New(0x03, Type::eVariant);
+    Memory_WriteByte(address + 2, Byte(vtype));
+    Memory_WriteWord(address + 3, value);
     return address;
 }
 
-UInt HRLong_NewFromConstant(UInt location)
+UInt HRVariant_New(UInt value, Type vtype)
 {
-    UInt address = GC_New(0x04, Type::eLong);
-    Memory_WriteWord(address + 0x02, Memory_ReadCodeWord(location));
-    Memory_WriteWord(address + 0x04, Memory_ReadCodeWord(location + 0x02));
-    return address;
-}
-
-UInt HRLong_ToBytes(UInt ichunk)
-{
-    UInt lst = HRList_New(Type::eByte);;
-    for (Byte i = 0x00; i < 0x04; i++)
+    UInt address = GC_New(0x03, Type::eVariant);
+    Memory_WriteByte(address + 2, Byte(vtype));
+    if (Types_IsReferenceType(vtype))
     {
-        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
-        HRList_Append(lst, b, Type::eByte);
+        value = GC_Clone(value);
     }
-    return lst;
-}
-
-UInt HRLong_ToUInt(UInt _this)
-{
-    UInt value = Memory_ReadWord(_this + 0x04);
-    return Memory_ReadWord(_this + 0x02);
-}
-
-UInt HRLong_LongNegate(UInt top)
-{
-    UInt zero = HRUInt_ToLong(0x00);
-    UInt result = External_LongSub(zero, top);
-    GC_Release(zero);
-    return result;
-}
-
-UInt HRLong_LongAddB(UInt next, UInt top)
-{
-    UInt argument = HRUInt_ToLong(top);
-    UInt result = External_LongAdd(next, argument);
-    GC_Release(argument);
-    return result;
-}
-
-UInt HRLong_LongSubB(UInt next, UInt top)
-{
-    UInt argument = HRUInt_ToLong(top);
-    UInt result = External_LongSub(next, argument);
-    GC_Release(argument);
-    return result;
-}
-
-UInt HRLong_New()
-{
-    UInt address = GC_New(0x04, Type::eLong);
-    Memory_WriteWord(address + 0x02, 0x00);
-    Memory_WriteWord(address + 0x04, 0x00);
+    Memory_WriteWord(address + 3, value);
     return address;
 }
 
-UInt HRLong_Clone(UInt original)
+UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
 {
-    UInt address = GC_New(0x04, Type::eLong);
-    Memory_WriteWord(address + 0x02, Memory_ReadWord(original + 0x02));
-    Memory_WriteWord(address + 0x04, Memory_ReadWord(original + 0x04));
-    return address;
+    vtype = Type(Memory_ReadByte(_this + 2));
+    return Memory_ReadWord(_this + 3);
 }
 
-UInt HRFloat_NewFromConstant(UInt location)
+Type HRVariant_GetValueType(UInt _this)
 {
-    UInt address = GC_New(0x04, Type::eFloat);
-    Memory_WriteWord(address + 0x02, Memory_ReadCodeWord(location));
-    Memory_WriteWord(address + 0x04, Memory_ReadCodeWord(location + 0x02));
-    return address;
+    return Type(Memory_ReadByte(_this + 2));
 }
 
-UInt HRFloat_ToBytes(UInt ichunk)
+UInt HRVariant_GetValue_R(UInt _this, Type & vtype)
 {
-    UInt lst = HRList_New(Type::eByte);;
-    for (Byte i = 0x00; i < 0x04; i++)
+    vtype = Type(Memory_ReadByte(_this + 2));
+    UInt value = Memory_ReadWord(_this + 3);
+    if (Types_IsReferenceType(vtype))
     {
-        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
-        HRList_Append(lst, b, Type::eByte);
+        value = GC_Clone(value);
+        vtype = Type(Memory_ReadByte(value));
     }
-    return lst;
+    return value;
 }
 
-Byte HRFloat_GetByte(UInt ichunk, UInt i)
+Bool HRVariant_IsEqual(UInt left, Type ltype, UInt right, Type rtype)
 {
-    return Memory_ReadByte(ichunk + 0x02 + i);
+    Bool lref = Types_IsReferenceType(ltype);
+    Bool rref = Types_IsReferenceType(rtype);
+    if (lref == rref)
+    {
+        if (lref)
+        {
+            if (ltype == rtype)
+            {
+                switch (ltype)
+                {
+                case Type::eString:
+                {
+                    return 0x00 == HRString_Compare(left, right);
+                    break;
+                }
+                case Type::eLong:
+                {
+                    return 0x00 != External_LongEQ(left, right);
+                    break;
+                }
+                default:
+                {
+                    Runtime_ErrorDump(0x4B);
+                    Minimal_Error_Set(0x0A);
+                    break;
+                }
+                } // switch
+            }
+        }
+        else
+        {
+            switch (ltype)
+            {
+            case Type::eBool:
+            {
+                if (rtype != Type::eBool)
+                {
+                    return false;
+                }
+                return left == right;
+                break;
+            }
+            case Type::eChar:
+            {
+                if (rtype != Type::eChar)
+                {
+                    return false;
+                }
+                return left == right;
+                break;
+            }
+            case Type::eByte:
+            case Type::eUInt:
+            {
+                switch (rtype)
+                {
+                case Type::eByte:
+                case Type::eUInt:
+                {
+                    return left == right;
+                    break;
+                }
+                case Type::eInt:
+                {
+                    if (0x00 == (0x8000 & right))
+                    {
+                        return left == right;
+                    }
+                    break;
+                }
+                } // switch
+                break;
+            }
+            case Type::eInt:
+            {
+                switch (rtype)
+                {
+                case Type::eByte:
+                case Type::eUInt:
+                {
+                    if (0x00 == (0x8000 & left))
+                    {
+                        return left == right;
+                    }
+                    break;
+                }
+                case Type::eInt:
+                {
+                    return left == right;
+                    break;
+                }
+                } // switch
+                break;
+            }
+            } // switch
+        }
+    }
+    return false;
 }
 
-UInt HRFloat_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3)
+UInt Memory_Available()
 {
-    UInt address = GC_New(0x04, Type::eFloat);
-    Memory_WriteByte(address + 0x02, b0);
-    Memory_WriteByte(address + 0x03, b1);
-    Memory_WriteByte(address + 0x04, b2);
-    Memory_WriteByte(address + 0x05, b3);
-    return address;
+    UInt available = 0;
+    UInt current = Memory_freeList;
+    for (;;)
+    {
+        if (0x00 == current)
+        {
+            break;;
+        }
+        available = available + Memory_ReadWord(current) - 0x02;
+        current = Memory_ReadWord(current + 0x02);
+    }
+    return available;
 }
 
-UInt HRFloat_New()
+UInt Memory_Maximum()
 {
-    UInt address = GC_New(0x04, Type::eFloat);
-    Memory_WriteWord(address + 0x02, 0x00);
-    Memory_WriteWord(address + 0x04, 0x00);
-    return address;
-}
-
-UInt HRFloat_Clone(UInt original)
-{
-    UInt address = GC_New(0x04, Type::eFloat);
-    Memory_WriteWord(address + 0x02, Memory_ReadWord(original + 0x02));
-    Memory_WriteWord(address + 0x04, Memory_ReadWord(original + 0x04));
-    return address;
+    UInt available = 0;
+    UInt current = Memory_freeList;
+    for (;;)
+    {
+        if (0x00 == current)
+        {
+            break;;
+        }
+        UInt size = Memory_ReadWord(current + 0x00);
+        if (size > available)
+        {
+            available = size;
+        }
+        current = Memory_ReadWord(current + 0x02);
+    }
+    if (available > 0x00)
+    {
+        
+        available--;
+        
+        available--;
+    }
+    return available;
 }
 
 UInt HRString_NewFromConstant0(UInt location, UInt length)
@@ -7900,713 +8686,6 @@ UInt HRString_TrimLeft(UInt _this)
     UInt copy = HRString_Clone(_this);
     HRString_TrimLeft_R(copy);
     return copy;
-}
-
-UInt HRArray_New(Type htype, UInt count)
-{
-    UInt elementbytes = 0;
-    switch (htype)
-    {
-    case Type::eBool:
-    {
-        elementbytes = (count + 0x07) >> 0x03;
-        break;
-    }
-    case Type::eChar:
-    case Type::eByte:
-    {
-        elementbytes = count;
-        break;
-    }
-    default:
-    {
-        elementbytes = count * 0x02;
-        break;
-    }
-    } // switch
-    UInt _this = GC_New(0x03 + elementbytes, Type::eArray);
-    Memory_WriteWord(_this + 2, count);
-    Memory_WriteByte(_this + 4, Byte(htype));
-    UInt address = _this + 5;;
-    for (UInt i = 0x00; i < elementbytes; i++)
-    {
-        Memory_WriteByte(address, 0x00);
-        
-        address++;
-    }
-    return _this;
-}
-
-UInt HRArray_NewFromConstant(UInt location, Type htype, UInt length)
-{
-    UInt _this = HRArray_New(htype, length);;
-    for (UInt i = 0x00; i < length; i++)
-    {
-        Memory_WriteByte(_this + 5 + i, Memory_ReadCodeByte(location + i));
-    }
-    return _this;
-}
-
-UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype)
-{
-    UInt elements = Memory_ReadWord(_this + 2);
-    etype = Type(Memory_ReadByte(_this + 4));
-    if (index >= elements)
-    {
-        Minimal_Error_Set(0x02);
-        return 0x00;
-    }
-    UInt address = _this + 5;
-    UInt value = 0;
-    switch (etype)
-    {
-    case Type::eBool:
-    {
-        UInt offset = address + (index >> 0x03);
-        Byte slotIndex = Byte(index & 0x07);
-        Byte b = Memory_ReadByte(offset);
-        Byte mask = Memory_ReadByte(HRArray_setSlots + slotIndex);
-        value = b & mask;
-        if (value != 0x00)
-        {
-            value = 0x01;
-        }
-        break;
-    }
-    case Type::eChar:
-    case Type::eByte:
-    {
-        value = Memory_ReadByte(address + index);
-        break;
-    }
-    default:
-    {
-        UInt offset = address + (index << 0x01);
-        Byte lsb = Memory_ReadByte(offset);
-        Byte msb = Memory_ReadByte(offset + 0x01);
-        value = (msb << 0x08) | lsb;
-        break;
-    }
-    } // switch
-    return value;
-}
-
-void HRArray_SetItem(UInt _this, UInt index, UInt value)
-{
-    UInt elements = Memory_ReadWord(_this + 2);
-    Type etype = Type(Memory_ReadByte(_this + 4));
-    if (index >= elements)
-    {
-        Minimal_Error_Set(0x02);
-        return;
-    }
-    UInt address = _this + 5;
-    switch (etype)
-    {
-    case Type::eBool:
-    {
-        UInt offset = address + (index >> 0x03);
-        Byte slotIndex = Byte(index & 0x07);
-        Byte b = Memory_ReadByte(offset);
-        if (value == 0x00)
-        {
-            Byte mask = Memory_ReadByte(HRArray_clearSlots + slotIndex);
-            b = b & mask;
-        }
-        else
-        {
-            Byte mask = Memory_ReadByte(HRArray_setSlots + slotIndex);
-            b = b | mask;
-        }
-        Memory_WriteByte(offset, b);
-        break;
-    }
-    case Type::eChar:
-    case Type::eByte:
-    {
-        Memory_WriteByte(address + index, Byte(value & 0xFF));
-        break;
-    }
-    default:
-    {
-        UInt offset = address + (index << 0x01);
-        Memory_WriteByte(offset, Byte(value & 0xFF));
-        Memory_WriteByte(offset + 0x01, Byte(value >> 0x08));
-        break;
-    }
-    } // switch
-}
-
-UInt HRArray_GetCount(UInt _this)
-{
-    return Memory_ReadWord(_this + 2);
-}
-
-Type HRArray_GetValueType(UInt _this)
-{
-    return Type(Memory_ReadByte(_this + 4));
-}
-
-UInt HRArray_Clone(UInt original)
-{
-    UInt count = Memory_ReadWord(original + 2);
-    Type etype = Type(Memory_ReadWord(original + 4));
-    UInt address = HRArray_New(etype, count);
-    UInt elementbytes = 0;
-    switch (etype)
-    {
-    case Type::eBool:
-    {
-        elementbytes = (count + 0x07) >> 0x03;
-        break;
-    }
-    case Type::eChar:
-    case Type::eByte:
-    {
-        elementbytes = count;
-        break;
-    }
-    default:
-    {
-        elementbytes = count * 0x02;
-        break;
-    }
-    } // switch;
-    for (UInt i = 0x00; i < elementbytes; i++)
-    {
-        Memory_WriteByte(address + 5 + i, Memory_ReadByte(original + 5 + i));
-    }
-    return address;
-}
-
-UInt HRVariant_CreateValueVariant(UInt value, Type vtype)
-{
-    UInt address = GC_New(0x03, Type::eVariant);
-    Memory_WriteByte(address + 2, Byte(vtype));
-    Memory_WriteWord(address + 3, value);
-    return address;
-}
-
-UInt HRVariant_New(UInt value, Type vtype)
-{
-    UInt address = GC_New(0x03, Type::eVariant);
-    Memory_WriteByte(address + 2, Byte(vtype));
-    if (Types_IsReferenceType(vtype))
-    {
-        value = GC_Clone(value);
-    }
-    Memory_WriteWord(address + 3, value);
-    return address;
-}
-
-UInt HRVariant_UnBox_R(UInt _this, Type & vtype)
-{
-    vtype = Type(Memory_ReadByte(_this + 2));
-    return Memory_ReadWord(_this + 3);
-}
-
-Type HRVariant_GetValueType(UInt _this)
-{
-    return Type(Memory_ReadByte(_this + 2));
-}
-
-UInt HRVariant_Clone(UInt original)
-{
-    Type vtype = Type(Memory_ReadByte(original + 2));
-    UInt value = Memory_ReadWord(original + 3);
-    return HRVariant_New(value, vtype);
-}
-
-UInt HRVariant_GetValue_R(UInt _this, Type & vtype)
-{
-    vtype = Type(Memory_ReadByte(_this + 2));
-    UInt value = Memory_ReadWord(_this + 3);
-    if (Types_IsReferenceType(vtype))
-    {
-        value = GC_Clone(value);
-        vtype = Type(Memory_ReadByte(value));
-    }
-    return value;
-}
-
-Bool HRVariant_IsEqual(UInt left, Type ltype, UInt right, Type rtype)
-{
-    Bool lref = Types_IsReferenceType(ltype);
-    Bool rref = Types_IsReferenceType(rtype);
-    if (lref == rref)
-    {
-        if (lref)
-        {
-            if (ltype == rtype)
-            {
-                switch (ltype)
-                {
-                case Type::eString:
-                {
-                    return 0x00 == HRString_Compare(left, right);
-                    break;
-                }
-                case Type::eLong:
-                {
-                    return 0x00 != External_LongEQ(left, right);
-                    break;
-                }
-                default:
-                {
-                    Runtime_ErrorDump(0x4B);
-                    Minimal_Error_Set(0x0A);
-                    break;
-                }
-                } // switch
-            }
-        }
-        else
-        {
-            switch (ltype)
-            {
-            case Type::eBool:
-            {
-                if (rtype != Type::eBool)
-                {
-                    return false;
-                }
-                return left == right;
-                break;
-            }
-            case Type::eChar:
-            {
-                if (rtype != Type::eChar)
-                {
-                    return false;
-                }
-                return left == right;
-                break;
-            }
-            case Type::eByte:
-            case Type::eUInt:
-            {
-                switch (rtype)
-                {
-                case Type::eByte:
-                case Type::eUInt:
-                {
-                    return left == right;
-                    break;
-                }
-                case Type::eInt:
-                {
-                    if (0x00 == (0x8000 & right))
-                    {
-                        return left == right;
-                    }
-                    break;
-                }
-                } // switch
-                break;
-            }
-            case Type::eInt:
-            {
-                switch (rtype)
-                {
-                case Type::eByte:
-                case Type::eUInt:
-                {
-                    if (0x00 == (0x8000 & left))
-                    {
-                        return left == right;
-                    }
-                    break;
-                }
-                case Type::eInt:
-                {
-                    return left == right;
-                    break;
-                }
-                } // switch
-                break;
-            }
-            } // switch
-        }
-    }
-    return false;
-}
-
-UInt HRPair_New(Type ktype, UInt key, Type vtype, UInt value)
-{
-    UInt address = GC_New(0x06, Type::ePair);
-    Memory_WriteByte(address + 2, Byte(ktype));
-    Memory_WriteByte(address + 3, Byte(vtype));
-    if (Types_IsReferenceType(ktype) && (0x00 != key))
-    {
-        key = GC_Clone(key);
-    }
-    if (Types_IsReferenceType(vtype) && (0x00 != value))
-    {
-        value = GC_Clone(value);
-    }
-    Memory_WriteWord(address + 4, key);
-    Memory_WriteWord(address + 6, value);
-    return address;
-}
-
-UInt HRPair_GetValue_R(UInt _this, Type & vtype)
-{
-    vtype = Type(Memory_ReadByte(_this + 3));
-    UInt value = Memory_ReadWord(_this + 6);
-    if (vtype == Type::eVariant)
-    {
-        value = HRVariant_GetValue_R(value, vtype);
-    }
-    else if (Types_IsReferenceType(vtype))
-    {
-        value = GC_Clone(value);
-        vtype = Type(Memory_ReadByte(value));
-    }
-    return value;
-}
-
-UInt HRPair_GetKey_R(UInt _this, Type & ktype)
-{
-    ktype = Type(Memory_ReadByte(_this + 2));
-    UInt key = Memory_ReadWord(_this + 4);
-    if (Types_IsReferenceType(ktype))
-    {
-        key = GC_Clone(key);
-        ktype = Type(Memory_ReadByte(key));
-    }
-    return key;
-}
-
-Type HRPair_GetValueType(UInt _this)
-{
-    return Type(Memory_ReadByte(_this + 3));
-}
-
-Type HRPair_GetKeyType(UInt _this)
-{
-    return Type(Memory_ReadByte(_this + 2));
-}
-
-UInt HRPair_Clone(UInt original)
-{
-    Type dkType = Type(Memory_ReadByte(original + 2));
-    Type dvType = Type(Memory_ReadByte(original + 3));
-    UInt key = Memory_ReadWord(original + 4);
-    UInt value = Memory_ReadWord(original + 6);
-    return HRPair_New(dkType, key, dvType, value);
-}
-
-Bool HRDictionary_Next_R(UInt _this, UInt & iterator, UInt & hrpair)
-{
-    Type ktype = (Type)0;
-    UInt key = 0;
-    Type vtype = (Type)0;
-    UInt value = 0;
-    Bool found = HRDictionary_next_R(_this, iterator, ktype, key, vtype, value);
-    if (found && (0x00 != value) && (vtype == Type::eVariant))
-    {
-        value = HRVariant_UnBox_R(value, vtype);
-    }
-    hrpair = HRPair_New(ktype, key, vtype, value);
-    return found;
-}
-
-Type HRDictionary_GetKeyType(UInt _this)
-{
-    return Type(Memory_ReadByte(_this + 2));
-}
-
-Type HRDictionary_GetValueType(UInt _this)
-{
-    return Type(Memory_ReadByte(_this + 3));
-}
-
-UInt HRDictionary_New(Type ktype, Type vtype)
-{
-    UInt address = GC_New(0x08, Type::eDictionary);
-    Memory_WriteByte(address + 2, Byte(ktype));
-    Memory_WriteByte(address + 3, Byte(vtype));
-    Memory_WriteWord(address + 4, 0x00);
-    Memory_WriteWord(address + 6, 0x00);
-    Memory_WriteWord(address + 8, 0x00);
-    return address;
-}
-
-UInt HRDictionary_GetCount(UInt _this)
-{
-    return Memory_ReadWord(_this + 4);
-}
-
-void HRDictionary_Set(UInt _this, UInt key, Type ktype, UInt value, Type vtype)
-{
-    Type dkType = Type(Memory_ReadByte(_this + 2));
-    Type dvType = Type(Memory_ReadByte(_this + 3));
-    UInt count = Memory_ReadWord(_this + 4);
-    UInt capacity = Memory_ReadWord(_this + 6);
-    Bool valueKeys = (dkType != Type::eString);
-    if (0x04 * (count + 0x01) > capacity * 0x03)
-    {
-        UInt newCapacity = 0x20;
-        if (capacity >= 0x80)
-        {
-            newCapacity = capacity + 0x20;
-        }
-        else if (capacity > 0x00)
-        {
-            newCapacity = capacity * 0x02;
-        }
-        HRDictionary_adjustCapacity(_this, newCapacity);
-    }
-    UInt pEntries = Memory_ReadWord(_this + 8);
-    capacity = Memory_ReadWord(_this + 6);
-    UInt hash = 0;
-    if (!valueKeys)
-    {
-        hash = HRDictionary_hashKey16(key);
-    }
-    UInt pEntry = HRDictionary_findEntry(pEntries, capacity, key, hash, valueKeys);
-    UInt ekey = Memory_ReadWord(pEntry + 0);
-    UInt evalue = Memory_ReadWord(pEntry + 6);
-    Bool isNewKey = (ekey == 0x00);
-    Bool existingValue = evalue != 0x00;
-    if (valueKeys)
-    {
-        Bool isOccupied = Memory_ReadByte(pEntry + 2) != 0x00;
-        isNewKey = !isOccupied;
-        existingValue = existingValue && isOccupied;
-    }
-    if (isNewKey && (evalue == 0x00))
-    {
-        Memory_WriteWord(_this + 4, Memory_ReadWord(_this + 4) + 0x01);
-    }
-    if (valueKeys)
-    {
-        Memory_WriteWord(pEntry + 0, key);
-        Memory_WriteWord(pEntry + 2, 0x01);
-    }
-    else
-    {
-        if (0x00 != ekey)
-        {
-            GC_Release(ekey);
-        }
-        Memory_WriteWord(pEntry + 0, GC_Clone(key));
-        Memory_WriteWord(pEntry + 2, hash);
-    }
-    if (Types_IsReferenceType(dvType))
-    {
-        if (existingValue)
-        {
-            GC_Release(evalue);
-        }
-        Memory_WriteWord(pEntry + 6, GC_Clone(value));
-    }
-    else
-    {
-        Memory_WriteWord(pEntry + 6, value);
-    }
-}
-
-Bool HRDictionary_Contains(UInt _this, UInt key)
-{
-    Type dkType = Type(Memory_ReadByte(_this + 2));
-    Bool valueKeys = (dkType != Type::eString);
-    UInt pEntries = Memory_ReadWord(_this + 8);
-    UInt capacity = Memory_ReadWord(_this + 6);
-    UInt hash = 0;
-    if (!valueKeys)
-    {
-        hash = HRDictionary_hashKey16(key);
-    }
-    UInt pEntry = HRDictionary_findEntry(pEntries, capacity, key, hash, valueKeys);
-    return HRDictionary_validEntry(pEntry, valueKeys);
-}
-
-UInt HRDictionary_Get_R(UInt _this, UInt key, Type & vtype)
-{
-    Type dkType = Type(Memory_ReadByte(_this + 2));
-    Bool valueKeys = (dkType != Type::eString);
-    UInt pEntries = Memory_ReadWord(_this + 8);
-    UInt capacity = Memory_ReadWord(_this + 6);
-    UInt hash = 0;
-    if (!valueKeys)
-    {
-        hash = HRDictionary_hashKey16(key);
-    }
-    UInt pEntry = HRDictionary_findEntry(pEntries, capacity, key, hash, valueKeys);
-    if (!HRDictionary_validEntry(pEntry, valueKeys))
-    {
-        Minimal_Error_Set(0x03);
-        return 0x00;
-    }
-    Type dvType = Type(Memory_ReadByte(_this + 3));
-    UInt value = Memory_ReadWord(pEntry + 6);
-    vtype = dvType;
-    if (0x00 != value)
-    {
-        if (vtype == Type::eVariant)
-        {
-            vtype = Type(Memory_ReadByte(value));
-        }
-        if (vtype == Type::eVariant)
-        {
-            value = HRVariant_GetValue_R(value, vtype);
-        }
-        else if (Types_IsReferenceType(vtype))
-        {
-            vtype = Type(Memory_ReadByte(value));
-            value = GC_Clone(value);
-        }
-    }
-    return value;
-}
-
-UInt HRDictionary_Clone(UInt original)
-{
-    Type dkType = Type(Memory_ReadByte(original + 2));
-    Type dvType = Type(Memory_ReadByte(original + 3));
-    UInt clone = HRDictionary_New(dkType, dvType);
-    UInt iterator = 0;
-    Type ktype = (Type)0;
-    UInt key = 0;
-    Type vtype = (Type)0;
-    UInt value = 0;
-    while (HRDictionary_next_R(original, iterator, ktype, key, vtype, value))
-    {
-        HRDictionary_Set(clone, key, ktype, value, vtype);
-    }
-    return clone;
-}
-
-void HRDictionary_adjustCapacity(UInt _this, UInt newCapacity)
-{
-    Type dkType = Type(Memory_ReadByte(_this + 2));
-    Bool valueKeys = (dkType != Type::eString);
-    UInt sizeRequired = 8 * newCapacity;
-    UInt pNewEntries = Memory_Allocate(sizeRequired);
-    Memory_Set(pNewEntries, 0x00, sizeRequired);
-    UInt pOldEntries = Memory_ReadWord(_this + 8);
-    UInt capacity = Memory_ReadWord(_this + 6);
-    UInt count = 0x00;;
-    for (UInt i = 0x00; i < capacity; i++)
-    {
-        UInt pOldEntry = pOldEntries + i * 8;
-        if (!HRDictionary_validEntry(pOldEntry, valueKeys))
-        {
-            continue;;
-        }
-        UInt key = Memory_ReadWord(pOldEntry + 0);
-        UInt hash = Memory_ReadWord(pOldEntry + 2);
-        UInt pNewEntry = HRDictionary_findEntry(pNewEntries, newCapacity, key, hash, valueKeys);
-        Memory_WriteWord(pNewEntry + 0, key);
-        Memory_WriteWord(pNewEntry + 2, hash);
-        Memory_WriteWord(pNewEntry + 6, Memory_ReadWord(pOldEntry + 6));
-        
-        count++;
-    }
-    if (0x00 != pOldEntries)
-    {
-        Memory_Free(pOldEntries);
-    }
-    Memory_WriteWord(_this + 4, count);
-    Memory_WriteWord(_this + 6, newCapacity);
-    Memory_WriteWord(_this + 8, pNewEntries);
-}
-
-UInt HRDictionary_hashKey16(UInt key)
-{
-    UInt length = Memory_ReadWord(key + 0x02);
-    UInt hash = 0x9DC5;;
-    for (UInt i = 0x00; i < length; i++)
-    {
-        UInt ch = Memory_ReadByte(key + 0x04 + i);
-        hash = hash ^ ch;
-        hash = hash * 0x0193;
-    }
-    return hash;
-}
-
-UInt HRDictionary_findEntry(UInt pEntries, UInt capacity, UInt key, UInt hash, Bool valueKeys)
-{
-    UInt index = 0;
-    if (valueKeys)
-    {
-        index = key % capacity;
-    }
-    else
-    {
-        index = hash % capacity;
-    }
-    UInt tombstone = 0x00;
-    for (;;)
-    {
-        UInt pEntry = pEntries + index * 8;
-        UInt ekey = Memory_ReadWord(pEntry + 0);
-        if (valueKeys)
-        {
-            Bool isOccupied = Memory_ReadByte(pEntry + 2) != 0x00;
-            if (!isOccupied)
-            {
-                UInt value = Memory_ReadWord(pEntry + 6);
-                if (value == 0x00)
-                {
-                    return (tombstone != 0x00) ? (tombstone) : (pEntry);
-                }
-                else
-                {
-                    if (tombstone == 0x00)
-                    {
-                        tombstone = pEntry;
-                    }
-                }
-            }
-            else if (ekey == key)
-            {
-                return pEntry;
-            }
-        }
-        else
-        {
-            if (ekey == 0x00)
-            {
-                UInt value = Memory_ReadWord(pEntry + 6);
-                if (value == 0x00)
-                {
-                    return (tombstone != 0x00) ? (tombstone) : (pEntry);
-                }
-                else
-                {
-                    if (tombstone == 0x00)
-                    {
-                        tombstone = pEntry;
-                    }
-                }
-            }
-            else if (HRString_Compare(ekey, key) == 0x00)
-            {
-                return pEntry;
-            }
-        }
-        index = (index + 0x01) % capacity;
-    }
-    return 0x00;
-}
-
-Bool HRDictionary_validEntry(UInt pEntry, Bool valueKeys)
-{
-    if (pEntry == 0x00)
-    {
-        return false;
-    }
-    else if (valueKeys)
-    {
-        return Memory_ReadByte(pEntry + 2) != 0x00;
-    }
-    else
-    {
-        return Memory_ReadWord(pEntry + 0) != 0x00;
-    }
-    return false;
 }
 
 Char HRChar_ToUpper(Char _this)
