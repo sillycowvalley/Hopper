@@ -21,13 +21,4 @@ unit Runtime
     // currently used in TiggerBasic to get current line number from PC - probably doesn't work as expected
     uint PC { get system; }
     
-    //uint SP { get system; }
-    //uint CSP { get system; }
-    //uint BP { get system; }
-    
-    //uint    GetStackWord(uint address) system;     // address offset in bytes
-    //type    GetStackType(uint address) system;     // address offset in bytes
-    //uint    GetCallStackWord(uint address) system; // address offset in words
-    
-    
 }

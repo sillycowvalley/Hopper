@@ -80,11 +80,10 @@ unit BuildCommand
                     {
                         // preprocessor symbols
                         <string,string> pdValues = kv.value;
-                        if (pdValues.Contains("MCU"))
-                        {
-                            GenerateIHex = true;
-                        }
-                        else if (pdValues.Contains("HOPPER_6502"))
+                        if (   pdValues.Contains("MCU")
+                            || pdValues.Contains("SERIAL_CONSOLE")
+                            || pdValues.Contains("HOPPER_6502")
+                           )
                         {
                             GenerateIHex = true;
                         }

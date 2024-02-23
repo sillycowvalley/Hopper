@@ -1,5 +1,6 @@
 program Command
 {
+//#define SERIAL_CONSOLE
     uses "/Source/Shell/Common"
     
     string Name                 { get { return "CLS";  } }
@@ -18,7 +19,14 @@ program Command
     bool OnFile(string path, bool first, uint maxLength) { return true; }
     
     {
-        if (Common.Arguments()) { Screen.Clear(); }
+        if (Common.Arguments()) 
+        { 
+#ifdef SERIAL_CONSOLE
+            IO.Clear(); 
+#else
+            Screen.Clear(); 
+#endif
+        }
     }
 }
 

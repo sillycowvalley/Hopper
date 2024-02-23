@@ -247,7 +247,8 @@ program Shell
                         PrintLn();
                     }
                     currentDirectory = CurrentDirectory;
-                    Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black); // colour just to help with testing for now
+                    // colour just to help with testing for now
+                    Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black); 
                     x = currentDirectory.Length+1;
                     current = x;
                 }
@@ -265,7 +266,8 @@ program Shell
                                 currentPreviousCommand++;
                                 if ((length > 1) && (commandLine == currentString))
                                 {
-                                    continue; // try again : probably switching between <up> and <down>
+                                    // try again : probably switching between <up> and <down>
+                                    continue;
                                 }
                                 commandLine = currentString;
                                 redraw = true;
@@ -276,19 +278,22 @@ program Shell
                 }
                 case Key.Down:
                 {
-                    // <down> - clear the current commandLine and replace with next previous command
+                    // <down> - clear the current commandLine and replace with next command
                     if (previousCommands.Count != 0) // previous commands exist
                     {
                         loop
                         {
                             uint length = previousCommands.Count;
-                            if ((currentPreviousCommand > 0) && (currentPreviousCommand-1 < length))
+                            if ((currentPreviousCommand > 0) && 
+                                (currentPreviousCommand-1 < length)
+                               )
                             {
                                 currentPreviousCommand--;
                                 string currentString = previousCommands[currentPreviousCommand];
                                 if ((length > 1) && (commandLine == currentString))
                                 {
-                                    continue; // try again : probably switching between <up> and <down>
+                                    // try again : probably switching between <up> and <down>
+                                    continue;
                                 }
                                 commandLine = currentString;
                                 redraw = true;

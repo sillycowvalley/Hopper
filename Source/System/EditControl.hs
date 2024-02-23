@@ -2,25 +2,28 @@ unit EditControl
 {
     uses "/Source/System/System"
     uses "/Source/System/Screen"
-#ifndef SERIAL_CONSOLE    
+#ifndef SERIAL_CONSOLE
     uses "/Source/System/Keyboard"
 #endif    
     
     delegate bool ValidEditCharacter(char c);
+#ifndef SERIAL_CONSOLE    
     uint foreColor = Colour.MatrixGreen;
     uint backColor = Colour.Black;
-    
+#endif    
     ValidEditCharacter validate;
 
     SetValidation(ValidEditCharacter validator)
     {
         validate = validator;
     }
+#ifndef SERIAL_CONSOLE
     SetColours(uint fore, uint back)
     {
         foreColor = fore;
         backColor = back;
     }
+#endif
 
 #ifdef SERIAL_CONSOLE
     bool OnKey(char ch, uint leftX, uint fieldWidth, ref string textContent, ref uint currentX)
@@ -30,7 +33,7 @@ unit EditControl
         {
             if (currentX > leftX)
             {
-                Print(char(0x08) + " " + char(0x08));
+                IO.Write(char(0x08) + " " + char(0x08));
                 currentX--;
                 textContent = textContent.Substring(0, textContent.Length - 1);
             }
@@ -45,7 +48,7 @@ unit EditControl
                 {
                     if (validate(ch))
                     {
-                        Print(ch);
+                        IO.Write(ch);
                         currentX++;
                         textContent = textContent +  ch;
                         consumed = true;

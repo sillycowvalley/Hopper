@@ -1,9 +1,7 @@
 unit Common
 {
     
-#ifndef SERIAL_CONSOLE
     uses "/Source/System/Runtime"
-#endif
 
     uses "/Source/System/System"
     uses "/Source/System/IO"
@@ -150,7 +148,7 @@ unit Common
     Write(string msg, uint foreColour)
     {
 #ifdef SERIAL_CONSOLE
-        Common.WriteLn("  " + msg);
+        Common.Write("  " + msg);
 #else
         Print("  " + msg, foreColour, Colour.Black);
 #endif

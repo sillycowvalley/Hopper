@@ -1,5 +1,6 @@
 program Help
 {
+//#define SERIAL_CONSOLE
     uses "/Source/Shell/Common"
     
     {
@@ -16,7 +17,9 @@ program Help
             WriteLn("    DEL        RM       Deletes on or more files.");
             WriteLn("    DIR        LS       Lists files and subdirectories of a directory.");
             WriteLn("    HELP       MAN      Provides help information for Hopper Shell commands.");
+#ifndef SERIAL_CONSOLE
             WriteLn("    MORE       TYPE     Displays syntax highlighted file one screen at a time.");
+#endif
             WriteLn("    SHELL               Launch a nested Hopper Shell within the current one.");
             WriteLn("    EXIT                Quit the current Hopper Shell.");
             // TODO
