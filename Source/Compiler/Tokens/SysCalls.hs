@@ -191,11 +191,12 @@ unit SysCalls
         addEntry("Runtime.InDebugger_Get");
         addEntry("Runtime.DateTime_Get");
         
+        addEntry("Memory.ReadProgramByte");
+        addEntry("Memory.WriteProgramByte");
+        addEntry("Memory.ReadProgramWord");
+        addEntry("Memory.WriteProgramWord");
+        
         // placeholders:
-        addEntry("_Time.RTC");
-        addEntry("_Time.RTC_Set");
-        addEntry("_Runtime.StepOver");
-        addEntry("_Runtime.StepRun");
         addEntry("_Runtime.Waiting_Get");
         addEntry("_Runtime.ClearBreakpoints");
         addEntry("_Runtime.ClearStatements");
@@ -306,7 +307,6 @@ unit SysCalls
         
         addEntry("Long.AddB");
         addEntry("Long.SubB");
-        
         
         
     }

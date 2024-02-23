@@ -1059,7 +1059,7 @@ unit Instructions
         return instruction;
     }
     
-    string Disassemble(<byte> code, ref uint address, uint entryPointAddress, ref <uint> jumpLabels, ref <uint> jixLabels, bool doLabels)
+    string Disassemble(<byte> code, ref uint address, long entryPointOffset, ref <uint> jumpLabels, ref <uint> jixLabels, bool doLabels)
     {
         string disassembledContent;
         byte cd = code[address];
@@ -1067,7 +1067,7 @@ unit Instructions
   
         if ((instruction == Instruction.JIXB) || (instruction == Instruction.JIX))
         {
-            uint actualAddress = entryPointAddress + address;
+            long actualAddress = entryPointOffset + address;
             string addressContent = "0x" + actualAddress.ToHexString(4) + "  ";
             string opcode = Instructions.ToString(instruction);
             string opcontent = opcode;
@@ -1178,13 +1178,13 @@ unit Instructions
         }
         else
         {
-            String.Build(ref disassembledContent, disassembleSingle(code, ref address, entryPointAddress, ref jumpLabels));
+            String.Build(ref disassembledContent, disassembleSingle(code, ref address, entryPointOffset, ref jumpLabels));
         }
         return disassembledContent;
     }
-    string disassembleSingle(<byte> code, ref uint address, uint entryPointAddress, ref <uint> jumpLabels)
+    string disassembleSingle(<byte> code, ref uint address, long entryPointOffset, ref <uint> jumpLabels)
     {
-        uint actualAddress = entryPointAddress + address;
+        long actualAddress = entryPointOffset + address;
         string addressContent = "0x" + actualAddress.ToHexString(4) + "  ";
         
         byte cd = code[address];
@@ -1231,7 +1231,7 @@ unit Instructions
                         offsetString = "+";
                     }
                     offsetString = offsetString + offset.ToString();
-                    jumpTarget = jumpTarget + offset + long(entryPointAddress);
+                    jumpTarget = jumpTarget + offset + entryPointOffset;
                 }
                 if (isJumpOffset)
                 {
@@ -1274,7 +1274,7 @@ unit Instructions
                         offsetString = "+";
                     }
                     offsetString = offsetString + offset.ToString();
-                    jumpTarget = jumpTarget + offset + long(entryPointAddress);
+                    jumpTarget = jumpTarget + offset + entryPointOffset;
                 }
                 if (isJumpOffset)
                 {

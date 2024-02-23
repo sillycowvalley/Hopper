@@ -1,6 +1,6 @@
 program TestStrings
 {
-//#define SERIAL_CONSOLE
+#define MCU
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
@@ -1063,7 +1063,7 @@ program TestStrings
         WriteLn();
         WriteLn("TestStrings Ok");
 
-#ifndef SERIAL_CONSOLE
+#ifndef MCU
         Key key = ReadKey();
 #endif
     }

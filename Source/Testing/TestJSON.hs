@@ -1,6 +1,6 @@
 program TestJSON
 {
-//#define SERIAL_CONSOLE
+#define MCU
     uses "/Source/System/System"
     uses "/Source/System/IO"
     uses "/Source/System/Serialize"
@@ -10,13 +10,8 @@ program TestJSON
     PrintFailed(string message)
     {
         //Trace = false;
-        
-#ifdef HOPPER_6502
         WriteLn("  " + message);
         Diagnostics.Die(0x0B); // system failure / internal error
-#else
-        WriteLn("  " + message);
-#endif         
     }
     TestManual()
     {
@@ -219,7 +214,7 @@ program TestJSON
     
     {
         TestManual();
-#ifndef SERIAL_CONSOLE        
+#ifndef MCU        
         TestFile(); // need to upload the test file to MCU ..
 #endif
         TestTime();

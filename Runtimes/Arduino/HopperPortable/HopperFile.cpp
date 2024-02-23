@@ -144,7 +144,7 @@ void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength
         for (UInt i=0; i < codeLength; i++)
         {
             Type itype;
-            Byte b = Memory_ReadCodeByte(codeStart+i);
+            Byte b = Memory_ReadCodeByte(codeStart+i); // External_FileWriteAllCodeBytes
             f.write(b);
         }
         f.close();
@@ -167,7 +167,7 @@ Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLengt
             uint bytesRead = f.readBytes(buffer, pathBufferSize);
             for (uint i=0; i < bytesRead; i++)
             {
-                Memory_WriteCodeByte(loadAddress, buffer[i]);
+                Memory_WriteCodeByte(loadAddress, buffer[i]);        // ReadAllCodeBytes (only used by Runtime_LoadAuto)
                 loadAddress++;
                 codeLength++;
             }

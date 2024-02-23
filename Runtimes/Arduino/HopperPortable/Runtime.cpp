@@ -9,6 +9,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -22,6 +23,7 @@ UInt HopperVM_binaryAddress = 0;
 UInt HopperVM_programSize = 0;
 UInt HopperVM_constAddress = 0;
 UInt HopperVM_methodTable = 0;
+UInt HopperVM_programOffset = 0;
 UInt HopperVM_keyboardBuffer = 0;
 UInt HopperVM_valueStack = 0;
 UInt HopperVM_typeStack = 0;
@@ -279,7 +281,7 @@ void Runtime_MCU()
                         Runtime_WaitForEnter();
                         Bool restart = false;
                         UInt pc = HopperVM_PC_Get();
-                        OpCode opCode = OpCode(Memory_ReadCodeByte(pc));
+                        OpCode opCode = OpCode(Memory_ReadProgramByte(pc));
                         if ((opCode == OpCode::eCALL) || (opCode == OpCode::eCALLI))
                         {
                             HopperVM_SetBreakpoint(0x00, pc + 0x03);
@@ -927,7 +929,19 @@ void HopperVM_Restart()
     HopperVM_csp = 0x00;
     Minimal_Error_Set(0x00);
     HopperVM_cnp = false;
-    HopperVM_pc = Memory_ReadCodeWord(HopperVM_binaryAddress + 0x04);
+    UInt version = Memory_ReadCodeWord(HopperVM_binaryAddress + 0x00);
+    UInt entryPoint = Memory_ReadCodeWord(HopperVM_binaryAddress + 0x04);
+    if (version > 0x00)
+    {
+        HopperVM_pc = 0x00;
+        HopperVM_programOffset = entryPoint;
+    }
+    else
+    {
+        HopperVM_pc = entryPoint;
+        HopperVM_programOffset = 0x00;
+    }
+    External_SetCodeStartAddress(HopperVM_programOffset);
 }
 
 void HopperVM_Initialize(UInt loadedAddress, UInt loadedSize)
@@ -1435,7 +1449,7 @@ void HopperVM_DiskSetup()
 Bool HopperVM_ExecuteOpCode()
 {
     External_ServiceInterrupts();
-    HopperVM_opCode = OpCode(Memory_ReadCodeByte(HopperVM_pc));
+    HopperVM_opCode = OpCode(Memory_ReadProgramByte(HopperVM_pc));
     
     HopperVM_pc++;
     return External_FunctionCall(HopperVM_jumpTable, Byte(HopperVM_opCode));
@@ -2966,7 +2980,7 @@ Bool Instructions_JIXB()
     if ((switchCase >= minRange) && (switchCase <= maxRange))
     {
         UInt index = tpc + switchCase - minRange;
-        offset = Memory_ReadCodeByte(index);
+        offset = Memory_ReadProgramByte(index);
     }
     if (offset == 0x00)
     {
@@ -3367,7 +3381,7 @@ Bool Instructions_JIX()
     if ((switchCase >= minRange) && (switchCase <= maxRange))
     {
         UInt index = tpc + (switchCase - minRange) * 0x02;
-        offset = Memory_ReadCodeByte(index) + (Memory_ReadCodeByte(index + 0x01) << 0x08);
+        offset = Memory_ReadProgramByte(index) + (Memory_ReadProgramByte(index + 0x01) << 0x08);
     }
     if (offset == 0x00)
     {
@@ -3385,8 +3399,8 @@ Bool Instructions_Call()
     UInt methodIndex = HopperVM_ReadWordOperand();
     HopperVM_PushCS(HopperVM_PC_Get());
     UInt methodAddress = HopperVM_LookupMethod(methodIndex);
-    Memory_WriteCodeByte(HopperVM_PC_Get() - 0x03, Byte(OpCode::eCALLI));
-    Memory_WriteCodeWord(HopperVM_PC_Get() - 0x02, methodAddress);
+    Memory_WriteProgramByte(HopperVM_PC_Get() - 0x03, Byte(OpCode::eCALLI));
+    Memory_WriteProgramWord(HopperVM_PC_Get() - 0x02, methodAddress);
     HopperVM_PC_Set(methodAddress);
     return true;
 }
@@ -3995,7 +4009,7 @@ void HopperVM_CNP_Set(Bool value)
 
 Int HopperVM_ReadByteOffsetOperand()
 {
-    Int offset = Int(Memory_ReadCodeByte(HopperVM_pc));
+    Int offset = Int(Memory_ReadProgramByte(HopperVM_pc));
     
     HopperVM_pc++;
     if (offset > 0x7F)
@@ -4030,7 +4044,7 @@ void HopperVM_Push(UInt value, Type htype)
 
 Byte HopperVM_ReadByteOperand()
 {
-    Byte operand = Memory_ReadCodeByte(HopperVM_pc);
+    Byte operand = Memory_ReadProgramByte(HopperVM_pc);
     
     HopperVM_pc++;
     return operand;
@@ -5977,7 +5991,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
 
 UInt HopperVM_ReadWordOperand()
 {
-    UInt operand = Memory_ReadCodeWord(HopperVM_pc);
+    UInt operand = Memory_ReadProgramWord(HopperVM_pc);
     
     HopperVM_pc++;
     
@@ -5995,7 +6009,7 @@ Int HopperVM_PopI_R(Type & htype)
 
 Int HopperVM_ReadWordOffsetOperand()
 {
-    Int offset = External_UIntToInt(Memory_ReadCodeWord(HopperVM_pc));
+    Int offset = External_UIntToInt(Memory_ReadProgramWord(HopperVM_pc));
     
     HopperVM_pc++;
     
@@ -6026,7 +6040,7 @@ Bool HopperVM_RunInline()
     UInt inlineCodeArray = HopperVM_Pop_R(ttype);
     HopperVM_pcStore = HopperVM_pc;
     UInt inlineLocation = HopperVM_binaryAddress + HopperVM_programSize;
-    HopperVM_pc = inlineLocation + startIndex;
+    HopperVM_pc = inlineLocation + startIndex - HopperVM_programOffset;
     UInt length = HRArray_GetCount(inlineCodeArray);;
     for (UInt i = 0x00; i < length; i++)
     {

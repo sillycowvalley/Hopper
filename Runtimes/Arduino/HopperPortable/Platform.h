@@ -29,6 +29,7 @@ extern std::queue<HopperISRStruct> isrQueue;
 
 extern unsigned char * dataMemoryBlock;
 extern unsigned char * codeMemoryBlock;
+extern unsigned char * codeStartAddress;
 
 void Machine_Initialize();
 Bool Machine_GetExited();
@@ -104,10 +105,18 @@ Byte Memory_ReadCodeByte(UInt address);
 void Memory_WriteCodeByte(UInt address, Byte value);
 Byte Memory_ReadByte(UInt address);
 void Memory_WriteByte(UInt address, Byte value);
+
 UInt Memory_ReadWord(UInt address);
 UInt Memory_ReadCodeWord(UInt address);
 void Memory_WriteWord(UInt address, UInt value);
 void Memory_WriteCodeWord(UInt address, UInt value);
+
+Byte Memory_ReadProgramByte(UInt address);
+void Memory_WriteProgramByte(UInt address, Byte value);
+UInt Memory_ReadProgramWord(UInt address);
+void Memory_WriteProgramWord(UInt address, UInt value);
+
+void External_SetCodeStartAddress(UInt codeAddress);
 
 UInt External_LongToFloat(UInt hrlong);
 UInt External_FloatToLong(UInt hrfloat);

@@ -22,9 +22,9 @@ optimize edit
 codegen term
 codegen port
 codegen hm
-codegen debug -extended
+codegen debug
 codegen rsod
-codegen edit -extended
+codegen edit
 
 dasm term
 dasm port

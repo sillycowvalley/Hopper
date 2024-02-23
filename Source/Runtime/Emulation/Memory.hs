@@ -15,6 +15,12 @@ unit Memory
     uint ReadCodeWord(uint address) system;
     WriteCodeWord(uint address, uint value) system;
     
+    byte ReadProgramByte(uint address) system;
+    WriteProgramByte(uint address, byte value) system;
+    uint ReadProgramWord(uint address) system;
+    WriteProgramWord(uint address, uint value) system;
+    
+    
     uint freeList;
     const byte mcbSize = 6;
     

@@ -43,8 +43,11 @@ unit HopperVM
     
     uint binaryAddress;
     uint programSize;
+    
     uint constAddress;
     uint methodTable;
+    uint programOffset;
+    
 #ifdef RUNTIME        
     uint keyboardBuffer;
 #endif
@@ -284,7 +287,20 @@ unit HopperVM
         csp = 0;
         Error = 0;
         cnp = false;
-        pc = ReadCodeWord(binaryAddress + 0x0004);   
+        
+        uint version = ReadCodeWord(binaryAddress + 0x0000);
+        uint entryPoint = ReadCodeWord(binaryAddress + 0x0004);
+        if (version > 0)
+        {
+            pc = 0;
+            programOffset = entryPoint;
+        }
+        else
+        {
+            pc = entryPoint;
+            programOffset = 0;
+        }
+        External.SetCodeStartAddress(programOffset);
     }
     
     
@@ -3123,19 +3139,19 @@ unit HopperVM
     
     uint ReadWordOperand()
     {
-        uint operand = ReadCodeWord(pc); 
+        uint operand = ReadProgramWord(pc); 
         pc++; pc++;
         return operand;
     }
     byte ReadByteOperand()
     {
-        byte operand = ReadCodeByte(pc); 
+        byte operand = ReadProgramByte(pc); 
         pc++;
         return operand;
     }
     int ReadByteOffsetOperand()
     {
-        int offset = int(ReadCodeByte(pc)); 
+        int offset = int(ReadProgramByte(pc)); 
         pc++;
         if (offset > 127)
         {
@@ -3145,13 +3161,13 @@ unit HopperVM
     }
     int ReadWordOffsetOperand()
     {
-        int offset = External.UIntToInt(ReadCodeWord(pc)); 
+        int offset = External.UIntToInt(ReadProgramWord(pc)); 
         pc++; pc++;
         return offset;
     }
     ShowCurrent()
     {
-        IO.WriteHex(pc); IO.Write(' ');  IO.WriteHex(ReadCodeByte(pc)); IO.Write(' ');
+        IO.WriteHex(pc); IO.Write(' ');  IO.WriteHex(ReadProgramByte(pc)); IO.Write(' ');
         IO.WriteLn();
     }
     WriteBREAK()
@@ -3456,7 +3472,7 @@ unit HopperVM
         ServiceInterrupts();
         
         //WriteLn(); WriteHex(pc);
-        opCode = OpCode(ReadCodeByte(pc));
+        opCode = OpCode(ReadProgramByte(pc));
         pc++;
 
 #ifndef SERIAL_CONSOLE                
@@ -3486,7 +3502,7 @@ unit HopperVM
 #ifdef CHECKED
             messagePC = PC;
 #endif
-            byte bopCode = ReadCodeByte(pc);
+            byte bopCode = ReadProgramByte(pc);
 #ifndef SERIAL_CONSOLE
             uint jump = ReadWord(jumpTable + (bopCode << 1));
 #endif
@@ -3576,7 +3592,7 @@ unit HopperVM
         
         pcStore  = pc;
         uint inlineLocation = binaryAddress + programSize;
-        pc = inlineLocation + startIndex;
+        pc = inlineLocation + startIndex - programOffset;
         
         uint length = HRArray.GetCount(inlineCodeArray);
         for (uint i = 0; i < length; i++)

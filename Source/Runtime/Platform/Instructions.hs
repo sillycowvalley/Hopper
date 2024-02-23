@@ -1072,7 +1072,7 @@ unit Instructions
         {
             // in the table
             uint index = tpc + switchCase - minRange;
-            offset = ReadCodeByte(index);
+            offset = ReadProgramByte(index);
         }
         
         if (offset == 0)
@@ -1110,7 +1110,7 @@ unit Instructions
         {
             // in the table
             uint index = tpc + (switchCase - minRange)*2;
-            offset = ReadCodeByte(index) + (ReadCodeByte(index+1) << 8);
+            offset = ReadProgramByte(index) + (ReadProgramByte(index+1) << 8);
         }
         
         if (offset == 0)
@@ -1493,7 +1493,7 @@ unit Instructions
     }
     bool InlinedSubB()
     {
-        uint top = ReadCodeByte(PC); PC = PC + 1;
+        uint top = ReadByteOperand();
 #ifdef CHECKED
         Type ntype;
         uint next = Pop(ref ntype);
@@ -1607,8 +1607,8 @@ unit Instructions
         uint methodIndex = ReadWordOperand();
         PushCS(PC);
         uint methodAddress = LookupMethod(methodIndex);
-        WriteCodeByte(PC-3, byte(OpCode.CALLI));
-        WriteCodeWord(PC-2, methodAddress);
+        WriteProgramByte(PC-3, byte(OpCode.CALLI));
+        WriteProgramWord(PC-2, methodAddress);
         PC = methodAddress;
         return true;
     }

@@ -31,8 +31,9 @@ const size_t segmentPages = 0xFF; // size in words, 64K x2 on all other devices 
 
 // Platform
 
-unsigned char * dataMemoryBlock = nullptr;
-unsigned char * codeMemoryBlock = nullptr;
+unsigned char * dataMemoryBlock  = nullptr;
+unsigned char * codeMemoryBlock  = nullptr;
+unsigned char * codeStartAddress = nullptr;
 
 Byte lastError;
 bool exited;
@@ -201,6 +202,7 @@ void Platform_Initialize()
     if (nullptr != codeMemoryBlock)
     {
         memset(codeMemoryBlock, (segmentPages << 8), 0);
+        codeStartAddress = codeMemoryBlock;
     }
     //Serial.println((unsigned int)codeMemoryBlock, HEX);
     dataMemoryBlock = (unsigned char*)malloc((segmentPages << 8));
@@ -228,6 +230,7 @@ void Platform_Release()
     dataMemoryBlock = nullptr;
     free(codeMemoryBlock);
     codeMemoryBlock = nullptr;
+    codeStartAddress = nullptr;
 
     External_WebServerRelease();
 }
@@ -263,27 +266,6 @@ Bool Serial_IsAvailable_Get()
     return (Bool)(Serial.available() != 0);
 }
 
-
-Byte Memory_ReadCodeByte(UInt address)
-{
-    return codeMemoryBlock[address];
-}
-
-void Memory_WriteCodeByte(UInt address, Byte value)
-{
-#ifdef CHECKED
-    if (address >= (segmentPages << 8))
-    {
-        Serial.print(address, HEX);
-        Serial.print(" out of range in Memory_WriteCodeByte ");
-        Error(0x02, HopperVM_PC_Get());
-        return;
-    }
-#endif  
-    codeMemoryBlock[address] = value;
-}
-
-
 Byte Memory_ReadByte(UInt address)
 {
     return dataMemoryBlock[address];
@@ -308,10 +290,6 @@ UInt Memory_ReadWord(UInt address)
     return dataMemoryBlock[address] + (dataMemoryBlock[address+1] << 8);
 }
 
-UInt Memory_ReadCodeWord(UInt address)
-{
-    return codeMemoryBlock[address] + (codeMemoryBlock[address + 1] << 8);
-}
 
 void Memory_WriteWord(UInt address, UInt value)
 {
@@ -328,6 +306,30 @@ void Memory_WriteWord(UInt address, UInt value)
     dataMemoryBlock[address+1] = value >> 8;
 }
 
+Byte Memory_ReadCodeByte(UInt address)
+{
+    return codeMemoryBlock[address];
+}
+
+void Memory_WriteCodeByte(UInt address, Byte value)
+{
+#ifdef CHECKED
+    if (address >= (segmentPages << 8))
+    {
+        Serial.print(address, HEX);
+        Serial.print(" out of range in Memory_WriteCodeByte ");
+        Error(0x02, HopperVM_PC_Get());
+        return;
+    }
+#endif  
+    codeMemoryBlock[address] = value;
+}
+
+UInt Memory_ReadCodeWord(UInt address)
+{
+    return codeMemoryBlock[address] + (codeMemoryBlock[address + 1] << 8);
+}
+
 void Memory_WriteCodeWord(UInt address, UInt value)
 {
 #ifdef CHECKED
@@ -341,6 +343,50 @@ void Memory_WriteCodeWord(UInt address, UInt value)
 #endif  
     codeMemoryBlock[address] = value & 0xFF;
     codeMemoryBlock[address + 1] = value >> 8;
+}
+
+Byte Memory_ReadProgramByte(UInt address)
+{
+    return codeStartAddress[address];
+}
+
+void Memory_WriteProgramByte(UInt address, Byte value)
+{
+#ifdef CHECKED
+    if (address >= (segmentPages << 8))
+    {
+        Serial.print(address, HEX);
+        Serial.print(" out of range in Memory_WriteProgramByte ");
+        Error(0x02, HopperVM_PC_Get());
+        return;
+    }
+#endif  
+    codeStartAddress[address] = value;
+}
+
+UInt Memory_ReadProgramWord(UInt address)
+{
+    return codeStartAddress[address] + (codeStartAddress[address + 1] << 8);
+}
+
+void Memory_WriteProgramWord(UInt address, UInt value)
+{
+#ifdef CHECKED
+    if (address+1 >= (segmentPages << 8))
+    {
+        Serial.print(address, HEX);
+        Serial.print(" out of range in Memory_WriteProgramWord ");
+        Error(0x02, HopperVM_PC_Get());
+        return;
+    }
+#endif  
+    codeStartAddress[address] = value & 0xFF;
+    codeStartAddress[address + 1] = value >> 8;
+}
+
+void External_SetCodeStartAddress(UInt codeStart)
+{
+    codeStartAddress = codeMemoryBlock + codeStart;
 }
 
 void External_Delay(UInt ms)
@@ -785,7 +831,7 @@ Bool HopperVM_InlinedExecuteWarp(bool logging)
         }
 #endif
         
-        InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[HopperVM_jumpTable + (codeMemoryBlock[HopperVM_pc++] << 2)]));
+        InstructionDelegate instructionDelegate = *((InstructionDelegate*)(&dataMemoryBlock[HopperVM_jumpTable + (codeStartAddress[HopperVM_pc++] << 2)]));
 #if defined(HWM) || defined(LWM)
 #ifdef HWM
         uint spb = HopperVM_sp;

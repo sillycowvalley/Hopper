@@ -270,15 +270,6 @@ unit BuildCommand
             {
                 arguments.Append("-ihex");
             }
-            if (BuildOptions.IsExtendedEnabled())
-            {
-                if (GenerateIHex)
-                {
-                    Editor.SetStatusBarText("Option 'Extended Code Segment' only valid for Windows Runtime");
-                    break;
-                }
-                arguments.Append("-extended");
-            }
             error = Runtime.Execute(binaryPath, arguments);
             if (error != 0)
             {

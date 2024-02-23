@@ -1,7 +1,6 @@
 program TestSuite
 {
-//#define SERIAL_CONSOLE
-//#define EXPERIMENTAL
+#define MCU
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
@@ -11,8 +10,6 @@ program TestSuite
     
     uses "/Source/System/IO"
     uses "/Source/System/Diagnostics"
-    uses "/Source/System/Screen"
-    uses "/Source/System/Keyboard"
     uses "/Source/Compiler/Tokens/Token"
 
 #ifdef TEXTBUFFER
@@ -20,12 +17,7 @@ program TestSuite
 #endif
     PrintFailed(string message)
     {
-      
-#ifdef HOPPER_6502
         WriteLn("  " + message);
-#else
-        WriteLn("  " + message);
-#endif         
         Diagnostics.Die(0x0B); // system failure / internal error
     }
     
@@ -1792,7 +1784,7 @@ program TestSuite
 #endif
         WriteLn();
         WriteLn("TestSuite Ok");
-#ifndef SERIAL_CONSOLE
+#ifndef MCU
         Key key = ReadKey();
 #endif
     }

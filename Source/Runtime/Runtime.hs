@@ -986,7 +986,7 @@ program Runtime
                                     WaitForEnter();
                                     bool restart;
                                     uint pc = HopperVM.PC;
-                                    OpCode opCode = OpCode(ReadCodeByte(pc));
+                                    OpCode opCode = OpCode(ReadProgramByte(pc));
                                     
                                     if ((opCode == OpCode.CALL) || (opCode == OpCode.CALLI))
                                     {

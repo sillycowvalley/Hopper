@@ -75,13 +75,13 @@ unit Code
                 }
             }
         }
-        
+        uint version     = code[0] + (code[1] << 8);
         uint methodCount = code[2] + (code[3] << 8);
         methodCount = methodCount - 6;
         methodCount = methodCount / 4;
         
         uint entryPoint = code[4] + (code[5] << 8);
-        methodStart[0] = entryPoint;
+        methodStart[0] = (version == 0) ? entryPoint : 0;
         
         for (uint iMethod = 0; iMethod < methodCount; iMethod++)
         {
@@ -182,8 +182,16 @@ unit Code
         <uint, <string> > globalOffsets;
         uint aCurrent = methodStart[methodIndex];
         uint aEnd   = aCurrent + methodSize[methodIndex];
-        // OutputDebug(pc.ToHexString(4) + ": " + aCurrent.ToHexString(4) + "->" + aEnd.ToHexString(4));
         
+        uint codeOffset = 0;    
+        uint version = code[0] + code[1] << 8;    
+        if (version != 0)
+        {
+            codeOffset = code[4] + code[5] << 8;    
+        }
+        pc       += codeOffset;
+        aCurrent += codeOffset;
+        aEnd     += codeOffset;
         loop
         {
             uint operand;
@@ -391,6 +399,7 @@ unit Code
     
     MapSource()
     {
+        //uint count = 0;
         foreach (var kv in debugSymbols)
         {
             if (kv.key == "globals")
@@ -427,6 +436,11 @@ unit Code
                 uint address = start + offset;
                 map[ln] = address;
                 codeMap[address] = path + ":" + kv2.value;
+                //if (count < 20)
+                //{
+                //    PrintLn(index.ToHexString(4) + " " + start.ToHexString(4) + " " + address.ToHexString(4) + ":" + codeMap[address]);
+                //    count++;
+                //}
             }
             lineMap[lpath] = map;
         }

@@ -14,7 +14,6 @@ unit BuildOptions
     bool IsOptimizeEnabled()     { return buildOptions["runOptimizer"]        != "false"; }
     bool IsDisassembleEnabled()  { return buildOptions["runDisassembler"]     != "false"; }
     bool IsAutoSaveEnabled()     { return buildOptions["autoSaveOnBuild"]     != "false"; }
-    bool IsExtendedEnabled()     { return buildOptions["extendedCodeSegment"] != "false"; }
     
     Register()
     {
@@ -22,7 +21,6 @@ unit BuildOptions
         buildOptions["runOptimizer"]        = "false";
         buildOptions["runDisassembler"]     = "false";
         buildOptions["autoSaveOnBuild"]     = "false";
-        buildOptions["extendedCodeSegment"] = "false";
         loadOptions();
         
         Commands.CommandExecuteDelegate checkedCommand = BuildOptions.Checked;
@@ -31,9 +29,6 @@ unit BuildOptions
         Commands.CommandExecuteDelegate optimizeCommand = BuildOptions.Optimized;
         Commands.CommandEnabledDelegate optimizeEnabled = BuildOptions.AlwaysEnabled;
         Commands.CommandCheckedDelegate optimizeIsChecked = BuildOptions.IsOptimizeEnabled;
-        Commands.CommandExecuteDelegate extendedCommand = BuildOptions.Extended;
-        Commands.CommandEnabledDelegate extendedEnabled = BuildOptions.AlwaysEnabled;
-        Commands.CommandCheckedDelegate extendedIsChecked = BuildOptions.IsExtendedEnabled;
         Commands.CommandExecuteDelegate disassembleCommand = BuildOptions.Disassemble;
         Commands.CommandEnabledDelegate disassembleEnabled = BuildOptions.AlwaysEnabled;
         Commands.CommandCheckedDelegate disassembleIsChecked = BuildOptions.IsDisassembleEnabled;
@@ -45,8 +40,6 @@ unit BuildOptions
         InstallChecked("Checked", checkedIsChecked);
         InstallCommand("Optimize",    "[ ] Run &Optimizer", optimizeCommand, optimizeEnabled, Key.NoKey);
         InstallChecked("Optimize", optimizeIsChecked);
-        InstallCommand("Extended",    "[ ] E&xtended Code Segment", extendedCommand, extendedEnabled, Key.NoKey);
-        InstallChecked("Extended", extendedIsChecked);
         InstallCommand("Disassemble", "[ ] Run &Disassembler", disassembleCommand, disassembleEnabled, Key.NoKey);
         InstallChecked("Disassemble", disassembleIsChecked);
         InstallCommand("AutoSave", "[ ] &Save on Build", autosaveCommand, autosaveEnabled, Key.NoKey);
@@ -60,10 +53,6 @@ unit BuildOptions
             if (JSON.Read(OptionsPath, ref dict))
             {
                 buildOptions = dict["buildoptions"];
-                if (!buildOptions.Contains("extendedCodeSegment"))
-                {
-                    buildOptions["extendedCodeSegment"] = "false";
-                }
             }
         }
     }
@@ -101,18 +90,6 @@ unit BuildOptions
         else
         {
             buildOptions["runOptimizer"] = "false";
-        }
-        saveOptions();
-    }
-    Extended()
-    {
-        if (buildOptions["extendedCodeSegment"] == "false")
-        {
-            buildOptions["extendedCodeSegment"] = "true";
-        }
-        else
-        {
-            buildOptions["extendedCodeSegment"] = "false";
         }
         saveOptions();
     }

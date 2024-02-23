@@ -15,7 +15,6 @@ program CODEGEN
     uses "/Source/Compiler/Tokens/Parser"
     
     long codeSize = 0;
-    bool extendedCodeSegment;
     
     WriteCode(file hexeFile, <byte> code)
     {
@@ -31,7 +30,6 @@ program CODEGEN
         PrintLn("Invalid arguments for CODEGEN:");
         PrintLn("  CODEGEN <code file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
-        PrintLn("    -extended  : full 64K for code, assumes 32 bit runtime");
         PrintLn("    -ihex      : generate an Intel HEX file from the .hexe");
     }
     
@@ -147,10 +145,6 @@ program CODEGEN
                         {
                             doIHex = true;
                         }
-                        case "-extended":
-                        {
-                            extendedCodeSegment = true;
-                        }
                         default:
                         {
                             args.Clear();
@@ -199,7 +193,7 @@ program CODEGEN
                     break;
                 }
                                 
-                byte versionLSB = extendedCodeSegment ? 0x01 : 0x00;
+                byte versionLSB = 0x01;
                 hexeFile.Append(versionLSB);
                 hexeFile.Append(byte(0));
                 
@@ -228,10 +222,6 @@ program CODEGEN
                 
                 uint entryIndex = Code.GetEntryIndex();
                 uint offset = Code.GetMethodSize(entryIndex);
-                if (!extendedCodeSegment)
-                {
-                    offset += mainOffset;
-                }
                 
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 foreach (var sz in methodSizes)
@@ -284,10 +274,7 @@ program CODEGEN
                 if (!Parser.IsInteractive())
                 {
                     codeSize = File.GetSize(hexePath);
-                    if (extendedCodeSegment)
-                    {
-                        codeSize -= mainOffset;
-                    }
+                    codeSize -= mainOffset;
                     PrintLn();
                     Print("Success, " + codeSize.ToString() + " bytes of code, ", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;

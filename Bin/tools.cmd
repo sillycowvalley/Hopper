@@ -27,7 +27,7 @@ DASM PreProcess
 PreProcess Compile
 Compile Compile -o
 Optimize Compile
-CODEGEN Compile -extended
+CODEGEN Compile
 DASM Compile
 
 PreProcess Translate

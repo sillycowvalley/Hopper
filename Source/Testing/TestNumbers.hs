@@ -1,6 +1,6 @@
 program TestNumbers
 {
-//#define SERIAL_CONSOLE
+#define MCU
     //uses "/Source/6502/System"
     uses "/Source/System/System"
     
@@ -10,7 +10,6 @@ program TestNumbers
     
     uses "/Source/System/IO"
     uses "/Source/System/Diagnostics"
-    uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
     uses "/Source/Compiler/Tokens/Token"
 
@@ -1747,7 +1746,7 @@ program TestNumbers
         
         WriteLn();
         WriteLn("TestNumbers Ok");
-#ifndef SERIAL_CONSOLE
+#ifndef MCU
         Key key = ReadKey();
 #endif
     }

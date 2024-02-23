@@ -372,6 +372,10 @@ namespace HopperNET
         RuntimeInDebuggerGet = 0x97,
         RuntimeDateTimeGet = 0x98,
 
+        MemoryReadProgramByte = 0x99,
+        MemoryWriteProgramByte = 0x9A,
+        MemoryReadProgramWord = 0x9B,
+        MemoryWriteProgramWord = 0x9C,
 
         SerialConnect = 0xA2,
         SerialClose = 0xA3,
@@ -5542,6 +5546,10 @@ namespace HopperNET
                         Diagnostics.ASSERT(currentContext.bpBefore == bp, "bp not the same as before System.Execute(..)");
                         Diagnostics.ASSERT(currentContext.spBefore == sp, "sp not the same as before System.Execute(..)");
 #endif
+                        if (setError != 0)
+                        {
+                            Diagnostics.OutputDebug("Runtime.Execute(..) -> " + setError.ToString());
+                        }
                         Push(setError, HopperType.tUInt);
                     }
                     break;
@@ -6809,6 +6817,7 @@ namespace HopperNET
                         Push(0xFFFF, HopperType.tUInt);
                     }
                     break;
+
                 case SysCall.MemoryReadCodeByte:
                     {
                         uint address = Pop();
@@ -6835,6 +6844,35 @@ namespace HopperNET
                         uint address = Pop();
                         currentContext.memoryCodeArray[address] = (byte)(data & 0xFF);
                         currentContext.memoryCodeArray[address + 1] = (byte)((data >> 8) & 0xFF);
+                    }
+                    break;
+
+                case SysCall.MemoryReadProgramByte:
+                    {
+                        uint address = Pop();
+                        Push(currentContext.memoryCodeArray[address + currentContext.CodeOffset], HopperType.tByte);
+                    }
+                    break;
+                case SysCall.MemoryReadProgramWord:
+                    {
+                        uint address = Pop();
+                        Push((ushort)(currentContext.memoryCodeArray[address + currentContext.CodeOffset] + (currentContext.memoryCodeArray[address + 1 + currentContext.CodeOffset] << 8)), HopperType.tUInt);
+                    }
+                    break;
+
+                case SysCall.MemoryWriteProgramByte:
+                    {
+                        uint data = Pop();
+                        uint address = Pop();
+                        currentContext.memoryCodeArray[address + currentContext.CodeOffset] = (byte)data;
+                    }
+                    break;
+                case SysCall.MemoryWriteProgramWord:
+                    {
+                        uint data = Pop();
+                        uint address = Pop();
+                        currentContext.memoryCodeArray[address + currentContext.CodeOffset] = (byte)(data & 0xFF);
+                        currentContext.memoryCodeArray[address + 1 + currentContext.CodeOffset] = (byte)((data >> 8) & 0xFF);
                     }
                     break;
 

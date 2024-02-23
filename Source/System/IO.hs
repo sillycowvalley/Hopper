@@ -5,6 +5,10 @@ unit IO
     bool echoToLCD;
     // #### end of globals
     
+#if !defined(SERIAL_CONSOLE) && defined(MCU)
+    #define SERIAL_CONSOLE
+#endif
+ 
 #ifndef MCU
     uses "/Source/System/Screen"
 #else    

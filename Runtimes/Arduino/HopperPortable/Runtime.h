@@ -452,6 +452,7 @@ enum Key {
     eTab = 0xE00D,
     eEnter = 0x000D,
     eEscape = 0x001B,
+    ePeriod = 0x002E,
     eModSpace = 0xE029,
     eModEscape = 0xE076,
     eModInsert = 0xE070,
@@ -902,6 +903,7 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+
 
 
 

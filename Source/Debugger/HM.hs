@@ -337,6 +337,7 @@ program HopperMonitor
                 if (symbolsLoaded)
                 {
                     <uint, <string> > usedGlobals = Source.GetGlobals(methodIndex, 0);
+                    Print(" methodIndex=" +methodIndex.ToHexString(4) + " "  + (usedGlobals.Count).ToString() + " ");
                     foreach (var kv in usedGlobals)
                     {
                         uint goffset = kv.key;
@@ -396,13 +397,26 @@ program HopperMonitor
         if (ZeroPageContains("CODESTART"))
         {
             string content = address.ToHexString(4); // fallback content
-            address = address - (GetZeroPage("CODESTART") << 8);
+            uint codeStart = (GetZeroPage("CODESTART") << 8);
+            
+            uint version    = Source.GetCode(codeStart);
+            uint entryPoint = Source.GetCode(codeStart+4);
+            uint codeOffset = 0;
+            if (version != 0)
+            {
+                codeOffset = entryPoint;
+            }
+            address = address + codeOffset - codeStart;
             bool first = true;
             loop
             {
                 if ((address > 0) && (address < Source.GetCodeLength()))
                 {
-                    string sourceIndex = Code.GetSourceIndex(address);
+                    uint sourcePC = address - codeOffset;
+                    string sourceIndex = Code.GetSourceIndex(sourcePC);
+                    //PrintLn();
+                    //Print("sourcePC=" + sourcePC.ToHexString(4) + " address=" + address.ToHexString(4) + " sourceIndex=" + sourceIndex + " ");
+                    
                     if (sourceIndex.Length != 0)
                     {
                         string sourceLine = Code.GetSourceLine(sourceIndex);
@@ -417,7 +431,8 @@ program HopperMonitor
                     }
                     Instruction instruction = Instruction(Source.GetCode(address));
                     bool wasReturn = Instructions.IsRET(instruction);
-                    content = Source.Disassemble(ref address);
+                    int entryPointOffset = -int(codeOffset);
+                    content = Source.Disassemble(ref address, entryPointOffset);
                     PrintLn();
                     if (first)
                     {

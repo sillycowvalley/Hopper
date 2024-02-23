@@ -243,7 +243,7 @@ Bool Instructions_InlinedAddB()
 {
     UInt sp2 = HopperVM_sp - 2;
     UInt * dp = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *dp = *dp + codeMemoryBlock[HopperVM_pc++];
+    *dp = *dp + codeStartAddress[HopperVM_pc++];
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
     return true;
 }
@@ -251,7 +251,7 @@ Bool Instructions_InlinedSubB()
 {
     UInt sp2 = HopperVM_sp - 2;
     UInt * dp = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *dp = *dp - codeMemoryBlock[HopperVM_pc++];
+    *dp = *dp - codeStartAddress[HopperVM_pc++];
     *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
     return true;
 }
@@ -274,7 +274,7 @@ Bool Instructions_InlinedPushIB()
 #ifdef CHECKED
     HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
 #else
-    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeMemoryBlock[HopperVM_pc++];
+    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeStartAddress[HopperVM_pc++];
     dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
     HopperVM_sp += 2;
 #endif
@@ -286,10 +286,10 @@ Bool Instructions_InlinedPushIBB()
     HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
     HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
 #else
-    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeMemoryBlock[HopperVM_pc++];
+    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeStartAddress[HopperVM_pc++];
     dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
     HopperVM_sp += 2;
-    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeMemoryBlock[HopperVM_pc++];
+    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeStartAddress[HopperVM_pc++];
     dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
     HopperVM_sp += 2;
 #endif
@@ -326,7 +326,7 @@ Bool Instructions_InlinedPushLocalB02()
 
 Bool Instructions_InlinedPushLocalB()
 {
-    Int8 offset = (Int8)(codeMemoryBlock[HopperVM_pc++]);
+    Int8 offset = (Int8)(codeStartAddress[HopperVM_pc++]);
     UInt * vp  = (UInt*)&dataMemoryBlock[offset + HopperVM_valueStack + HopperVM_bp];
     *((UInt*)&dataMemoryBlock[UInt(HopperVM_valueStack + HopperVM_sp)]) = *vp;
     Byte htype = dataMemoryBlock[UInt(offset + HopperVM_typeStack + HopperVM_bp)];
@@ -349,7 +349,7 @@ Bool Instructions_InlinedEnter()
 
 Bool Instructions_InlinedCallI()
 {
-    UInt methodAddress = codeMemoryBlock[HopperVM_pc++] + (codeMemoryBlock[HopperVM_pc++] << 8);
+    UInt methodAddress = codeStartAddress[HopperVM_pc++] + (codeStartAddress[HopperVM_pc++] << 8);
     *((UInt*)&dataMemoryBlock[HopperVM_callStack + HopperVM_csp]) = HopperVM_pc;
     HopperVM_pc = methodAddress;
     HopperVM_csp += 2;
@@ -363,7 +363,7 @@ Bool Instructions_InlinedRetResB()
     UInt ts2 = HopperVM_typeStack - 2;
     Byte * rtype = &dataMemoryBlock[ts2 + HopperVM_sp];
 
-    UInt popBytes = codeMemoryBlock[HopperVM_pc++];
+    UInt popBytes = codeStartAddress[HopperVM_pc++];
     while (popBytes != 0)
     {
         HopperVM_sp -= 2;
@@ -408,7 +408,7 @@ Bool Instructions_InlinedJZB()
 Bool Instructions_InlinedPushIBLE()
 {
     UInt sp2 = HopperVM_valueStack + HopperVM_sp - 2;
-    *((UInt*)&dataMemoryBlock[sp2]) = ((*((UInt*)&dataMemoryBlock[sp2]) <= codeMemoryBlock[HopperVM_pc++]) ? 1 : 0);
+    *((UInt*)&dataMemoryBlock[sp2]) = ((*((UInt*)&dataMemoryBlock[sp2]) <= codeStartAddress[HopperVM_pc++]) ? 1 : 0);
     dataMemoryBlock[HopperVM_typeStack + HopperVM_sp - 2] = 0x06; // Type::eBool
     return true;
 }
@@ -601,7 +601,7 @@ Bool Instructions_InlinedLE()
 
 Bool Instructions_InlinedCast()
 {
-    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp - 0x02] = codeMemoryBlock[HopperVM_pc++];
+    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp - 0x02] = codeStartAddress[HopperVM_pc++];
     return true;
 }
 
@@ -667,7 +667,7 @@ Bool Instructions_InlinedBoolNot()
 
 Bool Instructions_InlinedIncLocalB()
 {
-    UInt address = UInt(HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++]));
+    UInt address = UInt(HopperVM_bp + (Int8)(codeStartAddress[HopperVM_pc++]));
     UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + address];
 #ifdef CHECKED
     if (*value == 0xFFFF)
@@ -688,7 +688,7 @@ Bool Instructions_InlinedIncLocalB()
 
 Bool Instructions_InlinedDecLocalB()
 {
-    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++])];
+    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_bp + (Int8)(codeStartAddress[HopperVM_pc++])];
 #ifdef CHECKED
     if (*value == 0)
     {
@@ -702,7 +702,7 @@ Bool Instructions_InlinedDecLocalB()
 
 Bool Instructions_InlinedIncGlobalB()
 {
-    UInt address = codeMemoryBlock[HopperVM_pc++] + HopperVM_gp;
+    UInt address = codeStartAddress[HopperVM_pc++] + HopperVM_gp;
     Type itype = (Type)0;
     UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + address];
 #ifdef CHECKED
@@ -724,7 +724,7 @@ Bool Instructions_InlinedIncGlobalB()
 
 Bool Instructions_InlinedDecGlobalB()
 {
-    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + codeMemoryBlock[HopperVM_pc++] + HopperVM_gp];
+    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + codeStartAddress[HopperVM_pc++] + HopperVM_gp];
 #ifdef CHECKED
     if (*value == 0)
     {
@@ -738,7 +738,7 @@ Bool Instructions_InlinedDecGlobalB()
 
 Bool Instructions_InlinedIncLocalIB()
 {
-    UInt address = UInt(HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++]));
+    UInt address = UInt(HopperVM_bp + (Int8)(codeStartAddress[HopperVM_pc++]));
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
 #ifdef CHECKED
     if (*ivalue == 32767)
@@ -754,7 +754,7 @@ Bool Instructions_InlinedIncLocalIB()
 
 Bool Instructions_InlinedDecLocalIB()
 {
-    UInt address = UInt(HopperVM_bp + (Int8)(codeMemoryBlock[HopperVM_pc++]));
+    UInt address = UInt(HopperVM_bp + (Int8)(codeStartAddress[HopperVM_pc++]));
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
 #ifdef CHECKED
     if (*ivalue == -32768)
@@ -770,7 +770,7 @@ Bool Instructions_InlinedDecLocalIB()
 
 Bool Instructions_InlinedIncGlobalIB()
 {
-    UInt address = codeMemoryBlock[HopperVM_pc++] + HopperVM_gp;
+    UInt address = codeStartAddress[HopperVM_pc++] + HopperVM_gp;
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
 #ifdef CHECKED
     if (*ivalue == 32767)
@@ -786,7 +786,7 @@ Bool Instructions_InlinedIncGlobalIB()
 
 Bool Instructions_InlinedDecGlobalIB()
 {
-    UInt address = codeMemoryBlock[HopperVM_pc++] + HopperVM_gp;
+    UInt address = codeStartAddress[HopperVM_pc++] + HopperVM_gp;
     Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
 #ifdef CHECKED
     if (*ivalue == -32768)

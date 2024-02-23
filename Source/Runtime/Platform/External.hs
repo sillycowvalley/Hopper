@@ -99,6 +99,10 @@ unit External
     {
         // does nothing under Windows
     }
+    SetCodeStartAddress(uint codeAddress)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
     
     bool ReadAllCodeBytes(uint hrpath, uint loadAddress, ref uint codeLength)
     {

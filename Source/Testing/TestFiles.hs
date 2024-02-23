@@ -1,6 +1,6 @@
 program TestFiles
 {
-#define SERIAL_CONSOLE
+#define MCU
     uses "/Source/System/System"
     
     uses "/Source/System/IO"
@@ -257,7 +257,7 @@ program TestFiles
         
         WriteLn();
         WriteLn("TestSuite Ok");
-#ifndef SERIAL_CONSOLE
+#ifndef MCU
         Key key = ReadKey();
 #endif
     }
