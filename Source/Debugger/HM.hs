@@ -578,7 +578,7 @@ program HopperMonitor
     
     Interactive()
     {
-        Screen.Clear();
+        //Screen.Clear();
         
         // if "Debugger.options" exists, see it has a comPort set by Port.hexe:
         uint comPort;
@@ -1130,7 +1130,10 @@ program HopperMonitor
         
         <string> rawArgs = System.Arguments;
         bool invalidArguments = false;
-        string ihexPath;
+        string ihexPath;  
+        string transferPath;
+        string remoteFolder;
+        bool transferFile = false;
         bool uploadHex = false;
         bool executeAndExit = false;
         bool debugAndExit = false;
@@ -1171,6 +1174,30 @@ program HopperMonitor
                             }
                         }
 					               }
+                    else if (arg == "-t")
+               					{
+					                   i++;
+						                  if (i == rawArgs.Count)
+						                  {
+						                      invalidArguments = true;
+                      				  break;
+                  						}
+                        transferPath = rawArgs[i];
+                        if (!File.Exists(transferPath))
+                        {
+                            PrintLn("'" + transferPath + "' not found");
+                            invalidArguments = true;
+                        		  break;
+                        }
+                        i++;
+						                  if (i == rawArgs.Count)
+						                  {
+						                      invalidArguments = true;
+                      				  break;
+                  						}
+                        remoteFolder = rawArgs[i];
+                        transferFile = true;
+					               }
                 				else
                 				{
                 				    invalidArguments = true;
@@ -1194,9 +1221,11 @@ program HopperMonitor
             if (invalidArguments)
             {
                  PrintLn("Invalid arguments for HopperMonitor:");
-                 PrintLn("  -l <name> : load IHex image to 6502 machine");
-                 PrintLn("  -x        : execute without debugging and exit (<ctrl><F5>)");
-                 PrintLn("  -d        : execute with debugging and exit (<F5>)");
+                 PrintLn("  -l <name>           : load IHex image to 6502 machine");
+                 PrintLn("  -t <path> <folder>  : transfer file to remote folder");
+                 PrintLn("  -x                  : execute without debugging and exit (<ctrl><F5>)");
+                 PrintLn("  -d                  : execute with debugging and exit (<F5>)");
+                 
                  break;
             }
             if (uploadHex)
@@ -1207,6 +1236,12 @@ program HopperMonitor
                 Print("'" + fileName + "'");
                 InjectText("L " + fileName);
                 InjectKey(Key.Enter);
+                if (!debugAndExit && !executeAndExit)
+                {   
+                    // just an upload from the console or a script                 
+                    InjectText("Q");
+                    InjectKey(Key.Enter);
+                }
             }
             if (debugAndExit)
             {
@@ -1218,6 +1253,16 @@ program HopperMonitor
             if (executeAndExit)
             {
                 InjectText("X");
+                InjectKey(Key.Enter);
+                InjectText("Q");
+                InjectKey(Key.Enter);
+            }
+            if (transferFile)
+            {
+                transferPath = transferPath.ToUpper();
+                remoteFolder = remoteFolder.ToUpper();
+                Print("'" + transferPath + "' -> '" + remoteFolder + "'");
+                InjectText("T " + transferPath + " " + remoteFolder);
                 InjectKey(Key.Enter);
                 InjectText("Q");
                 InjectKey(Key.Enter);

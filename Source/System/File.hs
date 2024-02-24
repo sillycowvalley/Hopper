@@ -20,20 +20,22 @@ unit File
     
     bool Exists(ref string filePath, ref string extension, string searchFolder)
     {
+        string originalfilePath = filePath;
         if (!File.Exists(filePath))
         {
-            string rawPath = filePath;
-            string ext = Path.GetExtension(rawPath);
+            string ext = Path.GetExtension(originalfilePath);
             if (ext == ".")
             {
                 // first try appending the extension
-                filePath = rawPath + extension;
+                filePath = originalfilePath + extension;
+                filePath = filePath.Replace("..", "."); // in case it was ending in a trailing .
                 if (!File.Exists(filePath))
                 {
                     // try the searchFolder with the extension
-                    filePath = Path.Combine(searchFolder, rawPath + extension);
+                    filePath = Path.Combine(searchFolder, filePath);
                     if (!File.Exists(filePath))
                     {
+                        filePath = originalfilePath;
                         return false;
                     }
                 }
@@ -41,9 +43,10 @@ unit File
             else
             {
                 // try the searchFolder
-                filePath = Path.Combine(searchFolder, rawPath);
+                filePath = Path.Combine(searchFolder, originalfilePath);
                 if (!File.Exists(filePath))
                 {
+                    filePath = originalfilePath;
                     return false;
                 }
             }

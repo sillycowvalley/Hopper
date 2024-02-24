@@ -15,7 +15,7 @@ program TiggerBASIC
     
     uses "/Source/System/System"    
 #ifdef MCU    
-    uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/PiPicoW"
     uses "/Source/Library/Screen"
 #else
     uses "/Source/System/Diagnostics"
@@ -209,6 +209,112 @@ program TiggerBASIC
         LED = false;
 #endif
     }
+    
+    bool validateName(ref string name, bool mustExist)
+    {
+        foreach (var c in name)
+        {
+            if (!Path.IsValidPathCharacter(c))
+            {
+                return false;
+            }
+        }
+        if (!name.Contains('.'))
+        {
+            name = name + ".BAS";
+        }
+        string extension = Path.GetExtension(name);
+        if (extension != ".BAS")
+        {
+            return false;
+        }
+        if (mustExist)
+        {
+            if (!File.Exists(name))
+            {
+                string path = Path.Combine(CurrentDirectory, name);
+                if (!File.Exists(path))
+                {
+                    path = Path.Combine("/BASIC/", name);
+                    if (!File.Exists(path))
+                    {
+                        return false;
+                    }
+                }    
+                name = path;
+            }
+        }
+        else
+        {
+            string folder = Path.GetDirectoryName(name);
+            if (folder.Length == 0)
+            {
+                name = Path.Combine("/BASIC/", name);           
+            }
+        }
+        return true;
+    }
+    dir()
+    {
+        directory dir = Directory.Open("/BASIC/");
+        if (!dir.IsValid()) { return; }
+        uint files = dir.GetFileCount();
+        for (uint i = 0; i < files; i++)
+        {
+            string path = (dir.GetFile(i)).ToUpper();
+            if (Path.GetExtension(path) == ".BAS")
+            {
+                WriteLn(path);
+            } 
+        }
+    }
+    load(string name)
+    {
+        if (validateName(ref name, true))
+        {
+            Source.Clear();   // NEW
+            Platform.Clear(); // CLEAR
+            Write("Loading " + name);
+            file textFile = File.Open(name);
+            if (!textFile.IsValid())
+            {
+                WriteLn();
+                Write("  Error attempting to open file '" + name +"'");
+            }
+            else
+            {
+                loop
+                {
+                    string ln = textFile.ReadLine();
+                    if (ln.Length == 0)
+                    {
+                        if (!textFile.IsValid())
+                        {
+                            break;
+                        }
+                    }
+                    processLine(ln);
+                }
+            }
+            WriteLn();
+        }
+        else
+        {
+            WriteLn("'" + name + "' invalid.");
+        }
+    }
+    save(string name)
+    {
+        if (validateName(ref name, false))
+        {
+            Write("Saving " + name);       
+            WriteLn();
+        }
+        else
+        {
+            WriteLn("'" + name + "' invalid.");
+        }
+    }
     immediate(string inputLine)
     {
         loop
@@ -267,25 +373,15 @@ program TiggerBASIC
         }   
 #endif        
     }
-    
-    bool execute(ref string inputLine)
+    processLine(string inputLine)
     {
-        
-        Condition = Conditions.None;
         inputLine = inputLine.Trim();
-        loop
+        switch (inputLine)
         {
-            switch (inputLine.ToUpper())
+            case "NEW": { Source.Clear();                  }
+            default:
             {
-                case "BYE":     { return true;                     } // exit
-                case "NEW":     { Source.Clear();                  }
-                case "CLEAR":   { Platform.Clear();                } // reset variables in Platform
-                case "RUN":     { run();                           }
-                case "LIST":    { listing();                       }
-                case "COMPILE": { compile();                       } // tokenize without executing
-                case "BRON":    { HopperCode.BreakCheck(true);     }
-                case "BROFF":   { HopperCode.BreakCheck(false);    }
-                default:
+                loop
                 {
                     string numberString;
                     uint nCount;
@@ -321,7 +417,45 @@ program TiggerBASIC
                         immediate(inputLine);
                     }
                     break;
-                }
+                } // loop
+            } // default
+        } // switch
+    }
+    
+    bool execute(ref string inputLine)
+    {
+        
+        Condition = Conditions.None;
+        inputLine = inputLine.Trim();
+        loop
+        {
+            string command = inputLine.ToUpper();
+            string arguments;
+            uint iSpace;
+            if (command.IndexOf(' ', ref iSpace))
+            {
+                arguments = (command.Substring(iSpace)).Trim();
+                command = command.Substring(0, iSpace);
+            }
+            switch (command)
+            {
+                case "BYE":     { return true;                     } // exit
+                case "CLEAR":   { Platform.Clear();                } // reset variables in Platform
+                case "RUN":     { run();                           }
+                case "LIST":    { listing();                       }
+                case "COMPILE": { compile();                       } // tokenize without executing
+                case "BRON":    { HopperCode.BreakCheck(true);     }
+                case "BROFF":   { HopperCode.BreakCheck(false);    }
+                case "LOAD":    { load(arguments);                 }
+                case "SAVE":    { save(arguments);                 }
+                case "DIR":     { dir();                           }
+                
+                //case "NEW":
+                default:
+                {
+                    processLine(inputLine);
+                    break;
+                } // default
             } // switch
             break;
         } // loop 

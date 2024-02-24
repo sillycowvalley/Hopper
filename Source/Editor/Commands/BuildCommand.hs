@@ -171,12 +171,12 @@ unit BuildCommand
             string hasmPath = "/Debug/Obj/" + fileName + HasmExtension;
             
             // delete old versions so we don't run them by mistake if the build failed
-            File.Delete(hexePath);
-            File.Delete(ihexPath);
+            //File.Delete(hexePath); - hard to build the toolchain with a missing piece ..
+            //File.Delete(ihexPath);
 
             // also, let's not get confused by stale versions
-            File.Delete(codePath);
-            File.Delete(hasmPath);
+            //File.Delete(codePath);
+            //File.Delete(hasmPath);
             
             // except for .json : useful for <right><click> help even if stale
             // File.Delete(jsonPath);
@@ -323,7 +323,7 @@ unit BuildCommand
     Debug()
     {
         Screen.Clear();
-        if (!GenerateIHex)
+        if (!LaunchIHex)
         {
             Die(0x0B); // assume we only arrive here for HOPPER_6502 and MCU
         }

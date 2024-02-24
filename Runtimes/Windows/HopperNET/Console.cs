@@ -51,8 +51,9 @@ namespace HopperNET
 
         const ushort invertColour = 0xF000;
 
-        //const uint textColumns = 140;
-        //const uint textRows = 44;
+        // for videos
+        //static uint textColumns = 100;
+        //static uint textRows = 30;
 
         static uint textColumns = 140;
         static uint textRows = 44;

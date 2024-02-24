@@ -1302,7 +1302,7 @@ program PreProcess
     } // declaration()
               
                           
-  bool buildSymbols(string sourcePath)
+  bool buildSymbols(string sourcePath, <string> cliSymbols)
   {
       bool success = true;
       unitsParsed.Clear();
@@ -1312,6 +1312,11 @@ program PreProcess
       Scanner.New();
       SysCalls.New();
       LibCalls.New();
+      
+      foreach (var symbol in cliSymbols)
+      {
+          Symbols.AddDefine(symbol, "true");
+      }
                         
       bool firstUnit = true;
       loop
@@ -1441,8 +1446,9 @@ program PreProcess
     {
         PrintLn("Invalid arguments for PREPROCESS:");
         PrintLn("  PREPROCESS [args] <source file>");    
-        PrintLn("    -g <c> <r> : called from GUI, not console");
-        PrintLn("    -x : use experimental features");
+        PrintLn("    -g <c> <r>  : called from GUI, not console");
+        PrintLn("    -x          : use experimental features");
+        PrintLn("    -d <symbol> : define conditional compilation symbols");
     }
     {  
         bool success = false;
@@ -1450,6 +1456,7 @@ program PreProcess
         {
           <string> rawArgs = System.Arguments;
           <string> args;
+          <string> cliSymbols;
           
           for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
           {
@@ -1462,16 +1469,21 @@ program PreProcess
                       case "-g":
                       {
                           uint col;
-                            uint row;
-                            iArg++;
-                            if (UInt.TryParse(rawArgs[iArg], ref col))
-                            {
-                            }
-                            iArg++;
-                            if (UInt.TryParse(rawArgs[iArg], ref row))
-                            {
-                            }
-                            Parser.SetInteractive(byte(col), byte(row));
+                          uint row;
+                          iArg++;
+                          if (UInt.TryParse(rawArgs[iArg], ref col))
+                          {
+                          }
+                          iArg++;
+                          if (UInt.TryParse(rawArgs[iArg], ref row))
+                          {
+                          }
+                          Parser.SetInteractive(byte(col), byte(row));
+                      }
+                      case "-d":
+                      {
+                          iArg++;
+                          cliSymbols.Append(rawArgs[iArg]);
                       }
                       case "-x":
                       {
@@ -1499,7 +1511,9 @@ program PreProcess
           string sourcePath = args[0];
           string ext = ".hs";
           string codePath = args[0];
+          
           <string> sourceFolders;
+          sourceFolders.Append(System.CurrentDirectory);
           sourceFolders.Append("/Source/Compiler/");
           sourceFolders.Append("/Source/Debugger/");
           sourceFolders.Append("/Source/Editor/");
@@ -1532,7 +1546,7 @@ program PreProcess
                   // delete previous so no output on error
                   File.Delete(jsonPath); 
               }
-              if (!buildSymbols(sourcePath))
+              if (!buildSymbols(sourcePath, cliSymbols))
               {
                  // error!
                  break;
