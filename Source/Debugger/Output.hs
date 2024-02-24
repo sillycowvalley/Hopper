@@ -213,21 +213,25 @@ unit Output
                 if (currentX > outputLeft)
                 {
                     currentX--;
+                    /*
                     uint index  = currentY * Screen.Columns + currentX;
                     outputCharacters[index] = ' ';
                     outputForeColors[index] = foreColor;
                     outputBackColors[index] = backColor;
                     doDraw = true;
+                    */
                 }
                 else if (currentY > outputTop)
                 {
                     currentX = outputLeft + outputWidth-1;
                     currentY--;
+                    /*
                     uint index  = currentY * Screen.Columns + currentX;
                     outputCharacters[index] = ' ';
                     outputForeColors[index] = foreColor;
                     outputBackColors[index] = backColor;
                     doDraw = true;
+                    */
                 }
                 else
                 {

@@ -110,7 +110,7 @@ unit SysCalls
         addEntry("Float.GE");
         
         addEntry("Time.Millis_Get");
-        addEntry("Time.Micros_Get");
+        addEntry("Screen.ShowCursor_Set");
         
         addEntry("System.Arguments_Get");
         addEntry("System.CurrentDirectory_Get");

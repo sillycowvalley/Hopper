@@ -77,6 +77,7 @@ unit MCU
         Default133   = 133,   // default for Pi Pico
         Overclock240 = 240,   // overclock sets clock to 240 MHz
         Overclock250 = 250,   // overclock sets clock to 250 MHz
+        //Overclock266 = 266,   
         Overclock270 = 270,   // overclock sets clock to 270 MHz
         //Overclock275 = 275, // doesn't work on USB voltage
         //Overclock300 = 300, // doesn't work on USB voltage

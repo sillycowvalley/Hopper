@@ -131,12 +131,13 @@ namespace HopperNET
 
         public static void WriteChar(char outChar)
         {
-            string text = outChar.ToString();
+            byte[] b = new byte[1];
+            b[0] = (byte)outChar;
             if (IsValid())
             {
                 try
                 {
-                    serialPort.Write(text);
+                    serialPort.Write(b, 0, 1);
                 }
                 catch (Exception ex)
                 {

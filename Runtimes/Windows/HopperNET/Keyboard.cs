@@ -486,14 +486,16 @@ namespace HopperNET
 
         public bool IsAvailable()
         {
+            bool result = false;
             lock (keyboardBuffer)
             {
                 if (keyboardBuffer.Count == 0)
                 {
                     //Application.DoEvents();
                 }
-                return keyboardBuffer.Count != 0;
+                result =  keyboardBuffer.Count != 0;
             }
+            return result;
         }
 
         static public Key ToKey(char c)
@@ -505,8 +507,13 @@ namespace HopperNET
         public Key ReadKey()
         {
             Key c = Key.NoKey;
-            
-            console.ShowCursor(true);
+
+            bool localShow = false;
+            if (!console.CursorVisible)
+            {
+                console.ShowCursor(true);
+                localShow = true;
+            }
 
             for (; ; )
             {
@@ -543,7 +550,10 @@ namespace HopperNET
                     break;
                 }
             }
-            console.ShowCursor(false);
+            if (localShow)
+            {
+                console.ShowCursor(false);
+            }
             return c;
         }
     }

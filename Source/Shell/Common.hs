@@ -7,11 +7,7 @@ unit Common
     uses "/Source/System/IO"
     
     
-#ifdef SERIAL_CONSOLE    
-    bool doRecursive = true; // TODO REMOVE : MCU testing
-#else
     bool doRecursive;
-#endif
     bool skipConfirmation;
     
     bool cancelled;
@@ -667,6 +663,17 @@ unit Common
         {
             Common.ShowUsage(badMask);
             Common.ShowArguments();
+        }
+        else
+        {
+            /*
+            WriteLn("fileMask='" + fileMask + "'");
+            WriteLn("maskStartsWith='" + maskStartsWith + "'");
+            WriteLn("maskEndsWith='" + maskEndsWith + "'");
+            WriteLn("destinationFolder='" + destinationFolder + "'");
+            WriteLn("startFolder='" + startFolder + "'");
+            WriteLn("singleFile='" + singleFile + "'");
+            */
         }
         return success;
     }

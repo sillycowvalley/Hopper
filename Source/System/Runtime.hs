@@ -1,7 +1,7 @@
 unit Runtime
 {
     
-#if defined(MCU)
+#if defined(MCU) || defined(SERIAL_CONSOLE)
     // used from RTC.SetFromDebugger(..)
     bool InDebugger { get system; }
     string DateTime { get system; }

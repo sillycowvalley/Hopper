@@ -1,11 +1,11 @@
-program Shell
+program MCUShell
 {
         
 #define SERIAL_CONSOLE
 
+    uses "/Source/System/IO"
     uses "/Source/System/System"
     uses "/Source/System/Runtime"
-    uses "/Source/System/IO"
     uses "/Source/System/Diagnostics"
     uses "/Source/System/EditControl"
     
@@ -181,6 +181,9 @@ program Shell
         EditControl.ValidEditCharacter validator = ValidCommandLineCharacter;
         EditControl.SetValidation(validator);
         
+        < string > previousCommands;
+        uint currentPreviousCommand = 0;
+        
         IO.Write(currentDirectory + ">");
         uint x = currentDirectory.Length+1;
         uint w = consoleColumns;
@@ -189,41 +192,136 @@ program Shell
         loop
         {
             bool redraw = false;
+            char maker;
+            char ch2;
             char ch = IO.Read();
-            if (ch == char(0x0D))
+            if (ch == char(0xE0))
             {
-                commandLine = commandLine.Trim();
-                if (commandLine.Length != 0)
+                ch2 = IO.Read();
+                maker = ch;  
+                ch = ch2;
+            }
+            Key key = Keyboard.FromSerial(ch, maker);
+            switch (key)
+            {
+                case Key.Up:
                 {
-                    bool wasExit;
-                    if (RunCommandLine(commandLine, false, ref wasExit))
+                    // <up> - clear the current commandLine and replace with previous command
+                    if (previousCommands.Count != 0) // previous commands exist
                     {
+                        loop
+                        {
+                            uint length = previousCommands.Count;
+                            if (currentPreviousCommand < length)
+                            {
+                                string currentString = previousCommands[currentPreviousCommand];
+                                currentPreviousCommand++;
+                                if ((length > 1) && (commandLine == currentString))
+                                {
+                                    // try again : probably switching between <up> and <down>
+                                    continue;
+                                }
+                                commandLine = currentString;
+                                redraw = true;
+                            }
+                            break;
+                        }
                     }
-                    if (wasExit)
+                }
+                case Key.Down:
+                {
+                    // <down> - clear the current commandLine and replace with next command
+                    if (previousCommands.Count != 0) // previous commands exist
                     {
-                        break;
+                        loop
+                        {
+                            uint length = previousCommands.Count;
+                            if ((currentPreviousCommand > 0) && 
+                                (currentPreviousCommand-1 < length)
+                               )
+                            {
+                                currentPreviousCommand--;
+                                string currentString = previousCommands[currentPreviousCommand];
+                                if ((length > 1) && (commandLine == currentString))
+                                {
+                                    // try again : probably switching between <up> and <down>
+                                    continue;
+                                }
+                                commandLine = currentString;
+                                redraw = true;
+                            }
+                            break;
+                        }
                     }
+                }
+                case Key.Enter:
+                {
+                    commandLine = commandLine.Trim();
+                    
+                    if (commandLine.Length != 0)
+                    {
+                        // if it exists in the list already, move it to the front
+                        uint iFound = 0;
+                        bool wasFound = false;
+                        for (uint i=0; i < previousCommands.Count; i++)
+                        {
+                            string currentString = previousCommands[i];
+                            if (commandLine == currentString)
+                            {
+                                iFound = i;
+                                wasFound = true;
+                                break;
+                            }
+                        }
+                        if (wasFound)
+                        {
+                            // move it to the front
+                            if (iFound != 0) // already the front?
+                            {
+                                previousCommands.Remove(iFound);
+                                previousCommands.Insert(0, commandLine);
+                            }
+                        }
+                        else
+                        {   
+                            // insert new commandline in front
+                            previousCommands.Insert(0, commandLine);
+                        }
+                        currentPreviousCommand = 0; // reset for <up> and <down>
+                    }
+                    if (commandLine.Length != 0)
+                    {
+                        bool wasExit;
+                        if (RunCommandLine(commandLine, false, ref wasExit))
+                        {
+                        }
+                        if (wasExit)
+                        {
+                            break;
+                        }
+                        commandLine = "";
+                    }
+                    else
+                    {
+                        IO.WriteLn();
+                    }
+                    currentDirectory = CurrentDirectory;
+                    IO.Write(currentDirectory + ">");
+                    x = currentDirectory.Length+1;
+                    current = x;
+                }
+                case Key.Escape:
+                {
+                    currentPreviousCommand = 0;
+                    redraw = true;
                     commandLine = "";
                 }
-                else
+                default:
                 {
-                    IO.WriteLn();
+                    //_ = EditControl.OnKey(ch, x, w-x, ref commandLine, ref current);
+                    _ = EditControl.OnKey(key, x, w-x, ref commandLine, ref current);
                 }
-                currentDirectory = CurrentDirectory;
-                IO.Write(currentDirectory + ">");
-                x = currentDirectory.Length+1;
-                current = x;
-            }
-            else if (ch == char(0x1B)) // Escape
-            {
-                redraw = true;
-                commandLine = "";
-            }
-            else // Edit keys:
-            {
-                _ = EditControl.OnKey(ch, x, w-x, ref commandLine, ref current);
-            }
-
+            } // switch
             if (redraw)
             {
                 while (current > x)

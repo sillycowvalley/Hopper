@@ -43,12 +43,11 @@ unit Keyboard
 
         Left  = 0xE06B,
         Right = 0xE074,
+        Up    = 0xE075,
+        Down  = 0xE072,
 
-        Up   = 0xE075,
-        Down = 0xE072,
-
-        Home = 0xE06C,
-        End  = 0xE069,
+        Home  = 0xE06C,
+        End   = 0xE069,
         
         PageDown = 0xE07A,
         PageUp   = 0xE07D,
@@ -539,5 +538,30 @@ unit Keyboard
         }
         return c;
     }
-    
+    char ToSerial(Key key, ref char maker)
+    {
+        char ch;
+        maker = char(0);
+        if (key == (Key.ControlC))
+        {
+            ch = char(0x03); // for the debugger (on Windows)
+        }
+        else
+        {
+            byte msb = byte(uint(key) >> 8);
+            byte lsb = byte(uint(key) & 0xFF);
+            ch    = char(lsb);
+            if ((msb & 0xE0) == 0xE0)
+            {
+                maker = char(msb); // include modifiers
+            }
+        }
+        return ch;
+    }
+    Key FromSerial(char ch, char maker)
+    {
+        uint keyCode = (byte(ch) + (byte(maker) << 8)); 
+        Key key = Key(keyCode);
+        return key;
+    }
 }

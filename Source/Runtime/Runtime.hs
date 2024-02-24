@@ -91,7 +91,6 @@ program Runtime
     bool LoadHexe(uint path, uint startAddress, ref uint loadedAddress, ref uint codeLength, bool doCRC)
     {
         bool success;
-        
         loadedAddress = startAddress;
         uint address = 0;
         if (HRFile.Exists(path))

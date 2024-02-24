@@ -334,7 +334,6 @@ unit HopperVM
         uint startAddress = binaryAddress + programSize;
         if (LoadHexe(hrpath, startAddress, ref loadedAddress, ref codeLength, false))
         {
-            
             binaryAddress = loadedAddress;
             programSize   = codeLength;
             constAddress  = ReadCodeWord(binaryAddress + 0x0002) + startAddress;
@@ -349,6 +348,10 @@ unit HopperVM
             pc = 0;
             
             bool restart = HopperVM.InlinedExecuteWarp(false);
+        }
+        else if (Error == 0)
+        {
+            Error = 0x0E;
         }
         
         result = Error;
@@ -711,7 +714,7 @@ unit HopperVM
             {
                 if (0 == currentDirectory)
                 {
-                    currentDirectory = HRString.New();
+                    currentDirectory = HRString.NewFromConstant1(uint('/'));
                 }
                 Push(GC.Clone(currentDirectory), Type.String);
             }

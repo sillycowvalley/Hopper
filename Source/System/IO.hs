@@ -351,6 +351,10 @@ unit IO
             {
                 // ASCII 32 to 126 : ok
             }
+            else if (ch == char(0xE0))
+            {
+                // Maker
+            }
             else
             {
                 continue;

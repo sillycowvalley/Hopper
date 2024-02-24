@@ -89,10 +89,14 @@ unit Monitor
     {
         Serial.WriteChar(ch);
     }
+    SerialWriteChars(char maker, char ch)
+    {
+        Serial.WriteChar(maker);
+        Serial.WriteChar(ch);
+    }
     char SerialReadChar()
     {
-        char ch = Serial.ReadChar();
-        return ch;
+        return Serial.ReadChar();
     }
 #endif
 
@@ -203,15 +207,17 @@ unit Monitor
         SerialWriteChar(char(0x0D));
     }
     
-    bool checkEchoRun()
+    bool checkEchoRun(bool makersAllowed)
     {
         bool success = true;
         string keyboardBuffer;
         bool waitingForPrompt = false;
+        Screen.ShowCursor = true;
         loop
         {
             if (!Serial.IsAvailable)
             {
+                // write to the remote device?
                 if (!Serial.IsValid())
                 {
                     success = false;
@@ -251,48 +257,73 @@ unit Monitor
                         keyboardBuffer = keyboardBuffer + clipboardText;
                         continue;
                     }
-                    char ch = IO.TransformKey(key);
+                    char maker;
+                    char ch = Keyboard.ToSerial(key, ref maker);
                     if (ch != char(0x00))
                     {
-                        SerialWriteChar(ch);
+                        if (maker != char(0x00))
+                        {
+                            if (makersAllowed)
+                            {
+                                SerialWriteChars(maker, ch);
+                            }
+                        }
+                        else
+                        {
+                            SerialWriteChar(ch);
+                        }
                     }
                 }
                 continue;
             } // !Serial.IsAvailable
             
-            char c = SerialReadChar();
-            if ((c == char(0x0D)) || (c == char(0x0A)))
+            if (Serial.IsAvailable)
             {
-                Output.Print(c);
-            }
-            else
-            {
-                
+                char c;
+                Screen.ShowCursor = false;
+                while (Serial.IsAvailable)
+                {
+                    // read from the remote device
+                    c = SerialReadChar();
+                    if ((c == char(0x0D)) || (c == char(0x0A)))
+                    {
+                        Output.Print(c);
+                    }
+                    else
+                    {
+                        if (c == '\\')
+                        {
+                            break;
+                        }
+                        if (c == char(0x0C)) // form feed
+                        {
+                            Output.Clear();
+                        }
+                        else if (c == char(0x07)) // bell
+                        {
+                            // get next character
+                            c = SerialReadChar();
+                            monitorCommand(c);
+                        }
+                        else
+                        {
+                            Output.Print(c);
+                            if (c == '>')
+                            {
+                                waitingForPrompt = false;
+                                Delay(10);
+                            }
+                        }
+                    }
+                } // while (Serial.IsAvailable)
+                Screen.ShowCursor = true;
                 if (c == '\\')
                 {
                     break;
                 }
-                if (c == char(0x0C)) // form feed
-                {
-                    Output.Clear();
-                }
-                else if (c == char(0x07)) // bell
-                {
-                    // get next character
-                    c = SerialReadChar();
-                    monitorCommand(c);
-                }
-                else
-                {
-                    Output.Print(c);
-                    if (c == '>')
-                    {
-                        waitingForPrompt = false;
-                        Delay(10);
-                    }
-                }
-            }
-        }
+            } // if (Serial.IsAvailable)
+        } // loop
+        Screen.ShowCursor = false;
         return success;
     }
     
@@ -342,8 +373,9 @@ unit Monitor
     }
     bool RunCommand(string commandLine)
     {
+        bool makersAllowed = commandLine == "X";
         sendCommand(commandLine);
-        return checkEchoRun(); // special version for execute
+        return checkEchoRun(makersAllowed); // special version for execute
     }
     uint ReturnToDebugger(char currentCommand, ref bool serialConnectionLost)
     {

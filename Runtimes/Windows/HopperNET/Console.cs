@@ -629,22 +629,39 @@ namespace HopperNET
 
         public void ServiceCursor()
         {
-            if (cursorVisible && !hopper.Exiting && !graphicsMode)
+            lock (hopper)
             {
-                //ConsoleDrawCursor(ConsoleGetCursorX(), ConsoleGetCursorY(), cursorToggle);
-                cursorToggle = !cursorToggle;
-                hopper.HopperInvalidate();
-                //Application.DoEvents();
+                if (cursorVisible && !hopper.Exiting && !graphicsMode)
+                {
+                    //ConsoleDrawCursor(ConsoleGetCursorX(), ConsoleGetCursorY(), cursorToggle);
+                    cursorToggle = !cursorToggle;
+                    hopper.HopperInvalidate();
+                    //Application.DoEvents();
+                }
             }
         }
         public void ShowCursor(bool show)
         {
-            if (!hopper.Exiting)
+            lock (hopper)
             {
-                cursorVisible = show;
-                cursorToggle = show;
-                //ConsoleDrawCursor(ConsoleGetCursorX(), ConsoleGetCursorY(), cursorToggle);
+                if (!hopper.Exiting)
+                {
+                    if (!show && cursorVisible && cursorToggle)
+                    {
+                        // cursorToggle == false means cell background colour
+                        // cursorToggle == true means inverted cell background colour
+                        cursorToggle = false;
+                        hopper.HopperInvalidate();
+                    }
+                    cursorVisible = show;
+                    cursorToggle = show;
+                    //ConsoleDrawCursor(ConsoleGetCursorX(), ConsoleGetCursorY(), cursorToggle);
+                }
             }
+        }
+        public bool CursorVisible 
+        { 
+            get { return cursorVisible; } 
         }
         public void ScrollUp()
         {

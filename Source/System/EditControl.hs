@@ -25,45 +25,15 @@ unit EditControl
     }
 #endif
 
-#ifdef SERIAL_CONSOLE
-    bool OnKey(char ch, uint leftX, uint fieldWidth, ref string textContent, ref uint currentX)
-    {
-        bool consumed = false;
-        if (ch == char(0x08))
-        {
-            if (currentX > leftX)
-            {
-                IO.Write(char(0x08) + " " + char(0x08));
-                currentX--;
-                textContent = textContent.Substring(0, textContent.Length - 1);
-            }
-            consumed = true;
-        }
-        else 
-        {
-            uint currentWidth = currentX - leftX;
-            if (currentWidth+1 < fieldWidth)
-            {
-                if ((ch > char(31)) && (ch < char(128)))
-                {
-                    if (validate(ch))
-                    {
-                        IO.Write(ch);
-                        currentX++;
-                        textContent = textContent +  ch;
-                        consumed = true;
-                    }
-                }
-            }
-        }
-        return consumed;
-    }
-#else
     bool OnKey(Key key, uint leftX, uint fieldWidth, ref string textContent, ref uint currentX)
     {
         bool consumed = false;
         uint pos = currentX - leftX;
         uint currentWidth = textContent.Length;
+#ifdef SERIAL_CONSOLE
+        uint fieldPos = pos;
+        uint previousWidth = currentWidth;
+#endif
         
         bool isShifted = (Key.Shift == (key & Key.Shift));
         bool isControlled = (Key.Control == (key & Key.Control));
@@ -79,7 +49,7 @@ unit EditControl
         
         switch (unmaskedKey)
         {
-        case Key.Backspace:
+            case Key.Backspace:
             {
                 if (pos > 0)
                 {
@@ -99,7 +69,7 @@ unit EditControl
                     consumed = true;
                 }
             }
-        case Key.Delete:
+            case Key.Delete:
             {
                 if (pos < currentWidth)
                 {
@@ -118,7 +88,7 @@ unit EditControl
                     consumed = true;
                 }
             }
-        case Key.Left:
+            case Key.Left:
             {
                 if (pos > 0)
                 {
@@ -126,7 +96,7 @@ unit EditControl
                     consumed = true;
                 }
             }
-        case Key.Home:
+            case Key.Home:
             {
                 if (pos > 0)
                 {
@@ -134,7 +104,7 @@ unit EditControl
                     consumed = true;
                 }
             }
-        case Key.Right:
+            case Key.Right:
             {
                 if (pos < currentWidth)
                 {
@@ -142,7 +112,7 @@ unit EditControl
                     consumed = true;
                 }
             }
-        case Key.End:
+            case Key.End:
             {
                 if (pos < currentWidth)
                 {
@@ -150,7 +120,7 @@ unit EditControl
                     consumed = true;
                 }
             }
-        default:
+            default:
             {
                 if (currentWidth+1 < fieldWidth)
                 {
@@ -183,6 +153,42 @@ unit EditControl
         if (consumed)
         {
             // redraw
+#ifdef SERIAL_CONSOLE 
+            currentX = leftX + pos;
+            uint padWidth = 0;
+            if (fieldWidth > 0)
+            {
+                padWidth = fieldWidth - 1;
+            }
+            currentWidth = textContent.Length;
+            string paddedText = textContent.Pad(' ', previousWidth);
+            uint paddedLength = paddedText.Length;
+            
+            while (fieldPos > 0)
+            {
+                IO.Write(char(0x08));
+                fieldPos--;
+            }
+            for (uint x=0; x < paddedLength; x++)
+            {
+                IO.Write(paddedText[x]);
+                fieldPos++;
+            } 
+            /*
+            uint backs = paddedLength - currentWidth;
+            while (backs > 0)
+            {
+                IO.Write(char(0x08));
+                backs--;
+                fieldPos--;
+            }
+            */
+            while (fieldPos > pos)
+            {
+                IO.Write(char(0x08));
+                fieldPos--;
+            }
+#else
             Screen.Suspend();
             uint y = Screen.CursorY;
             currentX = leftX + pos;
@@ -200,8 +206,44 @@ unit EditControl
             }
             Screen.SetCursor(currentX, y);
             Screen.Resume(true);
+#endif
         }
         return consumed;
     }
-#endif        
+    
+/*
+    bool OnKey(char ch, uint leftX, uint fieldWidth, ref string textContent, ref uint currentX)
+    {
+        bool consumed = false;
+        if (ch == char(0x08))
+        {
+            if (currentX > leftX)
+            {
+                IO.Write(char(0x08) + " " + char(0x08));
+                currentX--;
+                textContent = textContent.Substring(0, textContent.Length - 1);
+            }
+            consumed = true;
+        }
+        else 
+        {
+            uint currentWidth = currentX - leftX;
+            if (currentWidth+1 < fieldWidth)
+            {
+                if ((ch > char(31)) && (ch < char(128)))
+                {
+                    if (validate(ch))
+                    {
+                        IO.Write(ch);
+                        currentX++;
+                        textContent = textContent +  ch;
+                        consumed = true;
+                    }
+                }
+            }
+        }
+        return consumed;
+    }
+*/    
+
 }

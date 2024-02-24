@@ -6,40 +6,6 @@ program Term
     uses "/Source/System/Screen"
     uses "/Source/System/Clipboard"
     
-    
-    char TransformKey(Key key)
-    {
-        char ch = key.ToChar();
-        if (key == (Key.Control | Key.ModX))
-        {
-            ch = char(0x18);
-        }
-        else if (key == (Key.ControlC))
-        {
-            ch = char(0x03); // for the debugger (on Windows)
-        }
-        else
-        {
-            key = (key & Keyboard.Key.Mask); // strip the modifiers
-            if ((key == Key.Enter) || (key == Key.ModEnter))
-            {
-                ch = char(0x0D);
-            }
-            else if ((key == Key.Escape) || (key == Key.ModEscape))
-            {
-                ch = char(0x1B);
-            }
-            else if ((key == Key.Backspace) || (key == Key.ModBackspace))
-            {
-                ch = char(0x08);
-            }
-            else if (key == Key.ModSpace)
-            {
-                ch = ' ';
-            }
-        }
-        return ch;
-    }
     bool DoConnect()
     {
         bool success = false;
@@ -75,7 +41,7 @@ program Term
                 if (UInt.TryParse(port, ref iport))
                 {
                     Serial.Connect(iport);
-                    PrintLn("Connected to COM" + iport.ToString() + " ('Q' to quit)");
+                    PrintLn("Connected to COM" + iport.ToString() + " (<Alt><F4> to exit)");
                     success = true;
                 }
             }
@@ -92,49 +58,72 @@ program Term
             return;
         }
         
-        
-        
+        Screen.ShowCursor = true;
         loop
         {
             if ((Keyboard.IsAvailable) || (keyboardBuffer.Length != 0))
             {
-                char ch;    
+                char ch; 
+                char maker;   
+                bool exitKey;
                 if (keyboardBuffer.Length != 0)
                 {
                     ch = keyboardBuffer[0];
                     keyboardBuffer = keyboardBuffer.Substring(1);
+                    Serial.WriteChar(ch);
                 }
                 else if (Keyboard.IsAvailable)
                 {
                     Key key = Keyboard.ReadKey();
-                     if (key == Key.ControlV)
-                     {
-                        if (Clipboard.HasText)
-                        {
-                            keyboardBuffer = keyboardBuffer + Clipboard.GetText();
-                            continue;
-                        }
-                     }
-                     ch = TransformKey(key);
+                    
+                    if (key == Key.ControlV)
+                    {
+                       if (Clipboard.HasText)
+                       {
+                           keyboardBuffer = keyboardBuffer + Clipboard.GetText();
+                           continue;
+                       }
+                    }
+                    else if (key == (Key.Alt | Key.F4))
+                    {
+                        exitKey = true;
+                    }
+                    ch = Keyboard.ToSerial(key, ref maker);
+                    if (maker != char(0))
+                    {
+                        Serial.WriteChar(maker);
+                    }
+                    Serial.WriteChar(ch);
                 }
-                Serial.WriteChar(ch);
+                
                 Delay(1);
-                if (ch.ToUpper() == 'Q')
+                if (exitKey)
                 {
+                    Screen.ShowCursor = false;
+                    Screen.PrintLn();
                     break;
                 }
             }
             if (Serial.IsAvailable)
             {
-                char ch = Serial.ReadChar();
-                if (ch == char(0x0A))
+                Screen.ShowCursor = false;
+                while (Serial.IsAvailable)
                 {
-                    PrintLn();
+                    char ch = Serial.ReadChar();
+                    if (ch == char(0x0A))
+                    {
+                        Screen.PrintLn();
+                    }
+                    else if (ch == char(0x0C))
+                    {
+                        Screen.Clear();
+                    }
+                    else
+                    {
+                        Screen.Print(ch);
+                    }
                 }
-                else
-                {
-                    Print(ch);
-                }
+                Screen.ShowCursor = true;
             }
         }
         

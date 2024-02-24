@@ -33,55 +33,7 @@ program HopperMonitor
         foreach (var ch in keys)
         {
             ch = ch.ToUpper();
-            Key key;
-            switch (ch) // lame solution for Key key = Key(ch):
-            {
-                case ' ': { key = Key.Space; }
-                case '.': { key = Key.Period; }
-                case 'A': { key = Key.A; }
-                case 'B': { key = Key.B; }
-                case 'C': { key = Key.C; }
-                case 'D': { key = Key.D; }
-                case 'E': { key = Key.E; }
-                case 'F': { key = Key.F; }
-                case 'G': { key = Key.G; }
-                case 'H': { key = Key.H; }
-                case 'I': { key = Key.I; }
-                case 'J': { key = Key.J; }
-                case 'K': { key = Key.K; }
-                case 'L': { key = Key.L; }
-                case 'M': { key = Key.M; }
-                case 'N': { key = Key.N; }
-                case 'O': { key = Key.O; }
-                case 'P': { key = Key.P; }
-                case 'Q': { key = Key.Q; }
-                case 'R': { key = Key.R; }
-                case 'S': { key = Key.S; }
-                case 'T': { key = Key.T; }
-                case 'U': { key = Key.U; }
-                case 'V': { key = Key.V; }
-                case 'W': { key = Key.W; }
-                case 'X': { key = Key.X; }
-                case 'Y': { key = Key.Y; }
-                case 'Z': { key = Key.Z; }
-                
-                case '0': { key = Key.N0; }
-                case '1': { key = Key.N1; }
-                case '2': { key = Key.N2; }
-                case '3': { key = Key.N3; }
-                case '4': { key = Key.N4; }
-                case '5': { key = Key.N5; }
-                case '6': { key = Key.N6; }
-                case '7': { key = Key.N7; }
-                case '8': { key = Key.N8; }
-                case '9': { key = Key.N9; }
-                
-                default:
-                {
-                    PrintLn((byte(ch)).ToHexString(2));
-                    Die(0x0A); // not implemented
-                }
-            }
+            Key key = Keyboard.FromSerial(ch, char(0));
             keyboardBuffer.Append(key);
         }
     }

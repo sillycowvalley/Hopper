@@ -296,7 +296,7 @@ namespace HopperNET
         FloatGT = 0x55,
         FloatGE = 0x56,
         TimeMillisGet = 0x57,
-        //TimeMicrosGet = 0x58, unused
+        ScreenShowCursorSet = 0x58,
         SystemArgumentsGet = 0x59,
         SystemCurrentDirectoryGet = 0x5A,
         SystemCurrentDirectorySet = 0x5B,
@@ -5595,6 +5595,7 @@ namespace HopperNET
                 case SysCall.ScreenCursorYGet:
                     Push(this.screen.CursorY, HopperType.tByte);
                     break;
+
                 case SysCall.ScreenSuspend:
                     this.screen.Suspend();
                     break;
@@ -5621,6 +5622,13 @@ namespace HopperNET
                         this.screen.SetCursor(x, y);
                     }
                     break;
+                case SysCall.ScreenShowCursorSet:
+                    {
+                        ushort show = (ushort)Pop();
+                        this.screen.Console.ShowCursor(show != 0);
+                    }
+                    break;
+
                 case SysCall.ScreenClear:
                     this.screen.Clear();
                     break;

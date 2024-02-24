@@ -7,6 +7,7 @@
 #include "Inlined.h"
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -4338,7 +4339,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         if (0x00 == HopperVM_currentDirectory)
         {
-            HopperVM_currentDirectory = HRString_New();
+            HopperVM_currentDirectory = HRString_NewFromConstant1(UInt('/'));
         }
         HopperVM_Push(GC_Clone(HopperVM_currentDirectory), Type::eString);
         break;
@@ -6182,6 +6183,10 @@ UInt HopperVM_RuntimeExecute(UInt hrpath, UInt hrargs)
         HopperVM_cspStart = HopperVM_csp;
         HopperVM_pc = 0x00;
         Bool restart = HopperVM_InlinedExecuteWarp(false);
+    }
+    else if (Minimal_Error_Get() == 0x00)
+    {
+        Minimal_Error_Set(0x0E);
     }
     result = Minimal_Error_Get();
     HopperVM_binaryAddress = binaryAddressBefore;

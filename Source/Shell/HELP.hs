@@ -1,6 +1,6 @@
 program Help
 {
-//#define SERIAL_CONSOLE
+#define SERIAL_CONSOLE
     uses "/Source/Shell/Common"
     
     {
@@ -46,6 +46,8 @@ program Help
                 {
                     args.Clear();
                     args.Append("-h");
+                    
+                    command = Common.ResolveCommandPath(command);
                     _ = Runtime.Execute(command, args);
                 }
                 default: { WriteLn("unknown command '" + command +"'", Colour.MatrixRed); }

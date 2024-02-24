@@ -17,6 +17,9 @@ unit Screen
     
     // if !isInteractive then Resume will pump messages (not needed if we are processing keystrokes)
     Resume(bool isInteractive) system;
+    
+    // only needed if we are not sitting on Keyboard.ReadKey (like if we are using Keyboard.IsAvailable which takes < 500ms)
+    bool ShowCursor { set system; }
 #endif
 
     Clear() system;

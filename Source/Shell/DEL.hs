@@ -1,5 +1,6 @@
 program Command
 {
+//#define SERIAL_CONSOLE
     uses "/Source/Shell/Common"
     
     string Name                 { get { return "DEL";  } }
