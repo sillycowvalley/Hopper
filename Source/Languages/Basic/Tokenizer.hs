@@ -121,7 +121,7 @@ unit Tokenizer
         // clear TOP ram if it was used to give tokenizer the best chance
         // (next program may not use TOP)
         Memory.ClearTop();
-        Write(' ');
+        //Write(' ');
         long start = Millis;
         loop
         {
@@ -151,7 +151,7 @@ unit Tokenizer
                 break;
             }
 #else
-            Write('.');
+            //Write('.');
 #endif            
         } // loop
         
@@ -182,11 +182,11 @@ unit Tokenizer
 #ifdef DEBUG            
             WriteLn(" " + (Millis - postStart).ToString() + "ms");
 #else
-            Write('.');
+            //Write('.');
 #endif                        
         }
         
-        WriteLn(" " + (Millis - start).ToString() + "ms");
+        //WriteLn(" " + (Millis - start).ToString() + "ms");
     }
     
     enum Basic

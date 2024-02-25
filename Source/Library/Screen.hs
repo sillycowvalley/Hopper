@@ -118,15 +118,6 @@ unit Screen
 
     DrawChar(byte col, byte row, char c, uint foreColour, uint backColour)
     {
-#if !defined(FONT_EXISTS)
-    // one-shot runtime warning?
-    //#error "uses \"/Source/Library/Font/xxx\" required"
-#endif
-#if !defined(DISPLAY_DRIVER)
-    // one-shot runtime warning?
-    //#error "uses \"/Source/Library/Displays/xxx\" required"
-#endif
-
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
         int x0 = int(col * cellWidth);
         int y0 = int(row * cellHeight);
@@ -147,6 +138,37 @@ unit Screen
         }
 #endif
     }
+    DrawChar(byte col, byte row, char c, uint foreColour, uint backColour, byte scale, int dx, int dy)
+    {
+#if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
+        int x0 = int(col * cellWidth  * scale) + dx;
+        int y0 = int(row * cellHeight * scale) + dy;
+        if (fontData.Count != 0)
+        {
+            Display.Suspend();
+            renderMonoCharacter(c, foreColour, backColour);
+            for (int y=0; y < cellHeight; y++)
+            {
+                int deltaY = y * cellWidth;
+                for (int x=0; x < cellWidth; x++)
+                {
+                    int y1 = y*scale+y0;
+                    int x1 = x*scale+x0;
+                    for (int iy = 0; iy < scale; iy++)
+                    {
+                        for (int ix = 0; ix < scale; ix++)
+                        {
+                            DisplayDriver.setPixel(x1+ix, y1+iy, cellBuffer[x + deltaY]);
+                        }
+                    }
+                }
+            }
+            Display.Resume();
+        }
+#endif
+    }
+    
+    
     Print(char c,     uint foreColour, uint backColour)
     {
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)

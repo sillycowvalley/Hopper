@@ -22,7 +22,7 @@ unit File
     {
         string originalfilePath = filePath;
         if (!File.Exists(filePath))
-        {
+        {    
             string ext = Path.GetExtension(originalfilePath);
             if (ext == ".")
             {
@@ -86,5 +86,40 @@ unit File
             }
         }
         return crc;
+    }
+    bool Copy(string sourcePath, string destinationPath)
+    {
+        return Copy(sourcePath, destinationPath, false);
+    }
+    bool Copy(string sourcePath, string destinationPath, bool overwrite)
+    {
+        if (File.Exists(destinationPath))
+        {
+            if (!overwrite)
+            {
+                return false;
+            }
+            File.Delete(destinationPath);   
+        }
+        
+        bool success;
+        loop
+        {
+            file sf = File.Open(sourcePath);
+            if (!sf.IsValid()) { break; }
+            file df = File.Create(destinationPath);
+            if (!df.IsValid()) { break; }
+            loop
+            {
+                byte data = sf.Read();
+                if (!sf.IsValid()) { break; }
+                df.Append(data);
+                if (!df.IsValid()) { break; }
+            }
+            df.Flush();
+            success = df.IsValid();
+            break;
+        }
+        return success;
     }
 }

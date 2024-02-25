@@ -3,8 +3,8 @@ program Command
 //#define SERIAL_CONSOLE
     uses "/Source/Shell/Common"
     
-    string Name                 { get { return "DEL";  } }
-    string Description          { get { return "delete one or more files (alias RM)"; } }
+    string Name                 { get { return "SHOW";  } }
+    string Description          { get { return "echo file content to console (alias TYPE)"; } }
     
     bool   SupportsSource       { get { return true;  } } // directory with or without mask as source
     bool   SupportsSourceFile   { get { return true;  } } // single file as source (never confirm)
@@ -21,9 +21,23 @@ program Command
     bool OnFile(ShellObject shellObject, bool first, uint maxLength)
     {
         string path = shellObject.Path;
-        Write(path.Pad(' ', maxLength), Colour.MatrixBlue);
-        File.Delete(path);
-        WriteLn(" deleted", Colour.MatrixRed);
+        WriteLn(path.Pad(' ', maxLength) + ":", Colour.MatrixBlue);
+        file textFile = File.Open(path);
+        if (textFile.IsValid())
+        {
+            loop
+            {
+                string ln = textFile.ReadLine();
+                if (ln.Length == 0)
+                {
+                    if (!textFile.IsValid())
+                    {
+                        break;
+                    }
+                }
+                WriteLn(ln, Colour.MatrixBlue);
+            }
+        }
         return true;
     } 
     
@@ -31,3 +45,4 @@ program Command
         if (Common.Arguments()) { Common.Walk(); }
     }
 }
+

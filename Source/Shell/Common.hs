@@ -35,6 +35,10 @@ unit Common
         uint Skipped;
     }
     
+    string StartFolder { get { return startFolder; } }
+    string DestinationFolder { get { return destinationFolder; } }
+    string ErrorMessage { get { return errorMessage; } set { errorMessage = value; } }
+    
     int CompareShellObjects(<ShellObject> this, uint ai, uint bi)
     {
         ShellObject a = this.GetItem(ai);
@@ -176,7 +180,14 @@ unit Common
         IO.Write  ("  " + Command.Name + " ");
         if (Command.SupportsSource)
         {
-            IO.Write("<source directory>");
+            if (Command.SupportsDestination)
+            {
+                IO.Write("<source directory>");
+            }
+            else
+            {
+                IO.Write("<directory>");
+            }
         }
         if (Command.SupportsMask)
         {
@@ -193,8 +204,8 @@ unit Common
         }
         else if (errorMessage != "")
         {
-          IO.WriteLn();   
-          Common.WriteLn("  " + errorMessage, Colour.MatrixRed);
+            IO.WriteLn();   
+            Common.WriteLn("  " + errorMessage, Colour.MatrixRed);
         }
     }
     InvalidMask()
@@ -290,7 +301,25 @@ unit Common
                                 bool skip;
                                 loop
                                 {
-                                    Common.Write(Command.Name + " " + shellObject.Path + " Y/N?", Colour.MatrixBlue);
+                                    bool overwrite;
+                                    string commandLine = Command.Name + " " + shellObject.Path;
+                                    if (SupportsDestination)
+                                    {
+                                        string fileName = Path.GetFileName(shellObject.Path);
+                                        string destinationPath = Path.Combine(Common.DestinationFolder, fileName);
+                                        if (!File.Exists(destinationPath))
+                                        {
+                                            break;
+                                        }
+                                        commandLine = commandLine + " " + destinationPath;
+                                        overwrite = true;
+                                    }
+                                    Common.Write(commandLine, Colour.MatrixBlue);
+                                    if (overwrite)
+                                    {
+                                        Common.Write("Overwrite", Colour.MatrixRed);
+                                    }
+                                    Common.Write("Y/N?", Colour.MatrixBlue);
                                     char c = (IO.Read()).ToUpper();
                                     IO.WriteLn();
                                     switch (c)
@@ -514,7 +543,7 @@ unit Common
             {
                 if (SupportsDestination)
                 {
-                    if (destinationFolder.Length != 0)
+                    if (destinationFolder.Length == 0)
                     {
                         destinationFolder = arg;
                     }
@@ -548,38 +577,16 @@ unit Common
             {
                 break;
             }
+            
+            if (Command.RequiresArguments && (rawargs.Count == 0))
+            {
+                success = false;
+                break;
+            }
             errorMessage = "";
             
             // validate arguments
-            if (destinationFolder.Length == 0)
-            {
-                if (destinationFolder.StartsWith('.') && !destinationFolder.StartsWith(".."))
-                {
-                    destinationFolder = destinationFolder.Substring(1);
-                    destinationFolder = Path.Combine(System.CurrentDirectory, destinationFolder);
-                }
-                if (!destinationFolder.StartsWith('/'))
-                {
-                    destinationFolder = Path.Combine(System.CurrentDirectory, destinationFolder);
-                }
-                while (destinationFolder.Contains("/.."))
-                {
-                    if (!ReplaceDotDot(ref destinationFolder))
-                    {
-                        errorMessage = "invalid <destination directory>";
-                        success = false;
-                        break;
-                    }
-                }
-                if (!Directory.Exists(destinationFolder))
-                {
-                    errorMessage = "<destination directory> must exist: '" + destinationFolder + "'";
-                    success = false;
-                    break;
-                }
-            }
-            
-            if (startFolder.Length == 0)
+            if ((startFolder.Length == 0) && Command.SupportsMask)
             {
                 startFolder = "*.*";
                 starDotStarAdded = true;
@@ -606,6 +613,41 @@ unit Common
             {
                 break;
             }
+            
+            if (destinationFolder.StartsWith('.') && !destinationFolder.StartsWith(".."))
+            {
+                destinationFolder = destinationFolder.Substring(1);
+                destinationFolder = Path.Combine(System.CurrentDirectory, destinationFolder);
+            }
+            if (!destinationFolder.StartsWith('/'))
+            {
+                destinationFolder = Path.Combine(System.CurrentDirectory, destinationFolder);
+            }
+            while (destinationFolder.Contains("/.."))
+            {
+                if (!ReplaceDotDot(ref destinationFolder))
+                {
+                    errorMessage = "invalid <destination directory>";
+                    success = false;
+                    break;
+                }
+            }
+            if (!success)
+            {
+                break;
+            }
+            
+            if (destinationFolder.EndsWith("/") && (destinationFolder.Length > 1))
+            {
+                destinationFolder = destinationFolder.Substring(0, destinationFolder.Length-1);
+            }
+            if (SupportsDestination && !Directory.Exists(destinationFolder))
+            {
+                errorMessage = "<destination directory> must exist: '" + destinationFolder + "'";
+                success = false;
+                break;
+            }
+            
             uint iDot; uint iStar;
             if (!startFolder.IndexOf('.', ref iDot) && !startFolder.IndexOf('*', ref iStar))
             {
@@ -613,8 +655,11 @@ unit Common
                 {
                     startFolder += "/";
                 }
-                startFolder += "*.*"; // default mask which is later truncated to "" to mean 'all'
-                starDotStarAdded = true;
+                if (Command.SupportsMask)
+                {
+                    startFolder += "*.*"; // default mask which is later truncated to "" to mean 'all'
+                    starDotStarAdded = true;
+                }
             }
             uint iSlash;
             if (startFolder.LastIndexOf('/', ref iSlash))
@@ -631,11 +676,33 @@ unit Common
                     success = false;
                     break;
                 }
-                if (!Directory.Exists(startFolder))
+                
+                if (Command.Name == "MKDIR")
                 {
-                    errorMessage = "<source directory> must exist: '" + startFolder + "'";
-                    success = false;
-                    break;
+                    if (fileMask.Length != 0)
+                    {
+                        if (File.Exists(Path.Combine(startFolder, fileMask)))
+                        {
+                            errorMessage = "'" + Path.Combine(startFolder, fileMask) + "' already exists";
+                            success = false;
+                            break;
+                        }
+                    }
+                    else if (Directory.Exists(startFolder))
+                    {
+                        errorMessage = "'" + startFolder + "' already exists";
+                        success = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (!Directory.Exists(startFolder))
+                    {
+                        errorMessage = "<source directory> must exist: '" + startFolder + "'";
+                        success = false;
+                        break;
+                    }
                 }
             }
             if (success)
@@ -649,11 +716,22 @@ unit Common
                     }
                     singleFile = ""; // must be a mask..
                 }
-                
-                success = ValidateMask(fileMask);
+                if (SupportsMask || (fileMask.Length != 0))
+                {
+                    success = ValidateMask(fileMask);
+                }
                 if (!success && SupportsMask)
                 {
                     badMask = true;
+                    break;
+                }
+            }
+            if (success && SupportsDestination)
+            {
+                if ((destinationFolder.Length != 0) && (destinationFolder == startFolder))
+                {
+                    errorMessage = "<source directory> and <destination directory> may not be the same";
+                    success = false;
                     break;
                 }
             }
@@ -664,17 +742,14 @@ unit Common
             Common.ShowUsage(badMask);
             Common.ShowArguments();
         }
-        else
-        {
-            /*
+ /*
             WriteLn("fileMask='" + fileMask + "'");
             WriteLn("maskStartsWith='" + maskStartsWith + "'");
             WriteLn("maskEndsWith='" + maskEndsWith + "'");
             WriteLn("destinationFolder='" + destinationFolder + "'");
             WriteLn("startFolder='" + startFolder + "'");
             WriteLn("singleFile='" + singleFile + "'");
-            */
-        }
+ */
         return success;
     }
 }

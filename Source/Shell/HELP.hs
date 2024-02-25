@@ -14,12 +14,17 @@ program Help
             WriteLn("    CD         CHDIR    Displays the name of or changes the current directory.");
             WriteLn("    CLS        CLEAR    Clears the screen.");
             WriteLn("    CMD        SHELL    Starts a new instance of the Hopper Shell.");
+            WriteLn("    CP         COPY     Copies on or more files between directories.");
             WriteLn("    DEL        RM       Deletes on or more files.");
             WriteLn("    DIR        LS       Lists files and subdirectories of a directory.");
             WriteLn("    HELP       MAN      Provides help information for Hopper Shell commands.");
-#ifndef SERIAL_CONSOLE
+#ifdef SERIAL_CONSOLE
+            WriteLn("    MORE       TYPE     Echos file content to console.");
+#else
             WriteLn("    MORE       TYPE     Displays syntax highlighted file one screen at a time.");
 #endif
+            WriteLn("    MD         MKDIR    Create new directory.");
+            WriteLn("    RD         RMDIR    Remove empty directory.");
             WriteLn("    SHELL               Launch a nested Hopper Shell within the current one.");
             WriteLn("    EXIT                Quit the current Hopper Shell.");
             // TODO
@@ -27,10 +32,6 @@ program Help
             //           DATE
             //           TIME
             //           REN        MV
-            //           MD         MKDIR
-            //           RD         RMDIR
-            //           CP         COPY
-            // 
         }
         
         else if (args.Count == 1)
@@ -41,8 +42,12 @@ program Help
             {
                 case "cd":
                 case "cls":
+                case "copy":
                 case "del":
-                case "dir": 
+                case "dir":
+                case "mkdir":
+                case "rmdir":
+                case "show":
                 {
                     args.Clear();
                     args.Append("-h");

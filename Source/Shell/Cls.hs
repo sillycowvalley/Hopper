@@ -12,6 +12,7 @@ program Command
     bool   SupportsMask         { get { return false; } } // *.*
     bool   SupportsRecursive    { get { return false; } } // -s
     bool   SupportsConfirmation { get { return false; } } // -y
+    bool   RequiresArguments    { get { return false;  } }
     
     ShowArguments() {}
     bool Argument(string arg) { return false; }

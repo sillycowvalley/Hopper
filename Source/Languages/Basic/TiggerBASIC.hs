@@ -376,7 +376,7 @@ program TiggerBASIC
     processLine(string inputLine)
     {
         inputLine = inputLine.Trim();
-        switch (inputLine)
+        switch (inputLine.ToUpper())
         {
             case "NEW": { Source.Clear();                  }
             default:
