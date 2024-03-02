@@ -6,18 +6,17 @@ unit RTCDevice
 #endif
 
     uses "/Source/Library/RTCs/PCF8523Driver"
-    
+       
     bool Begin()
     {
         bool success;
         loop
         {
         
-            /*
             SD.SPIController = 0;
-            SD.ClkPin = Board.GP18;
-            SD.TxPin  = Board.GP19;
-            SD.RxPin  = Board.GP20;
+            SD.ClkPin = Board.SPI0SCK;
+            SD.TxPin  = Board.SPI0Tx;
+            SD.RxPin  = Board.SPI0Rx;
             
             SD.CSPin  = Board.GP10;
             
@@ -25,7 +24,7 @@ unit RTCDevice
             {
                 break;
             }
-            */
+            
             // Wire defaults should be correct since it is a FeatherWing:
             if (!RTCDriver.begin(Wire.DefaultI2CController, Wire.DefaultI2CSDAPin, Wire.DefaultI2CSCLPin, 0x68))
             {

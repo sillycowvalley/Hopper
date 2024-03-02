@@ -666,12 +666,13 @@ void External_SDRxPinSet(Byte pin)
 }
 bool External_SDMount()
 {
+    //pinMode(sdCSPin, OUTPUT);
     SPIClassRP2040* sdSPI = (sdController == 0) ? &SPI : &SPI1;
-    sdSPI->setCS(sdCSPin);
-    sdSPI->setRX(sdRxPin);
-    sdSPI->setTX(sdTxPin);
     sdSPI->setSCK(sdClkPin);
-
+    sdSPI->setTX(sdTxPin);
+    sdSPI->setRX(sdRxPin);
+    //sdSPI->setCS(sdCSPin);
+        
     SDFS.setConfig(SDFSConfig(sdCSPin, SPI_HALF_SPEED, *sdSPI));
     sdMounted = SDFS.begin();
     return sdMounted;
