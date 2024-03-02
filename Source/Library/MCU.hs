@@ -21,7 +21,7 @@ unit MCU
 #if defined(BOARD_HAS_I2C)
     uses "/Source/Library/Wire"
 #endif
-    //uses "/Source/Library/SD"
+    uses "/Source/Library/SD"
     uses "/Source/Library/Timer"
 
 #if defined(BOARD_HAS_WIFI)

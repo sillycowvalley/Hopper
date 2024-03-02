@@ -223,9 +223,9 @@ program TestFiles
         Directory.Delete("/temp/testfolder2");
         Directory.Delete("/temp/testfolder3");
         
-        long timestamp1 = Directory.GetTime("/");
-        long timestamp2 = Directory.GetTime("/temp/testfolder");
-        if (timestamp1 == 0)
+        string timestamp1 = Directory.GetTime("/");
+        string timestamp2 = Directory.GetTime("/temp/testfolder");
+        if (timestamp1 == "")
         {
             PrintFailed("Directory.GetTime(..) failed");    
         }

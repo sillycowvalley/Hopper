@@ -335,7 +335,7 @@ namespace HopperNET
             }
             return hopperFile;
         }
-        public static Int32 GetTime(string path)
+        public static Int32 GetTimeStamp(string path)
         {
             long filetime = 0;
             if (HopperPath.ValidatePath(path))
@@ -351,26 +351,70 @@ namespace HopperNET
             }
             return (Int32)filetime;
         }
+        public static HopperString GetTime(string path)
+        {
+            HopperString str = new HopperString();
+            if (HopperPath.ValidatePath(path))
+            {
+                path = HopperPath.ToWindowsPath(path);
+                if (File.Exists(path))
+                {
+                    FileInfo fi = new FileInfo(path);
+                    DateTime dt = fi.LastWriteTime;
+                    str.Value = dt.ToString("HH:mm:ss");
+                }
+            }
+            return str;
+        }
+        public static HopperString GetDate(string path)
+        {
+            HopperString str = new HopperString();
+            if (HopperPath.ValidatePath(path))
+            {
+                path = HopperPath.ToWindowsPath(path);
+                if (File.Exists(path))
+                {
+                    FileInfo fi = new FileInfo(path);
+                    DateTime dt = fi.LastWriteTime;
+                    str.Value = dt.ToString("yyyy-MM-dd");
+                }
+            }
+            return str;
+        }
 
     }
 
     public class HopperDirectory : Variant
     {
-        public static Int32 GetTime(string path)
+        public static HopperString GetTime(string path)
         {
-            long filetime = 0;
+            HopperString str = new HopperString();
             if (HopperPath.ValidatePath(path))
             {
                 path = HopperPath.ToWindowsPath(path);
-                if (Directory.Exists(path))
+                if (File.Exists(path))
                 {
                     FileInfo fi = new FileInfo(path);
                     DateTime dt = fi.LastWriteTime;
-                    long unixTime = ((DateTimeOffset)dt).ToUnixTimeSeconds();
-                    filetime = unixTime;
+                    str.Value = dt.ToString("HH:mm:ss");
                 }
             }
-            return (Int32)filetime;
+            return str;
+        }
+        public static HopperString GetDate(string path)
+        {
+            HopperString str = new HopperString();
+            if (HopperPath.ValidatePath(path))
+            {
+                path = HopperPath.ToWindowsPath(path);
+                if (File.Exists(path))
+                {
+                    FileInfo fi = new FileInfo(path);
+                    DateTime dt = fi.LastWriteTime;
+                    str.Value = dt.ToString("yyyy-MM-dd");
+                }
+            }
+            return str;
         }
 
         public HopperDirectory()

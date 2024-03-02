@@ -933,6 +933,22 @@ unit HopperVM
                 HRFile.Delete(str);
                 GC.Release(str);         
             }
+            case SysCalls.FileGetTimeStamp:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(115);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRFile.GetTimeStamp(str);
+                Push(result, Type.Long);        
+                GC.Release(str);         
+            }
+            
             case SysCalls.FileGetTime:
             {
                 Type stype;
@@ -945,9 +961,55 @@ unit HopperVM
                 }
 #endif       
                 uint result = HRFile.GetTime(str);
-                Push(result, Type.Long);        
+                Push(result, Type.String);        
                 GC.Release(str);         
             }
+            case SysCalls.FileGetDate:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(115);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRFile.GetDate(str);
+                Push(result, Type.String);        
+                GC.Release(str);         
+            }
+            case SysCalls.DirectoryGetTime:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(115);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRDirectory.GetTime(str);
+                Push(result, Type.String);        
+                GC.Release(str);         
+            }
+            case SysCalls.DirectoryGetDate:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(115);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                uint result = HRDirectory.GetDate(str);
+                Push(result, Type.String);        
+                GC.Release(str);         
+            }
+            
             case SysCalls.FileGetSize:
             {
                 Type stype;
@@ -1158,21 +1220,6 @@ unit HopperVM
                 }
 #endif       
                 HRDirectory.Create(str);
-                GC.Release(str);         
-            }
-            case SysCalls.DirectoryGetTime:
-            {
-                Type stype;
-                uint str = Pop(ref stype);
-#ifdef CHECKED
-                if (stype != Type.String)
-                {
-                    ErrorDump(126);
-                    Error = 0x0B; // system failure (internal error)
-                }
-#endif       
-                uint result = HRDirectory.GetTime(str);
-                Push(result, Type.Long);        
                 GC.Release(str);         
             }
             case SysCalls.SerialIsAvailableGet:

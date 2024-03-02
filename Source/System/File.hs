@@ -4,7 +4,9 @@ unit File
     bool Exists(string path) system;
     Delete(string path) system;
     long GetSize(string path) system;
-    long GetTime(string path) system;
+    string GetTime(string path) system;
+    string GetDate(string path) system;
+    long GetTimeStamp(string path) system;
         
     bool IsValid(file this) system;
     

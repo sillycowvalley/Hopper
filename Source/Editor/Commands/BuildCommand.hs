@@ -44,8 +44,8 @@ unit BuildCommand
                 if (File.Exists(path)) 
                 {
                     // both .hexe and .ihex exist    
-                    long hexeFileTime = File.GetTime(path);
-                    long hexFileTime  = File.GetTime(ihexPath);
+                    long hexeFileTime = File.GetTimeStamp(path);
+                    long hexFileTime  = File.GetTimeStamp(ihexPath);
                     string hexeFileTimeHex = hexeFileTime.ToHexString(8);
                     string hexFileTimeHex  = hexFileTime.ToHexString(8);
                     if (hexFileTimeHex >= hexeFileTimeHex)

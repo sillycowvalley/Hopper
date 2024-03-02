@@ -91,9 +91,17 @@ unit HRFile
     {
         return External.FileGetSize(path);
     }
+    uint GetTimeStamp(uint path)
+    {
+        return External.FileGetTimeStamp(path);
+    }
     uint GetTime(uint path)
     {
         return External.FileGetTime(path);
+    }
+    uint GetDate(uint path)
+    {
+        return External.FileGetDate(path);
     }
     bool IsValid(uint this)
     {

@@ -160,6 +160,9 @@ unit SysCalls
         RuntimeInDebuggerGet = 0x97,
         RuntimeDateTimeGet = 0x98,
         
+        FileGetDate = 0x9D,
+        DirectoryGetDate = 0x9E,
+        
         SerialIsAvailableGet = 0xA5,
         SerialReadChar       = 0xA6,
         SerialWriteChar      = 0xA7,
@@ -189,6 +192,7 @@ unit SysCalls
         
         TimeDelay        = 0xC6,
         
+        FileGetTimeStamp = 0xCC,
         IntToBytes       = 0xCD,
         
         FileGetTime = 0xCE,

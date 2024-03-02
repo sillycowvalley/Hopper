@@ -9,8 +9,32 @@ unit RTCDevice
     
     bool Begin()
     {
-        // Wire defaults should be correct since it is a FeatherWing:
-        return RTCDriver.begin(Wire.DefaultI2CController, Wire.DefaultI2CSDAPin, Wire.DefaultI2CSCLPin, 0x68);
+        bool success;
+        loop
+        {
+        
+            /*
+            SD.SPIController = 0;
+            SD.ClkPin = Board.GP18;
+            SD.TxPin  = Board.GP19;
+            SD.RxPin  = Board.GP20;
+            
+            SD.CSPin  = Board.GP10;
+            
+            if (!SD.Mount())
+            {
+                break;
+            }
+            */
+            // Wire defaults should be correct since it is a FeatherWing:
+            if (!RTCDriver.begin(Wire.DefaultI2CController, Wire.DefaultI2CSDAPin, Wire.DefaultI2CSCLPin, 0x68))
+            {
+                break;
+            }
+            success = true;
+            break;
+        }
+        return success;
     }
     
 }

@@ -153,7 +153,7 @@ unit Dependencies
         string youngestStr = youngest.ToHexString(8);
         foreach (var path in sources)
         {
-            long fileTime = File.GetTime(path);
+            long fileTime = File.GetTimeStamp(path);
             string fileTimeStr = fileTime.ToHexString(8);
             int cmp = String.Compare(fileTimeStr, youngestStr);
             //OutputDebug(path + " " + fileTimeStr + " " + youngestStr + " " + cmp.ToString());

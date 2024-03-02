@@ -21,7 +21,7 @@ program Command
     ShowArguments()
     {
         WriteLn("  -f : show full paths for each file");
-        WriteLn("  -t : include unix time stamp");
+        WriteLn("  -t : include time and date stamp");
         WriteLn("  -c : include crc-16 checksums");
     }  
     bool Argument(string arg)
@@ -48,8 +48,9 @@ program Command
         Write(filename.Pad(' ', maxLength), Colour.MatrixBlue);
         if (doTimeStamp)
         {
-            long ft = File.GetTime(path);
-            Write("  0x"  +  ft.ToHexString(8), Colour.MatrixGreen);
+            string time = File.GetTime(path);
+            string date = File.GetDate(path);
+            Write("  "  + date + "  " + time, Colour.MatrixGreen);
         }
         if (doCheckSum)
         {

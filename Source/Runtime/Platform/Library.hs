@@ -374,6 +374,87 @@ unit Library
                 Push(hrlong, Type.Long);
             }
             
+            case LibCall.SDSPIControllerGet:
+            {
+                byte iController = External.SDSPIControllerGet();
+                Push(iController, Type.Byte);
+            }
+            case LibCall.SDSPIControllerSet:
+            {
+                Type ctype;   
+                uint spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ctype, spiController);
+#endif   
+                External.SDSPIControllerSet(byte(spiController));
+            }
+            
+            case LibCall.SDCSPinGet:
+            {
+                byte pin = External.SDCSPinGet();
+                Push(pin, Type.Byte);
+            }
+            case LibCall.SDCSPinSet:
+            {
+                Type ctype;   
+                uint pin = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ctype, pin);
+#endif   
+                External.SDCSPinSet(byte(pin));
+            }
+            
+            case LibCall.SDClkPinGet:
+            {
+                byte pin = External.SDClkPinGet();
+                Push(pin, Type.Byte);
+            }
+            case LibCall.SDClkPinSet:
+            {
+                Type ctype;   
+                uint pin = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ctype, pin);
+#endif   
+                External.SDClkPinSet(byte(pin));
+            }
+            case LibCall.SDTxPinGet:
+            {
+                byte pin = External.SDTxPinGet();
+                Push(pin, Type.Byte);
+            }
+            case LibCall.SDTxPinSet:
+            {
+                Type ctype;   
+                uint pin = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ctype, pin);
+#endif   
+                External.SDTxPinSet(byte(pin));
+            }
+            case LibCall.SDRxPinGet:
+            {
+                byte pin = External.SDRxPinGet();
+                Push(pin, Type.Byte);
+            }
+            case LibCall.SDRxPinSet:
+            {
+                Type ctype;   
+                uint pin = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertByte(ctype, pin);
+#endif   
+                External.SDRxPinSet(byte(pin));
+            }
+            case LibCall.SDMount:
+            {
+                bool ok = External.SDMount();
+                Push(ok ? 1 : 0, Type.Bool);
+            }
+            case LibCall.SDEject:
+            {
+                External.SDEject();
+            }
             case LibCall.SPIBegin:
             {
                 uint spiController = 0;

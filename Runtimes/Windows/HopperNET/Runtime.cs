@@ -377,6 +377,9 @@ namespace HopperNET
         MemoryReadProgramWord = 0x9B,
         MemoryWriteProgramWord = 0x9C,
 
+        FileGetDate = 0x9D,
+        DirectoryGetDate = 0x9E,
+
         SerialConnect = 0xA2,
         SerialClose = 0xA3,
         SerialIsValid = 0xA4,
@@ -428,7 +431,7 @@ namespace HopperNET
         ArrayGetItemUInt = 0xCA,
         ArraySetItemUInt = 0xCB,
 
-        //SystemInline = 0xCC,
+        FileGetTimeStamp = 0xCC,
         IntToBytes = 0xCD,
 
         FileGetTime = 0xCE,
@@ -5795,10 +5798,22 @@ namespace HopperNET
                         PushLong(HopperFile.GetSize(path.Value));
                     }
                     break;
+                case SysCall.FileGetTimeStamp:
+                    {
+                        HopperString path = (HopperString)PopVariant(HopperType.tString);
+                        PushLong(HopperFile.GetTimeStamp(path.Value));
+                    }
+                    break;
                 case SysCall.FileGetTime:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
-                        PushLong(HopperFile.GetTime(path.Value));
+                        Push(HopperFile.GetTime(path.Value));
+                    }
+                    break;
+                case SysCall.FileGetDate:
+                    {
+                        HopperString path = (HopperString)PopVariant(HopperType.tString);
+                        Push(HopperFile.GetDate(path.Value));
                     }
                     break;
 
@@ -5896,7 +5911,13 @@ namespace HopperNET
                 case SysCall.DirectoryGetTime:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
-                        PushLong(HopperDirectory.GetTime(path.Value));
+                        Push(HopperDirectory.GetTime(path.Value));
+                    }
+                    break;
+                case SysCall.DirectoryGetDate:
+                    {
+                        HopperString path = (HopperString)PopVariant(HopperType.tString);
+                        Push(HopperDirectory.GetDate(path.Value));
                     }
                     break;
 

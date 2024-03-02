@@ -2,38 +2,16 @@
 
 long nativeLongFromHopperLong(UInt hopperLong);
 
-#ifdef RP2040
-#define USELITTLEFS
-#endif
 
-#ifdef SEEEDESP32C3
-#define ESP32LITTLEFS
-#endif
-
-#ifdef LOLIND1MINI
-#define USELITTLEFS
-#endif
-
-#ifdef LOLIN_S2_PICO
-#define ESP32LITTLEFS
-#endif
-
-#ifdef ESP32LITTLEFS
-#include "FS.h"
-#include "LittleFS.h"
-#endif
-
-#ifdef USELITTLEFS
 #include "LittleFS.h" // https://arduino-pico.readthedocs.io/en/latest/fs.html
-#endif
+#include <FS.h>
+#include <SDFS.h>
+
+#include <time.h>
+
 
 void FileSystem_Initialize()
 {
-      //Serial.println("FileSystem_Initialize");
-#ifdef ESP32LITTLEFS
-      LittleFS.begin(true); // mount the file system, format if failed to mount
-#endif
-#ifdef USELITTLEFS  
       
       // LittleFS will automatically format the filesystem if one is not detected.
       LittleFSConfig cfg;
@@ -60,12 +38,30 @@ void FileSystem_Initialize()
       }
 #endif
 
-#endif
 }
 
+Byte sdController = 0;
+Byte sdCSPin;
+Byte sdClkPin;
+Byte sdTxPin;
+Byte sdRxPin;
+bool sdMounted = false;
 
+char * isSDPath(char * buffer)
+{
+    if (sdMounted && (buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == '/'))
+    {
+        char* sdpath = &buffer[3];
+        return sdpath;
+    }
+    return nullptr;
+}
+bool isSDRoot(char * buffer)
+{
+    return sdMounted && (buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == '/') && (buffer[4] == 0);
+}
 
-const UInt pathBufferSize = 40;
+const UInt pathBufferSize = 128;
 void HRPathToBuffer(UInt hrpath, char * buffer)
 {
     UInt length = HRString_GetLength(hrpath);
@@ -84,38 +80,58 @@ Bool External_FileExists(UInt hrpath)
 {
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    if(LittleFS.exists(buffer))
+    char * sdpath = isSDPath(buffer);
+    File f;
+    if (nullptr != sdpath)
     {
-        File f = LittleFS.open(buffer, "r");
-        return !f.isDirectory();
+        if (SDFS.exists(sdpath))
+        {
+            f = SDFS.open(sdpath, "r");
+        }
     }
-#endif    
-    return false;
+    else if(LittleFS.exists(buffer))
+    {
+        f = LittleFS.open(buffer, "r");
+    }
+    return f && !f.isDirectory();
 }
 void External_FileDelete(UInt hrpath)
 {
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    LittleFS.remove(buffer);
-#endif    
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        SDFS.remove(sdpath);
+    }
+    else
+    {
+        LittleFS.remove(buffer);
+    }
 }
 void External_FileWriteAllBytes(UInt hrpath, UInt hrcontent, bool append)
 {
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    
-    // "a+"
-    // Open for reading and appending (writing at end of file).  The
-    // file is created if it does not exist.  The initial file
-    // position for reading is at the beginning of the file, but
-    // output is always appended to the end of the file.
-    // "w"
-    // Truncate file to zero length or create text file for writing.
-    // The stream is positioned at the beginning of the file.
-    File f = LittleFS.open(buffer, append ? "a+" : "w");
+    File f;
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, append ? "a+" : "w");
+    }
+    else
+    {
+        // "a+"
+        // Open for reading and appending (writing at end of file).  The
+        // file is created if it does not exist.  The initial file
+        // position for reading is at the beginning of the file, but
+        // output is always appended to the end of the file.
+        // "w"
+        // Truncate file to zero length or create text file for writing.
+        // The stream is positioned at the beginning of the file.
+        f = LittleFS.open(buffer, append ? "a+" : "w");
+    }
     if (f) 
     {
         UInt length = HRString_GetLength(hrcontent);
@@ -127,18 +143,25 @@ void External_FileWriteAllBytes(UInt hrpath, UInt hrcontent, bool append)
         }
         f.close();
     }
-#endif    
 }
 void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength)
 {
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
 
-    // "w"
-    // Truncate file to zero length or create text file for writing.
-    // The stream is positioned at the beginning of the file.
-    File f = LittleFS.open(buffer, "w");
+    File f;
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "w");
+    }
+    else
+    {
+        // "w"
+        // Truncate file to zero length or create text file for writing.
+        // The stream is positioned at the beginning of the file.
+        f = LittleFS.open(buffer, "w");
+    }
     if (f) 
     {
         for (UInt i=0; i < codeLength; i++)
@@ -149,7 +172,6 @@ void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength
         }
         f.close();
     }
-#endif    
 }
 
 Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLength)
@@ -158,8 +180,17 @@ Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLengt
     codeLength = 0;
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    File f = LittleFS.open(buffer, "r");
+
+    File f;
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "r");
+    }
+    else
+    {
+        f = LittleFS.open(buffer, "r");
+    }
     if (f && !f.isDirectory())
     {
         while(f.available())
@@ -175,7 +206,6 @@ Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLengt
         f.close();
         success = true;
     }
-#endif
     return success;
 }
 
@@ -186,8 +216,17 @@ Bool External_TryFileReadByte_R(UInt hrpath, UInt hrseekpos, Byte & b)
     b = 0;
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    File f = LittleFS.open(buffer, "r");
+
+    File f;
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "r");
+    }
+    else
+    {
+        f = LittleFS.open(buffer, "r");
+    }
     if (f && !f.isDirectory()) 
     {
         if (f.seek(seekpos))
@@ -197,32 +236,26 @@ Bool External_TryFileReadByte_R(UInt hrpath, UInt hrseekpos, Byte & b)
             success = true;    
         }
     }
-#endif
     return success;
 }
 
-UInt External_FileGetTime(UInt hrpath)
-{
-    char buffer[pathBufferSize];
-    HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    File f = LittleFS.open(buffer, "r");
-    if (f && !f.isDirectory())
-    {
-        time_t lw = f.getLastWrite();
-        unsigned int t = (unsigned int)lw;
-        UInt result = HRLong_FromBytes(t & 0xFF, (t >> 8) & 0xFF, (t >> 16) & 0xFF, t >> 24);
-        return result;
-    }
-#endif    
-    return HRLong_New();
-}
+
 UInt External_FileGetSize(UInt hrpath)
 {
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    File f = LittleFS.open(buffer, "r");
+
+    File f;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "r");
+    }
+    else
+    {
+        f = LittleFS.open(buffer, "r");
+    }
     if (f && !f.isDirectory())
     {
         size_t s = f.size();
@@ -230,7 +263,6 @@ UInt External_FileGetSize(UInt hrpath)
         UInt result = HRLong_FromBytes(ui & 0xFF, (ui >> 8) & 0xFF, (ui >> 16) & 0xFF, ui >> 24);
         return result;
     }
-#endif
     return HRLong_New();
 }
 
@@ -238,14 +270,28 @@ Bool External_DirectoryExists(UInt hrpath)
 {
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    if(LittleFS.exists(buffer))
+
+    if (isSDRoot(buffer))
     {
-      File f = LittleFS.open(buffer, "r");
-        return f.isDirectory();
+        return true; // not a real directory
     }
-#endif    
-    return false;
+    File f;
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        if (SDFS.exists(sdpath))
+        {
+            f = SDFS.open(sdpath, "r");
+        }
+    }
+    else
+    {
+        if(LittleFS.exists(buffer))
+        {
+            f = LittleFS.open(buffer, "r");
+        }
+    }
+    return f && f.isDirectory();
 }
 void External_DirectoryDelete(UInt hrpath)
 {
@@ -262,14 +308,23 @@ void External_DirectoryDelete(UInt hrpath)
     plen = strlen(buffer2);
     buffer2[plen]   = '_';  
     buffer2[plen+1] = 0;
-    
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    if(LittleFS.exists(buffer2))
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
     {
-        LittleFS.remove(buffer2);
+        if (!isSDRoot(buffer))
+        {
+            SDFS.rmdir(sdpath);
+        }
     }
-    LittleFS.rmdir(buffer);
-#endif
+    else
+    {    
+        if(LittleFS.exists(buffer2))
+        {
+            LittleFS.remove(buffer2);
+        }
+        LittleFS.rmdir(buffer);
+    }
    
 }
 void External_DirectoryCreate(UInt hrpath)
@@ -277,75 +332,47 @@ void External_DirectoryCreate(UInt hrpath)
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
 
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-
-    LittleFS.mkdir(buffer);
-    uint plen = strlen(buffer);
-    if ((plen == 0) || (buffer[plen-1] != '/'))
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
     {
-        buffer[plen]   = '/';  
+        SDFS.mkdir(sdpath);
+    }
+    else
+    {
+        LittleFS.mkdir(buffer);
+        uint plen = strlen(buffer);
+        if ((plen == 0) || (buffer[plen-1] != '/'))
+        {
+            buffer[plen]   = '/';  
+            buffer[plen+1] = 0;
+        }
+        plen = strlen(buffer);
+        buffer[plen]   = '_';  
         buffer[plen+1] = 0;
+        File f = LittleFS.open(buffer, "w");
+        f.print('.');
+        f.close();
     }
-    plen = strlen(buffer);
-    buffer[plen]   = '_';  
-    buffer[plen+1] = 0;
-    File f = LittleFS.open(buffer, "w");
-    f.print('.');
-    f.close();
+}
 
-#endif
-}
-UInt External_DirectoryGetTime(UInt hrpath)
-{
-    char buffer[pathBufferSize];
-    HRPathToBuffer(hrpath, (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-    File f = LittleFS.open(buffer, "r");
-    if (f && f.isDirectory())
-    {
-#ifdef ESP32LITTLEFS
-        time_t lw = f.getLastWrite();
-#endif        
-#ifdef USELITTLEFS      
-        time_t lw = f.getCreationTime();
-#endif        
-        unsigned int t = (unsigned int)lw;
-        UInt result = HRLong_FromBytes(t & 0xFF, (t >> 8) & 0xFF, (t >> 16) & 0xFF, t >> 24);
-        return result;
-    }
-#endif    
-    return HRLong_New();
-}
 UInt External_DirectoryGetFileCount_R(UInt hrpath, UInt & skipped)
 {
     skipped = 0;
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
     UInt count = 0;
-    
-#ifdef ESP32LITTLEFS
-    File dir = LittleFS.open(buffer);
-    if (dir.isDirectory())
+
+    Dir dir;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
     {
-        for (;;)
-        {
-            File file = dir.openNextFile();
-            if (!file)
-            {
-                break;
-            }
-            if (!file.isDirectory())
-            {
-                if (file.name() != "_")
-                {
-                    count++;
-                }
-            }
-        } // loop
+        dir = SDFS.openDir(sdpath);
     }
-#endif    
-#ifdef USELITTLEFS      
-    Dir dir = LittleFS.openDir(buffer);
+    else
+    {
+        dir = LittleFS.openDir(buffer);
+    }
     while (dir.next()) 
     {
         if(!dir.isDirectory())  
@@ -355,7 +382,6 @@ UInt External_DirectoryGetFileCount_R(UInt hrpath, UInt & skipped)
             count++;
         }
     }
-#endif    
     return count;
 }
 UInt External_DirectoryGetDirectoryCount_R(UInt hrpath, UInt & skipped)
@@ -364,35 +390,30 @@ UInt External_DirectoryGetDirectoryCount_R(UInt hrpath, UInt & skipped)
     HRPathToBuffer(hrpath, (char*)&buffer);
     UInt count = 0;
     skipped = 0;
-#ifdef ESP32LITTLEFS
-    File dir = LittleFS.open(buffer);
-    if (dir.isDirectory())
+
+    Dir dir;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
     {
-        for (;;)
-        {
-            File file = dir.openNextFile();
-            if (!file)
-            {
-                break;
-            }
-            if (file.isDirectory())
-            {
-                count++;
-            }
-        } // loop
+        dir = SDFS.openDir(sdpath);
     }
-#endif    
-#ifdef USELITTLEFS  
-    Dir dir = LittleFS.openDir(buffer);
+    else
+    {
+        if (sdMounted && (buffer[0] == '/') && (buffer[1] == 0))
+        {
+            count++; // /sd/ is in the root
+        }
+        dir = LittleFS.openDir(buffer);
+    }
     while (dir.next()) 
     {
-        if(dir.isDirectory())  
+        if (dir.isDirectory())  
         {
             String name = dir.fileName();
             count++;
         }
     }
-#endif    
     return count;
 }
 UInt External_DirectoryGetFile(UInt hrpath, UInt index)
@@ -400,46 +421,18 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index)
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
     UInt count = 0;
-#ifdef ESP32LITTLEFS
-    File dir = LittleFS.open(buffer);
-    if (dir.isDirectory())
+
+    Dir dir;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
     {
-        for (;;)
-        {
-            File file = dir.openNextFile();
-            if (!file)
-            {
-                break;
-            }
-            if (!file.isDirectory())
-            {
-                String name = file.name();
-                if (name == "_") { continue; }
-                if (count == index)
-                {
-                    UInt str = HRString_New();
-                    uint plen = strlen(buffer);
-                    for (uint i=0; i < plen; i++)
-                    {
-                        HRString_BuildChar_R(str, buffer[i]);
-                    }
-                    if ((plen > 0) && (buffer[plen-1] != '/'))
-                    {
-                        HRString_BuildChar_R(str, '/');
-                    }
-                    for (uint i=0; i < name.length(); i++)
-                    {
-                        HRString_BuildChar_R(str, name[i]);
-                    }
-                    return str;
-                }
-                count++;
-            }
-        } // loop
+        dir = SDFS.openDir(sdpath);
     }
-#endif    
-#ifdef USELITTLEFS  
-    Dir dir = LittleFS.openDir(buffer);
+    else
+    {
+        dir = LittleFS.openDir(buffer);
+    }
     while (dir.next()) 
     {
         if (!dir.isDirectory())  
@@ -467,7 +460,6 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index)
             count++;
         }
     }
-#endif    
     return HRString_New();
 }
 UInt External_DirectoryGetDirectory(UInt hrpath, UInt index)
@@ -475,45 +467,18 @@ UInt External_DirectoryGetDirectory(UInt hrpath, UInt index)
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
     UInt count = 0;
-#ifdef ESP32LITTLEFS
-    File dir = LittleFS.open(buffer);
-    if (dir.isDirectory())
+
+    Dir dir;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
     {
-        for (;;)
-        {
-            File file = dir.openNextFile();
-            if (!file)
-            {
-                break;
-            }
-            if (file.isDirectory())
-            {
-                if (count == index)
-                {
-                    String name = file.name();
-                    UInt str = HRString_New();
-                    uint plen = strlen(buffer);
-                    for (uint i=0; i < plen; i++)
-                    {
-                        HRString_BuildChar_R(str, buffer[i]);
-                    }
-                    if ((plen > 0) && (buffer[plen-1] != '/'))
-                    {
-                        HRString_BuildChar_R(str, '/');
-                    }
-                    for (uint i=0; i < name.length(); i++)
-                    {
-                        HRString_BuildChar_R(str, name[i]);
-                    }
-                    return str;
-                }
-                count++;
-            }
-        } // loop
+        dir = SDFS.openDir(sdpath);
     }
-#endif    
-#ifdef USELITTLEFS  
-    Dir dir = LittleFS.openDir(buffer);
+    else
+    {
+        dir = LittleFS.openDir(buffer);
+    }
     while (dir.next()) 
     {
         if (dir.isDirectory())  
@@ -540,7 +505,16 @@ UInt External_DirectoryGetDirectory(UInt hrpath, UInt index)
             count++;
         }
     }
-#endif    
+    if (sdMounted)
+    {
+        // /sd/ is in the root
+        UInt str = HRString_New();
+        HRString_BuildChar_R(str, '/');
+        HRString_BuildChar_R(str, 's');
+        HRString_BuildChar_R(str, 'd');
+        HRString_BuildChar_R(str, '/');
+        return str;
+    }
     return HRString_New();
 }
 
@@ -561,8 +535,17 @@ UInt External_ReadLine(UInt _this)
                 isValid = true;
                 char buffer[pathBufferSize];
                 HRPathToBuffer(Memory_ReadWord(_this + 6), (char*)&buffer);
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
-                File f = LittleFS.open(buffer, "r");
+
+                File f;
+                char * sdpath = isSDPath(buffer);
+                if (nullptr != sdpath)
+                {
+                    f = SDFS.open(sdpath, "r");
+                }
+                else
+                { 
+                    f = LittleFS.open(buffer, "r");
+                }
                 bool isOpen = false;
                 if (f)
                 {
@@ -582,7 +565,7 @@ UInt External_ReadLine(UInt _this)
                     f.close();
                     break;
                 }
-#endif
+
                 for (;;)
                 {
                     if (pos == size)
@@ -591,25 +574,23 @@ UInt External_ReadLine(UInt _this)
                         break;
                     }
                     Byte b = 0;
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
+
                     int i = f.read();
                     if (i == -1) { isValid = false; break; }
                     b = (Byte)i;
-#endif
+
                     pos++;
                     if (b == 0x0D) { continue; }
                     if (b == 0x0A) { break;    }
                     HRString_BuildChar_R(str, Char(b)); // append to string
                 } // for (;;)
 
-#if defined(USELITTLEFS) || defined(ESP32LITTLEFS)
                 if (isOpen)
                 {
                     f.close();
                     Memory_WriteWord(_this + 8,        (pos & 0xFFFF));
                     Memory_WriteWord(_this + 8 + 0x02, (pos >> 16));
                 }
-#endif
                 break;
             }
         }
@@ -622,3 +603,236 @@ UInt External_ReadLine(UInt _this)
     return str;
 }
 
+Byte External_SDSPIControllerGet()
+{
+    return sdController;
+}
+void External_SDSPIControllerSet(Byte iController)
+{
+    sdController = iController;
+}
+Byte External_SDCSPinGet()
+{
+    return sdCSPin;
+}
+void External_SDCSPinSet(Byte pin)
+{
+    sdCSPin = pin;
+}
+Byte External_SDClkPinGet()
+{
+    return sdClkPin;
+}
+void External_SDClkPinSet(Byte pin)
+{
+    sdClkPin = pin;
+}
+Byte External_SDTxPinGet()
+{
+    return sdTxPin;
+}
+void External_SDTxPinSet(Byte pin)
+{
+    sdTxPin = pin;
+}
+Byte External_SDRxPinGet()
+{
+    return sdRxPin;
+}
+void External_SDRxPinSet(Byte pin)
+{
+    sdRxPin = pin;
+}
+bool External_SDMount()
+{
+    SPIClassRP2040* sdSPI = (sdController == 0) ? &SPI : &SPI1;
+    sdSPI->setCS(sdCSPin);
+    sdSPI->setRX(sdRxPin);
+    sdSPI->setTX(sdTxPin);
+    sdSPI->setSCK(sdClkPin);
+
+    SDFS.setConfig(SDFSConfig(sdCSPin, SPI_HALF_SPEED, *sdSPI));
+    sdMounted = SDFS.begin();
+    return sdMounted;
+}
+void External_SDEject()
+{
+    if (sdMounted)
+    {
+        SDFS.end();
+        SPIClassRP2040* sdSPI = (sdController == 0) ? &SPI : &SPI1;
+        sdSPI->end();
+    }
+}
+
+UInt External_DirectoryGetDate(UInt hrpath)
+{
+    char buffer[pathBufferSize];
+    HRPathToBuffer(hrpath, (char*)&buffer);
+
+    UInt result = HRString_New();
+
+    File f;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "r");
+    }
+    else
+    {
+        f = LittleFS.open(buffer, "r");
+    }
+    if (f && f.isDirectory())
+    {
+        time_t lw = f.getCreationTime();
+        struct tm ts = *localtime(&lw);
+
+        UInt year = ts.tm_year + 1900;
+        UInt month = ts.tm_mon+1;
+        
+        HRString_BuildChar_R(result, (Char)((year / 1000) + 48));
+        HRString_BuildChar_R(result, (Char)(((year / 100) % 10) + 48));
+        HRString_BuildChar_R(result, (Char)(((year / 10) % 10) + 48));
+        HRString_BuildChar_R(result, (Char)((year % 10) + 48));
+        HRString_BuildChar_R(result, '-');
+        HRString_BuildChar_R(result, (Char)((month / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((month % 10) + 48));
+        HRString_BuildChar_R(result, '-');
+        HRString_BuildChar_R(result, (Char)((ts.tm_mday / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((ts.tm_mday % 10) + 48));
+    }
+    return result;
+}
+UInt External_DirectoryGetTime(UInt hrpath)
+{
+    char buffer[pathBufferSize];
+    HRPathToBuffer(hrpath, (char*)&buffer);
+
+    UInt result = HRString_New();
+
+    File f;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "r");
+    }
+    else
+    {
+        f = LittleFS.open(buffer, "r");
+    }
+    if (f && f.isDirectory())
+    {
+        time_t lw = f.getCreationTime();
+        struct tm ts = *localtime(&lw);
+
+        HRString_BuildChar_R(result, (Char)((ts.tm_hour / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((ts.tm_hour % 10) + 48));
+        HRString_BuildChar_R(result, ':');
+        HRString_BuildChar_R(result, (Char)((ts.tm_min / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((ts.tm_min % 10) + 48));
+        HRString_BuildChar_R(result, ':');
+        HRString_BuildChar_R(result, (Char)((ts.tm_sec / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((ts.tm_sec % 10) + 48));
+    }
+    return result;
+}
+UInt External_FileGetDate(UInt hrpath)
+{
+    char buffer[pathBufferSize];
+    HRPathToBuffer(hrpath, (char*)&buffer);
+
+    UInt result = HRString_New();
+
+    File f;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "r");
+    }
+    else
+    {
+        f = LittleFS.open(buffer, "r");
+    }
+    if (f && !f.isDirectory())
+    {
+        time_t lw = f.getLastWrite();
+        struct tm ts = *localtime(&lw);
+
+        UInt year = ts.tm_year + 1900;
+        UInt month = ts.tm_mon+1;
+        
+        HRString_BuildChar_R(result, (Char)((year / 1000) + 48));
+        HRString_BuildChar_R(result, (Char)(((year / 100) % 10) + 48));
+        HRString_BuildChar_R(result, (Char)(((year / 10) % 10) + 48));
+        HRString_BuildChar_R(result, (Char)((year % 10) + 48));
+        HRString_BuildChar_R(result, '-');
+        HRString_BuildChar_R(result, (Char)((month / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((month % 10) + 48));
+        HRString_BuildChar_R(result, '-');
+        HRString_BuildChar_R(result, (Char)((ts.tm_mday / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((ts.tm_mday % 10) + 48));
+    }
+    return result;
+}
+UInt External_FileGetTime(UInt hrpath)
+{
+    char buffer[pathBufferSize];
+    HRPathToBuffer(hrpath, (char*)&buffer);
+
+    UInt result = HRString_New();
+
+    File f;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "r");
+    }
+    else
+    {
+        f = LittleFS.open(buffer, "r");
+    }
+    if (f && !f.isDirectory())
+    {
+        time_t lw = f.getLastWrite();
+        struct tm ts = *localtime(&lw);
+
+        HRString_BuildChar_R(result, (Char)((ts.tm_hour / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((ts.tm_hour % 10) + 48));
+        HRString_BuildChar_R(result, ':');
+        HRString_BuildChar_R(result, (Char)((ts.tm_min / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((ts.tm_min % 10) + 48));
+        HRString_BuildChar_R(result, ':');
+        HRString_BuildChar_R(result, (Char)((ts.tm_sec / 10) + 48));
+        HRString_BuildChar_R(result, (Char)((ts.tm_sec % 10) + 48));
+    }
+    return result;
+}
+UInt External_FileGetTimeStamp(UInt hrpath)
+{
+    char buffer[pathBufferSize];
+    HRPathToBuffer(hrpath, (char*)&buffer);
+
+    File f;
+
+    char * sdpath = isSDPath(buffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "r");
+    }
+    else
+    {
+        f = LittleFS.open(buffer, "r");
+    }
+    if (f && !f.isDirectory())
+    {
+        time_t lw = f.getLastWrite();
+        unsigned int t = (unsigned int)lw;
+        UInt result = HRLong_FromBytes(t & 0xFF, (t >> 8) & 0xFF, (t >> 16) & 0xFF, t >> 24);
+        return result;
+    }
+    return HRLong_New();
+}

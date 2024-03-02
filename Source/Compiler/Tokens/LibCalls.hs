@@ -35,7 +35,6 @@ unit LibCalls
         addEntry("MCU.ClockSpeed_Get");
         addEntry("MCU.ClockSpeed_Set");
         
-        
         addEntry("Timer.Start");
         addEntry("Timer.Stop");
         addEntry("Timer.Alarm");
@@ -78,6 +77,21 @@ unit LibCalls
         addEntry("WebServer.Events");
         addEntry("WebServer.Close");
         addEntry("WebServer.Send");
+        
+        addEntry("SD.SPIController_Get");
+        addEntry("SD.SPIController_Set");
+        addEntry("SD.CSPin_Get");
+        addEntry("SD.CSPin_Set");
+        addEntry("SD.ClkPin_Get");
+        addEntry("SD.ClkPin_Set");
+        addEntry("SD.TxPin_Get");
+        addEntry("SD.TxPin_Set");
+        addEntry("SD.RxPin_Get");
+        addEntry("SD.RxPin_Set");
+        addEntry("SD.Mount");
+        addEntry("SD.Eject");
+        
+        
     }
     
     bool TryParseLibCall(string name, ref byte index)

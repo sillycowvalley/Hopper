@@ -68,5 +68,18 @@ unit LibCalls
         WebServerEvents,
         WebServerClose,
         WebServerSend,
+        
+        SDSPIControllerGet,
+        SDSPIControllerSet,
+        SDCSPinGet,
+        SDCSPinSet,
+        SDClkPinGet,
+        SDClkPinSet,
+        SDTxPinGet,
+        SDTxPinSet,
+        SDRxPinGet,
+        SDRxPinSet,
+        SDMount,
+        SDEject,
     }
 }

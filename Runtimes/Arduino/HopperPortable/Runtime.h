@@ -276,6 +276,8 @@ enum SysCalls {
     eRuntimeUserCodeGet = 0x0094,
     eRuntimeInDebuggerGet = 0x0097,
     eRuntimeDateTimeGet = 0x0098,
+    eFileGetDate = 0x009D,
+    eDirectoryGetDate = 0x009E,
     eSerialIsAvailableGet = 0x00A5,
     eSerialReadChar = 0x00A6,
     eSerialWriteChar = 0x00A7,
@@ -298,6 +300,7 @@ enum SysCalls {
     eCharIsHexDigit = 0x00BF,
     eCharToLower = 0x00C0,
     eTimeDelay = 0x00C6,
+    eFileGetTimeStamp = 0x00CC,
     eIntToBytes = 0x00CD,
     eFileGetTime = 0x00CE,
     eDirectoryGetTime = 0x00CF,
@@ -411,6 +414,18 @@ enum LibCall {
     eWebServerEvents = 0x0037,
     eWebServerClose = 0x0038,
     eWebServerSend = 0x0039,
+    eSDSPIControllerGet = 0x003A,
+    eSDSPIControllerSet = 0x003B,
+    eSDCSPinGet = 0x003C,
+    eSDCSPinSet = 0x003D,
+    eSDClkPinGet = 0x003E,
+    eSDClkPinSet = 0x003F,
+    eSDTxPinGet = 0x0040,
+    eSDTxPinSet = 0x0041,
+    eSDRxPinGet = 0x0042,
+    eSDRxPinSet = 0x0043,
+    eSDMount = 0x0044,
+    eSDEject = 0x0045,
 };
 
 enum DataOrder {
@@ -800,6 +815,8 @@ UInt HRLong_LongAddB(UInt next, UInt top);
 UInt HRLong_LongSubB(UInt next, UInt top);
 UInt HRLong_New();
 UInt HRDirectory_Clone(UInt original);
+UInt HRDirectory_GetTime(UInt path);
+UInt HRDirectory_GetDate(UInt path);
 UInt HRDirectory_New();
 UInt HRDirectory_Open(UInt hrpath);
 Bool HRDirectory_IsValid(UInt _this);
@@ -810,13 +827,14 @@ UInt HRDirectory_GetDirectoryCount_R(UInt hrdir, UInt & skipped);
 UInt HRDirectory_GetFile(UInt hrdir, UInt index);
 UInt HRDirectory_GetDirectory(UInt hrdir, UInt index);
 void HRDirectory_Delete(UInt hrpath);
-UInt HRDirectory_GetTime(UInt hrpath);
 UInt HRFile_Clone(UInt original);
 Bool HRFile_IsValid(UInt _this);
 UInt HRFile_ReadLine(UInt _this);
 Byte HRFile_Read(UInt _this, UInt hrseekpos);
 void HRFile_Append(UInt _this, UInt hrstr);
+UInt HRFile_GetTimeStamp(UInt path);
 UInt HRFile_GetTime(UInt path);
+UInt HRFile_GetDate(UInt path);
 UInt HRFloat_Clone(UInt original);
 UInt HRFloat_NewFromConstant(UInt location);
 UInt HRFloat_ToBytes(UInt ichunk);

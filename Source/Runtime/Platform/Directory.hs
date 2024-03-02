@@ -60,9 +60,13 @@ unit HRDirectory
     {
         External.DirectoryDelete(hrpath);
     }
-    uint GetTime(uint hrpath)
+    uint GetTime(uint path)
     {
-        return External.DirectoryGetTime(hrpath);
+        return External.DirectoryGetTime(path);
+    }
+    uint GetDate(uint path)
+    {
+        return External.DirectoryGetDate(path);
     }
     uint GetFileCount(uint hrdir)
     {

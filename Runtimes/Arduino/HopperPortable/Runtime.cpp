@@ -7,6 +7,7 @@
 #include "Inlined.h"
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -4477,12 +4478,48 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
+    case SysCalls::eFileGetTimeStamp:
+    {
+        Type stype = (Type)0;
+        UInt str = HopperVM_Pop_R(stype);
+        UInt result = HRFile_GetTimeStamp(str);
+        HopperVM_Push(result, Type::eLong);
+        GC_Release(str);
+        break;
+    }
     case SysCalls::eFileGetTime:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
         UInt result = HRFile_GetTime(str);
-        HopperVM_Push(result, Type::eLong);
+        HopperVM_Push(result, Type::eString);
+        GC_Release(str);
+        break;
+    }
+    case SysCalls::eFileGetDate:
+    {
+        Type stype = (Type)0;
+        UInt str = HopperVM_Pop_R(stype);
+        UInt result = HRFile_GetDate(str);
+        HopperVM_Push(result, Type::eString);
+        GC_Release(str);
+        break;
+    }
+    case SysCalls::eDirectoryGetTime:
+    {
+        Type stype = (Type)0;
+        UInt str = HopperVM_Pop_R(stype);
+        UInt result = HRDirectory_GetTime(str);
+        HopperVM_Push(result, Type::eString);
+        GC_Release(str);
+        break;
+    }
+    case SysCalls::eDirectoryGetDate:
+    {
+        Type stype = (Type)0;
+        UInt str = HopperVM_Pop_R(stype);
+        UInt result = HRDirectory_GetDate(str);
+        HopperVM_Push(result, Type::eString);
         GC_Release(str);
         break;
     }
@@ -4621,15 +4658,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
         HRDirectory_Create(str);
-        GC_Release(str);
-        break;
-    }
-    case SysCalls::eDirectoryGetTime:
-    {
-        Type stype = (Type)0;
-        UInt str = HopperVM_Pop_R(stype);
-        UInt result = HRDirectory_GetTime(str);
-        HopperVM_Push(result, Type::eLong);
         GC_Release(str);
         break;
     }
@@ -6526,6 +6554,82 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         HopperVM_Push(hrlong, Type::eLong);
         break;
     }
+    case LibCall::eSDSPIControllerGet:
+    {
+        Byte iController = External_SDSPIControllerGet();
+        HopperVM_Push(iController, Type::eByte);
+        break;
+    }
+    case LibCall::eSDSPIControllerSet:
+    {
+        Type ctype = (Type)0;
+        UInt spiController = HopperVM_Pop_R(ctype);
+        External_SDSPIControllerSet(Byte(spiController));
+        break;
+    }
+    case LibCall::eSDCSPinGet:
+    {
+        Byte pin = External_SDCSPinGet();
+        HopperVM_Push(pin, Type::eByte);
+        break;
+    }
+    case LibCall::eSDCSPinSet:
+    {
+        Type ctype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ctype);
+        External_SDCSPinSet(Byte(pin));
+        break;
+    }
+    case LibCall::eSDClkPinGet:
+    {
+        Byte pin = External_SDClkPinGet();
+        HopperVM_Push(pin, Type::eByte);
+        break;
+    }
+    case LibCall::eSDClkPinSet:
+    {
+        Type ctype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ctype);
+        External_SDClkPinSet(Byte(pin));
+        break;
+    }
+    case LibCall::eSDTxPinGet:
+    {
+        Byte pin = External_SDTxPinGet();
+        HopperVM_Push(pin, Type::eByte);
+        break;
+    }
+    case LibCall::eSDTxPinSet:
+    {
+        Type ctype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ctype);
+        External_SDTxPinSet(Byte(pin));
+        break;
+    }
+    case LibCall::eSDRxPinGet:
+    {
+        Byte pin = External_SDRxPinGet();
+        HopperVM_Push(pin, Type::eByte);
+        break;
+    }
+    case LibCall::eSDRxPinSet:
+    {
+        Type ctype = (Type)0;
+        UInt pin = HopperVM_Pop_R(ctype);
+        External_SDRxPinSet(Byte(pin));
+        break;
+    }
+    case LibCall::eSDMount:
+    {
+        Bool ok = External_SDMount();
+        HopperVM_Push((ok) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
+    case LibCall::eSDEject:
+    {
+        External_SDEject();
+        break;
+    }
     case LibCall::eSPIBegin:
     {
         UInt spiController = 0x00;
@@ -6955,6 +7059,16 @@ UInt HRDirectory_Clone(UInt original)
     return address;
 }
 
+UInt HRDirectory_GetTime(UInt path)
+{
+    return External_DirectoryGetTime(path);
+}
+
+UInt HRDirectory_GetDate(UInt path)
+{
+    return External_DirectoryGetDate(path);
+}
+
 UInt HRDirectory_New()
 {
     UInt address = GC_New(0x03, Type::eDirectory);
@@ -7022,11 +7136,6 @@ UInt HRDirectory_GetDirectory(UInt hrdir, UInt index)
 void HRDirectory_Delete(UInt hrpath)
 {
     External_DirectoryDelete(hrpath);
-}
-
-UInt HRDirectory_GetTime(UInt hrpath)
-{
-    return External_DirectoryGetTime(hrpath);
 }
 
 UInt HRFile_Clone(UInt original)
@@ -7107,9 +7216,19 @@ void HRFile_Append(UInt _this, UInt hrstr)
     }
 }
 
+UInt HRFile_GetTimeStamp(UInt path)
+{
+    return External_FileGetTimeStamp(path);
+}
+
 UInt HRFile_GetTime(UInt path)
 {
     return External_FileGetTime(path);
+}
+
+UInt HRFile_GetDate(UInt path)
+{
+    return External_FileGetDate(path);
 }
 
 UInt HRFloat_Clone(UInt original)

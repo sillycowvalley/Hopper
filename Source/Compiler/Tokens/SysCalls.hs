@@ -196,9 +196,10 @@ unit SysCalls
         addEntry("Memory.ReadProgramWord");
         addEntry("Memory.WriteProgramWord");
         
+        addEntry("File.GetDate");
+        addEntry("Directory.GetDate");
+        
         // placeholders:
-        addEntry("_Runtime.Waiting_Get");
-        addEntry("_Runtime.ClearBreakpoints");
         addEntry("_Runtime.ClearStatements");
         addEntry("_Runtime.SetBreakpoint");
         addEntry("_Runtime.SetStatement");
@@ -259,7 +260,7 @@ unit SysCalls
         addEntry("Array.GetItemUInt");
         addEntry("Array.SetItemUInt");
         
-        addEntry("System.Inline");  // unused
+        addEntry("File.GetTimeStamp");
         addEntry("Int.ToBytes");
         
         addEntry("File.GetTime");

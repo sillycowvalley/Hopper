@@ -7,6 +7,6 @@ unit SD
     byte TxPin  { get library; set library; } // MOSI
     byte RxPin  { get library; set library; } // MISO
     
-    bool Mount(string rootFolder) library;   
-    bool Eject() library; 
+    bool Mount() library;   
+    Eject() library; 
 }

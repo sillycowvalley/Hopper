@@ -2482,7 +2482,7 @@ unit Editor
     
     bool IsYoungerThanSource(string candidatePath)
     {
-        long fileTime = File.GetTime(candidatePath);
+        long fileTime = File.GetTimeStamp(candidatePath);
         if (fileTime == 0)
         {
             return false;

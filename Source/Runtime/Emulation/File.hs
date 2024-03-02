@@ -9,5 +9,7 @@ unit File
     Append(file this, byte content) system;
     Flush(file this) system;
     long GetSize(string path) system;
-    long GetTime(string path) system;
+    long GetTimeStamp(string path) system;
+    string GetTime(string path) system;
+    string GetDate(string path) system;
 }

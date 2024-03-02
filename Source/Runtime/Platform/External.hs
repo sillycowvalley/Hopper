@@ -109,6 +109,57 @@ unit External
         ErrorDump(156); Error = 0x0A; return false;
     }
     
+    
+    byte SDSPIControllerGet()
+    {
+        ErrorDump(156); Error = 0x0A; return 0;
+    }
+    SDSPIControllerSet(byte iController)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    byte SDCSPinGet()
+    {
+        ErrorDump(156); Error = 0x0A; return 0;
+    }
+    SDCSPinSet(byte pin)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    
+    byte SDClkPinGet()
+    {
+        ErrorDump(156); Error = 0x0A; return 0;
+    }
+    SDClkPinSet(byte pin)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    byte SDTxPinGet()
+    {
+        ErrorDump(156); Error = 0x0A; return 0;
+    }
+    SDTxPinSet(byte pin)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    byte SDRxPinGet()
+    {
+        ErrorDump(156); Error = 0x0A; return 0;
+    }
+    SDRxPinSet(byte pin)
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    bool SDMount()
+    {
+        ErrorDump(156); Error = 0x0A; return false;
+    }
+    SDEject()
+    {
+        ErrorDump(156); Error = 0x0A;
+    }
+    
     MCUReboot(bool bootsel)
     {
         ErrorDump(156); Error = 0x0A;
@@ -289,11 +340,6 @@ unit External
         string path = nativeStringFromHopperString(hrpath);
         Directory.Create(path);
     }
-    uint DirectoryGetTime(uint hrpath)
-    {
-        string path = nativeStringFromHopperString(hrpath);
-        return hopperLongFromNativeLong(Directory.GetTime(path));
-    }
     bool FileExists(uint hrpath)
     {
         string path = nativeStringFromHopperString(hrpath);
@@ -312,13 +358,34 @@ unit External
         uint size = hopperLongFromNativeLong(nativeSize);
         return size;
     }
-    uint FileGetTime(uint hrpath)
+    uint FileGetTimeStamp(uint hrpath)
     {
         string path = nativeStringFromHopperString(hrpath);
-        long nativeTime = File.GetTime(path);
+        long nativeTime = File.GetTimeStamp(path);
         uint hrtime = hopperLongFromNativeLong(nativeTime);
         return hrtime;
     }
+    uint FileGetTime(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        return hopperStringFromNativeString(File.GetTime(path));
+    }
+    uint FileGetDate(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        return hopperStringFromNativeString(File.GetDate(path));
+    }
+    uint DirectoryGetTime(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        return hopperStringFromNativeString(Directory.GetTime(path));
+    }
+    uint DirectoryGetDate(uint hrpath)
+    {
+        string path = nativeStringFromHopperString(hrpath);
+        return hopperStringFromNativeString(Directory.GetDate(path));
+    }
+    
     FileWriteAllBytes(uint hrpath, uint buffer, bool append)
     {
         string path = nativeStringFromHopperString(hrpath);
