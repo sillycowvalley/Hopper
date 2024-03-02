@@ -1,8 +1,8 @@
-unit RTCDevice
+unit BoardDevice
 {
 
 #if !defined(MCU_BOARD_DEFINED)
-    uses "/Source/Library/Boards/Challenger2040SDRTC" // sneaky way of not modifying the automatically generated Board file
+    uses "/Source/Library/Boards/Challenger2040SDRTC" // avoid modifying the automatically generated Board file
 #endif
 
     uses "/Source/Library/RTCs/MCP79410Driver" 

@@ -7,7 +7,7 @@ unit RTCDriver
     uses "/Source/System/DateTime"
     uses "/Source/Library/RTC"
     
-    friend RTC, RTCDevice;
+    friend RTC, RTCDevice, BoardDevice;
  
     const byte RTC_CONTROL    = 0x07;
     const byte RTC_LOCATION   = 0x00;  

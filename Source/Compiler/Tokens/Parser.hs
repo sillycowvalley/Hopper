@@ -11,6 +11,14 @@ unit Parser
     <string, string> previousToken;
     <string, string> currentToken;
     
+    // <string, string>
+    // ["type"]    - HopperToken
+    // ["lexeme"]  - string
+    // ["line"]    - uint
+    // ["source"]  - string
+    // ["pos"]     - uint - index in current parsed content string
+    // ["literal"] - depends
+    
     bool hadError;
     bool interactive;
     
@@ -81,17 +89,9 @@ unit Parser
         
     bool HadError { get { return hadError; } }
     
-        <string, string> CurrentToken { get { return currentToken; }}    
+    <string, string> CurrentToken { get { return currentToken; }}    
     <string, string> PreviousToken { get { return previousToken; }}    
     
-    // ["type"]    - HopperToken
-    // ["lexeme"]  - string
-    // ["line"]    - uint
-    // ["source"]  - string
-    // ["pos"]     - uint - index in current parsed content string
-    // ["literal"] - depends
-
-
     DumpToken(string name, <string,string> token)
     {
         OutputDebug(name + ":"); // DumpToken() DumpCurrent() DumpPrevious() DumpPeek()

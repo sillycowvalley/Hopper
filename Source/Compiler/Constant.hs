@@ -186,6 +186,62 @@ unit Constant
         } // loop
         return result;
     }
+    
+    bool validateIntegralConstant(string typeExpected, string identifierType, ref string actualType, string value, <string,string> token)
+    {
+        bool success;
+        loop
+        {
+            string integralTypes = "|uint|int|byte|";
+            string keyString = "|" + identifierType + "|";
+            if (!integralTypes.Contains(keyString))
+            {
+                Parser.ErrorAt(token, "integral constant expected");
+                break;
+            }
+        
+            switch (typeExpected)
+            {
+                case "byte":
+                {
+                    uint ui;
+                    if (!UInt.TryParse(value, ref ui) || (ui > 255))   
+                    {
+                        Parser.ErrorAt(token, "constant out of range");
+                        break;
+                    }
+                    actualType = "byte";
+                }
+                case "uint":
+                {
+                    uint ui;
+                    if (!UInt.TryParse(value, ref ui))   
+                    {
+                        Parser.ErrorAt(token, "constant out of range");           
+                        break;
+                    }
+                    actualType = "uint";
+                }
+                case "int":
+                {
+                    int i;
+                    if (!Int.TryParse(value, ref i))   
+                    {
+                        Parser.ErrorAt(token, "constant out of range");           
+                        break;
+                    }
+                    actualType = "int";
+                }
+                default:
+                {
+                    Parser.ErrorAt(token, "constant identifier case not implemented");
+                }
+            }
+            success = true;
+            break;
+        } // loop
+        return success;
+    }
 
     string parseConstantPrimary(string typeExpected, ref string actualType, bool weakEnums)
     {
@@ -282,6 +338,16 @@ unit Constant
                                 break;
                             }
                             actualType = "uint";    
+                        }
+                        else if (typeExpected == "float")
+                        {
+                            float f;
+                            if (!Float.TryParse(currentToken["lexeme"], ref f))
+                            {
+                                Parser.ErrorAtCurrent("invalid float literal");
+                                break;           
+                            }
+                            actualType = "float";
                         }
                         else
                         {
@@ -387,7 +453,17 @@ unit Constant
                                     continue;
                                 }
                             }
-                            Parser.ErrorAtCurrent("undefined constant identifier '" + constantIdentifier + "'");
+                            if (typeExpected != "string")
+                            {
+                                <string, string> current = Parser.CurrentToken;
+                                value = "unresolved," + current["lexeme"] + "," + current["line"] + "," + current["source"] + "," + constantIdentifier;
+                                actualType = typeExpected;
+                                Parser.Advance();
+                            }
+                            else
+                            {
+                                Parser.ErrorAtCurrent("undefined constant identifier '" + constantIdentifier + "'");
+                            }
                             outerLoopBreak = true;
                             break;
                         }
@@ -397,50 +473,16 @@ unit Constant
                         break;
                     }
                     value = Symbols.GetConstantValue(name);
+                    string constantType = Symbols.GetConstantType(name);
                     if (isCount)
                     {
                         value = (value.Length).ToString();
                     }
-                    switch (typeExpected)
+                    if (!validateIntegralConstant(typeExpected, constantType, ref actualType, value, CurrentToken))
                     {
-                        case "byte":
-                        {
-                            uint ui;
-                            if (!UInt.TryParse(value, ref ui) || (ui > 255))   
-                            {
-                                Parser.ErrorAtCurrent("invalid identifier");
-                                break;
-                            }
-                            actualType = "byte";
-                            Parser.Advance();
-                        }
-                        case "uint":
-                        {
-                            uint ui;
-                            if (!UInt.TryParse(value, ref ui))   
-                            {
-                                Parser.ErrorAtCurrent("invalid identifier");           
-                                break;
-                            }
-                            actualType = "uint";
-                            Parser.Advance();   
-                        }
-                        case "int":
-                        {
-                            int i;
-                            if (!Int.TryParse(value, ref i))   
-                            {
-                                Parser.ErrorAtCurrent("invalid identifier");           
-                                break;
-                            }
-                            actualType = "int";
-                            Parser.Advance();       
-                        }
-                        default:
-                        {
-                            Parser.ErrorAtCurrent("constant identifier case not implemented");
-                        }
+                        break;
                     }
+                    Parser.Advance();
                 }            
                 case HopperToken.Keyword:
                 {
@@ -957,5 +999,47 @@ unit Constant
             }
         }
         return range;
+    }
+    
+    bool ResolveUnresolveds()
+    {
+        bool success = true;
+        
+        <string, string> cValues = Symbols.GetConstantValues();
+        foreach (var kv in cValues)
+        {
+            string typeExpected = Symbols.GetConstantType(kv.key);
+            if (typeExpected == "string") { continue; }
+            string value = kv.value;
+            if (value.StartsWith("unresolved,"))
+            {
+                // "unresolved,lexeme,line,source,identifier"
+                <string> parts = value.Split(',');
+                <string, string> token;
+                token["lexeme"] = parts[1];
+                token["line"] = parts[2];
+                token["source"] = parts[3];
+                
+                string identifier = parts[4];
+                if (!Symbols.ConstantExists(identifier))
+                {
+                    Parser.ErrorAt(token, "undefined constant identifier");
+                    success = false;
+                    break;
+                }
+                
+                string identifierType = Symbols.GetConstantType(identifier);
+                value                 = Symbols.GetConstantValue(identifier);
+                
+                string actualType;
+                if (!validateIntegralConstant(typeExpected, identifierType, ref actualType, value, token))
+                {
+                    success = false;
+                    break;
+                }
+                Symbols.SetConstantValue(kv.key, value);
+            }
+        }
+        return success;
     }
 }

@@ -18,7 +18,7 @@ void FileSystem_Initialize()
       LittleFS.setConfig(cfg);
       if (!LittleFS.begin()) // mount the file system
       {
-          Serial.println("LittleFS NOT ok: did you configure Flash Size correctly on the Tools menu?");
+          Serial.println("Did you configure Flash Size correctly on the Tools menu in Arduino IDE?");
       }
 
 #ifdef DIAGNOSTICS
@@ -310,6 +310,10 @@ Bool External_DirectoryExists(UInt hrpath)
         if(LittleFS.exists(buffer))
         {
             f = LittleFS.open(buffer, "r");
+        }
+        else if ((buffer[1] == 0) && (buffer[0] == '/'))
+        {
+            Serial.println("Did you configure Flash Size correctly on the Tools menu in Arduino IDE?");
         }
     }
     return f && f.isDirectory();

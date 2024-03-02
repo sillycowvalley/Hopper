@@ -585,58 +585,52 @@ program PreProcess
     {
         loop
         {
-          <string,string> prevToken = Parser.PreviousToken;
-          <string,string> usesToken = Parser.CurrentToken;
-          
-          if (usesToken["line"] == prevToken["line"])
-          {
-              Parser.ErrorAtCurrent("'uses' must be first token on line");
-              break;
-          }
-          Parser.Advance(); // uses
-          if (!Parser.Check(HopperToken.StringConstant))
-          {
-              Parser.ErrorAtCurrent("path of unit source expected");
-              break;
-          }
-          Parser.Advance();
-          <string, string> pathToken = Parser.PreviousToken;
-          string hsPath = pathToken["lexeme"];
-          string hsPathLower = hsPath.ToLower();
-          if (!hsPathLower.EndsWith(".hs"))
-          {
-              hsPath = hsPath + ".hs";
-          }
-          if (!File.Exists(hsPath))
-          {
-              Parser.ErrorAtCurrent("'" + hsPath + "' not found");
-              break;
-          }
-          
-          if (pathToken["line"] != usesToken["line"])
-          {
-              Parser.ErrorAtCurrent("'uses' and path must appear on one line");
-              break;
-          }
-          
-          hsPathLower = hsPath.ToLower();
-          if (!unitsParsed.Contains(hsPathLower))
-          {
-              unitsParsed[hsPathLower] = false; // false means we're aware of it but we haven't parsed it yet
-          }
-          <string, string> nextToken = Parser.CurrentToken;
-          // ["type"]    - HopperToken
-          // ["lexeme"]  - string
-          // ["line"]    - uint
-          // ["source"]  - string
-          // ["pos"]     - uint - index in current parsed content string
-          // ["literal"] - depends
-          if (nextToken["line"] == pathToken["line"])
-          {
-              Parser.ErrorAtCurrent("'uses' declaration must be alone on line");
-              break;
-          }
-          break;
+            <string,string> prevToken = Parser.PreviousToken;
+            <string,string> usesToken = Parser.CurrentToken;
+            
+            if (usesToken["line"] == prevToken["line"])
+            {
+                Parser.ErrorAtCurrent("'uses' must be first token on line");
+                break;
+            }
+            Parser.Advance(); // uses
+            if (!Parser.Check(HopperToken.StringConstant))
+            {
+                Parser.ErrorAtCurrent("path of unit source expected");
+                break;
+            }
+            Parser.Advance();
+            <string, string> pathToken = Parser.PreviousToken;
+            string hsPath = pathToken["lexeme"];
+            string hsPathLower = hsPath.ToLower();
+            if (!hsPathLower.EndsWith(".hs"))
+            {
+                hsPath = hsPath + ".hs";
+            }
+            if (!File.Exists(hsPath))
+            {
+                Parser.ErrorAtCurrent("'" + hsPath + "' not found");
+                break;
+            }
+            
+            if (pathToken["line"] != usesToken["line"])
+            {
+                Parser.ErrorAtCurrent("'uses' and path must appear on one line");
+                break;
+            }
+            
+            hsPathLower = hsPath.ToLower();
+            if (!unitsParsed.Contains(hsPathLower))
+            {
+                unitsParsed[hsPathLower] = false; // false means we're aware of it but we haven't parsed it yet
+            }
+            <string, string> nextToken = Parser.CurrentToken;
+            if (nextToken["line"] == pathToken["line"])
+            {
+                Parser.ErrorAtCurrent("'uses' declaration must be alone on line");
+                break;
+            }
+            break;
         }
     }   
     
@@ -1299,27 +1293,26 @@ program PreProcess
             } // global, method or function
         } // not directive
     } // declaration()
-              
-                          
-  bool buildSymbols(string sourcePath, <string> cliSymbols)
-  {
-      bool success = true;
-      unitsParsed.Clear();
-      unitsParsed[sourcePath] = true; // make sure program is included in the source paths
+    
+    bool buildSymbols(string sourcePath, <string> cliSymbols)
+    {
+        bool success = true;
+        unitsParsed.Clear();
+        unitsParsed[sourcePath] = true; // make sure program is included in the source paths
 
-      Symbols.New();
-      Scanner.New();
-      SysCalls.New();
-      LibCalls.New();
-      
-      foreach (var symbol in cliSymbols)
-      {
+        Symbols.New();
+        Scanner.New();
+        SysCalls.New();
+        LibCalls.New();
+
+        foreach (var symbol in cliSymbols)
+        {
           Symbols.AddDefine(symbol, "true");
-      }
+        }
                         
-      bool firstUnit = true;
-      loop
-      {
+        bool firstUnit = true;
+        loop
+        {
           Parser.Reset();
           
           Directives.New();
@@ -1437,8 +1430,12 @@ program PreProcess
           {
               break;
           }
-      } 
-      return success;
+        } 
+        if (success)
+        {
+            success = Constant.ResolveUnresolveds();
+        }
+        return success;
     }
     
     BadArguments()

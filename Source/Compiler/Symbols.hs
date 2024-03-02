@@ -492,6 +492,10 @@ unit Symbols
         }
         return value;
     }
+    <string, string> GetConstantValues()
+    {
+        return cValues;
+    }
     string GetConstantType(string name)
     {
         string value;
@@ -500,6 +504,12 @@ unit Symbols
             value = cTypes[name];
         }
         return value;
+    }
+    SetConstantValue(string constantName, string constantValue)
+    {
+        string actualType = GetConstantType(constantName);
+        string key = actualType + " " + constantName;
+        cDefinitions[key] = constantValue;
     }
     AddConstant(string constantName, string actualType, string constantValue)
     {
