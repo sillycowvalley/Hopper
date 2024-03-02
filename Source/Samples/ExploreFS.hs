@@ -26,13 +26,14 @@ program ExploreFS
                 string filePath = dir.GetFile(i);
                 long   size     = File.GetSize(filePath);
                 string fileName = Path.GetFileName(filePath);
-                WriteLn((indentString + fileName).Pad(' ', 20) + size.ToString() + " bytes");
+                WriteLn((indentString + fileName).Pad(' ', 32) + size.ToString() + " bytes");
             }
         }
     }
     
     {
         WalkDirectory("/", 0);
+        
 #ifndef SERIAL_CONSOLE
         Key k = ReadKey();
 #endif

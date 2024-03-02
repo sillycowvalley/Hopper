@@ -54,6 +54,16 @@ compile speed -o
 optimize speed
 codegen speed
 
+preprocess /source/projects/mcushell/mount
+compile mount -o
+optimize mount
+codegen mount
+
+preprocess /source/projects/mcushell/eject
+compile eject -o
+optimize eject
+codegen eject
+
 preprocess /source/samples/mandelbrot
 compile mandelbrot -o
 optimize mandelbrot
@@ -87,9 +97,14 @@ hm -t /bin/rmdir.hexe /bin
 hm -t /bin/copy.hexe /bin
 hm -t /bin/show.hexe /bin
 
-// upload some programs
+// upload some utilities
 
 hm -t /bin/speed.hexe /bin
+hm -t /bin/mount.hexe /bin
+hm -t /bin/eject.hexe /bin
+
+// upload some programs
+
 hm -t /bin/mandelbrot.hexe /bin
 hm -t /bin/fibouint.hexe /bin
 hm -t /bin/nrl.hexe /bin

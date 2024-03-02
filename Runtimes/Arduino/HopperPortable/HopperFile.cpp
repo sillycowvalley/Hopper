@@ -49,16 +49,37 @@ bool sdMounted = false;
 
 char * isSDPath(char * buffer)
 {
-    if (sdMounted && (buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == '/'))
+    if (sdMounted)
     {
-        char* sdpath = &buffer[3];
-        return sdpath;
+        if ((buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == '/'))
+        {
+            char* sdpath = &buffer[3];
+            return sdpath;
+        }
+        if ((buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == 0))
+        {
+            buffer[3] = '/';
+            buffer[4] = 0;
+            char* sdpath = &buffer[3];
+            return sdpath;
+        }
     }
     return nullptr;
 }
 bool isSDRoot(char * buffer)
 {
-    return sdMounted && (buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == '/') && (buffer[4] == 0);
+    if (sdMounted)
+    {
+        if ((buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == '/') && (buffer[4] == 0)) // '/sd/'
+        {
+            return true;
+        }
+        if ((buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == 0)) // '/sd'
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 const UInt pathBufferSize = 128;
@@ -662,6 +683,7 @@ void External_SDEject()
         SDFS.end();
         SPIClassRP2040* sdSPI = (sdController == 0) ? &SPI : &SPI1;
         sdSPI->end();
+        sdMounted = false;
     }
 }
 

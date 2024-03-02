@@ -26,7 +26,6 @@ program Command
         directory dir = Directory.Open(path);
         if (dir.IsValid())
         {
-            PrintLn("failed to delete " + path);
             Common.WriteLn("  failed to delete '" + path + "'", Colour.MatrixRed);
         }
         return true; 
