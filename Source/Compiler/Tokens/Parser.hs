@@ -110,7 +110,7 @@ unit Parser
     }    
     DumpPeek()
     {
-        <string, string> token = Peek();
+        <string, string> token = Scanner.Peek();
         DumpToken("PeekToken", token);
     }
     Reset()
@@ -121,10 +121,6 @@ unit Parser
         hadError = false;
     }
         
-    nextToken()
-    {
-        currentToken = Scanner.Next();
-    }   
     ErrorAt(<string, string> token, string message, bool prefix)
     {
         if (!hadError)
@@ -189,9 +185,8 @@ unit Parser
         previousToken = currentToken;
         loop
         {
-            nextToken();
-            HopperToken ttype = Token.GetType(currentToken);
-            if (ttype != HopperToken.Error)
+            currentToken = Scanner.Next();
+            if (Token.GetType(currentToken) != HopperToken.Error)
             {
                 break;
             }
@@ -199,15 +194,7 @@ unit Parser
             break;
         }
     }
-    Consume(HopperToken consumeType, char ch)
-    {
-        Consume(consumeType, "", "'" + ch + "' expected");
-    }
     Consume(HopperToken consumeType, string message)
-    {
-        Consume(consumeType, "", message);
-    }  
-    Consume(HopperToken consumeType, string keyword, string message)
     {
         loop
         {
@@ -215,71 +202,129 @@ unit Parser
             {
                 break;
             }
-            HopperToken ttype = Token.GetType(currentToken);
-            if (ttype == consumeType)
+            if (Token.GetType(currentToken) == consumeType)
             {
-                if (ttype == HopperToken.Keyword)
-                {
-                    keyword = "|" + keyword + "|";
-                    string search = "|" + currentToken["lexeme"] + "|";
-                    if (keyword.Contains(search))
-                    {
-                        Advance();
-                        break;
-                    }
-                }
-                else
+                Advance();
+                break;
+            }
+            ErrorAtCurrent(message);
+            break;             
+        }
+    }  
+    ConsumeKeyword(string keyword)
+    {
+        loop
+        {
+            if (HadError)
+            {
+                break;
+            }
+            if (Token.GetType(currentToken) == HopperToken.Keyword)
+            {
+                keyword = "|" + keyword + "|";
+                string search = "|" + currentToken["lexeme"] + "|";
+                if (keyword.Contains(search))
                 {
                     Advance();
                     break;
                 }
             }
-            ErrorAtCurrent(message);
+            ErrorAtCurrent("'" + keyword + "' expected");
             break;             
         }
     }
-    bool Check(HopperToken checkType)
+    Consume(HopperToken consumeType)
     {
-        return Check(checkType, "");
-    }
-    bool Check(HopperToken checkType, string keyword)
-    {
-        bool result = false;
         loop
         {
-            HopperToken ttype = Token.GetType(currentToken);
-            result = (checkType == ttype);
-            if (!result)
+            if (HadError)
             {
                 break;
             }
-            if (checkType == HopperToken.Keyword)
+            if (consumeType == Token.GetType(currentToken))
             {
-                keyword = "|" + keyword + "|";
-                string search = "|" + currentToken["lexeme"] + "|";
-                result = keyword.Contains(search);
+                Advance();
+                break;
             }
-            else if ((checkType == HopperToken.Identifier) && (keyword.Length != 0))
+            switch (consumeType)
             {
-                result = keyword == currentToken["lexeme"];
-            }
-            else if ((checkType == HopperToken.Directive) && (keyword.Length != 0))
-            {
-                result = keyword == currentToken["lexeme"];
+                case HopperToken.Comma:
+                {
+                    ErrorAtCurrent("',' expected");
+                }
+                case HopperToken.Colon:
+                {
+                    ErrorAtCurrent("':' expected");
+                }
+                case HopperToken.Assign:
+                {
+                    ErrorAtCurrent("'=' expected");
+                }
+                case HopperToken.SemiColon:
+                {
+                    ErrorAtCurrent("';' expected");
+                }
+                case HopperToken.LBracket:
+                {
+                    ErrorAtCurrent("'[' expected");
+                }
+                case HopperToken.RBracket:
+                {
+                    ErrorAtCurrent("']' expected");
+                }
+                case HopperToken.LBrace:
+                {
+                    ErrorAtCurrent("'{' expected");
+                }
+                case HopperToken.RBrace:
+                {
+                    ErrorAtCurrent("'}' expected");
+                }
+                case HopperToken.LParen:
+                {
+                    ErrorAtCurrent("'(' expected");
+                }
+                case HopperToken.RParen:
+                {
+                    ErrorAtCurrent("')' expected");
+                }
+                default:
+                {   
+                    ErrorAtCurrent("Consume not implemented");
+                    Die(0x0A);
+                }
             }
             break;             
         }
+    }
+    
+    
+    bool Check(HopperToken checkType)
+    {
+        return (checkType == Token.GetType(currentToken));
+    }
+    bool CheckDirective(string directive)
+    {
+        bool result = (HopperToken.Directive == Token.GetType(currentToken));
+        if (result)
+        {
+            result = directive == currentToken["lexeme"];
+        }
+        return result;
+    }
+    bool CheckKeyword(string keyword)
+    {
+        bool result = (HopperToken.Keyword == Token.GetType(currentToken));
+        if (result)
+        {
+            keyword = "|" + keyword + "|";
+            string search = "|" + currentToken["lexeme"] + "|";
+            result = keyword.Contains(search);
+        }
         return result;
     }  
-    
-    <string,string> Peek()
+    HopperToken PeekTokenType()
     {
-        <string,string> peek = Scanner.Peek();
-        return peek;
-    }
-    <string,string> PeekNext()
-    {
-        <string,string> peekNext = Scanner.PeekNext();
-        return peekNext;
+        return Scanner.PeekTokenType();
     }
 }

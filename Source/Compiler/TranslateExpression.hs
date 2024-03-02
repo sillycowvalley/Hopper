@@ -103,7 +103,7 @@ unit TranslateExpression
                 {
                     break;
                 }
-                Parser.Consume(HopperToken.RParen, ')'); // )
+                Parser.Consume(HopperToken.RParen);
                 if (Parser.HadError)
                 {
                     break;
@@ -187,7 +187,7 @@ unit TranslateExpression
                 break;
             }
             
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -577,7 +577,7 @@ unit TranslateExpression
                     {
                         break;
                     }
-                    Parser.Consume(HopperToken.RParen, ')');
+                    Parser.Consume(HopperToken.RParen);
                     if (Parser.HadError)
                     {
                         break;
@@ -995,7 +995,7 @@ unit TranslateExpression
                 
                 string trueExpression = TranslateExpression(expectedType, ref actualType);
                 
-                Parser.Consume(HopperToken.Colon, ':');
+                Parser.Consume(HopperToken.Colon);
                 if (Parser.HadError)
                 {
                     break;
@@ -1169,7 +1169,7 @@ unit TranslateExpression
                 }
             }
             
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -1212,7 +1212,7 @@ unit TranslateExpression
                 }
                 <string> argument;
                 bool isRef;
-                if (Parser.Check(HopperToken.Keyword, "ref"))
+                if (Parser.CheckKeyword("ref"))
                 {
                     Parser.Advance();
                     //content = content + "&";
@@ -1245,7 +1245,7 @@ unit TranslateExpression
                 n++;
                 if (!Parser.Check(HopperToken.RParen))
                 {
-                    Parser.Consume(HopperToken.Comma, ',');
+                    Parser.Consume(HopperToken.Comma);
                 }
                 continue; // next argument
             }

@@ -41,7 +41,7 @@ program Translate
         loop
         {
             Parser.Advance(); // if
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -53,7 +53,7 @@ program Translate
                 Parser.Error("boolean expression expected, (was '" + ifCheckType + "')");
                 break;
             }    
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -70,10 +70,10 @@ program Translate
             {
                 break;
             }
-            if (Parser.Check(HopperToken.Keyword, "else"))
+            if (Parser.CheckKeyword("else"))
             {
                 Advance(); // else
-                if (Parser.Check(HopperToken.Keyword, "if"))
+                if (Parser.CheckKeyword("if"))
                 {
                     content = "else ";
                     continue; // else if
@@ -148,7 +148,7 @@ program Translate
         {
             Parser.Advance(); // while
             
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -161,7 +161,7 @@ program Translate
                 break;
             }  
             
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -192,7 +192,7 @@ program Translate
         {
             
             Parser.Advance(); // for
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -204,7 +204,7 @@ program Translate
             if (Parser.Check(HopperToken.SemiColon))
             {
                 // empty initialization statement
-                Parser.Consume(HopperToken.SemiColon, ';');
+                Parser.Consume(HopperToken.SemiColon);
             }
             else
             {
@@ -223,7 +223,7 @@ program Translate
                 Parser.Error("boolean expression expected, (was '" + exitCheckType + "')");
                 break;
             }
-            Parser.Consume(HopperToken.SemiColon, ';');
+            Parser.Consume(HopperToken.SemiColon);
             if (Parser.HadError)
             {
                 break;
@@ -242,7 +242,7 @@ program Translate
                 incrementContent = collectedContent;
             }
             
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -295,7 +295,7 @@ program Translate
         loop
         {
             Parser.Advance(); // switch
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -314,7 +314,7 @@ program Translate
             
             
             
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -324,7 +324,7 @@ program Translate
             SourceStream.Append("switch (" + switchExpression + ")");
             
             
-            Parser.Consume(HopperToken.LBrace, '{');
+            Parser.Consume(HopperToken.LBrace);
             if (Parser.HadError)
             {
                 break;
@@ -350,9 +350,9 @@ program Translate
                 }
                 
                 bool isDefault = false;
-                if (!Parser.Check(HopperToken.Keyword, "case"))
+                if (!Parser.CheckKeyword("case"))
                 {
-                    if (Parser.Check(HopperToken.Keyword, "default"))
+                    if (Parser.CheckKeyword("default"))
                     {
                         isDefault = true;       
                         if (defaultSeen)
@@ -393,7 +393,7 @@ program Translate
                         SourceStream.NewLine();
                         SourceStream.Append("default:");
                     }
-                    Parser.Consume(HopperToken.Colon, ':');
+                    Parser.Consume(HopperToken.Colon);
                     if (Parser.HadError)
                     {
                         break;
@@ -401,7 +401,7 @@ program Translate
                     
                     if (!isDefault)
                     {
-                        if (Parser.Check(HopperToken.Keyword, "case"))
+                        if (Parser.CheckKeyword("case"))
                         {
                             continue; // multiple cases
                         }
@@ -559,7 +559,7 @@ program Translate
         {
             <string,string> leftToken = PreviousToken;
             HopperToken leftTokenType = Token.GetType(leftToken); 
-            Parser.Consume(HopperToken.Assign, '=');
+            Parser.Consume(HopperToken.Assign);
             if (Parser.HadError)
             {
                 break;
@@ -707,13 +707,11 @@ program Translate
                 if ((tokenType == HopperToken.Identifier) || (tokenType == HopperToken.DottedIdentifier))
                 {
                     bool isDotted = (tokenType == HopperToken.DottedIdentifier);
-                    <string,string> nextToken = Parser.Peek();
-                    HopperToken nextTokenType = Token.GetType(nextToken);   
                     if (Types.IsEnum(tokenString) || Types.IsFlags(tokenString))
                     {
                         success = translateLocalDeclaration(collectContent);
                     }
-                    else if (nextTokenType == HopperToken.Identifier)
+                    else if (Parser.PeekTokenType() == HopperToken.Identifier)
                     {
                         success = translateLocalDeclaration(collectContent);
                     }
@@ -722,8 +720,7 @@ program Translate
                         Advance();
                         <string,string> idToken   = Parser.PreviousToken;
                         tokenString = idToken["lexeme"];
-                        nextToken = Parser.CurrentToken;
-                        tokenType = Token.GetType(nextToken);
+                        tokenType = Token.GetType(Parser.CurrentToken);
                         if (tokenType == HopperToken.Assign)
                         {
                             // assignment
@@ -766,7 +763,7 @@ program Translate
                         {
                             if (!Parser.HadError)
                             {
-                                Parser.ErrorAt(nextToken, "'(' or '=' expected");
+                                Parser.ErrorAtCurrent("'(' or '=' expected");
                             }
                         }
                     }
@@ -786,7 +783,7 @@ program Translate
                 DumpCurrent();
             }
             */
-            Parser.Consume(HopperToken.SemiColon, ';');
+            Parser.Consume(HopperToken.SemiColon);
             SourceStream.Append(";");
         }
         return success;
@@ -957,7 +954,7 @@ program Translate
             if (!isExternal)
             {
                 Parser.Advance(); // load first token
-                isExternal = Parser.Check(HopperToken.Keyword, "system") || Parser.Check(HopperToken.Keyword, "library");
+                isExternal = Parser.CheckKeyword("|system|library|");
             }
             if (isExternal)
             {

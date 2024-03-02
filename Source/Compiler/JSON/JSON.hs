@@ -246,7 +246,7 @@ unit JSON
     <string> readList()
     {
         <string> lst;
-        Parser.Consume(HopperToken.LBracket, '[');
+        Parser.Consume(HopperToken.LBracket);
         bool first = true;
         loop
         {
@@ -263,7 +263,7 @@ unit JSON
             }
             if (!first)
             {
-                Parser.Consume(HopperToken.Comma, ',');
+                Parser.Consume(HopperToken.Comma);
             }
             first = false;
             <string,string> currentToken = CurrentToken;
@@ -285,7 +285,7 @@ unit JSON
     string readBinaryString()
     {
         string str;
-        Parser.Consume(HopperToken.LBracket, '[');
+        Parser.Consume(HopperToken.LBracket);
         bool first = true;
         loop
         {
@@ -302,7 +302,7 @@ unit JSON
             }
             if (!first)
             {
-                Parser.Consume(HopperToken.Comma, ',');
+                Parser.Consume(HopperToken.Comma);
             }
             first = false;
             <string,string> currentToken = CurrentToken;
@@ -333,7 +333,7 @@ unit JSON
     <string, variant> readDictionary(string dictionaryName)
     {
         <string, variant> dict;
-        Parser.Consume(HopperToken.LBrace, '{');
+        Parser.Consume(HopperToken.LBrace);
         bool first = true;
         loop
         {
@@ -350,7 +350,7 @@ unit JSON
             }
             if (!first)
             {
-                Parser.Consume(HopperToken.Comma, ',');
+                Parser.Consume(HopperToken.Comma);
             }
             first = false;
             Parser.Consume(HopperToken.StringConstant, "key string expected");
@@ -362,7 +362,7 @@ unit JSON
 #endif
             <string,string> previousToken = PreviousToken;
             string name = previousToken["lexeme"];
-            Parser.Consume(HopperToken.Colon, ':');
+            Parser.Consume(HopperToken.Colon);
 #ifndef JSON_EXPRESS
             if (Parser.HadError)
             {
@@ -446,7 +446,7 @@ unit JSON
         Scanner.Reset(pos, 1, path);
         
         Parser.Advance(); // load up first token
-        Parser.Consume(HopperToken.LBrace, '{');
+        Parser.Consume(HopperToken.LBrace);
         bool first = true;
         loop
         {
@@ -462,7 +462,7 @@ unit JSON
             }
             if (!first)
             {
-                Parser.Consume(HopperToken.Comma, ',');
+                Parser.Consume(HopperToken.Comma);
             }
             first = false;
             Parser.Consume(HopperToken.StringConstant, "section name expected");
@@ -474,7 +474,7 @@ unit JSON
 #endif
             <string,string> previousToken = PreviousToken;
             string sectionName = previousToken["lexeme"];
-            Parser.Consume(HopperToken.Colon, ':');
+            Parser.Consume(HopperToken.Colon);
 #ifndef JSON_EXPRESS
             if (Parser.HadError)
             {

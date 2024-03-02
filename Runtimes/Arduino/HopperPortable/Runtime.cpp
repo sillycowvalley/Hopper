@@ -7,7 +7,6 @@
 #include "Inlined.h"
 
 
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -4186,14 +4185,14 @@ UInt HopperVM_CSPStart_Get()
 Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
 {
     Bool doNext = true;
-    switch (SysCall(iSysCall))
+    switch (SysCalls(iSysCall))
     {
-    case SysCall::eDiagnosticsDie:
+    case SysCalls::eDiagnosticsDie:
     {
         doNext = Instructions_Die();
         break;
     }
-    case SysCall::eRuntimeInline:
+    case SysCalls::eRuntimeInline:
     {
         if (!HopperVM_RunInline())
         {
@@ -4203,7 +4202,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         }
         break;
     }
-    case SysCall::eRuntimeExecute:
+    case SysCalls::eRuntimeExecute:
     {
         Type ltype = (Type)0;
         UInt args = HopperVM_Pop_R(ltype);
@@ -4216,35 +4215,35 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         doNext = false;
         break;
     }
-    case SysCall::eRuntimeUserCodeGet:
+    case SysCalls::eRuntimeUserCodeGet:
     {
         HopperVM_Push(HopperVM_programSize, Type::eUInt);
         break;
     }
-    case SysCall::eRuntimeInDebuggerGet:
+    case SysCalls::eRuntimeInDebuggerGet:
     {
         HopperVM_Push((HopperVM_inDebugger) ? (0x01) : (0x00), Type::eBool);
         break;
     }
-    case SysCall::eRuntimeDateTimeGet:
+    case SysCalls::eRuntimeDateTimeGet:
     {
         UInt dateTime = HopperVM_RuntimeDateTime();
         HopperVM_Push(dateTime, Type::eString);
         break;
     }
-    case SysCall::eMemoryAvailable:
+    case SysCalls::eMemoryAvailable:
     {
         UInt size = Memory_Available();
         HopperVM_Push(size, Type::eUInt);
         break;
     }
-    case SysCall::eMemoryMaximum:
+    case SysCalls::eMemoryMaximum:
     {
         UInt size = Memory_Maximum();
         HopperVM_Push(size, Type::eUInt);
         break;
     }
-    case SysCall::eMemoryAllocate:
+    case SysCalls::eMemoryAllocate:
     {
         Type atype = (Type)0;
         UInt size = HopperVM_Pop_R(atype);
@@ -4252,14 +4251,14 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eUInt);
         break;
     }
-    case SysCall::eMemoryFree:
+    case SysCalls::eMemoryFree:
     {
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
         Memory_Free(address);
         break;
     }
-    case SysCall::eMemoryReadBit:
+    case SysCalls::eMemoryReadBit:
     {
         Type itype = (Type)0;
         UInt index = HopperVM_Pop_R(itype);
@@ -4271,7 +4270,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(((value != 0x00)) ? (0x01) : (0x00), Type::eByte);
         break;
     }
-    case SysCall::eMemoryWriteBit:
+    case SysCalls::eMemoryWriteBit:
     {
         Type btype = (Type)0;
         UInt data = HopperVM_Pop_R(btype);
@@ -4292,7 +4291,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         }
         break;
     }
-    case SysCall::eMemoryReadByte:
+    case SysCalls::eMemoryReadByte:
     {
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
@@ -4300,7 +4299,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(b, Type::eByte);
         break;
     }
-    case SysCall::eMemoryWriteByte:
+    case SysCalls::eMemoryWriteByte:
     {
         Type btype = (Type)0;
         UInt b = HopperVM_Pop_R(btype);
@@ -4309,7 +4308,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         Memory_WriteByte(address, Byte(b));
         break;
     }
-    case SysCall::eMemoryReadWord:
+    case SysCalls::eMemoryReadWord:
     {
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
@@ -4317,7 +4316,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(w, Type::eUInt);
         break;
     }
-    case SysCall::eMemoryWriteWord:
+    case SysCalls::eMemoryWriteWord:
     {
         Type btype = (Type)0;
         UInt w = HopperVM_Pop_R(btype);
@@ -4326,7 +4325,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         Memory_WriteWord(address, w);
         break;
     }
-    case SysCall::eSystemArgumentsGet:
+    case SysCalls::eSystemArgumentsGet:
     {
         if (0x00 == HopperVM_currentArguments)
         {
@@ -4335,7 +4334,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(GC_Clone(HopperVM_currentArguments), Type::eString);
         break;
     }
-    case SysCall::eSystemCurrentDirectoryGet:
+    case SysCalls::eSystemCurrentDirectoryGet:
     {
         if (0x00 == HopperVM_currentDirectory)
         {
@@ -4344,7 +4343,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(GC_Clone(HopperVM_currentDirectory), Type::eString);
         break;
     }
-    case SysCall::eSystemCurrentDirectorySet:
+    case SysCalls::eSystemCurrentDirectorySet:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4356,13 +4355,13 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eFileNew:
+    case SysCalls::eFileNew:
     {
         UInt result = HRFile_New();
         HopperVM_Push(result, Type::eFile);
         break;
     }
-    case SysCall::eFileExists:
+    case SysCalls::eFileExists:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4371,7 +4370,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eFileIsValid:
+    case SysCalls::eFileIsValid:
     {
         Type stype = (Type)0;
         UInt hrfile = HopperVM_Pop_R(stype);
@@ -4380,7 +4379,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(hrfile);
         break;
     }
-    case SysCall::eFileFlush:
+    case SysCalls::eFileFlush:
     {
         Type stype = (Type)0;
         UInt hrfile = HopperVM_Pop_R(stype);
@@ -4388,7 +4387,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(hrfile);
         break;
     }
-    case SysCall::eFileReadLine:
+    case SysCalls::eFileReadLine:
     {
         Type stype = (Type)0;
         UInt hrfile = HopperVM_Pop_R(stype);
@@ -4397,7 +4396,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(str, Type::eString);
         break;
     }
-    case SysCall::eFileRead:
+    case SysCalls::eFileRead:
     {
         switch (iOverload)
         {
@@ -4425,7 +4424,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eFileAppend:
+    case SysCalls::eFileAppend:
     {
         switch (iOverload)
         {
@@ -4452,7 +4451,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eFileCreate:
+    case SysCalls::eFileCreate:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4461,7 +4460,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eFileOpen:
+    case SysCalls::eFileOpen:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4470,7 +4469,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eFileDelete:
+    case SysCalls::eFileDelete:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4478,7 +4477,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eFileGetTime:
+    case SysCalls::eFileGetTime:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4487,7 +4486,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eFileGetSize:
+    case SysCalls::eFileGetSize:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4496,13 +4495,13 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eDirectoryNew:
+    case SysCalls::eDirectoryNew:
     {
         UInt result = HRDirectory_New();
         HopperVM_Push(result, Type::eDirectory);
         break;
     }
-    case SysCall::eDirectoryExists:
+    case SysCalls::eDirectoryExists:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4511,7 +4510,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eDirectoryOpen:
+    case SysCalls::eDirectoryOpen:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4520,7 +4519,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eDirectoryIsValid:
+    case SysCalls::eDirectoryIsValid:
     {
         Type stype = (Type)0;
         UInt hrdir = HopperVM_Pop_R(stype);
@@ -4529,7 +4528,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(hrdir);
         break;
     }
-    case SysCall::eDirectoryGetFileCount:
+    case SysCalls::eDirectoryGetFileCount:
     {
         switch (iOverload)
         {
@@ -4558,7 +4557,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eDirectoryGetDirectoryCount:
+    case SysCalls::eDirectoryGetDirectoryCount:
     {
         switch (iOverload)
         {
@@ -4587,7 +4586,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eDirectoryGetFile:
+    case SysCalls::eDirectoryGetFile:
     {
         Type itype = (Type)0;
         UInt index = HopperVM_Pop_R(itype);
@@ -4598,7 +4597,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(hrdir);
         break;
     }
-    case SysCall::eDirectoryGetDirectory:
+    case SysCalls::eDirectoryGetDirectory:
     {
         Type itype = (Type)0;
         UInt index = HopperVM_Pop_R(itype);
@@ -4609,7 +4608,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(hrdir);
         break;
     }
-    case SysCall::eDirectoryDelete:
+    case SysCalls::eDirectoryDelete:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4617,7 +4616,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eDirectoryCreate:
+    case SysCalls::eDirectoryCreate:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4625,7 +4624,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eDirectoryGetTime:
+    case SysCalls::eDirectoryGetTime:
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
@@ -4634,26 +4633,26 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(str);
         break;
     }
-    case SysCall::eSerialIsAvailableGet:
+    case SysCalls::eSerialIsAvailableGet:
     {
         Bool avail = Serial_IsAvailable_Get();
         HopperVM_Push(UInt(avail), Type::eBool);
         break;
     }
-    case SysCall::eSerialReadChar:
+    case SysCalls::eSerialReadChar:
     {
         Char ch = Serial_ReadChar();
         HopperVM_Push(UInt(ch), Type::eChar);
         break;
     }
-    case SysCall::eSerialWriteChar:
+    case SysCalls::eSerialWriteChar:
     {
         Type atype = (Type)0;
         UInt ch = HopperVM_Pop_R(atype);
         Serial_WriteChar(Char(ch));
         break;
     }
-    case SysCall::eLongNewFromConstant:
+    case SysCalls::eLongNewFromConstant:
     {
         Type atype = (Type)0;
         UInt location = HopperVM_Pop_R(atype);
@@ -4661,7 +4660,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eLong);
         break;
     }
-    case SysCall::eFloatNewFromConstant:
+    case SysCalls::eFloatNewFromConstant:
     {
         Type atype = (Type)0;
         UInt location = HopperVM_Pop_R(atype);
@@ -4669,7 +4668,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eFloat);
         break;
     }
-    case SysCall::eStringNewFromConstant:
+    case SysCalls::eStringNewFromConstant:
     {
         switch (iOverload)
         {
@@ -4700,7 +4699,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringPushImmediate:
+    case SysCalls::eStringPushImmediate:
     {
         UInt address = HRString_New();
         for (;;)
@@ -4723,13 +4722,13 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eString);
         break;
     }
-    case SysCall::eStringNew:
+    case SysCalls::eStringNew:
     {
         UInt address = HRString_New();
         HopperVM_Push(address, Type::eString);
         break;
     }
-    case SysCall::eStringLengthGet:
+    case SysCalls::eStringLengthGet:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -4738,7 +4737,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(length, Type::eUInt);
         break;
     }
-    case SysCall::eStringGetChar:
+    case SysCalls::eStringGetChar:
     {
         Type atype = (Type)0;
         UInt index = HopperVM_Pop_R(atype);
@@ -4749,7 +4748,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(UInt(ch), Type::eChar);
         break;
     }
-    case SysCall::eStringInsertChar:
+    case SysCalls::eStringInsertChar:
     {
         Type atype = (Type)0;
         UInt ch = HopperVM_Pop_R(atype);
@@ -4762,7 +4761,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(result, Type::eString);
         break;
     }
-    case SysCall::eStringToUpper:
+    case SysCalls::eStringToUpper:
     {
         switch (iOverload)
         {
@@ -4787,7 +4786,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringToLower:
+    case SysCalls::eStringToLower:
     {
         switch (iOverload)
         {
@@ -4812,7 +4811,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringEndsWith:
+    case SysCalls::eStringEndsWith:
     {
         switch (iOverload)
         {
@@ -4842,7 +4841,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringCompare:
+    case SysCalls::eStringCompare:
     {
         Type atype = (Type)0;
         UInt right = HopperVM_Pop_R(atype);
@@ -4854,7 +4853,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_PushI(result);
         break;
     }
-    case SysCall::eStringReplace:
+    case SysCalls::eStringReplace:
     {
         switch (iOverload)
         {
@@ -4889,7 +4888,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringAppend:
+    case SysCalls::eStringAppend:
     {
         switch (iOverload)
         {
@@ -4919,7 +4918,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringSubstring:
+    case SysCalls::eStringSubstring:
     {
         switch (iOverload)
         {
@@ -4967,7 +4966,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringBuild:
+    case SysCalls::eStringBuild:
     {
         switch (iOverload)
         {
@@ -5011,7 +5010,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringBuildFront:
+    case SysCalls::eStringBuildFront:
     {
         Type htype = (Type)0;
         Char ch = Char(HopperVM_Pop_R(htype));
@@ -5021,7 +5020,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Put(address, str, Type::eString);
         break;
     }
-    case SysCall::eStringTrim:
+    case SysCalls::eStringTrim:
     {
         switch (iOverload)
         {
@@ -5053,7 +5052,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringTrimLeft:
+    case SysCalls::eStringTrimLeft:
     {
         switch (iOverload)
         {
@@ -5084,7 +5083,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
-    case SysCall::eStringTrimRight:
+    case SysCalls::eStringTrimRight:
     {
         Type htype = (Type)0;
         UInt address = HopperVM_Pop_R(htype);
@@ -5093,7 +5092,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Put(address, str, Type::eString);
         break;
     }
-    case SysCall::eWiFiConnect:
+    case SysCalls::eWiFiConnect:
     {
         Type ptype = (Type)0;
         UInt password = HopperVM_Pop_R(ptype);
@@ -5105,24 +5104,24 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push((success) ? (0x01) : (0x00), Type::eBool);
         break;
     }
-    case SysCall::eWiFiIPGet:
+    case SysCalls::eWiFiIPGet:
     {
         UInt ip = External_WiFiIP();
         HopperVM_Push(ip, Type::eString);
         break;
     }
-    case SysCall::eWiFiStatusGet:
+    case SysCalls::eWiFiStatusGet:
     {
         UInt status = External_WiFiStatus();
         HopperVM_Push(status, Type::eUInt);
         break;
     }
-    case SysCall::eWiFiDisconnect:
+    case SysCalls::eWiFiDisconnect:
     {
         External_WiFiDisconnect();
         break;
     }
-    case SysCall::eArrayNew:
+    case SysCalls::eArrayNew:
     {
         Type stype = (Type)0;
         Type htype = Type(HopperVM_Pop_R(stype));
@@ -5131,7 +5130,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eArray);
         break;
     }
-    case SysCall::eArrayNewFromConstant:
+    case SysCalls::eArrayNewFromConstant:
     {
         Type stype = (Type)0;
         Type ltype = (Type)0;
@@ -5142,7 +5141,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eArray);
         break;
     }
-    case SysCall::eArrayGetItem:
+    case SysCalls::eArrayGetItem:
     {
         Type atype = (Type)0;
         UInt index = HopperVM_Pop_R(atype);
@@ -5154,7 +5153,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(item, etype);
         break;
     }
-    case SysCall::eArraySetItem:
+    case SysCalls::eArraySetItem:
     {
         Type itype = (Type)0;
         UInt item = HopperVM_Pop_R(itype);
@@ -5166,7 +5165,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eArrayCountGet:
+    case SysCalls::eArrayCountGet:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -5175,7 +5174,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(length, Type::eUInt);
         break;
     }
-    case SysCall::eListNew:
+    case SysCalls::eListNew:
     {
         Type stype = (Type)0;
         Type htype = Type(HopperVM_Pop_R(stype));
@@ -5183,7 +5182,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eList);
         break;
     }
-    case SysCall::eListCountGet:
+    case SysCalls::eListCountGet:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -5192,7 +5191,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(count, Type::eUInt);
         break;
     }
-    case SysCall::eListAppend:
+    case SysCalls::eListAppend:
     {
         Type itype = (Type)0;
         UInt item = HopperVM_Pop_R(itype);
@@ -5206,7 +5205,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eListSetItem:
+    case SysCalls::eListSetItem:
     {
         Type itype = (Type)0;
         UInt item = HopperVM_Pop_R(itype);
@@ -5222,7 +5221,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eListInsert:
+    case SysCalls::eListInsert:
     {
         Type itype = (Type)0;
         UInt item = HopperVM_Pop_R(itype);
@@ -5238,7 +5237,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eListGetItem:
+    case SysCalls::eListGetItem:
     {
         Type atype = (Type)0;
         UInt index = HopperVM_Pop_R(atype);
@@ -5250,7 +5249,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(item, itype);
         break;
     }
-    case SysCall::eListGetItemAsVariant:
+    case SysCalls::eListGetItemAsVariant:
     {
         Type atype = (Type)0;
         UInt index = HopperVM_Pop_R(atype);
@@ -5267,7 +5266,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(item, itype);
         break;
     }
-    case SysCall::eListClear:
+    case SysCalls::eListClear:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -5275,7 +5274,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eListRemove:
+    case SysCalls::eListRemove:
     {
         Type atype = (Type)0;
         UInt index = HopperVM_Pop_R(atype);
@@ -5285,7 +5284,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eListContains:
+    case SysCalls::eListContains:
     {
         Type itype = (Type)0;
         UInt item = HopperVM_Pop_R(itype);
@@ -5300,7 +5299,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push((contains) ? (0x01) : (0x00), Type::eBool);
         break;
     }
-    case SysCall::ePairNew:
+    case SysCalls::ePairNew:
     {
         Type vtype = (Type)0;
         UInt value = HopperVM_Pop_R(vtype);
@@ -5310,7 +5309,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::ePair);
         break;
     }
-    case SysCall::eVariantBox:
+    case SysCalls::eVariantBox:
     {
         Type vvtype = (Type)0;
         Type vtype = Type(HopperVM_Pop_R(vvtype));
@@ -5320,7 +5319,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eVariant);
         break;
     }
-    case SysCall::eVariantUnBox:
+    case SysCalls::eVariantUnBox:
     {
         Type vType = (Type)0;
         UInt _this = HopperVM_Pop_R(vType);
@@ -5330,7 +5329,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::ePairValue:
+    case SysCalls::ePairValue:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -5340,7 +5339,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(value, vtype);
         break;
     }
-    case SysCall::ePairKey:
+    case SysCalls::ePairKey:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -5350,7 +5349,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(key, ktype);
         break;
     }
-    case SysCall::eTypesTypeOf:
+    case SysCalls::eTypesTypeOf:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -5361,7 +5360,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(Byte(ttype), Type::eType);
         break;
     }
-    case SysCall::eTypesBoxTypeOf:
+    case SysCalls::eTypesBoxTypeOf:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -5377,7 +5376,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(Byte(ttype), Type::eType);
         break;
     }
-    case SysCall::eTypesVerifyValueTypes:
+    case SysCalls::eTypesVerifyValueTypes:
     {
         Type ttype = (Type)0;
         Type memberType = Type(HopperVM_Pop_R(ttype));
@@ -5431,7 +5430,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eTypesKeyTypeOf:
+    case SysCalls::eTypesKeyTypeOf:
     {
         Type vtype = (Type)0;
         UInt _this = HopperVM_Pop_R(vtype);
@@ -5460,7 +5459,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         }
         break;
     }
-    case SysCall::eTypesValueTypeOf:
+    case SysCalls::eTypesValueTypeOf:
     {
         Type vtype = (Type)0;
         UInt _this = HopperVM_Pop_R(vtype);
@@ -5506,7 +5505,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         }
         break;
     }
-    case SysCall::eDictionaryNew:
+    case SysCalls::eDictionaryNew:
     {
         Type stype = (Type)0;
         Type vtype = Type(HopperVM_Pop_R(stype));
@@ -5515,7 +5514,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eDictionary);
         break;
     }
-    case SysCall::eDictionaryCountGet:
+    case SysCalls::eDictionaryCountGet:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -5524,7 +5523,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(count, Type::eUInt);
         break;
     }
-    case SysCall::eDictionarySet:
+    case SysCalls::eDictionarySet:
     {
         Type vtype = (Type)0;
         UInt value = HopperVM_Pop_R(vtype);
@@ -5544,7 +5543,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eDictionaryNext:
+    case SysCalls::eDictionaryNext:
     {
         Type htype = (Type)0;
         UInt iterator = HopperVM_Pop_R(htype);
@@ -5558,7 +5557,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(iterator, Type::eUInt);
         break;
     }
-    case SysCall::eDictionaryContains:
+    case SysCalls::eDictionaryContains:
     {
         Type ktype = (Type)0;
         UInt key = HopperVM_Pop_R(ktype);
@@ -5573,7 +5572,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(found, Type::eBool);
         break;
     }
-    case SysCall::eDictionaryGet:
+    case SysCalls::eDictionaryGet:
     {
         Type ktype = (Type)0;
         UInt key = HopperVM_Pop_R(ktype);
@@ -5589,7 +5588,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(result, vtype);
         break;
     }
-    case SysCall::eDictionaryClear:
+    case SysCalls::eDictionaryClear:
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
@@ -5597,7 +5596,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eCharToString:
+    case SysCalls::eCharToString:
     {
         Type utype = (Type)0;
         UInt singleChar = HopperVM_Pop_R(utype);
@@ -5605,70 +5604,70 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(address, Type::eString);
         break;
     }
-    case SysCall::eCharToUpper:
+    case SysCalls::eCharToUpper:
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
         HopperVM_Push(Byte(HRChar_ToUpper(Char(ch))), Type::eChar);
         break;
     }
-    case SysCall::eCharToLower:
+    case SysCalls::eCharToLower:
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
         HopperVM_Push(Byte(HRChar_ToLower(Char(ch))), Type::eChar);
         break;
     }
-    case SysCall::eCharIsUpper:
+    case SysCalls::eCharIsUpper:
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
         HopperVM_Push(Byte(HRChar_IsUpper(Char(ch))), Type::eBool);
         break;
     }
-    case SysCall::eCharIsLower:
+    case SysCalls::eCharIsLower:
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
         HopperVM_Push(Byte(HRChar_IsLower(Char(ch))), Type::eBool);
         break;
     }
-    case SysCall::eCharIsDigit:
+    case SysCalls::eCharIsDigit:
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
         HopperVM_Push(Byte(HRChar_IsDigit(Char(ch))), Type::eBool);
         break;
     }
-    case SysCall::eCharIsLetterOrDigit:
+    case SysCalls::eCharIsLetterOrDigit:
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
         HopperVM_Push(Byte(HRChar_IsLetterOrDigit(Char(ch))), Type::eBool);
         break;
     }
-    case SysCall::eCharIsHexDigit:
+    case SysCalls::eCharIsHexDigit:
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
         HopperVM_Push(Byte(HRChar_IsHexDigit(Char(ch))), Type::eBool);
         break;
     }
-    case SysCall::eByteToDigit:
+    case SysCalls::eByteToDigit:
     {
         Type htype = (Type)0;
         UInt b = Byte(HopperVM_Pop_R(htype));
         HopperVM_Push(Byte(HRByte_ToDigit(Byte(b))), Type::eChar);
         break;
     }
-    case SysCall::eByteToHex:
+    case SysCalls::eByteToHex:
     {
         Type htype = (Type)0;
         UInt b = Byte(HopperVM_Pop_R(htype));
         HopperVM_Push(Byte(HRByte_ToHex(Byte(b))), Type::eChar);
         break;
     }
-    case SysCall::eUIntToLong:
+    case SysCalls::eUIntToLong:
     {
         Type htype = (Type)0;
         UInt value = HopperVM_Pop_R(htype);
@@ -5676,14 +5675,14 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(lng, Type::eLong);
         break;
     }
-    case SysCall::eUIntToInt:
+    case SysCalls::eUIntToInt:
     {
         Type htype = (Type)0;
         UInt value = HopperVM_Pop_R(htype);
         HopperVM_PushI(Int(value));
         break;
     }
-    case SysCall::eIntToLong:
+    case SysCalls::eIntToLong:
     {
         Type htype = (Type)0;
         UInt ichunk = HopperVM_Pop_R(htype);
@@ -5691,7 +5690,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(lng, Type::eLong);
         break;
     }
-    case SysCall::eIntToFloat:
+    case SysCalls::eIntToFloat:
     {
         Type htype = (Type)0;
         Int ichunk = HopperVM_PopI_R(htype);
@@ -5699,7 +5698,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(f, Type::eFloat);
         break;
     }
-    case SysCall::eUIntToFloat:
+    case SysCalls::eUIntToFloat:
     {
         Type htype = (Type)0;
         UInt ichunk = HopperVM_Pop_R(htype);
@@ -5707,7 +5706,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(f, Type::eFloat);
         break;
     }
-    case SysCall::eIntToBytes:
+    case SysCalls::eIntToBytes:
     {
         Type htype = (Type)0;
         UInt ichunk = HopperVM_Pop_R(htype);
@@ -5715,7 +5714,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(lst, Type::eList);
         break;
     }
-    case SysCall::eLongToBytes:
+    case SysCalls::eLongToBytes:
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
@@ -5724,7 +5723,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eFloatToLong:
+    case SysCalls::eFloatToLong:
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
@@ -5733,7 +5732,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eFloatToUInt:
+    case SysCalls::eFloatToUInt:
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
@@ -5742,7 +5741,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eLongGetByte:
+    case SysCalls::eLongGetByte:
     {
         UInt index = HopperVM_Pop();
         Type htype = (Type)0;
@@ -5752,7 +5751,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eLongFromBytes:
+    case SysCalls::eLongFromBytes:
     {
         Byte b3 = Byte(HopperVM_Pop());
         Byte b2 = Byte(HopperVM_Pop());
@@ -5762,7 +5761,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(l, Type::eLong);
         break;
     }
-    case SysCall::eIntGetByte:
+    case SysCalls::eIntGetByte:
     {
         UInt index = HopperVM_Pop();
         Type htype = (Type)0;
@@ -5771,7 +5770,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(b, Type::eByte);
         break;
     }
-    case SysCall::eIntFromBytes:
+    case SysCalls::eIntFromBytes:
     {
         Byte b1 = Byte(HopperVM_Pop());
         Byte b0 = Byte(HopperVM_Pop());
@@ -5779,7 +5778,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(i, Type::eInt);
         break;
     }
-    case SysCall::eFloatToBytes:
+    case SysCalls::eFloatToBytes:
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
@@ -5788,7 +5787,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eFloatToString:
+    case SysCalls::eFloatToString:
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
@@ -5797,7 +5796,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eLongToString:
+    case SysCalls::eLongToString:
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
@@ -5806,7 +5805,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eFloatGetByte:
+    case SysCalls::eFloatGetByte:
     {
         UInt index = HopperVM_Pop();
         Type htype = (Type)0;
@@ -5816,7 +5815,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eFloatFromBytes:
+    case SysCalls::eFloatFromBytes:
     {
         Byte b3 = Byte(HopperVM_Pop());
         Byte b2 = Byte(HopperVM_Pop());
@@ -5826,7 +5825,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(f, Type::eFloat);
         break;
     }
-    case SysCall::eLongToUInt:
+    case SysCalls::eLongToUInt:
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
@@ -5835,7 +5834,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eLongToInt:
+    case SysCalls::eLongToInt:
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
@@ -5844,7 +5843,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eLongToFloat:
+    case SysCalls::eLongToFloat:
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
@@ -5853,7 +5852,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(_this);
         break;
     }
-    case SysCall::eLongNegate:
+    case SysCalls::eLongNegate:
     {
         Type ttype = (Type)0;
         UInt top = HopperVM_Pop_R(ttype);
@@ -5864,16 +5863,16 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(top);
         break;
     }
-    case SysCall::eLongAdd:
-    case SysCall::eLongSub:
-    case SysCall::eLongDiv:
-    case SysCall::eLongMul:
-    case SysCall::eLongMod:
-    case SysCall::eLongEQ:
-    case SysCall::eLongLT:
-    case SysCall::eLongLE:
-    case SysCall::eLongGT:
-    case SysCall::eLongGE:
+    case SysCalls::eLongAdd:
+    case SysCalls::eLongSub:
+    case SysCalls::eLongDiv:
+    case SysCalls::eLongMul:
+    case SysCalls::eLongMod:
+    case SysCalls::eLongEQ:
+    case SysCalls::eLongLT:
+    case SysCalls::eLongLE:
+    case SysCalls::eLongGT:
+    case SysCalls::eLongGE:
     {
         Type ttype = (Type)0;
         UInt top = HopperVM_Pop_R(ttype);
@@ -5881,58 +5880,58 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt next = HopperVM_Pop_R(ntype);
         UInt result = 0;
         Type rtype = Type::eLong;
-        switch (SysCall(iSysCall))
+        switch (SysCalls(iSysCall))
         {
-        case SysCall::eLongAdd:
+        case SysCalls::eLongAdd:
         {
             result = External_LongAdd(next, top);
             break;
         }
-        case SysCall::eLongSub:
+        case SysCalls::eLongSub:
         {
             result = External_LongSub(next, top);
             break;
         }
-        case SysCall::eLongDiv:
+        case SysCalls::eLongDiv:
         {
             result = External_LongDiv(next, top);
             break;
         }
-        case SysCall::eLongMul:
+        case SysCalls::eLongMul:
         {
             result = External_LongMul(next, top);
             break;
         }
-        case SysCall::eLongMod:
+        case SysCalls::eLongMod:
         {
             result = External_LongMod(next, top);
             break;
         }
-        case SysCall::eLongEQ:
+        case SysCalls::eLongEQ:
         {
             result = External_LongEQ(next, top);
             rtype = Type::eBool;
             break;
         }
-        case SysCall::eLongLT:
+        case SysCalls::eLongLT:
         {
             result = External_LongLT(next, top);
             rtype = Type::eBool;
             break;
         }
-        case SysCall::eLongLE:
+        case SysCalls::eLongLE:
         {
             result = External_LongLE(next, top);
             rtype = Type::eBool;
             break;
         }
-        case SysCall::eLongGT:
+        case SysCalls::eLongGT:
         {
             result = External_LongGT(next, top);
             rtype = Type::eBool;
             break;
         }
-        case SysCall::eLongGE:
+        case SysCalls::eLongGE:
         {
             result = External_LongGE(next, top);
             rtype = Type::eBool;
@@ -5944,7 +5943,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(next);
         break;
     }
-    case SysCall::eLongAddB:
+    case SysCalls::eLongAddB:
     {
         Type ttype = (Type)0;
         UInt top = HopperVM_Pop_R(ttype);
@@ -5957,7 +5956,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(next);
         break;
     }
-    case SysCall::eLongSubB:
+    case SysCalls::eLongSubB:
     {
         Type ttype = (Type)0;
         UInt top = HopperVM_Pop_R(ttype);
@@ -5970,15 +5969,15 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(next);
         break;
     }
-    case SysCall::eFloatAdd:
-    case SysCall::eFloatSub:
-    case SysCall::eFloatDiv:
-    case SysCall::eFloatMul:
-    case SysCall::eFloatEQ:
-    case SysCall::eFloatLT:
-    case SysCall::eFloatLE:
-    case SysCall::eFloatGT:
-    case SysCall::eFloatGE:
+    case SysCalls::eFloatAdd:
+    case SysCalls::eFloatSub:
+    case SysCalls::eFloatDiv:
+    case SysCalls::eFloatMul:
+    case SysCalls::eFloatEQ:
+    case SysCalls::eFloatLT:
+    case SysCalls::eFloatLE:
+    case SysCalls::eFloatGT:
+    case SysCalls::eFloatGE:
     {
         Type ttype = (Type)0;
         UInt top = HopperVM_Pop_R(ttype);
@@ -5986,53 +5985,53 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt next = HopperVM_Pop_R(ntype);
         UInt result = 0;
         Type rtype = Type::eFloat;
-        switch (SysCall(iSysCall))
+        switch (SysCalls(iSysCall))
         {
-        case SysCall::eFloatAdd:
+        case SysCalls::eFloatAdd:
         {
             result = External_FloatAdd(next, top);
             break;
         }
-        case SysCall::eFloatSub:
+        case SysCalls::eFloatSub:
         {
             result = External_FloatSub(next, top);
             break;
         }
-        case SysCall::eFloatDiv:
+        case SysCalls::eFloatDiv:
         {
             result = External_FloatDiv(next, top);
             break;
         }
-        case SysCall::eFloatMul:
+        case SysCalls::eFloatMul:
         {
             result = External_FloatMul(next, top);
             break;
         }
-        case SysCall::eFloatEQ:
+        case SysCalls::eFloatEQ:
         {
             result = External_FloatEQ(next, top);
             rtype = Type::eBool;
             break;
         }
-        case SysCall::eFloatLT:
+        case SysCalls::eFloatLT:
         {
             result = External_FloatLT(next, top);
             rtype = Type::eBool;
             break;
         }
-        case SysCall::eFloatLE:
+        case SysCalls::eFloatLE:
         {
             result = External_FloatLE(next, top);
             rtype = Type::eBool;
             break;
         }
-        case SysCall::eFloatGT:
+        case SysCalls::eFloatGT:
         {
             result = External_FloatGT(next, top);
             rtype = Type::eBool;
             break;
         }
-        case SysCall::eFloatGE:
+        case SysCalls::eFloatGE:
         {
             result = External_FloatGE(next, top);
             rtype = Type::eBool;
@@ -6044,25 +6043,25 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         GC_Release(next);
         break;
     }
-    case SysCall::eLongNew:
+    case SysCalls::eLongNew:
     {
         UInt address = HRLong_New();
         HopperVM_Push(address, Type::eLong);
         break;
     }
-    case SysCall::eFloatNew:
+    case SysCalls::eFloatNew:
     {
         UInt address = HRFloat_New();
         HopperVM_Push(address, Type::eFloat);
         break;
     }
-    case SysCall::eTimeMillis:
+    case SysCalls::eTimeMillis:
     {
         UInt address = External_GetMillis();
         HopperVM_Push(address, Type::eLong);
         break;
     }
-    case SysCall::eTimeDelay:
+    case SysCalls::eTimeDelay:
     {
         External_Delay(HopperVM_Pop());
         doNext = false;
@@ -8216,17 +8215,6 @@ UInt Memory_Maximum()
     return available;
 }
 
-UInt HRString_NewFromConstant0(UInt location, UInt length)
-{
-    UInt address = HRString_new(length);
-    Memory_WriteWord(address + 2, length);;
-    for (UInt i = 0x00; i < length; i++)
-    {
-        Memory_WriteByte(address + 4 + i, Memory_ReadCodeByte(location + i));
-    }
-    return address;
-}
-
 UInt HRString_NewFromConstant1(UInt doubleChar)
 {
     Byte lsb = Byte(doubleChar & 0xFF);
@@ -8237,6 +8225,17 @@ UInt HRString_NewFromConstant1(UInt doubleChar)
     if (msb != 0x00)
     {
         Memory_WriteByte(address + 4 + 0x01, msb);
+    }
+    return address;
+}
+
+UInt HRString_NewFromConstant0(UInt location, UInt length)
+{
+    UInt address = HRString_new(length);
+    Memory_WriteWord(address + 2, length);;
+    for (UInt i = 0x00; i < length; i++)
+    {
+        Memory_WriteByte(address + 4 + i, Memory_ReadCodeByte(location + i));
     }
     return address;
 }

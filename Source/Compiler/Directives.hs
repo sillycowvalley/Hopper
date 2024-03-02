@@ -37,10 +37,10 @@ unit Directives
         bool result;
         loop
         {
-            if (Parser.Check(HopperToken.Directive, "defined"))
+            if (Parser.CheckDirective("defined"))
             {
                 Parser.Advance(); // defined
-                Parser.Consume(HopperToken.LParen, '(');
+                Parser.Consume(HopperToken.LParen);
                 if (Parser.HadError)
                 {
                     break;
@@ -55,7 +55,7 @@ unit Directives
                 result = Symbols.DefineExists(symbol);
                     
                 Parser.Advance();
-                Parser.Consume(HopperToken.RParen, ')');
+                Parser.Consume(HopperToken.RParen);
                 if (Parser.HadError)
                 {
                     break;
@@ -69,7 +69,7 @@ unit Directives
                 {
                     break;
                 }
-                Parser.Consume(HopperToken.RParen, ')');
+                Parser.Consume(HopperToken.RParen);
             }
             else
             {

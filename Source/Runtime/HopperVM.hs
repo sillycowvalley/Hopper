@@ -536,13 +536,13 @@ unit HopperVM
     bool ExecuteSysCall(byte iSysCall, uint iOverload)
     {
         bool doNext = true;
-        switch (SysCall(iSysCall))
+        switch (SysCalls(iSysCall))
         {
-            case SysCall.DiagnosticsDie:
+            case SysCalls.DiagnosticsDie:
             {
                 doNext = Instructions.Die();
             }
-            case SysCall.RuntimeInline:
+            case SysCalls.RuntimeInline:
             {
                 if (!RunInline())
                 {
@@ -550,7 +550,7 @@ unit HopperVM
                     doNext = false;
                 }
             }
-            case SysCall.RuntimeExecute:
+            case SysCalls.RuntimeExecute:
             {
                 Type ltype;
                 uint args = Pop(ref ltype);
@@ -574,31 +574,31 @@ unit HopperVM
                 Push(result, Type.UInt);
                 doNext = false;
             }
-            case SysCall.RuntimeUserCodeGet:
+            case SysCalls.RuntimeUserCodeGet:
             {
                 Push(programSize, Type.UInt);
             }
-            case SysCall.RuntimeInDebuggerGet:
+            case SysCalls.RuntimeInDebuggerGet:
             {
                 Push(inDebugger ? 1 : 0, Type.Bool);
             }
-            case SysCall.RuntimeDateTimeGet:
+            case SysCalls.RuntimeDateTimeGet:
             {
                 uint dateTime = RuntimeDateTime();
                 Push(dateTime, Type.String);
             }
             
-            case SysCall.MemoryAvailable:
+            case SysCalls.MemoryAvailable:
             {
                 uint size = Memory.Available();
                 Push(size, Type.UInt);
             }
-            case SysCall.MemoryMaximum:
+            case SysCalls.MemoryMaximum:
             {
                 uint size = Memory.Maximum();
                 Push(size, Type.UInt);
             }
-            case SysCall.MemoryAllocate:
+            case SysCalls.MemoryAllocate:
             {
                 Type atype;
                 uint size = Pop(ref atype);
@@ -608,7 +608,7 @@ unit HopperVM
                 uint address = Memory.Allocate(size);
                 Push(address, Type.UInt);
             }
-            case SysCall.MemoryFree:
+            case SysCalls.MemoryFree:
             {
                 Type atype;
                 uint address = Pop(ref atype);
@@ -617,7 +617,7 @@ unit HopperVM
 #endif       
                 Memory.Free(address);
             }
-            case SysCall.MemoryReadBit:
+            case SysCalls.MemoryReadBit:
             {
                 Type itype;
                 uint index = Pop(ref itype);
@@ -632,7 +632,7 @@ unit HopperVM
                 byte value = Memory.ReadByte(address) & mask;
                 Push((value != 0) ? 1 : 0, Type.Byte);
             }
-            case SysCall.MemoryWriteBit:
+            case SysCalls.MemoryWriteBit:
             {
                 Type btype;
                 uint data = Pop(ref btype);
@@ -658,7 +658,7 @@ unit HopperVM
                 }
             }
             
-            case SysCall.MemoryReadByte:
+            case SysCalls.MemoryReadByte:
             {
                 Type atype;
                 uint address = Pop(ref atype);
@@ -668,7 +668,7 @@ unit HopperVM
                 byte b = Memory.ReadByte(address);
                 Push(b, Type.Byte);
             }
-            case SysCall.MemoryWriteByte:
+            case SysCalls.MemoryWriteByte:
             {
                 Type btype;
                 uint b = Pop(ref btype);
@@ -680,7 +680,7 @@ unit HopperVM
 #endif       
                 Memory.WriteByte(address, byte(b));
             }
-            case SysCall.MemoryReadWord:
+            case SysCalls.MemoryReadWord:
             {
                 Type atype;
                 uint address = Pop(ref atype);
@@ -690,7 +690,7 @@ unit HopperVM
                 uint w = Memory.ReadWord(address);
                 Push(w, Type.UInt);
             }
-            case SysCall.MemoryWriteWord:
+            case SysCalls.MemoryWriteWord:
             {
                 Type btype;
                 uint w = Pop(ref btype);
@@ -702,7 +702,7 @@ unit HopperVM
 #endif       
                 Memory.WriteWord(address, w);
             }
-            case SysCall.SystemArgumentsGet:
+            case SysCalls.SystemArgumentsGet:
             {
                 if (0 == currentArguments)
                 {
@@ -710,7 +710,7 @@ unit HopperVM
                 }
                 Push(GC.Clone(currentArguments), Type.String);
             }
-            case SysCall.SystemCurrentDirectoryGet:
+            case SysCalls.SystemCurrentDirectoryGet:
             {
                 if (0 == currentDirectory)
                 {
@@ -718,7 +718,7 @@ unit HopperVM
                 }
                 Push(GC.Clone(currentDirectory), Type.String);
             }
-            case SysCall.SystemCurrentDirectorySet:
+            case SysCalls.SystemCurrentDirectorySet:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -736,12 +736,12 @@ unit HopperVM
                 currentDirectory = GC.Clone(str);
                 GC.Release(str);
             }
-            case SysCall.FileNew:
+            case SysCalls.FileNew:
             {
                 uint result = HRFile.New();
                 Push(result, Type.File);        
             }
-            case SysCall.FileExists:
+            case SysCalls.FileExists:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -756,7 +756,7 @@ unit HopperVM
                 Push(result ? 1 : 0, Type.Bool);
                 GC.Release(str);         
             }
-            case SysCall.FileIsValid:
+            case SysCalls.FileIsValid:
             {
                 Type stype;
                 uint hrfile = Pop(ref stype);
@@ -771,7 +771,7 @@ unit HopperVM
                 Push(result ? 1 : 0, Type.Bool);        
                 GC.Release(hrfile);         
             }
-            case SysCall.FileFlush:
+            case SysCalls.FileFlush:
             {
                 Type stype;
                 uint hrfile = Pop(ref stype);
@@ -786,7 +786,7 @@ unit HopperVM
                 GC.Release(hrfile);         
             }
             
-            case SysCall.FileReadLine:
+            case SysCalls.FileReadLine:
             {
                 Type stype;
                 uint hrfile = Pop(ref stype);
@@ -801,7 +801,7 @@ unit HopperVM
                 GC.Release(hrfile);       
                 Push(str, Type.String);  
             }
-            case SysCall.FileRead:
+            case SysCalls.FileRead:
             {
                 switch (iOverload)
                 {
@@ -845,7 +845,7 @@ unit HopperVM
                     }
                 }
             }
-            case SysCall.FileAppend:
+            case SysCalls.FileAppend:
             {
                 switch (iOverload)
                 {
@@ -889,7 +889,7 @@ unit HopperVM
                 }
             }
             
-            case SysCall.FileCreate:
+            case SysCalls.FileCreate:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -904,7 +904,7 @@ unit HopperVM
                 Push(result, Type.File);        
                 GC.Release(str);         
             }
-            case SysCall.FileOpen:
+            case SysCalls.FileOpen:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -919,7 +919,7 @@ unit HopperVM
                 Push(result, Type.File);        
                 GC.Release(str);         
             }
-            case SysCall.FileDelete:
+            case SysCalls.FileDelete:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -933,7 +933,7 @@ unit HopperVM
                 HRFile.Delete(str);
                 GC.Release(str);         
             }
-            case SysCall.FileGetTime:
+            case SysCalls.FileGetTime:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -948,7 +948,7 @@ unit HopperVM
                 Push(result, Type.Long);        
                 GC.Release(str);         
             }
-            case SysCall.FileGetSize:
+            case SysCalls.FileGetSize:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -964,12 +964,12 @@ unit HopperVM
                 GC.Release(str);         
             }
             
-            case SysCall.DirectoryNew:
+            case SysCalls.DirectoryNew:
             {
                 uint result = HRDirectory.New();
                 Push(result, Type.Directory);        
             }
-            case SysCall.DirectoryExists:
+            case SysCalls.DirectoryExists:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -984,7 +984,7 @@ unit HopperVM
                 Push(result ? 1 : 0, Type.Bool);        
                 GC.Release(str);         
             }
-            case SysCall.DirectoryOpen:
+            case SysCalls.DirectoryOpen:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -999,7 +999,7 @@ unit HopperVM
                 Push(result, Type.Directory);        
                 GC.Release(str);         
             }
-            case SysCall.DirectoryIsValid:
+            case SysCalls.DirectoryIsValid:
             {
                 Type stype;
                 uint hrdir = Pop(ref stype);
@@ -1014,7 +1014,7 @@ unit HopperVM
                 Push(result ? 1 : 0, Type.Bool);        
                 GC.Release(hrdir);         
             }
-            case SysCall.DirectoryGetFileCount:
+            case SysCalls.DirectoryGetFileCount:
             {
                 switch (iOverload)
                 {
@@ -1055,7 +1055,7 @@ unit HopperVM
                     }
                 }
             }
-            case SysCall.DirectoryGetDirectoryCount:
+            case SysCalls.DirectoryGetDirectoryCount:
             {
                 switch (iOverload)
                 {
@@ -1096,7 +1096,7 @@ unit HopperVM
                     }
                 }
             }
-            case SysCall.DirectoryGetFile:
+            case SysCalls.DirectoryGetFile:
             {
                 Type itype;
                 uint index = Pop(ref itype);
@@ -1114,7 +1114,7 @@ unit HopperVM
                 Push(result, Type.String);        
                 GC.Release(hrdir);         
             }
-            case SysCall.DirectoryGetDirectory:
+            case SysCalls.DirectoryGetDirectory:
             {
                 Type itype;
                 uint index = Pop(ref itype);
@@ -1132,7 +1132,7 @@ unit HopperVM
                 Push(result, Type.String);        
                 GC.Release(hrdir);         
             }
-            case SysCall.DirectoryDelete:
+            case SysCalls.DirectoryDelete:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -1146,7 +1146,7 @@ unit HopperVM
                 HRDirectory.Delete(str);
                 GC.Release(str);         
             }
-            case SysCall.DirectoryCreate:
+            case SysCalls.DirectoryCreate:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -1160,7 +1160,7 @@ unit HopperVM
                 HRDirectory.Create(str);
                 GC.Release(str);         
             }
-            case SysCall.DirectoryGetTime:
+            case SysCalls.DirectoryGetTime:
             {
                 Type stype;
                 uint str = Pop(ref stype);
@@ -1175,17 +1175,17 @@ unit HopperVM
                 Push(result, Type.Long);        
                 GC.Release(str);         
             }
-            case SysCall.SerialIsAvailableGet:
+            case SysCalls.SerialIsAvailableGet:
             {
                 bool avail = Serial.IsAvailable;
                 Push(uint(avail), Type.Bool);
             }
-            case SysCall.SerialReadChar:
+            case SysCalls.SerialReadChar:
             {
                 char ch = Serial.ReadChar();
                 Push(uint(ch), Type.Char);
             }
-            case SysCall.SerialWriteChar:
+            case SysCalls.SerialWriteChar:
             {
                 Type atype;
                 uint ch = Pop(ref atype);
@@ -1195,7 +1195,7 @@ unit HopperVM
                 Serial.WriteChar(char(ch));
             }
             
-            case SysCall.LongNewFromConstant:
+            case SysCalls.LongNewFromConstant:
             {
                 Type atype;
                 uint location = Pop(ref atype);
@@ -1206,7 +1206,7 @@ unit HopperVM
                 Push(address, Type.Long);
             }
             
-            case SysCall.FloatNewFromConstant:
+            case SysCalls.FloatNewFromConstant:
             {
                 Type atype;
                 uint location = Pop(ref atype);
@@ -1216,7 +1216,7 @@ unit HopperVM
                 uint address = HRFloat.NewFromConstant(constAddress + location);
                 Push(address, Type.Float);
             }
-            case SysCall.StringNewFromConstant:
+            case SysCalls.StringNewFromConstant:
             {
                 switch(iOverload)
                 {
@@ -1250,7 +1250,7 @@ unit HopperVM
                     }
                 }
             }
-            case SysCall.StringPushImmediate:
+            case SysCalls.StringPushImmediate:
             {
                 uint address = HRString.New();
                 loop
@@ -1276,12 +1276,12 @@ unit HopperVM
                 Push(address, Type.String);
             }
         
-            case SysCall.StringNew:
+            case SysCalls.StringNew:
             {
                 uint address = HRString.New();
                 Push(address, Type.String);
             }
-            case SysCall.StringLengthGet:
+            case SysCalls.StringLengthGet:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -1296,7 +1296,7 @@ unit HopperVM
                 GC.Release(this);
                 Push(length, Type.UInt);
             }
-            case SysCall.StringGetChar:
+            case SysCalls.StringGetChar:
             {
                 Type atype;
                 uint index = Pop(ref atype);
@@ -1314,7 +1314,7 @@ unit HopperVM
                 GC.Release(this);
                 Push(uint(ch), Type.Char);
             }
-            case SysCall.StringInsertChar:
+            case SysCalls.StringInsertChar:
             {
                 Type atype;
                 uint ch = Pop(ref atype);
@@ -1335,7 +1335,7 @@ unit HopperVM
                 GC.Release(this);
                 Push(result, Type.String);                
             }
-            case SysCall.StringToUpper:
+            case SysCalls.StringToUpper:
             {
                 switch (iOverload)
                 {
@@ -1373,7 +1373,7 @@ unit HopperVM
                     }
                 }
             }
-            case SysCall.StringToLower:
+            case SysCalls.StringToLower:
             {
                 switch (iOverload)
                 {
@@ -1411,7 +1411,7 @@ unit HopperVM
                     }
                 }
             }
-            case SysCall.StringEndsWith:
+            case SysCalls.StringEndsWith:
             {
                 switch (iOverload)
                 {
@@ -1454,7 +1454,7 @@ unit HopperVM
                     
                 }  
             }
-            case SysCall.StringCompare:
+            case SysCalls.StringCompare:
             {
                 Type atype;
                 uint right = Pop(ref atype);
@@ -1472,7 +1472,7 @@ unit HopperVM
                 GC.Release(left);
                 PushI(result);
             }
-            case SysCall.StringReplace:
+            case SysCalls.StringReplace:
             {
                 switch (iOverload)
                 {
@@ -1520,7 +1520,7 @@ unit HopperVM
                     }
                 }    
             }
-            case SysCall.StringAppend:
+            case SysCalls.StringAppend:
             {
                 switch (iOverload)
                 {
@@ -1562,7 +1562,7 @@ unit HopperVM
                     }
                 }   
             }
-            case SysCall.StringSubstring:
+            case SysCalls.StringSubstring:
             {
                 switch (iOverload)
                 {
@@ -1630,7 +1630,7 @@ unit HopperVM
                     }
                 }   
             }
-            case SysCall.StringBuild:
+            case SysCalls.StringBuild:
             {
                 switch (iOverload)
                 {
@@ -1700,7 +1700,7 @@ unit HopperVM
                     }
                 }
             }
-            case SysCall.StringBuildFront:
+            case SysCalls.StringBuildFront:
             {
                 Type htype;
                 char ch = char(Pop(ref htype));
@@ -1719,7 +1719,7 @@ unit HopperVM
                 HRString.BuildFront(ref str, ch);
                 Put(address, str, Type.String);
             }
-            case SysCall.StringTrim:
+            case SysCalls.StringTrim:
             {
                 switch (iOverload)
                 {
@@ -1761,7 +1761,7 @@ unit HopperVM
                     }
                 }
             }
-            case SysCall.StringTrimLeft:
+            case SysCalls.StringTrimLeft:
             {
                 switch (iOverload)
                 {
@@ -1802,7 +1802,7 @@ unit HopperVM
                     }
                 }
             }
-            case SysCall.StringTrimRight:
+            case SysCalls.StringTrimRight:
             {
                 Type htype;
                 uint address = Pop(ref htype);
@@ -1818,7 +1818,7 @@ unit HopperVM
                 Put(address, str, Type.String);
             }
             
-            case SysCall.WiFiConnect:
+            case SysCalls.WiFiConnect:
             {
                 Type ptype;    
                 uint password = Pop(ref ptype);
@@ -1836,22 +1836,22 @@ unit HopperVM
                 GC.Release(password);
                 Push(success ? 1 : 0, Type.Bool);                
             }
-            case SysCall.WiFiIPGet:
+            case SysCalls.WiFiIPGet:
             {
                 uint ip = External.WiFiIP();
                 Push(ip, Type.String);                
             }
-            case SysCall.WiFiStatusGet:
+            case SysCalls.WiFiStatusGet:
             {
                 uint status = External.WiFiStatus();
                 Push(status, Type.UInt);                
             }
-            case SysCall.WiFiDisconnect:
+            case SysCalls.WiFiDisconnect:
             {
                 External.WiFiDisconnect();
             }
             
-            case SysCall.ArrayNew:
+            case SysCalls.ArrayNew:
             {   
                 Type stype;
                 Type htype = Type(Pop(ref stype));
@@ -1869,7 +1869,7 @@ unit HopperVM
                 uint address = HRArray.New(htype, count);
                 Push(address, Type.Array);
             }
-            case SysCall.ArrayNewFromConstant:
+            case SysCalls.ArrayNewFromConstant:
             {   
                 Type stype;
                 Type ltype;
@@ -1891,7 +1891,7 @@ unit HopperVM
                 Push(address, Type.Array);
             }
             
-            case SysCall.ArrayGetItem:
+            case SysCalls.ArrayGetItem:
             {
                 Type atype;
                 uint index = Pop(ref atype);
@@ -1910,7 +1910,7 @@ unit HopperVM
                 GC.Release(this);
                 Push(item, etype);
             }
-            case SysCall.ArraySetItem:
+            case SysCalls.ArraySetItem:
             {
                 Type itype;
                 uint item = Pop(ref itype);
@@ -1929,7 +1929,7 @@ unit HopperVM
                 HRArray.SetItem(this, index, item);
                 GC.Release(this);
             }
-            case SysCall.ArrayCountGet:
+            case SysCalls.ArrayCountGet:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -1946,14 +1946,14 @@ unit HopperVM
             }
           
             
-            case SysCall.ListNew:
+            case SysCalls.ListNew:
             {   
                 Type stype;
                 Type htype = Type(Pop(ref stype));
                 uint address = HRList.New(htype);
                 Push(address, Type.List);
             }
-            case SysCall.ListCountGet:
+            case SysCalls.ListCountGet:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -1968,7 +1968,7 @@ unit HopperVM
                 GC.Release(this);
                 Push(count, Type.UInt);
             }
-            case SysCall.ListAppend:
+            case SysCalls.ListAppend:
             {
                 Type itype;
                 uint item = Pop(ref itype);
@@ -1988,7 +1988,7 @@ unit HopperVM
                 }
                 GC.Release(this);
             }
-            case SysCall.ListSetItem:
+            case SysCalls.ListSetItem:
             {
                 Type itype;
                 uint item  = Pop(ref itype);
@@ -2011,7 +2011,7 @@ unit HopperVM
                 }
                 GC.Release(this);
             }
-            case SysCall.ListInsert:
+            case SysCalls.ListInsert:
             {
                 Type itype;
                 uint item  = Pop(ref itype);
@@ -2034,7 +2034,7 @@ unit HopperVM
                 }
                 GC.Release(this);
             }
-            case SysCall.ListGetItem:
+            case SysCalls.ListGetItem:
             {
                 Type atype;
                 uint index = Pop(ref atype);
@@ -2053,7 +2053,7 @@ unit HopperVM
                 GC.Release(this);
                 Push(item, itype);
             }
-            case SysCall.ListGetItemAsVariant:
+            case SysCalls.ListGetItemAsVariant:
             {
                 Type atype;
                 uint index = Pop(ref atype);
@@ -2079,7 +2079,7 @@ unit HopperVM
                 Push(item, itype);
             }
             
-            case SysCall.ListClear:
+            case SysCalls.ListClear:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -2093,7 +2093,7 @@ unit HopperVM
                 HRList.Clear(this);
                 GC.Release(this);
             }
-            case SysCall.ListRemove:
+            case SysCalls.ListRemove:
             {
                 Type atype;
                 uint index = Pop(ref atype);
@@ -2110,7 +2110,7 @@ unit HopperVM
                 HRList.Remove(this, index);
                 GC.Release(this);
             }
-            case SysCall.ListContains:
+            case SysCalls.ListContains:
             {
                 Type itype;
                 uint item = Pop(ref itype);
@@ -2132,7 +2132,7 @@ unit HopperVM
                 Push(contains ? 1 : 0, Type.Bool);
             }
             
-            case SysCall.PairNew:
+            case SysCalls.PairNew:
             {
                 Type vtype;
                 uint value = Pop(ref vtype);
@@ -2149,7 +2149,7 @@ unit HopperVM
                 Push(address, Type.Pair);
             }
             
-            case SysCall.VariantBox:
+            case SysCalls.VariantBox:
             {
                 Type vvtype;
                 Type vtype = Type(Pop(ref vvtype));
@@ -2158,7 +2158,7 @@ unit HopperVM
                 uint address = HRVariant.New(value, vtype);
                 Push(address, Type.Variant);
             }
-            case SysCall.VariantUnBox:
+            case SysCalls.VariantUnBox:
             {
                 Type vType;
                 uint this = Pop(ref vType);
@@ -2175,7 +2175,7 @@ unit HopperVM
                 GC.Release(this);
             }
             
-            case SysCall.PairValue:
+            case SysCalls.PairValue:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -2191,7 +2191,7 @@ unit HopperVM
                 GC.Release(this);
                 Push(value, vtype);
             }
-            case SysCall.PairKey:
+            case SysCalls.PairKey:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -2208,7 +2208,7 @@ unit HopperVM
                 Push(key, ktype);
             }
             
-            case SysCall.TypesTypeOf:
+            case SysCalls.TypesTypeOf:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -2218,7 +2218,7 @@ unit HopperVM
                 }
                 Push(byte(ttype), Type.Type);
             }
-            case SysCall.TypesBoxTypeOf:
+            case SysCalls.TypesBoxTypeOf:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -2233,7 +2233,7 @@ unit HopperVM
                 }
                 Push(byte(ttype), Type.Type);
             }
-            case SysCall.TypesVerifyValueTypes:
+            case SysCalls.TypesVerifyValueTypes:
             {
                 Type ttype;
                 Type memberType = Type(Pop(ref ttype));
@@ -2287,7 +2287,7 @@ unit HopperVM
             }
             
             
-            case SysCall.TypesKeyTypeOf:
+            case SysCalls.TypesKeyTypeOf:
             {
                 Type vtype;
                 uint this = Pop(ref vtype);
@@ -2312,7 +2312,7 @@ unit HopperVM
                     GC.Release(this);
                 }
             }
-            case SysCall.TypesValueTypeOf:
+            case SysCalls.TypesValueTypeOf:
             {
                 Type vtype;
                 uint this = Pop(ref vtype);
@@ -2354,7 +2354,7 @@ unit HopperVM
                 }
             }
             
-            case SysCall.DictionaryNew:
+            case SysCalls.DictionaryNew:
             {   
                 Type stype;
                 Type vtype = Type(Pop(ref stype));
@@ -2370,7 +2370,7 @@ unit HopperVM
                 Push(address, Type.Dictionary);
             }
             
-            case SysCall.DictionaryCountGet:
+            case SysCalls.DictionaryCountGet:
             {
                 Type ttype;
                 uint this = Pop(ref ttype);
@@ -2386,7 +2386,7 @@ unit HopperVM
                 Push(count, Type.UInt);
             }
             
-            case SysCall.DictionarySet:
+            case SysCalls.DictionarySet:
             {
                 Type vtype;
                 uint value  = Pop(ref vtype);
@@ -2414,7 +2414,7 @@ unit HopperVM
                 GC.Release(this);
             }
             
-            case SysCall.DictionaryNext:
+            case SysCalls.DictionaryNext:
             {
                 Type htype;
                 uint iterator = Pop(ref htype);
@@ -2438,7 +2438,7 @@ unit HopperVM
                 Push(iterator, Type.UInt);    
             }
             
-            case SysCall.DictionaryContains:
+            case SysCalls.DictionaryContains:
             {
                 Type ktype;
                 uint key = Pop(ref ktype);
@@ -2465,7 +2465,7 @@ unit HopperVM
                 Push(found, Type.Bool);
             }
             
-            case SysCall.DictionaryGet:
+            case SysCalls.DictionaryGet:
             {
                 Type ktype;
                 uint key = Pop(ref ktype);
@@ -2492,7 +2492,7 @@ unit HopperVM
                 GC.Release(this);
                 Push(result, vtype);
             }
-            case SysCall.DictionaryClear:
+            case SysCalls.DictionaryClear:
             {
                 Type ttype;
                 uint this  = Pop(ref ttype);
@@ -2507,7 +2507,7 @@ unit HopperVM
                 GC.Release(this);
             }
             
-            case SysCall.CharToString:
+            case SysCalls.CharToString:
             {
                 Type utype;
                 uint singleChar = Pop(ref utype);
@@ -2517,7 +2517,7 @@ unit HopperVM
                 uint address = HRString.NewFromConstant1(singleChar);
                 Push(address, Type.String);
             }
-            case SysCall.CharToUpper:
+            case SysCalls.CharToUpper:
             {
                 Type utype;
                 uint ch = Pop(ref utype);
@@ -2526,7 +2526,7 @@ unit HopperVM
 #endif
                 Push(byte(HRChar.ToUpper(char(ch))), Type.Char);
             }
-            case SysCall.CharToLower:
+            case SysCalls.CharToLower:
             {
                 Type utype;
                 uint ch = Pop(ref utype);
@@ -2535,7 +2535,7 @@ unit HopperVM
 #endif
                 Push(byte(HRChar.ToLower(char(ch))), Type.Char);
             }
-            case SysCall.CharIsUpper:
+            case SysCalls.CharIsUpper:
             {
                 Type utype;
                 uint ch = Pop(ref utype);
@@ -2544,7 +2544,7 @@ unit HopperVM
 #endif
                 Push(byte(HRChar.IsUpper(char(ch))), Type.Bool);
             }
-            case SysCall.CharIsLower:
+            case SysCalls.CharIsLower:
             {
                 Type utype;
                 uint ch = Pop(ref utype);
@@ -2553,7 +2553,7 @@ unit HopperVM
 #endif
                 Push(byte(HRChar.IsLower(char(ch))), Type.Bool);
             }
-            case SysCall.CharIsDigit:
+            case SysCalls.CharIsDigit:
             {
                 Type utype;
                 uint ch = Pop(ref utype);
@@ -2562,7 +2562,7 @@ unit HopperVM
 #endif
                 Push(byte(HRChar.IsDigit(char(ch))), Type.Bool);
             }
-            case SysCall.CharIsLetterOrDigit:
+            case SysCalls.CharIsLetterOrDigit:
             {
                 Type utype;
                 uint ch = Pop(ref utype);
@@ -2571,7 +2571,7 @@ unit HopperVM
 #endif
                 Push(byte(HRChar.IsLetterOrDigit(char(ch))), Type.Bool);
             }
-            case SysCall.CharIsHexDigit:
+            case SysCalls.CharIsHexDigit:
             {
                 Type utype;
                 uint ch = Pop(ref utype);
@@ -2581,7 +2581,7 @@ unit HopperVM
                 Push(byte(HRChar.IsHexDigit(char(ch))), Type.Bool);
             }
             
-            case SysCall.ByteToDigit:
+            case SysCalls.ByteToDigit:
             {
                 Type htype;
                 uint b = byte(Pop(ref htype));
@@ -2594,7 +2594,7 @@ unit HopperVM
 #endif
                 Push(byte(HRByte.ToDigit(byte(b))), Type.Char);
             }
-            case SysCall.ByteToHex:
+            case SysCalls.ByteToHex:
             {
                 Type htype;
                 uint b = byte(Pop(ref htype));
@@ -2608,7 +2608,7 @@ unit HopperVM
                 Push(byte(HRByte.ToHex(byte(b))), Type.Char);
             }
             
-            case SysCall.UIntToLong:
+            case SysCalls.UIntToLong:
             {
                 Type htype;
                 uint value = Pop(ref htype);
@@ -2620,7 +2620,7 @@ unit HopperVM
             }
             
             
-            case SysCall.UIntToInt:
+            case SysCalls.UIntToInt:
             {
                 Type htype;
                 uint value = Pop(ref htype);
@@ -2635,7 +2635,7 @@ unit HopperVM
                 PushI(int(value));             
             }
             
-            case SysCall.IntToLong:
+            case SysCalls.IntToLong:
             {
                 Type htype;
                 uint ichunk = Pop(ref htype);
@@ -2645,14 +2645,14 @@ unit HopperVM
                 uint lng = HRInt.ToLong(ichunk);
                 Push(lng, Type.Long);
             }
-            case SysCall.IntToFloat:
+            case SysCalls.IntToFloat:
             {
                 Type htype;
                 int ichunk = PopI(ref htype);
                 uint f = External.IntToFloat(ichunk);
                 Push(f, Type.Float);
             }
-            case SysCall.UIntToFloat:
+            case SysCalls.UIntToFloat:
             {
                 Type htype;
                 uint ichunk = Pop(ref htype);
@@ -2662,7 +2662,7 @@ unit HopperVM
                 uint f = External.UIntToFloat(ichunk);
                 Push(f, Type.Float);
             }
-            case SysCall.IntToBytes:
+            case SysCalls.IntToBytes:
             {
                 Type htype;
                 uint ichunk = Pop(ref htype);
@@ -2672,7 +2672,7 @@ unit HopperVM
                 uint lst = HRInt.ToBytes(ichunk);
                 Push(lst, Type.List);
             }
-            case SysCall.LongToBytes:
+            case SysCalls.LongToBytes:
             {
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2684,7 +2684,7 @@ unit HopperVM
                 GC.Release(this);
             }
             
-            case SysCall.FloatToLong:
+            case SysCalls.FloatToLong:
             {
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2695,7 +2695,7 @@ unit HopperVM
                 Push(lng, Type.Long);
                 GC.Release(this);
             }
-            case SysCall.FloatToUInt:
+            case SysCalls.FloatToUInt:
             {
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2707,7 +2707,7 @@ unit HopperVM
                 GC.Release(this);
             }
             
-            case SysCall.LongGetByte:
+            case SysCalls.LongGetByte:
             {
                 uint index = Pop();
                 Type htype;
@@ -2719,7 +2719,7 @@ unit HopperVM
                 Push(b, Type.Byte);  
                 GC.Release(this);              
             }
-            case SysCall.LongFromBytes:
+            case SysCalls.LongFromBytes:
             {
                 byte b3 = byte(Pop());
                 byte b2 = byte(Pop());
@@ -2729,7 +2729,7 @@ unit HopperVM
                 uint l = HRLong.FromBytes(b0, b1, b2, b3);
                 Push(l, Type.Long);                
             }
-            case SysCall.IntGetByte:
+            case SysCalls.IntGetByte:
             {
                 uint index = Pop();
                 Type htype;
@@ -2737,7 +2737,7 @@ unit HopperVM
                 byte b = HRInt.GetByte(i, index);
                 Push(b, Type.Byte);                
             }
-            case SysCall.IntFromBytes:
+            case SysCalls.IntFromBytes:
             {
                 byte b1 = byte(Pop());
                 byte b0 = byte(Pop());
@@ -2746,7 +2746,7 @@ unit HopperVM
                 Push(i, Type.Int);  
             }
             
-            case SysCall.FloatToBytes:
+            case SysCalls.FloatToBytes:
             {
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2757,7 +2757,7 @@ unit HopperVM
                 Push(lst, Type.List); 
                 GC.Release(this);
             }
-            case SysCall.FloatToString:
+            case SysCalls.FloatToString:
             {
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2768,7 +2768,7 @@ unit HopperVM
                 Push(str, Type.String);
                 GC.Release(this);
             }
-            case SysCall.LongToString:
+            case SysCalls.LongToString:
             {
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2779,7 +2779,7 @@ unit HopperVM
                 Push(str, Type.String); 
                 GC.Release(this);
             }
-            case SysCall.FloatGetByte:
+            case SysCalls.FloatGetByte:
             {
                 uint index = Pop();
                 Type htype;
@@ -2791,7 +2791,7 @@ unit HopperVM
                 Push(b, Type.Byte); 
                 GC.Release(this);               
             }
-            case SysCall.FloatFromBytes:
+            case SysCalls.FloatFromBytes:
             {
                 byte b3 = byte(Pop());
                 byte b2 = byte(Pop());
@@ -2801,7 +2801,7 @@ unit HopperVM
                 uint f = HRFloat.FromBytes(b0, b1, b2, b3);
                 Push(f, Type.Float);                
             }
-            case SysCall.LongToUInt:
+            case SysCalls.LongToUInt:
             {
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2816,7 +2816,7 @@ unit HopperVM
                 Push(ui, Type.UInt);
                 GC.Release(this);
             }
-            case SysCall.LongToInt:
+            case SysCalls.LongToInt:
             {
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2831,7 +2831,7 @@ unit HopperVM
                 PushI(i);
                 GC.Release(this);
             }
-            case SysCall.LongToFloat:
+            case SysCalls.LongToFloat:
             {
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2847,7 +2847,7 @@ unit HopperVM
                 GC.Release(this);
             }
             
-            case SysCall.LongNegate:
+            case SysCalls.LongNegate:
             {
                 Type ttype;
                 uint top = Pop(ref ttype);
@@ -2866,16 +2866,16 @@ unit HopperVM
             }
             
             
-            case SysCall.LongAdd:
-            case SysCall.LongSub:
-            case SysCall.LongDiv:
-            case SysCall.LongMul:
-            case SysCall.LongMod:
-            case SysCall.LongEQ:
-            case SysCall.LongLT:
-            case SysCall.LongLE:
-            case SysCall.LongGT:
-            case SysCall.LongGE:
+            case SysCalls.LongAdd:
+            case SysCalls.LongSub:
+            case SysCalls.LongDiv:
+            case SysCalls.LongMul:
+            case SysCalls.LongMod:
+            case SysCalls.LongEQ:
+            case SysCalls.LongLT:
+            case SysCalls.LongLE:
+            case SysCalls.LongGT:
+            case SysCalls.LongGE:
             {
                 Type ttype;
                 uint top = Pop(ref ttype);
@@ -2890,49 +2890,49 @@ unit HopperVM
 #endif
                 uint result;
                 Type rtype = Type.Long;
-                switch (SysCall(iSysCall))
+                switch (SysCalls(iSysCall))
                 {
-                    case SysCall.LongAdd:
+                    case SysCalls.LongAdd:
                     {
                         result = External.LongAdd(next, top);
                     }
-                    case SysCall.LongSub:
+                    case SysCalls.LongSub:
                     {
                         result = External.LongSub(next, top);
                     }
-                    case SysCall.LongDiv:
+                    case SysCalls.LongDiv:
                     {
                         result = External.LongDiv(next, top);
                     }
-                    case SysCall.LongMul:
+                    case SysCalls.LongMul:
                     {
                         result = External.LongMul(next, top);
                     }
-                    case SysCall.LongMod:
+                    case SysCalls.LongMod:
                     {
                         result = External.LongMod(next, top);
                     }   
-                    case SysCall.LongEQ:
+                    case SysCalls.LongEQ:
                     {
                         result = External.LongEQ(next, top);
                         rtype = Type.Bool;
                     }   
-                    case SysCall.LongLT:
+                    case SysCalls.LongLT:
                     {
                         result = External.LongLT(next, top);
                         rtype = Type.Bool;
                     }   
-                    case SysCall.LongLE:
+                    case SysCalls.LongLE:
                     {
                         result = External.LongLE(next, top);
                         rtype = Type.Bool;
                     }   
-                    case SysCall.LongGT:
+                    case SysCalls.LongGT:
                     {
                         result = External.LongGT(next, top);
                         rtype = Type.Bool;
                     }   
-                    case SysCall.LongGE:
+                    case SysCalls.LongGE:
                     {
                         result = External.LongGE(next, top);
                         rtype = Type.Bool;
@@ -2943,7 +2943,7 @@ unit HopperVM
                 GC.Release(top);
                 GC.Release(next);
             }
-            case SysCall.LongAddB:
+            case SysCalls.LongAddB:
             {
                 Type ttype;
                 uint top  = Pop(ref ttype);
@@ -2963,7 +2963,7 @@ unit HopperVM
                 Push(result, rtype);        
                 GC.Release(next);
             }
-            case SysCall.LongSubB:
+            case SysCalls.LongSubB:
             {
                 Type ttype;
                 uint top  = Pop(ref ttype);
@@ -2984,15 +2984,15 @@ unit HopperVM
                 GC.Release(next);
             }
             
-            case SysCall.FloatAdd:
-            case SysCall.FloatSub:
-            case SysCall.FloatDiv:
-            case SysCall.FloatMul:
-            case SysCall.FloatEQ:
-            case SysCall.FloatLT:
-            case SysCall.FloatLE:
-            case SysCall.FloatGT:
-            case SysCall.FloatGE:
+            case SysCalls.FloatAdd:
+            case SysCalls.FloatSub:
+            case SysCalls.FloatDiv:
+            case SysCalls.FloatMul:
+            case SysCalls.FloatEQ:
+            case SysCalls.FloatLT:
+            case SysCalls.FloatLE:
+            case SysCalls.FloatGT:
+            case SysCalls.FloatGE:
             {
                 Type ttype;
                 uint top = Pop(ref ttype);
@@ -3007,45 +3007,45 @@ unit HopperVM
 #endif
                 uint result;
                 Type rtype = Type.Float;
-                switch (SysCall(iSysCall))
+                switch (SysCalls(iSysCall))
                 {
-                    case SysCall.FloatAdd:
+                    case SysCalls.FloatAdd:
                     {
                         result = External.FloatAdd(next, top);
                     }
-                    case SysCall.FloatSub:
+                    case SysCalls.FloatSub:
                     {
                         result = External.FloatSub(next, top);
                     }
-                    case SysCall.FloatDiv:
+                    case SysCalls.FloatDiv:
                     {
                         result = External.FloatDiv(next, top);
                     }
-                    case SysCall.FloatMul:
+                    case SysCalls.FloatMul:
                     {
                         result = External.FloatMul(next, top);
                     }
-                    case SysCall.FloatEQ:
+                    case SysCalls.FloatEQ:
                     {
                         result = External.FloatEQ(next, top);
                         rtype = Type.Bool;
                     }   
-                    case SysCall.FloatLT:
+                    case SysCalls.FloatLT:
                     {
                         result = External.FloatLT(next, top);
                         rtype = Type.Bool;
                     }   
-                    case SysCall.FloatLE:
+                    case SysCalls.FloatLE:
                     {
                         result = External.FloatLE(next, top);
                         rtype = Type.Bool;
                     }   
-                    case SysCall.FloatGT:
+                    case SysCalls.FloatGT:
                     {
                         result = External.FloatGT(next, top);
                         rtype = Type.Bool;
                     }   
-                    case SysCall.FloatGE:
+                    case SysCalls.FloatGE:
                     {
                         result = External.FloatGE(next, top);
                         rtype = Type.Bool;
@@ -3056,24 +3056,24 @@ unit HopperVM
                 GC.Release(top);
                 GC.Release(next);
             }
-            case SysCall.LongNew:
+            case SysCalls.LongNew:
             {
                 uint address = HRLong.New();
                 Push(address, Type.Long);
             }
-            case SysCall.FloatNew:
+            case SysCalls.FloatNew:
             {
                 uint address = HRFloat.New();
                 Push(address, Type.Float);
             }
             
             
-            case SysCall.TimeMillis:
+            case SysCalls.TimeMillis:
             {
                 uint address = External.GetMillis();
                 Push(address, Type.Long);
             }
-            case SysCall.TimeDelay:
+            case SysCalls.TimeDelay:
             {
                 External.Delay(Pop());
                 doNext = false;

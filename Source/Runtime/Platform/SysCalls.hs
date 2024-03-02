@@ -1,6 +1,6 @@
 unit SysCalls
 {
-    enum SysCall
+    enum SysCalls
     {
         StringNewFromConstant = 0x00,
         CharToString       = 0x01,

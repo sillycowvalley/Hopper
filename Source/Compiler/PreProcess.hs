@@ -94,7 +94,7 @@ program PreProcess
         {
             bool isSimple = false;
             <string,string> typeToken = Parser.CurrentToken;
-            if (Parser.Check(HopperToken.Keyword, "|bool|byte|char|uint|int|long|float|string|type|variant|file|directory|"))
+            if (Parser.CheckKeyword("|bool|byte|char|uint|int|long|float|string|type|variant|file|directory|"))
             {
                 isSimple = true;
             }
@@ -231,7 +231,7 @@ program PreProcess
       loop
       {
           bool isSystem = false;
-          if (Parser.Check(HopperToken.Keyword, "system") || Parser.Check(HopperToken.Keyword, "library"))
+          if (Parser.CheckKeyword("|system|library|"))
           {
               isSystem = true;
           }
@@ -261,7 +261,7 @@ program PreProcess
           Parser.Advance();
           if (isSystem)
           {
-              Parser.Consume(HopperToken.SemiColon, "';' expected");
+              Parser.Consume(HopperToken.SemiColon);
               break;
           }
           int nested = 1;
@@ -314,7 +314,7 @@ program PreProcess
                 Parser.Advance(); // ,
                 continue;
             }
-            Parser.Consume(HopperToken.SemiColon, "';' expected");
+            Parser.Consume(HopperToken.SemiColon);
             break;   
         }
     }
@@ -346,7 +346,7 @@ program PreProcess
                 break;   
             }
             Parser.Advance();
-            Parser.Consume(HopperToken.Assign, "'=' expected");
+            Parser.Consume(HopperToken.Assign);
             if (HadError)
             {
                 break;
@@ -367,10 +367,10 @@ program PreProcess
             HopperToken prevToken = GetType(prev);
             if (prevToken != HopperToken.RBrace) // no ';' after hex string constant
             {
-                Parser.Consume(HopperToken.SemiColon, "';' expected");
+                Parser.Consume(HopperToken.SemiColon);
             }
             */
-            Parser.Consume(HopperToken.SemiColon, "';' expected");
+            Parser.Consume(HopperToken.SemiColon);
             break;                                 
        }          
         
@@ -685,7 +685,7 @@ program PreProcess
                 Parser.Advance();
             }
             string isReference = "";
-            if (Parser.Check(HopperToken.Keyword, "ref"))
+            if (Parser.CheckKeyword("ref"))
             {
                 Parser.Advance(); // ref   
                 isReference = "ref";   
@@ -767,7 +767,7 @@ program PreProcess
             }
             if (isDelegate)
             {
-                Parser.Consume(HopperToken.SemiColon, "';' expected");
+                Parser.Consume(HopperToken.SemiColon);
                 if (HadError)
                 {
                     break;
@@ -822,7 +822,7 @@ program PreProcess
             }
             if (isDelegate)
             {
-                Parser.Consume(HopperToken.SemiColon, "';' expected");
+                Parser.Consume(HopperToken.SemiColon);
                 if (HadError)
                 {
                     break;
@@ -871,14 +871,14 @@ program PreProcess
                 break;   
             }
             
-            Parser.Consume(HopperToken.LBrace, "'{' expected");
+            Parser.Consume(HopperToken.LBrace);
             if (HadError)
             {
                 break;
             }
             loop
             {
-                if (Parser.Check(HopperToken.Keyword, "get"))
+                if (Parser.CheckKeyword("get"))
                 {
                     Parser.Advance();
                     if (hadGet)
@@ -930,7 +930,7 @@ program PreProcess
                     Symbols.AddFunction(getterName, arguments, typeString, blockPos);
                     continue;
                 }
-                else if (Parser.Check(HopperToken.Keyword, "set"))
+                else if (Parser.CheckKeyword("set"))
                 {
                     Parser.Advance();
                     if (hadSet)
@@ -997,7 +997,7 @@ program PreProcess
                 break;
             }
             
-            Parser.Consume(HopperToken.RBrace, "'}' expected");
+            Parser.Consume(HopperToken.RBrace);
             break;
         }
     }
@@ -1066,13 +1066,13 @@ program PreProcess
     {
         bool isDelegate;
         lastID = "";
-        if (Parser.Check(HopperToken.Keyword, "delegate"))
+        if (Parser.CheckKeyword("delegate"))
         {
             isDelegate = true;
             Parser.Advance(); // delegate
         }
         
-        if (Parser.Check(HopperToken.Directive, "#define"))
+        if (Parser.CheckDirective("#define"))
         {
             Directives.Declaration(); 
         }
@@ -1097,7 +1097,7 @@ program PreProcess
                         // The only directives we don't want to gobble are:
                         // - the #endif that flips allDefined
                         // - the #else that flips allDefined
-                        if (Parser.Check(HopperToken.Directive, "#define"))
+                        if (Parser.CheckDirective("#define"))
                         {
                             Directives.Declaration(); 
                         }
@@ -1129,30 +1129,30 @@ program PreProcess
                 mainMethodDeclaration();
                 curlyDeclarations++;
             }
-            else if (Parser.Check(HopperToken.Keyword, "const"))
+            else if (Parser.CheckKeyword("const"))
             {
                 constDeclaration();
             }
-            else if (Parser.Check(HopperToken.Keyword, "enum"))
+            else if (Parser.CheckKeyword("enum"))
             {
                 enumDeclaration();
                 curlyDeclarations++;
             }
-            else if (Parser.Check(HopperToken.Keyword, "flags"))
+            else if (Parser.CheckKeyword("flags"))
             {
                 flagsDeclaration();
                 curlyDeclarations++;
             }
-            else if (Parser.Check(HopperToken.Keyword, "record"))
+            else if (Parser.CheckKeyword("record"))
             {
                 recordDeclaration();
                 curlyDeclarations++;
             }
-            else if (Parser.Check(HopperToken.Keyword, "friend"))
+            else if (Parser.CheckKeyword("friend"))
             {
                 friendDeclaration();
             }
-            else if (Parser.Check(HopperToken.Keyword, "uses"))
+            else if (Parser.CheckKeyword("uses"))
             {
                 if (curlyDeclarations > 0)
                 {
@@ -1176,9 +1176,8 @@ program PreProcess
                     string typeString;
                     bool isType = false;
                   
-                    <string,string> peekNextToken = Parser.Peek();
                     bool deferred;
-                    if (HopperToken.LParen != Token.GetType(peekNextToken))
+                    if (HopperToken.LParen != Parser.PeekTokenType())
                     {           
                         isType = tryParseTypeString(ref typeString, ref deferred, true); // declaration (global or return type?)
                     }
@@ -1331,12 +1330,12 @@ program PreProcess
           Parser.Advance(); // load up first token
           if (firstUnit)
           {
-              Parser.Consume(HopperToken.Keyword, "program", "'program' expected");
+              Parser.ConsumeKeyword("program");
               Parser.Consume(HopperToken.Identifier, "Program name identifier expected");
           }
           else
           {
-              Parser.Consume(HopperToken.Keyword, "unit", "'unit' expected");
+              Parser.ConsumeKeyword("unit");
               Parser.Consume(HopperToken.Identifier, "Unit name identifier expected");
           }
           if (Parser.HadError)
@@ -1353,7 +1352,7 @@ program PreProcess
               programNamespace = Types.CurrentNamespace;
           }
           
-          Parser.Consume(HopperToken.LBrace, '{');
+          Parser.Consume(HopperToken.LBrace);
           if (Parser.HadError)
           {
               success = false;

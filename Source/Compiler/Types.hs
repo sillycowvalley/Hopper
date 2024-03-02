@@ -602,7 +602,7 @@ unit Types
         {
             bool isSimple = false;
             <string,string> typeToken = Parser.CurrentToken; // Keyword, Identifier (named type) or '<'
-            if (Parser.Check(HopperToken.Keyword, "|bool|byte|char|delegate|uint|int|long|float|string|type|variant|file|directory|"))
+            if (Parser.CheckKeyword("|bool|byte|char|delegate|uint|int|long|float|string|type|variant|file|directory|"))
             {
                 isSimple = true;    
             }

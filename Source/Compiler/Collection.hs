@@ -56,7 +56,7 @@ unit Collection
                         continue;
                     }
                 }
-                Parser.Consume(HopperToken.RBrace, "'}' expected");
+                Parser.Consume(HopperToken.RBrace);
                 break;
             } // loop
             

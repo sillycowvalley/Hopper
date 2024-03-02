@@ -75,7 +75,7 @@ program Compile
             
             Parser.Advance(); // if
             
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -88,7 +88,7 @@ program Compile
                 break;
             }      
             
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -116,11 +116,11 @@ program Compile
             uint pastAddress = CodeStream.NextAddress;
             CodeStream.PatchJump(jumpPast, pastAddress);        
                         
-            if (Parser.Check(HopperToken.Keyword, "else"))
+            if (Parser.CheckKeyword("else"))
             {
                 wasElse = true; // there was at least one else clause
                 Advance(); // else
-                if (Parser.Check(HopperToken.Keyword, "if"))
+                if (Parser.CheckKeyword("if"))
                 {
                     continue; // else if
                 }   
@@ -289,7 +289,7 @@ program Compile
         {
             Parser.Advance(); // while
             
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -305,7 +305,7 @@ program Compile
                 break;
             }      
             
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -379,7 +379,7 @@ program Compile
             Block.PushBlock(true); // new loop block context
             
             Parser.Advance(); // for
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -389,7 +389,7 @@ program Compile
             if (Parser.Check(HopperToken.SemiColon))
             {
                 // empty initialization statement
-                Parser.Consume(HopperToken.SemiColon, ';');
+                Parser.Consume(HopperToken.SemiColon);
             }
             else
             {
@@ -406,7 +406,7 @@ program Compile
                 Parser.Error("boolean expression expected, (was '" + exitCheckType + "')");
                 break;
             }
-            Parser.Consume(HopperToken.SemiColon, ';');
+            Parser.Consume(HopperToken.SemiColon);
             if (Parser.HadError)
             {
                 break;
@@ -429,7 +429,7 @@ program Compile
             <byte> incrementStream = CodeStream.CurrentStream;
             CodeStream.New(mainStream);
             
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -743,12 +743,12 @@ program Compile
         loop
         {
             Parser.Advance(); // foreach
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
             }
-            if (!Parser.Check(HopperToken.Keyword, "var"))
+            if (!Parser.CheckKeyword("var"))
             {
                 Parser.Error("'var' expected");
             }
@@ -763,7 +763,7 @@ program Compile
             string identifier = currentToken["lexeme"];
             Parser.Advance(); // identifier
                    
-            if (!Parser.Check(HopperToken.Keyword, "in"))
+            if (!Parser.CheckKeyword("in"))
             {
                 Parser.Error("'in' expected");
                 break;
@@ -775,7 +775,7 @@ program Compile
             {
                 break;
             }
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -824,12 +824,12 @@ program Compile
         bool success = false;
         loop
         {   
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
             }
-            Parser.Consume(HopperToken.LBrace, '{');
+            Parser.Consume(HopperToken.LBrace);
             if (Parser.HadError)
             {
                 break;
@@ -862,9 +862,9 @@ program Compile
                 }
                 
                 bool isDefault = false;
-                if (!Parser.Check(HopperToken.Keyword, "case"))
+                if (!Parser.CheckKeyword("case"))
                 {
-                    if (Parser.Check(HopperToken.Keyword, "default"))
+                    if (Parser.CheckKeyword("default"))
                     {
                         isDefault = true;       
                         if (defaultSeen)
@@ -982,14 +982,14 @@ program Compile
                     {
                         break;
                     }
-                    Parser.Consume(HopperToken.Colon, ':');
+                    Parser.Consume(HopperToken.Colon);
                     if (Parser.HadError)
                     {
                         break;
                     }
                     if (!isDefault)
                     {
-                        if (Parser.Check(HopperToken.Keyword, "case"))
+                        if (Parser.CheckKeyword("case"))
                         {
                             continue; // multiple cases
                         }
@@ -1112,7 +1112,7 @@ program Compile
         {
             <uint> jumpEnds;
             Parser.Advance(); // switch
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -1146,14 +1146,14 @@ program Compile
                 break;
             }
             
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
             }
             
             
-            Parser.Consume(HopperToken.LBrace, '{');
+            Parser.Consume(HopperToken.LBrace);
             if (Parser.HadError)
             {
                 break;
@@ -1174,9 +1174,9 @@ program Compile
                 }
                 
                 bool isDefault = false;
-                if (!Parser.Check(HopperToken.Keyword, "case"))
+                if (!Parser.CheckKeyword("case"))
                 {
-                    if (Parser.Check(HopperToken.Keyword, "default"))
+                    if (Parser.CheckKeyword("default"))
                     {
                         isDefault = true;       
                         if (defaultSeen)
@@ -1237,7 +1237,7 @@ program Compile
                         }
                     } // !isDefault
                     
-                    Parser.Consume(HopperToken.Colon, ':');
+                    Parser.Consume(HopperToken.Colon);
                     if (Parser.HadError)
                     {
                         break;
@@ -1257,7 +1257,7 @@ program Compile
                         jumpNexts.Append(jumpNext);
                         CodeStream.AddInstructionJump(Instruction.JZ);
                         
-                        if (Parser.Check(HopperToken.Keyword, "case"))
+                        if (Parser.CheckKeyword("case"))
                         {
                             uint jumpMatch = CodeStream.NextAddress;
                             CodeStream.AddInstructionJump(Instruction.J);
@@ -1696,9 +1696,7 @@ program Compile
                 ignoreZero = Types.IsValueType(variableType);
                 if (ignoreZero)
                 {
-                    <string,string> nextToken = Parser.Peek();
-                    HopperToken nextTokenType = Token.GetType(nextToken);   
-                    ignoreZero = nextTokenType == HopperToken.SemiColon;
+                    ignoreZero = Parser.PeekTokenType() == HopperToken.SemiColon;
                 }
                 if (ignoreZero)
                 {
@@ -2220,8 +2218,7 @@ program Compile
                 {
                     bool isDotted    = (tokenType == HopperToken.DottedIdentifier);
                     bool isDiscarder = (tokenType == HopperToken.Discarder);
-                    <string,string> nextToken = Parser.Peek();
-                    HopperToken nextTokenType = Token.GetType(nextToken);   
+                    HopperToken nextTokenType = Parser.PeekTokenType();
                     if (isDiscarder && (nextTokenType != HopperToken.Assign))
                     {
                         Parser.ErrorAtCurrent("'=' expected");
@@ -2239,8 +2236,7 @@ program Compile
                         Advance();
                         <string,string> idToken   = Parser.PreviousToken;
                         tokenString = idToken["lexeme"];
-                        nextToken = Parser.CurrentToken;
-                        tokenType = Token.GetType(nextToken);
+                        tokenType = Token.GetType(Parser.CurrentToken);
                         if (   (tokenType == HopperToken.Assign)
                             || (tokenType == HopperToken.AssignAdd)
                             || (tokenType == HopperToken.AssignSubtract)
@@ -2372,12 +2368,12 @@ program Compile
                                     break;
                                 }
                                 
-                                Parser.Consume(HopperToken.RBracket, ']');
+                                Parser.Consume(HopperToken.RBracket);
                                 if (Parser.HadError)
                                 {
                                     break;
                                 }
-                                Parser.Consume(HopperToken.Assign, '=');
+                                Parser.Consume(HopperToken.Assign);
                                 if (Parser.HadError)
                                 {
                                     break;
@@ -2445,7 +2441,6 @@ program Compile
                         else if (tokenType == HopperToken.LParen)
                         {
                             // method call
-                            // PrintLn(); Print("B:" + tokenString); // Method Call
                             string returnType = CompileMethodCall(tokenString, "", "");
                             if (returnType != "void")
                             {
@@ -2460,7 +2455,7 @@ program Compile
                         {
                             if (!Parser.HadError)
                             {
-                                Parser.ErrorAt(nextToken, "'(' or '=' expected");
+                                Parser.ErrorAtCurrent("'(' or '=' expected");
                             }
                         }
                     }
@@ -2480,7 +2475,7 @@ program Compile
                 DumpCurrent();
             }
             */
-            Parser.Consume(HopperToken.SemiColon, ';');
+            Parser.Consume(HopperToken.SemiColon);
         }
         return success;
     }
@@ -2600,7 +2595,7 @@ program Compile
                                                                                                                                                                     
             Parser.Advance(); // load first token
             
-            if (Parser.Check(HopperToken.Keyword, "system"))
+            if (Parser.CheckKeyword("system"))
             {
                 // no need to compile system calls
                 Symbols.OverloadWasCompiled(iCurrentOverload);         
@@ -2611,7 +2606,7 @@ program Compile
                 }
                 continue;
             }
-            else if (Parser.Check(HopperToken.Keyword, "library"))
+            else if (Parser.CheckKeyword("library"))
             {
                 // no need to compile system calls
                 Symbols.OverloadWasCompiled(iCurrentOverload);         

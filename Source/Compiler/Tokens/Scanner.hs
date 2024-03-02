@@ -195,10 +195,6 @@ unit Scanner
         currentPos = currentPos + 1;
         return c;
     }
-    char peek()
-    {
-        return sourceGetFromPos(currentPos, true);
-    }
     char peekNext()
     {
         if (isAtEnd())
@@ -223,9 +219,13 @@ unit Scanner
     }
     bool skipWhitespace()
     {
+        char c;
+        char n;
+        bool inString;
+        uint nesting;
         loop
         {
-            char c = peek();
+            c = sourceGetFromPos(currentPos, true); // peek
             if ((c == ' ') || (c == char(0x0D)) || (c == char(0x09)))
             {
                 c = advance();
@@ -237,13 +237,13 @@ unit Scanner
             }
             else if (c == '/')
             {
-                char n = peekNext();
+                n = peekNext();
                 if (n == '/')
                 {
                     // comment to end of line
                     loop
                     {
-                        c = peek();
+                        c = sourceGetFromPos(currentPos, true); // peek
                         if ((c == char(0)) || (c == char(0x0A)) || isAtEnd())
                         {
                             break;
@@ -256,11 +256,11 @@ unit Scanner
                     // block comment until '*/'
                     c = advance();
                     c = advance();
-                    bool inString;
-                    uint  nesting = 1;
+                    inString = false;
+                    nesting = 1;
                     loop
                     {
-                        c = peek();
+                        c = sourceGetFromPos(currentPos, true); // peek
                         if ((c == char(0)) || isAtEnd())
                         {
                             return false; // unexpected EOF in block comment
@@ -322,24 +322,32 @@ unit Scanner
     }
     <string,string> scanString()
     {
+        char c;
+        char p;
         string value;
-        while ((peek() != '"') && (peek() != char(0)))
+        loop
         {
-            if (peek() == char(0x0A))
+            p = sourceGetFromPos(currentPos, true); // peek
+            if ((p == '"') || (p == char(0)))
+            {
+                break;
+            }
+            if (p == char(0x0A))
             {
                 return errorToken("unexpected EOL in string");
             }
-            char c = advance();
+            c = advance();
             if (c == char(0x5C)) // \
             {
-                if (   (peek() == '"') // \"
-                    || (peek() == char(0x5C)) // \\
+                p = sourceGetFromPos(currentPos, true); // peek
+                if (   (p == '"') // \"
+                    || (p == char(0x5C)) // \\
                     )
                 {
                     c = advance(); // gooble the \
                 }
             }
-            value = value + c;
+            String.Build(ref value, c);
         }
         if (isAtEnd())
         {
@@ -349,22 +357,25 @@ unit Scanner
             }
             return errorToken("unterminated string: '" + value + "'");
         }
-        char c = advance(); // consume the '"'
+        c = advance(); // consume the '"'
         return Token.New(HopperToken.StringConstant, value, currentLine, currentPos, currentSourcePath);
     }
     <string,string> scanChar()
     {
+        char p;
+        char d;
         char c = advance();
         if (c == char(0x5C)) 
         {
-            if (   (peek() == char(0x27)) // \'
-                || (peek() == char(0x5C)) // \\
+            p = sourceGetFromPos(currentPos, true); // peek
+            if (   (p == char(0x27)) // \'
+                || (p == char(0x5C)) // \\
                 )
             {
                 c = advance();         // gobble the \
             }
         }
-        char d = advance();
+        d = advance();
         if (isAtEnd() || (d != char(0x27))) // '
         {
             return errorToken("' expected");
@@ -373,28 +384,30 @@ unit Scanner
     }
     <string,string> scanNumber(char c)
     {
+        bool hexOk;
+        bool binaryOk;
+        bool floatOk;
+        char c2;
+        HopperToken ttype = HopperToken.Integer;
+        
         <string,string> token;
         string value = c.ToString();
-        bool hexOk = false;
-        bool binaryOk = false;
-        bool floatOk = false;
         
-        HopperToken ttype = HopperToken.Integer;
         loop
         {
             loop
             {
-                c = peek();
+                c = sourceGetFromPos(currentPos, true); // peek
                 if ((c == 'x') && (value == "0"))
                 {
                     hexOk = true;
-                    value = value + advance();
+                    String.Build(ref value, advance());
                     continue;
                 }
                 if ((c == 'b') && (value == "0"))
                 {
                     binaryOk = true;
-                    value = value + advance();
+                    String.Build(ref value, advance());
                     continue;
                 }
                 if (hexOk && c.IsHexDigit())
@@ -407,7 +420,7 @@ unit Scanner
                 }
                 else if ((c == '.') && !floatOk && (value.Length != 0))
                 {
-                    char c2 = peekNext();
+                    c2 = peekNext();
                     if (c2 == '.') // ..
                     {
                         break;
@@ -418,7 +431,7 @@ unit Scanner
                 {
                     break;
                 }
-                value = value + advance();
+                String.Build(ref value, advance());
             }
             if (hexOk)
             {
@@ -479,12 +492,12 @@ unit Scanner
     }
     <string,string> scanIdentifier(char c)
     {
-        uint dotSeen = 0;
-        string value = c.ToString();
+        uint dotSeen;
         HopperToken ttype = HopperToken.Identifier;
+        string value = c.ToString();
         loop
         {
-            c = peek();
+            c = sourceGetFromPos(currentPos, true); // peek
             if (!c.IsLetter() && !c.IsDigit() && (c != '_'))
             {
                 if ((c == '.') && (dotSeen == 0))
@@ -496,7 +509,7 @@ unit Scanner
                     break;
                 }
             }
-            value = value + advance();
+            String.Build(ref value, advance());
         }
         if (dotSeen > 0)
         {
@@ -518,6 +531,9 @@ unit Scanner
     }
     <string,string> Next()
     {   
+        char c;
+        uint ui;
+        HopperToken htoken;
         <string,string> token = Token.New(HopperToken.Undefined, "", currentLine, currentPos, currentSourcePath);
         loop
         {
@@ -534,13 +550,13 @@ unit Scanner
             }
             loop
             {
-                HopperToken htoken = HopperToken.Undefined;
+                htoken = HopperToken.Undefined;
                 if (!skipWhitespace())
                 {
                     token = errorToken("unexpected EOF in block comment");
                     break;
                 }
-                char c = advance();
+                c = advance();
                 switch (c)
                 {
                     case '#', 'a'..'z', 'A'..'Z':
@@ -640,7 +656,7 @@ unit Scanner
                     }
                     default:
                     {
-                        uint ui = uint(c);
+                        ui = uint(c);
                         if ((ui == 0) && isAtEnd())
                         {
                             token = Token.New(HopperToken.EOF, "", currentLine, currentPos, currentSourcePath);
@@ -669,5 +685,14 @@ unit Scanner
             isPeekedToken = true;
         }
         return peekedToken;
+    }
+    HopperToken PeekTokenType()
+    {
+        if (!isPeekedToken)
+        {
+            peekedToken = Next();
+            isPeekedToken = true;
+        }
+        return Token.GetType(peekedToken);
     }
 }

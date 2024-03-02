@@ -563,7 +563,7 @@ unit Code
             }
             if (!first)
             {
-                Parser.Consume(HopperToken.Comma, "',' comma expected");
+                Parser.Consume(HopperToken.Comma);
                 if (Parser.HadError)
                 {
                     break;
@@ -576,7 +576,7 @@ unit Code
             }
             <string,string> previousToken = PreviousToken;
             string keyName = previousToken["lexeme"];
-            Parser.Consume(HopperToken.Colon, ':');
+            Parser.Consume(HopperToken.Colon);
             if (Parser.HadError)
             {
                 break;
@@ -637,7 +637,7 @@ unit Code
                 case "locals":
                 {
                     <string, <string> > localLists;
-                    Parser.Consume(HopperToken.LBrace, '{');
+                    Parser.Consume(HopperToken.LBrace);
                     if (Parser.HadError)
                     {
                         break;
@@ -656,7 +656,7 @@ unit Code
                         }
                         if (!fc)
                         {
-                            Parser.Consume(HopperToken.Comma, "',' comma expected");
+                            Parser.Consume(HopperToken.Comma);
                             if (Parser.HadError)
                             {
                                 break;
@@ -671,13 +671,13 @@ unit Code
                         previousToken = PreviousToken;
                         string range = previousToken["lexeme"];
                         
-                        Parser.Consume(HopperToken.Colon, ':');
+                        Parser.Consume(HopperToken.Colon);
                         if (Parser.HadError)
                         {
                             break;
                         }
                         
-                        Parser.Consume(HopperToken.LBrace, '{');
+                        Parser.Consume(HopperToken.LBrace);
                         if (Parser.HadError)
                         {
                             break;
@@ -696,7 +696,7 @@ unit Code
                             }
                             if (!fa)
                             {
-                                Parser.Consume(HopperToken.Comma, "',' comma expected");
+                                Parser.Consume(HopperToken.Comma);
                                 if (Parser.HadError)
                                 {
                                     break;
@@ -710,7 +710,7 @@ unit Code
                             previousToken = PreviousToken;
                             string membername = previousToken["lexeme"];
                         
-                            Parser.Consume(HopperToken.Colon, ':');
+                            Parser.Consume(HopperToken.Colon);
                             if (Parser.HadError)
                             {
                                 break;
@@ -759,7 +759,7 @@ unit Code
                 {
                     <string, <string> > argumentLists;
                     
-                    Parser.Consume(HopperToken.LBrace, '{');
+                    Parser.Consume(HopperToken.LBrace);
                     if (Parser.HadError)
                     {
                         break;
@@ -778,7 +778,7 @@ unit Code
                         }
                         if (!fc)
                         {
-                            Parser.Consume(HopperToken.Comma, "',' comma expected");
+                            Parser.Consume(HopperToken.Comma);
                             if (Parser.HadError)
                             {
                                 break;
@@ -793,13 +793,13 @@ unit Code
                         previousToken = PreviousToken;
                         string offset = previousToken["lexeme"];
                         
-                        Parser.Consume(HopperToken.Colon, ':');
+                        Parser.Consume(HopperToken.Colon);
                         if (Parser.HadError)
                         {
                             break;
                         }
                         
-                        Parser.Consume(HopperToken.LBrace, '{');
+                        Parser.Consume(HopperToken.LBrace);
                         if (Parser.HadError)
                         {
                             break;
@@ -818,7 +818,7 @@ unit Code
                             }
                             if (!fa)
                             {
-                                Parser.Consume(HopperToken.Comma, "',' comma expected");
+                                Parser.Consume(HopperToken.Comma);
                                 if (Parser.HadError)
                                 {
                                     break;
@@ -832,7 +832,7 @@ unit Code
                             previousToken = PreviousToken;
                             string membername = previousToken["lexeme"];
                         
-                            Parser.Consume(HopperToken.Colon, ':');
+                            Parser.Consume(HopperToken.Colon);
                             if (Parser.HadError)
                             {
                                 break;
@@ -882,7 +882,7 @@ unit Code
                 case "debug":
                 {
                     <string,string> debugInfo;
-                    Parser.Consume(HopperToken.LBrace, '{');
+                    Parser.Consume(HopperToken.LBrace);
                     if (Parser.HadError)
                     {
                         break;
@@ -901,7 +901,7 @@ unit Code
                         }
                         if (!fc)
                         {
-                            Parser.Consume(HopperToken.Comma, "',' comma expected");
+                            Parser.Consume(HopperToken.Comma);
                             if (Parser.HadError)
                             {
                                 break;
@@ -916,7 +916,7 @@ unit Code
                         previousToken = PreviousToken;
                         string offset = previousToken["lexeme"];
                         
-                        Parser.Consume(HopperToken.Colon, ':');
+                        Parser.Consume(HopperToken.Colon);
                         if (Parser.HadError)
                         {
                             break;
@@ -941,7 +941,7 @@ unit Code
                 }
                 case "code":
                 {
-                    Parser.Consume(HopperToken.LBracket, '[');
+                    Parser.Consume(HopperToken.LBracket);
                     if (Parser.HadError)
                     {
                         break;
@@ -960,7 +960,7 @@ unit Code
                         }
                         if (!fc)
                         {
-                            Parser.Consume(HopperToken.Comma, "',' comma expected");
+                            Parser.Consume(HopperToken.Comma);
                             if (Parser.HadError)
                             {
                                 break;
@@ -1019,7 +1019,7 @@ unit Code
             Scanner.Reset(pos, 1, codePath);
     
             Parser.Advance(); // load up first token
-            Parser.Consume(HopperToken.LBrace, '{');
+            Parser.Consume(HopperToken.LBrace);
             first = true;
             loop
             {
@@ -1033,7 +1033,7 @@ unit Code
                 }
                 if (!first)
                 {
-                    Parser.Consume(HopperToken.Comma, ',');
+                    Parser.Consume(HopperToken.Comma);
                 }
                 first = false;
                 Parser.Consume(HopperToken.StringConstant, "method index expected");
@@ -1043,12 +1043,12 @@ unit Code
                 }
                 <string,string> previousToken = PreviousToken;
                 string methodIndex = previousToken["lexeme"];
-                Parser.Consume(HopperToken.Colon, ':');
+                Parser.Consume(HopperToken.Colon);
                 if (Parser.HadError)
                 {
                     break;
                 }
-                Parser.Consume(HopperToken.LBrace, '{');
+                Parser.Consume(HopperToken.LBrace);
                 if (Parser.HadError)
                 {
                     break;
@@ -1071,7 +1071,7 @@ unit Code
                         }
                         if (!fc)
                         {
-                            Parser.Consume(HopperToken.Comma, "',' comma expected");
+                            Parser.Consume(HopperToken.Comma);
                             if (Parser.HadError)
                             {
                                 break;
@@ -1086,13 +1086,13 @@ unit Code
                         previousToken = PreviousToken;
                         string offset = previousToken["lexeme"];
                         
-                        Parser.Consume(HopperToken.Colon, ':');
+                        Parser.Consume(HopperToken.Colon);
                         if (Parser.HadError)
                         {
                             break;
                         }
                         
-                        Parser.Consume(HopperToken.LBrace, '{');
+                        Parser.Consume(HopperToken.LBrace);
                         if (Parser.HadError)
                         {
                             break;
@@ -1110,7 +1110,7 @@ unit Code
                             }
                             if (!fg)
                             {
-                                Parser.Consume(HopperToken.Comma, "',' comma expected");
+                                Parser.Consume(HopperToken.Comma);
                                 if (Parser.HadError)
                                 {
                                     break;
@@ -1124,7 +1124,7 @@ unit Code
                             previousToken = PreviousToken;
                             string membername = previousToken["lexeme"];
                             
-                            Parser.Consume(HopperToken.Colon, ':');
+                            Parser.Consume(HopperToken.Colon);
                             if (Parser.HadError)
                             {
                                 break;
@@ -1199,7 +1199,7 @@ unit Code
                         methodSize[index] = codeLength;
                         methodName[index] = name;
                     }
-                    Parser.Consume(HopperToken.RBrace, '}');
+                    Parser.Consume(HopperToken.RBrace);
                     if (Parser.HadError)
                     {
                         break;

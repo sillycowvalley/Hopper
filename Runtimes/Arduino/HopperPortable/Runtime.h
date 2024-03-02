@@ -143,7 +143,7 @@ enum OpCode {
     eSUBB = 0x006E,
 };
 
-enum SysCall {
+enum SysCalls {
     eStringNewFromConstant = 0x0000,
     eCharToString = 0x0001,
     eStringNew = 0x0002,
@@ -869,8 +869,8 @@ UInt HRVariant_GetValue_R(UInt _this, Type & vtype);
 Bool HRVariant_IsEqual(UInt left, Type ltype, UInt right, Type rtype);
 UInt Memory_Available();
 UInt Memory_Maximum();
-UInt HRString_NewFromConstant0(UInt location, UInt length);
 UInt HRString_NewFromConstant1(UInt doubleChar);
+UInt HRString_NewFromConstant0(UInt location, UInt length);
 Char HRString_GetChar(UInt _this, UInt index);
 UInt HRString_InsertChar(UInt _this, UInt index, Char ch);
 UInt HRString_ToUpper(UInt _this);

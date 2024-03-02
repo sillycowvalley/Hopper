@@ -377,8 +377,7 @@ unit Constant
                             if (pass == 0)
                             {
                                 //  Keyboard.Key ->  Keyboard.Key.Escape
-                                <string,string> peekToken = Parser.Peek();
-                                if (peekToken["type"] == "Dot")
+                                if (Parser.PeekTokenType() == HopperToken.Dot)
                                 {
                                     Parser.Advance(); // name
                                     Parser.Advance(); // dot
@@ -484,7 +483,7 @@ unit Constant
                             {
                                 break;
                             }
-                            Parser.Consume(HopperToken.RParen, ')');
+                            Parser.Consume(HopperToken.RParen);
                         }
                         else
                         {
@@ -510,7 +509,7 @@ unit Constant
                     {
                         break;
                     }
-                    Parser.Consume(HopperToken.RParen, ')');
+                    Parser.Consume(HopperToken.RParen);
                 }
                 default:
                 {

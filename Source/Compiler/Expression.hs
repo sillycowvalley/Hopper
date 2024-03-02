@@ -521,7 +521,7 @@ unit Expression
                 }
             }
             
-            Parser.Consume(HopperToken.LParen, '(');
+            Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
             {
                 break;
@@ -557,7 +557,7 @@ unit Expression
                 }
                 <string> argument;
                 bool isRef = false;
-                if (Parser.Check(HopperToken.Keyword, "ref"))
+                if (Parser.CheckKeyword("ref"))
                 {
                     Parser.Advance();
                     argument.Append("ref");
@@ -586,7 +586,7 @@ unit Expression
                 n++;
                 if (!Parser.Check(HopperToken.RParen))
                 {
-                    Parser.Consume(HopperToken.Comma, ',');
+                    Parser.Consume(HopperToken.Comma);
                 }
                 continue; // next argument
             }
@@ -966,7 +966,7 @@ unit Expression
                 {
                     break;
                 }
-                Parser.Consume(HopperToken.RParen, ')'); // )
+                Parser.Consume(HopperToken.RParen);
                 if (Parser.HadError)
                 {
                     break;
@@ -1042,7 +1042,7 @@ unit Expression
             //PrintLn();
             //Print("TODO: runtime check that this is a valid member: " + identifier + "(" + expressionType + ")");
             
-            Parser.Consume(HopperToken.RParen, ')');
+            Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
                 break;
@@ -1094,7 +1094,7 @@ unit Expression
                     Parser.ErrorAtCurrent("array index type invalid");
                     break;
                 }
-                Parser.Consume(HopperToken.RBracket, ']');
+                Parser.Consume(HopperToken.RBracket);
                 if (Parser.HadError)
                 {
                     break;
@@ -1132,7 +1132,7 @@ unit Expression
                     Parser.ErrorAtCurrent("string index type invalid");
                     break;
                 }
-                Parser.Consume(HopperToken.RBracket, ']');
+                Parser.Consume(HopperToken.RBracket);
                 if (Parser.HadError)
                 {
                     break;
@@ -1178,7 +1178,7 @@ unit Expression
                         break;
                     }
                 }
-                Parser.Consume(HopperToken.RBracket, ']');
+                Parser.Consume(HopperToken.RBracket);
                 if (Parser.HadError)
                 {
                     break;
@@ -1213,7 +1213,7 @@ unit Expression
                     Parser.ErrorAtCurrent("list index type invalid");
                     break;
                 }
-                Parser.Consume(HopperToken.RBracket, ']');
+                Parser.Consume(HopperToken.RBracket);
                 if (Parser.HadError)
                 {
                     break;
@@ -1273,7 +1273,7 @@ unit Expression
                     Parser.ErrorAtCurrent("string index type invalid");
                     break;
                 }
-                Parser.Consume(HopperToken.RBracket, ']');
+                Parser.Consume(HopperToken.RBracket);
                 if (Parser.HadError)
                 {
                     break;
@@ -1934,7 +1934,7 @@ unit Expression
                     {
                         break;
                     }
-                    Parser.Consume(HopperToken.RParen, ')');
+                    Parser.Consume(HopperToken.RParen);
                     if (Parser.HadError)
                     {
                         break;
@@ -3102,7 +3102,7 @@ unit Expression
             
                 Parser.Advance(); // ?
                 string trueExpressionType = CompileExpression(expectedType);
-                Parser.Consume(HopperToken.Colon, ':');
+                Parser.Consume(HopperToken.Colon);
                 if (Parser.HadError)
                 {
                     break;

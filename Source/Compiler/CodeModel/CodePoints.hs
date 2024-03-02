@@ -79,8 +79,8 @@ unit CodePoints
     
     uint currentMethod;
     <uint,string> indexDebugInfo;
-    
-    
+    <uint,uint> indexMap;   // index -> address
+    <uint,uint> addressMap; // address -> index
     
     bool IsTargetOfJumps(uint iIndex)
     {
@@ -236,44 +236,54 @@ unit CodePoints
         return found;
     }
     
-    uint GetInstructionIndex(uint seekAddress)
-    {
-        uint index;
-        if (!TryGetInstructionIndex(seekAddress, ref index))
-        {
-            Die(0x0B);
-        }
-        return index;
-    }
     uint GetInstructionAddress(uint seekIndex)
     {
+        uint address;
+        uint iIndex;
+        loop
+        {
+            if (iIndex == seekIndex)
+            {
+                break;
+            }
+            address = address + iLengths[iIndex];
+            iIndex++;
+        }
+        return address;
+    }
+    RebuildMaps()
+    {
+        indexMap.Clear();   // index -> address
+        addressMap.Clear(); // address -> index
+        
         uint address;
         uint index;
         loop
         {
-            if (index == seekIndex)
+            if (index >= iLengths.Count)
             {
                 break;
             }
+            indexMap[index] = address;
+            addressMap[address] = index;
             address = address + iLengths[index];
             index++;
         }
-        return address;
     }
     
     InitializeJumpTargets()
     {
         uint iCodesLength = iCodes.Count;
         uint iIndex;
+        uint instructionAddress;
+        
         loop
         {
             if (iIndex == iCodesLength)
             {
                 break;
             }
-            
-            Instruction opCode = iCodes[iIndex];
-            
+            Instruction opCode  = iCodes[iIndex];
             if (IsJumpInstruction(opCode))
             {
                 // single jump target
@@ -281,9 +291,8 @@ unit CodePoints
                 uint operand           = iOperands[iIndex];
                 
                 long offset;
-                long jumpTarget;
+                long jumpTargetAddress;
             
-                uint address = GetInstructionAddress(iIndex);
                 if (instructionLength == 2)
                 {
                     offset = operand;
@@ -291,7 +300,7 @@ unit CodePoints
                     {
                         offset = offset - 256; // 255 -> -1
                     }
-                    jumpTarget = long(address) + offset;
+                    jumpTargetAddress = long(instructionAddress) + offset;
                 }
                 else if (instructionLength == 3)
                 {
@@ -301,14 +310,24 @@ unit CodePoints
                     {
                         offset = offset - 65536; // 0x10000 -> -1
                     }
-                    jumpTarget = long(address) + offset;
+                    jumpTargetAddress = long(instructionAddress) + offset;
                 }
                 else
                 {
                     Die(0x0B); 
                 }
+                uint jumpIndex;
+                if (addressMap.Contains(jumpTargetAddress))
+                {
+                    jumpIndex = addressMap[jumpTargetAddress];
+                }
+                else
+                {
+                    // Most likely unreachable dead code so jumping to self
+                    // does not mess up reachableness.
+                    jumpIndex = iIndex;
+                }
                 
-                uint jumpIndex = GetInstructionIndex(jumpTarget);
                 <uint> jumpTargets;
                 jumpTargets.Append(jumpIndex);
                 iJumpTargets.SetItem(iIndex, jumpTargets);
@@ -324,9 +343,10 @@ unit CodePoints
                 <byte> jumpTable       = iContent[iIndex];
                 
                 uint negativeOffset = jumpTable[0] + (jumpTable[1] << 8);
-                uint myAddress   = GetInstructionAddress(iIndex);
+                
+                uint myAddress   = indexMap[iIndex];
                 uint baseAddress = myAddress - negativeOffset;
-                uint iBase       = GetInstructionIndex(baseAddress);
+                uint iBase = addressMap[baseAddress];
                 
                 jumpTargets.Append(iBase);    // add iBase so it does not get removed (and so we can rebuild)
                 jumpTargets.Append(iIndex+1); // default is the next instruction
@@ -353,8 +373,7 @@ unit CodePoints
                     }
                     if (offset != 0) // non-default
                     {
-                        uint jumpAddress = baseAddress + offset;
-                        uint jumpTarget  = GetInstructionIndex(jumpAddress);
+                        uint jumpTarget = addressMap[baseAddress + offset];
                         if (!jumpTargets.Contains(jumpTarget))
                         {
                             jumpTargets.Append(jumpTarget);
@@ -368,6 +387,7 @@ unit CodePoints
                 iJumpTargets.SetItem(iIndex, jumpTargets);
                 iJIXMaps[iIndex] = jixMap;
             }
+            instructionAddress += iLengths[iIndex];
             iIndex++;
         }
     }
@@ -513,7 +533,6 @@ unit CodePoints
             }
             
             iCodes.Append(opCode);
-            
             iLengths.Append(instructionLength);
             iOperands.Append(operand);
             iContent.Append(extraContent);
@@ -526,6 +545,8 @@ unit CodePoints
             }
         } // loop
         
+        RebuildMaps();
+        
         InitializeJumpTargets();
         
         // convert the debugInfo from instruction addresses to instruction indices
@@ -537,16 +558,19 @@ unit CodePoints
             uint address;
             if (UInt.TryParse(saddress, ref address))
             {
-            }
-            uint index;
-            if (!TryGetInstructionIndex(address, ref index))
+            }      
+            if (address < code.Count) // why?
             {
-                PrintLn();
-                PrintLn("Bad DebugInfo for method 0x" + currentMethod.ToHexString(4) + " : " + kv.key + "->" + kv.value + " " + when);
-            }
-            else
-            {
-                indexDebugInfo[index] = kv.value;
+                uint index;
+                if (!addressMap.Contains(address)) // address -> index
+                {
+                    PrintLn();
+                    PrintLn("Bad DebugInfo for method 0x" + currentMethod.ToHexString(4) + " : " + kv.key + "->" + kv.value + " " + when);
+                }
+                else
+                {
+                    indexDebugInfo[addressMap[address]] = kv.value;
+                }
             }
         }
         ProgessNudge();
@@ -557,6 +581,9 @@ unit CodePoints
         <byte> code;
         uint instructionCount = iCodes.Count;
         uint index;
+        
+        RebuildMaps();
+        
         loop
         {
             Instruction opCode = iCodes[index];
@@ -581,10 +608,24 @@ unit CodePoints
                 {
                     // use the index to calculate the new offset
                     
-                    long currentAddress = GetInstructionAddress(index);
+                    //long currentAddress = GetInstructionAddress(index);
+                    long currentAddress = indexMap[index];
                     <uint> jumpTargets  = iJumpTargets[index];
                     uint jumpTarget     = jumpTargets[0];
-                    long jumpAddress    = GetInstructionAddress(jumpTarget);
+                    //long jumpAddress    = GetInstructionAddress(jumpTarget);
+                    long jumpAddress;
+                    if (indexMap.Contains(jumpTarget))
+                    {
+                        jumpAddress = indexMap[jumpTarget];
+                    }
+                    else
+                    {
+                        if (iReachable[index])
+                        {
+                            Die(0x0B); // a reachable jump instruction has a target not in the map!?
+                        }
+                        jumpAddress = currentAddress; // jump to self, don't mess with reachability
+                    }
                     
                     long offset = jumpAddress - currentAddress;
                     if (offset < 0)
@@ -631,8 +672,11 @@ unit CodePoints
         foreach (var kv in indexDebugInfo)
         {
             index = kv.key;
-            uint address = GetInstructionAddress(index);
-            debugInfo[address.ToString()] = kv.value;
+            if (indexMap.Contains(index)) // why?
+            {
+                uint address = indexMap[index];
+                debugInfo[address.ToString()] = kv.value;
+            }
         }
         
         // update the method with the optimized code            
@@ -1743,7 +1787,6 @@ unit CodePoints
                     if (!IsTargetOfJumps(iIndex))
                     {
                         // single local
-                        //Print(" RR:00:" + currentMethod.ToHexString(4) +" ");
                         iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
                         iLengths.SetItem (iIndex, 1);
                         RemoveInstruction(iIndex-1);
@@ -1756,7 +1799,6 @@ unit CodePoints
                     // returning the only argument, no locals
                     if (!IsTargetOfJumps(iIndex))
                     {
-                        //Print(" RR:FE:" + currentMethod.ToHexString(4) +" ");
                         iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
                         iLengths.SetItem (iIndex, 1);
                         RemoveInstruction(iIndex-1);
@@ -2347,7 +2389,6 @@ unit CodePoints
                 
                 // IsTargetOfJumps(iIndex)) ??
                 
-                //Print(" " + Instructions.ToString(opCode) + ((delta == 2) ? "x2:" : ":") + operand.ToHexString(2));
                 if (delta == 1)
                 {
                     iCodes.SetItem(iIndex, opCode);
@@ -2360,7 +2401,8 @@ unit CodePoints
                         // 3 instructions          -> 1 instruction = remove 2
                         RemoveInstruction(iIndex-2);
                         RemoveInstruction(iIndex-2);
-                        //Print("-2 ");
+                        modified = true;
+                        continue;
                     }
                     else
                     {
@@ -2369,10 +2411,9 @@ unit CodePoints
                         RemoveInstruction(iIndex-3);
                         RemoveInstruction(iIndex-3);
                         RemoveInstruction(iIndex-3);
-                        //Print("-3 ");
+                        modified = true;
+                        continue;
                     }
-                    modified = true;
-                    continue;
                 }
                 else if (delta == 2) 
                 {
@@ -2387,7 +2428,6 @@ unit CodePoints
                     // PUSH   ADDB|SUBB   POP  -> INC|INC DEC|DEC   
                     // 3 instructions          -> 2 instructions = remove 1
                     RemoveInstruction(iIndex-2);
-                    //Print("-1 ");
                     modified = true;
                     continue;
                 }
@@ -2446,8 +2486,7 @@ unit CodePoints
                     iLengths.SetItem (iIndex-1, 1);
                     iCodes.SetItem   (iIndex-0, Instruction.GT);
                     modified = true;
-                    Print(" Z ");
-            }
+                }
             }
             if ((opCode0 == Instruction.GT) && (opCode1 == Instruction.PUSHI0))
             {
@@ -2540,9 +2579,9 @@ unit CodePoints
             }
             Instruction opCode1 = iCodes[iIndex-1];
             Instruction opCode0 = iCodes[iIndex]; 
-            if (!IsTargetOfJumps(iIndex))
+            if ((opCode1 == Instruction.PUSHIB) && (opCode0 == Instruction.SYSCALL0))
             {
-                if ((opCode1 == Instruction.PUSHIB) && (opCode0 == Instruction.SYSCALL0))
+                if (!IsTargetOfJumps(iIndex))
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
                     
@@ -2553,7 +2592,10 @@ unit CodePoints
                     modified = true;
                     continue;
                 }
-                if ((opCode1 == Instruction.PUSHIB) && (opCode0 == Instruction.SYSCALL1))
+            }
+            if ((opCode1 == Instruction.PUSHIB) && (opCode0 == Instruction.SYSCALL1))
+            {
+                if (!IsTargetOfJumps(iIndex))
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
                     
@@ -2564,7 +2606,10 @@ unit CodePoints
                     modified = true;
                     continue;
                 }
-                if ((opCode1 == Instruction.SYSCALL0) && (opCode0 == Instruction.SYSCALL0))
+            }
+            if ((opCode1 == Instruction.SYSCALL0) && (opCode0 == Instruction.SYSCALL0))
+            {
+                if (!IsTargetOfJumps(iIndex))
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
                     iCodes.SetItem   (iIndex-1, Instruction.SYSCALL00);
@@ -2574,7 +2619,10 @@ unit CodePoints
                     modified = true;
                     continue;
                 }
-                if ((opCode1 == Instruction.SYSCALL0) && (opCode0 == Instruction.SYSCALL1))
+            }
+            if ((opCode1 == Instruction.SYSCALL0) && (opCode0 == Instruction.SYSCALL1))
+            {
+                if (!IsTargetOfJumps(iIndex))
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
                     iCodes.SetItem   (iIndex-1, Instruction.SYSCALL01);
@@ -2584,7 +2632,10 @@ unit CodePoints
                     modified = true;
                     continue;
                 }
-                if ((opCode1 == Instruction.SYSCALL1) && (opCode0 == Instruction.SYSCALL0))
+            }
+            if ((opCode1 == Instruction.SYSCALL1) && (opCode0 == Instruction.SYSCALL0))
+            {
+                if (!IsTargetOfJumps(iIndex))
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
                     iCodes.SetItem   (iIndex-1, Instruction.SYSCALL10);

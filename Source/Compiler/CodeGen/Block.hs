@@ -435,7 +435,6 @@ unit Block
     string GetType(string identifier, ref bool isLocal)
     {
         isLocal = false;
-        string typeString;
         string name;
         <string,variant> blockContext;
         < <string> > members;
@@ -447,23 +446,8 @@ unit Block
                 break;
             }
             iCurrent--;
-            // TODO : namespaces?
+            
             blockContext = blockList[iCurrent];
-            if (blockContext.Contains("arguments"))
-            {
-                // arguments: < <ref,type,name> >
-                members = blockContext["arguments"];
-                foreach (var argument in members)
-                {
-                    name = argument[2];
-                    if (name == identifier)
-                    {
-                        typeString = argument[1];
-                        isLocal = true;
-                        break;
-                    }        
-                }
-            }       
             if (blockContext.Contains("locals"))
             {
                 // locals: < <type,name> >
@@ -473,11 +457,24 @@ unit Block
                     name = local[1];
                     if (name == identifier)
                     {
-                        typeString = local[0];
                         isLocal = true;
-                        break;
+                        return local[0]; // typeString
                     }            
                 }   
+            }       
+            if (blockContext.Contains("arguments"))
+            {
+                // arguments: < <ref,type,name> >
+                members = blockContext["arguments"];
+                foreach (var argument in members)
+                {
+                    name = argument[2];
+                    if (name == identifier)
+                    {
+                        isLocal = true;
+                        return argument[1]; // typeString
+                    }        
+                }
             }       
             if (blockContext.Contains("globals"))
             {
@@ -488,13 +485,12 @@ unit Block
                     name = global[1];
                     if (name == identifier)
                     {
-                        typeString = global[0];
-                        break;
+                        return global[0]; // typeString
                     }            
                 }
             }       
         }
-        return typeString;
+        return "";
     }
     
     bool LocalExists(string identifier)
