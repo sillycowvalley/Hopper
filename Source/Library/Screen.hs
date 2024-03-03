@@ -137,6 +137,9 @@ unit Screen
             Display.Resume();
         }
 #endif
+#ifdef BUFFER_TEXT
+        DisplayDriver.bufferText(col, row, c, foreColour, backColour);
+#endif
     }
     DrawChar(byte col, byte row, char c, uint foreColour, uint backColour, byte scale, int dx, int dy)
     {

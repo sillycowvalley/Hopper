@@ -7,14 +7,17 @@ unit DeviceDriver
     // plugs directly into the Pi Pico so no board defined, assume generic Pi Pico
     uses "/Source/Library/Boards/PiPico"
 #endif
-    #define WAVESHARE_PICO_LCD_114
     
-    uses "/Source/Library/Displays/ST7735Driver"
+    #define WAVESHARE_PICO_LCD_114
+    #define HAS_RESET_PIN
+    #define BUFFER_TEXT
+    
+    uses "/Source/Library/Displays/ST77XXDriver"
     
     friend DisplayDriver;
     
     const int pw = 240;
-    const int ph = 135;
+    const int ph = 135;    
     
     const byte spiController = 1; // this device uses SPI1 on Raspberry Pi Pico
     byte dcPin   { get { return Board.GP8; } }
@@ -38,12 +41,12 @@ unit DeviceDriver
     bool Begin()
     {
         bool success = Display.Begin();
-        MCU.PinMode(keyAPin, PinModeOption.InputPullup);
-        MCU.PinMode(keyBPin, PinModeOption.InputPullup);
-        MCU.PinMode(keyUpPin, PinModeOption.InputPullup);
-        MCU.PinMode(keyDownPin, PinModeOption.InputPullup);
-        MCU.PinMode(keyLeftPin, PinModeOption.InputPullup);
-        MCU.PinMode(keyRightPin, PinModeOption.InputPullup);
+        MCU.PinMode(keyAPin,      PinModeOption.InputPullup);
+        MCU.PinMode(keyBPin,      PinModeOption.InputPullup);
+        MCU.PinMode(keyUpPin,     PinModeOption.InputPullup);
+        MCU.PinMode(keyDownPin,   PinModeOption.InputPullup);
+        MCU.PinMode(keyLeftPin,   PinModeOption.InputPullup);
+        MCU.PinMode(keyRightPin,  PinModeOption.InputPullup);
         MCU.PinMode(keyButtonPin, PinModeOption.InputPullup);
         return success;
     }
@@ -53,12 +56,12 @@ unit DeviceDriver
         loop
         {
             if (!DeviceDriver.Begin())  { break; }
-            if (!AttachToPin(keyAPin, buttonDelegate, PinStatus.Rising))  { break; }
-            if (!AttachToPin(keyBPin, buttonDelegate, PinStatus.Rising))  { break; }
-            if (!AttachToPin(keyUpPin, buttonDelegate, PinStatus.Rising)) { break; }
-            if (!AttachToPin(keyDownPin, buttonDelegate, PinStatus.Rising)) { break; }
-            if (!AttachToPin(keyLeftPin, buttonDelegate, PinStatus.Rising)) { break; }
-            if (!AttachToPin(keyRightPin, buttonDelegate, PinStatus.Rising)) { break; }
+            if (!AttachToPin(keyAPin,      buttonDelegate, PinStatus.Rising)) { break; }
+            if (!AttachToPin(keyBPin,      buttonDelegate, PinStatus.Rising)) { break; }
+            if (!AttachToPin(keyUpPin,     buttonDelegate, PinStatus.Rising)) { break; }
+            if (!AttachToPin(keyDownPin,   buttonDelegate, PinStatus.Rising)) { break; }
+            if (!AttachToPin(keyLeftPin,   buttonDelegate, PinStatus.Rising)) { break; }
+            if (!AttachToPin(keyRightPin,  buttonDelegate, PinStatus.Rising)) { break; }
             if (!AttachToPin(keyButtonPin, buttonDelegate, PinStatus.Rising)) { break; }
             success = true;
             break;

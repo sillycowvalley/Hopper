@@ -1166,6 +1166,7 @@ unit CodePoints
                         break;
                     }
                     Instruction opCode = iCodes[iIndex];
+                    
                     byteLength = byteLength + iLengths[iIndex];
                     if (opCode == Instruction.RET0)
                     {
@@ -1185,6 +1186,7 @@ unit CodePoints
                             }
                         }
                     }
+                    
                     iIndex++;
                 } // loop
                 
@@ -1270,6 +1272,14 @@ unit CodePoints
                         if (sizeInBytes <= availableSpace)
                         {
                             uint inlineAddress = GetInstructionAddress(iIndex);
+                            <byte> inlineCode = Code.GetMethodCode(methodIndex);
+                            
+                            Instruction retFast = Instruction(inlineCode[inlineCode.Count-1]);
+                            if (retFast == Instruction.RETFAST)
+                            {
+                                // just so this never ends up inlined
+                                inlineCode[inlineCode.Count-1] = byte(Instruction.NOP);
+                            }
                             
                             // replace what was the method call with NOPs
                             for (uint i=0; i < availableSpace; i++)
@@ -1281,7 +1291,6 @@ unit CodePoints
                             uint nopOffset = availableSpace - sizeInBytes;
                             
                             // fill the space with the bytes from the method (could be trailing NOPs to remove later)
-                            <byte> inlineCode = Code.GetMethodCode(methodIndex);
                             while (inlineCode.Count < sizeInBytes)
                             {
                                 inlineCode.Append(byte(Instruction.NOP));

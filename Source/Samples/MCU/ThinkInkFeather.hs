@@ -1,5 +1,6 @@
 program ThinkInkFeatherwing
 {   
+    #define EXPERIMENTAL
     uses "/Source/Library/Boards/AdafruitFeather"
     //uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
@@ -7,8 +8,10 @@ program ThinkInkFeatherwing
     //uses "/Source/Library/Devices/AdafruitEInk213Mono"
     //uses "/Source/Library/Devices/AdafruitEInk213TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290TriColor"
-    uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
+    //uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
     //uses "/Source/Library/Devices/WSPicoePaper290"
+    uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
+    //uses "/Source/Library/Devices/Adafruit160x80ColorTFT"
     
     uses "/Source/Library/Fonts/Hitachi5x7"
     
@@ -68,6 +71,16 @@ program ThinkInkFeatherwing
             IO.WriteLn("  DrawBoxes: Red");
             backColour = Colour.White;
         }
+        else if (colour == Colour.Green)
+        {
+            IO.WriteLn("  DrawBoxes: Green");
+            backColour = Colour.White;
+        }
+        else if (colour == Colour.Blue)
+        {
+            IO.WriteLn("  DrawBoxes: Blue");
+            backColour = Colour.White;
+        }
         else
         {
             IO.WriteLn("  DrawBoxes: colour?");
@@ -116,23 +129,18 @@ program ThinkInkFeatherwing
             WriteLn(laps.ToString());
             laps++;
             Delay(250);
-            /*
+            
             start = Millis;
             DrawText();
             elapsed = Millis - start;
             WriteLn("Elapsed: " + elapsed.ToString());
             DelaySeconds(2);
             
-            break;
-            */
             start = Millis;
             DrawShades();
             elapsed = Millis - start;
             WriteLn("Elapsed: " + elapsed.ToString());
             DelaySeconds(2);
-            
-            break;
-            
             
             start = Millis;
             DrawBoxes(Colour.Black);
@@ -150,7 +158,19 @@ program ThinkInkFeatherwing
             DrawBoxes(Colour.Red);
             elapsed = Millis - start;
             WriteLn("Elapsed: " + elapsed.ToString());
-            DelaySeconds(1);
+            DelaySeconds(2);
+            
+            start = Millis;
+            DrawBoxes(Colour.Green);
+            elapsed = Millis - start;
+            WriteLn("Elapsed: " + elapsed.ToString());
+            DelaySeconds(2);
+            
+            start = Millis;
+            DrawBoxes(Colour.Blue);
+            elapsed = Millis - start;
+            WriteLn("Elapsed: " + elapsed.ToString());
+            DelaySeconds(2);
         }
     }
 }

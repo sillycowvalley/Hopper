@@ -8,6 +8,7 @@ unit DeviceDriver
     
     // https://www.waveshare.com/wiki/Pico-ePaper-4.2
     #define WAVESHARE_PICO_ePAPER_4200
+    #define HAS_RESET_PIN
     
     uses "/Source/Library/Displays/UC8176Driver"
     

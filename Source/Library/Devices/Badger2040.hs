@@ -2,6 +2,8 @@ unit DeviceDriver
 {
     uses "/Source/Library/Boards/PiPico"
     
+    #define HAS_RESET_PIN
+    
     uses "/Source/Library/Displays/UC8151Driver"
     
     friend DisplayDriver;

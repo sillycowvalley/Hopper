@@ -3,8 +3,11 @@ unit DeviceDriver
     // https://www.waveshare.com/wiki/RP2040-LCD-0.96
     // Note: Colour.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
     
+    #define HAS_RESET_PIN
+    #define BUFFER_TEXT
+    
     uses "/Source/Library/Boards/WaveshareRP2040LCD096"
-    uses "/Source/Library/Displays/ST7735Driver"
+    uses "/Source/Library/Displays/ST77XXDriver"
     
     friend DisplayDriver;
     

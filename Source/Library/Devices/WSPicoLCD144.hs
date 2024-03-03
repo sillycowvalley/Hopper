@@ -9,7 +9,10 @@ unit DeviceDriver
 #endif
 
     #define WAVESHARE_PICO_LCD_144
-    uses "/Source/Library/Displays/ST7735Driver"
+    #define HAS_RESET_PIN
+    #define BUFFER_TEXT
+    
+    uses "/Source/Library/Displays/ST77XXDriver"
     
     friend DisplayDriver;
     

@@ -1,8 +1,13 @@
 program ExploreFS
 {
-    #define MCU
+    #define SERIAL_CONSOLE
+    
+    uses "/Source/Library/Boards/PiPicoW"
+    
     uses "/Source/System/System"
     uses "/Source/System/IO"
+    
+    uses "/Source/Library/SD"
     
     WalkDirectory(string folderPath, uint indent)
     {
@@ -32,7 +37,18 @@ program ExploreFS
     }
     
     {
+        SD.SPIController = 0;
+        SD.ClkPin = Board.SPI0SCK;
+        SD.TxPin  = Board.SPI0Tx;
+        SD.RxPin  = Board.SPI0Rx;
+        SD.CSPin  = Board.SPI0SS;
+        
+        if (!SD.Mount())
+        {
+            WriteLn("Mount Failed");
+        }
         WalkDirectory("/", 0);
+        SD.Eject();
         
 #ifndef SERIAL_CONSOLE
         Key k = ReadKey();

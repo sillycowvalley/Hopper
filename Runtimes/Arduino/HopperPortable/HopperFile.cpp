@@ -686,8 +686,9 @@ void External_SDEject()
     if (sdMounted)
     {
         SDFS.end();
-        SPIClassRP2040* sdSPI = (sdController == 0) ? &SPI : &SPI1;
-        sdSPI->end();
+        // What if there is another device on this SPI?
+        //SPIClassRP2040* sdSPI = (sdController == 0) ? &SPI : &SPI1;
+        //sdSPI->end(); 
         sdMounted = false;
     }
 }

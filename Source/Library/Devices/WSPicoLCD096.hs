@@ -8,8 +8,10 @@ unit DeviceDriver
     uses "/Source/Library/Boards/PiPico"
 #endif
     #define WAVESHARE_PICO_LCD_096
+    #define HAS_RESET_PIN
+    #define BUFFER_TEXT
     
-    uses "/Source/Library/Displays/ST7735Driver"
+    uses "/Source/Library/Displays/ST77XXDriver"
     
     friend DisplayDriver;
     

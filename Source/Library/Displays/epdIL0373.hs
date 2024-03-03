@@ -192,7 +192,7 @@ unit DisplayDriver
     epdCommandList(byte [] initCode) 
     {
         byte[64] buffer;
-       uint index = 0;
+        uint index = 0;
         while (initCode[index] != 0xFE) 
         {
             byte cmd = initCode[index];
@@ -205,7 +205,7 @@ unit DisplayDriver
                 Delay(numArgs);
                 continue;
             }
-           for (byte i = 0; i < numArgs; i++) 
+            for (byte i = 0; i < numArgs; i++) 
             {
                 buffer[i] = initCode[index];
                 index++;
@@ -394,7 +394,8 @@ unit DisplayDriver
             }
             drow++;   
         }
-        */    }
+        */    
+    }
     bool colourToBit0(uint colour)
     {
         bool bit0;

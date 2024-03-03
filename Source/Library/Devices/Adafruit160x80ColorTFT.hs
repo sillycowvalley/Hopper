@@ -5,38 +5,50 @@ unit DeviceDriver
     uses "/Source/Library/Boards/PiPico"
 #endif
 
-    // TODO TFT uses "/Source/Library/Displays/EPDIL0373.hs"
+    #define ADAFRUIT_TFT_096
+    #define BUFFER_TEXT
     
-    friend DisplayDriver;
+    uses "/Source/Library/Displays/ST77XXDriver.hs"
+    
+    friend DisplayDriver, Screen;
     
     const int pw = 160;
     const int ph =  80;
     
-    // Adafruit Feather defaults
-    byte spi  = 0;
-    byte sdCS = Board.GP7; // SD
-    byte sck  = Board.GP18;
-    byte tx   = Board.GP19;
-    byte rx   = Board.GP20;
+    const int xFudge = 1;
+    const int yFudge = 26;
     
-    byte SPIController { get { return spi; }  set { spi = value; } }
-    byte SPISCK        { get { return sck; }  set { sck = value; } }
-    byte SPITx         { get { return tx; }   set { tx = value; } }
-    byte SPIRx         { get { return rx; }   set { rx = value; } }
-    byte SDCS          { get { return sdCS; } set { sdCS = value; } }
+    // Adafruit Feather defaults
+    byte spiController  = 0;
+    byte sdCS   = Board.GP7;  // SD
+    byte blPin  = Board.GP8;  // backlight
+    byte csPin  = Board.GP9;  // TFT
+    byte dcPin  = Board.GP10; // TFT
+    byte clkPin = Board.GP18;
+    byte txPin  = Board.GP19;
+    byte rxPin  = Board.GP20; // MISO - this is used for the SD card. It isn't used for the TFT display which is write-only. 
+    
+    byte SPIController { get { return spiController;  } set { spiController = value; } }
+    byte SPISCK        { get { return clkPin;         } set { clkPin = value;        } }
+    byte SPITx         { get { return txPin;          } set { txPin = value;         } }
+    byte SPIRx         { get { return rxPin;          } set { rxPin = value;         } }
+    byte SDCS          { get { return sdCS;           } set { sdCS = value;          } }
+    byte CS            { get { return csPin;          } set { csPin = value;         } }
+    byte DC            { get { return dcPin;          } set { dcPin = value;         } }
+    byte LIT           { get { return blPin;          } set { blPin = value;         } }
     
     bool Begin()
     {
         // https://learn.adafruit.com/adafruit-mini-tft-0-dot-96-inch-180x60-breakout/wiring-test
                
         // Settings for Hopper SD unit:
-        SD.SPIController = spi;
-        SD.ClkPin = sck;
-        SD.TxPin  = tx;
-        SD.RxPin  = rx;
+        SD.SPIController = spiController;
+        SD.ClkPin = clkPin;
+        SD.TxPin  = txPin;
+        SD.RxPin  = rxPin;
         SD.CSPin  = sdCS; 
         
-        return true; // TODO : Display.Begin();
+        return Display.Begin();
     }
     
 }
