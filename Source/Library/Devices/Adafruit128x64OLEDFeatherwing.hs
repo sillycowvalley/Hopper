@@ -5,14 +5,14 @@ unit DeviceDriver
     uses "/Source/Library/Boards/AdafruitFeather"
 #endif
 
-    #define EPD_HAS_BUTTONS
+    #define HAS_BUTTONS
     
-    // TODO OLED uses "/Source/Library/Displays/EPDIL0373.hs"
+    uses "/Source/Library/Displays/SH110XDriver.hs"
  
     friend DisplayDriver;
     
-    const int pw = 128;
-    const int ph = 64;
+    const int pw =  64;
+    const int ph = 128;
     
     const byte keyAPin = Board.GP9;
     const byte keyBPin = Board.GP8;
@@ -27,7 +27,7 @@ unit DeviceDriver
         //         I2CSDA1 and I2CSDCL1
         
         
-        return true; // TODO : Display.Begin();
+        return Display.Begin();
     }
     bool Begin(PinISRDelegate buttonDelegate)
     {

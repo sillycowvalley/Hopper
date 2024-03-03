@@ -4,7 +4,6 @@ unit DeviceDriver
     uses "/Source/Library/Boards/AdafruitFeather" // avoid modifying the automatically generated Board file
 #endif
     
-    #define EPD_HAS_BUTTONS
     #define HAS_BUTTONS
     
     #define EPD_GRAY

@@ -10,8 +10,9 @@ program ThinkInkFeatherwing
     //uses "/Source/Library/Devices/AdafruitThinkInk290TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
     //uses "/Source/Library/Devices/WSPicoePaper290"
-    uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
+    //uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
     //uses "/Source/Library/Devices/Adafruit160x80ColorTFT"
+    uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
     
     uses "/Source/Library/Fonts/Hitachi5x7"
     
@@ -99,11 +100,11 @@ program ThinkInkFeatherwing
     {
         
         
-        //DisplayDriver.IsPortrait = true;
+        DisplayDriver.IsPortrait = true;
         //DisplayDriver.FlipX = true;
         //DisplayDriver.FlipY = true;
      
-#ifdef EPD_HAS_BUTTONS        
+#ifdef HAS_BUTTONS        
         PinISRDelegate buttonDelegate = ButtonISR;
         if (!DeviceDriver.Begin(buttonDelegate))
         {

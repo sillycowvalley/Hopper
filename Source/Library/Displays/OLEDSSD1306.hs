@@ -41,13 +41,10 @@ unit DisplayDriver
     const byte SSD1306_SETVCOMDETECT      = 0xDB;
     
     byte i2cAddress = 0x3C; // typically a good default
-    bool resolutionSet;
     bool i2cConfigured;
     
-    int pixelWidth;
-    int pixelHeight;
-    
-    
+    const int pixelWidth  = 128;
+    const int pixelHeight = 64;
     
     byte i2cController = Wire.DefaultI2CController;
     byte sdaPin        = Wire.DefaultI2CSDAPin;
@@ -57,7 +54,7 @@ unit DisplayDriver
     byte I2CSDAPin     { get { return sdaPin; }        set { sdaPin = value; } }
     byte I2CSCLPin     { get { return sclPin; }        set { sclPin = value; } }
     
-    byte[1024] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
+    byte[pixelWidth * pixelHeight / 8] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
     
     scrollUp(uint lines)
     {
@@ -92,16 +89,6 @@ unit DisplayDriver
         }
     }
     
-    SetResolution(int width, int height)
-    {
-        Display.PixelWidth = width;
-        Display.PixelHeight = height;
-        
-        pixelWidth = width;
-        pixelHeight = height;
-        resolutionSet = true;
-    }
-    
     bool visible
     {
         set
@@ -129,11 +116,10 @@ unit DisplayDriver
         {
             Display.Reset();
             
-            if (!resolutionSet)
-            {
-                SetResolution(128, 64);
-                resolutionSet = true;
-            }
+            
+            Display.PixelWidth  = pixelWidth;
+            Display.PixelHeight = pixelHeight;
+            
             if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin))
             {
                 break;
