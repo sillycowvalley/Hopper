@@ -172,6 +172,8 @@ UInt HRSPI_ReadWord(Byte spiController);
 void HRSPI_ReadBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt length);
 void HRSPI_WriteByte(Byte spiController, Byte data);
 void HRSPI_WriteWord(Byte spiController, UInt data);
+void HRSPI_WriteBytes(Byte spiController, Byte data, UInt count);
+void HRSPI_WriteWords(Byte spiController, UInt data, UInt count);
 void HRSPI_WriteBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt length);
 void HRSPI_Settings(Byte spiController, UInt hrspeedMaximum, DataOrder dataOrder, DataMode dataMode);
 

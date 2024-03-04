@@ -48,7 +48,9 @@ unit LibCalls
         addEntry("SPI.ReadWord");
         addEntry("SPI.ReadBuffer");
         addEntry("SPI.WriteByte");
+        addEntry("SPI.WriteBytes");
         addEntry("SPI.WriteWord");
+        addEntry("SPI.WriteWords");
         addEntry("SPI.WriteBuffer");
         addEntry("SPI.SetCSPin");
         addEntry("SPI.GetCSPin");

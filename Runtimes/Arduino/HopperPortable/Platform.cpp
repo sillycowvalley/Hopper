@@ -1232,6 +1232,37 @@ void HRSPI_WriteByte(Byte spiController, Byte data)
     }
 }
 
+void HRSPI_WriteBytes(Byte spiController, Byte data, UInt count)
+{
+    switch (spiController)
+    {
+        case 0:
+#ifdef DIAGNOSTICS
+            //Serial.print("screenSPI0->transfer(");
+            //Serial.print(data, HEX);
+            //Serial.println(")");
+#endif        
+            while (count != 0)
+            {
+                screenSPI0->transfer(data);
+                count--;
+            }
+#ifdef DIAGNOSTICS
+            //Serial.println(")");
+#endif
+            break;
+#ifdef SPI1EXISTS
+        case 1:
+            while (count != 0)
+            {
+                screenSPI1->transfer(data);
+                count--;
+            }
+            break;
+#endif
+    }
+}
+
 UInt HRSPI_ReadWord(Byte spiController)
 {
     UInt data = 0;
@@ -1258,6 +1289,28 @@ switch (spiController)
 #ifdef SPI1EXISTS
         case 1:
             screenSPI1->transfer16(data);
+            break;
+#endif
+    }
+}
+void HRSPI_WriteWords(Byte spiController, UInt data, UInt count)
+{
+switch (spiController)
+    {
+        case 0:
+            while (count != 0)
+            {
+                screenSPI0->transfer16(data);
+                count--;
+            }
+            break;
+#ifdef SPI1EXISTS
+        case 1:
+            while (count != 0)
+            {
+                screenSPI1->transfer16(data);
+                count--;
+            }
             break;
 #endif
     }

@@ -45,6 +45,8 @@ unit SPI
     ReadBuffer(byte[] data, uint startIndex, uint length) library;
     WriteByte(byte data) library;
     WriteWord(uint data) library;
+    WriteBytes(byte data, uint count) library;
+    WriteWords(uint data, uint count) library;
     WriteBuffer(byte[] data, uint startIndex, uint length) library;
     
     // These APIs support more than one SPI controller
@@ -64,6 +66,8 @@ unit SPI
     ReadBuffer(byte spiController, byte[] data, uint startIndex, uint length) library;
     WriteByte(byte spiController, byte data) library;
     WriteWord(byte spiController, uint data) library;
+    WriteBytes(byte spiController, byte data, uint count) library;
+    WriteWords(byte spiController, uint data, uint count) library;
     WriteBuffer(byte spiController, byte[] data, uint startIndex, uint length) library;
     
     // used internally by drivers

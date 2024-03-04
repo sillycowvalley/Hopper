@@ -148,6 +148,8 @@ program TFTandSDdemo
                 int dx = (Display.PixelWidth  - Vectors.Width) / 2;
                 int dy = (Display.PixelHeight - Vectors.Height) / 2;
                 Vectors.Render(dx, dy);
+                long elapsed = Millis - start;
+                WriteLn("Elapsed: " + elapsed.ToString());
                 
                 IO.Write("  ");
                 for (uint i = 0; i < 5; i++)
@@ -157,8 +159,7 @@ program TFTandSDdemo
                 }
                 IO.WriteLn();
                 
-                long elapsed = Millis - start;
-                WriteLn("Elapsed: " + elapsed.ToString());
+                
             }
         }
     }

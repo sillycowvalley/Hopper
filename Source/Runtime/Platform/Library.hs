@@ -627,6 +627,27 @@ unit Library
                 }
                 HRSPI.WriteByte(byte(spiController), byte(data));
             }
+            case LibCall.SPIWriteBytes:
+            {
+                Type ltype;
+                uint count = Pop(ref ltype);
+                Type dtype;
+                uint data = Pop(ref dtype);
+#ifdef CHECKED             
+                AssertUInt(ltype, count);
+                AssertByte(dtype, data);
+#endif
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif
+                }
+                HRSPI.WriteBytes(byte(spiController), byte(data), count);
+            }
             case LibCall.SPIReadWord:
             {
                 uint spiController = 0;
@@ -658,6 +679,27 @@ unit Library
 #endif
                 }
                 HRSPI.WriteWord(byte(spiController), data);
+            }
+            case LibCall.SPIWriteWords:
+            {
+                Type ltype;
+                uint count = Pop(ref ltype);
+                Type dtype;
+                uint data = Pop(ref dtype);
+#ifdef CHECKED  
+                AssertUInt(ltype, count);           
+                AssertUInt(dtype, data);
+#endif
+                uint spiController = 0;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    spiController = Pop(ref ctype);
+#ifdef CHECKED             
+                    AssertByte(ctype, spiController);
+#endif
+                }
+                HRSPI.WriteWords(byte(spiController), data, count);
             }
             case LibCall.SPIReadBuffer:
             {

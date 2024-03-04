@@ -36,6 +36,8 @@ unit HRSPI
     
     WriteByte(byte spiController, byte data) { ErrorDump(163); Error = 0x0A; }
     WriteWord(byte spiController, uint data) { ErrorDump(164); Error = 0x0A; }
+    WriteBytes(byte spiController, byte data, uint count) { ErrorDump(163); Error = 0x0A; }
+    WriteWords(byte spiController, uint data, uint count) { ErrorDump(164); Error = 0x0A; }
     WriteBuffer(byte spiController, uint hrdata, uint startIndex, uint length) { ErrorDump(165); Error = 0x0A; }
     
     // used internally by drivers
