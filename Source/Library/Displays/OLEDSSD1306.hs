@@ -7,7 +7,6 @@ unit DisplayDriver
     
     friend Display, Screen;
     
-    // Eventually got it working reliably with a variation of the AdaFruit driver:
     //   https://github.com/adafruit/Adafruit_SSD1306/blob/master/Adafruit_SSD1306.cpp
     
     const byte SSD1306_MEMORYMODE       = 0x20;
@@ -30,6 +29,9 @@ unit DisplayDriver
     const byte SSD1306_SETMULTIPLEX    = 0xA8;
     const byte SSD1306_DISPLAYOFF      = 0xAE;
     const byte SSD1306_DISPLAYON       = 0xAF;
+    
+    const byte SSD1306_SETPAGEADDR     = 0xB0;
+    
     const byte SSD1306_COMSCANINC      = 0xC0;
     const byte SSD1306_COMSCANDEC      = 0xC8;
         
@@ -43,8 +45,8 @@ unit DisplayDriver
     byte i2cAddress = 0x3C; // typically a good default
     bool i2cConfigured;
     
-    const int pixelWidth  = 128;
-    const int pixelHeight = 64;
+    const int pw  = 128;
+    const int ph  = 64;
     
     byte i2cController = Wire.DefaultI2CController;
     byte sdaPin        = Wire.DefaultI2CSDAPin;
@@ -54,16 +56,26 @@ unit DisplayDriver
     byte I2CSDAPin     { get { return sdaPin; }        set { sdaPin = value; } }
     byte I2CSCLPin     { get { return sclPin; }        set { sclPin = value; } }
     
-    byte[pixelWidth * pixelHeight / 8] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
+    bool flipX;
+    bool flipY;
+    bool isPortrait;
+    bool FlipX { get { return flipX; } set { flipX = value; }}
+    bool FlipY { get { return flipY; } set { flipY = value; }}
+    bool IsPortrait { get { return isPortrait; } set { isPortrait = value; } }
+    
+    uint pw8;
+    int  w1;
+    int  h1;
+    
+    byte[DisplayDriver.pw * DisplayDriver.ph / 8] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
     
     scrollUp(uint lines)
     {
-        uint pw8 = uint(pixelWidth/8);
         uint dy;
-        for (uint uy = lines; uy < uint(Display.PixelHeight); uy++)
+        for (uint uy = lines; uy < uint(DisplayDriver.ph); uy++)
         {
             dy = uy - lines;
-            for (uint ux = 0; ux < uint(Display.PixelWidth); ux++)
+            for (uint ux = 0; ux < uint(DisplayDriver.pw); ux++)
             {
                 uint soffset = ((uy & 0xFFF8) * pw8) + ux; 
                 uint doffset = ((dy & 0xFFF8) * pw8) + ux; 
@@ -80,8 +92,8 @@ unit DisplayDriver
         loop
         {
             dy++;
-            if (dy >= uint(Display.PixelHeight)) { break; }
-            for (uint ux = 0; ux < uint(Display.PixelWidth); ux++)
+            if (dy >= uint(DisplayDriver.ph)) { break; }
+            for (uint ux = 0; ux < uint(DisplayDriver.pw); ux++)
             {
                 uint doffset = ((dy & 0xFFF8) * pw8) + ux; 
                 monoFrameBuffer[doffset] = monoFrameBuffer[doffset] & ~(1 << (dy & 0x07));
@@ -109,16 +121,24 @@ unit DisplayDriver
     bool begin()
     {
         i2cConfigured = false;
-#ifdef DISPLAY_DIAGNOSTICS
-        IO.Write("<OLEDSSD1306.Begin");
-#endif
         loop
         {
             Display.Reset();
             
+            if (DisplayDriver.IsPortrait)
+            {
+                Display.PixelWidth  = Int.Min(DisplayDriver.pw, DisplayDriver.ph);
+                Display.PixelHeight = Int.Max(DisplayDriver.pw, DisplayDriver.ph);
+            }
+            else
+            {
+                Display.PixelWidth  = Int.Max(DisplayDriver.pw, DisplayDriver.ph);
+                Display.PixelHeight = Int.Min(DisplayDriver.pw, DisplayDriver.ph);
+            }
             
-            Display.PixelWidth  = pixelWidth;
-            Display.PixelHeight = pixelHeight;
+            pw8 = uint(DisplayDriver.pw/8);
+            w1  = (Display.PixelWidth -1);
+            h1  = (Display.PixelHeight-1);
             
             if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin))
             {
@@ -200,36 +220,9 @@ unit DisplayDriver
             i2cConfigured = true;
             break;
         }
-#ifdef DISPLAY_DIAGNOSTICS
-        IO.WriteLn(">");
-#endif        
         return i2cConfigured;
     }
     
-    
-    // https://github.com/ThingPulse/esp8266-oled-ssd1306/blob/master/src/OLEDDisplay.cpp
-    Invert(bool invertColours)
-    {
-        if (i2cConfigured)
-        {
-            sendCommandI2C(invertColours ? SSD1306INVERTDISPLAY : SSD1306NORMALDISPLAY);
-        }
-    }
-    Flip(bool flipVertical)
-    {
-        if (i2cConfigured)
-        {
-            sendCommandI2C(flipVertical ? SSD1306COMSCANDEC      : SSD1306COMSCANINC);
-            sendCommandI2C(flipVertical ? SSD1306SETSEGMENTREMAP : SSD1306SEGREMAP);
-        }
-    }
-    Show(bool on)
-    {
-        if (i2cConfigured)
-        {
-            sendCommandI2C(on ? SSD1306DISPLAYON : SSD1306DISPLAYOFF);
-        }
-    }
     sendCommandI2C(byte command)
     {
         Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
@@ -241,64 +234,38 @@ unit DisplayDriver
             IO.WriteLn("sendCommandI2C failed: " + result.ToString());
         }
     }
-    
+   
     update()
     {
-#ifdef DISPLAY_DIAGNOSTICS
-        IO.Write("<OLEDSSD1306.UpdateDisplay");
-#endif
+        byte page;
+        uint address;
         if (i2cConfigured)
         {
-            // This re-initialization seems to keep the screen position in sync:
-            Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
-            Wire.Write(DisplayDriver.I2CController, 0x00);
-            Wire.Write(DisplayDriver.I2CController, SSD1306_PAGEADDR);   // Reset Page Address (for horizontal addressing)
-            Wire.Write(DisplayDriver.I2CController, 0x00);
-            Wire.Write(DisplayDriver.I2CController, 0xFF);             //Wire.Write(byte((Display.PixelHeight/8)-1));
-            Wire.Write(DisplayDriver.I2CController, SSD1306_COLUMNADDR); // Reset Column Address (for horizontal addressing)
-            if (Display.PixelWidth == 64)
+            for (int y = 0; y < DisplayDriver.ph; y++) 
             {
-                Wire.Write(DisplayDriver.I2CController, 32);
-                Wire.Write(DisplayDriver.I2CController, byte(32+Display.PixelWidth-1));
-            }
-            else
-            {
-                Wire.Write(DisplayDriver.I2CController, 0x00);
-                Wire.Write(DisplayDriver.I2CController, byte(Display.PixelWidth-1));
-            }
-            byte result = Wire.EndTx(DisplayDriver.I2CController);
-            if (result != 0)
-            {
-                IO.WriteLn("Update init failed: " + result.ToString());
-            }
-            
-            // update screen from buffer
-            uint address = 0;
-            byte written;
+                if (y % 8 == 0)
+                {
+                    Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);    
+                    Wire.Write(DisplayDriver.I2CController, 0x00);
+                    Wire.Write(DisplayDriver.I2CController, SSD1306_SETPAGEADDR + page);
+                    Wire.Write(DisplayDriver.I2CController, 0x10);
+                    Wire.Write(DisplayDriver.I2CController, 0x00);
+                    _ = Wire.EndTx(DisplayDriver.I2CController);
+                    page++;
+                }
                 
-            uint pw8 = uint(Display.PixelWidth >> 3); // 128/8 = 16 bytes per transaction seems small enough
-            for (int y = 0; y < pixelHeight; y++) 
-            {
                 Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
                 Wire.Write(DisplayDriver.I2CController, 0x40);
-                //for (uint i=0; i < pw8; i++) { Wire.Write(DisplayDriver.I2CController, monoFrameBuffer[address+i]); }
                 Wire.Write(DisplayDriver.I2CController, monoFrameBuffer, address, pw8);
                 address += pw8;
-                result = Wire.EndTx(DisplayDriver.I2CController);
-                if (result != 0)
-                {
-                    IO.WriteLn("Update failed: " + result.ToString());
-                    break;
-                }
+                _ = Wire.EndTx(DisplayDriver.I2CController);
             }
         }
-#ifdef DISPLAY_DIAGNOSTICS
-        IO.WriteLn(">");
-#endif        
     }
+    
     clear(uint colour)
     {
-        int size = pixelWidth * pixelHeight / 8;
+        int size = DisplayDriver.pw * DisplayDriver.ph / 8;
         if (colour == Colour.Black)
         {
             for (int i = 0; i < size; i++)
@@ -321,33 +288,100 @@ unit DisplayDriver
             }
         }
     }
-    setPixel(int x, int y, uint colour)
+    
+    setPixel(int vx, int vy, uint colour)
     {
-        uint ux = uint(x);
-        uint uy = uint(y);
-        
-        uint offset = ((uy & 0xFFF8) * uint(Display.PixelWidth/8)) + ux;
-        if (colour == 0xF000) // Colour.Invert
+        if (FlipX)
         {
-            monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
+            vx = w1 - vx;
         }
-        else if (colour == 0x0000) // Colour.Black
+        if (FlipY)
         {
-            monoFrameBuffer[offset] = monoFrameBuffer[offset] & ~(1 << (uy & 0x07));
+            vy = h1 - vy;
+        }
+        if (IsPortrait)
+        {
+            Int.Swap(ref vx, ref vy);
+        }
+        
+        uint ux = uint(vx);
+        uint uy = uint(vy);
+        
+        uint offset = ((uy & 0xFFF8) * uint(DisplayDriver.pw/8)) + ux;
+        //if (offset < DisplayDriver.pw * DisplayDriver.ph / 8) // TODO REMOVE
+        //{
+            if (colour == 0xF000) // Colour.Invert
+            {
+                monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
+            }
+            else if (colour == 0x0000) // Colour.Black
+            {
+                monoFrameBuffer[offset] = monoFrameBuffer[offset] & ~(1 << (uy & 0x07));
+            }
+            else
+            {
+                monoFrameBuffer[offset] = monoFrameBuffer[offset] | (1 << (uy & 0x07));
+            }
+        //}
+    }
+    
+    horizontalLine(int vx1, int vy, int vx2, uint colour)
+    {
+        if (FlipX)
+        {
+            vx1 = w1 - vx1;
+            vx2 = w1 - vx2;
+            if (vx2 < vx1)
+            {
+                Int.Swap(ref vx1, ref vx2);
+            }
+        }
+        if (FlipY)
+        {
+            vy = h1 - vy;
+        }
+        if (IsPortrait)
+        {
+            metaVerticalLine(vy, vx1, vx2, colour);
         }
         else
         {
-            monoFrameBuffer[offset] = monoFrameBuffer[offset] | (1 << (uy & 0x07));
+            metaHorizontalLine(vx1, vy, vx2, colour);
+        }
+    }   
+    
+    verticalLine(int vx, int vy1, int vy2, uint colour)
+    {
+        if (FlipX)
+        {
+            vx = w1 - vx;
+        }
+        if (FlipY)
+        {
+            vy1 = h1 - vy1;
+            vy2 = h1 - vy2;
+            if (vy2 < vy1)
+            {
+                Int.Swap(ref vy1, ref vy2);
+            }
+        }
+        if (IsPortrait)
+        {
+            metaHorizontalLine(vy1, vx, vy2, colour);
+        }
+        else
+        {
+            metaVerticalLine(vx, vy1, vy2, colour);
         }
     }
     
-    horizontalLine(int x1, int y, int x2, uint colour)
-    {
-        uint pw8 = uint(Display.PixelWidth/8);
-        uint uy = uint(y);
+    metaHorizontalLine(int vx1, int vy, int vx2, uint colour)
+    {        
+        uint uy = uint(vy);
+        uint ux1 = uint(vx1);
+        uint ux2 = uint(vx2);
+        
         uint uyandpw8 = (uy & 0xFFF8) * pw8;
-        uint ux1 = uint(x1);
-        uint ux2 = uint(x2);
         byte uybit = byte(1 << (uy & 0x07));
         if (colour == 0xF000) // Colour.Invert
         {
@@ -375,12 +409,12 @@ unit DisplayDriver
             }
         }
     }
-    verticalLine(int x, int y1, int y2, uint colour)
+    
+    metaVerticalLine(int vx, int vy1, int vy2, uint colour)
     {
-        uint ux  = uint(x);
-        uint uy1 = uint(y1);
-        uint uy2 = uint(y2);
-        uint pw8 = uint(Display.PixelWidth/8);
+        uint ux  = uint(vx);
+        uint uy1 = uint(vy1);
+        uint uy2 = uint(vy2);
         if (colour == 0xF000) // Colour.Invert
         {
             for (uint uy=uy1; uy <= uy2; uy++)

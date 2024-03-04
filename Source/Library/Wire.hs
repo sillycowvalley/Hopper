@@ -34,7 +34,8 @@ unit Wire
                         sdaPin = Board.I2CSDA0; 
                         sclPin = Board.I2CSCL0;
                     }
-                    if (    ((sdaPin == 0) && (sclPin == 1))
+                    if (    ((sdaPin == Board.I2CSDA0) && (sclPin == Board.I2CSCL0))
+                         || ((sdaPin == 0) && (sclPin == 1))
                          || ((sdaPin == 4) && (sclPin == 5))
                          || ((sdaPin == 8) && (sclPin == 9))
                          || ((sdaPin == 12) && (sclPin == 13))
@@ -53,7 +54,8 @@ unit Wire
                         sdaPin = Board.I2CSDA1; 
                         sclPin = Board.I2CSCL1;
                     }
-                    if (    ((sdaPin == 2) && (sclPin == 3))
+                    if (    ((sdaPin == Board.I2CSDA1) && (sclPin == Board.I2CSCL1))
+                         || ((sdaPin == 2) && (sclPin == 3))
                          || ((sdaPin == 6) && (sclPin == 7))
                          || ((sdaPin == 10) && (sclPin == 11))
                          || ((sdaPin == 14) && (sclPin == 15))

@@ -1,6 +1,7 @@
 program SSD1306Demo
 {   
-    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
+    //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
+    uses "/Source/Library/Boards/AdafruitQTPy"
     uses "/Source/Library/Displays/OLEDSSD1306"    
     uses "/Source/Library/Fonts/Hitachi5x7"
     
@@ -83,10 +84,18 @@ program SSD1306Demo
     
     
     {
-        //DisplayDriver.I2CController = 0;
-        //DisplayDriver.I2CSDAPin = 0;
-        //DisplayDriver.I2CSCLPin = 1;
+        // PiPicoW
+        //DisplayDriver.I2CController = 1;
+        //DisplayDriver.I2CSDAPin = Board.GP14;
+        //DisplayDriver.I2CSCLPin = Board.GP15;
 
+        // Sparkfun ThingPlus RP2040
+        //DisplayDriver.I2CController = 1;
+        //DisplayDriver.I2CSDAPin = Board.I2CSDA1;
+        //DisplayDriver.I2CSCLPin = Board.I2CSCL1;
+        
+        //IsPortrait = true;
+        //FlipX = true;
         if (!Display.Begin())
         {
             IO.WriteLn("Failed to initialize display");

@@ -53,7 +53,6 @@ unit Keyboard
         PageUp   = 0xE07D,
 
         ModPeriod = 0xE049,
-
         
         Mod0 = 0xE045,
         Mod1 = 0xE016,
@@ -548,12 +547,24 @@ unit Keyboard
         }
         else
         {
-            byte msb = byte(uint(key) >> 8);
-            byte lsb = byte(uint(key) & 0xFF);
-            ch    = char(lsb);
-            if ((msb & 0xE0) == 0xE0)
+            switch (key & Key.Mask)
             {
-                maker = char(msb); // include modifiers
+                case Key.Click:
+                case Key.Scroll:
+                case Key.ClickRight:
+                {
+                    // ignore these
+                }
+                default:
+                {
+                    byte msb = byte(uint(key) >> 8);
+                    byte lsb = byte(uint(key) & 0xFF);
+                    ch    = char(lsb);
+                    if ((msb & 0xE0) == 0xE0)
+                    {
+                        maker = char(msb); // include modifiers
+                    }
+                }
             }
         }
         return ch;

@@ -63,12 +63,14 @@ unit DisplayDriver
     bool FlipY { get { return flipY; } set { flipY = value; }}
     bool IsPortrait { get { return isPortrait; } set { isPortrait = value; } }
     
+    uint pw8;
+    int  w1;
+    int  h1;
     
     byte[DeviceDriver.pw * DeviceDriver.ph / 8] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
     
     scrollUp(uint lines)
     {
-        uint pw8 = uint(DeviceDriver.pw/8);
         uint dy;
         for (uint uy = lines; uy < uint(DeviceDriver.ph); uy++)
         {
@@ -98,7 +100,6 @@ unit DisplayDriver
             }
         }
     }
-    
     
     bool visible
     {
@@ -134,6 +135,10 @@ unit DisplayDriver
                 Display.PixelWidth  = Int.Max(DeviceDriver.pw, DeviceDriver.ph);
                 Display.PixelHeight = Int.Min(DeviceDriver.pw, DeviceDriver.ph);
             }
+            
+            pw8 = uint(DeviceDriver.pw/8);
+            w1  = (Display.PixelWidth -1);
+            h1  = (Display.PixelHeight-1);
     
             if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin))
             {
@@ -198,10 +203,9 @@ unit DisplayDriver
     {
         if (i2cConfigured)
         {
-            byte result;
             byte page = 0;
             uint address = 0;
-            uint pw8 = uint(DeviceDriver.pw >> 3); // 128/8 = 16 bytes per transaction seems small enough
+            
             for (int y = 0; y < DeviceDriver.ph; y++) 
             {
                 if (y % 8 == 0)
@@ -211,11 +215,7 @@ unit DisplayDriver
                     Wire.Write(DisplayDriver.I2CController, SH110X_SETPAGEADDR + page);
                     Wire.Write(DisplayDriver.I2CController, 0x10);
                     Wire.Write(DisplayDriver.I2CController, 0x00);
-                    result = Wire.EndTx(DisplayDriver.I2CController);
-                    if (result != 0)
-                    {
-                        IO.WriteLn("Update failed: " + result.ToString());
-                    }
+                    _ = Wire.EndTx(DisplayDriver.I2CController);
                     page++;
                 }
                 
@@ -223,15 +223,11 @@ unit DisplayDriver
                 Wire.Write(DisplayDriver.I2CController, 0x40);
                 Wire.Write(DisplayDriver.I2CController, monoFrameBuffer, address, pw8);
                 address += pw8;
-                result = Wire.EndTx(DisplayDriver.I2CController);
-                if (result != 0)
-                {
-                    IO.WriteLn("Update failed: " + result.ToString());
-                    break;
-                }
+                _ = Wire.EndTx(DisplayDriver.I2CController);
             }
         }
     }
+    
     clear(uint colour)
     {
         int size = DeviceDriver.pw * DeviceDriver.ph / 8;
@@ -257,15 +253,16 @@ unit DisplayDriver
             }
         }
     }
+    
     setPixel(int vx, int vy, uint colour)
     {
         if (FlipX)
         {
-            vx = (Display.PixelWidth-1) - vx;
+            vx = w1 - vx;
         }
         if (FlipY)
         {
-            vy = (Display.PixelHeight-1) - vy;
+            vy = h1 - vy;
         }
         if (!IsPortrait)
         {
@@ -274,8 +271,9 @@ unit DisplayDriver
         
         uint ux = uint(vx);
         uint uy = uint(vy);
+        
         uint offset = ((uy & 0xFFF8) * uint(DeviceDriver.pw/8)) + ux;
-        if (offset <DeviceDriver.pw * DeviceDriver.ph / 8)
+        if (offset < DeviceDriver.pw * DeviceDriver.ph / 8) // TODO REMOVE
         {
             if (colour == 0xF000) // Colour.Invert
             {
@@ -296,8 +294,8 @@ unit DisplayDriver
     {
         if (FlipX)
         {
-            vx1 = (Display.PixelWidth-1) - vx1;
-            vx2 = (Display.PixelWidth-1) - vx2;
+            vx1 = w1 - vx1;
+            vx2 = w1 - vx2;
             if (vx2 < vx1)
             {
                 Int.Swap(ref vx1, ref vx2);
@@ -305,7 +303,7 @@ unit DisplayDriver
         }
         if (FlipY)
         {
-            vy = (Display.PixelHeight-1) - vy;
+            vy = h1 - vy;
         }
         if (IsPortrait)
         {
@@ -316,13 +314,38 @@ unit DisplayDriver
             metaVerticalLine(vy, vx1, vx2, colour);
         }
     }   
+    
+    verticalLine(int vx, int vy1, int vy2, uint colour)
+    {
+        if (FlipX)
+        {
+            vx = w1 - vx;
+        }
+        if (FlipY)
+        {
+            vy1 = h1 - vy1;
+            vy2 = h1 - vy2;
+            if (vy2 < vy1)
+            {
+                Int.Swap(ref vy1, ref vy2);
+            }
+        }
+        if (IsPortrait)
+        {
+            metaVerticalLine(vx, vy1, vy2, colour);
+        }
+        else
+        {
+            metaHorizontalLine(vy1, vx, vy2, colour);
+        }
+    }
+    
     metaHorizontalLine(int vx1, int vy, int vx2, uint colour)
     {        
         uint uy = uint(vy);
         uint ux1 = uint(vx1);
         uint ux2 = uint(vx2);
         
-        uint pw8 = uint(DeviceDriver.pw/8);
         uint uyandpw8 = (uy & 0xFFF8) * pw8;
         byte uybit = byte(1 << (uy & 0x07));
         if (colour == 0xF000) // Colour.Invert
@@ -351,37 +374,12 @@ unit DisplayDriver
             }
         }
     }
-    verticalLine(int vx, int vy1, int vy2, uint colour)
-    {
-        if (FlipX)
-        {
-            vx = (Display.PixelWidth-1) - vx;
-        }
-        if (FlipY)
-        {
-            vy1 = (Display.PixelHeight-1) - vy1;
-            vy2 = (Display.PixelHeight-1) - vy2;
-            if (vy2 < vy1)
-            {
-                Int.Swap(ref vy1, ref vy2);
-            }
-        }
-        if (IsPortrait)
-        {
-            metaVerticalLine(vx, vy1, vy2, colour);
-        }
-        else
-        {
-            metaHorizontalLine(vy1, vx, vy2, colour);
-        }
-    }
         
     metaVerticalLine(int vx, int vy1, int vy2, uint colour)
     {
         uint ux  = uint(vx);
         uint uy1 = uint(vy1);
         uint uy2 = uint(vy2);
-        uint pw8 = uint(DeviceDriver.pw/8);
         if (colour == 0xF000) // Colour.Invert
         {
             for (uint uy=uy1; uy <= uy2; uy++)

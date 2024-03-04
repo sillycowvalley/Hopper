@@ -39,6 +39,27 @@ unit Board // Sparkfun ProMicro RP2040
     const byte UART2Tx = 8;
     const byte UART2Rx = 9;
 
+    const byte GP0 = 0;   // UART1Tx
+    const byte GP1 = 1;   // UART1Rx
+    const byte GP2 = 2;
+    const byte GP3 = 3;
+    const byte GP4 = 4;
+    const byte GP5 = 5;
+    const byte GP6 = 6;
+    const byte GP7 = 7;
+    const byte GP8 = 8;   // UART2Tx
+    const byte GP9 = 9;   // UART2Rx
+    const byte GP16 = 16; // I2CSDA0
+    const byte GP17 = 17; // I2CSCL0
+    const byte GP20 = 20; // SPI0Rx
+    const byte GP21 = 21; // SPI0SS
+    const byte GP22 = 22; // SPI0SCK
+    const byte GP23 = 23; // SPI0Tx
+    const byte GP25 = 25; // BuiltInNeoPixel
+    const byte GP26 = 26; // BuiltInA0
+    const byte GP27 = 27; // BuiltInA1
+    const byte GP28 = 28; // BuiltInA2
+    const byte GP29 = 29; // BuiltInA3
 
     uses "/Source/Library/MCU"
 

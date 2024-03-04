@@ -34,10 +34,10 @@ unit Board // Adafruit Feather
     const byte I2CSDA1 = 2;
     const byte I2CSCL1 = 3;
 
-    const byte SPI0Tx  = 19;
-    const byte SPI0Rx  = 20;
+    const byte SPI0Tx = 19;
+    const byte SPI0Rx = 20;
     const byte SPI0SCK = 18;
-    const byte SPI0SS  = 17;
+    const byte SPI0SS = 17;
 
     const byte UART1Tx = 0;
     const byte UART1Rx = 1;

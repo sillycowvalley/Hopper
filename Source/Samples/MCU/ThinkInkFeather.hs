@@ -1,18 +1,18 @@
 program ThinkInkFeatherwing
 {   
-    #define EXPERIMENTAL
-    uses "/Source/Library/Boards/AdafruitFeather"
+    //uses "/Source/Library/Boards/AdafruitFeather"
     //uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
+    uses "/Source/Library/Boards/SparkfunProMicroRP2040"
     
     //uses "/Source/Library/Devices/AdafruitEInk213Mono"
     //uses "/Source/Library/Devices/AdafruitEInk213TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
     //uses "/Source/Library/Devices/WSPicoePaper290"
-    //uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
+    uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
     //uses "/Source/Library/Devices/Adafruit160x80ColorTFT"
-    uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
+    //uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
     
     uses "/Source/Library/Fonts/Hitachi5x7"
     
@@ -45,11 +45,19 @@ program ThinkInkFeatherwing
     DrawShades()
     {
         IO.WriteLn("  DrawShades");
+        int pw2  = Display.PixelWidth/2;
+        int pw34 = Display.PixelWidth*3/4;
+        int pw4  = Display.PixelWidth/4;
+        int w = pw4;
+        if (Display.PixelWidth % 4 != 0)
+        {
+            w++;
+        }
         Display.Suspend();
-        FilledRectangle(0,                      0, Display.PixelWidth/4, Display.PixelHeight, Colour.White);
-        FilledRectangle(Display.PixelWidth/4,   0, Display.PixelWidth/4, Display.PixelHeight, Colour.LightGray);
-        FilledRectangle(Display.PixelWidth/2,   0, Display.PixelWidth/4, Display.PixelHeight, Colour.DarkGray);
-        FilledRectangle(Display.PixelWidth*3/4, 0, Display.PixelWidth/4, Display.PixelHeight, Colour.Black);
+        FilledRectangle(0,    0, w, Display.PixelHeight, Colour.White);
+        FilledRectangle(pw4,  0, w, Display.PixelHeight, Colour.LightGray);
+        FilledRectangle(pw2,  0, w, Display.PixelHeight, Colour.DarkGray);
+        FilledRectangle(pw34, 0, w, Display.PixelHeight, Colour.Black);
         IO.WriteLn("  Resume");
         Display.Resume(); 
     }
@@ -98,11 +106,16 @@ program ThinkInkFeatherwing
     }
     
     {
+        //IsPortrait = true;
+        //FlipY = true;
         
+        FlipX = true;
+        FlipY = true;
         
-        DisplayDriver.IsPortrait = true;
-        //DisplayDriver.FlipX = true;
-        //DisplayDriver.FlipY = true;
+        DeviceDriver.SDCS = Board.GP29;
+        DeviceDriver.CS   = Board.SPI0SS;
+        DeviceDriver.DC   = Board.GP28;
+    
      
 #ifdef HAS_BUTTONS        
         PinISRDelegate buttonDelegate = ButtonISR;

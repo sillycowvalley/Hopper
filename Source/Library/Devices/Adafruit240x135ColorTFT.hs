@@ -23,17 +23,17 @@ unit DeviceDriver
     byte sdCS   = Board.GP7;  // SD
     byte blPin  = Board.GP8;  // backlight
     byte csPin  = Board.GP9;  // TFT
-    byte dcPin  = Board.GP10; // TFT
-    byte clkPin = Board.GP18;
-    byte txPin  = Board.GP19;
-    byte rxPin  = Board.GP20; // MISO - this is used for the SD card. It isn't used for the TFT display which is write-only. 
+    byte dcPin  = 10;         // TFT
+    byte clkPin = Board.SPI0SCK;
+    byte txPin  = Board.SPI0Tx;
+    byte rxPin  = Board.SPI0Rx; // MISO - this is used for the SD card. It isn't used for the TFT display which is write-only. 
     
     byte SPIController { get { return spiController; } set { spiController  = value;  } }
     byte SPISCK        { get { return clkPin;        } set { clkPin  = value;         } }
     byte SPITx         { get { return txPin;         } set { txPin   = value;         } }
     byte SPIRx         { get { return rxPin;         } set { rxPin   = value;         } }
-    byte SDCS          { get { return csPin;         } set { csPin = value;           } }
-    byte CS            { get { return tftCS;         } set { tftCS = value;           } }
+    byte SDCS          { get { return sdCS;          } set { sdCS = value;           } }
+    byte CS            { get { return csPin;         } set { csPin = value;           } }
     byte DC            { get { return dcPin;         } set { dcPin = value;           } }
     byte LIT           { get { return blPin;         } set { blPin = value;           } }
     

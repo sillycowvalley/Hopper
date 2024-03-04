@@ -87,8 +87,8 @@ program SH1107Demo
         //DisplayDriver.I2CSCLPin = 1;
         
         //FlipY = true;
-        FlipX = true;
-        //IsPortrait = true;
+        //FlipX = true;
+        IsPortrait = true;
         
         if (!Display.Begin())
         {
