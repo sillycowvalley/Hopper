@@ -215,6 +215,25 @@ namespace HopperNET
             }
             return b;
         }
+        public ushort Read(HopperArray buffer, ushort bufferSize)
+        {
+            ushort bytesRead = 0;
+            if (reading && isValid)
+            {
+                while ((pos < bytes.Length) && (bytesRead < bufferSize))
+                {
+                    buffer.Value[bytesRead] = bytes[pos];
+                    bytesRead++;
+                    pos++;
+                }
+            }
+            else
+            {
+                isValid = false;
+            }
+            return bytesRead;
+        }
+        
         public string ReadLine()
         {
             string ln = "";

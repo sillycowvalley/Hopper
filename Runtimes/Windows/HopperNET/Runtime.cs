@@ -5748,6 +5748,15 @@ namespace HopperNET
                                 Push(file.Read(seekpos), HopperType.tByte);
                                 break;
                             }
+                        case 2:
+                            {
+                                ushort bufferSize = (ushort)Pop();
+                                HopperArray buffer = (HopperArray)PopVariant(HopperType.tArray);
+                                HopperFile file = (HopperFile)PopVariant(HopperType.tFile);
+
+                                Push(file.Read(buffer, bufferSize), HopperType.tUInt);
+                                break;
+                            }
                         default:
 #if DEBUG
                             Diagnostics.ASSERT(false, "unexpected overload");

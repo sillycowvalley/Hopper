@@ -329,6 +329,7 @@ unit DebugCommand
         uint ppc;
         uint minpc = 32000;
         uint maxpc = 0;
+        uint ticks;
         long start;
         long elapsed;
         loop
@@ -373,8 +374,32 @@ unit DebugCommand
             {
                 break;
             }
+            ticks++;
+            if (ticks == 10240)
+            {
+                flushProfilerData(minpc, maxpc, lineTimes, lineHits);
+                ticks = 0;
+            }
         } // loop
+        if (ticks != 0)
+        {
+            flushProfilerData(minpc, maxpc, lineTimes, lineHits);
+        }
         
+        watchWindow();
+        Editor.SetActiveLine(0, "", false);
+        if (serialConnectionLost)
+        {
+            Editor.SetStatusBarText("Serial connection lost.");
+        }
+        else
+        {
+            Editor.SetStatusBarText("Program exited, session reset.");
+        }
+    }    
+    
+    flushProfilerData(uint minpc, uint maxpc, <uint,long> lineTimes, <uint,long> lineHits)
+    {
         if (DebugOptions.IsCaptureConsoleMode)
         {
             ConsoleCapture.AppendLineToLog("");
@@ -392,18 +417,7 @@ unit DebugCommand
             }
             ConsoleCapture.FlushLog();
         }
-        
-        watchWindow();
-        Editor.SetActiveLine(0, "", false);
-        if (serialConnectionLost)
-        {
-            Editor.SetStatusBarText("Serial connection lost.");
-        }
-        else
-        {
-            Editor.SetStatusBarText("Program exited, session reset.");
-        }
-    }    
+    }
     
 }
 

@@ -843,6 +843,32 @@ unit HopperVM
                         GC.Release(hrlong);       
                         Push(b, Type.Byte);  
                     }
+                    case 2:
+                    {
+                        Type ltype;
+                        uint bufferSize = Pop(ref ltype);
+                        Type atype;
+                        uint hrarray = Pop(ref atype);
+                        Type stype;
+                        uint hrfile = Pop(ref stype);
+#ifdef CHECKED
+                        AssertUInt(ltype, bufferSize);
+                        if (atype != Type.Array)
+                        {
+                            ErrorDump(108);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+                        if (stype != Type.File)
+                        {
+                            ErrorDump(108);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif       
+                        uint bytesRead = HRFile.Read(hrfile, hrarray, bufferSize);
+                        GC.Release(hrfile);       
+                        GC.Release(hrarray);       
+                        Push(bytesRead, Type.UInt);  
+                    }
                 }
             }
             case SysCalls.FileAppend:

@@ -32,23 +32,27 @@ unit DeviceDriver
     byte SPISCK        { get { return clkPin;        } set { clkPin  = value;         } }
     byte SPITx         { get { return txPin;         } set { txPin   = value;         } }
     byte SPIRx         { get { return rxPin;         } set { rxPin   = value;         } }
-    byte SDCS          { get { return sdCS;          } set { sdCS = value;           } }
+    byte SDCS          { get { return sdCS;          } set { sdCS = value;            } }
     byte CS            { get { return csPin;         } set { csPin = value;           } }
     byte DC            { get { return dcPin;         } set { dcPin = value;           } }
     byte LIT           { get { return blPin;         } set { blPin = value;           } }
     
     bool Begin()
     {
-        // https://learn.adafruit.com/adafruit-1-14-240x135-color-tft-breakout
-        
         // Settings for Hopper SD unit:
         SD.SPIController = spiController;
         SD.ClkPin = clkPin;
         SD.TxPin  = txPin;
         SD.RxPin  = rxPin;
-        SD.CSPin  = csPin; 
+        SD.CSPin  = sdCS; 
         
-        return Display.Begin();
+        _ = SD.Mount(); // let SD library initialize SPI before call to SPI.Begin() in DisplayDriver.begin()
+        
+        // https://learn.adafruit.com/adafruit-1-14-240x135-color-tft-breakout
+        bool success = Display.Begin(); // calls SPI.Begin(..)
+        
+        
+        return success;
     }
     
 }

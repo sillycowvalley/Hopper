@@ -40,15 +40,18 @@ unit DeviceDriver
     bool Begin()
     {
         // https://learn.adafruit.com/adafruit-mini-tft-0-dot-96-inch-180x60-breakout/wiring-test
-               
-        // Settings for Hopper SD unit:
-        SD.SPIController = spiController;
-        SD.ClkPin = clkPin;
-        SD.TxPin  = txPin;
-        SD.RxPin  = rxPin;
-        SD.CSPin  = sdCS; 
+        bool success = Display.Begin();
         
-        return Display.Begin();
+        if (success)        
+        {
+            // Settings for Hopper SD unit:
+            SD.SPIController = spiController;
+            SD.ClkPin = clkPin;
+            SD.TxPin  = txPin;
+            SD.RxPin  = rxPin;
+            SD.CSPin  = sdCS; 
+        }
+        return success;
     }
     
 }

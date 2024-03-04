@@ -420,6 +420,11 @@ unit External
         b = f.Read(seekpos);
         return f.IsValid();
     }
+    uint TryFileReadBuffer(uint hrpath, uint hrseekpos, uint hrbuffer, uint bufferSize)
+    {
+        ErrorDump(156); Error = 0x0A;
+        return 0;
+    }
     
     byte GetSegmentPages()
     {

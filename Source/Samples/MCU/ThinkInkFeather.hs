@@ -38,7 +38,6 @@ program ThinkInkFeatherwing
         IO.WriteLn(lorumIpsum);
         Screen.ForeColour = Colour.Black;
         EchoToLCD = false;
-        IO.WriteLn("  Resume");
         Display.Resume();
     }
     
@@ -58,7 +57,6 @@ program ThinkInkFeatherwing
         FilledRectangle(pw4,  0, w, Display.PixelHeight, Colour.LightGray);
         FilledRectangle(pw2,  0, w, Display.PixelHeight, Colour.DarkGray);
         FilledRectangle(pw34, 0, w, Display.PixelHeight, Colour.Black);
-        IO.WriteLn("  Resume");
         Display.Resume(); 
     }
     

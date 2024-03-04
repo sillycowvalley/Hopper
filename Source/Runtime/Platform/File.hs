@@ -235,6 +235,39 @@ unit HRFile
         }
         return address;
     }
+    uint Read(uint this, uint hrbuffer, uint bufferSize)
+    {
+        uint bytesRead;
+        loop
+        {
+            if ((ReadByte(this+fiValid) != 0) && (ReadByte(this+fiReading) != 0))
+            {
+                uint posLSW    = ReadWord(this+fiPos);
+                uint posMSW    = ReadWord(this+fiPos+2);
+                uint sizeLSW   = ReadWord(this+fiSize);
+                uint sizeMSW   = ReadWord(this+fiSize+2);
+                if (lt32(posLSW, posMSW, sizeLSW, sizeMSW)) // pos < size
+                {
+                    uint hrpos  = HRLong.FromBytes(ReadByte(this+fiPos+0), ReadByte(this+fiPos+1), 
+                                                   ReadByte(this+fiPos+2), ReadByte(this+fiPos+3));
+                    bytesRead = External.TryFileReadBuffer(ReadWord(this+fiPath), hrpos, hrbuffer, bufferSize);
+                    if (0 != bytesRead)
+                    {
+                        posLSW = HRLong.GetByte(hrpos, 0) + (HRLong.GetByte(hrpos, 1) << 8);
+                        posMSW = HRLong.GetByte(hrpos, 2) + (HRLong.GetByte(hrpos, 3) << 8);
+                        GC.Release(hrpos);
+                        WriteWord(this+fiPos,   posLSW);
+                        WriteWord(this+fiPos+2, posMSW);
+                        break;
+                    }
+                    GC.Release(hrpos);
+                }
+            }
+            WriteByte(this+fiValid, 0);
+            break;
+        } 
+        return bytesRead;
+    }
     byte Read(uint this)
     {
         byte b;

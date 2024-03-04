@@ -230,6 +230,46 @@ Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLengt
     return success;
 }
 
+UInt External_TryFileReadBuffer(UInt hrpath, UInt hrseekpos, UInt hrbuffer, UInt bufferSize)
+{
+    UInt bytesRead = 0;
+    long seekpos = nativeLongFromHopperLong(hrseekpos);
+
+    char pathBuffer[pathBufferSize];
+    HRPathToBuffer(hrpath, (char*)&pathBuffer);
+    
+    File f;
+    char * sdpath = isSDPath(pathBuffer);
+    if (nullptr != sdpath)
+    {
+        f = SDFS.open(sdpath, "r");
+    }
+    else
+    {
+        f = LittleFS.open(pathBuffer, "r");
+    }
+    if (f && !f.isDirectory()) 
+    {
+        if (f.seek(seekpos))
+        {
+            Byte * buffer = &dataMemoryBlock[hrbuffer + 5];
+            bytesRead = f.read(buffer, size_t(bufferSize));
+            if (bytesRead != 0)
+            {
+                seekpos += bytesRead;
+                Byte* bytes = (Byte*)(&seekpos);
+                dataMemoryBlock[hrseekpos + 2] = *(bytes + 0);
+                dataMemoryBlock[hrseekpos + 3] = *(bytes + 1);
+                dataMemoryBlock[hrseekpos + 4] = *(bytes + 2);
+                dataMemoryBlock[hrseekpos + 5] = *(bytes + 3);
+            }
+            f.close();
+        }
+    }
+    
+    return bytesRead;
+}
+
 Bool External_TryFileReadByte_R(UInt hrpath, UInt hrseekpos, Byte & b)
 {
     bool success = false;    
@@ -677,7 +717,7 @@ bool External_SDMount()
     sdSPI->setRX(sdRxPin);
     //sdSPI->setCS(sdCSPin);
         
-    SDFS.setConfig(SDFSConfig(sdCSPin, SPI_HALF_SPEED, *sdSPI));
+    SDFS.setConfig(SDFSConfig(sdCSPin, 4000000 /*SPI_HALF_SPEED*/, *sdSPI));
     sdMounted = SDFS.begin();
     return sdMounted;
 }

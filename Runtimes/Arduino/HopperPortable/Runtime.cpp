@@ -8,6 +8,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -4422,6 +4423,20 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             HopperVM_Push(b, Type::eByte);
             break;
         }
+        case 0x02:
+        {
+            Type ltype = (Type)0;
+            UInt bufferSize = HopperVM_Pop_R(ltype);
+            Type atype = (Type)0;
+            UInt hrarray = HopperVM_Pop_R(atype);
+            Type stype = (Type)0;
+            UInt hrfile = HopperVM_Pop_R(stype);
+            UInt bytesRead = HRFile_Read(hrfile, hrarray, bufferSize);
+            GC_Release(hrfile);
+            GC_Release(hrarray);
+            HopperVM_Push(bytesRead, Type::eUInt);
+            break;
+        }
         } // switch
         break;
     }
@@ -7194,6 +7209,39 @@ Byte HRFile_Read(UInt _this, UInt hrseekpos)
         break;;
     }
     return b;
+}
+
+UInt HRFile_Read(UInt _this, UInt hrbuffer, UInt bufferSize)
+{
+    UInt bytesRead = 0;
+    for (;;)
+    {
+        if ((Memory_ReadByte(_this + 2) != 0x00) && (Memory_ReadByte(_this + 3) != 0x00))
+        {
+            UInt posLSW = Memory_ReadWord(_this + 8);
+            UInt posMSW = Memory_ReadWord(_this + 8 + 0x02);
+            UInt sizeLSW = Memory_ReadWord(_this + 14);
+            UInt sizeMSW = Memory_ReadWord(_this + 14 + 0x02);
+            if (HRFile_lt32(posLSW, posMSW, sizeLSW, sizeMSW))
+            {
+                UInt hrpos = HRLong_FromBytes(Memory_ReadByte(_this + 8 + 0x00), Memory_ReadByte(_this + 8 + 0x01), Memory_ReadByte(_this + 8 + 0x02), Memory_ReadByte(_this + 8 + 0x03));
+                bytesRead = External_TryFileReadBuffer(Memory_ReadWord(_this + 6), hrpos, hrbuffer, bufferSize);
+                if (0x00 != bytesRead)
+                {
+                    posLSW = HRLong_GetByte(hrpos, 0x00) + (HRLong_GetByte(hrpos, 0x01) << 0x08);
+                    posMSW = HRLong_GetByte(hrpos, 0x02) + (HRLong_GetByte(hrpos, 0x03) << 0x08);
+                    GC_Release(hrpos);
+                    Memory_WriteWord(_this + 8, posLSW);
+                    Memory_WriteWord(_this + 8 + 0x02, posMSW);
+                    break;;
+                }
+                GC_Release(hrpos);
+            }
+        }
+        Memory_WriteByte(_this + 2, 0x00);
+        break;;
+    }
+    return bytesRead;
 }
 
 void HRFile_Append(UInt _this, UInt hrstr)

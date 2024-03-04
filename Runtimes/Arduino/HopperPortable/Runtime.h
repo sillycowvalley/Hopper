@@ -831,6 +831,7 @@ UInt HRFile_Clone(UInt original);
 Bool HRFile_IsValid(UInt _this);
 UInt HRFile_ReadLine(UInt _this);
 Byte HRFile_Read(UInt _this, UInt hrseekpos);
+UInt HRFile_Read(UInt _this, UInt hrbuffer, UInt bufferSize);
 void HRFile_Append(UInt _this, UInt hrstr);
 UInt HRFile_GetTimeStamp(UInt path);
 UInt HRFile_GetTime(UInt path);

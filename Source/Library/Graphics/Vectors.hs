@@ -1,195 +1,177 @@
 unit Vectors
 {
     uses "/Source/Library/Display"
-    uses "/Source/Library/Graphics/Canvas"
+    int width;
+    int height;
+    uint backColour;
     
-    bool Load(string path, ref <char> commands, ref < <float> > coords)
+    int Width { get { return width; } }
+    int Height { get { return height; } }
+    uint BackColour { get { return backColour; } }
+    
+    string vectorsPath;
+    bool binaryMode;
+    
+    
+    bool Header(string path)
     {
-        bool success;
-        commands.Clear();
-        coords.Clear();
+        bool success = false;
         loop
         {
-            file dataFile = File.Open(path);
-            loop
+            vectorsPath = path;
+            binaryMode = path.EndsWith(".bin");
+            file f = File.Open(path);
+            if (!f.IsValid()) { break; }
+            
+            if (binaryMode)
             {
-                string content = dataFile.ReadLine();
-                if (!dataFile.IsValid()) { break; }
-                if (content.Length == 0) { break; }
-                success = true;
-                char command = content[0];
-                content = content.Substring(1);
-                String.Trim(ref content);
-                <float> arguments;
-                switch (command)
+                byte[16] buffer;
+                uint bytesRead = f.Read(buffer, 16);
+                width  = int(buffer[0] + (buffer[1] << 8));
+                height = int(buffer[2] + (buffer[3] << 8));
+                if (!f.IsValid()) { break; }
+                char recordType = char(buffer[4]);
+                if ((recordType == 'p') && (bytesRead > 10))
                 {
-                    case 'c':
-                    case 'm':
-                    case 'M':
-                    case 'h':
-                    case 'H':
-                    case 'v':
-                    case 'V':
-                    case 'l':
-                    case 'L':
-                    {
-                        <string> parts = content.Split(" ,");
-                        foreach (var part in parts)
-                        {
-                            if (part == ",") { continue; }
-                            float fl;
-                            if (!Float.TryParse(part, ref fl))
-                            {
-                                success = false;
-                                break;
-                            }
-                            arguments.Append(fl);
-                        }
-                    }
-                    case 'z':
-                    case 'Z':
-                    {
-                    }
-                    default:
-                    {
-                        success = false;
-                        break; // unsupported command
-                    }
+                    backColour = uint(buffer[9] + (buffer[10] << 8));
                 }
-                commands.Append(command);
-                coords.Append(arguments);
+                else if ((recordType == 'h') && (bytesRead > 12))
+                {
+                    backColour = uint(buffer[11] + (buffer[12]  << 8));
+                }
+                else
+                {
+                    break;
+                }
+                
+                if (!f.IsValid()) { break; }
             }
+            else
+            {
+                string header = f.ReadLine();
+                if (!f.IsValid()) { break; }
+                if (!header.StartsWith("sz:")) { break; }
+                header = header.Substring(3);
+                <string> parts = header.Split(',');
+                if ((parts.Count != 2) || !Int.TryParse(parts[0], ref width) || !Int.TryParse(parts[1], ref height)) { break; }
+                
+                string first  = f.ReadLine();
+                if (!f.IsValid()) { break; }
+                
+                if (first.StartsWith("p:"))
+                {
+                    parts = first.Split(',');
+                    if ((parts.Count != 3) || !UInt.TryParse(parts[2], ref backColour)) { break; }
+                }
+                else if (first.StartsWith("h:"))
+                {
+                    parts = first.Split(',');
+                    if ((parts.Count != 4) || !UInt.TryParse(parts[3], ref backColour)) { break; }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            
             success = true;
             break;
         }
         return success;
     }
-    Extents(< <float> > coordsList, ref float minX, ref float minY, ref float maxX, ref float maxY)
+    
+    uint bufferBytes;
+    uint bufferCurrent;
+    byte[1024] readBuffer;
+    
+    byte GetBufferByte(file f)
     {
-        bool first = true;
-        foreach (var coords in coordsList)
+        if (bufferCurrent >= bufferBytes)
         {
-            uint length = coords.Length;
-            if (length == 0) { continue; }
-            if (first)
+            bufferBytes = f.Read(readBuffer, 1024);
+            bufferCurrent = 0;
+            if (bufferBytes == 0)
             {
-                minX = coords[0];
-                maxX = coords[0];
-                minY = coords[1];
-                maxY = coords[1];
-                first = false;
+                return 0;
             }
-            for (uint i = 2; i < length; i+= 2)
-            {
-                float x = coords[i];
-                float y = coords[i+1];
-                
-                minX = Float.Min(minX, x);
-                minY = Float.Min(minY, y);
-                maxX = Float.Max(maxX, x);
-                maxY = Float.Max(maxY, y);
-            }    
         }
+        byte b = readBuffer[bufferCurrent];
+        bufferCurrent++;
+        return b;
     }
-    Line(float x0, float y0, float x1, float y1)
+    
+    Render(int dx, int dy)
     {
-        Display.Line(Canvas.ToX(x0), Canvas.ToY(y0), Canvas.ToY(x0), Canvas.ToY(y0), Screen.ForeColour);
-    }
-    Render(<char> commandsList, < <float> > coordsList)
-    {
-        uint count = commandsList.Length;
-        float currentX;
-        float currentY;
-        float startX;
-        float startY;
-        for (uint i = 0; i < count; i++)
+        file f = File.Open(vectorsPath);
+        int sx; int ex; int sy;
+        uint colour;
+        
+        
+        if (binaryMode)
         {
-            char   command = commandsList[i];
-            <float> coords = coordsList[i];
-            switch (command)
+            _ = GetBufferByte(f);
+            _ = GetBufferByte(f);
+            _ = GetBufferByte(f);
+            _ = GetBufferByte(f);
+            loop
             {
-                case 'm':
+                char recordType = char(GetBufferByte(f));
+                if (recordType == 'p')
                 {
-                    currentX += coords[0];
-                    currentY += coords[1];
+                    sx = int(GetBufferByte(f) + GetBufferByte(f) << 8);
+                    ex = sx;
+                    sy = int(GetBufferByte(f) + GetBufferByte(f) << 8);
                 }
-                case 'M':
+                else if (recordType == 'h')
                 {
-                    currentX = coords[0];
-                    currentY = coords[1];
+                    sx = int(GetBufferByte(f) + GetBufferByte(f) << 8);
+                    ex = int(GetBufferByte(f) + GetBufferByte(f) << 8);
+                    sy = int(GetBufferByte(f) + GetBufferByte(f) << 8);
                 }
-                case 'L':
+                else
                 {
-                    Vectors.Line(currentX, currentY, coords[0], coords[1]);
-                    currentX = coords[0];
-                    currentY = coords[1];
+                    break;
                 }
-                case 'l':
+                colour = uint(GetBufferByte(f) + (GetBufferByte(f) << 8));
+                if (!f.IsValid()) { break; }
+                Display.HorizontalLine(sx+dx, sy+dy, ex+dx, colour);
+            }
+        }
+        else
+        {
+            _ = f.ReadLine(); // header
+            loop
+            {
+                string command = f.ReadLine();
+                if (!f.IsValid()) { break; }
+                uint iColon;
+                if (command.IndexOf(':', ref iColon))
                 {
-                    Vectors.Line(currentX, currentY, currentX+coords[0], currentY+coords[1]);
-                    currentX += coords[0];
-                    currentY += coords[1];
-                }
-                case 'H':
-                {
-                    Vectors.Line(currentX, currentY, coords[0], currentY);
-                    currentX = coords[0];
-                }
-                case 'h':
-                {
-                    Vectors.Line(currentX, currentY, currentX+coords[0], currentY);
-                    currentX += coords[0];
-                }
-                case 'V':
-                {
-                    Vectors.Line(currentX, currentY, currentX, coords[0]);
-                    currentY = coords[0];
-                }
-                case 'v':
-                {
-                    Vectors.Line(currentX, currentY, currentX, currentY+coords[0]);
-                    currentY += coords[0];
-                }
-                case 'C':
-                {
-                    uint length = coords.Length;
-                    startX = coords[0];
-                    startY = coords[1];
-                    uint i = 0;
-                    loop
+                    string arguments = command.Substring(iColon+1);
+                    command = command.Substring(0, iColon);
+                    <string> parts = arguments.Split(',');
+                    switch (command)
                     {
-                        if (i == length) { break; }
-                        
-                        Vectors.Line(currentX, currentY, coords[i], coords[i+1]);
-                        currentX = coords[i];
-                        currentY = coords[i+1];
-                    
-                        i += 2;
+                        case "p":
+                        {
+                            _ = Int.TryParse(parts[0], ref sx);                        
+                            _ = Int.TryParse(parts[1], ref sy);
+                            ex = sx;
+                            _ = UInt.TryParse(parts[2], ref colour);
+                        }
+                        case "h":
+                        {
+                            _ = Int.TryParse(parts[0], ref sx);                        
+                            _ = Int.TryParse(parts[1], ref ex);                        
+                            _ = Int.TryParse(parts[2], ref sy);
+                            _ = UInt.TryParse(parts[3], ref colour);
+                        }
+                        default:
+                        {
+                            continue;
+                        }
                     }
-                }
-                case 'c':
-                {
-                    uint length = coords.Length;
-                    startX = currentX + coords[0];
-                    startY = currentY + coords[1];
-                    uint i = 0;
-                    loop
-                    {
-                        if (i == length) { break; }
-                        
-                        Vectors.Line(currentX, currentY, currentX+coords[i], currentY+coords[i+1]);
-                        currentX += coords[i];
-                        currentY += coords[i+1];
-                    
-                        i += 2;
-                    }
-                }
-                case 'z':
-                case 'Z':
-                {
-                    Vectors.Line(currentX, currentY, startX, startY);
-                    currentX = startX;
-                    currentY = startY;
+                    Display.HorizontalLine(sx+dx, sy+dy, ex+dx, colour);
                 }
             }
         }

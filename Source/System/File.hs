@@ -14,6 +14,7 @@ unit File
     string ReadLine(file this) system;
     byte Read(file this) system;
     byte Read(file this, long seekPosition) system;
+    uint Read(file this, byte[] data, uint bufferSize) library;
     
     file Create(string fullpath) system;
     Append(file this, byte content) system;
