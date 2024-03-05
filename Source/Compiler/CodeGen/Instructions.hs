@@ -1,7 +1,7 @@
 unit Instructions
 {
-    uses "/Source/Compiler/Tokens/SysCalls"
-    uses "/Source/Compiler/Tokens/LibCalls"
+    uses "../Tokens/SysCalls"
+    uses "../Tokens/LibCalls"
     
     enum Instruction
     {

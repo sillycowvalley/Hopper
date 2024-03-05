@@ -1,9 +1,9 @@
 unit EditControl
 {
-    uses "/Source/System/System"
-    uses "/Source/System/Screen"
+    uses "System"
+    uses "Screen"
 #ifndef SERIAL_CONSOLE
-    uses "/Source/System/Keyboard"
+    uses "Keyboard"
 #endif    
     
     delegate bool ValidEditCharacter(char c);

@@ -1,6 +1,6 @@
 unit Screen
 {
-    uses "/Source/System/Colour"
+    uses "Colour"
 
     byte CursorX { get system; }
     byte CursorY { get system; }

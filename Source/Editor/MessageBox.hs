@@ -3,13 +3,14 @@ unit MessageBox
     uses "/Source/System/Keyboard"
     uses "/Source/System/Screen"
     uses "/Source/System/System"
-    uses "/Source/Editor/Panel"
-    uses "/Source/Editor/Commands"
-    uses "/Source/Editor/Editor"
     uses "/Source/System/Diagnostics"
-    uses "/Source/Compiler/Tokens/Token"
     
-    uses "/Source/Editor/Highlighter"
+    uses "Panel"
+    uses "Commands"
+    uses "Editor"
+    uses "Highlighter"
+    
+    uses "/Source/Compiler/Tokens/Token"
     
     delegate bool ValidationDelegate(string content);
     

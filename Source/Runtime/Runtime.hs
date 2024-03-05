@@ -6,34 +6,34 @@ program Runtime
 #define RUNTIME       // workaround special clipboard buffer for testing on Windows (that works without String)
 #define SERIAL_CONSOLE // Source/System/IO uses serial only (for MCU's etc)
 
-    uses "/Source/Runtime/Emulation/Minimal" // minimal use of actual 'system' APIs
-    uses "/Source/Runtime/Emulation/Memory"
+    uses "Emulation/Minimal" // minimal use of actual 'system' APIs
+    uses "Emulation/Memory"
     
-    uses "/Source/Runtime/Platform/OpCodes"
-    uses "/Source/Runtime/Platform/SysCalls"
-    uses "/Source/Runtime/Platform/Types"
+    uses "Platform/OpCodes"
+    uses "Platform/SysCalls"
+    uses "Platform/Types"
     
-    uses "/Source/Runtime/Platform/GC"
-    uses "/Source/Runtime/Platform/Array"
-    uses "/Source/Runtime/Platform/Dictionary"
-    uses "/Source/Runtime/Platform/Directory"
-    uses "/Source/Runtime/Platform/File"
-    uses "/Source/Runtime/Platform/Float"
-    uses "/Source/Runtime/Platform/Int"
-    uses "/Source/Runtime/Platform/List"
-    uses "/Source/Runtime/Platform/Long"
-    uses "/Source/Runtime/Platform/Pair"
-    uses "/Source/Runtime/Platform/Char"
-    uses "/Source/Runtime/Platform/Byte"
-    uses "/Source/Runtime/Platform/String"
-    uses "/Source/Runtime/Platform/UInt"
-    uses "/Source/Runtime/Platform/Variant"
+    uses "Platform/GC"
+    uses "Platform/Array"
+    uses "Platform/Dictionary"
+    uses "Platform/Directory"
+    uses "Platform/File"
+    uses "Platform/Float"
+    uses "Platform/Int"
+    uses "Platform/List"
+    uses "Platform/Long"
+    uses "Platform/Pair"
+    uses "Platform/Char"
+    uses "Platform/Byte"
+    uses "Platform/String"
+    uses "Platform/UInt"
+    uses "Platform/Variant"
     
-    uses "/Source/Runtime/Platform/External"
-    uses "/Source/Runtime/Platform/Instructions"
-    uses "/Source/Runtime/Platform/Library"
+    uses "Platform/External"
+    uses "Platform/Instructions"
+    uses "Platform/Library"
     
-    uses "/Source/Runtime/HopperVM"
+    uses "HopperVM"
     
     // Zero Page FLAGS:
     flags HopperFlags

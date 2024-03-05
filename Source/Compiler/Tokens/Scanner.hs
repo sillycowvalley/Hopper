@@ -3,7 +3,7 @@ unit Scanner
 
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
-    uses "/Source/Compiler/Tokens/Token"
+    uses "Token"
 
     <string> sourceLines;
     long currentPos;

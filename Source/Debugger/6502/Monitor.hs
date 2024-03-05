@@ -2,7 +2,8 @@ unit Monitor
 {
     uses "/Source/System/IO"
     uses "/Source/Debugger/Source"
-    uses "/Source/Debugger/6502/Pages"
+    
+    uses "Pages"
     
     bool collectOutput;
     string serialOutput;

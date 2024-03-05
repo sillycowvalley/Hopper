@@ -1,7 +1,7 @@
 program Help
 {
 //#define SERIAL_CONSOLE
-    uses "/Source/Shell/Common"
+    uses "Common"
     
     {
         <string> args = Arguments;

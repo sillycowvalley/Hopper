@@ -1,6 +1,6 @@
 unit HRFile
 {
-    uses "/Source/Runtime/Platform/External"
+    uses "External"
     
     // File memory map:
     //   0000 heap allocator size

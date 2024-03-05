@@ -2,8 +2,8 @@ unit Output
 {
     uses "/Source/System/Screen"
     
-    uses "/Source/Debugger/Source"
-    uses "/Source/Debugger/6502/Pages"
+    uses "Source"
+    uses "6502/Pages"
     
     uses "/Source/Editor/Highlighter"
     uses "/Source/Editor/MessageBox"

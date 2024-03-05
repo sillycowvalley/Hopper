@@ -2,10 +2,10 @@ unit Symbols
 {
 
     uses "/Source/System/System"
-    uses "/Source/Compiler/JSON/JSON"
-    uses "/Source/Compiler/Types"
-    uses "/Source/Compiler/Tokens/SysCalls"
-    uses "/Source/Compiler/Tokens/LibCalls"
+    uses "JSON/JSON"
+    uses "Types"
+    uses "Tokens/SysCalls"
+    uses "Tokens/LibCalls"
     
     // globals
     <string> gNames;

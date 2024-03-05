@@ -1,7 +1,7 @@
 program Command
 {
 //#define SERIAL_CONSOLE
-    uses "/Source/Shell/Common"
+    uses "Common"
     
     string Name                 { get { return "CD";  } }
     string Description          { get { return "display the name of or change the current directory (alias CHDIR)"; } }

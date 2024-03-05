@@ -1,10 +1,10 @@
 unit Library
 {
-    uses "/Source/Runtime/Platform/LibCalls"
-    uses "/Source/Runtime/Platform/Wire"
-    uses "/Source/Runtime/Platform/SPI"
-    uses "/Source/Runtime/Platform/NeoPixel"
-    uses "/Source/Runtime/Platform/External"
+    uses "LibCalls"
+    uses "Wire"
+    uses "SPI"
+    uses "NeoPixel"
+    uses "External"
     
     enum HopperPinStatus
     {

@@ -1,7 +1,7 @@
 unit Expression
 {
     
-    uses "/Source/Languages/Basic/HopperCode"  // code related to Hopper VM byte code
+    uses "HopperCode"  // code related to Hopper VM byte code
     
     ExpressionType ParsePrimary(ref string eContent)
     {

@@ -6,16 +6,15 @@ program PreProcess
   uses "/Source/System/Diagnostics"
   uses "/Source/System/Screen"
   uses "/Source/System/Keyboard"
-  uses "/Source/Compiler/Tokens/Token"
-  uses "/Source/Compiler/Tokens/Scanner"
-  uses "/Source/Compiler/Tokens/Parser"
-  uses "/Source/Compiler/Tokens/SysCalls"
-  uses "/Source/Compiler/Tokens/LibCalls"
-  uses "/Source/Compiler/Symbols"
-   
-  uses "/Source/Compiler/Constant"
+  uses "Tokens/Token"
+  uses "Tokens/Scanner"
+  uses "Tokens/Parser"
+  uses "Tokens/SysCalls"
+  uses "Tokens/LibCalls"
   
-  uses "/Source/Compiler/Directives" 
+  uses "Symbols"
+  uses "Constant"
+  uses "Directives" 
   
   bool isExperimental;
   bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
@@ -30,6 +29,7 @@ program PreProcess
   // - drop << and >> tokens? synthesize them when needed? or, deal with them in the context of types?
   // - block comments aware of strings ("...*/...")
     
+    string projectPath;
     <string, bool> unitsParsed;
     string programNamespace;
         
@@ -581,7 +581,7 @@ program PreProcess
         enumDeclaration(true);
     }   
     
-    usesDeclaration()
+    usesDeclaration(string sourcePath)
     {
         loop
         {
@@ -606,6 +606,45 @@ program PreProcess
             if (!hsPathLower.EndsWith(".hs"))
             {
                 hsPath = hsPath + ".hs";
+            }
+            if (!File.Exists(hsPath))
+            {
+                string tryFile = hsPath;
+                uint removeLevels = 0;
+                if (tryFile.StartsWith("./"))
+                {
+                    tryFile = tryFile.Substring(2);
+                }
+                while (tryFile.StartsWith("../"))
+                {
+                    tryFile = tryFile.Substring(3);
+                    removeLevels++;
+                }
+                if (!tryFile.StartsWith("/"))
+                {
+                    // first try relative to current source file:
+                    string currentDirectory = Path.GetDirectoryName(sourcePath);
+                    while (removeLevels > 0)
+                    {
+                        currentDirectory = Path.GetDirectoryName(currentDirectory);
+                        removeLevels--;
+                    }
+                    string tryPath = Path.Combine(currentDirectory, tryFile);
+                    if (File.Exists(tryPath))
+                    {
+                        hsPath = tryPath;
+                    }
+                    else
+                    {
+                        // then try relative to main project file
+                        string projectDirectory = Path.GetDirectoryName(projectPath);
+                        tryPath = Path.Combine(projectDirectory, tryFile);
+                        if (File.Exists(tryPath))
+                        {
+                            hsPath = tryPath;
+                        }
+                    }
+                }
             }
             if (!File.Exists(hsPath))
             {
@@ -1056,7 +1095,7 @@ program PreProcess
         } // loop
     }
     
-    declaration(ref uint curlyDeclarations, ref string lastID)
+    declaration(ref uint curlyDeclarations, ref string lastID, string sourcePath)
     {
         bool isDelegate;
         lastID = "";
@@ -1154,7 +1193,7 @@ program PreProcess
                 }
                 else
                 {
-                    usesDeclaration();
+                    usesDeclaration(sourcePath);
                 }
             }
             else
@@ -1371,7 +1410,7 @@ program PreProcess
                   success = false;
                   break;
               }
-              declaration(ref curlyDeclarations, ref lastID);
+              declaration(ref curlyDeclarations, ref lastID, sourcePath);
               if (Parser.HadError)
               {
                   success = false;
@@ -1504,7 +1543,7 @@ program PreProcess
               break;
           }
           bool sourceFound;
-          string sourcePath = args[0];
+          projectPath = args[0];
           string ext = ".hs";
           string codePath = args[0];
           
@@ -1517,7 +1556,7 @@ program PreProcess
           sourceFolders.Append("/Source/Testing/");
           foreach (var sourceFolder in sourceFolders)
           {
-              if (File.Exists(ref sourcePath, ref ext, sourceFolder))
+              if (File.Exists(ref projectPath, ref ext, sourceFolder))
               {
                   sourceFound = true;
                   break;
@@ -1528,13 +1567,13 @@ program PreProcess
               BadArguments();
               break;
           }
-          sourcePath = Path.GetFullPath(sourcePath);
+          projectPath = Path.GetFullPath(projectPath);
           
           long startTime = Millis;
           loop
           {
-              string extension = Path.GetExtension(sourcePath);
-              string jsonPath  = sourcePath.Replace(extension, ".json");
+              string extension = Path.GetExtension(projectPath);
+              string jsonPath  = projectPath.Replace(extension, ".json");
               jsonPath = Path.GetFileName(jsonPath);
               jsonPath = Path.Combine("/Debug/Obj/", jsonPath);
               if (File.Exists(jsonPath))
@@ -1542,7 +1581,7 @@ program PreProcess
                   // delete previous so no output on error
                   File.Delete(jsonPath); 
               }
-              if (!buildSymbols(sourcePath, cliSymbols))
+              if (!buildSymbols(projectPath, cliSymbols))
               {
                  // error!
                  break;

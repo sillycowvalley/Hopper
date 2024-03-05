@@ -7,25 +7,25 @@ program Compile
     uses "/Source/System/Diagnostics"
     uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
-    uses "/Source/Compiler/Tokens/Token"
     
-    uses "/Source/Compiler/Tokens/Scanner"
-    uses "/Source/Compiler/Tokens/Parser"
-    uses "/Source/Compiler/Tokens/SysCalls"
-    uses "/Source/Compiler/Tokens/LibCalls"
-    uses "/Source/Compiler/Symbols"
+    uses "Tokens/Token"
+    uses "Tokens/Scanner"
+    uses "Tokens/Parser"
+    uses "Tokens/SysCalls"
+    uses "Tokens/LibCalls"
+
+    uses "Symbols"
+    uses "Types"
+    uses "Expression"
+    uses "Constant"
+    uses "Record"
     
-    uses "/Source/Compiler/Types"
-    uses "/Source/Compiler/Expression"
-    uses "/Source/Compiler/Constant"
-    uses "/Source/Compiler/Record"
+    uses "Directives"
     
-    uses "/Source/Compiler/Directives"
-    
-    uses "/Source/Compiler/CodeGen/Instructions"
-    uses "/Source/Compiler/CodeGen/CodeStream"
-    uses "/Source/Compiler/CodeGen/Peephole"
-    uses "/Source/Compiler/CodeGen/Block"
+    uses "CodeGen/Instructions"
+    uses "CodeGen/CodeStream"
+    uses "CodeGen/Peephole"
+    uses "CodeGen/Block"
     
     bool IsDebugger { get { return false; } }
     

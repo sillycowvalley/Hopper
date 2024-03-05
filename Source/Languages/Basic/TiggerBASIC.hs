@@ -24,15 +24,15 @@ program TiggerBASIC
     
     uses "/Source/System/IO"         // write either to Screen or Screen and Serial, read from Keyboard or Keyboard and Serial
     
-    uses "/Source/Languages/Basic/Errors"
+    uses "Errors"
     
-    uses "/Source/Languages/Basic/HopperCode"  // code related to Hopper VM byte code
-    uses "/Source/Languages/Basic/Memory"      // support for TOP, ?160, and the PEEK and POKE functionality (! and ?)
-    uses "/Source/Languages/Basic/Platform"    // helper methods called from the VM byte code
+    uses "HopperCode"  // code related to Hopper VM byte code
+    uses "Memory"      // support for TOP, ?160, and the PEEK and POKE functionality (! and ?)
+    uses "Platform"    // helper methods called from the VM byte code
     
-    uses "/Source/Languages/Basic/Source"      // source code lines
-    uses "/Source/Languages/Basic/Expression"  // recursive descent expression parser
-    uses "/Source/Languages/Basic/Tokenizer"   // the rest of the parser
+    uses "Source"      // source code lines
+    uses "Expression"  // recursive descent expression parser
+    uses "Tokenizer"   // the rest of the parser
 
     bool Debug // Hopper optimizer does constant folding and dead code removal using this:
     {

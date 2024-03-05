@@ -3,13 +3,13 @@ unit Commands
     uses "/Source/System/System"
     uses "/Source/System/Keyboard"
 
-    uses "/Source/Editor/Commands/ExitCommand"
+    uses "Commands/ExitCommand"
 #ifdef DEBUGGER
-    uses "/Source/Debugger/DebugCommand"
-    uses "/Source/Debugger/DebugOptions"
+    uses "DebugCommand"
+    uses "DebugOptions"
 #else
-    uses "/Source/Editor/Commands/BuildCommand"
-    uses "/Source/Editor/Commands/BuildOptions"
+    uses "Commands/BuildCommand"
+    uses "Commands/BuildOptions"
 #endif    
     
     delegate CommandExecuteDelegate();

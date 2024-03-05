@@ -4,8 +4,6 @@ unit BuildCommand
     uses "/Source/System/Runtime"
     uses "/Source/System/Screen"
     uses "/Source/System/Serial"
-    uses "/Source/Editor/Commands"
-    uses "/Source/Editor/Editor"
     
     // for DefineExists to see which platform to CODEGEN for
     uses "/Source/Compiler/JSON/JSON"

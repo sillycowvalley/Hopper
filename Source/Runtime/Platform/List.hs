@@ -1,7 +1,7 @@
 unit HRList
 {
-    uses "/Source/Runtime/Platform/GC"
-    uses "/Source/Runtime/Platform/Variant"
+    uses "GC"
+    uses "Variant"
 
 // List memory map:
 //   0000 heap allocator size

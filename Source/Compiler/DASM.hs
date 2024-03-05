@@ -6,16 +6,16 @@ program DASM
     uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
     
-    uses "/Source/Compiler/JSON/JSON"
-    uses "/Source/Compiler/JSON/Code"
+    uses "JSON/JSON"
+    uses "JSON/Code"
     
-    uses "/Source/Compiler/CodeGen/Instructions"
+    uses "CodeGen/Instructions"
     
-    uses "/Source/Compiler/Tokens/Token"
-    uses "/Source/Compiler/Tokens/Scanner"
-    uses "/Source/Compiler/Tokens/SysCalls"
-    uses "/Source/Compiler/Tokens/LibCalls"
-    uses "/Source/Compiler/Tokens/Parser"
+    uses "Tokens/Token"
+    uses "Tokens/Scanner"
+    uses "Tokens/SysCalls"
+    uses "Tokens/LibCalls"
+    uses "Tokens/Parser"
     
     bool extendedCodeSegment;
     

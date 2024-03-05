@@ -6,11 +6,11 @@ unit Minimal
     uses  "/Source/System/Int"
     uses  "/Source/System/IO"
     
-    uses "/Source/Runtime/Emulation/System"
-    uses "/Source/Runtime/Emulation/Diagnostics"
-    uses "/Source/Runtime/Emulation/Time"
-    uses "/Source/Runtime/Emulation/Long"
-    uses "/Source/Runtime/Emulation/Float"
+    uses "System"
+    uses "Diagnostics"
+    uses "Time"
+    uses "Long"
+    uses "Float"
     
     byte error;
     byte Error 

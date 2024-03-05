@@ -3,15 +3,16 @@ unit Editor
     uses "/Source/System/Keyboard"
     uses "/Source/System/Screen"
     uses "/Source/System/Clipboard"
-    uses "/Source/Editor/TextBuffer"
-    uses "/Source/Compiler/Tokens/Token"
-    uses "/Source/Editor/StatusBar"
-    uses "/Source/Editor/MenuBar"
-    uses "/Source/Editor/MessageBox"
-    uses "/Source/Editor/Highlighter"
     uses "/Source/System/Diagnostics"
-    uses "/Source/Editor/ClickStack"
     
+    uses "TextBuffer"
+    uses "StatusBar"
+    uses "MenuBar"
+    uses "MessageBox"
+    uses "Highlighter"
+    uses "ClickStack"
+    
+    uses "/Source/Compiler/Tokens/Token"
     uses "/Source/Compiler/Tokens/Dependencies"
 
 #ifdef DEBUGGER
@@ -235,7 +236,8 @@ unit Editor
         string selectedWord;
         if (HasOneLineSelection())
         {
-            string text = GetSelectedText();
+            string usesLine;
+            string text = GetSelectedText(ref usesLine);
             selectedWord = text;
         }
         return selectedWord;
@@ -362,11 +364,13 @@ unit Editor
         return false;
     }
     
-    string GetSelectedText()
+    string GetSelectedText(ref string usesLine)
     {
         string text = "";
         bool wasSelected = false;
         uint lineCount = TextBuffer.GetLineCount();
+        uint firstLine;
+        uint lastLine;
         for (uint row = 0; row < lineCount; row++)
         {
             string ln = TextBuffer.GetLine(row);
@@ -381,8 +385,21 @@ unit Editor
                         text = text + char(0x0A);
                     }
                     text = text + ln[column];
+                    if (!wasSelected)
+                    {      
+                        firstLine = row;
+                    }
+                    lastLine = row;
                 }
                 wasSelected = isSelected;
+            }
+        }
+        if (firstLine == lastLine)
+        {
+            string selectionLine = (TextBuffer.GetLine(firstLine)).Trim();
+            if (selectionLine.StartsWith("uses"))
+            {
+                usesLine = selectionLine;
             }
         }
         return text;
@@ -1501,18 +1518,12 @@ unit Editor
             }
             if ((Key.Click == unmaskedKey) && ClickDouble && HasOneLineSelection())
             {
-                string candidate = GetSelectedText();
-                if (candidate.Contains("/"))
+                string usesLine;
+                string candidate = GetSelectedText(ref usesLine);
+                if (usesLine.Length != 0)
                 {
-                    string extension = Path.GetExtension(candidate);
-                    if (extension == ".")
-                    {
-                        if (isHopperSource)
-                        {
-                            candidate = candidate + ".hs";
-                        }
-                    }
-                    if (File.Exists(candidate))
+                    candidate = ResolveUsesPath(usesLine, candidate);
+                    if (candidate.Length != 0)
                     {
                         if (Editor.CanUndo())
                         {
@@ -1522,13 +1533,82 @@ unit Editor
                         {
                             Editor.LoadFile(candidate); // just open it
                         }
-                        
                     }
                 }
             }
             return true; // used this key
         }
         return false;
+    }
+    string ResolveUsesPath(string usesLine, string hsPath)
+    {
+        if (usesLine.Contains("\".." + hsPath + '"'))
+        {
+            hsPath = ".." + hsPath; // leading '..' not selected by double-click
+        }
+        else if (usesLine.Contains("\"." + hsPath + '"'))
+        {
+            hsPath = "." + hsPath; // leading '.' not selected by double-click
+        }
+        if (!usesLine.Contains('"' + hsPath + '"'))
+        {
+            return "";
+        }
+        
+        string extension = Path.GetExtension(hsPath);
+        if (extension == ".")
+        {
+            if (isHopperSource)
+            {
+                hsPath = hsPath + ".hs";
+            }
+        }
+        
+        // same search path logic as in usesDeclaration(..) in PreProcess
+        if (!File.Exists(hsPath))
+        {
+            string tryFile = hsPath;
+            uint removeLevels = 0;
+            if (tryFile.StartsWith("./"))
+            {
+                tryFile = tryFile.Substring(2);
+            }
+            while (tryFile.StartsWith("../"))
+            {
+                tryFile = tryFile.Substring(3);
+                removeLevels++;
+            }
+            if (!tryFile.StartsWith("/"))
+            {
+                // first try relative to current source file:
+                string currentDirectory = Path.GetDirectoryName(currentPath);
+                while (removeLevels > 0)
+                {
+                    currentDirectory = Path.GetDirectoryName(currentDirectory);
+                    removeLevels--;
+                }
+                string tryPath = Path.Combine(currentDirectory, tryFile);
+                if (File.Exists(tryPath))
+                {
+                    hsPath = tryPath;
+                }
+                else
+                {
+                    // then try relative to main project file
+                    string projectDirectory = Path.GetDirectoryName(projectPath);
+                    tryPath = Path.Combine(projectDirectory, tryFile);
+                    if (File.Exists(tryPath))
+                    {
+                        hsPath = tryPath;
+                    }
+                }
+            }
+        }
+        if (!File.Exists(hsPath))
+        {
+            hsPath = "";
+        }
+        return hsPath;
     }
 
     CalculateLineNumberWidth()
@@ -2078,7 +2158,8 @@ unit Editor
         string initialText = ""; // findString; <- never useful
         if (HasOneLineSelection())
         {
-            initialText = GetSelectedText();
+            string usesLine;
+            initialText = GetSelectedText(ref usesLine);
         }
         
         fields["0"] = initialText; 
@@ -2135,18 +2216,20 @@ unit Editor
             }
             else if (HasOneLineSelection())
             {
-                string candidate = GetSelectedText();
-                if (candidate.Contains("/"))
+                string usesLine;
+                string candidate = GetSelectedText(ref usesLine);
+                if (candidate.Contains("/") && File.Exists(candidate))
                 {
-                    string extension = Path.GetExtension(candidate);
-                    if (extension == ".")
+                    initialText = candidate;
+                }
+                else
+                {
+                    if (usesLine.Length == 0)
                     {
-                        if (isHopperSource)
-                        {
-                            candidate = candidate + ".hs";
-                        }
+                        usesLine = "uses \"" + candidate + '"';
                     }
-                    if (File.Exists(candidate))
+                    candidate = ResolveUsesPath(usesLine, candidate);
+                    if (candidate.Length != 0)
                     {
                         initialText = candidate;
                     }

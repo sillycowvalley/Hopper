@@ -9,7 +9,7 @@ program Shell
     uses "/Source/System/EditControl"
     uses "/Source/System/Runtime"
     
-    uses "/Source/Shell/Common"
+    uses "Common"
     
     bool Run(string command, <string> arguments)
     {

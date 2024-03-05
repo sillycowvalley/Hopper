@@ -4,11 +4,11 @@ unit Code
     uses "/Source/System/Screen"
     uses "/Source/System/Runtime"
     
-    uses "/Source/Compiler/JSON/JSON"
+    uses "JSON"
     
-    uses "/Source/Compiler/Tokens/Token"
-    uses "/Source/Compiler/Tokens/Scanner"
-    uses "/Source/Compiler/Tokens/Parser"
+    uses "../Tokens/Token"
+    uses "../Tokens/Scanner"
+    uses "../Tokens/Parser"
     
 #ifdef DEBUGGER
     bool IsDebugger { get { return true; } }

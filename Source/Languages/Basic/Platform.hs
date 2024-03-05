@@ -1,6 +1,6 @@
 unit Platform
 {
-    uses "/Source/Languages/Basic/HopperCode"  // code related to Hopper VM byte code
+    uses "HopperCode"  // code related to Hopper VM byte code
     
     const uint timerResolution =   1000;  // fractions of a second of the current harware timer (ms in this case)
     const byte timeOnZeroPage  =   0xA0;  // (160) where GIBL thinks the time is on zeroPage (2 bytes)

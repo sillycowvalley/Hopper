@@ -5,8 +5,8 @@ unit Parser
     uses "/Source/System/Diagnostics"
     uses "/Source/System/Screen"
     
-    uses "/Source/Compiler/Tokens/Token"
-    uses "/Source/Compiler/Tokens/Scanner"
+    uses "Token"
+    uses "Scanner"
     
     <string, string> previousToken;
     <string, string> currentToken;

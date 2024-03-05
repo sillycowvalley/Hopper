@@ -1,10 +1,10 @@
 unit Block
 {
     
-    uses "/Source/Compiler/Tokens/Parser"
-    uses "/Source/Compiler/Tokens/Token"
-    uses "/Source/Compiler/Tokens/Scanner"
-    uses "/Source/Compiler/CodeGen/CodeStream"
+    uses "../Tokens/Parser"
+    uses "../Tokens/Token"
+    uses "../Tokens/Scanner"
+    uses "CodeStream"
     
     // "arguments" [BP-offset]
     // "locals"    [BP+offset]

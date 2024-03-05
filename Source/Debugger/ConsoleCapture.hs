@@ -2,7 +2,7 @@ unit ConsoleCapture
 {
     uses "/Source/System/File"
     
-    uses "/Source/Debugger/Output"
+    uses "Output"
     
     string capturePath;
     string captureBuffer;

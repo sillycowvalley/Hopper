@@ -1,6 +1,6 @@
 unit Record
 {
-    uses "/Source/Compiler/Symbols"
+    uses "Symbols"
     
     < <string> > Find(string recordName)
     {

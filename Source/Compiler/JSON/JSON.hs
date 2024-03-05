@@ -1,9 +1,9 @@
 unit JSON
 {
     uses "/Source/System/System"
-    uses "/Source/Compiler/Tokens/Token"
-    uses "/Source/Compiler/Tokens/Scanner"
-    uses "/Source/Compiler/Tokens/Parser"
+    uses "../Tokens/Token"
+    uses "../Tokens/Scanner"
+    uses "../Tokens/Parser"
     
     string eol()
     {

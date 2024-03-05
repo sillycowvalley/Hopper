@@ -1,7 +1,7 @@
 program Command
 {
 //#define SERIAL_CONSOLE
-    uses "/Source/Shell/Common"
+    uses "Common"
     
     string Name                 { get { return "DEL";  } }
     string Description          { get { return "delete one or more files (alias RM)"; } }

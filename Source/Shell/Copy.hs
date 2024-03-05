@@ -1,7 +1,7 @@
 program Command
 {
 //#define SERIAL_CONSOLE
-    uses "/Source/Shell/Common"
+    uses "Common"
     
     string Name                 { get { return "COPY";  } }
     string Description          { get { return "copy one or more files between directories (alias CP)"; } }

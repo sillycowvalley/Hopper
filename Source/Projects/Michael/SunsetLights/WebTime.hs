@@ -3,7 +3,7 @@ unit WebTime
     uses "/Source/Samples/MCU/Secrets2/Connect" // WiFi password
     uses "/Source/System/Serialize"             // to parse the JSON returned by the time webservice
     
-    uses "/Source/Samples/Projects/DateTime"
+    uses "DateTime"
     
     string wifiIP;
     byte   lastError;
@@ -58,6 +58,8 @@ unit WebTime
     {
         wifiConnected = false;
         
+        BlueLED = true; UpdateLEDs();
+        
         uint attempts = 0;
         WiFiStatus wifiStatus;
         wifiIP   = " . . . ";
@@ -89,6 +91,10 @@ unit WebTime
             }
         }
         Delay(500); // at least 0.5 seconds so that we can see it
+        
+        BlueLED = false;
+        UpdateLEDs();
+        
         return wifiConnected;
     }
     Disconnect()

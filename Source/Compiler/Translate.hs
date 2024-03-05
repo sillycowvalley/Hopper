@@ -7,20 +7,20 @@ program Translate
     uses "/Source/System/Diagnostics"
     uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
-    uses "/Source/Compiler/Tokens/Token"
+    uses "Tokens/Token"
     
-    uses "/Source/Compiler/Tokens/Scanner"
-    uses "/Source/Compiler/Tokens/Parser"
-    uses "/Source/Compiler/Tokens/SysCalls"
-    uses "/Source/Compiler/Tokens/LibCalls"
-    uses "/Source/Compiler/Symbols"
+    uses "Tokens/Scanner"
+    uses "Tokens/Parser"
+    uses "Tokens/SysCalls"
+    uses "Tokens/LibCalls"
+    uses "Symbols"
     
-    uses "/Source/Compiler/Types"
-    uses "/Source/Compiler/Directives"
+    uses "Types"
+    uses "Directives"
     
-    uses "/Source/Compiler/CodeGen/Block"
-    uses "/Source/Compiler/CodeGen/SourceStream"
-    uses "/Source/Compiler/TranslateExpression"
+    uses "CodeGen/Block"
+    uses "CodeGen/SourceStream"
+    uses "TranslateExpression"
     
     bool isMain;
     

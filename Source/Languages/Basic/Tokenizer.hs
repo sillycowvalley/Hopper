@@ -1,12 +1,12 @@
 unit Tokenizer
 {
-    uint     gLineNumber;       // current line number in tokenizer
+    uint gLineNumber;       // current line number in tokenizer
     
-    uses "/Source/Languages/Basic/Errors"
+    uses "Errors"
     
-    uses "/Source/Languages/Basic/Source"      // source code lines
-    uses "/Source/Languages/Basic/Expression"  // recursive descent expression parser
-    uses "/Source/Languages/Basic/HopperCode"  // code related to Hopper VM byte code
+    uses "Source"      // source code lines
+    uses "Expression"  // recursive descent expression parser
+    uses "HopperCode"  // code related to Hopper VM byte code
     
     uint LineNumber { get { return gLineNumber; }  set { gLineNumber = value; } }
     

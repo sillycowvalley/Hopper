@@ -2,15 +2,15 @@ program SunsetLights
 {   
     uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     
-    uses "/Source/Library/Devices/AdafruitThinkInk213TriColor"
+    uses "/Source/Library/Devices/AdafruitEInk213TriColor"
     uses "/Source/Library/Fonts/Verdana5x8"
     
 //#define HTTP_HEADER_TIME // just use the server time in the HTTP response headers (GMT) 
 //#define UTC_TIME         // time server that serves up GMT time and date
 #define COMPLETE_TIME    // time server that serves up UTC, time zone offset, and daylight savings (flag and offset)
     
-    uses "/Source/Samples/Projects/DateTime"
-    uses "/Source/Samples/Projects/WebTime"
+    uses "DateTime"
+    uses "WebTime"
     
     byte RelayPin { get { return Board.GP13; } }
     
@@ -28,6 +28,8 @@ program SunsetLights
     
     bool   lightsOn = false;
     
+    bool BlueLED { set { blueLED = value; } }
+    
     <byte, <string> > mySunsetTimes;
     InitializeTimes()
     {
@@ -37,7 +39,7 @@ program SunsetLights
         for (byte i = 0; i <= 6; i++)   { mySunsetTimes[i] = times; }
         for (byte i = 47; i <= 53; i++) { mySunsetTimes[i] = times; }
         times.Clear(); times.Append("20:00"); times.Append("22:00");
-        for (byte i = 7; i <= 9; i++)   { mySunsetTimes[i] = times; }
+        for (byte i = 7; i <= 10; i++)   { mySunsetTimes[i] = times; }
         for (byte i = 44; i <= 46; i++) { mySunsetTimes[i] = times; }
         times.Clear(); times.Append("19:30"); times.Append("21:00");
         for (byte i = 11; i <= 13; i++) { mySunsetTimes[i] = times; }
@@ -55,6 +57,8 @@ program SunsetLights
         LED = builtInLED;
         NeoPixel.SetColor(0, redLED ? 255 : 0, greenLED ? 255 : 0, blueLED ? 255 : 0);
         NeoPixel.Show();
+        //string colour = (redLED ? "R" : "") + (greenLED ? "G" : "") + (blueLED ? "B" : "");
+        //WriteLn("LED=" + colour);
     }
         
     RefreshEPaper()
@@ -124,7 +128,6 @@ program SunsetLights
             
             Display.Resume();
             
-            DisplayDriver.PowerDown();
             break;
         }
         WriteLn();        
@@ -146,9 +149,11 @@ program SunsetLights
         // allowing debugger to break-in before time call
         for (uint i=0; i < 10; i++)
         {
-            Delay(250);
+            Delay(500);
             Write('-');
+            builtInLED = !builtInLED; redLED = !redLED; greenLED = !greenLED; UpdateLEDs();
         }
+        builtInLED = false; greenLED = false; redLED = false; UpdateLEDs();
         WriteLn();
         
         InitializeTimes();
@@ -187,8 +192,10 @@ program SunsetLights
             // Update the time from the web?
             if ((lap == 1) || (WebTime.MinutesSinceLastUpdate >= minutesPerUpdate))
             {
-                greenLED = true;  UpdateLEDs();
+                greenLED = true;   UpdateLEDs();
+                Delay(500);
                 WebTime.UpdateTime();
+                Delay(500);
                 greenLED = false;  UpdateLEDs();
                 
                 refreshEPaper = true;
@@ -214,7 +221,7 @@ program SunsetLights
             // Refresh the ePaper display?
             if (refreshEPaper || (oldState != lightsOn) || (WebTime.MCUTimeNow - lastRefreshMinutes >= minutesPerRefresh))
             {
-                redLED = true; UpdateLEDs();
+                redLED = true;  UpdateLEDs();
                 RefreshEPaper();
                 redLED = false; UpdateLEDs();
                 lastRefreshMinutes = WebTime.MCUTimeNow;

@@ -17,11 +17,11 @@ program Debug
     
     uses "/Source/Compiler/Tokens/Parser"
     
-    uses "/Source/Debugger/Source"
-    uses "/Source/Debugger/Output"
-    uses "/Source/Debugger/6502/Monitor"
+    uses "Source"
+    uses "Output"
+    uses "6502/Monitor"
     
-    uses "/Source/Debugger/ConsoleCapture"
+    uses "ConsoleCapture"
     
     
     

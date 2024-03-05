@@ -1,4 +1,4 @@
 unit System
 {
-    uses "/Source/Runtime/Emulation/Memory"
+    uses "Memory"
 }

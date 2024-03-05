@@ -1,7 +1,7 @@
 unit HRVariant
 {
     
-    uses "/Source/Runtime/Platform/Types"
+    uses "Types"
     
 // Variant memory map:
 //   0000 heap allocator size

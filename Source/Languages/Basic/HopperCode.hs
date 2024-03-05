@@ -21,7 +21,7 @@ unit HopperCode
     
     uses "/Source/System/Runtime"
         
-    uses "/Source/Languages/Basic/Platform" // helper methods called from the VM byte code
+    uses "Platform" // helper methods called from the VM byte code
     
     // SYSCALL0 indices used by BASIC
     const byte iArrayGetItem        = 0x0D; // V GetItem(V[] this, uint index) system;

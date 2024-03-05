@@ -1,9 +1,9 @@
 unit CodeStream
 {
-    uses "/Source/Compiler/CodeGen/Instructions"
-    uses "/Source/Compiler/CodeGen/Block"
+    uses "Instructions"
+    uses "Block"
     uses "/Source/Compiler/Symbols"
-    uses "/Source/Compiler/CodeGen/Peephole"
+    uses "Peephole"
     
     
     <string,string> debugInfo;

@@ -13,7 +13,6 @@ unit System
     uses "/Source/System/UInt"
     
     uses "/Source/System/Long"
-    //uses "/Source/System/Float"
     uses "/Source/System/String"
     uses "/Source/System/Array"
     uses "/Source/System/List"

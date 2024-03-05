@@ -6,11 +6,13 @@ program Edit
     uses "/Source/System/System"
     uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
-    uses "/Source/Editor/Panel"
-    uses "/Source/Editor/MenuBar"
-    uses "/Source/Editor/StatusBar"
-    uses "/Source/Editor/Editor"
-    uses "/Source/Editor/Commands"
+    
+    uses "Panel"
+    uses "MenuBar"
+    uses "StatusBar"
+    uses "Editor"
+    uses "Commands"
+    
     uses "/Source/Compiler/Tokens/Parser" // SetInteractive
     
     string optionsPath;

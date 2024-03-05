@@ -7,13 +7,12 @@ program HopperMonitor
     uses "/Source/System/System"
     uses "/Source/System/IO"
     
-    
     uses "/Source/Editor/Highlighter"
     
-    uses "/Source/Debugger/Source"
-    uses "/Source/Debugger/Output"
-    uses "/Source/Debugger/6502/Pages"
-    uses "/Source/Debugger/6502/Monitor"
+    uses "Source"
+    uses "Output"
+    uses "6502/Pages"
+    uses "6502/Monitor"
     
     uses "/Source/Compiler/JSON/JSON"
     

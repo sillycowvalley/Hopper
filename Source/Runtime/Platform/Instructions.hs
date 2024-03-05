@@ -1,7 +1,8 @@
 unit Instructions
 {
     uses "/Source/Runtime/HopperVM"
-    uses "/Source/Runtime/Platform/OpCodes"
+    
+    uses "OpCodes"
     
     delegate bool InstructionDelegate();
     

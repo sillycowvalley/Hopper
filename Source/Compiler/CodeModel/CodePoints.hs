@@ -2,12 +2,12 @@ unit CodePoints
 {
     uses "/Source/System/String"
     
-    uses "/Source/Compiler/JSON/Code"
-    uses "/Source/Compiler/CodeGen/CodeStream"
-    uses "/Source/Compiler/CodeGen/Instructions"
-    uses "/Source/Compiler/Tokens/SysCalls"
-    uses "/Source/Compiler/Tokens/LibCalls"
-    uses "/Source/Compiler/CodeModel/ModelUtilities"
+    uses "../JSON/Code"
+    uses "../CodeGen/CodeStream"
+    uses "../CodeGen/Instructions"
+    uses "../Tokens/SysCalls"
+    uses "../Tokens/LibCalls"
+    uses "ModelUtilities"
     
     <uint,uint> inlineMethodCandidates;   
     

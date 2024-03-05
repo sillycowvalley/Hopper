@@ -1,7 +1,7 @@
 unit HRDictionary
 {
-    uses "/Source/Runtime/Platform/GC"
-    uses "/Source/Runtime/Platform/Pair"
+    uses "GC"
+    uses "Pair"
     
 // Dictionary memory map:
 //   0000 heap allocator size

@@ -1,7 +1,7 @@
 program Command
 {
 //#define SERIAL_CONSOLE
-    uses "/Source/Shell/Common"
+    uses "Common"
     
     string Name                 { get { return "DIR";  } }
     string Description          { get { return "list files and subdirectories of a directory (alias LS)"; } }

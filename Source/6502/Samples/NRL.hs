@@ -1,6 +1,5 @@
 program NRL
 {
-    //uses "/Source/System/System"
     uses "/Source/6502/System"
     uses "/Source/System/IO"
     

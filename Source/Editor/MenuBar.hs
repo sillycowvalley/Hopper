@@ -2,8 +2,9 @@ unit MenuBar
 {
     uses "/Source/System/Keyboard"
     uses "/Source/System/Screen"
-    uses "/Source/Editor/Panel"
-    uses "/Source/Editor/PopupMenu"
+    
+    uses "Panel"
+    uses "PopupMenu"
     
     // Panel 
     //   x0     : uint

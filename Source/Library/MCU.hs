@@ -16,22 +16,23 @@ unit MCU
     uses "/Source/System/System"
     uses "/Source/System/Runtime"
     uses "/Source/System/IO"
-    uses "/Source/Library/GPIO"
-    uses "/Source/Library/SPI"
+    
+    uses "GPIO"
+    uses "SPI"
 #if defined(BOARD_HAS_I2C)
-    uses "/Source/Library/Wire"
+    uses "Wire"
 #endif
-    uses "/Source/Library/SD"
-    uses "/Source/Library/Timer"
+    uses "SD"
+    uses "Timer"
 
 #if defined(BOARD_HAS_WIFI)
     uses "/Source/System/WiFi"
-    uses "/Source/Library/WebClient"
-    uses "/Source/Library/WebServer"
+    uses "WebClient"
+    uses "WebServer"
 #endif
     
 #if defined(BOARD_HAS_NEOPIXEL)
-    uses "/Source/Library/NeoPixel"
+    uses "NeoPixel"
 #endif
 
     flags PinModeOption

@@ -1,7 +1,7 @@
 unit Peephole
 {
-    uses "/Source/Compiler/CodeGen/Instructions"
-    uses "/Source/Compiler/CodeGen/CodeStream"
+    uses "Instructions"
+    uses "CodeStream"
     
     uint lastInstruction0;
     uint lastInstruction1; // -1

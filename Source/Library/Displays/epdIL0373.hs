@@ -293,10 +293,8 @@ unit DisplayDriver
         Delay(100);
         Delay(100);
         DelaySeconds(DeviceDriver.defaultRefreshDelay);
-        //if (sleep) 
-        //{
-        //    powerDown();
-        //}
+        
+        powerDown();
     }
     
     powerUp() 
@@ -323,7 +321,7 @@ unit DisplayDriver
         powerDown();
     }
     
-    powerDown() 
+    powerDown()
     {
         byte[4] buf;
         buf[0] = 0x17;

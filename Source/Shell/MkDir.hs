@@ -1,7 +1,7 @@
 program Command
 {
 //#define SERIAL_CONSOLE
-    uses "/Source/Shell/Common"
+    uses "Common"
 
     string Name                 { get { return "MKDIR";  } }
     string Description          { get { return "create a new directory (alias MD)"; } }

@@ -253,6 +253,7 @@ unit DisplayDriver
         Delay(500);
         
         DelaySeconds(DeviceDriver.defaultRefreshDelay);
+        powerDown();
     }
     
     powerUp() 
@@ -281,7 +282,7 @@ unit DisplayDriver
         epdCommand(SSD1680_DRIVER_CONTROL, buf, 3);
     }
     
-    powerDown() 
+    powerDown()
     {
         epdCommand(SSD1680_SW_RESET);
         Delay(500);
@@ -354,7 +355,8 @@ unit DisplayDriver
             }
             drow++;   
         }
-        */    }
+        */    
+    }
     bool colourToBit0(uint colour)
     {
         bool bit0;

@@ -1,7 +1,8 @@
 unit TextBuffer
 {
-    uses "/Source/Editor/JournalEntry"
     uses "/Source/System/Diagnostics"
+    
+    uses "JournalEntry"
     
     // JournalRecord < JournalEntry >
     

@@ -7,10 +7,10 @@ unit DebugCommand
     uses "/Source/Editor/Commands"
     uses "/Source/Editor/Editor"
     
-    uses "/Source/Debugger/Output"
-    uses "/Source/Debugger/6502/Monitor"
+    uses "Output"
+    uses "6502/Monitor"
     
-    uses "/Source/Debugger/ConsoleCapture"
+    uses "ConsoleCapture"
     
     <string> breakpoints;
     <uint>   breakpointAddresses;

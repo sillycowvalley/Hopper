@@ -3,8 +3,6 @@ unit BuildOptions
     uses "/Source/System/System"
     uses "/Source/System/Screen"
     uses "/Source/System/Serial"
-    uses "/Source/Editor/Commands"
-    uses "/Source/Editor/Editor"
     
     // to load and save options
     uses "/Source/Compiler/JSON/JSON"
