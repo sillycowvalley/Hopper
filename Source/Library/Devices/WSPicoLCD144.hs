@@ -11,12 +11,14 @@ unit DeviceDriver
     #define WAVESHARE_PICO_LCD_144
     #define HAS_RESET_PIN
     #define BUFFER_TEXT
+    #define ST77XX_CONTROLLER
+    #define SET_TFT_INVOFF
     
-    uses "/Source/Library/Displays/ST77XXDriver"
+    uses "/Source/Library/Displays/TFTDriver"
     
     friend DisplayDriver;
     
-    const int pw  = 128;
+    const int pw = 128;
     const int ph = 128;
     
     const byte spiController = 1; // this device uses SPI1 on Raspberry Pi Pico
@@ -32,8 +34,43 @@ unit DeviceDriver
     const byte key2Pin = 2;
     const byte key3Pin = 3;
     
-    const int xFudge = 2;
-    const int yFudge = 1;
+    int xFudge;
+    int yFudge;
+    
+    byte getMAD()
+    {
+        byte madArgument = MADCTL_BGR;
+        if (DisplayDriver.IsPortrait)
+        {
+            xFudge = 1;
+            yFudge = 2;
+            madArgument |= MADCTL_MV;
+            if (!FlipX)
+            {
+                madArgument |= MADCTL_MX;
+            }
+            if (FlipY)
+            {
+                xFudge = 3;
+                madArgument |= MADCTL_MY;
+            }
+        }
+        else
+        {
+            xFudge = 2;
+            yFudge = 1;
+            if (FlipX)
+            {
+                yFudge = 3;
+                madArgument |= MADCTL_MY;
+            }
+            if (FlipY)
+            {
+                madArgument |= MADCTL_MX;
+            }
+        }
+        return madArgument;
+    }
     
     bool Begin()
     {

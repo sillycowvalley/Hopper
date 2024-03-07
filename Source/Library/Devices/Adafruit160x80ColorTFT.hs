@@ -7,16 +7,17 @@ unit DeviceDriver
 
     #define ADAFRUIT_TFT_096
     #define BUFFER_TEXT
+    #define ST77XX_CONTROLLER
     
-    uses "/Source/Library/Displays/ST77XXDriver.hs"
+    uses "/Source/Library/Displays/TFTDriver"
     
     friend DisplayDriver, Screen;
     
     const int pw = 160;
     const int ph =  80;
     
-    const int xFudge = 1;
-    const int yFudge = 26;
+    int xFudge;
+    int yFudge;
     
     // Adafruit Feather defaults
     byte spiController  = 0;
@@ -24,6 +25,7 @@ unit DeviceDriver
     byte blPin  = Board.GP8;  // backlight
     byte csPin  = Board.GP9;  // TFT
     byte dcPin  = 10;         // TFT
+    int  rstPin  = -1;  
     byte clkPin = Board.SPI0SCK;
     byte txPin  = Board.SPI0Tx;
     byte rxPin  = Board.SPI0Rx; // MISO - this is used for the SD card. It isn't used for the TFT display which is write-only. 
@@ -36,6 +38,41 @@ unit DeviceDriver
     byte CS            { get { return csPin;         } set { csPin = value;           } }
     byte DC            { get { return dcPin;         } set { dcPin = value;           } }
     byte LIT           { get { return blPin;         } set { blPin = value;           } }
+    int  Reset         { get { return rstPin;        } set { rstPin = value;          } }
+    
+    byte getMAD()
+    {
+        byte madArgument = MADCTL_BGR;
+        if (DisplayDriver.IsPortrait)
+        {
+            if (FlipX)
+            {
+                madArgument |= MADCTL_MX;
+            }
+            if (FlipY)
+            {
+                madArgument |= MADCTL_MY;
+            }
+            xFudge = 26;
+            yFudge = 1;
+        }
+        else
+        {
+            madArgument |= MADCTL_MV;
+            if (!FlipX)
+            {
+                madArgument |= MADCTL_MY;
+            }
+            if (FlipY)
+            {
+                madArgument |= MADCTL_MX;
+            }
+            xFudge = 1;
+            yFudge = 26;
+    
+        }
+        return madArgument;
+    }
     
     bool Begin()
     {

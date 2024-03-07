@@ -9,10 +9,11 @@ unit DeviceDriver
 #endif
     
     #define WAVESHARE_PICO_LCD_114
-    #define HAS_RESET_PIN
     #define BUFFER_TEXT
+    #define ST77XX_CONTROLLER
+    #define HAS_RGB444
     
-    uses "/Source/Library/Displays/ST77XXDriver"
+    uses "/Source/Library/Displays/TFTDriver"
     
     friend DisplayDriver;
     
@@ -24,7 +25,7 @@ unit DeviceDriver
     byte csPin   { get { return Board.GP9; } }
     byte clkPin  { get { return Board.GP10; } }
     byte txPin   { get { return Board.GP11; } }
-    byte rstPin  { get { return Board.GP12; } }
+    int  rstPin  { get { return Board.GP12; } }
     byte blPin   { get { return Board.GP13; } }
     
     const byte keyAPin      = 15;
@@ -35,8 +36,42 @@ unit DeviceDriver
     const byte keyRightPin  = 20;
     const byte keyButtonPin = 3;
     
-    const int xFudge = 40;
-    const int yFudge = 53;
+    int xFudge;
+    int yFudge;
+    
+    byte getMAD()
+    {
+        byte madArgument = MADCTL_RGB;
+        if (DisplayDriver.IsPortrait)
+        {
+            if (FlipX)
+            {
+                madArgument |= MADCTL_MX;
+            }
+            if (FlipY)
+            {
+                madArgument |= MADCTL_MY;
+            }
+            xFudge = 53;
+            yFudge = 40;
+        }
+        else
+        {
+            madArgument |= MADCTL_MV;
+            if (FlipX)
+            {
+                madArgument |= MADCTL_MY;
+            }
+            if (!FlipY)
+            {
+                madArgument |= MADCTL_MX;
+            }
+            xFudge = 40;
+            yFudge = 53;
+    
+        }
+        return madArgument;
+    }
     
     bool Begin()
     {

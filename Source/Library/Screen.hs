@@ -7,9 +7,11 @@ unit Screen
     uses "/Source/Library/Display"
 #endif
 
+    friend DisplayDriver;
+
 #ifdef FONT_EXISTS
-    const uint cellWidth     = CellWidth +1;
-    const uint cellHeight    = CellHeight+1;
+    const uint cellWidth     = CellWidth  + 1;
+    const uint cellHeight    = CellHeight + 1;
     uint[cellWidth*cellHeight] cellBuffer;
 #endif
     
@@ -36,7 +38,9 @@ unit Screen
 
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
     byte[] fontData;
-    byte[] FontData { get { return fontData; } set { fontData = value; } }
+    byte[] FontData    { get { return fontData; } set { fontData = value; } }
+    bool   FontDataSet { get { return fontData.Count != 0; } }
+    
     renderMonoCharacter(char chr, uint foreColour, uint backColour)
     {
         uint pixelb = backColour;
@@ -115,6 +119,30 @@ unit Screen
         CursorX = col;
         CursorY = row;
     }
+    
+#ifdef BUFFER_TEXT
+    drawBufferChar(byte col, byte row, char c, uint foreColour, uint backColour)
+    {
+#if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
+        int x0 = int(col * cellWidth);
+        int y0 = int(row * cellHeight);
+        renderMonoCharacter(c, foreColour, backColour);
+        for (int y=0; y < cellHeight; y++)
+        {
+            int deltaY = y * cellWidth;
+            int y1 = y+y0;
+            for (int x=0; x < cellWidth; x++)
+            {
+                uint pixelColour = cellBuffer[x + deltaY];
+                if (pixelColour != backColour)
+                {
+                    DisplayDriver.setPixel(x+x0, y1, pixelColour);
+                }
+            }
+        }
+#endif
+    }
+#endif    
 
     DrawChar(byte col, byte row, char c, uint foreColour, uint backColour)
     {
@@ -124,17 +152,24 @@ unit Screen
         if (fontData.Count != 0)
         {
             Display.Suspend();
-            renderMonoCharacter(c, foreColour, backColour);
-            for (int y=0; y < cellHeight; y++)
+            if ((c <= char(32)) || (c > char(127)))
             {
-                int deltaY = y * cellWidth;
-                int y1 = y+y0;
-                for (int x=0; x < cellWidth; x++)
-                {
-                    DisplayDriver.setPixel(x+x0, y1, cellBuffer[x + deltaY]);
-                }
+                Display.FilledRectangle(x0, y0, Font.CellWidth, Font.CellHeight, backColour);
             }
-            Display.Resume();
+            else
+            {
+                renderMonoCharacter(c, foreColour, backColour);
+                for (int y=0; y < cellHeight; y++)
+                {
+                    int deltaY = y * cellWidth;
+                    int y1 = y+y0;
+                    for (int x=0; x < cellWidth; x++)
+                    {
+                        DisplayDriver.setPixel(x+x0, y1, cellBuffer[x + deltaY]);
+                    }
+                }
+                Display.Resume();
+            }
         }
 #endif
 #ifdef BUFFER_TEXT
@@ -149,19 +184,26 @@ unit Screen
         if (fontData.Count != 0)
         {
             Display.Suspend();
-            renderMonoCharacter(c, foreColour, backColour);
-            for (int y=0; y < cellHeight; y++)
+            if ((c <= char(32)) || (c > char(127)))
             {
-                int deltaY = y * cellWidth;
-                for (int x=0; x < cellWidth; x++)
+                Display.FilledRectangle(x0, y0, Font.CellWidth*scale, Font.CellHeight*scale, backColour);
+            }
+            else
+            {
+                renderMonoCharacter(c, foreColour, backColour);
+                for (int y=0; y < cellHeight; y++)
                 {
-                    int y1 = y*scale+y0;
-                    int x1 = x*scale+x0;
-                    for (int iy = 0; iy < scale; iy++)
+                    int deltaY = y * cellWidth;
+                    for (int x=0; x < cellWidth; x++)
                     {
-                        for (int ix = 0; ix < scale; ix++)
+                        int y1 = y*scale+y0;
+                        int x1 = x*scale+x0;
+                        for (int iy = 0; iy < scale; iy++)
                         {
-                            DisplayDriver.setPixel(x1+ix, y1+iy, cellBuffer[x + deltaY]);
+                            for (int ix = 0; ix < scale; ix++)
+                            {
+                                DisplayDriver.setPixel(x1+ix, y1+iy, cellBuffer[x + deltaY]);
+                            }
                         }
                     }
                 }

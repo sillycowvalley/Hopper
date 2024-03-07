@@ -43,10 +43,15 @@ program ExploreFS
             return;
         }
         
+        long start = Millis;
+        
         EchoToDisplay = true;
         Screen.Clear();
         WalkDirectory("/", 0);
         EchoToDisplay = false;
         SD.Eject();
+        
+        long elapsed = Millis - start;
+        IO.WriteLn("Elapsed: " + elapsed.ToString() + "ms");
     }
 }

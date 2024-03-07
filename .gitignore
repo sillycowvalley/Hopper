@@ -4,6 +4,7 @@
 *.options
 *.log
 *.mem
+*.uf2
 
 *.suo
 *.vsidx

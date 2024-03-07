@@ -47,24 +47,51 @@ Byte sdTxPin;
 Byte sdRxPin;
 bool sdMounted = false;
 
+bool isValidHopperPath(const char * path)
+{
+    bool isValid = (path != nullptr);
+    while (isValid && *path)
+    {
+        isValid &= (isalpha(*path) || isdigit(*path) || (*path == '/') || (*path == '.'));
+        path++;
+    }
+    return isValid;
+}
+
 char * isSDPath(char * buffer)
 {
-    if (sdMounted)
+    char* sdpath = nullptr;
+    for (;;)
     {
-        if ((buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == '/'))
+        if (!sdMounted)
         {
-            char* sdpath = &buffer[3];
-            return sdpath;
+            break;
         }
-        if ((buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd') && (buffer[3] == 0))
+        if (!((buffer[0] == '/') && (buffer[1] == 's') && (buffer[2] == 'd'))) // starts with '/sd'
+        {
+            break;
+        }
+        if (buffer[3] == '/')
+        {
+            sdpath = &buffer[3];
+        }
+        else if (buffer[3] == 0)
         {
             buffer[3] = '/';
             buffer[4] = 0;
-            char* sdpath = &buffer[3];
-            return sdpath;
+            sdpath = &buffer[3];
         }
+        if (nullptr == sdpath)
+        {
+            break;
+        }
+        if (!isValidHopperPath(sdpath))
+        {
+            sdpath = nullptr;
+        }
+        break;
     }
-    return nullptr;
+    return sdpath;
 }
 bool isSDRoot(char * buffer)
 {
@@ -443,7 +470,7 @@ UInt External_DirectoryGetFileCount_R(UInt hrpath, UInt & skipped)
         if(!dir.isDirectory())  
         {
             String name = dir.fileName();
-            if (name == "_") continue;
+            if (!isValidHopperPath(name.c_str())) continue; // includes '_'
             count++;
         }
     }
@@ -476,6 +503,7 @@ UInt External_DirectoryGetDirectoryCount_R(UInt hrpath, UInt & skipped)
         if (dir.isDirectory())  
         {
             String name = dir.fileName();
+            if (!isValidHopperPath(name.c_str())) continue;
             count++;
         }
     }
@@ -503,7 +531,7 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index)
         if (!dir.isDirectory())  
         {
             String name = dir.fileName();
-            if (name == "_") continue; // ignore
+            if (!isValidHopperPath(name.c_str())) continue; // includes '_'
             if (count == index)
             {
                 UInt str = HRString_New();
@@ -548,10 +576,11 @@ UInt External_DirectoryGetDirectory(UInt hrpath, UInt index)
     {
         if (dir.isDirectory())  
         {
+            String name = dir.fileName();
+            if (!isValidHopperPath(name.c_str())) continue; // includes '_'
             if (count == index)
             {
                 UInt str = HRString_New();
-                String name = dir.fileName();
                 uint plen = strlen(buffer);
                 for (uint i=0; i < plen; i++)
                 {
