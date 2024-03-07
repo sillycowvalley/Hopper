@@ -180,8 +180,8 @@ unit HRArray
             default:
             {
                 uint offset = address + (index << 1);
-                byte lsb = ReadByte(offset);
-                byte msb = ReadByte(offset+1);
+                byte msb = ReadByte(offset);
+                byte lsb = ReadByte(offset+1);
                 value = (msb << 8) | lsb;
             }
         }
@@ -227,8 +227,8 @@ unit HRArray
             default:
             {
                 uint offset = address + (index << 1);
-                WriteByte(offset,   byte(value & 0xFF));
-                WriteByte(offset+1, byte(value >> 8));
+                WriteByte(offset,   byte(value >> 8));
+                WriteByte(offset+1, byte(value & 0xFF));
             }
         }
     }

@@ -2582,8 +2582,10 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eLIBCALL1), instructionDelegate);
     instructionDelegate = &Instructions_LibCall;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eLIBCALL), instructionDelegate);
-    instructionDelegate = &Instructions_IncLocalBB;
+    instructionDelegate = &Instructions_InlinedIncLocalBB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCLOCALBB), instructionDelegate);
+    instructionDelegate = &Instructions_InlinedIncLocalIBB;
+    External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCLOCALIBB), instructionDelegate);
     instructionDelegate = &Instructions_IncGlobalBB;
     External_WriteToJumpTable(jumpTable, Byte(OpCode::eINCGLOBALBB), instructionDelegate);
     instructionDelegate = &Instructions_InlinedIncLocalB;
@@ -3487,16 +3489,6 @@ Bool Instructions_LibCall()
     UInt iOverload = HopperVM_Pop_R(htype);
     Byte iLibCall = HopperVM_ReadByteOperand();
     return Library_ExecuteLibCall(iLibCall, iOverload);
-}
-
-Bool Instructions_IncLocalBB()
-{
-    Int offset0 = HopperVM_ReadByteOffsetOperand();
-    Int offset1 = HopperVM_ReadByteOffsetOperand();
-    UInt address0 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + offset0);
-    UInt address1 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + offset1);
-    Memory_WriteWord(address0, Memory_ReadWord(address0) + Memory_ReadWord(address1));
-    return true;
 }
 
 Bool Instructions_IncGlobalBB()
@@ -6863,7 +6855,7 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         Type dtype = (Type)0;
         UInt hrdata = HopperVM_Pop_R(dtype);
         UInt spiController = 0x00;
-        if (iOverload == 0x01)
+        if ((iOverload == 0x02) || (iOverload == 0x03))
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
@@ -7773,8 +7765,8 @@ UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype)
     default:
     {
         UInt offset = address + (index << 0x01);
-        Byte lsb = Memory_ReadByte(offset);
-        Byte msb = Memory_ReadByte(offset + 0x01);
+        Byte msb = Memory_ReadByte(offset);
+        Byte lsb = Memory_ReadByte(offset + 0x01);
         value = (msb << 0x08) | lsb;
         break;
     }
@@ -7821,8 +7813,8 @@ void HRArray_SetItem(UInt _this, UInt index, UInt value)
     default:
     {
         UInt offset = address + (index << 0x01);
-        Memory_WriteByte(offset, Byte(value & 0xFF));
-        Memory_WriteByte(offset + 0x01, Byte(value >> 0x08));
+        Memory_WriteByte(offset, Byte(value >> 0x08));
+        Memory_WriteByte(offset + 0x01, Byte(value & 0xFF));
         break;
     }
     } // switch

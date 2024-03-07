@@ -8,15 +8,15 @@ program TFTandSDdemo
     //uses "/Source/Library/Devices/Adafruit160x80ColorTFT"
     
     uses "/Source/Library/Boards/PiPico"
-    //uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
+    uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
     //uses "/Source/Library/Devices/Generic480x320ST7796TFT"
     
-    uses "/Source/Library/Devices/WSPicoLCD114"
+    //uses "/Source/Library/Devices/WSPicoLCD114"
     //uses "/Source/Library/Devices/WSPicoLCD096"
     //uses "/Source/Library/Devices/WSPicoLCD144"
     //uses "/Source/Library/Devices/WSRP2040LCD096"
     
-    uses "/Source/Library/Fonts/Hitachi5x7"
+    uses "/Source/Library/Fonts/System5x7"
     
     const string lorumIpsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse iaculis tortor vitae imperdiet tempus. Quisque eget sapien ex. Donec molestie tincidunt sem imperdiet condimentum. Nulla facilisi. Class aptent taciti sociosqu ad litora vestibulum.";
 
@@ -119,6 +119,35 @@ program TFTandSDdemo
         Display.Resume(); 
     }
     
+    testText()
+    {
+        Screen.BackColour = Colour.Black;
+        Screen.Clear();
+        
+        long start = Time.Millis;
+        Screen.ForeColour = Colour.White;
+        Screen.PrintLn("Hello World!");
+        Screen.ForeColour = Colour.Yellow; Screen.TextScale = 2;
+        Screen.PrintLn((1234.56).ToString());
+        Screen.ForeColour = Colour.Red;  Screen.TextScale = 3;
+        Screen.PrintLn((0xDEAD).ToHexString(4) + (0xBEEF).ToHexString(4)); // Hopper only has 'uint' or signed 'long'
+        Screen.PrintLn();
+        Screen.ForeColour = Colour.Green;  Screen.TextScale = 5;
+        Screen.PrintLn("Groop");
+        Screen.TextScale = 2;
+        Screen.PrintLn("I implore thee,");
+        Screen.TextScale = 1;
+        Screen.PrintLn("my foonting turlingdromes.");
+        Screen.PrintLn("And hooptiously drangle me");
+        Screen.PrintLn("with crinkly bindlewurdles,");
+        Screen.PrintLn("Or I will rend thee");
+        Screen.PrintLn("in the gobberwarts");
+        Screen.PrintLn("with my blurglecruncheon,");
+        Screen.PrintLn("see if I don't!");
+        
+        IO.WriteLn(("Text").Pad(' ', 25) + (Time.Millis - start).ToString());
+    }
+    
     testFillScreen() 
     {
         long start = Time.Millis;
@@ -127,7 +156,7 @@ program TFTandSDdemo
         Display.Clear(Colour.Green);
         Display.Clear(Colour.Blue);
         Display.Clear(Colour.Black);
-        IO.WriteLn("Screen fill  " + (Time.Millis - start).ToString());
+        IO.WriteLn(("Screen fill").Pad(' ', 25) + (Time.Millis - start).ToString());
     }
     
     testLines(uint colour) 
@@ -180,7 +209,7 @@ program TFTandSDdemo
         x2    = 0;
         for(y2=0; y2<h; y2+=6) { Display.Line(x1, y1, x2, y2, colour);}
         
-        IO.WriteLn("Lines  " + (Time.Millis - start - (cleared * clearTime)).ToString());
+        IO.WriteLn(("Lines").Pad(' ', 25) + (Time.Millis - start - (cleared * clearTime)).ToString());
     }
 
     testFastLines(uint colour1, uint colour2) 
@@ -194,7 +223,7 @@ program TFTandSDdemo
         for(int y=0; y<h; y+=5) { Display.HorizontalLine(0, y, w, colour1);}
         for(int x=0; x<w; x+=5) { Display.VerticalLine(x, 0, h, colour2);}
         
-        IO.WriteLn("Horiz/Vert Lines  " + (Time.Millis - start).ToString());
+        IO.WriteLn(("Horiz/Vert Lines").Pad(' ', 25) + (Time.Millis - start).ToString());
     }
     
     testRects(uint colour) 
@@ -213,7 +242,7 @@ program TFTandSDdemo
             Display.Rectangle(cx-i2, cy-i2, i, i, colour);
         }
 
-        IO.WriteLn("Rectangles (outline)  " + (Time.Millis - start).ToString());
+        IO.WriteLn(("Rectangles (outline)").Pad(' ', 25) + (Time.Millis - start).ToString());
     }
 
     testFilledRects(uint colour1, uint colour2)
@@ -238,7 +267,120 @@ program TFTandSDdemo
             Display.Rectangle(cx-i2, cy-i2, i, i, colour2);
         }
 
-        IO.WriteLn("Rectangles (filled)  " + elapsed.ToString());
+        IO.WriteLn(("Rectangles (filled)").Pad(' ', 25) + elapsed.ToString());
+    }
+    
+    testTriangles() 
+    {
+        int cx = Display.PixelWidth  / 2 - 1;
+        int cy = Display.PixelHeight / 2 - 1;
+        int n = Int.Min(cx, cy);
+        
+        Display.Clear(Colour.Black);
+        long start = Time.Millis;
+        
+        for(int i=0; i<n; i+=5) 
+        {
+            byte colourComponent = (byte(i) & 0x3F) >> 2;
+            uint colour = (colourComponent << 8) + (colourComponent << 4) + colourComponent;
+            Display.Triangle(cx, cy-i, cx-i, cy+i, cx+i, cy+i, colour);
+        }
+        IO.WriteLn(("Triangles (outline)").Pad(' ', 25) + (Time.Millis - start).ToString());
+    }
+    testFilledTriangles()
+    {
+        int cx = Display.PixelWidth  / 2 - 1;
+        int cy = Display.PixelHeight / 2 - 1;
+        
+        Display.Clear(Colour.Black);
+        long start = Time.Millis;
+        
+        for(int i=Int.Min(cx, cy); i>10; i-=5) 
+        {
+            byte colourComponent = (byte(i*10) & 0x3F) >> 2;
+
+            uint colour = (colourComponent << 4) + colourComponent;
+            Display.FilledTriangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i,colour);
+            
+            colour = (colourComponent << 8) + (colourComponent << 4);
+            Display.FilledTriangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i, colour);
+        }
+        IO.WriteLn(("Triangles (filled)").Pad(' ', 25) + (Time.Millis - start).ToString());
+    } 
+    
+    testCircles(byte radius, uint colour)
+    {
+        int r2 = radius * 2;
+        int w  = Display.PixelWidth  + radius;
+        int h  = Display.PixelHeight + radius;
+        
+        long start = Time.Millis;
+        
+        for(int x=0; x<w; x+=r2) 
+        {
+            for(int y=0; y<h; y+=r2) 
+            {
+                Display.Circle(x, y, radius, colour);
+            }
+        }
+     
+        IO.WriteLn(("Circles (outline)").Pad(' ', 25) + (Time.Millis - start).ToString());      
+    }
+    testFilledCircles(byte radius, uint colour)
+    {
+        int r2 = radius * 2;
+        int w  = Display.PixelWidth;
+        int h  = Display.PixelHeight;
+        
+        Display.Clear(Colour.Black);
+        long start = Time.Millis;
+        
+        for(int x=radius; x<w; x+=r2) 
+        {
+            for(int y=radius; y<h; y+=r2) 
+            {
+                Display.FilledCircle(x, y, radius, colour);
+            }
+        }
+        IO.WriteLn(("Circles (filled)").Pad(' ', 25) + (Time.Millis - start).ToString());      
+    }
+    
+    testRoundedRectangles()
+    {
+        int cx = Display.PixelWidth  / 2 - 1;
+        int cy = Display.PixelHeight / 2 - 1;
+        int w  = Int.Min(Display.PixelWidth, Display.PixelHeight);
+        
+        Display.Clear(Colour.Black);
+        long start = Time.Millis;
+        
+        for (int i=0; i<w; i+=6) 
+        {
+            int i2 = i / 2;
+            byte colourComponent = (byte(i) & 0x3F) >> 2;
+            uint colour = (colourComponent << 8);
+            Display.RoundedRectangle(cx-i2, cy-i2, i, i, i/8, colour);
+        }
+        
+        IO.WriteLn(("Rounded rects (outline)").Pad(' ', 25) + (Time.Millis - start).ToString());      
+    }
+    testFilledRoundedRectangles()
+    {
+        int cx = Display.PixelWidth  / 2 - 1;
+        int cy = Display.PixelHeight / 2 - 1;
+        
+        Display.Clear(Colour.Black);
+        long start = Time.Millis;
+        
+        for (int i=Int.Min(Display.PixelWidth, Display.PixelHeight); i>20; i-=6)
+        {
+            int i2 = i / 2;
+            byte colourComponent = (byte(i) & 0x3F) >> 2;
+            uint colour = (colourComponent << 4);
+            Display.FilledRoundedRectangle(cx-i2, cy-i2, i, i, i/8, colour);
+        }
+        
+        IO.WriteLn(("Rounded rects (filled)").Pad(' ', 25) + (Time.Millis - start).ToString());      
     }
         
     {
@@ -276,7 +418,7 @@ program TFTandSDdemo
         DeviceDriver.SDCS = Board.GP29;
         DeviceDriver.CS   = Board.SPI0SS;
         DeviceDriver.DC   = Board.GP28;
-        //IsPortrait = true;
+        IsPortrait = true;
         FlipX = true;
         FlipY = true;
 #endif     
@@ -296,15 +438,34 @@ program TFTandSDdemo
         IO.WriteLn("Columns: " + (Screen.Columns).ToString() + ", Rows: " + (Screen.Rows).ToString());
         loop
         {
-         /*   
+            IO.WriteLn(("Benchmark").Pad(' ', 25) + "Time (milliseconds)");
             testFillScreen();
+            Delay(500);
+            testText();
+            Delay(3000);
             testLines(Colour.Cyan);
+            Delay(500);
             testFastLines(Colour.Red, Colour.Blue);
+            Delay(500);
             testRects(Colour.Green);
+            Delay(500);
             testFilledRects(Colour.Yellow, Colour.Magenta);
-            break;
-           */ 
- 
+            Delay(500);
+            testFilledCircles(10, Colour.Magenta);  
+            Delay(500);
+            testCircles(10, Colour.White);
+            Delay(500);
+            testTriangles();
+            Delay(500);
+            testFilledTriangles();
+            Delay(500);
+            testRoundedRectangles();
+            Delay(500);
+            testFilledRoundedRectangles();
+            Delay(500);
+            IO.WriteLn("Done!");
+   
+            /*
             DrawRGB();
             DelaySeconds(1);
             
@@ -315,10 +476,9 @@ program TFTandSDdemo
             DelaySeconds(1);
             DrawText();
             DelaySeconds(1);
- 
-            //DrawTextScroll();           
             break;
-            
+            */
+            //DrawTextScroll();           
         }
     }
 }

@@ -1318,6 +1318,12 @@ switch (spiController)
 
 void HRSPI_WriteBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt length)
 {
+    Type etype = (Type)dataMemoryBlock[hrdata + 4];
+    if (etype == Type::eUInt)
+    {
+        startIndex *= 2;
+        length *= 2;
+    }
     Byte * data = &dataMemoryBlock[hrdata + startIndex + 5];
     switch (spiController)
     {

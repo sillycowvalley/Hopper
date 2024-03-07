@@ -273,8 +273,10 @@ unit Instructions
         instructionDelegate = Instructions.LibCall;
         WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL), instructionDelegate);
         
-        instructionDelegate = Instructions.IncLocalBB;
+        instructionDelegate = Instructions.InlinedIncLocalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALBB), instructionDelegate);
+        instructionDelegate = Instructions.InlinedIncLocalIBB;
+        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALIBB), instructionDelegate);
         instructionDelegate = Instructions.IncGlobalBB;
         WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALBB), instructionDelegate);
         
@@ -1986,7 +1988,16 @@ unit Instructions
         return false;
     }
     
-    bool IncLocalBB()
+    bool InlinedIncLocalIBB()
+    {
+        int offset0    = ReadByteOffsetOperand();
+        int offset1    = ReadByteOffsetOperand();
+        uint address0 = uint(int(ValueStack) + int(BP) + offset0);
+        uint address1 = uint(int(ValueStack) + int(BP) + offset1);
+        WriteWord(address0, IntToUInt(External.UIntToInt(ReadWord(address0)) + External.UIntToInt(ReadWord(address1))));
+        return true;
+    }
+    bool InlinedIncLocalBB()
     {
         int offset0    = ReadByteOffsetOperand();
         int offset1    = ReadByteOffsetOperand();

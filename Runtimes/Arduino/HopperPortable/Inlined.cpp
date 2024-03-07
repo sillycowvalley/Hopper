@@ -688,6 +688,23 @@ Bool Instructions_InlinedIncLocalB()
     return true;
 }
 
+Bool Instructions_InlinedIncLocalIBB()
+{
+    UInt address0 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + (Int8)(codeStartAddress[HopperVM_pc++]));
+    UInt address1 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + (Int8)(codeStartAddress[HopperVM_pc++]));
+    *((Int*)&dataMemoryBlock[address0]) = *((Int*)&dataMemoryBlock[address0]) + *((Int*)&dataMemoryBlock[address1]) ;
+    return true;
+}
+
+Bool Instructions_InlinedIncLocalBB()
+{
+    UInt address0 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + (Int8)(codeStartAddress[HopperVM_pc++]));
+    UInt address1 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + (Int8)(codeStartAddress[HopperVM_pc++]));
+    *((UInt*)&dataMemoryBlock[address0]) = *((UInt*)&dataMemoryBlock[address0]) + *((UInt*)&dataMemoryBlock[address1]);
+    return true;
+}
+
+
 Bool Instructions_InlinedDecLocalB()
 {
     UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_bp + (Int8)(codeStartAddress[HopperVM_pc++])];

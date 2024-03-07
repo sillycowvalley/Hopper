@@ -48,6 +48,7 @@ unit SPI
     WriteBytes(byte data, uint count) library;
     WriteWords(uint data, uint count) library;
     WriteBuffer(byte[] data, uint startIndex, uint length) library;
+    WriteBuffer(uint[] data, uint startIndex, uint length) library;
     
     // These APIs support more than one SPI controller
     SetCSPin(byte spiController,  byte csPin) library;
@@ -69,6 +70,7 @@ unit SPI
     WriteBytes(byte spiController, byte data, uint count) library;
     WriteWords(byte spiController, uint data, uint count) library;
     WriteBuffer(byte spiController, byte[] data, uint startIndex, uint length) library;
+    WriteBuffer(byte spiController, uint[] data, uint startIndex, uint length) library;
     
     // used internally by drivers
     byte GetCSPin(byte spiController) library;

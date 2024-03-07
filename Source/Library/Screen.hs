@@ -18,14 +18,17 @@ unit Screen
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
     byte cursorX;
     byte cursorY;
+    byte textScale = 1;
     uint defaultForeColour = Colour.MatrixGreen;
     uint defaultBackColour = Colour.Black;
     uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}
     uint BackColour { get { return defaultBackColour; } set { defaultBackColour = value; }}
+    byte TextScale  { get { return textScale; } set { textScale = value; }}
     byte CursorX { get { return cursorX; } set { cursorX = value; } }
     byte CursorY { get { return cursorY; } set { cursorY = value; } }
     byte Columns { get { return byte(Display.PixelWidth / cellWidth); }}
     byte Rows    { get { return byte(Display.PixelHeight / cellHeight); }}
+    
 #else
     // stubs so code compiles even if it can't draw text (with no font)
     byte Columns { get { return 0; }}
@@ -43,36 +46,43 @@ unit Screen
     
     renderMonoCharacter(char chr, uint foreColour, uint backColour)
     {
+#ifdef DISPLAY_IS_RGB565
+    #ifdef HAS_DISPLAY_READ
+        uint pixelb = (backColour == Colour.Invert) ? backColour : DisplayDriver.convertToRGB565(backColour);
+        uint pixelf = (foreColour == Colour.Invert) ? foreColour : DisplayDriver.convertToRGB565(foreColour);
+    #else
+        uint pixelb = DisplayDriver.convertToRGB565(backColour);
+        uint pixelf = DisplayDriver.convertToRGB565(foreColour);
+    #endif
+#else
         uint pixelb = backColour;
         uint pixelf = foreColour;
+#endif        
         
-        uint cellSize = cellWidth*cellHeight;
         if ((chr <= char(32)) || (chr > char(127)))
         {
             // ' '
+            uint cellSize = cellWidth*cellHeight;
             for (uint i = 0; i < cellSize; i++)
             {
                 cellBuffer[i] = pixelb;
             }
             return;
         }
-        
-        uint addr = 0;
-        addr = addr + (Font.CellWidth * (byte(chr)-32));
-        byte[Font.CellWidth] colColours;
-        for (byte x = 0; x < Font.CellWidth; x++)
-        {
-            colColours[x] = fontData[addr];  addr++;
-        }
+        uint charStart = (Font.CellWidth * (byte(chr)-32));
         
         // This presumes fonts <= 8 pixels high (bytes per character == CellWidth)
-        uint bi = 0;
-        for (byte y = 0; y < Font.CellHeight; y++)     // 0..6
+        uint bi;
+        byte yMask;
+        uint addr;
+        for (byte y = 0; y < Font.CellHeight; y++)
         {
-            byte yMask = (1 << y);
-            for (byte x = 0; x < Font.CellWidth; x++) // 0..4
+            yMask = (1 << y);
+            addr = charStart;
+            for (byte x = 0; x < Font.CellWidth; x++)
             {
-                cellBuffer[bi] = (((colColours[x] & yMask) != 0) ? pixelf : pixelb); bi++;
+                cellBuffer[bi] = (((fontData[addr] & yMask) != 0) ? pixelf : pixelb); bi++;
+                addr++;
             }
             // space on right
             cellBuffer[bi] = pixelb; bi++;
@@ -127,18 +137,28 @@ unit Screen
         int x0 = int(col * cellWidth);
         int y0 = int(row * cellHeight);
         renderMonoCharacter(c, foreColour, backColour);
+        
+        int index = 0;
+        int y1 = y0;
+        int x1;
         for (int y=0; y < cellHeight; y++)
         {
-            int deltaY = y * cellWidth;
-            int y1 = y+y0;
+            x1 = x0;
             for (int x=0; x < cellWidth; x++)
             {
-                uint pixelColour = cellBuffer[x + deltaY];
+                uint pixelColour = cellBuffer[index];
                 if (pixelColour != backColour)
                 {
-                    DisplayDriver.setPixel(x+x0, y1, pixelColour);
+#ifdef DISPLAY_IS_RGB565
+                    DisplayDriver.setTextPixel(x+x0, y1, pixelColour);
+#else
+                    Display.SetPixel(x+x0, y1, pixelColour);
+#endif
                 }
+                index++;
+                x1++;
             }
+            y1++;
         }
 #endif
     }
@@ -152,21 +172,46 @@ unit Screen
         if (fontData.Count != 0)
         {
             Display.Suspend();
+#ifdef HAS_FAST_FILLEDRECTANGLE
+            if ((x0 >= 0) && (y0 >= 0) && (x0 + cellWidth <= Display.PixelWidth) && (y0 + cellHeight <= Display.PixelHeight))
+            {
+                if ((c <= char(32)) || (c > char(127)))
+                {
+                    DisplayDriver.filledRectangle(x0, y0, cellWidth, cellHeight, backColour);
+                }
+                else
+                {
+                    renderMonoCharacter(c, foreColour, backColour);
+                    DisplayDriver.filledRectangle(x0, y0, cellWidth, cellHeight, cellBuffer);
+                }
+                Display.Resume();
+                return;
+            }          
+#endif      
             if ((c <= char(32)) || (c > char(127)))
             {
-                Display.FilledRectangle(x0, y0, Font.CellWidth, Font.CellHeight, backColour);
+                Display.FilledRectangle(x0, y0, cellWidth, cellHeight, backColour);
             }
             else
             {
                 renderMonoCharacter(c, foreColour, backColour);
+                int index = 0;
+                int y1 = y0;
+                int x1;
                 for (int y=0; y < cellHeight; y++)
                 {
-                    int deltaY = y * cellWidth;
-                    int y1 = y+y0;
+                    x1 = x0;
                     for (int x=0; x < cellWidth; x++)
                     {
-                        DisplayDriver.setPixel(x+x0, y1, cellBuffer[x + deltaY]);
+#ifdef DISPLAY_IS_RGB565
+                        DisplayDriver.setTextPixel(x1, y1, cellBuffer[index]);
+#else
+                        Display.SetPixel(x1, y1, cellBuffer[index]);
+#endif
+                        index++;
+                        x1++;
                     }
+                    y1++;
                 }
                 Display.Resume();
             }
@@ -179,33 +224,66 @@ unit Screen
     DrawChar(byte col, byte row, char c, uint foreColour, uint backColour, byte scale, int dx, int dy)
     {
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
-        int x0 = int(col * cellWidth  * scale) + dx;
-        int y0 = int(row * cellHeight * scale) + dy;
+        int x0 = int(col * cellWidth * scale) + dx;
+        int y0 = int(row * cellHeight) + dy;
         if (fontData.Count != 0)
         {
             Display.Suspend();
+#ifdef HAS_FAST_FILLEDRECTANGLE                
+            if ((scale >= 2) && (x0 >= 0) && (y0 >= 0) && (x0 + cellWidth*scale < Display.PixelWidth) && (y0 + cellHeight*scale < Display.PixelHeight))
+            {
+                if ((c <= char(32)) || (c > char(127)))
+                {
+                    DisplayDriver.filledRectangle(x0, y0, cellWidth*scale, cellHeight*scale, backColour);
+                }
+                else
+                {
+                    renderMonoCharacter(c, foreColour, backColour);
+                    int x1;
+                    int y1 = y0;
+                    int index;
+                    uint colour;
+                    for (int y=0; y < cellHeight; y++)
+                    {
+                        x1 = x0;
+                        for (int x=0; x < cellWidth; x++)
+                        {                     
+                            DisplayDriver.filledRectangle(x1, y1, scale, scale, cellBuffer[index]);
+                            x1 += scale;
+                            index++;
+                        }
+                        y1 += scale;
+                    }
+                }
+                Display.Resume();
+                return;
+            }
+#endif
             if ((c <= char(32)) || (c > char(127)))
             {
-                Display.FilledRectangle(x0, y0, Font.CellWidth*scale, Font.CellHeight*scale, backColour);
+                Display.FilledRectangle(x0, y0, cellWidth*scale, cellHeight*scale, backColour);
             }
             else
             {
                 renderMonoCharacter(c, foreColour, backColour);
+                int x1;
+                int y1 = y0;
+                int index;
+                uint colour;
                 for (int y=0; y < cellHeight; y++)
                 {
-                    int deltaY = y * cellWidth;
+                    x1 = x0;
                     for (int x=0; x < cellWidth; x++)
-                    {
-                        int y1 = y*scale+y0;
-                        int x1 = x*scale+x0;
-                        for (int iy = 0; iy < scale; iy++)
-                        {
-                            for (int ix = 0; ix < scale; ix++)
-                            {
-                                DisplayDriver.setPixel(x1+ix, y1+iy, cellBuffer[x + deltaY]);
-                            }
-                        }
+                    {                     
+    #ifdef DISPLAY_IS_RGB565
+                        Display.FilledRectangle(x1, y1, scale, scale, DisplayDriver.convertFromRGB565(cellBuffer[index]));
+    #else
+                        Display.FilledRectangle(x1, y1, scale, scale, cellBuffer[index]);
+    #endif
+                        x1 += scale;
+                        index++;
                     }
+                    y1 += scale;
                 }
             }
             Display.Resume();
@@ -217,14 +295,21 @@ unit Screen
     Print(char c,     uint foreColour, uint backColour)
     {
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
-        DrawChar(cursorX, cursorY, c, foreColour, backColour);
+        if (1 == textScale)
+        {
+            DrawChar(cursorX, cursorY, c, foreColour, backColour);
+        }
+        else
+        {
+            DrawChar(cursorX, cursorY, c, foreColour, backColour, textScale, 0, 0);
+        }
 #endif
         CursorX++;
         if (CursorX >= Columns)
         {
             CursorX = 0;
-            CursorY++;
-            if (CursorY == Rows)
+            CursorY += textScale;
+            while (CursorY >= Rows)
             {
                 scrollOneLine();
             }
@@ -247,8 +332,8 @@ unit Screen
     PrintLn()
     {
         CursorX = 0;
-        CursorY++;
-        if (CursorY == Rows)
+        CursorY += textScale;
+        while (CursorY >= Rows)
         {
             scrollOneLine();
         }

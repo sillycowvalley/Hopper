@@ -756,7 +756,6 @@ Bool Instructions_SysCall();
 Bool Instructions_LibCall0();
 Bool Instructions_LibCall1();
 Bool Instructions_LibCall();
-Bool Instructions_IncLocalBB();
 Bool Instructions_IncGlobalBB();
 Bool Instructions_PopCopyLocal();
 Bool Instructions_PopCopyRel();

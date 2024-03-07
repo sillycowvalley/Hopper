@@ -204,6 +204,73 @@ unit Peephole
             lastInstruction4 = 0;
             return true; // hunt for more
         }
+        if (currentStream[lastInstruction2] == byte(Instruction.PUSHLOCALBB))
+        {
+            byte offset2 = currentStream[lastInstruction2+1]; 
+            byte offset1 = currentStream[lastInstruction2+2]; 
+            byte length1 = 1;
+            
+            byte offset0 = 0;
+            byte length0 = 0;
+            bool isPopLocalB0  = IsPopLocalB (currentStream, lastInstruction0, ref offset0, ref length0);
+            if (isPopLocalB0)
+            {
+                if (((offset2 == offset0) || (offset1 == offset0))
+                 && (currentStream[lastInstruction1] == byte(Instruction.ADD))
+                   )
+                {
+                    // PUSHLOCALBB ADD POPLOCALB -> INCLOCALBB
+                    // i2          i1  i0           i2
+                    currentStream.SetItem(lastInstruction2, byte(Instruction.INCLOCALBB));
+                    currentStream.SetItem(lastInstruction2+1, offset0);
+                    if (offset2 == offset0)
+                    {
+                        currentStream.SetItem(lastInstruction2+2, offset1);
+                    }
+                    else
+                    {
+                        currentStream.SetItem(lastInstruction2+2, offset2);
+                    }
+                    
+                    // 6 -> 3 = -3
+                    uint remove = length0 + length1;
+                    TrimTail(currentStream, remove);
+                    lastInstruction0 = lastInstruction2;
+                    lastInstruction1 = lastInstruction3;
+                    lastInstruction2 = lastInstruction4;
+                    lastInstruction3 = 0;
+                    lastInstruction4 = 0;
+                    return true; // hunt for more
+                }
+                if (((offset2 == offset0) || (offset1 == offset0))
+                 && (currentStream[lastInstruction1] == byte(Instruction.ADDI))
+                   )
+                {
+                    // PUSHLOCALBB ADDI POPLOCALB -> INCLOCALIBB
+                    // i2          i1   i0           i3
+                    currentStream.SetItem(lastInstruction2, byte(Instruction.INCLOCALIBB));
+                    currentStream.SetItem(lastInstruction2+1, offset0);
+                    if (offset2 == offset0)
+                    {
+                        currentStream.SetItem(lastInstruction2+2, offset1);
+                    }
+                    else
+                    {
+                        currentStream.SetItem(lastInstruction2+2, offset2);
+                    }
+                    
+                    // 6 -> 3 = -3
+                    uint remove = length0 + length1;
+                    TrimTail(currentStream, remove);
+                    lastInstruction0 = lastInstruction2;
+                    lastInstruction1 = lastInstruction3;
+                    lastInstruction2 = lastInstruction4;
+                    lastInstruction3 = 0;
+                    lastInstruction4 = 0;
+                    return true; // hunt for more
+                }
+            }
+        }
         return false;
     }
     bool peepholeOptimize4(<byte> currentStream)
@@ -292,6 +359,34 @@ unit Peephole
                 // PUSHLOCALB PUSHLOCALB ADD POPLOCALB -> INCLOCALBB
                 // i3         i2         i1  i0           i3
                 currentStream.SetItem(lastInstruction3, byte(Instruction.INCLOCALBB));
+                currentStream.SetItem(lastInstruction3+1, offset0);
+                if (offset3 == offset0)
+                {
+                    currentStream.SetItem(lastInstruction3+2, offset2);
+                }
+                else
+                {
+                    currentStream.SetItem(lastInstruction3+2, offset3);
+                }
+                
+                // 7 -> 3 = -4
+                uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
+                TrimTail(currentStream, remove);
+                lastInstruction0 = lastInstruction3;
+                lastInstruction1 = lastInstruction4;
+                lastInstruction2 = 0;
+                lastInstruction3 = 0;
+                lastInstruction4 = 0;
+                return true; // hunt for more
+            }
+            if (isPushLocalB2
+             && ((offset3 == offset0) || (offset2 == offset0))
+             && (currentStream[lastInstruction1] == byte(Instruction.ADDI))
+               )
+            {
+                // PUSHLOCALB PUSHLOCALB ADDI POPLOCALB -> INCLOCALIBB
+                // i3         i2         i1   i0           i3
+                currentStream.SetItem(lastInstruction3, byte(Instruction.INCLOCALIBB));
                 currentStream.SetItem(lastInstruction3+1, offset0);
                 if (offset3 == offset0)
                 {

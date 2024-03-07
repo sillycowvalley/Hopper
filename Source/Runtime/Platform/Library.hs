@@ -732,6 +732,12 @@ unit Library
             }
             case LibCall.SPIWriteBuffer:
             {
+                // Overloads:
+                //     0: WriteBuffer(byte[] data, uint startIndex, uint length) library;
+                //     1: WriteBuffer(uint[] data, uint startIndex, uint length) library;
+                //     2: WriteBuffer(byte spiController, byte[] data, uint startIndex, uint length) library;
+                //     3: WriteBuffer(byte spiController, uint[] data, uint startIndex, uint length) library;
+                
                 Type ltype;
                 uint length = Pop(ref ltype);
                 Type stype;
@@ -748,7 +754,7 @@ unit Library
                 }
 #endif
                 uint spiController = 0;
-                if (iOverload == 1)
+                if ((iOverload == 2) || (iOverload == 3))
                 {
                     Type ctype;
                     spiController = Pop(ref ctype);
