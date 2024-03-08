@@ -8,6 +8,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -6331,6 +6332,7 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
             break;
         }
         case 0x02:
+        case 0x03:
         {
             Type ltype = (Type)0;
             UInt length = HopperVM_Pop_R(ltype);
@@ -6349,13 +6351,19 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     }
     case LibCall::eWireConfigure:
     {
+        UInt freqkHz = 0x0190;
+        if (iOverload == 0x01)
+        {
+            Type freqtype = (Type)0;
+            freqkHz = HopperVM_Pop_R(freqtype);
+        }
         Type cltype = (Type)0;
         UInt sclPin = HopperVM_Pop_R(cltype);
         Type datype = (Type)0;
         UInt sdaPin = HopperVM_Pop_R(datype);
         Type ctype = (Type)0;
         UInt controller = HopperVM_Pop_R(ctype);
-        HRWire_Configure(Byte(controller), Byte(sdaPin), Byte(sclPin));
+        HRWire_Configure(Byte(controller), Byte(sdaPin), Byte(sclPin), freqkHz);
         break;
     }
     case LibCall::eWireRequestFrom:

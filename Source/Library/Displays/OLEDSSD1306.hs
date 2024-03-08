@@ -1,6 +1,8 @@
 unit DisplayDriver
 {
     #define DISPLAY_DRIVER
+    #define SSD1306_OLED_128x64
+    #define DISPLAY_IS_MONO
     
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
@@ -140,7 +142,8 @@ unit DisplayDriver
             w1  = (Display.PixelWidth -1);
             h1  = (Display.PixelHeight-1);
             
-            if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin))
+            // overclock I2C to 1MHz! (default is 400kHz but 1MHz seens to work)
+            if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin, 1000))
             {
                 break;
             }
@@ -308,8 +311,8 @@ unit DisplayDriver
         uint uy = uint(vy);
         
         uint offset = ((uy & 0xFFF8) * uint(DisplayDriver.pw/8)) + ux;
-        //if (offset < DisplayDriver.pw * DisplayDriver.ph / 8) // TODO REMOVE
-        //{
+        if (offset < DisplayDriver.pw * DisplayDriver.ph / 8) // Clipping
+        {
             if (colour == 0xF000) // Colour.Invert
             {
                 monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
@@ -322,7 +325,38 @@ unit DisplayDriver
             {
                 monoFrameBuffer[offset] = monoFrameBuffer[offset] | (1 << (uy & 0x07));
             }
-        //}
+        }
+    }
+    setClippedTextPixel(int vx, int vy, uint colour)
+    {
+        if (FlipX)
+        {
+            vx = w1 - vx;
+        }
+        if (FlipY)
+        {
+            vy = h1 - vy;
+        }
+        if (IsPortrait)
+        {
+            Int.Swap(ref vx, ref vy);
+        }
+        
+        uint ux = uint(vx);
+        uint uy = uint(vy);
+        uint offset = ((uy & 0xFFF8) * uint(DisplayDriver.pw/8)) + ux;
+        if (colour == 0xF000) // Colour.Invert
+        {
+            monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
+        }
+        else if (colour == 0x0000) // Colour.Black
+        {
+            monoFrameBuffer[offset] = monoFrameBuffer[offset] & ~(1 << (uy & 0x07));
+        }
+        else
+        {
+            monoFrameBuffer[offset] = monoFrameBuffer[offset] | (1 << (uy & 0x07));
+        }
     }
     
     horizontalLine(int vx1, int vy, int vx2, uint colour)
@@ -367,7 +401,7 @@ unit DisplayDriver
         }
         if (IsPortrait)
         {
-            metaHorizontalLine(vy1, vx, vy2, colour);
+            metaHorizontalLine(vy1, vx, vy2, colour); 
         }
         else
         {

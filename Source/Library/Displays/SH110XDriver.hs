@@ -1,6 +1,7 @@
 unit DisplayDriver
 {
     #define DISPLAY_DRIVER
+    #define DISPLAY_IS_MONO
     
     uses "/Source/Library/MCU"
     uses "/Source/Library/Display"
@@ -9,14 +10,14 @@ unit DisplayDriver
     
     //   https://github.com/adafruit/Adafruit_SH110x/blob/master/Adafruit_SH110X.cpp
     
-    const byte SH110X_MEMORYMODE       = 0x20;
+    const byte SH110X_MEMORYMODE       = 0x20; // 0x20 or 0x21
     const byte SH110X_COLUMNADDR       = 0x21;
     const byte SH110X_PAGEADDR         = 0x22;
     
     const byte SH110X_SETCONTRAST     = 0x81;
     const byte SH110X_CHARGEPUMP      = 0x8D;
-    const byte SH110X_SEGREMAP        = 0xA0;
-    const byte SH110X_SETSEGMENTREMAP = 0xA1;
+    const byte SH110X_SEGREMAP        = 0xA0; // 0xA0 or 0xA1
+    const byte SH110X_SETSEGMENTREMAP = 0xA1; 
     
     const byte SH110X_DISPLAYALLON_RESUME = 0xA4;
     const byte SH110X_DISPLAYALLON    = 0xA5;
@@ -30,7 +31,7 @@ unit DisplayDriver
     
     const byte SH110X_SETPAGEADDR     = 0xB0;
     
-    const byte SH110X_COMSCANINC      = 0xC0;
+    const byte SH110X_COMSCANINC      = 0xC0; // Scan direction?
     const byte SH110X_COMSCANDEC      = 0xC8;
             
     const byte SH110X_SETDISPLAYOFFSET   = 0xD3;
@@ -43,7 +44,7 @@ unit DisplayDriver
     
     const byte SH110X_SETLOWCOLUMN      = 0x00;
     const byte SH110X_SETHIGHCOLUMN     = 0x10;
-    const byte SH110X_SETSTARTLINE      = 0x40;
+    const byte SH110X_SETSTARTLINE      = 0x40; // Scrolling?
     
     byte i2cAddress = 0x3C; // typically a good default
     bool i2cConfigured;
@@ -68,6 +69,7 @@ unit DisplayDriver
     int  h1;
     
     byte[DeviceDriver.pw * DeviceDriver.ph / 8] monoFrameBuffer; // 1 bit per pixel for monochrome (1024 = 128 * 64 / 8)
+    
     
     scrollUp(uint lines)
     {
@@ -140,7 +142,8 @@ unit DisplayDriver
             w1  = (Display.PixelWidth -1);
             h1  = (Display.PixelHeight-1);
     
-            if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin))
+            // overclock I2C to 1MHz! (default is 400kHz but 1MHz seens to work)
+            if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin, 1000)) 
             {
                 break;
             }
@@ -151,13 +154,13 @@ unit DisplayDriver
             Wire.Write(DisplayDriver.I2CController, SH110X_DISPLAYOFF);
             Wire.Write(DisplayDriver.I2CController, SH110X_SETDISPLAYCLOCKDIV);
             Wire.Write(DisplayDriver.I2CController, 0x51);
-            Wire.Write(DisplayDriver.I2CController, SH110X_MEMORYMODE);
+            Wire.Write(DisplayDriver.I2CController, SH110X_MEMORYMODE);     // SH110X_COLUMNADDR or SH110X_MEMORYMODE (did nothing)
             Wire.Write(DisplayDriver.I2CController, SH110X_SETCONTRAST);
             Wire.Write(DisplayDriver.I2CController, 0x47);
             Wire.Write(DisplayDriver.I2CController, SH110X_DCDC);
             Wire.Write(DisplayDriver.I2CController, 0x8A);
-            Wire.Write(DisplayDriver.I2CController, SH110X_SEGREMAP);
-            Wire.Write(DisplayDriver.I2CController, SH110X_COMSCANINC);
+            Wire.Write(DisplayDriver.I2CController, SH110X_SEGREMAP); // SH110X_SEGREMAP or SH110X_SETSEGMENTREMAP
+            Wire.Write(DisplayDriver.I2CController, SH110X_COMSCANINC);      // SH110X_COMSCANINC or SH110X_COMSCANDEC (blank?)
             Wire.Write(DisplayDriver.I2CController, SH110X_SETDISPSTARTLINE);
             Wire.Write(DisplayDriver.I2CController, 0);
             Wire.Write(DisplayDriver.I2CController, SH110X_SETDISPLAYOFFSET);
@@ -218,7 +221,6 @@ unit DisplayDriver
                     _ = Wire.EndTx(DisplayDriver.I2CController);
                     page++;
                 }
-                
                 Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
                 Wire.Write(DisplayDriver.I2CController, 0x40);
                 Wire.Write(DisplayDriver.I2CController, monoFrameBuffer, address, pw8);
@@ -256,11 +258,11 @@ unit DisplayDriver
     
     setPixel(int vx, int vy, uint colour)
     {
-        if (FlipX)
+        if (!FlipX)
         {
             vx = w1 - vx;
         }
-        if (FlipY)
+        if (!FlipY)
         {
             vy = h1 - vy;
         }
@@ -271,9 +273,8 @@ unit DisplayDriver
         
         uint ux = uint(vx);
         uint uy = uint(vy);
-        
         uint offset = ((uy & 0xFFF8) * uint(DeviceDriver.pw/8)) + ux;
-        if (offset < DeviceDriver.pw * DeviceDriver.ph / 8) // TODO REMOVE
+        if (offset < DeviceDriver.pw * DeviceDriver.ph / 8) // Clipping ..
         {
             if (colour == 0xF000) // Colour.Invert
             {
@@ -289,10 +290,41 @@ unit DisplayDriver
             }
         }
     }
+    setClippedTextPixel(int vx, int vy, uint colour)
+    {
+        if (!FlipX)
+        {
+            vx = w1 - vx;
+        }
+        if (!FlipY)
+        {
+            vy = h1 - vy;
+        }
+        if (!IsPortrait)
+        {
+            Int.Swap(ref vx, ref vy);
+        }
+        
+        uint ux = uint(vx);
+        uint uy = uint(vy);
+        uint offset = ((uy & 0xFFF8) * uint(DeviceDriver.pw/8)) + ux;
+        if (colour == 0xF000) // Colour.Invert
+        {
+            monoFrameBuffer[offset] = monoFrameBuffer[offset] ^ (1 << (uy & 0x07));
+        }
+        else if (colour == 0x0000) // Colour.Black
+        {
+            monoFrameBuffer[offset] = monoFrameBuffer[offset] & ~(1 << (uy & 0x07));
+        }
+        else
+        {
+            monoFrameBuffer[offset] = monoFrameBuffer[offset] | (1 << (uy & 0x07));
+        }
+    }
     
     horizontalLine(int vx1, int vy, int vx2, uint colour)
     {
-        if (FlipX)
+        if (!FlipX)
         {
             vx1 = w1 - vx1;
             vx2 = w1 - vx2;
@@ -301,7 +333,7 @@ unit DisplayDriver
                 Int.Swap(ref vx1, ref vx2);
             }
         }
-        if (FlipY)
+        if (!FlipY)
         {
             vy = h1 - vy;
         }
@@ -317,11 +349,11 @@ unit DisplayDriver
     
     verticalLine(int vx, int vy1, int vy2, uint colour)
     {
-        if (FlipX)
+        if (!FlipX)
         {
             vx = w1 - vx;
         }
-        if (FlipY)
+        if (!FlipY)
         {
             vy1 = h1 - vy1;
             vy2 = h1 - vy2;

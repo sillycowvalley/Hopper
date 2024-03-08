@@ -25,6 +25,7 @@ program WaveShareLCD114Demo
         long laps;
         loop
         {
+            Screen.SetCursor(0,0);
             WriteLn("Laps: " + laps.ToString());
             laps++;
             

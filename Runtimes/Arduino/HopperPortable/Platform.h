@@ -155,7 +155,7 @@ void HRWire_BeginTx(Byte controller, Byte address);
 Byte HRWire_EndTx(Byte controller);
 void HRWire_Write(Byte controller, Byte data);
 void HRWire_Write(Byte controller, UInt hrarray, UInt startIndex, UInt length);
-void HRWire_Configure(Byte controller, Byte sdaPin, Byte sclPin);
+void HRWire_Configure(Byte controller, Byte sdaPin, Byte sclPin, UInt freqkHz);
 Byte HRWire_RequestFrom(Byte controller, Byte address, Byte bytes);
 Byte HRWire_Read(Byte controller);
 

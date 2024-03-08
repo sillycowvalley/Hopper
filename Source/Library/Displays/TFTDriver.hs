@@ -669,6 +669,30 @@ unit DisplayDriver
         MCU.DigitalWrite(DeviceDriver.csPin, true);
         SPI.EndTransaction(DeviceDriver.spiController);
     }
+    setClippedTextPixel(int x, int y, uint colour)
+    {
+        if (colour == Colour.Invert) // Invert
+        {
+#if !defined(HAS_DISPLAY_READ)
+            WriteLn("#### This display is write-only ####");
+            Die(0x0A);
+#else            
+            SPI.BeginTransaction(DeviceDriver.spiController);
+            MCU.DigitalWrite(DeviceDriver.csPin, false);
+            getPixelAddrWindowSPI(x, y);
+            colour = readColour565();
+            MCU.DigitalWrite(DeviceDriver.csPin, true);
+            SPI.EndTransaction(DeviceDriver.spiController);
+            colour = ~colour;
+#endif
+        }
+        SPI.BeginTransaction(DeviceDriver.spiController);
+        MCU.DigitalWrite(DeviceDriver.csPin, false);
+        setPixelAddrWindowSPI(x, y);
+        SPI.WriteWord(DeviceDriver.spiController, colour);
+        MCU.DigitalWrite(DeviceDriver.csPin, true);
+        SPI.EndTransaction(DeviceDriver.spiController);
+    }
 
 #ifdef FONT_EXISTS    
     filledRectangle(int x0, int y0, byte w, byte h, uint colour)

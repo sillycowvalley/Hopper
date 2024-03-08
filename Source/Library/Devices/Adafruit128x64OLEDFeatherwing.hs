@@ -6,8 +6,9 @@ unit DeviceDriver
 #endif
 
     #define HAS_BUTTONS
+    #define SH110X_OLED_128x64
     
-    uses "/Source/Library/Displays/SH110XDriver.hs"
+    uses "/Source/Library/Displays/SH110XDriver"
  
     friend DisplayDriver;
     

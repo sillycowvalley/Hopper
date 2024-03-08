@@ -188,6 +188,7 @@ unit Screen
                 return;
             }          
 #endif      
+            
             if ((c <= char(32)) || (c > char(127)))
             {
                 Display.FilledRectangle(x0, y0, cellWidth, cellHeight, backColour);
@@ -198,23 +199,47 @@ unit Screen
                 int index = 0;
                 int y1 = y0;
                 int x1;
-                for (int y=0; y < cellHeight; y++)
+                
+                if ((x0 >= 0) && (y0 >= 0) && (x0 + cellWidth <= Display.PixelWidth) && (y0 + cellHeight <= Display.PixelHeight))
                 {
-                    x1 = x0;
-                    for (int x=0; x < cellWidth; x++)
+                    for (int y=0; y < cellHeight; y++)
                     {
-#ifdef DISPLAY_IS_RGB565
-                        DisplayDriver.setTextPixel(x1, y1, cellBuffer[index]);
-#else
-                        Display.SetPixel(x1, y1, cellBuffer[index]);
+                        x1 = x0;
+                        for (int x=0; x < cellWidth; x++)
+                        {
+#if defined(DISPLAY_IS_RGB565) || defined(DISPLAY_IS_MONO)
+                            DisplayDriver.setClippedTextPixel(x1, y1, cellBuffer[index]);
 #endif
-                        index++;
-                        x1++;
+#if !defined(DISPLAY_IS_RGB565) && !defined(DISPLAY_IS_MONO)
+                            DisplayDriver.setPixel(x1, y1, cellBuffer[index]);
+#endif    
+                            index++;
+                            x1++;
+                        }
+                        y1++;
                     }
-                    y1++;
                 }
-                Display.Resume();
+                else
+                {
+                    for (int y=0; y < cellHeight; y++)
+                    {
+                        x1 = x0;
+                        for (int x=0; x < cellWidth; x++)
+                        {
+#if defined(DISPLAY_IS_RGB565)
+                            DisplayDriver.setTextPixel(x1, y1, cellBuffer[index]);
+#endif
+#if !defined(DISPLAY_IS_RGB565)
+                            Display.SetPixel(x1, y1, cellBuffer[index]);
+#endif    
+                            index++;
+                            x1++;
+                        }
+                        y1++;
+                    }
+                }
             }
+            Display.Resume();
         }
 #endif
 #ifdef BUFFER_TEXT

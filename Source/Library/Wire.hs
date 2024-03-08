@@ -16,6 +16,10 @@ unit Wire
     }
     bool Initialize(byte i2cController, byte sdaPin, byte sclPin)
     {
+        return Initialize(i2cController, sdaPin, sclPin, 400);
+    }
+    bool Initialize(byte i2cController, byte sdaPin, byte sclPin, uint freqkHz)
+    {
         bool success;
         loop
         {
@@ -70,7 +74,7 @@ unit Wire
                 }
             }
 #endif
-            Configure(i2cController, sdaPin, sclPin);
+            Configure(i2cController, sdaPin, sclPin, freqkHz);
             success = Begin(i2cController);
             break;
         } // loop'
@@ -89,9 +93,11 @@ unit Wire
     byte EndTx(byte i2cController)  library;
     Write(byte i2cController, byte data) library;
     Write(byte i2cController, byte[] data, uint startIndex, uint length) library;
+    Write(byte i2cController, bool[] data, uint startIndex, uint length) library;
     
     byte RequestFrom(byte i2cController, byte address, byte bytes) library;
     byte Read(byte i2cController) library;
     
     Configure(byte i2cController, byte sdaPin, byte sclPin) library;
+    Configure(byte i2cController, byte sdaPin, byte sclPin, uint freqkHz) library;
 }

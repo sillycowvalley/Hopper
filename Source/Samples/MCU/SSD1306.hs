@@ -115,6 +115,7 @@ program SSD1306Demo
             WriteLn(laps.ToString());
             Display.Resume();
             laps++;
+            
             start = Millis;
             Display.Clear(Colour.Black);
             elapsed = Millis - start;
@@ -122,7 +123,9 @@ program SSD1306Demo
             WriteLn("Clear: ");
             WriteLn(elapsed.ToString());
             Display.Resume();
-            Delay(1000);
+            Delay(500);
+            
+            SetCursor(0,0);
             
             start = Millis;
             TestDrawRect();
@@ -133,7 +136,7 @@ program SSD1306Demo
             EchoToLCD = false;
             WriteLn(elapsed.ToString());
             Display.Resume();
-            Delay(1000);
+            Delay(500);
             
             start = Millis;
             TestFillRect();   
@@ -144,7 +147,7 @@ program SSD1306Demo
             EchoToLCD = false;
             WriteLn(elapsed.ToString());
             Display.Resume();
-            Delay(1000);
+            Delay(500);
             
             start = Millis;
             TestDrawLines();
@@ -155,7 +158,7 @@ program SSD1306Demo
             EchoToLCD = false;
             WriteLn(elapsed.ToString());
             Display.Resume();
-            Delay(1000);
+            Delay(500);
         }
     }
 }

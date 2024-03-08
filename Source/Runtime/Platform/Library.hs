@@ -97,7 +97,7 @@ unit Library
 #endif   
                         HRWire.Write(byte(controller), byte(b));
                     }
-                    case 2:
+                    case 2: // byte[]
                     {
                         Type ltype;
                         uint length = Pop(ref ltype);
@@ -124,6 +124,15 @@ unit Library
             }
             case LibCall.WireConfigure:
             {
+                uint freqkHz = 400;
+                if (iOverload == 1)
+                {
+                    Type freqtype;
+                    freqkHz = Pop(ref freqtype);
+#ifdef CHECKED
+                     AssertUInt(freqtype,  freqkHz);
+#endif   
+                }
                 Type cltype;
                 uint sclPin = Pop(ref cltype);
                 Type datype;
@@ -135,7 +144,7 @@ unit Library
                 AssertByte(cltype, sclPin);
                 AssertByte(datype, sdaPin);
 #endif
-                HRWire.Configure(byte(controller), byte(sdaPin), byte(sclPin));
+                HRWire.Configure(byte(controller), byte(sdaPin), byte(sclPin), freqkHz);
             }
             case LibCall.WireRequestFrom:
             {

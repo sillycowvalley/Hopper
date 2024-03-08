@@ -26,7 +26,7 @@ unit HRWire
     {
         ErrorDump(136); Error = 0x0A; // not implemented on Windows
     }
-    Configure(byte controller, byte sdaPin, byte sclPin)
+    Configure(byte controller, byte sdaPin, byte sclPin, uint freqkHz)
     {
         ErrorDump(136); Error = 0x0A; // not implemented on Windows
     }

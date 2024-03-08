@@ -898,8 +898,10 @@ Byte sdaPin0 = 0;
 Byte sdaPin1 = 0;
 Byte sclPin0 = 0;
 Byte sclPin1 = 0;
+uint32_t freqkHz0 = 400;
+uint32_t freqkHz1 = 400;
 
-void HRWire_Configure(Byte controller, Byte sdaPin, Byte sclPin)
+void HRWire_Configure(Byte controller, Byte sdaPin, Byte sclPin, UInt freqkHz)
 {
     switch (controller)
     {
@@ -907,11 +909,13 @@ void HRWire_Configure(Byte controller, Byte sdaPin, Byte sclPin)
             controller0Configured = true;
             sdaPin0 = sdaPin;
             sclPin0 = sclPin;
+            freqkHz0 = freqkHz;
             break;  
         case 1:
             controller1Configured = true;
             sdaPin1 = sdaPin;
             sclPin1 = sclPin;
+            freqkHz1 = freqkHz;
             break;  
     }
 }
@@ -934,6 +938,9 @@ bool HRWire_Begin(Byte controller)
                         break;
                     }
                 }
+#ifdef RP2040
+                Wire.setClock(freqkHz0 * 1000);
+#endif
                 Wire.begin();
                 success = true;
                 break;
@@ -950,6 +957,7 @@ bool HRWire_Begin(Byte controller)
                         break;
                     }
                 }
+                Wire1.setClock(freqkHz1 * 1000);
                 Wire1.begin();
                 success = true;
                 break;

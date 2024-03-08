@@ -7,11 +7,11 @@ program TFTandSDdemo
     //uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
     //uses "/Source/Library/Devices/Adafruit160x80ColorTFT"
     
-    uses "/Source/Library/Boards/PiPico"
-    uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
+    //uses "/Source/Library/Boards/PiPico"
+    //uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
     //uses "/Source/Library/Devices/Generic480x320ST7796TFT"
     
-    //uses "/Source/Library/Devices/WSPicoLCD114"
+    uses "/Source/Library/Devices/WSPicoLCD114"
     //uses "/Source/Library/Devices/WSPicoLCD096"
     //uses "/Source/Library/Devices/WSPicoLCD144"
     //uses "/Source/Library/Devices/WSRP2040LCD096"
@@ -424,9 +424,9 @@ program TFTandSDdemo
 #endif     
 
 #if defined(WAVESHARE_PICO_LCD_114) || defined(WAVESHARE_PICO_LCD_096) || defined(WAVESHARE_PICO_LCD_144) || defined(WAVESHARE_RP2040_LCD_096)
-        IsPortrait = true;
-        FlipX = true;
-        FlipY = true;
+        //IsPortrait = true;
+        //FlipX = true;
+        //FlipY = true;
 #endif   
         
         if (!DeviceDriver.Begin())
