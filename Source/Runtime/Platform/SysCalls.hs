@@ -163,6 +163,8 @@ unit SysCalls
         FileGetDate = 0x9D,
         DirectoryGetDate = 0x9E,
         
+        SerialWriteString = 0xA0,
+        
         SerialIsAvailableGet = 0xA5,
         SerialReadChar       = 0xA6,
         SerialWriteChar      = 0xA7,

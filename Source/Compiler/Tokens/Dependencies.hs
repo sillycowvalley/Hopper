@@ -171,6 +171,51 @@ unit Dependencies
         return true;
     }
     
+    string ResolveRelativePath(string hsPath, string currentPath, string projectPath)
+    {
+        // same search path logic as in usesDeclaration(..) in PreProcess
+        if (!File.Exists(hsPath))
+        {
+            string tryFile = hsPath;
+            uint removeLevels = 0;
+            if (tryFile.StartsWith("./"))
+            {
+                tryFile = tryFile.Substring(2);
+            }
+            while (tryFile.StartsWith("../"))
+            {
+                tryFile = tryFile.Substring(3);
+                removeLevels++;
+            }
+            if (!tryFile.StartsWith("/"))
+            {
+                // first try relative to current source file:
+                string currentDirectory = Path.GetDirectoryName(currentPath);
+                while (removeLevels > 0)
+                {
+                    currentDirectory = Path.GetDirectoryName(currentDirectory);
+                    removeLevels--;
+                }
+                string tryPath = Path.Combine(currentDirectory, tryFile);
+                if (File.Exists(tryPath))
+                {
+                    hsPath = tryPath;
+                }
+                else
+                {
+                    // then try relative to main project file
+                    string projectDirectory = Path.GetDirectoryName(projectPath);
+                    tryPath = Path.Combine(projectDirectory, tryFile);
+                    if (File.Exists(tryPath))
+                    {
+                        hsPath = tryPath;
+                    }
+                }
+            }
+        }
+        return hsPath;
+    }
+    
     bool TryGetSources(string primaryPath, <string> sources)
     {
         //OutputDebug("TryGetSources: " + primaryPath);
@@ -178,18 +223,22 @@ unit Dependencies
         sources.Clear();
         Directives.New();
         <string,bool> usesPathsToParse;
+        <string,string> usesPathsSource;
         primaryPath = primaryPath.ToLower();
         usesPathsToParse[primaryPath] = true;
+        usesPathsSource[primaryPath] = primaryPath;
         sources.Append(primaryPath);
         string usesPrefix = "uses" + '"';
         loop
         {
             string nextPath;
+            string nextSourcePath;
             foreach (var kv in usesPathsToParse)
             {
                 if (kv.value)
                 {
                     nextPath = kv.key;
+                    nextSourcePath = usesPathsSource[nextPath];
                     break;
                 }
             }
@@ -198,11 +247,14 @@ unit Dependencies
                 break; // done
             }
             usesPathsToParse[nextPath] = false; // we are parsing it
+            
+            nextPath = ResolveRelativePath(nextPath, nextSourcePath, Editor.ProjectPath);
+            
             file textFile = File.Open(nextPath);
             //OutputDebug("TryGetSources: Open: " + nextPath);
             if (!textFile.IsValid())
             {
-                OutputDebug("TryGetSources Failed A: " + nextPath);
+                OutputDebug("TryGetSources Failed A: " + nextPath + " (from " + nextSourcePath + ")");
                 return false;
             }
             bool isAllDefined = true; // reset for each new file
@@ -241,6 +293,7 @@ unit Dependencies
                         if (isAllDefined)
                         {
                             usesPathsToParse[ln] = true;
+                            usesPathsSource[ln] = nextPath;
                             sources.Append(ln);
                         }
                     }

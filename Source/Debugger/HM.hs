@@ -580,7 +580,7 @@ program HopperMonitor
         //Screen.Clear();
         
         // if "Debugger.options" exists, see it has a comPort set by Port.hexe:
-        uint comPort;
+        uint comPort = 4242; // bogus port value
         optionsPath = Path.MakeOptions("Debugger.options");
         if (File.Exists(optionsPath))
         {
@@ -596,14 +596,14 @@ program HopperMonitor
                         // found a current port
                     }
                 }
-                if (comPort != 0)
+                if (comPort != 4242)
                 {
                     string currentPort = "COM" + comPort.ToString();
                     <string> ports = Serial.Ports;
                     if (!ports.Contains(currentPort))
                     {
                         // current port no longer exists
-                        comPort = 0;
+                        comPort = 4242;
                         debugOptions["comPort"] = comPort.ToString();
                         File.Delete(optionsPath);
                         dict["debugoptions"] = debugOptions;

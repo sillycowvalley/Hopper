@@ -1,6 +1,9 @@
+cd /source/runtime
 preprocess runtime
 compile runtime -o
-optimize runtime
+//optimize runtime
 codegen runtime
 dasm runtime
+
+runtime
 

@@ -17,6 +17,7 @@ UInt Memory_heapSize = 0x4000;
 UInt Memory_freeList = 0;
 UInt HRArray_setSlots = 0;
 UInt HRArray_clearSlots = 0;
+Bool External_interruptsDisabled = false;
 Bool Library_isrExists = false;
 UInt HopperVM_binaryAddress = 0;
 UInt HopperVM_programSize = 0;
@@ -51,11 +52,6 @@ UInt Screen_defaultForeColour = Colour_MatrixGreen_Get();
 UInt Screen_defaultBackColour = Colour_Black_Get();
     
 void HopperEntryPoint()
-{
-    Runtime_MCU();
-}
-
-void Runtime_MCU()
 {
     Runtime_loaded = false;
     HopperVM_Restart();
@@ -139,17 +135,23 @@ void Runtime_MCU()
             case 'P':
             {
                 Runtime_WaitForEnter();
-                Serial_WriteChar(Char(13));
-                Runtime_Out4Hex(HopperVM_PC_Get());
-                Serial_WriteChar(Char(92));
+                UInt serialBuffer = HRString_New();
+                HRString_BuildChar_R(serialBuffer, Char(13));
+                Runtime_out4Hex_R(serialBuffer, HopperVM_PC_Get());
+                HRString_BuildChar_R(serialBuffer, Char(92));
+                External_SerialWriteString(serialBuffer);
+                GC_Release(serialBuffer);
                 break;
             }
             case 'K':
             {
                 Runtime_WaitForEnter();
-                Serial_WriteChar(Char(13));
-                Runtime_Out4Hex(Runtime_currentCRC);
-                Serial_WriteChar(Char(92));
+                UInt serialBuffer = HRString_New();
+                HRString_BuildChar_R(serialBuffer, Char(13));
+                Runtime_out4Hex_R(serialBuffer, Runtime_currentCRC);
+                HRString_BuildChar_R(serialBuffer, Char(92));
+                External_SerialWriteString(serialBuffer);
+                GC_Release(serialBuffer);
                 break;
             }
             case 'E':
@@ -161,34 +163,38 @@ void Runtime_MCU()
             case 'R':
             {
                 Runtime_WaitForEnter();
-                Serial_WriteChar(Char(13));
-                Serial_WriteChar('P');
-                Serial_WriteChar('C');
-                Serial_WriteChar('=');
-                Runtime_Out4Hex(HopperVM_PC_Get());
-                Serial_WriteChar(' ');
-                Serial_WriteChar('C');
-                Serial_WriteChar('S');
-                Serial_WriteChar('P');
-                Serial_WriteChar('=');
-                Runtime_Out2Hex(Byte(HopperVM_CSP_Get()));
-                Serial_WriteChar(' ');
-                Serial_WriteChar('S');
-                Serial_WriteChar('P');
-                Serial_WriteChar('=');
-                Runtime_Out4Hex(HopperVM_SP_Get() + 0x0600);
-                Serial_WriteChar(' ');
-                Serial_WriteChar('T');
-                Serial_WriteChar('S');
-                Serial_WriteChar('P');
-                Serial_WriteChar('=');
-                Runtime_Out4Hex(HopperVM_SP_Get() + 0x0500);
-                Serial_WriteChar(' ');
-                Serial_WriteChar('B');
-                Serial_WriteChar('P');
-                Serial_WriteChar('=');
-                Runtime_Out4Hex(HopperVM_BP_Get() + 0x0600);
-                Serial_WriteChar(Char(92));
+                UInt serialBuffer = HRString_New();
+                HRString_BuildChar_R(serialBuffer, Char(13));
+                HRString_BuildChar_R(serialBuffer, Char(13));
+                HRString_BuildChar_R(serialBuffer, 'P');
+                HRString_BuildChar_R(serialBuffer, 'C');
+                HRString_BuildChar_R(serialBuffer, '=');
+                Runtime_out4Hex_R(serialBuffer, HopperVM_PC_Get());
+                HRString_BuildChar_R(serialBuffer, ' ');
+                HRString_BuildChar_R(serialBuffer, 'C');
+                HRString_BuildChar_R(serialBuffer, 'S');
+                HRString_BuildChar_R(serialBuffer, 'P');
+                HRString_BuildChar_R(serialBuffer, '=');
+                Runtime_out2Hex_R(serialBuffer, Byte(HopperVM_CSP_Get()));
+                HRString_BuildChar_R(serialBuffer, ' ');
+                HRString_BuildChar_R(serialBuffer, 'S');
+                HRString_BuildChar_R(serialBuffer, 'P');
+                HRString_BuildChar_R(serialBuffer, '=');
+                Runtime_out4Hex_R(serialBuffer, HopperVM_SP_Get() + 0x0600);
+                HRString_BuildChar_R(serialBuffer, ' ');
+                HRString_BuildChar_R(serialBuffer, 'T');
+                HRString_BuildChar_R(serialBuffer, 'S');
+                HRString_BuildChar_R(serialBuffer, 'P');
+                HRString_BuildChar_R(serialBuffer, '=');
+                Runtime_out4Hex_R(serialBuffer, HopperVM_SP_Get() + 0x0500);
+                HRString_BuildChar_R(serialBuffer, ' ');
+                HRString_BuildChar_R(serialBuffer, 'B');
+                HRString_BuildChar_R(serialBuffer, 'P');
+                HRString_BuildChar_R(serialBuffer, '=');
+                Runtime_out4Hex_R(serialBuffer, HopperVM_BP_Get() + 0x0600);
+                HRString_BuildChar_R(serialBuffer, Char(92));
+                External_SerialWriteString(serialBuffer);
+                GC_Release(serialBuffer);
                 break;
             }
             case 'T':
@@ -252,12 +258,15 @@ void Runtime_MCU()
                 {
                     HopperVM_Initialize(loadedAddress, codeLength);
                     HopperVM_Restart();
-                    Runtime_Out4Hex(codeLength);
-                    Serial_WriteChar(' ');
-                    Runtime_Out4Hex(Memory_HeapStart_Get());
-                    Serial_WriteChar(' ');
-                    Runtime_Out4Hex(Memory_HeapSize_Get());
-                    Serial_WriteChar(' ');
+                    UInt serialBuffer = HRString_New();
+                    Runtime_out4Hex_R(serialBuffer, codeLength);
+                    HRString_BuildChar_R(serialBuffer, ' ');
+                    Runtime_out4Hex_R(serialBuffer, Memory_HeapStart_Get());
+                    HRString_BuildChar_R(serialBuffer, ' ');
+                    Runtime_out4Hex_R(serialBuffer, Memory_HeapSize_Get());
+                    HRString_BuildChar_R(serialBuffer, ' ');
+                    External_SerialWriteString(serialBuffer);
+                    GC_Release(serialBuffer);
                 }
                 for (;;)
                 {
@@ -500,14 +509,15 @@ void Runtime_WaitForEnter()
 
 void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
 {
+    UInt pageBuffer = HRString_New();
     UInt rowAddress = (iPage << 0x08);;
     for (Byte row = 0x00; row < 0x10; row++)
     {
-        Serial_WriteChar(Char(13));
+        HRString_BuildChar_R(pageBuffer, Char(13));
         if (includeAddresses)
         {
-            Runtime_Out4Hex(rowAddress);
-            Serial_WriteChar(' ');
+            Runtime_out4Hex_R(pageBuffer, rowAddress);
+            HRString_BuildChar_R(pageBuffer, ' ');
             rowAddress = rowAddress + 0x10;
         }
         if (iPage == 0x00)
@@ -621,13 +631,13 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
                 } // switch
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                     if (col == 0x08)
                     {
-                        Serial_WriteChar(' ');
+                        HRString_BuildChar_R(pageBuffer, ' ');
                     }
                 }
-                Runtime_Out2Hex(data);
+                Runtime_out2Hex_R(pageBuffer, data);
             }
         }
         else if (iPage == 0x04)
@@ -638,18 +648,18 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
                 UInt stackData = HopperVM_GetCS(address);
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                     if (col == 0x04)
                     {
-                        Serial_WriteChar(' ');
+                        HRString_BuildChar_R(pageBuffer, ' ');
                     }
                 }
-                Runtime_Out2Hex(Byte(stackData & 0xFF));
+                Runtime_out2Hex_R(pageBuffer, Byte(stackData & 0xFF));
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                 }
-                Runtime_Out2Hex(Byte(stackData >> 0x08));
+                Runtime_out2Hex_R(pageBuffer, Byte(stackData >> 0x08));
             }
         }
         else if (iPage == 0x05)
@@ -662,13 +672,13 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
                 UInt stackData = HopperVM_Get_R(address, htype);
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                     if (col == 0x08)
                     {
-                        Serial_WriteChar(' ');
+                        HRString_BuildChar_R(pageBuffer, ' ');
                     }
                 }
-                Runtime_Out2Hex(Byte(htype));
+                Runtime_out2Hex_R(pageBuffer, Byte(htype));
             }
         }
         else if (iPage == 0x06)
@@ -680,18 +690,18 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
                 UInt stackData = HopperVM_Get_R(address, htype);
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                     if (col == 0x04)
                     {
-                        Serial_WriteChar(' ');
+                        HRString_BuildChar_R(pageBuffer, ' ');
                     }
                 }
-                Runtime_Out2Hex(Byte(stackData & 0xFF));
+                Runtime_out2Hex_R(pageBuffer, Byte(stackData & 0xFF));
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                 }
-                Runtime_Out2Hex(Byte(stackData >> 0x08));
+                Runtime_out2Hex_R(pageBuffer, Byte(stackData >> 0x08));
             }
         }
         else if (iPage == 0x07)
@@ -704,18 +714,18 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
                 UInt stackData = HopperVM_Get_R(address, htype);
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                     if (col == 0x04)
                     {
-                        Serial_WriteChar(' ');
+                        HRString_BuildChar_R(pageBuffer, ' ');
                     }
                 }
-                Runtime_Out2Hex(Byte(stackData & 0xFF));
+                Runtime_out2Hex_R(pageBuffer, Byte(stackData & 0xFF));
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                 }
-                Runtime_Out2Hex(Byte(stackData >> 0x08));
+                Runtime_out2Hex_R(pageBuffer, Byte(stackData >> 0x08));
             }
         }
         else if (iPage > 0x07)
@@ -726,13 +736,13 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
                 address = address + (0x0100 * iPage);
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                     if (col == 0x08)
                     {
-                        Serial_WriteChar(' ');
+                        HRString_BuildChar_R(pageBuffer, ' ');
                     }
                 }
-                Runtime_Out2Hex(Memory_ReadByte(address));
+                Runtime_out2Hex_R(pageBuffer, Memory_ReadByte(address));
             }
         }
         else
@@ -741,37 +751,39 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
             {
                 if (includeAddresses)
                 {
-                    Serial_WriteChar(' ');
+                    HRString_BuildChar_R(pageBuffer, ' ');
                     if (col == 0x08)
                     {
-                        Serial_WriteChar(' ');
+                        HRString_BuildChar_R(pageBuffer, ' ');
                     }
                 }
-                Runtime_Out2Hex(0x00);
+                Runtime_out2Hex_R(pageBuffer, 0x00);
             }
         }
     }
-    Serial_WriteChar(Char(13));
+    HRString_BuildChar_R(pageBuffer, Char(13));
+    External_SerialWriteString(pageBuffer);
+    GC_Release(pageBuffer);
 }
 
-void Runtime_Out4Hex(UInt value)
+void Runtime_out4Hex_R(UInt & pageBuffer, UInt value)
 {
     Byte b = Byte(value >> 0x0C);
-    Serial_WriteChar(HRByte_ToHex(b));
+    HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
     b = Byte((value >> 0x08) & 0x0F);
-    Serial_WriteChar(HRByte_ToHex(b));
+    HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
     b = Byte((value >> 0x04) & 0x0F);
-    Serial_WriteChar(HRByte_ToHex(b));
+    HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
     b = Byte(value & 0x0F);
-    Serial_WriteChar(HRByte_ToHex(b));
+    HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
 }
 
-void Runtime_Out2Hex(Byte value)
+void Runtime_out2Hex_R(UInt & pageBuffer, Byte value)
 {
     Byte b = Byte((value >> 0x04) & 0x0F);
-    Serial_WriteChar(HRByte_ToHex(b));
+    HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
     b = Byte(value & 0x0F);
-    Serial_WriteChar(HRByte_ToHex(b));
+    HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
 }
 
 Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength)
@@ -949,7 +961,7 @@ void HopperVM_Restart()
         HopperVM_pc = entryPoint;
         HopperVM_programOffset = 0x00;
     }
-    External_SetCodeStartAddress(HopperVM_programOffset);
+    External_SetProgramOffset(HopperVM_programOffset);
 }
 
 UInt HopperVM_GetAppName(Bool crc)
@@ -2214,18 +2226,6 @@ void IO_WriteLn()
 void IO_Write(Char c)
 {
     Serial_WriteChar(c);
-    if (IO_echoToLCD)
-    {
-        if (Char(0x0D) == c)
-        {
-        }
-        else if (Char(0x0C) == c)
-        {
-        }
-        else
-        {
-        }
-    }
 }
 
 void IO_WriteHex(UInt u)
@@ -4055,6 +4055,26 @@ Char HRByte_ToDigit(Byte d)
     return Char(d);
 }
 
+void Runtime_Out4Hex(UInt value)
+{
+    Byte b = Byte(value >> 0x0C);
+    Serial_WriteChar(HRByte_ToHex(b));
+    b = Byte((value >> 0x08) & 0x0F);
+    Serial_WriteChar(HRByte_ToHex(b));
+    b = Byte((value >> 0x04) & 0x0F);
+    Serial_WriteChar(HRByte_ToHex(b));
+    b = Byte(value & 0x0F);
+    Serial_WriteChar(HRByte_ToHex(b));
+}
+
+void Runtime_Out2Hex(Byte value)
+{
+    Byte b = Byte((value >> 0x04) & 0x0F);
+    Serial_WriteChar(HRByte_ToHex(b));
+    b = Byte(value & 0x0F);
+    Serial_WriteChar(HRByte_ToHex(b));
+}
+
 OpCode HopperVM_CurrentOpCode_Get()
 {
     return HopperVM_opCode;
@@ -4685,6 +4705,13 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         Type atype = (Type)0;
         UInt ch = HopperVM_Pop_R(atype);
         Serial_WriteChar(Char(ch));
+        break;
+    }
+    case SysCalls::eSerialWriteString:
+    {
+        Type stype = (Type)0;
+        UInt str = HopperVM_Pop_R(stype);
+        External_SerialWriteString(str);
         break;
     }
     case SysCalls::eLongNewFromConstant:
@@ -6209,7 +6236,7 @@ UInt HopperVM_RuntimeExecute(UInt hrpath, UInt hrargs)
         HopperVM_programSize = codeLength;
         HopperVM_constAddress = Memory_ReadCodeWord(HopperVM_binaryAddress + 0x02) + startAddress;
         HopperVM_programOffset = Memory_ReadCodeWord(HopperVM_binaryAddress + 0x04) + startAddress;
-        External_SetCodeStartAddress(HopperVM_programOffset);
+        External_SetProgramOffset(HopperVM_programOffset);
         HopperVM_methodTable = HopperVM_binaryAddress + 0x06;
         Minimal_Error_Set(0x00);
         HopperVM_cnp = false;
@@ -6228,7 +6255,7 @@ UInt HopperVM_RuntimeExecute(UInt hrpath, UInt hrargs)
     HopperVM_constAddress = constAddressBefore;
     HopperVM_methodTable = methodTableBefore;
     HopperVM_programOffset = programOffsetBefore;
-    External_SetCodeStartAddress(HopperVM_programOffset);
+    External_SetProgramOffset(HopperVM_programOffset);
     HopperVM_pc = pcBefore;
     HopperVM_gp = gpBefore;
     HopperVM_cspStart = cspStartBefore;
@@ -6332,7 +6359,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
             break;
         }
         case 0x02:
-        case 0x03:
         {
             Type ltype = (Type)0;
             UInt length = HopperVM_Pop_R(ltype);

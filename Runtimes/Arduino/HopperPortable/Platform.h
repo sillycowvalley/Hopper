@@ -100,6 +100,7 @@ void External_MCUClockSpeedSet(UInt value);
 Bool Serial_IsAvailable_Get();
 Char Serial_ReadChar();
 void Serial_WriteChar(Char value);
+void External_SerialWriteString(UInt hrbuffer);
 
 Byte Memory_ReadCodeByte(UInt address);
 void Memory_WriteCodeByte(UInt address, Byte value);
@@ -116,7 +117,7 @@ void Memory_WriteProgramByte(UInt address, Byte value);
 UInt Memory_ReadProgramWord(UInt address);
 void Memory_WriteProgramWord(UInt address, UInt value);
 
-void External_SetCodeStartAddress(UInt codeAddress);
+void External_SetProgramOffset(UInt codeAddress);
 
 UInt External_LongToFloat(UInt hrlong);
 UInt External_FloatToLong(UInt hrfloat);

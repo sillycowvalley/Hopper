@@ -185,6 +185,7 @@ unit DebugCommand
     
     watchWindow()
     {
+        Editor.SetStatusBarText("Updating stack view..");
         Pages.ClearPageData();
         Pages.LoadZeroPage(false); // for CSP and PC
         Output.Initialize();
@@ -234,9 +235,9 @@ unit DebugCommand
         if (pc != 0)
         {
             Editor.SetStatusBarText("");
+            watchWindow();
             string sourceIndex = Code.GetClosestSourceIndex(pc);
             Output.GotoSourceIndex(sourceIndex, true);
-            watchWindow();
             if (serialConnectionLost)
             {
                 Editor.SetStatusBarText("Serial connection lost.");
@@ -268,11 +269,11 @@ unit DebugCommand
     Run()
     {
         Editor.SetStatusBarText("Running..");
+        Editor.SetActiveLine(0, "", false);
         if (!Monitor.RunCommand("X"))
         {
             serialConnectionLost = true;
         }
-        Editor.SetActiveLine(0, "", false);
         if (serialConnectionLost)
         {
             Editor.SetStatusBarText("Serial connection lost.");

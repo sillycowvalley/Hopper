@@ -44,6 +44,7 @@ namespace HopperNET
         public byte[] Code { get; internal set; }
 
         // emulation APIs for small devices
+        public ushort ProgramOffset { get; internal set; }
         public byte[] memoryArray     { get; internal set; }
         public byte[] memoryCodeArray { get; internal set; }
 

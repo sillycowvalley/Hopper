@@ -12,7 +12,7 @@ program Port
     uint LoadPort()
     {
         // load options
-        uint comCurrent;
+        uint comCurrent = 4242; // bogus port value
         string optionsPath = Path.MakeOptions("Debugger.options");
         if (File.Exists(optionsPath))
         {

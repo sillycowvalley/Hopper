@@ -5,6 +5,7 @@ unit File
     bool IsValid(file this) system;
     file Open(string fullpath) system;
     file Create(string fullpath) system;
+    byte Read(file this) system;
     byte Read(file this, long seekPosition) system;
     Append(file this, byte content) system;
     Flush(file this) system;

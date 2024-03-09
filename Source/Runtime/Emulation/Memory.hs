@@ -20,6 +20,7 @@ unit Memory
     uint ReadProgramWord(uint address) system;
     WriteProgramWord(uint address, uint value) system;
     
+    uint ProgramOffset { set system; } // offset between "Code" and "Program" in memoryCodeArray (entry point)
     
     uint freeList;
     const byte mcbSize = 6;

@@ -6,6 +6,7 @@ program Badger
     
     //uses "/Source/Library/Devices/WSPicoePaper4200"
     uses "/Source/Library/Devices/WSPicoePaper290"
+    //uses "/Source/Library/Devices/WSPicoePaper213"
     uses "/Source/Library/Fonts/Hitachi5x7"
     
     bool exit;
@@ -30,15 +31,21 @@ program Badger
     
     {
         // Setup code:
-        PinISRDelegate buttonDelegate = ButtonISR;
+        
         //DisplayDriver.IsPortrait = true;
         //DisplayDriver.FlipX = true;
-        DisplayDriver.FlipY = true;
-        if (!DeviceDriver.Begin(buttonDelegate))
+        //DisplayDriver.FlipY = true;
+        if (!DeviceDriver.Begin())
         {
-            IO.WriteLn("Failed to initialize Waveshare Pico-ePaper-4.2");
+            IO.WriteLn("Failed to initialize Waveshare Pico-ePaper");
             return;
         }
+        //PinISRDelegate buttonDelegate = ButtonISR;
+        //if (!DeviceDriver.Begin(buttonDelegate))
+        //{
+        //    IO.WriteLn("Failed to initialize Waveshare Pico-ePaper");
+        //    return;
+        //}
         
         // Demo code:
         long start;
@@ -59,6 +66,8 @@ program Badger
             Display.Resume();
             IO.WriteLn("Black Screen: " + (Millis - start).ToString());
             Delay(100);
+            
+            break;
             
             start = Millis;
             Display.Suspend();

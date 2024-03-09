@@ -134,27 +134,23 @@ unit IO
     Write(char c)
     {
         Serial.WriteChar(c);
+#ifndef RUNTIME
         if (echoToLCD)
         {
             if (char(0x0D) == c)
             {
-#ifndef RUNTIME
                 Screen.PrintLn();
-#endif 
             }
             else if (char(0x0C) == c)
             {
-#ifndef RUNTIME
                 Screen.Clear();
-#endif 
             }
             else
             {
-#ifndef RUNTIME
                 Screen.Print(c);
-#endif 
             }
         }
+#endif
     }
     Write(string s)
     {

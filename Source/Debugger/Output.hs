@@ -1601,20 +1601,39 @@ unit Output
     
     uint WalkDumpFreeList(file memoryFile, uint indent)
     {
+        OutputDebug("<WalkDumpFreeList");
         uint size = 0;
         uint heapStart  = Pages.GetZeroPage("HEAPSTART");
         uint heapSize   = Pages.GetZeroPage("HEAPSIZE");
         long heapPtr    = heapStart;
         long heapEndPtr = long(heapStart) + long(heapSize);
+        OutputDebug("heapStart  = 0x" + heapStart.ToHexString(4));
+        OutputDebug("heapSize   = 0x" + heapSize.ToHexString(4));
+        OutputDebug("heapEndPtr = 0x" + heapEndPtr.ToHexString(5));
+        
         loop
         {
             if (heapPtr >= heapEndPtr)
             {
+                OutputDebug("  heapPtr    = 0x" + heapPtr.ToHexString(4) + " LAST");
                 break;
             }
             uint blockSize = Pages.GetPageWord(heapPtr);
+            
+            if (blockSize <= 2)
+            {
+                OutputDebug("  heapPtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4) + " WTF?!");
+                break; // WTF?!
+            }
+            else
+            {
+                OutputDebug("  heapPtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
+            }
+            
             if (freeBlocks.Contains(heapPtr))
             {
+                OutputDebug("  freePtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
+                
                 string content;
                 content = content.Pad(' ', indent);
                 
@@ -1646,11 +1665,13 @@ unit Output
             }
             heapPtr = heapPtr + blockSize;
         }
+        OutputDebug("WalkDumpFreeList>");
         return size;
     }
     
     uint WalkHeap(file memoryFile, uint indent)
     {
+        OutputDebug("<WalkHeap");
         uint size = 0;
         uint heapStart  = Pages.GetZeroPage("HEAPSTART");
         uint heapSize   = Pages.GetZeroPage("HEAPSIZE");
@@ -1664,28 +1685,28 @@ unit Output
         {
             if (heapPtr >= heapEndPtr)
             {
-                OutputDebug("heapPtr    = 0x" + heapPtr.ToHexString(4) + " LAST");
+                OutputDebug("  heapPtr    = 0x" + heapPtr.ToHexString(4) + " LAST");
                 break;
             }
             uint blockSize = Pages.GetPageWord(heapPtr);
             if (accountedFor.Contains(heapPtr))
             {
                 // we already walked it
-                OutputDebug("stackPtr   = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
+                OutputDebug("  stackPtr   = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
             }
             else if (freeBlocks.Contains(heapPtr))
             {
                 // accounted for
-                OutputDebug("freePtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
+                OutputDebug("  freePtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
             }
             else if (blockSize <= 2)
             {
-                OutputDebug("heapPtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4) + " WTF?!");
+                OutputDebug("  heapPtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4) + " WTF?!");
                 break; // WTF?!
             }
             else
             {
-                OutputDebug("heapPtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
+                OutputDebug("  heapPtr    = 0x" + heapPtr.ToHexString(4) + ", blockSize=0x" + blockSize.ToHexString(4));
                 // allocated by Memory.Allocate(..) so not reachable from the stack
                 string content;
                 content = content.Pad(' ', indent);
@@ -1715,6 +1736,7 @@ unit Output
             }
             heapPtr = heapPtr + blockSize;
         }
+        OutputDebug("WalkHeap>");
         return size;
     }
     DebugFlush(file memoryFile)

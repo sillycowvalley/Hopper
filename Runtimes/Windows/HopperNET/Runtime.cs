@@ -380,6 +380,10 @@ namespace HopperNET
         FileGetDate = 0x9D,
         DirectoryGetDate = 0x9E,
 
+        MemoryProgramOffsetSet = 0x9F,
+
+        SerialWriteString = 0xA0,
+
         SerialConnect = 0xA2,
         SerialClose = 0xA3,
         SerialIsValid = 0xA4,
@@ -6781,6 +6785,12 @@ namespace HopperNET
                 case SysCall.SerialWriteChar:
                     Serial.WriteChar((char)Pop());
                     break;
+                case SysCall.SerialWriteString:
+                    {
+                        HopperString str = (HopperString)PopVariant(HopperType.tString);
+                        Serial.WriteString(str);
+                    }
+                    break;
                 case SysCall.SerialPortsGet:
                     {
                         HopperList portList = new HopperList(HopperType.tString);
@@ -6888,13 +6898,13 @@ namespace HopperNET
                 case SysCall.MemoryReadProgramByte:
                     {
                         uint address = Pop();
-                        Push(currentContext.memoryCodeArray[address + currentContext.CodeOffset], HopperType.tByte);
+                        Push(currentContext.memoryCodeArray[address + currentContext.ProgramOffset], HopperType.tByte);
                     }
                     break;
                 case SysCall.MemoryReadProgramWord:
                     {
                         uint address = Pop();
-                        Push((ushort)(currentContext.memoryCodeArray[address + currentContext.CodeOffset] + (currentContext.memoryCodeArray[address + 1 + currentContext.CodeOffset] << 8)), HopperType.tUInt);
+                        Push((ushort)(currentContext.memoryCodeArray[address + currentContext.ProgramOffset] + (currentContext.memoryCodeArray[address + 1 + currentContext.ProgramOffset] << 8)), HopperType.tUInt);
                     }
                     break;
 
@@ -6902,15 +6912,21 @@ namespace HopperNET
                     {
                         uint data = Pop();
                         uint address = Pop();
-                        currentContext.memoryCodeArray[address + currentContext.CodeOffset] = (byte)data;
+                        currentContext.memoryCodeArray[address + currentContext.ProgramOffset] = (byte)data;
                     }
                     break;
                 case SysCall.MemoryWriteProgramWord:
                     {
                         uint data = Pop();
                         uint address = Pop();
-                        currentContext.memoryCodeArray[address + currentContext.CodeOffset] = (byte)(data & 0xFF);
-                        currentContext.memoryCodeArray[address + 1 + currentContext.CodeOffset] = (byte)((data >> 8) & 0xFF);
+                        currentContext.memoryCodeArray[address + currentContext.ProgramOffset] = (byte)(data & 0xFF);
+                        currentContext.memoryCodeArray[address + 1 + currentContext.ProgramOffset] = (byte)((data >> 8) & 0xFF);
+                    }
+                    break;
+                case SysCall.MemoryProgramOffsetSet:
+                    {
+                        uint programOffset = Pop();
+                        currentContext.ProgramOffset = (ushort)programOffset;
                     }
                     break;
 

@@ -246,6 +246,15 @@ void Serial_WriteChar(Char value)
     str[1] = 0;
     Serial.print(str);
 }
+void External_SerialWriteString(UInt hrbuffer)
+{
+    UInt length = HRString_GetLength(hrbuffer);
+    for (UInt i = 0; i < length; i++)
+    {
+        Char value = HRString_GetChar(hrbuffer, i);
+        Serial_WriteChar(value);
+    }
+}
 
 Char Serial_ReadChar()
 {
@@ -384,7 +393,7 @@ void Memory_WriteProgramWord(UInt address, UInt value)
     codeStartAddress[address + 1] = value >> 8;
 }
 
-void External_SetCodeStartAddress(UInt codeStart)
+void External_SetProgramOffset(UInt codeStart)
 {
     codeStartAddress = codeMemoryBlock + codeStart;
 }

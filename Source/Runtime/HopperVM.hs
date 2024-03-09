@@ -29,13 +29,13 @@ unit HopperVM
     const uint stackSize     = 512; // size of value stack in byte (each stack slot is 2 bytes)
     const uint callStackSize = 512; // size of callstack in bytes (4 bytes per call)
     
+    const uint dataMemoryStart = 0x0000; // data memory magically exists from 0x0000 to 0xFFFF
+    
 #ifdef RUNTIME    
     const uint keyboardBufferSize = 256;
 #endif
-    const uint dataMemoryStart = 0x0000; // data memory magically exists from 0x0000 to 0xFFFF
-    
-    
-#ifdef SERIAL_CONSOLE
+
+#ifndef LOCALDEBUGGER
     const uint jumpTableSize   = 512; // 4 byte function pointer slots on Pi Pico
 #else    
     const uint jumpTableSize   = 256; // 2 byte delegate slots, highest OpCode is currently 0x6A (256 will do until 0x7F)
@@ -149,7 +149,9 @@ unit HopperVM
     DataMemoryReset()
     {
         HRArray.Release();  // in case we were already called
+#ifndef LOCALDEBUGGER
         External.WebServerRelease();
+#endif
         
         uint nextAddress   = dataMemoryStart;
         callStack          = nextAddress;
@@ -168,17 +170,16 @@ unit HopperVM
         keyboardBuffer     = nextAddress;
         nextAddress        = nextAddress + keyboardBufferSize;
         IO.AssignKeyboardBuffer(keyboardBuffer);
-#endif
+#endif        
+        
         Instructions.PopulateJumpTable(jumpTable);
         
         dataMemory         = nextAddress;
         
-#ifdef SERIAL_CONSOLE        
         if (dataMemory < 0x0800)
         {
             dataMemory = 0x0800; // after our 'fake' stack pages
         }
-#endif
         
         // currently we have 64K on the Pi Pico (actually only 0xFF00 for various reasons)
         // to avoid any boundary condition issues in the heap allocator)
@@ -194,7 +195,9 @@ unit HopperVM
     Release()
     {
         HRArray.Release();
+#ifndef LOCALDEBUGGER
         External.WebServerRelease();
+#endif
         
         Memory.Free(breakpoints);
         breakpoints = 0;
@@ -281,8 +284,9 @@ unit HopperVM
         External.MCUClockSpeedSet(133); // RP2040 default
         DataMemoryReset();
         DiskSetup();
-        External.TimerInitialize();
-        
+#ifndef LOCALDEBUGGER
+        External.TimerInitialize(); // TODO : implement Timer on Windows
+#endif        
         sp = 0;
         gp = 0;
         bp = 0;
@@ -303,7 +307,7 @@ unit HopperVM
             pc = entryPoint;
             programOffset = 0;
         }
-        External.SetCodeStartAddress(programOffset);
+        External.SetProgramOffset(programOffset);
     }
     
     uint RuntimeExecute(uint hrpath, uint hrargs)
@@ -338,7 +342,7 @@ unit HopperVM
             programSize   = codeLength;
             constAddress  = ReadCodeWord(binaryAddress + 0x0002) + startAddress;
             programOffset = ReadCodeWord(binaryAddress + 0x0004) + startAddress;
-            External.SetCodeStartAddress(programOffset);
+            External.SetProgramOffset(programOffset);
             methodTable   = binaryAddress + 0x0006;
             
             Error = 0;
@@ -362,7 +366,7 @@ unit HopperVM
         constAddress  = constAddressBefore;
         methodTable   = methodTableBefore;
         programOffset = programOffsetBefore;
-        External.SetCodeStartAddress(programOffset);
+        External.SetProgramOffset(programOffset);
         pc = pcBefore;
         gp = gpBefore;
         cspStart = cspStartBefore;
@@ -1266,6 +1270,19 @@ unit HopperVM
                 AssertChar(atype, ch);
 #endif
                 Serial.WriteChar(char(ch));
+            }
+            case SysCalls.SerialWriteString:
+            {
+                Type stype;
+                uint str = Pop(ref stype);
+#ifdef CHECKED
+                if (stype != Type.String)
+                {
+                    ErrorDump(211);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif       
+                External.SerialWriteString(str);
             }
             
             case SysCalls.LongNewFromConstant:
@@ -3352,9 +3369,6 @@ unit HopperVM
     }
     WriteERROR()
     {
-#ifndef SERIAL_CONSOLE                
-        DumpStack(8);
-#endif        
         IO.WriteLn();
 #ifdef CHECKED                
         IO.WriteHex(messagePC);
@@ -3650,7 +3664,7 @@ unit HopperVM
         opCode = OpCode(ReadProgramByte(pc));
         pc++;
 
-#ifndef SERIAL_CONSOLE                
+#ifdef LOCALDEBUGGER                
         uint jump = ReadWord(jumpTable + (byte(opCode) << 1));
 #ifdef CHECKED
         if (0 == jump)
@@ -3678,11 +3692,11 @@ unit HopperVM
             messagePC = PC;
 #endif
             byte bopCode = ReadProgramByte(pc);
-#ifndef SERIAL_CONSOLE
+#ifdef LOCALDEBUGGER
             uint jump = ReadWord(jumpTable + (bopCode << 1));
 #endif
             pc++;
-#ifndef SERIAL_CONSOLE            
+#ifdef LOCALDEBUGGER            
 #ifdef CHECKED
             if (0 == jump)
             {
@@ -3704,7 +3718,7 @@ unit HopperVM
                 }
             }
             
-#ifdef SERIAL_CONSOLE // on MCU
+#ifndef LOCALDEBUGGER // on MCU
             if (External.FunctionCall(jumpTable, bopCode)) { continue; }
 #else
             InstructionDelegate instructionDelegate = InstructionDelegate(jump);

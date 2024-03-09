@@ -32,7 +32,7 @@ program PreProcess
     string projectPath;
     <string, bool> unitsParsed;
     string programNamespace;
-        
+    
     bool normalizeIdentifier(<string,string> idToken, ref string identifier, ref bool public, bool noDuplicates)
     {
         bool success = false;

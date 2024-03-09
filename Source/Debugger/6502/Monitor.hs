@@ -380,7 +380,6 @@ unit Monitor
     }
     uint ReturnToDebugger(char currentCommand, ref bool serialConnectionLost)
     {
-        //OutputDebug("ReturnToDebugger()");
         uint pc = GetCurrentPC();
         uint entry = GetEntryPC();
         bool showSource = true;
@@ -655,7 +654,7 @@ unit Monitor
         }
         Monitor.Command("P", true, true);
         string serialOutput = Monitor.GetSerialOutput();
-        if ((serialOutput.Length == 5) && (serialOutput[0] == char(0x0A)))
+        while ((serialOutput.Length >= 5) && ((serialOutput[0] == char(0x0A)) || (serialOutput[0] == char(0x0D))))
         {
             serialOutput = serialOutput.Substring(1);
         }
@@ -671,7 +670,7 @@ unit Monitor
     {
         Monitor.Command("K", true, true);
         string serialOutput = Monitor.GetSerialOutput();
-        if ((serialOutput.Length == 5) && (serialOutput[0] == char(0x0A)))
+        while ((serialOutput.Length >= 5) && ((serialOutput[0] == char(0x0A)) || (serialOutput[0] == char(0x0D))))
         {
             serialOutput = serialOutput.Substring(1);
         }
@@ -705,7 +704,7 @@ unit Monitor
         bool success;
         loop
         {
-            if (comPort == 0)
+            if (comPort == 4242)
             {
                 // use the serial port with the highest number
                 <string> ports = Serial.Ports;
@@ -718,7 +717,7 @@ unit Monitor
                     }
                 }
             }
-            if (comPort != 0)
+            if (comPort != 4242)
             {
                 Serial.Connect(comPort);
                 if (Serial.IsValid())
@@ -728,7 +727,7 @@ unit Monitor
                 }
             }
             string message = "Failed to connect to " + "COM" + comPort.ToString() + ".";
-            if (comPort == 0)
+            if (comPort == 4242)
             {
                 message = "No COM ports found.";
             }

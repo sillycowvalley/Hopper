@@ -83,7 +83,10 @@ unit BuildCommand
                             || pdValues.Contains("HOPPER_6502")
                            )
                         {
-                            GenerateIHex = true;
+                            if (!pdValues.Contains("LOCALDEBUGGER")) // special case for debugging portable runtime locally
+                            {
+                                GenerateIHex = true;
+                            }
                         }
                         break;
                     }

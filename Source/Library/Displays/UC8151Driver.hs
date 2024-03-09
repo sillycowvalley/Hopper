@@ -280,6 +280,12 @@ unit DisplayDriver
             // setup(0);
             // https://github.com/pimoroni/pimoroni-pico/blob/911cbb710ebb725d83065a21438c35783ef8b19c/drivers/uc8151_legacy/uc8151_legacy.cpp#L323
             byte[] data = { pswFlags.LUT_OTP | pswFlags.FORMAT_BW | pswFlags.SHIFT_RIGHT | pswFlags.BOOSTER_ON | pswFlags.RESET_NONE };
+            
+#ifdef HAS_RED
+            data[0] = data[0] | byte(pswFlags.FORMAT_BWR);
+#else
+            data[0] = data[0] | byte(pswFlags.FORMAT_BW);
+#endif            
             alternateAspect = false;
             if (    ((Display.PixelWidth == 160) && (Display.PixelHeight == 296))
                  || ((Display.PixelWidth == 296) && (Display.PixelHeight == 160))
@@ -309,6 +315,16 @@ unit DisplayDriver
                 alternateAspect = ((Display.PixelWidth == 230) && (Display.PixelHeight == 96));
                 data[0] = data[0] | byte(pswFlags.RES_96x230);
             }
+            
+            else if (   ((Display.PixelWidth == 122) && (Display.PixelHeight == 250))
+                     || ((Display.PixelWidth == 250) && (Display.PixelHeight == 122))
+               )
+            {
+                alternateAspect = ((Display.PixelWidth == 250) && (Display.PixelHeight == 122));
+                data[0] = data[0] | byte(pswFlags.RES_160x296);
+            }
+            
+            
             else
             {
                 IO.WriteLn("DeviceDriver.Begin failed : unsupported resolution");

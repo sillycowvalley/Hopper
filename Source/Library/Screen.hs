@@ -15,10 +15,10 @@ unit Screen
     uint[cellWidth*cellHeight] cellBuffer;
 #endif
     
+    byte textScale = 1;
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
     byte cursorX;
     byte cursorY;
-    byte textScale = 1;
     uint defaultForeColour = Colour.MatrixGreen;
     uint defaultBackColour = Colour.Black;
     uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}

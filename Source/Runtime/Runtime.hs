@@ -1,10 +1,12 @@
 program Runtime
 {
-//#define CHECKED     // mainly stack checks, range checks and division by zero
+#define SERIAL_CONSOLE // Source/System/IO uses serial only (for MCU's etc)
+#define RUNTIME        // keyboard buffer to make IO.IsBreak() work cannot be a 'string'
+ 
+//#define CHECKED      // mainly stack checks, range checks and division by zero
 //#define MEMORYLEAKS
 
-#define RUNTIME       // workaround special clipboard buffer for testing on Windows (that works without String)
-#define SERIAL_CONSOLE // Source/System/IO uses serial only (for MCU's etc)
+//#define LOCALDEBUGGER  // for debugging portable runtime locally
 
     uses "Emulation/Minimal" // minimal use of actual 'system' APIs
     uses "Emulation/Memory"
@@ -173,171 +175,47 @@ program Runtime
         return success;
     }
     
-    ErrorDump(uint number)
+#ifdef LOCALDEBUGGER
+    print(char c)
     {
-        IO.Write('D');IO.Write('A');IO.Write('N');IO.Write('G');IO.Write('!');
-        IO.WriteUInt(number);
+        Print(c, Colour.MatrixRed, Colour.Black);
     }
     
-    Windows()
+    printDigit(uint uthis)
     {
-        loaded = false;
-        HopperVM.Restart();
-        bool refresh = true;
-        loop
+        uint digit = uthis % 10;
+        char c = HRByte.ToDigit(byte(digit));
+        uthis = uthis / 10;
+        if (uthis != 0)
         {
-            if (refresh)
-            {
-                IO.WriteLn();
-                IO.Write('>');
-                refresh = false;
-            }
-            char c = IO.Read().ToUpper();
-            if (c != char(0x0D))
-            {
-                IO.Write(c);
-            }
-            
-            switch (c.ToUpper())
-            {
-                case 'Q':
-                {
-                    break; // exit
-                }
-                case 'L':
-                {
-                    IO.WriteLn();
-                    IO.Write('P');IO.Write('a');IO.Write('s');IO.Write('t');IO.Write('e');IO.Write(' ');
-                    IO.Write('I');IO.Write('H');IO.Write('e');IO.Write('x');IO.Write(':');
-                    IO.WriteLn();
-                    
-                    // load mode
-                    uint loadedAddress;
-                    uint codeLength;
-                    
-                    loaded = LoadIHex(ref loadedAddress, ref codeLength);
-                    
-                    if (loaded) // success?
-                    {
-                        IO.WriteLn();
-                        IO.Write('L');IO.Write('o');IO.Write('a');IO.Write('d');IO.Write('e');IO.Write('d');
-                        IO.WriteLn();
-                        HopperVM.Initialize(loadedAddress);
-                        HopperVM.Restart();
-                    }
-                    else
-                    {
-                        IO.WriteLn();
-                        IO.Write('F');IO.Write('a');IO.Write('i');IO.Write('l');IO.Write('e');IO.Write('d');
-                        IO.WriteLn();
-                    }
-                    refresh = true;
-                }
-                default:
-                {
-                    if (loaded)
-                    {
-                        switch (c.ToUpper())
-                        {
-                            case 'D':
-                            {
-                                if (HopperVM.Execute())
-                                {
-                                    HopperVM.Restart();
-                                }
-                                if (Error == 0)
-                                {
-                                    HopperVM.DumpHeap(false, 0x22 + 0x0A + 0x0A + 0x10); // breakpoints, Array bit tables and CurrentDirectory
-                                }
-                                refresh = true;
-                            }
-                            case 'I':
-                            {
-                                if (HopperVM.ExecuteStepTo())
-                                {
-                                    HopperVM.Restart();
-                                }
-                                refresh = true;
-                            }
-                            case 'O':
-                            {
-                                uint pc = HopperVM.PC;
-                                OpCode opCode = OpCode(ReadByte(pc));
-                                bool restart;
-                                if ((opCode == OpCode.CALLW) || (opCode == OpCode.CALLIW))
-                                {
-                                    
-                                    // set breakpoint[0] to PC+3
-                                    HopperVM.SetBreakpoint(0, pc+3);
-                                    restart = HopperVM.Execute();
-                                }
-                                else if (opCode == OpCode.CALLB)
-                                {
-                                    // set breakpoint[0] to PC+2
-                                    HopperVM.SetBreakpoint(0, pc+2);
-                                    restart = HopperVM.Execute();
-                                }
-                                else if (opCode == OpCode.CALLREL)
-                                {
-                                    // set breakpoint[0] to PC+1
-                                    HopperVM.SetBreakpoint(0, pc+1);
-                                    restart = HopperVM.Execute();
-                                }
-                                else
-                                {
-                                    // use single step (set bit in HopperFlags)
-                                    restart = HopperVM.ExecuteStepTo();
-                                }
-                                if (restart)
-                                {
-                                    HopperVM.Restart();
-                                }
-                                refresh = true;
-                            }
-                            case 'V':
-                            {
-                                HopperVM.DumpStack(20);
-                                refresh = true;
-                            }
-                            case 'H':
-                            {
-                                HopperVM.DumpHeap(true, 0);
-                                refresh = true;
-                            }
-                            case 'X':
-                            {
-                                if (HopperVM.InlinedExecuteWarp(false))
-                                {
-                                    HopperVM.Restart();
-                                }
-                                refresh = true;
-                            }
-                            case 'W':
-                            {
-                                HopperVM.Restart();
-                                refresh = true;
-                            }
-                            default:
-                            {
-                                if (c != char(0x0D))
-                                {
-                                    IO.Write(char(0x08));
-                                    IO.Write(' ');
-                                    IO.Write(char(0x08));
-                                }
-                            }       
-                        }
-                    }
-                    else if (c != char(0x0D))
-                    {
-                        IO.Write(char(0x08));
-                        IO.Write(' ');
-                        IO.Write(char(0x08));
-                    }
-                }
-            }
-        } // loop
-        HopperVM.Release();
+            printDigit(uthis);
+        }
+        print(c);
+    }
+    
+    printHex(byte b)
+    {
+        byte msn = ((b >> 4) & 0xF);
+        print(ToHex(msn));
+        byte lsn = b & 0xF;
+        print(ToHex(lsn));
+    }
+    printHex(uint u)
+    {
+        byte msb = byte(u >> 8);
+        printHex(msb);
+        byte lsb = byte(u & 0xFF);
+        printHex(lsb);
+    }
+    
+#endif
+    ErrorDump(uint number)
+    {
+#ifdef LOCALDEBUGGER
+        print('D');print('A');print('N');print('G');print('!');printDigit(number);print(' ');print('P');print('C');print(':');printHex(PC);
+#endif
+        IO.Write('D');IO.Write('A');IO.Write('N');IO.Write('G');IO.Write('!');
+        IO.WriteUInt(number);
     }
     
     const byte enter  = 0x0D;
@@ -473,17 +351,40 @@ program Runtime
         Serial.WriteChar(HRByte.ToHex(b));
     }
     
+    out4Hex(ref uint pageBuffer, uint value)
+    {
+        byte b = byte(value >> 12);
+        HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
+        b = byte((value >> 8) & 0x0F); 
+        HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
+        b = byte((value >> 4) & 0x0F); 
+        HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
+        b = byte(value & 0x0F); 
+        HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
+    }
+    
+    out2Hex(ref uint pageBuffer, byte value)
+    {
+        byte b = byte((value >> 4) & 0x0F); 
+        HRString.BuildChar(ref pageBuffer, ToHex(b));
+        b = byte(value & 0x0F); 
+        HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
+    }
+    
     DumpPage(byte iPage, bool includeAddresses)
     {
         // 6502 zero page simulation
+        
+        uint pageBuffer = HRString.New();
+        
         uint rowAddress = (iPage << 8);
         for (byte row = 0; row < 16; row++)
         {
-            Serial.WriteChar(char(enter)); // next line
+            HRString.BuildChar(ref pageBuffer, char(enter)); // next line
             if (includeAddresses)
             {
-                Out4Hex(rowAddress);
-                Serial.WriteChar(' ');
+                out4Hex(ref pageBuffer, rowAddress);
+                HRString.BuildChar(ref pageBuffer, ' ');
                 rowAddress = rowAddress + 16;
             }
             if (iPage == 0)
@@ -584,13 +485,13 @@ program Runtime
                     }
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                         if (col == 8)
                         {
-                            Serial.WriteChar(' ');
+                            HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
-                    Out2Hex(data);
+                    out2Hex(ref pageBuffer, data);
                 }
             } // zero page
             
@@ -602,18 +503,18 @@ program Runtime
                     uint stackData = HopperVM.GetCS(address);
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                         if (col == 4)
                         {
-                            Serial.WriteChar(' ');
+                            HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
-                    Out2Hex(byte(stackData & 0xFF));
+                    out2Hex(ref pageBuffer, byte(stackData & 0xFF));
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                     }
-                    Out2Hex(byte(stackData >> 8));
+                    out2Hex(ref pageBuffer, byte(stackData >> 8));
                     
                 }
             } // call stack
@@ -629,13 +530,13 @@ program Runtime
                     uint stackData = HopperVM.Get(address, ref htype);
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                         if (col == 8)
                         {
-                            Serial.WriteChar(' ');
+                            HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
-                    Out2Hex(byte(htype));
+                    out2Hex(ref pageBuffer, byte(htype));
                 }
             } // type stack
             
@@ -650,18 +551,18 @@ program Runtime
                     
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                         if (col == 4)
                         {
-                            Serial.WriteChar(' ');
+                            HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
-                    Out2Hex(byte(stackData & 0xFF));
+                    out2Hex(ref pageBuffer, byte(stackData & 0xFF));
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                     }
-                    Out2Hex(byte(stackData >> 8));
+                    out2Hex(ref pageBuffer, byte(stackData >> 8));
                 }
             } // value stack
             
@@ -677,18 +578,18 @@ program Runtime
                     
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                         if (col == 4)
                         {
-                            Serial.WriteChar(' ');
+                            HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
-                    Out2Hex(byte(stackData & 0xFF));
+                    out2Hex(ref pageBuffer, byte(stackData & 0xFF));
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                     }
-                    Out2Hex(byte(stackData >> 8));   
+                    out2Hex(ref pageBuffer, byte(stackData >> 8));   
                 }
             } // value stack
             
@@ -701,13 +602,13 @@ program Runtime
                     
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                         if (col == 8)
                         {
-                            Serial.WriteChar(' ');
+                            HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
-                    Out2Hex(Memory.ReadByte(address));
+                    out2Hex(ref pageBuffer, Memory.ReadByte(address));
                 }
             } // heap
             
@@ -717,28 +618,32 @@ program Runtime
                 {
                     if (includeAddresses)
                     {
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref pageBuffer, ' '); 
                         if (col == 8)
                         {
-                            Serial.WriteChar(' ');
+                            HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
-                    Out2Hex(0x00);
+                    out2Hex(ref pageBuffer, 0x00);
                 }
             } // heap
         } // for (row = 0; r < 16; row++)
-        
-        Serial.WriteChar(char(enter)); // next line
+        HRString.BuildChar(ref pageBuffer, char(enter)); // next line
+        External.SerialWriteString(pageBuffer);
+        GC.Release(pageBuffer);
     }
     
-    MCU()
     {
+#ifdef LOCALDEBUGGER
+        // 4242 is a magic number that means "0, but as server (not client)"
+        // "COM0" is our fake interprocess COM port on Windows (named pipe)
+        Serial.Connect(4242); 
+#endif    
         loaded = false;
         HopperVM.Restart();
         bool refresh = true;
         
-        
-        
+#ifndef LOCALDEBUGGER        
         if (External.LoadAuto)
         {
             uint loadedAddress;
@@ -759,6 +664,7 @@ program Runtime
             }
             GC.Release(autoPath);
         }
+#endif
 
         Serial.WriteChar(char(slash)); // ready
         loop
@@ -821,17 +727,23 @@ program Runtime
                     {
                         WaitForEnter();
                         
-                        Serial.WriteChar(char(enter));
-                        Out4Hex(HopperVM.PC);
-                        Serial.WriteChar(char(slash)); // confirm data
+                        uint serialBuffer = HRString.New();
+                        HRString.BuildChar(ref serialBuffer, char(enter));
+                        out4Hex(ref serialBuffer, HopperVM.PC);
+                        HRString.BuildChar(ref serialBuffer, char(slash)); // confirm data
+                        External.SerialWriteString(serialBuffer);
+                        GC.Release(serialBuffer);
                     }
                     case 'K': // get CRC
                     {
                         WaitForEnter();
                         
-                        Serial.WriteChar(char(enter));
-                        Out4Hex(currentCRC);
-                        Serial.WriteChar(char(slash)); // confirm data
+                        uint serialBuffer = HRString.New();
+                        HRString.BuildChar(ref serialBuffer, char(enter));
+                        out4Hex(ref serialBuffer, currentCRC);
+                        HRString.BuildChar(ref serialBuffer, char(slash)); // confirm data
+                        External.SerialWriteString(serialBuffer);
+                        GC.Release(serialBuffer);
                     }
                     case 'E': // enter Boot Select mode
                     {
@@ -842,39 +754,46 @@ program Runtime
                     {
                         WaitForEnter();
                         
-                        Serial.WriteChar(char(enter));
-                        Serial.WriteChar('P');
-                        Serial.WriteChar('C');
-                        Serial.WriteChar('=');
-                        Out4Hex(HopperVM.PC);
-                        Serial.WriteChar(' ');
+                        uint serialBuffer = HRString.New();
+                        HRString.BuildChar(ref serialBuffer, char(enter)); // next line
                         
-                        Serial.WriteChar('C');
-                        Serial.WriteChar('S');
-                        Serial.WriteChar('P');
-                        Serial.WriteChar('=');
-                        Out2Hex(byte(HopperVM.CSP));
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref serialBuffer, char(enter));
+                        HRString.BuildChar(ref serialBuffer, 'P');
+                        HRString.BuildChar(ref serialBuffer, 'C');
+                        HRString.BuildChar(ref serialBuffer, '=');
+                        out4Hex(ref serialBuffer, HopperVM.PC);
+                        HRString.BuildChar(ref serialBuffer, ' ');
                         
-                        Serial.WriteChar('S');
-                        Serial.WriteChar('P');
-                        Serial.WriteChar('=');
-                        Out4Hex(HopperVM.SP + 0x0600);
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref serialBuffer, 'C');
+                        HRString.BuildChar(ref serialBuffer, 'S');
+                        HRString.BuildChar(ref serialBuffer, 'P');
+                        HRString.BuildChar(ref serialBuffer, '=');
+                        out2Hex(ref serialBuffer, byte(HopperVM.CSP));
+                        HRString.BuildChar(ref serialBuffer, ' ');
                         
-                        Serial.WriteChar('T');
-                        Serial.WriteChar('S');
-                        Serial.WriteChar('P');
-                        Serial.WriteChar('=');
-                        Out4Hex(HopperVM.SP + 0x0500);
-                        Serial.WriteChar(' ');
+                        HRString.BuildChar(ref serialBuffer, 'S');
+                        HRString.BuildChar(ref serialBuffer, 'P');
+                        HRString.BuildChar(ref serialBuffer, '=');
+                        out4Hex(ref serialBuffer, HopperVM.SP + 0x0600);
+                        HRString.BuildChar(ref serialBuffer, ' ');
                         
-                        Serial.WriteChar('B');
-                        Serial.WriteChar('P');
-                        Serial.WriteChar('=');
-                        Out4Hex(HopperVM.BP + 0x0600);
+                        HRString.BuildChar(ref serialBuffer, 'T');
+                        HRString.BuildChar(ref serialBuffer, 'S');
+                        HRString.BuildChar(ref serialBuffer, 'P');
+                        HRString.BuildChar(ref serialBuffer, '=');
+                        out4Hex(ref serialBuffer, HopperVM.SP + 0x0500);
+                        HRString.BuildChar(ref serialBuffer, ' ');
                         
-                        Serial.WriteChar(char(slash)); // confirm data
+                        HRString.BuildChar(ref serialBuffer, 'B');
+                        HRString.BuildChar(ref serialBuffer, 'P');
+                        HRString.BuildChar(ref serialBuffer, '=');
+                        out4Hex(ref serialBuffer, HopperVM.BP + 0x0600);
+                        
+                        HRString.BuildChar(ref serialBuffer, char(slash)); // confirm data
+                        
+                        External.SerialWriteString(serialBuffer);
+                        GC.Release(serialBuffer);
+                        
                     }
                     case 'T':
                     {
@@ -950,17 +869,22 @@ program Runtime
                             HopperVM.Initialize(loadedAddress, codeLength);
                             HopperVM.Restart();
                             
+                            uint serialBuffer = HRString.New();
+                            
                             // loadCodeLength
-                            Out4Hex(codeLength);
-                            Serial.WriteChar(' ');
+                            out4Hex(ref serialBuffer, codeLength);
+                            HRString.BuildChar(ref serialBuffer, ' ');
                             
                             // heapStart
-                            Out4Hex(Memory.HeapStart);
-                            Serial.WriteChar(' ');
+                            out4Hex(ref serialBuffer, Memory.HeapStart);
+                            HRString.BuildChar(ref serialBuffer, ' ');
                             
                             // heapSize
-                            Out4Hex(Memory.HeapSize);
-                            Serial.WriteChar(' ');
+                            out4Hex(ref serialBuffer, Memory.HeapSize);
+                            HRString.BuildChar(ref serialBuffer, ' ');
+                            
+                            External.SerialWriteString(serialBuffer);
+                            GC.Release(serialBuffer);
                         }
                         
                         // '*' success
@@ -976,11 +900,12 @@ program Runtime
                         Serial.WriteChar(loaded ? '*' : '!');
                         
                         Serial.WriteChar(char(slash)); // confirm the data
-                        
+#ifndef LOCALDEBUGGER                        
                         if (loaded)
                         {
                             FlashProgram(loadedAddress, codeLength, currentCRC);
                         }
+#endif
                     } // L
                     default:
                     {
@@ -1071,15 +996,5 @@ program Runtime
         } // loop
         HopperVM.Release();
     }
-    
-    {
-#ifdef SERIAL_CONSOLE
-        MCU();
-#else        
-        Windows();
-#endif
-
-    }
-    
 }
 

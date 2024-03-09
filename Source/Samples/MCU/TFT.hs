@@ -1,7 +1,7 @@
 program TFTandSDdemo
 {
-    //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
-    //uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
+    uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
+    uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
 
     //uses "/Source/Library/Boards/SparkfunProMicroRP2040"    
     //uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
@@ -11,7 +11,7 @@ program TFTandSDdemo
     //uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
     //uses "/Source/Library/Devices/Generic480x320ST7796TFT"
     
-    uses "/Source/Library/Devices/WSPicoLCD114"
+    //uses "/Source/Library/Devices/WSPicoLCD114"
     //uses "/Source/Library/Devices/WSPicoLCD096"
     //uses "/Source/Library/Devices/WSPicoLCD144"
     //uses "/Source/Library/Devices/WSRP2040LCD096"

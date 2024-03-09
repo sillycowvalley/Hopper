@@ -80,6 +80,8 @@ unit Editor
     byte editorTop;
     byte editorWidth;
     byte editorHeight;
+    
+    string ProjectPath { get { return projectPath; } }    
 
     uint TitleColor 
     {   get 
@@ -596,11 +598,10 @@ unit Editor
     
     SetActiveLine(uint gotoLine, string path, bool setActive)
     {
-        if (setActive)
-        {
-            activeLine = gotoLine;
-            activePath = path.ToLower();
-        }
+        // '0, "", false' means hide active line
+        activeLine = gotoLine;
+        activePath = path.ToLower();
+
         if (gotoLine != 0)
         {
             // -1 means first non-space
@@ -1564,46 +1565,7 @@ unit Editor
             }
         }
         
-        // same search path logic as in usesDeclaration(..) in PreProcess
-        if (!File.Exists(hsPath))
-        {
-            string tryFile = hsPath;
-            uint removeLevels = 0;
-            if (tryFile.StartsWith("./"))
-            {
-                tryFile = tryFile.Substring(2);
-            }
-            while (tryFile.StartsWith("../"))
-            {
-                tryFile = tryFile.Substring(3);
-                removeLevels++;
-            }
-            if (!tryFile.StartsWith("/"))
-            {
-                // first try relative to current source file:
-                string currentDirectory = Path.GetDirectoryName(currentPath);
-                while (removeLevels > 0)
-                {
-                    currentDirectory = Path.GetDirectoryName(currentDirectory);
-                    removeLevels--;
-                }
-                string tryPath = Path.Combine(currentDirectory, tryFile);
-                if (File.Exists(tryPath))
-                {
-                    hsPath = tryPath;
-                }
-                else
-                {
-                    // then try relative to main project file
-                    string projectDirectory = Path.GetDirectoryName(projectPath);
-                    tryPath = Path.Combine(projectDirectory, tryFile);
-                    if (File.Exists(tryPath))
-                    {
-                        hsPath = tryPath;
-                    }
-                }
-            }
-        }
+        hsPath = Dependencies.ResolveRelativePath(hsPath, currentPath, projectPath);
         if (!File.Exists(hsPath))
         {
             hsPath = "";

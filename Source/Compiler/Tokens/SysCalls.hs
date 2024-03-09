@@ -199,10 +199,12 @@ unit SysCalls
         addEntry("File.GetDate");
         addEntry("Directory.GetDate");
         
-        // placeholders:
-        addEntry("_Runtime.ClearStatements");
-        addEntry("_Runtime.SetBreakpoint");
-        addEntry("_Runtime.SetStatement");
+        addEntry("Memory.ProgramOffset_Set");
+        
+        addEntry("Serial.WriteString"); // A0
+        
+        // placeholder:
+        addEntry("_Runtime.SetStatement");  // A1
         
         addEntry("Serial.Connect");
         addEntry("Serial.Close");

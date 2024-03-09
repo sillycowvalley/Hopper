@@ -25,6 +25,7 @@ unit External
         }
         return false;
     }
+    
     uint ReadLine(uint this)
     {
         uint str = HRString.New();
@@ -99,24 +100,23 @@ unit External
     {
         // does nothing under Windows
     }
-    SetCodeStartAddress(uint codeAddress)
+    SetProgramOffset(uint codeAddress)
     {
-        ErrorDump(156); Error = 0x0A;
+        Memory.ProgramOffset = codeAddress;
     }
     
     bool ReadAllCodeBytes(uint hrpath, uint loadAddress, ref uint codeLength)
     {
-        ErrorDump(156); Error = 0x0A; return false;
+        ErrorDump(176); Error = 0x0A; return false;
     }
-    
     
     byte SDSPIControllerGet()
     {
-        ErrorDump(156); Error = 0x0A; return 0;
+        ErrorDump(177); Error = 0x0A; return 0;
     }
     SDSPIControllerSet(byte iController)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(178); Error = 0x0A;
     }
     byte SDCSPinGet()
     {
@@ -124,92 +124,102 @@ unit External
     }
     SDCSPinSet(byte pin)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(179); Error = 0x0A;
     }
     
     byte SDClkPinGet()
     {
-        ErrorDump(156); Error = 0x0A; return 0;
+        ErrorDump(180); Error = 0x0A; return 0;
     }
     SDClkPinSet(byte pin)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(181); Error = 0x0A;
     }
     byte SDTxPinGet()
     {
-        ErrorDump(156); Error = 0x0A; return 0;
+        ErrorDump(182); Error = 0x0A; return 0;
     }
     SDTxPinSet(byte pin)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(183); Error = 0x0A;
     }
     byte SDRxPinGet()
     {
-        ErrorDump(156); Error = 0x0A; return 0;
+        ErrorDump(184); Error = 0x0A; return 0;
     }
     SDRxPinSet(byte pin)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(185); Error = 0x0A;
     }
     bool SDMount()
     {
-        ErrorDump(156); Error = 0x0A; return false;
+        ErrorDump(186); Error = 0x0A; return false;
     }
     SDEject()
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(187); Error = 0x0A;
     }
     
     MCUReboot(bool bootsel)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(188); Error = 0x0A;
     }
     uint MCUHeapFree()
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(189); Error = 0x0A;
         return 0;
     }
     uint MCUStackFree()
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(190); Error = 0x0A;
         return 0;
     }
     
     TimerRelease()
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(191); Error = 0x0A;
     }
     TimerInitialize()
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(192); Error = 0x0A;
     }
     uint TimerStart(uint msInterval, TimerISRDelegate timerISR)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(193); Error = 0x0A;
         return 0;
     }
     uint TimerStartLong(uint msInterval, TimerISRDelegate timerISR)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(194); Error = 0x0A;
         return 0;
     }
     uint TimerAlarm(uint msInterval, TimerISRDelegate timerISR)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(195); Error = 0x0A;
         return 0;
     }
     uint TimerAlarmLong(uint msInterval, TimerISRDelegate timerISR)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(196); Error = 0x0A;
         return 0;
     }
     TimerStop(uint timerID)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(197); Error = 0x0A;
     }
     TimerCancel(uint alarmID)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(198); Error = 0x0A;
+    }
+    
+    SerialWriteString(uint hrbuffer)
+    {
+        string buffer = nativeStringFromHopperString(hrbuffer);
+        Serial.WriteString(buffer);
+        //foreach (var ch in buffer)
+        //{
+        //    Serial.WriteChar(ch);
+        //}
     }
     
     bool WiFiConnect(uint hrssid, uint hrpassword)
@@ -220,47 +230,47 @@ unit External
     }
     uint WiFiIP()
     {
-        ErrorDump(156); Error = 0x0A; return 0;
+        ErrorDump(200); Error = 0x0A; return 0;
     }
     uint WiFiStatus()
     {
-        ErrorDump(156); Error = 0x0A; return 0;
+        ErrorDump(199); Error = 0x0A; return 0;
     }
     WiFiDisconnect()
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(201); Error = 0x0A;
     }
     bool WebClientGetRequest(uint hrurl, ref uint hrcontent)
     {
-        ErrorDump(156); Error = 0x0A; return false;
+        ErrorDump(202); Error = 0x0A; return false;
     }
     WebServerBegin(uint port)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(203); Error = 0x0A;
     }
     WebServerClose()
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(204); Error = 0x0A;
     }
     WebServerEvents()
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(205); Error = 0x0A;
     }
     WebServerSend(uint uri, uint headerContent, uint content)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(206); Error = 0x0A;
     }
     WebServerOn(uint uri, HandlerDelegate handler)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(207); Error = 0x0A;
     }
     WebServerOnNotFound(HandlerDelegate handler)
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(208); Error = 0x0A;
     }
     WebServerRelease()
     {
-        ErrorDump(156); Error = 0x0A;
+        ErrorDump(209); Error = 0x0A;
     }
     
     bool LoadAuto { get { return true; } }
@@ -471,22 +481,25 @@ unit External
         ErrorDump(170); Error = 0x0A; 
         return false;
     }
+    
+    // NOP on Windows but keeps track of state
+    bool interruptsDisabled;
     MCUInterruptsEnabledSet(bool value)
     {
-        ErrorDump(170); Error = 0x0A; 
+        interruptsDisabled = !value;
     }
     bool MCUInterruptsEnabledGet()
     {
-        ErrorDump(170); Error = 0x0A; 
-        return false;
+        return !interruptsDisabled;
     }
+    
     MCUClockSpeedSet(uint value)
     {
-        ErrorDump(170); Error = 0x0A; 
+        // NOP on Windows
     }
     uint MCUClockSpeedGet()
     {
-        ErrorDump(170); Error = 0x0A; 
+        ErrorDump(174); Error = 0x0A; 
         return 0;
     }
     
@@ -693,13 +706,12 @@ unit External
     }
     WatchDog()
     {
-        // ping the MCU watchdog so it knows we are still alive
-#ifdef SERIAL_CONSOLE
+        // ping the MCU watchdog here so it knows we are still alive (not needed on RP2040)
+        
         // any code to prevent the optimizer from removing WatchDog()
         for (uint i = 0; i < 1; i++)
         {
         }
-#endif
     }
     bool FunctionCall(uint address, byte opCode)
     {

@@ -278,6 +278,7 @@ enum SysCalls {
     eRuntimeDateTimeGet = 0x0098,
     eFileGetDate = 0x009D,
     eDirectoryGetDate = 0x009E,
+    eSerialWriteString = 0x00A0,
     eSerialIsAvailableGet = 0x00A5,
     eSerialReadChar = 0x00A6,
     eSerialWriteChar = 0x00A7,
@@ -601,13 +602,12 @@ enum Key {
 };
 
 void HopperEntryPoint();
-void Runtime_MCU();
 Bool Runtime_LoadHexe_R(UInt path, UInt startAddress, UInt & loadedAddress, UInt & codeLength, Bool doCRC);
 Byte Runtime_FromHex(Char ch);
 void Runtime_WaitForEnter();
 void Runtime_DumpPage(Byte iPage, Bool includeAddresses);
-void Runtime_Out4Hex(UInt value);
-void Runtime_Out2Hex(Byte value);
+void Runtime_out4Hex_R(UInt & pageBuffer, UInt value);
+void Runtime_out2Hex_R(UInt & pageBuffer, Byte value);
 Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength);
 Bool Runtime_TryReadSerialByte_R(Byte & data);
 UInt Colour_MatrixGreen_Get();
@@ -779,6 +779,8 @@ void GC_AddReference(UInt address);
 UInt GC_Clone(UInt original);
 UInt HRString_Clone(UInt original);
 Char HRByte_ToDigit(Byte d);
+void Runtime_Out4Hex(UInt value);
+void Runtime_Out2Hex(Byte value);
 OpCode HopperVM_CurrentOpCode_Get();
 UInt HopperVM_Pop_R(Type & htype);
 Bool HopperVM_CNP_Get();
@@ -925,7 +927,6 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
-
 
 
 #endif // HOPPERRUNTIME_H

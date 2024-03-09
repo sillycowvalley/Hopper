@@ -788,7 +788,7 @@ unit Library
                 AssertByte(otype, uint(dataOrder));
                 if (stype != Type.Long)
                 {
-                    ErrorDump(170);
+                    ErrorDump(175);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif                   

@@ -309,10 +309,11 @@ unit Display
         Suspend();
         if ((x0-r >= 0) && (y0-r >= 0) && (x0+r < PixelWidth) && (y0+r < PixelHeight))
         {
-            DisplayDriver.setPixel(x0, y0 + r, colour);
-            DisplayDriver.setPixel(x0, y0 - r, colour);
-            DisplayDriver.setPixel(x0 + r, y0, colour);
-            DisplayDriver.setPixel(x0 - r, y0, colour);
+            colour = DisplayDriver.convertToRGB565(colour);
+            DisplayDriver.setClippedTextPixel(x0, y0 + r, colour);
+            DisplayDriver.setClippedTextPixel(x0, y0 - r, colour);
+            DisplayDriver.setClippedTextPixel(x0 + r, y0, colour);
+            DisplayDriver.setClippedTextPixel(x0 - r, y0, colour);
             while (x < y) 
             {
                 if (f >= 0) 
@@ -325,14 +326,14 @@ unit Display
                 ddFx += 2;
                 f += ddFx;
                 
-                DisplayDriver.setPixel(x0 + x, y0 + y, colour);
-                DisplayDriver.setPixel(x0 - x, y0 + y, colour);
-                DisplayDriver.setPixel(x0 + x, y0 - y, colour);
-                DisplayDriver.setPixel(x0 - x, y0 - y, colour);
-                DisplayDriver.setPixel(x0 + y, y0 + x, colour);
-                DisplayDriver.setPixel(x0 - y, y0 + x, colour);
-                DisplayDriver.setPixel(x0 + y, y0 - x, colour);
-                DisplayDriver.setPixel(x0 - y, y0 - x, colour);
+                DisplayDriver.setClippedTextPixel(x0 + x, y0 + y, colour);
+                DisplayDriver.setClippedTextPixel(x0 - x, y0 + y, colour);
+                DisplayDriver.setClippedTextPixel(x0 + x, y0 - y, colour);
+                DisplayDriver.setClippedTextPixel(x0 - x, y0 - y, colour);
+                DisplayDriver.setClippedTextPixel(x0 + y, y0 + x, colour);
+                DisplayDriver.setClippedTextPixel(x0 - y, y0 + x, colour);
+                DisplayDriver.setClippedTextPixel(x0 + y, y0 - x, colour);
+                DisplayDriver.setClippedTextPixel(x0 - y, y0 - x, colour);
             }
         }
         else
