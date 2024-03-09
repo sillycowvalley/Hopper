@@ -90,11 +90,11 @@ program  RedScreenOfDeath
             string debugAddress = delta.ToString();
             if (debugInfo.Contains(debugAddress))
             {
-                string dln = debugInfo[debugAddress];
-                string sourceCode = GetSourceLine(src, dln);
+                string debugLine = debugInfo[debugAddress];
+                string sourceCode = GetSourceLine(src, debugLine);
                 if (sourceCode.Length != 0)
                 {
-                    sourceLine = srcName + ":" + dln;
+                    sourceLine = srcName + ":" + debugLine;
                     sourceLine += '`';
                     sourceLine = sourceLine + methodName +  ":";
                     sourceLine += '`';

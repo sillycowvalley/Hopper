@@ -111,26 +111,25 @@ program DASM
             string debugAddress = delta.ToString();
             if (debugInfo.Contains(debugAddress))
             {
-                string dln = debugInfo[debugAddress];
+                string debugLine = debugInfo[debugAddress];
                 hasmFile.Append("" + char(0x0A)); 
-                string sourceLine = GetSourceLine(src, dln);
+                string sourceLine = GetSourceLine(src, debugLine);
                 if (sourceLine.Length != 0)
                 {
                     string commentStart;
                     commentStart = commentStart.Pad(' ', 24) + "//";
                     sourceLine = commentStart + " " + sourceLine.Trim();
-                    if (sourceLine.Length < 70)
+                    if (sourceLine.Length < 80)
                     {
-                        sourceLine = sourceLine.Pad(' ', 80);
-                        sourceLine = sourceLine + srcName + ":" + dln;
+                        sourceLine = sourceLine.Pad(' ', 90);
+                        sourceLine = sourceLine + srcName + ":" + debugLine;
                     }
                     hasmFile.Append(sourceLine + char(0x0A));  
                 }
                 else
                 {
-                    hasmFile.Append("// " + src + ":" + dln + char(0x0A));  
+                    hasmFile.Append("// " + src + ":" + debugLine + char(0x0A));  
                 }
-                
                 hasmFile.Append("" + char(0x0A)); 
             }
             <uint> jumpTargets;

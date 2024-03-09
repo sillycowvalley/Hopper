@@ -110,10 +110,23 @@ unit CodePoints
         return false;
     }
     
+    DumpDebugInfo()
+    {
+        PrintLn("DebugInfo:");
+        foreach (var kv in indexDebugInfo)
+        {
+            PrintLn("    " + (kv.key).ToString() + " -> " + kv.value);
+        }
+    }
+    
     RemoveInstruction(uint iRemoval)
     {
+        RemoveInstruction(iRemoval, true);
+    }
+    RemoveInstruction(uint iRemoval, bool keepDebugLine)
+    {
         // lists:
-
+        
         iCodes.Remove(iRemoval);
         iLengths.Remove(iRemoval);
         iOperands.Remove(iRemoval);
@@ -174,21 +187,66 @@ unit CodePoints
         
         // indexDebugInfo
         <uint,string> newDebugInfo;
-        foreach (var kv in indexDebugInfo)
+        
+        if (false)
         {
-            uint iD = kv.key; // instruction index
-            if ((iD > iRemoval) && (iD > 0))
+            foreach (var kv in indexDebugInfo)
             {
-                iD--;
+                uint iD = kv.key; // instruction index
+                if ((iD > iRemoval) && (iD > 0))
+                {
+                    iD--;
+                }
+                if (indexDebugInfo.Contains(iD))
+                {
+                    // keep the old line
+                    newDebugInfo[iD] = indexDebugInfo[iD];
+                }
+                else
+                {
+                    newDebugInfo[iD] = kv.value; // source line number
+                }
             }
-            if (indexDebugInfo.Contains(iD))
+        }
+        else
+        {
+            foreach (var kv in indexDebugInfo)
             {
-                // keep the old line
-                newDebugInfo[iD] = indexDebugInfo[iD];
-            }
-            else
-            {
-                newDebugInfo[iD] = kv.value; // source line number
+                uint iD          = kv.key;   // instruction index
+                string debugLine = kv.value; // debug source location
+                
+                // 3 scenarios:
+                //   a) instruction index is before iRemoval
+                //   b) instruction index is iRemoval
+                //   c) instruction index after iRemoval
+                
+                if (iD < iRemoval)
+                {
+                    // a) trivial:
+                    newDebugInfo[iD] = debugLine;
+                }
+                else if ((iD == iRemoval) && keepDebugLine)
+                {
+                    // b) absorb the debugLine from the next instruction
+                    if (indexDebugInfo.Contains(iD))
+                    {
+                        newDebugInfo[iD] = debugLine;
+                    }
+                }
+                else  // (iD > iRemoval)
+                {
+                    // c)
+                    iD--;
+                    if (newDebugInfo.Contains(iD))
+                    {
+                        // keep the earlier line
+                        // TODO : assumes keys are iterated in order
+                    }
+                    else
+                    {
+                        newDebugInfo[iD] = debugLine;
+                    }
+                }
             }
         }
         indexDebugInfo = newDebugInfo;
@@ -1323,7 +1381,7 @@ unit CodePoints
             bool removeInstruction = !iReachable[iIndex];
             if (removeInstruction)
             {
-                RemoveInstruction(iIndex);
+                RemoveInstruction(iIndex, false); // good
                 modified = true;
             }
             else
@@ -1567,7 +1625,7 @@ unit CodePoints
                     opCodeNext = SwitchToCOPYPOP(opCodeNext);
                     iCodes.SetItem(iIndex, opCodeNext);
                     
-                    RemoveInstruction(iIndex-1);
+                    RemoveInstruction(iIndex-1); // good
                     modified = true;
                     continue;
                 }
@@ -1798,7 +1856,7 @@ unit CodePoints
                         // single local
                         iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
                         iLengths.SetItem (iIndex, 1);
-                        RemoveInstruction(iIndex-1);
+                        RemoveInstruction(iIndex-1); // good
                         MergedRET0Exists = true;
                         modified = true;
                     }
@@ -1810,7 +1868,7 @@ unit CodePoints
                     {
                         iCodes.SetItem   (iIndex, Instruction.MERGEDRET0);
                         iLengths.SetItem (iIndex, 1);
-                        RemoveInstruction(iIndex-1);
+                        RemoveInstruction(iIndex-1); // good
                         MergedRET0Exists = true;
                         modified = true;
                     }
@@ -2225,7 +2283,7 @@ unit CodePoints
                 {
                     iCodes.SetItem(iIndex, Instruction.RET0);
                     iLengths.SetItem(iIndex, 1);
-                    RemoveInstruction(iIndex-2);
+                    RemoveInstruction(iIndex-2); // good
                 }
             }
         
@@ -2408,8 +2466,8 @@ unit CodePoints
                     {
                         // PUSH   ADDB|SUBB   POP  -> INC | DEC
                         // 3 instructions          -> 1 instruction = remove 2
-                        RemoveInstruction(iIndex-2);
-                        RemoveInstruction(iIndex-2);
+                        RemoveInstruction(iIndex-2); // good
+                        RemoveInstruction(iIndex-2); // good
                         modified = true;
                         continue;
                     }
@@ -2417,9 +2475,9 @@ unit CodePoints
                     {
                         // PUSH   PUSHI1  ADD|ADDI|SUB|SUBI  POP  -> INC | DEC
                         // 4 instructions                         -> 1 instruction = remove 3
-                        RemoveInstruction(iIndex-3);
-                        RemoveInstruction(iIndex-3);
-                        RemoveInstruction(iIndex-3);
+                        RemoveInstruction(iIndex-3); // good
+                        RemoveInstruction(iIndex-3); // good
+                        RemoveInstruction(iIndex-3); // good
                         modified = true;
                         continue;
                     }
@@ -2436,7 +2494,7 @@ unit CodePoints
                  
                     // PUSH   ADDB|SUBB   POP  -> INC|INC DEC|DEC   
                     // 3 instructions          -> 2 instructions = remove 1
-                    RemoveInstruction(iIndex-2);
+                    RemoveInstruction(iIndex-2); // good
                     modified = true;
                     continue;
                 }
@@ -2512,10 +2570,10 @@ unit CodePoints
                 if (!IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
                 {
                     // NOP : replace comparison with PUSHI1 (always true)
-                    iCodes.SetItem   (iIndex-2, Instruction.PUSHI1);
-                    iLengths.SetItem (iIndex-2, 1);
-                    RemoveInstruction(iIndex);
-                    RemoveInstruction(iIndex-1);
+                    iCodes.SetItem   (iIndex, Instruction.PUSHI1);
+                    iLengths.SetItem (iIndex, 1);
+                    RemoveInstruction(iIndex-2); // good
+                    RemoveInstruction(iIndex-2); // good
                     modified = true;
                 }
             }
@@ -2525,10 +2583,10 @@ unit CodePoints
                 if (!IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
                 {
                     // NOP : replace comparison with PUSHI1 (always true)
-                    iCodes.SetItem   (iIndex-2, Instruction.PUSHI1);
-                    iLengths.SetItem (iIndex-2, 1);
-                    RemoveInstruction(iIndex);
-                    RemoveInstruction(iIndex-1);
+                    iCodes.SetItem   (iIndex, Instruction.PUSHI1);
+                    iLengths.SetItem (iIndex, 1);
+                    RemoveInstruction(iIndex-2); // good
+                    RemoveInstruction(iIndex-2); // good
                     modified = true;
                 }
             }
@@ -2559,10 +2617,10 @@ unit CodePoints
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
                     
-                    iCodes.SetItem   (iIndex-1, Instruction.PUSHIBB);
-                    iOperands.SetItem(iIndex-1, operand);
-                    iLengths.SetItem (iIndex-1, 3);
-                    RemoveInstruction(iIndex);
+                    iCodes.SetItem   (iIndex, Instruction.PUSHIBB);
+                    iOperands.SetItem(iIndex, operand);
+                    iLengths.SetItem (iIndex, 3);
+                    RemoveInstruction(iIndex-1); // good
                     modified = true;
                     continue;
                 }
@@ -2594,10 +2652,10 @@ unit CodePoints
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
                     
-                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALLB0);
-                    iOperands.SetItem(iIndex-1, operand);
-                    iLengths.SetItem (iIndex-1, 3);
-                    RemoveInstruction(iIndex);
+                    iCodes.SetItem   (iIndex, Instruction.SYSCALLB0);
+                    iOperands.SetItem(iIndex, operand);
+                    iLengths.SetItem (iIndex, 3);
+                    RemoveInstruction(iIndex-1); // good
                     modified = true;
                     continue;
                 }
@@ -2608,10 +2666,10 @@ unit CodePoints
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
                     
-                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALLB1);
-                    iOperands.SetItem(iIndex-1, operand);
-                    iLengths.SetItem (iIndex-1, 3);
-                    RemoveInstruction(iIndex);
+                    iCodes.SetItem   (iIndex, Instruction.SYSCALLB1);
+                    iOperands.SetItem(iIndex, operand);
+                    iLengths.SetItem (iIndex, 3);
+                    RemoveInstruction(iIndex-1); // good
                     modified = true;
                     continue;
                 }
@@ -2621,10 +2679,10 @@ unit CodePoints
                 if (!IsTargetOfJumps(iIndex))
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
-                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALL00);
-                    iOperands.SetItem(iIndex-1, operand);
-                    iLengths.SetItem (iIndex-1, 3);
-                    RemoveInstruction(iIndex);
+                    iCodes.SetItem   (iIndex, Instruction.SYSCALL00);
+                    iOperands.SetItem(iIndex, operand);
+                    iLengths.SetItem (iIndex, 3);
+                    RemoveInstruction(iIndex-1); // good
                     modified = true;
                     continue;
                 }
@@ -2634,10 +2692,10 @@ unit CodePoints
                 if (!IsTargetOfJumps(iIndex))
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
-                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALL01);
-                    iOperands.SetItem(iIndex-1, operand);
-                    iLengths.SetItem (iIndex-1, 3);
-                    RemoveInstruction(iIndex);
+                    iCodes.SetItem   (iIndex, Instruction.SYSCALL01);
+                    iOperands.SetItem(iIndex, operand);
+                    iLengths.SetItem (iIndex, 3);
+                    RemoveInstruction(iIndex-1); // good
                     modified = true;
                     continue;
                 }
@@ -2647,10 +2705,10 @@ unit CodePoints
                 if (!IsTargetOfJumps(iIndex))
                 {
                     uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
-                    iCodes.SetItem   (iIndex-1, Instruction.SYSCALL10);
-                    iOperands.SetItem(iIndex-1, operand);
-                    iLengths.SetItem (iIndex-1, 3);
-                    RemoveInstruction(iIndex);
+                    iCodes.SetItem   (iIndex, Instruction.SYSCALL10);
+                    iOperands.SetItem(iIndex, operand);
+                    iLengths.SetItem (iIndex, 3);
+                    RemoveInstruction(iIndex-1); // good
                     modified = true;
                     continue;
                 }

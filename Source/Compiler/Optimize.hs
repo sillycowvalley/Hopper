@@ -525,7 +525,7 @@ program Optimize
             ReportMethodSizes();
         }
         methodsCalled.Clear(); // just to be sure ..
-        if (IsExperimental)
+        if (false && IsExperimental)
         {
             ListCompareDelegate sorter = CompairPair;
             pairList.Sort(sorter);
