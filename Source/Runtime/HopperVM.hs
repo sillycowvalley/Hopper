@@ -211,6 +211,9 @@ unit HopperVM
             GC.Release(currentArguments);
             currentArguments = 0;
         }
+#ifdef MEMORYLEAKS
+        TestMemory(0);
+#endif
     }
 
     uint GetAppName(bool crc)

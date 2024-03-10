@@ -11,7 +11,7 @@ program Memory
     
     const uint heapStart = 0x1000;
     const uint heapSize  = 0x4000;
-    byte[heapSize] memory; // bottom 0x1000 is unused to simulate not starting at 0x0000 on Zooper
+    byte[heapSize] memory; // bottom 0x1000 is unused to simulate not starting at 0x0000 on Zopper
     
     uint freeList = 0x0000;
     uint totalAllocated = 0;
