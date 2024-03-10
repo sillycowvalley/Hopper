@@ -307,7 +307,30 @@ program TiggerBASIC
     {
         if (validateName(ref name, false))
         {
-            Write("Saving " + name);       
+            Write("Saving " + name);  
+            File.Delete(name);
+            file textFile = File.Create(name);
+            if (!textFile.IsValid())
+            {
+                WriteLn();
+                Write("  Error attempting to save file '" + name +"'");
+            }
+            else
+            {
+                for (uint i=1; i <= Source.LineLimit; i++)
+                {
+                    if (Source.LineExists(i))
+                    {
+                        string content = i.ToString() + " " + Source.GetLine(i);
+                        textFile.Append(content);
+                    }
+                    if (i >= Source.LastLine)
+                    {
+                        break;
+                    }
+                }
+                textFile.Flush();
+            }     
             WriteLn();
         }
         else

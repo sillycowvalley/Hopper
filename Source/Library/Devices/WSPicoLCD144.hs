@@ -26,7 +26,7 @@ unit DeviceDriver
     byte csPin   { get { return Board.GP9; } }
     byte clkPin  { get { return Board.GP10; } }
     byte txPin   { get { return Board.GP11; } }
-    byte rstPin  { get { return Board.GP12; } }
+    int rstPin   { get { return Board.GP12; } }
     byte blPin   { get { return Board.GP13; } }
     
     const byte key0Pin = 15;

@@ -23,7 +23,7 @@ unit DeviceDriver
     const byte csPin   = 9;
     const byte clkPin  = 10;
     const byte txPin   = 11;
-    const int  rstPin  = 12;
+    int  rstPin  = 12;
     const byte blPin   = 13;
     
     const byte keyAPin      = 15;

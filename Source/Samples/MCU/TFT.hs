@@ -1,14 +1,15 @@
 program TFTandSDdemo
 {
-    uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
-    uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
+    //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
+    //uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
 
     //uses "/Source/Library/Boards/SparkfunProMicroRP2040"    
     //uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
     //uses "/Source/Library/Devices/Adafruit160x80ColorTFT"
     
-    //uses "/Source/Library/Boards/PiPico"
-    //uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
+    //uses "/Source/Library/Boards/PiPicoW"
+    uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
     //uses "/Source/Library/Devices/Generic480x320ST7796TFT"
     
     //uses "/Source/Library/Devices/WSPicoLCD114"
@@ -402,7 +403,7 @@ program TFTandSDdemo
         FlipX = true;
         FlipY = true;
         
-    #if defined(RPIPICO)
+    #if defined(RPIPICO) || defined(RPIPICOW)
         DeviceDriver.DC    = Board.GP20;
         DeviceDriver.Reset = Board.GP21;
     #endif

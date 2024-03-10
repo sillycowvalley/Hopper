@@ -19,22 +19,21 @@ unit DeviceDriver
     int xFudge;
     int yFudge;
     
-    // Adafruit Feather defaults
     byte spiController  = 0;
-    byte sdCS   = Board.GP7;  // SD
-    byte blPin  = Board.GP8;  // backlight
-    byte csPin  = Board.GP9;  // TFT
-    byte dcPin  = 10;         // TFT
+    int sdCS    = -1;            // SD  (Feather default is GP7)
+    byte blPin  = Board.GP8;     // backlight
+    byte csPin  = Board.SPI0SS;  // TFT (Feather default is GP9)
+    byte dcPin  = 10;            // TFT
     int  rstPin  = -1;  
     byte clkPin = Board.SPI0SCK;
     byte txPin  = Board.SPI0Tx;
-    byte rxPin  = Board.SPI0Rx; // MISO - this is used for the SD card. It isn't used for the TFT display which is write-only. 
+    byte rxPin  = Board.SPI0Rx;  // MISO - this is used for the SD card. It isn't used for the TFT display which is write-only. 
     
     byte SPIController { get { return spiController; } set { spiController  = value;  } }
     byte SPISCK        { get { return clkPin;        } set { clkPin  = value;         } }
     byte SPITx         { get { return txPin;         } set { txPin   = value;         } }
     byte SPIRx         { get { return rxPin;         } set { rxPin   = value;         } }
-    byte SDCS          { get { return sdCS;          } set { sdCS = value;           } }
+    int  SDCS          { get { return sdCS;          } set { sdCS = value;           } }
     byte CS            { get { return csPin;         } set { csPin = value;           } }
     byte DC            { get { return dcPin;         } set { dcPin = value;           } }
     byte LIT           { get { return blPin;         } set { blPin = value;           } }
@@ -76,19 +75,20 @@ unit DeviceDriver
     
     bool Begin()
     {
-        // https://learn.adafruit.com/adafruit-mini-tft-0-dot-96-inch-180x60-breakout/wiring-test
-        bool success = Display.Begin();
-        
-        if (success)        
+        if (sdCS != -1)
         {
             // Settings for Hopper SD unit:
             SD.SPIController = spiController;
             SD.ClkPin = clkPin;
             SD.TxPin  = txPin;
             SD.RxPin  = rxPin;
-            SD.CSPin  = sdCS; 
+            SD.CSPin  = byte(sdCS); 
+            
+            _ = SD.Mount(); // let SD library initialize SPI before call to SPI.Begin() in DisplayDriver.begin()
         }
-        return success;
+        
+        // https://learn.adafruit.com/adafruit-mini-tft-0-dot-96-inch-180x60-breakout/wiring-test
+        return Display.Begin(); // calls SPI.Begin(..)
     }
     
 }
