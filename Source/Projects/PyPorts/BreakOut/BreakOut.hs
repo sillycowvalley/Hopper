@@ -14,6 +14,10 @@ program BreakOut
     //    - increasing speed as levels go up
     //    - portrait or landscape orientations supported
     //    - TFT (colour) and OLED (mono) supported
+    //
+    // This version has no sound effects since none of the devices
+    // available to me have sound capability (yet).
+    //
     
     uses "/Source/Library/Devices/WSPicoLCD144"
     //uses "/Source/Library/Devices/WSPicoLCD114"
@@ -22,7 +26,10 @@ program BreakOut
     
     uses "/Source/Library/Fonts/Hitachi5x7"
     
+    //#define TEST_PLAY // for testing
+    
     uses "Utilities"
+    
     uses "Paddle"
     uses "Ball"
     uses "Bricks"
@@ -32,7 +39,6 @@ program BreakOut
     uint lives = startLives;
     uint score = 0;
     uint level = 1;
-    
     
     uint Score { get { return score; } set { score = value; } }
     uint Lives { get { return lives; } set { lives = value; } }
@@ -156,6 +162,7 @@ program BreakOut
                 score = 0;
                 break;
             }
+
             Display.Suspend();
             Paddle.Render(Colour.Black);
             Ball.Render(Colour.Black);
@@ -171,6 +178,12 @@ program BreakOut
             Ball.Render(Colour.White);
             Display.Resume();
             Time.Delay(25);
+            
+#ifdef TEST_PLAY
+            lives = startLives;
+            score = 0;
+            break;
+#endif
         }
     }
     
@@ -180,8 +193,11 @@ program BreakOut
         DisplayDriver.IsPortrait = true;
 #endif
 #if defined(WAVESHARE_PICO_LCD_096)
-        DisplayDriver.FlipX = true;
-        DisplayDriver.FlipY = true;
+        if (DisplayDriver.IsPortrait)
+        {
+            DisplayDriver.FlipX = true;
+            DisplayDriver.FlipY = true;
+        }
 #endif
         
         if (!DeviceDriver.Begin())
@@ -200,6 +216,9 @@ program BreakOut
             // delay for each game update loop (gets faster as levels go up)
             uint msDelay = 50;
     
+            Display.Suspend();
+            Paddle.Render(Colour.Black);
+            Display.Resume();
             Paddle.Initialize(); // reset paddle width for new game
             gameOver(first);
             Bricks.CreateWall();
@@ -225,11 +244,11 @@ program BreakOut
                 Ball.Render(Colour.Black);
                 
                 Paddle.Move();
-                bool update = !Ball.Move();
-                
+                bool update = Ball.Move();
                 if (Ball.IsCollisionWithPaddle())
                 {
                     Ball.CalculateAngle();
+                    update = false;
                 }   
                 
                 if (Bricks.RemoveDeadBricks())
@@ -263,7 +282,11 @@ program BreakOut
                 Ball.Render(Colour.White);
                  
                 Display.Resume(); // for OLED displays
+#ifdef TEST_PLAY                
+                Time.Delay(5);
+#else
                 Time.Delay(msDelay);
+#endif
             }
         }
     }

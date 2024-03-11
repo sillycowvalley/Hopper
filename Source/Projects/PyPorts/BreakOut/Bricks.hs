@@ -1,8 +1,5 @@
 unit Bricks
 {
-    const int brickWidth  = 22;
-    const int brickHeight = 7;
-    
     record Brick
     {
         int X;
@@ -16,20 +13,22 @@ unit Bricks
     
     uint Count { get { return bricks.Count; } }
     
-    Brick Create(int x, int y, uint colour)
+    Brick create(int x, int y, int w, int h, uint colour)
     {
         Brick brick;
         brick.X = x;
         brick.Y = y;
-        brick.Width = brickWidth;
-        brick.Height = brickHeight;
+        brick.Width  = w;
+        brick.Height = h;
         brick.colour = colour;
         return brick;
     }
     
     render(Brick brick, uint colour)
     {
+        Display.Suspend();
         Display.FilledRectangle(brick.X - brick.Width/2, brick.Y - brick.Height/2, brick.Width, brick.Height, colour);
+        Display.Resume();
     }
     Render()
     {
@@ -46,14 +45,56 @@ unit Bricks
     {
         bricks.Clear();
         
-        <uint> usedColours;
-        int offset = 0;
+        // Tricky to make block size generic:
+        //    - too many blocks will slow down the game (collision detection)
+        //    - for tall portrait displays, too many rows looks odd
+        //    - full size blocks in the right column are ideal (not truncated)
+        int brickWidth  = 22;
+        int brickHeight = 7;
+        switch (Display.PixelWidth)
+        {
+            case 64:
+            {
+                brickWidth = 14;
+                brickHeight = 6;
+            }
+            case 80:
+            {
+                brickWidth = 18;
+                brickHeight = 9;
+            }
+            case 128:
+            {
+                brickWidth = 14;
+            }
+            case 135:
+            {
+                brickWidth = 21;
+                brickHeight = 11;
+            }
+            case 160:
+            {
+                brickWidth  = 18;
+                brickHeight = 6;
+            }
+            case 240:
+            {
+                brickWidth = 28;
+            }
+            case 320:
+            {
+                brickWidth = 38;
+            }
+        }
         
         int titleSpace = (CellHeight+1)*2;
         
         int startY    = titleSpace + brickHeight/2 + 1;
         int endY      = titleSpace + (Display.PixelHeight - titleSpace)/2;
         int rowHeight = brickHeight+3;
+        
+        <uint> usedColours;
+        int offset = 0;
         for (int y = startY; y <= endY; y += rowHeight)
         {
             uint colour;
@@ -79,17 +120,18 @@ unit Bricks
                 if (!usedColours.Contains(colour)) { break; }
             }
             usedColours.Append(colour);
-            int x = brickWidth/2 + offset;
+            int x = brickWidth/2 + offset + 1;
             loop
             {
-                bricks.Append(Create(x, y, colour));
+                bricks.Append(create(x, y, brickWidth, brickHeight, colour));
                 x += brickWidth+2;
                 if (x - brickWidth/2 > Display.PixelWidth - 1)
                 {
                     break;
                 }
             }
-            offset = (offset == 0) ? -int(brickWidth/2) : 0;
+            // uncomment for offset bricks in alternate rows
+            // offset = (offset == 0) ? -int(brickWidth/2) : 0;
         }
         Render();
     }

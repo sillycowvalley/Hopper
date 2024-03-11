@@ -36,36 +36,37 @@ unit Ball
     }
     bool Move()
     {
+        bool update = false;
         x += dx;
         y += dy;
         
-        if (x < 0 + width/2)
+        if (x < 0 + width/2) // left bounce
         {
             x = 0 + width/2;
             dx *= -1;
         }
-        else if (x > Display.PixelWidth - width/2)
+        else if (x > Display.PixelWidth - width/2) //right bounce
         {
             x = Display.PixelWidth - width/2;
             dx *= -1;
         }
 
-        if (y < 15 + height/2)
+        if (y < (CellHeight+1)*2 + height/2) // top bounce
         {
-            y = 15 + height/2;
+            y = (CellHeight+1)*2 + height/2;
             dy *= -1;
+            update = true; // repair the line below the score
         }
-        else if (y > Display.PixelHeight - height/2)
+        else if (y > Display.PixelHeight - height/2) // missed the paddle
         {
-            y = Display.PixelHeight - height/2;
             y = Paddle.Y - 4;
             x = Paddle.X;
             dy = -3;
             dx = -3;
             Lives -= 1;
-            return false;
+            update = true;
         }
-        return true;
+        return update;
     }
     Render(uint colour)
     {
@@ -74,8 +75,12 @@ unit Ball
     
     bool IsCollisionWithPaddle()
     {
+#ifdef TEST_PLAY        
+        return (Int.Abs(y - Paddle.Y) * 2) < (height + Paddle.Height);
+#else
         return ((Int.Abs(x - Paddle.X) * 2) < (width + Paddle.Width)) && 
                ((Int.Abs(y - Paddle.Y) * 2) < (height + Paddle.Height));
+#endif
     }
     bool IsCollisionWithBrick(Brick brick)
     {

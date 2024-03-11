@@ -3,7 +3,7 @@ unit Paddle
     int x;
     int y;
     int dx;
-    int width  = 24;
+    int width;
     const int height = 4;  
     
     int maxPaddleSpeed = 5;
