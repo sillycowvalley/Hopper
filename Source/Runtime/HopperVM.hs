@@ -3081,6 +3081,7 @@ unit HopperVM
             case SysCalls.FloatSub:
             case SysCalls.FloatDiv:
             case SysCalls.FloatMul:
+            case SysCalls.FloatATan2:
             case SysCalls.FloatEQ:
             case SysCalls.FloatLT:
             case SysCalls.FloatLE:
@@ -3118,6 +3119,10 @@ unit HopperVM
                     {
                         result = External.FloatMul(next, top);
                     }
+                    case SysCalls.FloatATan2:
+                    {
+                        result = External.FloatATan2(next, top);
+                    }
                     case SysCalls.FloatEQ:
                     {
                         result = External.FloatEQ(next, top);
@@ -3148,6 +3153,39 @@ unit HopperVM
                 Push(result, rtype);        
                 GC.Release(top);
                 GC.Release(next);
+            }
+            case SysCalls.FloatSin:
+            case SysCalls.FloatCos:
+            case SysCalls.FloatSqrt:
+            {
+                Type ttype;
+                uint top = Pop(ref ttype);
+#ifdef CHECKED
+                if (ttype != Type.Float)
+                {
+                    ErrorDump(6);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif
+                uint result;
+                Type rtype = Type.Float;
+                switch (SysCalls(iSysCall))
+                {
+                    case SysCalls.FloatSin:
+                    {
+                        result = External.FloatSin(top);
+                    } 
+                    case SysCalls.FloatCos:
+                    {
+                        result = External.FloatCos(top);
+                    }
+                    case SysCalls.FloatSqrt:
+                    {
+                        result = External.FloatSqrt(top);
+                    }
+                }
+                Push(result, rtype);        
+                GC.Release(top);
             }
             case SysCalls.LongNew:
             {

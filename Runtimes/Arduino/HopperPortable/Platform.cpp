@@ -774,6 +774,30 @@ UInt External_FloatMul(UInt n, UInt t)
     return hopperFloatFromNativeFloat(next * top);
 }
 
+UInt External_FloatSin(UInt t)
+{
+    float top = nativeFloatFromHopperFloat(t);
+    return hopperFloatFromNativeFloat(sin(top));
+}
+
+UInt External_FloatCos(UInt t)
+{
+    float top = nativeFloatFromHopperFloat(t);
+    return hopperFloatFromNativeFloat(cos(top));
+}
+UInt External_FloatATan2(UInt n, UInt t)
+{
+    float top = nativeFloatFromHopperFloat(t);
+    float next = nativeFloatFromHopperFloat(n);
+    return hopperFloatFromNativeFloat(atan2(next, top));
+}
+UInt External_FloatSqrt(UInt t)
+{
+    float top = nativeFloatFromHopperFloat(t);
+    return hopperFloatFromNativeFloat(sqrt(top));
+}
+
+
 Int  External_UIntToInt(UInt ui)
 {
     return (Int)ui;

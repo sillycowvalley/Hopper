@@ -324,6 +324,10 @@ enum SysCalls {
     eFloatToLong = 0x00ED,
     eLongAddB = 0x00EE,
     eLongSubB = 0x00EF,
+    eFloatSin = 0x00F0,
+    eFloatCos = 0x00F1,
+    eFloatATan2 = 0x00F2,
+    eFloatSqrt = 0x00F3,
 };
 
 enum Type {

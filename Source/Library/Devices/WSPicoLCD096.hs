@@ -8,7 +8,8 @@ unit DeviceDriver
     uses "/Source/Library/Boards/PiPico"
 #endif
     #define WAVESHARE_PICO_LCD_096
-    #define BUFFER_TEXT
+    #define HAS_RESET_PIN
+    //#define BUFFER_TEXT
     #define ST77XX_CONTROLLER
     
     uses "/Source/Library/Displays/TFTDriver"

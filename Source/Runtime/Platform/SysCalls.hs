@@ -228,5 +228,10 @@ unit SysCalls
         LongAddB        = 0xEE,
         LongSubB        = 0xEF,
         
+        FloatSin   = 0xF0,
+        FloatCos   = 0xF1,
+        FloatATan2 = 0xF2,
+        FloatSqrt  = 0xF3,
+        
     }
 }

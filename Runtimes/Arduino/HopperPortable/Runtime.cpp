@@ -8,7 +8,6 @@
 
 
 
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -6035,6 +6034,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     case SysCalls::eFloatSub:
     case SysCalls::eFloatDiv:
     case SysCalls::eFloatMul:
+    case SysCalls::eFloatATan2:
     case SysCalls::eFloatEQ:
     case SysCalls::eFloatLT:
     case SysCalls::eFloatLE:
@@ -6067,6 +6067,11 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         case SysCalls::eFloatMul:
         {
             result = External_FloatMul(next, top);
+            break;
+        }
+        case SysCalls::eFloatATan2:
+        {
+            result = External_FloatATan2(next, top);
             break;
         }
         case SysCalls::eFloatEQ:
@@ -6103,6 +6108,36 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(result, rtype);
         GC_Release(top);
         GC_Release(next);
+        break;
+    }
+    case SysCalls::eFloatSin:
+    case SysCalls::eFloatCos:
+    case SysCalls::eFloatSqrt:
+    {
+        Type ttype = (Type)0;
+        UInt top = HopperVM_Pop_R(ttype);
+        UInt result = 0;
+        Type rtype = Type::eFloat;
+        switch (SysCalls(iSysCall))
+        {
+        case SysCalls::eFloatSin:
+        {
+            result = External_FloatSin(top);
+            break;
+        }
+        case SysCalls::eFloatCos:
+        {
+            result = External_FloatCos(top);
+            break;
+        }
+        case SysCalls::eFloatSqrt:
+        {
+            result = External_FloatSqrt(top);
+            break;
+        }
+        } // switch
+        HopperVM_Push(result, rtype);
+        GC_Release(top);
         break;
     }
     case SysCalls::eLongNew:

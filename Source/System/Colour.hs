@@ -23,6 +23,14 @@ unit Colour
     uint Red         { get { return 0xF00; }}
     uint Magenta     { get { return 0xF0F; }}
     uint Yellow      { get { return 0xFF0; }}
+    uint Purple      { get { return 0x808; }}
+    uint Violet      { get { return 0x90D; }}
+    uint Orange      { get { return 0xF80; }}
+    uint Indigo      { get { return 0x508; }}
+    uint Raspberry   { get { return 0xF08; }}
+    uint Turquoise   { get { return 0x0F8; }}
+    uint Ocean       { get { return 0x08F; }}
+    uint Spring      { get { return 0xF80; }}
     
     uint Viridian    { get { return 0x497; }} // Darker green
     uint Avocado     { get { return 0x9B4; }} // Olive green

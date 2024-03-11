@@ -95,6 +95,21 @@ unit Display
         else
         {
             Suspend();
+#ifdef HAS_FAST_FILLEDRECTANGLE
+            if ((x >= 0) && (y >= 0) && (x + w <= Display.PixelWidth) && (y + h <= Display.PixelHeight) && (w*h <= 256))
+            {
+#ifdef DISPLAY_IS_RGB565
+    #ifdef HAS_DISPLAY_READ
+                colour = (colour == Colour.Invert) ? colour : DisplayDriver.convertToRGB565(colour);
+    #else
+                colour = DisplayDriver.convertToRGB565(colour);
+    #endif
+#endif
+                DisplayDriver.filledRectangle(x, y, w, h, colour);
+                Resume();
+                return;
+            }
+#endif
             for (int i=y; i < y+ih; i++)
             {
                 HorizontalLine(x, i, x2, colour);

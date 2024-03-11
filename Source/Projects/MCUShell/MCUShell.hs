@@ -3,7 +3,7 @@ program MCUShell
         
 #define SERIAL_CONSOLE
 
-    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
+    uses "/Source/Library/Boards/PiPico"
     uses "/Source/System/IO"
     uses "/Source/System/System"
     uses "/Source/System/Runtime"

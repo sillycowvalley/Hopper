@@ -479,6 +479,11 @@ namespace HopperNET
         LongAddB = 0xEE,
         LongSubB = 0xEF,
 
+        FloatSin   = 0xF0,
+        FloatCos   = 0xF1,
+        FloatATan2 = 0xF2,
+        FloatSqrt  = 0xF3,
+
     };
 
     enum LibCall
@@ -6332,6 +6337,32 @@ namespace HopperNET
                         location = (ushort)(location + currentContext.ConstantsStart);
                         float f = BitConverter.ToSingle(currentContext.Code, location);
                         PushFloat(f);
+                    }
+                    break;
+
+                case SysCall.FloatSin:
+                    {
+                        float top = PopFloat();
+                        PushFloat((float)Math.Sin(top));
+                    }
+                    break;
+                case SysCall.FloatCos:
+                    {
+                        float top = PopFloat();
+                        PushFloat((float)Math.Cos(top));
+                    }
+                    break;
+                case SysCall.FloatATan2:
+                    {
+                        float top = PopFloat();
+                        float next = PopFloat();
+                        PushFloat((float)Math.Atan2(next, top));
+                    }
+                    break;
+                case SysCall.FloatSqrt:
+                    {
+                        float top = PopFloat();
+                        PushFloat((float)Math.Sqrt(top));
                     }
                     break;
                 case SysCall.FloatAdd:

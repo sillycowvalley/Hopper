@@ -109,6 +109,16 @@ unit Float
     byte GetByte(float this, byte index) system;
     float FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     
+    const float Pi = 3.1415926535;
+    
+    float Sin(float angle) system;
+    float Cos(float angle) system;
+    float ATan2(float y, float x) system;
+    float Sqrt(float value) system;
+    
+    float Radians(float angle) { return angle * Pi / 180.0; }
+    float Degrees(float angle) { return angle * 180.0 / Pi; }
+    
     float Abs(float value) { return (value >= 0) ? value : -value; }
     float Min(float a, float b) { return (a < b) ? a : b; }
     float Max(float a, float b) { return (a > b) ? a : b; }

@@ -9,9 +9,9 @@ unit DeviceDriver
 #endif
     
     #define WAVESHARE_PICO_LCD_114
-    #define BUFFER_TEXT
+    #define HAS_RESET_PIN
+    //#define BUFFER_TEXT
     #define ST77XX_CONTROLLER
-    #define HAS_RGB444
     
     uses "/Source/Library/Displays/TFTDriver"
     
@@ -42,6 +42,7 @@ unit DeviceDriver
     byte getMAD()
     {
         byte madArgument = MADCTL_RGB;
+        //byte madArgument = MADCTL_BGR;
         if (DisplayDriver.IsPortrait)
         {
             if (FlipX)
@@ -52,7 +53,7 @@ unit DeviceDriver
             {
                 madArgument |= MADCTL_MY;
             }
-            xFudge = 53;
+            xFudge = 52; //53;
             yFudge = 40;
         }
         else
@@ -68,7 +69,6 @@ unit DeviceDriver
             }
             xFudge = 40;
             yFudge = 53;
-    
         }
         return madArgument;
     }

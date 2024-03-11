@@ -311,7 +311,10 @@ unit SysCalls
         addEntry("Long.AddB");
         addEntry("Long.SubB");
         
-        
+        addEntry("Float.Sin");
+        addEntry("Float.Cos");
+        addEntry("Float.ATan2");
+        addEntry("Float.Sqrt");
     }
     
     bool TryParseSysCall(string name, ref byte index)

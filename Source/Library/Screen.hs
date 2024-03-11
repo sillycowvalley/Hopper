@@ -177,6 +177,13 @@ unit Screen
             {
                 if ((c <= char(32)) || (c > char(127)))
                 {
+#ifdef DISPLAY_IS_RGB565
+    #ifdef HAS_DISPLAY_READ
+                    backColour = (backColour == Colour.Invert) ? backColour : DisplayDriver.convertToRGB565(backColour);
+    #else
+                    backColour = DisplayDriver.convertToRGB565(backColour);
+    #endif
+#endif
                     DisplayDriver.filledRectangle(x0, y0, cellWidth, cellHeight, backColour);
                 }
                 else
@@ -246,6 +253,14 @@ unit Screen
         DisplayDriver.bufferText(col, row, c, foreColour, backColour);
 #endif
     }
+    DrawText(int x, int y, string text, uint foreColour, uint backColour, byte scale)
+    {
+        foreach (var c in text)
+        {
+            DrawChar(0, 0, c, foreColour, backColour, scale, x, y);
+            x += cellWidth * scale;
+        }
+    }
     DrawChar(byte col, byte row, char c, uint foreColour, uint backColour, byte scale, int dx, int dy)
     {
 #if defined(DISPLAY_DRIVER) && defined(FONT_EXISTS)
@@ -259,6 +274,13 @@ unit Screen
             {
                 if ((c <= char(32)) || (c > char(127)))
                 {
+#ifdef DISPLAY_IS_RGB565
+    #ifdef HAS_DISPLAY_READ
+                    backColour = (backColour == Colour.Invert) ? backColour : DisplayDriver.convertToRGB565(backColour);
+    #else
+                    backColour = DisplayDriver.convertToRGB565(backColour);
+    #endif
+#endif
                     DisplayDriver.filledRectangle(x0, y0, cellWidth*scale, cellHeight*scale, backColour);
                 }
                 else

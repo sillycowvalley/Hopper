@@ -683,6 +683,22 @@ unit External
     {
         return hopperFloatFromNativeFloat(nativeFloatFromHopperFloat(next) * nativeFloatFromHopperFloat(top)); 
     }
+    uint FloatSin(uint top)
+    {
+        return hopperFloatFromNativeFloat(Float.Sin(nativeFloatFromHopperFloat(top))); 
+    }
+    uint FloatCos(uint top)
+    {
+        return hopperFloatFromNativeFloat(Float.Cos(nativeFloatFromHopperFloat(top))); 
+    }
+    uint FloatATan2(uint next, uint top)
+    {
+        return hopperFloatFromNativeFloat(Float.ATan2(nativeFloatFromHopperFloat(next), nativeFloatFromHopperFloat(top))); 
+    }
+    uint FloatSqrt(uint top)
+    {
+        return hopperFloatFromNativeFloat(Float.Sqrt(nativeFloatFromHopperFloat(top))); 
+    }
     
     uint FloatEQ(uint next, uint top)
     {

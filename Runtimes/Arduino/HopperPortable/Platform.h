@@ -140,6 +140,11 @@ UInt External_FloatSub(UInt n, UInt t);
 UInt External_FloatMul(UInt n, UInt t);
 UInt External_FloatDiv(UInt n, UInt t);
 
+UInt External_FloatSin(UInt t);
+UInt External_FloatCos(UInt t);
+UInt External_FloatATan2(UInt n, UInt t);
+UInt External_FloatSqrt(UInt t);
+
 bool External_LongEQ(UInt n, UInt t);
 bool External_LongGT(UInt n, UInt t);
 bool External_LongGE(UInt n, UInt t);

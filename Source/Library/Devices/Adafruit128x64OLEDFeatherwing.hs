@@ -5,6 +5,7 @@ unit DeviceDriver
     uses "/Source/Library/Boards/AdafruitFeather"
 #endif
 
+    #define OLED_FEATHERWING_128x64
     #define HAS_BUTTONS
     #define SH110X_OLED_128x64
     
@@ -26,8 +27,9 @@ unit DeviceDriver
         // I2C address = 0x3C
         //     controller 1:
         //         I2CSDA1 and I2CSDCL1
-        
-        
+        MCU.PinMode(keyAPin, PinModeOption.InputPullup);
+        MCU.PinMode(keyBPin, PinModeOption.InputPullup);
+        MCU.PinMode(keyCPin, PinModeOption.InputPullup);
         return Display.Begin();
     }
     bool Begin(PinISRDelegate buttonDelegate)
@@ -36,9 +38,6 @@ unit DeviceDriver
         loop
         {
             if (!DeviceDriver.Begin()) { break; }
-            MCU.PinMode(keyAPin, PinModeOption.InputPullup);
-            MCU.PinMode(keyBPin, PinModeOption.InputPullup);
-            MCU.PinMode(keyCPin, PinModeOption.InputPullup);
             if (!AttachToPin(keyAPin, buttonDelegate, PinStatus.Rising)) { break; }
             if (!AttachToPin(keyBPin, buttonDelegate, PinStatus.Rising)) { break; }
             if (!AttachToPin(keyCPin, buttonDelegate, PinStatus.Rising)) { break; }
@@ -57,9 +56,9 @@ unit DeviceDriver
         }
         return "";
     }
-    bool ButtonA { get { return MCU.DigitalRead(keyAPin); } }
-    bool ButtonB { get { return MCU.DigitalRead(keyBPin); } }
-    bool ButtonC { get { return MCU.DigitalRead(keyCPin);  } }
+    bool ButtonA { get { return !MCU.DigitalRead(keyAPin); } }
+    bool ButtonB { get { return !MCU.DigitalRead(keyBPin); } }
+    bool ButtonC { get { return !MCU.DigitalRead(keyCPin);  } }
     
     
 }   

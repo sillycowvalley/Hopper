@@ -53,6 +53,9 @@ unit DeviceDriver
         SD.RxPin  = Board.SPI0Rx;
         SD.CSPin  = sdCS; 
         
+        MCU.PinMode(keyAPin, PinModeOption.InputPullup);
+        MCU.PinMode(keyBPin, PinModeOption.InputPullup);
+        MCU.PinMode(keyCPin, PinModeOption.InputPullup);
         return Display.Begin();
     }
     bool Begin(PinISRDelegate buttonDelegate)
@@ -61,9 +64,6 @@ unit DeviceDriver
         loop
         {
             if (!DeviceDriver.Begin()) { break; }
-            MCU.PinMode(keyAPin, PinModeOption.InputPullup);
-            MCU.PinMode(keyBPin, PinModeOption.InputPullup);
-            MCU.PinMode(keyCPin, PinModeOption.InputPullup);
             if (!AttachToPin(keyAPin, buttonDelegate, PinStatus.Rising)) { break; }
             if (!AttachToPin(keyBPin, buttonDelegate, PinStatus.Rising)) { break; }
             if (!AttachToPin(keyCPin, buttonDelegate, PinStatus.Rising)) { break; }

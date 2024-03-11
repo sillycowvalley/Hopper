@@ -10,7 +10,7 @@ unit DeviceDriver
 
     #define WAVESHARE_PICO_LCD_144
     #define HAS_RESET_PIN
-    #define BUFFER_TEXT
+    //#define BUFFER_TEXT
     #define ST77XX_CONTROLLER
     #define SET_TFT_INVOFF
     

@@ -3,16 +3,16 @@ program ThinkInkFeatherwing
     //uses "/Source/Library/Boards/AdafruitFeather"
     //uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
-    uses "/Source/Library/Boards/SparkfunProMicroRP2040"
+    //uses "/Source/Library/Boards/SparkfunProMicroRP2040"
     
     //uses "/Source/Library/Devices/AdafruitEInk213Mono"
     //uses "/Source/Library/Devices/AdafruitEInk213TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
     //uses "/Source/Library/Devices/WSPicoePaper290"
-    uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
+    //uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
     //uses "/Source/Library/Devices/Adafruit160x80ColorTFT"
-    //uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
+    uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
     
     uses "/Source/Library/Fonts/Hitachi5x7"
     
@@ -110,10 +110,11 @@ program ThinkInkFeatherwing
         FlipX = true;
         FlipY = true;
         
+#if defined(ADAFRUIT_TFT_114) || defined(ADAFRUIT_TFT_096)       
         DeviceDriver.SDCS = Board.GP29;
         DeviceDriver.CS   = Board.SPI0SS;
         DeviceDriver.DC   = Board.GP28;
-    
+#endif
      
 #ifdef HAS_BUTTONS        
         PinISRDelegate buttonDelegate = ButtonISR;

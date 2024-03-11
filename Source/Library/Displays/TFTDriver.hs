@@ -695,21 +695,21 @@ unit DisplayDriver
     }
 
 #ifdef FONT_EXISTS    
-    filledRectangle(int x0, int y0, byte w, byte h, uint colour)
+    filledRectangle(int x0, int y0, int w, int h, uint colour)
     {
         SPI.BeginTransaction(DeviceDriver.spiController);
         MCU.DigitalWrite(DeviceDriver.csPin, false);
         setAddrWindowSPI(x0, y0, x0+w-1, y0+h-1, true);
-        SPI.WriteWords(DeviceDriver.spiController, colour, w*h); 
+        SPI.WriteWords(DeviceDriver.spiController, colour, uint(w*h)); 
         MCU.DigitalWrite(DeviceDriver.csPin, true);
         SPI.EndTransaction(DeviceDriver.spiController); 
     }
-    filledRectangle(int x0, int y0, byte w, byte h, uint[] cellBuffer)
+    filledRectangle(int x0, int y0, int w, int h, uint[] cellBuffer)
     {
         SPI.BeginTransaction(DeviceDriver.spiController);
         MCU.DigitalWrite(DeviceDriver.csPin, false);
         setAddrWindowSPI(x0, y0, x0+w-1, y0+h-1, true);
-        SPI.WriteBuffer(DeviceDriver.spiController, cellBuffer, 0, w*h); 
+        SPI.WriteBuffer(DeviceDriver.spiController, cellBuffer, 0, uint(w*h)); 
         MCU.DigitalWrite(DeviceDriver.csPin, true);
         SPI.EndTransaction(DeviceDriver.spiController); 
     }
