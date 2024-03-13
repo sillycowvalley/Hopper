@@ -25,6 +25,10 @@ unit HopperVM
     uses "Platform/Instructions"
     uses "Platform/Library"
     
+#ifdef LOCALDEBUGGER
+    uses "Platform/Desktop"
+#endif    
+    
     
     const uint stackSize     = 512; // size of value stack in byte (each stack slot is 2 bytes)
     const uint callStackSize = 512; // size of callstack in bytes (4 bytes per call)
@@ -1504,6 +1508,154 @@ unit HopperVM
                     }
                 }
             }
+            case SysCalls.StringStartsWith:
+            {
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        Type atype;
+                        uint with = Pop(ref atype);
+                        Type ttype;
+                        uint this = Pop(ref ttype);
+#ifdef CHECKED
+                        AssertChar(atype, with);
+                        if (ttype != Type.String)
+                        {
+                            ErrorDump(27);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif        
+                        bool result = HRString.StartsWith(this, char(with));
+                        GC.Release(this);
+                        Push(result ? 1 : 0, Type.Bool);
+                    }
+                    case 1:
+                    {
+                        Type atype;
+                        uint with = Pop(ref atype);
+                        Type ttype;
+                        uint this = Pop(ref ttype);
+#ifdef CHECKED
+                        if ((atype != Type.String) || (ttype != Type.String))
+                        {
+                            ErrorDump(26);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif        
+                        bool result = HRString.StartsWith(this, with);
+                        GC.Release(this);
+                        GC.Release(with);
+                        Push(result ? 1 : 0, Type.Bool);
+                    }
+                    default:
+                    {
+                        ErrorDump(225);
+                        Error = 0x0B; // system failure (internal error)
+                    }
+                } 
+            }
+            
+            case SysCalls.StringContains:
+            {
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        Type atype;
+                        uint with = Pop(ref atype);
+                        Type ttype;
+                        uint this = Pop(ref ttype);
+#ifdef CHECKED
+                        AssertChar(atype, with);
+                        if (ttype != Type.String)
+                        {
+                            ErrorDump(27);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif        
+                        bool result = HRString.Contains(this, char(with));
+                        GC.Release(this);
+                        Push(result ? 1 : 0, Type.Bool);
+                    }
+                    default:
+                    {
+                        ErrorDump(223);
+                        Error = 0x0B; // system failure (internal error)
+                    }
+                } 
+            }
+            case SysCalls.StringIndexOf:
+            {
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        Type htype;
+                        uint address = Pop(ref htype);
+                        uint index = Get(address, ref htype);
+                        
+                        Type atype;
+                        uint with = Pop(ref atype);
+                        Type ttype;
+                        uint this = Pop(ref ttype);
+#ifdef CHECKED
+                        AssertUInt(htype, index);
+                        AssertChar(atype, with);
+                        if (ttype != Type.String)
+                        {
+                            ErrorDump(27);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif        
+                        bool result = HRString.IndexOf(this, char(with), ref index);
+                        if (result)
+                        {
+                            Put(address, index, Type.UInt);
+                        }
+                        GC.Release(this);
+                        Push(result ? 1 : 0, Type.Bool);
+                    }
+                    case 1:
+                    {
+                        Type htype;
+                        uint address = Pop(ref htype);
+                        uint index = Get(address, ref htype);
+                        
+                        Type itype;
+                        uint searchIndex = Pop(ref itype);
+                        
+                        Type atype;
+                        uint with = Pop(ref atype);
+                        Type ttype;
+                        uint this = Pop(ref ttype);
+#ifdef CHECKED
+                        AssertUInt(htype, index);
+                        AssertUInt(itype, searchIndex);
+                        AssertChar(atype, with);
+                        if (ttype != Type.String)
+                        {
+                            ErrorDump(26);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+#endif        
+                        bool result = HRString.IndexOf(this, char(with), searchIndex, ref index);
+                        if (result)
+                        {
+                            Put(address, index, Type.UInt);
+                        }
+                        GC.Release(this);
+                        GC.Release(with);
+                        Push(result ? 1 : 0, Type.Bool);
+                    }
+                    default:
+                    {
+                        ErrorDump(224);
+                        Error = 0x0B; // system failure (internal error)
+                    }
+                } 
+            }
+            
             case SysCalls.StringEndsWith:
             {
                 switch (iOverload)
@@ -1522,9 +1674,9 @@ unit HopperVM
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif        
-                        uint result = uint(HRString.EndsWith(this, char(with)));
+                        bool result = HRString.EndsWith(this, char(with));
                         GC.Release(this);
-                        Push(result, Type.Bool);
+                        Push(result ? 1 : 0, Type.Bool);
                     }
                     case 1:
                     {
@@ -1539,10 +1691,10 @@ unit HopperVM
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif        
-                        uint result = uint(HRString.EndsWith(this, with));
+                        bool result = HRString.EndsWith(this, with);
                         GC.Release(this);
                         GC.Release(with);
-                        Push(result, Type.Bool);
+                        Push(result ? 1 : 0, Type.Bool);
                     }
                     
                 }  
@@ -3210,6 +3362,219 @@ unit HopperVM
                 doNext = false;
             }
             
+            
+            case SysCalls.ScreenPrint:
+            {
+#ifdef LOCALDEBUGGER
+                switch (iOverload)
+                {
+                    case 0:
+                    {
+                        //Print(char c,     uint foreColour, uint backColour) system;
+                        Type btype;
+                        uint backColour = Pop(ref btype);
+                        Type ftype;
+                        uint foreColour = Pop(ref ftype);
+                        Type atype;
+                        uint ch = Pop(ref atype);
+#ifdef CHECKED
+                        AssertChar(atype, ch);
+                        AssertUInt(ftype, foreColour);
+                        AssertUInt(btype, backColour);
+#endif
+                        Desktop.Print(ch, foreColour, backColour);
+                    }
+                    case 1:
+                    {
+                        //Print(string s,   uint foreColour, uint backColour) system;
+                        Type btype;
+                        uint backColour = Pop(ref btype);
+                        Type ftype;
+                        uint foreColour = Pop(ref ftype);
+                        Type atype;
+                        uint str = Pop(ref atype);
+#ifdef CHECKED
+                        if (atype != Type.String)
+                        {
+                            ErrorDump(226);
+                            Error = 0x0B; // system failure (internal error)
+                        }
+                        AssertUInt(ftype, foreColour);
+                        AssertUInt(btype, backColour);
+#endif
+                        Desktop.Print(str, foreColour, backColour);
+                    }
+                    default:
+                    {
+                        ErrorDump(203); Error = 0x0B;
+                    }
+                }   
+#else
+                ErrorDump(204); Error = 0x0B;
+#endif
+            }
+            case SysCalls.ScreenPrintLn:
+            {
+#ifdef LOCALDEBUGGER
+                // PrintLn() system;
+                Desktop.PrintLn();
+#else
+                ErrorDump(206); Error = 0x0B;
+#endif
+            }
+            case SysCalls.ScreenClear:
+            {
+#ifdef LOCALDEBUGGER
+                // Clear() system;
+                Desktop.Clear();
+#else
+                ErrorDump(208); Error = 0x0B;
+#endif
+            }
+            case SysCalls.ScreenSetCursor:
+            {
+#ifdef LOCALDEBUGGER
+                // SetCursor(uint col, uint row) system;
+                Type rtype;
+                uint row = Pop(ref rtype);
+                Type ctype;
+                uint col = Pop(ref ctype);
+#ifdef CHECKED
+                AssertUInt(ctype, col);
+                AssertUInt(rtype, row);
+#endif
+                Desktop.SetCursor(col, row);
+                
+#else
+                ErrorDump(210); Error = 0x0B;
+#endif
+            }
+            case SysCalls.ScreenColumnsGet:
+            {
+#ifdef LOCALDEBUGGER
+                // byte Columns { get system; }
+                Push(Desktop.GetColumns(), Type.Byte);
+#else
+                ErrorDump(212); Error = 0x0B;
+#endif
+            }
+            case SysCalls.ScreenRowsGet:
+            {
+#ifdef LOCALDEBUGGER
+                // byte Rows { get system; }
+                Push(Desktop.GetRows(), Type.Byte);
+#else
+                ErrorDump(214); Error = 0x0B;
+#endif
+            }
+            case SysCalls.ScreenCursorXGet:
+            {
+#ifdef LOCALDEBUGGER
+                // byte CursorX { get system; }
+                Push(Desktop.GetCursorX(), Type.Byte);
+#else
+                ErrorDump(216); Error = 0x0B;
+#endif
+            }
+            case SysCalls.ScreenCursorYGet:
+            {
+#ifdef LOCALDEBUGGER
+                // byte CursorY { get system; }
+                Push(Desktop.GetCursorY(), Type.Byte);
+#else
+                ErrorDump(218); Error = 0x0B;
+#endif
+            }
+            case SysCalls.ScreenSuspend:
+            {
+#ifdef LOCALDEBUGGER
+                // Suspend() system;
+                Desktop.Suspend();
+#else
+                ErrorDump(220); Error = 0x0B;
+#endif
+            }
+            case SysCalls.ScreenResume:
+            {
+#ifdef LOCALDEBUGGER
+                // Resume() system;
+                Type ctype;
+                uint isInteractive = Pop(ref ctype);
+#ifdef CHECKED
+                AssertBool(ctype, col);
+#endif                
+                Desktop.Resume(isInteractive != 0);
+#else
+                ErrorDump(222); Error = 0x0B;
+#endif
+            }
+            
+            case SysCalls.KeyboardReadKey:
+            {
+#ifdef LOCALDEBUGGER
+                // Key  ReadKey() system;
+                Push(Desktop.ReadKey(), Type.UInt);
+#else
+                ErrorDump(227); Error = 0x0B;
+#endif
+            }
+            case SysCalls.KeyboardIsAvailableGet:
+            {
+#ifdef LOCALDEBUGGER
+                // bool IsAvailable { get system; }
+                Push(Desktop.IsAvailable() ? 1 : 0, Type.Bool);
+#else
+                ErrorDump(227); Error = 0x0B;
+#endif
+            }
+            
+            case SysCalls.KeyboardClickXGet:
+            {
+#ifdef LOCALDEBUGGER
+                // uint ClickX      { get system; } // x position of last read click event
+                Push(Desktop.ClickX(), Type.UInt);
+#else
+                ErrorDump(227); Error = 0x0B;
+#endif
+            }
+            case SysCalls.KeyboardClickYGet:
+            {
+#ifdef LOCALDEBUGGER
+                // uint ClickY      { get system; } // y position of last read click event
+                Push(Desktop.ClickY(), Type.UInt);
+#else
+                ErrorDump(227); Error = 0x0B;
+#endif
+            }
+            case SysCalls.KeyboardClickUpGet:
+            {
+#ifdef LOCALDEBUGGER
+                // bool ClickUp     { get system; } // was last read click event Up or Down?
+                Push(Desktop.ClickUp() ? 1 : 0, Type.Bool);
+#else
+                ErrorDump(227); Error = 0x0B;
+#endif
+            }
+            case SysCalls.KeyboardClickDoubleGet:
+            {
+#ifdef LOCALDEBUGGER
+                // bool ClickDouble { get system; } // was last read click event a double click?
+                Push(Desktop.ClickDouble() ? 1 : 0, Type.Bool);
+#else
+                ErrorDump(227); Error = 0x0B;
+#endif
+            }
+            case SysCalls.KeyboardScrollDeltaGet:
+            {
+#ifdef LOCALDEBUGGER
+                // int  ScrollDelta { get system; } // delta for last scroll wheel event
+                PushI(Desktop.ScrollDelta());
+#else
+                ErrorDump(227); Error = 0x0B;
+#endif
+            }
+            
+                     
             default:
             {
                 IO.WriteHex(PC); IO.Write(':'); IO.Write('S'); IO.WriteHex(iSysCall); IO.Write('-'); IO.WriteHex(iOverload);  

@@ -6,6 +6,10 @@ unit External
     uses "/Source/Runtime/Emulation/Long.hs"
     uses "/Source/Runtime/Emulation/WiFi.hs"
     
+#ifdef LOCALDEBUGGER
+    friend Desktop;
+#endif        
+    
     
     const uint fiValid    = 2;
     const uint fiReading  = 3;

@@ -29,6 +29,12 @@ unit String
     
     uint Length { get system; }
     
+    bool IndexOf(string this, char pattern, ref uint index) system;
+    bool IndexOf(string this, char pattern, uint searchIndex, ref uint index) system;
+    
+    bool Contains(string this, char needle) system;
+    bool StartsWith(string this, char pattern) system;
+    
 #ifdef HOPPER_6502
     string Replace(string original, string pattern, string replace)
     {
@@ -128,13 +134,13 @@ unit String
         return substring == pattern;
     }
     
-    bool Contains(string this, char needle) system;
+    
     bool Contains(string this, string needle)
     {
         uint index;
         return IndexOf(this, needle, ref index);
     }
-    bool StartsWith(string this, char pattern) system;
+    
     bool StartsWith(string this, string pattern)
     {
         uint length;
@@ -153,86 +159,21 @@ unit String
         }
         return false;
     }
-    bool IndexOf(string this, char pattern, ref uint index) system;
-    bool IndexOf(string this, char pattern, uint searchIndex, ref uint index) system;
+    
 #else
+    bool StartsWith(string this, string pattern) system;
+    bool Contains(string this, string needle)
+    {
+        uint index;
+        return IndexOf(this, needle, ref index);
+    }
+        
+
     string Replace(string this, string pattern, string replace) system;
     string Replace(string this, char pattern, char replace) system;
     bool EndsWith(string this, char pattern) system;
     bool EndsWith(string this, string pattern) system;
     
-    bool Contains(string this, char needle)
-    {
-        uint i;
-        uint length = this.Length;
-        for ( ; i < length; i++)
-        {
-            if (this[i] == needle)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-    bool Contains(string this, string needle)
-    {
-        uint index;
-        return IndexOf(this, needle, ref index);
-    }
-    bool StartsWith(string this, char pattern)
-    {
-        return (this.Length != 0) && (this[0] == pattern);
-    }
-    bool StartsWith(string this, string pattern)
-    {
-        uint i;
-        uint length;
-        length = pattern.Length;
-        if (length <= this.Length)
-        {
-            for ( ; i < length; i++)
-            {
-                if (pattern[i] != this[i])
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-    bool IndexOf(string this, char pattern, ref uint index)
-    {
-        uint i;
-        uint length = this.Length;
-        for ( ; i < length; i++)
-        {
-            if (this[i] == pattern)
-            {
-                index = i;
-                return true;
-            }
-        }
-        return false;
-    }
-    bool IndexOf(string this, char pattern, uint searchIndex, ref uint index)
-    {
-        uint length = this.Length;
-        loop
-        {
-            if (searchIndex >= length)
-            {
-                break;
-            }
-            if (this[searchIndex] == pattern)
-            {
-                index = searchIndex;
-                return true;
-            }
-            searchIndex++;
-        }
-        return false;
-    }
 #endif    
     
     bool IndexOf(string this, string pattern, ref uint index)

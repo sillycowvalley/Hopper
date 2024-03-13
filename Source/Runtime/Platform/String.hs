@@ -285,6 +285,85 @@ unit HRString
             i--;
         }
     }
+    bool IndexOf(uint this, char pattern, ref uint index)
+    {
+        uint length = GetLength(this);
+        for (uint i = 0; i < length; i++)
+        {
+            if (char(ReadByte(this+siChars+i)) == pattern)
+            {
+                index = i;
+                return true;
+            }
+        }
+        return false;
+    }
+    bool IndexOf(uint this, char pattern, uint searchIndex, ref uint index)
+    {
+        uint length = GetLength(this);
+        loop
+        {
+            if (searchIndex >= length)
+            {
+                break;
+            }
+            if (char(ReadByte(this+siChars+searchIndex)) == pattern)
+            {
+                index = searchIndex;
+                return true;
+            }
+            searchIndex++;
+        }
+        return false;
+    }
+    bool Contains(uint this, char needle)
+    {
+        uint i;
+        uint length = GetLength(this);
+        for ( ; i < length; i++)
+        {
+            if (char(ReadByte(this+siChars+i)) == needle)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    bool StartsWith(uint this, char with)
+    {
+        uint length = GetLength(this);
+        if (length == 0)
+        {
+            return false;
+        }
+        return (char(ReadByte(this+siChars)) == with);
+    }
+    bool StartsWith(uint this, uint with)
+    {
+        uint length0 = GetLength(this);
+        uint length1 = GetLength(with);
+        if (length0 < length1)
+        {
+            return false;
+        }
+        if (length1 == 0)
+        {
+            return true; // StartsWith(xxx, "") == true?
+        }
+        uint i = 0;
+        loop
+        {
+            if (i == length1)
+            {
+                break;
+            }
+            char w = char(ReadByte(with+siChars+i));   
+            char t = char(ReadByte(this+siChars+i));
+            if (w != t) { return false; }
+            i++;
+        }
+        return true;
+    }
     
     bool EndsWith(uint this, char with)
     {

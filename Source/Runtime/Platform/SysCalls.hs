@@ -119,6 +119,15 @@ unit SysCalls
         DirectoryGetFile           = 0x70,
         DirectoryGetDirectory      = 0x71,
         
+        KeyboardReadKey = 0x72,
+        KeyboardIsAvailableGet = 0x73,
+        KeyboardToKey = 0x74,
+        KeyboardClickXGet = 0x75,
+        KeyboardClickYGet = 0x76,
+        KeyboardClickUpGet = 0x77,
+        KeyboardClickDoubleGet = 0x78,
+        KeyboardScrollDeltaGet = 0x79,
+        
         DiagnosticsDie = 0x7C,
         
         TypesTypeOf      = 0x7E,
@@ -191,6 +200,10 @@ unit SysCalls
         ByteToHex = 0xBE,
         CharIsHexDigit = 0xBF,
         CharToLower = 0xC0,
+        
+        StringStartsWith = 0xC1,
+        StringContains = 0xC2,
+        StringIndexOf = 0xC3,
         
         TimeDelay        = 0xC6,
         

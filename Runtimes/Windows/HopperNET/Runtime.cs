@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -4565,7 +4566,6 @@ namespace HopperNET
                             break;
                     }
                     break;
-
                 case SysCall.StringToLower:
                     switch (iOverload)
                     {
@@ -4814,6 +4814,95 @@ namespace HopperNET
                         }
                         */
                         PushInt(result);
+                    }
+                    break;
+
+                case SysCall.StringIndexOf:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            {
+                                //bool IndexOf(string this, char pattern, ref uint index) system;
+                                uint reference = Pop();
+                                uint address = reference >> 1;
+                                char ch = (char)Pop();
+                                HopperString top = (HopperString)PopVariant(HopperType.tString);
+
+                                int index = top.Value.IndexOf(ch);
+
+                                if (index != -1)
+                                {
+                                    stack[address].value = (ushort)index;
+                                }
+                                PushBool(index != -1);
+                            }
+                            break;
+                        case 1:
+                            {
+                                //bool IndexOf(string this, char pattern, uint searchIndex, ref uint index) system;
+                                uint reference = Pop();
+                                uint address = reference >> 1;
+                                int searchIndex = (int)Pop();
+                                char ch = (char)Pop();
+                                HopperString top = (HopperString)PopVariant(HopperType.tString);
+
+                                int index = top.Value.IndexOf(ch, searchIndex);
+
+                                if (index != -1)
+                                {
+                                    stack[address].value = (ushort)index;
+                                }
+                                PushBool(index != -1);
+                            }
+                            break;
+                    }
+                    break;
+                case SysCall.StringContains:
+                    {
+                        switch (iOverload)
+                        {
+                            case 0:
+                                {
+                                    // bool Contains(string this, char needle) system;
+                                    char needle = (char)Pop();
+                                    HopperString top = (HopperString)PopVariant(HopperType.tString);
+                                    PushBool(top.Value.Contains(needle));
+                                }
+                                break;
+                            case 1:
+                                {
+                                    // bool Contains(string this, string needle) system;
+                                    HopperString needle = (HopperString)PopVariant(HopperType.tString);
+                                    HopperString top = (HopperString)PopVariant(HopperType.tString);
+                                    PushBool(top.Value.Contains(needle.Value));
+                                }
+                                break;
+
+                        }
+                    }
+                    break;
+                case SysCall.StringStartsWith:
+                    {
+                        switch (iOverload)
+                        {
+                            case 0:
+                                {
+                                    // bool StartsWith(string this, char pattern) system;
+                                    char pattern = (char)Pop();
+                                    HopperString top = (HopperString)PopVariant(HopperType.tString);
+                                    PushBool((top.Value.Length > 0) && (top.Value[0] == pattern));
+                                }
+                                break;
+                            case 1:
+                                {
+                                    // bool StartsWith(string this, string pattern) system;
+                                    HopperString pattern = (HopperString)PopVariant(HopperType.tString);
+                                    HopperString top = (HopperString)PopVariant(HopperType.tString);
+                                    PushBool(top.Value.StartsWith(pattern.Value));
+                                }
+                                break;
+
+                        }
                     }
                     break;
 

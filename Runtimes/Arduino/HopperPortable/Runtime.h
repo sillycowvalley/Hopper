@@ -300,6 +300,9 @@ enum SysCalls {
     eByteToHex = 0x00BE,
     eCharIsHexDigit = 0x00BF,
     eCharToLower = 0x00C0,
+    eStringStartsWith = 0x00C1,
+    eStringContains = 0x00C2,
+    eStringIndexOf = 0x00C3,
     eTimeDelay = 0x00C6,
     eFileGetTimeStamp = 0x00CC,
     eIntToBytes = 0x00CD,
@@ -903,6 +906,11 @@ UInt HRString_ToUpper(UInt _this);
 void HRString_ToUpper_R(UInt & _this);
 UInt HRString_ToLower(UInt _this);
 void HRString_ToLower_R(UInt & _this);
+Bool HRString_StartsWith(UInt _this, Char with);
+Bool HRString_StartsWith(UInt _this, UInt with);
+Bool HRString_Contains(UInt _this, Char needle);
+Bool HRString_IndexOf_R(UInt _this, Char pattern, UInt & index);
+Bool HRString_IndexOf_R(UInt _this, Char pattern, UInt searchIndex, UInt & index);
 Bool HRString_EndsWith(UInt _this, Char with);
 Bool HRString_EndsWith(UInt _this, UInt with);
 Int HRString_Compare(UInt left, UInt right);
@@ -931,6 +939,7 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+
 
 
 #endif // HOPPERRUNTIME_H

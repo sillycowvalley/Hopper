@@ -8,6 +8,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -4872,6 +4873,118 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         } // switch
         break;
     }
+    case SysCalls::eStringStartsWith:
+    {
+        switch (iOverload)
+        {
+        case 0x00:
+        {
+            Type atype = (Type)0;
+            UInt with = HopperVM_Pop_R(atype);
+            Type ttype = (Type)0;
+            UInt _this = HopperVM_Pop_R(ttype);
+            Bool result = HRString_StartsWith(_this, Char(with));
+            GC_Release(_this);
+            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
+            break;
+        }
+        case 0x01:
+        {
+            Type atype = (Type)0;
+            UInt with = HopperVM_Pop_R(atype);
+            Type ttype = (Type)0;
+            UInt _this = HopperVM_Pop_R(ttype);
+            Bool result = HRString_StartsWith(_this, with);
+            GC_Release(_this);
+            GC_Release(with);
+            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
+            break;
+        }
+        default:
+        {
+            Runtime_ErrorDump(0xE1);
+            Minimal_Error_Set(0x0B);
+            break;
+        }
+        } // switch
+        break;
+    }
+    case SysCalls::eStringContains:
+    {
+        switch (iOverload)
+        {
+        case 0x00:
+        {
+            Type atype = (Type)0;
+            UInt with = HopperVM_Pop_R(atype);
+            Type ttype = (Type)0;
+            UInt _this = HopperVM_Pop_R(ttype);
+            Bool result = HRString_Contains(_this, Char(with));
+            GC_Release(_this);
+            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
+            break;
+        }
+        default:
+        {
+            Runtime_ErrorDump(0xDF);
+            Minimal_Error_Set(0x0B);
+            break;
+        }
+        } // switch
+        break;
+    }
+    case SysCalls::eStringIndexOf:
+    {
+        switch (iOverload)
+        {
+        case 0x00:
+        {
+            Type htype = (Type)0;
+            UInt address = HopperVM_Pop_R(htype);
+            UInt index = HopperVM_Get_R(address, htype);
+            Type atype = (Type)0;
+            UInt with = HopperVM_Pop_R(atype);
+            Type ttype = (Type)0;
+            UInt _this = HopperVM_Pop_R(ttype);
+            Bool result = HRString_IndexOf_R(_this, Char(with), index);
+            if (result)
+            {
+                HopperVM_Put(address, index, Type::eUInt);
+            }
+            GC_Release(_this);
+            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
+            break;
+        }
+        case 0x01:
+        {
+            Type htype = (Type)0;
+            UInt address = HopperVM_Pop_R(htype);
+            UInt index = HopperVM_Get_R(address, htype);
+            Type itype = (Type)0;
+            UInt searchIndex = HopperVM_Pop_R(itype);
+            Type atype = (Type)0;
+            UInt with = HopperVM_Pop_R(atype);
+            Type ttype = (Type)0;
+            UInt _this = HopperVM_Pop_R(ttype);
+            Bool result = HRString_IndexOf_R(_this, Char(with), searchIndex, index);
+            if (result)
+            {
+                HopperVM_Put(address, index, Type::eUInt);
+            }
+            GC_Release(_this);
+            GC_Release(with);
+            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
+            break;
+        }
+        default:
+        {
+            Runtime_ErrorDump(0xE0);
+            Minimal_Error_Set(0x0B);
+            break;
+        }
+        } // switch
+        break;
+    }
     case SysCalls::eStringEndsWith:
     {
         switch (iOverload)
@@ -4882,9 +4995,9 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt with = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            UInt result = UInt(HRString_EndsWith(_this, Char(with)));
+            Bool result = HRString_EndsWith(_this, Char(with));
             GC_Release(_this);
-            HopperVM_Push(result, Type::eBool);
+            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
             break;
         }
         case 0x01:
@@ -4893,10 +5006,10 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt with = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            UInt result = UInt(HRString_EndsWith(_this, with));
+            Bool result = HRString_EndsWith(_this, with);
             GC_Release(_this);
             GC_Release(with);
-            HopperVM_Push(result, Type::eBool);
+            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
             break;
         }
         } // switch
@@ -6162,6 +6275,66 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         External_Delay(HopperVM_Pop());
         doNext = false;
+        break;
+    }
+    case SysCalls::eScreenPrint:
+    {
+        Runtime_ErrorDump(0xCC);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eScreenPrintLn:
+    {
+        Runtime_ErrorDump(0xCE);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eScreenClear:
+    {
+        Runtime_ErrorDump(0xD0);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eScreenSetCursor:
+    {
+        Runtime_ErrorDump(0xD2);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eScreenColumnsGet:
+    {
+        Runtime_ErrorDump(0xD4);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eScreenRowsGet:
+    {
+        Runtime_ErrorDump(0xD6);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eScreenCursorXGet:
+    {
+        Runtime_ErrorDump(0xD8);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eScreenCursorYGet:
+    {
+        Runtime_ErrorDump(0xDA);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eScreenSuspend:
+    {
+        Runtime_ErrorDump(0xDC);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eScreenResume:
+    {
+        Runtime_ErrorDump(0xDE);
+        Minimal_Error_Set(0x0B);
         break;
     }
     default:
@@ -8579,6 +8752,95 @@ void HRString_ToLower_R(UInt & _this)
         
         i++;
     }
+}
+
+Bool HRString_StartsWith(UInt _this, Char with)
+{
+    UInt length = HRString_GetLength(_this);
+    if (length == 0x00)
+    {
+        return false;
+    }
+    return (Char(Memory_ReadByte(_this + 4)) == with);
+}
+
+Bool HRString_StartsWith(UInt _this, UInt with)
+{
+    UInt length0 = HRString_GetLength(_this);
+    UInt length1 = HRString_GetLength(with);
+    if (length0 < length1)
+    {
+        return false;
+    }
+    if (length1 == 0x00)
+    {
+        return true;
+    }
+    UInt i = 0x00;
+    for (;;)
+    {
+        if (i == length1)
+        {
+            break;;
+        }
+        Char w = Char(Memory_ReadByte(with + 4 + i));
+        Char t = Char(Memory_ReadByte(_this + 4 + i));
+        if (w != t)
+        {
+            return false;
+        }
+        
+        i++;
+    }
+    return true;
+}
+
+Bool HRString_Contains(UInt _this, Char needle)
+{
+    UInt i = 0;
+    UInt length = HRString_GetLength(_this);
+    for (; i < length; i++)
+    {
+        if (Char(Memory_ReadByte(_this + 4 + i)) == needle)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+Bool HRString_IndexOf_R(UInt _this, Char pattern, UInt & index)
+{
+    UInt length = HRString_GetLength(_this);;
+    for (UInt i = 0x00; i < length; i++)
+    {
+        if (Char(Memory_ReadByte(_this + 4 + i)) == pattern)
+        {
+            index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+Bool HRString_IndexOf_R(UInt _this, Char pattern, UInt searchIndex, UInt & index)
+{
+    UInt length = HRString_GetLength(_this);
+    for (;;)
+    {
+        if (searchIndex >= length)
+        {
+            break;;
+        }
+        if (Char(Memory_ReadByte(_this + 4 + searchIndex)) == pattern)
+        {
+            index = searchIndex;
+            return true;
+        }
+        
+        searchIndex++;
+    }
+    return false;
 }
 
 Bool HRString_EndsWith(UInt _this, Char with)
