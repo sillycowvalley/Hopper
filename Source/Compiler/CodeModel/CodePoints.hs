@@ -2629,6 +2629,57 @@ unit CodePoints
         } // loop
         return modified;
     }
+    bool OptimizePUSHLOCALBB()
+    {
+        bool modified;
+        if (iCodes.Count < 2)
+        {
+            return modified;
+        }
+        uint iIndex = 1;
+        uint hits = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            Instruction opCode0 = iCodes[iIndex]; 
+            if ((opCode0 == Instruction.PUSHLOCALB) || (opCode0 == Instruction.PUSHLOCALB00) || (opCode0 == Instruction.PUSHLOCALB02))
+            {
+                Instruction opCode1 = iCodes[iIndex-1]; 
+                if ((opCode1 == Instruction.PUSHLOCALB) || (opCode1 == Instruction.PUSHLOCALB00) || (opCode1 == Instruction.PUSHLOCALB02))
+                {
+                    if ((iLengths[iIndex]+iLengths[iIndex-1] >= 3) && !IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
+                    {
+                        byte operand0;
+                        byte operand1;
+                        switch (opCode0)
+                        {
+                            case Instruction.PUSHLOCALB:   { operand0 = byte(iOperands[iIndex]); }
+                            case Instruction.PUSHLOCALB00: { operand0 = 0; }
+                            case Instruction.PUSHLOCALB02: { operand0 = 2; }
+                        }
+                        switch (opCode1)
+                        {
+                            case Instruction.PUSHLOCALB:   { operand1 = byte(iOperands[iIndex-1]); }
+                            case Instruction.PUSHLOCALB00: { operand1 = 0; }
+                            case Instruction.PUSHLOCALB02: { operand1 = 2; }
+                        }
+                        uint operand = operand1 + (operand0 << 8);
+                        iCodes.SetItem   (iIndex, Instruction.PUSHLOCALBB);
+                        iOperands.SetItem(iIndex, operand);
+                        iLengths.SetItem (iIndex, 3);
+                        RemoveInstruction(iIndex-1); // good
+                        modified = true;
+                        continue;
+                    }
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
     bool OptimizeSYSCALL00()
     {
         bool modified;

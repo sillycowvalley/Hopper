@@ -16,16 +16,15 @@ program CODEGEN
     
     long codeSize = 0;
     
-    WriteCode(file hexeFile, <byte> code)
+    writeCode(file hexeFile, <byte> code)
     {
         foreach (var b in code)
         {
-            byte c = b;
-            hexeFile.Append(c);
+            hexeFile.Append(b);
         }
     }
     
-    BadArguments()
+    badArguments()
     {
         PrintLn("Invalid arguments for CODEGEN:");
         PrintLn("  CODEGEN <code file>");
@@ -60,7 +59,7 @@ program CODEGEN
         ihexFile.Append(":" + ln + chk.ToHexString(2) + char(0x0A));
     }
     
-    ConvertToIHex(string hexePath)
+    convertToIHex(string hexePath)
     {
         // https://en.wikipedia.org/wikie/Intel_HEX#Format
         // convert the .hexe into IHEX
@@ -160,14 +159,14 @@ program CODEGEN
           
             if (args.Count != 1)
             {
-                BadArguments();
+                badArguments();
                 break;
             }
             string ext = ".code";
             string codePath = args[0];
             if (!File.Exists(ref codePath, ref ext, "/Debug/Obj/"))
             {
-                BadArguments();
+                badArguments();
             }
             
             long startTime = Millis;
@@ -247,10 +246,10 @@ program CODEGEN
                 Parser.ProgressTick(".");
                 
                 // emit data
-                WriteCode(hexeFile, constantData);
+                writeCode(hexeFile, constantData);
                 Parser.ProgressTick(".");
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
-                WriteCode(hexeFile, methodCode);
+                writeCode(hexeFile, methodCode);
                 Parser.ProgressTick(".");
                 foreach (var sz in methodSizes)
                 {
@@ -260,7 +259,7 @@ program CODEGEN
                         continue;
                     }
                     methodCode = Code.GetMethodCode(index);
-                    WriteCode(hexeFile, methodCode);   
+                    writeCode(hexeFile, methodCode);   
                     Parser.ProgressTick(".");
                 }
                                 
@@ -268,7 +267,7 @@ program CODEGEN
                 
                 if (doIHex)
                 {
-                    ConvertToIHex(hexePath);
+                    convertToIHex(hexePath);
                 }
                 
                 if (!Parser.IsInteractive())

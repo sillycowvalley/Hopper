@@ -79,6 +79,7 @@ unit BuildCommand
                         // preprocessor symbols
                         <string,string> pdValues = kv.value;
                         if (   pdValues.Contains("MCU")
+                            || pdValues.Contains("IHEX")             // generate .ihex for local debugger
                             || pdValues.Contains("SERIAL_CONSOLE")
                             || pdValues.Contains("HOPPER_6502")
                            )

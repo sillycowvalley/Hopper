@@ -470,6 +470,16 @@ program Optimize
 #endif                
                 modified = true;
             }
+            if (!NoPackedInstructions && CodePoints.OptimizePUSHLOCALBB())
+            {
+#ifdef DIAGNOSTICS
+                if (logging)
+                {
+                    CodePoints.DumpInstructions("OptimizePUSHLOCALBB");
+                }
+#endif                
+                modified = true;
+            }
             if (pass > 0) // allow inlining to happen first
             {
                 if (CodePoints.OptimizeRemoveUnreachable())
