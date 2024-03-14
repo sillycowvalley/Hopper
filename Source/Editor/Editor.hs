@@ -50,6 +50,7 @@ unit Editor
     string currentPath;
     
     bool   isHopperSource;
+    bool   isAssemblerSource;
     string youngestSourcePath;
     long   youngestSourceTime;
     string youngestSourceTimeHex;
@@ -1563,6 +1564,10 @@ unit Editor
             {
                 hsPath = hsPath + ".hs";
             }
+            else if (isAssemblerSource)
+            {
+                hsPath = hsPath + ".asm";
+            }
         }
         
         hsPath = Dependencies.ResolveRelativePath(hsPath, currentPath, projectPath);
@@ -1620,7 +1625,7 @@ unit Editor
         // render the text buffer
         uint lineCount = TextBuffer.GetLineCount();
         
-        if (isHopperSource)
+        if (isHopperSource || isAssemblerSource)
         {
             selectedWord = GetSelectedWord();
             if (bufferTopLeftY > 0)
@@ -1742,7 +1747,7 @@ unit Editor
             c = 0;
             if (lineIndex < lineCount)
             {
-                if (isHopperSource)
+                if (isHopperSource || isAssemblerSource)
                 {
                     colours = Highlighter.HopperSource(ln, selectedWord, background, ref blockCommentNesting);
                 }
@@ -1766,7 +1771,7 @@ unit Editor
                         bColor = Colour.Gray;
                     }
                     uint textColor = Colour.Black;
-                    if (isHopperSource)
+                    if (isHopperSource || isAssemblerSource)
                     {
                         textColor = colours[colourOffset + c] & 0x0FFF;
                         if (!isSelected && (0 != (colours[colourOffset + c] & Colour.Selected)))
@@ -1952,6 +1957,7 @@ unit Editor
         string extension = Path.GetExtension(currentPath);
         extension = extension.ToLower();
         isHopperSource = (extension == ".hs");
+        isAssemblerSource = (extension == ".asm");
         
         if (projectPath.Length == 0) // first load
         {
@@ -2551,7 +2557,7 @@ unit Editor
         OutputDebug("UpdateYoungestFile:");
         youngestSourcePath = "";
         youngestSourceTime = 0;
-        if (isHopperSource)
+        if (isHopperSource || isAssemblerSource)
         {
             <string> sources;
             _ = Dependencies.TryGetSources(GetProjectPath(), sources); // try even if there was a failure

@@ -2,6 +2,11 @@ unit LibCalls
 {
     enum LibCall
     {
+        TimerStart,
+        TimerStop,
+        TimerAlarm,
+        TimerCancel,
+        
         WireBegin,
         WireBeginTx,
         WireEndTx,
@@ -25,12 +30,7 @@ unit LibCalls
         MCUStackFree,
         MCUClockSpeedGet,
         MCUClockSpeedSet,
-        
-        TimerStart,
-        TimerStop,
-        TimerAlarm,
-        TimerCancel,
-        
+                
         SPISettings,
         SPIBegin,
         SPIBeginTransaction,

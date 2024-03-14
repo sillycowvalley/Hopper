@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows.Forms;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -489,20 +490,10 @@ namespace HopperNET
 
     enum LibCall
     {
-        WireBegin = 0x00,
-        WireBeginTx = 0x01,
-        WireEndTx = 0x02,
-        WireWrite = 0x03,
-        WireConfigure = 0x04,
-
-        MCUPinMode = 0x05,
-        MCUDigitalRead = 0x06,
-        MCUDigitalWrite = 0x07,
-        MCUAnalogRead = 0x08,
-        MCUAnalogWrite = 0x09,
-        MCUAnalogWriteResolution = 0x0A,
-
-        
+        TimerStart = 0x00,
+        TimerStop = 0x01,
+        TimerAlarm = 0x02,
+        TimerCancel = 0x03,
     };
 
     public enum HopperType // if you change this, look at the end of ToByte(..) in Types.hs
@@ -4209,8 +4200,33 @@ namespace HopperNET
                     }
                     //break;
             }
-            */
         }
+            */
+        switch (libCall)
+        {
+            case LibCall.TimerStart:
+                    // uint Start(uint msInterval, TimerISRDelegate timerISR) library;
+                    // uint Start(long msInterval, TimerISRDelegate timerISR) library;
+                    Diagnostics.Die(0x0A, this); // not implemented
+                    break;
+            case LibCall.TimerStop:
+                    // Stop(uint timerID) library;
+                    Diagnostics.Die(0x0A, this); // not implemented
+                    break;
+            case LibCall.TimerAlarm:
+                    // uint Alarm(uint msInterval, TimerISRDelegate timerISR) library;
+                    // uint Alarm(long msInterval, TimerISRDelegate timerISR) library;
+                    Diagnostics.Die(0x0A, this); // not implemented
+                    break;
+            case LibCall.TimerCancel:
+                    // Cancel(uint alarmID) library;
+                    Diagnostics.Die(0x0A, this); // not implemented
+                    break;
+            default:
+                    Diagnostics.Die(0x0A, this); // not implemented
+                    break;
+        }
+    }
 
         private void SystemCall(Context currentContext, SysCall sysCall, byte iOverload)
         {

@@ -15,12 +15,15 @@ unit BuildCommand
     // or, failing that, in GetBinaryPath()
     //   - checks if a ".ihex" exists when a ".hexe" is not found
     
-    bool generateIHex = false;
+    bool isHopper;
+    bool isAssembler;
+    bool generateIHex;
+    bool launchIHex;
+    
     bool GenerateIHex 
     { 
         get { return generateIHex; } set { generateIHex = value; }
     }
-    bool launchIHex = false;
     bool LaunchIHex 
     { 
         get { return launchIHex; } set { launchIHex = value; }
@@ -172,16 +175,8 @@ unit BuildCommand
             string ihexPath = hexePath.Replace(".hexe", ".ihex");
             string hasmPath = "/Debug/Obj/" + fileName + HasmExtension;
             
-            // delete old versions so we don't run them by mistake if the build failed
-            //File.Delete(hexePath); - hard to build the toolchain with a missing piece ..
-            //File.Delete(ihexPath);
-
-            // also, let's not get confused by stale versions
-            //File.Delete(codePath);
-            //File.Delete(hasmPath);
-            
-            // except for .json : useful for <right><click> help even if stale
-            // File.Delete(jsonPath);
+            string target = "";
+            uint error;
             
             Editor.SetStatusBarText("Preprocessing '" + sourcePath + "' -> '" + jsonPath + "'");
             Source.DefinitionSymbolsLoaded = false; // reload after Preprocessing..
@@ -194,56 +189,62 @@ unit BuildCommand
             arguments.Append("-g");
             arguments.Append(col.ToString());
             arguments.Append(row.ToString());
-            uint error = Runtime.Execute(binaryPath, arguments);
+            if (isAssembler)
+            {
+                arguments.Append("-a"); // TODO
+            }
+            error = Runtime.Execute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError("Preprocessor", error);
                 break;
             }
             
-            binaryPath ="/Bin/Compile" + HexeExtension;
-            if (!File.Exists(binaryPath))
+            if (isHopper)
             {
-                Editor.SetStatusBarText("No Compiler: '" + binaryPath + "'");
-                break;
-            }
-            
-            CheckTarget(jsonPath);
-            string target = "";
-            if (Target6502)
-            {
-                target = " for 6502";
-            }
-            if (TargetMCU)
-            {
-                target = " for MCU";
-            }
-            
-            arguments.Clear();
-            arguments.Append(jsonPath);
-            string checkedBuild;
-            if (BuildOptions.IsCheckedEnabled())
-            {
-                checkedBuild = " (checked build)";
-            }
-            else
-            {
-                arguments.Append("-o"); // 'o'ptimized, not checked build (release)
-            }
-            
-            arguments.Append("-g");
-            arguments.Append(col.ToString());
-            arguments.Append(row.ToString());
-            
-            Editor.SetStatusBarText("Compiling '" + jsonPath + "' -> '" + codePath + "'" + checkedBuild);
-            error = Runtime.Execute(binaryPath, arguments);
-            if (error != 0)
-            {
-                DisplayError("Compile", error);
-                break;
+                binaryPath ="/Bin/Compile" + HexeExtension;
+                if (!File.Exists(binaryPath))
+                {
+                    Editor.SetStatusBarText("No Compiler: '" + binaryPath + "'");
+                    break;
+                }
+                
+                CheckTarget(jsonPath);
+                if (Target6502)
+                {
+                    target = " for 6502";
+                }
+                if (TargetMCU)
+                {
+                    target = " for MCU";
+                }
+                
+                arguments.Clear();
+                arguments.Append(jsonPath);
+                string checkedBuild;
+                if (BuildOptions.IsCheckedEnabled())
+                {
+                    checkedBuild = " (checked build)";
+                }
+                else
+                {
+                    arguments.Append("-o"); // 'o'ptimized, not checked build (release)
+                }
+                
+                arguments.Append("-g");
+                arguments.Append(col.ToString());
+                arguments.Append(row.ToString());
+                
+                Editor.SetStatusBarText("Compiling '" + jsonPath + "' -> '" + codePath + "'" + checkedBuild);
+                error = Runtime.Execute(binaryPath, arguments);
+                if (error != 0)
+                {
+                    DisplayError("Compile", error);
+                    break;
+                }
             }
     
-            if (BuildOptions.IsOptimizeEnabled())
+            if (isHopper && BuildOptions.IsOptimizeEnabled())
             {        
                 binaryPath ="/Bin/Optimize" + HexeExtension;
                 if (!File.Exists(binaryPath))
@@ -265,60 +266,67 @@ unit BuildCommand
                     break;
                 }
             }
-            
-            binaryPath ="/Bin/CODEGEN" + HexeExtension;
-            if (!File.Exists(binaryPath))
+            if (isHopper)
             {
-                Editor.SetStatusBarText("No CODEGEN: '" + binaryPath + "'");
-                break;
-            }
-            Editor.SetStatusBarText("Generating Code '" + codePath + "' -> '" + hexePath + "'" + target);
-            
-            arguments.Clear();
-            arguments.Append(codePath);
-            arguments.Append("-g");
-            arguments.Append(col.ToString());
-            arguments.Append(row.ToString());
-            if (GenerateIHex)
-            {
-                arguments.Append("-ihex");
-            }
-            error = Runtime.Execute(binaryPath, arguments);
-            if (error != 0)
-            {
-                DisplayError("CODEGEN", error);
-                break;
-            }
-            
-            if (BuildOptions.IsDisassembleEnabled())
-            {       
-                binaryPath ="/Bin/DASM" + HexeExtension;
+                binaryPath ="/Bin/CODEGEN" + HexeExtension;
                 if (!File.Exists(binaryPath))
                 {
-                    Editor.SetStatusBarText("No DASM: '" + binaryPath + "'");
+                    Editor.SetStatusBarText("No CODEGEN: '" + binaryPath + "'");
                     break;
                 }
-                
-                Editor.SetStatusBarText("Disassembling '" + hexePath + "' -> '" + hasmPath + "'");
+                Editor.SetStatusBarText("Generating Code '" + codePath + "' -> '" + hexePath + "'" + target);
                 
                 arguments.Clear();
-                arguments.Append(hexePath);
+                arguments.Append(codePath);
                 arguments.Append("-g");
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
+                if (GenerateIHex)
+                {
+                    arguments.Append("-ihex");
+                }
                 error = Runtime.Execute(binaryPath, arguments);
                 if (error != 0)
                 {
-                    DisplayError("DASM", error);
+                    DisplayError("CODEGEN", error);
                     break;
                 }
             }
-            // debugger needs .hexe file, even for 6502
-            if (GenerateIHex)
+            if (isHopper)
             {
-                hexePath = ihexPath;
+                if (BuildOptions.IsDisassembleEnabled())
+                {       
+                    binaryPath ="/Bin/DASM" + HexeExtension;
+                    if (!File.Exists(binaryPath))
+                    {
+                        Editor.SetStatusBarText("No DASM: '" + binaryPath + "'");
+                        break;
+                    }
+                    
+                    Editor.SetStatusBarText("Disassembling '" + hexePath + "' -> '" + hasmPath + "'");
+                    
+                    arguments.Clear();
+                    arguments.Append(hexePath);
+                    arguments.Append("-g");
+                    arguments.Append(col.ToString());
+                    arguments.Append(row.ToString());
+                    error = Runtime.Execute(binaryPath, arguments);
+                    if (error != 0)
+                    {
+                        DisplayError("DASM", error);
+                        break;
+                    }
+                }
             }
-            Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'" + target);
+            if (isHopper)
+            {
+                // debugger needs .hexe file, even for 6502
+                if (GenerateIHex)
+                {
+                    hexePath = ihexPath;
+                }
+                Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'" + target);
+            }
             break;   
         }
     }
@@ -357,7 +365,9 @@ unit BuildCommand
         string path = Editor.GetProjectPath();
         string extension = Path.GetExtension(path);
         extension = extension.ToLower();
-        return extension == ".hs";
+        isHopper    = (extension == ".hs");
+        isAssembler = (extension == ".asm");
+        return isHopper || isAssembler;
     }
     
     // Conditions for when we need to rebuild:

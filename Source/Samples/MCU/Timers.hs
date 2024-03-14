@@ -1,7 +1,6 @@
 program TimerDemo
 {
-    #define RP2040_PICOW
-    uses "/Source/Library/MCU"
+    uses "/Source/Library/Boards/PiPico"
     
     const byte alarmPin = 16;
     const byte timerPin = 17;

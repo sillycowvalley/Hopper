@@ -18,6 +18,9 @@ program PreProcess
   
   bool isExperimental;
   bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
+  
+  bool isAssembler;
+  bool IsAssembler { get { return isAssembler; } set { isAssembler = value; } }
     
   bool IsDebugger   { get { return false; } }
   bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
@@ -601,15 +604,16 @@ program PreProcess
             }
             Parser.Advance();
             <string, string> pathToken = Parser.PreviousToken;
-            string hsPath = pathToken["lexeme"];
-            string hsPathLower = hsPath.ToLower();
-            if (!hsPathLower.EndsWith(".hs"))
+            string usesPath = pathToken["lexeme"];
+            string usesPathLower = usesPath.ToLower();
+            string usesExtension = IsAssembler ? ".asm" : ".hs";
+            if (!usesPathLower.EndsWith(usesExtension))
             {
-                hsPath = hsPath + ".hs";
+                usesPath = usesPath + usesExtension;
             }
-            if (!File.Exists(hsPath))
+            if (!File.Exists(usesPath))
             {
-                string tryFile = hsPath;
+                string tryFile = usesPath;
                 uint removeLevels = 0;
                 if (tryFile.StartsWith("./"))
                 {
@@ -632,7 +636,7 @@ program PreProcess
                     string tryPath = Path.Combine(currentDirectory, tryFile);
                     if (File.Exists(tryPath))
                     {
-                        hsPath = tryPath;
+                        usesPath = tryPath;
                     }
                     else
                     {
@@ -641,14 +645,14 @@ program PreProcess
                         tryPath = Path.Combine(projectDirectory, tryFile);
                         if (File.Exists(tryPath))
                         {
-                            hsPath = tryPath;
+                            usesPath = tryPath;
                         }
                     }
                 }
             }
-            if (!File.Exists(hsPath))
+            if (!File.Exists(usesPath))
             {
-                Parser.ErrorAtCurrent("'" + hsPath + "' not found");
+                Parser.ErrorAtCurrent("'" + usesPath + "' not found");
                 break;
             }
             
@@ -658,10 +662,10 @@ program PreProcess
                 break;
             }
             
-            hsPathLower = hsPath.ToLower();
-            if (!unitsParsed.Contains(hsPathLower))
+            usesPathLower = usesPath.ToLower();
+            if (!unitsParsed.Contains(usesPathLower))
             {
-                unitsParsed[hsPathLower] = false; // false means we're aware of it but we haven't parsed it yet
+                unitsParsed[usesPathLower] = false; // false means we're aware of it but we haven't parsed it yet
             }
             <string, string> nextToken = Parser.CurrentToken;
             if (nextToken["line"] == pathToken["line"])
@@ -1484,6 +1488,7 @@ program PreProcess
         PrintLn("    -g <c> <r>  : called from GUI, not console");
         PrintLn("    -x          : use experimental features");
         PrintLn("    -d <symbol> : define conditional compilation symbols");
+        PrintLn("    -a          : preprocess assembler code");
     }
     {  
         bool success = false;
@@ -1523,6 +1528,10 @@ program PreProcess
                       case "-x":
                       {
                           isExperimental = true;   
+                      }
+                      case "-a":
+                      {
+                          isAssembler = true;   
                       }
                       default:
                       {

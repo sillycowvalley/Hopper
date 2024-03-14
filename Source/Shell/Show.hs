@@ -201,7 +201,7 @@ program Show
             LinePrinter linePrinter = DefaultLinePrinter;
             string extension = Path.GetExtension(filePath);
             extension = extension.ToLower();
-            if ((extension == ".hs") || (extension == ".json") || (extension == ".code") || (extension == ".options"))
+            if ((extension == ".hs") || (extension == ".asm") || (extension == ".json") || (extension == ".code") || (extension == ".options"))
             {
                 linePrinter = HopperLinePrinter;
                 Token.Initialize();// inialize the tokenizer

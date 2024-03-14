@@ -8,7 +8,6 @@
 
 
 
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -6334,6 +6333,48 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     case SysCalls::eScreenResume:
     {
         Runtime_ErrorDump(0xDE);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eKeyboardReadKey:
+    {
+        Runtime_ErrorDump(0xE3);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eKeyboardIsAvailableGet:
+    {
+        Runtime_ErrorDump(0xE3);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eKeyboardClickXGet:
+    {
+        Runtime_ErrorDump(0xE3);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eKeyboardClickYGet:
+    {
+        Runtime_ErrorDump(0xE3);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eKeyboardClickUpGet:
+    {
+        Runtime_ErrorDump(0xE3);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eKeyboardClickDoubleGet:
+    {
+        Runtime_ErrorDump(0xE3);
+        Minimal_Error_Set(0x0B);
+        break;
+    }
+    case SysCalls::eKeyboardScrollDeltaGet:
+    {
+        Runtime_ErrorDump(0xE3);
         Minimal_Error_Set(0x0B);
         break;
     }

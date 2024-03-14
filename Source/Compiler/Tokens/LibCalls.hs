@@ -11,6 +11,11 @@ unit LibCalls
     {
         libcalls.Clear(); // in case called a 2nd time
     
+        addEntry("Timer.Start");
+        addEntry("Timer.Stop");
+        addEntry("Timer.Alarm");
+        addEntry("Timer.Cancel");
+        
         addEntry("Wire.Begin");
         addEntry("Wire.BeginTx");
         addEntry("Wire.EndTx");
@@ -34,12 +39,7 @@ unit LibCalls
         addEntry("MCU.StackFree");
         addEntry("MCU.ClockSpeed_Get");
         addEntry("MCU.ClockSpeed_Set");
-        
-        addEntry("Timer.Start");
-        addEntry("Timer.Stop");
-        addEntry("Timer.Alarm");
-        addEntry("Timer.Cancel");
-        
+                
         addEntry("SPI.Settings");
         addEntry("SPI.Begin");
         addEntry("SPI.BeginTransaction");
