@@ -590,6 +590,35 @@ unit Symbols
         address = address*2;
         return address;
     }
+    uint GetGlobalByteAddress(string name)
+    {
+        uint address = 0;
+        uint index = gIndex[name];
+        uint current = 0;
+        while (current < index)
+        {
+            string globalType = gTypes[current];
+            switch (globalType)
+            {
+                case "byte":
+                case "char":
+                {
+                    address += 1;
+                }
+                case "int":
+                case "uint":
+                {
+                    address += 2;
+                }
+                default:
+                {
+                    Die(0x0B);
+                }
+            }
+            current++;
+        }
+        return address;
+    }
     uint GetGlobalCount()
     {
         return gNames.Count;

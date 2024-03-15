@@ -348,24 +348,37 @@ program Compile
             Parser.Advance(); // loop
 
             Block.PushBlock(true); // loop context
-            
             uint continueAddress = CodeStream.NextAddress;
             
             Block.PushBlock(false); // for block locals
             compileBlock();
             Block.PopBlock();
-            
             CodeStream.InsertDebugInfo(true);
             
             CodeStream.AddInstructionJump(Instruction.J, continueAddress);
-            uint breakAddress = CodeStream.NextAddress;
             
+            uint breakAddress = CodeStream.NextAddress;
             Block.PopBlock(continueAddress, breakAddress);
             if (Parser.HadError)
             {
                 break;
             }
             success = true;                    
+            break;
+        }
+        return success;
+    }
+    
+    bool compileBlockScope()
+    {
+        bool success = false;
+        loop
+        {
+            Block.PushBlock(false); // for block locals
+            compileBlock();
+            Block.PopBlock();
+            CodeStream.InsertDebugInfo(true);
+            success = !Parser.HadError;
             break;
         }
         return success;
@@ -2551,8 +2564,15 @@ program Compile
                         }
                         else if (tokenType == HopperToken.LBrace)
                         {
-                            Parser.ErrorAt(currentToken, "unexpected '{'");
-                            break;
+                            CodeStream.InsertDebugInfo(false);
+                            if (!compileBlockScope())
+                            {
+                                if (!Parser.HadError)
+                                {
+                                    Parser.ErrorAtCurrent("bad 'block' statement?");
+                                }
+                                break;
+                            }
                         }
                         else
                         {
@@ -2826,7 +2846,7 @@ program Compile
         return code;
     }
     
-    BadArguments()
+    badArguments()
     {
         PrintLn("Invalid arguments for COMPILE:");
         PrintLn("  COMPILE <object json>");
@@ -2835,6 +2855,7 @@ program Compile
         PrintLn("    -x : use experimental features");
     }
     
+    Hopper()
     {
         bool success = false;
         loop
@@ -2893,7 +2914,7 @@ program Compile
           
             if (args.Count != 1)
             {
-                BadArguments();
+                badArguments();
                 break;
             }
             
@@ -2901,7 +2922,7 @@ program Compile
             string ext = ".json";
             if (!File.Exists(ref jsonPath, ref ext, "/Debug/Obj/"))
             {
-                BadArguments();
+                badArguments();
             }
             
             CodeStream.CheckedBuild = checkedBuild;
@@ -2952,11 +2973,7 @@ program Compile
                 {
                     break;
                 }
-                //codePath = jsonPath.Replace(extension, ".code2");
-                //if (!Symbols.ExportCode(codePath, true))
-                //{
-                //    break;
-                //}
+                
                 if (touchesTree)
                 {
                     string touchPath = jsonPath.Replace(extension, ".txt");

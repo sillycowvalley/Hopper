@@ -1,5 +1,7 @@
 unit CodeStream
 {
+    #define CODESTREAM
+
     uses "Instructions"
     uses "Block"
     uses "/Source/Compiler/Symbols"

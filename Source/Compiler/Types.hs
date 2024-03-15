@@ -5,7 +5,6 @@ unit Types
     uses "Tokens/Parser"
     
     uses "CodeGen/Block"
-    uses "CodeGen/CodeStream"
     uses "CodeGen/Instructions"
     
     uses "Symbols"

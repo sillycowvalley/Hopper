@@ -5,6 +5,8 @@ unit Highlighter
     
     string delimiters = ";,:?(){}[]<>=!&|~^+-*/%";
     
+    bool isAssembler;
+    
     uint HopperWord(string word, string selectedWord)
     {
         uint colour;
@@ -19,6 +21,18 @@ unit Highlighter
         else if (IsTypeKeyword(word))
         {
             colour = Colour.Type;
+        }
+        else if (isAssembler && IsInstructionKeyword(word))
+        {
+            colour = Colour.Instruction;
+        }
+        else if (isAssembler && IsRegisterKeyword(word))
+        {
+            colour = Colour.Register;
+        }
+        else if (isAssembler && IsConditionKeyword(word))
+        {
+            colour = Colour.Condition;
         }
         else
         {
@@ -60,10 +74,12 @@ unit Highlighter
         return colour;
     }
     
-    <uint> HopperSource(string ln, string selectedWord, uint backColor, ref uint blockCommentNesting)
+    <uint> HopperSource(string ln, string selectedWord, uint backColor, bool isAssemblerSource, ref uint blockCommentNesting)
     {
         <uint> colours;
         uint colour;
+        
+        isAssembler = isAssemblerSource;
         
         uint length = ln.Length;
         string word;

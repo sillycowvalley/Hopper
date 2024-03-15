@@ -51,6 +51,8 @@ unit Editor
     
     bool   isHopperSource;
     bool   isAssemblerSource;
+    CPUArchitecture cpuArchitecture;
+    
     string youngestSourcePath;
     long   youngestSourceTime;
     string youngestSourceTimeHex;
@@ -83,6 +85,7 @@ unit Editor
     byte editorHeight;
     
     string ProjectPath { get { return projectPath; } }    
+    CPUArchitecture Architecture { get { return cpuArchitecture; } }
 
     uint TitleColor 
     {   get 
@@ -1638,7 +1641,7 @@ unit Editor
                         string ln = TextBuffer.GetLine(i);
                         if (ln.Contains("/*") || ln.Contains("*/"))
                         {
-                            colours = Highlighter.HopperSource(ln, selectedWord, background, ref blockCommentNesting);
+                            colours = Highlighter.HopperSource(ln, selectedWord, background, isAssemblerSource, ref blockCommentNesting);
                         }
                     }
                 }
@@ -1749,7 +1752,7 @@ unit Editor
             {
                 if (isHopperSource || isAssemblerSource)
                 {
-                    colours = Highlighter.HopperSource(ln, selectedWord, background, ref blockCommentNesting);
+                    colours = Highlighter.HopperSource(ln, selectedWord, background, isAssemblerSource, ref blockCommentNesting);
                 }
                 uint colourOffset = 0;
                 
@@ -1962,6 +1965,40 @@ unit Editor
         if (projectPath.Length == 0) // first load
         {
             projectPath = currentPath;
+            if (isAssemblerSource)
+            {
+                uint maxLines = TextBuffer.GetLineCount(); 
+                uint currentLine = 0;
+                loop
+                {
+                    if (currentLine >= maxLines) { break; }
+                    string ln = TextBuffer.GetLine(currentLine);
+                    if (ln.Contains("#define"))
+                    {
+                        <string> parts = ln.Split(' ');
+                        if ((parts.Count >= 2) && (parts[0] == "#define"))
+                        {
+                            if (parts[1] == "CPU_6502")
+                            {
+                                cpuArchitecture = CPUArchitecture.M6502;
+                                break;
+                            }
+                            if (parts[1] == "CPU_65C02")
+                            {
+                                cpuArchitecture = CPUArchitecture.W65C02;
+                                break;
+                            }
+                            if (parts[1] == "CPU_Z80A")
+                            {
+                                cpuArchitecture = CPUArchitecture.Z80A;
+                                break;
+                            }
+                        }
+                    }
+                    currentLine++;
+                }
+                Token.InitializeAssembler(cpuArchitecture);
+            }
             UpdateYoungestFile();
         }
         CalculateLineNumberWidth();

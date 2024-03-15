@@ -156,6 +156,7 @@ unit Block
             uint bytesToPop = GetBytesToPop();
             if (bytesToPop > 0)
             {
+#ifdef CODESTREAM
                 Instruction previousInstruction = CodeStream.GetLastInstruction();
                 if ((previousInstruction != Instruction.RETB) 
                  && (previousInstruction != Instruction.RET)
@@ -208,6 +209,9 @@ unit Block
                     }
                     */
                 }
+#else
+                Die(0x0B);
+#endif
             }
             
             <string,variant> blockContext = blockList[iLast];   

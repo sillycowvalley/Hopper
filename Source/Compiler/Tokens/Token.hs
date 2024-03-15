@@ -1,7 +1,7 @@
 unit Token
 {
     uses "/Source/System/Diagnostics"
-
+    
     enum HopperToken
     {
         Undefined,
@@ -32,6 +32,8 @@ unit Token
         RBrace,   // }
         LBracket, // [
         RBracket, // ]
+        
+        Hash, // #
 
         LT, // <
         GT, // >
@@ -70,7 +72,18 @@ unit Token
         AssignBitAnd,   // &=
         AssignBitOr,    // |=
         
+        Instruction,
+        Register,
+        Condition,
+        
         EOF
+    }
+    flags CPUArchitecture
+    {
+        None   = 0x0000,
+        Z80A   = 0x0001,
+        M6502  = 0x0010, // orignal MOS instruction set
+        W65C02 = 0x0030, // MOS set plus WDC / Rockwell set
     }
     
     string HopperTokenToString(HopperToken tokenType)
@@ -116,6 +129,10 @@ unit Token
     <string,bool> statementKeywords;      // purple
     <string,bool> directiveKeywords;      // dark gray
     
+    <string,bool> instructionKeywords;
+    <string,bool> registerKeywords;
+    <string,bool> conditionKeywords;
+    
     <string, HopperToken> hopperTokenTypes;
     <HopperToken, string> hopperTokenNames;
     
@@ -123,8 +140,14 @@ unit Token
     {
         typeKeywords.Clear();
         statementKeywords.Clear();
+        directiveKeywords.Clear();
+        
+        instructionKeywords.Clear();
+        registerKeywords.Clear();
+        conditionKeywords.Clear();
         
         hopperTokenTypes.Clear();
+        hopperTokenNames.Clear();
         
         hopperTokenTypes["EOF"] = HopperToken.EOF;
         hopperTokenTypes["Undefined"] = HopperToken.Undefined;
@@ -157,6 +180,8 @@ unit Token
         hopperTokenTypes["RBrace"] = HopperToken.RBrace;
         hopperTokenTypes["LBracket"] = HopperToken.LBracket;
         hopperTokenTypes["RBracket"] = HopperToken.RBracket;
+        hopperTokenTypes["Hash"] = HopperToken.Hash;
+        
         hopperTokenTypes["SemiColon"] = HopperToken.SemiColon;
         hopperTokenTypes["Colon"] = HopperToken.Colon;
         hopperTokenTypes["Question"] = HopperToken.Question;
@@ -185,6 +210,11 @@ unit Token
         hopperTokenTypes["BitOr"] = HopperToken.BitOr;
         hopperTokenTypes["BitNot"] = HopperToken.BitNot;
         hopperTokenTypes["BitXor"] = HopperToken.BitXor;
+        
+        hopperTokenTypes["Instruction"] = HopperToken.Instruction;
+        hopperTokenTypes["Condition"] = HopperToken.Condition;
+        hopperTokenTypes["Register"] = HopperToken.Register;
+        
         
         foreach (var kv in hopperTokenTypes)
         {
@@ -253,6 +283,123 @@ unit Token
         statementKeywords["while"] = true;
         statementKeywords["friend"] = true;
     }
+    
+    InitializeAssembler(CPUArchitecture architecture)
+    {    
+        instructionKeywords.Clear();
+        registerKeywords.Clear();
+        conditionKeywords.Clear();
+        
+        if (architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            // 6502 instructions:
+            instructionKeywords["BEQ"] = true;
+            instructionKeywords["BNE"] = true;
+            
+            instructionKeywords["JMP"] = true;
+            
+            instructionKeywords["LDA"] = true;
+            instructionKeywords["STA"] = true;
+            instructionKeywords["LDX"] = true;
+            instructionKeywords["STX"] = true;
+            instructionKeywords["LDY"] = true;
+            instructionKeywords["STY"] = true;
+            
+            instructionKeywords["CMP"] = true;
+            
+            instructionKeywords["JSR"] = true;
+            instructionKeywords["RTS"] = true;
+        }
+        if (architecture & CPUArchitecture.Z80A != CPUArchitecture.None)
+        {
+            // Z80 instructions:
+            instructionKeywords["JP"]    = true;
+            
+            instructionKeywords["CP"]  = true;
+            
+            instructionKeywords["LD"]  = true;
+            
+            instructionKeywords["CALL"] = true;
+            instructionKeywords["RET"] = true;
+        }
+        
+        if (architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            // 6502 registers:
+            registerKeywords["A"] = true;
+            registerKeywords["X"] = true;
+            registerKeywords["Y"] = true;
+            
+            registerKeywords["PC"] = true;
+            registerKeywords["SP"] = true;
+            
+            // 6502 flags / 'conditions':
+            conditionKeywords["C"] = true;
+            conditionKeywords["Z"] = true;
+            conditionKeywords["I"] = true; // ?
+            conditionKeywords["N"] = true;
+            conditionKeywords["V"] = true; // ?
+            
+            // 6502 'conditions':
+            conditionKeywords["NC"] = true;
+            conditionKeywords["NZ"] = true;
+            conditionKeywords["NV"] = true; // ?
+            conditionKeywords["PL"] = true;
+            conditionKeywords["MI"] = true;
+        }
+        if (architecture & CPUArchitecture.Z80A != CPUArchitecture.None)
+        {
+            // Z80 registers:
+            registerKeywords["A"] = true;
+            registerKeywords["B"] = true;
+            registerKeywords["C"] = true;
+            registerKeywords["D"] = true;
+            registerKeywords["E"] = true;
+            registerKeywords["F"] = true;
+            registerKeywords["H"] = true;
+            registerKeywords["L"] = true;
+            
+            registerKeywords["AF"] = true;
+            registerKeywords["BC"] = true;
+            registerKeywords["DE"] = true;
+            registerKeywords["HL"] = true;
+            registerKeywords["IX"] = true;
+            registerKeywords["IY"] = true;
+            
+            registerKeywords["AF'"] = true;
+            
+            registerKeywords["PC"] = true;
+            registerKeywords["SP"] = true;
+            
+            // Z80 flags / 'conditions':
+            conditionKeywords["C"] = true;
+            conditionKeywords["Z"] = true;
+            
+            conditionKeywords["M"] = true;
+            conditionKeywords["P"] = true;
+            
+            // Z80 'conditions':
+            conditionKeywords["NC"] = true;
+            conditionKeywords["NZ"] = true;
+            
+            conditionKeywords["PE"] = true;
+            conditionKeywords["PO"] = true;    
+        }
+    }
+    
+    bool IsInstructionKeyword(string candidate)
+    {
+        return instructionKeywords.Contains(candidate);
+    }
+    bool IsRegisterKeyword(string candidate)
+    {
+        return registerKeywords.Contains(candidate);
+    }
+    bool IsConditionKeyword(string candidate)
+    {
+        return conditionKeywords.Contains(candidate);
+    }
+    
     bool IsDirectiveKeyword(string candidate)
     {
         return directiveKeywords.Contains(candidate);

@@ -700,7 +700,7 @@ unit MessageBox
         {
             backcolour = LightestGray;
             uint blockCommentNesting;
-            colours = Highlighter.HopperSource(message, "", backcolour, ref blockCommentNesting);
+            colours = Highlighter.HopperSource(message, "", backcolour, false, ref blockCommentNesting);
         }
         
         uint x = xLeft;

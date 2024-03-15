@@ -439,7 +439,7 @@ program HopperMonitor
     {
         ln = ln.Pad(' ', Screen.Columns);
         uint blockCommentNesting;
-        <uint> colours = Highlighter.HopperSource(ln, "", backColor, ref blockCommentNesting);
+        <uint> colours = Highlighter.HopperSource(ln, "", backColor, false, ref blockCommentNesting);
         uint length = ln.Length;
         for (uint i=0; i < length; i++)
         {

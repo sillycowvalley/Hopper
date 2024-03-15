@@ -16,9 +16,11 @@ unit BuildCommand
     //   - checks if a ".ihex" exists when a ".hexe" is not found
     
     bool isHopper;
-    bool isAssembler;
+    bool isAssembly;
     bool generateIHex;
     bool launchIHex;
+    
+    CPUArchitecture cpuArchitecture;
     
     bool GenerateIHex 
     { 
@@ -189,8 +191,9 @@ unit BuildCommand
             arguments.Append("-g");
             arguments.Append(col.ToString());
             arguments.Append(row.ToString());
-            if (isAssembler)
+            if (isAssembly)
             {
+                cpuArchitecture = Architecture;
                 arguments.Append("-a"); // TODO
             }
             error = Runtime.Execute(binaryPath, arguments);
@@ -199,7 +202,47 @@ unit BuildCommand
                 DisplayError("Preprocessor", error);
                 break;
             }
-            
+            if (isAssembly)
+            {
+                string arch;
+                if (cpuArchitecture == CPUArchitecture.W65C02)
+                {
+                    target = " for 65C02"; 
+                    arch = "W65C02";
+                }
+                if (cpuArchitecture == CPUArchitecture.M6502)
+                {
+                    target = " for 6502";
+                    arch = "M6502";
+                }
+                if (cpuArchitecture == CPUArchitecture.Z80A)
+                {
+                    target = " for Z80";
+                    arch = "Z80A";
+                }
+                binaryPath ="/Bin/Assemble" + HexeExtension;
+                if (!File.Exists(binaryPath))
+                {
+                    Editor.SetStatusBarText("No Assembler: '" + binaryPath + "'");
+                    break;
+                }
+                arguments.Clear();
+                arguments.Append(jsonPath);
+                
+                arguments.Append("-g");
+                arguments.Append(col.ToString());
+                arguments.Append(row.ToString());
+                arguments.Append("-a");
+                arguments.Append(arch);
+                
+                Editor.SetStatusBarText("Assembling '" + jsonPath + "' -> '" + codePath);
+                error = Runtime.Execute(binaryPath, arguments);
+                if (error != 0)
+                {
+                    DisplayError("Assemble", error);
+                    break;
+                }
+            }
             if (isHopper)
             {
                 binaryPath ="/Bin/Compile" + HexeExtension;
@@ -364,10 +407,10 @@ unit BuildCommand
     {
         string path = Editor.GetProjectPath();
         string extension = Path.GetExtension(path);
-        extension = extension.ToLower();
-        isHopper    = (extension == ".hs");
-        isAssembler = (extension == ".asm");
-        return isHopper || isAssembler;
+        extension  = extension.ToLower();
+        isHopper   = (extension == ".hs");
+        isAssembly = (extension == ".asm");
+        return isHopper || isAssembly;
     }
     
     // Conditions for when we need to rebuild:

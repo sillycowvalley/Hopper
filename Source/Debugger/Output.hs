@@ -290,7 +290,7 @@ unit Output
         {
             content = content.Replace('`', ',');
             uint blockCommentNesting;
-            <uint> colours = Highlighter.HopperSource(content, "", backColor, ref blockCommentNesting);
+            <uint> colours = Highlighter.HopperSource(content, "", backColor, false, ref blockCommentNesting);
             
             for (byte i = 0; i < content.Length; i++)
             {

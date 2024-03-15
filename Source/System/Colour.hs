@@ -96,7 +96,9 @@ unit Colour
     uint Directive   { get { return 0x0666; }}
     uint Selected    { get { return 0x8000; }} // high bit set
     
-    
+    uint Instruction { get { return 0x0C23; }}
+    uint Register    { get { return 0x02C3; }}
+    uint Condition   { get { return 0x023C; }}
     
     
 }

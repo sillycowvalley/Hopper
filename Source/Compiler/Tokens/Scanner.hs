@@ -523,9 +523,21 @@ unit Scanner
                 ttype = HopperToken.Bool;
             }
         }
-        if (Token.IsDirectiveKeyword(value))
+        else if (Token.IsDirectiveKeyword(value))
         {
             ttype = HopperToken.Directive;
+        }
+        else if (Token.IsInstructionKeyword(value))
+        {
+            ttype = HopperToken.Instruction;
+        }
+        else if (Token.IsRegisterKeyword(value))
+        {
+            ttype = HopperToken.Register;
+        }
+        else if (Token.IsConditionKeyword(value))
+        {
+            ttype = HopperToken.Condition;
         }
         return Token.New(ttype, value, currentLine, currentPos, currentSourcePath);
     }
@@ -559,7 +571,20 @@ unit Scanner
                 c = advance();
                 switch (c)
                 {
-                    case '#', 'a'..'z', 'A'..'Z':
+                    case '#':
+                    {
+                        c = sourceGetFromPos(currentPos, true); // peek
+                        if (!c.IsDigit() && (c != '\''))
+                        {
+                            token = scanIdentifier('#');
+                            break;
+                        }
+                        else
+                        {
+                            htoken = HopperToken.Hash;
+                        }
+                    }
+                    case 'a'..'z', 'A'..'Z':
                     {
                         token = scanIdentifier(c);
                         break;

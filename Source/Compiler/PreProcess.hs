@@ -19,8 +19,8 @@ program PreProcess
   bool isExperimental;
   bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
   
-  bool isAssembler;
-  bool IsAssembler { get { return isAssembler; } set { isAssembler = value; } }
+  bool isAssembly;
+  bool IsAssembly { get { return isAssembly; } set { isAssembly = value; } }
     
   bool IsDebugger   { get { return false; } }
   bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
@@ -606,7 +606,7 @@ program PreProcess
             <string, string> pathToken = Parser.PreviousToken;
             string usesPath = pathToken["lexeme"];
             string usesPathLower = usesPath.ToLower();
-            string usesExtension = IsAssembler ? ".asm" : ".hs";
+            string usesExtension = IsAssembly ? ".asm" : ".hs";
             if (!usesPathLower.EndsWith(usesExtension))
             {
                 usesPath = usesPath + usesExtension;
@@ -792,6 +792,11 @@ program PreProcess
             < <string > > arguments = argumentsDeclaration();
             if (HadError)
             {
+                break;
+            }
+            if (IsAssembly && (arguments.Count != 0))
+            {
+                Parser.ErrorAt(idToken, "no arguments in assembly");
                 break;
             }
             if (idToken["lexeme"] == "Hopper")
@@ -1049,7 +1054,7 @@ program PreProcess
             {
                 break;   
             }
-            if (public)
+            if (!IsAssembly && public)
             {
                 Parser.ErrorAtCurrent("member variables must be private");
                 break;
@@ -1105,8 +1110,15 @@ program PreProcess
         lastID = "";
         if (Parser.CheckKeyword("delegate"))
         {
-            isDelegate = true;
-            Parser.Advance(); // delegate
+            if (IsAssembly)
+            {
+                Parser.Error("no delegates in assembly");
+            }
+            else
+            {
+                isDelegate = true;
+                Parser.Advance(); // delegate
+            }
         }
         
         if (Parser.CheckDirective("#define"))
@@ -1180,11 +1192,6 @@ program PreProcess
                 flagsDeclaration();
                 curlyDeclarations++;
             }
-            else if (Parser.CheckKeyword("record"))
-            {
-                recordDeclaration();
-                curlyDeclarations++;
-            }
             else if (Parser.CheckKeyword("friend"))
             {
                 friendDeclaration();
@@ -1198,6 +1205,18 @@ program PreProcess
                 else
                 {
                     usesDeclaration(sourcePath);
+                }
+            }
+            else if (Parser.CheckKeyword("record"))
+            {
+                if (IsAssembly)
+                {
+                    Parser.Error("no records in assembly");
+                }
+                else
+                {
+                    recordDeclaration();
+                    curlyDeclarations++;
                 }
             }
             else
@@ -1227,16 +1246,36 @@ program PreProcess
                             Parser.Advance();
                             if (Parser.Check(HopperToken.LParen))
                             {
+                                if (IsAssembly)
+                                {
+                                    Parser.Error("no 'return' type in assembly");
+                                    break;
+                                }
                                 // return type followed by function id and then '('
                                 isFunction = true;
                             }
-                            else if (Parser.Check(HopperToken.SemiColon) || Parser.Check(HopperToken.Assign))
+                            else if (Parser.Check(HopperToken.Assign))
                             {
-                                // type followed by global id and then ';' or '='
+                                if (IsAssembly)
+                                {
+                                    Parser.Error("global initialization not supported in assembly");
+                                    break;
+                                }
+                                // type followed by global id and then '='
+                                isGlobal = true;
+                            }
+                            else if (Parser.Check(HopperToken.SemiColon))
+                            {
+                                // type followed by global id and then ';'
                                 isGlobal = true;
                             }
                             else if (Parser.Check(HopperToken.LBrace))
                             {
+                                if (IsAssembly)
+                                {
+                                    Parser.Error("no properties in assembly");
+                                    break;
+                                }
                                 // type followed by property id and then '{'
                                 isProperty = true;
                             }
@@ -1270,6 +1309,11 @@ program PreProcess
                             // two consecutive identifiers implies:
                             if (Parser.Check(HopperToken.LParen))
                             {
+                                if (IsAssembly)
+                                {
+                                    Parser.Error("no 'return' in assembly");
+                                    break;
+                                }
                                 // return type followed by function id and then '('
                                 isFunction = true;
                             }
@@ -1280,6 +1324,11 @@ program PreProcess
                             }
                             else if (Parser.Check(HopperToken.LBrace))
                             {
+                                if (IsAssembly)
+                                {
+                                    Parser.Error("no properties in assembly");
+                                    break;
+                                }
                                 // type followed by property id and then '{'
                                 isProperty = true;
                             }
@@ -1488,7 +1537,7 @@ program PreProcess
         PrintLn("    -g <c> <r>  : called from GUI, not console");
         PrintLn("    -x          : use experimental features");
         PrintLn("    -d <symbol> : define conditional compilation symbols");
-        PrintLn("    -a          : preprocess assembler code");
+        PrintLn("    -a          : preprocess assemblye");
     }
     {  
         bool success = false;
@@ -1531,7 +1580,7 @@ program PreProcess
                       }
                       case "-a":
                       {
-                          isAssembler = true;   
+                          isAssembly = true;   
                       }
                       default:
                       {

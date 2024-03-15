@@ -15,8 +15,9 @@ program Show
     uint opcodeColor         = 0x33F;
     uint listingCommentColor = 0x360;
         
-    bool more = false;
-    bool wide = false;
+    bool more;
+    bool wide;
+    bool isAssembly;
     
     bool MorePrompt()
     {
@@ -125,7 +126,7 @@ program Show
     {
         ln = ln.Pad(' ', Screen.Columns);
         uint blockCommentNesting;
-        <uint> colours = Highlighter.HopperSource(ln, "", backColor, ref blockCommentNesting);
+        <uint> colours = Highlighter.HopperSource(ln, "", backColor, isAssembly, ref blockCommentNesting);
         uint length = ln.Length;
         for (uint i=0; i < length; i++)
         {
@@ -203,6 +204,7 @@ program Show
             extension = extension.ToLower();
             if ((extension == ".hs") || (extension == ".asm") || (extension == ".json") || (extension == ".code") || (extension == ".options"))
             {
+                isAssembly = (extension == ".asm");
                 linePrinter = HopperLinePrinter;
                 Token.Initialize();// inialize the tokenizer
             }
