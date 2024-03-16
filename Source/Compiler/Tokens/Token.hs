@@ -80,10 +80,10 @@ unit Token
     }
     flags CPUArchitecture
     {
-        None   = 0x0000,
-        Z80A   = 0x0001,
-        M6502  = 0x0010, // orignal MOS instruction set
-        W65C02 = 0x0030, // MOS set plus WDC / Rockwell set
+        None    = 0x0000,
+        Z80A    = 0x0001,
+        M6502   = 0x0010, // orignal MOS instruction set
+        W65C02  = 0x0030, // MOS set plus WDC / Rockwell set
     }
     
     string HopperTokenToString(HopperToken tokenType)
@@ -307,6 +307,8 @@ unit Token
             instructionKeywords["STZ"] = true;
             
             instructionKeywords["CMP"] = true;
+            instructionKeywords["CPX"] = true;
+            instructionKeywords["CPY"] = true;
             
             instructionKeywords["JSR"] = true;
             instructionKeywords["RTS"] = true;
@@ -320,6 +322,29 @@ unit Token
             instructionKeywords["BMI"] = true;
             instructionKeywords["BVS"] = true;
             instructionKeywords["BVC"] = true;
+            
+            instructionKeywords["PHA"] = true;
+            instructionKeywords["PLA"] = true;
+            instructionKeywords["PHX"] = true;
+            instructionKeywords["PLX"] = true;
+            instructionKeywords["PHY"] = true;
+            instructionKeywords["PLY"] = true;
+            instructionKeywords["CLI"] = true;
+            instructionKeywords["SEI"] = true;
+            
+            instructionKeywords["INC"] = true;
+            instructionKeywords["DEC"] = true;
+            
+            instructionKeywords["AND"] = true;
+            instructionKeywords["ORA"] = true;
+            
+            for (byte i=0; i < 8; i++)
+            {
+                instructionKeywords["RMB" + i.ToString()] = true;
+                instructionKeywords["SMB" + i.ToString()] = true;
+                instructionKeywords["BBR" + i.ToString()] = true;
+                instructionKeywords["BBS" + i.ToString()] = true;
+            }
         }
         if (architecture & CPUArchitecture.Z80A != CPUArchitecture.None)
         {

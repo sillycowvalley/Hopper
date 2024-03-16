@@ -1,0 +1,9 @@
+unit Command
+{
+    MemoryDump()
+    {
+    }
+    Registers()
+    {
+    }
+}

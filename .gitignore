@@ -18,3 +18,4 @@ Bin/Auto.crc
 Bin/Auto.hexe
 Temp/IPCisRunning.bin
 Runtimes/Windows/HopperNET/.vs/HopperNET/v17/DocumentLayout.json
+*.lst

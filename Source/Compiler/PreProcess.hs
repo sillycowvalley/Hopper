@@ -1537,7 +1537,7 @@ program PreProcess
         PrintLn("    -g <c> <r>  : called from GUI, not console");
         PrintLn("    -x          : use experimental features");
         PrintLn("    -d <symbol> : define conditional compilation symbols");
-        PrintLn("    -a          : preprocess assemblye");
+        PrintLn("    -a          : preprocess assembly");
     }
     {  
         bool success = false;

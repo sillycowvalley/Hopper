@@ -175,7 +175,7 @@ unit BuildCommand
             string codePath = "/Debug/Obj/" + fileName + ".code";
             string hexePath = "/Bin/" + fileName + HexeExtension;
             string ihexPath = hexePath.Replace(".hexe", ".ihex");
-            string hasmPath = "/Debug/Obj/" + fileName + HasmExtension;
+            string hasmPath = "/Debug/" + fileName + HasmExtension;
             
             string target = "";
             uint error;
@@ -220,7 +220,9 @@ unit BuildCommand
                     target = " for Z80";
                     arch = "Z80A";
                 }
+                hasmPath = "/Debug/" + fileName + ".asm";
                 binaryPath ="/Bin/Assemble" + HexeExtension;
+                ihexPath = hexePath.Replace(".hexe", ".hex");
                 if (!File.Exists(binaryPath))
                 {
                     Editor.SetStatusBarText("No Assembler: '" + binaryPath + "'");
@@ -368,10 +370,10 @@ unit BuildCommand
                         break;
                     }
                     
-                    Editor.SetStatusBarText("Disassembling '" + hexePath + "' -> '" + hasmPath + "'");
+                    Editor.SetStatusBarText("Disassembling '" + ihexPath + "' -> '" + hasmPath + "'");
                     
                     arguments.Clear();
-                    arguments.Append(hexePath);
+                    arguments.Append(ihexPath);
                     arguments.Append("-g");
                     arguments.Append(col.ToString());
                     arguments.Append(row.ToString());

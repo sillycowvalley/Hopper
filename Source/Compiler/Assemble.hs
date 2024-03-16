@@ -503,7 +503,7 @@ program Assemble
                                    |AddressingModes.AbsoluteIndirectX
                                    |AddressingModes.ZeroPageIndirect
                                    |AddressingModes.XIndexedZeroPage
-                                   |AddressingModes.YIndexedZeroPage)) == AddressingModes.None)
+                                   |AddressingModes.YIndexedZeroPage)) != AddressingModes.None)
             {
                 if (tokenType == HopperToken.LParen)
                 {
@@ -525,6 +525,8 @@ program Assemble
                 case HopperToken.DottedIdentifier:
                 {
                     hasImmediate = assembleConstantExpression(ref immediateValue);
+                    currentToken = Parser.CurrentToken;
+                    tokenType = Token.GetType(currentToken);
                 }
             }
             
@@ -547,6 +549,56 @@ program Assemble
                 break;
             }
             
+            if ((addressingModes & (AddressingModes.ZeroPageRelative)) == AddressingModes.ZeroPageRelative)
+            {
+                if (tokenType != HopperToken.Comma)
+                {
+                    Parser.Error("',' expected");
+                    break;
+                }
+                if (immediateValue > 255)
+                {
+                    Parser.Error("byte zero page address");
+                    break;
+                }
+                Parser.Advance();
+                
+                currentToken = Parser.CurrentToken;
+                tokenType = Token.GetType(currentToken);
+                
+                int offset;
+                // -128 .. 127
+                bool negative;
+                if (tokenType == HopperToken.Subtract)
+                {
+                    Parser.Advance(); // '-' 
+                    currentToken = Parser.CurrentToken;
+                    tokenType = Token.GetType(currentToken);
+                    negative = true; 
+                }
+                else if (tokenType == HopperToken.Add)
+                {
+                    Parser.Advance(); // '+'    
+                    currentToken = Parser.CurrentToken;
+                    tokenType = Token.GetType(currentToken);
+                }
+                if ((tokenType == HopperToken.Integer) && Int.TryParse(currentToken["lexeme"], ref offset))
+                {
+                    Parser.Advance(); // <offset>
+                    
+                    // ZeroPageRelative=0x8000,          // nn,dd
+                    OpCodes.EmitInstructionZeroPageRelative(instructionName, byte(immediateValue), negative ? -offset : offset);
+                    
+                    success = true;
+                    break;
+                }
+                else
+                {
+                    Parser.ErrorAtCurrent("integer offset (-128..127) expected");
+                    break;
+                }
+           }
+            
             char registerName;
             bool rparenConsumed;
             if ((addressingModes & (AddressingModes.AbsoluteIndirectX
@@ -555,7 +607,9 @@ program Assemble
                                    |AddressingModes.ZeroPageX
                                    |AddressingModes.ZeroPageY
                                    |AddressingModes.AbsoluteX
-                                   |AddressingModes.AbsoluteY)) == AddressingModes.None)
+                                   |AddressingModes.AbsoluteY
+                                   |AddressingModes.ZeroPageRelative
+                                   )) != AddressingModes.None)
             {
                 if (tokenType == HopperToken.RParen)
                 {
@@ -584,6 +638,7 @@ program Assemble
                     tokenType = Token.GetType(currentToken);
                 }
             }
+                       
             if (immediateValue <= 255)
             {
                 byte operand = byte(immediateValue);
@@ -654,7 +709,7 @@ program Assemble
                     }
                 }
             }
-            else
+            else // > 255
             {
                 uint operand = immediateValue;
                 if (expectIndirect)
@@ -917,6 +972,8 @@ program Assemble
                         }
                         else
                         {
+                            DumpPrevious();
+                            DumpCurrent();
                             Parser.ErrorAt(currentToken, "keyword or identifier expected");
                             break;
                         }

@@ -167,6 +167,75 @@ unit AsmStream
             currentStream.Append(byte(retw & 0xFF));
         }
     }
+    string Disassemble(uint address, byte instruction, uint operand)
+    {
+        string disassembly;
+        disassembly += "0x" + address.ToHexString(4);
+        disassembly += " ";
+        
+        disassembly +=  " 0x" + instruction.ToHexString(2);
+        disassembly += " ";
+        
+        byte length = GetInstructionLength(instruction);
+        string operandString = "         "; 
+        if (length == 2)
+        {
+            operandString = "0x" + operand.ToHexString(2) + "     "; 
+        }
+        else if (length == 3)
+        {
+            
+            operandString = "0x" + (operand & 0xFF).ToHexString(2) + " 0x" + (operand >> 8).ToHexString(2); 
+        }
+        disassembly += operandString;
+        disassembly += "  ";
+        string name = OpCodes.GetName(instruction);
+        AddressingModes addressingMode = OpCodes.GetAddressingMode(instruction);
+        
+        switch (addressingMode)
+        {
+            case AddressingModes.Accumulator:      { disassembly += (name + " A"); }
+            case AddressingModes.Implied:           { disassembly += name; }
+            case AddressingModes.Immediate:         { disassembly += (name + " #0x" + operand.ToHexString(2)); }
+            case AddressingModes.Absolute:          { disassembly += (name + " 0x" + operand.ToHexString(4)); }
+            case AddressingModes.AbsoluteX:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",X"); }
+            case AddressingModes.AbsoluteY:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",Y"); }
+            case AddressingModes.AbsoluteIndirect:  { disassembly += (name + " (0x" + operand.ToHexString(4) + ")"); }
+            case AddressingModes.AbsoluteIndirectX: { disassembly += (name + " (0x" + operand.ToHexString(4) + ",X)"); }
+            case AddressingModes.ZeroPage:          { disassembly += (name + " 0x" + operand.ToHexString(2)); }
+            case AddressingModes.ZeroPageX:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",X"); }
+            case AddressingModes.ZeroPageY:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",Y"); }
+            case AddressingModes.ZeroPageIndirect:  { disassembly += (name + " (0x" + operand.ToHexString(2) +")"); }
+            case AddressingModes.XIndexedZeroPage:  { disassembly += (name + " (0x" + operand.ToHexString(2) +",X)"); }
+            case AddressingModes.YIndexedZeroPage:  { disassembly += (name + " (0x" + operand.ToHexString(2) +"),Y"); }
+            
+            case AddressingModes.Relative:  
+            { 
+                int ioperand = int(operand);
+                if (ioperand > 127)
+                {
+                    ioperand = ioperand - 256; // 0xFF -> -1
+                }
+                long target = long(address) + length + ioperand;
+                disassembly += (name + " 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
+            }
+            case AddressingModes.ZeroPageRelative:
+            {
+                int ioperand = int(operand >> 8);
+                if (ioperand > 127)
+                {
+                    ioperand = ioperand - 256; // 0xFF -> -1
+                }
+                long target = long(address) + length + ioperand;
+                disassembly += (name + " 0x" + (operand & 0xFF).ToHexString(2) +", 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
+            }
+            
+            default: { disassembly += name; }
+            
+        }
+        return disassembly;
+    }
+                    
     byte GetInstructionLength(byte instruction)
     {
         byte length;
@@ -235,7 +304,50 @@ unit AsmStream
                 case 0xBA: // TSX
                 case 0xCA: // DEX
                 case 0xEA: // NOP
+                
+                case 0x1A: // INC A
+                case 0x3A: // DEC A
+                case 0x5A: // PHY
+                case 0x7A: // PLY
+                case 0xDA: // PHX
+                case 0xFA: // PLX
                 { length = 1; } 
+                    
+                case 0x0F:
+                case 0x1F:
+                case 0x2F:
+                case 0x3F:
+                case 0x4F:
+                case 0x5F:
+                case 0x6F:
+                case 0x7F:
+                case 0x8F:
+                case 0x9F:
+                case 0xAF:
+                case 0xBF:
+                case 0xCF:
+                case 0xDF:
+                case 0xEF:
+                case 0xFF:
+                { length = 3; }
+                
+                case 0x07:
+                case 0x17:
+                case 0x27:
+                case 0x37:
+                case 0x47:
+                case 0x57:
+                case 0x67:
+                case 0x77:
+                case 0x87:
+                case 0x97:
+                case 0xA7:
+                case 0xB7:
+                case 0xC7:
+                case 0xD7:
+                case 0xE7:
+                case 0xF7:
+                { length = 2; }
             }
         }
         if (Architecture == CPUArchitecture.Z80A)
@@ -244,8 +356,9 @@ unit AsmStream
         }
         if (length == 0)
         {
-            Die(0x0B);
+            PrintLn("0x" + instruction.ToHexString(2)); Die(0x0B);
         }
+        //PrintLn("0x" + instruction.ToHexString(2) + " " + length.ToString());
         return length;
     }
     AddInstructionJ()
@@ -272,7 +385,7 @@ unit AsmStream
             currentStream.Append(GetJMPInstruction());
             // placeholder address
             currentStream.Append(byte(jumpToAddress & 0xFF));
-            currentStream.Append(byte(jumpToAddress > 8));
+            currentStream.Append(byte(jumpToAddress >> 8));
         }
     }
     AddInstructionJZ()
@@ -319,7 +432,7 @@ unit AsmStream
         }
         // unresolved method index for now
         currentStream.Append(byte(iOverload & 0xFF));
-        currentStream.Append(byte(iOverload > 8));
+        currentStream.Append(byte(iOverload >> 8));
     }
     
 }
