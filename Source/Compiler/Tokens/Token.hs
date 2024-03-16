@@ -299,16 +299,27 @@ unit Token
             instructionKeywords["JMP"] = true;
             
             instructionKeywords["LDA"] = true;
-            instructionKeywords["STA"] = true;
             instructionKeywords["LDX"] = true;
-            instructionKeywords["STX"] = true;
             instructionKeywords["LDY"] = true;
+            instructionKeywords["STA"] = true;
+            instructionKeywords["STX"] = true;
             instructionKeywords["STY"] = true;
+            instructionKeywords["STZ"] = true;
             
             instructionKeywords["CMP"] = true;
             
             instructionKeywords["JSR"] = true;
             instructionKeywords["RTS"] = true;
+            
+            instructionKeywords["BRA"] = true;
+            instructionKeywords["BEQ"] = true;
+            instructionKeywords["BNE"] = true;
+            instructionKeywords["BCC"] = true;
+            instructionKeywords["BCS"] = true;
+            instructionKeywords["BPL"] = true;
+            instructionKeywords["BMI"] = true;
+            instructionKeywords["BVS"] = true;
+            instructionKeywords["BVC"] = true;
         }
         if (architecture & CPUArchitecture.Z80A != CPUArchitecture.None)
         {

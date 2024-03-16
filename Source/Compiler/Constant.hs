@@ -290,7 +290,12 @@ unit Constant
                 {
                     Parser.Advance();
                     value = currentToken["lexeme"];
+#ifdef ASSEMBLER
+                    actualType = "byte";
+                    value = (byte(value[0])).ToString();
+#else
                     actualType = "char";
+#endif
                 }
                 case HopperToken.Float:
                 {
@@ -379,7 +384,12 @@ unit Constant
                 case HopperToken.Identifier:
                 {
                     string name = currentToken["lexeme"];
-                    
+#ifdef ASSEMBLER                    
+                    if (name.StartsWith('#')) // immediate addressing mode, not directive identifier
+                    {
+                        name = name.Substring(1);
+                    }
+#endif    
                     string typeName;
                     string valueName;
                     uint ivalue;
@@ -455,6 +465,40 @@ unit Constant
                                     continue;
                                 }
                             }
+#ifdef ASSEMBLER
+                            string qualifiedName;
+                            string identifierTypeString = Types.GetTypeString(currentToken["lexeme"], false, ref qualifiedName);
+                            if (Parser.HadError)
+                            {
+                                outerLoopBreak = true;
+                                break;
+                            }
+                            if (identifierTypeString.Length != 0)
+                            {
+                                if (Symbols.GlobalMemberExists(qualifiedName))
+                                {
+                                    switch (identifierTypeString)
+                                    {
+                                        case "byte":
+                                        case "uint":
+                                        {
+                                            value = (Symbols.GetGlobalByteAddress(qualifiedName)).ToString();
+                                            if (!validateIntegralConstant(typeExpected, identifierTypeString, ref actualType, value, CurrentToken))
+                                            {
+                                                outerLoopBreak = true;
+                                                break;
+                                            }
+                                            Parser.Advance();
+                                        }
+                                        default:
+                                        {
+                                            PrintLn("identifierTypeString=" + identifierTypeString);
+                                            Die(0x0A);
+                                        }
+                                    }
+                                }
+                            }
+#else                            
                             if (typeExpected != "string")
                             {
                                 <string, string> current = Parser.CurrentToken;
@@ -466,6 +510,7 @@ unit Constant
                             {
                                 Parser.ErrorAtCurrent("undefined constant identifier '" + constantIdentifier + "'");
                             }
+#endif                            
                             outerLoopBreak = true;
                             break;
                         }
@@ -480,6 +525,13 @@ unit Constant
                     {
                         value = (value.Length).ToString();
                     }
+#ifdef ASSEMBLER
+                    if (constantType == "char")
+                    {
+                        constantType = "byte";
+                        value = (byte(value[0])).ToString();
+                    }
+#endif
                     if (!validateIntegralConstant(typeExpected, constantType, ref actualType, value, CurrentToken))
                     {
                         break;
@@ -547,6 +599,13 @@ unit Constant
                 }
                 case HopperToken.LParen:
                 {
+#ifdef ASSEMBLER
+                    if (!Parser.HadError)
+                    {
+                        Parser.ErrorAtCurrent("constant expected");
+                    }
+                    break;
+#else                    
                     Parser.Advance(); // (
                     value = ParseConstantExpression(typeExpected, ref actualType, weakEnums);
                     if (Parser.HadError)
@@ -554,6 +613,7 @@ unit Constant
                         break;
                     }
                     Parser.Consume(HopperToken.RParen);
+#endif
                 }
                 default:
                 {
@@ -561,7 +621,7 @@ unit Constant
                     {
                         Parser.ErrorAtCurrent("constant expected");
                     }
-                    break;           
+                    break;
                 }
             } // switch
             break;
@@ -590,6 +650,10 @@ unit Constant
             {
                 // ok
                 //PrintLn("Constant: " + actualType + "->" + typeExpected);
+            }
+            else if ((typeExpected == "uint") && (actualType == "byte"))
+            {
+                // ok
             }
             else
             {

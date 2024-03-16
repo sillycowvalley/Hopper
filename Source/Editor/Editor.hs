@@ -1988,7 +1988,7 @@ unit Editor
                                 cpuArchitecture = CPUArchitecture.W65C02;
                                 break;
                             }
-                            if (parts[1] == "CPU_Z80A")
+                            if (parts[1] == "CPU_Z80")
                             {
                                 cpuArchitecture = CPUArchitecture.Z80A;
                                 break;

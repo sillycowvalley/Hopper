@@ -590,9 +590,11 @@ unit Symbols
         address = address*2;
         return address;
     }
+#ifdef ASSEMBLER    
     uint GetGlobalByteAddress(string name)
     {
-        uint address = 0;
+        uint address = 0x0600; // hard-coded convention based on Hopper VM for now
+        
         uint index = gIndex[name];
         uint current = 0;
         while (current < index)
@@ -602,13 +604,10 @@ unit Symbols
             {
                 case "byte":
                 case "char":
-                {
-                    address += 1;
-                }
                 case "int":
                 case "uint":
                 {
-                    address += 2;
+                    address += 2; // all 2 byte slots based on Hopper VM convention
                 }
                 default:
                 {
@@ -619,6 +618,7 @@ unit Symbols
         }
         return address;
     }
+#endif
     uint GetGlobalCount()
     {
         return gNames.Count;

@@ -1,6 +1,5 @@
 unit CodeStream
 {
-    #define CODESTREAM
 
     uses "Instructions"
     uses "Block"

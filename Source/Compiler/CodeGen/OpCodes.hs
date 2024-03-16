@@ -10,8 +10,8 @@ unit OpCodes
         Accumulator=0x0002,       // A
         Immediate=0x0004,         // #nn
         Absolute=0x0008,          // nnnn
-        AbsoluteY=0x0010,         // nnnn,X
-        AbsoluteX=0x0020,         // nnnn,Y
+        AbsoluteX=0x0010,         // nnnn,X
+        AbsoluteY=0x0020,         // nnnn,Y
         AbsoluteIndirect=0x0040,  // (nnnn)
         AbsoluteIndirectX=0x0080, // (nnnn,X)
         ZeroPage=0x0100,          // nn
@@ -97,6 +97,25 @@ unit OpCodes
                                 | AddressingModes.YIndexedZeroPage
                                 | AddressingModes.AbsoluteY
                                 | AddressingModes.AbsoluteX;
+            }
+            case "STX":
+            {
+                addressingModes = AddressingModes.ZeroPage
+                                | AddressingModes.Absolute
+                                | AddressingModes.YIndexedZeroPage;
+            }
+            case "STY":
+            {
+                addressingModes = AddressingModes.ZeroPage
+                                | AddressingModes.Absolute
+                                | AddressingModes.XIndexedZeroPage;
+            }
+            case "STZ":
+            {
+                addressingModes = AddressingModes.ZeroPage
+                                | AddressingModes.Absolute
+                                | AddressingModes.AbsoluteX
+                                | AddressingModes.XIndexedZeroPage;
             }
             
             case "ASL":
@@ -472,12 +491,38 @@ unit OpCodes
         Die(0x0B);
         return 0;
     }
-    
-    byte GetHALTInstruction()
+    uint GetRETIInstruction()
     {
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
-            return 0xEA; // NOP : TODO : JMP to self?
+            return 0x40; // RTI
+        }
+        if (Architecture == CPUArchitecture.Z80A)
+        {
+            return 0xED + 0x4D << 8; // RETI is 0xED 0x4D
+        }
+        Die(0x0B);
+        return 0;
+    }
+    uint GetRETNInstruction()
+    {
+        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            return 0x40; // RTI
+        }
+        if (Architecture == CPUArchitecture.Z80A)
+        {
+            return 0xED + 0x44 << 8; // RETN is 0xED 0x45
+        }
+        Die(0x0B);
+        return 0;
+    }
+    
+    uint GetHALTInstruction()
+    {
+        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            return 0x80 + 0xFE << 8; // BRA -2 (to self)
         }
         if (Architecture == CPUArchitecture.Z80A)
         {
@@ -491,6 +536,7 @@ unit OpCodes
     {
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
+            Die(0x0B); // only relative branches supported for now
             return 0x4C; // JMP
         }
         if (Architecture == CPUArchitecture.Z80A)
@@ -510,6 +556,7 @@ unit OpCodes
                 case "NZ": { return 0xD0; } // BNE
                 case "C":  { return 0xB0; } // BCS
                 case "NC": { return 0x90; } // BCC
+                case "":   { return 0x80; } // BRA
                 default:   { Die(0x0A);   }
             }
         }

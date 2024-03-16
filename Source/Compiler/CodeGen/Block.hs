@@ -147,7 +147,13 @@ unit Block
         iLast--;
         Export(iLast);
         
-        if (CodeStream.InUse)
+        
+#ifdef ASSEMBLER
+        bool isUse = AsmStream.InUse;
+#else
+        bool isUse = CodeStream.InUse;
+#endif
+        if (isUse)
         {
 #ifdef TRANSLATE
             Parser.ErrorAt(Parser.PreviousToken, "translate should not be generating code!!");
@@ -156,7 +162,20 @@ unit Block
             uint bytesToPop = GetBytesToPop();
             if (bytesToPop > 0)
             {
-#ifdef CODESTREAM
+#ifdef ASSEMBLER
+                if (iLast == 0) 
+                {
+                    // Hopper exit
+                }
+                else if (AsmStream.LastInstructionIsRET(iLast == 0))
+                {
+                    // Return logic already dealt with
+                }
+                else
+                {
+                    Die(0x0A); // locals and arguments not supported yet
+                }
+#endif
                 Instruction previousInstruction = CodeStream.GetLastInstruction();
                 if ((previousInstruction != Instruction.RETB) 
                  && (previousInstruction != Instruction.RET)
@@ -175,7 +194,7 @@ unit Block
                             Die(0x0B);
                         }
                     }               
-                    CodeStream.InsertDebugInfo(true); // PreviousToken is '{'
+                    CodeStream.InsertDebugInfo(true); // PreviousToken is '}'
                     
                     if (bytesToPop > 255)
                     {
@@ -209,11 +228,8 @@ unit Block
                     }
                     */
                 }
-#else
-                Die(0x0B);
-#endif
-            }
-            
+            } // (bytesToPop > 0)
+
             <string,variant> blockContext = blockList[iLast];   
             if (blockContext.Contains("breaks"))
             {
@@ -227,7 +243,11 @@ unit Block
                 <uint> breakPatches = blockContext["breaks"];
                 foreach (var breakJump in breakPatches)
                 {
+#ifdef ASSEMBLER
+                    AsmStream.PatchJump(breakJump, breakTarget);
+#else
                     CodeStream.PatchJump(breakJump, breakTarget);
+#endif
                 }
             }
             if (blockContext.Contains("continues"))
@@ -242,7 +262,11 @@ unit Block
                 <uint> continuePatches = blockContext["continues"];
                 foreach (var continueJump in continuePatches)
                 {
-                    PatchJump(continueJump, continueTarget);
+#ifdef ASSEMBLER
+                    AsmStream.PatchJump(continueJump, continueTarget);
+#else
+                    CodeStream.PatchJump(continueJump, continueTarget);
+#endif
                 }
             }
         }
@@ -295,7 +319,6 @@ unit Block
                 break;
             }
         }
-    
         return bytesToPop;
     }
     
@@ -329,8 +352,6 @@ unit Block
         }
         return localsToPop;
     }
-    
-    
     
     int GetOffset(string identifier, ref bool isRef)
     {

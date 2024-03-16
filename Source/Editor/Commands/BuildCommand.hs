@@ -309,6 +309,28 @@ unit BuildCommand
                     break;
                 }
             }
+            if (isAssembly)
+            {
+                binaryPath ="/Bin/ASMGEN" + HexeExtension;
+                if (!File.Exists(binaryPath))
+                {
+                    Editor.SetStatusBarText("No /Bin/ASMGEN: '" + binaryPath + "'");
+                    break;
+                }
+                Editor.SetStatusBarText("Generating Code '" + codePath + "' -> '" + ihexPath + "'" + target);
+                
+                arguments.Clear();
+                arguments.Append(codePath);
+                arguments.Append("-g");
+                arguments.Append(col.ToString());
+                arguments.Append(row.ToString());
+                error = Runtime.Execute(binaryPath, arguments);
+                if (error != 0)
+                {
+                    DisplayError("ASMGEN", error);
+                    break;
+                }
+            }
             if (isHopper)
             {
                 binaryPath ="/Bin/CODEGEN" + HexeExtension;
@@ -333,6 +355,32 @@ unit BuildCommand
                 {
                     DisplayError("CODEGEN", error);
                     break;
+                }
+            }
+            if (isAssembly)
+            {
+                if (BuildOptions.IsDisassembleEnabled())
+                {       
+                    binaryPath ="/Bin/65DASM" + HexeExtension;
+                    if (!File.Exists(binaryPath))
+                    {
+                        Editor.SetStatusBarText("No 65DASM: '" + binaryPath + "'");
+                        break;
+                    }
+                    
+                    Editor.SetStatusBarText("Disassembling '" + hexePath + "' -> '" + hasmPath + "'");
+                    
+                    arguments.Clear();
+                    arguments.Append(hexePath);
+                    arguments.Append("-g");
+                    arguments.Append(col.ToString());
+                    arguments.Append(row.ToString());
+                    error = Runtime.Execute(binaryPath, arguments);
+                    if (error != 0)
+                    {
+                        DisplayError("65DASM", error);
+                        break;
+                    }
                 }
             }
             if (isHopper)
