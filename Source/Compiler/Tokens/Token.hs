@@ -338,6 +338,8 @@ unit Token
             instructionKeywords["AND"] = true;
             instructionKeywords["ORA"] = true;
             
+            instructionKeywords["NOP"] = true;
+            
             for (byte i=0; i < 8; i++)
             {
                 instructionKeywords["RMB" + i.ToString()] = true;

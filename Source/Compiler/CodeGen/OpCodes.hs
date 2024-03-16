@@ -634,6 +634,7 @@ unit OpCodes
             case 0xE6: { name = "INC"; }
             case 0xE8: { name = "INX"; }
             case 0xE9: { name = "SBC"; }
+            case 0xEA: { name = "NOP"; }
             case 0xEC: { name = "CPX"; }
             case 0xED: { name = "SBC"; }
             case 0xEE: { name = "INC"; }
@@ -1131,12 +1132,25 @@ unit OpCodes
     {
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
-            Die(0x0B); // only relative branches supported for now
             return 0x4C; // JMP
         }
         if (Architecture == CPUArchitecture.Z80A)
         {
+            PrintLn("HERE!");
             return 0xC3; // JP
+        }
+        Die(0x0B);
+        return 0;
+    }
+    byte GetNOPInstruction()
+    {
+        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            return 0xEA; // NOP
+        }
+        if (Architecture == CPUArchitecture.Z80A)
+        {
+            return 0x00; // NOP
         }
         Die(0x0B);
         return 0;

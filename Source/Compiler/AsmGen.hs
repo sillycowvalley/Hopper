@@ -35,16 +35,20 @@ program ASMGEN
     
     writeMethod(uint methodIndex, <byte> code, uint romAddress)
     {
-        methods[methodIndex] = output.Count + romAddress;
+        uint methodAddress   = output.Count + romAddress;
+        methods[methodIndex] = methodAddress;
         
         byte callInstruction;
+        byte jumpInstruction;
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
             callInstruction = GetJSRInstruction();
+            jumpInstruction = GetJMPInstruction(); // TODO: 0x6C and 0x7C
         }
         if (Architecture == CPUArchitecture.Z80A)
         {
             callInstruction = GetCALLInstruction();
+            jumpInstruction = GetJMPInstruction();
         }
         
         uint index = 0;
@@ -53,10 +57,33 @@ program ASMGEN
             if (index == code.Count) { break; }
             byte instruction = code[index];
             byte instructionLength = AsmStream.GetInstructionLength(instruction);
+            
+            /*
+            Print(methodIndex.ToString() + " " + index.ToHexString(4) + " " + instruction.ToHexString(2) + " " + OpCodes.GetName(instruction));
+            if (instructionLength == 2)
+            {
+                Print(" " + (code[index+1]).ToHexString(2));
+            }
+            else if (instructionLength == 3)
+            {
+                Print(" " + (code[index+2]).ToHexString(2) + (code[index+1]).ToHexString(2));
+            }
+            PrintLn ();
+            */
+            
             if (instruction == callInstruction)
             {
                 uint address = code[index+1] + code[index+2] << 8;
                 patches[output.Count+1] = address;
+            }
+            if (instruction == jumpInstruction)
+            {
+                uint address = code[index+1] + code[index+2] << 8;
+                //Print("  " + methodIndex.ToString() + " " + index.ToHexString(4) + " " + address.ToHexString(4));
+                address += methodAddress;
+                //PrintLn("  -> " + address.ToHexString(4));
+                code[index+1] = address.GetByte(0);
+                code[index+2] = address.GetByte(1);
             }
             for (uint i=0; i < instructionLength; i++)
             {
@@ -291,8 +318,6 @@ program ASMGEN
                 output.Append(arch);
                 output.Append(byte(romAddress & 0xFF));
                 output.Append(byte(romAddress >> 8));
-                
-                
                 
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 writeMethod(entryIndex, methodCode, romAddress);

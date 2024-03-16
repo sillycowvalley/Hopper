@@ -152,24 +152,13 @@ program Assemble
                 break;
             }
             
+            AsmStream.AppendCode(GetBInstruction(conditionString));
+            AsmStream.AppendCode(+3);
+            
             // if false jump past
             uint jumpPast = AsmStream.NextAddress;
-            switch (conditionString)
-            {
-                case "Z":
-                {
-                    AsmStream.AddInstructionJNZ();
-                }
-                case "NZ":
-                {
-                    AsmStream.AddInstructionJZ();
-                }
-                default:
-                {
-                    Die(0x0A);
-                }
-            }
-            
+            AsmStream.AddInstructionJ();
+                       
             Block.PushBlock(false); // not a loop context
             assembleBlock();
             Block.PopBlock();
@@ -212,11 +201,7 @@ program Assemble
             else
             {
                 // simple if with no "else" clause/s
-                uint jumpSize = 3;
-                if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-                {
-                    jumpSize = 2;
-                }
+                uint jumpSize = 3; // this is always a 3 byte jump (for 6502, it could be BRA followed by NOP)
                 AsmStream.PopTail(jumpSize);
                 AsmStream.PatchJump(jumpPast, pastAddress-jumpSize);
                 

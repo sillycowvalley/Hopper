@@ -71,26 +71,6 @@ unit AsmStream
         }
     }
     
-    PatchJump(uint jumpAddress, uint jumpToAddress)
-    {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            int offset = int(jumpToAddress) - int(jumpAddress) - 2;
-            if ((offset < -128) || (offset > 127))
-            {
-                Parser.Error("jump target exceeds 6502 relative limit (" + offset.ToString() + ")");
-                return;
-            }
-            currentStream.SetItem(jumpAddress+1, offset.GetByte(0));
-        }
-        else
-        {
-            uint lsb = jumpToAddress & 0xFF;
-            uint msb = jumpToAddress >> 8;
-            currentStream.SetItem(jumpAddress+1, byte(lsb));
-            currentStream.SetItem(jumpAddress+2, byte(msb));
-        }
-    }
     PopTail(uint pops)
     {
         loop
@@ -146,6 +126,7 @@ unit AsmStream
         string name = Symbols.GetFunctionName(iCurrent);
         
         uint retw = OpCodes.GetRETInstruction();
+        bool addNOP;
         if (name.EndsWith(".Hopper")) // TODO : only allow in 'program'
         {
             // this means we are exiting Hopper()
@@ -318,8 +299,11 @@ unit AsmStream
                 case 0x2F:
                 case 0x3F:
                 case 0x4F:
+                case 0x4C: // JMP
                 case 0x5F:
+                case 0x6C: // JMP
                 case 0x6F:
+                case 0x7C: // JMP
                 case 0x7F:
                 case 0x8F:
                 case 0x9F:
@@ -356,11 +340,54 @@ unit AsmStream
         }
         if (length == 0)
         {
-            PrintLn("0x" + instruction.ToHexString(2)); Die(0x0B);
+            PrintLn("GetInstructionLength: 0x" + instruction.ToHexString(2)); Die(0x0B);
+            length = 1;
         }
         //PrintLn("0x" + instruction.ToHexString(2) + " " + length.ToString());
         return length;
     }
+    
+    PatchJump(uint jumpAddress, uint jumpToAddress)
+    {
+        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            byte braInstruction = GetBInstruction("");
+            byte jmpInstruction = GetJMPInstruction();
+            int offset = int(jumpToAddress) - int(jumpAddress) - 2;
+            
+            bool testJMP = false; // ((currentStream[jumpAddress+0] == braInstruction) || (currentStream[jumpAddress+0] == jmpInstruction));
+            
+            if (testJMP || (offset < -128) || (offset > 127))
+            {
+                // long jump
+                if ((currentStream[jumpAddress+0] != braInstruction) &&
+                    (currentStream[jumpAddress+0] != jmpInstruction))
+                {
+                    Parser.Error("jump target exceeds 6502 relative limit (" + offset.ToString() + ")");
+                    return;
+                }
+                currentStream.SetItem(jumpAddress+0, GetJMPInstruction());
+                currentStream.SetItem(jumpAddress+1, jumpToAddress.GetByte(0));
+                currentStream.SetItem(jumpAddress+2, jumpToAddress.GetByte(1));
+            }
+            else
+            {
+                // short jump
+                if (currentStream[jumpAddress+0] == jmpInstruction)
+                {
+                    currentStream.SetItem(jumpAddress+0, GetBInstruction(""));
+                }
+                currentStream.SetItem(jumpAddress+1, offset.GetByte(0));
+                currentStream.SetItem(jumpAddress+2, GetNOPInstruction());
+            }
+        }
+        else
+        {
+            currentStream.SetItem(jumpAddress+1, jumpToAddress.GetByte(0));
+            currentStream.SetItem(jumpAddress+2, jumpToAddress.GetByte(1));
+        }
+    }
+    
     AddInstructionJ()
     {
         AddInstructionJ(0x0000); // placeholder address
@@ -370,15 +397,24 @@ unit AsmStream
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
             uint jumpAddress = NextAddress;
-            currentStream.Append(GetBInstruction(""));
-            
             int offset = int(jumpToAddress) - int(jumpAddress) - 2;
-            if ((offset < -128) || (offset > 127))
+            
+            bool testJMP = false;
+            
+            if (testJMP || (offset < -128) || (offset > 127))
             {
-                Parser.Error("jump target exceeds 6502 relative limit (" + offset.ToString() + ")");
-                return;
+                // long jump
+                currentStream.Append(GetJMPInstruction());
+                currentStream.Append(byte(jumpToAddress & 0xFF));
+                currentStream.Append(byte(jumpToAddress >> 8));
             }
-            currentStream.Append(offset.GetByte(0));
+            else
+            {
+                // short jump
+                currentStream.Append(GetBInstruction(""));
+                currentStream.Append(offset.GetByte(0));
+                currentStream.Append(GetNOPInstruction());
+            }
         }
         if (Architecture == CPUArchitecture.Z80A)
         {
@@ -395,6 +431,7 @@ unit AsmStream
             currentStream.Append(GetBInstruction("Z"));
             // placeholder address
             currentStream.Append(0x00);
+            currentStream.Append(GetNOPInstruction());
         }
         if (Architecture == CPUArchitecture.Z80A)
         {
@@ -411,6 +448,7 @@ unit AsmStream
             currentStream.Append(GetBInstruction("NZ"));
             // placeholder address
             currentStream.Append(0x00);
+            currentStream.Append(GetNOPInstruction());
         }
         if (Architecture == CPUArchitecture.Z80A)
         {
