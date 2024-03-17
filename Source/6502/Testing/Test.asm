@@ -1,4 +1,3 @@
-
 program Test
 {
     // mapping of Z80 -> 6502
@@ -18,8 +17,8 @@ program Test
     
     IRQ()
     {
-        BBR7 ACIASTATUS, +6
-        BBS0 ACIASTATUS, +3  
+        BBR7 ACIASTATUS, +6 // interrupt request by 6850
+        BBR0 ACIASTATUS, +3 // RDRF : receive data register full
         
         Serial.ISR();
     }
@@ -36,9 +35,10 @@ program Test
             Serial.IsAvailable();
             if (NZ)        
             {
-                ReadChar();
-                WriteChar(); // echo
-                
+                Serial.ReadChar();
+                Serial.HexOut();     
+                LDA #0x0A
+                Serial.WriteChar();          
                 loop
                 {
                     CMP #'R'

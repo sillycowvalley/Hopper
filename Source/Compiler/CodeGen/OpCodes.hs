@@ -92,12 +92,14 @@ unit OpCodes
             case "SEC":
             case "SED":
             case "SEI":
+            case "STP":
             case "TAX":
             case "TAY":
             case "TSX":
             case "TXA":
             case "TXS":
             case "TYA":   
+            case "WAI":   
             {
                 addressingModes = AddressingModes.Implied;
             }
@@ -364,7 +366,9 @@ unit OpCodes
             case 0xBA:
             case 0x8A:
             case 0x9A:
-            case 0x98: { addressingMode = AddressingModes.Implied; }
+            case 0x98:
+            case 0xDB:
+            case 0xCB: { addressingMode = AddressingModes.Implied; }
             
             case 0x0A:
             case 0x3A:
@@ -612,6 +616,7 @@ unit OpCodes
             case 0xC8: { name = "INY"; }
             case 0xC9: { name = "CMP"; }
             case 0xCA: { name = "DEX"; }
+            case 0xCB: { name = "WAI"; }
             case 0xCC: { name = "CPY"; }
             case 0xCD: { name = "CMP"; }
             case 0xCE: { name = "DEC"; }
@@ -624,6 +629,7 @@ unit OpCodes
             case 0xD8: { name = "CLD"; }
             case 0xD9: { name = "CMP"; }
             case 0xDA: { name = "PHX"; }
+            case 0xDB: { name = "STP"; }
             case 0xDD: { name = "CMP"; }
             case 0xDE: { name = "DEC"; }
             
@@ -1118,7 +1124,7 @@ unit OpCodes
     {
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
-            return 0x80 + 0xFE << 8; // BRA -2 (to self)
+            return 0xDB; // STP (stop)
         }
         if (Architecture == CPUArchitecture.Z80A)
         {

@@ -1,9 +1,8 @@
 unit Serial
 {
-    const byte ACIADATA    = 0xEC;
-    const byte ACIASTATUS  = 0xED;
-    const byte ACIACOMMAND = 0xEE;
-    const byte ACIACONTROL = 0xEF;
+    const byte ACIACONTROL = 0xEC;
+    const byte ACIASTATUS  = 0xEC;
+    const byte ACIADATA    = 0xED;
     
     const byte SerialInWritePointer = 0xD3;
     const byte SerialInReadPointer  = 0xD4;
@@ -93,5 +92,35 @@ unit Serial
         PLA
         STA ACIADATA           // output character to TDRE
         PLX
+    }
+    HexOut()
+    {
+        PHA
+        PHA
+        
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        
+        CMP #0x0A
+        if (C)
+        {
+            ADC #6 // add 7 (6+C=1)
+        }
+        ADC #'0'
+        WriteChar();
+        
+        PLA
+        AND #0x0F
+        CMP #0x0A
+        if (C)
+        {
+            ADC #6 // add 7 (6+C=1)
+        }
+        ADC #'0'
+        WriteChar();
+        
+        PLA
     }
 }

@@ -297,6 +297,7 @@ unit Token
             instructionKeywords["BNE"] = true;
             
             instructionKeywords["JMP"] = true;
+            instructionKeywords["STP"] = true;
             
             instructionKeywords["LDA"] = true;
             instructionKeywords["LDX"] = true;
@@ -312,6 +313,8 @@ unit Token
             
             instructionKeywords["JSR"] = true;
             instructionKeywords["RTS"] = true;
+            instructionKeywords["BRK"] = true;
+            instructionKeywords["RTI"] = true;
             
             instructionKeywords["BRA"] = true;
             instructionKeywords["BEQ"] = true;
@@ -337,6 +340,8 @@ unit Token
             
             instructionKeywords["AND"] = true;
             instructionKeywords["ORA"] = true;
+            instructionKeywords["LSR"] = true;
+            instructionKeywords["ADC"] = true;
             
             instructionKeywords["NOP"] = true;
             

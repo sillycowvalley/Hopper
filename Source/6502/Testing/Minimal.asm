@@ -11,7 +11,7 @@ program Minimal
     }
     
     {
-    
+        BRK
     }
 }
 

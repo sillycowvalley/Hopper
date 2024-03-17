@@ -15,8 +15,9 @@ program Emulate
     uses "/Source/Compiler/CODEGEN/OpCodes"
     uses "/Source/Compiler/CODEGEN/AsmStream"
     
-    uses "CPU/6502"
-    uses "CPU/Z80"
+    uses "Chips/6502"
+    uses "Chips/Z80"
+    uses "Chips/ACIA"
     
     uint orgROM;
     uint[16] breakpoints;
@@ -60,12 +61,12 @@ program Emulate
         {
             if (BreakCheck()) { break; }
             uint pc = GetPC();
+            if (pc == InvalidAddress) { break; }
             if (!first && IsBreakPoint(pc))
             {
                 ClearIfZeroBreakPoint(pc);
                 break;
             }
-            if (pc == InvalidAddress) { break; }
             StepInto();
             first = false;
         }
@@ -73,6 +74,7 @@ program Emulate
     StepOver()
     {
         uint pc = GetPC();
+        if (pc == InvalidAddress) { return; }
         byte instruction = Emulate.GetMemory(pc);
         if (instruction == OpCodes.GetJSRInstruction())
         {
@@ -87,8 +89,13 @@ program Emulate
     }
     StepInto()
     {
+        bool requestIRQ = ACIA.ServiceSerial();
         if (Is6502)
         {
+            if (requestIRQ)
+            {
+                W65C02.RaiseIRQ();
+            }
             W65C02.Execute();
         }
         else
@@ -236,6 +243,8 @@ program Emulate
     }
     DoReset()
     {
+        ACIA.Initialize();
+        
         if (Is6502)
         {
             W65C02.Reset();
@@ -900,5 +909,6 @@ program Emulate
             
             break;
         } // loop
+        ACIA.Close();
     }
 }

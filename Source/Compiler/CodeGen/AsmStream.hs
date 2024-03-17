@@ -116,6 +116,13 @@ unit AsmStream
         return isRET;
     }
     
+    AddInstructionRESET()
+    {
+        // program entry code
+        OpCodes.EmitInstruction("CLD");
+        OpCodes.EmitInstruction("LDX", 0xFF);
+        OpCodes.EmitInstruction("TXS");
+    }
     AddInstructionENTER()
     {
         // method entry code
@@ -285,6 +292,9 @@ unit AsmStream
                 case 0xBA: // TSX
                 case 0xCA: // DEX
                 case 0xEA: // NOP
+                
+                case 0xDB: // STP
+                case 0xCB: // WAI
                 
                 case 0x1A: // INC A
                 case 0x3A: // DEC A

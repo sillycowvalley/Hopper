@@ -974,6 +974,9 @@ program Assemble
     {
         <byte> globalCode = initializeGlobals();
         
+        
+        
+        
         bool success = false;
         bool isMain = true;
         uint iMain = iCurrentOverload;
@@ -1003,8 +1006,11 @@ program Assemble
             
             <string,string> braceToken = Parser.CurrentToken; // for CodeGen location
             
+            if (isMain)
+            {
+                AsmStream.AddInstructionRESET();
+            }
             AsmStream.AddInstructionENTER();
-            
             if (!isMain) // already pushed with globals
             {
                 Block.PushBlock(false); // new block context
