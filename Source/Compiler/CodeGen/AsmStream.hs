@@ -2,8 +2,8 @@ unit AsmStream
 {
     #define ASMSTREAM
     
-    uses "CodeGen/OpCodes"
-    
+    uses "/Source/Compiler/CODEGEN/OpCodes"
+        
     <string,string> debugInfo;
     <string,bool> debugInfoLineUsed;
     <byte> currentStream;

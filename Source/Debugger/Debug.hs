@@ -47,8 +47,6 @@ program Debug
     bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
     
     {
-        <string> arguments = System.Arguments;
-        
         string filePath;
         bool showHelp;
         
