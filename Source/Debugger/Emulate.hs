@@ -26,6 +26,8 @@ program Emulate
     <uint,uint> methodAddresses; // <address,index>
     
     bool Is6502 { get { return ((Architecture & CPUArchitecture.M6502) != CPUArchitecture.None); } }
+    
+    file logFile;
         
     bool BreakCheck()
     {
@@ -94,7 +96,9 @@ program Emulate
             {
                 W65C02.RaiseIRQ();
             }
+            updateLogBefore();
             W65C02.Execute();
+            updateLogAfter();
         }
         else
         {
@@ -241,6 +245,8 @@ program Emulate
     }
     DoReset()
     {
+        logFile = File.Create("/Debug/Emulate.log");
+        
         ACIA.Initialize();
         
         if (Is6502)
@@ -296,6 +302,45 @@ program Emulate
             Z80.ShowStack();
         }
     }
+    updateLogBefore()
+    {
+        /*
+        string logLine = W65C02.GetRegisterNames();
+        logFile.Append(logLine + char(0x0D));
+        logLine = W65C02.GetRegisters();
+        logFile.Append(logLine + char(0x0D) + char(0x0D));
+        logFile.Flush();
+        */
+    }
+    updateLogAfter()
+    {
+        /*
+        string serialData;
+        byte serialWrite = W65C02.GetMemory(0xD3);
+        byte serialRead  = W65C02.GetMemory(0xD4);
+        
+        while (serialRead != serialWrite)
+        {
+            byte data = W65C02.GetMemory(0x300 + serialRead);
+            serialData += data.ToHexString(2) + " ";
+            if (serialRead == 0xFF)
+            {
+                serialRead = 0;
+            }
+            else
+            {
+                serialRead++;
+            }
+        }
+        
+        string logLine = W65C02.GetRegisterNames();
+        logFile.Append(logLine + char(0x0D));
+        logLine = W65C02.GetRegisters() + " " + serialRead.ToHexString(2) + " " + serialWrite.ToHexString(2) + "   " + serialData;
+        logFile.Append(logLine + char(0x0D));
+        logFile.Flush();
+        */
+    }
+    
     ShowRegisters()
     {
         PrintLn();

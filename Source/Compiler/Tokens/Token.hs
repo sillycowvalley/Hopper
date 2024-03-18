@@ -307,6 +307,11 @@ unit Token
             instructionKeywords["STY"] = true;
             instructionKeywords["STZ"] = true;
             
+            instructionKeywords["TYA"] = true;
+            instructionKeywords["TAY"] = true;
+            instructionKeywords["TXA"] = true;
+            instructionKeywords["TAX"] = true;
+            
             instructionKeywords["CMP"] = true;
             instructionKeywords["CPX"] = true;
             instructionKeywords["CPY"] = true;
@@ -337,11 +342,17 @@ unit Token
             
             instructionKeywords["INC"] = true;
             instructionKeywords["DEC"] = true;
+            instructionKeywords["INX"] = true;
+            instructionKeywords["DEX"] = true;
+            instructionKeywords["INY"] = true;
+            instructionKeywords["DEY"] = true;
             
             instructionKeywords["AND"] = true;
             instructionKeywords["ORA"] = true;
             instructionKeywords["LSR"] = true;
+            instructionKeywords["ASL"] = true;
             instructionKeywords["ADC"] = true;
+            instructionKeywords["SBC"] = true;
             
             instructionKeywords["NOP"] = true;
             

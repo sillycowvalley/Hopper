@@ -635,6 +635,7 @@ program Runtime
         GC.Release(pageBuffer);
     }
     
+    Hopper()
     {
 #ifdef LOCALDEBUGGER
         // 4242 is a magic number that means "0, but as server (not client)"

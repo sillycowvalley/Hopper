@@ -134,6 +134,13 @@ unit OpCodes
                                 | AddressingModes.AbsoluteY
                                 | AddressingModes.AbsoluteX;
             }
+            case "CPX":
+            case "CPY":
+            {
+                addressingModes = AddressingModes.ZeroPage
+                                | AddressingModes.Immediate
+                                | AddressingModes.Absolute;
+            }
             case "STA":
             {
                 addressingModes = AddressingModes.Absolute
@@ -207,10 +214,14 @@ unit OpCodes
                 addressingModes = AddressingModes.Absolute
                                 | AddressingModes.AbsoluteIndirect;
             }
+            case "JSR":
+            {
+                addressingModes = AddressingModes.Absolute;
+            }
             default:
             {
                 PrintLn(instructionName);
-                Die(0x0A);
+                Parser.Error("not implemented"); Die(0x0A);
             }
         }
         return addressingModes;
@@ -842,7 +853,7 @@ unit OpCodes
             
             default:
             {
-                Die(0x0A);
+                Parser.Error("not implemented"); Die(0x0A);
             }
         }
         AsmStream.AppendCode(code);
@@ -873,7 +884,7 @@ unit OpCodes
                        
             default:
             {
-                Die(0x0A);
+                Parser.Error("not implemented"); Die(0x0A);
             }
         }
         AsmStream.AppendCode(code);
@@ -899,7 +910,7 @@ unit OpCodes
             case "BVS": { code = 0x70; }
             default:
             {
-                Die(0x0A);
+                Parser.Error("not implemented"); Die(0x0A);
             }
         }
         AsmStream.AppendCode(code);
@@ -987,7 +998,7 @@ unit OpCodes
                 case "JMP": { code = 0x7C; }
                 default:
                 {
-                    Die(0x0A);
+                    Parser.Error("not implemented"); Die(0x0A);
                 }
             }
         }
@@ -998,13 +1009,13 @@ unit OpCodes
                 case "JMP": { code = 0x6C; }
                 default:
                 {
-                    Die(0x0A);
+                    Parser.Error("not implemented"); Die(0x0A);
                 }
             }
         }
         else
         {
-            Die(0x0B);
+            Parser.Error("internal error"); Die(0x0B);
         }
         AsmStream.AppendCode(code);
         AsmStream.AppendCode(byte(operand & 0xFF));
@@ -1026,10 +1037,10 @@ unit OpCodes
                 case "ORA": { code = 0x01; }
                 case "SBC": { code = 0xE1; }
                 case "STA": { code = 0x81; }
-                default: { PrintLn(instructionName); Die(0x0B); }
+                default: { Parser.Error("internal error"); PrintLn(instructionName); Die(0x0B); }
             }
         }
-        else if (addressingMode == AddressingModes.XIndexedZeroPage)
+        else if (addressingMode == AddressingModes.YIndexedZeroPage)
         {
             // YIndexedZeroPage=0x2000,  // (nn), Y
             switch (instructionName)
@@ -1042,7 +1053,7 @@ unit OpCodes
                 case "ORA": { code = 0x11; }
                 case "SBC": { code = 0xF1; }
                 case "STA": { code = 0x91; }
-                default: { PrintLn(instructionName); Die(0x0B); }
+                default: { Parser.Error("internal error"); PrintLn(instructionName); Die(0x0B); }
             }
         }
         else if (addressingMode == AddressingModes.ZeroPageIndirect)
@@ -1058,7 +1069,7 @@ unit OpCodes
                 case "ORA": { code = 0x12; }
                 case "SBC": { code = 0xF2; }
                 case "STA": { code = 0x92; }
-                default: { PrintLn(instructionName); Die(0x0B); }
+                default: { Parser.Error("internal error"); PrintLn(instructionName); Die(0x0B); }
             }
         }
         else if (addressingMode == AddressingModes.ZeroPageY)
@@ -1068,7 +1079,7 @@ unit OpCodes
             {
                 case "LDX": { code = 0xB6; }
                 case "STX": { code = 0x96; }
-                default: { PrintLn(instructionName); Die(0x0B); }
+                default: { Parser.Error("internal error"); PrintLn(instructionName); Die(0x0B); }
             }
         }
         else if (addressingMode == AddressingModes.ZeroPageX)
@@ -1094,7 +1105,7 @@ unit OpCodes
                 case "STA": { code = 0x95; }
                 case "STY": { code = 0x94; }
                 case "STZ": { code = 0x74; }
-                default: { PrintLn(instructionName); Die(0x0B); }
+                default: { Parser.Error("internal error"); PrintLn(instructionName); Die(0x0B); }
             }
         }
         else if (addressingMode == AddressingModes.ZeroPage)
@@ -1144,13 +1155,13 @@ unit OpCodes
                 case "SMB6": { code = 0xE7; }
                 case "SMB7": { code = 0xF7; }
                 
-                default: { PrintLn(instructionName); Die(0x0B); }
+                default: { Parser.Error("internal error"); PrintLn(instructionName); Die(0x0B); }
             }
         }
         
         else
         {
-            PrintLn(instructionName); Die(0x0B);
+            Parser.Error("internal error"); PrintLn(instructionName); Die(0x0B);
         }
         AsmStream.AppendCode(code);
         AsmStream.AppendCode(operand);
@@ -1200,7 +1211,7 @@ unit OpCodes
             case "TYA": { code = 0x98; }
             default:
             {
-                Die(0x0A);
+                Parser.Error("not implemented"); Die(0x0A);
             }
         }
         AsmStream.AppendCode(code);
@@ -1218,7 +1229,7 @@ unit OpCodes
         {
             return 0xC9; // RET
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return 0;
     }
     uint GetRETIInstruction()
@@ -1231,7 +1242,7 @@ unit OpCodes
         {
             return 0xED + 0x4D << 8; // RETI is 0xED 0x4D
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return 0;
     }
     uint GetRETNInstruction()
@@ -1244,7 +1255,7 @@ unit OpCodes
         {
             return 0xED + 0x44 << 8; // RETN is 0xED 0x45
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return 0;
     }
     
@@ -1258,7 +1269,7 @@ unit OpCodes
         {
             return 0x76; // HALT
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return 0;
     }
     
@@ -1273,7 +1284,7 @@ unit OpCodes
             PrintLn("HERE!");
             return 0xC3; // JP
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return 0;
     }
     byte GetNOPInstruction()
@@ -1286,7 +1297,7 @@ unit OpCodes
         {
             return 0x00; // NOP
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return 0;
     }
     byte GetBInstruction(string condition)
@@ -1300,10 +1311,10 @@ unit OpCodes
                 case "C":  { return 0xB0; } // BCS
                 case "NC": { return 0x90; } // BCC
                 case "":   { return 0x80; } // BRA
-                default:   { Die(0x0A);   }
+                default:   { Parser.Error("not implemented"); Die(0x0A);   }
             }
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return 0;
     }
     
@@ -1315,10 +1326,10 @@ unit OpCodes
             {
                 case "Z":  { return 0xCA; } // JP Z
                 case "NZ": { return 0xC2; } // JP NZ
-                default:   { Die(0x0A);   }
+                default:   { Parser.Error("not implemented"); Die(0x0A);   }
             }
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return 0;
     }
     byte GetJSRInstruction()
@@ -1336,7 +1347,7 @@ unit OpCodes
         {
             return 0xCD; // CALL
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return 0;
     }
     
@@ -1355,7 +1366,7 @@ unit OpCodes
             }
             return false;
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return false;
     }
     
@@ -1411,7 +1422,7 @@ unit OpCodes
             }
             return false;
         }
-        Die(0x0B);
+        Parser.Error("internal error"); Die(0x0B);
         return false;
     }
     

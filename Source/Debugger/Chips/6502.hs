@@ -55,6 +55,14 @@ unit W65C02
         // result exceeding +127 or -128, otherwise overflow is reset. 
     }
     
+    SBC(byte operand)
+    {
+        int isum = int(aRegister) - operand - (cFlag ? 0 : 1);
+        cFlag = (isum >= 0);
+        vFlag = (isum < -127) || (isum > 127);
+        aRegister = isum.GetByte(0);
+    }
+    
     byte Pop()
     {
         if (spRegister == 0xFF)
@@ -190,7 +198,7 @@ unit W65C02
     {
         if (pcRegister == InvalidAddress) { return; }
         
-        // TODO : check for IRQ and NMI here
+        // check for IRQ and NMI:
         if (nmiWaiting > 0)
         {
             nmiWaiting--;
@@ -364,10 +372,20 @@ unit W65C02
                 case 0x61:                                                          // ADC (nn,X)
                 case 0x71: { ADC(GetMemory(operand));         CheckNZ(aRegister); } // ADC (nn),Y
                 
+                case 0xE9: { SBC(byte(operand));              CheckNZ(aRegister); } // SBC #nn
+                case 0xED:                                                          // SBC nnnn
+                case 0xFD:                                                          // SBC nnnn,X
+                case 0xF9:                                                          // SBC nnnn,Y
+                case 0xE5:                                                          // SBC nn
+                case 0xF5:                                                          // SBC nn,X
+                case 0xF2:                                                          // SBC (nn)
+                case 0xE1:                                                          // SBC (nn,X)
+                case 0xF1: { SBC(GetMemory(operand));         CheckNZ(aRegister); } // SBC (nn),Y
+                
                 case 0x4A: 
                 { 
-                    cFlag = ((aRegister & 0x01) != 0); nFlag = false;
-                    aRegister = aRegister >> 1; CheckNZ(xRegister);                 // LSR A
+                    cFlag = ((aRegister & 0x01) != 0);
+                    aRegister = aRegister >> 1; CheckNZ(aRegister);                 // LSR A
                 }
                 case 0x4E:                                                          // LSR nnnn
                 case 0x5E:                                                          // LSR nnnn,X
@@ -375,8 +393,24 @@ unit W65C02
                 case 0x56:                                                          // LSR nn, X
                 { 
                     byte value = GetMemory(operand);
-                    cFlag = ((value & 0x01) != 0); nFlag = false;
+                    cFlag = ((value & 0x01) != 0);
                     value = value >> 1; CheckNZ(value); 
+                    SetMemory(operand, value);                         
+                }
+                
+                case 0x0A: 
+                { 
+                    cFlag = ((aRegister & 0x80) != 0);
+                    aRegister = aRegister << 1; CheckNZ(aRegister);                 // ASL A
+                }
+                case 0x0E:                                                          // ASL nnnn
+                case 0x1E:                                                          // ASL nnnn,X
+                case 0x06:                                                          // ASL nn
+                case 0x16:                                                          // ASL nn, X
+                { 
+                    byte value = GetMemory(operand);
+                    cFlag = ((value & 0x80) != 0);
+                    value = value << 1; CheckNZ(value); 
                     SetMemory(operand, value);                         
                 }
                 
@@ -546,7 +580,7 @@ unit W65C02
     
     string GetRegisterNames()
     {
-        string registers = "PC   A  X  I  SP [NV-BDIZC]";
+        string registers = "PC   A  X  Y  SP [NV-BDIZC]";
         return registers;
     }
     string GetRegisters()

@@ -75,6 +75,7 @@ unit ACIA
                 readChar = Serial.ReadChar();
                 readWaiting = true;
                 requestIRQ = true;
+                //PrintLn((byte(readChar)).ToHexString(2), Colour.Green, Colour.Black);
             }
         }
         return requestIRQ;
@@ -89,13 +90,16 @@ unit ACIA
             {
                 // 0b00000011        // reset the 6850
                 // 0b10010110        // 8-N-1,  28800 baud (/64 for  1.8432 mHz), rx interrupt
-                PrintLn(value.ToHexString(2) + " -> CONTROL");
                 written = true;
             }
             if (address == dataRegister)
             {
                 Serial.WriteChar(char(value));
-                PrintLn(value.ToHexString(2) + " -> DATA");
+                //Print(value.ToHexString(2), Colour.MatrixRed, Colour.Black);
+                //if (value == 0x0D)
+                //{
+                //    PrintLn();
+                //}
                 written = true;
             }
         }
@@ -114,11 +118,10 @@ unit ACIA
                 if (readWaiting)
                 {
                     // Bit 7 - is the irq bit
-                    // Bit 0 - When high, the RDRF bit indicatesthat received data has been transferred 
-                    //         into the receiver data register andis ready to be read by the microprocessor.
+                    // Bit 0 - When high, the RDRF bit indicatesthat received data has been transferred 
+                    //         into the receiver data register andis ready to be read by the microprocessor.
                     value |= 0b10000001;
                 }
-                PrintLn("STATUS -> " + value.ToHexString(2));
                 read = true;
             }
             if (address == dataRegister)
@@ -128,8 +131,12 @@ unit ACIA
                 {
                     value = byte(readChar);
                     readWaiting = false;
+                    //PrintLn(value.ToHexString(2), Colour.MatrixBlue, Colour.Black);
                 }
-                PrintLn("DATA -> " + value.ToHexString(2));
+                else
+                {
+                    //PrintLn("??", Colour.Yellow, Colour.Black);
+                }
                 read = true;
             }
         }

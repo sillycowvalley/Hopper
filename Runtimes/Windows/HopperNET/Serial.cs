@@ -490,7 +490,7 @@ namespace HopperNET
                     }                            
                     else if (isHopperCOM0Server)
                     {
-                        isAvail = AtomicExists(ipcClientToServer);
+                        isAvail = !String.IsNullOrEmpty(atomicReadBuffer) || AtomicExists(ipcClientToServer);
                     }
                     else
                     {

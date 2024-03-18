@@ -36,12 +36,16 @@ unit Pages
     {
         if (!pageLoaded[page])
         {
-            //OutputDebug("Loading: 0x"+page.ToHexString(2));
+            OutputDebug("Loading: 0x"+page.ToHexString(2));
             Monitor.Command("F" + page.ToHexString(2), true, true);
             if (Pages.ParseHexPage(page))
             {
                 pageLoaded[page] = true;
-                //OutputDebug("Loaded: 0x"+page.ToHexString(2));
+                OutputDebug("Loaded: 0x"+page.ToHexString(2));
+            }
+            else
+            {
+                OutputDebug("Failed: 0x"+page.ToHexString(2));
             }
         }
         else
@@ -117,10 +121,10 @@ unit Pages
                 }
                 else
                 {
-                    //OutputDebug(address.ToHexString(4) + " " + ln);
+                    OutputDebug(address.ToHexString(4) + " " + ln);
                     if (!ParseHexLine(address, ref ln))
                     {
-                        //OutputDebug("Failed:" + address.ToHexString(4));
+                        OutputDebug("Failed:" + address.ToHexString(4));
                         return false; // failure
                     }
                     address = address + 16;

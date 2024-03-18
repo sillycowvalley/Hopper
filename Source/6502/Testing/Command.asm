@@ -1,9 +1,0 @@
-unit Command
-{
-    MemoryDump()
-    {
-    }
-    Registers()
-    {
-    }
-}
