@@ -574,7 +574,7 @@ unit Scanner
                     case '#':
                     {
                         c = sourceGetFromPos(currentPos, true); // peek
-                        if (!c.IsDigit() && (c != '\''))
+                        if (c.IsLower() || c.IsUpper() || (c == '_'))
                         {
                             token = scanIdentifier('#');
                             break;

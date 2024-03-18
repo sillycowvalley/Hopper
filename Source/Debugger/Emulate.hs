@@ -26,8 +26,6 @@ program Emulate
     <uint,uint> methodAddresses; // <address,index>
     
     bool Is6502 { get { return ((Architecture & CPUArchitecture.M6502) != CPUArchitecture.None); } }
-    
-    uint InvalidAddress { get { return Is6502 ? 0xFFFF : 0xFFFF; } }
         
     bool BreakCheck()
     {

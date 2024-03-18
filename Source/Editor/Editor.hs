@@ -84,7 +84,9 @@ unit Editor
     byte editorWidth;
     byte editorHeight;
     
-    string ProjectPath { get { return projectPath; } }    
+    string CurrentPath { get { return currentPath; } }
+    string ProjectPath { get { return projectPath; } }
+    
     CPUArchitecture Architecture { get { return cpuArchitecture; } }
 
     uint TitleColor 
@@ -1573,7 +1575,7 @@ unit Editor
             }
         }
         
-        hsPath = Dependencies.ResolveRelativePath(hsPath, currentPath, projectPath);
+        hsPath = Dependencies.ResolveRelativePath(hsPath, CurrentPath, ProjectPath);
         if (!File.Exists(hsPath))
         {
             hsPath = "";
@@ -1619,7 +1621,7 @@ unit Editor
         
         Suspend();
         
-        string currentLower = currentPath.ToLower();
+        string currentLower = (CurrentPath).ToLower();
         string selectedWord;
         bool currentIsActive = (activePath == currentLower);
         
@@ -1825,7 +1827,7 @@ unit Editor
         buttons.Append("No");
         buttons.Append("Cancel");
         
-        <string, variant> mb = MessageBox.New("Save", "Save changes?", "  '" + currentPath + "'", buttons);
+        <string, variant> mb = MessageBox.New("Save", "Save changes?", "  '" + CurrentPath + "'", buttons);
         DisplayCursor(false);
         string result = MessageBox.Execute(mb);
         DisplayCursor(true);
@@ -1839,12 +1841,12 @@ unit Editor
 
     Save()
     {
-        if (File.Exists(currentPath))
+        if (File.Exists(CurrentPath))
         {
-            File.Delete(currentPath);
+            File.Delete(CurrentPath);
         }
         
-        file textFile = File.Create(currentPath);
+        file textFile = File.Create(CurrentPath);
         if (textFile.IsValid())
         {
             uint lines = TextBuffer.GetLineCount();
@@ -1869,17 +1871,10 @@ unit Editor
     
     SetNewPath(string path)
     {
-        path = GetFullPath(path); // correct case
-        currentPath = path;   
+        path = Path.GetCorrectCase(path); // full path, correct case
+        currentPath = path;
     }
-    string GetCurrentPath()
-    {
-        return currentPath;
-    }
-    string GetProjectPath()
-    {
-        return projectPath;
-    }
+    
     LoadFile(string path)
     {
         LoadFile(path, 0, true);
@@ -1890,7 +1885,7 @@ unit Editor
     }
     LoadFile(string path, uint gotoLine, bool defaultLine)
     {
-        path = GetFullPath(path); // correct case
+        path = Path.GetCorrectCase(path); // full path, correct case
 #ifdef PROFILER    
         isProfiler = false;
         profileHits.Clear();
@@ -1935,9 +1930,10 @@ unit Editor
         }
         
 #endif       
-        if (currentPath.Length != 0)
+        string localCurrent = CurrentPath;
+        if (localCurrent.Length != 0)
         { 
-            ClickStack.Push(currentPath, Editor.GetCurrentLineNumber());
+            ClickStack.Push(localCurrent, Editor.GetCurrentLineNumber());
         }
         
         TextBuffer.Clear();
@@ -1957,14 +1953,15 @@ unit Editor
         }
         currentPath = path;
 
-        string extension = Path.GetExtension(currentPath);
+        string extension = Path.GetExtension(CurrentPath);
         extension = extension.ToLower();
         isHopperSource = (extension == ".hs");
         isAssemblerSource = (extension == ".asm");
         
-        if (projectPath.Length == 0) // first load
+        string localProject = ProjectPath;
+        if (localProject.Length == 0) // first load
         {
-            projectPath = currentPath;
+            projectPath = CurrentPath;
             if (isAssemblerSource)
             {
                 uint maxLines = TextBuffer.GetLineCount(); 
@@ -2010,8 +2007,8 @@ unit Editor
     }
     UpdateTitle()
     {
-        string cp = IsDebugger ? Path.GetFileName(currentPath) : currentPath;
-        MenuBar.SetTitleText(menubar, cp, projectPath);
+        string cp = IsDebugger ? Path.GetFileName(CurrentPath) : CurrentPath;
+        MenuBar.SetTitleText(menubar, cp, ProjectPath);
         StatusBar.SetText(statusbar, ""); // clears the "Saved" - not ideal
     }
     
@@ -2214,7 +2211,7 @@ unit Editor
             <string, variant> mb = MessageBox.New("Open", "Path:", "", buttons, 1, 50);
             DisplayCursor(false);
             
-            string initialText = currentPath;
+            string initialText = CurrentPath;
             if (suggestedPath != "")
             {
                 initialText = suggestedPath;
@@ -2326,7 +2323,7 @@ unit Editor
             DisplayCursor(false);
             
             <string, string> fields = mb["fields"];
-            fields["0"] = currentPath;
+            fields["0"] = CurrentPath;
             mb["fields"] = fields;
             mb["allowed"] = "";
             
@@ -2393,7 +2390,7 @@ unit Editor
             DisplayCursor(false);
             
             <string, string> fields = mb["fields"];
-            fields["0"] = currentPath;
+            fields["0"] = CurrentPath;
             mb["fields"] = fields;
             mb["allowed"] = "";
             
@@ -2429,9 +2426,10 @@ unit Editor
                 currentPath = newPath;
                 TextBuffer.Clear();
                 TextBuffer.Initialize();
-                if (projectPath.Length == 0) // first load
+                string localProject = ProjectPath;
+                if (localProject.Length == 0) // first load
                 {
-                    projectPath = currentPath;
+                    projectPath = CurrentPath;
                     UpdateYoungestFile();
                 }
                 CalculateLineNumberWidth();
@@ -2597,7 +2595,7 @@ unit Editor
         if (isHopperSource || isAssemblerSource)
         {
             <string> sources;
-            _ = Dependencies.TryGetSources(GetProjectPath(), sources); // try even if there was a failure
+            _ = Dependencies.TryGetSources(ProjectPath, sources); // try even if there was a failure
             if (sources.Count != 0)
             {
                 if (Dependencies.TryGetYoungest(sources, ref youngestSourcePath, ref youngestSourceTime))

@@ -58,7 +58,7 @@ unit StatusBar
                     }
                     if (winner)
                     {
-                        ClickStack.Push(Editor.GetCurrentPath(), Editor.GetCurrentLineNumber());
+                        ClickStack.Push(Editor.CurrentPath, Editor.GetCurrentLineNumber());
                         ClickStack.Load(clickPath);
                         return true; // consumed key
                     }

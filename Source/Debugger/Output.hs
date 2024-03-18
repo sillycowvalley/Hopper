@@ -904,7 +904,7 @@ unit Output
             uint gotoLine;
             if (UInt.TryParse(parts[1], ref gotoLine))
             {
-                if (Editor.GetCurrentPath() != hsPath)
+                if (Editor.CurrentPath != hsPath)
                 {
                     Editor.LoadFile(hsPath);
                 }

@@ -86,7 +86,7 @@ unit Type
                 byte b = byte(this);
                 result = "unknown type 0x" + b.ToHexString(2) +"in Type.ToString()";
 #ifdef DEBUGGER
-                result += " " + Editor.GetCurrentPath() + ":" + Editor.GetCurrentLineNumber().ToString();
+                result += " " + Editor.CurrentPath + ":" + Editor.GetCurrentLineNumber().ToString();
 #endif                
             }
         }

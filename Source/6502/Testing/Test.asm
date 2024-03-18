@@ -25,6 +25,11 @@ program Test
     NMI()
     {
         INC SerialBreakFlag // hardware <ctrl><C>
+        RTI
+        NotCalled();
+    }
+    NotCalled()
+    {
     }
     
     Hopper()

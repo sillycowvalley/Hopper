@@ -3666,7 +3666,6 @@ unit HopperVM
         return External.UIntToInt(value);
     }
     
-    
     Push(uint value, Type htype)
     {
 #ifdef CHECKED        

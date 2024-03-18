@@ -21,9 +21,7 @@ program Optimize
     uses "CodeModel/CodePoints"
     
     <string,variant> symbols;
-    
     <uint,bool> methodsCalled;
-    
     
     bool     verbose;
     bool     showSizes;
@@ -197,7 +195,6 @@ program Optimize
         }
         return removed;
     }
-
     
     bool Optimize(uint pass, ref long codeBefore, ref long codeAfter)
     {
@@ -223,7 +220,6 @@ program Optimize
         // - at the end of each Optimize pass, if InlineMethodCandidatesExist, call InlineSmallMethods() which will ..
         //   .. cause RemoveUnreachableMethods() to remove completely inlined methods on the next pass
         CodePoints.Reset(); 
-        
         
         
         uint methodIndex = 0; // "main"

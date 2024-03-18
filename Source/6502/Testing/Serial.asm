@@ -85,24 +85,21 @@ unit Serial
         loop
         {
             LDA ACIASTATUS  
-            
-            AND #0b00000010    // Bit 1 - Transmit Data Register Empty (TDRE)
+            AND #0b00000010   // Bit 1 - Transmit Data Register Empty (TDRE)
             if (NZ) { break; } // loop if not ready (bit set means TDRE is empty and ready)
         } // loop
         PLA
         STA ACIADATA           // output character to TDRE
         PLX
     }
+    // transmits A as two hex characters
     HexOut()
     {
         PHA
         PHA
         
-        LSR A
-        LSR A
-        LSR A
-        LSR A
-        
+        // most significant nibble
+        LSR A LSR A LSR A LSR A
         CMP #0x0A
         if (C)
         {
@@ -111,7 +108,8 @@ unit Serial
         ADC #'0'
         WriteChar();
         
-        PLA
+        // least significant nibble
+        PLA        
         AND #0x0F
         CMP #0x0A
         if (C)

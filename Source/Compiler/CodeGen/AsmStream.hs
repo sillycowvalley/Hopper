@@ -179,47 +179,52 @@ unit AsmStream
         disassembly += "  ";
         string name = OpCodes.GetName(instruction);
         AddressingModes addressingMode = OpCodes.GetAddressingMode(instruction);
-        
-        switch (addressingMode)
+        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
-            case AddressingModes.Accumulator:      { disassembly += (name + " A"); }
-            case AddressingModes.Implied:           { disassembly += name; }
-            case AddressingModes.Immediate:         { disassembly += (name + " #0x" + operand.ToHexString(2)); }
-            case AddressingModes.Absolute:          { disassembly += (name + " 0x" + operand.ToHexString(4)); }
-            case AddressingModes.AbsoluteX:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",X"); }
-            case AddressingModes.AbsoluteY:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",Y"); }
-            case AddressingModes.AbsoluteIndirect:  { disassembly += (name + " (0x" + operand.ToHexString(4) + ")"); }
-            case AddressingModes.AbsoluteIndirectX: { disassembly += (name + " (0x" + operand.ToHexString(4) + ",X)"); }
-            case AddressingModes.ZeroPage:          { disassembly += (name + " 0x" + operand.ToHexString(2)); }
-            case AddressingModes.ZeroPageX:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",X"); }
-            case AddressingModes.ZeroPageY:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",Y"); }
-            case AddressingModes.ZeroPageIndirect:  { disassembly += (name + " (0x" + operand.ToHexString(2) +")"); }
-            case AddressingModes.XIndexedZeroPage:  { disassembly += (name + " (0x" + operand.ToHexString(2) +",X)"); }
-            case AddressingModes.YIndexedZeroPage:  { disassembly += (name + " (0x" + operand.ToHexString(2) +"),Y"); }
-            
-            case AddressingModes.Relative:  
-            { 
-                int ioperand = int(operand);
-                if (ioperand > 127)
-                {
-                    ioperand = ioperand - 256; // 0xFF -> -1
-                }
-                long target = long(address) + length + ioperand;
-                disassembly += (name + " 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
-            }
-            case AddressingModes.ZeroPageRelative:
+            switch (addressingMode)
             {
-                int ioperand = int(operand >> 8);
-                if (ioperand > 127)
-                {
-                    ioperand = ioperand - 256; // 0xFF -> -1
+                case AddressingModes.Accumulator:      { disassembly += (name + " A"); }
+                case AddressingModes.Implied:           { disassembly += name; }
+                case AddressingModes.Immediate:         { disassembly += (name + " #0x" + operand.ToHexString(2)); }
+                case AddressingModes.Absolute:          { disassembly += (name + " 0x" + operand.ToHexString(4)); }
+                case AddressingModes.AbsoluteX:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",X"); }
+                case AddressingModes.AbsoluteY:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",Y"); }
+                case AddressingModes.AbsoluteIndirect:  { disassembly += (name + " (0x" + operand.ToHexString(4) + ")"); }
+                case AddressingModes.AbsoluteIndirectX: { disassembly += (name + " (0x" + operand.ToHexString(4) + ",X)"); }
+                case AddressingModes.ZeroPage:          { disassembly += (name + " 0x" + operand.ToHexString(2)); }
+                case AddressingModes.ZeroPageX:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",X"); }
+                case AddressingModes.ZeroPageY:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",Y"); }
+                case AddressingModes.ZeroPageIndirect:  { disassembly += (name + " (0x" + operand.ToHexString(2) +")"); }
+                case AddressingModes.XIndexedZeroPage:  { disassembly += (name + " (0x" + operand.ToHexString(2) +",X)"); }
+                case AddressingModes.YIndexedZeroPage:  { disassembly += (name + " (0x" + operand.ToHexString(2) +"),Y"); }
+                
+                case AddressingModes.Relative:  
+                { 
+                    int ioperand = int(operand);
+                    if (ioperand > 127)
+                    {
+                        ioperand = ioperand - 256; // 0xFF -> -1
+                    }
+                    long target = long(address) + length + ioperand;
+                    disassembly += (name + " 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
                 }
-                long target = long(address) + length + ioperand;
-                disassembly += (name + " 0x" + (operand & 0xFF).ToHexString(2) +", 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
+                case AddressingModes.ZeroPageRelative:
+                {
+                    int ioperand = int(operand >> 8);
+                    if (ioperand > 127)
+                    {
+                        ioperand = ioperand - 256; // 0xFF -> -1
+                    }
+                    long target = long(address) + length + ioperand;
+                    disassembly += (name + " 0x" + (operand & 0xFF).ToHexString(2) +", 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
+                }
+                
+                default: { disassembly += name; }
             }
-            
-            default: { disassembly += name; }
-            
+        }
+        if (Architecture == CPUArchitecture.Z80A)
+        {
+            Die(0x0A);
         }
         return disassembly;
     }
@@ -229,120 +234,7 @@ unit AsmStream
         byte length;
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
-            // https://llx.com/Neil/a2/opcodes.html
-            byte cc  = instruction & 0b11;
-            byte bbb = (instruction >> 2) & 0b111;
-            switch (cc)
-            {
-                case 0b01: // group one
-                {
-                    length = 2;
-                    if ((bbb == 0b011) || (bbb == 0b110) || (bbb == 0b111))
-                    {
-                        length = 3;
-                    }
-                }
-                case 0b10: // group two
-                {
-                    length = 2;
-                    if ((bbb == 0b011) || (bbb == 0b111))
-                    {
-                        length = 3;
-                    }
-                    if (bbb == 0b010)
-                    {
-                        length = 1;
-                    }
-                }
-                case 0b00: // group 3
-                {
-                    length = 2;
-                    if ((bbb == 0b011) || (bbb == 0b111))
-                    {
-                        length = 3;
-                    }
-                }
-            }
-            switch (instruction)
-            {
-                case 0x20: { length = 3; } // JSR
-                
-                case 0x00: // BRK
-                case 0x40: // RTI
-                case 0x60: // RTS
-                case 0x08: // PHP
-                case 0x28: // PLP
-                case 0x48: // PHA
-                case 0x68: // PLA
-                case 0x88: // DEY
-                case 0xA8: // TAY
-                case 0xC8: // INX
-                case 0xE8: // INY
-                case 0x18: // CLC
-                case 0x38: // SEC
-                case 0x58: // CLI
-                case 0x78: // SEI
-                case 0x98: // TAY
-                case 0xB8: // CLV
-                case 0xD8: // CLD
-                case 0xF8: // SED
-                case 0x8A: // TXA
-                case 0x9A: // TXS
-                case 0xAA: // TAX
-                case 0xBA: // TSX
-                case 0xCA: // DEX
-                case 0xEA: // NOP
-                
-                case 0xDB: // STP
-                case 0xCB: // WAI
-                
-                case 0x1A: // INC A
-                case 0x3A: // DEC A
-                case 0x5A: // PHY
-                case 0x7A: // PLY
-                case 0xDA: // PHX
-                case 0xFA: // PLX
-                { length = 1; } 
-                    
-                case 0x0F:
-                case 0x1F:
-                case 0x2F:
-                case 0x3F:
-                case 0x4F:
-                case 0x4C: // JMP
-                case 0x5F:
-                case 0x6C: // JMP
-                case 0x6F:
-                case 0x7C: // JMP
-                case 0x7F:
-                case 0x8F:
-                case 0x9F:
-                case 0xAF:
-                case 0xBF:
-                case 0xCF:
-                case 0xDF:
-                case 0xEF:
-                case 0xFF:
-                { length = 3; }
-                
-                case 0x07:
-                case 0x17:
-                case 0x27:
-                case 0x37:
-                case 0x47:
-                case 0x57:
-                case 0x67:
-                case 0x77:
-                case 0x87:
-                case 0x97:
-                case 0xA7:
-                case 0xB7:
-                case 0xC7:
-                case 0xD7:
-                case 0xE7:
-                case 0xF7:
-                { length = 2; }
-            }
+            length = OpCodes.GetInstructionLength(instruction);
         }
         if (Architecture == CPUArchitecture.Z80A)
         {
@@ -350,10 +242,8 @@ unit AsmStream
         }
         if (length == 0)
         {
-            PrintLn("GetInstructionLength: 0x" + instruction.ToHexString(2)); Die(0x0B);
-            length = 1;
+            Die(0x0B);
         }
-        //PrintLn("0x" + instruction.ToHexString(2) + " " + length.ToString());
         return length;
     }
     
@@ -365,7 +255,7 @@ unit AsmStream
             byte jmpInstruction = GetJMPInstruction();
             int offset = int(jumpToAddress) - int(jumpAddress) - 2;
             
-            bool testJMP = false; // ((currentStream[jumpAddress+0] == braInstruction) || (currentStream[jumpAddress+0] == jmpInstruction));
+            bool testJMP = false; //((currentStream[jumpAddress+0] == braInstruction) || (currentStream[jumpAddress+0] == jmpInstruction));
             
             if (testJMP || (offset < -128) || (offset > 127))
             {

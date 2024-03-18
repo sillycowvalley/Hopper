@@ -9,7 +9,6 @@ unit ClickStack
     Push(string path, uint ln)
     {
         string location = path + ":" + ln.ToString();
-        //OutputDebug("Push:" + location);
         clickStack.Append(location);
     }
     Pop()
@@ -18,7 +17,6 @@ unit ClickStack
         if (0 != length)
         {
             string location = clickStack[length-1];
-            //OutputDebug("Pop:" + location);
             clickStack.Remove(length-1);
             ClickStack.Load(location);
             
@@ -36,14 +34,14 @@ unit ClickStack
         if (parts.Count == 2)
         {
             string sourcePath = parts[0];
-            string currentPath = Editor.GetCurrentPath();
+            string clickCurrentPath = Editor.CurrentPath;
             uint ln;
             bool gotoLine = false;
             if (UInt.TryParse(parts[1], ref ln))
             {
                 gotoLine = true;
             }
-            if (sourcePath.ToLower() != currentPath.ToLower())
+            if (sourcePath.ToLower() != clickCurrentPath.ToLower())
             {
                 if (Editor.CanUndo())
                 {
@@ -53,8 +51,8 @@ unit ClickStack
                 {
                     Editor.LoadFile(sourcePath);
                 }
-                currentPath = Editor.GetCurrentPath();
-                gotoLine = (sourcePath.ToLower() == currentPath.ToLower());
+                clickCurrentPath = Editor.CurrentPath;
+                gotoLine = (sourcePath.ToLower() == clickCurrentPath.ToLower());
             }
             if (gotoLine)
             {
@@ -79,9 +77,9 @@ unit ClickStack
         {
             if (!Source.DefinitionSymbolsLoaded)
             {
-                string projectPath = Editor.GetProjectPath();
-                string extension = Path.GetExtension(projectPath);
-                string jsonPath  = projectPath.Replace(extension, ".json");
+                string clickProjectPath = Editor.ProjectPath;
+                string extension = Path.GetExtension(clickProjectPath);
+                string jsonPath  = clickProjectPath.Replace(extension, ".json");
                 jsonPath = Path.GetFileName(jsonPath);
                 jsonPath = Path.Combine("/Debug/Obj/", jsonPath);
                 if (!File.Exists(jsonPath))
@@ -95,8 +93,8 @@ unit ClickStack
                     break;
                 }
             }
-            string currentNamespace = Symbols.GetNamespace(Editor.GetCurrentPath());
-            clickLocation = Editor.GetCurrentPath().ToLower() + ":" + clickLine.ToString();
+            string currentNamespace = Symbols.GetNamespace(Editor.CurrentPath);
+            clickLocation = (Editor.CurrentPath).ToLower() + ":" + clickLine.ToString();
             
             uint iFirst; uint iLast;
             if (contextWord.IndexOf('.', ref iFirst) && contextWord.LastIndexOf('.', ref iLast) && (iFirst != iLast))
@@ -316,10 +314,10 @@ unit ClickStack
         {
             if (clickLocation != location)
             {
-                string cursorLocation = Editor.GetCurrentPath().ToLower() + ":" + Editor.GetCurrentLineNumber().ToString();
+                string cursorLocation = (Editor.CurrentPath).ToLower() + ":" + Editor.GetCurrentLineNumber().ToString();
                 if (cursorLocation != location)
                 {
-                    ClickStack.Push(Editor.GetCurrentPath(), Editor.GetCurrentLineNumber());
+                    ClickStack.Push(Editor.CurrentPath, Editor.GetCurrentLineNumber());
                     ClickStack.Load(location);
                     clickedThrough = true;
                 }

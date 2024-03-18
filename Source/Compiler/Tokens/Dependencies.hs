@@ -218,16 +218,14 @@ unit Dependencies
     
     bool TryGetSources(string primaryPath, <string> sources)
     {
-        //OutputDebug("TryGetSources: " + primaryPath);
-        
         sources.Clear();
         Directives.New();
         <string,bool> usesPathsToParse;
         <string,string> usesPathsSource;
-        primaryPath = primaryPath.ToLower();
-        usesPathsToParse[primaryPath] = true;
-        usesPathsSource[primaryPath] = primaryPath;
-        sources.Append(primaryPath);
+        string primaryPathLower = primaryPath.ToLower();
+        usesPathsToParse[primaryPathLower] = true;
+        usesPathsSource[primaryPathLower] = primaryPathLower;
+        sources.Append(primaryPathLower);
         string usesPrefix = "uses" + '"';
         loop
         {

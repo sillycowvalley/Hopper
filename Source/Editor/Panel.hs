@@ -10,7 +10,6 @@ unit Panel
     //   width  : uint
     //   height : uint
     //   children : < Panel >
-    
     <string, variant> New(byte x, byte y, byte w, byte h)
     {
         <string, variant> instance;

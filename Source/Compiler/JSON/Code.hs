@@ -483,6 +483,18 @@ unit Code
     {
         return methodName[methodIndex];
     }
+    uint GetMethodIndex(string name)
+    {
+        foreach (var kv in methodName)
+        {
+            if (kv.value == name)
+            {
+                return kv.key;
+            }
+        }
+        Die(0x0B);
+        return 0;
+    }
     <uint, uint> GetMethodSizes()
     {
         return methodSize;

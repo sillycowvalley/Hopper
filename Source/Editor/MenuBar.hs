@@ -16,7 +16,7 @@ unit MenuBar
     <string> menuOrder;
     string titleText;
     string titleText2;
-    string projectPath;
+    string menuProjectPath;
        
     <string, variant> New()
     {
@@ -83,10 +83,10 @@ unit MenuBar
     {
         titleText = cp;
         titleText2 = "";
-        projectPath = "";
-        if (cp != pp)
+        menuProjectPath = "";
+        if (cp.ToLower() != pp.ToLower())
         {
-            projectPath = pp;
+            menuProjectPath = pp;
             titleText2 = Path.GetFileName(pp);
         }
         Draw(this);
@@ -242,7 +242,7 @@ unit MenuBar
                     return true; // consumed the key   
                 }
             }
-            else if (ClickUp && ClickDouble && (projectPath.Length != 0))
+            else if (ClickUp && ClickDouble && (menuProjectPath.Length != 0))
             {
                 uint x0 = Panel.GetX0(this);
                 uint y0 = Panel.GetY0(this);
@@ -255,11 +255,11 @@ unit MenuBar
                     {
                         if (Editor.CanUndo())
                         {
-                            Editor.OpenPath(projectPath); // offer undo
+                            Editor.OpenPath(menuProjectPath); // offer undo
                         }
                         else
                         {
-                            Editor.LoadFile(projectPath); // just open it
+                            Editor.LoadFile(menuProjectPath); // just open it
                         }
                         return true; // consumed the key   
                     }

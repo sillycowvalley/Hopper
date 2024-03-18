@@ -580,7 +580,7 @@ unit Source
                         // record members are always variant for now
 #ifdef DEBUGGER
                         OutputDebug("TypeToString: " + tname + " " + lvtypes + " " + 
-                                    Editor.GetCurrentPath() + ":" + Editor.GetCurrentLineNumber().ToString());
+                                    Editor.CurrentPath + ":" + Editor.GetCurrentLineNumber().ToString());
 #endif                
                     }
                     else

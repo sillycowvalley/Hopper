@@ -4585,7 +4585,7 @@ namespace HopperNET
                 case SysCall.StringToLower:
                     switch (iOverload)
                     {
-                        // string ToUpper(string this)
+                        // string ToLower(string this)
                         case 0:
                             {
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
@@ -4593,7 +4593,7 @@ namespace HopperNET
                                 Push(str);
                             }
                             break;
-                        // ToUpper(ref string build) system;
+                        // ToLower(ref string build) system;
                         case 1:
                             {
                                 uint reference = Pop();

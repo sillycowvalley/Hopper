@@ -35,7 +35,7 @@ unit BuildCommand
         string path;
         if (Enabled())
         {
-            path = Editor.GetProjectPath();
+            path = Editor.ProjectPath;
             path = Path.GetFileName(path);
             string extension = Path.GetExtension(path);
             path = path.Replace(extension, HexeExtension);
@@ -166,7 +166,7 @@ unit BuildCommand
                 Editor.SetStatusBarText("No PreProcessor: '" + binaryPath + "'");
                 break;
             }
-            string sourcePath = Editor.GetProjectPath();
+            string sourcePath = Editor.ProjectPath;
             string fileName = Path.GetFileName(sourcePath);
             string extension = Path.GetExtension(fileName);
             fileName = fileName.Replace(extension, "");
@@ -288,7 +288,28 @@ unit BuildCommand
                     break;
                 }
             }
-    
+            if (isAssembly && BuildOptions.IsOptimizeEnabled())
+            {        
+                binaryPath ="/Bin/OptAsm" + HexeExtension;
+                if (!File.Exists(binaryPath))
+                {
+                    Editor.SetStatusBarText("No OptAsm: '" + binaryPath + "'");
+                    break;
+                }
+                Editor.SetStatusBarText("Optimizing Code '" + codePath + "' -> '" + codePath + "'" + target);
+                
+                arguments.Clear();
+                arguments.Append(codePath);
+                arguments.Append("-g");
+                arguments.Append(col.ToString());
+                arguments.Append(row.ToString());
+                error = Runtime.Execute(binaryPath, arguments);
+                if (error != 0)
+                {
+                    DisplayError("OptAsm", error);
+                    break;
+                }
+            }
             if (isHopper && BuildOptions.IsOptimizeEnabled())
             {        
                 binaryPath ="/Bin/Optimize" + HexeExtension;
@@ -431,7 +452,7 @@ unit BuildCommand
             Die(0x0B); // assume we only arrive here for HOPPER_6502 and MCU
         }
         <string> arguments;
-        string sourcePath = Editor.GetProjectPath(); 
+        string sourcePath = Editor.ProjectPath; 
         arguments.Append(sourcePath); // Debugger takes the .hs source path
         arguments.Append("-g"); // Interactive mode (not launched directly from command line)
         uint error = Runtime.Execute("Debug", arguments);
@@ -455,7 +476,7 @@ unit BuildCommand
     
     bool Enabled()
     {
-        string path = Editor.GetProjectPath();
+        string path = Editor.ProjectPath;
         string extension = Path.GetExtension(path);
         extension  = extension.ToLower();
         isHopper   = (extension == ".hs");

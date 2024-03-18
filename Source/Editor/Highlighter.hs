@@ -10,7 +10,23 @@ unit Highlighter
     uint HopperWord(string word, string selectedWord)
     {
         uint colour;
-        if (IsStatementKeyword(word))
+        if (isAssembler && word.StartsWith('#'))
+        {
+            if (word.Length == 1)
+            {
+                colour = Colour.Constant;
+            }
+            else if (IsDirectiveKeyword(word))
+            {
+                colour = Colour.Directive;
+            }
+            else
+            {
+                string subWord = word.Substring(1);
+                return HopperWord(subWord, selectedWord);
+            }
+        }
+        else if (IsStatementKeyword(word))
         {
             colour = Colour.Statement;
         }
@@ -37,7 +53,7 @@ unit Highlighter
         else
         {
             long l;
-            uint h;
+            uint ui;
             if (word.StartsWith('"'))
             {
                 colour = Colour.Constant;
@@ -51,6 +67,10 @@ unit Highlighter
                 colour = Colour.Delimiter;
             }
             else if (Long.TryParse(word, ref l))
+            {
+                colour = Colour.Constant;
+            }
+            else if (UInt.TryParse(word, ref ui))
             {
                 colour = Colour.Constant;
             }

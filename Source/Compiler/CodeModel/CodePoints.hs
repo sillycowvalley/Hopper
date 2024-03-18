@@ -188,64 +188,41 @@ unit CodePoints
         // indexDebugInfo
         <uint,string> newDebugInfo;
         
-        if (false)
+        foreach (var kv in indexDebugInfo)
         {
-            foreach (var kv in indexDebugInfo)
+            uint iD          = kv.key;   // instruction index
+            string debugLine = kv.value; // debug source location
+            
+            // 3 scenarios:
+            //   a) instruction index is before iRemoval
+            //   b) instruction index is iRemoval
+            //   c) instruction index after iRemoval
+            
+            if (iD < iRemoval)
             {
-                uint iD = kv.key; // instruction index
-                if ((iD > iRemoval) && (iD > 0))
-                {
-                    iD--;
-                }
+                // a) trivial:
+                newDebugInfo[iD] = debugLine;
+            }
+            else if ((iD == iRemoval) && keepDebugLine)
+            {
+                // b) absorb the debugLine from the next instruction
                 if (indexDebugInfo.Contains(iD))
                 {
-                    // keep the old line
-                    newDebugInfo[iD] = indexDebugInfo[iD];
+                    newDebugInfo[iD] = debugLine;
+                }
+            }
+            else  // (iD > iRemoval)
+            {
+                // c)
+                iD--;
+                if (newDebugInfo.Contains(iD))
+                {
+                    // keep the earlier line
+                    // TODO : assumes keys are iterated in order
                 }
                 else
                 {
-                    newDebugInfo[iD] = kv.value; // source line number
-                }
-            }
-        }
-        else
-        {
-            foreach (var kv in indexDebugInfo)
-            {
-                uint iD          = kv.key;   // instruction index
-                string debugLine = kv.value; // debug source location
-                
-                // 3 scenarios:
-                //   a) instruction index is before iRemoval
-                //   b) instruction index is iRemoval
-                //   c) instruction index after iRemoval
-                
-                if (iD < iRemoval)
-                {
-                    // a) trivial:
                     newDebugInfo[iD] = debugLine;
-                }
-                else if ((iD == iRemoval) && keepDebugLine)
-                {
-                    // b) absorb the debugLine from the next instruction
-                    if (indexDebugInfo.Contains(iD))
-                    {
-                        newDebugInfo[iD] = debugLine;
-                    }
-                }
-                else  // (iD > iRemoval)
-                {
-                    // c)
-                    iD--;
-                    if (newDebugInfo.Contains(iD))
-                    {
-                        // keep the earlier line
-                        // TODO : assumes keys are iterated in order
-                    }
-                    else
-                    {
-                        newDebugInfo[iD] = debugLine;
-                    }
                 }
             }
         }

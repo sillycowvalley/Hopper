@@ -110,6 +110,8 @@ program Edit
                 break;
             }
             
+            filePath = Path.GetCorrectCase(filePath); // get correct case
+            
             optionsPath = Path.MakeOptions(filePath);
             
             Screen.Clear();
@@ -133,7 +135,7 @@ program Edit
             {
                 Editor.SetNewPath(filePath);
                 Commands.Execute("New");
-                if (!File.Exists(Editor.GetCurrentPath()))
+                if (!File.Exists(Editor.CurrentPath))
                 {
                     ExitCommand.Execute();
                     break;

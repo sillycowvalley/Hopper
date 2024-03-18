@@ -6,7 +6,7 @@ program Runtime
 //#define CHECKED      // mainly stack checks, range checks and division by zero
 //#define MEMORYLEAKS
 
-//#define LOCALDEBUGGER  // for debugging portable runtime locally
+#define LOCALDEBUGGER  // for debugging portable runtime locally
 
     uses "Emulation/Minimal" // minimal use of actual 'system' APIs
     uses "Emulation/Memory"
@@ -36,6 +36,15 @@ program Runtime
     uses "Platform/Library"
     
     uses "HopperVM"
+    
+    const byte enter  = 0x0D;
+    const byte escape = 0x1B;
+    const byte slash  = 0x5C;
+    
+    const uint codeMemoryStart = 0x0000; // code memory magically exists from 0x0000 to 0xFFFF
+    
+    bool loaded = false;
+    uint currentCRC;
     
     // Zero Page FLAGS:
     flags HopperFlags
@@ -85,10 +94,6 @@ program Runtime
         IO.Write(c1);
         return true;
     }
-    
-    bool loaded = false;
-    uint currentCRC;
-    const uint codeMemoryStart = 0x0000; // code memory magically exists from 0x0000 to 0xFFFF
     
     bool LoadHexe(uint path, uint startAddress, ref uint loadedAddress, ref uint codeLength, bool doCRC)
     {
@@ -218,9 +223,6 @@ program Runtime
         IO.WriteUInt(number);
     }
     
-    const byte enter  = 0x0D;
-    const byte escape = 0x1B;
-    const byte slash  = 0x5C;
     
     bool TryReadSerialByte(ref byte data)
     {

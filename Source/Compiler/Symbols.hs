@@ -1645,7 +1645,7 @@ unit Symbols
                     
                     if (fReturnTypes[overload] == returnType)
                     {
-                        Parser.ErrorAt(locationToken, "duplicate " + errorName + " definition");
+                        Parser.ErrorAt(locationToken, "duplicate " + errorName + " definition ('" + name + "')");
                     }
                     else
                     {

@@ -111,7 +111,7 @@ unit DebugCommand
     }
     ToggleBreakpoint()
     {
-        string currentPath = Editor.GetCurrentPath();
+        string currentPath = Editor.CurrentPath;
         currentPath = currentPath.ToLower();
         uint currentLine = Editor.GetCurrentLineNumber();
         
@@ -157,7 +157,7 @@ unit DebugCommand
         string path;
         if (Enabled())
         {
-            path = Editor.GetProjectPath();
+            path = Editor.ProjectPath;
             path = Path.GetFileName(path);
             string extension = Path.GetExtension(path);
             path = path.Replace(extension, HexeExtension);

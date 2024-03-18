@@ -144,6 +144,52 @@ unit Path
         }
         return path;
     }
+    // returns correct case (including path) of full path
+    string GetCorrectCase(string path)
+    {
+        string correctPath;
+        path = GetFullPath(path);
+        if (!path.StartsWith('/') && (CurrentDirectory == "/"))
+        {
+            path = "/" + path;
+        }
+        if (File.Exists(path))
+        {
+            <string> parts = path.Split('/');
+            correctPath = "/";
+            for (byte i = 0; i < (parts.Count-1); i++)
+            {
+                directory dr = Directory.Open(correctPath);
+                uint dCount = dr.GetDirectoryCount();
+                for (uint iDirectory = 0; iDirectory < dCount; iDirectory++)
+                {
+                    string dPath = dr.GetDirectory(iDirectory);
+                    if ((correctPath + parts[i] + '/').ToLower() == dPath.ToLower())
+                    {
+                        correctPath = dPath;
+                        break;
+                    }
+                }
+            }
+            directory fdr = Directory.Open(correctPath);
+            uint fCount = fdr.GetFileCount();
+            for (uint iFile = 0; iFile < fCount; iFile++)
+            {
+                string fpath = fdr.GetFile(iFile);
+                string correctCaseName = Path.GetFileName(fpath);
+                if (correctCaseName.ToLower() == (parts[parts.Count-1]).ToLower())
+                {
+                    correctPath += correctCaseName;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            correctPath = path; // better than nothing?
+        }
+        return correctPath;
+    }
     string MakeOptions(string filePath)
     {
         Directory.Create("/Bin/Options/"); // make sure the /Bin/Options directory exists

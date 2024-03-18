@@ -624,6 +624,7 @@ program PreProcess
                     tryFile = tryFile.Substring(3);
                     removeLevels++;
                 }
+                
                 if (!tryFile.StartsWith("/"))
                 {
                     // first try relative to current source file:
@@ -654,6 +655,14 @@ program PreProcess
             {
                 Parser.ErrorAtCurrent("'" + usesPath + "' not found");
                 break;
+            }
+            else
+            {
+                // relative path from '/'? add '/' to be canonical (and avoid multiple references to the same unit)
+                if (!usesPath.StartsWith('/') && (CurrentDirectory == "/"))
+                {
+                    usesPath = "/" + usesPath;
+                }
             }
             
             if (pathToken["line"] != usesToken["line"])
