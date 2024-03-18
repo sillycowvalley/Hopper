@@ -18,6 +18,12 @@ program DASM
     uses "Tokens/Parser"
     
     bool extendedCodeSegment;
+    bool flatStack;
+    byte slotSize;
+    
+    bool FlatStack    { get { return flatStack; } }
+    byte SlotSize     { get { return slotSize; } }
+    
     
     uint codeSize = 0;
     uint instructionCount = 0;
@@ -246,8 +252,8 @@ program DASM
                 break;
             }
             string ext = HexeExtension;
-            string codePath = args[0];
-            if (!File.Exists(ref codePath, ref ext, "/Bin/"))
+            string hexePath = args[0];
+            if (!File.Exists(ref hexePath, ref ext, "/Bin/"))
             {
                 BadArguments();
             }
@@ -255,8 +261,8 @@ program DASM
             long startTime = Millis;
             loop
             {
-                string extension = Path.GetExtension(codePath);
-                string hasmPath  = codePath.Replace(extension, HasmExtension);
+                string extension = Path.GetExtension(hexePath);
+                string hasmPath  = hexePath.Replace(extension, HasmExtension);
                 hasmPath = Path.GetFileName(hasmPath);
                 hasmPath = Path.Combine("/Debug/", hasmPath);
                 File.Delete(hasmPath);
@@ -268,20 +274,19 @@ program DASM
                     break;
                 }
                 
-                string symbolsPath  = codePath.Replace(extension, ".code");
-                symbolsPath = Path.GetFileName(symbolsPath);
-                symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
-                
-                if (File.Exists(symbolsPath))
+                string codePath  = hexePath.Replace(extension, ".code");
+                codePath = Path.GetFileName(codePath);
+                codePath = Path.Combine("/Debug/Obj", codePath);
+                if (File.Exists(codePath))
                 {
-                    if (!ParseCode(symbolsPath, false, true))
+                    if (!ParseCode(codePath, false, true))
                     {
                         break;
                     }
                 }
                 
                 uint address = 0;
-                file binFile = File.Open(codePath);
+                file binFile = File.Open(hexePath);
                 
                 byte lsb = binFile.Read();
                 if (!binFile.IsValid())
@@ -295,6 +300,12 @@ program DASM
                 }
                 uint version = lsb + (msb << 8);
                 extendedCodeSegment = (version & 0x0001) != 0;
+                flatStack           = (version & 0x0002) != 0;
+                slotSize = 2;
+                if (flatStack)
+                {
+                    slotSize = 1;
+                }
                 hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + version.ToHexString(4) + " // binary version number" + char(0x0A));
                 address = address + 2;
                                     

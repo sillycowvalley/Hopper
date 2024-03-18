@@ -48,6 +48,7 @@ unit HopperVM
     uint binaryAddress;
     uint programSize;
     
+    uint binaryVersion;
     uint constAddress;
     uint methodTable;
     uint programOffset;
@@ -146,6 +147,7 @@ unit HopperVM
     {
         binaryAddress      = loadedAddress;
         programSize        = loadedSize;
+        binaryVersion      = ReadCodeWord(binaryAddress + 0x0000);
         constAddress       = ReadCodeWord(binaryAddress + 0x0002);
         methodTable        = binaryAddress + 0x0006;
     }

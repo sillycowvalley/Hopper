@@ -1179,7 +1179,7 @@ program Assemble
                 {
                     break;
                 }
-                isExperimental       = isExperimental || DefineExists("EXPERIMENTAL");
+                isExperimental       = isExperimental || Symbols.DefineExists("EXPERIMENTAL");
                 
                 uint mIndex;
                 if (!Symbols.GetFunctionIndex("Hopper", ref mIndex))

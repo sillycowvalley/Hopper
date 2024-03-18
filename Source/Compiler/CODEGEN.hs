@@ -9,10 +9,13 @@ program CODEGEN
     uses "JSON/Code"
     
     uses "CodeGen/Instructions"
+    uses "CodeGen/CodeStream"
     
     uses "Tokens/Token"
     uses "Tokens/Scanner"
     uses "Tokens/Parser"
+    
+    <string,variant> symbols;
     
     long codeSize = 0;
     
@@ -173,8 +176,8 @@ program CODEGEN
             loop
             {
                 string extension = Path.GetExtension(codePath);
-                //string hexePath  = codePath.Replace(extension, HexeExtension);
                 string hexePath  = codePath.Replace(extension, ".hexe");
+                string symbolsPath = codePath.Replace(extension, ".json");
                 
                 hexePath = Path.GetFileName(hexePath);
                 hexePath = Path.Combine("/Bin/", hexePath);
@@ -186,6 +189,15 @@ program CODEGEN
                     PrintLn("Failed to create '" + hexePath + "'");
                     break;
                 }
+
+                Symbols.New();
+                if (File.Exists(symbolsPath))
+                {
+                    if (Symbols.Import(symbolsPath, false))
+                    {
+                        CodeStream.InitializeSymbolShortcuts();
+                    }
+                }
                 
                 if (!ParseCode(codePath, true, false))
                 {
@@ -193,6 +205,10 @@ program CODEGEN
                 }
                                 
                 byte versionLSB = 0x01;
+                if (CodeStream.FlatStack)
+                {
+                    versionLSB |= 0x02;
+                }
                 hexeFile.Append(versionLSB);
                 hexeFile.Append(byte(0));
                 

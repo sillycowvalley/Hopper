@@ -40,6 +40,7 @@ namespace HopperNET
         public ushort BinaryVersion { get; internal set; }
         public ushort EntryPoint { get; internal set; }
         public ushort CodeOffset { get; internal set; }
+        public bool   FlatStack  { get; internal set; }
         public ushort[] MethodTable { get; internal set; }
         public byte[] Code { get; internal set; }
 
@@ -104,6 +105,14 @@ namespace HopperNET
             if ((BinaryVersion & 0x0001) != 0)
             {
                 CodeOffset = EntryPoint;
+            }
+            else
+            {
+                throw new InvalidOperationException(); // only extended code segment now?
+            }
+            if ((BinaryVersion & 0x0002) != 0)
+            {
+                FlatStack = true;
             }
 
             ushort iMethod = 6;

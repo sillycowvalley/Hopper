@@ -17,21 +17,43 @@ unit CodeStream
     bool portableDefined;
     bool h6502Defined;
     bool mcuDefined;
+    bool flatStack;
+    byte slotSize;
+    bool isExperimental;
+    bool noPackedInstructions;
+    bool peepHole;
     
     bool CheckedBuild 
     { 
         get { return checkedBuild; }
         set { checkedBuild = value; }
     }
+    
+    bool NoPackedInstructions { get { return noPackedInstructions; } }
+    bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
     bool IsShortCalls { get { return shortCallsDefined; } }
     bool Target6502   { get { return h6502Defined; } }
     bool TargetMCU    { get { return mcuDefined; } }
+    bool PeepHole     { get { return peepHole; } }
+    
+    bool FlatStack    { get { return flatStack; } }
+    byte SlotSize     { get { return slotSize; } }
     
     InitializeSymbolShortcuts()
     {
-        shortCallsDefined = DefineExists("SHORT_CALLS");
-        h6502Defined      = DefineExists("HOPPER_6502");
-        mcuDefined        = DefineExists("MCU");
+        noPackedInstructions = Symbols.DefineExists("NO_PACKED_INSTRUCTIONS");
+        isExperimental       = Symbols.DefineExists("EXPERIMENTAL");
+                
+        shortCallsDefined = Symbols.DefineExists("SHORT_CALLS");
+        h6502Defined      = Symbols.DefineExists("HOPPER_6502"); // Target6502
+        mcuDefined        = Symbols.DefineExists("MCU");
+        flatStack         = Symbols.DefineExists("FLAT_STACK");
+        peepHole          = Symbols.DefineExists("PEEPHOLEOPT");
+        slotSize = 2;
+        if (flatStack)
+        {
+            slotSize = 1;
+        }
     }
     bool InUse { get { return currentStream.Count != 0; } } 
     

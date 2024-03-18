@@ -769,7 +769,7 @@ unit Instructions
             
             case Instruction.POPLOCALB02:
             {
-                result = "POPLOCALB02";
+                result = "POPLOCALB0" + (SlotSize).ToString();
             }
             case Instruction.POPLOCALB00:
             {
@@ -777,7 +777,7 @@ unit Instructions
             }
             case Instruction.POPCOPYLOCALB02:
             {
-                result = "POPCOPYLOCALB02";
+                result = "POPCOPYLOCALB0" + (SlotSize).ToString();
             }
             case Instruction.POPCOPYLOCALB00:
             {
@@ -821,7 +821,7 @@ unit Instructions
             }
             case Instruction.PUSHLOCALB02:
             {
-                result = "PUSHLOCALB02";
+                result = "PUSHLOCALB0" + (SlotSize).ToString();
             }
             case Instruction.PUSHLOCAL:
             {

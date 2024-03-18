@@ -25,7 +25,6 @@ program Optimize
     
     bool     verbose;
     bool     showSizes;
-    bool     isExperimental;
     <string> outputLinesRemoved;
     <string> outputLinesSizes;
     uint     totalBytesRemoved;
@@ -43,42 +42,9 @@ program Optimize
         }
     }
     
-    bool target6502;
-    bool Target6502 
-    { 
-        get { return target6502; }
-    }
-    bool noPackedInstructions;
     bool mergedRET0Exists;
-    bool NoPackedInstructions { get { return noPackedInstructions; }}
-    bool IsExperimental { get { return isExperimental; }}
     
     bool MergedRET0Exists { get { return mergedRET0Exists; } set { mergedRET0Exists = value; }}
-    
-    CheckTarget()
-    {
-        foreach (var kv in symbols)
-        {
-            if (kv.key == "symbols")
-            {
-                // preprocessor symbols
-                <string,string> pdValues = kv.value;
-                if (pdValues.Contains("HOPPER_6502"))
-                {
-                    target6502 = true;
-                }
-                if (pdValues.Contains("NO_PACKED_INSTRUCTIONS"))
-                {
-                    noPackedInstructions = true;
-                }
-                if (pdValues.Contains("EXPERIMENTAL"))
-                {
-                    isExperimental = true;
-                }
-                break;
-            }
-        } // kv
-    }
     
     bool CompareBeforeAndAfter(string codePath, string optPath)
     {
@@ -614,6 +580,7 @@ program Optimize
         bool success = false;
         loop
         {
+            bool argIsExperimental;
             <string> rawArgs = System.Arguments;
             <string> args;
             for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
@@ -634,7 +601,7 @@ program Optimize
                         }
                         case "-x":
                         {
-                            isExperimental = true;
+                            argIsExperimental = true;
                         }
                         case "-g":
                         {
@@ -687,15 +654,20 @@ program Optimize
                 long codeBefore;
                 long codeAfter;
                 string optPath = codePath;
-                string symbolsPath = codePath.Replace(extension, ".json");
                 string verbosePath = codePath.Replace(extension, ".txt");
+                string symbolsPath = codePath.Replace(extension, ".json");
                 
+                Symbols.New();
                 if (File.Exists(symbolsPath))
                 {
-                    if (JSON.Read(symbolsPath, ref symbols))
+                    if (Symbols.Import(symbolsPath, false))
                     {
-                        CheckTarget();
+                        CodeStream.InitializeSymbolShortcuts();
                     }
+                }
+                if (argIsExperimental)
+                {
+                    IsExperimental = argIsExperimental;
                 }
                 SysCalls.New(); // initialize
                 LibCalls.New();

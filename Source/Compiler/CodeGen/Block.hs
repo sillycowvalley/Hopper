@@ -293,17 +293,17 @@ unit Block
             if (blockContext.Contains("arguments"))
             {
                 < < string > > arguments = blockContext["arguments"];
-                popMore = popMore + arguments.Count * 2; // 2 bytes per stack slot for arguments
+                popMore = popMore + arguments.Count * SlotSize; // slots for arguments
             }
             if (blockContext.Contains("locals"))
             {
                 < < string > > locals = blockContext["locals"];
-                popMore = popMore + locals.Count * 2; // 2 bytes per stack slot for locals
+                popMore = popMore + locals.Count * SlotSize; // slots for locals
             }
             if (blockContext.Contains("globals"))
             {
                 < < string > > globals = blockContext["globals"];
-                popMore = popMore + globals.Count * 2; // 2 bytes per stack slot for globals
+                popMore = popMore + globals.Count * SlotSize; // slots for globals
             }
             bytesToPop = bytesToPop + popMore;
             if (!toLoop)
@@ -337,17 +337,17 @@ unit Block
             if (blockContext.Contains("locals"))
             {
                 < < string > > locals = blockContext["locals"];
-                localsToPop = localsToPop + locals.Count * 2; // 2 bytes per stack slot for locals
+                localsToPop = localsToPop + locals.Count * SlotSize; // slots for locals
             }
             if (andArguments && blockContext.Contains("arguments"))
             {
                 < < string > > arguments = blockContext["arguments"];
-                localsToPop = localsToPop + arguments.Count * 2; // 2 bytes per stack slot for arguments
+                localsToPop = localsToPop + arguments.Count * SlotSize; // slots for arguments
             }
             if (andGlobals && blockContext.Contains("globals"))
             {
                 < < string > > globals = blockContext["globals"];
-                localsToPop = localsToPop + globals.Count * 2; // 2 bytes per stack slot for globals
+                localsToPop = localsToPop + globals.Count * SlotSize; // slots for globals
             }
         }
         return localsToPop;
@@ -378,7 +378,7 @@ unit Block
                     string name = local[1];
                     if (name == identifier)
                     {
-                        offset = int(i) * 2;
+                        offset = int(i) * SlotSize;
                         found = true;
                         break;
                     }
@@ -403,7 +403,7 @@ unit Block
                                 Die(0x0B); // Compiler should have caught this!
                             }
                         }
-                        offset = (int(narguments) - int(i)) * 2;
+                        offset = (int(narguments) - int(i)) * SlotSize;
                         offset = 0 - offset;
                         if (reference.Length != 0)
                         {
@@ -436,7 +436,7 @@ unit Block
                 {
                     members = blockContext["locals"];
                     uint nlocals = members.Count;
-                    offset = offset + int(nlocals) * 2;
+                    offset = offset + int(nlocals) * SlotSize;
                 }
             }
         }

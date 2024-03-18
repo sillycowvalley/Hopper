@@ -62,7 +62,7 @@ unit Peephole
         // peepholeOptimization takes place before boundary is updated after jump instructions
         // but after operands have been emitted
         
-        if ((!CodeStream.CheckedBuild || DefineExists("PEEPHOLEOPT")) && !NoPackedInstructions)
+        if ((!CodeStream.CheckedBuild || PeepHole) && !NoPackedInstructions)
         {
             loop
             {
@@ -152,7 +152,7 @@ unit Peephole
             }
             case Instruction.PUSHLOCALB02:
             {
-                offset = 2;   
+                offset = SlotSize;   
                 length = 1;    
                 return true;
             }
@@ -179,7 +179,7 @@ unit Peephole
             }
             case Instruction.POPLOCALB02:
             {
-                offset = 2;
+                offset = SlotSize;
                 length = 1; 
                 return true;
             }
@@ -444,7 +444,7 @@ unit Peephole
         byte length0 = 0;
         bool isPushLocalB = IsPushLocalB(currentStream, lastInstruction0, ref offset0, ref length0);
         
-        if (isPushLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 2)))
+        if (isPushLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == SlotSize)))
         {
             if (offset0 == 0)
             {
@@ -452,7 +452,7 @@ unit Peephole
                 // i0         -> i0
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB00));
             }
-            if (offset0 == 2)
+            if (offset0 == SlotSize)
             {
                 // PUSHLOCALB -> PUSHLOCALB02
                 // i0         -> i0
@@ -463,7 +463,7 @@ unit Peephole
         }
         
         bool isPopLocalB = IsPopLocalB(currentStream, lastInstruction0, ref offset0, ref length0);
-        if (isPopLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 2)))
+        if (isPopLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == SlotSize)))
         {
             if (offset0 == 0)
             {
@@ -471,7 +471,7 @@ unit Peephole
                 // i0         -> i0
                 currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB00));
             }
-            if (offset0 == 2)
+            if (offset0 == SlotSize)
             {
                 // POPLOCALB -> POPLOCALB02
                 // i0         -> i0

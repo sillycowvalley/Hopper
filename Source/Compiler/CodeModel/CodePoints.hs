@@ -1812,14 +1812,14 @@ unit CodePoints
             }
             Instruction opCode0  = iCodes   [iIndex];
             uint        operand0 = iOperands[iIndex];
-            if ((opCode0 == Instruction.RETRESB) && (operand0 == 2)) // RETRESB 0x02
+            if ((opCode0 == Instruction.RETRESB) && (operand0 == SlotSize)) // RETRESB SlotSize
             {
-                // When we merge the PUSH and the RETRESB 0x02 into a single RET0,
+                // When we merge the PUSH and the RETRESB SlotSize into a single RET0,
                 // we need to preserve the fact that this is not a normal RET0:
                 // - it is RET0 on the assumption that the return value is already
                 //   on the top of the stack.
                 // The danger of using RET0 is that it may get merged with other instructions
-                // (like DECSP for example : DECSP 0x02 + RET0 -> RETB 0x02) which would screw
+                // (like DECSP for example : DECSP SlotSize + RET0 -> RETB SlotSize) which would screw
                 // up our assumption about what was pushed to the top of the stack.
                 // MERGEDRET0 is a placeholder for RET0 that is a reminder not to touch it with
                 // later optimizations. It is replaced with RET0 at the end of optimization.
@@ -1838,7 +1838,7 @@ unit CodePoints
                         modified = true;
                     }
                 }  
-                else if ((opCode1 == Instruction.PUSHLOCALB) && (operand1 == 0xFE))
+                else if ((opCode1 == Instruction.PUSHLOCALB) && (operand1 == (0x100 - SlotSize))) // PUSHLOCALB BP-2 (BP-2 = 0xFE, BP-1 = 0xFF)
                 {
                     // returning the only argument, no locals
                     if (!IsTargetOfJumps(iIndex))
@@ -2011,7 +2011,7 @@ unit CodePoints
                         }
                         case Instruction.POPCOPYLOCALB02:
                         {
-                            operand2 = 2;
+                            operand2 = SlotSize;
                             singleArg = (opCode2 == Instruction.PUSHLOCALB02);
                         }
                     }
@@ -2039,7 +2039,7 @@ unit CodePoints
                         }
                         case Instruction.POPCOPYLOCALB02:
                         {
-                            operand3 = 2;
+                            operand3 = SlotSize;
                             doubleArg = (opCode3 == Instruction.PUSHLOCALB02);
                         }
                     }
@@ -2066,7 +2066,7 @@ unit CodePoints
                         }
                         case Instruction.POPCOPYLOCALB02:
                         {
-                            operand4 = 2;
+                            operand4 = SlotSize;
                             trippleArg = (opCode4 == Instruction.PUSHLOCALB02);
                         }
                     }
@@ -2254,8 +2254,8 @@ unit CodePoints
                 && (opCode0 == Instruction.RETB)
                )
             {
-                if (   (iOperands[iIndex-2] == 0xFE) // PUSHLOCALB BP-2
-                    && (iOperands[iIndex]   == 2) // RETB 2
+                if (   (iOperands[iIndex-2] == (0x100 - SlotSize)) // PUSHLOCALB BP-2 (BP-2 = 0xFE, BP-1 = 0xFF)
+                    && (iOperands[iIndex]   == SlotSize) // RETB 2
                    )
                 {
                     iCodes.SetItem(iIndex, Instruction.RET0);
@@ -2374,7 +2374,7 @@ unit CodePoints
                 }
                 else if ((opCode3 == Instruction.PUSHLOCALB02) && (opCode0 == Instruction.POPLOCALB02))
                 {
-                    operand = 2;
+                    operand = SlotSize;
                     local = true;
                 }
             }
@@ -2409,7 +2409,7 @@ unit CodePoints
                     }
                     else if ((opCode2 == Instruction.PUSHLOCALB02) && (opCode0 == Instruction.POPLOCALB02))
                     {
-                        operand = 2;
+                        operand = SlotSize;
                         local = true;
                         delta = iOperands[iIndex-1];
                     }
@@ -2635,13 +2635,13 @@ unit CodePoints
                         {
                             case Instruction.PUSHLOCALB:   { operand0 = byte(iOperands[iIndex]); }
                             case Instruction.PUSHLOCALB00: { operand0 = 0; }
-                            case Instruction.PUSHLOCALB02: { operand0 = 2; }
+                            case Instruction.PUSHLOCALB02: { operand0 = SlotSize; }
                         }
                         switch (opCode1)
                         {
                             case Instruction.PUSHLOCALB:   { operand1 = byte(iOperands[iIndex-1]); }
                             case Instruction.PUSHLOCALB00: { operand1 = 0; }
-                            case Instruction.PUSHLOCALB02: { operand1 = 2; }
+                            case Instruction.PUSHLOCALB02: { operand1 = SlotSize; }
                         }
                         uint operand = operand1 + (operand0 << 8);
                         iCodes.SetItem   (iIndex, Instruction.PUSHLOCALBB);

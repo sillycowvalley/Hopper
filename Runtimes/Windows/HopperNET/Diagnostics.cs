@@ -18,6 +18,14 @@ namespace HopperNET
                 Debug.WriteLine(message);
             }
         }
+        static public void ASSERTDIE(bool assertion, string message, Runtime runtime)
+        {
+            if (!assertion)
+            {
+                Debug.WriteLine(message);
+                Die(0x0B, runtime);
+            }
+        }
 #endif
 
         // lastError codes:
@@ -36,7 +44,7 @@ namespace HopperNET
         //   0x0C - memory allocation failure
         //   0x0D - numeric type out of range / overflow
         //   0x0E - error returned from a failing child exe
-        
+
         internal static bool ErrorShown { get; set; }
         //internal static void Die(int lastError)
         //{

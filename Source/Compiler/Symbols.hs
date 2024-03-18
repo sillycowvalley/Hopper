@@ -587,7 +587,7 @@ unit Symbols
     uint GetGlobalAddress(string name)
     {
         uint address = gIndex[name];
-        address = address*2;
+        address = address*SlotSize;
         return address;
     }
 #ifdef ASSEMBLER    
@@ -607,7 +607,7 @@ unit Symbols
                 case "int":
                 case "uint":
                 {
-                    address += 2; // all 2 byte slots based on Hopper VM convention
+                    address += SlotSize; // slots based on Hopper VM convention
                 }
                 default:
                 {
@@ -1916,7 +1916,7 @@ unit Symbols
             uint gNamesCount = gNames.Count;
             for (uint i = 0; i < gNamesCount; i++)
             {
-                uint offset = i * 2;
+                uint offset = i * SlotSize;
                 <string,string> gDict;
                 string gName = gNames[i];
                 gDict["name"] = gName;
@@ -1986,7 +1986,7 @@ unit Symbols
                         argdict["type"] = typeType.ToString();
                         argdict["ref"] = aref;
                         
-                        int offset = 0 - (int(argCount)-acount)*2;
+                        int offset = 0 - (int(argCount)-acount)*SlotSize;
                         argdicts[offset.ToString()] = argdict;
                         acount++;
                     }
@@ -2251,6 +2251,10 @@ unit Symbols
     
     bool Import(string jsonPath)
     {
+        return Import(jsonPath, true);
+    }
+    bool Import(string jsonPath, bool allSymbols)
+    {
         bool success = true;
         loop
         {
@@ -2271,20 +2275,23 @@ unit Symbols
                 {
                     case "constants":
                     {
-                        <string, string> constantDict = kv.value;
-                        foreach (var constant in constantDict)
+                        if (allSymbols)
                         {
-                            string constantKey = constant.key;
-                            if (constantKey.Contains(' '))
+                            <string, string> constantDict = kv.value;
+                            foreach (var constant in constantDict)
                             {
-                                <string> parts = constantKey.Split(' ');
-                                cValues[parts[1]] = constant.value;
-                                cTypes[parts[1]] = parts[0];
-                            }
-                            else // TODO REMOVE
-                            {
-                                cValues[constantKey] = constant.value;
-                                cTypes[constantKey] = "";
+                                string constantKey = constant.key;
+                                if (constantKey.Contains(' '))
+                                {
+                                    <string> parts = constantKey.Split(' ');
+                                    cValues[parts[1]] = constant.value;
+                                    cTypes[parts[1]] = parts[0];
+                                }
+                                else // TODO REMOVE
+                                {
+                                    cValues[constantKey] = constant.value;
+                                    cTypes[constantKey] = "";
+                                }
                             }
                         }
                     }
@@ -2294,318 +2301,345 @@ unit Symbols
                     }
                     case "records":
                     {
-                        <string, variant> rdict = kv.value;
-                        foreach (var kv2 in rdict)
+                        if (allSymbols)
                         {
-                            string name = kv2.key;
-                            <string, variant> values = kv2.value;
-                            
-                            < <string> > members;
-                            foreach (var kv3 in values)
+                            <string, variant> rdict = kv.value;
+                            foreach (var kv2 in rdict)
                             {
-                                <string,string> member = kv3.value;
+                                string name = kv2.key;
+                                <string, variant> values = kv2.value;
                                 
-                                foreach (var kv4 in member)
+                                < <string> > members;
+                                foreach (var kv3 in values)
                                 {
-                                    <string> memberList;
-                                    memberList.Append(kv4.key);
-                                    memberList.Append(kv4.value);
-                                    members.Append(memberList);
-                                }
-                            } 
-                            AddRecord(name, members);      
+                                    <string,string> member = kv3.value;
+                                    
+                                    foreach (var kv4 in member)
+                                    {
+                                        <string> memberList;
+                                        memberList.Append(kv4.key);
+                                        memberList.Append(kv4.value);
+                                        members.Append(memberList);
+                                    }
+                                } 
+                                AddRecord(name, members);      
+                            }
                         }
                     }
                     case "enums":
                     {
-                        <string, variant> edict = kv.value;
-                        foreach (var kv2 in edict)
+                        if (allSymbols)
                         {
-                            string name = kv2.key;
-                            <string, variant> values = kv2.value;
-                            <string,string> lmembers = values["members"];
-                            <string,uint> members;
-                            foreach (var kv6 in lmembers)
+                            <string, variant> edict = kv.value;
+                            foreach (var kv2 in edict)
                             {
-                                string l = kv6.value;
-                                uint ui;
-                                if (UInt.TryParse(l, ref ui))
+                                string name = kv2.key;
+                                <string, variant> values = kv2.value;
+                                <string,string> lmembers = values["members"];
+                                <string,uint> members;
+                                foreach (var kv6 in lmembers)
                                 {
-                                    members[kv6.key] = ui;
+                                    string l = kv6.value;
+                                    uint ui;
+                                    if (UInt.TryParse(l, ref ui))
+                                    {
+                                        members[kv6.key] = ui;
+                                    }
                                 }
+                                AddEnum(name, members);
                             }
-                            AddEnum(name, members);
                         }
                     }
                     case "flags":
                     {
-                        <string, variant> fdict = kv.value;
-                        foreach (var kv2 in fdict)
+                        if (allSymbols)
                         {
-                            string name = kv2.key;
-                            <string, variant> values = kv2.value;
-                            <string,string> lmembers = values["members"];
-                            <string,uint> members;
-                            foreach (var kv6 in lmembers)
+                            <string, variant> fdict = kv.value;
+                            foreach (var kv2 in fdict)
                             {
-                                string l = kv6.value;
-                                uint ui;
-                                if (UInt.TryParse(l, ref ui))
+                                string name = kv2.key;
+                                <string, variant> values = kv2.value;
+                                <string,string> lmembers = values["members"];
+                                <string,uint> members;
+                                foreach (var kv6 in lmembers)
                                 {
-                                    members[kv6.key] = ui;
+                                    string l = kv6.value;
+                                    uint ui;
+                                    if (UInt.TryParse(l, ref ui))
+                                    {
+                                        members[kv6.key] = ui;
+                                    }
                                 }
+                                AddFlags(name, members);
                             }
-                            AddFlags(name, members);
                         }
                     }
                     case "globals":
                     {
-                        // globals
-                        //   <string> gNames;
-                        //   <string,uint> gIndex;
-                        //   <uint,string> gTypes;
-                        // code location of initialization code:
-                        //   <uint, long> gStartPos;
-                        //   <uint, uint> gStartLine;
-                        //   <uint, string> gSourcePath;
-                        <string, variant> gdict = kv.value;
-                        foreach (var kv2 in gdict)
+                        if (allSymbols)
                         {
-                            string name = kv2.key;
-                            <string, string> values = kv2.value;
-                            string typeString = values["type"];
-                            <string> blockPos;
-                            if (values.Contains("line"))
+                            // globals
+                            //   <string> gNames;
+                            //   <string,uint> gIndex;
+                            //   <uint,string> gTypes;
+                            // code location of initialization code:
+                            //   <uint, long> gStartPos;
+                            //   <uint, uint> gStartLine;
+                            //   <uint, string> gSourcePath;
+                            <string, variant> gdict = kv.value;
+                            foreach (var kv2 in gdict)
                             {
-                                blockPos.Append(values["pos"]);
-                                blockPos.Append(values["line"]);
-                                blockPos.Append(values["source"]);
+                                string name = kv2.key;
+                                <string, string> values = kv2.value;
+                                string typeString = values["type"];
+                                <string> blockPos;
+                                if (values.Contains("line"))
+                                {
+                                    blockPos.Append(values["pos"]);
+                                    blockPos.Append(values["line"]);
+                                    blockPos.Append(values["source"]);
+                                }
+                                Symbols.AddGlobalMember(name, typeString, blockPos);    
                             }
-                            Symbols.AddGlobalMember(name, typeString, blockPos);    
                         }
                     }
                     case "delegates":
                     {
-                        // delegates, arguments, return types
-                        //   <string> fdNames;
-                        //   <string,uint> fdIndex;
-                        //   <uint, <uint> > fdOverloads;
-                        // for each overload uint:
-                        //   <uint, string > fdReturnTypes;
-                        //   <uint, < < string > > > fdArgumentNamesAndTypes;
-                        
-                        <string, variant> fdict = kv.value;
-                        foreach (var kv2 in fdict)
+                        if (allSymbols)
                         {
-                            string name = kv2.key;
-                            <string, variant> overloads = kv2.value;
-                            foreach (var kv3 in overloads)
+                            // delegates, arguments, return types
+                            //   <string> fdNames;
+                            //   <string,uint> fdIndex;
+                            //   <uint, <uint> > fdOverloads;
+                            // for each overload uint:
+                            //   <uint, string > fdReturnTypes;
+                            //   <uint, < < string > > > fdArgumentNamesAndTypes;
+                            
+                            <string, variant> fdict = kv.value;
+                            foreach (var kv2 in fdict)
                             {
-                                if (UInt.TryParse(kv3.key, ref idNextOverload))
+                                string name = kv2.key;
+                                <string, variant> overloads = kv2.value;
+                                foreach (var kv3 in overloads)
                                 {
-                                }
-                                <string, variant> odict = kv3.value;
-                                string returnType = "void";
-                                if (odict.Contains("returntype"))
-                                {
-                                    returnType = odict["returntype"];
-                                }
-                                < <string> > arguments;
-                                if (odict.Contains("arguments"))
-                                {
-                                    <string,string> adict = odict["arguments"];
-                                    uint argCount = adict.Count;
-                                    for (uint ai = 0; ai < argCount; ai++)
+                                    if (UInt.TryParse(kv3.key, ref idNextOverload))
                                     {
-                                        foreach (var kv4 in adict)
-                                        {
-                                            //<ref, type, name>
-                                            string argName = kv4.key;
-                                            string argOrder = ai.ToString() + ":";
-                                            if (argName.StartsWith(argOrder))
-                                            {
-                                                argName = argName.Substring(argOrder.Length);
-                                                <string> alist;
-                                                string rf;
-                                                string tn = kv4.value;
-                                                if (tn.StartsWith("ref "))
-                                                {
-                                                    rf = "ref";
-                                                    tn = tn.Substring(4);
-                                                }
-                                                alist.Append(rf);
-                                                alist.Append(tn);
-                                                alist.Append(argName);       
-                                                arguments.Append(alist);
-                                            }
-                                        } // kv4
                                     }
-                                }
-                                AddFunctionDelegate(name, arguments, returnType);
-                            } // kv3
-                        } // kv2
+                                    <string, variant> odict = kv3.value;
+                                    string returnType = "void";
+                                    if (odict.Contains("returntype"))
+                                    {
+                                        returnType = odict["returntype"];
+                                    }
+                                    < <string> > arguments;
+                                    if (odict.Contains("arguments"))
+                                    {
+                                        <string,string> adict = odict["arguments"];
+                                        uint argCount = adict.Count;
+                                        for (uint ai = 0; ai < argCount; ai++)
+                                        {
+                                            foreach (var kv4 in adict)
+                                            {
+                                                //<ref, type, name>
+                                                string argName = kv4.key;
+                                                string argOrder = ai.ToString() + ":";
+                                                if (argName.StartsWith(argOrder))
+                                                {
+                                                    argName = argName.Substring(argOrder.Length);
+                                                    <string> alist;
+                                                    string rf;
+                                                    string tn = kv4.value;
+                                                    if (tn.StartsWith("ref "))
+                                                    {
+                                                        rf = "ref";
+                                                        tn = tn.Substring(4);
+                                                    }
+                                                    alist.Append(rf);
+                                                    alist.Append(tn);
+                                                    alist.Append(argName);       
+                                                    arguments.Append(alist);
+                                                }
+                                            } // kv4
+                                        }
+                                    }
+                                    AddFunctionDelegate(name, arguments, returnType);
+                                } // kv3
+                            } // kv2
+                        }
                     }
                     case "functions":
                     {
-                        // functions, arguments, return types
-                        //  <string> fNames;
-                        //  <string,uint> fIndex;
-                        //  <uint, <uint> > fOverloads;
-                        // for each overload uint:
-                        //  <uint, string> fReturnTypes;
-                        //  <uint, < < string > > > fArgumentNamesAndTypes;
-                        // code location of function bodies
-                        //  <uint, long> fStartPos;
-                        //  <uint, uint> fStartLine;
-                        //  <uint, string> fSourcePath;
-                        <string, variant> fdict = kv.value;
-                        foreach (var kv2 in fdict)
+                        if (allSymbols)
                         {
-                            string name = kv2.key;
-                            <string, variant> overloads = kv2.value;
-                            foreach (var kv3 in overloads)
+                            // functions, arguments, return types
+                            //  <string> fNames;
+                            //  <string,uint> fIndex;
+                            //  <uint, <uint> > fOverloads;
+                            // for each overload uint:
+                            //  <uint, string> fReturnTypes;
+                            //  <uint, < < string > > > fArgumentNamesAndTypes;
+                            // code location of function bodies
+                            //  <uint, long> fStartPos;
+                            //  <uint, uint> fStartLine;
+                            //  <uint, string> fSourcePath;
+                            <string, variant> fdict = kv.value;
+                            foreach (var kv2 in fdict)
                             {
-                                if (!UInt.TryParse(kv3.key, ref iNextOverload))
+                                string name = kv2.key;
+                                <string, variant> overloads = kv2.value;
+                                foreach (var kv3 in overloads)
                                 {
-                                    PrintLn("bad iNextOverload");
-                                }
-                                
-                                <string, variant> odict = kv3.value;
-                                string returnType = "void";
-                                if (odict.Contains("returntype"))
-                                {
-                                    returnType = odict["returntype"];
-                                }
-                                <string> blockPos;
-                                
-                                if (odict.Contains("line"))
-                                {
-                                    string ln  = odict["line"];
-                                    string pos = odict["pos"];
-                                    string src = odict["source"];
-                                    blockPos.Append(pos);
-                                    blockPos.Append(ln);
-                                    blockPos.Append(src);
-                                }
-                                byte iSysCall;
-                                byte iSysCallOverload;
-                                bool isSysCall;
-                                if (odict.Contains("syscall"))
-                                {
-                                    string sc = odict["syscall"];
-                                    string ov = odict["overload"];
-                                    uint scui;
-                                    if (UInt.TryParse(sc, ref scui))
+                                    if (!UInt.TryParse(kv3.key, ref iNextOverload))
                                     {
-                                        iSysCall = byte(scui);
+                                        PrintLn("bad iNextOverload");
                                     }
-                                    uint ovui;
-                                    if (UInt.TryParse(ov, ref ovui))
+                                    
+                                    <string, variant> odict = kv3.value;
+                                    string returnType = "void";
+                                    if (odict.Contains("returntype"))
                                     {
-                                        iSysCallOverload = byte(ovui);
+                                        returnType = odict["returntype"];
                                     }
-                                    isSysCall = true;
-                                }
-                                byte iLibCall;
-                                byte iLibCallOverload;
-                                bool isLibCall;
-                                if (odict.Contains("libcall"))
-                                {
-                                    string sc = odict["libcall"];
-                                    string ov = odict["overload"];
-                                    uint scui;
-                                    if (UInt.TryParse(sc, ref scui))
+                                    <string> blockPos;
+                                    
+                                    if (odict.Contains("line"))
                                     {
-                                        iLibCall = byte(scui);
+                                        string ln  = odict["line"];
+                                        string pos = odict["pos"];
+                                        string src = odict["source"];
+                                        blockPos.Append(pos);
+                                        blockPos.Append(ln);
+                                        blockPos.Append(src);
                                     }
-                                    uint ovui;
-                                    if (UInt.TryParse(ov, ref ovui))
+                                    byte iSysCall;
+                                    byte iSysCallOverload;
+                                    bool isSysCall;
+                                    if (odict.Contains("syscall"))
                                     {
-                                        iLibCallOverload = byte(ovui);
-                                    }
-                                    isLibCall = true;
-                                }
-                                < <string> > arguments;
-                                if (odict.Contains("arguments"))
-                                {
-                                    <string,string> adict = odict["arguments"];
-                                    uint argCount = adict.Count;
-                                    for (uint ai = 0; ai < argCount; ai++)
-                                    {
-                                        foreach (var kv4 in adict)
+                                        string sc = odict["syscall"];
+                                        string ov = odict["overload"];
+                                        uint scui;
+                                        if (UInt.TryParse(sc, ref scui))
                                         {
-                                            //<ref, type, name>
-                                            string argName = kv4.key;
-                                            string argOrder = ai.ToString() + ":";
-                                            if (argName.StartsWith(argOrder))
-                                            {
-                                                argName = argName.Substring(argOrder.Length);
-                                                <string> alist;
-                                                string rf;
-                                                string tn = kv4.value;
-                                                if (tn.StartsWith("ref "))
-                                                {
-                                                    rf = "ref";
-                                                    tn = tn.Substring(4);
-                                                }
-                                                alist.Append(rf);
-                                                alist.Append(tn);
-                                                alist.Append(argName);       
-                                                arguments.Append(alist);
-                                            }
-                                        } // kv4
+                                            iSysCall = byte(scui);
+                                        }
+                                        uint ovui;
+                                        if (UInt.TryParse(ov, ref ovui))
+                                        {
+                                            iSysCallOverload = byte(ovui);
+                                        }
+                                        isSysCall = true;
                                     }
-                                }
-                                uint iOverload = iNextOverload;
-                                AddFunction(name, arguments, returnType, blockPos);
-                                if (isSysCall)
-                                {
-                                    SetSysCall(iOverload, iSysCall, iSysCallOverload);
-                                }
-                                if (isLibCall)
-                                {
-                                    SetLibCall(iOverload, iLibCall, iLibCallOverload);
-                                }
-                            } // kv3
-                        } // kv2  
+                                    byte iLibCall;
+                                    byte iLibCallOverload;
+                                    bool isLibCall;
+                                    if (odict.Contains("libcall"))
+                                    {
+                                        string sc = odict["libcall"];
+                                        string ov = odict["overload"];
+                                        uint scui;
+                                        if (UInt.TryParse(sc, ref scui))
+                                        {
+                                            iLibCall = byte(scui);
+                                        }
+                                        uint ovui;
+                                        if (UInt.TryParse(ov, ref ovui))
+                                        {
+                                            iLibCallOverload = byte(ovui);
+                                        }
+                                        isLibCall = true;
+                                    }
+                                    < <string> > arguments;
+                                    if (odict.Contains("arguments"))
+                                    {
+                                        <string,string> adict = odict["arguments"];
+                                        uint argCount = adict.Count;
+                                        for (uint ai = 0; ai < argCount; ai++)
+                                        {
+                                            foreach (var kv4 in adict)
+                                            {
+                                                //<ref, type, name>
+                                                string argName = kv4.key;
+                                                string argOrder = ai.ToString() + ":";
+                                                if (argName.StartsWith(argOrder))
+                                                {
+                                                    argName = argName.Substring(argOrder.Length);
+                                                    <string> alist;
+                                                    string rf;
+                                                    string tn = kv4.value;
+                                                    if (tn.StartsWith("ref "))
+                                                    {
+                                                        rf = "ref";
+                                                        tn = tn.Substring(4);
+                                                    }
+                                                    alist.Append(rf);
+                                                    alist.Append(tn);
+                                                    alist.Append(argName);       
+                                                    arguments.Append(alist);
+                                                }
+                                            } // kv4
+                                        }
+                                    }
+                                    uint iOverload = iNextOverload;
+                                    AddFunction(name, arguments, returnType, blockPos);
+                                    if (isSysCall)
+                                    {
+                                        SetSysCall(iOverload, iSysCall, iSysCallOverload);
+                                    }
+                                    if (isLibCall)
+                                    {
+                                        SetLibCall(iOverload, iLibCall, iLibCallOverload);
+                                    }
+                                } // kv3
+                            } // kv2
+                        }
                     }
                     case "units":
                     {
-                        if (typeof(kv.value) == list)
+                        if (allSymbols)
                         {
-                            <string> ulist = kv.value;
-                            foreach (var name in ulist)
+                            if (typeof(kv.value) == list)
                             {
-                                AddNameSpace(name, "");
+                                <string> ulist = kv.value;
+                                foreach (var name in ulist)
+                                {
+                                    AddNameSpace(name, "");
+                                }
                             }
-                        }
-                        else if (typeof(kv.value) == dictionary)
-                        {
-                            <string,string> udict = kv.value;
-                            foreach (var namekv in udict)
+                            else if (typeof(kv.value) == dictionary)
                             {
-                                AddNameSpace(namekv.key, namekv.value);
+                                <string,string> udict = kv.value;
+                                foreach (var namekv in udict)
+                                {
+                                    AddNameSpace(namekv.key, namekv.value);
+                                }
                             }
                         }
                     }
                     case "friends":
                     {
-                        <string, <string> > fdict = kv.value;
-                        foreach (var friendkv in fdict)
+                        if (allSymbols)
                         {
-                            <string> friendList = friendkv.value;
-                            foreach (var friendUnit in friendList)
+                            <string, <string> > fdict = kv.value;
+                            foreach (var friendkv in fdict)
                             {
-                                AddFriend(friendkv.key, friendUnit);
+                                <string> friendList = friendkv.value;
+                                foreach (var friendUnit in friendList)
+                                {
+                                    AddFriend(friendkv.key, friendUnit);
+                                }
                             }
                         }
                     }
                     case "locations":
                     {
-                        <string,string> ldict = kv.value;
-                        foreach (var locationkv in ldict)
+                        if (allSymbols)
                         {
-                            AddLocation(locationkv.key, locationkv.value);
+                            <string,string> ldict = kv.value;
+                            foreach (var locationkv in ldict)
+                            {
+                                AddLocation(locationkv.key, locationkv.value);
+                            }
                         }
                     }
                     

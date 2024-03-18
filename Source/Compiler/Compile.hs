@@ -29,12 +29,6 @@ program Compile
     
     bool IsDebugger  { get { return false; } }
     
-    bool isExperimental;
-    bool IsExperimental { get { return isExperimental; } }
-    
-    bool noPackedInstructions;
-    bool NoPackedInstructions { get { return noPackedInstructions; } }
-    
     uint iCurrentOverload;
     
     string CurrentUnit { get { return ""; } }
@@ -176,7 +170,7 @@ program Compile
                             break;
                         }
                     }
-                    returnBytes = 2;       
+                    returnBytes = SlotSize;       
                 }
             }
             if (CodeStream.CheckedBuild)
@@ -1056,7 +1050,7 @@ program Compile
             // if there are no cases, no switch (still works if there was a 'default', just fall through to it)
             if (caseOffsets.Count  == 0)
             {
-                CodeStream.AddInstruction(Instruction.DECSP, 2); // do nothing with the switch
+                CodeStream.AddInstruction(Instruction.DECSP, SlotSize); // do nothing with the switch
             }
             else
             {
@@ -2061,7 +2055,7 @@ program Compile
             } // switch
             if (leftTokenType == HopperToken.Discarder)
             {
-                CodeStream.AddInstruction(Instruction.DECSP, 2); // discard the stack slot
+                CodeStream.AddInstruction(Instruction.DECSP, SlotSize); // discard the stack slot
             }
             else if (isMember)
             {
@@ -2863,7 +2857,8 @@ program Compile
             <string> rawArgs = System.Arguments;
             <string> args;
             bool checkedBuild = true;
-            bool touchesTree = false;
+            bool touchesTree;
+            bool argIsExperimental;
           
             for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
@@ -2897,7 +2892,7 @@ program Compile
                         }
                         case "-x":
                         {
-                            isExperimental = true;   
+                            argIsExperimental = true;   
                         }
                         default:
                         {
@@ -2938,9 +2933,10 @@ program Compile
                     break;
                 }
                 CodeStream.InitializeSymbolShortcuts();
-                
-                noPackedInstructions = DefineExists("NO_PACKED_INSTRUCTIONS");
-                isExperimental       = isExperimental || DefineExists("EXPERIMENTAL");
+                if (argIsExperimental)
+                {
+                    IsExperimental = argIsExperimental;
+                }
                 
                 uint mIndex;
                 if (!Symbols.GetFunctionIndex("Hopper", ref mIndex))
