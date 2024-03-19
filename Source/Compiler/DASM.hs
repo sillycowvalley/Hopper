@@ -17,14 +17,6 @@ program DASM
     uses "Tokens/LibCalls"
     uses "Tokens/Parser"
     
-    bool extendedCodeSegment;
-    bool flatStack;
-    byte slotSize;
-    
-    bool FlatStack    { get { return flatStack; } }
-    byte SlotSize     { get { return slotSize; } }
-    
-    
     uint codeSize = 0;
     uint instructionCount = 0;
     
@@ -299,13 +291,9 @@ program DASM
                     break;
                 }
                 uint version = lsb + (msb << 8);
-                extendedCodeSegment = (version & 0x0001) != 0;
-                flatStack           = (version & 0x0002) != 0;
-                slotSize = 2;
-                if (flatStack)
-                {
-                    slotSize = 1;
-                }
+                //extendedCodeSegment = (version & 0x0001) != 0;
+                //flatStack           = (version & 0x0002) != 0;
+
                 hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + version.ToHexString(4) + " // binary version number" + char(0x0A));
                 address = address + 2;
                                     
@@ -343,14 +331,7 @@ program DASM
                 // read the method table
                 <uint,string> methodNames;
                 methodNames[constOffset] = "constant data";
-                if (extendedCodeSegment)
-                {
-                    methodNames[0] = "0x0000";
-                }
-                else
-                {
-                    methodNames[codeOffset] = "0x0000";
-                }
+                methodNames[0] = "0x0000";
                 
                 uint constLength = codeOffset - constOffset;
                 
@@ -436,10 +417,7 @@ program DASM
                     }
                     code.Append(b);
                 }
-                if (extendedCodeSegment)
-                {
-                    address = 0;
-                }
+                address = 0;
                 DisassembleCode(hasmFile, code, address, methodNames);
                 codeSize = codeSize + code.Count;
                 Parser.ProgressTick(".");
@@ -447,10 +425,7 @@ program DASM
                 if (!Parser.IsInteractive())
                 {
                     PrintLn();
-                    if (extendedCodeSegment)
-                    {
-                        codeSize -= codeOffset;
-                    }
+                    codeSize -= codeOffset;
                     Print("Success, " + codeSize.ToString() + " bytes of code, ", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;

@@ -586,9 +586,7 @@ unit Symbols
     }
     uint GetGlobalAddress(string name)
     {
-        uint address = gIndex[name];
-        address = address*SlotSize;
-        return address;
+        return gIndex[name];
     }
 #ifdef ASSEMBLER    
     uint GetGlobalByteAddress(string name)
@@ -607,7 +605,7 @@ unit Symbols
                 case "int":
                 case "uint":
                 {
-                    address += SlotSize; // slots based on Hopper VM convention
+                    address++;
                 }
                 default:
                 {
@@ -1916,7 +1914,7 @@ unit Symbols
             uint gNamesCount = gNames.Count;
             for (uint i = 0; i < gNamesCount; i++)
             {
-                uint offset = i * SlotSize;
+                uint offset = i;
                 <string,string> gDict;
                 string gName = gNames[i];
                 gDict["name"] = gName;
@@ -1986,7 +1984,7 @@ unit Symbols
                         argdict["type"] = typeType.ToString();
                         argdict["ref"] = aref;
                         
-                        int offset = 0 - (int(argCount)-acount)*SlotSize;
+                        int offset = 0 - (int(argCount)-acount);
                         argdicts[offset.ToString()] = argdict;
                         acount++;
                     }

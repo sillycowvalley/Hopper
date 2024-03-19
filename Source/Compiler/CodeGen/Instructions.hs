@@ -80,9 +80,9 @@ unit Instructions
         CALLREL,   // call delegate based on <index> in [top]
         
         POPLOCALB00,
-        POPLOCALB02,
+        POPLOCALB01,
         PUSHLOCALB00,
-        PUSHLOCALB02,
+        PUSHLOCALB01,
         
         NOP,
         
@@ -104,7 +104,7 @@ unit Instructions
         POPCOPYGLOBAL,
         
         POPCOPYLOCALB00,
-        POPCOPYLOCALB02,
+        POPCOPYLOCALB01,
         
         ENTERB,
         
@@ -767,17 +767,17 @@ unit Instructions
             }
             
             
-            case Instruction.POPLOCALB02:
+            case Instruction.POPLOCALB01:
             {
-                result = "POPLOCALB0" + (SlotSize).ToString();
+                result = "POPLOCALB01";
             }
             case Instruction.POPLOCALB00:
             {
                 result = "POPLOCALB00";
             }
-            case Instruction.POPCOPYLOCALB02:
+            case Instruction.POPCOPYLOCALB01:
             {
-                result = "POPCOPYLOCALB0" + (SlotSize).ToString();
+                result = "POPCOPYLOCALB01";
             }
             case Instruction.POPCOPYLOCALB00:
             {
@@ -819,9 +819,9 @@ unit Instructions
             {
                 result = "PUSHLOCALB00";
             }
-            case Instruction.PUSHLOCALB02:
+            case Instruction.PUSHLOCALB01:
             {
-                result = "PUSHLOCALB0" + (SlotSize).ToString();
+                result = "PUSHLOCALB01";
             }
             case Instruction.PUSHLOCAL:
             {

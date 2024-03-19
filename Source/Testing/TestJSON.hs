@@ -1,6 +1,5 @@
 program TestJSON
 {
-    #define FLAT_STACK
 //#define MCU
     uses "/Source/System/System"
     uses "/Source/System/IO"

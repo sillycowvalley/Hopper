@@ -108,9 +108,9 @@ namespace HopperNET
         CALLREL,   // call delegate based on <index> in [top]
 
         POPLOCALB00,
-        POPLOCALB02,
+        POPLOCALB01,
         PUSHLOCALB00,
-        PUSHLOCALB02,
+        PUSHLOCALB01,
 
         NOP,
 
@@ -132,7 +132,7 @@ namespace HopperNET
         POPCOPYGLOBAL,
 
         POPCOPYLOCALB00,
-        POPCOPYLOCALB02,
+        POPCOPYLOCALB01,
 
         ENTERB,
 
@@ -677,7 +677,6 @@ namespace HopperNET
         private Keyboard keyboard;
         private ushort[] methodTable;
         private byte[] code;
-        private byte stackSlot;
         
         private ushort pcStore;
         private ushort bpStore;
@@ -764,49 +763,6 @@ namespace HopperNET
         {
             return hopperSystem.Execute(this, ref setError, clean);
         }
-        ushort SPDiv2()
-        {
-            if (stackSlot == 1)
-            {
-                return sp; // ok
-            }
-            else
-            {
-                return (ushort)(sp>>1); // ok
-            }
-        }
-        ushort Div2(ushort address)
-        {
-            if (stackSlot == 1)
-            {
-                return address;
-            }
-            else
-            {
-                return (ushort)(address>>1); // ok
-            }
-        }
-        ushort Div2(int address)
-        {
-            if (stackSlot == 1)
-            {
-                return (ushort)address;
-            }
-            else
-            {
-                return (ushort)(address >> 1); // ok
-            }
-        }
-        void SPInc()
-        {
-            sp += stackSlot;
-        }
-        void SPDec()
-        {
-            sp -= stackSlot;
-        }
-
-
 
         void PushCS(ushort address)
         {
@@ -839,39 +795,39 @@ namespace HopperNET
         void PushInt(short value)
         {
             Int32 v = value;
-            ushort sp2 = SPDiv2();
+            ushort sp2 = sp;
             stack[sp2].value = BitConverter.ToUInt32(BitConverter.GetBytes(v), 0);
             stack[sp2].type = HopperType.tInt;
 #if DEBUG
             stack[sp2].reference = null;
 #endif
-            SPInc();
+            sp++;
 #if DEBUG
             Diagnostics.ASSERT(sp < STACKSIZE, "stack overflow");
 #endif
         }
         void PushLong(Int32 value)
         {
-            ushort sp2 = SPDiv2();
+            ushort sp2 = sp;
             stack[sp2].value = BitConverter.ToUInt32(BitConverter.GetBytes(value), 0);
             stack[sp2].type = HopperType.tLong;
 #if DEBUG
             stack[sp2].reference = null;
 #endif
-            SPInc();
+            sp++;
 #if DEBUG
             Diagnostics.ASSERT(sp < STACKSIZE, "stack overflow");
 #endif
         }
         void PushFloat(float value)
         {
-            ushort sp2 = SPDiv2();
+            ushort sp2 = sp;
             stack[sp2].value = BitConverter.ToUInt32(BitConverter.GetBytes(value), 0);
             stack[sp2].type = HopperType.tFloat;
 #if DEBUG
             stack[sp2].reference = null;
 #endif
-            SPInc();
+            sp++;
 #if DEBUG
             Diagnostics.ASSERT(sp < STACKSIZE, "stack overflow");
 #endif
@@ -884,20 +840,20 @@ namespace HopperNET
                 Diagnostics.Die(0x07, this);
                 return;
             }
-            ushort sp2 = SPDiv2();
+            ushort sp2 = sp;
             stack[sp2].value = value;
             stack[sp2].type = type;
 #if DEBUG
             stack[sp2].reference = null;
 #endif
-            SPInc();
+            sp++;
 #if DEBUG
             Diagnostics.ASSERT(sp < STACKSIZE, "stack overflow");
 #endif
         }
         void PutStack(ushort address, uint value, HopperType type)
         {
-            ushort address2 = Div2(address);
+            ushort address2 = (address);
             stack[address2].value = value;
             stack[address2].type = type;
 #if DEBUG
@@ -917,7 +873,7 @@ namespace HopperNET
                 variant.Validate();
             }
 #endif
-            ushort address2 = Div2(address);
+            ushort address2 = (address);
 #if DEBUG
             stack[address2].value = 0;
 #endif
@@ -937,13 +893,13 @@ namespace HopperNET
                 variant.Validate();
             }
 #endif
-            ushort sp2 = SPDiv2();
+            ushort sp2 = sp;
 #if DEBUG
             stack[sp2].value = 0;
 #endif
             stack[sp2].type = type;
             stack[sp2].reference = variant;
-            SPInc();
+            sp++;
 #if DEBUG
             Diagnostics.ASSERT(sp < STACKSIZE, "stack overflow");
 #endif
@@ -953,11 +909,11 @@ namespace HopperNET
 #if DEBUG
             while (operand > 0)
             {
-                operand -= stackSlot;
-                SPDec();
-                stack[SPDiv2()].value = 0;
-                stack[SPDiv2()].reference = null;
-                stack[SPDiv2()].type = HopperType.tUndefined;
+                operand -= 1;
+                sp--;
+                stack[sp].value = 0;
+                stack[sp].reference = null;
+                stack[sp].type = HopperType.tUndefined;
             }
 #else
             sp -= operand;
@@ -966,13 +922,13 @@ namespace HopperNET
         short PopInt()
         {
 #if DEBUG
-            Diagnostics.ASSERT(sp >= stackSlot, "stack underflow");
+            Diagnostics.ASSERT(sp >= 1, "stack underflow");
 #endif
-            SPDec();
+            sp--;
 #if DEBUG
-            Diagnostics.ASSERTDIE(stack[SPDiv2()].reference == null, "value type", this);
+            Diagnostics.ASSERTDIE(stack[sp].reference == null, "value type", this);
 #endif
-            ushort sp2 = SPDiv2();
+            ushort sp2 = sp;
             short result = 0;
             HopperType type = stack[sp2].type;
             uint value = stack[sp2].value;
@@ -1023,10 +979,10 @@ namespace HopperNET
         Int32 PopLong()
         {
 #if DEBUG
-            Diagnostics.ASSERT(sp >= stackSlot, "stack underflow");
+            Diagnostics.ASSERT(sp >= 1, "stack underflow");
 #endif
-            SPDec();
-            ushort sp2 = SPDiv2();
+            sp--;
+            ushort sp2 = sp;
 #if DEBUG
             Diagnostics.ASSERT(stack[sp2].reference == null, "value type");            // TODO
             Diagnostics.ASSERT(stack[sp2].type == HopperType.tLong, "tLong expected"); // TODO
@@ -1042,10 +998,10 @@ namespace HopperNET
         float PopFloat()
         {
 #if DEBUG
-            Diagnostics.ASSERT(sp >= stackSlot, "stack underflow");
+            Diagnostics.ASSERT(sp >= 1, "stack underflow");
 #endif
-            SPDec();
-            ushort sp2 = SPDiv2();
+            sp--;
+            ushort sp2 = sp;
 #if DEBUG
             Diagnostics.ASSERTDIE(stack[sp2].reference == null, "value type", this);
             Diagnostics.ASSERTDIE(stack[sp2].type == HopperType.tFloat, "tFloat expected", this);
@@ -1062,10 +1018,10 @@ namespace HopperNET
         uint Pop()
         {
 #if DEBUG
-            Diagnostics.ASSERT(sp >= stackSlot, "stack underflow");
+            Diagnostics.ASSERT(sp >= 1, "stack underflow");
 #endif
-            SPDec();
-            ushort sp2 = SPDiv2();
+            sp--;
+            ushort sp2 = sp;
 #if DEBUG
             Diagnostics.ASSERTDIE(stack[sp2].reference == null, "value type", this);
 #endif
@@ -1080,10 +1036,10 @@ namespace HopperNET
         Variant PopVariant(HopperType expectedType)
         {
 #if DEBUG
-            Diagnostics.ASSERT(sp >= stackSlot, "stack underflow");
+            Diagnostics.ASSERT(sp >= 1, "stack underflow");
 #endif
-            SPDec();
-            ushort sp2 = SPDiv2();
+            sp--;
+            ushort sp2 = sp;
 #if DEBUG
             Diagnostics.ASSERTDIE(stack[sp2].reference != null, "reference type", this);
 #endif
@@ -1108,11 +1064,11 @@ namespace HopperNET
         }
         HopperType GetStackType(ushort address)
         {
-            return stack[Div2(address)].type;
+            return stack[(address)].type;
         }
         uint GetStack(ushort address)
         {
-            ushort address2 = Div2(address);
+            ushort address2 = (address);
 #if DEBUG
             Diagnostics.ASSERTDIE(stack[address2].reference == null, "value type", this);
 #endif
@@ -1120,7 +1076,7 @@ namespace HopperNET
         }
         Variant GetStackVariant(ushort address)
         {
-            ushort address2 = Div2(address);
+            ushort address2 = (address);
             HopperType type = stack[address2].type;
             if ((type == HopperType.tLong) || (type == HopperType.tFloat))
             {
@@ -1276,8 +1232,7 @@ namespace HopperNET
 
             code = currentContext.Code;
             methodTable = currentContext.MethodTable;
-            stackSlot = (byte)(currentContext.FlatStack ? 1 : 2);
-
+            
             Halted = false;
             waiting = false;
 
@@ -1334,8 +1289,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1353,8 +1308,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1373,8 +1328,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1392,8 +1347,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1416,8 +1371,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1441,8 +1396,8 @@ namespace HopperNET
                             uint top = Pop();
                             uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1460,8 +1415,8 @@ namespace HopperNET
                             uint top = Pop();
                             uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1479,8 +1434,8 @@ namespace HopperNET
                             uint top = Pop();
                             uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1498,8 +1453,8 @@ namespace HopperNET
                             uint top = Pop();
                             uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1517,8 +1472,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1536,8 +1491,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1586,8 +1541,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1605,8 +1560,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1630,8 +1585,8 @@ namespace HopperNET
                 uint top = Pop();
                 uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1651,8 +1606,8 @@ namespace HopperNET
                             uint top = Pop();
                             uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1673,8 +1628,8 @@ namespace HopperNET
                             uint top = Pop();
                             uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1692,8 +1647,8 @@ namespace HopperNET
                             uint top = Pop();
                             uint next = Pop();
 #else
-                            SPDec();
-                            ushort sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #endif
@@ -1792,10 +1747,10 @@ namespace HopperNET
                             Push(operand, HopperType.tByte);
 #else
                             {
-                                ushort sp2 = SPDiv2();
+                                ushort sp2 = sp;
                                 stack[sp2].value = operand;
                                 stack[sp2].type = HopperType.tByte;
-                                SPInc();
+                                sp++;
                             }
 #endif
 
@@ -1813,10 +1768,10 @@ namespace HopperNET
                             Push(operand, HopperType.tByte);
 #else
                             {
-                                ushort sp2 = SPDiv2();
+                                ushort sp2 = sp;
                                 stack[sp2].value = operand;
                                 stack[sp2].type = HopperType.tByte;
-                                SPInc();
+                                sp++;
                             }
 #endif
 
@@ -1884,10 +1839,10 @@ namespace HopperNET
                         Push(operand, HopperType.tByte);
 #else
                             {
-                                ushort sp2 = SPDiv2();
+                                ushort sp2 = sp;
                                 stack[sp2].value = operand;
                                 stack[sp2].type = HopperType.tByte;
-                                SPInc();
+                                sp++;
                             }
 #endif
                         }
@@ -1901,10 +1856,10 @@ namespace HopperNET
                             Push(operand, HopperType.tByte);
 #else
                             {
-                                ushort sp2 = SPDiv2();
+                                ushort sp2 = sp;
                                 stack[sp2].value = operand;
                                 stack[sp2].type = HopperType.tByte;
-                                SPInc();
+                                sp++;
                             }
 #endif
                             operand = code[pc + currentContext.CodeOffset];
@@ -1913,10 +1868,10 @@ namespace HopperNET
                             Push(operand, HopperType.tByte);
 #else
                             {
-                                ushort sp2 = SPDiv2();
+                                ushort sp2 = sp;
                                 stack[sp2].value = operand;
                                 stack[sp2].type = HopperType.tByte;
-                                SPInc();
+                                sp++;
                             }
 #endif
                         }
@@ -1987,7 +1942,7 @@ namespace HopperNET
 #if UNDOINLINED
                             uint top = 0;
                             Variant vtop = null;
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             bool isValueType = Type_IsValueType(type);
                             if (isValueType)
                             {
@@ -2009,12 +1964,12 @@ namespace HopperNET
                                 Push(vtop);
                             }
 #else
-                            int retLocation = SPDiv2() - 1;
+                            int retLocation = sp - 1;
                             HopperType type = stack[retLocation].type;
                                 
                             // clear the locals and arguments off the stack (return value is already dealt with if needed)
                             sp -= operand;
-                            int sp2 = SPDiv2() - 1;
+                            int sp2 = sp - 1;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[retLocation].value;
@@ -2069,7 +2024,7 @@ namespace HopperNET
 #if UNDOINLINED
                             uint top = 0;
                             Variant vtop = null;
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             bool isValueType = Type_IsValueType(type);
                             if (isValueType)
                             {
@@ -2091,12 +2046,12 @@ namespace HopperNET
                                 Push(vtop);
                             }
 #else
-                            int retLocation = (SPDiv2()) - 1;
+                            int retLocation = (sp) - 1;
                             HopperType type = stack[retLocation].type;
 
                             // clear the locals and arguments off the stack (return value is already dealt with if needed)
                             sp -= operand;
-                            int sp2 = (SPDiv2()) - 1;
+                            int sp2 = (sp) - 1;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[retLocation].value;
@@ -2161,8 +2116,8 @@ namespace HopperNET
 #if UNDOINLINED
                             if (Pop() != 0)
 #else
-                            SPDec();
-                            ushort sp2 = SPDiv2();
+                            sp--;
+                            ushort sp2 = sp;
                             uint top = stack[sp2].value;
                             if (top != 0)
 #endif
@@ -2200,7 +2155,7 @@ namespace HopperNET
                             pc++;
 
                             ushort address = (ushort)(operand + gp);
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             if (copyNextPop)
                             {
                                 if ((type == HopperType.tLong) || (type == HopperType.tFloat))
@@ -2247,7 +2202,7 @@ namespace HopperNET
                             }
                             ushort localAddress = (ushort)(bp + offset);
 
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             if (copyNextPop)
                             {
                                 if ((type == HopperType.tLong) || (type == HopperType.tFloat))
@@ -2295,7 +2250,7 @@ namespace HopperNET
                             }
                             ushort localAddress = (ushort)(bp + offset);
 
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             if (copyNextPop)
                             {
                                 if ((type == HopperType.tLong) || (type == HopperType.tFloat))
@@ -2343,7 +2298,7 @@ namespace HopperNET
 
                             ushort referenceAddress = (ushort)(bp + offset);
                             ushort localAddress = (ushort)GetStack(referenceAddress);
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             if (copyNextPop)
                             {
                                 if ((type == HopperType.tLong) || (type == HopperType.tFloat))
@@ -2391,7 +2346,7 @@ namespace HopperNET
                             }
                             ushort referenceAddress = (ushort)(bp + offset);
                             ushort localAddress = (ushort)GetStack(referenceAddress);
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             if (copyNextPop)
                             {
                                 if ((type == HopperType.tLong) || (type == HopperType.tFloat))
@@ -2443,9 +2398,9 @@ namespace HopperNET
                                 Push(GetStackVariant((ushort)(operand + gp)));
                             }
 #else
-                            ushort address = Div2(operand + gp);
+                            ushort address = (ushort)(operand + gp);
                             HopperType type = stack[address].type;
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[address].value;
@@ -2460,7 +2415,7 @@ namespace HopperNET
                                 stack[sp2].reference = stack[address].reference;
                             }
                             stack[sp2].type = type;
-                            SPInc();
+                            sp++;
 #endif
                         }
                         break;
@@ -2488,9 +2443,9 @@ namespace HopperNET
                                 Push(GetStackVariant(localAddress));
                             }
 #else
-                            ushort localAddress2 = (ushort)(Div2(bp + offset));
+                            ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[localAddress2].value;
@@ -2505,7 +2460,7 @@ namespace HopperNET
                                 stack[sp2].reference = stack[localAddress2].reference;
                             }
                             stack[sp2].type = type;
-                            SPInc();
+                            sp++;
 #endif
                         }
                         break;
@@ -2533,9 +2488,9 @@ namespace HopperNET
                                 Push(GetStackVariant(localAddress));
                             }
 #else
-                            ushort localAddress2 = (ushort)(Div2(bp + offset));
+                            ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[localAddress2].value;
@@ -2550,7 +2505,7 @@ namespace HopperNET
                                 stack[sp2].reference = stack[localAddress2].reference;
                             }
                             stack[sp2].type = type;
-                            SPInc();
+                            sp++;
 #endif
                         }
                         break;
@@ -2662,10 +2617,10 @@ namespace HopperNET
                             uint value = GetStack(localAddress);
                             PutStack(localAddress, value + 1, type);
 #else
-                            stack[Div2(bp + offset)].value++;
-                            if (stack[Div2(bp + offset)].type == HopperType.tByte)
+                            stack[(bp + offset)].value++;
+                            if (stack[(bp + offset)].type == HopperType.tByte)
                             {
-                                stack[Div2(bp + offset)].type = HopperType.tUInt;
+                                stack[(bp + offset)].type = HopperType.tUInt;
                             }
 #endif
                         }
@@ -2686,7 +2641,7 @@ namespace HopperNET
                             HopperType type = GetStackType(localAddress);
                             PutStack(localAddress, GetStack(localAddress) - 1, type);
 #else
-                            stack[Div2(bp + offset)].value--;
+                            stack[(bp + offset)].value--;
 #endif
                         }
                         break;
@@ -2709,7 +2664,7 @@ namespace HopperNET
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
-                            ushort localAddress = (ushort)((sp - stackSlot) - operand); // DUP 0 implies duplicating [top]
+                            ushort localAddress = (ushort)((sp - 1) - operand); // DUP 0 implies duplicating [top]
                             HopperType type = GetStackType(localAddress);
                             if (Type_IsValueType(type))
                             {
@@ -2768,7 +2723,7 @@ namespace HopperNET
                             {
                                 offset1 = (short)(offset1 - 256); // 255 -> -1
                             }
-                            stack[Div2(bp + offset0)].value += stack[Div2(bp + offset1)].value;
+                            stack[(bp + offset0)].value += stack[(bp + offset1)].value;
                         }
                         break;
 
@@ -2787,12 +2742,12 @@ namespace HopperNET
                             {
                                 offset1 = (short)(offset1 - 256); // 255 -> -1
                             }
-                            byte[] bytes = BitConverter.GetBytes(stack[Div2(bp + offset0)].value);
+                            byte[] bytes = BitConverter.GetBytes(stack[(bp + offset0)].value);
                             short a = BitConverter.ToInt16(bytes, 0);
-                            bytes = BitConverter.GetBytes(stack[Div2(bp + offset1)].value);
+                            bytes = BitConverter.GetBytes(stack[(bp + offset1)].value);
                             short b = BitConverter.ToInt16(bytes, 0);
                             a = (short)(a + b);
-                            stack[Div2(bp + offset0)].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
+                            stack[(bp + offset0)].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
                         }
                         break;
 
@@ -2807,11 +2762,11 @@ namespace HopperNET
                             {
                                 offset = (short)(offset - 256); // 255 -> -1
                             }
-                            byte[] bytes = BitConverter.GetBytes(stack[Div2(bp + offset)].value);
+                            byte[] bytes = BitConverter.GetBytes(stack[(bp + offset)].value);
                             short a = BitConverter.ToInt16(bytes, 0);
                             a++;
-                            stack[Div2(bp + offset)].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
-                            stack[Div2(bp + offset)].type = HopperType.tInt;
+                            stack[(bp + offset)].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
+                            stack[(bp + offset)].type = HopperType.tInt;
                         }
                         break;
                     case Instruction.DECLOCALIB:
@@ -2824,18 +2779,18 @@ namespace HopperNET
                             {
                                 offset = (short)(offset - 256); // 255 -> -1
                             }
-                            byte[] bytes = BitConverter.GetBytes(stack[Div2(bp + offset)].value);
+                            byte[] bytes = BitConverter.GetBytes(stack[(bp + offset)].value);
                             short a = BitConverter.ToInt16(bytes, 0);
                             a--;
-                            stack[Div2(bp + offset)].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
-                            stack[Div2(bp + offset)].type = HopperType.tInt;
+                            stack[(bp + offset)].value = BitConverter.ToUInt16(BitConverter.GetBytes(a), 0);
+                            stack[(bp + offset)].type = HopperType.tInt;
                         }
                         break;
                     case Instruction.INCGLOBALIB:
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            ushort address = Div2(operand + gp);
+                            ushort address = (ushort)(operand + gp);
                             byte[] bytes = BitConverter.GetBytes(stack[address].value);
                             short a = BitConverter.ToInt16(bytes, 0);
                             a++;
@@ -2847,7 +2802,7 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            ushort address = Div2(operand + gp);
+                            ushort address = (ushort)(operand + gp);
                             byte[] bytes = BitConverter.GetBytes(stack[address].value);
                             short a = BitConverter.ToInt16(bytes, 0);
                             a--;
@@ -2866,10 +2821,10 @@ namespace HopperNET
                             Push(operand, HopperType.tUInt);
 #else
                             {
-                                ushort sp2 = SPDiv2();
+                                ushort sp2 = sp;
                                 stack[sp2].value = operand;
                                 stack[sp2].type = HopperType.tUInt;
-                                SPInc();
+                                sp++;
                             }
 #endif
                         }
@@ -2890,13 +2845,13 @@ namespace HopperNET
                             PushBool(next <= top);
 #else
                             {
-                                ushort sp2 = SPDiv2();
+                                ushort sp2 = sp;
                                 stack[sp2].value = operand;
                                 stack[sp2].type = HopperType.tUInt;
-                                SPInc();
+                                sp++;
 
-                                SPDec();
-                                sp2 = (ushort)((SPDiv2()) - 1);
+                                sp--;
+                                sp2 = (ushort)((sp) - 1);
                                 uint top = stack[sp2 + 1].value;
                                 uint next = stack[sp2].value;
 
@@ -2920,13 +2875,13 @@ namespace HopperNET
                             PushBool(next <= top);
 #else
                             {
-                                ushort sp2 = SPDiv2();
+                                ushort sp2 = sp;
                                 stack[sp2].value = operand;
                                 stack[sp2].type = HopperType.tUInt;
-                                SPInc();
+                                sp++;
 
-                                SPDec();
-                                sp2 = (ushort)((SPDiv2()) - 1);
+                                sp--;
+                                sp2 = (ushort)((sp) - 1);
                                 uint top = stack[sp2 + 1].value;
                                 uint next = stack[sp2].value;
 
@@ -2950,13 +2905,13 @@ namespace HopperNET
                             PushBool(next == top);
 #else
                             {
-                                ushort sp2 = SPDiv2();
+                                ushort sp2 = sp;
                                 stack[sp2].value = operand;
                                 stack[sp2].type = HopperType.tUInt;
-                                SPInc();
+                                sp++;
 
-                                SPDec();
-                                sp2 = (ushort)((SPDiv2()) - 1);
+                                sp--;
+                                sp2 = (ushort)((sp) - 1);
                                 uint top = stack[sp2 + 1].value;
                                 uint next = stack[sp2].value;
 
@@ -3011,8 +2966,8 @@ namespace HopperNET
 #if UNDOINLINED
                             if (Pop() == 0)
 #else
-                            SPDec();
-                            uint top = stack[SPDiv2()].value;
+                            sp--;
+                            uint top = stack[sp].value;
                             if (top == 0)
 #endif
                             {
@@ -3033,8 +2988,8 @@ namespace HopperNET
 #if UNDOINLINED
                             if (Pop() != 0)
 #else
-                            SPDec();
-                            uint top = stack[SPDiv2()].value;
+                            sp--;
+                            uint top = stack[sp].value;
                             if (top != 0)
 #endif
                             {
@@ -3063,9 +3018,9 @@ namespace HopperNET
                                 Push(GetStackVariant((ushort)(operand + gp)));
                             }
 #else
-                            ushort address = Div2(operand + gp);
+                            ushort address = (ushort)(operand + gp);
                             HopperType type = stack[address].type;
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[address].value;
@@ -3080,7 +3035,7 @@ namespace HopperNET
                                 stack[sp2].reference = stack[address].reference;
                             }
                             stack[sp2].type = type;
-                            SPInc();
+                            sp++;
 #endif
                         }
                         break;
@@ -3090,7 +3045,7 @@ namespace HopperNET
                             pc += 2;
 
                             ushort address = (ushort)(operand + gp);
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             if (copyNextPop)
                             {
                                 if ((type == HopperType.tLong) || (type == HopperType.tFloat))
@@ -3171,7 +3126,7 @@ namespace HopperNET
 #if UNDOINLINED
                             Push(Pop(), (HopperType)operand);
 #else
-                            ushort sp2 = Div2(sp - stackSlot);
+                            ushort sp2 = (ushort)(sp - 1);
                             stack[sp2].type = (HopperType)operand;
 #endif
                         }
@@ -3189,8 +3144,8 @@ namespace HopperNET
                             HopperType type0 = GetStackType(globalAddress0);
                             PutStack(globalAddress0, GetStack(globalAddress0) + GetStack(globalAddress1), type0);
 #else
-                            ushort address0 = Div2(operand0 + gp);
-                            ushort address1 = Div2(operand1 + gp);
+                            ushort address0 = (ushort)(operand0 + gp);
+                            ushort address1 = (ushort)(operand1 + gp);
                             stack[address0].value += stack[address1].value;
 #endif
                         }
@@ -3217,7 +3172,7 @@ namespace HopperNET
                             }
                             PutStack(globalAddress, GetStack(globalAddress) + 1, type);
 #else
-                            ushort address = Div2(operand + gp);
+                            ushort address = (ushort)(operand + gp);
                             stack[address].value++;
                             if (stack[address].type == HopperType.tByte)
                             {
@@ -3236,7 +3191,7 @@ namespace HopperNET
                             HopperType type = GetStackType(globalAddress);
                             PutStack(globalAddress, GetStack(globalAddress) - 1, type);
 #else
-                            ushort address = Div2(operand + gp);
+                            ushort address = (ushort)(operand + gp);
                             stack[address].value--;
 #endif
                         }
@@ -3247,7 +3202,7 @@ namespace HopperNET
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
                             ushort address = (ushort)(operand + gp);
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
 
                             if ((type == HopperType.tLong) || (type == HopperType.tFloat))
                             {
@@ -3276,7 +3231,7 @@ namespace HopperNET
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             ushort address = (ushort)(operand + gp);
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
 
                             if ((type == HopperType.tLong) || (type == HopperType.tFloat))
                             {
@@ -3313,7 +3268,7 @@ namespace HopperNET
                             }
                             ushort localAddress = (ushort)(bp + offset);
 
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
 
                             if ((type == HopperType.tLong) || (type == HopperType.tFloat))
                             {
@@ -3348,7 +3303,7 @@ namespace HopperNET
                             }
                             ushort referenceAddress = (ushort)(bp + offset);
                             ushort localAddress = (ushort)GetStack(referenceAddress);
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
 
                             if ((type == HopperType.tLong) || (type == HopperType.tFloat))
                             {
@@ -3395,9 +3350,9 @@ namespace HopperNET
                                 Push(GetStackVariant((ushort)(operand + gp)));
                             }
 #else
-                            ushort address = Div2(operand + gp);
+                            ushort address = (ushort)(operand + gp);
                             HopperType type = stack[address].type;
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[address].value;
@@ -3412,7 +3367,7 @@ namespace HopperNET
                                 stack[sp2].reference = stack[address].reference;
                             }
                             stack[sp2].type = type;
-                            SPInc();
+                            sp++;
 #endif
                         }
                         break;
@@ -3445,9 +3400,9 @@ namespace HopperNET
                                 Push(GetStackVariant(localAddress));
                             }
 #else
-                            ushort localAddress2 = (ushort)(Div2(bp + offset));
+                            ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[localAddress2].value;
@@ -3462,7 +3417,7 @@ namespace HopperNET
                                 stack[sp2].reference = stack[localAddress2].reference;
                             }
                             stack[sp2].type = type;
-                            SPInc();
+                            sp++;
 #endif
 
                         }
@@ -3481,13 +3436,13 @@ namespace HopperNET
                             PushBool(next < top);
 #else
 
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             stack[sp2].value = operand;
                             stack[sp2].type = HopperType.tUInt;
-                            SPInc();
+                            sp++;
 
-                            SPDec();
-                            sp2 = (ushort)((SPDiv2()) - 1);
+                            sp--;
+                            sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 
@@ -3555,10 +3510,10 @@ namespace HopperNET
                                 Push(0, HopperType.tByte);
 #else
                                 {
-                                    ushort sp2 = SPDiv2();
+                                    ushort sp2 = sp;
                                     stack[sp2].value = 0;
                                     stack[sp2].type = HopperType.tByte;
-                                    SPInc();
+                                    sp++;
                                 }
 #endif
                             }
@@ -3699,10 +3654,10 @@ namespace HopperNET
                             Push(operand, HopperType.tByte);
 #else
 
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             stack[sp2].value = operand;
                             stack[sp2].type = HopperType.tByte;
-                            SPInc();
+                            sp++;
 
 #endif
                         }
@@ -3716,10 +3671,10 @@ namespace HopperNET
                             Push(operand, HopperType.tUInt);
 #else
 
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             stack[sp2].value = operand;
                             stack[sp2].type = HopperType.tUInt;
-                            SPInc();
+                            sp++;
                             
 #endif
                         }
@@ -3730,10 +3685,10 @@ namespace HopperNET
                         Push(0, HopperType.tByte);
 #else
                         {
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             stack[sp2].value = 0;
                             stack[sp2].type = HopperType.tByte;
-                            SPInc();
+                            sp++;
                             }
 #endif
                         break;
@@ -3742,10 +3697,10 @@ namespace HopperNET
                         Push(1, HopperType.tByte);
 #else
                         {
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             stack[sp2].value = 1;
                             stack[sp2].type = HopperType.tByte;
-                            SPInc();
+                            sp++;
                         }
 #endif
                         break;
@@ -3771,9 +3726,9 @@ namespace HopperNET
                                 Push(GetStackVariant(localAddress));
                             }
 #else
-                            ushort localAddress2 = (ushort)(Div2(bp + offset));
+                            ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[localAddress2].value;
@@ -3788,13 +3743,13 @@ namespace HopperNET
                                 stack[sp2].reference = stack[localAddress2].reference;
                             }
                             stack[sp2].type = type;
-                            SPInc();
+                            sp++;
 #endif
                         }
                         break;
-                    case Instruction.PUSHLOCALB02:
+                    case Instruction.PUSHLOCALB01:
                         {
-                            short offset = stackSlot;
+                            short offset = 1;
 #if UNDOINLINED
                             ushort localAddress = (ushort)(bp + offset);
                             HopperType type = GetStackType(localAddress);
@@ -3807,9 +3762,9 @@ namespace HopperNET
                                 Push(GetStackVariant(localAddress));
                             }
 #else
-                            ushort localAddress2 = (ushort)(Div2(bp + offset));
+                            ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
-                            ushort sp2 = SPDiv2();
+                            ushort sp2 = sp;
                             if (type <= HopperType.tLong)
                             {
                                 stack[sp2].value = stack[localAddress2].value;
@@ -3824,7 +3779,7 @@ namespace HopperNET
                                 stack[sp2].reference = stack[localAddress2].reference;
                             }
                             stack[sp2].type = type;
-                            SPInc();
+                            sp++;
 #endif
                         }
                         break;
@@ -3834,7 +3789,7 @@ namespace HopperNET
                             short offset = (short)0;
                             ushort localAddress = (ushort)(bp + offset);
 
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             if (copyNextPop)
                             {
                                 if ((type == HopperType.tLong) || (type == HopperType.tFloat))
@@ -3868,12 +3823,12 @@ namespace HopperNET
                             }
                         }
                         break;
-                    case Instruction.POPLOCALB02:
+                    case Instruction.POPLOCALB01:
                         {
-                            short offset = (short)stackSlot;
+                            short offset = 1;
                             ushort localAddress = (ushort)(bp + offset);
 
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                             if (copyNextPop)
                             {
                                 if ((type == HopperType.tLong) || (type == HopperType.tFloat))
@@ -3913,7 +3868,7 @@ namespace HopperNET
                             short offset = (short)0;
                             ushort localAddress = (ushort)(bp + offset);
 
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                                 
                             if ((type == HopperType.tLong) || (type == HopperType.tFloat))
                             {
@@ -3937,12 +3892,12 @@ namespace HopperNET
                                 
                         }
                         break;
-                    case Instruction.POPCOPYLOCALB02:
+                    case Instruction.POPCOPYLOCALB01:
                         {
-                            short offset = (short)stackSlot;
+                            short offset = 1;
                             ushort localAddress = (ushort)(bp + offset);
 
-                            HopperType type = GetStackType((ushort)(sp - stackSlot));
+                            HopperType type = GetStackType((ushort)(sp - 1));
                                 
                             if ((type == HopperType.tLong) || (type == HopperType.tFloat))
                             {
@@ -3980,8 +3935,8 @@ namespace HopperNET
 
                     case Instruction.SWAP:
                         {
-                            HopperType topType = GetStackType((ushort)(sp - stackSlot));
-                            HopperType nextType = GetStackType((ushort)(sp - (stackSlot*2)));
+                            HopperType topType = GetStackType((ushort)(sp - 1));
+                            HopperType nextType = GetStackType((ushort)(sp - 2));
                             if (Type_IsValueType(topType) && Type_IsValueType(nextType))
                             {
                                 uint top = Pop();
@@ -4018,7 +3973,7 @@ namespace HopperNET
                         break;
                     case Instruction.BITNOT:
                         {
-                            HopperType topType = GetStackType((ushort)(sp - stackSlot));
+                            HopperType topType = GetStackType((ushort)(sp - 1));
                             uint top = Pop();
                             top = ~top;
                             if (topType == HopperType.tByte)
@@ -4344,7 +4299,7 @@ namespace HopperNET
                 case SysCall.HttpClientGetRequest:
                     {
                         uint reference = Pop();
-                        uint address = Div2((ushort)reference);
+                        uint address = ((ushort)reference);
                         HopperString url = (HopperString)PopVariant(HopperType.tString);
 
 #if DEBUG
@@ -4479,7 +4434,7 @@ namespace HopperNET
                             {
                                 char more = (char)Pop();
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4511,7 +4466,7 @@ namespace HopperNET
                         case 1:
                             {
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4547,7 +4502,7 @@ namespace HopperNET
                         case 1:
                             {
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4574,7 +4529,7 @@ namespace HopperNET
                         case 0:
                             {
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4609,7 +4564,7 @@ namespace HopperNET
                         case 1:
                             {
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4640,7 +4595,7 @@ namespace HopperNET
                         case 1:
                             {
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4664,7 +4619,7 @@ namespace HopperNET
                             {
                                 HopperString more = (HopperString)PopVariant(HopperType.tString);
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4677,7 +4632,7 @@ namespace HopperNET
                             {
                                 char more = (char)Pop();
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4689,7 +4644,7 @@ namespace HopperNET
                         case 2:
                             {
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4803,7 +4758,7 @@ namespace HopperNET
                             {
                                 ushort start = (ushort)Pop();
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
 #if DEBUG
                                 Diagnostics.ASSERT(stack[address].type == HopperType.tString, "string ref expected");
 #endif
@@ -4883,7 +4838,7 @@ namespace HopperNET
                             {
                                 //bool IndexOf(string this, char pattern, ref uint index) system;
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
                                 char ch = (char)Pop();
                                 HopperString top = (HopperString)PopVariant(HopperType.tString);
 
@@ -4900,7 +4855,7 @@ namespace HopperNET
                             {
                                 //bool IndexOf(string this, char pattern, uint searchIndex, ref uint index) system;
                                 uint reference = Pop();
-                                uint address = Div2((ushort)reference);
+                                uint address = ((ushort)reference);
                                 int searchIndex = (int)Pop();
                                 char ch = (char)Pop();
                                 HopperString top = (HopperString)PopVariant(HopperType.tString);
@@ -5054,11 +5009,11 @@ namespace HopperNET
                         ushort index = (ushort)Pop();
                         HopperArray _this_ = (HopperArray)PopVariant(HopperType.tArray);
 #else
-                        uint sp2 = (uint)(SPDiv2());
+                        uint sp2 = (uint)(sp);
                         uint value = stack[sp2 - 1].value;
                         uint index = stack[sp2 - 2].value;
                         HopperArray _this_ = stack[sp2 - 3].reference as HopperArray;
-                        sp -= (ushort)(stackSlot*3);
+                        sp -= 3;
 #endif
                         ushort[] array = _this_.Value;
                         if (index >= array.Length)
@@ -5075,10 +5030,10 @@ namespace HopperNET
                         ushort index = (ushort)Pop();
                         HopperArray _this_ = (HopperArray)PopVariant(HopperType.tArray);
 #else
-                        uint sp2 = (uint)(SPDiv2());
+                        uint sp2 = (uint)(sp);
                         uint index = stack[sp2 - 1].value;
                         HopperArray _this_ = stack[sp2 - 2].reference as HopperArray;
-                        SPDec();
+                        sp--;
 #endif
                         ushort[] array = _this_.Value;
                         if (index >= array.Length)
@@ -5256,8 +5211,8 @@ namespace HopperNET
                     break;
                 case SysCall.DictionarySet:
                     {
-                        HopperType valueType = GetStackType((ushort)(sp - stackSlot));
-                        HopperType keyType = GetStackType((ushort)(sp - (stackSlot*2)));
+                        HopperType valueType = GetStackType((ushort)(sp - 1));
+                        HopperType keyType = GetStackType((ushort)(sp - 2));
                         if (Type_IsValueType(valueType) && (keyType == HopperType.tString))
                         {
                             uint value = Pop();
@@ -5307,7 +5262,7 @@ namespace HopperNET
                     break;
                 case SysCall.DictionaryContains:
                     {
-                        HopperType keyType = GetStackType((ushort)(sp - stackSlot));
+                        HopperType keyType = GetStackType((ushort)(sp - 1));
                         if (keyType == HopperType.tString)
                         {
                             HopperString key = (HopperString)PopVariant(HopperType.tString);
@@ -5328,7 +5283,7 @@ namespace HopperNET
                     break;
                 case SysCall.DictionaryGet:
                     {
-                        HopperType keyType = GetStackType((ushort)(sp - stackSlot));
+                        HopperType keyType = GetStackType((ushort)(sp - 1));
                         if (keyType == HopperType.tString)
                         {
                             HopperString key = (HopperString)PopVariant(HopperType.tString);
@@ -5389,7 +5344,7 @@ namespace HopperNET
                     break;
                 case SysCall.ListInsert:
                     {
-                        HopperType topType = GetStackType((ushort)(sp - stackSlot));
+                        HopperType topType = GetStackType((ushort)(sp - 1));
                         if (Type_IsValueType(topType))
                         {
                             uint value = Pop();
@@ -5422,7 +5377,7 @@ namespace HopperNET
                     break;
                 case SysCall.ListAppend:
                     {
-                        HopperType topType = GetStackType((ushort)(sp - stackSlot));
+                        HopperType topType = GetStackType((ushort)(sp - 1));
                         if (Type_IsValueType(topType))
                         {
                             uint value = Pop();
@@ -5524,7 +5479,7 @@ namespace HopperNET
                     break;
                 case SysCall.ListSetItem:
                     {
-                        HopperType topType = GetStackType((ushort)(sp - stackSlot));
+                        HopperType topType = GetStackType((ushort)(sp - 1));
                         uint value = 0;
                         Variant variant = null;
                         if (Type_IsValueType(topType))
@@ -5599,7 +5554,7 @@ namespace HopperNET
                             break;
                         }
                         Push(_this_.Value[index].Clone());
-                        HopperType topType = GetStackType((ushort)(sp - stackSlot));
+                        HopperType topType = GetStackType((ushort)(sp - 1));
                     }
                     break;
                 case SysCall.ListRemove:
@@ -5622,7 +5577,7 @@ namespace HopperNET
                     break;
                 case SysCall.ListContains:
                     {
-                        HopperType type = GetStackType((ushort)(sp - stackSlot));
+                        HopperType type = GetStackType((ushort)(sp - 1));
                         if (Type_IsValueType(type))
                         {
                             uint value = Pop();
@@ -5691,8 +5646,7 @@ namespace HopperNET
 
                         code = currentContext.Code; 
                         methodTable = currentContext.MethodTable;
-                        stackSlot = (byte)(currentContext.FlatStack ? 1 : 2);
-
+                        
                         pc = currentContext.pcBefore;
                         gp = currentContext.gpBefore;
                         
@@ -6034,7 +5988,7 @@ namespace HopperNET
                             case 1:
                                 {
                                     uint reference = Pop();
-                                    uint address = Div2((ushort)reference);
+                                    uint address = ((ushort)reference);
 #if DEBUG
                                     Diagnostics.ASSERT(stack[address].type == HopperType.tUInt, "uint ref expected");
 #endif
@@ -6061,7 +6015,7 @@ namespace HopperNET
                             case 1:
                                 {
                                     uint reference = Pop();
-                                    uint address = Div2((ushort)reference);
+                                    uint address = ((ushort)reference);
 #if DEBUG
                                     Diagnostics.ASSERT(stack[address].type == HopperType.tUInt, "uint ref expected");
 #endif
@@ -6194,9 +6148,9 @@ namespace HopperNET
                 case SysCall.LongInc:
                     {
 #if DEBUG
-                        Diagnostics.ASSERT(sp >= stackSlot, "stack underflow");
+                        Diagnostics.ASSERT(sp >= 1, "stack underflow");
 #endif
-                        ushort sp2 = Div2((ushort)(sp - stackSlot));
+                        ushort sp2 = ((ushort)(sp - 1));
 #if DEBUG
                         Diagnostics.ASSERT(stack[sp2].reference == null, "value type");
                         Diagnostics.ASSERT(stack[sp2].type == HopperType.tLong, "tLong expected");
@@ -6210,9 +6164,9 @@ namespace HopperNET
                     {
                         Int32 top = PopLong();
 #if DEBUG
-                        Diagnostics.ASSERT(sp >= stackSlot, "stack underflow");
+                        Diagnostics.ASSERT(sp >= 1, "stack underflow");
 #endif
-                        ushort sp2 = Div2((ushort)(sp - stackSlot));
+                        ushort sp2 = ((ushort)(sp - 1));
 #if DEBUG
                         Diagnostics.ASSERT(stack[sp2].reference == null, "value type");
                         Diagnostics.ASSERT(stack[sp2].type == HopperType.tLong, "tLong expected");
@@ -6226,9 +6180,9 @@ namespace HopperNET
                     {
                         Int32 top = PopLong();
 #if DEBUG
-                        Diagnostics.ASSERT(sp >= stackSlot, "stack underflow");
+                        Diagnostics.ASSERT(sp >= 1, "stack underflow");
 #endif
-                        ushort sp2 = Div2((ushort)(sp - stackSlot));
+                        ushort sp2 = ((ushort)(sp - 1));
 #if DEBUG
                         Diagnostics.ASSERT(stack[sp2].reference == null, "value type");
                         Diagnostics.ASSERT(stack[sp2].type == HopperType.tLong, "tLong expected");
@@ -6626,7 +6580,7 @@ namespace HopperNET
 
                 case SysCall.TypesTypeOf:
                     {
-                        HopperType type = GetStackType((ushort)(sp - stackSlot));
+                        HopperType type = GetStackType((ushort)(sp - 1));
                         if (Type_IsValueType(type))
                         {
                             Pop();
@@ -6725,7 +6679,7 @@ namespace HopperNET
                     break;
                 case SysCall.TypesBoxTypeOf:
                     {
-                        HopperType type = GetStackType((ushort)(sp - stackSlot));
+                        HopperType type = GetStackType((ushort)(sp - 1));
                         if (Type_IsValueType(type))
                         {
                             Pop();

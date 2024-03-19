@@ -204,11 +204,7 @@ program CODEGEN
                     break;
                 }
                                 
-                byte versionLSB = 0x01;
-                if (CodeStream.FlatStack)
-                {
-                    versionLSB |= 0x02;
-                }
+                byte versionLSB = 0x03; // extended code segment and flatstack
                 hexeFile.Append(versionLSB);
                 hexeFile.Append(byte(0));
                 

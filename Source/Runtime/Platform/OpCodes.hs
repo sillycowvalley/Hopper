@@ -114,9 +114,9 @@ unit OpCodes
         RET0         = 0x4A,
         
         POPLOCALB00  = 0x4C,
-        POPLOCALB02  = 0x4D,
+        POPLOCALB01  = 0x4D,
         PUSHLOCALB00 = 0x4E,
-        PUSHLOCALB02 = 0x4F,
+        PUSHLOCALB01 = 0x4F,
         
         SYSCALL0 = 0x24,
         SYSCALL1 = 0x25,
@@ -148,7 +148,7 @@ unit OpCodes
         POPCOPYGLOBALB  = 0x59,
         
         POPCOPYLOCALB00 = 0x5D,
-        POPCOPYLOCALB02 = 0x5E,
+        POPCOPYLOCALB01 = 0x5E,
         
         ENTERB   = 0x5F,
         EXIT     = 0x63, // only used in inline code (like GIBL)

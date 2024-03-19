@@ -114,14 +114,14 @@ unit ModelUtilities
             case Instruction.PUSHLOCAL:
             case Instruction.POPLOCAL:
             case Instruction.PUSHLOCALB00:
-            case Instruction.PUSHLOCALB02:
+            case Instruction.PUSHLOCALB01:
             case Instruction.POPLOCALB00:
-            case Instruction.POPLOCALB02:
+            case Instruction.POPLOCALB01:
             case Instruction.POPCOPYLOCALB:
             case Instruction.POPCOPYLOCALB00:
             case Instruction.PUSHLOCALBB:
             case Instruction.POPCOPYLOCAL:
-            case Instruction.POPCOPYLOCALB02:
+            case Instruction.POPCOPYLOCALB01:
             {
                 return true;
             }
@@ -135,7 +135,7 @@ unit ModelUtilities
             case Instruction.POPCOPYLOCALB:
             case Instruction.POPCOPYLOCALB00:
             case Instruction.POPCOPYLOCAL:
-            case Instruction.POPCOPYLOCALB02:
+            case Instruction.POPCOPYLOCALB01:
             {
                 return true;
             }
@@ -154,9 +154,9 @@ unit ModelUtilities
             {
                 opCode = Instruction.POPCOPYLOCALB00;
             }
-            case Instruction.POPLOCALB02:
+            case Instruction.POPLOCALB01:
             {
-                opCode = Instruction.POPCOPYLOCALB02;
+                opCode = Instruction.POPCOPYLOCALB01;
             }
             case Instruction.POPLOCAL:
             {
@@ -190,7 +190,7 @@ unit ModelUtilities
             case Instruction.POPLOCAL:   
             case Instruction.POPGLOBAL:   
             case Instruction.POPLOCALB00:   
-            case Instruction.POPLOCALB02:   
+            case Instruction.POPLOCALB01:   
             case Instruction.POPRELB:   
             case Instruction.POPREL:   
             {
@@ -216,7 +216,7 @@ unit ModelUtilities
             case Instruction.PUSHGLOBAL:
             case Instruction.PUSHREL:
             case Instruction.PUSHLOCALB00:
-            case Instruction.PUSHLOCALB02:
+            case Instruction.PUSHLOCALB01:
             {
                 return true;
             }

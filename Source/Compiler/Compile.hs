@@ -170,7 +170,7 @@ program Compile
                             break;
                         }
                     }
-                    returnBytes = SlotSize;       
+                    returnBytes = 1;
                 }
             }
             if (CodeStream.CheckedBuild)
@@ -1050,7 +1050,7 @@ program Compile
             // if there are no cases, no switch (still works if there was a 'default', just fall through to it)
             if (caseOffsets.Count  == 0)
             {
-                CodeStream.AddInstruction(Instruction.DECSP, SlotSize); // do nothing with the switch
+                CodeStream.AddInstruction(Instruction.DECSP, 1); // do nothing with the switch
             }
             else
             {
@@ -2055,7 +2055,7 @@ program Compile
             } // switch
             if (leftTokenType == HopperToken.Discarder)
             {
-                CodeStream.AddInstruction(Instruction.DECSP, SlotSize); // discard the stack slot
+                CodeStream.AddInstruction(Instruction.DECSP, 1); // discard the stack slot
             }
             else if (isMember)
             {

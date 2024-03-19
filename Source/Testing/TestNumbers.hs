@@ -1,6 +1,5 @@
 program TestNumbers
 {
-    #define FLAT_STACK
 //#define MCU
     uses "/Source/System/System"
     

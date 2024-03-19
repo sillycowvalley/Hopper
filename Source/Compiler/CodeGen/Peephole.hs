@@ -150,9 +150,9 @@ unit Peephole
                 length = 1;    
                 return true;
             }
-            case Instruction.PUSHLOCALB02:
+            case Instruction.PUSHLOCALB01:
             {
-                offset = SlotSize;   
+                offset = 1;   
                 length = 1;    
                 return true;
             }
@@ -177,9 +177,9 @@ unit Peephole
                 length = 1; 
                 return true;
             }
-            case Instruction.POPLOCALB02:
+            case Instruction.POPLOCALB01:
             {
-                offset = SlotSize;
+                offset = 1;
                 length = 1; 
                 return true;
             }
@@ -444,7 +444,7 @@ unit Peephole
         byte length0 = 0;
         bool isPushLocalB = IsPushLocalB(currentStream, lastInstruction0, ref offset0, ref length0);
         
-        if (isPushLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == SlotSize)))
+        if (isPushLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 1)))
         {
             if (offset0 == 0)
             {
@@ -452,18 +452,18 @@ unit Peephole
                 // i0         -> i0
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB00));
             }
-            if (offset0 == SlotSize)
+            if (offset0 == 1)
             {
-                // PUSHLOCALB -> PUSHLOCALB02
+                // PUSHLOCALB -> PUSHLOCALB01
                 // i0         -> i0
-                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB02));
+                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB01));
             }
             TrimTail(currentStream, 1);
             return true; // hunt for more
         }
         
         bool isPopLocalB = IsPopLocalB(currentStream, lastInstruction0, ref offset0, ref length0);
-        if (isPopLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == SlotSize)))
+        if (isPopLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 1)))
         {
             if (offset0 == 0)
             {
@@ -471,11 +471,11 @@ unit Peephole
                 // i0         -> i0
                 currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB00));
             }
-            if (offset0 == SlotSize)
+            if (offset0 == 1)
             {
-                // POPLOCALB -> POPLOCALB02
+                // POPLOCALB -> POPLOCALB01
                 // i0         -> i0
-                currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB02));
+                currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB01));
             }
             TrimTail(currentStream, 1);
             return true; // hunt for more

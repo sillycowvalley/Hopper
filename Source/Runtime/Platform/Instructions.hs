@@ -111,12 +111,12 @@ unit Instructions
         
         instructionDelegate = Instructions.PopLocalB00;
         WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB00), instructionDelegate);
-        instructionDelegate = Instructions.PopLocalB02;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB02), instructionDelegate);
+        instructionDelegate = Instructions.PopLocalB01;
+        WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB01), instructionDelegate);
         instructionDelegate = Instructions.InlinedPushLocalB00;
         WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALB00), instructionDelegate);
-        instructionDelegate = Instructions.InlinedPushLocalB02;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALB02), instructionDelegate);
+        instructionDelegate = Instructions.InlinedPushLocalB01;
+        WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALB01), instructionDelegate);
         
         instructionDelegate = Instructions.SysCall0;
         WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL0), instructionDelegate);
@@ -148,8 +148,8 @@ unit Instructions
         WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYGLOBALB), instructionDelegate);
         instructionDelegate = Instructions.PopCopyLocalB00;
         WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYLOCALB00), instructionDelegate);
-        instructionDelegate = Instructions.PopCopyLocalB02;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYLOCALB02), instructionDelegate);
+        instructionDelegate = Instructions.PopCopyLocalB01;
+        WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYLOCALB01), instructionDelegate);
         
         instructionDelegate = Instructions.EnterB;
         WriteToJumpTable(jumpTable, byte(OpCode.ENTERB), instructionDelegate);
@@ -579,7 +579,7 @@ unit Instructions
         }
         return true;
     }
-    bool InlinedPushLocalB02()
+    bool InlinedPushLocalB01()
     {
         uint value = ReadWord(uint(int(ValueStack)     + int(BP) + 2));
         Type htype = Type(ReadWord(uint(int(TypeStack) + int(BP) + 2)));
@@ -851,12 +851,12 @@ unit Instructions
         }
         return true;
     }
-    bool PopLocalB02()
+    bool PopLocalB01()
     {
         if (CNP) 
         { 
             CNP = false;
-            return PopCopyLocalB02();
+            return PopCopyLocalB01();
         }
         else
         {
@@ -955,7 +955,7 @@ unit Instructions
         }
         return true;
     }
-    bool PopCopyLocalB02()
+    bool PopCopyLocalB01()
     {
         // this is the slot we are about to overwrite: decrease reference count if reference type
         Type htype;
