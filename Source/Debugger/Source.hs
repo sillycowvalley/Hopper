@@ -201,25 +201,16 @@ unit Source
         return char(bvalue);
     }
     
-    uint ListGetNextItem(ref uint pCurrent, ref uint pItem1)
+    uint ListGetNextItem(ref uint pCurrent)
     {
-        uint pItem0 = Pages.GetPageWord(pCurrent + 0);
-        if (Is32BitStackSlot)
-        {
-            pItem1     = Pages.GetPageWord(pCurrent + 2);
-            pCurrent   = Pages.GetPageWord(pCurrent + 4);
-        }
-        else
-        {
-            pCurrent   = Pages.GetPageWord(pCurrent + 2);
-            pItem1 = 0;
-        }
-        return pItem0;   
+        uint pItem = Pages.GetPageWord(pCurrent + 0);
+        pCurrent   = Pages.GetPageWord(pCurrent + 2);
+        return pItem;   
     }
     
-    uint ListGetItem(uint lPtr, uint index, ref uint item1)
+    uint ListGetItem(uint lPtr, uint index)
     {
-        uint item0;
+        uint item;
         type   lvtype  = type(Pages.GetPageByte(lPtr+4));
         string lvtypes = lvtype.ToString();
         uint pCurrent = Pages.GetPageWord(lPtr+5);
@@ -227,8 +218,7 @@ unit Source
         bool iValueType = Types.IsValueType(lvtypes);
         while (pCurrent != 0)
         {
-            item1 = 0;
-            item0 = ListGetNextItem(ref pCurrent, ref item1);
+            item = ListGetNextItem(ref pCurrent);
             if (index == 0)
             {
                 //if (iValueType)
@@ -239,10 +229,10 @@ unit Source
             }
             index--;
         }
-        return item0;
+        return item;
     }
     
-    bool DictionaryNextItem(uint dPtr, ref uint iterator, ref uint kValue, ref uint vValue0, ref uint vValue1)
+    bool DictionaryNextItem(uint dPtr, ref uint iterator, ref uint kValue, ref uint vValue)
     {
         // Dictionary memory map:
         //   0000 heap allocator size
@@ -291,14 +281,7 @@ unit Source
             bool notOccupied;
             if (dktype == string)
             {
-                if (Is32BitStackSlot)
-                {
-                    notOccupied = (Pages.GetPageWord(pEntry+2) == 0);
-                }
-                else
-                {
-                    notOccupied = ((Pages.GetPageWord(pEntry+2) == 0) && (Pages.GetPageWord(pEntry+4) == 0));
-                }
+                notOccupied = ((Pages.GetPageWord(pEntry+2) == 0) && (Pages.GetPageWord(pEntry+4) == 0));
             }
             else
             {
@@ -311,16 +294,7 @@ unit Source
             else
             {
                 kValue  = Pages.GetPageWord(pEntry);
-                if (Is32BitStackSlot)
-                {
-                    vValue0 = Pages.GetPageWord(pEntry+4);
-                    vValue1 = Pages.GetPageWord(pEntry+6);
-                }
-                else
-                {
-                    vValue0 = Pages.GetPageWord(pEntry+6);
-                    vValue1 = 0;
-                }
+                vValue = Pages.GetPageWord(pEntry+6);
                 if (iterator == 0)
                 {
                     iterator = 0xFFFF; // end indicator for foreach loop
@@ -404,19 +378,17 @@ unit Source
         }
         return item;
     }
-    string TypeToString(uint value0, uint value1, string vtype, bool isReference, uint limit)
+    string TypeToString(uint value, string vtype, bool isReference, uint limit)
     {
-        return TypeToString(value0, value1, vtype, isReference, limit, "");
+        return TypeToString(value, vtype, isReference, limit, "");
     }
-    string TypeToString(uint value0, uint value1, string vtype, bool isReference, uint limit, string recordMemberType)
+    string TypeToString(uint value, string vtype, bool isReference, uint limit, string recordMemberType)
     {
         string content;
         if (isReference)
         {
-            uint refValue = Pages.GetPageWord(value0);
-            //uint taddress = TypeAddressFromValueAddress(value);
-            // TODO : validate against byte refType = pageData[taddress];
-            content = TypeToString(refValue, 0, vtype, false, limit, recordMemberType);
+            uint refValue = Pages.GetPageByte(value + 0x0600) + Pages.GetPageByte(value + 0x0700) << 8;
+            content = TypeToString(refValue, vtype, false, limit, recordMemberType);
         }
         else
         {
@@ -456,33 +428,33 @@ unit Source
             {
                 case "char":
                 {
-                    content = "'" + char(value0) + "'";
+                    content = "'" + char(value) + "'";
                 }
                 case "byte":
                 {
                     if (IsHexDisplayMode)
                     {
-                        content = "0x" + value0.ToHexString(2);
+                        content = "0x" + value.ToHexString(2);
                     }
                     else
                     {
-                        content = value0.ToString();
+                        content = value.ToString();
                     }
                 }
                 case "uint":
                 {
                     if (IsHexDisplayMode)
                     {
-                        content = "0x" + value0.ToHexString(4);
+                        content = "0x" + value.ToHexString(4);
                     }
                     else
                     {
-                        content = value0.ToString();
+                        content = value.ToString();
                     }
                 }
                 case "bool":
                 {
-                    if (value0 == 0)
+                    if (value == 0)
                     {
                         content = "false";
                     }
@@ -493,11 +465,11 @@ unit Source
                 }
                 case "string":
                 {
-                    uint length = Pages.GetPageWord(value0+2);
+                    uint length = Pages.GetPageWord(value+2);
                     string str;
                     for (uint i = 0; i < length; i++)
                     {
-                        str = str + StringGetChar(value0, i);
+                        str = str + StringGetChar(value, i);
                     }
                     if (IsHexDisplayMode)
                     {
@@ -523,8 +495,8 @@ unit Source
                 }
                 case "dictionary":
                 {
-                    type dktype = type(Pages.GetPageByte(value0+2));
-                    type dvtype = type(Pages.GetPageByte(value0+3));
+                    type dktype = type(Pages.GetPageByte(value+2));
+                    type dvtype = type(Pages.GetPageByte(value+3));
                     
                     string dktypes = dktype.ToString();
                     string dvtypes = dvtype.ToString();
@@ -532,8 +504,7 @@ unit Source
                     bool first = true;
                     uint iterator = 0;
                     uint kValue;
-                    uint vValue0;
-                    uint vValue1;
+                    uint vValue;
                     
                     if (dktype == Types.ToType(kType))
                     {
@@ -543,7 +514,7 @@ unit Source
                     {
                         dvtypes = vType;
                     }
-                    while (DictionaryNextItem(value0, ref iterator, ref kValue, ref vValue0, ref vValue1))
+                    while (DictionaryNextItem(value, ref iterator, ref kValue, ref vValue))
                     {
                         if (!first)
                         {
@@ -555,9 +526,9 @@ unit Source
                             break;
                         }
                         content += "<";
-                        content += TypeToString(kValue, 0, dktypes, false, limit);
+                        content += TypeToString(kValue, dktypes, false, limit);
                         content += ", ";
-                        content += TypeToString(vValue0, vValue1, dvtypes, false, limit);
+                        content += TypeToString(vValue, dvtypes, false, limit);
                         content += ">";
                         first = false;
                     }
@@ -571,9 +542,9 @@ unit Source
                     
                     content = "{";
                     uint iMember;
-                    type   lvtype  = type(Pages.GetPageByte(value0+4));
+                    type   lvtype  = type(Pages.GetPageByte(value+4));
                     string lvtypes = lvtype.ToString();
-                    uint pCurrent = Pages.GetPageWord(value0+5);
+                    uint pCurrent = Pages.GetPageWord(value+5);
                     if (lvtypes != "variant")
                     {
                         content += "??? " + lvtypes + " ???";
@@ -606,15 +577,14 @@ unit Source
                                 mtypes = member[1];
                                 mReferenceType = IsMachineReferenceType(mtypes);
                             }
-                            uint pItem1;
-                            uint pItem0 = ListGetNextItem(ref pCurrent, ref pItem1);
+                            uint pItem = ListGetNextItem(ref pCurrent);
                             if (mReferenceType)
                             {
-                                content += TypeToString(pItem0, 0, mtypes, false, limit);    
+                                content += TypeToString(pItem, mtypes, false, limit);    
                             }
                             else
                             {
-                                content += TypeToString(pItem0, 0, lvtypes, false, limit, mtypes); // variant    
+                                content += TypeToString(pItem, lvtypes, false, limit, mtypes); // variant    
                             }
                             iMember++;
                         }
@@ -643,9 +613,9 @@ unit Source
                 case "list":
                 {
                     content = "<";
-                    type   lvtype  = type(Pages.GetPageByte(value0+4));
+                    type   lvtype  = type(Pages.GetPageByte(value+4));
                     string lvtypes = lvtype.ToString();
-                    uint pCurrent = Pages.GetPageWord(value0+5);
+                    uint pCurrent = Pages.GetPageWord(value+5);
                     bool first = true;
                     bool iValueType = !IsMachineReferenceType(lvtypes);
                     
@@ -665,15 +635,14 @@ unit Source
                             content += "..";
                             break;
                         }
-                        uint pItem1;
-                        uint pItem0 = ListGetNextItem(ref pCurrent, ref pItem1);
+                        uint pItem = ListGetNextItem(ref pCurrent);
                         if (iValueType)
                         {
-                            content += TypeToString(pItem0, pItem1, lvtypes, false, limit);
+                            content += TypeToString(pItem, lvtypes, false, limit);
                         }
                         else
                         {
-                            content += TypeToString(pItem0, 0, lvtypes, false, limit);    
+                            content += TypeToString(pItem, lvtypes, false, limit);    
                         }
                         first = false;
                     }
@@ -681,27 +650,26 @@ unit Source
                 }
                 case "variant":
                 {
-                    type mtype = type(Pages.GetPageByte(value0));
+                    type mtype = type(Pages.GetPageByte(value));
                     string mtypes = mtype.ToString();
                     if (mtype == variant)
                     {
                         // unbox the value type
-                        mtype   = type(Pages.GetPageByte(value0+2));
+                        mtype   = type(Pages.GetPageByte(value+2));
                         mtypes = mtype.ToString();
                         bool mValueType = !IsMachineReferenceType(mtypes);
                         if (mValueType)
                         {
-                            uint pMember0 = Pages.GetPageWord(value0+3);
-                            uint pMember1 = Is32BitStackSlot ? Pages.GetPageWord(value1+3) : 0;
+                            uint pMember = Pages.GetPageWord(value+3);
                             if (recordMemberType.Length != 0)
                             {
                                 mtypes = recordMemberType;
                             }
-                            content += TypeToString(pMember0, pMember1, mtypes, false, limit);   
+                            content += TypeToString(pMember, mtypes, false, limit);   
                         }
                         else
                         {
-                            content = value0.ToHexString(4) + " v[" + mtypes + "]"; // what's this?
+                            content = value.ToHexString(4) + " v[" + mtypes + "]"; // what's this?
                         }
                     }
                     else
@@ -710,20 +678,20 @@ unit Source
                         if (!mValueType)
                         {
                             // reference type other than variant
-                            content += TypeToString(value0, value1, mtypes, false, limit); 
+                            content += TypeToString(value, mtypes, false, limit); 
                         }
                         else
                         {
-                            content = value0.ToHexString(4) + " v[" + mtypes + "]"; // what's this?
+                            content = value.ToHexString(4) + " v[" + mtypes + "]"; // what's this?
                         }
                     }
                 }
                 case "array":
                 {
                     content = "[";
-                    type avtype = type(Pages.GetPageByte(value0+4));
+                    type avtype = type(Pages.GetPageByte(value+4));
                     string avtypes = avtype.ToString();
-                    uint asize = Pages.GetPageWord(value0+2);
+                    uint asize = Pages.GetPageWord(value+2);
                     bool first = true;
                     for (uint i=0; i < asize; i++)
                     {
@@ -736,8 +704,8 @@ unit Source
                             content += "..";
                             break;
                         }
-                        uint item = ArrayGetItem(value0, i);
-                        content += TypeToString(item, 0, avtypes, false, limit);
+                        uint item = ArrayGetItem(value, i);
+                        content += TypeToString(item, avtypes, false, limit);
                         uint cl = content.Length;
                         first = false;
                     }
@@ -747,20 +715,20 @@ unit Source
                 {
                     if (IsHexDisplayMode)
                     {
-                        content = "0x" + value0.ToHexString(4); // easy since 'value' is a uint
+                        content = "0x" + value.ToHexString(4); // easy since 'value' is a uint
                     }
                     else
                     {
-                        int ivalue = Int.FromBytes(byte(value0 & 0xFF), byte(value0 >> 8));
+                        int ivalue = Int.FromBytes(byte(value & 0xFF), byte(value >> 8));
                         content = ivalue.ToString();
                     }
                 }
                 case "long":
                 {
-                    byte b0 = Output.Is32BitStackSlot? byte(value0 & 0xFF) : Pages.GetPageByte(value0+2);
-                    byte b1 = Output.Is32BitStackSlot? byte(value0 >> 8)   : Pages.GetPageByte(value0+3);
-                    byte b2 = Output.Is32BitStackSlot? byte(value1 & 0xFF) : Pages.GetPageByte(value0+4);
-                    byte b3 = Output.Is32BitStackSlot? byte(value1 >> 8)   : Pages.GetPageByte(value0+5);
+                    byte b0 = Pages.GetPageByte(value+2);
+                    byte b1 = Pages.GetPageByte(value+3);
+                    byte b2 = Pages.GetPageByte(value+4);
+                    byte b3 = Pages.GetPageByte(value+5);
                     
                     if (IsHexDisplayMode)
                     {
@@ -774,10 +742,10 @@ unit Source
                 }
                 case "float":
                 {
-                    byte b0 = Output.Is32BitStackSlot? byte(value0 & 0xFF) : Pages.GetPageByte(value0+2);
-                    byte b1 = Output.Is32BitStackSlot? byte(value0 >> 8)   : Pages.GetPageByte(value0+3);
-                    byte b2 = Output.Is32BitStackSlot? byte(value1 & 0xFF) : Pages.GetPageByte(value0+4);
-                    byte b3 = Output.Is32BitStackSlot? byte(value1 >> 8)   : Pages.GetPageByte(value0+5);
+                    byte b0 = Pages.GetPageByte(value+2);
+                    byte b1 = Pages.GetPageByte(value+3);
+                    byte b2 = Pages.GetPageByte(value+4);
+                    byte b3 = Pages.GetPageByte(value+5);
 
                     if (IsHexDisplayMode)
                     {
@@ -793,7 +761,7 @@ unit Source
                 case "enum":
                 {
                     tname = Types.QualifyEnum(tname);
-                    content = Symbols.DecodeEnum(tname, value0);
+                    content = Symbols.DecodeEnum(tname, value);
                     uint iFirst; uint iLast;
                     if (content.IndexOf('.', ref iFirst) && content.LastIndexOf('.', ref iLast) && (iFirst != iLast))
                     {
@@ -804,7 +772,7 @@ unit Source
                 case "flags":
                 {
                     tname = Types.QualifyFlags(tname);
-                    content = Symbols.DecodeFlags(tname, value0);
+                    content = Symbols.DecodeFlags(tname, value);
                     uint iFirst; uint iLast;
                     if (!content.Contains('|') && content.IndexOf('.', ref iFirst) && content.LastIndexOf('.', ref iLast) && (iFirst != iLast))
                     {
@@ -815,34 +783,34 @@ unit Source
                 case "delegate":
                 {
                     tname = Types.QualifyDelegateName(tname);
-                    if (value0 == 0)
+                    if (value == 0)
                     {
                         content = "null"; // illegal delegate value
                     }
                     else 
                     {
                         uint codeStart = (Pages.GetZeroPage("CODESTART") << 8);
-                        if (!Code.MethodExists(value0) && (value0 >= codeStart))
+                        if (!Code.MethodExists(value) && (value >= codeStart))
                         {
                             // probably a method address, not an index
-                            uint address = value0 - codeStart;
-                            value0 = Code.LocationToIndex(address);
+                            uint address = value - codeStart;
+                            value = Code.LocationToIndex(address);
                         }
                         string methodName;
-                        if (Code.MethodExists(value0))
+                        if (Code.MethodExists(value))
                         {
-                            methodName = Code.GetMethodName(value0);
+                            methodName = Code.GetMethodName(value);
                         }
                         else
                         {
-                            methodName = "0x" + value0.ToHexString(4);
+                            methodName = "0x" + value.ToHexString(4);
                         }
                         content = methodName + "(..)";
                     }
                 }
                 default:
                 {
-                    content = value0.ToHexString(4) + " [" + vtype + "]";
+                    content = value.ToHexString(4) + " [" + vtype + "]";
                 }
             }
         }

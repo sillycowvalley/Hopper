@@ -8,14 +8,18 @@
 extern UInt HopperVM_messagePC;
 #endif
 extern UInt HopperVM_pc;
-extern UInt HopperVM_sp;
-extern UInt HopperVM_gp;
-extern UInt HopperVM_bp;
-extern UInt HopperVM_csp;
+
+extern Byte HopperVM_sp;
+extern Byte HopperVM_gp;
+extern Byte HopperVM_bp;
+extern Byte HopperVM_csp;
 extern Bool HopperVM_cnp;
-extern UInt HopperVM_valueStack;
-extern UInt HopperVM_typeStack;
-extern UInt HopperVM_callStack;
+
+extern UInt HopperVM_valueStackLSBPage;
+extern UInt HopperVM_valueStackMSBPage;
+extern UInt HopperVM_typeStackPage;
+extern UInt HopperVM_callStackLSBPage;
+extern UInt HopperVM_callStackMSBPage;
 extern UInt HopperVM_dataMemory;
 extern UInt HopperVM_codeMemory;
 extern UInt HopperVM_jumpTable;
@@ -57,7 +61,7 @@ Bool Instructions_InlinedPushIB();
 Bool Instructions_InlinedPushIBB();
 Bool Instructions_InlinedPushLocalB();
 Bool Instructions_InlinedPushLocalB00();
-Bool Instructions_InlinedPushLocalB02();
+Bool Instructions_InlinedPushLocalB01();
 Bool Instructions_InlinedEnter();
 Bool Instructions_InlinedCallI();
 Bool Instructions_InlinedRetResB();

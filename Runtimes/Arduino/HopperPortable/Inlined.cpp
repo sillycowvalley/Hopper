@@ -19,29 +19,32 @@ void HopperVM_AssertBool(Type htype, UInt value)
 
 Bool Instructions_InlinedAdd()
 {
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next + *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    next = next + (dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
     return true;
 }
 Bool Instructions_InlinedSub()
 {
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next - *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    next = next - (dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
     return true;
 }
 Bool Instructions_InlinedMul()
 {
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next * *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    HopperVM_sp -= 1;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    next = next * (dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
     return true;
 }
 Bool Instructions_InlinedDiv()
@@ -63,17 +66,18 @@ Bool Instructions_InlinedDiv()
         HopperVM_Push(next / top, Type::eUInt);
     }
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    UInt top = *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    HopperVM_sp -= 1;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
     if (top == 0)
     {
         Minimal_Error_Set(0x04);
         return false;
     }
-    *next = *next / top;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    next = next / top;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
 #endif
     return true;
 }
@@ -97,17 +101,18 @@ Bool Instructions_InlinedMod()
         HopperVM_Push(next % top, Type::eUInt);
     }
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    UInt top = *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    HopperVM_sp -= 1;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
     if (top == 0)
     {
         Minimal_Error_Set(0x04);
         return false;
     }
-    *next = *next % top;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    next = next % top;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
 #endif
     return true;
 }
@@ -123,11 +128,12 @@ Bool Instructions_InlinedAddI()
     HopperVM_AssertInt(ntype);
     HopperVM_PushI(next + top);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next + *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x02; // Type::eInt;
+    HopperVM_sp -= 1;
+    UInt sp2 = HopperVM_sp - 1;
+    Int next = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8));
+    next = next + (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x02; // Type::eInt;
 #endif
     return true;
 }
@@ -143,11 +149,12 @@ Bool Instructions_InlinedSubI()
     HopperVM_AssertInt(ntype);
     HopperVM_PushI(next - top);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next - *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x02; // Type::eInt;
+    HopperVM_sp -= 1;
+    UInt sp2 = HopperVM_sp - 1;
+    Int next = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8));
+    next = next - (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x02; // Type::eInt;
 #endif
     return true;
 }
@@ -171,17 +178,18 @@ Bool Instructions_InlinedDivI()
         HopperVM_PushI(next / top);
     }
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    Int top = *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    HopperVM_sp -= 1;
+    UInt sp2 = HopperVM_sp - 1;
+    Int next = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8));
+    Int top  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
     if (top == 0)
     {
         Minimal_Error_Set(0x04);
         return false;
     }
-    *next = *next / top;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x02; // Type::eInt;
+    next = next / top;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x02; // Type::eInt;
 #endif
     return true;
 }
@@ -197,13 +205,13 @@ Bool Instructions_InlinedMulI()
     HopperVM_AssertInt(ntype);
     HopperVM_PushI(next * top);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next * *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x02; // Type::eInt;
+    HopperVM_sp -= 1;
+    UInt sp2 = HopperVM_sp - 1;
+    Int next = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8));
+    next = next * (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x02; // Type::eInt;
 #endif
-
     return true;
 }
 
@@ -226,49 +234,52 @@ Bool Instructions_InlinedModI()
         HopperVM_PushI(next % top);
     }
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    Int top = *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
+    HopperVM_sp -= 1;
+    UInt sp2 = HopperVM_sp - 1;
+    Int next = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8));
+    Int top  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
     if (top == 0)
     {
         Minimal_Error_Set(0x04);
         return false;
     }
-    *next = *next % top;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x02; // Type::eInt;
+    next = next % top;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x02; // Type::eInt;
 #endif
     return true;
 }
 
 Bool Instructions_InlinedAddB()
 {
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * dp = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *dp = *dp + codeStartAddress[HopperVM_pc++];
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt dp = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    dp = dp + codeStartAddress[HopperVM_pc++];
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(dp & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(dp >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
     return true;
 }
 Bool Instructions_InlinedSubB()
 {
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * dp = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *dp = *dp - codeStartAddress[HopperVM_pc++];
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt dp = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    dp = dp - codeStartAddress[HopperVM_pc++];
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(dp & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(dp >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
     return true;
 }
 Bool Instructions_InlinedPushI0()
 {
-    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = 0;
-    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
-    HopperVM_sp += 2;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] = 0;  dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp] = 0x03; // Type::eByte
+    HopperVM_sp++;
     return true;
 }
 Bool Instructions_InlinedPushI1()
 {
-    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = 1;
-    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
-    HopperVM_sp += 2;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] = 1;  dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp] = 0x03; // Type::eByte
+    HopperVM_sp++;
     return true;
 }
 Bool Instructions_InlinedPushIB()
@@ -276,9 +287,9 @@ Bool Instructions_InlinedPushIB()
 #ifdef CHECKED
     HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
 #else
-    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeStartAddress[HopperVM_pc++];
-    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
-    HopperVM_sp += 2;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] = codeStartAddress[HopperVM_pc++];  dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp] = 0x03; // Type::eByte
+    HopperVM_sp++;
 #endif
     return true;
 }
@@ -288,40 +299,39 @@ Bool Instructions_InlinedPushIBB()
     HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
     HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
 #else
-    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeStartAddress[HopperVM_pc++];
-    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
-    HopperVM_sp += 2;
-    *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]) = codeStartAddress[HopperVM_pc++];
-    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp] = 0x03; // Type::eByte
-    HopperVM_sp += 2;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] = codeStartAddress[HopperVM_pc++];  dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp] = 0x03; // Type::eByte
+    HopperVM_sp++;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] = codeStartAddress[HopperVM_pc++];  dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp] = 0x03; // Type::eByte
+    HopperVM_sp++;
 #endif
     return true;
 }
 
-
 Bool Instructions_InlinedPushLocalB00()
 {
-    UInt * vp  = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_bp];
-    *((UInt*)&dataMemoryBlock[UInt(HopperVM_valueStack + HopperVM_sp)]) = *vp;
-    Byte htype = dataMemoryBlock[HopperVM_typeStack + HopperVM_bp];
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + HopperVM_sp]) = htype;
-    HopperVM_sp += 2;
+    UInt vp = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_bp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_bp] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] = (Byte)(vp & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] = (Byte)(vp >> 8);
+    Byte htype = dataMemoryBlock[HopperVM_typeStackPage + HopperVM_bp];
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp] = htype;
+    HopperVM_sp++;
     if (htype >= 0x0D)
     {
-        GC_AddReference(*vp);
+        GC_AddReference(vp);
     }
     return true;
 }
-Bool Instructions_InlinedPushLocalB02()
+Bool Instructions_InlinedPushLocalB01()
 {
-    UInt * vp  = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_bp + 2];
-    *((UInt*)&dataMemoryBlock[UInt(HopperVM_valueStack + HopperVM_sp)]) = *vp;
-    Byte htype = dataMemoryBlock[HopperVM_typeStack + HopperVM_bp + 2];
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + HopperVM_sp]) = htype;
-    HopperVM_sp += 2;
+    UInt vp = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_bp + 1] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_bp + 1] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] = (Byte)(vp & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] = (Byte)(vp >> 8);
+    Byte htype = dataMemoryBlock[HopperVM_typeStackPage + HopperVM_bp + 1];
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp] = htype;
+    HopperVM_sp++;
     if (htype >= 0x0D)
     {
-        GC_AddReference(*vp);
+        GC_AddReference(vp);
     }
     return true;
 }
@@ -329,75 +339,73 @@ Bool Instructions_InlinedPushLocalB02()
 Bool Instructions_InlinedPushLocalB()
 {
     Int8 offset = (Int8)(codeStartAddress[HopperVM_pc++]);
-    UInt * vp  = (UInt*)&dataMemoryBlock[offset + HopperVM_valueStack + HopperVM_bp];
-    *((UInt*)&dataMemoryBlock[UInt(HopperVM_valueStack + HopperVM_sp)]) = *vp;
-    Byte htype = dataMemoryBlock[UInt(offset + HopperVM_typeStack + HopperVM_bp)];
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + HopperVM_sp]) = htype;
-    HopperVM_sp += 2;
+    UInt vp = dataMemoryBlock[offset + HopperVM_valueStackLSBPage + HopperVM_bp] + (dataMemoryBlock[offset + HopperVM_valueStackMSBPage + HopperVM_bp] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] = (Byte)(vp & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] = (Byte)(vp >> 8);
+    Byte htype = dataMemoryBlock[offset + HopperVM_typeStackPage + HopperVM_bp];
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp] = htype;
+    HopperVM_sp++;
     if (htype >= 0x0D)
     {
-        GC_AddReference(*vp);
+        GC_AddReference(vp);
     }
     return true;
 }
 
 Bool Instructions_InlinedEnter()
 {
-    *((UInt*)&dataMemoryBlock[HopperVM_callStack + HopperVM_csp]) = HopperVM_bp;
+    dataMemoryBlock[HopperVM_callStackLSBPage + HopperVM_csp] = HopperVM_bp; dataMemoryBlock[HopperVM_callStackMSBPage + HopperVM_csp] = 0;
     HopperVM_bp = HopperVM_sp;
-    HopperVM_csp += 2;
+    HopperVM_csp++;
     return true;
 }
 
 Bool Instructions_InlinedCallI()
 {
     UInt methodAddress = codeStartAddress[HopperVM_pc++] + (codeStartAddress[HopperVM_pc++] << 8);
-    *((UInt*)&dataMemoryBlock[HopperVM_callStack + HopperVM_csp]) = HopperVM_pc;
+    dataMemoryBlock[HopperVM_callStackLSBPage + HopperVM_csp] = (HopperVM_pc & 0xFF); dataMemoryBlock[HopperVM_callStackMSBPage + HopperVM_csp] = (HopperVM_pc >> 8);
     HopperVM_pc = methodAddress;
-    HopperVM_csp += 2;
+    HopperVM_csp++;
     return true;
 }
 
 Bool Instructions_InlinedRetResB()
 {
-    UInt vs2 = HopperVM_valueStack-2;
-    UInt * value = (UInt*)&dataMemoryBlock[vs2 + HopperVM_sp];
-    UInt ts2 = HopperVM_typeStack - 2;
-    Byte * rtype = &dataMemoryBlock[ts2 + HopperVM_sp];
+    UInt value = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp - 1] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp - 1] << 8);
+    Byte rtype = dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp - 1];
 
     UInt popBytes = codeStartAddress[HopperVM_pc++];
     while (popBytes != 0)
     {
-        HopperVM_sp -= 2;
-        UInt * address = (UInt*)&dataMemoryBlock[vs2 + HopperVM_sp];
-        if (dataMemoryBlock[ts2 + HopperVM_sp] >= 0x0D)
+        HopperVM_sp--;
+        UInt address = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp - 1] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp - 1] << 8);
+        if (dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp - 1] >= 0x0D)
         {
-            GC_Release(*address);
+            GC_Release(address);
         }
-        popBytes -= 2;
+        popBytes--;
     }
     
-    *((UInt*)&dataMemoryBlock[vs2 + HopperVM_sp]) = *value;
-    dataMemoryBlock[ts2 + HopperVM_sp] = *rtype;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp - 1] = (Byte)(value & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp - 1] = (Byte)(value >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp - 1] = rtype;
     
-    HopperVM_csp -= 2;
-    HopperVM_bp = *((UInt*)(&dataMemoryBlock[HopperVM_callStack + HopperVM_csp]));
+    HopperVM_csp--;
+    HopperVM_bp = dataMemoryBlock[HopperVM_callStackLSBPage + HopperVM_csp];
     if (HopperVM_csp == 0)
     {
         HopperVM_pc = 0;
     }
     else
     {
-        HopperVM_csp -= 2;
-        HopperVM_pc = *((UInt*)(&dataMemoryBlock[HopperVM_callStack + HopperVM_csp]));
+        HopperVM_csp--;
+        HopperVM_pc = dataMemoryBlock[HopperVM_callStackLSBPage + HopperVM_csp] + (dataMemoryBlock[HopperVM_callStackMSBPage + HopperVM_csp] << 8);
     }
     return HopperVM_pc != 0;
 }
 Bool Instructions_InlinedJZB()
 {
-    HopperVM_sp = HopperVM_sp - 0x02;
-    UInt * dp = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp];
-    if (*dp == 0)
+    HopperVM_sp = HopperVM_sp - 1;
+    UInt dp = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    if (dp == 0)
     {
         HopperVM_pc = (UInt)(HopperVM_ReadByteOffsetOperand() + HopperVM_pc - 2);
     }
@@ -409,9 +417,11 @@ Bool Instructions_InlinedJZB()
 }
 Bool Instructions_InlinedPushIBLE()
 {
-    UInt sp2 = HopperVM_valueStack + HopperVM_sp - 2;
-    *((UInt*)&dataMemoryBlock[sp2]) = ((*((UInt*)&dataMemoryBlock[sp2]) <= codeStartAddress[HopperVM_pc++]) ? 1 : 0);
-    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp - 2] = 0x06; // Type::eBool
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next <= codeStartAddress[HopperVM_pc++]) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool
     return true;
 }
 
@@ -427,11 +437,13 @@ Bool Instructions_InlinedGTI()
     HopperVM_AssertInt(ntype);
     HopperVM_Push(((next > top)) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next > *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    Int next = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8));
+    Int top  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next > top) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -447,11 +459,13 @@ Bool Instructions_InlinedLTI()
     HopperVM_AssertInt(ntype);
     HopperVM_Push(((next < top)) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next < *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    Int next = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8));
+    Int top  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next < top) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] =  0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -467,11 +481,13 @@ Bool Instructions_InlinedGEI()
     HopperVM_AssertInt(ntype);
     HopperVM_Push(((next >= top)) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next >= *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    Int next = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8));
+    Int top  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next >= top) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] =  0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -487,11 +503,13 @@ Bool Instructions_InlinedLEI()
     HopperVM_AssertInt(ntype);
     HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    Int * next = (Int*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next <= *((Int*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    Int next = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8));
+    Int top  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next <= top) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] =  0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -501,11 +519,13 @@ Bool Instructions_InlinedEQ()
 #ifdef CHECKED
     HopperVM_Push(((HopperVM_Pop() == HopperVM_Pop())) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next == *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next == top) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -515,11 +535,13 @@ Bool Instructions_InlinedNE()
 #ifdef CHECKED
     HopperVM_Push(((HopperVM_Pop() != HopperVM_Pop())) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next == *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 0 : 1;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next == top) ? 0 : 1;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -535,11 +557,13 @@ Bool Instructions_InlinedGT()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push(((next > top)) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next > *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next > top) ? 1 : 0; 
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -554,11 +578,13 @@ Bool Instructions_InlinedLT()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push(((next < top)) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next < *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next < top) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -573,11 +599,13 @@ Bool Instructions_InlinedGE()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push(((next >= top)) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next >= *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next >= top) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -592,22 +620,22 @@ Bool Instructions_InlinedLE()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
 #else
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (*next <= *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp])) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (next <= top) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
 
 Bool Instructions_InlinedCast()
 {
-    dataMemoryBlock[HopperVM_typeStack + HopperVM_sp - 0x02] = codeStartAddress[HopperVM_pc++];
+    dataMemoryBlock[HopperVM_typeStackPage + HopperVM_sp - 1] = codeStartAddress[HopperVM_pc++];
     return true;
 }
-
-
 
 Bool Instructions_InlinedBoolOr()
 {
@@ -620,12 +648,13 @@ Bool Instructions_InlinedBoolOr()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push((((next != 0x00) || (top != 0x00))) ? (0x01) : (0x00), Type::eBool);
 #else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt *  top = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp];
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (((*next != 0) || (*top != 0))) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (((next != 0) || (top != 0))) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -641,12 +670,13 @@ Bool Instructions_InlinedBoolAnd()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push((((next != 0x00) && (top != 0x00))) ? (0x01) : (0x00), Type::eBool);
 #else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt *  top = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp];
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = (((*next != 0) && (*top != 0))) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (((next != 0) && (top != 0))) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
@@ -659,63 +689,75 @@ Bool Instructions_InlinedBoolNot()
     HopperVM_AssertBool(ttype, top);
     HopperVM_Push(((top == 0x00)) ? (0x01) : (0x00), Type::eBool);
 #else
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * top = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *top = (*top == 0) ? 1 : 0;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x06; // Type::eBool;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (top == 0) ? 1 : 0;
+    dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = 0;
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x06; // Type::eBool;
 #endif
     return true;
 }
 
 Bool Instructions_InlinedIncLocalB()
 {
-    UInt address = UInt(HopperVM_bp + (Int8)(codeStartAddress[HopperVM_pc++]));
-    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + address];
+    Int8 offset = (Int8)(codeStartAddress[HopperVM_pc++]);
+    UInt address = UInt(offset + HopperVM_bp);
+    UInt value  = dataMemoryBlock[HopperVM_valueStackLSBPage + address] + (dataMemoryBlock[HopperVM_valueStackMSBPage + address] << 8);
 #ifdef CHECKED
-    if (*value == 0xFFFF)
+    if (value == 0xFFFF)
     {
         Minimal_Error_Set(0x0D); // numeric type out of range / overflow
         return false;
     }    
 #endif
-    (*value)++;
-    Byte   vtype = dataMemoryBlock[HopperVM_typeStack + address];
+    value++;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + address] = (Byte)(value & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + address] = (Byte)(value >> 8);
+    Byte   vtype = dataMemoryBlock[HopperVM_typeStackPage + address];
     if (vtype == 0x03) // Type::eByte
     {
         vtype = 0x04; // Type::eUInt;
     }
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = vtype; 
+    dataMemoryBlock[HopperVM_typeStackPage + address] = vtype; 
     return true;
 }
 
 Bool Instructions_InlinedIncLocalIBB()
 {
-    UInt address0 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + (Int8)(codeStartAddress[HopperVM_pc++]));
-    UInt address1 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + (Int8)(codeStartAddress[HopperVM_pc++]));
-    *((Int*)&dataMemoryBlock[address0]) = *((Int*)&dataMemoryBlock[address0]) + *((Int*)&dataMemoryBlock[address1]) ;
+    Int8 offset0 = (Int8)(codeStartAddress[HopperVM_pc++]);
+    Int8 offset1 = (Int8)(codeStartAddress[HopperVM_pc++]);
+    Int value0 = (Int)(dataMemoryBlock[offset0 + HopperVM_valueStackLSBPage + HopperVM_bp] + (dataMemoryBlock[offset0 + HopperVM_valueStackMSBPage + HopperVM_bp] << 8));
+    Int value1 = (Int)(dataMemoryBlock[offset1 + HopperVM_valueStackLSBPage + HopperVM_bp] + (dataMemoryBlock[offset1 + HopperVM_valueStackMSBPage + HopperVM_bp] << 8));
+    value0 = value0 + value1;
+    dataMemoryBlock[offset0 + HopperVM_valueStackLSBPage + HopperVM_bp] = (Byte)(value0 & 0xFF); dataMemoryBlock[offset0 + HopperVM_valueStackMSBPage + HopperVM_bp] = (Byte)(value0 >> 8);
     return true;
 }
 
 Bool Instructions_InlinedIncLocalBB()
 {
-    UInt address0 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + (Int8)(codeStartAddress[HopperVM_pc++]));
-    UInt address1 = UInt(Int(HopperVM_ValueStack_Get()) + Int(HopperVM_BP_Get()) + (Int8)(codeStartAddress[HopperVM_pc++]));
-    *((UInt*)&dataMemoryBlock[address0]) = *((UInt*)&dataMemoryBlock[address0]) + *((UInt*)&dataMemoryBlock[address1]);
+    Int8 offset0 = (Int8)(codeStartAddress[HopperVM_pc++]);
+    Int8 offset1 = (Int8)(codeStartAddress[HopperVM_pc++]);
+    UInt value0 = (dataMemoryBlock[offset0 + HopperVM_valueStackLSBPage + HopperVM_bp] + (dataMemoryBlock[offset0 + HopperVM_valueStackMSBPage + HopperVM_bp] << 8));
+    UInt value1 = (dataMemoryBlock[offset1 + HopperVM_valueStackLSBPage + HopperVM_bp] + (dataMemoryBlock[offset1 + HopperVM_valueStackMSBPage + HopperVM_bp] << 8));
+    value0 = value0 + value1;
+    dataMemoryBlock[offset0 + HopperVM_valueStackLSBPage + HopperVM_bp] = (Byte)(value0 & 0xFF); dataMemoryBlock[offset0 + HopperVM_valueStackMSBPage + HopperVM_bp] = (Byte)(value0 >> 8);
     return true;
 }
 
 
 Bool Instructions_InlinedDecLocalB()
 {
-    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_bp + (Int8)(codeStartAddress[HopperVM_pc++])];
+    Int8 offset = (Int8)(codeStartAddress[HopperVM_pc++]);
+    UInt value  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_bp + offset] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_bp + offset] << 8);
 #ifdef CHECKED
-    if (*value == 0)
+    if (value == 0)
     {
         Minimal_Error_Set(0x0D); // numeric type out of range / overflow
         return false;
     }    
 #endif
-    (*value)--;
+    value--;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_bp + offset] = (Byte)(value & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_bp + offset] = (Byte)(value >> 8);
+    
     return true;
 }
 
@@ -723,99 +765,108 @@ Bool Instructions_InlinedIncGlobalB()
 {
     UInt address = codeStartAddress[HopperVM_pc++] + HopperVM_gp;
     Type itype = (Type)0;
-    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + address];
+    UInt value  = dataMemoryBlock[HopperVM_valueStackLSBPage + address] + (dataMemoryBlock[HopperVM_valueStackMSBPage + address] << 8);
 #ifdef CHECKED
-    if (*value == 0xFFFF)
+    if (value == 0xFFFF)
     {
         Minimal_Error_Set(0x0D); // numeric type out of range / overflow
         return false;
     }    
 #endif
-    (*value)++;
-    Byte   vtype = dataMemoryBlock[HopperVM_typeStack + address];
+    Byte   vtype = dataMemoryBlock[HopperVM_typeStackPage + address];
+    value++;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + address] = (Byte)(value & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + address] = (Byte)(value >> 8);
     if (vtype == 0x03) // Type::eByte
     {
         vtype = 0x04; // Type::eUInt;
     }
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = vtype; 
+    dataMemoryBlock[HopperVM_typeStackPage + address] = vtype; 
     return true;
 }
 
 Bool Instructions_InlinedDecGlobalB()
 {
-    UInt * value = (UInt*)&dataMemoryBlock[HopperVM_valueStack + codeStartAddress[HopperVM_pc++] + HopperVM_gp];
+    uint address = codeStartAddress[HopperVM_pc++] + HopperVM_gp;
+    UInt value  = dataMemoryBlock[HopperVM_valueStackLSBPage + address] + (dataMemoryBlock[HopperVM_valueStackMSBPage + address] << 8);
 #ifdef CHECKED
-    if (*value == 0)
+    if (value == 0)
     {
         Minimal_Error_Set(0x0D); // numeric type out of range / overflow
         return false;
     }    
 #endif
-    (*value)--;
+    value--;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + address] = (Byte)(value & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + address] = (Byte)(value >> 8);
     return true;
 }
 
 Bool Instructions_InlinedIncLocalIB()
 {
-    UInt address = UInt(HopperVM_bp + (Int8)(codeStartAddress[HopperVM_pc++]));
-    Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+    Int8 offset = (Int8)(codeStartAddress[HopperVM_pc++]);
+    UInt address = UInt(HopperVM_bp + offset);
+    Int ivalue  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + address] + (dataMemoryBlock[HopperVM_valueStackMSBPage + address] << 8));
 #ifdef CHECKED
-    if (*ivalue == 32767)
+    if (ivalue == 32767)
     {
         Minimal_Error_Set(0x0D); // numeric type out of range / overflow
         return false;
     }    
 #endif
-    (*ivalue)++;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
+    ivalue++;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + address] = (Byte)(ivalue & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + address] = (Byte)(ivalue >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + address] = 0x02; // Type::eInt;
     return true;
 }
 
 Bool Instructions_InlinedDecLocalIB()
 {
-    UInt address = UInt(HopperVM_bp + (Int8)(codeStartAddress[HopperVM_pc++]));
-    Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+    Int8 offset = (Int8)(codeStartAddress[HopperVM_pc++]);
+    UInt address = UInt(HopperVM_bp + offset);
+    Int ivalue  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + address] + (dataMemoryBlock[HopperVM_valueStackMSBPage + address] << 8));
 #ifdef CHECKED
-    if (*ivalue == -32768)
+    if (ivalue == -32768)
     {
         Minimal_Error_Set(0x0D); // numeric type out of range / overflow
         return false;
     }    
 #endif
-    (*ivalue)--;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
+    ivalue--;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + address] = (Byte)(ivalue & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + address] = (Byte)(ivalue >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + address] = 0x02; // Type::eInt;
     return true;
 }
 
 Bool Instructions_InlinedIncGlobalIB()
 {
     UInt address = codeStartAddress[HopperVM_pc++] + HopperVM_gp;
-    Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+    Int ivalue  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + address] + (dataMemoryBlock[HopperVM_valueStackMSBPage + address] << 8));
 #ifdef CHECKED
-    if (*ivalue == 32767)
+    if (ivalue == 32767)
     {
         Minimal_Error_Set(0x0D); // numeric type out of range / overflow
         return false;
     }    
 #endif
-    (*ivalue)++;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
+    ivalue++;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + address] = (Byte)(ivalue & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + address] = (Byte)(ivalue >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + address] = 0x02; // Type::eInt;
     return true;
 }
 
 Bool Instructions_InlinedDecGlobalIB()
 {
     UInt address = codeStartAddress[HopperVM_pc++] + HopperVM_gp;
-    Int * ivalue = (Int*)&dataMemoryBlock[HopperVM_valueStack + address];
+    Int ivalue  = (Int)(dataMemoryBlock[HopperVM_valueStackLSBPage + address] + (dataMemoryBlock[HopperVM_valueStackMSBPage + address] << 8));
 #ifdef CHECKED
-    if (*ivalue == -32768)
+    if (ivalue == -32768)
     {
         Minimal_Error_Set(0x0D); // numeric type out of range / overflow
         return false;
     }    
 #endif
-    (*ivalue)--;
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + address]) = 0x02; // Type::eInt;
+    ivalue--;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + address] = (Byte)(ivalue & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + address] = (Byte)(ivalue >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + address] = 0x02; // Type::eInt;
     return true;
 }
 
@@ -830,11 +881,13 @@ Bool Instructions_InlinedBitOr()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push(next | top, Type::eUInt);
 #else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next | *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    next = next | top;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
 #endif
     return true;
 }
@@ -850,11 +903,14 @@ Bool Instructions_InlinedBitAnd()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push(next & top, Type::eUInt);
 #else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next & *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    next = next & top;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
 #endif
     return true;
 }
@@ -870,11 +926,13 @@ Bool Instructions_InlinedBitShl()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push(next << top, Type::eUInt);
 #else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next << *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    next = next << top;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
 #endif
     return true;
 }
@@ -890,11 +948,13 @@ Bool Instructions_InlinedBitShr()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push(next >> top, Type::eUInt);
 #else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = *next >> *((UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp]);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    next = next >> top;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
 #endif
     return true;
 }
@@ -907,10 +967,11 @@ Bool Instructions_InlinedBitNot()
     HopperVM_AssertUInt(ttype, top);
     HopperVM_Push(~top, Type::eUInt);
 #else
-    UInt sp2 = HopperVM_sp - 2;
-    UInt * top = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *top = ~(*top);
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    top = ~top;
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(top & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(top >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
 #endif
     return true;
 }
@@ -926,12 +987,13 @@ Bool Instructions_InlinedBitXor()
     HopperVM_AssertUInt(ntype, next);
     HopperVM_Push((next | top) & (~(next & top)), Type::eUInt);
 #else    
-    HopperVM_sp -= 2;
-    UInt sp2 = HopperVM_sp - 2;
-    UInt *  top = (UInt*)&dataMemoryBlock[HopperVM_valueStack + HopperVM_sp];
-    UInt * next = (UInt*)&dataMemoryBlock[HopperVM_valueStack + sp2];
-    *next = ((*next | *top) & (~(*next & *top)));
-    *((UInt*)&dataMemoryBlock[HopperVM_typeStack + sp2]) = 0x04; // Type::eUInt;
+    HopperVM_sp--;
+    UInt sp2 = HopperVM_sp - 1;
+    UInt top  = dataMemoryBlock[HopperVM_valueStackLSBPage + HopperVM_sp] + (dataMemoryBlock[HopperVM_valueStackMSBPage + HopperVM_sp] << 8);
+    UInt next = dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] + (dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] << 8);
+    next = ((next | top) & (~(next & top)));
+    dataMemoryBlock[HopperVM_valueStackLSBPage + sp2] = (Byte)(next & 0xFF); dataMemoryBlock[HopperVM_valueStackMSBPage + sp2] = (Byte)(next >> 8);
+    dataMemoryBlock[HopperVM_typeStackPage + sp2] = 0x04; // Type::eUInt;
 #endif
     return true;
 }

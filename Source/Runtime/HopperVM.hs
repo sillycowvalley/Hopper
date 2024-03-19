@@ -29,10 +29,6 @@ unit HopperVM
     uses "Platform/Desktop"
 #endif    
     
-    
-    const uint stackSize     = 512; // size of value stack in byte (each stack slot is 2 bytes)
-    const uint callStackSize = 512; // size of callstack in bytes (4 bytes per call)
-    
     const uint dataMemoryStart = 0x0000; // data memory magically exists from 0x0000 to 0xFFFF
     
 #ifdef RUNTIME    
@@ -57,9 +53,11 @@ unit HopperVM
     uint keyboardBuffer;
 #endif
     
-    uint valueStack; // 2 byte slots
-    uint typeStack;  // 2 byte slots (but we only use the LSB, just to be able to use the same 'sp' as valueStack)
-    uint callStack;  // 2 byte slots (either return address PC or BP for stack from)
+    uint valueStackLSBPage;
+    uint valueStackMSBPage;
+    uint typeStackPage;
+    uint callStackLSBPage;
+    uint callStackMSBPage;
     
     uint dataMemory; // start of free memory (changes if a new program is loaded)
     
@@ -70,11 +68,11 @@ unit HopperVM
     uint currentArguments;
     
     uint pc;
-    uint gp; // floor for globals (matters for child processes)
-    uint sp;
-    uint bp;
-    uint csp;
-    uint cspStart;
+    byte gp; // floor for globals (matters for child processes)
+    byte sp;
+    byte bp;
+    byte csp;
+    byte cspStart;
     bool cnp;
 #ifdef CHECKED
     uint messagePC;
@@ -82,19 +80,22 @@ unit HopperVM
     bool inDebugger;
     
     uint PC  { get { return pc; }  set { pc = value; } }
-    uint SP  { get { return sp; }  set { sp = value; } }
-    uint GP  { get { return gp; }  set { gp = value; } }
-    uint CSP { get { return csp; } set { csp = value; } }
-    uint CSPStart { get { return cspStart; } set { cspStart = value; } }
+    byte SP  { get { return sp; }  set { sp = value; } }
+    byte GP  { get { return gp; }  set { gp = value; } }
+    byte CSP { get { return csp; } set { csp = value; } }
+    byte CSPStart { get { return cspStart; } set { cspStart = value; } }
+    byte BP  { get { return bp; }  set { bp = value; } }
+    
     bool CNP { get { return cnp; } set { cnp = value; } }
-    uint BP  { get { return bp; }  set { bp = value; } }
     
     OpCode opCode;
     OpCode CurrentOpCode { get { return opCode; } }
     
-    uint ValueStack { get { return valueStack; } }
-    uint TypeStack  { get { return typeStack; } }
-    uint CallStack  { get { return callStack; } }
+    uint ValueStackLSB { get { return valueStackLSBPage; } }
+    uint ValueStackMSB { get { return valueStackMSBPage; } }
+    uint TypeStackLSB  { get { return typeStackPage; } }
+    uint CallStackLSB  { get { return callStackLSBPage; } }
+    uint CallStackMSB  { get { return callStackMSBPage; } }
     
     bool BreakpointExists { get { return breakpointExists; } }
     
@@ -160,14 +161,20 @@ unit HopperVM
 #endif
         
         uint nextAddress   = dataMemoryStart;
-        callStack          = nextAddress;
-        nextAddress        = nextAddress + callStackSize;
+        callStackLSBPage   = nextAddress;
+        nextAddress        = nextAddress + 256;
         
-        valueStack         = nextAddress;
-        nextAddress        = nextAddress + stackSize;
+        callStackMSBPage   = nextAddress;
+        nextAddress        = nextAddress + 256;
         
-        typeStack          = nextAddress;
-        nextAddress        = nextAddress + stackSize;
+        typeStackPage      = nextAddress;
+        nextAddress        = nextAddress + 256;
+        
+        valueStackLSBPage  = nextAddress;
+        nextAddress        = nextAddress + 256;
+        
+        valueStackMSBPage  = nextAddress;
+        nextAddress        = nextAddress + 256;
         
         jumpTable          = nextAddress;
         nextAddress        = nextAddress + jumpTableSize;
@@ -329,11 +336,11 @@ unit HopperVM
         currentArguments = hrargs;
         
         uint pcBefore = pc;
-        uint spBefore = sp;
-        uint bpBefore = bp;
-        uint gpBefore = gp;
-        uint cspBefore = csp;
-        uint cspStartBefore = cspStart;
+        byte spBefore = sp;
+        byte bpBefore = bp;
+        byte gpBefore = gp;
+        byte cspBefore = csp;
+        byte cspStartBefore = cspStart;
         
         // modified by Initialize(..)
         uint binaryAddressBefore = binaryAddress;
@@ -1137,7 +1144,7 @@ unit HopperVM
                     case 1:
                     {
                         Type utype;
-                        uint address = Pop(ref utype);
+                        byte address = byte(Pop(ref utype));
                         uint skipped = Get(address, ref utype);
                         
                         Type stype;
@@ -1178,7 +1185,7 @@ unit HopperVM
                     case 1:
                     {
                         Type utype;
-                        uint address = Pop(ref utype);
+                        byte address = byte(Pop(ref utype));
                         uint skipped = Get(address, ref utype);
                         
                         Type stype;
@@ -1458,7 +1465,7 @@ unit HopperVM
                     {
                         // ToUpper(ref string build) system;
                         Type htype;
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint str = Get(address, ref htype);
 #ifdef CHECKED
                         if (htype != Type.String)
@@ -1496,7 +1503,7 @@ unit HopperVM
                     {
                         // ToUpper(ref string build) system;
                         Type htype;
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint str = Get(address, ref htype);
 #ifdef CHECKED
                         if (htype != Type.String)
@@ -1594,7 +1601,7 @@ unit HopperVM
                     case 0:
                     {
                         Type htype;
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint index = Get(address, ref htype);
                         
                         Type atype;
@@ -1621,7 +1628,7 @@ unit HopperVM
                     case 1:
                     {
                         Type htype;
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint index = Get(address, ref htype);
                         
                         Type itype;
@@ -1647,7 +1654,6 @@ unit HopperVM
                             Put(address, index, Type.UInt);
                         }
                         GC.Release(this);
-                        GC.Release(with);
                         Push(result ? 1 : 0, Type.Bool);
                     }
                     default:
@@ -1857,7 +1863,7 @@ unit HopperVM
                         Type stype;
                         uint start = Pop(ref stype);
                         Type htype;
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint str = Get(address, ref htype);
 #ifdef CHECKED
                         AssertUInt(stype, start);
@@ -1893,12 +1899,12 @@ unit HopperVM
                         }
 #endif
                         Type htype;
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint str = Get(address, ref htype);
 #ifdef CHECKED
                         if (htype != Type.String)
                         {
-                            ErrorDump(17);
+                            ErrorDump(271);
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif        
@@ -1913,12 +1919,12 @@ unit HopperVM
 #ifdef CHECKED
                         AssertChar(htype, byte(ch));
 #endif                
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint str = Get(address, ref htype);
 #ifdef CHECKED
                         if (htype != Type.String)
                         {
-                            ErrorDump(17);
+                            ErrorDump(272);
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif        
@@ -1928,12 +1934,12 @@ unit HopperVM
                     case 2:
                     {
                         Type htype;
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint str = Get(address, ref htype);
 #ifdef CHECKED
                         if (htype != Type.String)
                         {
-                            ErrorDump(17);
+                            ErrorDump(273);
                             Error = 0x0B; // system failure (internal error)
                         }
 #endif        
@@ -1954,12 +1960,12 @@ unit HopperVM
 #ifdef CHECKED
                 AssertChar(htype, byte(ch));
 #endif                
-                uint address = Pop(ref htype);
+                byte address = byte(Pop(ref htype));
                 uint str = Get(address, ref htype);
 #ifdef CHECKED
                 if (htype != Type.String)
                 {
-                    ErrorDump(16);
+                    ErrorDump(257);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
@@ -1988,7 +1994,7 @@ unit HopperVM
                     case 1:
                     {
                         Type htype;
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint str = Get(address, ref htype);
 #ifdef CHECKED
                         if (htype != Type.String)
@@ -2030,7 +2036,7 @@ unit HopperVM
                     case 1:
                     {
                         Type htype;
-                        uint address = Pop(ref htype);
+                        byte address = byte(Pop(ref htype));
                         uint str = Get(address, ref htype);
 #ifdef CHECKED
                         if (htype != Type.String)
@@ -2052,7 +2058,7 @@ unit HopperVM
             case SysCalls.StringTrimRight:
             {
                 Type htype;
-                uint address = Pop(ref htype);
+                byte address = byte(Pop(ref htype));
                 uint str = Get(address, ref htype);
 #ifdef CHECKED
                 if (htype != Type.String)
@@ -2074,7 +2080,7 @@ unit HopperVM
 #ifdef CHECKED
                 if ((stype != Type.String) || (ptype != Type.String))
                 {
-                    ErrorDump(16);
+                    ErrorDump(258);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
@@ -2129,7 +2135,7 @@ unit HopperVM
                 }
 #endif
                 uint length = Pop(ref stype);
-                uint location = Pop(ref stype);
+                uint location = Pop(ref ltype);
 #ifdef CHECKED
                 AssertUInt(stype, length);
                 AssertUInt(ltype, location);
@@ -3129,9 +3135,14 @@ unit HopperVM
                 Type ntype;
                 uint next = Pop(ref ntype);
 #ifdef CHECKED
-                if ((ttype != Type.Long) || (ntype != Type.Long))
+                if (ttype != Type.Long)
                 {
-                    ErrorDump(6);
+                    ErrorDump(250);
+                    Error = 0x0B; // system failure (internal error)
+                }
+                if (ntype != Type.Long)
+                {
+                    ErrorDump(255);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif
@@ -3199,7 +3210,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (ntype != Type.Long)
                 {
-                    ErrorDump(6);
+                    ErrorDump(251);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif
@@ -3219,7 +3230,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (ntype != Type.Long)
                 {
-                    ErrorDump(6);
+                    ErrorDump(252);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif
@@ -3249,7 +3260,7 @@ unit HopperVM
 #ifdef CHECKED
                 if ((ttype != Type.Float) || (ntype != Type.Float))
                 {
-                    ErrorDump(6);
+                    ErrorDump(253);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif
@@ -3317,7 +3328,7 @@ unit HopperVM
 #ifdef CHECKED
                 if (ttype != Type.Float)
                 {
-                    ErrorDump(6);
+                    ErrorDump(254);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif
@@ -3503,7 +3514,7 @@ unit HopperVM
                 Type ctype;
                 uint isInteractive = Pop(ref ctype);
 #ifdef CHECKED
-                AssertBool(ctype, col);
+                AssertBool(ctype, isInteractive);
 #endif                
                 Desktop.Resume(isInteractive != 0);
 #else
@@ -3587,47 +3598,43 @@ unit HopperVM
         return doNext && (Error == 0);
     }
     
-    Put(uint address, uint value, Type htype)
+    Put(byte address, uint value, Type htype)
     {
-        WriteWord(valueStack + address, value);
-        WriteWord(typeStack  + address, byte(htype));
+        WriteByte(valueStackLSBPage + address, byte(value & 0xFF));
+        WriteByte(valueStackMSBPage + address, byte(value >> 8));
+        WriteByte(typeStackPage + address, byte(htype));
     }
-    uint Get(uint address, ref Type htype)
+    uint Get(byte address, ref Type htype)
     {
-        uint value  = ReadWord(valueStack + address);
-        htype  = Type(ReadWord(typeStack + address));
-        return value;
+        htype  = Type(ReadByte(typeStackPage + address));
+        return ReadByte(valueStackLSBPage + address) + (ReadByte(valueStackMSBPage + address) << 8);
     }
-    uint Get(uint address)
+    uint Get(byte address)
     {
-        return ReadWord(valueStack + address);
+        return ReadByte(valueStackLSBPage + address) + (ReadByte(valueStackMSBPage + address) << 8);
     }
     
     PushI(int ivalue)
     {
         uint value = External.IntToUInt(ivalue);
 #ifdef CHECKED        
-        if (sp == stackSize)
+        if (sp == 256)
         {
             ErrorDump(7); ErrorDump(1); Error = 0x07; // stack overflow
             return;
         }
 #endif
-        WriteWord(valueStack + sp, value);
-        WriteWord(typeStack + sp, byte(Type.Int));
-        sp = sp + 2;
+        WriteByte(valueStackLSBPage + sp, byte(value & 0xFF));
+        WriteByte(valueStackMSBPage + sp, byte(value >> 8));
+        WriteByte(typeStackPage + sp, byte(Type.Int));
+        sp++;
     }
-    PutI(uint address, int ivalue, Type htype)
+    PutI(byte address, int ivalue)
     {
         uint value = External.IntToUInt(ivalue);
-        WriteWord(valueStack + address, value);
-        WriteWord(typeStack  + address, byte(htype));
-    }
-    PutI(uint address, int ivalue)
-    {
-        uint value = External.IntToUInt(ivalue);
-        WriteWord(valueStack + address, value);
-        WriteWord(typeStack  + address, byte(Type.Int));
+        WriteByte(valueStackLSBPage + address, byte(value & 0xFF));
+        WriteByte(valueStackMSBPage + address, byte(value >> 8));
+        WriteByte(typeStackPage + address, byte(Type.Int));
     }
     
     int PopI(ref Type htype)
@@ -3639,9 +3646,9 @@ unit HopperVM
             return 0;
         }
 #endif
-        sp = sp - 2;
-        uint value  = ReadWord(valueStack + sp);
-        htype  = Type(ReadWord(typeStack + sp));
+        sp--;
+        uint value  = ReadByte(valueStackLSBPage + sp) + (ReadByte(valueStackMSBPage + sp) << 8); 
+        htype  = Type(ReadByte(typeStackPage + sp));
         return External.UIntToInt(value);
     }
     int PopI()
@@ -3653,33 +3660,35 @@ unit HopperVM
             return 0;
         }
 #endif
-        sp = sp - 2;
-        return External.UIntToInt(ReadWord(valueStack + sp));
-    }
-    int GetI(uint address, ref Type htype)
-    {
-        uint value  = ReadWord(valueStack + address);
-        htype  = Type(ReadWord(typeStack + address));
+        sp--;
+        uint value  = ReadByte(valueStackLSBPage + sp) + (ReadByte(valueStackMSBPage + sp) << 8);        
         return External.UIntToInt(value);
     }
-    int GetI(uint address)
+    int GetI(byte address, ref Type htype)
     {
-        uint value  = ReadWord(valueStack + address);
+        uint value  = ReadByte(valueStackLSBPage + address) + (ReadByte(valueStackMSBPage + address) << 8); 
+        htype  = Type(ReadByte(typeStackPage + address));
+        return External.UIntToInt(value);
+    }
+    int GetI(byte address)
+    {
+        uint value  = ReadByte(valueStackLSBPage + address) + (ReadByte(valueStackMSBPage + address) << 8);   
         return External.UIntToInt(value);
     }
     
     Push(uint value, Type htype)
     {
 #ifdef CHECKED        
-        if (sp == stackSize)
+        if (sp == 256)
         {
             ErrorDump(4); Error = 0x07; // stack overflow
             return;
         }
 #endif
-        WriteWord(valueStack + sp, value);
-        WriteWord(typeStack + sp, byte(htype));
-        sp = sp + 2;
+        WriteByte(valueStackLSBPage + sp, byte(value & 0xFF));
+        WriteByte(valueStackMSBPage + sp, byte(value >> 8));
+        WriteByte(typeStackPage + sp, byte(htype));
+        sp++;
     }
     uint Pop(ref Type htype)
     {
@@ -3690,9 +3699,9 @@ unit HopperVM
             return 0;
         }
 #endif
-        sp = sp - 2;
-        uint value  = ReadWord(valueStack + sp);
-        htype  = Type(ReadWord(typeStack + sp));
+        sp--;
+        uint value  = ReadByte(valueStackLSBPage + sp) + (ReadByte(valueStackMSBPage + sp) << 8); 
+        htype  = Type(ReadByte(typeStackPage + sp));
         return value;
     }
     uint Pop()
@@ -3700,28 +3709,29 @@ unit HopperVM
 #ifdef CHECKED
         if (sp == 0)
         {
-            ErrorDump(6); Error = 0x07; // stack underflow
+            ErrorDump(256); Error = 0x07; // stack underflow
             return 0;
         }
 #endif
-        sp = sp - 2;
-        return ReadWord(valueStack + sp);
+        sp--;
+        return ReadByte(valueStackLSBPage + sp) + (ReadByte(valueStackMSBPage + sp) << 8);
     }
-    uint GetCS(uint address)
+    uint GetCS(byte address)
     {
-        return ReadWord(callStack + address);
+        return ReadByte(callStackLSBPage + address) + (ReadByte(callStackMSBPage + address) << 8);
     }
     PushCS(uint value)
     {
 #ifdef CHECKED
-        if (csp == callStackSize)
+        if (csp == 256)
         {
             ErrorDump(8); Error = 0x06; // call stack overflow
             return;
         }
 #endif
-        WriteWord(callStack + csp, value);
-        csp = csp + 2;
+        WriteByte(callStackLSBPage + csp, byte(value & 0xFF));
+        WriteByte(callStackMSBPage + csp, byte(value >> 8));
+        csp++;
     }
     uint PopCS()
     {
@@ -3732,8 +3742,8 @@ unit HopperVM
             return 0;
         }
 #endif
-        csp = csp - 2;
-        return ReadWord(callStack + csp);
+        csp--;
+        return ReadByte(callStackLSBPage + csp) + (ReadByte(callStackMSBPage + csp) << 8);
     }
     
     
@@ -3787,213 +3797,7 @@ unit HopperVM
         IO.WriteHex(berror);
         IO.WriteLn();
     }
-    
-    DumpHeap(bool display, uint accountedFor)
-    {
-        bool verboseDisplay = false;
-        if (display)
-        {
-            verboseDisplay = true;
-        }
-        if (verboseDisplay)
-        {
-            IO.WriteLn();
-            for (uint s = 0; s < sp; s = s + 2)
-            {
-                uint value  = ReadWord(valueStack + s);
-                uint address = valueStack + s;
-                byte htype  = byte(ReadWord(typeStack + s));
-                if (IsReferenceType(Type(htype)))
-                {
-                    byte count  = byte(ReadByte(value + 1));
-                    IO.WriteHex(value); IO.Write(':'); IO.WriteHex(htype);IO.Write(' ');IO.WriteHex(count); IO.Write(' '); 
-                    GC.Dump(value, 0);
-                    IO.WriteLn();
-                }
-            }
-        }
-        
-        
-        
-        if (display)
-        {
-            IO.WriteLn();
-            IO.Write('P');IO.Write('C');IO.Write(':');IO.WriteHex(PC);
-            IO.WriteLn();
-            IO.Write('F');IO.Write(':');
-        }
-        
-        uint pCurrent = Memory.FreeList;
-        uint freeSize = 0;
-        uint allocatedSize = 0;
-        loop
-        {
-            if (0 == pCurrent)
-            {
-                break;
-            }
-            uint size  = ReadWord(pCurrent);    
-            uint pNext = ReadWord(pCurrent+2);    
-            uint pPrev = ReadWord(pCurrent+4);   
-            if (verboseDisplay) // free list items
-            { 
-                IO.WriteLn();
-                IO.WriteHex(pCurrent);IO.Write(' ');
-                IO.WriteHex(size); IO.Write(' ');
-                IO.WriteHex(pNext);IO.Write('>');IO.Write(' ');IO.Write('<');IO.WriteHex(pPrev);
-            }
-            pCurrent = pNext;
-            freeSize = freeSize + size;
-        }
-        if (display)
-        {
-            IO.WriteLn();
-            IO.Write('H');IO.Write(':');
-            uint h = HeapStart+HeapSize;
-            IO.WriteHex(h);IO.Write('-');
-            IO.WriteHex(HeapStart);IO.Write('=');IO.WriteHex(HeapSize);
-        }
-        pCurrent = HeapStart;
-        uint pLimit   = HeapStart + HeapSize;
-        uint count = 0;
-        loop
-        {
-            count ++;
-            if (pCurrent >= pLimit)
-            {
-                break;
-            }
-            uint size  = ReadWord(pCurrent);    
-            if (count > 50)
-            {
-                break;
-            }
-                
-            if (!IsOnFreeList(pCurrent))
-            {
-                if (verboseDisplay) // heap items
-                {
-                    IO.WriteLn();
-                    IO.WriteHex(pCurrent); Write(' ');
-                    IO.WriteHex(size); Write(' ');
-                    byte tp = ReadByte(pCurrent+2);
-                    byte rf = ReadByte(pCurrent+3);
-                    IO.WriteHex(tp); Write(' ');IO.WriteHex(rf);
-                }
-                allocatedSize = allocatedSize + size;
-            }
-            else if (verboseDisplay)
-            {
-                // free list items
-                IO.WriteLn();
-                IO.WriteHex(pCurrent); Write(' ');
-                IO.WriteHex(size); Write(' ');
-            }
-            if (size == 0)
-            {
-                break;
-            }
-            pCurrent = pCurrent + size; // this is why we limit ourselves to 0xFF00 (not 0x10000, actual 64K)
-        }
-        bool reportAndStop = (HeapSize != (allocatedSize + freeSize));
-        if (!reportAndStop && (accountedFor > 0))
-        {
-            reportAndStop = (accountedFor != allocatedSize);    
-        }
-        if (reportAndStop)
-        {
-            if (!display)
-            {
-                DumpHeap(true, accountedFor);
-                ErrorDump(91); Error = 0x0B;
-            }
-            else
-            {
-                IO.WriteLn();
-                Write('A');IO.WriteHex(allocatedSize);Write(':');IO.WriteHex(accountedFor);Write(' ');Write('F');IO.WriteHex(freeSize);
-                uint fl = HeapSize - (allocatedSize + freeSize);
-                Write(' ');Write('L');IO.WriteHex(fl);
-            }
-        }
-    }
-    bool IsOnFreeList(uint pCandidate)
-    {
-        uint pCurrent = Memory.FreeList;
-        loop
-        {
-            if (0 == pCurrent)
-            {
-                break;
-            }
-            if (pCurrent == pCandidate)
-            {
-                return true;
-            }
-            pCurrent = ReadWord(pCurrent+2);  
-        }
-        return false;
-    }
-    
-    DumpStack(uint limit)
-    {
-        IO.WriteLn();
-        limit = limit * 2;
-        for (uint s = 0; s < sp; s = s + 2)
-        {
-            if (sp - s > limit) { continue; }
-            if (s == bp)
-            {
-                IO.Write('B'); IO.Write('P');
-            }
-            else
-            {
-                IO.Write(' '); IO.Write(' ');
-            }
-            IO.Write(' '); IO.Write(' ');
-            uint value  = ReadWord(valueStack + s);
-            uint address = valueStack + s;
-            byte htype  = byte(ReadWord(typeStack + s));
-            IO.WriteHex(s); IO.Write(' '); IO.WriteHex(address); IO.Write(' ');
-            IO.WriteHex(value); IO.Write(':'); IO.WriteHex(htype);
-            if (IsReferenceType(Type(htype)))
-            {
-                byte count  = byte(ReadByte(value + 1));
-                IO.Write(' '); IO.WriteHex(count); IO.Write(' '); 
-                GC.Dump(value);
-            }
-            else
-            {
-                switch (Type(htype))
-                {
-                    case Type.Byte:
-                    case Type.UInt:
-                    {
-                        IO.Write(' ');
-                        IO.WriteUInt(value);
-                    }
-                    case Type.Bool:
-                    {
-                        IO.Write(' ');
-                        IO.Write(((value != 0) ? 't' : 'f'));
-                    }
-                    case Type.Char:
-                    {
-                        IO.Write(char(0x27)); // single quote
-                        IO.Write(char(value));
-                        IO.Write(char(0x27)); // single quote
-                    }
-                    case Type.Int:
-                    {
-                        IO.Write(' ');
-                        int iv = External.UIntToInt(value);
-                        IO.WriteInt(iv);
-                    }
-                } 
-            }
-            IO.WriteLn();
-        }
-    }  
-    
+       
     bool ExecuteStepTo()
     {
         bool restart;

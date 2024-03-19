@@ -6,7 +6,7 @@ program Runtime
 //#define CHECKED      // mainly stack checks, range checks and division by zero
 //#define MEMORYLEAKS
 
-#define LOCALDEBUGGER  // for debugging portable runtime locally
+//#define LOCALDEBUGGER  // for debugging portable runtime locally
 
     uses "Emulation/Minimal" // minimal use of actual 'system' APIs
     uses "Emulation/Memory"
@@ -49,14 +49,14 @@ program Runtime
     // Zero Page FLAGS:
     flags HopperFlags
     {
-        TraceOn        = 0x01,
+      //TraceOn        = 0x01,
         WarpSpeed      = 0x02, // on 6502, built without checks for <Ctrl><C>
-        StackSlot32Bit = 0x02, // on MCUs, 'float' and 'long' are value types
+      //StackSlot32Bit = 0x02, // on MCUs, 'float' and 'long' are value types
         CheckedBuild   = 0x04,
-        SP8Bit         = 0x08,
-        ProfileBuild   = 0x10,
+      //SP8Bit         = 0x08,
+      //ProfileBuild   = 0x10,
         BreakpointsSet = 0x20,
-        SingleStep     = 0x40,
+      //SingleStep     = 0x40,
         MCUPlatform    = 0x80,
     }
     
@@ -405,37 +405,17 @@ program Runtime
                         {
                             data = byte(HopperVM.PC & 0xFF);
                         }
-                        case 0xB3: // SPH
+                        case 0xB2: // SP
                         {
-                            data = byte((HopperVM.SP + 0x0600) >> 8);
-                        }
-                        case 0xB2: // SPL
-                        {
-                            data = byte((HopperVM.SP + 0x0600) & 0xFF);
-                        }
-                        case 0xB5: // TSPH
-                        {
-                            data = byte(((HopperVM.SP/2) + 0x0500) >> 8);
-                        }
-                        case 0xB4: // TSPL
-                        {
-                            data = byte(((HopperVM.SP/2) + 0x0500) & 0xFF);
-                        }
-                        case 0xB7:
-                        {
-                            data = byte((HopperVM.BP + 0x0600) >> 8);
+                            data = HopperVM.SP;
                         }
                         case 0xB6:
                         {
-                            data = byte((HopperVM.BP + 0x0600) & 0xFF);
-                        }
-                        case 0xB9:
-                        {
-                            data = byte((HopperVM.CSP + 0x0400) >> 8);
+                            data = HopperVM.BP;
                         }
                         case 0xB8:
                         {
-                            data = byte((HopperVM.CSP + 0x0400) & 0xFF);
+                            data = HopperVM.CSP;
                         }
                         case 0xBB: // flags
                         {
@@ -497,27 +477,39 @@ program Runtime
                 }
             } // zero page
             
-            else if (iPage == 4) // call stack
+            else if (iPage == 3) // call stack LSB
             {
-                for (byte col = 0; col < 8; col++)
+                for (byte col = 0; col < 16; col++)
                 {
-                    uint address = col*2 + (row << 4);
+                    byte address = col + (row << 4);
                     uint stackData = HopperVM.GetCS(address);
                     if (includeAddresses)
                     {
                         HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 4)
+                        if (col == 8)
                         {
                             HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
                     out2Hex(ref pageBuffer, byte(stackData & 0xFF));
+                }
+            } // call stack
+            
+            else if (iPage == 4) // call stack MSB
+            {
+                for (byte col = 0; col < 16; col++)
+                {
+                    byte address = col*2 + (row << 4);
+                    uint stackData = HopperVM.GetCS(address);
                     if (includeAddresses)
                     {
                         HRString.BuildChar(ref pageBuffer, ' '); 
+                        if (col == 8)
+                        {
+                            HRString.BuildChar(ref pageBuffer, ' '); 
+                        }
                     }
                     out2Hex(ref pageBuffer, byte(stackData >> 8));
-                    
                 }
             } // call stack
             
@@ -525,9 +517,7 @@ program Runtime
             {
                 for (byte col = 0; col < 16; col++)
                 {
-                    uint address = col + (row << 4); // 0..255
-                    address = address * 2; // 0..510
-                    
+                    byte address = col + (row << 4); // 0..255
                     Type htype;
                     uint stackData = HopperVM.Get(address, ref htype);
                     if (includeAddresses)
@@ -544,9 +534,9 @@ program Runtime
             
             else if (iPage == 6) // value stack
             {
-                for (byte col = 0; col < 8; col++)
+                for (byte col = 0; col < 16; col++)
                 {
-                    uint address = col*2 + (row << 4);
+                    byte address = col + (row << 4);
                     
                     Type htype;
                     uint stackData = HopperVM.Get(address, ref htype);
@@ -554,26 +544,20 @@ program Runtime
                     if (includeAddresses)
                     {
                         HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 4)
+                        if (col == 8)
                         {
                             HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
                     out2Hex(ref pageBuffer, byte(stackData & 0xFF));
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                    }
-                    out2Hex(ref pageBuffer, byte(stackData >> 8));
                 }
             } // value stack
             
             else if (iPage == 7) // value stack
             {
-                for (byte col = 0; col < 8; col++)
+                for (byte col = 0; col < 16; col++)
                 {
-                    uint address = col*2 + (row << 4);
-                    address = address + 256;
+                    byte address = col + (row << 4);
                     
                     Type htype;
                     uint stackData = HopperVM.Get(address, ref htype);
@@ -581,17 +565,12 @@ program Runtime
                     if (includeAddresses)
                     {
                         HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 4)
+                        if (col == 8)
                         {
                             HRString.BuildChar(ref pageBuffer, ' '); 
                         }
                     }
-                    out2Hex(ref pageBuffer, byte(stackData & 0xFF));
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                    }
-                    out2Hex(ref pageBuffer, byte(stackData >> 8));   
+                    out2Hex(ref pageBuffer, byte(stackData >> 8));
                 }
             } // value stack
             
@@ -600,7 +579,7 @@ program Runtime
                 for (byte col = 0; col < 16; col++)
                 {
                     uint address = col + (row << 4); // 0..127
-                    address = address + (256 * iPage);
+                    address = address + (iPage << 8);
                     
                     if (includeAddresses)
                     {
@@ -697,16 +676,6 @@ program Runtime
                         DumpPage(iPage, false);
                         Serial.WriteChar(char(slash)); // confirm data
                     }
-                    case 'M': // memory page dump
-                    {
-                        byte msn = FromHex(Serial.ReadChar());
-                        byte lsn = FromHex(Serial.ReadChar());
-                        WaitForEnter();
-                        
-                        byte iPage = (msn << 4) + lsn;
-                        DumpPage(iPage, true);
-                        Serial.WriteChar(char(slash)); // confirm data
-                    }
                     case 'B':
                     {
                         char arg = Serial.ReadChar();
@@ -752,51 +721,6 @@ program Runtime
                     {
                         WaitForEnter();
                         External.MCUReboot(true);
-                    }
-                    case 'R': // get Registers
-                    {
-                        WaitForEnter();
-                        
-                        uint serialBuffer = HRString.New();
-                        HRString.BuildChar(ref serialBuffer, char(enter)); // next line
-                        
-                        HRString.BuildChar(ref serialBuffer, char(enter));
-                        HRString.BuildChar(ref serialBuffer, 'P');
-                        HRString.BuildChar(ref serialBuffer, 'C');
-                        HRString.BuildChar(ref serialBuffer, '=');
-                        out4Hex(ref serialBuffer, HopperVM.PC);
-                        HRString.BuildChar(ref serialBuffer, ' ');
-                        
-                        HRString.BuildChar(ref serialBuffer, 'C');
-                        HRString.BuildChar(ref serialBuffer, 'S');
-                        HRString.BuildChar(ref serialBuffer, 'P');
-                        HRString.BuildChar(ref serialBuffer, '=');
-                        out2Hex(ref serialBuffer, byte(HopperVM.CSP));
-                        HRString.BuildChar(ref serialBuffer, ' ');
-                        
-                        HRString.BuildChar(ref serialBuffer, 'S');
-                        HRString.BuildChar(ref serialBuffer, 'P');
-                        HRString.BuildChar(ref serialBuffer, '=');
-                        out4Hex(ref serialBuffer, HopperVM.SP + 0x0600);
-                        HRString.BuildChar(ref serialBuffer, ' ');
-                        
-                        HRString.BuildChar(ref serialBuffer, 'T');
-                        HRString.BuildChar(ref serialBuffer, 'S');
-                        HRString.BuildChar(ref serialBuffer, 'P');
-                        HRString.BuildChar(ref serialBuffer, '=');
-                        out4Hex(ref serialBuffer, HopperVM.SP + 0x0500);
-                        HRString.BuildChar(ref serialBuffer, ' ');
-                        
-                        HRString.BuildChar(ref serialBuffer, 'B');
-                        HRString.BuildChar(ref serialBuffer, 'P');
-                        HRString.BuildChar(ref serialBuffer, '=');
-                        out4Hex(ref serialBuffer, HopperVM.BP + 0x0600);
-                        
-                        HRString.BuildChar(ref serialBuffer, char(slash)); // confirm data
-                        
-                        External.SerialWriteString(serialBuffer);
-                        GC.Release(serialBuffer);
-                        
                     }
                     case 'T':
                     {
@@ -978,18 +902,6 @@ program Runtime
                                 {
                                     WaitForEnter();
                                     HopperVM.Restart();
-                                }
-                                case 'V':
-                                {
-                                    WaitForEnter();
-                                    HopperVM.DumpStack(20);
-                                    Serial.WriteChar(char(slash)); // confirm handing back control
-                                }
-                                case 'H':
-                                {
-                                    WaitForEnter();
-                                    HopperVM.DumpHeap(true, 0);
-                                    Serial.WriteChar(char(slash)); // confirm handing back control
                                 }
                             } // switch
                         } // loaded

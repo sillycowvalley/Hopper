@@ -76,7 +76,7 @@ unit HRList
         byte referenceCount = ReadByte(pCurrent+1);
         if (referenceCount == 0)
         {
-            ErrorDump(94);
+            ErrorDump(270);
             Error = 0x0B;
             return;
         }

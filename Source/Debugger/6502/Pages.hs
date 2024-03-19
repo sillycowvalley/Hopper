@@ -8,14 +8,14 @@ unit Pages
     // Zero Page FLAGS:
     flags HopperFlags
     {
-        TraceOn        = 0x01,
+      //TraceOn        = 0x01,
         WarpSpeed      = 0x02, // on 6502, built without checks for <Ctrl><C>
         StackSlot32Bit = 0x02, // on MCUs, 'float' and 'long' are value types
         CheckedBuild   = 0x04,
-        SP8Bit         = 0x08,
-        ProfileBuild   = 0x10,
+      //SP8Bit         = 0x08,
+      //ProfileBuild   = 0x10,
         BreakpointsSet = 0x20,
-        SingleStep     = 0x40,
+      //SingleStep     = 0x40,
         MCUPlatform    = 0x80,
     }
     
@@ -36,12 +36,12 @@ unit Pages
     {
         if (!pageLoaded[page])
         {
-            OutputDebug("Loading: 0x"+page.ToHexString(2));
+            //OutputDebug("Loading: 0x"+page.ToHexString(2));
             Monitor.Command("F" + page.ToHexString(2), true, true);
             if (Pages.ParseHexPage(page))
             {
                 pageLoaded[page] = true;
-                OutputDebug("Loaded: 0x"+page.ToHexString(2));
+                //OutputDebug("Loaded: 0x"+page.ToHexString(2));
             }
             else
             {
@@ -121,7 +121,7 @@ unit Pages
                 }
                 else
                 {
-                    OutputDebug(address.ToHexString(4) + " " + ln);
+                    //OutputDebug(address.ToHexString(4) + " " + ln);
                     if (!ParseHexLine(address, ref ln))
                     {
                         OutputDebug("Failed:" + address.ToHexString(4));
@@ -151,7 +151,7 @@ unit Pages
             success = ParseHexPage(0);
             if (!success)
             {
-                //OutputDebug("LoadZeroPage: failed");
+                OutputDebug("LoadZeroPage: failed");
             }
             //OutputDebug("ReloadPageData(0x00)");
         }
@@ -166,21 +166,14 @@ unit Pages
             zeroPage["IDY"]    = Pages.GetPageWord(0xC8);
             
             zeroPage["PC"]     = Pages.GetPageWord(0xB0);
-            if (HopperFlags.SP8Bit == hopperFlags & HopperFlags.SP8Bit)
-            {
-                zeroPage["SP8"] = Pages.GetPageByte(0xB2);
-                zeroPage["BP8"] = Pages.GetPageByte(0xB6);
-            }
-            else
-            {
-                zeroPage["SP"]  = Pages.GetPageWord(0xB2);
-                zeroPage["TSP"] = Pages.GetPageWord(0xB4);
-                zeroPage["BP"]  = Pages.GetPageWord(0xB6);
-            }
-            zeroPage["CSP"] = Pages.GetPageByte(0xB8);
+            
+            zeroPage["SP"]     = Pages.GetPageByte(0xB2);
+            zeroPage["BP"]     = Pages.GetPageByte(0xB6);
+            zeroPage["CSP"]    = Pages.GetPageByte(0xB8);
+            
             zeroPage["HEAPSTART"] = Pages.GetPageByte(0xEA) << 8;
-            zeroPage["HEAPSIZE"] = Pages.GetPageByte(0xEB) << 8;
-            zeroPage["FREELIST"] = Pages.GetPageWord(0xE8);
+            zeroPage["HEAPSIZE"]  = Pages.GetPageByte(0xEB) << 8;
+            zeroPage["FREELIST"]  = Pages.GetPageWord(0xE8);
             zeroPage["CODESTART"] = Pages.GetPageByte(0xCA);
             
             //foreach (var kv in zeroPage)

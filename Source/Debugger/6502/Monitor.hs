@@ -600,7 +600,6 @@ unit Monitor
     HopperFlags hopperFlags;
     
     bool IsMCU { get { return ( HopperFlags.MCUPlatform                               == (hopperFlags & HopperFlags.MCUPlatform)); } }
-    bool IsLV  { get { return ((HopperFlags.MCUPlatform | HopperFlags.StackSlot32Bit) == hopperFlags & (HopperFlags.MCUPlatform | HopperFlags.StackSlot32Bit) ) } }
     
     string GetHopperInfo()
     {
@@ -611,14 +610,7 @@ unit Monitor
             hopperFlags = HopperFlags(GetZeroPage("FLAGS"));
         }
         string info;
-        if (HopperFlags.SP8Bit == hopperFlags & HopperFlags.SP8Bit)
-        {
-            info = info + "8 bit SP and BP";
-        }
-        else
-        {
-            info = info + "16 bit SP and BP";
-        }
+        info = info + "8 bit SP and BP";
         if (HopperFlags.WarpSpeed == (hopperFlags & (HopperFlags.MCUPlatform | HopperFlags.WarpSpeed)))
         {
             info = info + ", Warp speed (no <ctrl><C>)";
@@ -627,17 +619,9 @@ unit Monitor
         {
             info = info + ", Checked Build";
         }
-        if (HopperFlags.ProfileBuild == (hopperFlags & HopperFlags.ProfileBuild))
-        {
-            info = info + ", Profile Build";
-        }
         if (HopperFlags.MCUPlatform == (hopperFlags & HopperFlags.MCUPlatform))
         {
             info = info + ", MCU";
-            if (HopperFlags.StackSlot32Bit == (hopperFlags & HopperFlags.StackSlot32Bit))
-            {
-                info = info + ", Long Values";
-            }
         }
         else
         {

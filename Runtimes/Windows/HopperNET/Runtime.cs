@@ -843,6 +843,15 @@ namespace HopperNET
             ushort sp2 = sp;
             stack[sp2].value = value;
             stack[sp2].type = type;
+
+            if (stack[sp2].type == HopperType.tUInt)
+            {
+                if (stack[sp2].value > 0xFFFF)
+                {
+                    int wtf = 0;
+                }
+            }
+
 #if DEBUG
             stack[sp2].reference = null;
 #endif
@@ -1072,6 +1081,13 @@ namespace HopperNET
 #if DEBUG
             Diagnostics.ASSERTDIE(stack[address2].reference == null, "value type", this);
 #endif
+            if (stack[address2].type == HopperType.tUInt)
+            {
+                if (stack[address2].value > 0xFFFF)
+                {
+                    int wtf = 0;
+                }
+            }
             return stack[address2].value;
         }
         Variant GetStackVariant(ushort address)
@@ -1286,8 +1302,8 @@ namespace HopperNET
                     case Instruction.ADD:
                         {
 #if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
+                            uint top = Pop();
+                            uint next = Pop();
 #else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
@@ -1295,7 +1311,7 @@ namespace HopperNET
                             uint next = stack[sp2].value;
 #endif
 #if UNDOINLINED
-                        Push(next + top, HopperType.tUInt);
+                            Push(next + top, HopperType.tUInt);
 #else
                             stack[sp2].value = next + top;
                             stack[sp2].type = HopperType.tUInt;
@@ -1305,8 +1321,8 @@ namespace HopperNET
                     case Instruction.SUB:
                         {
 #if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
+                            uint top = Pop();
+                            uint next = Pop();
 #else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
@@ -6970,6 +6986,10 @@ namespace HopperNET
                 case SysCall.MemoryReadByte:
                     {
                         uint address = Pop();
+                        if (address > 0xFFFF)
+                        {
+                            int wtf = 0;
+                        }
                         Push(currentContext.memoryArray[address], HopperType.tByte);
                     }
                     break;

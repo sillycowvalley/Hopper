@@ -455,7 +455,7 @@ unit External
     }
     DigitalWrite(byte pin, byte value)
     {
-        ErrorDump(157); Error = 0x0A; 
+        //ErrorDump(157); Error = 0x0A; 
     }
     byte DigitalRead(byte pin)
     {
@@ -464,7 +464,7 @@ unit External
     }
     PinMode(byte pin, byte value)
     {
-        ErrorDump(159); Error = 0x0A; 
+        //ErrorDump(159); Error = 0x0A; 
     }
     uint AnalogRead(byte pin)
     {

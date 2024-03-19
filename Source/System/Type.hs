@@ -84,10 +84,17 @@ unit Type
             default:
             {
                 byte b = byte(this);
-                result = "unknown type 0x" + b.ToHexString(2) +"in Type.ToString()";
+                if (b == 5)
+                {
+                    result = "ref";
+                }
+                else
+                {
+                    result = "unknown type 0x" + b.ToHexString(2) +"in Type.ToString()";
 #ifdef DEBUGGER
-                result += " " + Editor.CurrentPath + ":" + Editor.GetCurrentLineNumber().ToString();
-#endif                
+                    result += " " + Editor.CurrentPath + ":" + Editor.GetCurrentLineNumber().ToString();
+#endif   
+                }             
             }
         }
         return result;

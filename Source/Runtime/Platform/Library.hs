@@ -256,7 +256,7 @@ unit Library
 #ifdef CHECKED
                     if (itype != Type.Long)
                     {
-                        ErrorDump(16);
+                        ErrorDump(261);
                         Error = 0x0B; // system failure (internal error)
                     }
 #endif
@@ -292,7 +292,7 @@ unit Library
 #ifdef CHECKED
                     if (itype != Type.Long)
                     {
-                        ErrorDump(16);
+                        ErrorDump(260);
                         Error = 0x0B; // system failure (internal error)
                     }
 #endif
@@ -891,7 +891,7 @@ unit Library
             case LibCall.WebClientGetRequest:
             {
                 Type htype;    
-                uint address = HopperVM.Pop(ref htype);
+                byte address = byte(HopperVM.Pop(ref htype));
                 uint content = HopperVM.Get(address, ref htype);
                 Type utype;    
                 uint url = Pop(ref utype);
@@ -899,7 +899,7 @@ unit Library
 #ifdef CHECKED
                 if ((htype != Type.String) || (utype != Type.String))
                 {
-                    ErrorDump(16);
+                    ErrorDump(264);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
@@ -932,7 +932,7 @@ unit Library
 #ifdef CHECKED
                 if (utype != Type.String)
                 {
-                    ErrorDump(16);
+                    ErrorDump(262);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        
@@ -966,7 +966,7 @@ unit Library
                 AssertUInt(htype, httpCode);
                 if ((ctype != Type.String) || (ttype != Type.Dictionary))
                 {
-                    ErrorDump(16);
+                    ErrorDump(263);
                     Error = 0x0B; // system failure (internal error)
                 }
 #endif        

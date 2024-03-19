@@ -104,21 +104,7 @@ program HopperMonitor
         profileFile.Flush();
     }
     
-    uint TypeAddressFromValueAddress(uint voffset)
-    {
-        uint toffset;
-        if (Is8BitSP)
-        {
-            toffset = uint(voffset - 0x0100);
-        }
-        else
-        {
-            uint delta = uint(voffset - 0x0600);
-            toffset = 0x0500 + (delta / 2);
-        }
-        return toffset;
-    }
-    string GenerateMethodString(uint methodIndex, uint bp)
+    string GenerateMethodString(uint methodIndex, byte bp)
     {
         <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
         string methodName = methodSymbols["name"];
@@ -139,18 +125,12 @@ program HopperMonitor
                 if (Int.TryParse(kv.key, ref delta))
                 {
                 }
-                if (Is32BitStackSlot)
-                {
-                    delta = delta * 2;
-                }
-                uint voffset = uint(int(bp) +  delta);
-                uint toffset = TypeAddressFromValueAddress(voffset);
-                uint value0 = GetPageWord(voffset);
-                uint value1 = GetPageWord(voffset + 2);
+                byte voffset = byte(int(bp) +  delta);
+                uint value   = GetPageByte(voffset + 0x0600) + GetPageByte(voffset + 0x0700) << 8;
                 string vtype = argumentList[1];
-                // TODO : validate against pageData[toffset];
+                
                 bool isReference = (argumentList[0] == "true");
-                content = content + char(2) + TypeToString(value0, value1, vtype, isReference, 255) + char(3);
+                content = content + char(2) + TypeToString(value, vtype, isReference, 255) + char(3);
                 first = false;
             }
         }
@@ -179,7 +159,7 @@ program HopperMonitor
         }
         Print(contentBuffer);
     }
-    OutputMethodLine(uint address, uint methodIndex, uint bp, bool sourceLevel, bool symbolsLoaded)
+    OutputMethodLine(uint address, uint methodIndex, byte bp, bool sourceLevel, bool symbolsLoaded)
     {
         if (!sourceLevel)
         {
@@ -191,7 +171,7 @@ program HopperMonitor
             }
         }
         <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
-        string methodName = methodSymbols["name"];
+        string methodName   = methodSymbols["name"];
         string methodSource = methodSymbols["source"];
         string methodLine   = methodSymbols["line"];
                             
@@ -204,7 +184,7 @@ program HopperMonitor
         }
         else
         {
-            Print(address.ToHexString(4) + "?");
+            //Print(address.ToHexString(4) + "?");
         }
         
         string methodString = GenerateMethodString(methodIndex, bp);
@@ -233,79 +213,51 @@ program HopperMonitor
     {
         ClearPageData();
         Pages.LoadZeroPage(false); // for CSP and PC
-        //Pages.LoadPageData(0x04);
-        //Pages.LoadPageData(0x05);
-        //Pages.LoadPageData(0x06);
         Output.Initialize();
         
-        if (!Is8BitSP)
-        {
-            //Pages.LoadPageData(0x07);
-        }
-        
-        if (   ZeroPageContains("PC") && ZeroPageContains("CSP") && ZeroPageContains("CODESTART")
-            //&& IsPageLoaded(0x04)
-           )
+        if (   ZeroPageContains("PC") && ZeroPageContains("CSP") && ZeroPageContains("CODESTART"))
         {
             //DumpMap();
             
             uint csp = GetZeroPage("CSP");
             if (csp > 0)
             {
-                uint bp;
-                uint tsp;
+                byte bp;
                 uint address;
                 uint methodIndex;
                 
                 PrintLn();            
-                uint icsp = 2;
+                uint icsp = 1;
                 while (icsp < csp)
                 {
-                    address = GetPageWord(0x0400+icsp);
-                    bp      = GetPageWord(0x0400+icsp+2);
-                    if (Is8BitSP)
-                    {
-                        bp  = 0x600 + bp;
-                    }
+                    address = GetPageByte(0x0300+icsp) + GetPageByte(0x0400+icsp) << 8;
+                    bp      = GetPageByte(0x0300+icsp+1);
+
                     address = address - (GetZeroPage("CODESTART") << 8);
                     methodIndex = LocationToIndex(address);
                     OutputMethodLine(address - 3, methodIndex, bp, sourceLevel, symbolsLoaded);
-                    icsp = icsp + 4;
+                    icsp += 2;
                 }
                 
                 // current method
                 uint pc = GetZeroPage("PC") - (GetZeroPage("CODESTART") << 8);
                 methodIndex = LocationToIndex(pc);
-                if (Is8BitSP)
-                {
-                    bp  = 0x600 + GetZeroPage("BP8");
-                }
-                else
-                {
-                    bp  = GetZeroPage("BP");
-                }
+                bp  = byte(GetZeroPage("BP"));
+
                 OutputMethodLine(pc, methodIndex, bp, sourceLevel, symbolsLoaded);
                 if (symbolsLoaded)
                 {
                     <uint, <string> > usedGlobals = Source.GetGlobals(methodIndex, 0);
-                    Print(" methodIndex=" +methodIndex.ToHexString(4) + " "  + (usedGlobals.Count).ToString() + " ");
+                    //Print(" methodIndex=" +methodIndex.ToHexString(4) + " "  + (usedGlobals.Count).ToString() + " ");
                     foreach (var kv in usedGlobals)
                     {
                         uint goffset = kv.key;
-                        if (Is32BitStackSlot)
-                        {
-                            goffset = goffset * 2;
-                        }
                         <string> globalList = kv.value;
-                        uint gaddress = goffset + 0x0600;
-                        uint toffset = TypeAddressFromValueAddress(gaddress);
-                        uint gvalue0 = GetPageWord(gaddress);
-                        uint gvalue1 = GetPageWord(gaddress + 2);
+                        uint gvalue  = GetPageByte(goffset + 0x0600) + GetPageByte(goffset + 0x0700) << 8;
                         
                         string gtype = globalList[0];
-                        // TODO : validate against pageData[toffset];
                         
-                        string gcontent = char(2) + Source.TypeToString(gvalue0, gvalue1, gtype, false, 255) + char(3);
+                        string gcontent = char(2) + Source.TypeToString(gvalue, gtype, false, 255) + char(3);
                         
                         PrintLn();
                         PrintColors("    " + globalList[1] + "=" + gcontent);
@@ -339,6 +291,65 @@ program HopperMonitor
             Print(info, Colour.LightestGray, Colour.Black);
         }
     }
+    ShowValueStack()
+    {
+        Pages.ClearPageData(); // fresh data
+        
+        PrintLn();
+        Pages.LoadZeroPage(true);
+        byte sp = byte(GetZeroPage("SP"));
+        byte bp = byte(GetZeroPage("BP"));
+        byte spi = sp;
+        
+        PrintLn("SP -> " + sp.ToHexString(2));
+        uint entries = 0;
+        loop
+        {
+            if (spi == 0) { break; }
+            spi--;
+            uint value = Pages.GetPageByte(0x0600 + spi) + (Pages.GetPageByte(0x0700 + spi) << 8);
+            byte vtype = byte(Pages.GetPageByte(0x0500 + spi));
+            string leftText = "      ";
+            if (spi == bp)
+            {
+                leftText = "BP -> ";
+            }
+            
+            string tstring = Type.ToString(type(vtype));
+            
+            bool isReference = tstring == "ref";
+            string content = TypeToString(value, tstring, isReference, 30);
+            
+            string referenceCount = "    ";
+            if (IsMachineReferenceType(vtype))
+            {
+                byte count = Pages.GetPageByte(value + 1);
+                referenceCount = "[" + count.ToHexString(2) + "]";
+            }
+            
+            Print(leftText + spi.ToHexString(2) + " " + value.ToHexString(4) + ":" + vtype.ToHexString(2) + referenceCount); 
+            Print(" (" + tstring + ")" + " " + content, Colour.LightestGray, Colour.Black);
+            PrintLn();
+            entries++;
+            if (entries == 12) 
+            { 
+               PrintLn("      ...");
+               break; 
+            }
+        }
+    }    
+    ShowRegisters()
+    {
+        Pages.LoadZeroPage(true);
+        PrintLn();
+        
+        uint pc = GetZeroPage("PC");
+        uint csp = GetZeroPage("CSP");
+        uint sp = GetZeroPage("SP");
+        uint bp = GetZeroPage("BP");
+        PrintLn("PC=" + pc.ToHexString(4) + " CSP=" + csp.ToHexString(2)+ " SP=" + sp.ToHexString(2)+ " BP=" + bp.ToHexString(2));
+    }    
+    
     ShowDisassembly(uint address, uint instructions)
     {
         if (!ZeroPageContains("CODESTART"))
@@ -350,14 +361,21 @@ program HopperMonitor
             string content = address.ToHexString(4); // fallback content
             uint codeStart = (GetZeroPage("CODESTART") << 8);
             
-            uint version    = Source.GetCode(codeStart);
-            uint entryPoint = Source.GetCode(codeStart+4);
+            uint version    = Source.GetCode(codeStart)   + Source.GetCode(codeStart+1) << 8;
+            uint entryPoint = Source.GetCode(codeStart+4) + Source.GetCode(codeStart+5) << 8;
             uint codeOffset = 0;
             if (version != 0)
             {
                 codeOffset = entryPoint;
             }
+            
+            //PrintLn("version=" + version.ToHexString(4) + " entryPoint=" + entryPoint.ToHexString(4) + " " + 
+            //        "address=" + address.ToHexString(4) + " codeStart=" + codeStart.ToHexString(4));
+            
+            
             address = address + codeOffset - codeStart;
+            
+            
             bool first = true;
             loop
             {
@@ -365,6 +383,8 @@ program HopperMonitor
                 {
                     uint sourcePC = address - codeOffset;
                     string sourceIndex = Code.GetSourceIndex(sourcePC);
+                    
+                    
                     //PrintLn();
                     //Print("sourcePC=" + sourcePC.ToHexString(4) + " address=" + address.ToHexString(4) + " sourceIndex=" + sourceIndex + " ");
                     
@@ -385,9 +405,11 @@ program HopperMonitor
                     int entryPointOffset = -int(codeOffset);
                     content = Source.Disassemble(ref address, entryPointOffset);
                     PrintLn();
+                    uint colour = Colour.MatrixBlue;
                     if (first)
                     {
                         Print("PC -> ", Colour.MatrixRed, Colour.Black);
+                        colour = Colour.Ocean;
                     }
                     else
                     {
@@ -401,7 +423,7 @@ program HopperMonitor
                         content = content.Substring(0, iComment);        
                         content = content.Pad(' ', 54);
                     }
-                    Print(content, Colour.MatrixBlue, Colour.Black);
+                    Print(content, colour, Colour.Black);
                     Print(comment, Colour.MatrixGreen, Colour.Black);
                     if (wasReturn)
                     {
@@ -761,10 +783,49 @@ program HopperMonitor
                         hexpage = commandLine.Substring(2, commandLine.Length-2);
                         if (ValidateHexPage(ref hexpage))
                         {
-                            Monitor.Command(commandLine.Substring(0,1) + hexpage, false, true);
+                            commandLine = commandLine.Replace('M', 'F');
+                            Monitor.Command(commandLine.Substring(0,1) + hexpage, true, true);
                             refresh = true;
+                            string output = Monitor.GetSerialOutput();
+                            output = output.Replace(""+ char(0x0D), "");
+                            output = output.Replace(""+ char(0x0A), "");
+                            if (output.Length == 512)
+                            {
+                                uint iPage;
+                                _ = UInt.TryParse("0x" + hexpage, ref iPage);
+                                uint address = iPage << 8;
+                                PrintLn();
+                                Print("      ");
+                                for (byte i = 0; i < 16; i++)
+                                {
+                                   Print("x" + i.ToHex() + " ");  
+                                   if (i == 7)
+                                   {
+                                       Print(' ');
+                                   }  
+                                }
+                                PrintLn();
+                                for (uint i = 0; i < 256; i += 16)
+                                {
+                                    string ln = output.Substring(i<<1, 32);
+                                    Print((address + i).ToHexString(4)+ "  ");
+                                    for (uint j = 0; j < 32; j++)
+                                    {
+                                        Print(ln[j]);
+                                        if (j % 2 == 1)
+                                        {
+                                            Print(' ');
+                                        } 
+                                        if (j == 15)
+                                        {
+                                            Print(' ');
+                                        }
+                                    }
+                                    PrintLn();
+                                }
+                            }
                         }
-                    }
+                    }    
                 } // case 'M'
                 
                 else if (currentCommand == 'F') // memory dump
@@ -933,7 +994,7 @@ program HopperMonitor
                 }
                 else if (currentCommand == 'R') // Registers
                 {
-                    Monitor.Command(commandLine, false, true);
+                    ShowRegisters();
                     refresh = true;
                 }
                 else if (currentCommand == 'P') // raw PC (mostly used internally)
@@ -948,12 +1009,13 @@ program HopperMonitor
                 }
                 else if (currentCommand == 'V') // Value Stack
                 {
-                    Monitor.Command(commandLine, false, true);
+                    ShowValueStack();
                     refresh = true;
                 }
                 else if (currentCommand == 'H') // Heap
                 {
-                    Monitor.Command(commandLine, false, true);
+                    // TODO : rewrite on client side
+                    //Monitor.Command(commandLine, false, true);
                     refresh = true;
                 }
                 if (refresh)
