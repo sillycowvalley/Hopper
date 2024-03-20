@@ -6,6 +6,11 @@
 #include <Arduino.h>
 #include "Runtime.h"
 
+extern Bool Library_isrExists;
+extern Byte Minimal_error;
+extern UInt HopperVM_jumpTable;
+extern UInt HopperVM_pc;
+
 enum InterruptType 
 {
     eUndefinedInterruptType = 0,
@@ -30,6 +35,8 @@ extern std::queue<HopperISRStruct> isrQueue;
 extern unsigned char * dataMemoryBlock;
 extern unsigned char * codeMemoryBlock;
 extern unsigned char * codeStartAddress;
+
+bool HopperVM_InlinedExecuteWarp(bool logging);
 
 void Machine_Initialize();
 Bool Machine_GetExited();
@@ -102,18 +109,30 @@ Char Serial_ReadChar();
 void Serial_WriteChar(Char value);
 void External_SerialWriteString(UInt hrbuffer);
 
+
+
+
+#ifdef CHECKED
+void Memory_WriteByte(UInt address, Byte value);
+Byte Memory_ReadByte(UInt address);
 Byte Memory_ReadCodeByte(UInt address);
 void Memory_WriteCodeByte(UInt address, Byte value);
-Byte Memory_ReadByte(UInt address);
-void Memory_WriteByte(UInt address, Byte value);
+Byte Memory_ReadProgramByte(UInt address);
+void Memory_WriteProgramByte(UInt address, Byte value);
+#else
+#define Memory_WriteByte(address, value)        { dataMemoryBlock[(address)] = (value); }
+#define Memory_ReadByte(address)                (dataMemoryBlock[(address)])
+#define Memory_ReadCodeByte(address)            (codeMemoryBlock[address])
+#define Memory_WriteCodeByte(address, value)    { codeMemoryBlock[(address)] = (value); }
+#define Memory_ReadProgramByte(address)         (codeStartAddress[address])
+#define Memory_WriteProgramByte(address, value) { codeStartAddress[(address)] = (value); }
+#endif
 
 UInt Memory_ReadWord(UInt address);
 UInt Memory_ReadCodeWord(UInt address);
 void Memory_WriteWord(UInt address, UInt value);
 void Memory_WriteCodeWord(UInt address, UInt value);
 
-Byte Memory_ReadProgramByte(UInt address);
-void Memory_WriteProgramByte(UInt address, Byte value);
 UInt Memory_ReadProgramWord(UInt address);
 void Memory_WriteProgramWord(UInt address, UInt value);
 

@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-const bool loadAuto = false; // set this to false if you are booting into a bad flashed Hopper program
+const bool loadAuto = true; // set this to false if you are booting into a bad flashed Hopper program
 
 //#define DIAGNOSTICS // turn on more Serial.print output
 //#define CHECKED

@@ -28,6 +28,8 @@ unit HopperVM
 #ifdef LOCALDEBUGGER
     uses "Platform/Desktop"
 #endif    
+
+    friend Instructions;
     
     const uint dataMemoryStart = 0x0000; // data memory magically exists from 0x0000 to 0xFFFF
     

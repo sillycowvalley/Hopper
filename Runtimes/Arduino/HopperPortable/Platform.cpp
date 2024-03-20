@@ -1,5 +1,4 @@
 #include "Platform.h"
-#include "Inlined.h"
 #include "HopperScreen.h"
 #include "HopperTimer.h"
 
@@ -275,14 +274,22 @@ Bool Serial_IsAvailable_Get()
     return (Bool)(Serial.available() != 0);
 }
 
+
+#ifdef CHECKED
+Byte Memory_ReadProgramByte(UInt address)
+{
+    return codeStartAddress[address];
+}
+Byte Memory_ReadCodeByte(UInt address)
+{
+    return codeMemoryBlock[address];
+}
 Byte Memory_ReadByte(UInt address)
 {
     return dataMemoryBlock[address];
 }
-
 void Memory_WriteByte(UInt address, Byte value)
 {
-#ifdef CHECKED
     if (address >= (segmentPages << 8))
     {
         Serial.print(address, HEX);
@@ -290,13 +297,38 @@ void Memory_WriteByte(UInt address, Byte value)
         Error(0x02, HopperVM_PC_Get());
         return;
     }
-#endif  
-    dataMemoryBlock[address] = value;
 }
+void Memory_WriteCodeByte(UInt address, Byte value)
+{
+    if (address >= (segmentPages << 8))
+    {
+        Serial.print(address, HEX);
+        Serial.print(" out of range in Memory_WriteCodeByte ");
+        Error(0x02, HopperVM_PC_Get());
+        return;
+    }
+    codeMemoryBlock[address] = value;
+}
+void Memory_WriteProgramByte(UInt address, Byte value)
+{
+    if (address >= (segmentPages << 8))
+    {
+        Serial.print(address, HEX);
+        Serial.print(" out of range in Memory_WriteProgramByte ");
+        Error(0x02, HopperVM_PC_Get());
+        return;
+    }
+    codeStartAddress[address] = value;
+}
+#endif  
 
 UInt Memory_ReadWord(UInt address)
 {
     return dataMemoryBlock[address] + (dataMemoryBlock[address+1] << 8);
+}
+UInt Memory_ReadProgramWord(UInt address)
+{
+    return codeStartAddress[address] + (codeStartAddress[address + 1] << 8);
 }
 
 
@@ -315,24 +347,6 @@ void Memory_WriteWord(UInt address, UInt value)
     dataMemoryBlock[address+1] = value >> 8;
 }
 
-Byte Memory_ReadCodeByte(UInt address)
-{
-    return codeMemoryBlock[address];
-}
-
-void Memory_WriteCodeByte(UInt address, Byte value)
-{
-#ifdef CHECKED
-    if (address >= (segmentPages << 8))
-    {
-        Serial.print(address, HEX);
-        Serial.print(" out of range in Memory_WriteCodeByte ");
-        Error(0x02, HopperVM_PC_Get());
-        return;
-    }
-#endif  
-    codeMemoryBlock[address] = value;
-}
 
 UInt Memory_ReadCodeWord(UInt address)
 {
@@ -354,29 +368,9 @@ void Memory_WriteCodeWord(UInt address, UInt value)
     codeMemoryBlock[address + 1] = value >> 8;
 }
 
-Byte Memory_ReadProgramByte(UInt address)
-{
-    return codeStartAddress[address];
-}
 
-void Memory_WriteProgramByte(UInt address, Byte value)
-{
-#ifdef CHECKED
-    if (address >= (segmentPages << 8))
-    {
-        Serial.print(address, HEX);
-        Serial.print(" out of range in Memory_WriteProgramByte ");
-        Error(0x02, HopperVM_PC_Get());
-        return;
-    }
-#endif  
-    codeStartAddress[address] = value;
-}
 
-UInt Memory_ReadProgramWord(UInt address)
-{
-    return codeStartAddress[address] + (codeStartAddress[address + 1] << 8);
-}
+
 
 void Memory_WriteProgramWord(UInt address, UInt value)
 {

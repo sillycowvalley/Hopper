@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include "Runtime.h"
 #include "Platform.h"
-#include "Inlined.h"
 
 #if defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
 #define USEWIFI       // WiFi for Raspberry Pi Pico W

@@ -2,7 +2,6 @@
 
 long nativeLongFromHopperLong(UInt hopperLong);
 
-
 #include "LittleFS.h" // https://arduino-pico.readthedocs.io/en/latest/fs.html
 #include <FS.h>
 #include <SDFS.h>
