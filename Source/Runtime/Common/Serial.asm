@@ -44,6 +44,16 @@ unit Serial
         PLA
     }
     
+    EmptyTheBuffer()
+    {
+        loop
+        {
+            IsAvailable();
+            if (Z) { break; }
+            WaitForChar();
+        }
+    }
+    
     // returns Z flag clear if there is a character available in the buffer, Z set if not (disables and enables interrupts)
     IsAvailable()
     {

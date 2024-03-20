@@ -373,7 +373,7 @@ program ASMGEN
                 
                 if (!Parser.IsInteractive())
                 {
-                    codeSize = File.GetSize(ihexPath);
+                    codeSize = output.Count;
                     
                     PrintLn();
                     Print("Success, " + codeSize.ToString() + " bytes of code, ", Colour.ProgressText, Colour.ProgressFace);

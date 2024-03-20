@@ -699,8 +699,8 @@ unit AsmPoints
             }
             else if (OpCodes.IsJumpInstruction(opCode, ref addressingMode, ref isConditional) 
                   && !isConditional
-                  && (addressingMode != AddressingModes.AbsoluteIndirect) // (nnnn)
-                  && (addressingMode != AddressingModes.AbsoluteIndirectX) // (nnnn,X)
+                  && (addressingMode != AddressingModes.AbsoluteIndirect)  // [nnnn]
+                  && (addressingMode != AddressingModes.AbsoluteIndirectX) // [nnnn,X]
                   )
             {
                 removeIt = iJumpTargets[iIndex] == iIndex+1;

@@ -183,20 +183,20 @@ unit AsmStream
         {
             switch (addressingMode)
             {
-                case AddressingModes.Accumulator:      { disassembly += (name + " A"); }
+                case AddressingModes.Accumulator:       { disassembly += (name + " A"); }
                 case AddressingModes.Implied:           { disassembly += name; }
                 case AddressingModes.Immediate:         { disassembly += (name + " #0x" + operand.ToHexString(2)); }
                 case AddressingModes.Absolute:          { disassembly += (name + " 0x" + operand.ToHexString(4)); }
                 case AddressingModes.AbsoluteX:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",X"); }
                 case AddressingModes.AbsoluteY:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",Y"); }
-                case AddressingModes.AbsoluteIndirect:  { disassembly += (name + " (0x" + operand.ToHexString(4) + ")"); }
-                case AddressingModes.AbsoluteIndirectX: { disassembly += (name + " (0x" + operand.ToHexString(4) + ",X)"); }
+                case AddressingModes.AbsoluteIndirect:  { disassembly += (name + " [0x" + operand.ToHexString(4) + "]"); }
+                case AddressingModes.AbsoluteIndirectX: { disassembly += (name + " [0x" + operand.ToHexString(4) + ",X]"); }
                 case AddressingModes.ZeroPage:          { disassembly += (name + " 0x" + operand.ToHexString(2)); }
                 case AddressingModes.ZeroPageX:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",X"); }
                 case AddressingModes.ZeroPageY:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",Y"); }
-                case AddressingModes.ZeroPageIndirect:  { disassembly += (name + " (0x" + operand.ToHexString(2) +")"); }
-                case AddressingModes.XIndexedZeroPage:  { disassembly += (name + " (0x" + operand.ToHexString(2) +",X)"); }
-                case AddressingModes.YIndexedZeroPage:  { disassembly += (name + " (0x" + operand.ToHexString(2) +"),Y"); }
+                case AddressingModes.ZeroPageIndirect:  { disassembly += (name + " [0x" + operand.ToHexString(2) +"]"); }
+                case AddressingModes.XIndexedZeroPage:  { disassembly += (name + " [0x" + operand.ToHexString(2) +",X]"); }
+                case AddressingModes.YIndexedZeroPage:  { disassembly += (name + " [0x" + operand.ToHexString(2) +"],Y"); }
                 
                 case AddressingModes.Relative:  
                 { 

@@ -337,8 +337,6 @@ unit Token
             instructionKeywords["PLX"] = true;
             instructionKeywords["PHY"] = true;
             instructionKeywords["PLY"] = true;
-            instructionKeywords["CLI"] = true;
-            instructionKeywords["SEI"] = true;
             
             instructionKeywords["INC"] = true;
             instructionKeywords["DEC"] = true;
@@ -353,6 +351,14 @@ unit Token
             instructionKeywords["ASL"] = true;
             instructionKeywords["ADC"] = true;
             instructionKeywords["SBC"] = true;
+            
+            instructionKeywords["CLC"] = true;
+            instructionKeywords["CLD"] = true;
+            instructionKeywords["CLI"] = true;
+            instructionKeywords["CLV"] = true;
+            instructionKeywords["SEC"] = true;
+            instructionKeywords["SED"] = true;
+            instructionKeywords["SEI"] = true;
             
             instructionKeywords["NOP"] = true;
             

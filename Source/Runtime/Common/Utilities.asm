@@ -33,5 +33,35 @@ unit Utilities
         }
         Utilities.SendSlash();  // '\' response : acknowledge <enter> received
     }
+    
+    // IDX (memory location) and X (number of pages):
+    //    inspired by: https://forums.atariage.com/topic/186656-clearing-a-section-of-memory/
+    ClearPages()
+    {
+        LDA #0
+        loop
+        {
+            LDY #0
+            loop
+            {
+                STA [IDX], Y
+                DEY
+                if (Z) { break; }
+            }
+            // next page ..
+            INC IDXH
+            DEX
+            if (Z) { break; }
+        }
+            
+    }
+    IncIDY()
+    {
+        INC ZP.IDYL
+        if (Z)
+        {
+            INC ZP.IDYH
+        }
+    }
 
 }

@@ -599,13 +599,6 @@ unit Constant
                 }
                 case HopperToken.LParen:
                 {
-#ifdef ASSEMBLER
-                    if (!Parser.HadError)
-                    {
-                        Parser.ErrorAtCurrent("constant expected");
-                    }
-                    break;
-#else                    
                     Parser.Advance(); // (
                     value = ParseConstantExpression(typeExpected, ref actualType, weakEnums);
                     if (Parser.HadError)
@@ -613,7 +606,6 @@ unit Constant
                         break;
                     }
                     Parser.Consume(HopperToken.RParen);
-#endif
                 }
                 default:
                 {

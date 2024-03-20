@@ -17,7 +17,7 @@ unit Diagnostic
                 LDA #Utilities.Enter
                 Serial.WriteChar();
             }
-            LDA (ZP.IDX), Y
+            LDA [ZP.IDX], Y
             Serial.HexOut();
             INY
             CPY #0x00 // ; after $FF

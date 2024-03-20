@@ -357,10 +357,10 @@ program Assemble
         // instr R, nnnn
         // instr R, R
         // instr RR, RR
-        // instr (RR)
-        // instr R, (RR)
-        // instr (RR), R
-        // instr (nnnn), R
+        // instr [RR]
+        // instr R, [RR]
+        // instr [RR], R
+        // instr [nnnn], R
         // instr dd
         // instr C, dd
         // instr C
@@ -387,9 +387,9 @@ program Assemble
         // Y-Indexed Absolute:
         //     LDA nnnn,Y
         // Absolute Indirect:
-        //     JMP (nnnn)
+        //     JMP [nnnn]
         // Absolute X-Indexed Indirect:
-        //     JMP (nnnn,X)
+        //     JMP [nnnn,X]
         // Zero Page:
         //     LDA nn   (same as LDA 00nn)
         // X-Indexed Zero Page:
@@ -397,11 +397,11 @@ program Assemble
         // Y-Indexed Zero Page:
         //     LDX nn,Y (same as LDA 00nn, Y) 
         // Zero Page Indirect:
-        //     LDA (nn)
+        //     LDA [nn]
         // X-Indexed Zero Page Indirect:
-        //     LDA (nn,X)
+        //     LDA [nn,X]
         // Zero Page Indirect Y-Indexed:
-        //     LDA (nn),Y
+        //     LDA [nn],Y
         // Relative:
         //     BEQ dd
         
@@ -490,9 +490,9 @@ program Assemble
                                    |AddressingModes.XIndexedZeroPage
                                    |AddressingModes.YIndexedZeroPage)) != AddressingModes.None)
             {
-                if (tokenType == HopperToken.LParen)
+                if (tokenType == HopperToken.LBracket)
                 {
-                    Parser.Advance(); // '('
+                    Parser.Advance(); // '['
                     currentToken = Parser.CurrentToken;
                     tokenType = Token.GetType(currentToken);
                     expectIndirect = true;
@@ -508,6 +508,7 @@ program Assemble
                 case HopperToken.Integer:
                 case HopperToken.Identifier:
                 case HopperToken.DottedIdentifier:
+                case HopperToken.LParen:
                 {
                     hasImmediate = assembleConstantExpression(ref immediateValue);
                     currentToken = Parser.CurrentToken;
@@ -596,7 +597,7 @@ program Assemble
                                    |AddressingModes.ZeroPageRelative
                                    )) != AddressingModes.None)
             {
-                if (tokenType == HopperToken.RParen)
+                if (tokenType == HopperToken.RBracket)
                 {
                     if ((addressingModes & (AddressingModes.YIndexedZeroPage)) == AddressingModes.YIndexedZeroPage)
                     {
@@ -635,27 +636,27 @@ program Assemble
                         {
                             if ((addressingModes & (AddressingModes.XIndexedZeroPage)) != AddressingModes.XIndexedZeroPage)
                             {
-                                Die(0x0B);
+                                Parser.Error("internal error"); Die(0x0B);
                             }
-                            // XIndexedZeroPage=0x1000,  // (nn,X)
+                            // XIndexedZeroPage=0x1000,  // [nn,X]
                             OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.XIndexedZeroPage);
                         }
                         case 'Y':
                         {
                             if ((addressingModes & (AddressingModes.YIndexedZeroPage)) != AddressingModes.YIndexedZeroPage)
                             {
-                                Die(0x0B);
+                                Parser.Error("internal error"); Die(0x0B);
                             }
-                            // YIndexedZeroPage=0x2000,  // (nn), Y
+                            // YIndexedZeroPage=0x2000,  // [nn], Y
                             OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.YIndexedZeroPage);
                         }
                         default:
                         {
                             if ((addressingModes & (AddressingModes.ZeroPageIndirect)) != AddressingModes.ZeroPageIndirect)
                             {
-                                Die(0x0B);
+                                Parser.Error("internal error"); Die(0x0B);
                             }
-                            // ZeroPageIndirect=0x0800,  // (nn)
+                            // ZeroPageIndirect=0x0800,  // [nn]
                             OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageIndirect);
                         }
                     }
@@ -668,7 +669,7 @@ program Assemble
                         {
                             if ((addressingModes & (AddressingModes.ZeroPageX)) != AddressingModes.ZeroPageX)
                             {
-                                Die(0x0B);
+                                Parser.Error("internal error"); Die(0x0B);
                             }
                             // ZeroPageX=0x0200,         // nn,X
                             OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageX);
@@ -677,7 +678,7 @@ program Assemble
                         {
                             if ((addressingModes & (AddressingModes.ZeroPageY)) != AddressingModes.ZeroPageY)
                             {
-                                Die(0x0B);
+                                Parser.Error("internal error"); Die(0x0B);
                             }
                             // ZeroPageY=0x0400,         // nn,Y
                             OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageY);
@@ -686,7 +687,7 @@ program Assemble
                         {
                             if ((addressingModes & (AddressingModes.ZeroPage)) != AddressingModes.ZeroPage)
                             {
-                                Die(0x0B);
+                                Parser.Error("internal error"); Die(0x0B);
                             }
                             // ZeroPage=0x0100,          // nn
                             OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPage);
@@ -703,18 +704,18 @@ program Assemble
                     {
                         if ((addressingModes & (AddressingModes.AbsoluteIndirectX)) != AddressingModes.AbsoluteIndirectX)
                         {
-                            Die(0x0B);
+                            Parser.Error("internal error"); Die(0x0B);
                         }
-                        // AbsoluteIndirectX=0x0080, // (nnnn,X)
+                        // AbsoluteIndirectX=0x0080, // [nnnn,X]
                         OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteIndirectX);
                     }
                     else
                     {
                         if ((addressingModes & (AddressingModes.AbsoluteIndirect)) != AddressingModes.AbsoluteIndirect)
                         {
-                            Die(0x0B);
+                            Parser.Error("internal error"); Die(0x0B);
                         }
-                        // AbsoluteIndirect=0x0040,  // (nnnn)
+                        // AbsoluteIndirect=0x0040,  // [nnnn]
                         OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteIndirect);
                     }
                 }
@@ -726,7 +727,7 @@ program Assemble
                         {
                             if ((addressingModes & (AddressingModes.AbsoluteX)) != AddressingModes.AbsoluteX)
                             {
-                                Die(0x0B);
+                                Parser.Error("internal error"); Die(0x0B);
                             }
                             // AbsoluteX=0x0020,         // nnnn,X
                             OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteX);
@@ -735,7 +736,7 @@ program Assemble
                         {
                             if ((addressingModes & (AddressingModes.AbsoluteY)) != AddressingModes.AbsoluteY)
                             {
-                                Die(0x0B);
+                                Parser.Error("internal error"); Die(0x0B);
                             }
                             // AbsoluteY=0x0010,         // nnnn,Y
                             OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteY);
@@ -744,7 +745,7 @@ program Assemble
                         {
                             if ((addressingModes & (AddressingModes.Absolute)) != AddressingModes.Absolute)
                             {
-                                Die(0x0B);
+                                Parser.Error("internal error"); Die(0x0B);
                             }
                             // Absolute=0x0008,          // nnnn
                             OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.Absolute);

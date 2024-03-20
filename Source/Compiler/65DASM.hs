@@ -261,7 +261,7 @@ program DASM
                             hasmFile.Append("" + char(0x0A)); 
                             hasmFile.Append("// " + src + ":" + ln + char(0x0A));  
                             
-                            string mname = "// ####  " + nm + "(..)  ####";
+                            string mname = "// ####  " + nm + "()  ####";
                             mname = mname.Pad(' ', 80);
                             mname = mname + "0x" + methodIndex.ToHexString(4) + char(0x0A);
                             hasmFile.Append(mname);  

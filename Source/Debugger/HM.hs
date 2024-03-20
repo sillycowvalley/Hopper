@@ -857,7 +857,7 @@ program HopperMonitor
                         {
                             hex = "0x" + commandLine.Substring(4);
                             uint address;
-                            if (UInt.TryParse(hex, ref address) && (address > 0) && (address < 0x8000))
+                            if (UInt.TryParse(hex, ref address))
                             {
                                 commandLine = "B" + breakpoint.ToHexString(1) + address.ToHexString(4);
                                 Monitor.Command(commandLine, false, false);

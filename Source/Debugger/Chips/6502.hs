@@ -46,7 +46,7 @@ unit W65C02
     
     ADC(byte operand)
     {
-        uint sum = aRegister + operand + (cFlag ? 1 : 0);
+        uint sum = uint(aRegister) + uint(operand) + (cFlag ? 1 : 0);
         cFlag = (sum > 255);
         aRegister = byte(sum & 0xFF);
 
@@ -57,7 +57,7 @@ unit W65C02
     
     SBC(byte operand)
     {
-        int isum = int(aRegister) - operand - (cFlag ? 0 : 1);
+        int isum = int(aRegister) - int(operand) - int(cFlag ? 0 : 1);
         cFlag = (isum >= 0);
         vFlag = (isum < -127) || (isum > 127);
         aRegister = isum.GetByte(0);
@@ -144,6 +144,20 @@ unit W65C02
             return true;
         }
         return false;
+    }
+    RMB(byte bit, uint operand)
+    {
+        byte mask  = ~(1 << bit);
+        byte value = GetMemory(operand);
+        value &= mask;
+        SetMemory(operand, value);
+    }
+    SMB(byte bit, uint operand)
+    {
+        byte mask  = (1 << bit);
+        byte value = GetMemory(operand);
+        value |= mask;
+        SetMemory(operand, value);
     }
     
     JSR(uint operand)
@@ -562,6 +576,23 @@ unit W65C02
                 case 0xDF:
                 case 0xEF:
                 case 0xFF: { if (BBS((instruction & 0x70) >> 4, operand, offset)) { break; } }
+                
+                case 0x07:
+                case 0x17:
+                case 0x27:
+                case 0x37:
+                case 0x47:
+                case 0x57:
+                case 0x67:
+                case 0x77: { RMB((instruction & 0x70) >> 4, operand); }
+                case 0x87:
+                case 0x97:
+                case 0xA7:
+                case 0xB7:
+                case 0xC7:
+                case 0xD7:
+                case 0xE7:
+                case 0xF7: { SMB((instruction & 0x70) >> 4, operand); }
                                 
                 default: 
                 { 
@@ -580,7 +611,7 @@ unit W65C02
     
     string GetRegisterNames()
     {
-        string registers = "PC   A  X  Y  SP [NV-BDIZC]";
+        string registers = "PC   A  X  Y  SP [NV-BDIZC]  |  PC   SP  BP  ACC  IDX  IDY";
         return registers;
     }
     string GetRegisters()
@@ -591,12 +622,27 @@ unit W65C02
                             yRegister.ToHexString(2) + " " + 
                            spRegister.ToHexString(2) + "  " +
                             (nFlag ? "1" : "0") +
-                            (vFlag ? "1-" : "0-") +
+                            (vFlag ? "1" : "0") + "-" +
                             (bFlag ? "1" : "0") +
                             (dFlag ? "1" : "0") +
                             (iFlag ? "1" : "0") +
                             (zFlag ? "1" : "0") +
                             (cFlag ? "1" : "0");
+        
+        uint pc  = GetMemory(0xB0) + GetMemory(0xB1) << 8;
+        byte sp  = GetMemory(0xB2);
+        byte bp  = GetMemory(0xB6);
+        uint acc = GetMemory(0xC0) + GetMemory(0xC1) << 8;
+        uint idx = GetMemory(0xC6) + GetMemory(0xC7) << 8;
+        uint idy = GetMemory(0xC8) + GetMemory(0xC9) << 8;
+                                                
+        registers += // the Hopper registers                   
+        "      " + pc.ToHexString(4) + 
+             " " + sp.ToHexString(2) + " " +
+             " " + bp.ToHexString(2) + " " +
+             " " + acc.ToHexString(4) + 
+             " " + idx.ToHexString(4) + 
+             " " + idy.ToHexString(4) + " ";
         return registers;
     }
     byte GetMemory(uint address)
