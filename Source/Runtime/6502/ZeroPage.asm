@@ -7,18 +7,29 @@ unit ZP
     const byte PCL                  = 0xB0;
     const byte PCH                  = 0xB1;
     
-    const byte SP                   = 0xB2;
+    const byte CODESTART            = 0xB2;
+    const byte CODESTARTL           = 0xB2;
+    const byte CODESTARTH           = 0xB3;
     
-    const byte BP                   = 0xB6;
     
-    const byte CSP                  = 0xB8;
-    
-    const byte COPYNEXTPOP          = 0xBA;
+    const byte SP                   = 0xB4;
+    const byte BP                   = 0xB5;
+    const byte CSP                  = 0xB6;
+    const byte CNP                  = 0xB7;
     
     const byte FLAGS                = 0xBB;
     // Bit 5 - breakpoint/s exist
     // Bit 3 - 8 bit SP and BP
     // Bit 2 - checked build
+    // Bit 1 - running at Warp (no checks for <ctrl><C>)
+    // Bit 0 - a program has been loaded
+    
+    const byte FREELIST             = 0xBC;
+    const byte FREELISTL            = 0xBC;
+    const byte FREELISTH            = 0xBD;
+    const byte HEAPSTART            = 0xBE;
+    const byte HEAPSIZE             = 0xBF;
+    
     
     const byte ACC                  = 0xC0;
     const byte ACCL                 = 0xC0;
@@ -40,17 +51,14 @@ unit ZP
     const byte IDYL                 = 0xC8;
     const byte IDYH                 = 0xC9;
     
-    const byte CODESTART            = 0xCA;
+    const byte ACCT                 = 0xCA;
+    const byte TOPT                 = 0xCB;
+    const byte NEXTT                = 0xCC;
+    
     
     const byte SerialInWritePointer = 0xD3;
     const byte SerialInReadPointer  = 0xD4;
     const byte SerialBreakFlag      = 0xDE;
-    
-    const byte FREELIST             = 0xE8;
-    const byte FREELISTL            = 0xE8;
-    const byte FREELISTH            = 0xE9;
-    const byte HEAPSTART            = 0xEA;
-    const byte HEAPSIZE             = 0xEB;
     
     const byte ACIACONTROL          = 0xEC;
     const byte ACIASTATUS           = 0xEC;

@@ -373,4 +373,35 @@ unit AsmStream
         currentStream.Append(byte(iOverload >> 8));
     }
     
+    AddInstructionCMP(char register, byte operand)
+    {
+        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            switch (register)
+            {
+                case 'A':
+                {
+                    OpCodes.EmitInstruction("CMP", operand);
+                }
+                case 'X':
+                {
+                    OpCodes.EmitInstruction("CPX", operand);
+                }
+                case 'Y':
+                {
+                    OpCodes.EmitInstruction("CPY", operand);
+                }
+                default:
+                {
+                    IE();
+                }
+            }
+            
+        }
+        if (Architecture == CPUArchitecture.Z80A)
+        {
+            NI();
+        }
+    }
+    
 }

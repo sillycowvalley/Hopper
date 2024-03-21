@@ -131,6 +131,7 @@ unit Editor
     New(<string, variant> sb, <string, variant> mb)
     {
         Token.Initialize();
+        OutputDebug("Editor.New()");
         statusbar = sb;
         menubar = mb;
         x0 = Editor.Left;
@@ -1875,6 +1876,47 @@ unit Editor
         currentPath = path;
     }
     
+    CheckAssemblerSource()
+    {
+        if (isAssemblerSource)
+        {
+            if (cpuArchitecture == CPUArchitecture.None)
+            {
+                uint maxLines = TextBuffer.GetLineCount(); 
+                uint currentLine = 0;
+                loop
+                {
+                    if (currentLine >= maxLines) { break; }
+                    string ln = TextBuffer.GetLine(currentLine);
+                    if (ln.Contains("#define"))
+                    {
+                        <string> parts = ln.Split(' ');
+                        if ((parts.Count >= 2) && (parts[0] == "#define"))
+                        {
+                            if (parts[1] == "CPU_6502")
+                            {
+                                cpuArchitecture = CPUArchitecture.M6502;
+                                break;
+                            }
+                            if (parts[1] == "CPU_65C02")
+                            {
+                                cpuArchitecture = CPUArchitecture.W65C02;
+                                break;
+                            }
+                            if (parts[1] == "CPU_Z80")
+                            {
+                                cpuArchitecture = CPUArchitecture.Z80A;
+                                break;
+                            }
+                        }
+                    }
+                    currentLine++;
+                }
+            }
+            Token.InitializeAssembler(cpuArchitecture);
+        }
+    }
+    
     LoadFile(string path)
     {
         LoadFile(path, 0, true);
@@ -1955,47 +1997,14 @@ unit Editor
 
         string extension = Path.GetExtension(CurrentPath);
         extension = extension.ToLower();
-        isHopperSource = (extension == ".hs");
+        isHopperSource    = (extension == ".hs");
         isAssemblerSource = (extension == ".asm");
         
         string localProject = ProjectPath;
         if (localProject.Length == 0) // first load
         {
             projectPath = CurrentPath;
-            if (isAssemblerSource)
-            {
-                uint maxLines = TextBuffer.GetLineCount(); 
-                uint currentLine = 0;
-                loop
-                {
-                    if (currentLine >= maxLines) { break; }
-                    string ln = TextBuffer.GetLine(currentLine);
-                    if (ln.Contains("#define"))
-                    {
-                        <string> parts = ln.Split(' ');
-                        if ((parts.Count >= 2) && (parts[0] == "#define"))
-                        {
-                            if (parts[1] == "CPU_6502")
-                            {
-                                cpuArchitecture = CPUArchitecture.M6502;
-                                break;
-                            }
-                            if (parts[1] == "CPU_65C02")
-                            {
-                                cpuArchitecture = CPUArchitecture.W65C02;
-                                break;
-                            }
-                            if (parts[1] == "CPU_Z80")
-                            {
-                                cpuArchitecture = CPUArchitecture.Z80A;
-                                break;
-                            }
-                        }
-                    }
-                    currentLine++;
-                }
-                Token.InitializeAssembler(cpuArchitecture);
-            }
+            Editor.CheckAssemblerSource();
             UpdateYoungestFile();
         }
         CalculateLineNumberWidth();

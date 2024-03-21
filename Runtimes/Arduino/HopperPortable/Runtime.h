@@ -634,6 +634,7 @@ void HopperVM_Release();
 Byte HopperVM_SP_Get();
 Byte HopperVM_BP_Get();
 Byte HopperVM_CSP_Get();
+Bool HopperVM_CNP_Get();
 Bool HopperVM_BreakpointExists_Get();
 UInt HopperVM_GetBreakpoint(Byte n);
 UInt HopperVM_GetCS(Byte address);
@@ -832,7 +833,6 @@ OpCode HopperVM_CurrentOpCode_Get();
 UInt HopperVM_Pop_R(Type & htype);
 Int HopperVM_PopI();
 void HopperVM_PushI(Int ivalue);
-Bool HopperVM_CNP_Get();
 void HopperVM_CNP_Set(Bool value);
 Int HopperVM_ReadByteOffsetOperand();
 UInt HopperVM_TypeStackLSB_Get();
@@ -983,5 +983,6 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+
 
 #endif // HOPPERRUNTIME_H

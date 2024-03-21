@@ -28,7 +28,7 @@ unit Serial
     {
         PHA
         LDA ZP.ACIADATA   // read serial byte
-        CMP #0x03      // is it break? (<ctrl><C>)
+        CMP #0x03         // is it break? (<ctrl><C>)
         if (Z)
         {
             INC ZP.SerialBreakFlag
@@ -46,12 +46,14 @@ unit Serial
     
     EmptyTheBuffer()
     {
+        PHA
         loop
         {
             IsAvailable();
             if (Z) { break; }
             WaitForChar();
         }
+        PLA
     }
     
     // returns Z flag clear if there is a character available in the buffer, Z set if not (disables and enables interrupts)
@@ -92,6 +94,7 @@ unit Serial
         }
         PLX
     }
+    
        
     // transmits A
     WriteChar()
@@ -115,7 +118,7 @@ unit Serial
         PHA
         
         // most significant nibble
-        LSR A LSR A LSR A LSR A
+        LSR LSR LSR LSR
         CMP #0x0A
         if (C)
         {
@@ -136,5 +139,19 @@ unit Serial
         WriteChar();
         
         PLA
+    }
+    
+    // loads two hex characters from Serial to byte in A
+    //    uses ZP.ACCL  
+    HexIn()
+    {
+        Serial.WaitForChar();
+        Utilities.MakeNibble();
+        ASL ASL ASL ASL
+        AND #0xF0
+        STA ZP.ACCL
+        Serial.WaitForChar();
+        Utilities.MakeNibble();
+        ORA ZP.ACCL
     }
 }

@@ -1875,25 +1875,31 @@ unit CodePoints
                 && ((opCode0 == Instruction.LE)     || (opCode0 == Instruction.EQ))
                )
             {
-                byte       operand = ((opCode1 == Instruction.PUSHI0) ? 0 : 1);
-                Instruction opCode = ((opCode0 == Instruction.LE) ? Instruction.PUSHIBLE : Instruction.PUSHIBEQ);
-                iCodes.SetItem   (iIndex-1, opCode);
-                iOperands.SetItem(iIndex-1, operand);
-                iLengths.SetItem (iIndex-1, 2);
-                RemoveInstruction(iIndex);
-                modified = true;
+                if (!IsTargetOfJumps(iIndex))
+                {
+                    byte       operand = ((opCode1 == Instruction.PUSHI0) ? 0 : 1);
+                    Instruction opCode = ((opCode0 == Instruction.LE) ? Instruction.PUSHIBLE : Instruction.PUSHIBEQ);
+                    iCodes.SetItem   (iIndex-1, opCode);
+                    iOperands.SetItem(iIndex-1, operand);
+                    iLengths.SetItem (iIndex-1, 2);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                }
             }
             if (   ((opCode1 == Instruction.PUSHI0) || (opCode1 == Instruction.PUSHI1))
                 && ((opCode0 == Instruction.ADD)    || (opCode0 == Instruction.SUB))
                )
             {
-                byte       operand = ((opCode1 == Instruction.PUSHI0) ? 0 : 1);
-                Instruction opCode = ((opCode0 == Instruction.ADD) ? Instruction.ADDB : Instruction.SUBB);
-                iCodes.SetItem   (iIndex-1, opCode);
-                iOperands.SetItem(iIndex-1, operand);
-                iLengths.SetItem (iIndex-1, 2);
-                RemoveInstruction(iIndex);
-                modified = true;
+                if (!IsTargetOfJumps(iIndex))
+                {
+                    byte       operand = ((opCode1 == Instruction.PUSHI0) ? 0 : 1);
+                    Instruction opCode = ((opCode0 == Instruction.ADD) ? Instruction.ADDB : Instruction.SUBB);
+                    iCodes.SetItem   (iIndex-1, opCode);
+                    iOperands.SetItem(iIndex-1, operand);
+                    iLengths.SetItem (iIndex-1, 2);
+                    RemoveInstruction(iIndex);
+                    modified = true;
+                }
             }
             iIndex++;
         } // loop

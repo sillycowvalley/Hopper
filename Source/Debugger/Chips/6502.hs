@@ -130,7 +130,7 @@ unit W65C02
         byte value = GetMemory(operand);
         if (value & (1 << bit) == 0)
         {
-            pcRegister = uint(long(pcRegister) + 2 + offset);
+            pcRegister = uint(long(pcRegister) + 3 + offset);
             return true;
         }
         return false;
@@ -140,7 +140,7 @@ unit W65C02
         byte value = GetMemory(operand);
         if (value & (1 << bit) != 0)
         {
-            pcRegister = uint(long(pcRegister) + 2 + offset);
+            pcRegister = uint(long(pcRegister) + 3 + offset);
             return true;
         }
         return false;
@@ -190,6 +190,18 @@ unit W65C02
     }
     BRK()
     {
+        // #### BRK: a way for 6502 code to panic for now
+        PrintLn();
+        PrintLn("6502 Panic at PC=0x" + pcRegister.ToHexString(4) 
+                           + ", A=0x" + aRegister.ToHexString(2)
+                           + ", X=0x" + xRegister.ToHexString(2)
+                           + ", Y=0x" + yRegister.ToHexString(2)
+                           , Colour.Red, Colour.Black);
+        PrintLn();
+        ACIA.Close();
+        Die(0x0B); 
+        // ####
+        
         Push(pcRegister+1);
         PushFlags();
         pcRegister = IRQ;
@@ -239,24 +251,24 @@ unit W65C02
             }
             case AddressingModes.Absolute:          //  nnnn
             {
-                operand = memory[pcRegister+1] + memory[pcRegister+2] << 8;
+                operand = memory[pcRegister+1] + (memory[pcRegister+2] << 8);
             }
             case AddressingModes.AbsoluteX:         //  nnnn,X
             {
-                operand = memory[pcRegister+1] + memory[pcRegister+2] << 8 + xRegister;
+                operand = memory[pcRegister+1] + (memory[pcRegister+2] << 8) + xRegister;
             }
             case AddressingModes.AbsoluteY:         //  nnnn,Y
             {
-                operand = memory[pcRegister+1] + memory[pcRegister+2] << 8 + yRegister;
+                operand = memory[pcRegister+1] + (memory[pcRegister+2] << 8) + yRegister;
             }
             case AddressingModes.AbsoluteIndirect:  // (nnnn)
             {
-                operand = memory[pcRegister+1] + memory[pcRegister+2] << 8;
+                operand = memory[pcRegister+1] + (memory[pcRegister+2] << 8);
                 Die(0x0A);
             }
             case AddressingModes.AbsoluteIndirectX: // (nnnn,X)
             {
-                operand = memory[pcRegister+1] + memory[pcRegister+2] << 8;
+                operand = memory[pcRegister+1] + (memory[pcRegister+2] << 8);
                 Die(0x0A);
             }
             case AddressingModes.Immediate:         // #nn
@@ -275,17 +287,17 @@ unit W65C02
             case AddressingModes.ZeroPageIndirect:  // (nn)
             {
                 operand = memory[pcRegister+1];
-                operand = (memory[operand] + memory[operand+1] << 8);
+                operand = (memory[operand] + (memory[operand+1] << 8));
             }
             case AddressingModes.XIndexedZeroPage:  // (nn,X)
             {
                 operand = (memory[pcRegister+1] + xRegister) & 0xFF;
-                operand = (memory[operand] + memory[operand+1] << 8);
+                operand = (memory[operand] + (memory[operand+1] << 8));
             }
             case AddressingModes.YIndexedZeroPage:  // (nn), Y
             {
                 operand = memory[pcRegister+1];
-                operand = (memory[operand] + memory[operand+1] << 8 + yRegister);
+                operand = (memory[operand] + (memory[operand+1] << 8) + yRegister);
             }
             case AddressingModes.Relative:          // dd
             {
@@ -611,7 +623,7 @@ unit W65C02
     
     string GetRegisterNames()
     {
-        string registers = "PC   A  X  Y  SP [NV-BDIZC]  |  PC   SP  BP  ACC  IDX  IDY";
+        string registers = "PC   A  X  Y  SP [NV-BDIZC]  |  PC   SP  BP  CSP    ACC  TOP  NEXT IDX  IDY";
         return registers;
     }
     string GetRegisters()
@@ -629,18 +641,24 @@ unit W65C02
                             (zFlag ? "1" : "0") +
                             (cFlag ? "1" : "0");
         
-        uint pc  = GetMemory(0xB0) + GetMemory(0xB1) << 8;
-        byte sp  = GetMemory(0xB2);
-        byte bp  = GetMemory(0xB6);
-        uint acc = GetMemory(0xC0) + GetMemory(0xC1) << 8;
-        uint idx = GetMemory(0xC6) + GetMemory(0xC7) << 8;
-        uint idy = GetMemory(0xC8) + GetMemory(0xC9) << 8;
+        uint pc   = GetMemory(0xB0) + (GetMemory(0xB1) << 8);
+        byte sp   = GetMemory(0xB4);
+        byte bp   = GetMemory(0xB5);
+        byte csp  = GetMemory(0xB6);
+        uint acc  = GetMemory(0xC0) + (GetMemory(0xC1) << 8);
+        uint top  = GetMemory(0xC2) + (GetMemory(0xC3) << 8);
+        uint next = GetMemory(0xC4) + (GetMemory(0xC5) << 8);
+        uint idx  = GetMemory(0xC6) + (GetMemory(0xC7) << 8);
+        uint idy  = GetMemory(0xC8) + (GetMemory(0xC9) << 8);
                                                 
         registers += // the Hopper registers                   
         "      " + pc.ToHexString(4) + 
              " " + sp.ToHexString(2) + " " +
              " " + bp.ToHexString(2) + " " +
+             " " + csp.ToHexString(2) + "    " +
              " " + acc.ToHexString(4) + 
+             " " + top.ToHexString(4) + 
+             " " + next.ToHexString(4) + 
              " " + idx.ToHexString(4) + 
              " " + idy.ToHexString(4) + " ";
         return registers;

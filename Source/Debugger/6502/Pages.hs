@@ -8,9 +8,9 @@ unit Pages
     // Zero Page FLAGS:
     flags HopperFlags
     {
-      //TraceOn        = 0x01,
+        ProgramLoaded  = 0x01, // a program has been loaded
         WarpSpeed      = 0x02, // on 6502, built without checks for <Ctrl><C>
-        StackSlot32Bit = 0x02, // on MCUs, 'float' and 'long' are value types
+      //StackSlot32Bit = 0x02, // on MCUs, 'float' and 'long' are value types
         CheckedBuild   = 0x04,
       //SP8Bit         = 0x08,
       //ProfileBuild   = 0x10,
@@ -158,23 +158,26 @@ unit Pages
         if (success)
         {
             HopperFlags hopperFlags   = HopperFlags(Pages.GetPageByte(0xBB));
-            zeroPage["FLAGS"]  = Pages.GetPageByte(0xBB);
+            
+            zeroPage["PC"]        = Pages.GetPageWord(0xB0);
+            zeroPage["CODESTART"] = Pages.GetPageWord(0xB2);
+            
+            zeroPage["SP"]        = Pages.GetPageByte(0xB4);
+            zeroPage["BP"]        = Pages.GetPageByte(0xB5);
+            zeroPage["CSP"]       = Pages.GetPageByte(0xB6);
+            zeroPage["CNP"]       = Pages.GetPageByte(0xB7);
+            
+            zeroPage["FLAGS"]     = Pages.GetPageByte(0xBB);
+            
+            zeroPage["FREELIST"]  = Pages.GetPageWord(0xBC);
+            zeroPage["HEAPSTART"] = Pages.GetPageByte(0xBE) << 8;
+            zeroPage["HEAPSIZE"]  = Pages.GetPageByte(0xBF) << 8;
+            
             zeroPage["ACC"]    = Pages.GetPageWord(0xC0);
             zeroPage["TOP"]    = Pages.GetPageWord(0xC2);
             zeroPage["NEXT"]   = Pages.GetPageWord(0xC4);
             zeroPage["IDX"]    = Pages.GetPageWord(0xC6);
             zeroPage["IDY"]    = Pages.GetPageWord(0xC8);
-            
-            zeroPage["PC"]     = Pages.GetPageWord(0xB0);
-            
-            zeroPage["SP"]     = Pages.GetPageByte(0xB2);
-            zeroPage["BP"]     = Pages.GetPageByte(0xB6);
-            zeroPage["CSP"]    = Pages.GetPageByte(0xB8);
-            
-            zeroPage["HEAPSTART"] = Pages.GetPageByte(0xEA) << 8;
-            zeroPage["HEAPSIZE"]  = Pages.GetPageByte(0xEB) << 8;
-            zeroPage["FREELIST"]  = Pages.GetPageWord(0xE8);
-            zeroPage["CODESTART"] = Pages.GetPageByte(0xCA);
             
             //foreach (var kv in zeroPage)
             //{

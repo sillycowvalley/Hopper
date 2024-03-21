@@ -397,26 +397,37 @@ program Runtime
                     byte address = col + (row << 4);
                     switch (address)
                     {
-                        case 0xB1:
-                        {
-                            data = byte(HopperVM.PC >> 8);
-                        }
                         case 0xB0:
                         {
                             data = byte(HopperVM.PC & 0xFF);
                         }
-                        case 0xB2: // SP
+                        case 0xB1:
+                        {
+                            data = byte(HopperVM.PC >> 8);
+                        }
+                        case 0xB2:
+                        case 0xB3:
+                        {
+                            data = 0; // CODESTART
+                        }
+                        case 0xB4: // SP
                         {
                             data = HopperVM.SP;
                         }
-                        case 0xB6:
+                        case 0xB5:
                         {
                             data = HopperVM.BP;
                         }
-                        case 0xB8:
+                        case 0xB6:
                         {
                             data = HopperVM.CSP;
                         }
+                        case 0xB7:
+                        {
+                            data = HopperVM.CNP ? 1 : 0;
+                        }
+                        
+                        
                         case 0xBB: // flags
                         {
                             data = byte(HopperFlags.MCUPlatform); // 0x08 would imply 8 bit SP
@@ -429,26 +440,23 @@ program Runtime
 #endif                          
                         }
                         
-                        case 0xE9:
-                        {
-                            data = byte(Memory.FreeList >> 8);
-                        }
-                        case 0xE8:
+                        case 0xBC:
                         {
                             data = byte(Memory.FreeList & 0xFF);
                         }
-                        case 0xEB:// HeapSize MSB
+                        case 0xBD:
                         {
-                            data = byte(Memory.HeapSize >> 8);
+                            data = byte(Memory.FreeList >> 8);
                         }
-                        case 0xEA: // HeapStart MSB
+                        case 0xBE: // HeapStart MSB
                         {
                             data = byte(Memory.HeapStart >> 8);
                         }
-                        case 0xCA: // CodeStart MSB
+                        case 0xBF:// HeapSize MSB
                         {
-                            data = 0;
+                            data = byte(Memory.HeapSize >> 8);
                         }
+                        
                         default:
                         {
                             if ((address >= 0x50) && (address <= 0x5F))

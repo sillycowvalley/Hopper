@@ -191,7 +191,7 @@ program Emulate
                 }
                 else if (length == 3)
                 {
-                    operand = Emulate.GetMemory(address+1) + Emulate.GetMemory(address+2) << 8; 
+                    operand = Emulate.GetMemory(address+1) + (Emulate.GetMemory(address+2) << 8); 
                 }
                 
                 string debugAddress = (address - methodStart).ToString();
@@ -615,7 +615,7 @@ program Emulate
             
             byte version = code[0];
             byte arch    = code[1];
-            orgROM       = code[2] + code[3] << 8;
+            orgROM       = code[2] + (code[3] << 8);
             
             Architecture = CPUArchitecture(arch);
             
@@ -644,9 +644,9 @@ program Emulate
             if (Is6502)
             {
                 vectorUse    = 6;
-                W65C02.NMI   = code[length-6] + code[length-5] << 8;
-                W65C02.Reset = code[length-4] + code[length-3] << 8;
-                W65C02.IRQ   = code[length-2] + code[length-1] << 8;
+                W65C02.NMI   = code[length-6] + (code[length-5] << 8);
+                W65C02.Reset = code[length-4] + (code[length-3] << 8);
+                W65C02.IRQ   = code[length-2] + (code[length-1] << 8);
             }
             for (uint i = 0; i < length-vectorUse; i++)
             {

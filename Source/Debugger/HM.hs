@@ -233,14 +233,14 @@ program HopperMonitor
                     address = GetPageByte(0x0300+icsp) + GetPageByte(0x0400+icsp) << 8;
                     bp      = GetPageByte(0x0300+icsp+1);
 
-                    address = address - (GetZeroPage("CODESTART") << 8);
+                    address = address - GetZeroPage("CODESTART");
                     methodIndex = LocationToIndex(address);
                     OutputMethodLine(address - 3, methodIndex, bp, sourceLevel, symbolsLoaded);
                     icsp += 2;
                 }
                 
                 // current method
-                uint pc = GetZeroPage("PC") - (GetZeroPage("CODESTART") << 8);
+                uint pc = GetZeroPage("PC") - GetZeroPage("CODESTART");
                 methodIndex = LocationToIndex(pc);
                 bp  = byte(GetZeroPage("BP"));
 
@@ -352,97 +352,71 @@ program HopperMonitor
     
     ShowDisassembly(uint address, uint instructions)
     {
-        if (!ZeroPageContains("CODESTART"))
+        string content = address.ToHexString(4); // fallback content
+        uint entryPoint = Source.GetCode(0x0004) + Source.GetCode(0x0005) << 8;
+        address += entryPoint;
+        int entryPointOffset = -int(entryPoint);
+        bool first = true;
+        loop
         {
-            Pages.LoadZeroPage(false);
-        }
-        if (ZeroPageContains("CODESTART"))
-        {
-            string content = address.ToHexString(4); // fallback content
-            uint codeStart = (GetZeroPage("CODESTART") << 8);
-            
-            uint version    = Source.GetCode(codeStart)   + Source.GetCode(codeStart+1) << 8;
-            uint entryPoint = Source.GetCode(codeStart+4) + Source.GetCode(codeStart+5) << 8;
-            uint codeOffset = 0;
-            if (version != 0)
+            if ((address >= 0) && (address < Source.GetCodeLength()))
             {
-                codeOffset = entryPoint;
-            }
-            
-            //PrintLn("version=" + version.ToHexString(4) + " entryPoint=" + entryPoint.ToHexString(4) + " " + 
-            //        "address=" + address.ToHexString(4) + " codeStart=" + codeStart.ToHexString(4));
-            
-            
-            address = address + codeOffset - codeStart;
-            
-            
-            bool first = true;
-            loop
-            {
-                if ((address > 0) && (address < Source.GetCodeLength()))
+                uint sourcePC = address;
+                string sourceIndex = Code.GetSourceIndex(sourcePC);
+                
+                if (sourceIndex.Length != 0)
                 {
-                    uint sourcePC = address - codeOffset;
-                    string sourceIndex = Code.GetSourceIndex(sourcePC);
-                    
-                    
-                    //PrintLn();
-                    //Print("sourcePC=" + sourcePC.ToHexString(4) + " address=" + address.ToHexString(4) + " sourceIndex=" + sourceIndex + " ");
-                    
-                    if (sourceIndex.Length != 0)
+                    string sourceLine = Code.GetSourceLine(sourceIndex);
+                    if (sourceLine.Length != 0)
                     {
-                        string sourceLine = Code.GetSourceLine(sourceIndex);
-                        if (sourceLine.Length != 0)
-                        {
-                            sourceLine = "      " + sourceLine.Trim();
-                            sourceLine = sourceLine.Pad(' ', 60);
-                            PrintLn();
-                            Print(sourceLine, White, Black);    
-                            Print("// " + sourceIndex, Colour.Comment, Colour.Black);
-                        }
+                        sourceLine = "      " + sourceLine.Trim();
+                        sourceLine = sourceLine.Pad(' ', 60);
+                        PrintLn();
+                        Print(sourceLine, White, Black);    
+                        Print("// " + sourceIndex, Colour.Comment, Colour.Black);
                     }
-                    Instruction instruction = Instruction(Source.GetCode(address));
-                    bool wasReturn = Instructions.IsRET(instruction);
-                    int entryPointOffset = -int(codeOffset);
-                    content = Source.Disassemble(ref address, entryPointOffset);
-                    PrintLn();
-                    uint colour = Colour.MatrixBlue;
-                    if (first)
-                    {
-                        Print("PC -> ", Colour.MatrixRed, Colour.Black);
-                        colour = Colour.Ocean;
-                    }
-                    else
-                    {
-                        Print("      ");
-                    }
-                    uint iComment;
-                    string comment;
-                    if (content.IndexOf("//", ref iComment))
-                    {
-                        comment = content.Substring(iComment);
-                        content = content.Substring(0, iComment);        
-                        content = content.Pad(' ', 54);
-                    }
-                    Print(content, colour, Colour.Black);
-                    Print(comment, Colour.MatrixGreen, Colour.Black);
-                    if (wasReturn)
-                    {
-                        break;
-                    }
+                }
+                Instruction instruction = Instruction(Source.GetCode(address));
+                bool wasReturn = Instructions.IsRET(instruction);
+                content = Source.Disassemble(ref address, entryPointOffset);
+                PrintLn();
+                uint colour = Colour.MatrixBlue;
+                if (first)
+                {
+                    Print("PC -> ", Colour.MatrixRed, Colour.Black);
+                    colour = Colour.Ocean;
                 }
                 else
                 {
-                    break;
+                    Print("      ");
                 }
-                instructions--;
-                if (instructions == 0)
+                uint iComment;
+                string comment;
+                if (content.IndexOf("//", ref iComment))
+                {
+                    comment = content.Substring(iComment);
+                    content = content.Substring(0, iComment);        
+                    content = content.Pad(' ', 54);
+                }
+                Print(content, colour, Colour.Black);
+                Print(comment, Colour.MatrixGreen, Colour.Black);
+                if (wasReturn)
                 {
                     break;
                 }
-                address++;
-                first = false;
-            } //loop
-        }
+            }
+            else
+            {
+                break;
+            }
+            instructions--;
+            if (instructions == 0)
+            {
+                break;
+            }
+            address++;
+            first = false;
+        } //loop
     }
     
     ShowCurrentInstruction(uint instructions)

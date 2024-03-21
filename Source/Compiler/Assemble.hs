@@ -97,11 +97,42 @@ program Assemble
     {
         bool hasImmediate;
         string actualType;
-        string value = ParseConstantExpression("uint", ref actualType);
-        if ((actualType == "uint") || (actualType == "byte"))
+        string value;
+        loop
         {
-            hasImmediate = UInt.TryParse(value, ref immediateValue);
-        }
+            <string,string> currentToken = Parser.CurrentToken;
+            HopperToken tokenType = Token.GetType(currentToken);
+            if (tokenType == HopperToken.LParen)
+            {
+                Parser.Advance(); // (
+                currentToken = Parser.CurrentToken;
+                value = ParseConstantExpression("uint", ref actualType, true);
+                if (Parser.HadError)
+                {
+                    break;
+                }
+                <string,string> previousToken = Parser.PreviousToken;
+                if (previousToken["pos"] == currentToken["pos"])
+                {
+                    Parser.Error("simple (nn) considered dangerous, did you mean [..]?");
+                }
+                Parser.Consume(HopperToken.RParen);
+            }
+            else
+            {
+                value = ParseConstantExpression("uint", ref actualType, true);
+                if (Parser.HadError)
+                {
+                    break;
+                }
+            }
+            
+            if ((actualType == "uint") || (actualType == "byte"))
+            {
+                hasImmediate = UInt.TryParse(value, ref immediateValue);
+            }
+            break;
+        } // loop
         return hasImmediate;
     }
     
@@ -119,6 +150,186 @@ program Assemble
         }
         return success;
     }
+    bool assembleSwitchStatement()
+    {
+        bool success = false;
+        loop
+        {
+            <uint> jumpEnds;
+            Parser.Advance(); // switch
+            Parser.Consume(HopperToken.LParen);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            
+            <string,string> currentToken = Parser.CurrentToken;
+            HopperToken tokenType = Token.GetType(currentToken);
+            if (tokenType != HopperToken.Register)
+            {
+                Parser.Error("register expected");
+                break;
+            }  
+            char registerName = (currentToken["lexeme"]).GetChar(0);
+            Parser.Advance();
+            
+            Parser.Consume(HopperToken.RParen);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            
+            Parser.Consume(HopperToken.LBrace);
+            if (Parser.HadError)
+            {
+                break;
+            }
+            bool defaultSeen = false;
+            loop
+            {
+                if (Parser.Check(HopperToken.RBrace))
+                {
+                    success = true;
+                    Parser.Advance(); // }
+                    break;
+                }
+                if (Parser.Check(HopperToken.EOF))
+                {
+                    Parser.ErrorAtCurrent("unexpected EOF in 'switch'");
+                    break;
+                }
+                
+                bool isDefault = false;
+                if (!Parser.CheckKeyword("case"))
+                {
+                    if (Parser.CheckKeyword("default"))
+                    {
+                        isDefault = true;       
+                        if (defaultSeen)
+                        {
+                            Parser.ErrorAtCurrent("'default' can only occur once");
+                            break;    
+                        }
+                        defaultSeen = true;
+                    }
+                    else
+                    {
+                        Parser.ErrorAtCurrent("'case' expected");
+                        break;
+                    }
+                }
+                if (defaultSeen && !isDefault)
+                {
+                    Parser.ErrorAtCurrent("'default' must be last case");
+                    break;    
+                }      
+                <uint> jumpNexts;
+                <uint> jumpMatches;
+                
+                loop
+                {
+                    AsmStream.InsertDebugInfo(false);
+                    
+                    Parser.Advance(); // "case" or "default"
+// next:         
+                    if (!isDefault)
+                    {   
+                        string actualType;
+                        string caseConstant = ParseConstantExpression("byte", ref actualType, true);
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        
+                        uint cc;
+                        if (UInt.TryParse(caseConstant, ref cc))
+                        {
+                            if (cc > 255)
+                            {
+                                IE();
+                            }
+                            AsmStream.AddInstructionCMP(registerName, byte(cc));
+                        }
+                        else
+                        {
+                            Parser.Error("unexpected 'case' constant '" + caseConstant + "'");                
+                        }
+                    
+                    } // !isDefault
+                    
+                    Parser.Consume(HopperToken.Colon);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    
+                    if (!isDefault)
+                    {
+                        // compare with case constant
+                        AsmStream.AppendCode(GetBInstruction("Z"));
+                        AsmStream.AppendCode(+3);
+            
+                        uint jumpNext = AsmStream.NextAddress;
+                        jumpNexts.Append(jumpNext);
+                        AsmStream.AddInstructionJ();
+                        
+                        if (Parser.CheckKeyword("case"))
+                        {
+                            uint jumpMatch = AsmStream.NextAddress;
+                            AsmStream.AddInstructionJ();
+                            jumpMatches.Append(jumpMatch);
+                            
+                            uint nextAddress = AsmStream.NextAddress;
+                            AsmStream.PatchJump(jumpNexts[0], nextAddress);  
+                            jumpNexts.Clear();
+                            
+                            continue; // multiple cases
+                        }
+                    }
+                    break;
+                } // loop: multiple "case"
+                
+                if (Parser.HadError)
+                {
+                    break;
+                }
+// match:       
+                foreach (var jumpMatch in jumpMatches)
+                {        
+                    uint nextAddress = AsmStream.NextAddress;
+                    AsmStream.PatchJump(jumpMatch, nextAddress);   
+                }
+                     
+                Block.PushBlock(false); // not loop context
+                assembleBlock();
+                Block.PopBlock();
+                
+                AsmStream.InsertDebugInfo(true); 
+                
+                uint jumpEnd = AsmStream.NextAddress;
+                AsmStream.AddInstructionJ();
+                jumpEnds.Append(jumpEnd);
+// next:        
+                // next case will be after the block if there was one
+                foreach (var jumpNext in jumpNexts)
+                {        
+                    uint nextAddress = AsmStream.NextAddress;
+                    AsmStream.PatchJump(jumpNext, nextAddress);   
+                }
+            } // loop
+// end:         
+            uint endAddress = AsmStream.NextAddress;
+            foreach (var jumpEnd in jumpEnds)
+            {
+                uint ui = jumpEnd;
+                AsmStream.PatchJump(ui, endAddress);
+            }
+            break;
+            
+        } // loop
+        return success;
+    }
+    
     bool assembleIfStatement()
     {
         bool success = false;
@@ -531,6 +742,15 @@ program Assemble
             }
             if (!hasImmediate)
             {
+                // Second swing at Accumulator, where we just assume 'A'
+                //   There are only 6 instructions that have Accumulator addressing mode and all their
+                //   alternate addressing modes would have had an immediate operand next so ...
+                if ((addressingModes & AddressingModes.Accumulator) == AddressingModes.Accumulator)
+                {
+                    OpCodes.EmitInstruction(instructionName);
+                    success = true;
+                    break;
+                }
                 Parser.Error("immediate operand expected");
                 break;
             }
@@ -786,6 +1006,11 @@ program Assemble
                 if (tokenString == "if")
                 {
                     success = assembleIfStatement();
+                    noSemiColon = true;
+                }
+                else if (tokenString == "switch")
+                {
+                    success = assembleSwitchStatement();
                     noSemiColon = true;
                 }
                 else if (tokenString == "return")
@@ -1059,11 +1284,8 @@ program Assemble
             
             AsmStream.InsertDebugInfo(true);
             
-            if (!LastInstructionIsRET(isMain))
-            {
-                uint bytesToPop = Block.GetLocalsToPop(true, isMain);
-                AsmStream.AddInstructionRET(bytesToPop);
-            }
+            uint bytesToPop = Block.GetLocalsToPop(true, isMain);
+            AsmStream.AddInstructionRET(bytesToPop);
             
             if (!isMain)
             {

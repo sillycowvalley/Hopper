@@ -190,13 +190,6 @@ unit OpCodes
             case "ROL":
             case "LSR":
             case "ROR":
-            {
-                addressingModes = AddressingModes.ZeroPage
-                                | AddressingModes.Accumulator
-                                | AddressingModes.Absolute
-                                | AddressingModes.ZeroPageX
-                                | AddressingModes.AbsoluteX;
-            }
             case "DEC":
             case "INC":
             {
@@ -206,6 +199,7 @@ unit OpCodes
                                 | AddressingModes.ZeroPage
                                 | AddressingModes.ZeroPageX;
             }
+            
             case "LDX":
             {
                 addressingModes = AddressingModes.Immediate
@@ -1252,7 +1246,7 @@ unit OpCodes
         }
         if (Architecture == CPUArchitecture.Z80A)
         {
-            return 0xED + 0x4D << 8; // RETI is 0xED 0x4D
+            return 0xED + (0x4D << 8); // RETI is 0xED 0x4D
         }
         IE();
         return 0;
@@ -1265,7 +1259,7 @@ unit OpCodes
         }
         if (Architecture == CPUArchitecture.Z80A)
         {
-            return 0xED + 0x44 << 8; // RETN is 0xED 0x45
+            return 0xED + (0x44 << 8); // RETN is 0xED 0x45
         }
         IE();
         return 0;

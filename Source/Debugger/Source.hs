@@ -789,7 +789,7 @@ unit Source
                     }
                     else 
                     {
-                        uint codeStart = (Pages.GetZeroPage("CODESTART") << 8);
+                        uint codeStart = Pages.GetZeroPage("CODESTART");
                         if (!Code.MethodExists(value) && (value >= codeStart))
                         {
                             // probably a method address, not an index

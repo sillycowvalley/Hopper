@@ -444,7 +444,7 @@ unit Output
         dataClicks.Clear();
         byte yCurrent = 0;
         
-        uint pc = Pages.GetZeroPage("PC") - (Pages.GetZeroPage("CODESTART") << 8);
+        uint pc = Pages.GetZeroPage("PC") - Pages.GetZeroPage("CODESTART");
         uint currentMethodIndex = Code.LocationToIndex(pc);
         
         <string,variant> methodSymbols = Code.GetMethodSymbols(currentMethodIndex);
@@ -482,7 +482,7 @@ unit Output
                     bp  = Pages.GetZeroPage("BP");
                 }
                 
-                address = address - (Pages.GetZeroPage("CODESTART") << 8);
+                address = address - Pages.GetZeroPage("CODESTART");
                 methodIndex = Code.LocationToIndex(address);
                 sourceIndex = Code.GetSourceIndex(Source.CallAddressFromReturnToAddress(methodIndex, address), methodIndex); 
                 codeClicks[yCurrent] = sourceIndex;

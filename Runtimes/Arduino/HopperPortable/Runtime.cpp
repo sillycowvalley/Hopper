@@ -5,7 +5,6 @@
 #include "HopperScreen.h"
 
 
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -467,29 +466,40 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
                 Byte address = col + (row << 0x04);
                 switch (address)
                 {
-                case 0xB1:
-                {
-                    data = Byte(HopperVM_PC_Get() >> 0x08);
-                    break;
-                }
                 case 0xB0:
                 {
                     data = Byte(HopperVM_PC_Get() & 0xFF);
                     break;
                 }
+                case 0xB1:
+                {
+                    data = Byte(HopperVM_PC_Get() >> 0x08);
+                    break;
+                }
                 case 0xB2:
+                case 0xB3:
+                {
+                    data = 0x00;
+                    break;
+                }
+                case 0xB4:
                 {
                     data = HopperVM_SP_Get();
                     break;
                 }
-                case 0xB6:
+                case 0xB5:
                 {
                     data = HopperVM_BP_Get();
                     break;
                 }
-                case 0xB8:
+                case 0xB6:
                 {
                     data = HopperVM_CSP_Get();
+                    break;
+                }
+                case 0xB7:
+                {
+                    data = (HopperVM_CNP_Get()) ? (0x01) : (0x00);
                     break;
                 }
                 case 0xBB:
@@ -501,29 +511,24 @@ void Runtime_DumpPage(Byte iPage, Bool includeAddresses)
                     }
                     break;
                 }
-                case 0xE9:
-                {
-                    data = Byte(Memory_FreeList_Get() >> 0x08);
-                    break;
-                }
-                case 0xE8:
+                case 0xBC:
                 {
                     data = Byte(Memory_FreeList_Get() & 0xFF);
                     break;
                 }
-                case 0xEB:
+                case 0xBD:
                 {
-                    data = Byte(Memory_HeapSize_Get() >> 0x08);
+                    data = Byte(Memory_FreeList_Get() >> 0x08);
                     break;
                 }
-                case 0xEA:
+                case 0xBE:
                 {
                     data = Byte(Memory_HeapStart_Get() >> 0x08);
                     break;
                 }
-                case 0xCA:
+                case 0xBF:
                 {
-                    data = 0x00;
+                    data = Byte(Memory_HeapSize_Get() >> 0x08);
                     break;
                 }
                 default:
@@ -1068,6 +1073,11 @@ Byte HopperVM_BP_Get()
 Byte HopperVM_CSP_Get()
 {
     return HopperVM_csp;
+}
+
+Bool HopperVM_CNP_Get()
+{
+    return HopperVM_cnp;
 }
 
 Bool HopperVM_BreakpointExists_Get()
@@ -4271,11 +4281,6 @@ void HopperVM_PushI(Int ivalue)
     Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(Type::eInt));
     
     HopperVM_sp++;
-}
-
-Bool HopperVM_CNP_Get()
-{
-    return HopperVM_cnp;
 }
 
 void HopperVM_CNP_Set(Bool value)

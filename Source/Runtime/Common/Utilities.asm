@@ -63,5 +63,21 @@ unit Utilities
             INC ZP.IDYH
         }
     }
+    IncPC()
+    {
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+    }
+    IncACC()
+    {
+        INC ZP.ACCL
+        if (Z)
+        {
+            INC ZP.ACCH
+        }
+    }
 
 }

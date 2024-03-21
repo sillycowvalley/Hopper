@@ -211,6 +211,12 @@ program OptAsm
             }
             AsmPoints.MarkReachableInstructions();
             
+            // BRA|JMP to BRA|JMP -> BRA|JMP
+            if (AsmPoints.OptimizeJMPJMP())
+            {
+                modified = true;
+            }
+            
             // not just NOP, also JMP -> JMP + 1, can cause more short JumpToJump's to work
             if (AsmPoints.OptimizeRemoveNOPs())
             {
@@ -226,7 +232,20 @@ program OptAsm
             {
                 modified = true;
             }
-            
+            // BRA|JMP to RTS - > RTS
+            if (AsmPoints.OptimizeJMPRTS())
+            {
+                modified = true;
+            }
+            // RTS|RTS to RTS - > RTS
+            if (AsmPoints.OptimizeRTSRTS())
+            {
+                modified = true;
+            }
+            // TODO:
+            // CMP #0 after LDA, LDX, LDY, INC, INX, INY, DEC, DEX, DEY, INA, DEA, AND, ORA, EOR, ASL, LSR, ROL, 
+            //              ROR, PLA, PLX, PLY, SBC, ADC, TAX, TXA, TAY, TYA, and TSX
+            // is redundant if checking Z or V. They all set the Z and V flags. C is a different story.
             
             if (pass > 0) // allow inlining to happen first
             {
@@ -235,6 +254,7 @@ program OptAsm
                     modified = true;
                 }
             }
+            
             AsmPoints.CollectMethodCalls(methodsCalled);
             
             size = AsmPoints.Save();

@@ -75,7 +75,7 @@ unit DebugCommand
         Pages.LoadZeroPage(false); // for CODESTART
         if (ZeroPageContains("CODESTART"))
         {
-            uint cs = (GetZeroPage("CODESTART") << 8);
+            uint cs = GetZeroPage("CODESTART");
             
             <string> commands;
             commands.Append("BX"); // clear existing breakpoints

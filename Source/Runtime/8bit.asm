@@ -38,6 +38,7 @@ program Runtime
     uses "Common/Utilities"
     uses "Common/Serial"
     uses "Common/Diagnostic"
+    uses "Common/Instructions"
     
 #ifdef CPU_65C02
     IRQ()
@@ -50,11 +51,11 @@ program Runtime
     }
     NMI()
     {
-        //INC ZP.SerialBreakFlag // hardware <ctrl><C>
+        INC ZP.SerialBreakFlag // hardware <ctrl><C>
         RTI
     }
 #endif
-       
+     
     breakpointCommand()
     {
         Serial.WaitForChar();
@@ -70,43 +71,21 @@ program Runtime
             Utilities.MakeNibble();
             TAX
             
-            Serial.WaitForChar();
-            Utilities.MakeNibble();
-            ASL A ASL A ASL A ASL A
-            AND #0xF0
-            STA ZP.ACCL
-            Serial.WaitForChar();
-            Utilities.MakeNibble();
-            ORA ZP.ACCL
+            Serial.HexIn();
             STA ZP.BRKH, X
             
-            Serial.WaitForChar();
-            Utilities.MakeNibble();
-            ASL A ASL A ASL A ASL A
-            AND #0xF0
-            STA ZP.ACCL
-            Serial.WaitForChar();
-            Utilities.MakeNibble();
-            ORA ZP.ACCL
+            Serial.HexIn();
             STA ZP.BRKL, X
             
             SMB5 ZP.FLAGS
         }
-        Serial.WaitForChar();
-        Utilities.SendSlash();
+        Utilities.WaitForEnter();
     }
     
     memoryCommand()
     {
-        Serial.WaitForChar();   // consume hex character
-        Utilities.MakeNibble();
-        ASL A ASL A ASL A ASL A
-        AND #0xF0
-        STA ZP.ACCL
-        
-        Serial.WaitForChar();   // consume hex character
-        Utilities.MakeNibble();
-        ORA ZP.ACCL             // A now contains the page number for the memory dump
+        Serial.HexIn();             
+        // A now contains the page number for the memory dump
         PHA
         
         Utilities.WaitForEnter();
@@ -118,18 +97,17 @@ program Runtime
     }
     crcCommand()
     {
-        Serial.WaitForChar();    // consume <enter>
+        Utilities.WaitForEnter();  // consume <enter>
         LDA #0
         Serial.WriteChar();
         Serial.WriteChar();
         Serial.WriteChar();
         Serial.WriteChar();
-        Utilities.SendSlash();      // confirm the data
+        Utilities.SendSlash();     // confirm the data
     }
     pcCommand()
     {
-        Serial.WaitForChar();    // consume <enter>
-        Utilities.SendSlash();   // confirm the command
+        Utilities.WaitForEnter();  // consume <enter>
         
         LDA # 0x0D
         Serial.WriteChar();
@@ -148,35 +126,13 @@ program Runtime
         {
             loop
             {
-                Serial.WaitForChar();
-                Utilities.MakeNibble();
-                ASL A ASL A ASL A ASL A
-                AND # 0xF0
-                STA ZP.ACCL
-                Serial.WaitForChar();
-                Utilities.MakeNibble();
-                ORA ZP.ACCL      
-                STA ZP.ACCL 
-                // ACCL contains record length
+                Serial.HexIn();      
+                STA ZP.ACCH 
+                // ACCH contains record length
           
-                Serial.WaitForChar();
-                Utilities.MakeNibble();
-                ASL A ASL A ASL A ASL A
-                AND #0xF0
+                Serial.HexIn();
                 STA ZP.IDXH
-                Serial.WaitForChar();
-                Utilities.MakeNibble();
-                ORA ZP.IDXH
-                STA ZP.IDXH
-          
-                Serial.WaitForChar();
-                Utilities.MakeNibble();
-                ASL A ASL A ASL A ASL A
-                AND # 0xF0
-                STA ZP.IDXL
-                Serial.WaitForChar();
-                Utilities.MakeNibble();
-                ORA ZP.IDXL      
+                Serial.HexIn();      
                 STA ZP.IDXL 
                 
                 CLC
@@ -188,65 +144,53 @@ program Runtime
                 STA ZP.IDXH
                 // IDX contains the destination address
            
-                Serial.WaitForChar();
-                Utilities.MakeNibble();
-                ASL A ASL A ASL A ASL A
-                AND # 0xF0
-                STA ZP.ACCH
-                Serial.WaitForChar();
-                Utilities.MakeNibble();
-                ORA ZP.ACCH // A contains record type    
-                
-                CMP # 0x01 // EOF record
-                if (NZ)
+                Serial.HexIn(); // A contains record type   
+                switch (A)
                 {
-                    CMP # 0x00 // data record
-                    if (NZ) { break; } // what's this? fail ->
-                    
-                    // load the data
-                    LDY # 0
-                    LDX ZP.ACCL
-                    loop
+                    case 0x00: // data record
                     {
-                        CPX # 0
-                        if (Z) { break; }
-                        
+                        // load the data
+                        LDY # 0
+                        LDX ZP.ACCH // record length
+                        loop
+                        {
+                            CPX # 0
+                            if (Z) { break; }
+                            
+                            Serial.HexIn(); // A contains data byte
+                            STA [ZP.IDX], Y
+                            
+                            Utilities.IncIDY();
+                            
+                            INY
+                            DEX
+                        }
+                        // ignore data checksum and EOL for now
                         Serial.WaitForChar();
-                        Utilities.MakeNibble();
-                        ASL A ASL A ASL A ASL A
-                        AND # 0xF0
-                        STA ZP.ACCL
                         Serial.WaitForChar();
-                        Utilities.MakeNibble();
-                        ORA ZP.ACCL // A contains data byte
-                        STA [ZP.IDX], Y
-                        
-                        Utilities.IncIDY();
-                        
-                        INY
-                        DEX
+                        Serial.WaitForChar();
+                        LDA # 0x00 // not '!' or '*'
                     }
-                    // ignore data checksum and EOL for now : TODO
-                    Serial.WaitForChar();
-                    Serial.WaitForChar();
-                    Serial.WaitForChar();
-                    LDA # 0x00 // not '!' or '*'
-                }
-                else
-                {
-                    // ignore EOF checksum and EOL : TODO
-                    Serial.WaitForChar();
-                    Serial.WaitForChar();
-                    Serial.WaitForChar();
-                    
-                    LDA # 0x0D
-                    Serial.WriteChar();
-                    LDA ZP.IDYH
-                    Serial.HexOut();
-                    LDA ZP.IDYL
-                    Serial.HexOut();
-                    LDA # '*' // EOF success terminator
-                }
+                    case 0x01: // EOF record
+                    {
+                        // ignore EOF checksum and EOL
+                        Serial.WaitForChar();
+                        Serial.WaitForChar();
+                        Serial.WaitForChar();
+                        
+                        LDA # 0x0D
+                        Serial.WriteChar();
+                        LDA ZP.IDYH
+                        Serial.HexOut();
+                        LDA ZP.IDYL
+                        Serial.HexOut();
+                        LDA # '*' // EOF success terminator
+                    }
+                    default: // what is this record type? fail ->
+                    {
+                        break;                   
+                    }
+                } // switch
                 RTS
             } // loop
         }
@@ -256,10 +200,9 @@ program Runtime
     
     loadCommand()
     {
-        Serial.WaitForChar();    // consume <enter>
-        Utilities.SendSlash();   // confirm the command
+        Utilities.WaitForEnter();     // consume <enter>
         
-        // ignore CRC for now: TODO
+        // ignore CRC for now
         Serial.WaitForChar();
         Serial.WaitForChar();
         Serial.WaitForChar();
@@ -279,8 +222,10 @@ program Runtime
         CMP # '*' // success terminator
         if (Z) 
         {
-            Memory.InitializeHeapSize();
-            hopperInit();           // good defaults for HopperVM
+            hopperInit();                // good defaults for HopperVM
+            
+            SMB0 ZP.FLAGS                // program is loaded
+            
             LDA # 0x0D
             Serial.WriteChar();
             LDA # '*'               // restore success terminator
@@ -289,28 +234,42 @@ program Runtime
         Utilities.SendSlash();      // confirm the data
     }
     
-    hopperInitPC()
+    warmRestart()
     {
+        Memory.InitializeHeapSize(); // sets HEAPSTART and HEAPSIZE based on size of program loaded
+        Stacks.Init();
+        STZ ZP.CNP
+        
+        // hopperInitPC -> 0x0000
+        STZ ZP.PCL
+        STZ ZP.PCH
+    }
+    
+    
+    hopperInit()
+    {
+        Memory.InitializeHeapSize(); // sets HEAPSTART and HEAPSIZE based on size of program loaded
+        Stacks.Init();
+        
+        // CODESTART = EntryPoint + HopperData
         LDA #(HopperData & 0xFF)
         CLC
         ADC (HopperData+4)
-        STA ZP.PCL
+        STA ZP.CODESTARTL
         LDA #(HopperData >> 8)
         ADC (HopperData+5)
-        STA ZP.PCH
-    }
-    hopperInit()
-    {
-        Stacks.Init();
-        LDA #(HopperData >> 8)
-        STA ZP.CODESTART
-        STZ ZP.COPYNEXTPOP
+        STA ZP.CODESTARTH
+        
+        STZ ZP.CNP
         STZ ZP.FLAGS
 #ifdef CHECKED
         SMB2 ZP.FLAGS // this is a checked build
 #endif        
         SMB3 ZP.FLAGS // 8 bit SP and BP
-        hopperInitPC();
+        
+        // hopperInitPC -> 0x0000
+        STZ ZP.PCL
+        STZ ZP.PCH
     }
    
     resetVector()
@@ -327,7 +286,7 @@ program Runtime
         LDX # 1
         Utilities.ClearPages(); // clear the serial buffer
         
-        // good default heap until we load a program? TODO : should depend on RAM
+        // arbitrary default heap until we load a program
         LDA #0x60
         STA ZP.HEAPSTART
         LDA #0x20
@@ -336,6 +295,130 @@ program Runtime
         Serial.Initialize();
         hopperInit();        
     }
+    
+    runCommand()
+    {
+        // run ignoring breakpoints
+        loop
+        {
+            LDA ZP.SerialBreakFlag
+            if (NZ) 
+            { 
+                STZ ZP.SerialBreakFlag
+                break; 
+            }
+            
+            LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
+            CMP PCH
+            if (Z)
+            {
+                CMP PCL
+                if (Z)
+                {
+                    break; // end of program run
+                }
+            }
+            stepintoCommand();
+        }
+        
+    }
+    debugCommand()
+    {
+        // run until breakpoint
+        
+        // for first instruction, don't check for breakpoint (in case we are already stopped on one)
+        stepintoCommand();
+        
+        loop
+        {
+            LDA ZP.SerialBreakFlag
+            if (NZ) 
+            { 
+                STZ ZP.SerialBreakFlag
+                break; 
+            }
+            
+            LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
+            CMP PCH
+            if (Z)
+            {
+                CMP PCL
+                if (Z)
+                {
+                    break; // end of program run
+                }
+            }
+            
+            Breakpoints.IsPCBreakpoint();
+            if (Z)
+            {
+                // if breakpoint '0', clear it
+                CPX # 0
+                if (Z)
+                {
+                    Breakpoints.ClearX();
+                }
+                break;
+            }
+            stepintoCommand();
+        }
+    }
+    stepoverCommand()
+    {
+        LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
+        CMP PCH
+        if (Z)
+        {
+            CMP PCL
+            if (Z)
+            {
+                return; // end of program run
+            }
+        }
+        
+        // is the next instruction a CALL/JSR?
+        Instruction.IsNextCALL();
+        if (Z)
+        {
+            // set breakpoint '0' on next instruction
+            
+            // ACC = PC + CODESTART + instruction length
+            GetNextAddress();
+            
+            // machine address - CODESTART = Hopper address
+            SEC
+            LDA ZP.ACCL
+            SBC ZP.CODESTARTL
+            STA ZP.BRKL
+            LDA ZP.ACCH
+            SBC ZP.CODESTARTH
+            STA ZP.BRKH
+            
+            SMB5 ZP.FLAGS
+            
+            // run to breakpoint
+            debugCommand();
+        }
+        stepintoCommand();
+    }
+    stepintoCommand()
+    {
+        Instruction.Execute();    
+    }
+    checkRestart()
+    {
+        LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
+        CMP PCH
+        if (Z)
+        {
+            CMP PCL
+            if (Z)
+            {
+                warmRestart();
+            }
+        }
+    }
+    
     Hopper()
     {
         resetVector();
@@ -343,47 +426,108 @@ program Runtime
         Utilities.SendSlash(); // ready
         loop
         {
-            Serial.WaitForChar();
-            CMP #0x03 // <ctrl><C> from Debugger but we were not running 
-            if (Z)
-            {
+            LDA ZP.SerialBreakFlag
+            if (NZ) 
+            { 
+                // <ctrl><C> from Debugger but we were not running
+                STZ ZP.SerialBreakFlag
                 Utilities.SendSlash();
                 continue;
             }
+            IsAvailable(); // munts A
+            if (NZ)
+            {
+                Serial.WaitForChar();
+            }
+            else
+            {
+                LDA #0
+            }
+            LDA (0)
+            //CMP #0x03 // <ctrl><C> from Debugger but we were not running 
+            //if (Z)
+            //{
+            //    Utilities.SendSlash();
+            //    continue;
+            //}
             CMP #Escape
             if (Z)
             {
                 Utilities.SendSlash(); // '\' response -> ready for command
                 Serial.WaitForChar();
-                CMP #'F'
-                if (Z)
+                
+                switch (A)
                 {
-                    memoryCommand();
-                    continue;
+                    case 'F':
+                    {
+                        memoryCommand();
+                        continue;
+                    }
+                    case 'K':
+                    {
+                        crcCommand();
+                        continue;
+                    }
+                    case 'P':
+                    {
+                        pcCommand();
+                        continue;
+                    }
+                    case 'B':
+                    {
+                        breakpointCommand();
+                        continue;
+                    }
+                    case 'L':
+                    {
+                        loadCommand();
+                        continue;
+                    }
                 }
-                CMP #'K'
-                if (Z)
+                
+                BBS0 ZP.FLAGS, +3 
+                continue; // no program is loaded
+                
+                // Execution commands:
+                switch (A)
                 {
-                    crcCommand();
-                    continue;
-                }
-                CMP #'P'
-                if (Z)
-                {
-                    pcCommand();
-                    continue;
-                }
-                CMP #'B'
-                if (Z)
-                {
-                    breakpointCommand();
-                    continue;
-                }
-                CMP #'L'
-                if (Z)
-                {
-                    loadCommand();
-                    continue;
+                    case 'W':
+                    {
+                        Utilities.WaitForEnter();    // consume <enter>
+                        warmRestart();
+                    }
+                    case 'X':
+                    {
+                        // <ctrl><F5>
+                        Utilities.WaitForEnter();    // consume <enter>
+                        runCommand();
+                        checkRestart();
+                        Utilities.SendSlash();   // confirm handing back control
+                    }
+                    case 'D':
+                    {
+                        // <F5>
+                        Utilities.WaitForEnter();    // consume <enter>
+                        debugCommand();
+                        checkRestart();
+                        Utilities.SendSlash();   // confirm handing back control
+                    }
+                    case 'O':
+                    {
+                        // <F10>
+                        Utilities.WaitForEnter();    // consume <enter>
+                        stepoverCommand();
+                        checkRestart();
+                        Utilities.SendSlash();   // confirm handing back control
+                    }
+                    case 'I':
+                    {
+                        // <F11>
+                        Utilities.WaitForEnter();    // consume <enter>
+                        stepintoCommand();
+                        checkRestart();
+                        Utilities.SendSlash();   // confirm handing back control
+                    }
                 }
             }
         } // loop

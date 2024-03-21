@@ -381,7 +381,6 @@ unit Monitor
     uint ReturnToDebugger(char currentCommand, ref bool serialConnectionLost)
     {
         uint pc = GetCurrentPC();
-        uint entry = GetEntryPC();
         bool showSource = true;
         serialConnectionLost = false;
         loop
@@ -391,7 +390,7 @@ unit Monitor
             {
                 break; // stop when we arrive at the next source line
             }
-            else if (pc == entry)
+            else if (pc == 0)
             {
                 // if there is no source line (global initialization)
                 showSource = false;
@@ -646,7 +645,7 @@ unit Monitor
         uint pc;
         if (UInt.TryParse("0x" + serialOutput, ref pc))
         {
-            pc = pc - (GetZeroPage("CODESTART") << 8);
+            pc = pc - GetZeroPage("CODESTART");
         }
         return pc;
     }
@@ -665,23 +664,6 @@ unit Monitor
         }
         return crc;
     }
-    uint GetEntryPC()
-    {
-        if (!entryPCIsSet)
-        {
-            if (!ZeroPageContains("CODESTART"))
-            {
-                LoadZeroPage(false);
-            }
-            byte csPage = byte(GetZeroPage("CODESTART"));
-            LoadPageData(csPage);
-            uint address = (csPage << 8);
-            entryPC = GetPageWord(address+4);
-            entryPCIsSet = true;
-        }
-        return entryPC;
-    }
-    
     
     bool Connect(uint comPort)
     {

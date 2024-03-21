@@ -25,6 +25,9 @@ unit AsmPoints
     byte opcodeBNE;
     byte opcodeBCS;
     byte opcodeBCC;
+    byte opcodeRTS;
+    uint opcodeRTI;
+    uint opcodeRTN;
     
     uint GetInstructionAddress(uint seekIndex)
     {
@@ -85,6 +88,10 @@ unit AsmPoints
         opcodeBNE = OpCodes.GetBInstruction("NZ");
         opcodeBCS = OpCodes.GetBInstruction("C");
         opcodeBCC = OpCodes.GetBInstruction("NC");
+        opcodeRTS = OpCodes.GetRETInstruction();
+        opcodeRTI = OpCodes.GetRETIInstruction();
+        opcodeRTN = OpCodes.GetRETNInstruction();
+        
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
             opcodeCALL = OpCodes.GetJSRInstruction();
@@ -174,13 +181,19 @@ unit AsmPoints
         return codeLength;
     }
     
+    //#define JUMP_DIAGNOSTICS
     InitializeJumpTargets()
     {
         uint iCodesLength = iCodes.Count;
         uint iIndex;
         uint instructionAddress;
         
-        //PrintLn("InitializeJumpTargets:");
+#ifdef JUMP_DIAGNOSTICS
+        uint targetMethod = 1;
+        uint codeStart = 0xE07C;
+        if (currentMethod == targetMethod) { PrintLn(); PrintLn("InitializeJumpTargets:"); }
+#endif
+        
         loop
         {
             if (iIndex == iCodesLength)
@@ -194,29 +207,38 @@ unit AsmPoints
             {
                 uint address = GetInstructionAddress(iIndex);
                 
-                //Print((iIndex.ToString()).Pad(' ', 3) + (address+0xE004).ToHexString(4) + " " + opCode.ToHexString(2) + " " + OpCodes.GetName(byte(opCode)) + " ");
+#ifdef JUMP_DIAGNOSTICS                
+                if (currentMethod == targetMethod) { Print((iIndex.ToString()).Pad(' ', 3) + (address+codeStart).ToHexString(4) + " " + opCode.ToHexString(2) + " " + OpCodes.GetName(byte(opCode)) + " "); }
+#endif
+                
                 uint operand           = iOperands[iIndex];
+                uint instructionLength = iLengths[iIndex];
                 
                 long offset;
                 long jumpTargetAddress;
             
-                if (addressingMode == AddressingModes.Relative) // dd
+                if (addressingMode == AddressingModes.Absolute) // nnnn
+                {
+#ifdef JUMP_DIAGNOSTICS
+                    if (currentMethod == targetMethod) { Print("nnnn: " + (operand+codeStart).ToHexString(4) + " "); }
+#endif                    
+                    uint jumpIndex;
+                    jumpTargetAddress = long(operand);
+                }
+                else if (addressingMode == AddressingModes.Relative) // dd
                 {
                     offset = operand;
                     if (offset > 127)
                     {
                         offset = offset - 256; // 255 -> -1
                     }
-                    //Print(offset.ToString() + " ");
-                    
-                    jumpTargetAddress = long(instructionAddress) + offset + 2;
-                    //Print((jumpTargetAddress+0xE004).ToHexString(4) + " ");
-                }
-                else if (addressingMode == AddressingModes.Absolute) // nnnn
-                {
-                    //Print((operand+0xE004).ToHexString(4) + " ");
-                    uint jumpIndex;
-                    jumpTargetAddress = long(operand);
+#ifdef JUMP_DIAGNOSTICS
+                    if (currentMethod == targetMethod) { Print(offset.ToString() + " "); }
+#endif
+                    jumpTargetAddress = long(instructionAddress) + offset + instructionLength;
+#ifdef JUMP_DIAGNOSTICS
+                    if (currentMethod == targetMethod) { Print("dd: " + (jumpTargetAddress+codeStart).ToHexString(4) + " "); }
+#endif
                 }
                 else if (addressingMode == AddressingModes.ZeroPageRelative) // nn,dd
                 {
@@ -225,10 +247,13 @@ unit AsmPoints
                     {
                         offset = offset - 256; // 255 -> -1
                     }
-                    //Print((operand & 0xFF).ToHexString(2) + " " + offset.ToString() + " ");
-                    
-                    jumpTargetAddress = long(instructionAddress) + offset + 2;
-                    //Print((jumpTargetAddress+0xE004).ToHexString(4) + " ");
+#ifdef JUMP_DIAGNOSTICS
+                    if (currentMethod == targetMethod) { Print("nn,dd:" + (operand & 0xFF).ToHexString(2) + " " + offset.ToString() + " "); }
+#endif
+                    jumpTargetAddress = long(instructionAddress) + offset + instructionLength;
+#ifdef JUMP_DIAGNOSTICS
+                    if (currentMethod == targetMethod) { Print((jumpTargetAddress+codeStart).ToHexString(4) + " ");}
+#endif
                 }
                 else
                 {
@@ -245,8 +270,9 @@ unit AsmPoints
                     // does not mess up reachableness.
                     jumpIndex = iIndex;
                 }
-                //PrintLn("-> " + jumpIndex.ToString());
-                
+#ifdef JUMP_DIAGNOSTICS
+                if (currentMethod == targetMethod) { PrintLn("-> " + jumpIndex.ToString()); }
+#endif
                 
                 iJumpTargets.SetItem(iIndex, jumpIndex);
             }
@@ -268,9 +294,10 @@ unit AsmPoints
         loop
         {
             uint opCode = iCodes[index];
+            uint instructionLength = iLengths[index];
+            
             code.Append(byte(opCode));
             
-            uint instructionLength = iLengths[index];
             if (instructionLength > 3)
             {
                 Die(0x0B);
@@ -307,7 +334,7 @@ unit AsmPoints
                     
                     if ((addressingMode == AddressingModes.Relative) || (addressingMode == AddressingModes.ZeroPageRelative))
                     {
-                        long offset = jumpAddress - currentAddress - 2;
+                        long offset = jumpAddress - currentAddress - instructionLength;
                         if ((offset < -128) || (offset > 127))
                         {
                             PrintLn("Bad Jump:  " + offset.ToString());
@@ -698,7 +725,7 @@ unit AsmPoints
                 removeIt = true;
             }
             else if (OpCodes.IsJumpInstruction(opCode, ref addressingMode, ref isConditional) 
-                  && !isConditional
+                  //&& !isConditional - makes no difference if it is conditional, still does nothing
                   && (addressingMode != AddressingModes.AbsoluteIndirect)  // [nnnn]
                   && (addressingMode != AddressingModes.AbsoluteIndirectX) // [nnnn,X]
                   )
@@ -757,7 +784,7 @@ unit AsmPoints
         } // loop
         return modified;
     }
-    // BEQ BRA -> BNE (for example
+    // BEQ BRA -> BNE (for example)
     bool OptimizeBEQBRA()
     {
         if (iCodes.Count < 2)
@@ -784,6 +811,7 @@ unit AsmPoints
             if (   OpCodes.IsJumpInstruction(opCode1, ref addressingMode1, ref isConditional1) &&  isConditional1
                 && OpCodes.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) && !isConditional0
                 && (addressingMode0 == AddressingModes.Relative)
+                && (addressingMode1 != AddressingModes.ZeroPageRelative) // not BBSx or BBRx
                )
             {
                 if (!IsTargetOfJumps(iIndex))
@@ -808,4 +836,148 @@ unit AsmPoints
         return modified;
     }
     
+    // BRA|JMP to RTS - > RTS
+    bool OptimizeJMPRTS()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            uint opCode0 = iCodes[iIndex];
+            
+            AddressingModes addressingMode0;
+            bool isConditional0;
+            
+            if (   OpCodes.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) && !isConditional0
+                && ((addressingMode0 == AddressingModes.Relative) || (addressingMode0 == AddressingModes.Absolute))
+               )
+            {
+                AddressingModes addressingMode1;
+                bool isConditional1;
+                
+                uint iTarget = iJumpTargets[iIndex];
+                uint opCode1 = iCodes[iTarget];
+                if (OpCodes.IsMethodExitInstruction(opCode1))
+                {
+                    iCodes.SetItem(iIndex, opCode1);
+                    iLengths.SetItem(iIndex, iLengths[iTarget]);
+                    iOperands.SetItem(iIndex, iOperands[iTarget]);
+                    modified = true;
+                }
+            }        
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    
+    // BRA|JMP to BRA|JMP -> BRA|JMP
+    bool OptimizeJMPJMP()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 1;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            uint opCode0 = iCodes[iIndex];
+            
+            AddressingModes addressingMode0;
+            bool isConditional0;
+            
+            if (   OpCodes.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) 
+                && ((addressingMode0 == AddressingModes.Relative) || (addressingMode0 == AddressingModes.Absolute))
+               )
+            {
+                AddressingModes addressingMode1;
+                bool isConditional1;
+                
+                uint iTarget0 = iJumpTargets[iIndex];
+                uint opCode1 = iCodes[iTarget0];                               // the 2nd jump can be conditional - future optimization ..
+                if (   OpCodes.IsJumpInstruction(opCode1, ref addressingMode1, ref isConditional1) && !isConditional1 
+                    && ((addressingMode1 == AddressingModes.Relative) || (addressingMode1 == AddressingModes.Absolute))
+                    && (iTarget0 != iIndex) // circular
+                   )
+                {
+                    uint iTarget1 = iJumpTargets[iTarget0];
+                    
+                    long myAddress     = GetInstructionAddress(iIndex);
+                    long targetAddress = GetInstructionAddress(iTarget1);
+                    if (addressingMode0 == AddressingModes.Absolute)
+                    {
+                        // easy case
+                        iJumpTargets.SetItem(iIndex, iTarget1);
+                        modified = true;
+                    }
+                    else
+                    {
+                        // if the first branch is conditional, we need to be careful if we 
+                        // also allow conditional for the second branch: same conditions for both?
+                        byte instructionLength = OpCodes.GetInstructionLength(byte(opCode0));
+                        long offset = targetAddress - (myAddress+instructionLength);
+                        if ((offset >= -128) && (offset <= 127))
+                        {
+                            iJumpTargets.SetItem(iIndex, iTarget1);
+                            modified = true;
+                        }
+                    }
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    
+    // RTS RTS -> RTS
+    bool OptimizeRTSRTS()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 1;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            uint opCode1 = iCodes[iIndex-1];
+            uint opCode0 = iCodes[iIndex];
+            if ((opCode0 == opcodeRTS) && (opCode1 == opcodeRTS))
+            {
+                RemoveInstruction(iIndex-1);
+                modified = true;
+            }
+            else if ((opCode0 == opcodeRTI) && (opCode1 == opcodeRTI))
+            {
+                RemoveInstruction(iIndex-1);
+                modified = true;
+            }
+            else if ((opCode0 == opcodeRTN) && (opCode1 == opcodeRTN))
+            {
+                RemoveInstruction(iIndex-1);
+                modified = true;
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
 }

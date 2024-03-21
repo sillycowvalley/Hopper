@@ -848,7 +848,7 @@ namespace HopperNET
             {
                 if (stack[sp2].value > 0xFFFF)
                 {
-                    int wtf = 0;
+                    int why = 0;
                 }
             }
 
@@ -1085,7 +1085,7 @@ namespace HopperNET
             {
                 if (stack[address2].value > 0xFFFF)
                 {
-                    int wtf = 0;
+                    int why = 0;
                 }
             }
             return stack[address2].value;
@@ -2709,7 +2709,7 @@ namespace HopperNET
 
                             ushort bpExpected = (ushort)(sp - operand);
 #if DEBUG
-                            Diagnostics.ASSERT(bpExpected == bp, "stack mismatch on return");
+                            Diagnostics.ASSERTDIE(bpExpected == bp, "stack mismatch on return", this);
 #endif
                         }
                         break;
@@ -5675,8 +5675,8 @@ namespace HopperNET
                             lastError = 0;
                         }
 #if DEBUG
-                        Diagnostics.ASSERT(currentContext.bpBefore == bp, "bp not the same as before System.Execute(..)");
-                        Diagnostics.ASSERT(currentContext.spBefore == sp, "sp not the same as before System.Execute(..)");
+                        Diagnostics.ASSERTDIE(currentContext.bpBefore == bp, "bp not the same as before System.Execute(..)", this);
+                        Diagnostics.ASSERTDIE(currentContext.spBefore == sp, "sp not the same as before System.Execute(..)", this);
 #endif
                         if (setError != 0)
                         {
@@ -6006,7 +6006,7 @@ namespace HopperNET
                                     uint reference = Pop();
                                     uint address = ((ushort)reference);
 #if DEBUG
-                                    Diagnostics.ASSERT(stack[address].type == HopperType.tUInt, "uint ref expected");
+                                    Diagnostics.ASSERT((stack[address].type == HopperType.tUInt) || (stack[address].type == HopperType.tByte), "uint ref expected, was " + ((byte)(stack[address].type)).ToString("X2"));
 #endif
                                     ushort skipped = (ushort)stack[address].value;
                                     HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
@@ -6033,7 +6033,7 @@ namespace HopperNET
                                     uint reference = Pop();
                                     uint address = ((ushort)reference);
 #if DEBUG
-                                    Diagnostics.ASSERT(stack[address].type == HopperType.tUInt, "uint ref expected");
+                                    Diagnostics.ASSERT((stack[address].type == HopperType.tUInt) || (stack[address].type == HopperType.tByte), "uint ref expected, was " + ((byte)(stack[address].type)).ToString("X2"));
 #endif
                                     ushort skipped = (ushort)stack[address].value;
                                     HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
@@ -6986,10 +6986,6 @@ namespace HopperNET
                 case SysCall.MemoryReadByte:
                     {
                         uint address = Pop();
-                        if (address > 0xFFFF)
-                        {
-                            int wtf = 0;
-                        }
                         Push(currentContext.memoryArray[address], HopperType.tByte);
                     }
                     break;

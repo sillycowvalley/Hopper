@@ -403,9 +403,11 @@ unit Constant
                             Parser.Advance();
                             actualType = typeName;
                             value = ivalue.ToString();
+                            
                             if (weakEnums && (typeExpected != actualType))
                             {
-                                if ((typeExpected == "byte") && (ivalue >= 0) && (ivalue <= 255))
+                                actualType = "uint";
+                                if (((typeExpected == "byte") || (typeExpected == "uint")) && (ivalue >= 0) && (ivalue <= 255))
                                 {
                                     actualType = "byte";
                                 }
@@ -424,7 +426,8 @@ unit Constant
                             value = ivalue.ToString();
                             if (weakEnums && (typeExpected != actualType))
                             {
-                                if ((typeExpected == "byte") && (ivalue >= 0) && (ivalue <= 255))
+                                actualType = "uint";
+                                if (((typeExpected == "byte") || (typeExpected == "uint")) && (ivalue >= 0) && (ivalue <= 255))
                                 {
                                     actualType = "byte";
                                 }
@@ -649,7 +652,12 @@ unit Constant
             }
             else
             {
-                Parser.ErrorAtCurrent("expected '" + typeExpected + "' constant expression, (was '" + actualType + "')");
+                string was;
+                if (actualType.Length != 0)
+                {
+                    was = ", (was '" + actualType + "')";
+                }
+                Parser.ErrorAtCurrent("expected '" + typeExpected + "' constant expression" + was);
             }
         }
         return value;
