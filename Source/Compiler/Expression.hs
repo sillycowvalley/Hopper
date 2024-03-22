@@ -2383,6 +2383,7 @@ unit Expression
                     }
                     Advance(); // +, -
                     string rightType = compileShift(expectedType);
+                    
                     if (actualType != rightType)
                     {
                         if ((operation == HopperToken.Add) && ((rightType == "string") || (rightType == "char")))
@@ -2391,11 +2392,11 @@ unit Expression
                         }
                         else if (Types.AutomaticUpCastTop(rightType, actualType))
                         {
-                            rightType = actualType;    
+                            rightType = actualType;
                         }
                         else if (Types.AutomaticUpCastNext(actualType, rightType))
                         {
-                            actualType = rightType;    
+                            actualType = rightType;
                         }
                         else
                         {

@@ -117,7 +117,10 @@ unit Types
                    || (desiredType == "long")
                    || (desiredType == "float")
                    );
-                nop = (desiredType == "uint");
+                nop = ((desiredType == "uint")
+                    || (desiredType == "+int")
+                    || (desiredType ==  "int")
+                      );
             }
             else if (actualType == "+int")
             {
@@ -126,7 +129,9 @@ unit Types
                    || (desiredType == "long")
                    || (desiredType == "float")
                      );
-                nop = (desiredType == "uint");
+                nop = ((desiredType == "uint")
+                    || (desiredType ==  "int")
+                      );
             }
             else if (actualType == "int")
             {
@@ -146,6 +151,7 @@ unit Types
                    || (desiredType == "long")
                    || (desiredType == "float")
                      );
+                nop = (desiredType == "int");
             }
             else if (actualType == "long")
             {
@@ -154,6 +160,10 @@ unit Types
                      );
             }
             break;
+        }
+        if (!nop && ok && !codeGenNext && !codeGenTop)
+        {
+            ok = false; // no code generation allowed
         }
         if (!nop && ok && ((desiredType == "long") || (desiredType == "float") || (desiredType == "uint"))) // cast to new reference types?
         {
@@ -171,7 +181,7 @@ unit Types
                     }
                     else if (desiredType == "uint")
                     {
-                        CodeStream.AddInstructionSysCall0("Long", "ToUInt");
+                        CodeStream.AddInstructionSysCall0("Long", "ToUInt"); 
                     }
                     else
                     {
@@ -1151,11 +1161,9 @@ unit Types
         return iOverloadFound;
     }
     
-    
     uint FindOverload(string functionName, < <string> > arguments, ref string returnType)
     {
         uint iOverloadFound;
-        
         loop
         {
             uint fIndex;

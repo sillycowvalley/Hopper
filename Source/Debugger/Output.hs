@@ -1482,7 +1482,7 @@ unit Output
                 OutputDebug("  heapPtr    = 0x" + heapPtr.ToHexString(4) + " LAST");
                 break;
             }
-            uint blockSize = Pages.GetPageWord(heapPtr);
+            uint blockSize = Pages.GetPageWord(uint(heapPtr));
             
             if (blockSize <= 2)
             {
@@ -1501,7 +1501,7 @@ unit Output
                 string content;
                 content = content.Pad(' ', indent);
                 
-                uint next = Pages.GetPageWord(heapPtr+2);
+                uint next = Pages.GetPageWord(uint(heapPtr+2));
                 content += "0x" + heapPtr.ToHexString(4) + " 0x" + blockSize.ToHexString(4)+ " 0x" + next.ToHexString(4);
 
                 uint pCurrent = heapPtr+4;
@@ -1552,7 +1552,7 @@ unit Output
                 OutputDebug("  heapPtr    = 0x" + heapPtr.ToHexString(4) + " LAST");
                 break;
             }
-            uint blockSize = Pages.GetPageWord(heapPtr);
+            uint blockSize = Pages.GetPageWord(uint(heapPtr));
             if (accountedFor.Contains(heapPtr))
             {
                 // we already walked it

@@ -670,6 +670,7 @@ program Emulate
             char currentCommand = ' ';
             string commandLine = "";
             bool refresh = true;
+            bool firstRun = false;
             loop
             {
                 if (refresh)
@@ -683,7 +684,16 @@ program Emulate
                     refresh = false;
                 }
                 
-                Key key = ReadKey();
+                Key key;
+                if (firstRun)
+                {
+                    key = Key.F5;
+                    firstRun = false;
+                }
+                else
+                {
+                    key = ReadKey();
+                }
                 
                 char ch = key.ToChar();
                 ch = ch.ToUpper();

@@ -27,8 +27,8 @@ namespace HopperNET
         static bool isHopperCOM0Server = false; // Portable Runtime or Emulator
         static bool isHopperCOM0Client = false; // HM, Debug or Term
 
-        static NamedPipeServerStream com0Writer = null;
-        static NamedPipeClientStream com0Reader = null;
+        static NamedPipeServerStream com0Server = null;
+        static NamedPipeClientStream com0Client = null;
 
         static string ipCPipeName = "/Temp/IPCPipeName.bin";
 
@@ -57,66 +57,41 @@ namespace HopperNET
             return com0Exists;
         }
 
-        private static NamedPipeServerStream CreatePipeServerStream(bool server, bool manageName)
+        private static NamedPipeServerStream CreatePipeServerStream()
         {
             if (ipCPipeName.Contains("/"))
             {
                 ipCPipeName = HopperPath.ToWindowsPath(ipCPipeName);
-                if (manageName)
-                {
-                    File.Delete(ipCPipeName);
-                }
+                File.Delete(ipCPipeName);
             }
             NamedPipeServerStream result = null;
-            if (manageName)
+            uint iName = 0;
+            for (; ; )
             {
-                uint iName = 0;
-                for (; ; )
-                {
-                    string comPipeName = iName.ToString("X8");
-                    try
-                    {
-                        result = new NamedPipeServerStream((server ? "com0Server-" : "com0Client-") + comPipeName, PipeDirection.Out);
-                    }
-                    catch (Exception ex)
-                    {
-                        iName++;
-                        continue;
-                    }
-                    File.WriteAllText(ipCPipeName, comPipeName);
-                    break;
-                }
-            }
-            else
-            {
-                for (; ; )
-                {
-                    Thread.Sleep(100);
-                    if (File.Exists(ipCPipeName))
-                    {
-                        break;
-                    }
-                }
-                string comPipeName = File.ReadAllText(ipCPipeName);
+                string comPipeName = iName.ToString("X8");
                 try
                 {
-                    result = new NamedPipeServerStream((server ? "com0Server-" : "com0Client-") + comPipeName, PipeDirection.Out);
+                    result = new NamedPipeServerStream("com0Server-" + comPipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                    File.WriteAllText(ipCPipeName, comPipeName);
+                    result.WaitForConnection();
                 }
                 catch (Exception ex)
                 {
-                    int why = 0;
+                    iName++;
+                    continue;
                 }
+                break;
             }
             return result;
         }
-
-        private static NamedPipeClientStream CreatePipeClientStream(bool server)
+        private static NamedPipeClientStream CreatePipeClientStream()
         {
             if (ipCPipeName.Contains("/"))
             {
                 ipCPipeName = HopperPath.ToWindowsPath(ipCPipeName);
             }
-            for (; ;)
+            NamedPipeClientStream result = null;
+            for (; ; )
             {
                 Thread.Sleep(100);
                 if (File.Exists(ipCPipeName))
@@ -125,12 +100,63 @@ namespace HopperNET
                 }
             }
             string comPipeName = File.ReadAllText(ipCPipeName);
-            return new NamedPipeClientStream(".", (server ? "com0Client-" : "com0Server-") + comPipeName, PipeDirection.In);
+            try
+            {
+                result = new NamedPipeClientStream(".", "com0Server-" + comPipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            }
+            catch (Exception ex)
+            {
+                int why = 0;
+            }
+            return result;
         }
 
-        static Thread pipeThread = null;
+        public static void Com0Close()
+        {
+            /*
+            if (isHopperCOM0Client || isHopperCOM0Server)
+            {
+                pipeThreadExit = true;
+                if ((pipeReadThread != null) || (pipeWriteThread != null))
+                {
+                    if (pipeReadThread != null)
+                    {
+                        pipeReadThread.Abort();
+                        pipeReadThread = null;
+                    }
+                    if (pipeWriteThread != null)
+                    {
+                        pipeWriteThread.Abort();
+                        pipeWriteThread = null;
+                    }
+                }
+                if (isHopperCOM0Client && (null != com0Client))
+                {
+                    com0Client.Close();
+                    com0Client = null;
+                }
+                if (isHopperCOM0Server && (null != com0Server))
+                {
+                    com0Server.Close();
+                    com0Server = null;
+                }
+            }
+            if (File.Exists(ipCPipeName) && isHopperCOM0Server)
+            {
+                File.Delete(ipCPipeName);
+            }
+            */
+            isHopperCOM0Client = false;
+            isHopperCOM0Server = false;
+        }
+
+
+        static Thread pipeReadThread = null;
         static bool pipeThreadExit = false;
         static Queue<char> pipeReadBuffer = new Queue<char>();
+
+        static Thread pipeWriteThread = null;
+        static Queue<char> pipeWriteBuffer = new Queue<char>();
 
         static void PipeThreadReader()
         {
@@ -142,25 +168,18 @@ namespace HopperNET
             {
                 // spin
             }
-            if (null == com0Reader)
-            {
-                if (isHopperCOM0Server)
-                {
-                    com0Reader = CreatePipeClientStream(true);
-                }
-                if (isHopperCOM0Client)
-                {
-                    com0Reader = CreatePipeClientStream(false);
-
-                }
-                com0Reader.Connect();
-            }
-
             while (!pipeThreadExit)
             {
-                if ((isHopperCOM0Server || isHopperCOM0Client) && (com0Reader != null))
+                if (isHopperCOM0Server && (com0Server != null))
                 {
-                    if (com0Reader.IsConnected)
+                    if (com0Server.IsConnected)
+                    {
+                        break;
+                    }
+                }
+                if (isHopperCOM0Client && (com0Client != null))
+                {
+                    if (com0Client.IsConnected)
                     {
                         break;
                     }
@@ -169,15 +188,41 @@ namespace HopperNET
             }
             while (!pipeThreadExit)
             {
-                if ((isHopperCOM0Server || isHopperCOM0Client) && (com0Reader != null))
+                if (isHopperCOM0Server && (com0Server != null))
                 {
-                    if (!com0Reader.IsConnected)
+                    if (!com0Server.IsConnected)
                     {
                         break;
                     }
                     try
                     {
-                        int ibyte = com0Reader.ReadByte();
+                        int ibyte = com0Server.ReadByte();
+                        if (ibyte != -1)
+                        {
+                            lock (pipeReadBuffer)
+                            {
+                                pipeReadBuffer.Enqueue((char)ibyte);
+                            }
+                        }
+                        else
+                        {
+                            Thread.Sleep(10);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        int why = 0;
+                    }
+                }
+                if (isHopperCOM0Client && (com0Client != null))
+                {
+                    if (!com0Client.IsConnected)
+                    {
+                        break;
+                    }
+                    try
+                    {
+                        int ibyte = com0Client.ReadByte();
                         if (ibyte != -1)
                         {
                             lock (pipeReadBuffer)
@@ -196,10 +241,92 @@ namespace HopperNET
                     }
                 }
             }
-            if (null != com0Reader)
+        }
+
+        static void PipeThreadWriter()
+        {
+            byte[] b = new byte[1];
+
+            lock (pipeWriteBuffer)
             {
-                com0Reader.Close();
-                com0Reader = null;
+                pipeWriteBuffer.Clear();
+            }
+            while (!isHopperCOM0Server && !isHopperCOM0Client)
+            {
+                // spin
+            }
+            while (!pipeThreadExit)
+            {
+                if (isHopperCOM0Server && (com0Server != null))
+                {
+                    if (com0Server.IsConnected)
+                    {
+                        break;
+                    }
+                }
+                if (isHopperCOM0Client && (com0Client != null))
+                {
+                    if (com0Client.IsConnected)
+                    {
+                        break;
+                    }
+                }
+                Thread.Sleep(10);
+            }
+            while (!pipeThreadExit)
+            {
+                bool isEmpty = false;
+                lock (pipeWriteBuffer)
+                {
+                    isEmpty = (pipeWriteBuffer.Count == 0);
+                }
+                if (isEmpty)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+                if (isHopperCOM0Server && (com0Server != null))
+                {
+                    if (!com0Server.IsConnected)
+                    {
+                        break;
+                    }
+                    char c;
+                    lock (pipeWriteBuffer)
+                    {
+                        c = pipeWriteBuffer.Dequeue();
+                    }
+                    try
+                    {
+                        b[0] = (byte)c;
+                        com0Server.Write(b, 0, 1);
+                    }
+                    catch (Exception ex)
+                    {
+                        Thread.Sleep(10);
+                    }
+                }
+                if (isHopperCOM0Client && (com0Client != null))
+                {
+                    if (!com0Client.IsConnected)
+                    {
+                        break;
+                    }
+                    char c;
+                    lock (pipeWriteBuffer)
+                    {
+                        c = pipeWriteBuffer.Dequeue();
+                    }
+                    try
+                    {
+                        b[0] = (byte)c;
+                        com0Client.Write(b, 0, 1);
+                    }
+                    catch (Exception ex)
+                    {
+                        Thread.Sleep(10);
+                    }
+                }
             }
         }
 
@@ -222,7 +349,7 @@ namespace HopperNET
                 // assume server never calls GetPorts(), only HM, Debug or Term
 
                 // already connected?
-                bool com0Exists = (com0Reader != null) && com0Reader.IsConnected;
+                bool com0Exists = (com0Client != null) && com0Client.IsConnected;
                 if (!com0Exists)
                 {
                     // is it possible to connect?
@@ -278,14 +405,19 @@ namespace HopperNET
         {
             if (portName == "COM4242")
             {
-                if (null == com0Writer)
+                if (null == com0Server)
                 {
-                    if (pipeThread == null)
+                    if (pipeReadThread == null)
                     {
-                        pipeThread = new Thread(new ThreadStart(PipeThreadReader));
-                        pipeThread.Start();
+                        pipeReadThread = new Thread(new ThreadStart(PipeThreadReader));
+                        pipeReadThread.Start();
+                        pipeWriteThread = new Thread(new ThreadStart(PipeThreadWriter));
+                        pipeWriteThread.Start();
                     }
-                    com0Writer = CreatePipeServerStream(true, true);
+                    com0Server = CreatePipeServerStream();
+                }
+                if (null != com0Server)
+                {
                     isHopperCOM0Server = true; // Portable Runtime or Emulator
                     isHopperCOM0Client = false; // HM, Debug or Term
                 }
@@ -297,18 +429,20 @@ namespace HopperNET
                 //{
                 //    Com0Close(); // abort existing thread
                 //}
-                if (pipeThread == null)
+                if (pipeReadThread == null)
                 {
-                    pipeThread = new Thread(new ThreadStart(PipeThreadReader));
-                    pipeThread.Start();
+                    pipeReadThread = new Thread(new ThreadStart(PipeThreadReader));
+                    pipeReadThread.Start();
+                    pipeWriteThread = new Thread(new ThreadStart(PipeThreadWriter));
+                    pipeWriteThread.Start();
                 }
                 try
                 {
-                    if (null == com0Writer)
+                    if (null == com0Client)
                     {
-                        com0Writer = CreatePipeServerStream(false, false);
+                        com0Client = CreatePipeClientStream();
                     }
-                    if (null != com0Writer)
+                    if (null != com0Client)
                     {
                         isHopperCOM0Server = false; // Portable Runtime or Emulator
                         isHopperCOM0Client = true; // HM, Debug or Term
@@ -372,29 +506,7 @@ namespace HopperNET
             }
         }
 
-        public static void Com0Close()
-        {
-            if (isHopperCOM0Client || isHopperCOM0Server)
-            {
-                if (pipeThread != null)
-                {
-                    pipeThreadExit = true;
-                    pipeThread.Abort();
-                    pipeThread = null;
-                }
-                if (null != com0Writer)
-                {
-                    com0Writer.Close();
-                    com0Writer = null;
-                }
-            }
-            if (File.Exists(ipCPipeName) && isHopperCOM0Server)
-            {
-                File.Delete(ipCPipeName);
-            }
-            isHopperCOM0Client = false;
-            isHopperCOM0Server = false;
-        }
+        
 
         public static void Close()
         {
@@ -413,24 +525,38 @@ namespace HopperNET
             bool isValid = false;
             try
             {
-                if (isHopperCOM0Client || isHopperCOM0Server)
+                if (isHopperCOM0Server)
                 {
-                    if (!com0Writer.IsConnected)
+                    /*
+                    if (!com0Server.IsConnected)
                     {
                         try
                         {
-                            com0Writer.WaitForConnection();
+                            com0Server.WaitForConnection();
                         }
                         catch (Exception ex)
                         {
                             int why = 0;
                         }
                     }
-                    isValid = com0Writer.IsConnected;
-                    if (isValid && isHopperCOM0Client)
+                    isValid = com0Server.IsConnected;
+                    */
+                    isValid = com0Server.CanRead && com0Server.CanWrite;
+                }
+                else if (isHopperCOM0Client)
+                {
+                    if (!com0Client.IsConnected)
                     {
-                        isValid = (null != com0Reader) && com0Reader.IsConnected;
+                        try
+                        {
+                            com0Client.Connect();
+                        }
+                        catch (Exception ex)
+                        {
+                            int why = 0;
+                        }
                     }
+                    isValid = com0Client.IsConnected;
                 }
                 else
                 {
@@ -451,24 +577,24 @@ namespace HopperNET
 
         public static void WriteChar(char outChar)
         {
-            byte[] b = new byte[1];
-            b[0] = (byte)outChar;
             if (IsValid())
             {
-                try
+                if (isHopperCOM0Server || isHopperCOM0Client)
                 {
-                    if (isHopperCOM0Client || isHopperCOM0Server)
+                    pipeWriteBuffer.Enqueue(outChar);
+                }
+                else
+                {
+                    try
                     {
-                        com0Writer.Write(b, 0, 1);
-                    }
-                    else
-                    {
+                        byte[] b = new byte[1];
+                        b[0] = (byte)outChar;
                         serialPort.Write(b, 0, 1);
                     }
-                }
-                catch (Exception ex)
-                {
-                    Diagnostics.OutputDebug("WriteChar: " + ex.Message);
+                    catch (Exception ex)
+                    {
+                        Diagnostics.OutputDebug("WriteChar: " + ex.Message);
+                    }
                 }
             }
         }
@@ -476,26 +602,31 @@ namespace HopperNET
         {
             if (IsValid())
             {
-                byte[] b = new byte[str.Value.Length];
-                for (int i = 0; i < str.Value.Length; i++)
+                if (isHopperCOM0Server || isHopperCOM0Client)
                 {
-                    b[i] = (byte)str.Value[i];
-                }
-
-                try
-                {
-                    if (isHopperCOM0Client || isHopperCOM0Server)
+                    for (int i = 0; i < str.Value.Length; i++)
                     {
-                        com0Writer.Write(b, 0, b.Length);
+                        lock (pipeWriteBuffer)
+                        {
+                            pipeWriteBuffer.Enqueue(str.Value[i]);
+                        }
                     }
-                    else
+                }
+                else
+                {
+                    try
                     {
+                        byte[] b = new byte[str.Value.Length];
+                        for (int i = 0; i < str.Value.Length; i++)
+                        {
+                            b[i] = (byte)str.Value[i];
+                        }
                         serialPort.Write(b, 0, b.Length);
                     }
-                }
-                catch (Exception ex)
-                {
-                    Diagnostics.OutputDebug("WriteChar: " + ex.Message);
+                    catch (Exception ex)
+                    {
+                        Diagnostics.OutputDebug("WriteChar: " + ex.Message);
+                    }
                 }
             }
         }

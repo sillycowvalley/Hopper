@@ -139,7 +139,7 @@ unit Source
     {
        <uint> currentTargets;
        <uint> currentJixLabels;
-       return Instructions.Disassemble(code, ref address, entryPointOffset, ref currentTargets, ref currentJixLabels, false);
+       return Instructions.Disassemble(code, ref address, long(entryPointOffset), ref currentTargets, ref currentJixLabels, false);
     }
     
     uint CallAddressFromReturnToAddress(uint methodIndex, uint returnToAddress)

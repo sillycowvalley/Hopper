@@ -993,8 +993,8 @@ namespace HopperNET
             sp--;
             ushort sp2 = sp;
 #if DEBUG
-            Diagnostics.ASSERT(stack[sp2].reference == null, "value type");            // TODO
-            Diagnostics.ASSERT(stack[sp2].type == HopperType.tLong, "tLong expected"); // TODO
+            Diagnostics.ASSERTDIE(stack[sp2].reference == null, "value type", this);            // TODO
+            Diagnostics.ASSERTDIE(stack[sp2].type == HopperType.tLong, "tLong expected", this); // TODO
 #endif
             uint value = stack[sp2].value;
 #if DEBUG
@@ -1275,9 +1275,9 @@ namespace HopperNET
                 //Debug.WriteLine("PC: 0x" + pc.ToString("X4"));
                 Instruction opCode = (Instruction)code[pc + currentContext.CodeOffset];
                 instructionPC = pc;
-                if (pc == 0x10E7)
+                if (pc == 0x2C5A)
                 {
-                    //int why = 0;
+                    int why = 0;
                 }
                 if (!inISR && (currentISR != 0))
                 {
@@ -6168,8 +6168,8 @@ namespace HopperNET
 #endif
                         ushort sp2 = ((ushort)(sp - 1));
 #if DEBUG
-                        Diagnostics.ASSERT(stack[sp2].reference == null, "value type");
-                        Diagnostics.ASSERT(stack[sp2].type == HopperType.tLong, "tLong expected");
+                        Diagnostics.ASSERTDIE(stack[sp2].reference == null, "value type", this);
+                        Diagnostics.ASSERTDIE(stack[sp2].type == HopperType.tLong, "tLong expected", this);
 #endif
                         Int32 lvalue = BitConverter.ToInt32(BitConverter.GetBytes(stack[sp2].value), 0); ;
                         lvalue++;
@@ -6184,8 +6184,8 @@ namespace HopperNET
 #endif
                         ushort sp2 = ((ushort)(sp - 1));
 #if DEBUG
-                        Diagnostics.ASSERT(stack[sp2].reference == null, "value type");
-                        Diagnostics.ASSERT(stack[sp2].type == HopperType.tLong, "tLong expected");
+                        Diagnostics.ASSERTDIE(stack[sp2].reference == null, "value type", this);
+                        Diagnostics.ASSERTDIE(stack[sp2].type == HopperType.tLong, "tLong expected", this);
 #endif
                         Int32 lvalue = BitConverter.ToInt32(BitConverter.GetBytes(stack[sp2].value), 0); ;
                         lvalue = lvalue + top;
@@ -6200,8 +6200,8 @@ namespace HopperNET
 #endif
                         ushort sp2 = ((ushort)(sp - 1));
 #if DEBUG
-                        Diagnostics.ASSERT(stack[sp2].reference == null, "value type");
-                        Diagnostics.ASSERT(stack[sp2].type == HopperType.tLong, "tLong expected");
+                        Diagnostics.ASSERTDIE(stack[sp2].reference == null, "value type", this);
+                        Diagnostics.ASSERTDIE(stack[sp2].type == HopperType.tLong, "tLong expected", this);
 #endif
                         Int32 lvalue = BitConverter.ToInt32(BitConverter.GetBytes(stack[sp2].value), 0); ;
                         lvalue = lvalue * top;
