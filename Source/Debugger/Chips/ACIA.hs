@@ -95,7 +95,7 @@ unit ACIA
             if (address == dataRegister)
             {
                 Serial.WriteChar(char(value));
-                //Print(value.ToHexString(2) + " ", Colour.MatrixRed, Colour.Black);
+                Print(value.ToHexString(2) + " ", Colour.MatrixRed, Colour.Black);
                 //if (value == 0x0D)
                 //{
                 //    PrintLn();
@@ -131,7 +131,7 @@ unit ACIA
                 {
                     value = byte(readChar);
                     readWaiting = false;
-                    //Print(value.ToHexString(2) + " ", Colour.MatrixBlue, Colour.Black);
+                    Print(value.ToHexString(2) + " ", Colour.MatrixBlue, Colour.Black);
                 }
                 else
                 {

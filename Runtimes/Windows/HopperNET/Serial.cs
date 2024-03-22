@@ -1,4 +1,6 @@
-﻿using System;
+﻿
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,31 +10,13 @@ using System.Management;
 using System.IO.Pipes;
 using System.IO;
 using System.Threading;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+using System.ComponentModel;
 
 namespace HopperNET
 {
-    public static class MutexHelper
-    {
-        private static Mutex m_mutex = new Mutex(false, "Global\\HopperIPCMutex");
-
-        public static void Take()
-        {
-            try
-            {
-                m_mutex.WaitOne();
-            }
-            catch (AbandonedMutexException)
-            {
-
-            }
-        }
-
-        public static void Leave()
-        {
-            m_mutex.ReleaseMutex();
-        }
-    }
-
+    
     class Serial
     {
         static bool continueSerial;
@@ -40,153 +24,184 @@ namespace HopperNET
         static string lastPort;
         static List<string> btPorts = new List<string>();
 
-        static bool isHopperCOM0Server = false; // Portable Runtime
+        static bool isHopperCOM0Server = false; // Portable Runtime or Emulator
         static bool isHopperCOM0Client = false; // HM, Debug or Term
 
-        static string ipcRunning = "/Temp/IPCisRunning.bin";
-        static string ipcServerToClient = "/Temp/IPCserverToClient.bin";
-        static string ipcClientToServer = "/Temp/IPCclientToServer.bin";
-        
-        private static void AtomicWrite(string path, char outChar)
-        {
-            try
-            {
-                MutexHelper.Take();
+        static NamedPipeServerStream com0Writer = null;
+        static NamedPipeClientStream com0Reader = null;
 
-                if (!File.Exists(path))
+        static string ipCPipeName = "/Temp/IPCPipeName.bin";
+
+        private static bool CheckCom0Exists()
+        {
+            bool com0Exists = false;
+            if (ipCPipeName.Contains("/"))
+            {
+                ipCPipeName = HopperPath.ToWindowsPath(ipCPipeName);
+            }
+            uint count = 0;
+            for (; ; )
+            {
+                Thread.Sleep(10);
+                if (File.Exists(ipCPipeName))
                 {
-                    // create
-                    var bytes = new byte[1];
-                    bytes[0] = (byte)outChar;
-                    File.WriteAllBytes(path, bytes);
+                    com0Exists = true;
+                    break;
                 }
-                else
+                count++;
+                if (count == 100)
                 {
-                    // append
-                    var existingBytes = File.ReadAllBytes(path);
-                    var bytes = new byte[existingBytes.Length + 1];
-                    for (int i = 0; i < existingBytes.Length; i++)
+                    break;
+                }
+            }
+            return com0Exists;
+        }
+
+        private static NamedPipeServerStream CreatePipeServerStream(bool server, bool manageName)
+        {
+            if (ipCPipeName.Contains("/"))
+            {
+                ipCPipeName = HopperPath.ToWindowsPath(ipCPipeName);
+                if (manageName)
+                {
+                    File.Delete(ipCPipeName);
+                }
+            }
+            NamedPipeServerStream result = null;
+            if (manageName)
+            {
+                uint iName = 0;
+                for (; ; )
+                {
+                    string comPipeName = iName.ToString("X8");
+                    try
                     {
-                        bytes[i] = existingBytes[i];
+                        result = new NamedPipeServerStream((server ? "com0Server-" : "com0Client-") + comPipeName, PipeDirection.Out);
                     }
-                    bytes[existingBytes.Length] = (byte)outChar;
-                    File.WriteAllBytes(path, bytes);
-                }
-            }
-            finally
-            {
-                MutexHelper.Leave();
-            }
-            //string verbose = ((byte)outChar > 31) ? " '" + outChar + "'" : "";
-            //Diagnostics.OutputDebug("\nAtomicWrite: " + ((byte)outChar).ToString("X2") + verbose);
-        }
-
-        private static void AtomicWrite(string path, byte[] bytes)
-        {
-            try
-            {
-                MutexHelper.Take();
-
-                if (!File.Exists(path))
-                {
-                    // create
-                    File.WriteAllBytes(path, bytes);
-                }
-                else
-                {
-                    // append
-                    var existingBytes = File.ReadAllBytes(path);
-                    var newBytes = new byte[existingBytes.Length + bytes.Length];
-                    int index = 0;
-                    foreach (byte b in existingBytes)
+                    catch (Exception ex)
                     {
-                        newBytes[index] = b;
-                        index++;
+                        iName++;
+                        continue;
                     }
-                    foreach (byte b in bytes)
+                    File.WriteAllText(ipCPipeName, comPipeName);
+                    break;
+                }
+            }
+            else
+            {
+                for (; ; )
+                {
+                    Thread.Sleep(100);
+                    if (File.Exists(ipCPipeName))
                     {
-                        newBytes[index] = b;
-                        index++;
+                        break;
                     }
-                    File.WriteAllBytes(path, newBytes);
                 }
-            }
-            finally
-            {
-                MutexHelper.Leave();
-            }
-            //Diagnostics.OutputDebug("\nAtomicWrite: " + (bytes.Length).ToString("") + " bytes");
-        }
-        static string atomicReadBuffer = String.Empty;
-        
-        private static char AtomicRead(string path)
-        {
-            char readChar = ' ';
-            if (atomicReadBuffer.Length > 0)
-            {
-                readChar = atomicReadBuffer[0];
-                atomicReadBuffer = atomicReadBuffer.Substring(1);
-                return readChar;
-            }
-            while (!AtomicExists(path))
-            {
-                // read is blocking
-            }
-            try
-            {
-                MutexHelper.Take();
-                while (!AtomicExists(path))
+                string comPipeName = File.ReadAllText(ipCPipeName);
+                try
                 {
-                    // <-- in case it vanished in the non-atomic part : we may lock here ..
+                    result = new NamedPipeServerStream((server ? "com0Server-" : "com0Client-") + comPipeName, PipeDirection.Out);
                 }
-                
-                byte [] buffer = File.ReadAllBytes(path);
-                foreach (var b in buffer)
+                catch (Exception ex)
                 {
-                    atomicReadBuffer = atomicReadBuffer + (char)b;
+                    int why = 0;
                 }
-                readChar = atomicReadBuffer[0];
-                atomicReadBuffer = atomicReadBuffer.Substring(1);
-
-                File.Delete(path);
             }
-            finally
-            {
-                MutexHelper.Leave();
-            }
-            //string verbose = ((byte)readChar > 31) ? " '" + readChar + "'" : "";
-            //Diagnostics.OutputDebug("\nAtomicRead: " + ((byte)readChar).ToString("X2") + verbose);
-            return readChar;
+            return result;
         }
 
-        private static bool AtomicExists(string path)
+        private static NamedPipeClientStream CreatePipeClientStream(bool server)
         {
-            bool exists = false;
-            try
+            if (ipCPipeName.Contains("/"))
             {
-                MutexHelper.Take();
-                exists = File.Exists(path);
+                ipCPipeName = HopperPath.ToWindowsPath(ipCPipeName);
             }
-            finally
+            for (; ;)
             {
-                MutexHelper.Leave();
+                Thread.Sleep(100);
+                if (File.Exists(ipCPipeName))
+                {
+                    break;
+                }
             }
-            return exists;
+            string comPipeName = File.ReadAllText(ipCPipeName);
+            return new NamedPipeClientStream(".", (server ? "com0Client-" : "com0Server-") + comPipeName, PipeDirection.In);
         }
-        private static void AtomicDelete(string path)
+
+        static Thread pipeThread = null;
+        static bool pipeThreadExit = false;
+        static Queue<char> pipeReadBuffer = new Queue<char>();
+
+        static void PipeThreadReader()
         {
-            try
+            lock (pipeReadBuffer)
             {
-                MutexHelper.Take();
-                File.Delete(path);
+                pipeReadBuffer.Clear();
             }
-            finally
+            while (!isHopperCOM0Server && !isHopperCOM0Client)
             {
-                MutexHelper.Leave();
+                // spin
+            }
+            if (null == com0Reader)
+            {
+                if (isHopperCOM0Server)
+                {
+                    com0Reader = CreatePipeClientStream(true);
+                }
+                if (isHopperCOM0Client)
+                {
+                    com0Reader = CreatePipeClientStream(false);
+
+                }
+                com0Reader.Connect();
+            }
+
+            while (!pipeThreadExit)
+            {
+                if ((isHopperCOM0Server || isHopperCOM0Client) && (com0Reader != null))
+                {
+                    if (com0Reader.IsConnected)
+                    {
+                        break;
+                    }
+                }
+                Thread.Sleep(10);
+            }
+            while (!pipeThreadExit)
+            {
+                if ((isHopperCOM0Server || isHopperCOM0Client) && (com0Reader != null))
+                {
+                    if (!com0Reader.IsConnected)
+                    {
+                        break;
+                    }
+                    try
+                    {
+                        int ibyte = com0Reader.ReadByte();
+                        if (ibyte != -1)
+                        {
+                            lock (pipeReadBuffer)
+                            {
+                                pipeReadBuffer.Enqueue((char)ibyte);
+                            }
+                        }
+                        else
+                        {
+                            Thread.Sleep(10);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        int why = 0;
+                    }
+                }
+            }
+            if (null != com0Reader)
+            {
+                com0Reader.Close();
+                com0Reader = null;
             }
         }
-
-
 
         public static void Connect()
         {
@@ -201,18 +216,29 @@ namespace HopperNET
         }
         public static List<String> GetPorts()
         {
-            if (ipcRunning.Contains("/"))
+            List<String> list = new List<string>();
+            try
             {
-                ipcClientToServer = HopperPath.ToWindowsPath(ipcClientToServer);
-                ipcServerToClient = HopperPath.ToWindowsPath(ipcServerToClient);
-                ipcRunning = HopperPath.ToWindowsPath(ipcRunning);
+                // assume server never calls GetPorts(), only HM, Debug or Term
+
+                // already connected?
+                bool com0Exists = (com0Reader != null) && com0Reader.IsConnected;
+                if (!com0Exists)
+                {
+                    // is it possible to connect?
+                    com0Exists = CheckCom0Exists();
+                }
+                if (com0Exists)
+                {
+                    list.Add("COM0");
+                }
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.OutputDebug("client connect: " + ex.Message);
             }
 
-            List<String> list = new List<string>();
-            if (AtomicExists(ipcRunning))
-            {
-                list.Add("COM0");
-            }
+
             if (btPorts.Count > 0)
             {
                 String[] names = SerialPort.GetPortNames();
@@ -252,41 +278,57 @@ namespace HopperNET
         {
             if (portName == "COM4242")
             {
-                if (ipcRunning.Contains("/"))
+                if (null == com0Writer)
                 {
-                    ipcClientToServer = HopperPath.ToWindowsPath(ipcClientToServer);
-                    ipcServerToClient = HopperPath.ToWindowsPath(ipcServerToClient);
-                    ipcRunning = HopperPath.ToWindowsPath(ipcRunning);
+                    if (pipeThread == null)
+                    {
+                        pipeThread = new Thread(new ThreadStart(PipeThreadReader));
+                        pipeThread.Start();
+                    }
+                    com0Writer = CreatePipeServerStream(true, true);
+                    isHopperCOM0Server = true; // Portable Runtime or Emulator
+                    isHopperCOM0Client = false; // HM, Debug or Term
                 }
-
-                isHopperCOM0Server = true;
-                isHopperCOM0Client = false;
-                AtomicDelete(ipcRunning);
-                AtomicDelete(ipcServerToClient);
-                AtomicDelete(ipcClientToServer);
-                AtomicWrite(ipcRunning, '!');
                 return;
             }
             else if (portName == "COM0")
             {
-                if (ipcRunning.Contains("/"))
+                //if (pipeThread != null)
+                //{
+                //    Com0Close(); // abort existing thread
+                //}
+                if (pipeThread == null)
                 {
-                    ipcClientToServer = HopperPath.ToWindowsPath(ipcClientToServer);
-                    ipcServerToClient = HopperPath.ToWindowsPath(ipcServerToClient);
-                    ipcRunning = HopperPath.ToWindowsPath(ipcRunning);
+                    pipeThread = new Thread(new ThreadStart(PipeThreadReader));
+                    pipeThread.Start();
                 }
-
-                isHopperCOM0Server = false;
-                isHopperCOM0Client = true;
-                AtomicDelete(ipcClientToServer);
-                atomicReadBuffer = String.Empty;
+                try
+                {
+                    if (null == com0Writer)
+                    {
+                        com0Writer = CreatePipeServerStream(false, false);
+                    }
+                    if (null != com0Writer)
+                    {
+                        isHopperCOM0Server = false; // Portable Runtime or Emulator
+                        isHopperCOM0Client = true; // HM, Debug or Term
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Diagnostics.OutputDebug("client connect: " + ex.Message);
+                }
                 return;
             }
             else 
             {
+                if (isHopperCOM0Client || isHopperCOM0Server)
+                {
+                    Com0Close();
+                }
+
                 // any real COM port
                 isHopperCOM0Client = false;
-                AtomicDelete(ipcClientToServer);
 
             }
 
@@ -329,41 +371,66 @@ namespace HopperNET
                 Diagnostics.OutputDebug("connect: " + ex.Message);
             }
         }
-        public static void Close()
+
+        public static void Com0Close()
         {
-            if (IsValid())
+            if (isHopperCOM0Client || isHopperCOM0Server)
             {
-                if (isHopperCOM0Client)
+                if (pipeThread != null)
                 {
-                    isHopperCOM0Client = false;
-                    AtomicDelete(ipcClientToServer);
+                    pipeThreadExit = true;
+                    pipeThread.Abort();
+                    pipeThread = null;
                 }
-                else if (isHopperCOM0Server)
+                if (null != com0Writer)
                 {
-                    // clean up on server close
-                    AtomicDelete(ipcServerToClient);
-                    AtomicDelete(ipcClientToServer);
-                    AtomicDelete(ipcRunning);
-                    isHopperCOM0Server = false;
-                }
-                else
-                {
-                    serialPort.Close();
+                    com0Writer.Close();
+                    com0Writer = null;
                 }
             }
+            if (File.Exists(ipCPipeName) && isHopperCOM0Server)
+            {
+                File.Delete(ipCPipeName);
+            }
+            isHopperCOM0Client = false;
+            isHopperCOM0Server = false;
+        }
+
+        public static void Close()
+        {
+            if (isHopperCOM0Client || isHopperCOM0Server)
+            {
+                Com0Close();
+            }
+            else if (IsValid())
+            {
+                serialPort.Close();
+            }
+
         }
         public static bool IsValid()
         {
             bool isValid = false;
             try
             {
-                if (isHopperCOM0Client)
+                if (isHopperCOM0Client || isHopperCOM0Server)
                 {
-                    isValid = AtomicExists(ipcRunning);
-                }
-                else if (isHopperCOM0Server)
-                {
-                    isValid = AtomicExists(ipcRunning);
+                    if (!com0Writer.IsConnected)
+                    {
+                        try
+                        {
+                            com0Writer.WaitForConnection();
+                        }
+                        catch (Exception ex)
+                        {
+                            int why = 0;
+                        }
+                    }
+                    isValid = com0Writer.IsConnected;
+                    if (isValid && isHopperCOM0Client)
+                    {
+                        isValid = (null != com0Reader) && com0Reader.IsConnected;
+                    }
                 }
                 else
                 {
@@ -390,15 +457,9 @@ namespace HopperNET
             {
                 try
                 {
-                    if (isHopperCOM0Client)
+                    if (isHopperCOM0Client || isHopperCOM0Server)
                     {
-                        // only one char at a time
-                        AtomicWrite(ipcClientToServer, outChar);
-                    }
-                    else if (isHopperCOM0Server)
-                    {
-                        // only one char at a time
-                        AtomicWrite(ipcServerToClient, outChar);
+                        com0Writer.Write(b, 0, 1);
                     }
                     else
                     {
@@ -423,15 +484,9 @@ namespace HopperNET
 
                 try
                 {
-                    if (isHopperCOM0Client)
+                    if (isHopperCOM0Client || isHopperCOM0Server)
                     {
-                        // only one char at a time
-                        AtomicWrite(ipcClientToServer, b);
-                    }
-                    else if (isHopperCOM0Server)
-                    {
-                        // only one char at a time
-                        AtomicWrite(ipcServerToClient, b);
+                        com0Writer.Write(b, 0, b.Length);
                     }
                     else
                     {
@@ -453,15 +508,23 @@ namespace HopperNET
             {
                 try
                 {
-                    if (isHopperCOM0Client)
+                    if (isHopperCOM0Client || isHopperCOM0Server)
                     {
                         // read is blocking
-                        readChar = AtomicRead(ipcServerToClient);
-                    }
-                    else if (isHopperCOM0Server)
-                    {
-                        // read is blocking
-                        readChar = AtomicRead(ipcClientToServer);
+                        for (; ; )
+                        {
+                            lock (pipeReadBuffer)
+                            {
+                                if (pipeReadBuffer.Count != 0)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                        lock (pipeReadBuffer)
+                        {
+                            readChar = (char)pipeReadBuffer.Dequeue();
+                        }
                     }
                     else
                     {
@@ -484,13 +547,12 @@ namespace HopperNET
                 isAvail = false;
                 try
                 {
-                    if (isHopperCOM0Client)
+                    if (isHopperCOM0Client || isHopperCOM0Server)
                     {
-                        isAvail = !String.IsNullOrEmpty(atomicReadBuffer) || AtomicExists(ipcServerToClient);
-                    }                            
-                    else if (isHopperCOM0Server)
-                    {
-                        isAvail = !String.IsNullOrEmpty(atomicReadBuffer) || AtomicExists(ipcClientToServer);
+                        lock (pipeReadBuffer)
+                        {
+                            isAvail  = pipeReadBuffer.Count != 0;
+                        }
                     }
                     else
                     {

@@ -18,8 +18,11 @@ unit Instruction
         PUSHLOCAL = 0x39,
         
         ADD       = 0x80,
+        SUB       = 0x82,
         
         EQ        = 0x92,
+        LE        = 0x90,
+        
     }
     
     enum Types
@@ -43,7 +46,9 @@ unit Instruction
         {
             case Instructions.ENTER:
             case Instructions.ADD:
+            case Instructions.SUB:
             case Instructions.EQ:
+            case Instructions.LE:
             {
                 LDA #0
             }
@@ -206,6 +211,24 @@ unit Instruction
         Stacks.PushNext();
     }
     
+    sub()
+    {
+        Stacks.PopTop();
+        Stacks.PopNext();
+        
+        SEC
+        LDA ZP.NEXTL
+        SBC ZP.TOPL
+        STA ZP.NEXTL
+        LDA ZP.NEXTH
+        SBC ZP.TOPH
+        STA ZP.NEXTH
+        
+        LDA #Types.UInt
+        STA ZP.NEXTT
+        Stacks.PushNext();
+    }
+    
     eq()
     {
         Stacks.PopTop();
@@ -218,6 +241,28 @@ unit Instruction
             LDA ZP.NEXTH
             CMP ZP.TOPH
             if (Z)
+            {
+                LDA # 1
+                Stacks.PushBool();
+                return;
+            }
+        }
+        LDA # 0
+        Stacks.PushBool();
+    }
+    le()
+    {
+        Stacks.PopTop();
+        Stacks.PopNext();
+        
+        // next <= top -> top >= next
+        LDA ZP.TOPH
+        CMP ZP.NEXTH
+        if (C)
+        {
+            LDA ZP.TOPL
+            CMP ZP.NEXTL
+            if (C)
             {
                 LDA # 1
                 Stacks.PushBool();
@@ -429,6 +474,11 @@ unit Instruction
         LDA ZP.IDXH
         STA ZP.PCH
     }
+    
+    missing()
+    {
+        BRK // Not Implemented!
+    }
       
     Execute()
     {
@@ -473,9 +523,17 @@ unit Instruction
             {
                 add();
             }
+            case Instructions.SUB:
+            {
+                sub();
+            }
             case Instructions.EQ:
             {
                 eq();
+            }
+            case Instructions.LE:
+            {
+                le();
             }
             case Instructions.JZ:
             {
@@ -503,7 +561,7 @@ unit Instruction
             }
             default:
             {
-                BRK // Not Implemented!
+                missing();
             }
         }
     }

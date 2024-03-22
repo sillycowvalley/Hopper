@@ -443,7 +443,6 @@ program Runtime
             {
                 LDA #0
             }
-            LDA (0)
             //CMP #0x03 // <ctrl><C> from Debugger but we were not running 
             //if (Z)
             //{
