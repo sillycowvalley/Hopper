@@ -1,13 +1,10 @@
 program Runtime
 {
- 
 #define CHECKED
-
     // mapping of Z80 -> 6502
     // https://litwr2.github.io/8080-8085-z80-8088-6502/z80-6502.html
     
     #define ROM_8K
-    
     #define CPU_65C02  // Rockwell and WDC
 
     // HopperMon commands to support:
@@ -38,6 +35,7 @@ program Runtime
     uses "Common/Utilities"
     uses "Common/Serial"
     uses "Common/Diagnostic"
+    uses "Common/SysCalls"
     uses "Common/Instructions"
     
 #ifdef CPU_65C02
@@ -174,16 +172,10 @@ program Runtime
                     case 0x01: // EOF record
                     {
                         // ignore EOF checksum and EOL
-                        Serial.WaitForChar();
-                        Serial.WaitForChar();
-                        Serial.WaitForChar();
+                        Serial.WaitForChar(); // 'F'
+                        Serial.WaitForChar(); // 'F'
+                        Serial.WaitForChar(); // 0x0D
                         
-                        LDA # 0x0D
-                        Serial.WriteChar();
-                        LDA ZP.IDYH
-                        Serial.HexOut();
-                        LDA ZP.IDYL
-                        Serial.HexOut();
                         LDA # '*' // EOF success terminator
                     }
                     default: // what is this record type? fail ->
@@ -225,6 +217,29 @@ program Runtime
             hopperInit();                // good defaults for HopperVM
             
             SMB0 ZP.FLAGS                // program is loaded
+            
+            LDA ZP.IDYH
+            Serial.HexOut();
+            LDA ZP.IDYL
+            Serial.HexOut();
+            LDA #' '
+            Serial.WriteChar();
+            
+            LDA ZP.HEAPSTART
+            Serial.HexOut();
+            LDA #0
+            Serial.HexOut();
+            LDA #' '
+            Serial.WriteChar();
+            
+            LDA ZP.HEAPSIZE
+            Serial.HexOut();
+            LDA #0
+            Serial.HexOut();
+            LDA #' '
+            Serial.WriteChar();
+            
+            Serial.WaitForChar(); // arbitrary '*' terminator from client
             
             LDA # 0x0D
             Serial.WriteChar();

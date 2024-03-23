@@ -122,14 +122,48 @@ unit Stacks
         INC ZP.SP
         PLY
     }
+    PushAcc()
+    {
+        PHY
+        LDY ZP.SP
+        LDA ZP.ACCL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.ACCH
+        STA Address.ValueStackMSB, Y
+        LDA ZP.ACCT
+        STA Address.TypeStackLSB, Y
+        INC ZP.SP
+        PLY
+    }
     PushBool()
     {
-        // value is in A: 0 or 1
-        STA ZP.NEXTL
+        // value is in X: 0 or 1
+        STX ZP.NEXTL
         STZ ZP.NEXTH
         LDA #Types.Bool
         STA ZP.NEXTT
         PushNext();
     }
+    PopAcc()
+    {
+        PHY
+        DEC ZP.SP
+        LDY ZP.SP
+        LDA Address.ValueStackLSB, Y
+        STA ZP.ACCL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.ACCH
+        LDA Address.TypeStackLSB, Y
+        STA ZP.ACCT
+        PLY
+    }
     
+    PopA() // pop a byte (don't care about type or MSB)
+    {
+        PHY
+        DEC ZP.SP
+        LDY ZP.SP
+        LDA Address.ValueStackLSB, Y
+        PLY
+    }
 }

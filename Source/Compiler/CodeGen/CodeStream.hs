@@ -16,6 +16,7 @@ unit CodeStream
     bool shortCallsDefined;
     bool portableDefined;
     bool h6502Defined;
+    bool minimalDefined;
     bool mcuDefined;
     bool isExperimental;
     bool noPackedInstructions;
@@ -29,10 +30,11 @@ unit CodeStream
     
     bool NoPackedInstructions { get { return noPackedInstructions; } }
     bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
-    bool IsShortCalls { get { return shortCallsDefined; } }
-    bool Target6502   { get { return h6502Defined; } }
-    bool TargetMCU    { get { return mcuDefined; } }
-    bool PeepHole     { get { return peepHole; } }
+    bool IsShortCalls   { get { return shortCallsDefined; } }
+    bool Target6502     { get { return h6502Defined; } }
+    bool TargetMinimal  { get { return minimalDefined; } }
+    bool TargetMCU      { get { return mcuDefined; } }
+    bool PeepHole       { get { return peepHole; } }
     
     InitializeSymbolShortcuts()
     {
@@ -40,6 +42,7 @@ unit CodeStream
         isExperimental       = Symbols.DefineExists("EXPERIMENTAL");
                 
         shortCallsDefined = Symbols.DefineExists("SHORT_CALLS");
+        minimalDefined    = Symbols.DefineExists("MINIMAL_RUNTIME");
         h6502Defined      = Symbols.DefineExists("HOPPER_6502"); // Target6502
         mcuDefined        = Symbols.DefineExists("MCU");
         peepHole          = Symbols.DefineExists("PEEPHOLEOPT");
@@ -267,7 +270,7 @@ unit CodeStream
         // Is there a user supplied alternative to the SysCall with only one overload?
         //  (we're not checking arguments or return type : shooting from the hip ..)
         uint fIndex;
-        if (CodeStream.Target6502 || TargetMCU)
+        if (CodeStream.Target6502 || CodeStream.TargetMinimal || TargetMCU)
         {
             if (GetFunctionIndex(name, ref fIndex))
             {

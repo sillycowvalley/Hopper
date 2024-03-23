@@ -39,7 +39,9 @@ program ASMGEN
         methods[methodIndex] = methodAddress;
         
         byte callInstruction;
+        byte ijmpInstruction;
         byte jumpInstruction;
+        byte jumpIndexinstruction;
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
             callInstruction = GetJSRInstruction();
@@ -50,46 +52,56 @@ program ASMGEN
             callInstruction = GetCALLInstruction();
             jumpInstruction = GetJMPInstruction();
         }
+        ijmpInstruction = GetiJMPInstruction();
         
+        jumpIndexinstruction = GetJMPIndexInstruction();
         uint index = 0;
         loop
         {
-            if (index == code.Count) { break; }
-            byte instruction = code[index];
-            byte instructionLength = AsmStream.GetInstructionLength(instruction);
             
-            /*
-            Print(methodIndex.ToString() + " " + index.ToHexString(4) + " " + instruction.ToHexString(2) + " " + OpCodes.GetName(instruction));
-            if (instructionLength == 2)
-            {
-                Print(" " + (code[index+1]).ToHexString(2));
-            }
-            else if (instructionLength == 3)
-            {
-                Print(" " + (code[index+2]).ToHexString(2) + (code[index+1]).ToHexString(2));
-            }
-            PrintLn ();
-            */
+            if (index == code.Count) { break; }
+            
+            byte instruction = code[index];
+            
+            uint instructionLength = AsmStream.GetInstructionLength(instruction);
             
             if (instruction == callInstruction)
             {
                 uint address = code[index+1] + code[index+2] << 8;
                 patches[output.Count+1] = address;
             }
-            if (instruction == jumpInstruction)
+            else if (instruction == ijmpInstruction)
             {
                 uint address = code[index+1] + code[index+2] << 8;
-                //Print("  " + methodIndex.ToString() + " " + index.ToHexString(4) + " " + address.ToHexString(4));
+                patches[output.Count+1] = address;
+                code[index] = jumpInstruction;
+            }
+            else if ((instruction == jumpInstruction) || (instruction == jumpIndexinstruction))
+            {
+                uint address = code[index+1] + (code[index+2] << 8);
                 address += methodAddress;
-                //PrintLn("  -> " + address.ToHexString(4));
                 code[index+1] = address.GetByte(0);
                 code[index+2] = address.GetByte(1);
             }
-            for (uint i=0; i < instructionLength; i++)
+            
+            for (uint i=0; i < UInt.Min(instructionLength, 3); i++)
             {
                 output.Append(code[index+i]);
             }
-            index += instructionLength;
+            index += UInt.Min(instructionLength, 3);
+            
+            if (instruction == jumpIndexinstruction)
+            {
+                for (uint ii = 0; ii < 0x80; ii++)
+                {
+                    uint mIndex = code[index] + (code[index+1] << 8);
+                    patches[output.Count] = mIndex;
+                    output.Append(code[index]);
+                    index++;
+                    output.Append(code[index]);
+                    index++;
+                }
+            }
         }
     }
     doCallPatches()

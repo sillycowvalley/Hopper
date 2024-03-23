@@ -890,7 +890,7 @@ unit CodePoints
                    )
                 {
                     uint callMethodIndex = iOperands[iIndex];
-                    if (Target6502) // delegates still use this
+                    if (Target6502|| TargetMinimal) // delegates still use this
                     {
                         callMethodIndex = callMethodIndex & 0x3FFF;
                     }
@@ -1293,7 +1293,7 @@ unit CodePoints
             if ((opCode == Instruction.CALL) || (opCode == Instruction.CALLB))
             {
                 uint callMethodIndex = iOperands[iIndex];
-                if (Target6502)
+                if (Target6502 || TargetMinimal)
                 {
                     callMethodIndex = callMethodIndex & 0x3FFF;
                 }

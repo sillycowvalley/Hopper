@@ -120,6 +120,10 @@ unit W65C02
     {
         pcRegister = operand;
     }
+    JMPIndexed(uint operand)
+    {
+        pcRegister = operand;
+    }
     BRA(int offset)
     {
         pcRegister = uint(long(pcRegister) + 2 + offset);
@@ -269,7 +273,12 @@ unit W65C02
             case AddressingModes.AbsoluteIndirectX: // (nnnn,X)
             {
                 operand = memory[pcRegister+1] + (memory[pcRegister+2] << 8);
-                Die(0x0A);
+                //PrintLn("operand=" + operand.ToHexString(4));
+                operand = operand + xRegister;
+                //PrintLn("operand+xRegister=" + operand.ToHexString(4));
+                uint address = memory[operand] + (memory[operand+1] << 8);
+                //PrintLn("address=" + address.ToHexString(4));
+                operand = address;
             }
             case AddressingModes.Immediate:         // #nn
             case AddressingModes.ZeroPage:          // nn
@@ -331,6 +340,7 @@ unit W65C02
                 case 0x40: { RTI();        break; }
                 case 0x00: { BRK();        break; }
                 case 0x4C: { JMP(operand); break; } 
+                case 0x7C: { JMPIndexed(operand); break; } 
                 case 0x80: { BRA(offset);  break; }
                 
                 case 0x90: { if (!cFlag) { BRA(offset); break; } } // BCC
@@ -426,8 +436,8 @@ unit W65C02
                 
                 case 0x0A: 
                 { 
-                    cFlag = ((aRegister & 0x80) != 0);
-                    aRegister = aRegister << 1; CheckNZ(aRegister);                 // ASL A
+                    cFlag     = ((aRegister & 0x80) != 0);
+                    aRegister = (aRegister << 1) & 0xFF; CheckNZ(aRegister);        // ASL A
                 }
                 case 0x0E:                                                          // ASL nnnn
                 case 0x1E:                                                          // ASL nnnn,X
@@ -436,7 +446,47 @@ unit W65C02
                 { 
                     byte value = GetMemory(operand);
                     cFlag = ((value & 0x80) != 0);
-                    value = value << 1; CheckNZ(value); 
+                    value = (value << 1) & 0xFF; CheckNZ(value); 
+                    SetMemory(operand, value);                         
+                }
+                
+                case 0x2A: 
+                { 
+                    bool cAfter = ((aRegister & 0x80) != 0);
+                    aRegister   = ((aRegister << 1) & 0xFF) | (cFlag ? 1 : 0); 
+                    cFlag       = cAfter;
+                    CheckNZ(aRegister);                                             // ROL A
+                }
+                case 0x2E:                                                          // ROL nnnn
+                case 0x3E:                                                          // ROL nnnn,X
+                case 0x26:                                                          // ROL nn
+                case 0x36:                                                          // ROL nn, X
+                { 
+                    byte value = GetMemory(operand);
+                    bool cAfter = ((value & 0x80) != 0);
+                    value = ((value << 1) & 0xFF) | (cFlag ? 1 : 0); 
+                    cFlag = cAfter; 
+                    CheckNZ(value); 
+                    SetMemory(operand, value);                         
+                }
+                
+                case 0x6A: 
+                { 
+                    bool cAfter = ((aRegister & 0x01) != 0);
+                    aRegister   = (aRegister >> 1) | (cFlag ? 0x80 : 0); 
+                    cFlag       = cAfter;
+                    CheckNZ(aRegister);                                             // ROR A
+                }
+                case 0x6E:                                                          // ROR nnnn
+                case 0x7E:                                                          // ROR nnnn,X
+                case 0x66:                                                          // ROR nn
+                case 0x76:                                                          // ROR nn, X
+                { 
+                    byte value  = GetMemory(operand);
+                    bool cAfter = ((value & 0x01) != 0);
+                    value       = (value >> 1) | (cFlag ? 0x80 : 0); 
+                    cFlag       = cAfter;
+                    CheckNZ(value); 
                     SetMemory(operand, value);                         
                 }
                 

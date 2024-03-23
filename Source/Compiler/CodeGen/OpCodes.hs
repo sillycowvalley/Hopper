@@ -222,6 +222,7 @@ unit OpCodes
                                 | AddressingModes.AbsoluteIndirect;
             }
             case "JSR":
+            case "iJMP":
             {
                 addressingModes = AddressingModes.Absolute;
             }
@@ -233,9 +234,9 @@ unit OpCodes
         return addressingModes;
     }
     
-    byte GetInstructionLength(byte instruction)
+    uint GetInstructionLength(byte instruction)
     {
-        byte length;
+        uint length;
         // https://llx.com/Neil/a2/opcodes.html
         byte cc  = instruction & 0b11;
         byte bbb = (instruction >> 2) & 0b111;
@@ -273,6 +274,7 @@ unit OpCodes
         switch (instruction)
         {
             case 0x20: { length = 3; } // JSR
+            case 0xFC: { length = 3; } // iJMP
             
             case 0x00: // BRK
             case 0x40: // RTI
@@ -320,7 +322,6 @@ unit OpCodes
             case 0x5F:
             case 0x6C: // JMP
             case 0x6F:
-            case 0x7C: // JMP
             case 0x7F:
             case 0x8F:
             case 0x9F:
@@ -331,6 +332,9 @@ unit OpCodes
             case 0xEF:
             case 0xFF:
             { length = 3; }
+            
+            case 0x7C: // JMP
+            { length = 3 + 256; }
             
             case 0x07:
             case 0x17:
@@ -834,6 +838,8 @@ unit OpCodes
             case 0xD7: { name = "SMB5"; }
             case 0xE7: { name = "SMB6"; }
             case 0xF7: { name = "SMB7"; }
+            
+            case 0xFC: { name = "iJMP"; }
         }
         return name;
     }
@@ -943,6 +949,7 @@ unit OpCodes
                 case "INC": { code = 0xEE; }
                 case "JMP": { code = 0x4C; }
                 case "JSR": { code = 0x20; }
+                case "iJMP":{ code = 0xFC; }
                 case "LDA": { code = 0xAD; }
                 case "LDX": { code = 0xAE; }
                 case "LDY": { code = 0xAC; }
@@ -1292,6 +1299,15 @@ unit OpCodes
         IE();
         return 0;
     }
+    byte GetJMPIndexInstruction()
+    {
+        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            return 0x7C; // JMP
+        }
+        IE();
+        return 0;
+    }
     byte GetNOPInstruction()
     {
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
@@ -1346,6 +1362,15 @@ unit OpCodes
         Die(0x0B);
         return 0;
     }
+    byte GetiJMPInstruction()
+    {
+        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            return 0xFC; // iJMP
+        }
+        Die(0x0B);
+        return 0;
+    }
     byte GetCALLInstruction()
     {
         if (Architecture == CPUArchitecture.Z80A)
@@ -1362,9 +1387,11 @@ unit OpCodes
         {
             switch (opCode)
             {
-                case 0x40:// RTI
-                case 0x60:// RTS
-                case 0xDB:// STP
+                case 0x40: // RTI
+                case 0x60: // RTS
+                case 0xDB: // STP
+                case 0xFC: // iJMP
+                case 0x7C: // JMPIndex
                 {
                     return true;
                 }
@@ -1383,12 +1410,12 @@ unit OpCodes
             isConditional = false;
             switch (instruction)
             {
-                case 0x4C:// JMP nnnn
+                case 0x4C: //  JMP nnnn
                 {
                     return true;
                 }
-                case 0x6C:// JMP [nnnn]
-                case 0x7C:// JMP [nnnn, X]
+                case 0x6C: // JMP [nnnn]
+                //case 0x7C: // JMP [nnnn, X]
                 case 0x80: // BRA
                 {
                     return true;

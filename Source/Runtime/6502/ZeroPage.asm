@@ -1,5 +1,21 @@
 unit ZP
 {
+    const byte F0                   = 0x90;
+    
+    const byte U0                   = 0xA0;
+    const byte U1                   = 0xA1;
+    const byte U2                   = 0xA2;
+    const byte U3                   = 0xA3;
+    
+    // used for UInt library
+    const byte UWIDE0               = U0;
+    const byte UWIDE1               = U1;
+    const byte UWIDE2               = U2;
+    const byte UWIDE3               = U3;
+    
+    // unsed for Int library for sign
+    const byte FSIGN                = F0;
+    
     const byte BRKL                 = 0x50; // .. 0x5F
     const byte BRKH                 = 0x60; // .. 0x6F
     

@@ -94,14 +94,18 @@ unit Highlighter
         return colour;
     }
     
-    <uint> HopperSource(string ln, string selectedWord, uint backColor, bool isAssemblerSource, ref uint blockCommentNesting)
+    <uint> HopperSource(string ln, string selectedWord, uint backColour, bool isAssemblerSource, ref uint blockCommentNesting)
     {
         <uint> colours;
         uint colour;
         
         isAssembler = isAssemblerSource;
         
+        uint lengthBefore = ln.Length;
+        ln = ln.TrimRight();
         uint length = ln.Length;
+        uint extras = lengthBefore -length;
+        
         string word;
         uint i=0;
         loop 
@@ -121,7 +125,7 @@ unit Highlighter
                         }
                         word = "";
                     }
-                    colours.Append(backColor);
+                    colours.Append(backColour);
                 }
             case '"':
                 {
@@ -277,6 +281,11 @@ unit Highlighter
             {
                 colours.Append((blockCommentNesting == 0) ? colour : Colour.Comment);
             }
+        }
+        while (extras != 0)
+        {
+            colours.Append(backColour);
+            extras--;
         }
         return colours;
     }

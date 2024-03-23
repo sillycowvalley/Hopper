@@ -347,8 +347,11 @@ unit Token
             
             instructionKeywords["AND"] = true;
             instructionKeywords["ORA"] = true;
+            instructionKeywords["EOR"] = true;
             instructionKeywords["LSR"] = true;
             instructionKeywords["ASL"] = true;
+            instructionKeywords["ROR"] = true;
+            instructionKeywords["ROL"] = true;
             instructionKeywords["ADC"] = true;
             instructionKeywords["SBC"] = true;
             

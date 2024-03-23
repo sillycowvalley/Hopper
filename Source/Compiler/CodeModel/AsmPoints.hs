@@ -9,6 +9,8 @@ unit AsmPoints
     <uint>    iOperands;    // original
     <uint>    iJumpTargets; // where can this instruction jump to?
     
+    < <uint> > iJumpTables;
+    
     <uint,bool>   iReachable;
     
     uint currentMethod;
@@ -26,8 +28,11 @@ unit AsmPoints
     byte opcodeBCS;
     byte opcodeBCC;
     byte opcodeRTS;
+    byte opcodeJSR;
+    byte opcodeiJMP;
     uint opcodeRTI;
     uint opcodeRTN;
+    uint opcodeJMPIndex;
     
     uint GetInstructionAddress(uint seekIndex)
     {
@@ -82,15 +87,18 @@ unit AsmPoints
     
     Reset()
     {
-        opcodeNOP = OpCodes.GetNOPInstruction();
-        opcodeBRA = OpCodes.GetBInstruction("");
-        opcodeBEQ = OpCodes.GetBInstruction("Z");
-        opcodeBNE = OpCodes.GetBInstruction("NZ");
-        opcodeBCS = OpCodes.GetBInstruction("C");
-        opcodeBCC = OpCodes.GetBInstruction("NC");
-        opcodeRTS = OpCodes.GetRETInstruction();
-        opcodeRTI = OpCodes.GetRETIInstruction();
-        opcodeRTN = OpCodes.GetRETNInstruction();
+        opcodeNOP  = OpCodes.GetNOPInstruction();
+        opcodeBRA  = OpCodes.GetBInstruction("");
+        opcodeBEQ  = OpCodes.GetBInstruction("Z");
+        opcodeBNE  = OpCodes.GetBInstruction("NZ");
+        opcodeBCS  = OpCodes.GetBInstruction("C");
+        opcodeBCC  = OpCodes.GetBInstruction("NC");
+        opcodeRTS  = OpCodes.GetRETInstruction();
+        opcodeRTI  = OpCodes.GetRETIInstruction();
+        opcodeRTN  = OpCodes.GetRETNInstruction();
+        opcodeJSR  = OpCodes.GetJSRInstruction();
+        opcodeiJMP = OpCodes.GetiJMPInstruction();
+        opcodeJMPIndex = GetJMPIndexInstruction();
         
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
@@ -112,25 +120,29 @@ unit AsmPoints
         iLengths.Clear();
         iOperands.Clear();
         iJumpTargets.Clear();
+        iJumpTables.Clear();
+        
         indexDebugInfo.Clear();
         iReachable.Clear();
         
         <byte> code = Code.GetMethodCode(currentMethod);
         uint codeLength = code.Count;
         uint i = 0;
+        
         loop
         {
             uint operand;
-            uint jumpTableSize;
-            <byte> extraContent;
+                      
+            
             uint opCode = code[i];
-            byte instructionLength = OpCodes.GetInstructionLength(byte(opCode));
+            uint instructionLength = OpCodes.GetInstructionLength(byte(opCode));
             switch (instructionLength)
             {
                 case 2:
                 {
                     operand = code[i+1];
                 }
+                case 3+256:
                 case 3:
                 {
                     operand = code[i+1] + (code[i+2] << 8);
@@ -141,12 +153,31 @@ unit AsmPoints
             iLengths.Append(instructionLength);
             iOperands.Append(operand);
             iJumpTargets.Append(OpCodes.InvalidAddress); // invalid for now
+            <uint> empty;
+            iJumpTables.Append(empty); // place holder
             
+            uint iIndex = iCodes.Count-1;
+            uint iTable = i + 3;
             i += instructionLength;
+            
+            if (opCode == opcodeJMPIndex)
+            {
+                <uint> jumps;
+                for (uint ii=0; ii < 0x80; ii++)
+                {
+                    uint mi = code[iTable] + (code[iTable+1] << 8);
+                    iTable += 2;
+                    jumps.Append(mi);
+                }
+                iJumpTables.SetItem(iIndex, jumps);
+            }
+            
             if (i == codeLength)
             {
                 break;
             }
+            
+            
         } // loop
         
         RebuildMaps();
@@ -188,12 +219,6 @@ unit AsmPoints
         uint iIndex;
         uint instructionAddress;
         
-#ifdef JUMP_DIAGNOSTICS
-        uint targetMethod = 1;
-        uint codeStart = 0xE07C;
-        if (currentMethod == targetMethod) { PrintLn(); PrintLn("InitializeJumpTargets:"); }
-#endif
-        
         loop
         {
             if (iIndex == iCodesLength)
@@ -206,11 +231,6 @@ unit AsmPoints
             if (OpCodes.IsJumpInstruction(opCode, ref addressingMode, ref isConditional))
             {
                 uint address = GetInstructionAddress(iIndex);
-                
-#ifdef JUMP_DIAGNOSTICS                
-                if (currentMethod == targetMethod) { Print((iIndex.ToString()).Pad(' ', 3) + (address+codeStart).ToHexString(4) + " " + opCode.ToHexString(2) + " " + OpCodes.GetName(byte(opCode)) + " "); }
-#endif
-                
                 uint operand           = iOperands[iIndex];
                 uint instructionLength = iLengths[iIndex];
                 
@@ -219,10 +239,6 @@ unit AsmPoints
             
                 if (addressingMode == AddressingModes.Absolute) // nnnn
                 {
-#ifdef JUMP_DIAGNOSTICS
-                    if (currentMethod == targetMethod) { Print("nnnn: " + (operand+codeStart).ToHexString(4) + " "); }
-#endif                    
-                    uint jumpIndex;
                     jumpTargetAddress = long(operand);
                 }
                 else if (addressingMode == AddressingModes.Relative) // dd
@@ -232,13 +248,7 @@ unit AsmPoints
                     {
                         offset = offset - 256; // 255 -> -1
                     }
-#ifdef JUMP_DIAGNOSTICS
-                    if (currentMethod == targetMethod) { Print(offset.ToString() + " "); }
-#endif
                     jumpTargetAddress = long(instructionAddress) + offset + instructionLength;
-#ifdef JUMP_DIAGNOSTICS
-                    if (currentMethod == targetMethod) { Print("dd: " + (jumpTargetAddress+codeStart).ToHexString(4) + " "); }
-#endif
                 }
                 else if (addressingMode == AddressingModes.ZeroPageRelative) // nn,dd
                 {
@@ -247,13 +257,7 @@ unit AsmPoints
                     {
                         offset = offset - 256; // 255 -> -1
                     }
-#ifdef JUMP_DIAGNOSTICS
-                    if (currentMethod == targetMethod) { Print("nn,dd:" + (operand & 0xFF).ToHexString(2) + " " + offset.ToString() + " "); }
-#endif
                     jumpTargetAddress = long(instructionAddress) + offset + instructionLength;
-#ifdef JUMP_DIAGNOSTICS
-                    if (currentMethod == targetMethod) { Print((jumpTargetAddress+codeStart).ToHexString(4) + " ");}
-#endif
                 }
                 else
                 {
@@ -270,10 +274,6 @@ unit AsmPoints
                     // does not mess up reachableness.
                     jumpIndex = iIndex;
                 }
-#ifdef JUMP_DIAGNOSTICS
-                if (currentMethod == targetMethod) { PrintLn("-> " + jumpIndex.ToString()); }
-#endif
-                
                 iJumpTargets.SetItem(iIndex, jumpIndex);
             }
             instructionAddress += iLengths[iIndex];
@@ -290,19 +290,15 @@ unit AsmPoints
         RebuildMaps();
         
         //PrintLn("Save:");
-        
         loop
         {
+            
             uint opCode = iCodes[index];
             uint instructionLength = iLengths[index];
             
             code.Append(byte(opCode));
             
-            if (instructionLength > 3)
-            {
-                Die(0x0B);
-            }
-            else if (instructionLength > 1)
+            if (instructionLength > 1)
             {
                 uint operand = iOperands[index];
                 
@@ -330,8 +326,6 @@ unit AsmPoints
                         }
                         jumpAddress = currentAddress; // jump to self, don't mess with reachability
                     }
-                    //Print(jumpTarget.ToString() + " -> " + (jumpAddress + 0xE004).ToHexString(4) + " ");
-                    
                     if ((addressingMode == AddressingModes.Relative) || (addressingMode == AddressingModes.ZeroPageRelative))
                     {
                         long offset = jumpAddress - currentAddress - instructionLength;
@@ -340,7 +334,6 @@ unit AsmPoints
                             PrintLn("Bad Jump:  " + offset.ToString());
                             Die(0x0B);
                         }
-                        //Print(offset.ToString() + " ");
                         if (offset < 0)
                         {
                             offset = offset + 256;
@@ -365,17 +358,32 @@ unit AsmPoints
                     //PrintLn();
                 }
                 
-                
-                byte lsb = byte(operand & 0xFF);
-                byte msb = byte(operand >> 8);
-                code.Append(lsb);
-                if (instructionLength > 2)
+                if (opCode == opcodeJMPIndex)
                 {
-                    code.Append(msb);
+                    // JMP [nnnn,X] always just to the table just ahead of itself
+                    uint jumpAddress = code.Count+2;
+                    code.Append(byte(jumpAddress & 0xFF));
+                    code.Append(byte(jumpAddress >> 8));
+                    <uint> jumps = iJumpTables[index];
+                    foreach (var iMethod in jumps)
+                    {
+                        code.Append(byte(iMethod & 0xFF));
+                        code.Append(byte(iMethod >> 8));
+                    }
                 }
-                else if (msb != 0)
+                else
                 {
-                    Die(0x0B); // why is MSB != 0 for instructionLength == 2?
+                    byte lsb = byte(operand & 0xFF);
+                    byte msb = byte(operand >> 8);
+                    code.Append(lsb);
+                    if (instructionLength > 2)
+                    {
+                        code.Append(msb);
+                    }
+                    else if (msb != 0)
+                    {
+                        Die(0x0B); // why is MSB != 0 for instructionLength == 2?
+                    }
                 }
             }
             
@@ -505,10 +513,18 @@ unit AsmPoints
             if (iReachable[iIndex])
             {
                 uint opCode = iCodes[iIndex];
-                if (opCode == opcodeCALL)
+                if ((opCode == opcodeCALL) || (opCode == opcodeiJMP))
                 {
                     uint callMethodIndex = iOperands[iIndex];
                     methodsCalled[callMethodIndex] = true;
+                }
+                if (opCode == opcodeJMPIndex)
+                {
+                    <uint> methods = iJumpTables[iIndex];
+                    foreach (var method in methods)
+                    {
+                        methodsCalled[method] = true;
+                    }
                 }
             }
             iIndex++;
@@ -593,6 +609,8 @@ unit AsmPoints
         iLengths.Remove(iRemoval);
         iOperands.Remove(iRemoval);
         iJumpTargets.Remove(iRemoval);
+        
+        iJumpTables.Remove(iRemoval);
         
         // iReachable
         <uint,bool>   newReachable;
@@ -928,7 +946,7 @@ unit AsmPoints
                     {
                         // if the first branch is conditional, we need to be careful if we 
                         // also allow conditional for the second branch: same conditions for both?
-                        byte instructionLength = OpCodes.GetInstructionLength(byte(opCode0));
+                        uint instructionLength = OpCodes.GetInstructionLength(byte(opCode0));
                         long offset = targetAddress - (myAddress+instructionLength);
                         if ((offset >= -128) && (offset <= 127))
                         {
@@ -975,6 +993,37 @@ unit AsmPoints
             {
                 RemoveInstruction(iIndex-1);
                 modified = true;
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    
+    // JSR RTS -> iJMP
+    bool OptimizeJSRRTS()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 1;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            uint opCode1 = iCodes[iIndex-1];
+            uint opCode0 = iCodes[iIndex];
+            if ((opCode0 == opcodeRTS) && (opCode1 == opcodeJSR))
+            {
+                if (!IsTargetOfJumps(iIndex))
+                {
+                    iCodes.SetItem(iIndex-1, opcodeiJMP);
+                    modified = true;
+                }
             }
             iIndex++;
         } // loop

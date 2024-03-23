@@ -1099,7 +1099,7 @@ unit Expression
                 {
                     break;
                 }
-                if (CodeStream.Target6502 && IsWordValueType(typeString))
+                if ((CodeStream.Target6502 || CodeStream.TargetMinimal) && IsWordValueType(typeString))
                 {
                     CodeStream.AddInstructionSysCall0("Array", "GetItemUInt");
                 }
@@ -1392,7 +1392,7 @@ unit Expression
             Symbols.OverloadToCompile(wiOverload); 
             
             // push function index to stack
-            if (CodeStream.Target6502)
+            if ((CodeStream.Target6502 || CodeStream.TargetMinimal))
             {
                 if (wiOverload <= 0x3FFF)
                 {

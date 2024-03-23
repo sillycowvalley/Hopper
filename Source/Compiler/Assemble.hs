@@ -150,12 +150,28 @@ program Assemble
         }
         return success;
     }
+    
     bool assembleSwitchStatement()
     {
         bool success = false;
         loop
         {
+            uint opcodeJSR = GetJSRInstruction();
+            uint opcodeJMP = GetJMPInstruction();
+            bool tableCandidate;
+            
+            <byte,uint> jumpRecords; // <caseLabel,methodIndex>
+            uint defaultIndex;
+            
+            <uint> caseLabels;
             <uint> jumpEnds;
+            
+            uint jumpToTable = AsmStream.NextAddress;
+            uint fakeJump = jumpToTable + 3;
+            AsmStream.AppendCode(byte(opcodeJMP));
+            AsmStream.AppendCode(byte(fakeJump & 0xFF));
+            AsmStream.AppendCode(byte(fakeJump >> 8));
+            
             Parser.Advance(); // switch
             Parser.Consume(HopperToken.LParen);
             if (Parser.HadError)
@@ -173,6 +189,7 @@ program Assemble
             char registerName = (currentToken["lexeme"]).GetChar(0);
             Parser.Advance();
             
+            tableCandidate = (registerName == 'X'); // JMP [nnnn,X]
             Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
@@ -198,8 +215,9 @@ program Assemble
                     Parser.ErrorAtCurrent("unexpected EOF in 'switch'");
                     break;
                 }
+                <byte> currentCaseLabels;
+                bool   isDefault = false;
                 
-                bool isDefault = false;
                 if (!Parser.CheckKeyword("case"))
                 {
                     if (Parser.CheckKeyword("default"))
@@ -252,8 +270,16 @@ program Assemble
                         }
                         else
                         {
-                            Parser.Error("unexpected 'case' constant '" + caseConstant + "'");                
+                            Parser.Error("unexpected 'case' constant '" + caseConstant + "'");   
+                            break;             
                         }
+                        if (caseLabels.Contains(cc))
+                        {
+                            Parser.Error("duplicate 'case' constant '" + caseConstant + "'");
+                            break;
+                        }
+                        caseLabels.Append(cc);
+                        currentCaseLabels.Append(byte(cc));
                     
                     } // !isDefault
                     
@@ -299,10 +325,45 @@ program Assemble
                     uint nextAddress = AsmStream.NextAddress;
                     AsmStream.PatchJump(jumpMatch, nextAddress);   
                 }
-                     
+                 
+                uint beforeBlock = AsmStream.NextAddress;
+                    
                 Block.PushBlock(false); // not loop context
                 assembleBlock();
                 Block.PopBlock();
+                
+                uint afterBlock = AsmStream.NextAddress;
+                uint blockSize  = afterBlock - beforeBlock;
+                if (tableCandidate)
+                {
+                    if (blockSize != 3)
+                    {
+                        tableCandidate = false;
+                    }
+                    else
+                    {
+                        byte opCode  = AsmStream.GetCodeByte(afterBlock - blockSize);
+                        uint methodIndex = AsmStream.GetCodeByte(afterBlock - blockSize+1) + (AsmStream.GetCodeByte(afterBlock - blockSize+2) << 8);
+                        if (opCode == opcodeJSR)
+                        {
+                            if (isDefault)
+                            {
+                                defaultIndex = methodIndex;
+                            }
+                            else
+                            {
+                                foreach (var caseLabel in currentCaseLabels)
+                                {
+                                    jumpRecords[caseLabel] = methodIndex;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            tableCandidate = false;
+                        }
+                    }
+                }
                 
                 AsmStream.InsertDebugInfo(true); 
                 
@@ -323,6 +384,84 @@ program Assemble
             {
                 uint ui = jumpEnd;
                 AsmStream.PatchJump(ui, endAddress);
+            }
+            
+            tableCandidate = tableCandidate && (defaultIndex != 0);
+            tableCandidate = tableCandidate && (jumpRecords.Count > 8);
+            if (tableCandidate)
+            {
+                tableCandidate = false;
+                currentToken   = Parser.CurrentToken;
+                tokenType      = Token.GetType(currentToken);
+                if (tokenType == HopperToken.Keyword)
+                {
+                    tableCandidate = currentToken["lexeme"] == "return";
+                }
+                else if (tokenType == HopperToken.RBrace)
+                {
+                    tableCandidate = (Block.BlockDepth() == 2); // program | unit + current method
+                }
+            }
+            if (tableCandidate)
+            {   
+                <uint> jumpList;
+                uint i = 0;
+                for (; i < 256; i++)
+                {
+                    if (!jumpRecords.Contains(byte(i)))
+                    {
+                        jumpList.Append(defaultIndex);
+                    }
+                    else
+                    {
+                        jumpList.Append(jumpRecords[i]);
+                    }
+                }
+                
+                uint tableAddress = AsmStream.NextAddress;
+                AsmStream.PatchJump(jumpToTable, tableAddress);
+                
+                AsmStream.AddInstructionCMP('X', 0x80);
+                AsmStream.AppendCode(GetBInstruction("NC"));
+                AsmStream.AppendCode(+3);
+                uint jumpSecond = AsmStream.NextAddress;
+                AsmStream.AddInstructionJ();
+            
+                OpCodes.EmitInstruction("TXA");
+                OpCodes.EmitInstruction("ASL");
+                OpCodes.EmitInstruction("TAX");
+                
+                uint indexJump  = AsmStream.NextAddress;
+                fakeJump = indexJump + 3;
+                AsmStream.AppendCode(GetJMPIndexInstruction()); // JMP [nnnn,X]
+                AsmStream.AppendCode(byte(fakeJump & 0xFF));
+                AsmStream.AppendCode(byte(fakeJump >> 8));
+                for (uint ii=0; ii < 0x80; ii++)
+                {
+                    uint methodIndex = jumpList[ii];
+                    AsmStream.AppendCode(byte(methodIndex & 0xFF));
+                    AsmStream.AppendCode(byte(methodIndex >> 8));
+                }
+                
+                uint secondTableAddress = AsmStream.NextAddress;
+                AsmStream.PatchJump(jumpSecond, secondTableAddress);
+                OpCodes.EmitInstruction("TXA");
+                OpCodes.EmitInstruction("SEC");
+                OpCodes.EmitInstruction("SBC", 0x80);
+                OpCodes.EmitInstruction("ASL");
+                OpCodes.EmitInstruction("TAX");
+                
+                indexJump  = AsmStream.NextAddress;
+                fakeJump = indexJump + 3;
+                AsmStream.AppendCode(0x7C); // JMP [nnnn,X]
+                AsmStream.AppendCode(byte(fakeJump & 0xFF));
+                AsmStream.AppendCode(byte(fakeJump >> 8));
+                for (uint ii=0x80; ii < 0x100; ii++)
+                {
+                    uint methodIndex = jumpList[ii];
+                    AsmStream.AppendCode(byte(methodIndex & 0xFF));
+                    AsmStream.AppendCode(byte(methodIndex >> 8));
+                }
             }
             break;
             

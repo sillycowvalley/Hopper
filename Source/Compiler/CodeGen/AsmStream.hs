@@ -26,6 +26,10 @@ unit AsmStream
             return currentStream.Count;
         } 
     }
+    byte GetCodeByte(uint index)
+    {
+        return currentStream[index];
+    }
      
     AppendCode(<byte> code)
     {
@@ -164,13 +168,13 @@ unit AsmStream
         disassembly +=  " 0x" + instruction.ToHexString(2);
         disassembly += " ";
         
-        byte length = GetInstructionLength(instruction);
+        uint length = GetInstructionLength(instruction);
         string operandString = "         "; 
         if (length == 2)
         {
             operandString = "0x" + operand.ToHexString(2) + "     "; 
         }
-        else if (length == 3)
+        else if (length >= 3)
         {
             
             operandString = "0x" + (operand & 0xFF).ToHexString(2) + " 0x" + (operand >> 8).ToHexString(2); 
@@ -229,9 +233,9 @@ unit AsmStream
         return disassembly;
     }
                     
-    byte GetInstructionLength(byte instruction)
+    uint GetInstructionLength(byte instruction)
     {
-        byte length;
+        uint length;
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
             length = OpCodes.GetInstructionLength(instruction);

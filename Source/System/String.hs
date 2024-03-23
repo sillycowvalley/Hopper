@@ -417,6 +417,13 @@ unit String
     TrimLeft(ref string build) system;
     
     TrimRight(ref string build) system;
+    
+    string TrimRight(string this)
+    {
+        string result = this;
+        TrimRight(ref result);
+        return result;
+    }
 
     string ToUpper(string this) system;
     ToUpper(ref string this) system;

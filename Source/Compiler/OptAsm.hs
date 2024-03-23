@@ -242,6 +242,11 @@ program OptAsm
             {
                 modified = true;
             }
+            // JSR|RTS - > iJMP
+            if (AsmPoints.OptimizeJSRRTS())
+            {
+                modified = true;
+            }
             // TODO:
             // CMP #0 after LDA, LDX, LDY, INC, INX, INY, DEC, DEX, DEY, INA, DEA, AND, ORA, EOR, ASL, LSR, ROL, 
             //              ROR, PLA, PLX, PLY, SBC, ADC, TAX, TXA, TAY, TYA, and TSX

@@ -226,12 +226,16 @@ program DASM
                 string src;
                 string srcName;
                 
+                uint jumpIndexinstruction = GetJMPIndexInstruction();
+                        
+                bool secondHalf = false;        
                 uint index = 4;
                 loop
                 {
                     if (index == code.Count-6) { break; }
+                    
                     byte instruction = code[index];
-                    byte length      = AsmStream.GetInstructionLength(instruction);
+                    uint length      = UInt.Min(AsmStream.GetInstructionLength(instruction), 3);
                     
                     codeSize += length;
                     instructionCount++;
@@ -296,6 +300,40 @@ program DASM
                     
                     index += length;
                     address += length;
+                    
+                    if (instruction == jumpIndexinstruction)
+                    {
+                        string previousComment;
+                        for (byte i = 0; i < 0x80; i++)
+                        {
+                            uint tableEntry = code[index] + code[index+1] << 8; 
+                            comment = "";
+                            if (methodAddresses.Contains(tableEntry))
+                            {
+                                uint methodIndex = methodAddresses[tableEntry];
+                                <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
+                                if (methodSymbols.Count != 0)
+                                {
+                                    string nm = methodSymbols["name"];
+                                    comment = "// -> " + nm + "()";
+                                    if (comment == previousComment)
+                                    {
+                                        comment = "// ->            ''";
+                                    }
+                                    else
+                                    {
+                                        previousComment = comment;
+                                    }
+                                }
+                            }
+                            uint ii = secondHalf ? (i + 0x80) : i;
+                            hasmFile.Append("    0x" + address.ToHexString(4) + " 0x" + ii.ToHexString(2) + " 0x" + 
+                                                       tableEntry.ToHexString(4) + "    " + comment + char(0x0A)); 
+                            index += 2;
+                            address += 2;
+                        }
+                        secondHalf = !secondHalf;
+                    }
                 }
                 hasmFile.Append("" +  char(0x0A));
                 uint vector = code[index] + code[index+1] << 8;

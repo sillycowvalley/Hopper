@@ -86,6 +86,7 @@ unit BuildCommand
                         if (   pdValues.Contains("MCU")
                             || pdValues.Contains("IHEX")             // generate .ihex for local debugger
                             || pdValues.Contains("SERIAL_CONSOLE")
+                            || pdValues.Contains("MINIMAL_RUNTIME")
                             || pdValues.Contains("HOPPER_6502")
                            )
                         {
@@ -432,10 +433,10 @@ unit BuildCommand
                     }
                 }
             }
-            if (isHopper)
+            if (isHopper || isAssembly)
             {
                 // debugger needs .hexe file, even for 6502
-                if (GenerateIHex)
+                if (GenerateIHex || isAssembly)
                 {
                     hexePath = ihexPath;
                 }
