@@ -10,7 +10,7 @@ program DASM
     uses "JSON/JSON"
     uses "JSON/Code"
     
-    uses "CODEGEN/AsmStream"
+    uses "CODEGEN/Asm6502"
     
     uses "Tokens/Token"
     uses "Tokens/Scanner"
@@ -235,7 +235,7 @@ program DASM
                     if (index == code.Count-6) { break; }
                     
                     byte instruction = code[index];
-                    uint length      = UInt.Min(AsmStream.GetInstructionLength(instruction), 3);
+                    uint length      = UInt.Min(Asm6502.GetInstructionLength(instruction), 3);
                     
                     codeSize += length;
                     instructionCount++;
@@ -295,7 +295,7 @@ program DASM
                         }
                     }
                     
-                    string disassembly = AsmStream.Disassemble(address, instruction, operand);
+                    string disassembly = Asm6502.Disassemble(address, instruction, operand);
                     hasmFile.Append(disassembly.Pad(' ', 48) + comment + char(0x0A));
                     
                     index += length;

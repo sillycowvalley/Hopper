@@ -1,7 +1,6 @@
 unit AsmPoints
 {
-    uses "../CodeGen/AsmStream"
-    uses "../CodeGen/OpCodes"
+    uses "../CodeGen/Asm6502"
     
     
     <uint>    iCodes;
@@ -31,7 +30,6 @@ unit AsmPoints
     byte opcodeJSR;
     byte opcodeiJMP;
     uint opcodeRTI;
-    uint opcodeRTN;
     uint opcodeJMPIndex;
     
     uint GetInstructionAddress(uint seekIndex)
@@ -87,27 +85,18 @@ unit AsmPoints
     
     Reset()
     {
-        opcodeNOP  = OpCodes.GetNOPInstruction();
-        opcodeBRA  = OpCodes.GetBInstruction("");
-        opcodeBEQ  = OpCodes.GetBInstruction("Z");
-        opcodeBNE  = OpCodes.GetBInstruction("NZ");
-        opcodeBCS  = OpCodes.GetBInstruction("C");
-        opcodeBCC  = OpCodes.GetBInstruction("NC");
-        opcodeRTS  = OpCodes.GetRETInstruction();
-        opcodeRTI  = OpCodes.GetRETIInstruction();
-        opcodeRTN  = OpCodes.GetRETNInstruction();
-        opcodeJSR  = OpCodes.GetJSRInstruction();
-        opcodeiJMP = OpCodes.GetiJMPInstruction();
+        opcodeNOP  = Asm6502.GetNOPInstruction();
+        opcodeBRA  = Asm6502.GetBInstruction("");
+        opcodeBEQ  = Asm6502.GetBInstruction("Z");
+        opcodeBNE  = Asm6502.GetBInstruction("NZ");
+        opcodeBCS  = Asm6502.GetBInstruction("C");
+        opcodeBCC  = Asm6502.GetBInstruction("NC");
+        opcodeRTS  = Asm6502.GetRETInstruction();
+        opcodeRTI  = Asm6502.GetRTIInstruction();
+        opcodeJSR  = Asm6502.GetJSRInstruction();
+        opcodeiJMP = Asm6502.GetiJMPInstruction();
         opcodeJMPIndex = GetJMPIndexInstruction();
-        
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            opcodeCALL = OpCodes.GetJSRInstruction();
-        }
-        if (Architecture == CPUArchitecture.Z80A)
-        {
-            opcodeCALL = OpCodes.GetCALLInstruction();
-        }
+        opcodeCALL = Asm6502.GetJSRInstruction();
         inlineMethodCandidates.Clear();
     }
     bool InlineCandidatesExist { get { return inlineMethodCandidates.Count != 0; } }
@@ -135,7 +124,7 @@ unit AsmPoints
                       
             
             uint opCode = code[i];
-            uint instructionLength = OpCodes.GetInstructionLength(byte(opCode));
+            uint instructionLength = Asm6502.GetInstructionLength(byte(opCode));
             switch (instructionLength)
             {
                 case 2:
@@ -152,7 +141,7 @@ unit AsmPoints
             iCodes.Append(opCode);
             iLengths.Append(instructionLength);
             iOperands.Append(operand);
-            iJumpTargets.Append(OpCodes.InvalidAddress); // invalid for now
+            iJumpTargets.Append(Asm6502.InvalidAddress); // invalid for now
             <uint> empty;
             iJumpTables.Append(empty); // place holder
             
@@ -228,7 +217,7 @@ unit AsmPoints
             uint opCode  = iCodes[iIndex];
             AddressingModes addressingMode;
             bool isConditional;
-            if (OpCodes.IsJumpInstruction(opCode, ref addressingMode, ref isConditional))
+            if (Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional))
             {
                 uint address = GetInstructionAddress(iIndex);
                 uint operand           = iOperands[iIndex];
@@ -304,13 +293,13 @@ unit AsmPoints
                 
                 AddressingModes addressingMode;
                 bool isConditional;
-                bool isJump = OpCodes.IsJumpInstruction(opCode, ref addressingMode, ref isConditional);
+                bool isJump = Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional);
                 if (isJump)
                 {
                     // use the index to calculate the new offset
                     long currentAddress = indexMap[index];
                     
-                    //Print((index.ToString()).Pad(' ', 3) + (currentAddress+0xE004).ToHexString(4) + " " + opCode.ToHexString(2) + " " + OpCodes.GetName(byte(opCode)) + " ");
+                    //Print((index.ToString()).Pad(' ', 3) + (currentAddress+0xE004).ToHexString(4) + " " + opCode.ToHexString(2) + " " + Asm6502.GetName(byte(opCode)) + " ");
                     
                     uint jumpTarget     = iJumpTargets[index];
                     long jumpAddress;
@@ -462,7 +451,7 @@ unit AsmPoints
                 uint opCode = iCodes[iIndex];
                 AddressingModes addressingMode;
                 bool isConditional;
-                bool isJump = OpCodes.IsJumpInstruction(opCode, ref addressingMode, ref isConditional);
+                bool isJump = Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional);
                 if (isJump && isConditional)
                 {
                     // conditional branch: explore both paths
@@ -476,7 +465,7 @@ unit AsmPoints
                     iIndex = iJumpTargets[iIndex];
                     continue;
                 }
-                else if (OpCodes.IsMethodExitInstruction(opCode))
+                else if (Asm6502.IsMethodExitInstruction(opCode))
                 {
                     break; // end of this path
                 }
@@ -680,7 +669,7 @@ unit AsmPoints
         for (uint iIndex = 0; iIndex < iCodeLength; iIndex++)
         {
             uint jumpTarget = iJumpTargets[iIndex];
-            if (jumpTarget != OpCodes.InvalidAddress)
+            if (jumpTarget != Asm6502.InvalidAddress)
             {
                 if (jumpTarget > iRemoval)
                 {
@@ -742,7 +731,7 @@ unit AsmPoints
             {
                 removeIt = true;
             }
-            else if (OpCodes.IsJumpInstruction(opCode, ref addressingMode, ref isConditional) 
+            else if (Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional) 
                   //&& !isConditional - makes no difference if it is conditional, still does nothing
                   && (addressingMode != AddressingModes.AbsoluteIndirect)  // [nnnn]
                   && (addressingMode != AddressingModes.AbsoluteIndirectX) // [nnnn,X]
@@ -782,7 +771,7 @@ unit AsmPoints
             AddressingModes addressingMode;
             bool isConditional;
             
-            if (OpCodes.IsJumpInstruction(opCode, ref addressingMode, ref isConditional) 
+            if (Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional) 
                   && !isConditional
                   && (addressingMode == AddressingModes.Absolute) // nnnn
                )
@@ -826,8 +815,8 @@ unit AsmPoints
             AddressingModes addressingMode1;
             bool isConditional1;
             
-            if (   OpCodes.IsJumpInstruction(opCode1, ref addressingMode1, ref isConditional1) &&  isConditional1
-                && OpCodes.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) && !isConditional0
+            if (   Asm6502.IsJumpInstruction(opCode1, ref addressingMode1, ref isConditional1) &&  isConditional1
+                && Asm6502.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) && !isConditional0
                 && (addressingMode0 == AddressingModes.Relative)
                 && (addressingMode1 != AddressingModes.ZeroPageRelative) // not BBSx or BBRx
                )
@@ -875,7 +864,7 @@ unit AsmPoints
             AddressingModes addressingMode0;
             bool isConditional0;
             
-            if (   OpCodes.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) && !isConditional0
+            if (   Asm6502.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) && !isConditional0
                 && ((addressingMode0 == AddressingModes.Relative) || (addressingMode0 == AddressingModes.Absolute))
                )
             {
@@ -884,7 +873,7 @@ unit AsmPoints
                 
                 uint iTarget = iJumpTargets[iIndex];
                 uint opCode1 = iCodes[iTarget];
-                if (OpCodes.IsMethodExitInstruction(opCode1))
+                if (Asm6502.IsMethodExitInstruction(opCode1))
                 {
                     iCodes.SetItem(iIndex, opCode1);
                     iLengths.SetItem(iIndex, iLengths[iTarget]);
@@ -918,7 +907,7 @@ unit AsmPoints
             AddressingModes addressingMode0;
             bool isConditional0;
             
-            if (   OpCodes.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) 
+            if (   Asm6502.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) 
                 && ((addressingMode0 == AddressingModes.Relative) || (addressingMode0 == AddressingModes.Absolute))
                )
             {
@@ -927,7 +916,7 @@ unit AsmPoints
                 
                 uint iTarget0 = iJumpTargets[iIndex];
                 uint opCode1 = iCodes[iTarget0];                               // the 2nd jump can be conditional - future optimization ..
-                if (   OpCodes.IsJumpInstruction(opCode1, ref addressingMode1, ref isConditional1) && !isConditional1 
+                if (   Asm6502.IsJumpInstruction(opCode1, ref addressingMode1, ref isConditional1) && !isConditional1 
                     && ((addressingMode1 == AddressingModes.Relative) || (addressingMode1 == AddressingModes.Absolute))
                     && (iTarget0 != iIndex) // circular
                    )
@@ -946,7 +935,7 @@ unit AsmPoints
                     {
                         // if the first branch is conditional, we need to be careful if we 
                         // also allow conditional for the second branch: same conditions for both?
-                        uint instructionLength = OpCodes.GetInstructionLength(byte(opCode0));
+                        uint instructionLength = Asm6502.GetInstructionLength(byte(opCode0));
                         long offset = targetAddress - (myAddress+instructionLength);
                         if ((offset >= -128) && (offset <= 127))
                         {
@@ -985,11 +974,6 @@ unit AsmPoints
                 modified = true;
             }
             else if ((opCode0 == opcodeRTI) && (opCode1 == opcodeRTI))
-            {
-                RemoveInstruction(iIndex-1);
-                modified = true;
-            }
-            else if ((opCode0 == opcodeRTN) && (opCode1 == opcodeRTN))
             {
                 RemoveInstruction(iIndex-1);
                 modified = true;

@@ -149,7 +149,7 @@ unit Block
         
         
 #ifdef ASSEMBLER
-        bool isUse = AsmStream.InUse;
+        bool isUse = Asm6502.InUse;
 #else
         bool isUse = CodeStream.InUse;
 #endif
@@ -167,7 +167,7 @@ unit Block
                 {
                     // Hopper exit
                 }
-                else if (AsmStream.LastInstructionIsRET(iLast == 0))
+                else if (Asm6502.LastInstructionIsRET(iLast == 0))
                 {
                     // Return logic already dealt with
                 }
@@ -244,7 +244,7 @@ unit Block
                 foreach (var breakJump in breakPatches)
                 {
 #ifdef ASSEMBLER
-                    AsmStream.PatchJump(breakJump, breakTarget);
+                    Asm6502.PatchJump(breakJump, breakTarget);
 #else
                     CodeStream.PatchJump(breakJump, breakTarget);
 #endif
@@ -263,7 +263,7 @@ unit Block
                 foreach (var continueJump in continuePatches)
                 {
 #ifdef ASSEMBLER
-                    AsmStream.PatchJump(continueJump, continueTarget);
+                    Asm6502.PatchJump(continueJump, continueTarget);
 #else
                     CodeStream.PatchJump(continueJump, continueTarget);
 #endif

@@ -6,7 +6,7 @@ program Runtime
 //#define CHECKED      // mainly stack checks, range checks and division by zero
 //#define MEMORYLEAKS
 
-#define LOCALDEBUGGER  // for debugging portable runtime locally
+//#define LOCALDEBUGGER  // for debugging portable runtime locally
 
     uses "Emulation/Minimal" // minimal use of actual 'system' APIs
     uses "Emulation/Memory"

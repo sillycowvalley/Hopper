@@ -1905,7 +1905,7 @@ unit Editor
                             }
                             if (parts[1] == "CPU_Z80")
                             {
-                                cpuArchitecture = CPUArchitecture.Z80A;
+                                cpuArchitecture = CPUArchitecture.Z80;
                                 break;
                             }
                         }

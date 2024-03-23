@@ -17,10 +17,11 @@ unit BuildCommand
     
     bool isHopper;
     bool isAssembly;
+    bool isZ80;
     bool generateIHex;
     bool launchIHex;
     
-    CPUArchitecture cpuArchitecture;
+    CPUArchitecture cpuArchitecture; // for toolchain
     
     bool GenerateIHex 
     { 
@@ -192,10 +193,51 @@ unit BuildCommand
             arguments.Append("-g");
             arguments.Append(col.ToString());
             arguments.Append(row.ToString());
-            if (isAssembly)
+            
+            string arch;
+            switch (Architecture)
             {
-                cpuArchitecture = Architecture;
-                arguments.Append("-a"); // TODO
+                case CPUArchitecture.W65C02:
+                {
+                    target = " for 65C02"; 
+                    arch = "W65C02";
+                    cpuArchitecture = Architecture;
+                }
+                case CPUArchitecture.M6502:
+                {
+                    target = " for 6502";
+                    arch = "M6502";
+                    cpuArchitecture = Architecture;
+                }
+                case CPUArchitecture.Z80:
+                {
+                    target = " for Z80";
+                    arch = "Z80A";
+                    cpuArchitecture = Architecture;
+                    isZ80 = true;
+                }
+                default: // includes None
+                {
+                    cpuArchitecture = CPUArchitecture.Hopper; // a good starting assumption
+                }
+            }
+            
+            if (isAssembly) // set by source being ".asm"
+            {
+                if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502))
+                {
+                    Editor.SetStatusBarText("#define CPU_6502 or CPU_65C02 for '.asm' projects");
+                    break;
+                }
+                arguments.Append("-a");
+            }
+            else
+            {
+                if ((cpuArchitecture == CPUArchitecture.W65C02) || (cpuArchitecture == CPUArchitecture.M6502))
+                {
+                    Editor.SetStatusBarText("#define CPU_6502 and CPU_65C02 only valid for '.asm' projects");
+                    break;
+                }
             }
             error = Runtime.Execute(binaryPath, arguments);
             if (error != 0)
@@ -205,22 +247,6 @@ unit BuildCommand
             }
             if (isAssembly)
             {
-                string arch;
-                if (cpuArchitecture == CPUArchitecture.W65C02)
-                {
-                    target = " for 65C02"; 
-                    arch = "W65C02";
-                }
-                if (cpuArchitecture == CPUArchitecture.M6502)
-                {
-                    target = " for 6502";
-                    arch = "M6502";
-                }
-                if (cpuArchitecture == CPUArchitecture.Z80A)
-                {
-                    target = " for Z80";
-                    arch = "Z80A";
-                }
                 hasmPath = "/Debug/" + fileName + ".asm";
                 binaryPath ="/Bin/Assemble" + HexeExtension;
                 ihexPath = hexePath.Replace(".hexe", ".hex");
@@ -289,12 +315,18 @@ unit BuildCommand
                     break;
                 }
             }
-            if (isAssembly && BuildOptions.IsOptimizeEnabled())
-            {        
-                binaryPath ="/Bin/OptAsm" + HexeExtension;
+            if (BuildOptions.IsOptimizeEnabled())
+            {   
+                string optName = "Optimize";
+                if (isAssembly)
+                {
+                    optName = "OptAsm";
+                }
+                     
+                binaryPath ="/Bin/" + optName + HexeExtension;
                 if (!File.Exists(binaryPath))
                 {
-                    Editor.SetStatusBarText("No OptAsm: '" + binaryPath + "'");
+                    Editor.SetStatusBarText("No " + optName + ": '" + binaryPath + "'");
                     break;
                 }
                 Editor.SetStatusBarText("Optimizing Code '" + codePath + "' -> '" + codePath + "'" + target);
@@ -307,141 +339,91 @@ unit BuildCommand
                 error = Runtime.Execute(binaryPath, arguments);
                 if (error != 0)
                 {
-                    DisplayError("OptAsm", error);
+                    DisplayError(optName, error);
                     break;
                 }
-            }
-            if (isHopper && BuildOptions.IsOptimizeEnabled())
-            {        
-                binaryPath ="/Bin/Optimize" + HexeExtension;
-                if (!File.Exists(binaryPath))
-                {
-                    Editor.SetStatusBarText("No Optimize: '" + binaryPath + "'");
-                    break;
-                }
-                Editor.SetStatusBarText("Optimizing Code '" + codePath + "' -> '" + codePath + "'" + target);
-                
-                arguments.Clear();
-                arguments.Append(codePath);
-                arguments.Append("-g");
-                arguments.Append(col.ToString());
-                arguments.Append(row.ToString());
-                error = Runtime.Execute(binaryPath, arguments);
-                if (error != 0)
-                {
-                    DisplayError("Optimize", error);
-                    break;
-                }
-            }
+            } // BuildOptions.IsOptimizeEnabled()
+            
+            string genName = "CODEGEN";
+            string outputPath = hexePath;
             if (isAssembly)
             {
-                binaryPath ="/Bin/ASMGEN" + HexeExtension;
+                genName = "ASMGEN";
+                outputPath = ihexPath;
+            }
+            if (isZ80)
+            {
+                genName = "Z80GEN";
+                outputPath = ihexPath;
+            }
+                    
+            binaryPath ="/Bin/" + genName + HexeExtension;
+            if (!File.Exists(binaryPath))
+            {
+                Editor.SetStatusBarText("No " + genName + ": '" + binaryPath + "'");
+                break;
+            }
+            Editor.SetStatusBarText("Generating Code '" + codePath + "' -> '" + outputPath + "'" + target);
+            
+            arguments.Clear();
+            arguments.Append(codePath);
+            arguments.Append("-g");
+            arguments.Append(col.ToString());
+            arguments.Append(row.ToString());
+            if (isHopper && GenerateIHex)
+            {
+                arguments.Append("-ihex");
+            }
+            error = Runtime.Execute(binaryPath, arguments);
+            if (error != 0)
+            {
+                DisplayError(genName, error);
+                break;
+            }
+            
+            if (BuildOptions.IsDisassembleEnabled())
+            { 
+                string dasmName = "DASM";
+                string dasmInput = hexePath;
+                if (isAssembly)
+                {
+                    dasmName = "65DASM";
+                    dasmInput = ihexPath;
+                }
+                if (isZ80)
+                {
+                    dasmName = "Z80DASM";
+                    dasmInput = ihexPath;
+                }
+                       
+                binaryPath ="/Bin/" + dasmName + HexeExtension;
                 if (!File.Exists(binaryPath))
                 {
-                    Editor.SetStatusBarText("No /Bin/ASMGEN: '" + binaryPath + "'");
+                    Editor.SetStatusBarText("No " + dasmName + ": '" + binaryPath + "'");
                     break;
                 }
-                Editor.SetStatusBarText("Generating Code '" + codePath + "' -> '" + ihexPath + "'" + target);
+                
+                Editor.SetStatusBarText("Disassembling '" + dasmInput + "' -> '" + hasmPath + "'");
                 
                 arguments.Clear();
-                arguments.Append(codePath);
+                arguments.Append(dasmInput);
                 arguments.Append("-g");
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
                 error = Runtime.Execute(binaryPath, arguments);
                 if (error != 0)
                 {
-                    DisplayError("ASMGEN", error);
+                    DisplayError(dasmName, error);
                     break;
                 }
-            }
-            if (isHopper)
+            } // BuildOptions.IsDisassembleEnabled()
+            
+            if (GenerateIHex)
             {
-                binaryPath ="/Bin/CODEGEN" + HexeExtension;
-                if (!File.Exists(binaryPath))
-                {
-                    Editor.SetStatusBarText("No CODEGEN: '" + binaryPath + "'");
-                    break;
-                }
-                Editor.SetStatusBarText("Generating Code '" + codePath + "' -> '" + hexePath + "'" + target);
-                
-                arguments.Clear();
-                arguments.Append(codePath);
-                arguments.Append("-g");
-                arguments.Append(col.ToString());
-                arguments.Append(row.ToString());
-                if (GenerateIHex)
-                {
-                    arguments.Append("-ihex");
-                }
-                error = Runtime.Execute(binaryPath, arguments);
-                if (error != 0)
-                {
-                    DisplayError("CODEGEN", error);
-                    break;
-                }
+                outputPath = ihexPath;
             }
-            if (isAssembly)
-            {
-                if (BuildOptions.IsDisassembleEnabled())
-                {       
-                    binaryPath ="/Bin/65DASM" + HexeExtension;
-                    if (!File.Exists(binaryPath))
-                    {
-                        Editor.SetStatusBarText("No 65DASM: '" + binaryPath + "'");
-                        break;
-                    }
-                    
-                    Editor.SetStatusBarText("Disassembling '" + ihexPath + "' -> '" + hasmPath + "'");
-                    
-                    arguments.Clear();
-                    arguments.Append(ihexPath);
-                    arguments.Append("-g");
-                    arguments.Append(col.ToString());
-                    arguments.Append(row.ToString());
-                    error = Runtime.Execute(binaryPath, arguments);
-                    if (error != 0)
-                    {
-                        DisplayError("65DASM", error);
-                        break;
-                    }
-                }
-            }
-            if (isHopper)
-            {
-                if (BuildOptions.IsDisassembleEnabled())
-                {       
-                    binaryPath ="/Bin/DASM" + HexeExtension;
-                    if (!File.Exists(binaryPath))
-                    {
-                        Editor.SetStatusBarText("No DASM: '" + binaryPath + "'");
-                        break;
-                    }
-                    
-                    Editor.SetStatusBarText("Disassembling '" + hexePath + "' -> '" + hasmPath + "'");
-                    
-                    arguments.Clear();
-                    arguments.Append(hexePath);
-                    arguments.Append("-g");
-                    arguments.Append(col.ToString());
-                    arguments.Append(row.ToString());
-                    error = Runtime.Execute(binaryPath, arguments);
-                    if (error != 0)
-                    {
-                        DisplayError("DASM", error);
-                        break;
-                    }
-                }
-            }
-            if (isHopper || isAssembly)
-            {
-                // debugger needs .hexe file, even for 6502
-                if (GenerateIHex || isAssembly)
-                {
-                    hexePath = ihexPath;
-                }
-                Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + hexePath + "'" + target);
-            }
+            Editor.SetStatusBarText("Success '" + sourcePath + "' -> '" + outputPath + "'" + target);
+        
             break;   
         }
     }

@@ -14,8 +14,7 @@ program OptAsm
     uses "Tokens/Scanner"
     uses "Tokens/Parser"
     
-    uses "CodeGen/OpCodes"
-    uses "CodeGen/AsmStream"
+    uses "CodeGen/Asm6502"
     
     uses "CodeModel/AsmPoints"
     
@@ -67,10 +66,6 @@ program OptAsm
                 if (pdValues.Contains("CPU_65C02"))
                 {
                     Architecture = CPUArchitecture.W65C02;
-                }
-                if (pdValues.Contains("CPU_Z80A"))
-                {
-                    Architecture = CPUArchitecture.Z80A;
                 }
                 if (pdValues.Contains("ROM_32K"))
                 {

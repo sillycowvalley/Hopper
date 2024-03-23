@@ -1,6 +1,6 @@
 unit W65C02
 {
-    uses "/Source/Compiler/CODEGEN/OpCodes"
+    uses "/Source/Compiler/CODEGEN/Asm6502"
     
     byte[0xFFFA] memory;
     uint vectorReset;
@@ -242,8 +242,8 @@ unit W65C02
         
         
         byte instruction               = memory[pcRegister];
-        byte length                    = AsmStream.GetInstructionLength(instruction);
-        AddressingModes addressingMode = OpCodes.GetAddressingMode(instruction);
+        uint length                    = Asm6502.GetInstructionLength(instruction);
+        AddressingModes addressingMode = Asm6502.GetAddressingMode(instruction);
         uint operand;
         int  offset;
         switch (addressingMode)

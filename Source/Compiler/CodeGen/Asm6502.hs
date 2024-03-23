@@ -1,5 +1,12 @@
-unit OpCodes
+unit Asm6502
 {
+    #define ASM6502
+    
+    <string,string> debugInfo;
+    <string,bool> debugInfoLineUsed;
+    <byte> currentStream;
+    <byte> constantStream;
+    
     CPUArchitecture cpuArchitecture;
     CPUArchitecture Architecture { get { return cpuArchitecture; } set { cpuArchitecture = value; } }
     
@@ -34,7 +41,6 @@ unit OpCodes
     {
         Parser.Error("not implemented"); Die(0x0A);
     }
-    
     
     AddressingModes GetAddressingModes(string instructionName)
     {
@@ -868,8 +874,8 @@ unit OpCodes
                 NI();
             }
         }
-        AsmStream.AppendCode(code);
-        AsmStream.AppendCode(operand);
+        Asm6502.AppendCode(code);
+        Asm6502.AppendCode(operand);
     }
     EmitInstructionZeroPageRelative(string instructionName, byte immediateValue, int offset)
     {
@@ -899,10 +905,10 @@ unit OpCodes
                 NI();
             }
         }
-        AsmStream.AppendCode(code);
-        AsmStream.AppendCode(immediateValue);
+        Asm6502.AppendCode(code);
+        Asm6502.AppendCode(immediateValue);
         byte b = offset.GetByte(0);
-        AsmStream.AppendCode(b);
+        Asm6502.AppendCode(b);
     }
     
     EmitInstruction(string instructionName, int offset)
@@ -925,9 +931,9 @@ unit OpCodes
                 NI();
             }
         }
-        AsmStream.AppendCode(code);
+        Asm6502.AppendCode(code);
         byte b = offset.GetByte(0);
-        AsmStream.AppendCode(b);
+        Asm6502.AppendCode(b);
     }
     EmitInstructionAbsolute(string instructionName, uint operand, AddressingModes addressingMode)
     {
@@ -1030,9 +1036,9 @@ unit OpCodes
         {
             IE();
         }
-        AsmStream.AppendCode(code);
-        AsmStream.AppendCode(byte(operand & 0xFF));
-        AsmStream.AppendCode(byte(operand >> 8));
+        Asm6502.AppendCode(code);
+        Asm6502.AppendCode(byte(operand & 0xFF));
+        Asm6502.AppendCode(byte(operand >> 8));
     }
     EmitInstructionZeroPage(string instructionName, byte operand, AddressingModes addressingMode)
     {
@@ -1176,8 +1182,8 @@ unit OpCodes
         {
             IE();
         }
-        AsmStream.AppendCode(code);
-        AsmStream.AppendCode(operand);
+        Asm6502.AppendCode(code);
+        Asm6502.AppendCode(operand);
     }
     EmitInstruction(string instructionName)
     {
@@ -1227,235 +1233,461 @@ unit OpCodes
                 NI();
             }
         }
-        AsmStream.AppendCode(code);
+        Asm6502.AppendCode(code);
     }
     
     // Direct support for a small subset of instructions that 
     // are used directly by the assembler:
     byte GetRETInstruction()
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            return 0x60; // RTS
-        }
-        if (Architecture == CPUArchitecture.Z80A)
-        {
-            return 0xC9; // RET
-        }
-        IE();
-        return 0;
+        return 0x60; // RTS
     }
-    uint GetRETIInstruction()
+    uint GetRTIInstruction()
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            return 0x40; // RTI
-        }
-        if (Architecture == CPUArchitecture.Z80A)
-        {
-            return 0xED + (0x4D << 8); // RETI is 0xED 0x4D
-        }
-        IE();
-        return 0;
-    }
-    uint GetRETNInstruction()
-    {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            return 0x40; // RTI
-        }
-        if (Architecture == CPUArchitecture.Z80A)
-        {
-            return 0xED + (0x44 << 8); // RETN is 0xED 0x45
-        }
-        IE();
-        return 0;
+        return 0x40; // RTI
     }
     
     uint GetHALTInstruction()
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            return 0xDB; // STP (stop)
-        }
-        if (Architecture == CPUArchitecture.Z80A)
-        {
-            return 0x76; // HALT
-        }
-        IE();
-        return 0;
+        return 0xDB; // STP (stop)
     }
     
     byte GetJMPInstruction()
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            return 0x4C; // JMP
-        }
-        if (Architecture == CPUArchitecture.Z80A)
-        {
-            return 0xC3; // JP
-        }
-        IE();
-        return 0;
+        return 0x4C; // JMP
     }
     byte GetJMPIndexInstruction()
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            return 0x7C; // JMP
-        }
-        IE();
-        return 0;
+        return 0x7C; // JMP
     }
     byte GetNOPInstruction()
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            return 0xEA; // NOP
-        }
-        if (Architecture == CPUArchitecture.Z80A)
-        {
-            return 0x00; // NOP
-        }
-        IE();
-        return 0;
+        return 0xEA; // NOP
     }
     byte GetBInstruction(string condition)
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        switch (condition)
         {
-            switch (condition)
-            {
-                case "Z":  { return 0xF0; } // BEQ
-                case "NZ": { return 0xD0; } // BNE
-                case "C":  { return 0xB0; } // BCS
-                case "NC": { return 0x90; } // BCC
-                case "":   { return 0x80; } // BRA
-                default:   { NI();   }
-            }
+            case "Z":  { return 0xF0; } // BEQ
+            case "NZ": { return 0xD0; } // BNE
+            case "C":  { return 0xB0; } // BCS
+            case "NC": { return 0x90; } // BCC
+            case "":   { return 0x80; } // BRA
+            default:   { NI();   }
         }
-        IE();
         return 0;
     }
     
     byte GetJPInstruction(string condition)
     {
-        if (Architecture == CPUArchitecture.Z80A)
+        switch (condition)
         {
-            switch (condition)
-            {
-                case "Z":  { return 0xCA; } // JP Z
-                case "NZ": { return 0xC2; } // JP NZ
-                default:   { NI(); }
-            }
+            case "Z":  { return 0xCA; } // JP Z
+            case "NZ": { return 0xC2; } // JP NZ
+            default:   { NI(); }
         }
-        IE();
         return 0;
     }
     byte GetJSRInstruction()
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            return 0x20; // JSR
-        }
-        Die(0x0B);
-        return 0;
+        return 0x20; // JSR
     }
     byte GetiJMPInstruction()
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            return 0xFC; // iJMP
-        }
-        Die(0x0B);
-        return 0;
+        return 0xFC; // iJMP - fake internal instruction : JMP to an unresolved methodIndex
     }
     byte GetCALLInstruction()
     {
-        if (Architecture == CPUArchitecture.Z80A)
-        {
-            return 0xCD; // CALL
-        }
-        IE();
-        return 0;
+        return 0xCD; // CALL
     }
     
     bool IsMethodExitInstruction(uint opCode)
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        switch (opCode)
         {
-            switch (opCode)
+            case 0x40: // RTI
+            case 0x60: // RTS
+            case 0xDB: // STP
+            case 0xFC: // iJMP
+            case 0x7C: // JMPIndex
             {
-                case 0x40: // RTI
-                case 0x60: // RTS
-                case 0xDB: // STP
-                case 0xFC: // iJMP
-                case 0x7C: // JMPIndex
-                {
-                    return true;
-                }
+                return true;
             }
-            return false;
         }
-        IE();
         return false;
     }
     
     bool IsJumpInstruction(uint instruction, ref AddressingModes addressingMode, ref bool isConditional)
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        addressingMode = GetAddressingMode(byte(instruction));
+        isConditional = false;
+        switch (instruction)
         {
-            addressingMode = GetAddressingMode(byte(instruction));
-            isConditional = false;
-            switch (instruction)
+            case 0x4C: //  JMP nnnn
             {
-                case 0x4C: //  JMP nnnn
-                {
-                    return true;
-                }
-                case 0x6C: // JMP [nnnn]
-                //case 0x7C: // JMP [nnnn, X]
-                case 0x80: // BRA
-                {
-                    return true;
-                }
-                
-                case 0x90: // BCC
-                case 0xB0: // BCS
-                case 0xF0: // BEQ
-                case 0x30: // BMI
-                case 0xD0: // BNE
-                case 0x10: // BPL
-                case 0x50: // BVC
-                case 0x70: // BVS
-                
-                case 0x0F: // BBR0
-                case 0x1F: // BBR1
-                case 0x2F: // BBR2
-                case 0x3F: // BBR3
-                case 0x4F: // BBR4
-                case 0x5F: // BBR5
-                case 0x6F: // BBR6
-                case 0x7F: // BBR7
-                case 0x8F: // BBS0
-                case 0x9F: // BBS1
-                case 0xAF: // BBS2
-                case 0xBF: // BBS3
-                case 0xCF: // BBS4
-                case 0xDF: // BBS5
-                case 0xEF: // BBS6
-                case 0xFF: // BBS7
-                {
-                    isConditional = true;
-                    return true;
-                }
-                
+                return true;
             }
-            return false;
+            case 0x6C: // JMP [nnnn]
+            //case 0x7C: // JMP [nnnn, X]
+            case 0x80: // BRA
+            {
+                return true;
+            }
+            
+            case 0x90: // BCC
+            case 0xB0: // BCS
+            case 0xF0: // BEQ
+            case 0x30: // BMI
+            case 0xD0: // BNE
+            case 0x10: // BPL
+            case 0x50: // BVC
+            case 0x70: // BVS
+            
+            case 0x0F: // BBR0
+            case 0x1F: // BBR1
+            case 0x2F: // BBR2
+            case 0x3F: // BBR3
+            case 0x4F: // BBR4
+            case 0x5F: // BBR5
+            case 0x6F: // BBR6
+            case 0x7F: // BBR7
+            case 0x8F: // BBS0
+            case 0x9F: // BBS1
+            case 0xAF: // BBS2
+            case 0xBF: // BBS3
+            case 0xCF: // BBS4
+            case 0xDF: // BBS5
+            case 0xEF: // BBS6
+            case 0xFF: // BBS7
+            {
+                isConditional = true;
+                return true;
+            }
+            
         }
-        IE();
         return false;
     }
     
+    
+    <byte> CurrentStream { get { return currentStream; } }
+    <string,string> DebugInfo { get { return debugInfo; } }
+    ClearDebugInfo()
+    {
+        debugInfo.Clear();
+        debugInfoLineUsed.Clear();
+    }
+    
+    bool InUse { get { return currentStream.Count != 0; } } 
+    
+    uint NextAddress 
+    { 
+        get 
+        { 
+            return currentStream.Count;
+        } 
+    }
+    byte GetCodeByte(uint index)
+    {
+        return currentStream[index];
+    }
+     
+    AppendCode(<byte> code)
+    {
+        foreach (var b in code)
+        {
+            currentStream.Append(b);        
+        }
+    }
+    AppendCode(byte b)
+    {
+        currentStream.Append(b);        
+    }
+    New()
+    {
+        currentStream.Clear();
+    }
+    New(<byte> starterStream)
+    {
+        currentStream = starterStream;
+    }
+    <byte> GetConstantStream()
+    {
+        return constantStream;
+    }
+    InsertDebugInfo(bool usePreviousToken)
+    {
+        <string,string> token;
+        if (!usePreviousToken)
+        {
+            token = CurrentToken;    
+        }
+        else
+        {
+            token = PreviousToken;
+        }
+        uint na = NextAddress;
+        string nextAddress = na.ToString();
+        string ln = token["line"];
+        if (!debugInfoLineUsed.Contains(ln)) // keep the one with the earliest address
+        {
+            debugInfo[nextAddress] = ln;       
+            debugInfoLineUsed[ln] = true;
+        }
+    }
+    
+    PopTail(uint pops)
+    {
+        loop
+        {
+            uint iLast = currentStream.Count - 1;
+            currentStream.Remove(iLast);
+            pops--;
+            if (pops == 0)
+            {
+                break;
+            }
+        }
+    }
+    
+    bool LastInstructionIsRET(bool orHALT) // to make Block happy
+    {
+        bool isRET;
+        if (currentStream.Count > 0)
+        {
+            uint iLast = currentStream.Count - 1;
+            byte last = currentStream[iLast];
+            uint lastw = last;
+            if (currentStream.Count > 1)
+            {
+                lastw = currentStream[iLast-1] + (last << 8);
+            }
+            isRET = (last == Asm6502.GetRETInstruction());
+            if (!isRET)
+            {
+                uint ret = Asm6502.GetRTIInstruction();
+                isRET = (ret <= 0xFF) ? (ret == last) : (ret == lastw);
+                if (!isRET && orHALT)
+                {      
+                    ret = Asm6502.GetHALTInstruction();
+                    isRET = (ret <= 0xFF) ? (ret == last) : (ret == lastw);
+                }
+            }
+        }    
+        return isRET;
+    }
+    
+    AddInstructionRESET()
+    {
+        // program entry code
+        Asm6502.EmitInstruction("CLD");
+        Asm6502.EmitInstruction("LDX", 0xFF);
+        Asm6502.EmitInstruction("TXS");
+    }
+    AddInstructionENTER()
+    {
+        // method entry code
+    }
+    AddInstructionRET(uint bytesToPop)
+    {
+        uint iCurrent = Types.GetCurrentMethod();
+        string name = Symbols.GetFunctionName(iCurrent);
+        
+        uint retw = Asm6502.GetRETInstruction();
+        bool addNOP;
+        if (name.EndsWith(".Hopper")) // TODO : only allow in 'program'
+        {
+            // this means we are exiting Hopper()
+            retw = Asm6502.GetHALTInstruction();
+        }
+        else if (name.EndsWith(".IRQ") || name.EndsWith(".NMI")) // TODO : only allow in 'program'
+        {
+            retw = Asm6502.GetRTIInstruction();
+        }
+        
+        currentStream.Append(byte(retw & 0xFF));
+        retw = retw >> 8;
+        if (retw != 0)
+        {
+            currentStream.Append(byte(retw & 0xFF));
+        }
+    }
+    string Disassemble(uint address, byte instruction, uint operand)
+    {
+        string disassembly;
+        disassembly += "0x" + address.ToHexString(4);
+        disassembly += " ";
+        
+        disassembly +=  " 0x" + instruction.ToHexString(2);
+        disassembly += " ";
+        
+        uint length = GetInstructionLength(instruction);
+        string operandString = "         "; 
+        if (length == 2)
+        {
+            operandString = "0x" + operand.ToHexString(2) + "     "; 
+        }
+        else if (length >= 3)
+        {
+            
+            operandString = "0x" + (operand & 0xFF).ToHexString(2) + " 0x" + (operand >> 8).ToHexString(2); 
+        }
+        disassembly += operandString;
+        disassembly += "  ";
+        string name = Asm6502.GetName(instruction);
+        AddressingModes addressingMode = Asm6502.GetAddressingMode(instruction);
+        switch (addressingMode)
+        {
+            case AddressingModes.Accumulator:       { disassembly += (name + " A"); }
+            case AddressingModes.Implied:           { disassembly += name; }
+            case AddressingModes.Immediate:         { disassembly += (name + " #0x" + operand.ToHexString(2)); }
+            case AddressingModes.Absolute:          { disassembly += (name + " 0x" + operand.ToHexString(4)); }
+            case AddressingModes.AbsoluteX:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",X"); }
+            case AddressingModes.AbsoluteY:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",Y"); }
+            case AddressingModes.AbsoluteIndirect:  { disassembly += (name + " [0x" + operand.ToHexString(4) + "]"); }
+            case AddressingModes.AbsoluteIndirectX: { disassembly += (name + " [0x" + operand.ToHexString(4) + ",X]"); }
+            case AddressingModes.ZeroPage:          { disassembly += (name + " 0x" + operand.ToHexString(2)); }
+            case AddressingModes.ZeroPageX:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",X"); }
+            case AddressingModes.ZeroPageY:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",Y"); }
+            case AddressingModes.ZeroPageIndirect:  { disassembly += (name + " [0x" + operand.ToHexString(2) +"]"); }
+            case AddressingModes.XIndexedZeroPage:  { disassembly += (name + " [0x" + operand.ToHexString(2) +",X]"); }
+            case AddressingModes.YIndexedZeroPage:  { disassembly += (name + " [0x" + operand.ToHexString(2) +"],Y"); }
+            
+            case AddressingModes.Relative:  
+            { 
+                int ioperand = int(operand);
+                if (ioperand > 127)
+                {
+                    ioperand = ioperand - 256; // 0xFF -> -1
+                }
+                long target = long(address) + length + ioperand;
+                disassembly += (name + " 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
+            }
+            case AddressingModes.ZeroPageRelative:
+            {
+                int ioperand = int(operand >> 8);
+                if (ioperand > 127)
+                {
+                    ioperand = ioperand - 256; // 0xFF -> -1
+                }
+                long target = long(address) + length + ioperand;
+                disassembly += (name + " 0x" + (operand & 0xFF).ToHexString(2) +", 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
+            }
+            
+                default: { disassembly += name; }
+            }
+        return disassembly;
+    }
+       
+    PatchJump(uint jumpAddress, uint jumpToAddress)
+    {
+        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        {
+            byte braInstruction = GetBInstruction("");
+            byte jmpInstruction = GetJMPInstruction();
+            int offset = int(jumpToAddress) - int(jumpAddress) - 2;
+            
+            bool testJMP = false; //((currentStream[jumpAddress+0] == braInstruction) || (currentStream[jumpAddress+0] == jmpInstruction));
+            
+            if (testJMP || (offset < -128) || (offset > 127))
+            {
+                // long jump
+                if ((currentStream[jumpAddress+0] != braInstruction) &&
+                    (currentStream[jumpAddress+0] != jmpInstruction))
+                {
+                    Parser.Error("jump target exceeds 6502 relative limit (" + offset.ToString() + ")");
+                    return;
+                }
+                currentStream.SetItem(jumpAddress+0, GetJMPInstruction());
+                currentStream.SetItem(jumpAddress+1, jumpToAddress.GetByte(0));
+                currentStream.SetItem(jumpAddress+2, jumpToAddress.GetByte(1));
+            }
+            else
+            {
+                // short jump
+                if (currentStream[jumpAddress+0] == jmpInstruction)
+                {
+                    currentStream.SetItem(jumpAddress+0, GetBInstruction(""));
+                }
+                currentStream.SetItem(jumpAddress+1, offset.GetByte(0));
+                currentStream.SetItem(jumpAddress+2, GetNOPInstruction());
+            }
+        }
+        else
+        {
+            currentStream.SetItem(jumpAddress+1, jumpToAddress.GetByte(0));
+            currentStream.SetItem(jumpAddress+2, jumpToAddress.GetByte(1));
+        }
+    }
+    
+    AddInstructionJ()
+    {
+        AddInstructionJ(0x0000); // placeholder address
+    }
+    AddInstructionJ(uint jumpToAddress)
+    {
+        uint jumpAddress = NextAddress;
+        int offset = int(jumpToAddress) - int(jumpAddress) - 2;
+        
+        bool testJMP = false;
+        
+        if (testJMP || (offset < -128) || (offset > 127))
+        {
+            // long jump
+            currentStream.Append(GetJMPInstruction());
+            currentStream.Append(byte(jumpToAddress & 0xFF));
+            currentStream.Append(byte(jumpToAddress >> 8));
+        }
+        else
+        {
+            // short jump
+            currentStream.Append(GetBInstruction(""));
+            currentStream.Append(offset.GetByte(0));
+            currentStream.Append(GetNOPInstruction());
+        }
+    }
+    AddInstructionJZ()
+    {
+        currentStream.Append(GetBInstruction("Z"));
+        // placeholder address
+        currentStream.Append(0x00);
+        currentStream.Append(GetNOPInstruction());
+    }
+    AddInstructionJNZ()
+    {
+        currentStream.Append(GetBInstruction("NZ"));
+        // placeholder address
+        currentStream.Append(0x00);
+        currentStream.Append(GetNOPInstruction());
+    }
+    AddInstructionCALL(uint iOverload)
+    {
+        currentStream.Append(GetJSRInstruction());
+
+        // unresolved method index for now
+        currentStream.Append(byte(iOverload & 0xFF));
+        currentStream.Append(byte(iOverload >> 8));
+    }
+    
+    AddInstructionCMP(char register, byte operand)
+    {
+        switch (register)
+        {
+            case 'A':
+            {
+                Asm6502.EmitInstruction("CMP", operand);
+            }
+            case 'X':
+            {
+                Asm6502.EmitInstruction("CPX", operand);
+            }
+            case 'Y':
+            {
+                Asm6502.EmitInstruction("CPY", operand);
+            }
+            default:
+            {
+                IE();
+            }
+        }
+    }
 }

@@ -67,18 +67,16 @@ unit ACIA
     
     bool ServiceSerial()
     {
-        bool requestIRQ;
         if (initialized)
         {
             if (!readWaiting && Serial.IsAvailable)
             {
                 readChar = Serial.ReadChar();
                 readWaiting = true;
-                requestIRQ = true;
-                //PrintLn((byte(readChar)).ToHexString(2), Colour.Green, Colour.Black);
+                return true; // request IRQ
             }
         }
-        return requestIRQ;
+        return false;
     }
     
     bool OfferWrite(uint address, byte value)

@@ -1,6 +1,7 @@
-program Runtime
+program R6502
 {
-#define CHECKED
+    #define CHECKED
+    
     // mapping of Z80 -> 6502
     // https://litwr2.github.io/8080-8085-z80-8088-6502/z80-6502.html
     
@@ -24,21 +25,18 @@ program Runtime
     //   O      - step over
     //   W      - warm restart
 
-#ifdef CPU_65C02    
     uses "6502/MemoryMap"
     uses "6502/ZeroPage"
     uses "6502/Breakpoints"
     uses "6502/Stacks"
     uses "6502/Memory"
     
-#endif
-    uses "Common/Utilities"
-    uses "Common/Serial"
-    uses "Common/Diagnostic"
-    uses "Common/SysCalls"
-    uses "Common/Instructions"
+    uses "6502/Utilities"
+    uses "6502/Serial"
+    uses "6502/Diagnostic"
+    uses "6502/SysCalls"
+    uses "6502/Instructions"
     
-#ifdef CPU_65C02
     IRQ()
     
     {
@@ -52,7 +50,6 @@ program Runtime
         INC ZP.SerialBreakFlag // hardware <ctrl><C>
         RTI
     }
-#endif
      
     breakpointCommand()
     {

@@ -15,7 +15,7 @@ program ASMGEN
     
     uses "Symbols"
     
-    uses "CODEGEN/AsmStream"
+    uses "CODEGEN/Asm6502"
     
     uint romSize = 0;
     long codeSize = 0;
@@ -38,23 +38,11 @@ program ASMGEN
         uint methodAddress   = output.Count + romAddress;
         methods[methodIndex] = methodAddress;
         
-        byte callInstruction;
-        byte ijmpInstruction;
-        byte jumpInstruction;
-        byte jumpIndexinstruction;
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
-            callInstruction = GetJSRInstruction();
-            jumpInstruction = GetJMPInstruction(); // TODO: 0x6C and 0x7C
-        }
-        if (Architecture == CPUArchitecture.Z80A)
-        {
-            callInstruction = GetCALLInstruction();
-            jumpInstruction = GetJMPInstruction();
-        }
-        ijmpInstruction = GetiJMPInstruction();
+        byte callInstruction      = GetJSRInstruction();
+        byte jumpInstruction      = GetJMPInstruction(); // TODO: 0x6C
+        byte ijmpInstruction      = GetiJMPInstruction();
+        byte jumpIndexinstruction = GetJMPIndexInstruction();
         
-        jumpIndexinstruction = GetJMPIndexInstruction();
         uint index = 0;
         loop
         {
@@ -63,7 +51,7 @@ program ASMGEN
             
             byte instruction = code[index];
             
-            uint instructionLength = AsmStream.GetInstructionLength(instruction);
+            uint instructionLength = Asm6502.GetInstructionLength(instruction);
             
             if (instruction == callInstruction)
             {
@@ -274,10 +262,6 @@ program ASMGEN
                 if (DefineExists("CPU_65C02"))
                 {
                     Architecture = CPUArchitecture.W65C02;
-                }
-                if (DefineExists("CPU_Z80A"))
-                {
-                    Architecture = CPUArchitecture.Z80A;
                 }
                 if (DefineExists("ROM_32K"))
                 {

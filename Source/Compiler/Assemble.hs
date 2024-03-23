@@ -35,7 +35,7 @@ program Assemble
     uses "Directives"
     
     uses "CodeGen/Block"
-    uses "CodeGen/AsmStream"
+    uses "CodeGen/Asm6502"
     
     bool IsDebugger  { get { return false; } }
     bool NoPackedInstructions { get { return false; } }
@@ -53,7 +53,7 @@ program Assemble
         PrintLn("Invalid arguments for ASSEMBLE:");
         PrintLn("  ASSEMBLE <object json>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
-        PrintLn("    -a <arch>  : target CPU: M6502|W65C02|Z80");
+        PrintLn("    -a <arch>  : target CPU: M6502|W65C02");
         PrintLn("    -x         : use experimental features");
     }
     
@@ -72,7 +72,7 @@ program Assemble
         //   <uint, uint> gStartLine;
         //   <uint, string> gSourcePath;
         
-        AsmStream.New();
+        Asm6502.New();
         
         uint gCount = Symbols.GetGlobalCount();
         for (uint gIndex = 0; gIndex < gCount; gIndex++)
@@ -88,7 +88,7 @@ program Assemble
         top["globals"] = globals;
         Block.ReplaceTop(top);
         
-        <byte> code = AsmStream.CurrentStream;
+        <byte> code = Asm6502.CurrentStream;
         return code;
         
     }
@@ -144,7 +144,7 @@ program Assemble
             Block.PushBlock(false); // for block locals
             assembleBlock();
             Block.PopBlock();
-            AsmStream.InsertDebugInfo(true);
+            Asm6502.InsertDebugInfo(true);
             success = !Parser.HadError;
             break;
         }
@@ -166,11 +166,11 @@ program Assemble
             <uint> caseLabels;
             <uint> jumpEnds;
             
-            uint jumpToTable = AsmStream.NextAddress;
+            uint jumpToTable = Asm6502.NextAddress;
             uint fakeJump = jumpToTable + 3;
-            AsmStream.AppendCode(byte(opcodeJMP));
-            AsmStream.AppendCode(byte(fakeJump & 0xFF));
-            AsmStream.AppendCode(byte(fakeJump >> 8));
+            Asm6502.AppendCode(byte(opcodeJMP));
+            Asm6502.AppendCode(byte(fakeJump & 0xFF));
+            Asm6502.AppendCode(byte(fakeJump >> 8));
             
             Parser.Advance(); // switch
             Parser.Consume(HopperToken.LParen);
@@ -246,7 +246,7 @@ program Assemble
                 
                 loop
                 {
-                    AsmStream.InsertDebugInfo(false);
+                    Asm6502.InsertDebugInfo(false);
                     
                     Parser.Advance(); // "case" or "default"
 // next:         
@@ -266,7 +266,7 @@ program Assemble
                             {
                                 IE();
                             }
-                            AsmStream.AddInstructionCMP(registerName, byte(cc));
+                            Asm6502.AddInstructionCMP(registerName, byte(cc));
                         }
                         else
                         {
@@ -292,21 +292,21 @@ program Assemble
                     if (!isDefault)
                     {
                         // compare with case constant
-                        AsmStream.AppendCode(GetBInstruction("Z"));
-                        AsmStream.AppendCode(+3);
+                        Asm6502.AppendCode(GetBInstruction("Z"));
+                        Asm6502.AppendCode(+3);
             
-                        uint jumpNext = AsmStream.NextAddress;
+                        uint jumpNext = Asm6502.NextAddress;
                         jumpNexts.Append(jumpNext);
-                        AsmStream.AddInstructionJ();
+                        Asm6502.AddInstructionJ();
                         
                         if (Parser.CheckKeyword("case"))
                         {
-                            uint jumpMatch = AsmStream.NextAddress;
-                            AsmStream.AddInstructionJ();
+                            uint jumpMatch = Asm6502.NextAddress;
+                            Asm6502.AddInstructionJ();
                             jumpMatches.Append(jumpMatch);
                             
-                            uint nextAddress = AsmStream.NextAddress;
-                            AsmStream.PatchJump(jumpNexts[0], nextAddress);  
+                            uint nextAddress = Asm6502.NextAddress;
+                            Asm6502.PatchJump(jumpNexts[0], nextAddress);  
                             jumpNexts.Clear();
                             
                             continue; // multiple cases
@@ -322,17 +322,17 @@ program Assemble
 // match:       
                 foreach (var jumpMatch in jumpMatches)
                 {        
-                    uint nextAddress = AsmStream.NextAddress;
-                    AsmStream.PatchJump(jumpMatch, nextAddress);   
+                    uint nextAddress = Asm6502.NextAddress;
+                    Asm6502.PatchJump(jumpMatch, nextAddress);   
                 }
                  
-                uint beforeBlock = AsmStream.NextAddress;
+                uint beforeBlock = Asm6502.NextAddress;
                     
                 Block.PushBlock(false); // not loop context
                 assembleBlock();
                 Block.PopBlock();
                 
-                uint afterBlock = AsmStream.NextAddress;
+                uint afterBlock = Asm6502.NextAddress;
                 uint blockSize  = afterBlock - beforeBlock;
                 if (tableCandidate)
                 {
@@ -342,8 +342,8 @@ program Assemble
                     }
                     else
                     {
-                        byte opCode  = AsmStream.GetCodeByte(afterBlock - blockSize);
-                        uint methodIndex = AsmStream.GetCodeByte(afterBlock - blockSize+1) + (AsmStream.GetCodeByte(afterBlock - blockSize+2) << 8);
+                        byte opCode  = Asm6502.GetCodeByte(afterBlock - blockSize);
+                        uint methodIndex = Asm6502.GetCodeByte(afterBlock - blockSize+1) + (Asm6502.GetCodeByte(afterBlock - blockSize+2) << 8);
                         if (opCode == opcodeJSR)
                         {
                             if (isDefault)
@@ -365,25 +365,25 @@ program Assemble
                     }
                 }
                 
-                AsmStream.InsertDebugInfo(true); 
+                Asm6502.InsertDebugInfo(true); 
                 
-                uint jumpEnd = AsmStream.NextAddress;
-                AsmStream.AddInstructionJ();
+                uint jumpEnd = Asm6502.NextAddress;
+                Asm6502.AddInstructionJ();
                 jumpEnds.Append(jumpEnd);
 // next:        
                 // next case will be after the block if there was one
                 foreach (var jumpNext in jumpNexts)
                 {        
-                    uint nextAddress = AsmStream.NextAddress;
-                    AsmStream.PatchJump(jumpNext, nextAddress);   
+                    uint nextAddress = Asm6502.NextAddress;
+                    Asm6502.PatchJump(jumpNext, nextAddress);   
                 }
             } // loop
 // end:         
-            uint endAddress = AsmStream.NextAddress;
+            uint endAddress = Asm6502.NextAddress;
             foreach (var jumpEnd in jumpEnds)
             {
                 uint ui = jumpEnd;
-                AsmStream.PatchJump(ui, endAddress);
+                Asm6502.PatchJump(ui, endAddress);
             }
             
             tableCandidate = tableCandidate && (defaultIndex != 0);
@@ -418,49 +418,49 @@ program Assemble
                     }
                 }
                 
-                uint tableAddress = AsmStream.NextAddress;
-                AsmStream.PatchJump(jumpToTable, tableAddress);
+                uint tableAddress = Asm6502.NextAddress;
+                Asm6502.PatchJump(jumpToTable, tableAddress);
                 
-                AsmStream.AddInstructionCMP('X', 0x80);
-                AsmStream.AppendCode(GetBInstruction("NC"));
-                AsmStream.AppendCode(+3);
-                uint jumpSecond = AsmStream.NextAddress;
-                AsmStream.AddInstructionJ();
+                Asm6502.AddInstructionCMP('X', 0x80);
+                Asm6502.AppendCode(GetBInstruction("NC"));
+                Asm6502.AppendCode(+3);
+                uint jumpSecond = Asm6502.NextAddress;
+                Asm6502.AddInstructionJ();
             
-                OpCodes.EmitInstruction("TXA");
-                OpCodes.EmitInstruction("ASL");
-                OpCodes.EmitInstruction("TAX");
+                Asm6502.EmitInstruction("TXA");
+                Asm6502.EmitInstruction("ASL");
+                Asm6502.EmitInstruction("TAX");
                 
-                uint indexJump  = AsmStream.NextAddress;
+                uint indexJump  = Asm6502.NextAddress;
                 fakeJump = indexJump + 3;
-                AsmStream.AppendCode(GetJMPIndexInstruction()); // JMP [nnnn,X]
-                AsmStream.AppendCode(byte(fakeJump & 0xFF));
-                AsmStream.AppendCode(byte(fakeJump >> 8));
+                Asm6502.AppendCode(GetJMPIndexInstruction()); // JMP [nnnn,X]
+                Asm6502.AppendCode(byte(fakeJump & 0xFF));
+                Asm6502.AppendCode(byte(fakeJump >> 8));
                 for (uint ii=0; ii < 0x80; ii++)
                 {
                     uint methodIndex = jumpList[ii];
-                    AsmStream.AppendCode(byte(methodIndex & 0xFF));
-                    AsmStream.AppendCode(byte(methodIndex >> 8));
+                    Asm6502.AppendCode(byte(methodIndex & 0xFF));
+                    Asm6502.AppendCode(byte(methodIndex >> 8));
                 }
                 
-                uint secondTableAddress = AsmStream.NextAddress;
-                AsmStream.PatchJump(jumpSecond, secondTableAddress);
-                OpCodes.EmitInstruction("TXA");
-                OpCodes.EmitInstruction("SEC");
-                OpCodes.EmitInstruction("SBC", 0x80);
-                OpCodes.EmitInstruction("ASL");
-                OpCodes.EmitInstruction("TAX");
+                uint secondTableAddress = Asm6502.NextAddress;
+                Asm6502.PatchJump(jumpSecond, secondTableAddress);
+                Asm6502.EmitInstruction("TXA");
+                Asm6502.EmitInstruction("SEC");
+                Asm6502.EmitInstruction("SBC", 0x80);
+                Asm6502.EmitInstruction("ASL");
+                Asm6502.EmitInstruction("TAX");
                 
-                indexJump  = AsmStream.NextAddress;
+                indexJump  = Asm6502.NextAddress;
                 fakeJump = indexJump + 3;
-                AsmStream.AppendCode(0x7C); // JMP [nnnn,X]
-                AsmStream.AppendCode(byte(fakeJump & 0xFF));
-                AsmStream.AppendCode(byte(fakeJump >> 8));
+                Asm6502.AppendCode(0x7C); // JMP [nnnn,X]
+                Asm6502.AppendCode(byte(fakeJump & 0xFF));
+                Asm6502.AppendCode(byte(fakeJump >> 8));
                 for (uint ii=0x80; ii < 0x100; ii++)
                 {
                     uint methodIndex = jumpList[ii];
-                    AsmStream.AppendCode(byte(methodIndex & 0xFF));
-                    AsmStream.AppendCode(byte(methodIndex >> 8));
+                    Asm6502.AppendCode(byte(methodIndex & 0xFF));
+                    Asm6502.AppendCode(byte(methodIndex >> 8));
                 }
             }
             break;
@@ -476,7 +476,7 @@ program Assemble
         <uint> jumpEnds;
         loop
         {
-            AsmStream.InsertDebugInfo(false); // could be a 2nd 'else if'
+            Asm6502.InsertDebugInfo(false); // could be a 2nd 'else if'
             
             Parser.Advance(); // if
             
@@ -502,12 +502,12 @@ program Assemble
                 break;
             }
             
-            AsmStream.AppendCode(GetBInstruction(conditionString));
-            AsmStream.AppendCode(+3);
+            Asm6502.AppendCode(GetBInstruction(conditionString));
+            Asm6502.AppendCode(+3);
             
             // if false jump past
-            uint jumpPast = AsmStream.NextAddress;
-            AsmStream.AddInstructionJ();
+            uint jumpPast = Asm6502.NextAddress;
+            Asm6502.AddInstructionJ();
                        
             Block.PushBlock(false); // not a loop context
             assembleBlock();
@@ -517,15 +517,15 @@ program Assemble
                 break;
             }
             
-            AsmStream.InsertDebugInfo(true);
+            Asm6502.InsertDebugInfo(true);
             
             // jump end (past a potential "else" block)
-            uint jumpEnd = AsmStream.NextAddress;
+            uint jumpEnd = Asm6502.NextAddress;
             jumpEnds.Append(jumpEnd);
-            AsmStream.AddInstructionJ();
+            Asm6502.AddInstructionJ();
 // past:    
-            uint pastAddress = AsmStream.NextAddress;
-            AsmStream.PatchJump(jumpPast, pastAddress);        
+            uint pastAddress = Asm6502.NextAddress;
+            Asm6502.PatchJump(jumpPast, pastAddress);        
                         
             if (Parser.CheckKeyword("else"))
             {
@@ -545,15 +545,15 @@ program Assemble
             {       
                 foreach (var jump in jumpEnds)
                 {
-                    AsmStream.PatchJump(jump, AsmStream.NextAddress);
+                    Asm6502.PatchJump(jump, Asm6502.NextAddress);
                 }
             }
             else
             {
                 // simple if with no "else" clause/s
                 uint jumpSize = 3; // this is always a 3 byte jump (for 6502, it could be BRA followed by NOP)
-                AsmStream.PopTail(jumpSize);
-                AsmStream.PatchJump(jumpPast, pastAddress-jumpSize);
+                Asm6502.PopTail(jumpSize);
+                Asm6502.PatchJump(jumpPast, pastAddress-jumpSize);
                 
             }
             success = true;                    
@@ -569,16 +569,16 @@ program Assemble
             Parser.Advance(); // loop
 
             Block.PushBlock(true); // loop context
-            uint continueAddress = AsmStream.NextAddress;
+            uint continueAddress = Asm6502.NextAddress;
             
             Block.PushBlock(false); // for block locals
             assembleBlock();
             Block.PopBlock();
-            AsmStream.InsertDebugInfo(true);
+            Asm6502.InsertDebugInfo(true);
             
-            AsmStream.AddInstructionJ(continueAddress);
+            Asm6502.AddInstructionJ(continueAddress);
             
-            uint breakAddress = AsmStream.NextAddress;
+            uint breakAddress = Asm6502.NextAddress;
             Block.PopBlock(continueAddress, breakAddress);
             if (Parser.HadError)
             {
@@ -606,7 +606,7 @@ program Assemble
             
             // bytesToPop = locals + arguments
             uint bytesToPop = Block.GetLocalsToPop(true, iCurrentOverload == 0);
-            AsmStream.AddInstructionRET(bytesToPop);
+            Asm6502.AddInstructionRET(bytesToPop);
             success = true;
             break;
         }
@@ -626,8 +626,8 @@ program Assemble
         }
                
         // - jump to current inner loop 'exit'
-        uint breakJump = AsmStream.NextAddress;
-        AsmStream.AddInstructionJ();
+        uint breakJump = Asm6502.NextAddress;
+        Asm6502.AddInstructionJ();
         if (!Block.AddBreakPatch(breakJump))
         {
             Parser.ErrorAtCurrent("'break' must be inside loop block");
@@ -649,8 +649,8 @@ program Assemble
             Die(0x0B);
         }
         // - jump to current inner loop 'next'
-        uint continueJump = AsmStream.NextAddress;
-        AsmStream.AddInstructionJ();
+        uint continueJump = Asm6502.NextAddress;
+        Asm6502.AddInstructionJ();
         if (!Block.AddContinuePatch(continueJump))
         {
             Parser.ErrorAtCurrent("'continue' must be inside loop block");
@@ -690,39 +690,15 @@ program Assemble
             Symbols.OverloadToCompile(iOverload); // CompileMethodCall(methodName): Setters, function calls, actual method calls
             Symbols.AddFunctionCall(iOverload);   // CompileMethodCall(methodName)
             
-            AsmStream.AddInstructionCALL(iOverload);
+            Asm6502.AddInstructionCALL(iOverload);
             success = true;
             break;
         } // loop
         return success;
     }
-    bool assembleInstructionZ80()
-    {
-        // Z80 instruction forms
-        //
-        // instr
-        // instr R
-        // instr RR
-        // instr R, nn
-        // instr R, nnnn
-        // instr R, R
-        // instr RR, RR
-        // instr [RR]
-        // instr R, [RR]
-        // instr [RR], R
-        // instr [nnnn], R
-        // instr dd
-        // instr C, dd
-        // instr C
-        // instr C, nnnn
-        // instr nnnn
-        
-        Die(0x0A);
-        return false;
-    }
     bool assembleInstruction6502()
     {
-        // Z80 instruction forms
+        // 6502 instruction forms:
         //
         // Implied:
         //     RTS
@@ -766,11 +742,11 @@ program Assemble
             currentToken = Parser.CurrentToken;
             tokenType = Token.GetType(currentToken);
             
-            AddressingModes addressingModes = OpCodes.GetAddressingModes(instructionName);
+            AddressingModes addressingModes = Asm6502.GetAddressingModes(instructionName);
             
             if (addressingModes == AddressingModes.Implied)
             {
-                OpCodes.EmitInstruction(instructionName);
+                Asm6502.EmitInstruction(instructionName);
                 success = true;
                 break;
             }
@@ -795,7 +771,7 @@ program Assemble
                 if ((tokenType == HopperToken.Integer) && Int.TryParse(currentToken["lexeme"], ref offset))
                 {
                     Parser.Advance(); // <offset>
-                    OpCodes.EmitInstruction(instructionName, negative ? -offset : offset);
+                    Asm6502.EmitInstruction(instructionName, negative ? -offset : offset);
                     success = true;
                     break;
                 }
@@ -810,7 +786,7 @@ program Assemble
                 if ((tokenType == HopperToken.Register) && (currentToken["lexeme"] == "A"))
                 {
                     Parser.Advance(); // 'A'
-                    OpCodes.EmitInstruction(instructionName);
+                    Asm6502.EmitInstruction(instructionName);
                     success = true;
                     break;
                 }
@@ -874,7 +850,7 @@ program Assemble
                 }
                 else
                 {
-                    OpCodes.EmitInstruction(instructionName, byte(immediateValue));
+                    Asm6502.EmitInstruction(instructionName, byte(immediateValue));
                     success = true;
                 }
                 break;
@@ -886,7 +862,7 @@ program Assemble
                 //   alternate addressing modes would have had an immediate operand next so ...
                 if ((addressingModes & AddressingModes.Accumulator) == AddressingModes.Accumulator)
                 {
-                    OpCodes.EmitInstruction(instructionName);
+                    Asm6502.EmitInstruction(instructionName);
                     success = true;
                     break;
                 }
@@ -932,7 +908,7 @@ program Assemble
                     Parser.Advance(); // <offset>
                     
                     // ZeroPageRelative=0x8000,          // nn,dd
-                    OpCodes.EmitInstructionZeroPageRelative(instructionName, byte(immediateValue), negative ? -offset : offset);
+                    Asm6502.EmitInstructionZeroPageRelative(instructionName, byte(immediateValue), negative ? -offset : offset);
                     
                     success = true;
                     break;
@@ -998,7 +974,7 @@ program Assemble
                                 Parser.Error("internal error"); Die(0x0B);
                             }
                             // XIndexedZeroPage=0x1000,  // [nn,X]
-                            OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.XIndexedZeroPage);
+                            Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.XIndexedZeroPage);
                         }
                         case 'Y':
                         {
@@ -1007,7 +983,7 @@ program Assemble
                                 Parser.Error("internal error"); Die(0x0B);
                             }
                             // YIndexedZeroPage=0x2000,  // [nn], Y
-                            OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.YIndexedZeroPage);
+                            Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.YIndexedZeroPage);
                         }
                         default:
                         {
@@ -1016,7 +992,7 @@ program Assemble
                                 Parser.Error("internal error"); Die(0x0B);
                             }
                             // ZeroPageIndirect=0x0800,  // [nn]
-                            OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageIndirect);
+                            Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageIndirect);
                         }
                     }
                 }
@@ -1031,7 +1007,7 @@ program Assemble
                                 Parser.Error("internal error"); Die(0x0B);
                             }
                             // ZeroPageX=0x0200,         // nn,X
-                            OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageX);
+                            Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageX);
                         }
                         case 'Y':
                         {
@@ -1040,7 +1016,7 @@ program Assemble
                                 Parser.Error("internal error"); Die(0x0B);
                             }
                             // ZeroPageY=0x0400,         // nn,Y
-                            OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageY);
+                            Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageY);
                         }
                         default:
                         {
@@ -1049,7 +1025,7 @@ program Assemble
                                 Parser.Error("internal error"); Die(0x0B);
                             }
                             // ZeroPage=0x0100,          // nn
-                            OpCodes.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPage);
+                            Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPage);
                         }
                     }
                 }
@@ -1066,7 +1042,7 @@ program Assemble
                             Parser.Error("internal error"); Die(0x0B);
                         }
                         // AbsoluteIndirectX=0x0080, // [nnnn,X]
-                        OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteIndirectX);
+                        Asm6502.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteIndirectX);
                     }
                     else
                     {
@@ -1075,7 +1051,7 @@ program Assemble
                             Parser.Error("internal error"); Die(0x0B);
                         }
                         // AbsoluteIndirect=0x0040,  // [nnnn]
-                        OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteIndirect);
+                        Asm6502.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteIndirect);
                     }
                 }
                 else
@@ -1089,7 +1065,7 @@ program Assemble
                                 Parser.Error("internal error"); Die(0x0B);
                             }
                             // AbsoluteX=0x0020,         // nnnn,X
-                            OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteX);
+                            Asm6502.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteX);
                         }
                         case 'Y':
                         {
@@ -1098,7 +1074,7 @@ program Assemble
                                 Parser.Error("internal error"); Die(0x0B);
                             }
                             // AbsoluteY=0x0010,         // nnnn,Y
-                            OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteY);
+                            Asm6502.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.AbsoluteY);
                         }
                         default:
                         {
@@ -1107,7 +1083,7 @@ program Assemble
                                 Parser.Error("internal error"); Die(0x0B);
                             }
                             // Absolute=0x0008,          // nnnn
-                            OpCodes.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.Absolute);
+                            Asm6502.EmitInstructionAbsolute(instructionName, immediateValue, AddressingModes.Absolute);
                         }
                     }
                 }
@@ -1135,7 +1111,7 @@ program Assemble
         HopperToken tokenType = Token.GetType(currentToken);
         if (debugInfoInsert)
         {
-            AsmStream.InsertDebugInfo(false);
+            Asm6502.InsertDebugInfo(false);
         }
         
         switch (tokenType)
@@ -1177,14 +1153,7 @@ program Assemble
             }
             case HopperToken.Instruction:
             {
-                if (Architecture == CPUArchitecture.Z80A)
-                {
-                    success = assembleInstructionZ80();
-                }
-                else
-                {    
-                    success = assembleInstruction6502();
-                }
+                success = assembleInstruction6502();
                 noSemiColon = true;
             }
             default:
@@ -1310,7 +1279,7 @@ program Assemble
                         }
                         else if (tokenType == HopperToken.LBrace)
                         {
-                            AsmStream.InsertDebugInfo(false);
+                            Asm6502.InsertDebugInfo(false);
                             if (!assembleBlockScope())
                             {
                                 if (!Parser.HadError)
@@ -1357,11 +1326,11 @@ program Assemble
             Scanner.Reset(startToken);
             Parser.Reset();
             Directives.New();
-            AsmStream.New();
+            Asm6502.New();
             
             if (globalCode.Count != 0)
             {
-                AsmStream.AppendCode(globalCode);
+                Asm6502.AppendCode(globalCode);
                 globalCode.Clear();
             }
             
@@ -1373,9 +1342,9 @@ program Assemble
             
             if (isMain)
             {
-                AsmStream.AddInstructionRESET();
+                Asm6502.AddInstructionRESET();
             }
-            AsmStream.AddInstructionENTER();
+            Asm6502.AddInstructionENTER();
             if (!isMain) // already pushed with globals
             {
                 Block.PushBlock(false); // new block context
@@ -1421,10 +1390,10 @@ program Assemble
                 Die(0x0B);
             }
             
-            AsmStream.InsertDebugInfo(true);
+            Asm6502.InsertDebugInfo(true);
             
             uint bytesToPop = Block.GetLocalsToPop(true, isMain);
-            AsmStream.AddInstructionRET(bytesToPop);
+            Asm6502.AddInstructionRET(bytesToPop);
             
             if (!isMain)
             {
@@ -1442,10 +1411,10 @@ program Assemble
                 Block.ReplaceTop(mainContext);
             }
             
-            <byte> asmStream = AsmStream.CurrentStream;
-            <string,string> debugInfo = AsmStream.DebugInfo;
+            <byte> asmStream = Asm6502.CurrentStream;
+            <string,string> debugInfo = Asm6502.DebugInfo;
             Symbols.SetCodeStream(iCurrentOverload, asmStream, debugInfo);
-            AsmStream.ClearDebugInfo();
+            Asm6502.ClearDebugInfo();
             
             Symbols.OverloadWasCompiled(iCurrentOverload);         
             if (!Symbols.OverloadNextToCompile(ref iCurrentOverload))
@@ -1500,7 +1469,6 @@ program Assemble
                             {
                                 case "M6502":  { Architecture = CPUArchitecture.M6502;  }
                                 case "W65C02": { Architecture = CPUArchitecture.W65C02; }
-                                case "Z80A":   { Architecture = CPUArchitecture.Z80A;   }
                             } 
                         }
                         case "-x":

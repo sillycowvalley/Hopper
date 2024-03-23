@@ -81,9 +81,10 @@ unit Token
     flags CPUArchitecture
     {
         None    = 0x0000,
-        Z80A    = 0x0001,
-        M6502   = 0x0010, // orignal MOS instruction set
+        Hopper  = 0x0001,
+        M6502   = 0x0010, // original MOS instruction set
         W65C02  = 0x0030, // MOS set plus WDC / Rockwell set
+        Z80     = 0x0100,
     }
     
     string HopperTokenToString(HopperToken tokenType)
@@ -372,22 +373,7 @@ unit Token
                 instructionKeywords["BBR" + i.ToString()] = true;
                 instructionKeywords["BBS" + i.ToString()] = true;
             }
-        }
-        if (architecture & CPUArchitecture.Z80A != CPUArchitecture.None)
-        {
-            // Z80 instructions:
-            instructionKeywords["JP"]    = true;
-            
-            instructionKeywords["CP"]  = true;
-            
-            instructionKeywords["LD"]  = true;
-            
-            instructionKeywords["CALL"] = true;
-            instructionKeywords["RET"] = true;
-        }
-        
-        if (architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
-        {
+
             // 6502 registers:
             registerKeywords["A"] = true;
             registerKeywords["X"] = true;
@@ -409,44 +395,6 @@ unit Token
             conditionKeywords["NV"] = true; // ?
             conditionKeywords["PL"] = true;
             conditionKeywords["MI"] = true;
-        }
-        if (architecture & CPUArchitecture.Z80A != CPUArchitecture.None)
-        {
-            // Z80 registers:
-            registerKeywords["A"] = true;
-            registerKeywords["B"] = true;
-            registerKeywords["C"] = true;
-            registerKeywords["D"] = true;
-            registerKeywords["E"] = true;
-            registerKeywords["F"] = true;
-            registerKeywords["H"] = true;
-            registerKeywords["L"] = true;
-            
-            registerKeywords["AF"] = true;
-            registerKeywords["BC"] = true;
-            registerKeywords["DE"] = true;
-            registerKeywords["HL"] = true;
-            registerKeywords["IX"] = true;
-            registerKeywords["IY"] = true;
-            
-            registerKeywords["AF'"] = true;
-            
-            registerKeywords["PC"] = true;
-            registerKeywords["SP"] = true;
-            
-            // Z80 flags / 'conditions':
-            conditionKeywords["C"] = true;
-            conditionKeywords["Z"] = true;
-            
-            conditionKeywords["M"] = true;
-            conditionKeywords["P"] = true;
-            
-            // Z80 'conditions':
-            conditionKeywords["NC"] = true;
-            conditionKeywords["NZ"] = true;
-            
-            conditionKeywords["PE"] = true;
-            conditionKeywords["PO"] = true;    
         }
     }
     
