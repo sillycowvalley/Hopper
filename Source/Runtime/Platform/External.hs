@@ -219,11 +219,15 @@ unit External
     SerialWriteString(uint hrbuffer)
     {
         string buffer = nativeStringFromHopperString(hrbuffer);
+#ifdef LOCALDEBUGGER
+        foreach (var ch in buffer)
+        {
+            SerialWriteChar(ch);
+        }
+#else        
         Serial.WriteString(buffer);
-        //foreach (var ch in buffer)
-        //{
-        //    Serial.WriteChar(ch);
-        //}
+#endif
+        
     }
     
     bool WiFiConnect(uint hrssid, uint hrpassword)

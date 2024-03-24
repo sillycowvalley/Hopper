@@ -1189,55 +1189,55 @@ unit Instructions
     
     bool PopLocalB00()
     {
-        if (CNP) 
+        if (HopperVM.CNP) 
         { 
-            CNP = false;
+            HopperVM.CNP = false;
             return PopCopyLocalB00();
         }
         else
         {
             // this is the slot we are about to overwrite: decrease reference count if reference type
-            Type htype = Type(ReadByte(uint(int(TypeStackLSB) + int(BP))));
+            Type htype = Type(ReadByte(uint(int(TypeStackLSB) + int(HopperVM.BP))));
             uint value;
             if (IsReferenceType(htype))
             {
-                value = HopperVM.Get(BP);
+                value = HopperVM.Get(HopperVM.BP);
                 GC.Release(value);
             }
             value = Pop(ref htype);
-            HopperVM.Put(BP, value, htype);
+            HopperVM.Put(HopperVM.BP, value, htype);
         }
         return true;
     }
     bool PopLocalB01()
     {
-        if (CNP) 
+        if (HopperVM.CNP) 
         { 
-            CNP = false;
+            HopperVM.CNP = false;
             return PopCopyLocalB01();
         }
         else
         {
             // this is the slot we are about to overwrite: decrease reference count if reference type
-            Type htype = Type(ReadByte(uint(int(TypeStackLSB) + int(BP) + 1)));
+            Type htype = Type(ReadByte(uint(int(TypeStackLSB) + int(HopperVM.BP) + 1)));
             uint value;
             if (IsReferenceType(htype))
             {
-                value = HopperVM.Get(BP+1);
+                value = HopperVM.Get(HopperVM.BP+1);
                 GC.Release(value);
             }
             
             value = Pop(ref htype);
-            HopperVM.Put(BP+1, value, htype);
+            HopperVM.Put(HopperVM.BP+1, value, htype);
         }
         return true;
     }
     bool PopLocalB()
     {
         int offset;
-        if (CNP) 
+        if (HopperVM.CNP) 
         { 
-            CNP = false;
+            HopperVM.CNP = false;
             return PopCopyLocalB();
         }
         else
@@ -1245,15 +1245,15 @@ unit Instructions
             offset     = ReadByteOffsetOperand();
         
             // this is the slot we are about to overwrite: decrease reference count if reference type
-            Type htype = Type(ReadByte(uint(int(TypeStackLSB) + int(BP) + offset)));
+            Type htype = Type(ReadByte(uint(int(TypeStackLSB) + int(HopperVM.BP) + offset)));
             uint value;
             if (IsReferenceType(htype))
             {
-                value = HopperVM.Get(byte(int(BP) + offset));
+                value = HopperVM.Get(byte(int(HopperVM.BP) + offset));
                 GC.Release(value);
             }
             value = Pop(ref htype);
-            HopperVM.Put(byte(int(BP) + offset), value, htype);
+            HopperVM.Put(byte(int(HopperVM.BP) + offset), value, htype);
         }
         return true;
     }
@@ -1261,9 +1261,9 @@ unit Instructions
     bool PopLocal()
     {
         int offset;
-        if (CNP) 
+        if (HopperVM.CNP) 
         { 
-            CNP = false;
+            HopperVM.CNP = false;
             return PopCopyLocal();
         }
         else
@@ -1271,16 +1271,16 @@ unit Instructions
             offset     = ReadWordOffsetOperand();
         
             // this is the slot we are about to overwrite: decrease reference count if reference type
-            Type htype = Type(ReadByte(uint(int(TypeStackLSB) + int(BP) + offset)));
+            Type htype = Type(ReadByte(uint(int(TypeStackLSB) + int(HopperVM.BP) + offset)));
             uint value;
             if (IsReferenceType(htype))
             {
-                value = HopperVM.Get(byte(int(BP) + offset));
+                value = HopperVM.Get(byte(int(HopperVM.BP) + offset));
                 GC.Release(value);
             }
             
             value = Pop(ref htype);
-            HopperVM.Put(byte(int(BP) + offset), value, htype);
+            HopperVM.Put(byte(int(HopperVM.BP) + offset), value, htype);
         }
         return true;
     }
@@ -1289,7 +1289,7 @@ unit Instructions
     {
         // this is the slot we are about to overwrite: decrease reference count if reference type
         Type htype;
-        byte localAddress = BP;
+        byte localAddress = HopperVM.BP;
         uint oldvalue = HopperVM.Get(localAddress, ref htype);
         if (IsReferenceType(htype))
         {
@@ -1313,7 +1313,7 @@ unit Instructions
     {
         // this is the slot we are about to overwrite: decrease reference count if reference type
         Type htype;
-        byte localAddress = byte(BP + 1);
+        byte localAddress = byte(HopperVM.BP + 1);
         uint oldvalue = HopperVM.Get(localAddress, ref htype);
         if (IsReferenceType(htype))
         {
@@ -1699,12 +1699,12 @@ unit Instructions
         }
         if (choice != 0)
         {
-            PC = uint(int(PC-2) + offset);
+            HopperVM.pc = uint(int(HopperVM.pc-2) + offset);
         }
 #else
         if (Pop() != 0)
         {
-            PC = uint(ReadByteOffsetOperand() + int(PC-2));
+            HopperVM.pc = uint(ReadByteOffsetOperand() + int(HopperVM.pc-2));
         }
         else
         {
@@ -1729,16 +1729,16 @@ unit Instructions
         
         if (choice == 0)
         {
-            PC = uint(int(PC-3) + offset);
+            HopperVM.pc = uint(int(HopperVM.pc-3) + offset);
         }
 #else
         if (Pop() == 0)
         {
-            PC = uint(ReadWordOffsetOperand() + int(PC-3));
+            HopperVM.pc = uint(ReadWordOffsetOperand() + int(HopperVM.pc-3));
         }
         else
         {
-            PC = PC + 2;
+            HopperVM.pc = HopperVM.pc + 2;
         }
 #endif   
         return true;
@@ -2034,12 +2034,12 @@ unit Instructions
     {
         int  offset = ReadWordOffsetOperand();
 #ifdef CHECKED
-        if ((int(BP) + offset > 255) || (int(BP) + offset < 0))
+        if ((int(HopperVM.BP) + offset > 255) || (int(HopperVM.BP) + offset < 0))
         {
             ErrorDump(259); Error = 0x0B;
         }
 #endif
-        byte address = byte(int(BP) + offset);
+        byte address = byte(int(HopperVM.BP) + offset);
         Push(address, Type.Reference);
         return true;
     }
@@ -2047,10 +2047,10 @@ unit Instructions
     {
         Type ttype;
         Type ntype;
-        uint topValue  = HopperVM.Get(SP - 1, ref ttype);
-        uint nextValue = HopperVM.Get(SP - 2, ref ntype);
-        HopperVM.Put(byte(SP - 1), nextValue, ntype);
-        HopperVM.Put(byte(SP - 2), topValue, ttype);
+        uint topValue  = HopperVM.Get(HopperVM.SP - 1, ref ttype);
+        uint nextValue = HopperVM.Get(HopperVM.SP - 2, ref ntype);
+        HopperVM.Put(byte(HopperVM.SP - 1), nextValue, ntype);
+        HopperVM.Put(byte(HopperVM.SP - 2), topValue, ttype);
         return true;
     }
     bool Dup()
@@ -2070,8 +2070,8 @@ unit Instructions
     bool TestBPB()
     {
         byte  operand  = ReadByteOperand();
-        uint bpExpected = uint(SP - operand);
-        if (bpExpected != BP)
+        uint bpExpected = uint(HopperVM.SP - operand);
+        if (bpExpected != HopperVM.BP)
         {
             Error = 0x0B;
             return false;
@@ -2082,18 +2082,18 @@ unit Instructions
     bool CallB()
     {
         uint methodIndex = ReadByteOperand();
-        PushCS(PC);
-        PC = LookupMethod(methodIndex);
+        PushCS(HopperVM.PC);
+        HopperVM.PC = LookupMethod(methodIndex);
         return true;
     }
 
     bool Call()
     {
         uint methodIndex = ReadWordOperand();
-        PushCS(PC);
+        PushCS(HopperVM.PC);
         uint methodAddress = LookupMethod(methodIndex);
-        WriteProgramByte(PC-3, byte(OpCode.CALLI));
-        WriteProgramWord(PC-2, methodAddress);
+        WriteProgramByte(HopperVM.PC-3, byte(OpCode.CALLI));
+        WriteProgramWord(HopperVM.PC-2, methodAddress);
         PC = methodAddress;
         return true;
     }
@@ -2111,8 +2111,8 @@ unit Instructions
 #else
         uint methodIndex = Pop();                
 #endif          
-        PushCS(PC);
-        PC = LookupMethod(methodIndex);
+        PushCS(HopperVM.PC);
+        HopperVM.PC = LookupMethod(methodIndex);
         return true;
     }
     bool DecSP()
@@ -2133,7 +2133,7 @@ unit Instructions
     
     bool RetFast()
     {
-        PC = PopCS();
+        HopperVM.PC = PopCS();
         return true;
     }
     bool RetB()
@@ -2149,16 +2149,16 @@ unit Instructions
             }
             popBytes--;
         }
-        BP = byte(PopCS());
+        HopperVM.BP = byte(PopCS());
         if (CSP == CSPStart)
         {
-            PC = 0; // exit program
+            HopperVM.PC = 0; // exit program
         }
         else
         {
-            PC = PopCS();
+            HopperVM.PC = PopCS();
         }
-        return PC != 0;
+        return HopperVM.PC != 0;
     }
     
     bool Ret()
@@ -2174,8 +2174,8 @@ unit Instructions
             }
             popBytes--;
         }
-        BP = byte(PopCS());
-        if (CSP == CSPStart)
+        HopperVM.BP = byte(PopCS());
+        if (HopperVM.CSP == HopperVM.CSPStart)
         {
             PC = 0; // exit program
         }
@@ -2188,7 +2188,7 @@ unit Instructions
     
     bool PushGlobalB()
     {
-        byte address     = byte(ReadByteOperand() + GP);
+        byte address     = byte(ReadByteOperand() + HopperVM.GP);
         Type htype;
         uint value = HopperVM.Get(address, ref htype);
         Push(value, htype);
@@ -2201,7 +2201,7 @@ unit Instructions
 
     bool PushGlobal()
     {
-        byte address     = byte(ReadWordOperand() + GP);
+        byte address     = byte(ReadWordOperand() + HopperVM.GP);
         Type htype;
         uint value = HopperVM.Get(address, ref htype);
         Push(value, htype);
@@ -2214,14 +2214,14 @@ unit Instructions
     
     bool PopGlobalB()
     {
-        if (CNP)
+        if (HopperVM.CNP)
         { 
-            CNP=false; 
+            HopperVM.CNP=false; 
             return PopCopyGlobalB(); 
         }
         else
         {
-            byte address     = byte(ReadByteOperand() + GP);
+            byte address     = byte(ReadByteOperand() + HopperVM.GP);
             // this is the slot we are about to overwrite: decrease reference count if reference type
             Type htype = Type(ReadByte(TypeStackLSB + address));
             uint value;
@@ -2239,14 +2239,14 @@ unit Instructions
 
     bool PopGlobal()
     {
-        if (CNP)
+        if (HopperVM.CNP)
         { 
-            CNP=false; 
+            HopperVM.CNP=false; 
             return PopCopyGlobal(); 
         }
         else
         {
-            byte address     = byte(ReadWordOperand() + GP);
+            byte address     = byte(ReadWordOperand() + HopperVM.GP);
             // this is the slot we are about to overwrite: decrease reference count if reference type
             Type htype = Type(ReadByte(TypeStackLSB + address));
             uint value;
@@ -2264,15 +2264,15 @@ unit Instructions
     
     bool PopRelB()
     {
-        if (CNP)
+        if (HopperVM.CNP)
         {
-            CNP = false;
+            HopperVM.CNP = false;
             return PopCopyRelB();
         }
         else
         {        
             int offset = ReadByteOffsetOperand();
-            byte referenceAddress = byte(int(BP) + offset);
+            byte referenceAddress = byte(int(HopperVM.BP) + offset);
             Type rtype;
             byte localAddress = byte(HopperVM.Get(referenceAddress, ref rtype));
             uint existing = HopperVM.Get(localAddress, ref rtype);
@@ -2289,15 +2289,15 @@ unit Instructions
 
     bool PopRel()
     {
-        if (CNP)
+        if (HopperVM.CNP)
         {
-            CNP = false;
+            HopperVM.CNP = false;
             return PopCopyRel();
         }
         else
         {        
             int offset = ReadWordOffsetOperand();
-            byte referenceAddress = byte(int(BP) + offset);
+            byte referenceAddress = byte(int(HopperVM.BP) + offset);
             Type rtype;
             byte localAddress = byte(HopperVM.Get(referenceAddress, ref rtype));
             uint existing = HopperVM.Get(localAddress, ref rtype);
@@ -2314,7 +2314,7 @@ unit Instructions
     
     bool PopCopyGlobalB()
     {
-        byte address     = byte(ReadByteOperand() + GP);
+        byte address     = byte(ReadByteOperand() + HopperVM.GP);
         // this is the slot we are about to overwrite: decrease reference count if reference type
         Type htype;
         uint oldvalue = HopperVM.Get(address, ref htype);
@@ -2339,7 +2339,7 @@ unit Instructions
 
     bool PopCopyGlobal()
     {
-        byte address     = byte(ReadWordOperand() + GP);
+        byte address     = byte(ReadWordOperand() + HopperVM.GP);
         // this is the slot we are about to overwrite: decrease reference count if reference type
         Type htype;
         uint oldvalue = HopperVM.Get(address, ref htype);
@@ -2434,7 +2434,7 @@ unit Instructions
     }
     bool Undefined()
     {
-        Runtime.Out4Hex(PC);
+        Runtime.Out4Hex(HopperVM.PC);
         Serial.WriteChar(':');
         Serial.WriteChar('O');
         Runtime.Out2Hex(byte(CurrentOpCode));
@@ -2446,8 +2446,8 @@ unit Instructions
     
     bool IncGlobalBB()
     {
-        byte address0     = byte(ReadByteOperand() + GP);
-        byte address1     = byte(ReadByteOperand() + GP);
+        byte address0     = byte(ReadByteOperand() + HopperVM.gp);
+        byte address1     = byte(ReadByteOperand() + HopperVM.gp);
         Type type0;
         uint value = HopperVM.Get(address0, ref type0);
         Type type1;   
@@ -2469,7 +2469,7 @@ unit Instructions
         // (we need to avoid munting the type if it is currently a -ve tInt)
         
         Type itype;
-        byte address = byte(int(BP) + offset);
+        byte address = byte(int(HopperVM.bp) + offset);
         uint value = HopperVM.Get(address, ref itype);
         if (itype == Type.Byte)
         {

@@ -12,6 +12,7 @@
 \obj
 
 Runtimes/Windows/HopperNet/bin
+Runtimes/Windows/Restart/bin
 Source/Samples/MCU/Secrets2
 Temp/Errors.txt
 Bin/Auto.crc
@@ -21,3 +22,4 @@ Runtimes/Windows/HopperNET/.vs/HopperNET/v17/DocumentLayout.json
 *.lst
 Temp/testpath.json
 *.bin
+Runtimes/Windows/Restart/.vs/Restart/v17/DocumentLayout.json

@@ -6,7 +6,9 @@ program Runtime
 //#define CHECKED      // mainly stack checks, range checks and division by zero
 //#define MEMORYLEAKS
 
-//#define LOCALDEBUGGER  // for debugging portable runtime locally
+#define LOCALDEBUGGER  // for debugging portable runtime locally
+
+    uses "/Source/Debugger/6502/ZeroPage"
 
     uses "Emulation/Minimal" // minimal use of actual 'system' APIs
     uses "Emulation/Memory"
@@ -46,18 +48,82 @@ program Runtime
     bool loaded = false;
     uint currentCRC;
     
-    // Zero Page FLAGS:
-    flags HopperFlags
+       
+#ifdef LOCALDEBUGGER
+    print(char c)
     {
-      //TraceOn        = 0x01,
-        WarpSpeed      = 0x02, // on 6502, built without checks for <Ctrl><C>
-      //StackSlot32Bit = 0x02, // on MCUs, 'float' and 'long' are value types
-        CheckedBuild   = 0x04,
-      //SP8Bit         = 0x08,
-      //ProfileBuild   = 0x10,
-        BreakpointsSet = 0x20,
-      //SingleStep     = 0x40,
-        MCUPlatform    = 0x80,
+        Desktop.Print(c, Colour.MatrixRed, Colour.Black);
+    }
+    
+    printDigit(uint uthis)
+    {
+        uint digit = uthis % 10;
+        char c = HRByte.ToDigit(byte(digit));
+        uthis = uthis / 10;
+        if (uthis != 0)
+        {
+            printDigit(uthis);
+        }
+        print(c);
+    }
+    
+    printHex(byte b)
+    {
+        byte msn = ((b >> 4) & 0xF);
+        print(ToHex(msn));
+        byte lsn = b & 0xF;
+        print(ToHex(lsn));
+    }
+    printHex(uint u)
+    {
+        byte msb = byte(u >> 8);
+        printHex(msb);
+        byte lsb = byte(u & 0xFF);
+        printHex(lsb);
+    }
+    
+#endif    
+    
+    char SerialReadChar()
+    {
+        char c = Serial.ReadChar();
+#ifdef LOCALDEBUGGER        
+        if (c > ' ')
+        {
+            Desktop.Print(c, Colour.MatrixBlue, Colour.Black);
+        }
+        else
+        {
+            byte b = byte(c);
+            byte msn = ((b >> 4) & 0xF);
+            byte lsn = b & 0xF;
+            Desktop.Print(' ', Colour.MatrixBlue, Colour.Black);
+            Desktop.Print(HRByte.ToHex(msn), Colour.MatrixBlue, Colour.Black);
+            Desktop.Print(HRByte.ToHex(lsn), Colour.MatrixBlue, Colour.Black);
+            Desktop.Print(' ', Colour.MatrixBlue, Colour.Black);
+        }
+#endif        
+        return c;
+    }
+    SerialWriteChar(char c)
+    {
+#ifdef LOCALDEBUGGER        
+        if (c > ' ')
+        {
+            Desktop.Print(c, Colour.MatrixRed, Colour.Black);
+        }
+        else
+        {
+            byte b = byte(c);
+            byte msn = ((b >> 4) & 0xF);
+            byte lsn = b & 0xF;
+            Desktop.Print(' ', Colour.MatrixRed, Colour.Black);
+            Desktop.Print(HRByte.ToHex(msn), Colour.MatrixRed, Colour.Black);
+            Desktop.Print(HRByte.ToHex(lsn), Colour.MatrixRed, Colour.Black);
+            Desktop.Print(' ', Colour.MatrixRed, Colour.Black);
+        }
+#endif
+        Serial.WriteChar(c);
     }
     
     byte FromHex(char ch)
@@ -180,40 +246,6 @@ program Runtime
         return success;
     }
     
-#ifdef LOCALDEBUGGER
-    print(char c)
-    {
-        Desktop.Print(c, Colour.MatrixRed, Colour.Black);
-    }
-    
-    printDigit(uint uthis)
-    {
-        uint digit = uthis % 10;
-        char c = HRByte.ToDigit(byte(digit));
-        uthis = uthis / 10;
-        if (uthis != 0)
-        {
-            printDigit(uthis);
-        }
-        print(c);
-    }
-    
-    printHex(byte b)
-    {
-        byte msn = ((b >> 4) & 0xF);
-        print(ToHex(msn));
-        byte lsn = b & 0xF;
-        print(ToHex(lsn));
-    }
-    printHex(uint u)
-    {
-        byte msb = byte(u >> 8);
-        printHex(msb);
-        byte lsb = byte(u & 0xFF);
-        printHex(lsb);
-    }
-    
-#endif
     ErrorDump(uint number)
     {
 #ifdef LOCALDEBUGGER
@@ -226,8 +258,8 @@ program Runtime
     
     bool TryReadSerialByte(ref byte data)
     {
-        char c0 = Serial.ReadChar();
-        char c1 = Serial.ReadChar();
+        char c0 = SerialReadChar();
+        char c1 = SerialReadChar();
         byte msn = FromHex(c0);
         byte lsn = FromHex(c1);
         data =  (msn << 4) + lsn;
@@ -249,7 +281,7 @@ program Runtime
         }
         if (success)
         {
-            char eol = Serial.ReadChar();
+            char eol = SerialReadChar();
             if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
             { 
                 success = false;
@@ -266,7 +298,7 @@ program Runtime
         loop
         {
             if (!success) { break; }
-            char colon = Serial.ReadChar();
+            char colon = SerialReadChar();
             if (colon != ':') { success = false; break; }
             
             byte byteCount;
@@ -297,7 +329,7 @@ program Runtime
                     byte checkSum;
                     if (!TryReadSerialByte(ref checkSum)) { success = false; break; }
                     
-                    char eol = Serial.ReadChar();
+                    char eol = SerialReadChar();
                     if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
                     { 
                         success = false; break;
@@ -324,33 +356,33 @@ program Runtime
     {
         loop
         {
-            char ch = Serial.ReadChar();
+            char ch = SerialReadChar();
             if (ch == char(enter))
             {
                 break;
             }       
         } // loop
-        Serial.WriteChar(char(slash)); // '\' response : acknowledge <enter> received
+        SerialWriteChar(char(slash)); // '\' response : acknowledge <enter> received
     }
     
     Out4Hex(uint value)
     {
         byte b = byte(value >> 12);
-        Serial.WriteChar(HRByte.ToHex(b));
+        SerialWriteChar(HRByte.ToHex(b));
         b = byte((value >> 8) & 0x0F); 
-        Serial.WriteChar(HRByte.ToHex(b));
+        SerialWriteChar(HRByte.ToHex(b));
         b = byte((value >> 4) & 0x0F); 
-        Serial.WriteChar(HRByte.ToHex(b));
+        SerialWriteChar(HRByte.ToHex(b));
         b = byte(value & 0x0F); 
-        Serial.WriteChar(HRByte.ToHex(b));
+        SerialWriteChar(HRByte.ToHex(b));
     }
     
     Out2Hex(byte value)
     {
         byte b = byte((value >> 4) & 0x0F); 
-        Serial.WriteChar(ToHex(b));
+        SerialWriteChar(ToHex(b));
         b = byte(value & 0x0F); 
-        Serial.WriteChar(HRByte.ToHex(b));
+        SerialWriteChar(HRByte.ToHex(b));
     }
     
     out4Hex(ref uint pageBuffer, uint value)
@@ -365,30 +397,27 @@ program Runtime
         HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
     }
     
-    out2Hex(ref uint pageBuffer, byte value)
+    out2HexOrDot(ref uint pageBuffer, byte value)
     {
-        byte b = byte((value >> 4) & 0x0F); 
-        HRString.BuildChar(ref pageBuffer, ToHex(b));
-        b = byte(value & 0x0F); 
-        HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
+        if (value == 0)
+        {
+            HRString.BuildChar(ref pageBuffer, '.'); // '.' means '00'
+        }
+        else
+        {
+            byte b = byte((value >> 4) & 0x0F); 
+            HRString.BuildChar(ref pageBuffer, ToHex(b));
+            b = byte(value & 0x0F); 
+            HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
+        }
     }
     
-    DumpPage(byte iPage, bool includeAddresses)
+    DumpPage(byte iPage)
     {
-        // 6502 zero page simulation
-        
         uint pageBuffer = HRString.New();
-        
         uint rowAddress = (iPage << 8);
         for (byte row = 0; row < 16; row++)
         {
-            HRString.BuildChar(ref pageBuffer, char(enter)); // next line
-            if (includeAddresses)
-            {
-                out4Hex(ref pageBuffer, rowAddress);
-                HRString.BuildChar(ref pageBuffer, ' ');
-                rowAddress = rowAddress + 16;
-            }
             if (iPage == 0)
             {
                 for (byte col = 0; col < 16; col++)
@@ -397,75 +426,79 @@ program Runtime
                     byte address = col + (row << 4);
                     switch (address)
                     {
-                        case 0xB0:
+                        case ZPCL:
                         {
                             data = byte(HopperVM.PC & 0xFF);
                         }
-                        case 0xB1:
+                        case ZPCH:
                         {
                             data = byte(HopperVM.PC >> 8);
                         }
-                        case 0xB2:
-                        case 0xB3:
+                        case ZCODESTARTL:
+                        case ZCODESTARTH:
                         {
                             data = 0; // CODESTART
                         }
-                        case 0xB4: // SP
+                        case ZSP: // SP
                         {
                             data = HopperVM.SP;
                         }
-                        case 0xB5:
+                        case ZBP:
                         {
                             data = HopperVM.BP;
                         }
-                        case 0xB6:
+                        case ZCSP:
                         {
                             data = HopperVM.CSP;
                         }
-                        case 0xB7:
+                        case ZCNP:
                         {
                             data = HopperVM.CNP ? 1 : 0;
                         }
                         
-                        
-                        case 0xBB: // flags
+                        case ZFLAGS: // flags
                         {
-                            data = byte(HopperFlags.MCUPlatform); // 0x08 would imply 8 bit SP
+                            HopperFlags flgs = HopperFlags.MCUPlatform;
                             if (HopperVM.BreakpointExists)
                             {
-                                data = data | byte(HopperFlags.BreakpointsSet);
+                                flgs = flgs | HopperFlags.BreakpointsSet;
+                            }
+                            if (loaded)
+                            {
+                                flgs = flgs | HopperFlags.ProgramLoaded;
                             }
 #ifdef CHECKED
-                            data = data | byte(HopperFlags.CheckedBuild);
-#endif                          
+                            flgs = flgs | HopperFlags.CheckedBuild;
+#endif                        
+                            data = byte(flgs);  
                         }
                         
-                        case 0xBC:
+                        case ZFREELISTL:
                         {
                             data = byte(Memory.FreeList & 0xFF);
                         }
-                        case 0xBD:
+                        case ZFREELISTH:
                         {
                             data = byte(Memory.FreeList >> 8);
                         }
-                        case 0xBE: // HeapStart MSB
+                        case ZHEAPSTART: // HeapStart MSB
                         {
                             data = byte(Memory.HeapStart >> 8);
                         }
-                        case 0xBF:// HeapSize MSB
+                        case ZHEAPSIZE:// HeapSize MSB
                         {
                             data = byte(Memory.HeapSize >> 8);
                         }
                         
                         default:
                         {
-                            if ((address >= 0x50) && (address <= 0x5F))
+                            if ((address >= ZBRKL) && (address <= ZBRKL+0x0F))
                             {
-                                data = byte(GetBreakpoint(address - 0x50) & 0xFF);
+                                data = byte(GetBreakpoint(address - ZBRKL) & 0xFF);
                             }
-                            else if ((address >= 0x60) && (address <= 0x6F))
+                            else if ((address >= ZBRKH) && (address <= ZBRKH+0x0F))
                             {
-                                data = byte(GetBreakpoint(address - 0x60) >> 8);
+                                data = byte(GetBreakpoint(address - ZBRKH) >> 8);
                             }
                             else
                             {
@@ -473,15 +506,7 @@ program Runtime
                             }
                         }
                     }
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 8)
-                        {
-                            HRString.BuildChar(ref pageBuffer, ' '); 
-                        }
-                    }
-                    out2Hex(ref pageBuffer, data);
+                    out2HexOrDot(ref pageBuffer, data);
                 }
             } // zero page
             
@@ -489,17 +514,9 @@ program Runtime
             {
                 for (byte col = 0; col < 16; col++)
                 {
-                    byte address = col + (row << 4);
+                    byte address = col + (row << 4); // 0..255
                     uint stackData = HopperVM.GetCS(address);
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 8)
-                        {
-                            HRString.BuildChar(ref pageBuffer, ' '); 
-                        }
-                    }
-                    out2Hex(ref pageBuffer, byte(stackData & 0xFF));
+                    out2HexOrDot(ref pageBuffer, byte(stackData & 0xFF));
                 }
             } // call stack
             
@@ -507,17 +524,9 @@ program Runtime
             {
                 for (byte col = 0; col < 16; col++)
                 {
-                    byte address = col*2 + (row << 4);
+                    byte address = col + (row << 4); // 0..255
                     uint stackData = HopperVM.GetCS(address);
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 8)
-                        {
-                            HRString.BuildChar(ref pageBuffer, ' '); 
-                        }
-                    }
-                    out2Hex(ref pageBuffer, byte(stackData >> 8));
+                    out2HexOrDot(ref pageBuffer, byte(stackData >> 8));
                 }
             } // call stack
             
@@ -528,15 +537,7 @@ program Runtime
                     byte address = col + (row << 4); // 0..255
                     Type htype;
                     uint stackData = HopperVM.Get(address, ref htype);
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 8)
-                        {
-                            HRString.BuildChar(ref pageBuffer, ' '); 
-                        }
-                    }
-                    out2Hex(ref pageBuffer, byte(htype));
+                    out2HexOrDot(ref pageBuffer, byte(htype));
                 }
             } // type stack
             
@@ -544,20 +545,9 @@ program Runtime
             {
                 for (byte col = 0; col < 16; col++)
                 {
-                    byte address = col + (row << 4);
-                    
-                    Type htype;
-                    uint stackData = HopperVM.Get(address, ref htype);
-                    
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 8)
-                        {
-                            HRString.BuildChar(ref pageBuffer, ' '); 
-                        }
-                    }
-                    out2Hex(ref pageBuffer, byte(stackData & 0xFF));
+                    byte address = col + (row << 4); // 0..255
+                    uint stackData = HopperVM.Get(address);
+                    out2HexOrDot(ref pageBuffer, byte(stackData & 0xFF));
                 }
             } // value stack
             
@@ -565,20 +555,9 @@ program Runtime
             {
                 for (byte col = 0; col < 16; col++)
                 {
-                    byte address = col + (row << 4);
-                    
-                    Type htype;
-                    uint stackData = HopperVM.Get(address, ref htype);
-                    
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 8)
-                        {
-                            HRString.BuildChar(ref pageBuffer, ' '); 
-                        }
-                    }
-                    out2Hex(ref pageBuffer, byte(stackData >> 8));
+                    byte address = col + (row << 4); // 0..255
+                    uint stackData = HopperVM.Get(address);
+                    out2HexOrDot(ref pageBuffer, byte(stackData >> 8));
                 }
             } // value stack
             
@@ -586,18 +565,9 @@ program Runtime
             {
                 for (byte col = 0; col < 16; col++)
                 {
-                    uint address = col + (row << 4); // 0..127
+                    uint address = col + (row << 4); // 0..255
                     address = address + (iPage << 8);
-                    
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 8)
-                        {
-                            HRString.BuildChar(ref pageBuffer, ' '); 
-                        }
-                    }
-                    out2Hex(ref pageBuffer, Memory.ReadByte(address));
+                    out2HexOrDot(ref pageBuffer, Memory.ReadByte(address));
                 }
             } // heap
             
@@ -605,19 +575,33 @@ program Runtime
             {
                 for (byte col = 0; col < 16; col++)
                 {
-                    if (includeAddresses)
-                    {
-                        HRString.BuildChar(ref pageBuffer, ' '); 
-                        if (col == 8)
-                        {
-                            HRString.BuildChar(ref pageBuffer, ' '); 
-                        }
-                    }
-                    out2Hex(ref pageBuffer, 0x00);
+                    out2HexOrDot(ref pageBuffer, 0x00);
                 }
             } // heap
         } // for (row = 0; r < 16; row++)
-        HRString.BuildChar(ref pageBuffer, char(enter)); // next line
+        
+        int length = int(HRString.GetLength(pageBuffer));
+        int iLast = -1;
+        int i = length-1;
+        loop
+        {
+            char ch = HRString.GetChar(pageBuffer, uint(i));
+            if ((ch != '0') && (ch != '.'))
+            {
+                iLast = i;
+                break;
+            }
+            if (i == 0) { break; }
+            i--;
+        }
+        if (iLast != length-1)
+        {
+            // smallest possible is length-2
+            iLast++;
+            HRString.SetChar(pageBuffer, uint(iLast), '+');
+            HRString.SetLength(pageBuffer, uint(iLast+1));
+        }
+        
         External.SerialWriteString(pageBuffer);
         GC.Release(pageBuffer);
     }
@@ -656,37 +640,37 @@ program Runtime
         }
 #endif
 
-        Serial.WriteChar(char(slash)); // ready
+        SerialWriteChar(char(slash)); // ready
         loop
         {
             char ch;
             if (Serial.IsAvailable)
             {
-                ch = Serial.ReadChar();
+                ch = SerialReadChar();
             }
             if (ch == char(0x03)) // <ctrl><C> from Debugger but we were not running 
             {
-                Serial.WriteChar(char(slash));
+                SerialWriteChar(char(slash));
             }
             else if (ch == char(escape)) // <esc> from Debugger
             {
-                Serial.WriteChar(char(slash)); // '\' response -> ready for command
-                ch = Serial.ReadChar(); // single letter command
+                SerialWriteChar(char(slash)); // '\' response -> ready for command
+                ch = SerialReadChar(); // single letter command
                 switch (ch)
                 {
                     case 'F': // fast memory page dump
                     {
-                        byte msn = FromHex(Serial.ReadChar());
-                        byte lsn = FromHex(Serial.ReadChar());
+                        byte msn = FromHex(SerialReadChar());
+                        byte lsn = FromHex(SerialReadChar());
                         WaitForEnter();
                         
                         byte iPage = (msn << 4) + lsn;
-                        DumpPage(iPage, false);
-                        Serial.WriteChar(char(slash)); // confirm data
+                        DumpPage(iPage);
+                        SerialWriteChar(char(slash)); // confirm data
                     }
                     case 'B':
                     {
-                        char arg = Serial.ReadChar();
+                        char arg = SerialReadChar();
                         if (arg == 'X')
                         {
                             HopperVM.ClearBreakpoints(false);
@@ -694,10 +678,10 @@ program Runtime
                         else
                         {
                             byte n  = FromHex(arg);
-                            byte a3 = FromHex(Serial.ReadChar());
-                            byte a2 = FromHex(Serial.ReadChar());
-                            byte a1 = FromHex(Serial.ReadChar());
-                            byte a0 = FromHex(Serial.ReadChar());
+                            byte a3 = FromHex(SerialReadChar());
+                            byte a2 = FromHex(SerialReadChar());
+                            byte a1 = FromHex(SerialReadChar());
+                            byte a0 = FromHex(SerialReadChar());
                             uint address = (a3 << 12) + (a2 << 8) + (a1 << 4) + a0;
                             HopperVM.SetBreakpoint(n, address);   
                         }
@@ -738,56 +722,56 @@ program Runtime
                         uint destinationName = HRString.New();
                         loop
                         {
-                            char rc = Serial.ReadChar();
+                            char rc = SerialReadChar();
                             if (rc == char(enter))
                             {
                                 break;
                             }
                             HRString.BuildChar(ref destinationName, rc);
                         }
-                        Serial.WriteChar(char(enter));
-                        Serial.WriteChar(char(slash));
+                        SerialWriteChar(char(enter));
+                        SerialWriteChar(char(slash));
                         
                         // read path characters till 0x0D
                         uint destinationFolder = HRString.New();
                         loop
                         {
-                            char rc = Serial.ReadChar();
+                            char rc = SerialReadChar();
                             if (rc == char(enter))
                             {
                                 break;
                             }
                             HRString.BuildChar(ref destinationFolder, rc);
                         }
-                        Serial.WriteChar(char(enter));
-                        Serial.WriteChar(char(slash));
+                        SerialWriteChar(char(enter));
+                        SerialWriteChar(char(slash));
                         
                         HRDirectory.Create(destinationFolder);
                         
-                        char h3 = Serial.ReadChar();
-                        char h2 = Serial.ReadChar();
-                        char h1 = Serial.ReadChar();
-                        char h0 = Serial.ReadChar();
+                        char h3 = SerialReadChar();
+                        char h2 = SerialReadChar();
+                        char h1 = SerialReadChar();
+                        char h0 = SerialReadChar();
                         
                         uint size = (FromHex(h3) << 12) + (FromHex(h2) << 8) + (FromHex(h1) << 4) + FromHex(h0);
                         
-                        Serial.WriteChar(char(enter));
-                        Serial.WriteChar(char(slash));
+                        SerialWriteChar(char(enter));
+                        SerialWriteChar(char(slash));
                         
                         uint fh = HRFile.Create(destinationName);
                         
                         // read file hex nibbles
                         while (size != 0)
                         {
-                            char n1 = Serial.ReadChar();
-                            char n0 = Serial.ReadChar();
+                            char n1 = SerialReadChar();
+                            char n0 = SerialReadChar();
                             byte b = (FromHex(n1) << 4) + FromHex(n0);
                             HRFile.Append(fh, b);
                             size--;
                         }
                         HRFile.Flush(fh);
-                        Serial.WriteChar(char(enter));
-                        Serial.WriteChar(char(slash));
+                        SerialWriteChar(char(enter));
+                        SerialWriteChar(char(slash));
                         
                     }
                     case 'L':
@@ -798,7 +782,7 @@ program Runtime
                         uint codeLength;
                     
                         loaded = SerialLoadIHex(ref loadedAddress, ref codeLength);
-                        Serial.WriteChar(char(enter));
+                        SerialWriteChar(char(enter));
                         if (loaded)
                         {
                             HopperVM.Initialize(loadedAddress, codeLength);
@@ -825,16 +809,16 @@ program Runtime
                         // '*' success
                         loop
                         {
-                            ch = Serial.ReadChar();
+                            ch = SerialReadChar();
                             if ((ch == '!') || (ch == '*'))
                             {
                                 break;
                             }
                         }
-                        Serial.WriteChar(char(enter));
-                        Serial.WriteChar(loaded ? '*' : '!');
+                        SerialWriteChar(char(enter));
+                        SerialWriteChar(loaded ? '*' : '!');
                         
-                        Serial.WriteChar(char(slash)); // confirm the data
+                        SerialWriteChar(char(slash)); // confirm the data
 #ifndef LOCALDEBUGGER                        
                         if (loaded)
                         {
@@ -877,7 +861,7 @@ program Runtime
                                     {
                                         HopperVM.Restart();
                                     }
-                                    Serial.WriteChar(char(slash)); // confirm handing back control
+                                    SerialWriteChar(char(slash)); // confirm handing back control
                                 }
                                 case 'I': // Step Into | <F11>
                                 {
@@ -886,7 +870,7 @@ program Runtime
                                     {
                                         HopperVM.Restart();
                                     }
-                                    Serial.WriteChar(char(slash)); // confirm handing back control
+                                    SerialWriteChar(char(slash)); // confirm handing back control
                                 }
                                 case 'D': // Debug
                                 {
@@ -895,7 +879,7 @@ program Runtime
                                     {
                                         HopperVM.Restart();
                                     }
-                                    Serial.WriteChar(char(slash)); // confirm handing back control
+                                    SerialWriteChar(char(slash)); // confirm handing back control
                                 }
                                 case 'X': // Execute
                                 {
@@ -904,7 +888,7 @@ program Runtime
                                     {
                                         HopperVM.Restart();
                                     }
-                                    Serial.WriteChar(char(slash)); // confirm handing back control
+                                    SerialWriteChar(char(slash)); // confirm handing back control
                                 }
                                 case 'W': // Warm restart
                                 {

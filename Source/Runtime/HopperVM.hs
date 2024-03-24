@@ -184,17 +184,27 @@ unit HopperVM
 #ifdef RUNTIME        
         keyboardBuffer     = nextAddress;
         nextAddress        = nextAddress + keyboardBufferSize;
-        IO.AssignKeyboardBuffer(keyboardBuffer);
 #endif        
-        
-        Instructions.PopulateJumpTable(jumpTable);
-        
         dataMemory         = nextAddress;
         
         if (dataMemory < 0x0800)
         {
             dataMemory = 0x0800; // after our 'fake' stack pages
         }
+        
+        // filling these pages with zeroes makes debugger protocol faster
+        uint i = 0;
+        loop
+        {
+            Memory.WriteWord(i, 0x0000);
+            i = i + 2;
+            if (i == dataMemory) { break; }
+        }
+        
+#ifdef RUNTIME                
+        IO.AssignKeyboardBuffer(keyboardBuffer);
+#endif  
+        Instructions.PopulateJumpTable(jumpTable);
         
         // currently we have 64K on the Pi Pico (actually only 0xFF00 for various reasons)
         // to avoid any boundary condition issues in the heap allocator)
@@ -1277,7 +1287,7 @@ unit HopperVM
             }
             case SysCalls.SerialReadChar:
             {
-                char ch = Serial.ReadChar();
+                char ch = SerialReadChar();
                 Push(uint(ch), Type.Char);
             }
             case SysCalls.SerialWriteChar:
@@ -1287,7 +1297,7 @@ unit HopperVM
 #ifdef CHECKED
                 AssertChar(atype, ch);
 #endif
-                Serial.WriteChar(char(ch));
+                SerialWriteChar(char(ch));
             }
             case SysCalls.SerialWriteString:
             {
@@ -3792,7 +3802,7 @@ unit HopperVM
 #ifdef CHECKED                
         IO.WriteHex(messagePC);
 #else
-        IO.WriteHex(PC);
+        IO.WriteHex(HopperVM.PC);
 #endif
         IO.Write(' '); IO.Write('E'); IO.Write('r'); IO.Write('r'); IO.Write('o'); IO.Write('r'); IO.Write(':'); 
         byte berror = Error;
@@ -3943,7 +3953,7 @@ unit HopperVM
                 WriteERROR();
                 break;
             }
-            if (PC == 0) // returned from "main"
+            if (HopperVM.PC == 0) // returned from "main"
             {
                 restart = true; // this restart causes the Profiler to hang for MSU (since 0 is legit start address)
                 break;     // clean exit of "main"
@@ -3958,8 +3968,8 @@ unit HopperVM
     }
     uint RuntimeDateTime()
     {
-        Serial.WriteChar(char(0x07)); // Bell
-        Serial.WriteChar('D'); // DateTime
+        SerialWriteChar(char(0x07)); // Bell
+        SerialWriteChar('D'); // DateTime
         while (!Serial.IsAvailable)
         {
             External.Delay(10);    
@@ -3967,7 +3977,7 @@ unit HopperVM
         uint hrstring = HRString.New();
         loop
         {
-            char ch = Serial.ReadChar();
+            char ch = SerialReadChar();
             if (ch == char(0x0D))
             {
                 break;

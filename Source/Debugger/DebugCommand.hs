@@ -72,26 +72,19 @@ unit DebugCommand
     
     setBreakpoints(<uint> breakpointAddresses)
     {
-        Pages.LoadZeroPage(false); // for CODESTART
-        if (ZeroPageContains("CODESTART"))
+        <string> commands;
+        commands.Append("BX"); // clear existing breakpoints
+        for (uint i = 0; i < breakpointAddresses.Count; i++)
         {
-            uint cs = GetZeroPage("CODESTART");
-            
-            <string> commands;
-            commands.Append("BX"); // clear existing breakpoints
-            for (uint i = 0; i < breakpointAddresses.Count; i++)
+            uint address = breakpointAddresses[i];
+            if (address > 0)
             {
-                uint address = breakpointAddresses[i];
-                if (address > 0)
-                {
-                    address = address + cs;
-                    uint n = i + 1;
-                    string command = "B" + n.ToHexString(1) + address.ToHexString(4);
-                    commands.Append(command);
-                }
+                uint n = i + 1;
+                string command = "B" + n.ToHexString(1) + address.ToHexString(4);
+                commands.Append(command);
             }
-            Monitor.Command(commands, false, false);
         }
+        Monitor.Command(commands, false, false);
     }
     
     bool BreakpointsExist()
@@ -191,8 +184,6 @@ unit DebugCommand
         Output.Initialize();
         if (   ZeroPageContains("PC") 
             && ZeroPageContains("CSP") 
-            && ZeroPageContains("CODESTART")
-            // && IsPageLoaded(0x04)
            )
         {
             uint csp = GetZeroPage("CSP");

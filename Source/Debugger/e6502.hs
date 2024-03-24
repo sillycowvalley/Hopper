@@ -22,8 +22,6 @@ program E6502
     <uint,uint> methodSizes;     // <index, length>
     <uint,uint> methodAddresses; // <address,index>
     
-    file logFile;
-        
     bool BreakCheck()
     {
         if (Keyboard.IsAvailable)
@@ -219,8 +217,6 @@ program E6502
        
     DoReset()
     {
-        logFile = File.Create("/Debug/Emulate.log");
-        
         ACIA.Initialize();
         W65C02.Reset();
     }
@@ -550,12 +546,12 @@ program E6502
             W65C02.NMI   = code[length-6] + (code[length-5] << 8);
             W65C02.Reset = code[length-4] + (code[length-3] << 8);
             W65C02.IRQ   = code[length-2] + (code[length-1] << 8);
+            
+            DoReset();
             for (uint i = 0; i < length-vectorUse; i++)
             {
                 W65C02.SetMemory(orgROM+i, code[i]);
             }
-            DoReset();
-            
             
             //PrintLn(orgROM.ToHexString(4));
             //PrintLn(vectorNMI.ToHexString(4));

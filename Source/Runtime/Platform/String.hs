@@ -71,6 +71,17 @@ unit HRString
     {
         return ReadWord(this+siLength);
     }
+    SetLength(uint this, uint length)
+    {
+        if (length > ReadWord(this+siLength))
+        {
+            Error = 0x05;
+        }
+        else
+        {
+            WriteWord(this+siLength, length);
+        }
+    }
     char GetChar(uint this, uint index)
     {
         uint length = GetLength(this);
@@ -80,6 +91,18 @@ unit HRString
             return char(0);
         }
         return char(ReadByte(this+siChars+index));     
+    }
+    SetChar(uint this, uint index, char ch)
+    {
+        uint length = GetLength(this);
+        if (index >= length)
+        {
+            Error = 0x05;
+        }
+        else
+        {
+            WriteByte(this+siChars+index, byte(ch));     
+        }
     }
     uint Substring(uint this, uint start, uint limit)
     {

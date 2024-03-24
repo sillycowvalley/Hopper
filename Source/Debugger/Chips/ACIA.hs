@@ -8,6 +8,11 @@ unit ACIA
     
     bool initialized;
     
+    bool IsRegister(uint address)
+    {
+        return (controlRegister == address) || (statusRegister == address) || (dataRegister == address);
+    }
+    
     Initialize()
     {
         bool success;

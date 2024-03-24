@@ -6,7 +6,7 @@ unit Stacks
         STZ ZP.BP
         STZ ZP.CSP
         
-#ifdef CHECKED
+        // zeroes mean faster debug protocol
         STZ IDXL
         LDA # (Address.ValueStackLSB >> 8)
         STA IDXH
@@ -25,7 +25,6 @@ unit Stacks
         STA IDXH
         LDX # 2
         Utilities.ClearPages(); // with IDX (memory location) and X (number of pages) initialized
-#endif
     }
     
     PopBP()

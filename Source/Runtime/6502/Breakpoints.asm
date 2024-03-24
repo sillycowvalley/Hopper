@@ -63,28 +63,27 @@ unit Breakpoints
     {
         LDX # 0x10 // Z is clear
         
-        BBS5 ZP.FLAGS, +3
-        return; // skip code below if no breakpoints set
-            
-        LDX #0
-        loop
-        {
-            // clearNextBreakPoint
-            LDA ZP.BRKH, X
-            CMP ZP.PCL
-            if (Z)
+        if (BBS5, ZP.FLAGS) // are there breakpoints set?
+        {  
+            LDX #0
+            loop
             {
-                LDA ZP.BRKL, X
+                LDA ZP.BRKH, X
                 CMP ZP.PCH
                 if (Z)
                 {
-                    return; // Z is set
+                    LDA ZP.BRKL, X
+                    CMP ZP.PCL
+                    if (Z)
+                    {
+                        return; // Z is set for X
+                    }
                 }
+                INX
+                CPX # 0x10
+                if (Z) { break; }
             }
-            INX
-            CPX # 0x10
-            if (Z) { break; }
+            CPX # 0 // clear Z (since X is 0x10)
         }
-        CPX # 0 // clear Z (since X is 0x10)
     }
 }

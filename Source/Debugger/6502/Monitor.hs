@@ -347,6 +347,24 @@ unit Monitor
         <string> commandLines;
         commandLines.Append(commandLine);
         Command(commandLines, collect, hasData);
+        
+        if (collect && hasData && commandLine.StartsWith('F'))
+        {
+            serialOutput = serialOutput.Replace(".", "00");
+            if (serialOutput.EndsWith('+'))
+            {
+                serialOutput = serialOutput.Substring(0, serialOutput.Length-1);
+                serialOutput = serialOutput.Pad('0', 512);
+            }
+            string expanded;
+            for (uint i=0; i < 16; i++)
+            {
+                String.Build(ref expanded, serialOutput.Substring(0, 32));
+                String.Build(ref expanded, char(0x0D));
+                serialOutput = serialOutput.Substring(32);
+            }
+            serialOutput =expanded;
+        }
     }
     Command(<string> commandLines, bool collect, bool hasData)
     {
@@ -592,6 +610,7 @@ unit Monitor
         {
             DeleteBreakpoints();
         }
+        Pages.LoadZeroPage(true); // update IsLoaded reliably
         collectOutput = false;
     }
     string CurrentHexPath { get { return lastHexPath; } set {lastHexPath = value; } }
@@ -626,27 +645,28 @@ unit Monitor
         {
             info = info + ", 6502";
         }
+        if (HopperFlags.BreakpointsSet == (hopperFlags & HopperFlags.BreakpointsSet))
+        {
+            info = info + ", Breakpoint/s exist";
+        }
+        if (IsLoaded)
+        {
+            info = info + ", program loaded";
+        }
+        
         return info;
     }     
     
     uint GetCurrentPC()
     {
-        if (!ZeroPageContains("CODESTART"))
-        {
-            LoadZeroPage(false);
-        }
         Monitor.Command("P", true, true);
         string serialOutput = Monitor.GetSerialOutput();
         while ((serialOutput.Length >= 5) && ((serialOutput[0] == char(0x0A)) || (serialOutput[0] == char(0x0D))))
         {
             serialOutput = serialOutput.Substring(1);
         }
-        //OutputDebug("GetCurrentPC: " + serialOutput);
         uint pc;
-        if (UInt.TryParse("0x" + serialOutput, ref pc))
-        {
-            pc = pc - GetZeroPage("CODESTART");
-        }
+        _ = UInt.TryParse("0x" + serialOutput, ref pc);
         return pc;
     }
     uint GetCurrentCRC()

@@ -1,23 +1,14 @@
 unit Pages
 {
+    uses "ZeroPage"
+    
     bool[0x100]   pageLoaded;
     uint[0x8000]  pageWordData; // because 64K is 0x10000, not 0xFFFF
     
     <string,uint> zeroPage;
     
-    // Zero Page FLAGS:
-    flags HopperFlags
-    {
-        ProgramLoaded  = 0x01, // a program has been loaded
-        WarpSpeed      = 0x02, // on 6502, built without checks for <Ctrl><C>
-      //StackSlot32Bit = 0x02, // on MCUs, 'float' and 'long' are value types
-        CheckedBuild   = 0x04,
-      //SP8Bit         = 0x08,
-      //ProfileBuild   = 0x10,
-        BreakpointsSet = 0x20,
-      //SingleStep     = 0x40,
-        MCUPlatform    = 0x80,
-    }
+    bool isLoaded;
+    bool IsLoaded { get { return isLoaded; }  set { isLoaded = value; } } // program is loaded
     
     bool IsPageLoaded(byte page)
     {
@@ -152,37 +143,35 @@ unit Pages
             if (!success)
             {
                 OutputDebug("LoadZeroPage: failed");
+                Print("[Z-]");
             }
             //OutputDebug("ReloadPageData(0x00)");
         }
         if (success)
         {
-            HopperFlags hopperFlags   = HopperFlags(Pages.GetPageByte(0xBB));
+            zeroPage["PC"]        = Pages.GetPageWord(ZP.ZPC);
+            //zeroPage["CODESTART"] = Pages.GetPageWord(ZP.ZCODESTART);
             
-            zeroPage["PC"]        = Pages.GetPageWord(0xB0);
-            zeroPage["CODESTART"] = Pages.GetPageWord(0xB2);
+            zeroPage["SP"]        = Pages.GetPageByte(ZP.ZSP);
+            zeroPage["BP"]        = Pages.GetPageByte(ZP.ZBP);
+            zeroPage["CSP"]       = Pages.GetPageByte(ZP.ZCSP);
+            //zeroPage["CNP"]       = Pages.GetPageByte(ZP.ZCNP);
             
-            zeroPage["SP"]        = Pages.GetPageByte(0xB4);
-            zeroPage["BP"]        = Pages.GetPageByte(0xB5);
-            zeroPage["CSP"]       = Pages.GetPageByte(0xB6);
-            zeroPage["CNP"]       = Pages.GetPageByte(0xB7);
+            HopperFlags hf = HopperFlags(Pages.GetPageByte(ZP.ZFLAGS));
             
-            zeroPage["FLAGS"]     = Pages.GetPageByte(0xBB);
+            zeroPage["FLAGS"]     = uint(hf);
             
-            zeroPage["FREELIST"]  = Pages.GetPageWord(0xBC);
-            zeroPage["HEAPSTART"] = Pages.GetPageByte(0xBE) << 8;
-            zeroPage["HEAPSIZE"]  = Pages.GetPageByte(0xBF) << 8;
+            zeroPage["FREELIST"]  = Pages.GetPageWord(ZP.ZFREELIST);
+            zeroPage["HEAPSTART"] = Pages.GetPageByte(ZP.ZHEAPSTART) << 8;
+            zeroPage["HEAPSIZE"]  = Pages.GetPageByte(ZP.ZHEAPSIZE) << 8;
             
-            zeroPage["ACC"]    = Pages.GetPageWord(0xC0);
-            zeroPage["TOP"]    = Pages.GetPageWord(0xC2);
-            zeroPage["NEXT"]   = Pages.GetPageWord(0xC4);
-            zeroPage["IDX"]    = Pages.GetPageWord(0xC6);
-            zeroPage["IDY"]    = Pages.GetPageWord(0xC8);
+            //zeroPage["ACC"]    = Pages.GetPageWord(ZP.ZACC);
+            //zeroPage["TOP"]    = Pages.GetPageWord(ZP.ZTOP);
+            //zeroPage["NEXT"]   = Pages.GetPageWord(ZP.ZNEXT);
+            //zeroPage["IDX"]    = Pages.GetPageWord(ZP.ZIDX);
+            //zeroPage["IDY"]    = Pages.GetPageWord(ZP.ZIDY);
             
-            //foreach (var kv in zeroPage)
-            //{
-            //    OutputDebug(kv.key + " = 0x" + kv.value.ToHexString(4));
-            //}
+            IsLoaded = (HopperFlags.ProgramLoaded == (hf & HopperFlags.ProgramLoaded));
         }
     }
     bool ZeroPageContains(string key)

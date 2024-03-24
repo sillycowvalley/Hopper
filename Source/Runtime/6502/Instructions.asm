@@ -140,18 +140,17 @@ unit Instruction
             }
             default:
             {
-                TXA
-                BRK // operand length not implemented!
+                TXA BRK // operand length not implemented!
             }
         }
         PLX
     }
     
     // Z set if next instruction is CALL, Z clear if not
-    IsNextCALL()
+    IsCurrentCALL()
     {
         // ACC = PC + CODESTART + instruction length
-        GetNextAddress();
+        GetCurrentAddress(); // GetNextAddress();
         
         // load next instruction into A
         LDA [ZP.ACC]
@@ -677,7 +676,7 @@ unit Instruction
         }
         if (NZ) // NEXT == TOP (not >)?
         {
-            if (NC) // NEXT <  TOP (not >)?
+            if (C) // NEXT <  TOP (not >)?
             {
                 LDX #0  // NEXT > TOP
             }
@@ -1101,8 +1100,7 @@ unit Instruction
     
     missing()
     {
-        TXA
-        BRK // OpCode not Implemented!
+        TXA BRK // OpCode not Implemented!
     }
       
     Execute()
@@ -1125,7 +1123,9 @@ unit Instruction
         LDA [ZP.ACC]
         
         Utilities.IncPC();
-        
+#ifdef CHECKED
+        TAY // so we can see the original A at BRK
+#endif        
         TAX
         switch (X)
         {

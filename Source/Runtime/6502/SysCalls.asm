@@ -14,13 +14,11 @@ unit SysCall
     
     missing()
     {
-        TXA
-        BRK // SysCall not Implemented!
+        TXA BRK // SysCall not Implemented!
     }
     die()
     {
-        PopA();
-        BRK // user error from Hopper in A
+        PopA(); BRK // user error from Hopper in A
     }
     serialConnect()
     {
@@ -83,6 +81,10 @@ unit SysCall
     {
         // iOverload in ACC
         // iSysCall  in X
+        
+#ifdef CHECKED
+        TXA TAY // so we can see the original A at BRK
+#endif                
         switch (X)
         {
             case SysCalls.DiagnosticsDie:

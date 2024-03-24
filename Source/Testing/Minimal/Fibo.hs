@@ -38,7 +38,7 @@ program Fibo
     }
     Hopper()
     {
-        uint result = Fibo(24);
+        uint result = Fibo(15);
         Serial.WriteChar(' '); WriteUInt(result); Serial.WriteChar('!');Serial.WriteChar(' ');
     }
 }

@@ -458,8 +458,10 @@ enum DataMode {
 };
 
 enum HopperFlags {
+    eProgramLoaded = 0x0001,
     eWarpSpeed = 0x0002,
     eCheckedBuild = 0x0004,
+    eSP8Bit = 0x0008,
     eBreakpointsSet = 0x0020,
     eMCUPlatform = 0x0080,
 };
@@ -612,12 +614,14 @@ enum Key {
 
 void HopperEntryPoint();
 Bool Runtime_LoadHexe_R(UInt path, UInt startAddress, UInt & loadedAddress, UInt & codeLength, Bool doCRC);
+void Runtime_SerialWriteChar(Char c);
+Char Runtime_SerialReadChar();
 Byte Runtime_FromHex(Char ch);
 void Runtime_WaitForEnter();
-void Runtime_DumpPage(Byte iPage, Bool includeAddresses);
+void Runtime_DumpPage(Byte iPage);
 void Runtime_out4Hex_R(UInt & pageBuffer, UInt value);
 Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength);
-void Runtime_out2Hex_R(UInt & pageBuffer, Byte value);
+void Runtime_out2HexOrDot_R(UInt & pageBuffer, Byte value);
 Bool Runtime_TryReadSerialByte_R(Byte & data);
 UInt Colour_MatrixGreen_Get();
 UInt Colour_Black_Get();
@@ -639,6 +643,7 @@ Bool HopperVM_BreakpointExists_Get();
 UInt HopperVM_GetBreakpoint(Byte n);
 UInt HopperVM_GetCS(Byte address);
 UInt HopperVM_Get_R(Byte address, Type & htype);
+UInt HopperVM_Get(Byte address);
 void HopperVM_DataMemoryReset();
 void HopperVM_DiskSetup();
 Bool HopperVM_ExecuteOpCode();
@@ -647,10 +652,13 @@ void HopperVM_WriteBREAK();
 void GC_Release(UInt address);
 UInt HRString_New();
 void HRString_BuildChar_R(UInt & _this, Char ch);
+UInt HRString_GetLength(UInt _this);
+Char HRString_GetChar(UInt _this, UInt index);
+void HRString_SetChar(UInt _this, UInt index, Char ch);
+void HRString_SetLength(UInt _this, UInt length);
 void HRString_BuildClear_R(UInt & _this);
 UInt HRString_new(UInt size);
 UInt HRString_getCapacity(UInt _this);
-UInt HRString_GetLength(UInt _this);
 UInt HRString_clone(UInt original, UInt extra);
 void HRDirectory_Create(UInt hrpath);
 Bool HRDirectory_Exists(UInt hrpath);
@@ -836,7 +844,6 @@ void HopperVM_PushI(Int ivalue);
 void HopperVM_CNP_Set(Bool value);
 Int HopperVM_ReadByteOffsetOperand();
 UInt HopperVM_TypeStackLSB_Get();
-UInt HopperVM_Get(Byte address);
 void HopperVM_Put(Byte address, UInt value, Type htype);
 void HopperVM_Push(UInt value, Type htype);
 Byte HopperVM_ReadByteOperand();
@@ -936,7 +943,6 @@ UInt Memory_Available();
 UInt Memory_Maximum();
 UInt HRString_NewFromConstant1(UInt doubleChar);
 UInt HRString_NewFromConstant0(UInt location, UInt length);
-Char HRString_GetChar(UInt _this, UInt index);
 UInt HRString_InsertChar(UInt _this, UInt index, Char ch);
 UInt HRString_ToUpper(UInt _this);
 void HRString_ToUpper_R(UInt & _this);

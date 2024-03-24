@@ -789,11 +789,10 @@ unit Source
                     }
                     else 
                     {
-                        uint codeStart = Pages.GetZeroPage("CODESTART");
-                        if (!Code.MethodExists(value) && (value >= codeStart))
+                        if (!Code.MethodExists(value))
                         {
                             // probably a method address, not an index
-                            uint address = value - codeStart;
+                            uint address = value;
                             value = Code.LocationToIndex(address);
                         }
                         string methodName;

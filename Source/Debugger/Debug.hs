@@ -124,6 +124,18 @@ program Debug
                             filePath = fullPathExt;
                             break;
                         }
+                        filePathExt = filePath + ".asm";
+                        if (File.Exists(filePathExt))
+                        {
+                            filePath = filePathExt;
+                            break;
+                        }
+                        fullPathExt = Path.Combine(System.CurrentDirectory, filePathExt);
+                        if (File.Exists(fullPathExt))
+                        {
+                            filePath = fullPathExt;
+                            break;
+                        }
                     }
                     if (!File.Exists(fullPath))
                     {
@@ -137,7 +149,7 @@ program Debug
             {
                 ihexPath = Path.GetFileName(filePath);
                 string extension = Path.GetExtension(filePath);
-                ihexPath = ihexPath.Replace(extension, ".ihex");
+                ihexPath = ihexPath.Replace(extension, (filePath.EndsWith(".asm") ? ".hex" : ".ihex"));
                 ihexPath = Path.Combine("/bin", ihexPath);
                 if (!File.Exists(ihexPath))
                 {

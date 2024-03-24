@@ -330,7 +330,10 @@ program DASM
                 
                 // read the method table
                 <uint,string> methodNames;
-                methodNames[constOffset] = "constant data";
+                if (constOffset != codeOffset)
+                {
+                    methodNames[constOffset] = "constant data";
+                }
                 methodNames[0] = "0x0000";
                 
                 uint constLength = codeOffset - constOffset;

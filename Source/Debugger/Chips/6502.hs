@@ -221,7 +221,6 @@ unit W65C02
     {
         PopFlags();
         pcRegister = Pop() + (Pop() << 8);
-        iFlag = false;
     }
     
     Execute()

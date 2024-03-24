@@ -215,7 +215,7 @@ program HopperMonitor
         Pages.LoadZeroPage(false); // for CSP and PC
         Output.Initialize();
         
-        if (   ZeroPageContains("PC") && ZeroPageContains("CSP") && ZeroPageContains("CODESTART"))
+        if (   ZeroPageContains("PC") && ZeroPageContains("CSP"))
         {
             //DumpMap();
             
@@ -233,14 +233,13 @@ program HopperMonitor
                     address = GetPageByte(0x0300+icsp) + GetPageByte(0x0400+icsp) << 8;
                     bp      = GetPageByte(0x0300+icsp+1);
 
-                    address = address - GetZeroPage("CODESTART");
                     methodIndex = LocationToIndex(address);
                     OutputMethodLine(address - 3, methodIndex, bp, sourceLevel, symbolsLoaded);
                     icsp += 2;
                 }
                 
                 // current method
-                uint pc = GetZeroPage("PC") - GetZeroPage("CODESTART");
+                uint pc = GetZeroPage("PC");
                 methodIndex = LocationToIndex(pc);
                 bp  = byte(GetZeroPage("BP"));
 
@@ -343,10 +342,10 @@ program HopperMonitor
         Pages.LoadZeroPage(true);
         PrintLn();
         
-        uint pc = GetZeroPage("PC");
+        uint pc  = GetZeroPage("PC");
         uint csp = GetZeroPage("CSP");
-        uint sp = GetZeroPage("SP");
-        uint bp = GetZeroPage("BP");
+        uint sp  = GetZeroPage("SP");
+        uint bp  = GetZeroPage("BP");
         PrintLn("PC=" + pc.ToHexString(4) + " CSP=" + csp.ToHexString(2)+ " SP=" + sp.ToHexString(2)+ " BP=" + bp.ToHexString(2));
     }    
     
@@ -354,14 +353,22 @@ program HopperMonitor
     {
         string content = address.ToHexString(4); // fallback content
         uint entryPoint = Source.GetCode(0x0004) + Source.GetCode(0x0005) << 8;
+        
+        uint codeLength = Source.GetCodeLength();
+
+        //PrintLn();        
+        //PrintLn("address=" + address.ToHexString(4) + 
+        //        ", entryPoint=" + entryPoint.ToHexString(4) + 
+        //        ", codeLength=" +codeLength.ToHexString(4));
+        
         address += entryPoint;
         int entryPointOffset = -int(entryPoint);
         bool first = true;
         loop
         {
-            if ((address >= 0) && (address < Source.GetCodeLength()))
+            if ((address >= 0) && (address < codeLength))
             {
-                uint sourcePC = address;
+                uint sourcePC = address - entryPoint;
                 string sourceIndex = Code.GetSourceIndex(sourcePC);
                 
                 if (sourceIndex.Length != 0)
@@ -568,7 +575,6 @@ program HopperMonitor
         PrintPad("S        - show source listing at Hopper PC", 4);
         PrintPad("H        - emit current Hopper heap objects", 4);
         PrintPad("M <page> - emit a 256 byte page of memory", 4);
-        PrintPad("U        - profile: opCode and sysCall usage data, generates .csv", 4);
     }
     
     Interactive()
@@ -700,7 +706,14 @@ program HopperMonitor
             if (key == Key.Enter)
             {
                 // execute commandLine
-                if (currentCommand == 'Q') // exit monitor UI
+                if (!Pages.IsLoaded && ("BCDIOSUVWX").Contains(currentCommand))
+                {
+                    // these commands should do be used if there is no program loaded
+                    PrintLn();
+                    PrintLn("No program loaded");
+                    refresh = true;
+                }
+                else if (currentCommand == 'Q') // exit monitor UI
                 {
                     PrintLn();
                     break; 
@@ -810,8 +823,21 @@ program HopperMonitor
                         hexpage = commandLine.Substring(2, commandLine.Length-2);
                         if (ValidateHexPage(ref hexpage))
                         {
-                            Monitor.Command(commandLine.Substring(0,1) + hexpage, false, true);
+                            Monitor.Command(commandLine.Substring(0,1) + hexpage, true, true);
                             refresh = true;
+                            
+                            string output = Monitor.GetSerialOutput();
+                            output = output.Replace(""+ char(0x0D), "");
+                            output = output.Replace(""+ char(0x0A), "");
+                            if (output.Length == 512)
+                            {
+                                PrintLn();
+                                for (byte i = 0; i < 15; i++)
+                                {
+                                    PrintLn(output.Substring(0,32));
+                                    output = output.Substring(32);
+                                }
+                            }
                         }
                     }
                 } // case 'F'
@@ -840,33 +866,6 @@ program HopperMonitor
                         }
                     }
                 } // case 'B'
-                
-                else if (currentCommand == 'U') // gather usage data
-                {
-                    PrintLn();
-                    string lastHexPath = Monitor.CurrentHexPath;
-                    if (lastHexPath.Length == 0)
-                    {
-                        Print("Nothing loaded yet to profile.");
-                    }
-                    else
-                    {
-                        string pages = "89AB";
-                        <string> commands;
-                        foreach (var page in pages)
-                        {
-                            commands.Append("M0" + page);
-                        }
-                        Monitor.Command(commands, true, true);
-                        string profilePath = Path.GetFileName(lastHexPath);
-                        profilePath = profilePath.ToLower();
-                        profilePath = profilePath.Replace(".ihex", ".csv");
-                        profilePath = Path.Combine("/Debug", profilePath);
-                        Profile(GetSerialOutput(), profilePath);
-                        Print("Profile data saved to '" + profilePath  + "'");
-                    }
-                    refresh = true;
-                } // case 'U'
                 
                 else if (currentCommand == 'E') // enter Boot Select mode on the RP2040 then quit
                 {
@@ -1031,7 +1030,7 @@ program HopperMonitor
                     if (clength == 0)
                     {
                         // first character must be command key
-                        if (String.Contains("?BCDEFHIKLMOPQRSTUVWXZ", ch))
+                        if (String.Contains("?BCDEFHIKLMOPQRSTVWXZ", ch))
                         {
                             currentCommand = ch;
                         }

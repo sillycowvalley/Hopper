@@ -319,7 +319,7 @@ namespace HopperNET
                     }
                     try
                     {
-                        Thread.Sleep(5); /// for 6502, we are limited by a 256 byte circular buffer
+                        Thread.Sleep(1); /// for 6502, we are limited by a 256 byte circular buffer
                         b[0] = (byte)c;
                         com0Client.Write(b, 0, 1);
                     }

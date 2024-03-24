@@ -38,12 +38,14 @@ program R6502
     uses "6502/Instructions"
     
     IRQ()
-    
     {
-        BBR7 ZP.ACIASTATUS, +6 // interrupt request by 6850
-        BBR0 ZP.ACIASTATUS, +3 // RDRF : receive data register full
-        
-        Serial.ISR();
+        if (BBS7, ZP.ACIASTATUS) // interrupt request by 6850
+        {
+            if (BBS0, ZP.ACIASTATUS) // RDRF : receive data register full
+            {
+                Serial.ISR();
+            }
+        }
     }
     NMI()
     {
@@ -93,11 +95,11 @@ program R6502
     crcCommand()
     {
         Utilities.WaitForEnter();  // consume <enter>
+        LDA # 0x0D
+        Serial.WriteChar();
         LDA #0
-        Serial.WriteChar();
-        Serial.WriteChar();
-        Serial.WriteChar();
-        Serial.WriteChar();
+        Serial.HexOut();
+        Serial.HexOut();
         Utilities.SendSlash();     // confirm the data
     }
     pcCommand()
@@ -171,7 +173,6 @@ program R6502
                         // ignore EOF checksum and EOL
                         Serial.WaitForChar(); // 'F'
                         Serial.WaitForChar(); // 'F'
-                        Serial.WaitForChar(); // 0x0D
                         
                         LDA # '*' // EOF success terminator
                     }
@@ -215,6 +216,9 @@ program R6502
             
             SMB0 ZP.FLAGS                // program is loaded
             
+            LDA # 0x0D
+            Serial.WriteChar();
+            
             LDA ZP.IDYH
             Serial.HexOut();
             LDA ZP.IDYL
@@ -236,11 +240,18 @@ program R6502
             LDA #' '
             Serial.WriteChar();
             
+            Serial.WaitForChar(); // 0x0D
+            Serial.WaitForChar(); // 0x0D
+            
             Serial.WaitForChar(); // arbitrary '*' terminator from client
             
             LDA # 0x0D
             Serial.WriteChar();
             LDA # '*'               // restore success terminator
+        }
+        else
+        {
+            RMB0 ZP.FLAGS           // no program loaded
         }
         Serial.WriteChar();         // success or failure ('*' or '!')?
         Utilities.SendSlash();      // confirm the data
@@ -286,11 +297,20 @@ program R6502
    
     resetVector()
     {
-        STZ IDXL
-        LDA # 0
-        STA IDXH
-        LDX # 1
-        Utilities.ClearPages(); // clear the Zero Page
+        // zeroes mean faster debug protocol
+        
+        // clear the Zero Page
+        LDX #0
+        loop
+        {
+            CPX # ACIADATA // don't write to ACIA data register (on Zero Page right now)
+            if (NZ) 
+            {
+                STZ 0x00, X
+            }
+            DEX
+            if (Z) { break; }
+        }
         
         STZ IDXL
         LDA # (SerialInBuffer >> 8)
@@ -310,7 +330,8 @@ program R6502
     
     runCommand()
     {
-        // run ignoring breakpoints
+        // Bit 1 set - run ignoring breakpoints
+        SMB1 ZP.FLAGS
         loop
         {
             LDA ZP.SerialBreakFlag
@@ -319,7 +340,6 @@ program R6502
                 STZ ZP.SerialBreakFlag
                 break; 
             }
-            
             LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
             CMP PCH
             if (Z)
@@ -333,10 +353,13 @@ program R6502
             stepintoCommand();
         }
         
+        // Bit 1 clear - run until breakpoint
+        RMB1 ZP.FLAGS   
     }
     debugCommand()
     {
-        // run until breakpoint
+        // Bit 1 clear - run until breakpoint
+        RMB1 ZP.FLAGS
         
         // for first instruction, don't check for breakpoint (in case we are already stopped on one)
         stepintoCommand();
@@ -388,14 +411,14 @@ program R6502
             }
         }
         
-        // is the next instruction a CALL/JSR?
-        Instruction.IsNextCALL();
+        // is the instruction about to be executed a CALL/JSR?
+        Instruction.IsCurrentCALL();
         if (Z)
         {
             // set breakpoint '0' on next instruction
             
             // ACC = PC + CODESTART + instruction length
-            GetNextAddress();
+            Instruction.GetNextAddress();
             
             // machine address - CODESTART = Hopper address
             SEC
@@ -411,7 +434,10 @@ program R6502
             // run to breakpoint
             debugCommand();
         }
-        stepintoCommand();
+        else
+        {
+            stepintoCommand();
+        }
     }
     stepintoCommand()
     {
@@ -496,8 +522,10 @@ program R6502
                     }
                 }
                 
-                BBS0 ZP.FLAGS, +3 
-                continue; // no program is loaded
+                if (BBR0, ZP.FLAGS)
+                {
+                    continue; // no program is loaded
+                }
                 
                 // Execution commands:
                 switch (A)
