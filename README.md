@@ -69,8 +69,7 @@ Disassembles Hopper binaries `<project.hexe>` into assembler listings `<project.
 Disassembles 6502 binaries `<project.hex>` into assembler listings `<project.lst>`.
 
 ### Runtime
-The portable runtime is written in Hopper and is used to generate the RP2040 MCU runtime. It also runs under the Windows Runtime for emulation and testing.
-- full support for Hopper `Debug` and `HopperMon` via synthesized `COM0` serial interface
+The portable runtime is written in Hopper and is used to generate the RP2040 MCU runtime. It also runs under the Windows Runtime for emulation and testing. It provides full support for Hopper `Debug` and `HopperMon` via synthesized `COM0` serial interface when running on Windows or via the actual serial interface when running on a MCU.
 
 ### RP2040 Runtime
 Current state of Hopper on RP2040 MCUs (via the Arduino IDE) is:
@@ -90,7 +89,19 @@ Current state of Hopper on RP2040 MCUs (via the Arduino IDE) is:
 - RTC drivers for 3 different chips (including alarm and timer events)
 
 ### 6502 Runtime
-This is the second generation Hopper runtime for 6502.  Currently it (`r6502`) can be loaded into the emulator (`e6502`) under the Windows Runtime and you can upload and debug Hopper programs on it using HopperMon (`hm`) or the Hopper debugger (`debug`) via the synthesized `COM0` connection.
+This is the second generation Hopper runtime for 6502.  Currently it (`r6502`) can be loaded into the emulator (`e6502`) under the Windows Runtime and you can upload and debug Hopper programs on it using HopperMon (`hm`) or the Hopper debugger (`debug`) via the synthesized `COM0` connection. 
+
+### Editor
+The editor, `edit`, is a colour syntax highlighting editor for both Hopper (`.hs`) and 6502 assembly (`.asm`) projects that runs under the Hopper runtime on Windows. It also serves as the IDE with good project navigation tools and integration with both the Hopper and 6502 project building toolchains. It can also upload successfully built projects (either Hopper or 6502 assembly) to your device and launch them directly in the debugger (`debug`).
+
+### Debugger
+Full source-level symbolic debugging experience (`debug`) which can be launched from the IDE (`edit`). Works with Hopper projects and 6502 assembly projects. Works by connecting to the Hopper Runtime via a serial connection. This also works in emulation mode by connecting to the Portable Runtime (`runtime`) via a synthesized `COM0` serial interface to a 2nd instance of the Hopper runtime running on Windows.
+
+### HopperMon
+`hm` runs under the Windows Runtime. It uses the same serial connection debugging protocol as the debugger (`debug`) but has more of a console-style interface. It also has more utility commands than the source debugger and can step one Hopper VM instruction at a time (rather than one Hopper source line at a time in the GUI debugger).
+
+### 6502 Emulator
+`e6502` runs under the Hopper runtime on Windows and can be connected to by HopperMon (`hm`) or the source debugger (`debug`) via the IDE using a synthesized `COM0` serial interface. This allows you to debug Hopper programs on the 6502 platform without a physical 6502 device. The emulator itself also has a HopperMon-style interface that can be used to debug and single step through the 6502 code.
 
 ## What's Next?
 
