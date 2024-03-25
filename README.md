@@ -31,60 +31,72 @@ From a security point of view, Hopper is:
 
 **Note:** This project is incomplete with plenty of work still to be done. Treat this as a *beta release*.
 
-The primary target for Hopper is small devices. Currently it is running well on 6502 and there
-are drivers for the following functionality:
+The primary target for Hopper is small devices. This includes microcontrollers and 8 bit CPUs. In addition to running on Windows, Hopper currently works on the 6502 and on RP2040-based microcontrollers.
 
-1. LCD (using 65C22 VIA)
-2. Timer (using 65C22 VIA)
-3. Serial (using either the Motorola 6850 or the WDC/Rockwell 6551)
-4. mimimal GPIO (built-in LED using 65C22)
-5. PS/2 keyboard (using 65C22 VIA)
+Developing for the 6502 and MCUs is a first class IDE experience: source for both the editor (with syntax highlighting) and the full symbolic source-level debugger are included (written in Hopper, of course). The debugger works live on Windows accross the regular serial connection to your device.
 
-Developing for the 6502 is a first class IDE experience: source for both the editor (with syntax highlighting)
-and the full symbolic source-level debugger are included (written in Hopper, of course).
+## Toolset
+All of these tools are written in Hopper and run and the Hopper Runtime on Windows.
 
-The compilation toolchain is broken into 5 applications, all written in Hopper:
-- Preprocess: first compilation phase which walks the entire project to collect definitions
-- Compile:    second compilation phase compiles the code within the methods
-- Optimize:   optional phase that makes obvious optimizations to the intermediate output from the compiler
-- Codegen:    compiles the intermediate output into Hopper VM byte code
-- Dasm:       disassembles Hopper binaries (.hexe) into assembler listings (.hasm)
+### Shell
+The shell is the main windows when running under the Windows Runtime. It is a command line interface written in Hopper that has also been ported to run on RP2040 MCUs (via serial). Type `help` or `man` for the list of available commands.
 
-I've also recently written a portable runtime in Hopper which, along with a Hopper to C translation tool (written in Hopper of course), made a fresh version of the runtime in the Arduino Environment a fairly trivial project.
+### Preprocess
+First compilation phase which walks the entire project to collect definitions (the stuff outside the curly braces). `Preprocess` outputs `<project.json>` which is consumed by the Hopper compiler (`compile`) or the 6502 assembler (`assemble`).
 
-Current state on microcontrollers (via the Arduino IDE) is:
-- tested on several ESP8266 and RP2040 devices
-- seperate configurable code and data segments (unlike 6502 which only has a monolithic 64K segment for both)
-- GPIO API including digital, PWM and analog
-- LittleFS for file system (to store your current program too)
-- I2C (via Arduino Wire.h)
-- SPI (mostly for display support so far)
-- several display drivers for OLED and TFT LCD
-- Graphics unit with more text functionality than Screen and some drawing primitives
-- full support for the Hopper debugger via serial interface (identical protocol to 6502 interface)
+### Compile
+Second compilation phase for Hopper programs compiles the code within the methods (the stuff between the curly braces). `Compile` generates `<project.code>` which is an intermediate format of the Hopper VM instructions. It can be consumed by either the optimizer (`optimize`) or the code generator (`codegen`).
+
+### Assemble
+Second compilation phase for 6502 assembly programs assebles the code within the methods (the stuff between the curly braces). `Assemble` generates `<project.code>` which is an intermediate format of 6502 instructions. It can be consumed by either the 6502 optimizer (`optasm`) or the 6502 code generator (`asmgen`).
+
+### Optimize
+Optional phase that makes obvious optimizations to the intermediate output from the Hopper compiler. Consumes `<project.code>`, optimizes it and then outputs a new leaner and meaner `<project.code>`.
+
+### OptAsm
+Optional phase that makes obvious optimizations to the intermediate output from the 6502 assembler. Consumes `<project.code>`, optimizes it and then outputs a new leaner and meaner `<project.code>`.
+
+### CodeGen
+Transforms the Hopper intermediate format from `<project.code>` into Hopper VM byte code executable `<project.hexe>`. Also emits this same output as an Intel HEX file (`<project.ihexe>`) if the target is an MCU or 6502. This Intel HEX is what is uploaded via the serial connection to your device.
+
+### AsmGen
+Transforms the 6502 intermediate format from `<project.code>` into 6502 executable machine code `<project.hex>`. This output is a Intel HEX file that can be burned to EEPROM or uploaded to the 6502 emulator (`e6502`).
+
+### DASM
+Disassembles Hopper binaries `<project.hexe>` into assembler listings `<project.hasm>`.
+
+### 65DASM
+Disassembles 6502 binaries `<project.hex>` into assembler listings `<project.lst>`.
+
+### Runtime
+The portable runtime is written in Hopper and is used to generate the RP2040 MCU runtime. It also runs under the Windows Runtime for emulation and testing.
+- full support for Hopper `Debug` and `HopperMon` via synthesized `COM0` serial interface
+
+### RP2040 Runtime
+Current state of Hopper on RP2040 MCUs (via the Arduino IDE) is:
+- tested on dozens of RP2040 devices
+- full support for the Hopper `Debug` and `HopperMon` via serial interface
+- seperate configurable 64K code and 64K data segments (unlike 6502 which only has a monolithic 64K segment for code, data and stacks)
+- GPIO API including digital, PWM, analog and pin interrupts
+- LittleFS for Hopper file system (to store your current program too built-in FLASH)
+- SD support via FAT file system mounted into the Hopper file system under `/SD/`
+- I2C
+- SPI
+- Timer API including alarm events
+- WiFi, web server and web client functionality
+- numerous display drivers (written in Hopper) for OLED, TFT LCD and ePaper displays
+  - text : scale, several fonts
+  - simple graphics
+- RTC drivers for 3 different chips (including alarm and timer events)
+
+### 6502 Runtime
+This is the second generation Hopper runtime for 6502.  Currently it (`r6502`) can be loaded into the emulator (`e6502`) under the Windows Runtime and you can upload and debug Hopper programs on it using HopperMon (`hm`) or the Hopper debugger (`debug`) via the synthesized `COM0` connection.
 
 ## What's Next?
 
-1. generic SPI interface (beyond the current display drivers)
-2. system | compiler | debugger:
-- fix line-ending functionality throught (consistent across platforms): parsing, serial IO, etc.
-- debugger on Windows (two instances communicating via 'serial' interface?)
-3. SD card driver (FAT?)
-4. Web / WiFi support (beyond current simple HTTP request support)
-5. Port to Z80 again
-6. Get Hopper up and running on some currently available 8 bit kits (like RC2014 and Neo6502 for example)
-7. Sound APIs (8-bit retro style possibly)
-8. UF2 binary for simpler getting starting on RP2040
-
-## Fun Project Ideas
-
-1. Better support for Forth in the VM:
-- built-in word dictionary support in the VM
-- a handful more VM opcodes
-- support for remote word-level debugging in the debugger
-2. A second Hopper client to support more than just Windows (probably Raspberry Pi next)
-3. Some utility libraries to make it easier to support retro game development on microcontrollers
-4. Revisit TinyHopper (minimal runtime with no reference types or GC) to support non-Hopper languages, run on 6507 (8K memory map)
-5. Hopper Python?
+1. fix line-ending functionality throught (consistent across platforms): parsing, serial IO, etc.
+2. Continue to refine the v2 version of the 6502 runtime
+3. Port to Z80 again ..
+4. Sound APIs (8-bit retro style possibly)
 
 Contact me for more info: BiggerTigger at sillycowvalley dot com
