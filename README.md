@@ -42,13 +42,13 @@ All of these tools are written in Hopper and run and the Hopper Runtime on Windo
 The shell is the main windows when running under the Windows Runtime. It is a command line interface written in Hopper that has also been ported to run on RP2040 MCUs (via serial). Type `help` or `man` for the list of available commands.
 
 ### Preprocess
-First compilation phase which walks the entire project to collect definitions (the stuff outside the curly braces). `Preprocess` outputs `<project.json>` which is consumed by the Hopper compiler (`compile`) or the 6502 assembler (`assemble`).
+First compilation phase which walks the entire project to collect definitions (the stuff outside the curly braces). `preprocess` outputs `<project.json>` which is consumed by the Hopper compiler (`compile`) or the 6502 assembler (`assemble`).
 
 ### Compile
-Second compilation phase for Hopper programs compiles the code within the methods (the stuff between the curly braces). `Compile` generates `<project.code>` which is an intermediate format of the Hopper VM instructions. It can be consumed by either the optimizer (`optimize`) or the code generator (`codegen`).
+Second compilation phase for Hopper programs compiles the code within the methods (the stuff between the curly braces). `compile` generates `<project.code>` which is an intermediate format of the Hopper VM instructions. It can be consumed by either the optimizer (`optimize`) or the code generator (`codegen`).
 
 ### Assemble
-Second compilation phase for 6502 assembly programs assebles the code within the methods (the stuff between the curly braces). `Assemble` generates `<project.code>` which is an intermediate format of 6502 instructions. It can be consumed by either the 6502 optimizer (`optasm`) or the 6502 code generator (`asmgen`).
+Second compilation phase for 6502 assembly programs assebles the code within the methods (the stuff between the curly braces). `assemble` generates `<project.code>` which is an intermediate format of 6502 instructions. It can be consumed by either the 6502 optimizer (`optasm`) or the 6502 code generator (`asmgen`).
 
 ### Optimize
 Optional phase that makes obvious optimizations to the intermediate output from the Hopper compiler. Consumes `<project.code>`, optimizes it and then outputs a new leaner and meaner `<project.code>`.
@@ -67,6 +67,10 @@ Disassembles Hopper binaries `<project.hexe>` into assembler listings `<project.
 
 ### 65DASM
 Disassembles 6502 binaries `<project.hex>` into assembler listings `<project.lst>`.
+
+### C Translator
+`translate` is a tool that converts Hopper source into `C` code. This tool is currently used to migrate the Hopper Portable Runtime, via the Arduino IDE, to run as the Hopper Runtime on RP2040 MCUs. Typically you'd build the Hopper project, `runtime` in this case, first. That way you know it is free of compilation errors before you try to translate it to `C`.
+Since there is no Hopper memory management and garbage collection support in `C`, projects that can be translated will need to avoid using reference types and stick to value types. The Hopper Portable runtime is such a project.
 
 ### Runtime
 The portable runtime is written in Hopper and is used to generate the RP2040 MCU runtime. It also runs under the Windows Runtime for emulation and testing. It provides full support for Hopper `Debug` and `HopperMon` via synthesized `COM0` serial interface when running on Windows or via the actual serial interface when running on a MCU.
