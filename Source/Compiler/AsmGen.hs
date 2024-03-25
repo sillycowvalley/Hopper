@@ -36,6 +36,7 @@ program ASMGEN
     writeMethod(uint methodIndex, <byte> code, uint romAddress)
     {
         uint methodAddress   = output.Count + romAddress;
+        
         methods[methodIndex] = methodAddress;
         
         byte callInstruction      = GetJSRInstruction();
@@ -157,7 +158,7 @@ program ASMGEN
             buffer = buffer + cb.ToHexString(2);
             if (buffer.Length == 32)
             {
-                emitBuffer(ihexFile, emitAddress, buffer);
+                emitBuffer(ihexFile, emitAddress + romAddress, buffer);
                 emitAddress = emitAddress + 16;
                 buffer = "";
             }
@@ -170,7 +171,7 @@ program ASMGEN
         }
         if (buffer.Length != 0)
         {
-            emitBuffer(ihexFile, emitAddress, buffer);
+            emitBuffer(ihexFile, emitAddress + romAddress, buffer);
             buffer = "";
         }
         
@@ -179,7 +180,7 @@ program ASMGEN
         {
             buffer = buffer + vb.ToHexString(2);
         }
-        emitBuffer(ihexFile, 0xFFFA - romAddress, buffer);
+        emitBuffer(ihexFile, 0xFFFA /*- romAddress*/, buffer);
         
         
         ihexFile.Append(":00000001FF" + char(0x0A)); // eof
@@ -310,10 +311,8 @@ program ASMGEN
                 
                 Parser.ProgressTick(".");
                 byte arch = byte(Architecture);
-                output.Append(0); // version
-                output.Append(arch);
-                output.Append(byte(romAddress & 0xFF));
-                output.Append(byte(romAddress >> 8));
+                output.Append(0);    // version
+                output.Append(arch); // CPU
                 
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 writeMethod(entryIndex, methodCode, romAddress);
@@ -330,7 +329,7 @@ program ASMGEN
                 // then we can find them again in the binary (for debug info)
                 for (uint index = 0; index <= indexMax; index++)
                 {
-                    if (index == entryIndex) { continue; }
+                    if (index == entryIndex)          { continue; }
                     if (!methodSizes.Contains(index)) { continue; }   
                     methodCode = Code.GetMethodCode(index);
                     writeMethod(index, methodCode, romAddress);   

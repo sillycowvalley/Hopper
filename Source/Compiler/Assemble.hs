@@ -126,7 +126,6 @@ program Assemble
                     break;
                 }
             }
-            
             if ((actualType == "uint") || (actualType == "byte"))
             {
                 hasImmediate = UInt.TryParse(value, ref immediateValue);
@@ -488,13 +487,46 @@ program Assemble
             
             <string,string> currentToken = Parser.CurrentToken;
             string conditionString = currentToken["lexeme"];
+            string bitBranchInstruction;
+            byte zeroPageAddress;
             HopperToken tokenType = Token.GetType(currentToken);
-            if (tokenType != HopperToken.Condition)
+            if (tokenType == HopperToken.Instruction)
             {
-                Parser.Error("condition expected");
-                break;
-            }  
-            Parser.Advance();
+                if (AddressingModes.ZeroPageRelative == Asm6502.GetAddressingModes(conditionString))
+                {
+                    // BBSn or BBRn : flip the condition
+                    bitBranchInstruction = conditionString;
+                    conditionString = "";
+                    Parser.Advance(); // bitBranchInstruction
+                    
+                    Parser.Consume(HopperToken.Comma);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    
+                    uint immediateValue;
+                    if(!assembleConstantExpression(ref immediateValue))
+                    {
+                        break;
+                    }
+                    if (immediateValue > 255)
+                    {
+                        Parser.Error("invalid zero page address (0x" + immediateValue.ToHexString(4) + ")");
+                        break;
+                    }
+                    zeroPageAddress = byte(immediateValue);
+                }
+            }
+            if (bitBranchInstruction.Length == 0)
+            {
+                if (tokenType != HopperToken.Condition)
+                {
+                    Parser.Error("condition expected");
+                    break;
+                }  
+                Parser.Advance(); // conditionString
+            }
             
             Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
@@ -502,8 +534,18 @@ program Assemble
                 break;
             }
             
-            Asm6502.AppendCode(GetBInstruction(conditionString));
-            Asm6502.AppendCode(+3);
+            if (bitBranchInstruction.Length != 0)
+            {
+                Asm6502.EmitInstructionZeroPageRelative(bitBranchInstruction, zeroPageAddress, +3);
+            }
+            else
+            {
+                Asm6502.AppendCode(GetBInstruction(conditionString));
+                Asm6502.AppendCode(+3);
+            }
+            
+            
+            
             
             // if false jump past
             uint jumpPast = Asm6502.NextAddress;

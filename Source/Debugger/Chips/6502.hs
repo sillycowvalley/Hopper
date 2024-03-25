@@ -1,6 +1,7 @@
 unit W65C02
 {
     uses "/Source/Compiler/CODEGEN/Asm6502"
+    uses "/Source/Debugger/6502/ZeroPage"
     
     byte[0xFFFA] memory;
     uint vectorReset;
@@ -690,15 +691,15 @@ unit W65C02
                             (zFlag ? "1" : "0") +
                             (cFlag ? "1" : "0");
         
-        uint pc   = GetMemory(0xB0) + (GetMemory(0xB1) << 8);
-        byte sp   = GetMemory(0xB4);
-        byte bp   = GetMemory(0xB5);
-        byte csp  = GetMemory(0xB6);
-        uint acc  = GetMemory(0xC0) + (GetMemory(0xC1) << 8);
-        uint top  = GetMemory(0xC2) + (GetMemory(0xC3) << 8);
-        uint next = GetMemory(0xC4) + (GetMemory(0xC5) << 8);
-        uint idx  = GetMemory(0xC6) + (GetMemory(0xC7) << 8);
-        uint idy  = GetMemory(0xC8) + (GetMemory(0xC9) << 8);
+        uint pc   = GetMemory(ZP.ZPCL)   + (GetMemory(ZP.ZPCH) << 8);
+        byte sp   = GetMemory(ZP.ZSP);
+        byte bp   = GetMemory(ZP.ZBP);
+        byte csp  = GetMemory(ZP.ZCSP);
+        uint acc  = GetMemory(ZP.ZACCL)  + (GetMemory(ZP.ZACCH) << 8);
+        uint top  = GetMemory(ZP.ZTOPL)  + (GetMemory(ZP.ZTOPH) << 8);
+        uint next = GetMemory(ZP.ZNEXTL) + (GetMemory(ZP.ZNEXTH) << 8);
+        uint idx  = GetMemory(ZP.ZIDXL)  + (GetMemory(ZP.ZIDXH) << 8);
+        uint idy  = GetMemory(ZP.ZIDYL)  + (GetMemory(ZP.ZIDYH) << 8);
                                                 
         registers += // the Hopper registers                   
         "      " + pc.ToHexString(4) + 

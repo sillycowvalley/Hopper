@@ -641,7 +641,14 @@ unit TranslateExpression
             }
             else if (operation == HopperToken.BitNot)
             {
-                content = "~" + content;
+                if (Types.IsFlags(expectedType))
+                {
+                    content = "(" + expectedType + ")(" + " ~" + content + ")";
+                }
+                else
+                {
+                    content = "~" + content;
+                }
             }
             break;
         } // loop
@@ -813,7 +820,14 @@ unit TranslateExpression
                 {
                     Parser.Advance();
                     string rightContent = translateComparison(expectedType, ref actualType);
-                    content = content + " & " + rightContent;
+                    if (actualType == "flags")
+                    {
+                        content = "(" + expectedType + ")(" + content + " & " + rightContent + ")";
+                    }
+                    else
+                    {
+                        content = content + " & " + rightContent;
+                    }
                     actualType = "uint";
                     continue;    
                 }
@@ -840,7 +854,14 @@ unit TranslateExpression
                 {
                     Parser.Advance();
                     string rightContent = translateBitAnd(expectedType, ref actualType);
-                    content = content + " ^ " + rightContent;
+                    if (actualType == "flags")
+                    {
+                        content = "(" + expectedType + ")(" + content + " ^ " + rightContent + ")";
+                    }
+                    else
+                    {
+                        content = content + " ^ " + rightContent;
+                    }
                     actualType = "uint";
                     continue;    
                 }
@@ -867,7 +888,14 @@ unit TranslateExpression
                 {
                     Parser.Advance();
                     string rightContent = translateBitXor(expectedType, ref actualType);
-                    content = content + " | " + rightContent;
+                    if (actualType == "flags")
+                    {
+                        content = "(" + expectedType + ")(" + content + " | " + rightContent + ")";
+                    }
+                    else
+                    {
+                        content = content + " | " + rightContent;
+                    }
                     actualType = "uint";
                     continue;    
                 }

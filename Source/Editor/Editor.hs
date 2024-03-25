@@ -1878,20 +1878,20 @@ unit Editor
     
     CheckAssemblerSource()
     {
-        if (isAssemblerSource)
+        if (cpuArchitecture == CPUArchitecture.None)
         {
-            if (cpuArchitecture == CPUArchitecture.None)
+            uint maxLines = TextBuffer.GetLineCount(); 
+            uint currentLine = 0;
+            loop
             {
-                uint maxLines = TextBuffer.GetLineCount(); 
-                uint currentLine = 0;
-                loop
+                if (currentLine >= maxLines) { break; }
+                string ln = TextBuffer.GetLine(currentLine);
+                if (ln.Contains("#define"))
                 {
-                    if (currentLine >= maxLines) { break; }
-                    string ln = TextBuffer.GetLine(currentLine);
-                    if (ln.Contains("#define"))
+                    <string> parts = ln.Split(' ');
+                    if ((parts.Count >= 2) && (parts[0] == "#define"))
                     {
-                        <string> parts = ln.Split(' ');
-                        if ((parts.Count >= 2) && (parts[0] == "#define"))
+                        if (isAssemblerSource)
                         {
                             if (parts[1] == "CPU_6502")
                             {
@@ -1903,6 +1903,9 @@ unit Editor
                                 cpuArchitecture = CPUArchitecture.W65C02;
                                 break;
                             }
+                        }
+                        else
+                        {
                             if (parts[1] == "CPU_Z80")
                             {
                                 cpuArchitecture = CPUArchitecture.Z80;
@@ -1910,9 +1913,12 @@ unit Editor
                             }
                         }
                     }
-                    currentLine++;
                 }
+                currentLine++;
             }
+        }
+        if (isAssemblerSource)
+        {
             Token.InitializeAssembler(cpuArchitecture);
         }
     }

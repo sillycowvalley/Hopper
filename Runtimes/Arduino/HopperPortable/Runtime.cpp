@@ -509,11 +509,16 @@ void Runtime_DumpPage(Byte iPage)
                 }
                 case 2:
                 {
-                    data = Byte(HopperFlags::eMCUPlatform);
+                    HopperFlags flgs = HopperFlags::eMCUPlatform;
                     if (HopperVM_BreakpointExists_Get())
                     {
-                        data = data | Byte(HopperFlags::eBreakpointsSet);
+                        flgs = (HopperFlags)(flgs | HopperFlags::eBreakpointsSet);
                     }
+                    if (Runtime_loaded)
+                    {
+                        flgs = (HopperFlags)(flgs | HopperFlags::eProgramLoaded);
+                    }
+                    data = Byte(flgs);
                     break;
                 }
                 case 6:

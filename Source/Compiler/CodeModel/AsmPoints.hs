@@ -818,21 +818,25 @@ unit AsmPoints
             if (   Asm6502.IsJumpInstruction(opCode1, ref addressingMode1, ref isConditional1) &&  isConditional1
                 && Asm6502.IsJumpInstruction(opCode0, ref addressingMode0, ref isConditional0) && !isConditional0
                 && (addressingMode0 == AddressingModes.Relative)
-                && (addressingMode1 != AddressingModes.ZeroPageRelative) // not BBSx or BBRx
                )
             {
                 if (!IsTargetOfJumps(iIndex))
                 {
                     if (iJumpTargets[iIndex-1] == iIndex + 1)
                     {
-                        uint flipOpCode;
-                             if (opCode1 == opcodeBEQ) { flipOpCode = opcodeBNE; }
-                        else if (opCode1 == opcodeBNE) { flipOpCode = opcodeBEQ; }
-                        else if (opCode1 == opcodeBCC) { flipOpCode = opcodeBCS; }
-                        else if (opCode1 == opcodeBCS) { flipOpCode = opcodeBCC; }
-                        else                           { Die(0x0A);              }
-                        
-                        iCodes.SetItem(iIndex, flipOpCode);
+                        if (addressingMode1 == AddressingModes.Relative)        // BnC or BnS
+                        {
+                            // flipping this bit switches to the opposite condition instruction
+                            opCode1 = (opCode1 ^ 0x20); 
+                        }
+                        if (addressingMode1 == AddressingModes.ZeroPageRelative) // BBSx or BBRx
+                        {
+                            // flipping this bit switches to the opposite condition instruction
+                            opCode1 = (opCode1 ^ 0x80);
+                            iOperands.SetItem(iIndex, iOperands[iIndex-1]);
+                            iLengths.SetItem (iIndex, iLengths[iIndex-1]);
+                        }
+                        iCodes.SetItem(iIndex, opCode1);
                         RemoveInstruction(iIndex-1);
                         modified = true;
                     }

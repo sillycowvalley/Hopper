@@ -159,23 +159,37 @@ program HopperMonitor
         }
         Print(contentBuffer);
     }
-    OutputMethodLine(uint address, uint methodIndex, byte bp, bool sourceLevel, bool symbolsLoaded)
+    OutputMethodLine(uint pc, uint address, uint methodIndex, byte bp, bool sourceLevel, bool symbolsLoaded)
     {
-        if (!sourceLevel)
+        if (address == pc)
         {
-            Print("  0x" + address.ToHexString(4), LightestGray, Black);
-            if (!symbolsLoaded)
-            {
-                PrintLn();
-                return;
-            }
+            Print("PC -> ", Colour.MatrixRed, Colour.Black);
         }
+        else
+        {
+            Print("      "); 
+        }
+        if (address == pc)
+        {
+            Print("0x" + address.ToHexString(4), LightestGray, Black);
+            Print("        0x" + bp.ToHexString(2) + "  ", LightestGray, Black);
+        }
+        else
+        {
+            Print("0x" + address.ToHexString(4));
+            Print(" 0x" + (address+3).ToHexString(4) + " 0x" + bp.ToHexString(2) + "  ", LightestGray, Black);
+        }
+        if (!symbolsLoaded)
+        {
+            PrintLn();
+            return;
+        }
+        
         <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
         string methodName   = methodSymbols["name"];
         string methodSource = methodSymbols["source"];
         string methodLine   = methodSymbols["line"];
-                            
-        Print("  ");
+        
         string sLine = Code.GetSourceIndex(address, methodIndex);
         uint iColon;
         if ((sLine != "") && sLine.IndexOf(':', ref iColon))
@@ -190,7 +204,7 @@ program HopperMonitor
         string methodString = GenerateMethodString(methodIndex, bp);
         PrintColors(methodString);
         
-        Screen.SetCursor(Screen.Columns - 40, Screen.CursorY);
+        Screen.SetCursor(80, Screen.CursorY);
         uint lSlash;
         if (methodSource.LastIndexOf('/', ref lSlash))
         {
@@ -226,7 +240,10 @@ program HopperMonitor
                 uint address;
                 uint methodIndex;
                 
-                PrintLn();            
+                uint pc = GetZeroPage("PC");
+                
+                PrintLn();     
+                PrintLn("             RET    BP");
                 uint icsp = 1;
                 while (icsp < csp)
                 {
@@ -234,16 +251,15 @@ program HopperMonitor
                     bp      = GetPageByte(0x0300+icsp+1);
 
                     methodIndex = LocationToIndex(address);
-                    OutputMethodLine(address - 3, methodIndex, bp, sourceLevel, symbolsLoaded);
+                    OutputMethodLine(pc, address - 3, methodIndex, bp, sourceLevel, symbolsLoaded);
                     icsp += 2;
                 }
                 
                 // current method
-                uint pc = GetZeroPage("PC");
                 methodIndex = LocationToIndex(pc);
                 bp  = byte(GetZeroPage("BP"));
 
-                OutputMethodLine(pc, methodIndex, bp, sourceLevel, symbolsLoaded);
+                OutputMethodLine(pc, pc, methodIndex, bp, sourceLevel, symbolsLoaded);
                 if (symbolsLoaded)
                 {
                     <uint, <string> > usedGlobals = Source.GetGlobals(methodIndex, 0);
@@ -300,7 +316,8 @@ program HopperMonitor
         byte bp = byte(GetZeroPage("BP"));
         byte spi = sp;
         
-        PrintLn("SP -> " + sp.ToHexString(2));
+        Print("SP -> ", Colour.MatrixRed, Colour.Black);
+        PrintLn("0x" + sp.ToHexString(2), Colour.LightestGray, Colour.Black);
         uint entries = 0;
         loop
         {
@@ -323,11 +340,20 @@ program HopperMonitor
             if (IsMachineReferenceType(vtype))
             {
                 byte count = Pages.GetPageByte(value + 1);
-                referenceCount = "[" + count.ToHexString(2) + "]";
+                referenceCount = "[0x" + count.ToHexString(2) + "]";
             }
             
-            Print(leftText + spi.ToHexString(2) + " " + value.ToHexString(4) + ":" + vtype.ToHexString(2) + referenceCount); 
-            Print(" (" + tstring + ")" + " " + content, Colour.LightestGray, Colour.Black);
+            Print(leftText, Colour.MatrixRed, Colour.Black);
+            if (spi == bp)
+            {
+                Print("0x" + spi.ToHexString(2), Colour.LightestGray, Colour.Black);
+            }
+            else
+            {
+                Print("0x" + spi.ToHexString(2));
+            }
+            Print(" 0x" + value.ToHexString(4) + ":0x" + vtype.ToHexString(2) + referenceCount, Colour.LightestGray, Colour.Black); 
+            Print(" (" + tstring + ")" + " " + content);
             PrintLn();
             entries++;
             if (entries == 12) 
@@ -346,7 +372,27 @@ program HopperMonitor
         uint csp = GetZeroPage("CSP");
         uint sp  = GetZeroPage("SP");
         uint bp  = GetZeroPage("BP");
-        PrintLn("PC=" + pc.ToHexString(4) + " CSP=" + csp.ToHexString(2)+ " SP=" + sp.ToHexString(2)+ " BP=" + bp.ToHexString(2));
+        
+        uint acc  = GetZeroPage("ACC");
+        uint top  = GetZeroPage("TOP");
+        uint next = GetZeroPage("NEXT");
+        uint idx  = GetZeroPage("IDX");
+        uint idy  = GetZeroPage("IDY");
+        
+        PrintLn("PC   SP  BP  CSP    ACC  TOP  NEXT IDX  IDY");
+        
+        string registers = // the Hopper registers                   
+                   pc.ToHexString(4) + 
+             " " + sp.ToHexString(2) + " " +
+             " " + bp.ToHexString(2) + " " +
+             " " + csp.ToHexString(2) + "    " +
+             " " + acc.ToHexString(4) + 
+             " " + top.ToHexString(4) + 
+             " " + next.ToHexString(4) + 
+             " " + idx.ToHexString(4) + 
+             " " + idy.ToHexString(4) + " ";
+        
+        PrintLn(registers, Colour.LightestGray, Colour.Black);
     }    
     
     ShowDisassembly(uint address, uint instructions)
@@ -379,7 +425,7 @@ program HopperMonitor
                         sourceLine = "      " + sourceLine.Trim();
                         sourceLine = sourceLine.Pad(' ', 60);
                         PrintLn();
-                        Print(sourceLine, White, Black);    
+                        Print(sourceLine);    
                         Print("// " + sourceIndex, Colour.Comment, Colour.Black);
                     }
                 }
@@ -391,6 +437,11 @@ program HopperMonitor
                 if (first)
                 {
                     Print("PC -> ", Colour.MatrixRed, Colour.Black);
+                    
+                    string location = content.Substring(0,6);
+                    content = content.Substring(6);
+                
+                    Print(location, Colour.LightestGray, Colour.Black);
                     colour = Colour.Ocean;
                 }
                 else
@@ -634,6 +685,11 @@ program HopperMonitor
             if (Monitor.FindCurrentHex(crc))
             {
                 Source.LoadSymbols(true);
+                if (!SymbolsLoaded)
+                {
+                    PrintLn();
+                    PrintLn("Failed to load Symbols", Colour.MatrixRed, Colour.Black);
+                }
             }
         }
         
@@ -798,7 +854,7 @@ program HopperMonitor
                                     Print((address + i).ToHexString(4)+ "  ");
                                     for (uint j = 0; j < 32; j++)
                                     {
-                                        Print(ln[j]);
+                                        Print(ln[j], Colour.LightestGray, Colour.Black);
                                         if (j % 2 == 1)
                                         {
                                             Print(' ');
@@ -834,7 +890,7 @@ program HopperMonitor
                                 PrintLn();
                                 for (byte i = 0; i < 15; i++)
                                 {
-                                    PrintLn(output.Substring(0,32));
+                                    PrintLn(output.Substring(0,32), Colour.LightestGray, Colour.Black);
                                     output = output.Substring(32);
                                 }
                             }
@@ -931,6 +987,11 @@ program HopperMonitor
                         )
                 {
                     Source.LoadSymbols(true);
+                    if (!SymbolsLoaded)
+                    {
+                        PrintLn();
+                        PrintLn("Failed to load Symbols", Colour.MatrixRed, Colour.Black);
+                    }
                     if (!Monitor.RunCommand(commandLine))
                     {
                         PrintLn(" serial connection lost", Colour.MatrixRed, Colour.Black);
@@ -957,6 +1018,11 @@ program HopperMonitor
                 else if (currentCommand == 'S') // Source
                 {
                     Source.LoadSymbols(true);
+                    if (!SymbolsLoaded)
+                    {
+                        PrintLn();
+                        PrintLn("Failed to load Symbols", Colour.MatrixRed, Colour.Black);
+                    }
                     ShowCurrentInstruction(15);
                     refresh = true;
                 }

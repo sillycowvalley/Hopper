@@ -64,8 +64,9 @@ program DASM
         return sourceLine;
     }
     
-    <byte> readIHex(file hexFile)
+    <byte> readIHex(file hexFile, ref uint org)
     {
+        bool first = true;
         <byte> code;
         loop
         {
@@ -75,6 +76,11 @@ program DASM
             uint length;
             _ = UInt.TryParse("0x" + len, ref length);
             if (length == 0) { continue; }
+            if (first)
+            {
+                string orgString = ln.Substring(3,4);
+                _ = UInt.TryParse("0x" + orgString, ref org);
+            }
             ln = ln.Substring(9);
             while (length > 0)
             {
@@ -85,6 +91,7 @@ program DASM
                 code.Append(byte(b));
                 length--;
             }
+            first = false;
         }
         return code;
     }
@@ -177,17 +184,18 @@ program DASM
                     }
                 }
                 
+                uint org;
+                
                 uint address = 0;
                 file hexFile = File.Open(codePath);
-                <byte> code = readIHex(hexFile);
+                <byte> code = readIHex(hexFile, ref org);
                 
-                if (code.Count < 4)
+                if (code.Count < 2)
                 {
                     break;
                 }
                 byte version = code[0];
                 byte arch    = code[1];
-                uint org     = code[2] + code[3] << 8;
                 
                 Architecture = CPUArchitecture(arch);
                 
@@ -197,8 +205,6 @@ program DASM
                 address++;
                 hasmFile.Append("0x" + address.ToHexString(4) + "  0x" + arch.ToHexString(2) + "   // CPU Architecture" + char(0x0A));
                 address++;
-                hasmFile.Append("0x" + address.ToHexString(4) + "  0x" + org.ToHexString(4) + " // ROM location" + char(0x0A));
-                address += 2;
                                     
                 uint iOverload = 0;
                 
@@ -229,7 +235,7 @@ program DASM
                 uint jumpIndexinstruction = GetJMPIndexInstruction();
                         
                 bool secondHalf = false;        
-                uint index = 4;
+                uint index = 2;
                 loop
                 {
                     if (index == code.Count-6) { break; }

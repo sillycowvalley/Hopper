@@ -159,7 +159,8 @@ program E6502
             //       (methodStart + methodLength-1).ToHexString(4) + " " +
             //       (debugInfo.Count).ToString() +
             //        " : " + address.ToHexString(4));
-             
+            
+            bool firstLine = true;
             loop
             {
                 if (instructions == 0) { break; }
@@ -200,11 +201,29 @@ program E6502
                     }
                 }
                 
+                uint colour = Colour.MatrixBlue;
+                if (firstLine)
+                {
+                    colour = Colour.Ocean;
+                }
                 string disassembly = Asm6502.Disassemble(address, instruction, operand);
-                PrintLn(disassembly.Pad(' ', 48) + comment);
+                if (address == W65C02.PC)
+                {
+                    string location = disassembly.Substring(0,6);
+                    disassembly = disassembly.Substring(6);
+                    Print("PC -> ", Colour.MatrixRed, Colour.Black);
+                    Print(location, Colour.LightestGray, Colour.Black);
+                    Print(disassembly.Pad(' ', 42), colour, Colour.Black); // disassembly
+                }
+                else
+                {
+                    Print("      " + disassembly.Pad(' ', 48), colour, Colour.Black); // disassembly
+                }
+                PrintLn(comment, Colour.MatrixGreen, Colour.Black); // comment
                 
                 address += length;
                 instructions--;
+                firstLine = false;
             }
         }
     }
@@ -227,6 +246,18 @@ program E6502
         _ = UInt.TryParse("0x" + hexpage, ref page);
         
         page = page << 8;
+        
+        PrintLn();
+        Print("      ");
+        for (byte i = 0; i < 16; i++)
+        {
+           Print("x" + i.ToHex() + " ");  
+           if (i == 7)
+           {
+               Print(' ');
+           }  
+        }
+        
         for (uint i = 0; i < 256; i++)
         {
             uint address = page + i;
@@ -239,7 +270,7 @@ program E6502
             {
                 Print(" ");
             }
-            Print(" " + (W65C02.GetMemory(address)).ToHexString(2));
+            Print(" " + (W65C02.GetMemory(address)).ToHexString(2), Colour.LightestGray, Colour.Black);
         }
         PrintLn();
     }
@@ -258,7 +289,7 @@ program E6502
         string names = W65C02.GetRegisterNames();
         string registers = W65C02.GetRegisters();
         PrintLn(names);
-        PrintLn(registers);
+        PrintLn(registers, Colour.LightestGray, Colour.Black);
     }
     
     string pathLoaded;
@@ -302,9 +333,10 @@ program E6502
         return sourceLine;
     }
 
-    <byte> readIHex(file hexFile)
+    <byte> readIHex(file hexFile, ref uint loadAddress)
     {
         <byte> code;
+        bool first = true;
         loop
         {
             string ln = hexFile.ReadLine();
@@ -313,6 +345,11 @@ program E6502
             uint length;
             _ = UInt.TryParse("0x" + len, ref length);
             if (length == 0) { continue; }
+            if (first)
+            {
+                string location = ln.Substring(3,4);
+                _ = UInt.TryParse("0x" + location, ref loadAddress);
+            }
             ln = ln.Substring(9);
             while (length > 0)
             {
@@ -323,6 +360,7 @@ program E6502
                 code.Append(byte(b));
                 length--;
             }
+            first = false;
         }
         return code;
     }
@@ -508,8 +546,8 @@ program E6502
             }
             PrintLn();
             file hexFile = File.Open(ihexPath);
-            <byte> code = readIHex(hexFile);
-            if (code.Count < 4)
+            <byte> code = readIHex(hexFile, ref orgROM);
+            if (code.Count < 2)
             {
                 PrintLn("Failed to load '" + ihexPath + "'");
                 break;
@@ -517,7 +555,6 @@ program E6502
             
             byte version = code[0];
             byte arch    = code[1];
-            orgROM       = code[2] + (code[3] << 8);
             
             Architecture = CPUArchitecture(arch);
             
@@ -531,7 +568,7 @@ program E6502
                     indexMax = sz.key;
                 }
             }
-            uint methodAddress = 4;
+            uint methodAddress = 2;
             for (uint index = 0; index <= indexMax; index++)
             {
                 if (!methodSizes.Contains(index)) { continue; }   
