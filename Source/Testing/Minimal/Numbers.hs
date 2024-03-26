@@ -1,5 +1,7 @@
 program TestNumbers
 {
+    #define CPU_Z80
+    
     uses "/Source/Minimal/System"
     
     uses "/Source/Minimal/Diagnostics"
@@ -733,13 +735,13 @@ program TestNumbers
         
         TestConstants();
         TestEquals();
-        //TestLessThan();
-        //TestGreaterThan();
-        //TestGreaterThanOrEqual();
-        //TestLessThanOrEqual();
-        //TestUIntMath();
-        //TestIntMath();
-        //TestPropertyMath();
+        TestLessThan();
+        TestGreaterThan();
+        TestGreaterThanOrEqual();
+        TestLessThanOrEqual();
+        TestUIntMath();
+        TestIntMath();
+        TestPropertyMath();
         
         Serial.WriteChar('O');Serial.WriteChar('K');Serial.WriteChar('!');
         

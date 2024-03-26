@@ -9,13 +9,15 @@ unit Minimal
     uses "System"
     uses "Diagnostics"
     uses "Time"
+    
+#ifdef INCLUDE_LONGS    
     uses "Long"
+#endif
+#ifdef INCLUDE_FLOATS    
     uses "Float"
+#endif
     
     byte error;
     byte Error 
     { set { error = value; SetError(error); } get { return error; }}
-    
-    
-    
 }

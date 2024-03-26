@@ -17,13 +17,137 @@ program CODEGEN
     
     <string,variant> symbols;
     
-    long codeSize = 0;
+    bool doInstrumenting;
     
+    long codeSize = 0;
     writeCode(file hexeFile, <byte> code)
     {
         foreach (var b in code)
         {
             hexeFile.Append(b);
+        }
+    }
+    <byte, <byte,uint> > sysCallHits;
+    <Instruction, uint> instructionHits;
+    
+    exportStats(string instrumentingPath)
+    {
+        string name;
+        SysCalls.New();
+        file statsFile = File.Create(instrumentingPath);
+        foreach (var kv in sysCallHits)
+        {
+            byte iSysCall = kv.key;
+            name = SysCalls.GetSysCallName(iSysCall);
+            foreach (var kv2 in kv.value)
+            {
+                uint iOverload = kv2.key;
+                uint hits = kv2.value;
+                statsFile.Append(name + "," + iOverload.ToString() + "," + hits.ToString() + char(0x0A));
+            }  
+        }
+        statsFile.Append("" + char(0x0A));
+        foreach (var kv in instructionHits)
+        {
+            Instruction instruction = kv.key;
+            uint hits = kv.value;
+            name = Instructions.ToString(instruction);
+            statsFile.Append(name + "," + hits.ToString() + char(0x0A));
+        }
+        statsFile.Flush();
+    }
+    
+    instrumentSysCall(byte iSysCall, byte iOverload)
+    {
+        <byte,uint> hits;
+        if (sysCallHits.Contains(iSysCall))
+        {
+            hits = sysCallHits[iSysCall];
+        }
+        if (!hits.Contains(iOverload))
+        {
+            hits[iOverload] = 1;
+        }
+        else
+        {
+            hits[iOverload] = hits[iOverload] + 1;
+        }
+        sysCallHits[iSysCall] = hits;
+    }
+    instrumentInstruction(Instruction instruction)
+    {
+        if (!instructionHits.Contains(instruction))
+        {
+            instructionHits[instruction] = 1;
+        }
+        else
+        {
+            instructionHits[instruction] = instructionHits[instruction] + 1;
+        }
+    }
+    
+    instrument(<byte> code)
+    {
+        uint address = 0;
+        loop
+        {
+            if (address == code.Count) { break; }
+            uint operand;
+            Instruction instruction = Instructions.GetOperandAndNextAddress(code, ref address, ref operand);
+            switch (instruction)
+            {
+                case Instruction.SYSCALL0:
+                {
+                    byte iSysCall = byte(operand & 0xFF);
+                    instrumentSysCall(iSysCall, 0);
+                }
+                case Instruction.SYSCALL1:
+                {
+                    byte iSysCall = byte(operand & 0xFF);
+                    instrumentSysCall(iSysCall, 1);
+                }
+                case Instruction.SYSCALL00:
+                {
+                    byte iSysCall = byte(operand & 0xFF);
+                    instrumentSysCall(iSysCall, 0);
+                    iSysCall = byte(operand >> 8);
+                    instrumentSysCall(iSysCall, 0);
+                }
+                case Instruction.SYSCALL01:
+                {
+                    byte iSysCall = byte(operand & 0xFF);
+                    instrumentSysCall(iSysCall, 0);
+                    iSysCall = byte(operand >> 8);
+                    instrumentSysCall(iSysCall, 1);
+                }
+                case Instruction.SYSCALL10:
+                {
+                    byte iSysCall = byte(operand & 0xFF);
+                    instrumentSysCall(iSysCall, 1);
+                    iSysCall = byte(operand >> 8);
+                    instrumentSysCall(iSysCall, 0);
+                }
+                case Instruction.SYSCALLB0:
+                {
+                    byte iSysCall = byte(operand >> 8);
+                    instrumentSysCall(iSysCall, 0);
+                }
+                case Instruction.SYSCALLB1:
+                {
+                    byte iSysCall = byte(operand >> 8);
+                    instrumentSysCall(iSysCall, 0);
+                }
+                case Instruction.SYSCALL:
+                {
+                    byte iSysCall = byte(operand >> 8);
+                    instrumentSysCall(iSysCall, 2); // probably not 0 or 1?
+                }
+                default:
+                {
+                    instrumentInstruction(instruction);
+                }
+            }
+            
         }
     }
     
@@ -33,6 +157,7 @@ program CODEGEN
         PrintLn("  CODEGEN <code file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
         PrintLn("    -ihex      : generate an Intel HEX file from the .hexe");
+        PrintLn("    -i         : measure instruction and syscall usage");
     }
     
     byte hexCheckSum(string values)
@@ -114,6 +239,7 @@ program CODEGEN
         ihexFile.Flush();
     }
     
+    Hopper()
     {
         bool success = false;
         loop
@@ -147,6 +273,10 @@ program CODEGEN
                         {
                             doIHex = true;
                         }
+                        case "-i":
+                        {
+                            doInstrumenting = true;
+                        }
                         default:
                         {
                             args.Clear();
@@ -178,6 +308,7 @@ program CODEGEN
                 string extension = Path.GetExtension(codePath);
                 string hexePath  = codePath.Replace(extension, ".hexe");
                 string symbolsPath = codePath.Replace(extension, ".json");
+                string instrumentingPath = codePath.Replace(extension, ".stats");
                 
                 hexePath = Path.GetFileName(hexePath);
                 hexePath = Path.Combine("/Bin/", hexePath);
@@ -261,6 +392,10 @@ program CODEGEN
                 writeCode(hexeFile, constantData);
                 Parser.ProgressTick(".");
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
+                if (doInstrumenting)
+                {
+                    instrument(methodCode);
+                }
                 writeCode(hexeFile, methodCode);
                 Parser.ProgressTick(".");
                 foreach (var sz in methodSizes)
@@ -271,6 +406,10 @@ program CODEGEN
                         continue;
                     }
                     methodCode = Code.GetMethodCode(index);
+                    if (doInstrumenting)
+                    {
+                        instrument(methodCode);
+                    }
                     writeCode(hexeFile, methodCode);   
                     Parser.ProgressTick(".");
                 }
@@ -280,6 +419,10 @@ program CODEGEN
                 if (doIHex)
                 {
                     convertToIHex(hexePath);
+                }
+                if (doInstrumenting)
+                {
+                    exportStats(instrumentingPath);
                 }
                 
                 if (!Parser.IsInteractive())

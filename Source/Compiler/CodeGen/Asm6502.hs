@@ -1,7 +1,5 @@
 unit Asm6502
 {
-    #define ASM6502
-    
     <string,string> debugInfo;
     <string,bool> debugInfoLineUsed;
     <byte> currentStream;

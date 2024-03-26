@@ -20,6 +20,7 @@ unit CodeStream
     bool mcuDefined;
     bool isExperimental;
     bool noPackedInstructions;
+    bool noJixInstructions;
     bool peepHole;
     
     bool CheckedBuild 
@@ -29,6 +30,7 @@ unit CodeStream
     }
     
     bool NoPackedInstructions { get { return noPackedInstructions; } }
+    bool NoJIXInstructions { get { return noJixInstructions; } }
     bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
     bool IsShortCalls   { get { return shortCallsDefined; } }
     bool Target6502     { get { return h6502Defined; } }
@@ -39,6 +41,7 @@ unit CodeStream
     InitializeSymbolShortcuts()
     {
         noPackedInstructions = Symbols.DefineExists("NO_PACKED_INSTRUCTIONS");
+        noJixInstructions    = Symbols.DefineExists("NO_JIX_INSTRUCTIONS");
         isExperimental       = Symbols.DefineExists("EXPERIMENTAL");
                 
         shortCallsDefined = Symbols.DefineExists("SHORT_CALLS");

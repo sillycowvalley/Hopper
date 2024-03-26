@@ -1126,10 +1126,8 @@ program Compile
             }
             
             string switchType = CompileExpression("");
-            
-            
             byte upperBound;
-            if (!NoPackedInstructions && Types.IsByteRange(switchType, ref upperBound))
+            if (!NoPackedInstructions && !NoJIXInstructions && Types.IsByteRange(switchType, ref upperBound))
             {
                 success = compileFastSwitch(switchType, upperBound);
                 break;

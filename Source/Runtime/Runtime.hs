@@ -1,13 +1,23 @@
 program Runtime
 {
+    
 #define SERIAL_CONSOLE // Source/System/IO uses serial only (for MCU's etc)
 #define RUNTIME        // keyboard buffer to make IO.IsBreak() work cannot be a 'string'
  
 //#define CHECKED      // mainly stack checks, range checks and division by zero
 //#define MEMORYLEAKS
 
-#define LOCALDEBUGGER  // for debugging portable runtime locally
+//#define LOCALDEBUGGER  // for debugging portable runtime locally
+#define CPU_Z80
+//#define NO_JIX_INSTRUCTIONS
 
+#ifndef CPU_Z80
+    #define INCLUDE_FILESYSTEM
+    #define INCLUDE_FLOATS
+    #define INCLUDE_LONGS
+    #define INCLUDE_LIBRARY
+    #define INCLUDE_WIFI
+#endif
     uses "/Source/Debugger/6502/ZeroPage"
 
     uses "Emulation/Minimal" // minimal use of actual 'system' APIs

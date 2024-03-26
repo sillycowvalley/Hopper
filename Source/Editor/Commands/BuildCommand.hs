@@ -370,7 +370,7 @@ unit BuildCommand
             arguments.Append("-g");
             arguments.Append(col.ToString());
             arguments.Append(row.ToString());
-            if (isHopper && GenerateIHex)
+            if (isHopper && GenerateIHex && !isZ80)
             {
                 arguments.Append("-ihex");
             }

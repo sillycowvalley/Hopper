@@ -1774,21 +1774,36 @@ unit Instructions
     }
     bool LibCall0()
     {
+#ifdef INCLUDE_LIBRARY
         byte iLibCall = ReadByteOperand();  
         return ExecuteLibCall(iLibCall, 0);
+#else
+        Error = 0x0A;
+        return false;
+#endif
     }
     bool LibCall1()
     {
+#ifdef INCLUDE_LIBRARY            
         Type htype;
         byte iLibCall = ReadByteOperand();  
         return ExecuteLibCall(iLibCall, 1);
+#else
+        Error = 0x0A;
+        return false;
+#endif
     }
     bool LibCall()
     {
+#ifdef INCLUDE_LIBRARY            
         Type htype;
         uint iOverload = Pop(ref htype);
         byte iLibCall = ReadByteOperand();  
         return ExecuteLibCall(iLibCall, iOverload);
+#else
+        Error = 0x0A;
+        return false;
+#endif
     }
 
     bool SysCall0()

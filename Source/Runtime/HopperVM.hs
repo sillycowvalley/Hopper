@@ -325,16 +325,8 @@ unit HopperVM
         
         uint version = ReadCodeWord(binaryAddress + 0x0000);
         uint entryPoint = ReadCodeWord(binaryAddress + 0x0004);
-        if (version > 0)
-        {
-            pc = 0;
-            programOffset = entryPoint;
-        }
-        else
-        {
-            pc = entryPoint;
-            programOffset = 0;
-        }
+        pc = 0;
+        programOffset = entryPoint;
         External.SetProgramOffset(programOffset);
     }
     
@@ -770,11 +762,16 @@ unit HopperVM
             }
             case SysCalls.FileNew:
             {
+#ifdef INCLUDE_FILESYSTEM                
                 uint result = HRFile.New();
                 Push(result, Type.File);        
+#else
+                Error = 0x0A;
+#endif                
             }
             case SysCalls.FileExists:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -787,9 +784,13 @@ unit HopperVM
                 bool result = HRFile.Exists(str);
                 Push(result ? 1 : 0, Type.Bool);
                 GC.Release(str);         
+#else
+                Error = 0x0A;
+#endif                
             }
             case SysCalls.FileIsValid:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint hrfile = Pop(ref stype);
 #ifdef CHECKED
@@ -802,9 +803,13 @@ unit HopperVM
                 bool result = HRFile.IsValid(hrfile);
                 Push(result ? 1 : 0, Type.Bool);        
                 GC.Release(hrfile);         
+#else
+                Error = 0x0A;
+#endif                
             }
             case SysCalls.FileFlush:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint hrfile = Pop(ref stype);
 #ifdef CHECKED
@@ -816,10 +821,14 @@ unit HopperVM
 #endif       
                 HRFile.Flush(hrfile);
                 GC.Release(hrfile);         
+#else
+                Error = 0x0A;
+#endif                
             }
             
             case SysCalls.FileReadLine:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint hrfile = Pop(ref stype);
 #ifdef CHECKED
@@ -831,10 +840,14 @@ unit HopperVM
 #endif       
                 uint str = HRFile.ReadLine(hrfile);
                 GC.Release(hrfile);       
-                Push(str, Type.String);  
+                Push(str, Type.String);
+#else
+                Error = 0x0A;
+#endif                  
             }
             case SysCalls.FileRead:
             {
+#ifdef INCLUDE_FILESYSTEM
                 switch (iOverload)
                 {
                     case 0:
@@ -902,9 +915,13 @@ unit HopperVM
                         Push(bytesRead, Type.UInt);  
                     }
                 }
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.FileAppend:
             {
+#ifdef INCLUDE_FILESYSTEM
                 switch (iOverload)
                 {
                     case 0:
@@ -945,10 +962,14 @@ unit HopperVM
                         GC.Release(hrfile);
                     }
                 }
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.FileCreate:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -960,10 +981,14 @@ unit HopperVM
 #endif       
                 uint result = HRFile.Create(str);
                 Push(result, Type.File);        
-                GC.Release(str);         
+                GC.Release(str);
+#else
+                Error = 0x0A;
+#endif         
             }
             case SysCalls.FileOpen:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -975,10 +1000,14 @@ unit HopperVM
 #endif       
                 uint result = HRFile.Open(str);
                 Push(result, Type.File);        
-                GC.Release(str);         
+                GC.Release(str);     
+#else
+                Error = 0x0A;
+#endif    
             }
             case SysCalls.FileDelete:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -990,9 +1019,13 @@ unit HopperVM
 #endif       
                 HRFile.Delete(str);
                 GC.Release(str);         
+#else
+                Error = 0x0A;
+#endif    
             }
             case SysCalls.FileGetTimeStamp:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1004,11 +1037,15 @@ unit HopperVM
 #endif       
                 uint result = HRFile.GetTimeStamp(str);
                 Push(result, Type.Long);        
-                GC.Release(str);         
+                GC.Release(str); 
+#else
+                Error = 0x0A;
+#endif            
             }
             
             case SysCalls.FileGetTime:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1020,10 +1057,14 @@ unit HopperVM
 #endif       
                 uint result = HRFile.GetTime(str);
                 Push(result, Type.String);        
-                GC.Release(str);         
+                GC.Release(str); 
+#else
+                Error = 0x0A;
+#endif              
             }
             case SysCalls.FileGetDate:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1035,10 +1076,14 @@ unit HopperVM
 #endif       
                 uint result = HRFile.GetDate(str);
                 Push(result, Type.String);        
-                GC.Release(str);         
+                GC.Release(str);
+#else
+                Error = 0x0A;
+#endif               
             }
             case SysCalls.DirectoryGetTime:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1050,10 +1095,14 @@ unit HopperVM
 #endif       
                 uint result = HRDirectory.GetTime(str);
                 Push(result, Type.String);        
-                GC.Release(str);         
+                GC.Release(str);  
+#else
+                Error = 0x0A;
+#endif         
             }
             case SysCalls.DirectoryGetDate:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1065,11 +1114,15 @@ unit HopperVM
 #endif       
                 uint result = HRDirectory.GetDate(str);
                 Push(result, Type.String);        
-                GC.Release(str);         
+                GC.Release(str); 
+#else
+                Error = 0x0A;
+#endif          
             }
             
             case SysCalls.FileGetSize:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1081,16 +1134,24 @@ unit HopperVM
 #endif       
                 uint result = HRFile.GetSize(str);
                 Push(result, Type.Long);        
-                GC.Release(str);         
+                GC.Release(str);  
+#else
+                Error = 0x0A;
+#endif 
             }
             
             case SysCalls.DirectoryNew:
             {
+#ifdef INCLUDE_FILESYSTEM
                 uint result = HRDirectory.New();
                 Push(result, Type.Directory);        
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.DirectoryExists:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1103,9 +1164,13 @@ unit HopperVM
                 bool result = HRDirectory.Exists(str);
                 Push(result ? 1 : 0, Type.Bool);        
                 GC.Release(str);         
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.DirectoryOpen:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1118,9 +1183,13 @@ unit HopperVM
                 uint result = HRDirectory.Open(str);
                 Push(result, Type.Directory);        
                 GC.Release(str);         
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.DirectoryIsValid:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint hrdir = Pop(ref stype);
 #ifdef CHECKED
@@ -1133,9 +1202,13 @@ unit HopperVM
                 bool result = HRDirectory.IsValid(hrdir);
                 Push(result ? 1 : 0, Type.Bool);        
                 GC.Release(hrdir);         
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.DirectoryGetFileCount:
             {
+#ifdef INCLUDE_FILESYSTEM
                 switch (iOverload)
                 {
                     case 0:
@@ -1174,9 +1247,13 @@ unit HopperVM
                         GC.Release(hrdir);         
                     }
                 }
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.DirectoryGetDirectoryCount:
             {
+#ifdef INCLUDE_FILESYSTEM
                 switch (iOverload)
                 {
                     case 0:
@@ -1215,9 +1292,13 @@ unit HopperVM
                         GC.Release(hrdir);         
                     }
                 }
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.DirectoryGetFile:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type itype;
                 uint index = Pop(ref itype);
                 Type stype;
@@ -1232,10 +1313,14 @@ unit HopperVM
 #endif       
                 uint result = HRDirectory.GetFile(hrdir, index);
                 Push(result, Type.String);        
-                GC.Release(hrdir);         
+                GC.Release(hrdir);  
+#else
+                Error = 0x0A;
+#endif       
             }
             case SysCalls.DirectoryGetDirectory:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type itype;
                 uint index = Pop(ref itype);
                 Type stype;
@@ -1250,10 +1335,14 @@ unit HopperVM
 #endif       
                 uint result = HRDirectory.GetDirectory(hrdir, index);
                 Push(result, Type.String);        
-                GC.Release(hrdir);         
+                GC.Release(hrdir);  
+#else
+                Error = 0x0A;
+#endif       
             }
             case SysCalls.DirectoryDelete:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1264,10 +1353,14 @@ unit HopperVM
                 }
 #endif       
                 HRDirectory.Delete(str);
-                GC.Release(str);         
+                GC.Release(str);  
+#else
+                Error = 0x0A;
+#endif              
             }
             case SysCalls.DirectoryCreate:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1279,6 +1372,9 @@ unit HopperVM
 #endif       
                 HRDirectory.Create(str);
                 GC.Release(str);         
+#else
+                Error = 0x0A;
+#endif       
             }
             case SysCalls.SerialIsAvailableGet:
             {
@@ -1315,6 +1411,7 @@ unit HopperVM
             
             case SysCalls.LongNewFromConstant:
             {
+#ifdef INCLUDE_LONGS
                 Type atype;
                 uint location = Pop(ref atype);
 #ifdef CHECKED
@@ -1322,10 +1419,14 @@ unit HopperVM
 #endif
                 uint address = HRLong.NewFromConstant(constAddress + location);
                 Push(address, Type.Long);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.FloatNewFromConstant:
             {
+#ifdef INCLUDE_FLOATS
                 Type atype;
                 uint location = Pop(ref atype);
 #ifdef CHECKED
@@ -1333,6 +1434,9 @@ unit HopperVM
 #endif
                 uint address = HRFloat.NewFromConstant(constAddress + location);
                 Push(address, Type.Float);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.StringNewFromConstant:
             {
@@ -2085,6 +2189,7 @@ unit HopperVM
             
             case SysCalls.WiFiConnect:
             {
+#ifdef INCLUDE_WIFI            
                 Type ptype;    
                 uint password = Pop(ref ptype);
                 Type stype;    
@@ -2100,20 +2205,35 @@ unit HopperVM
                 GC.Release(ssid);
                 GC.Release(password);
                 Push(success ? 1 : 0, Type.Bool);                
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.WiFiIPGet:
             {
+#ifdef INCLUDE_WIFI            
                 uint ip = External.WiFiIP();
                 Push(ip, Type.String);                
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.WiFiStatusGet:
             {
+#ifdef INCLUDE_WIFI            
                 uint status = External.WiFiStatus();
                 Push(status, Type.UInt);                
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.WiFiDisconnect:
             {
+#ifdef INCLUDE_WIFI            
                 External.WiFiDisconnect();
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.ArrayNew:
@@ -2875,6 +2995,7 @@ unit HopperVM
             
             case SysCalls.UIntToLong:
             {
+#ifdef INCLUDE_LONGS
                 Type htype;
                 uint value = Pop(ref htype);
 #ifdef CHECKED
@@ -2882,6 +3003,9 @@ unit HopperVM
 #endif
                 uint lng = HRUInt.ToLong(value);
                 Push(lng, Type.Long);
+#else
+                Error = 0x0A;
+#endif
             }
             
             
@@ -2902,6 +3026,7 @@ unit HopperVM
             
             case SysCalls.IntToLong:
             {
+#ifdef INCLUDE_LONGS
                 Type htype;
                 uint ichunk = Pop(ref htype);
 #ifdef CHECKED
@@ -2909,16 +3034,24 @@ unit HopperVM
 #endif
                 uint lng = HRInt.ToLong(ichunk);
                 Push(lng, Type.Long);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.IntToFloat:
             {
+#ifdef INCLUDE_FLOATS
                 Type htype;
                 int ichunk = PopI(ref htype);
                 uint f = External.IntToFloat(ichunk);
                 Push(f, Type.Float);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.UIntToFloat:
             {
+#ifdef INCLUDE_FLOATS             
                 Type htype;
                 uint ichunk = Pop(ref htype);
 #ifdef CHECKED
@@ -2926,6 +3059,9 @@ unit HopperVM
 #endif
                 uint f = External.UIntToFloat(ichunk);
                 Push(f, Type.Float);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.IntToBytes:
             {
@@ -2939,6 +3075,7 @@ unit HopperVM
             }
             case SysCalls.LongToBytes:
             {
+#ifdef INCLUDE_LONGS
                 Type htype;
                 uint this = Pop(ref htype);
 #ifdef CHECKED
@@ -2947,10 +3084,14 @@ unit HopperVM
                 uint lst = HRLong.ToBytes(this);
                 Push(lst, Type.List);  
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.FloatToLong:
             {
+#ifdef INCLUDE_FLOATS
                 Type htype;
                 uint this = Pop(ref htype);
 #ifdef CHECKED
@@ -2959,9 +3100,13 @@ unit HopperVM
                 uint lng = External.FloatToLong(this);
                 Push(lng, Type.Long);
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.FloatToUInt:
             {
+#ifdef INCLUDE_FLOATS
                 Type htype;
                 uint this = Pop(ref htype);
 #ifdef CHECKED
@@ -2970,10 +3115,14 @@ unit HopperVM
                 uint ui = External.FloatToUInt(this);
                 Push(ui, Type.UInt);
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.LongGetByte:
             {
+#ifdef INCLUDE_LONGS
                 uint index = Pop();
                 Type htype;
                 uint this = Pop(ref htype);
@@ -2982,10 +3131,14 @@ unit HopperVM
 #endif
                 byte b = HRLong.GetByte(this, index);
                 Push(b, Type.Byte);  
-                GC.Release(this);              
+                GC.Release(this);        
+#else
+                Error = 0x0A;
+#endif      
             }
             case SysCalls.LongFromBytes:
             {
+#ifdef INCLUDE_LONGS
                 byte b3 = byte(Pop());
                 byte b2 = byte(Pop());
                 byte b1 = byte(Pop());
@@ -2993,6 +3146,9 @@ unit HopperVM
                 
                 uint l = HRLong.FromBytes(b0, b1, b2, b3);
                 Push(l, Type.Long);                
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.IntGetByte:
             {
@@ -3013,6 +3169,7 @@ unit HopperVM
             
             case SysCalls.FloatToBytes:
             {
+#ifdef INCLUDE_FLOATS
                 Type htype;
                 uint this = Pop(ref htype);
 #ifdef CHECKED
@@ -3021,9 +3178,13 @@ unit HopperVM
                 uint lst = HRFloat.ToBytes(this);
                 Push(lst, Type.List); 
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.FloatToString:
             {
+#ifdef INCLUDE_FLOATS
                 Type htype;
                 uint this = Pop(ref htype);
 #ifdef CHECKED
@@ -3032,9 +3193,13 @@ unit HopperVM
                 uint str = External.FloatToString(this);
                 Push(str, Type.String);
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.LongToString:
             {
+#ifdef INCLUDE_LONGS
                 Type htype;
                 uint this = Pop(ref htype);
 #ifdef CHECKED
@@ -3043,9 +3208,13 @@ unit HopperVM
                 uint str = External.LongToString(this);
                 Push(str, Type.String); 
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.FloatGetByte:
             {
+#ifdef INCLUDE_FLOATS
                 uint index = Pop();
                 Type htype;
                 uint this = Pop(ref htype);
@@ -3054,20 +3223,28 @@ unit HopperVM
 #endif
                 byte b = HRFloat.GetByte(this, index);
                 Push(b, Type.Byte); 
-                GC.Release(this);               
+                GC.Release(this);   
+#else
+                Error = 0x0A;
+#endif            
             }
             case SysCalls.FloatFromBytes:
             {
+#ifdef INCLUDE_FLOATS
                 byte b3 = byte(Pop());
                 byte b2 = byte(Pop());
                 byte b1 = byte(Pop());
                 byte b0 = byte(Pop());
                 
                 uint f = HRFloat.FromBytes(b0, b1, b2, b3);
-                Push(f, Type.Float);                
+                Push(f, Type.Float); 
+#else
+                Error = 0x0A;
+#endif               
             }
             case SysCalls.LongToUInt:
             {
+#ifdef INCLUDE_LONGS
                 Type htype;
                 uint this = Pop(ref htype);
 #ifdef CHECKED
@@ -3080,9 +3257,13 @@ unit HopperVM
                 uint ui = HRLong.ToUInt(this);
                 Push(ui, Type.UInt);
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.LongToInt:
             {
+#ifdef INCLUDE_LONGS
                 Type htype;
                 uint this = Pop(ref htype);
 #ifdef CHECKED
@@ -3095,9 +3276,13 @@ unit HopperVM
                 int i = External.LongToInt(this);
                 PushI(i);
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.LongToFloat:
             {
+#ifdef INCLUDE_LONGS
                 Type htype;
                 uint this = Pop(ref htype);
 #ifdef CHECKED
@@ -3110,10 +3295,14 @@ unit HopperVM
                 uint f = External.LongToFloat(this);
                 Push(f, Type.Float);
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.LongNegate:
             {
+#ifdef INCLUDE_LONGS
                 Type ttype;
                 uint top = Pop(ref ttype);
 #ifdef CHECKED
@@ -3128,6 +3317,9 @@ unit HopperVM
                 result = HRLong.LongNegate(top);
                 Push(result, rtype);        
                 GC.Release(top);
+#else
+                Error = 0x0A;
+#endif
             }
             
             
@@ -3142,6 +3334,7 @@ unit HopperVM
             case SysCalls.LongGT:
             case SysCalls.LongGE:
             {
+#ifdef INCLUDE_LONGS
                 Type ttype;
                 uint top = Pop(ref ttype);
                 Type ntype;
@@ -3212,9 +3405,13 @@ unit HopperVM
                 Push(result, rtype);        
                 GC.Release(top);
                 GC.Release(next);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.LongAddB:
             {
+#ifdef INCLUDE_LONGS
                 Type ttype;
                 uint top  = Pop(ref ttype);
                 Type ntype;
@@ -3232,9 +3429,13 @@ unit HopperVM
                 result = HRLong.LongAddB(next, top);
                 Push(result, rtype);        
                 GC.Release(next);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.LongSubB:
             {
+#ifdef INCLUDE_LONGS
                 Type ttype;
                 uint top  = Pop(ref ttype);
                 Type ntype;
@@ -3251,7 +3452,10 @@ unit HopperVM
                 
                 result = HRLong.LongSubB(next, top);
                 Push(result, rtype);        
-                GC.Release(next);
+                GC.Release(next); 
+#else
+                Error = 0x0A;
+#endif          
             }
             
             case SysCalls.FloatAdd:
@@ -3265,6 +3469,7 @@ unit HopperVM
             case SysCalls.FloatGT:
             case SysCalls.FloatGE:
             {
+#ifdef INCLUDE_FLOATS
                 Type ttype;
                 uint top = Pop(ref ttype);
                 Type ntype;
@@ -3330,11 +3535,15 @@ unit HopperVM
                 Push(result, rtype);        
                 GC.Release(top);
                 GC.Release(next);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.FloatSin:
             case SysCalls.FloatCos:
             case SysCalls.FloatSqrt:
             {
+#ifdef INCLUDE_FLOATS
                 Type ttype;
                 uint top = Pop(ref ttype);
 #ifdef CHECKED
@@ -3363,16 +3572,27 @@ unit HopperVM
                 }
                 Push(result, rtype);        
                 GC.Release(top);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.LongNew:
             {
+#ifdef INCLUDE_LONGS
                 uint address = HRLong.New();
                 Push(address, Type.Long);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.FloatNew:
             {
+#ifdef INCLUDE_FLOATS
                 uint address = HRFloat.New();
                 Push(address, Type.Float);
+#else
+                Error = 0x0A;
+#endif
             }
             
             
