@@ -465,7 +465,7 @@ program Optimize
             size = CodePoints.Save();
             codeAfter = codeAfter + size;
             ProgessNudge();
-            
+                       
             bool walkNextMethod;
             foreach (var kv in methodsCalled)
             {
@@ -486,7 +486,7 @@ program Optimize
             {
                 break;
             }
-        } // loop
+        } // method loop
         
         if (RemoveUnreachableMethods())
         {

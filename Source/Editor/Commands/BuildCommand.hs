@@ -23,6 +23,19 @@ unit BuildCommand
     
     CPUArchitecture cpuArchitecture; // for toolchain
     
+    uint runtimeExecute(string path, <string> arguments)
+    {
+        if (false) // for diagnostics
+        {
+            PrintLn();
+            Print(path + " ");
+            foreach (var arg in arguments)
+            {
+                Print(arg + " ");
+            }
+        }
+        return Runtime.Execute(path, arguments);
+    }
     bool GenerateIHex 
     { 
         get { return generateIHex; } set { generateIHex = value; }
@@ -193,7 +206,8 @@ unit BuildCommand
             arguments.Append("-g");
             arguments.Append(col.ToString());
             arguments.Append(row.ToString());
-            
+
+            isZ80 = false;            
             string arch;
             switch (Architecture)
             {
@@ -221,6 +235,10 @@ unit BuildCommand
                     cpuArchitecture = CPUArchitecture.Hopper; // a good starting assumption
                 }
             }
+            if (isZ80 || isAssembly)
+            {
+                ihexPath = hexePath.Replace(".hexe", ".hex");
+            }
             
             if (isAssembly) // set by source being ".asm"
             {
@@ -239,7 +257,8 @@ unit BuildCommand
                     break;
                 }
             }
-            error = Runtime.Execute(binaryPath, arguments);
+            
+            error = runtimeExecute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError("Preprocessor", error);
@@ -249,7 +268,6 @@ unit BuildCommand
             {
                 hasmPath = "/Debug/" + fileName + ".asm";
                 binaryPath ="/Bin/Assemble" + HexeExtension;
-                ihexPath = hexePath.Replace(".hexe", ".hex");
                 if (!File.Exists(binaryPath))
                 {
                     Editor.SetStatusBarText("No Assembler: '" + binaryPath + "'");
@@ -265,7 +283,7 @@ unit BuildCommand
                 arguments.Append(arch);
                 
                 Editor.SetStatusBarText("Assembling '" + jsonPath + "' -> '" + codePath);
-                error = Runtime.Execute(binaryPath, arguments);
+                error = runtimeExecute(binaryPath, arguments);
                 if (error != 0)
                 {
                     DisplayError("Assemble", error);
@@ -308,7 +326,7 @@ unit BuildCommand
                 arguments.Append(row.ToString());
                 
                 Editor.SetStatusBarText("Compiling '" + jsonPath + "' -> '" + codePath + "'" + checkedBuild);
-                error = Runtime.Execute(binaryPath, arguments);
+                error = runtimeExecute(binaryPath, arguments);
                 if (error != 0)
                 {
                     DisplayError("Compile", error);
@@ -336,7 +354,7 @@ unit BuildCommand
                 arguments.Append("-g");
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
-                error = Runtime.Execute(binaryPath, arguments);
+                error = runtimeExecute(binaryPath, arguments);
                 if (error != 0)
                 {
                     DisplayError(optName, error);
@@ -374,7 +392,7 @@ unit BuildCommand
             {
                 arguments.Append("-ihex");
             }
-            error = Runtime.Execute(binaryPath, arguments);
+            error = runtimeExecute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError(genName, error);
@@ -410,7 +428,7 @@ unit BuildCommand
                 arguments.Append("-g");
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
-                error = Runtime.Execute(binaryPath, arguments);
+                error = runtimeExecute(binaryPath, arguments);
                 if (error != 0)
                 {
                     DisplayError(dasmName, error);
@@ -438,7 +456,7 @@ unit BuildCommand
         string sourcePath = Editor.ProjectPath; 
         arguments.Append(sourcePath); // Debugger takes the .hs source path
         arguments.Append("-g"); // Interactive mode (not launched directly from command line)
-        uint error = Runtime.Execute("Debug", arguments);
+        uint error = runtimeExecute("Debug", arguments);
         Editor.DrawAll();
     }
     Run()
@@ -453,7 +471,7 @@ unit BuildCommand
             arguments.Append(path); // HopperMon takes IHex path
             path = "hm";
         }
-        uint error = Runtime.Execute(path, arguments);
+        uint error = runtimeExecute(path, arguments);
         Editor.DrawAll();
     }
     

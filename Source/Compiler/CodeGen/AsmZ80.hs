@@ -343,6 +343,7 @@ unit AsmZ80
         JR_Z_e   = 0x28,
         JR_NC_e  = 0x30,
         JR_C_e   = 0x38,
+        JR_e     = 0x18,
 
         DJNZ_e  = 0x10,
         
@@ -1746,6 +1747,11 @@ unit AsmZ80
                     name = "JP NC e";
                     operandType = OperandType.Relative;
                 }
+                case OpCode.JR_e:
+                {
+                    name = "JP e";
+                    operandType = OperandType.Relative;
+                }
                 
                 case OpCode.RST_Reset:
                 {
@@ -2145,7 +2151,7 @@ unit AsmZ80
         }
         return name;
     }
-    string Disassemble(uint address, OpCode instruction, uint operand)
+    string Disassemble(uint address, OpCode instruction, uint operand, bool bare)
     {
         OperandType operandType;
         byte operandLength;
@@ -2209,7 +2215,7 @@ unit AsmZ80
                 disassembly = disassembly.Replace("+d", "d");
                 disassembly = disassembly.Replace('e', 'd');
                 disassembly = disassembly.Replace("d", sign + offset.ToString());
-                if (jumpAddress)
+                if (jumpAddress && !bare)
                 {
                     long targetAddress = long(address) + offset;
                     disassembly = disassembly + "  -> 0x" + targetAddress.ToHexString(4);  

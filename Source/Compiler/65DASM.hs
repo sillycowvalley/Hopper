@@ -206,8 +206,6 @@ program DASM
                 hasmFile.Append("0x" + address.ToHexString(4) + "  0x" + arch.ToHexString(2) + "   // CPU Architecture" + char(0x0A));
                 address++;
                                     
-                uint iOverload = 0;
-                
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 uint indexMax = 0;
                 foreach (var sz in methodSizes)

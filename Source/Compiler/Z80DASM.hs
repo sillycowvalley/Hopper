@@ -206,16 +206,57 @@ program DASM
                 address = org + 2;
                 codeSize += 2;
                 
+                <uint, uint> methodSizes = Code.GetMethodSizes();
+                uint indexMax = 0;
+                foreach (var sz in methodSizes)
+                {
+                    if (sz.key > indexMax)
+                    {
+                        indexMax = sz.key;
+                    }
+                }
+                uint entryAddress;
+                <string,string> debugInfo;
+                <uint,uint> methodFirstAddresses; // <address,index>
+                for (uint index = 0; index <= indexMax; index++)
+                {
+                    <string,variant> methodSymbols = Code.GetMethodSymbols(index);
+                    if (methodSymbols.Count != 0)
+                    {
+                        debugInfo = methodSymbols["debug"];
+                        foreach (var kv in debugInfo)
+                        {
+                            uint codeAddress;
+                            if (UInt.TryParse(kv.key, ref codeAddress))
+                            {
+                                methodFirstAddresses[codeAddress] = index;
+                                if (index == 0)
+                                {
+                                    entryAddress = codeAddress;
+                                }
+                                //PrintLn(index.ToString() + ": 0x" + codeAddress.ToHexString(4));
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                uint doffset = 0;
+                string src;
+                string srcName;
                  
                 uint index = 2;
                 byte lastA;
                 byte lastB;
                 byte lastC;
+                uint lastBC;
+                OpCode prevInstruction;
                 loop
                 {
                     if (index == code.Count) { break; }
                     
                     byte opCodeLength = GetOpCodeLength(code[index]);
+                    address = index;
                     
                     OpCode instruction;
                     OperandType operandType;
@@ -264,41 +305,125 @@ program DASM
                     {
                         lastC = byte(operand & 0xFF);
                     }
+                    if (instruction == OpCode.LD_BC_nn)
+                    {
+                        lastBC = operand;
+                    }
                     
+                    uint switchAddress = address;
+                    if (resetVector == switchAddress)
+                    {
+                        switchAddress = entryAddress;
+                    }
+                    else if (prevInstruction == OpCode.RET)
+                    {
+                        for (uint search = address; search < address+6; search++)
+                        {
+                            if (methodFirstAddresses.Contains(search))
+                            {
+                                switchAddress = search; 
+                                break;
+                            }
+                        }
+                    }
+                    
+                    
+                    prevInstruction = instruction;
+                    if (methodFirstAddresses.Contains(switchAddress))
+                    {
+                        //PrintLn(switchAddress.ToHexString(4));
+                        if ((switchAddress != address) || (resetVector == address))
+                        {
+                            uint methodIndex = methodFirstAddresses[switchAddress];
+                            <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
+                            if (methodSymbols.Count != 0)
+                            {
+                                src = methodSymbols["source"];
+                                srcName = Path.GetFileName(src);
+                                string ln = methodSymbols["line"];
+                                string nm = methodSymbols["name"];
+                                debugInfo = methodSymbols["debug"];
+                                doffset = address;
+                                hasmFile.Append("" + char(0x0A)); 
+                                hasmFile.Append("// " + src + ":" + ln + char(0x0A));  
+                                
+                                string mname = "// ####  " + nm + "()  ####";
+                                mname = mname.Pad(' ', 80);
+                                mname = mname + "0x" + methodIndex.ToHexString(4) + char(0x0A);
+                                hasmFile.Append(mname);  
+                                hasmFile.Append("" + char(0x0A)); 
+                                Parser.ProgressTick(".");
+                            }
+                        }
+                    }
                     string comment;
-                    if (instruction == OpCode.RST_Instruction)
+                    string addressKey = address.ToString();
+                    if (debugInfo.Contains(addressKey))
                     {
-                        comment = "// " + Instructions.ToString(Instruction(lastA));
+                        string debugLine = debugInfo[addressKey];
+                        string sourceLine = getSourceLine(src, debugLine);
+                        if (sourceLine.Length != 0)
+                        {
+                            comment = "// " + sourceLine.Trim();
+                            if (comment.Length < 34)
+                            {
+                                comment = comment.Pad(' ', 34);
+                                comment = comment + srcName + ":" + debugLine;
+                            }
+                        }
+                        else
+                        {
+                            comment = "// " + src + ":" + debugLine;  
+                        }
                     }
-                    switch (instruction)
-                    {
-                        case OpCode.RST_PopAbsolute:
-                        {
-                            comment = "// POP GLOBAL";
-                        }
-                        case OpCode.RST_PushAbsolute:
-                        {
-                            comment = "// PUSH GLOBAL";
-                        }
-                        case OpCode.RST_PushImmediate:
-                        {
-                            comment = "// PUSH IMMEDIATE";
-                        }
-                        case OpCode.RST_PushOffset:
-                        {
-                            comment = "// PUSH LOCAL";
-                        }
-                        case OpCode.RST_PopOffset:
-                        {
-                            comment = "// POP LOCAL";
-                        }
-                        case OpCode.RST_SysCall0:
-                        {                          
-                            comment = "// SYSCALL0: " + GetSysCallName(lastC);
-                        }
                     
+                    if (comment.Length == 0)
+                    {
+                        if (instruction == OpCode.RST_Instruction)
+                        {
+                            comment = "//     " + Instructions.ToString(Instruction(lastA));
+                        }
+                        switch (instruction)
+                        {
+                            case OpCode.RST_PopAbsolute:
+                            {
+                                comment = "//     POP GLOBAL [" + (lastBC & 0xFF).ToString() + "]";
+                            }
+                            case OpCode.RST_PushAbsolute:
+                            {
+                                comment = "//     PUSH GLOBAL [" + (lastBC & 0xFF).ToString() + "]";
+                            }
+                            case OpCode.RST_PushImmediate:
+                            {
+                                comment = "//     PUSH IMMEDIATE 0x" + lastBC.ToHexString(4);
+                            }
+                            case OpCode.RST_PushOffset:
+                            {
+                                int offset = lastBC.GetByte(0);
+                                if (offset > 127)
+                                {
+                                    offset = offset - 256;
+                                }
+                                string sign = (offset >= 0) ? "+" : "";
+                                comment = "//     PUSH LOCAL (BP" + sign + offset.ToString() + ")";
+                            }
+                            case OpCode.RST_PopOffset:
+                            {
+                                int offset = lastBC.GetByte(0);
+                                if (offset > 127)
+                                {
+                                    offset = offset - 256;
+                                }
+                                string sign = (offset >= 0) ? "+" : "";
+                                comment = "//     POP LOCAL (BP" + sign + offset.ToString() + ")";
+                            }
+                            case OpCode.RST_SysCall0:
+                            {                          
+                                comment = "//     SYSCALL0: " + GetSysCallName(lastC) + "(..)";
+                            }
+                        }
                     }
-                    string disassembly = AsmZ80.Disassemble(address, instruction, operand);
+                    string disassembly = AsmZ80.Disassemble(address, instruction, operand, bare);
                     if (bare)
                     {
                         disassembly = disassembly.Substring(29);
@@ -321,7 +446,6 @@ program DASM
                         hasmFile.Append(disassembly.Pad(' ', 48) + comment + char(0x0A));
                     }
                     //hasmFile.Flush();
-                    address += (opCodeLength + operandLength);
                 }
                               
                 Parser.ProgressTick(".");

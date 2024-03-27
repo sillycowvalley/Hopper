@@ -285,6 +285,12 @@ unit Token
         statementKeywords["friend"] = true;
     }
     
+    ClearAssembler()
+    {
+        instructionKeywords.Clear();
+        registerKeywords.Clear();
+        conditionKeywords.Clear();
+    }
     InitializeAssembler(CPUArchitecture architecture)
     {    
         instructionKeywords.Clear();

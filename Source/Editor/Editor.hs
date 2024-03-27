@@ -1862,6 +1862,11 @@ unit Editor
             Editor.UpdateTitle(); // file is no longer modified
             UpdateYoungestFile();
             StatusBar.SetText(statusbar, "Saved");
+            
+            if (CurrentPath == ProjectPath) // updating the main file to build?
+            {
+                Editor.CheckAssemblerSource(true);
+            }
         }
     }
     
@@ -1876,10 +1881,11 @@ unit Editor
         currentPath = path;
     }
     
-    CheckAssemblerSource()
+    CheckAssemblerSource(bool always)
     {
-        if (cpuArchitecture == CPUArchitecture.None)
+        if (always || (cpuArchitecture == CPUArchitecture.None))
         {
+            cpuArchitecture = CPUArchitecture.None;
             uint maxLines = TextBuffer.GetLineCount(); 
             uint currentLine = 0;
             loop
@@ -1889,7 +1895,9 @@ unit Editor
                 if (ln.Contains("#define"))
                 {
                     <string> parts = ln.Split(' ');
-                    if ((parts.Count >= 2) && (parts[0] == "#define"))
+                    // "//#define"        is dealt with
+                    // "//", "#define"    is dealt with
+                    if ((parts.Count >= 2) && (parts[0] == "#define")) 
                     {
                         if (isAssemblerSource)
                         {
@@ -1920,6 +1928,10 @@ unit Editor
         if (isAssemblerSource)
         {
             Token.InitializeAssembler(cpuArchitecture);
+        }
+        else
+        {
+            Token.ClearAssembler();
         }
     }
     
@@ -2010,7 +2022,7 @@ unit Editor
         if (localProject.Length == 0) // first load
         {
             projectPath = CurrentPath;
-            Editor.CheckAssemblerSource();
+            Editor.CheckAssemblerSource(true);
             UpdateYoungestFile();
         }
         CalculateLineNumberWidth();

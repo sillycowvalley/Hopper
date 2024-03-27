@@ -890,13 +890,21 @@ unit CodePoints
                    )
                 {
                     uint callMethodIndex = iOperands[iIndex];
-                    if (Target6502|| TargetMinimal) // delegates still use this
+                    if (!methodsCalled.Contains(callMethodIndex))
                     {
-                        callMethodIndex = callMethodIndex & 0x3FFF;
+                        // Die(0x0B); //  why are we calling a method that we don't have code for anymore?
                     }
-                    methodsCalled[callMethodIndex] = true;
+                    else
+                    {
+                        if (Target6502|| TargetMinimal) // delegates still use this
+                        {
+                            callMethodIndex = callMethodIndex & 0x3FFF;
+                        }
+                        methodsCalled[callMethodIndex] = true; // reachable from currentMethod
+                    }
                 }
             }
+        
             iIndex++;
         } // loop
         ProgessNudge();
@@ -937,7 +945,7 @@ unit CodePoints
                     if (iIndex > 0)
                     {
                         Instruction opCodePrev = iCodes[iIndex-1];
-                        if (opCodePrev == Instruction.PUSHI0)
+                        if ((opCodePrev == Instruction.PUSHI0) || (IsExperimental && (opCodePrev == Instruction.ENTERB)))
                         {
                             switch (opCode)
                             {
@@ -1369,6 +1377,34 @@ unit CodePoints
         return modified;
     }
     
+    removePUSHI0orPUSHI1orReduceENTERB(uint iIndex)
+    {
+        if (iCodes[iIndex] == Instruction.ENTERB)
+        {
+            // update the ENTERB
+            uint b = iOperands[iIndex];
+            if (b == 1)
+            {
+                iCodes.SetItem   (iIndex, Instruction.ENTER);
+                iLengths.SetItem (iIndex, 1);
+            }
+            else
+            {
+                iOperands.SetItem(iIndex, b-1);
+            }
+        }
+        else if ((iCodes[iIndex] == Instruction.PUSHI0) || (iCodes[iIndex] == Instruction.PUSHI1))
+        {
+            // remove the PUSHI0 or PUSHI1
+            iCodes.SetItem(iIndex, Instruction.NOP);
+        }
+        else
+        {
+            PrintLn(Instructions.ToString(iCodes[iIndex]));
+            Die(0x0B);
+        }
+    }
+    
     bool OptimizeUnconditionalJumps()
     {
         uint iCodesLength = iCodes.Count;
@@ -1394,11 +1430,18 @@ unit CodePoints
                 byte nopCount = 0;
                 Instruction opCodePrev     = iCodes[iIndex-1];
                 Instruction opCodePrevPrev = Instruction.DIE; // unknown
+                
+                bool opCodePrevIsEnterB   = (opCodePrev == Instruction.ENTERB);
+                bool opCodePrevIsZero     = opCodePrevIsEnterB || (opCodePrev == Instruction.PUSHI0);
+                bool opCodePrevPrevIsEnterB;
+                bool opCodePrevPrevIsZero;
                 if ((iIndex >= 2) && !IsTargetOfJumps(iIndex-1))
                 {
                     opCodePrevPrev = iCodes[iIndex-2];
+                    opCodePrevPrevIsEnterB = (opCodePrevPrev == Instruction.ENTERB);
+                    opCodePrevPrevIsZero   = opCodePrevPrevIsEnterB || (opCodePrevPrev == Instruction.PUSHI0);
                 }
-                if (opCodePrev == Instruction.PUSHI0)
+                if (opCodePrevIsZero)
                 {
                     switch (opCode)
                     {
@@ -1434,8 +1477,8 @@ unit CodePoints
                         }
                     }
                 }
-                else if (                                               (opCodePrev == Instruction.BOOLNOT)
-                          || ((opCodePrevPrev == Instruction.PUSHI0) && (opCodePrev == Instruction.EQ))
+                else if (                             (opCodePrev == Instruction.BOOLNOT)
+                          || (opCodePrevPrevIsZero && (opCodePrev == Instruction.EQ)) 
                         )
                 {
                     switch (opCode)
@@ -1467,7 +1510,7 @@ unit CodePoints
                         nopCount = 2;
                     }
                 }
-                else if ((opCodePrevPrev == Instruction.PUSHI0) && (opCodePrev == Instruction.NE))
+                else if (opCodePrevPrevIsZero && (opCodePrev == Instruction.NE))
                 {
                     switch (opCode)
                     {
@@ -1485,7 +1528,7 @@ unit CodePoints
                 if (!jumpPathIsValid)
                 {
                     // we never branch - replace the PUSH and the J with NOPs
-                    iCodes.SetItem(iIndex-1, Instruction.NOP);
+                    removePUSHI0orPUSHI1orReduceENTERB(iIndex-1);
                     iCodes.SetItem(iIndex,   Instruction.NOP);
                     iLengths.SetItem(iIndex, 1);
                     <uint> emptyTarget;
@@ -1495,8 +1538,7 @@ unit CodePoints
                 else if (!mainPathIsValid)
                 {
                     // we always branch - replace the PUSH with NOP and the J with unconditional
-                    iCodes.SetItem(iIndex-1, Instruction.NOP);
-                       
+                    removePUSHI0orPUSHI1orReduceENTERB(iIndex-1);
                     switch (opCode)
                     {
                         case Instruction.JZ:
@@ -1518,7 +1560,7 @@ unit CodePoints
                     // swap the BOOLNOT for a NOP
                     if (nopCount == 2)
                     {
-                        iCodes.SetItem(iIndex-2, Instruction.NOP);
+                        removePUSHI0orPUSHI1orReduceENTERB(iIndex-2);
                     }
                     iCodes.SetItem(iIndex-1, Instruction.NOP);
                     iCodes.SetItem(iIndex, opCode);
@@ -1528,7 +1570,7 @@ unit CodePoints
                 {
                     if (nopCount == 2)
                     {
-                        iCodes.SetItem(iIndex-2, Instruction.NOP);
+                        removePUSHI0orPUSHI1orReduceENTERB(iIndex-2);
                     }
                     iCodes.SetItem(iIndex-1, Instruction.NOP);
                     modified = true;

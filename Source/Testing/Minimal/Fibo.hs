@@ -1,7 +1,7 @@
 program Fibo
 {
  
-#define CPU_Z80
+//#define CPU_Z80
 
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/Serial"

@@ -94,7 +94,7 @@ unit ClickStack
                 }
                 // successfully loaded symbols (which called Scanner.New()) so we 
                 // need to reload assembler keywords if isAssembler
-                Editor.CheckAssemblerSource();
+                Editor.CheckAssemblerSource(false);
             }
             string currentNamespace = Symbols.GetNamespace(Editor.CurrentPath);
             clickLocation = (Editor.CurrentPath).ToLower() + ":" + clickLine.ToString();
