@@ -114,7 +114,7 @@ switch (variable)
 ```
 
 #### No Need for Break
-Unlike C and its derivatives, Hopper **does not alow** the use of `break` statements after each case.
+Unlike C and its derivatives, Hopper **does not allow** the use of `break` statements after each case.
 The code execution will **never** fall through to the next case. `break` is reserved for loop constructs.
 
 #### Supported Variable Types
