@@ -49,6 +49,7 @@ unit AsmZ80
         LD_D_D = 0x52,
         LD_D_E = 0x53,
         LD_D_H = 0x54,
+        LD_D_IYH = 0xFD54,   // #FD #54       LD   D,IYH - http://www.z80.info/z80undoc.htm
         LD_D_L = 0x55,
         LD_D_A = 0x57,
         
@@ -58,7 +59,11 @@ unit AsmZ80
         LD_E_E = 0x5B,
         LD_E_H = 0x5C,
         LD_E_L = 0x5D,
+        LD_E_IYL = 0xFD5D,   // #FD #5D       LD   E,IYL - http://www.z80.info/z80undoc.htm
         LD_E_A = 0x5F,
+        
+        
+        
         
         LD_H_B = 0x60,
         LD_H_C = 0x61,
@@ -174,6 +179,9 @@ unit AsmZ80
         DEC_H = 0x25,
         DEC_L = 0x2D,
         
+        DEC_iHL   = 0x35,
+        DEC_iIX_d = 0xDD35,
+        DEC_iIY_d = 0xFD35,
         
         DEC_BC  = 0x0B,
         DEC_HL  = 0x2B,
@@ -296,7 +304,18 @@ unit AsmZ80
         SLA_E = 0xCB23,
         SLA_H = 0xCB24,
         SLA_L = 0xCB25,
+        SLA_iHL = 0xCB26,
         SLA_A = 0xCB27,
+        
+        SRL_B = 0xCB38,
+        SRL_C = 0xCB39,
+        SRL_D = 0xCB3A,
+        SRL_E = 0xCB3B,
+        SRL_H = 0xCB3C,
+        SRL_L = 0xCB3D,
+        SRL_iHL = 0xCB3E,
+        SRL_A = 0xCB3F,
+        
         
         RLC_B = 0xCB00,
         RLC_C = 0xCB01,
@@ -304,11 +323,9 @@ unit AsmZ80
         RLC_E = 0xCB03,
         RLC_H = 0xCB04,
         RLC_L = 0xCB05,
+        RLC_iHL = 0xCB06,
         RLC_A = 0xCB07,
         
-        RLA  = 0x17,
-        
-        RL_A = 0xCB17,
         RL_B = 0xCB10,
         RL_C = 0xCB11,
         RL_D = 0xCB12,
@@ -316,10 +333,23 @@ unit AsmZ80
         RL_H = 0xCB14,
         RL_L = 0xCB15,
         RL_iHL = 0xCB16,
-        RL_iIX_d = 0xDDCB,
-        RL_iIY_d = 0xFDCB,
+        RL_A = 0xCB17,
+        
+        RR_B = 0xCB18,
+        RR_C = 0xCB19,
+        RR_D = 0xCB1A,
+        RR_E = 0xCB1B,
+        RR_H = 0xCB1C,
+        RR_L = 0xCB1D,
+        RR_iHL = 0xCB1E,
+        RR_A = 0xCB1F,
         
         
+        RLA  = 0x17,
+        RRA  = 0x1F,
+        
+        CCF = 0x3F,
+        SCF = 0x37,
         
         AND_A    = 0xA7, // clears the carry flag
         
@@ -339,6 +369,7 @@ unit AsmZ80
         ADC_HL_SP = 0xED7A,
         
         JP_nn    = 0xC3,
+        JP_HL    = 0xE9,
         JR_NZ_e  = 0x20,
         JR_Z_e   = 0x28,
         JR_NC_e  = 0x30,
@@ -349,6 +380,8 @@ unit AsmZ80
         
         CALL_nn = 0xCD,
         RET     = 0xC9,
+        
+        HALT    = 0x76,
         
         PUSH_DE = 0xD5,
         POP_DE  = 0xD1,
@@ -395,6 +428,157 @@ unit AsmZ80
         {
             switch (opCode)
             {
+            
+                case OpCode.RL_B:
+                {
+                    name = "RL B";
+                    operandType = OperandType.Implied;
+                }
+                
+                case OpCode.RL_C:
+                {
+                    name = "RL C";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RL_D:
+                {
+                    name = "RL D";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RL_E:
+                {
+                    name = "RL E";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RL_H:
+                {
+                    name = "RL H";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RL_L:
+                {
+                    name = "RL L";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RL_iHL:
+                {
+                    name = "RL (HL)";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RL_A:
+                {
+                    name = "RL A";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RR_B:
+                {
+                    name = "RR B";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RR_C:
+                {
+                    name = "RR C";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RR_D:
+                {
+                    name = "RR D";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RR_E:
+                {
+                    name = "RR E";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RR_H:
+                {
+                    name = "RR H";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RR_L:
+                {
+                    name = "RR L";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RR_iHL:
+                {
+                    name = "RR (HL)";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.RR_A:
+                {
+                    name = "RR A";
+                    operandType = OperandType.Implied;
+                }
+                
+                
+                case OpCode.SLA_iHL:
+                {
+                    name = "SLA (HL)";
+                    operandType = OperandType.Implied;
+                }    
+                case OpCode.SRL_iHL:
+                {
+                    name = "SRL (HL)";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SRL_B:
+                {
+                    name = "SRL B";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SRL_C:
+                {
+                    name = "SRL C";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SRL_D:
+                {
+                    name = "SRL D";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SRL_E:
+                {
+                    name = "SRL E";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SRL_H:
+                {
+                    name = "SRL H";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SRL_L:
+                {
+                    name = "SRL L";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SRL_A:
+                {
+                    name = "SRL A";
+                    operandType = OperandType.Implied;
+                }
+
+                case OpCode.LD_D_IYH:
+                {
+                    name = "LD D, IYh";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.LD_E_IYL:
+                {
+                    name = "LD E, IYl";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.DEC_iIX_d:
+                {
+                    name = "DEC (IX+d)";
+                    operandType = OperandType.IndexedRelative;
+                }
+                case OpCode.DEC_iIY_d:
+                {
+                    name = "DEC (IY+d)";
+                    operandType = OperandType.IndexedRelative;
+                }
+                
                 case OpCode.PUSH_IX:
                 {
                     name = "PUSH IX";
@@ -810,16 +994,6 @@ unit AsmZ80
                     name = "INC (IY+d)";
                     operandType = OperandType.Relative;
                 }
-                case OpCode.RL_iIX_d:
-                {
-                    name = "RL (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.RL_iIY_d:
-                {
-                    name = "RL (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
                 case OpCode.RL_A:
                 {
                     name = "RL A";
@@ -860,6 +1034,41 @@ unit AsmZ80
                     name = "RL (HL)";
                     operandType = OperandType.Implied;
                 }
+                case OpCode.SLA_B:
+                {
+                    name = "SLA_B";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SLA_C:
+                {
+                    name = "SLA_C";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SLA_D:
+                {
+                    name = "SLA_D";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SLA_E:
+                {
+                    name = "SLA_E";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SLA_H:
+                {
+                    name = "SLA_H";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SLA_L:
+                {
+                    name = "SLA_L";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SLA_A:
+                {
+                    name = "SLA_A";
+                    operandType = OperandType.Implied;
+                }
                 
                 default:
                 {
@@ -871,7 +1080,16 @@ unit AsmZ80
         {
             switch (opCode)
             {
-                
+                case OpCode.DEC_iHL:
+                {
+                    name = "DEC (HL)";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.JP_HL:
+                {
+                    name = "JP HL";
+                    operandType = OperandType.Implied;
+                }
                                             
                 case OpCode.ADD_HL_BC:
                 {
@@ -1561,45 +1779,10 @@ unit AsmZ80
                 }
                 
                 
-                case OpCode.SLA_B:
-                {
-                    name = "SLA_B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_C:
-                {
-                    name = "SLA_C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_D:
-                {
-                    name = "SLA_D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_E:
-                {
-                    name = "SLA_E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_H:
-                {
-                    name = "SLA_H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_L:
-                {
-                    name = "SLA_L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_A:
-                {
-                    name = "SLA_A";
-                    operandType = OperandType.Implied;
-                }
-                
+                            
                 case OpCode.CP_A_n:
                 {
-                    name = "CMP A, n";
+                    name = "CP A, n";
                     operandType = OperandType.Immediate8;
                 }
                 
@@ -1729,27 +1912,27 @@ unit AsmZ80
                 }
                 case OpCode.JR_Z_e:
                 {
-                    name = "JP Z e";
+                    name = "JR Z e";
                     operandType = OperandType.Relative;
                 }
                 case OpCode.JR_NZ_e:
                 {
-                    name = "JP NZ e";
+                    name = "JR NZ e";
                     operandType = OperandType.Relative;
                 }
                 case OpCode.JR_C_e:
                 {
-                    name = "JP C e";
+                    name = "JR C e";
                     operandType = OperandType.Relative;
                 }
                 case OpCode.JR_NC_e:
                 {
-                    name = "JP NC e";
+                    name = "JR NC e";
                     operandType = OperandType.Relative;
                 }
                 case OpCode.JR_e:
                 {
-                    name = "JP e";
+                    name = "JR e";
                     operandType = OperandType.Relative;
                 }
                 
@@ -2011,6 +2194,11 @@ unit AsmZ80
                     name = "RET";
                     operandType = OperandType.Implied;
                 }
+                case OpCode.HALT:
+                {
+                    name = "HALT";
+                    operandType = OperandType.Implied;
+                }
                 case OpCode.CALL_nn:
                 {
                     name = "CALL nn";
@@ -2105,11 +2293,27 @@ unit AsmZ80
                     name = "RLA";
                     operandType = OperandType.Implied;
                 }
+                case OpCode.RRA:
+                {
+                    name = "RRA";
+                    operandType = OperandType.Implied;
+                }
                 case OpCode.CLP:
                 {
                     name = "CLP";
                     operandType = OperandType.Implied;
                 }
+                case OpCode.CCF:
+                {
+                    name = "CCF";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.SCF:
+                {
+                    name = "SCF";
+                    operandType = OperandType.Implied;
+                }
+                
                 default:
                 {
                     Print("OpCode.GetName(0x" + (uint(opCode)).ToHexString(4) +") not implemented (short)"); Die(0x0A);
@@ -2217,7 +2421,7 @@ unit AsmZ80
                 disassembly = disassembly.Replace("d", sign + offset.ToString());
                 if (jumpAddress && !bare)
                 {
-                    long targetAddress = long(address) + offset;
+                    long targetAddress = long(address) + offset + operandLength + opCodeLength;
                     disassembly = disassembly + "  -> 0x" + targetAddress.ToHexString(4);  
                 }
             }

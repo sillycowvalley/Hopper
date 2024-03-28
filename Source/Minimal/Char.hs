@@ -2,79 +2,55 @@ unit Char
 {
     bool IsUpper(char this)
     {
-        byte b;
-        b = byte(this);
-        return ((b >= 65) && (b <= 90));  // A..Z
+        return this >= 'A' && this <= 'Z';
     }
+
     bool IsLower(char this)
     {
-        byte b;
-        b = byte(this);
-        return ((b >= 97) && (b <= 122)); // a..z
+        return this >= 'a' && this <= 'z';
     }
-    char ToUpper(char this) 
+
+    char ToUpper(char this)
     {
-        byte b;
-        if (IsLower(this))
+        if (this >= 'a' && this <= 'z')
         {
-            b = byte(this) - 97 + 65; // -a + A;
-            this = char(b);
+            return this - ('a' - 'A');
         }
         return this;
     }
     bool IsDigit(char this)
     {
-        byte b;
-        b = byte(this);
-        return ((b >= 48) && (b <= 57)); // 0..9
+        return this >= '0' && this <= '9';
     }
     bool IsLetterOrDigit(char this)
     {
-        byte b;
-        b = byte(this);
-        return ((b >= 48) && (b <= 57)) || // 0..9
-               ((b >= 65) && (b <= 90)) || // A..Z
-               ((b >= 97) && (b <= 122));  // a..z
+        return (this >= '0' && this <= '9') ||
+               (this >= 'A' && this <= 'Z') ||
+               (this >= 'a' && this <= 'z');
     }
+
     char ToLower(char this) 
     {
-        byte b;
-        if (IsUpper(this))
+        if ((this >= 'A') && (this <= 'Z'))
         {
-            b = byte(this) - 65 + 97; // -A + a;
-            this = char(b); 
+            return this + ('a' - 'A');
         }
         return this;
     }
+
     bool IsHexDigit(char this)
     {
-        byte b;
-        b = byte(this);
-        return ((b >= 48) && (b <= 57)) || // 0..9
-               ((b >= 65) && (b <= 70)) || // A..F
-               ((b >= 97) && (b <= 102));  // a..f
+        return ((this >= '0' && this <= '9') || 
+                (this >= 'A' && this <= 'F') || 
+                (this >= 'a' && this <= 'f'));
     }
     
     bool IsLetter(char this)
     {
-        byte b;
-        b = byte(this);
-        return ((b >= 65) && (b <= 90))   // A..Z
-            || ((b >= 97) && (b <= 122)); // a..z
+        return (this >= 'A' && this <= 'Z') || (this >= 'a' && this <= 'z');
     }
     bool IsWhitespace(char this)
     {
-        switch(byte(this))
-        {
-            case 0x09: // tab
-            case 0x0A: // line feed
-            case 0x0C: // form feed
-            case 0x0D: // return
-            case 0x20: // space
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+        return this == ' ' || this == char(0x09) || this == char(0x0A) || this == char(0x0C) || this == char(0x0D);
+    }        
 }

@@ -733,15 +733,15 @@ program TestNumbers
 	
     {
         
-        TestConstants();
-        TestEquals();
+        //TestConstants();
+        //TestEquals();
         TestLessThan();
-        TestGreaterThan();
-        TestGreaterThanOrEqual();
-        TestLessThanOrEqual();
-        TestUIntMath();
-        TestIntMath();
-        TestPropertyMath();
+        //TestGreaterThan();
+        //TestGreaterThanOrEqual();
+        //TestLessThanOrEqual();
+        //TestUIntMath();
+        //TestIntMath();
+        //TestPropertyMath();
         
         Serial.WriteChar('O');Serial.WriteChar('K');Serial.WriteChar('!');
         

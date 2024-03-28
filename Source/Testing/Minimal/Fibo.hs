@@ -1,7 +1,7 @@
 program Fibo
 {
  
-//#define CPU_Z80
+#define CPU_Z80
 
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/Serial"
@@ -41,7 +41,7 @@ program Fibo
     }
     Hopper()
     {
-        uint result = Fibo(15);
+        uint result = Fibo(24);
         Serial.WriteChar(' '); WriteUInt(result); Serial.WriteChar('!');Serial.WriteChar(' ');
     }
 }

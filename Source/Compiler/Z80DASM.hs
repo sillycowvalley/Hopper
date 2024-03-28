@@ -196,15 +196,7 @@ program DASM
                 file hexFile = File.Open(codePath);
                 <byte> code = readIHex(hexFile, ref org);
                 
-                if (code.Count < 2)
-                {
-                    break;
-                }
-                uint resetVector = code[0] + (code[1] << 8);
-
-                hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + resetVector.ToHexString(4) + "   // reset vector" + char(0x0A));
-                address = org + 2;
-                codeSize += 2;
+                uint resetVector = code[4] + (code[5] << 8);
                 
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 uint indexMax = 0;
@@ -240,12 +232,13 @@ program DASM
                         }
                     }
                 }
+                //PrintLn("resetVector: 0x" + resetVector.ToHexString(4));
                 
                 uint doffset = 0;
                 string src;
                 string srcName;
                  
-                uint index = 2;
+                uint index;
                 byte lastA;
                 byte lastB;
                 byte lastC;
@@ -261,6 +254,7 @@ program DASM
                     OpCode instruction;
                     OperandType operandType;
                     byte operandLength;
+                    byte tableSize;
                     bool signed;
                     
                     //if (index + opCodeLength > code.Count) { hasmFile.Flush(); break; }
@@ -293,6 +287,13 @@ program DASM
                     codeSize += (opCodeLength + operandLength);
                     instructionCount++;
                     
+                    if (instruction == OpCode.JP_HL)
+                    {
+                        tableSize = code[index];
+                        index += 1;
+                        codeSize += 1;
+                    }
+                    
                     if (instruction == OpCode.LD_A_n)
                     {
                         lastA = byte(operand & 0xFF);
@@ -300,10 +301,12 @@ program DASM
                     if (instruction == OpCode.LD_B_n)
                     {
                         lastB = byte(operand & 0xFF);
+                        lastBC = (lastBC & 0x00FF) | (lastB << 8);
                     }
                     if (instruction == OpCode.LD_C_n)
                     {
                         lastC = byte(operand & 0xFF);
+                        lastBC = (lastBC & 0xFF00) | lastC;
                     }
                     if (instruction == OpCode.LD_BC_nn)
                     {
@@ -424,6 +427,10 @@ program DASM
                         }
                     }
                     string disassembly = AsmZ80.Disassemble(address, instruction, operand, bare);
+                    if (tableSize != 0)
+                    {
+                        disassembly = disassembly.Replace("JP HL", "JP HL              // " + tableSize.ToString() + " table entries follow:");
+                    }
                     if (bare)
                     {
                         disassembly = disassembly.Substring(29);
@@ -445,8 +452,32 @@ program DASM
                     {                  
                         hasmFile.Append(disassembly.Pad(' ', 48) + comment + char(0x0A));
                     }
-                    //hasmFile.Flush();
-                }
+                    if (tableSize > 0)
+                    {
+                        uint count = 0;
+                        loop
+                        {
+                            if (tableSize == 0) { break; }
+                            uint entry = code[index] + (code[index+1] << 8);
+                            if (count % 8 == 0)
+                            {
+                                if (count != 0)
+                                {
+                                    hasmFile.Append("" + char(0x0A));
+                                }
+                                hasmFile.Append("                               ");
+                            }
+                            hasmFile.Append("0x" + entry.ToHexString(4) + " ");
+                            index += 2;
+                            codeSize += 2;
+                            tableSize--;
+                            count++;
+                        }    
+                        hasmFile.Append("" + char(0x0A));
+                    }
+                    
+                    hasmFile.Flush(); // TODO REMOVE
+                } // loop
                               
                 Parser.ProgressTick(".");
                 hasmFile.Flush();
