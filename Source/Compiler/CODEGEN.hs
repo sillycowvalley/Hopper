@@ -32,7 +32,7 @@ program CODEGEN
     <Instruction, uint> instructionHits;
     <Instruction, string> instructionLocations;
     
-    exportStats(string instrumentingPath)
+    exportStats(string instrumentingPath, <uint,uint> methodSizes)
     {
         string name;
         SysCalls.New();
@@ -59,6 +59,52 @@ program CODEGEN
             string location = instructionLocations[instruction];
             statsFile.Append(name + "," + hits.ToString() + "," + location + char(0x0A));
         }
+        statsFile.Append("" + char(0x0A));
+        foreach (var kv in methodSizes)
+        {
+            name = Code.GetMethodName(kv.key);
+            <string,variant> methodSymbols = Code.GetMethodSymbols(kv.key);
+            uint argumentsBytes;
+            uint argumentCount;
+            if (methodSymbols.Contains("arguments"))
+            {
+                <string, <string> > argumentInfo = methodSymbols["arguments"];
+                argumentCount = argumentInfo.Count;
+                foreach (var kv2 in argumentInfo)
+                {
+                    <string> argumentList = kv2.value;
+                    switch (argumentList[1])
+                    {
+                        case "char":
+                        case "byte":
+                        case "bool":
+                        {
+                            argumentsBytes++;
+                        }
+                        case "uint":
+                        case "int":
+                        {
+                            argumentsBytes += 2;
+                        }
+                        case "delegate":
+                        case "enum":   // TODO : enum8 ?
+                        case "flags":  // TODO : flags8 ?
+                        {
+                            argumentsBytes += 2;
+                        }
+                        default:
+                        {
+                            Print(" " + argumentList[1]);
+                        }
+                    }
+                }
+            }
+            
+            uint size = kv.value;
+            statsFile.Append(name + "," + size.ToString() + "," + argumentCount.ToString() + "," + argumentsBytes.ToString() + char(0x0A));   
+        }
+        
+        
         statsFile.Flush();
     }
     
@@ -342,7 +388,7 @@ program CODEGEN
                     }
                 }
                 
-                if (!ParseCode(codePath, true, false))
+                if (!ParseCode(codePath, true, doInstrumenting))
                 {
                     break;
                 }
@@ -434,7 +480,7 @@ program CODEGEN
                 }
                 if (doInstrumenting)
                 {
-                    exportStats(instrumentingPath);
+                    exportStats(instrumentingPath, methodSizes);
                 }
                 
                 if (!Parser.IsInteractive())

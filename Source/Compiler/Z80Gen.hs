@@ -187,7 +187,6 @@ program Z80Gen
             uint offset = output.Count - patchLocation - 1;
             if (offset > 127) { Die(0x0B); }
             output.SetItem(patchLocation, byte(offset));
-            
         }
         EmitByte(OpCode.CP_A_n, byte(instruction));
         patchLocation = output.Count+1;
@@ -369,41 +368,44 @@ program Z80Gen
         EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
         EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
     } 
+    EmitBITNOT()
+    {
+        EmitOffset(OpCode.LD_A_iIY_d, -2); // LSB
+        Emit(OpCode.CPL_A_A);              // Complement (bitwise invert) the contents of A
+        EmitOffset(OpCode.LD_iIY_d_A, -2); // LSB
+        EmitOffset(OpCode.LD_A_iIY_d, -1); // MSB
+        Emit(OpCode.CPL_A_A);              // Complement (bitwise invert) the contents of A
+        EmitOffset(OpCode.LD_iIY_d_A, -1); // MSB
+    } 
     
     EmitBITSHR()
     {
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
+        EmitOffset(OpCode.LD_B_iIY_d, -2); // assuming the shift is < 256
         Emit(OpCode.DEC_IY);
         Emit(OpCode.DEC_IY);
         EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
         EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
         
-        Emit(OpCode.LD_B_C); // assuming the shift is < 256
-        
         Emit(OpCode.AND_A);
         Emit(OpCode.SRL_H);
         Emit(OpCode.RR_L);
-        EmitOffset(OpCode.DJNZ_e, -8);
+        EmitOffset(OpCode.DJNZ_e, -7);
         
         EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
         EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
     }
     EmitBITSHL()
     {
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
+        EmitOffset(OpCode.LD_B_iIY_d, -2); // assuming the shift is < 256
         Emit(OpCode.DEC_IY);
         Emit(OpCode.DEC_IY);
         EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
         EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
         
-        Emit(OpCode.LD_B_C); // assuming the shift is < 256
-        
         Emit(OpCode.AND_A);
         Emit(OpCode.SLA_L);
         Emit(OpCode.RL_H);
-        EmitOffset(OpCode.DJNZ_e, -8);
+        EmitOffset(OpCode.DJNZ_e, -7);
         
         EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
         EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
@@ -714,6 +716,11 @@ program Z80Gen
         EmitBITXOR();
         Emit(OpCode.RET);
         
+        // BITNOT: next = next ^ top
+        patchLocation = compareInstruction(Instruction.BITNOT, patchLocation);
+        EmitBITNOT();
+        Emit(OpCode.RET);
+        
         // BITSHR: next = next >> top
         patchLocation = compareInstruction(Instruction.BITSHR, patchLocation);
         EmitBITSHR();
@@ -1015,7 +1022,6 @@ program Z80Gen
             
             uint hopperAddress = index;
             instructionAddresses[hopperAddress] = output.Count;
-            
             uint operand;
             Instruction instruction = Instructions.GetOperandAndNextAddress(code, ref index, ref operand);
             string instructionName = Instructions.ToString(instruction);
@@ -1269,6 +1275,7 @@ program Z80Gen
                     }
                     case Instruction.DECSP:
                     {
+                        // NO INLINE
                         if (operand == 1)
                         {
                             Emit(OpCode.DEC_IY);
@@ -1798,8 +1805,8 @@ program Z80Gen
                         EmitByte(entries); // clue to Z80DASM
                         
                         uint tableAddress = output.Count;
-                        output.SetItem(tablePatch+0, byte(tableAddress & 0xFF));
-                        output.SetItem(tablePatch+1, byte(tableAddress >> 8));
+                        patchByte(tablePatch+0, byte(tableAddress & 0xFF));
+                        patchByte(tablePatch+1, byte(tableAddress >> 8));
                         
                         for (uint i = 0; i < entries; i++)
                         {
@@ -1822,8 +1829,8 @@ program Z80Gen
                         uint defaultAddress = output.Count;
                         foreach (var defaultPatch in defaultPatches)
                         {
-                            output.SetItem(defaultPatch+0, byte(defaultAddress & 0xFF));
-                            output.SetItem(defaultPatch+1, byte(defaultAddress >> 8));
+                            patchByte(defaultPatch+0, byte(defaultAddress & 0xFF));
+                            patchByte(defaultPatch+1, byte(defaultAddress >> 8));
                         }
                     }
                     
@@ -1898,8 +1905,8 @@ program Z80Gen
                 uint patchLocation    = jumpPatchLocations[hopperJumpLocation];
             
                 // PATCH
-                output.SetItem(patchLocation+0, byte(targetAddress & 0xFF));
-                output.SetItem(patchLocation+1, byte(targetAddress >> 8));
+                patchByte(patchLocation+0, byte(targetAddress & 0xFF));
+                patchByte(patchLocation+1, byte(targetAddress >> 8));
             }
         }
         <string,string> debugInfo = Code.GetMethodDebugInfo(methodIndex);
@@ -1916,6 +1923,14 @@ program Z80Gen
         // save the modified debugInfo
         Code.SetMethodDebugInfo(methodIndex, z80DebugInfo);
     }
+    patchByte(uint address, byte value)
+    {
+        if ((address == 0x0010) || (address == 0x0011))
+        {
+            Die(0x0B);
+        }
+        output.SetItem(address, value);
+    }
         
     doCallPatches()
     {
@@ -1927,11 +1942,11 @@ program Z80Gen
             uint targetMethod  = kv.value;
             uint targetAddress = methods[targetMethod];
             // PATCH
-            output.SetItem(patchAddress+0, byte(targetAddress & 0xFF));
-            output.SetItem(patchAddress+1, byte(targetAddress >> 8));
+            patchByte(patchAddress+0, byte(targetAddress & 0xFF));
+            patchByte(patchAddress+1, byte(targetAddress >> 8));
         }
-        output.SetItem(4, byte(methods[entryIndex] & 0xFF));
-        output.SetItem(5, byte(methods[entryIndex] >> 8));
+        patchByte(4, byte(methods[entryIndex] & 0xFF));
+        patchByte(5, byte(methods[entryIndex] >> 8));
     }
     
     badArguments()
@@ -2130,6 +2145,8 @@ program Z80Gen
                 }
                 // if we emit the methods in increasing order of indices
                 // then we can find them again in the binary (for debug info)
+                uint count = 1;
+                bool failed = false;
                 for (uint index = 0; index <= indexMax; index++)
                 {
                     if (index == entryIndex)          { continue; }
@@ -2137,13 +2154,29 @@ program Z80Gen
                     methodCode = Code.GetMethodCode(index);
                     writeMethod(index, methodCode);   
                     Parser.ProgressTick(".");
+                    count++;
+                    if (output.Count > 0x8000)
+                    {
+                        PrintLn();
+                        PrintLn((output.Count).ToString() + " bytes Z80 assembly generated.", Colour.Red, Colour.Black);
+                        PrintLn("Only on method " + count.ToString() + " of " + (methodSizes.Count).ToString() + ". Abandoning build.", Colour.Red, Colour.Black);
+                        failed = true;
+                        break;
+                    }
+                }
+                if (failed)
+                {
+                    break;
                 }
                 doCallPatches();
                 Parser.ProgressTick(".");
-                
                 writeIHex(ihexFile, 0x0000, output);
                 File.Delete(codePath);
                 if (!Code.ExportCode(codePath)) // after
+                {
+                    break;
+                }
+                if (failed)
                 {
                     break;
                 }

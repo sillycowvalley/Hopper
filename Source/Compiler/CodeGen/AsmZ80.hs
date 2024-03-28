@@ -235,6 +235,7 @@ unit AsmZ80
         AND_A_iIX_d = 0xDDA6,
         AND_A_iIY_d = 0xFDA6,
         
+        CPL_A_A = 0x2F,
         XOR_A_B = 0xA8,
         XOR_A_C = 0xA9,
         XOR_A_D = 0xAA,
@@ -1364,7 +1365,11 @@ unit AsmZ80
                     operandType = OperandType.Implied;
                 }
 
-            
+                case OpCode.CPL_A_A:
+                {
+                    name = "CLP A, A";
+                    operandType = OperandType.Implied;
+                }
                 case OpCode.XOR_A_B:
                 {
                     name = "XOR A, B";

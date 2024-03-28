@@ -764,7 +764,7 @@ unit External
         ErrorDump(160); Error = 0x0A; 
         return false;    
     }
-    WriteToJumpTable(uint jumpTable, byte opCode, InstructionDelegate instructionDelegate)
+    WriteToJumpTable(uint jumpTable, OpCode opCode, InstructionDelegate instructionDelegate)
     {
         WriteWord(jumpTable + (byte(opCode) << 1), uint(instructionDelegate));
     }

@@ -1,6 +1,6 @@
 program ValueTypeRuntimeTests
 {
-    #define CPU_Z80
+    //#define CPU_Z80
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/Serial"
@@ -164,15 +164,52 @@ program ValueTypeRuntimeTests
         {
             Failure(21);       
         }
-        
+    }
+    uint GetBits(byte one, byte two, byte three)
+    {
+        uint bits = 1 << one;
+        bits |= 1 << two;
+        bits |= 1 << three;
+        return bits;
+    }
+    BITS()
+    {
+        uint bits = GetBits(2,4,6);
+        if (bits != 0b01010100)
+        {
+            Failure(22);
+        }
+        bits &= 0xFF;
+        if (bits != 0b01010100)
+        {
+            Failure(23);
+        }
+        bits = bits ^ 0xFF;
+        if (bits != 0b10101011)
+        {
+            Failure(24);
+        }
+        bits = 0x55AA;
+        bits = bits >> 3;
+        if (bits != 0xAB5)
+        {
+            Failure(25);
+        }
+        bits = 0x55AA;
+        bits = ~bits;
+        if (bits != 0xAA55)
+        {
+            Failure(26);
+        }
         
     }
     
     
     Hopper()
     {
-        ADD(); // ADD, ADDB, INCLOCALB, INCGLOBALB NE, JZB
-        SUB(); // SUB, SUBB, DECLOCALB, DECGLOBALB
-        EQ();  // EQ NE
+        BITS(); // BITAND, BITOR, BITXOR, BITSHL, BITSHR
+        ADD();  // ADD, ADDB, INCLOCALB, INCGLOBALB NE, JZB
+        SUB();  // SUB, SUBB, DECLOCALB, DECGLOBALB
+        EQ();   // EQ NE
     }
 }

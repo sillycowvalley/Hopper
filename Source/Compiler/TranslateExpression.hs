@@ -1221,6 +1221,32 @@ unit TranslateExpression
                 arguments.Append(argument);
                 n++;
             }
+            
+            <string> expectedArgumentTypes;
+            <uint> iOverloads = Symbols.GetFunctionOverloads(fIndex);
+            bool first = true;
+            foreach (var iOverload in iOverloads)
+            {
+                < < string > > methodArguments = Symbols.GetOverloadArguments(iOverloads[0]);
+                uint nth;
+                foreach (var methodArgument in methodArguments)
+                {
+                    if (nth == expectedArgumentTypes.Count)
+                    {
+                        // first time we have seen an nth argument, just add it to the end of the list of arguments
+                        expectedArgumentTypes.Append(methodArgument[1]); // <ref, type, name>
+                    }
+                    else
+                    {
+                        if (methodArgument[1] != expectedArgumentTypes[nth])
+                        {
+                            expectedArgumentTypes.SetItem(nth, ""); // ambiguous argument type
+                        }
+                    }
+                    nth++;
+                }
+            }
+            
             bool hadRef = false;
             loop
             {
@@ -1257,6 +1283,10 @@ unit TranslateExpression
                 {
                     argumentContent = TranslateReferenceArgument(ref argumentType);
                     hadRef = true;
+                }
+                else if ((expectedArgumentTypes.Count != 0) && (n < expectedArgumentTypes.Count))
+                {
+                    argumentContent = TranslateExpression(expectedArgumentTypes[n], ref argumentType);
                 }
                 else  
                 {  

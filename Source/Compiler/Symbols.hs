@@ -22,7 +22,7 @@ unit Symbols
     <uint, <uint> > fOverloads;
     // for each overload uint:
     <uint, string> fReturnTypes;
-    <uint, < < string > > > fArgumentNamesAndTypes;
+    <uint, < < string > > > fArgumentNamesAndTypes; // <"ref", "type", "name">
     <uint, < < string > > > fLocalNamesAndTypes; // and offsets
     // code location of function bodies
     <uint, long> fStartPos;

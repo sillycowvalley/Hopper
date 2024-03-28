@@ -660,6 +660,8 @@ void HRString_BuildClear_R(UInt & _this);
 UInt HRString_new(UInt size);
 UInt HRString_getCapacity(UInt _this);
 UInt HRString_clone(UInt original, UInt extra);
+void Minimal_Error_Set(Byte value);
+Byte Minimal_Error_Get();
 void HRDirectory_Create(UInt hrpath);
 Bool HRDirectory_Exists(UInt hrpath);
 void HRDirectory_Clear(UInt _this);
@@ -684,8 +686,6 @@ void Memory_Initialize(UInt start, UInt size);
 UInt Memory_Allocate(UInt size);
 void Memory_Set(UInt memory, Byte value, UInt size);
 Char HRByte_ToHex(Byte h);
-void Minimal_Error_Set(Byte value);
-Byte Minimal_Error_Get();
 Bool IO_IsBreak();
 void IO_AssignKeyboardBuffer(UInt buffer);
 void IO_WriteLn();
@@ -758,6 +758,7 @@ Bool Instructions_PopCopyRelB();
 Bool Instructions_PopCopyGlobalB();
 Bool Instructions_PopCopyLocalB00();
 Bool Instructions_PopCopyLocalB01();
+Bool Instructions_Enter();
 Bool Instructions_EnterB();
 Bool Instructions_JIXB();
 Bool Instructions_PushILE();
@@ -793,7 +794,6 @@ Bool Instructions_Swap();
 Bool Instructions_PushIM1();
 Bool Instructions_PushGP();
 Bool Instructions_CNP();
-Bool Instructions_Enter();
 Bool Instructions_NOP();
 Bool Instructions_Cast();
 Bool Instructions_BitXor();
@@ -989,6 +989,8 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+
+
 
 
 #endif // HOPPERRUNTIME_H

@@ -11,291 +11,140 @@ unit Instructions
         InstructionDelegate
         instructionDelegate = Instructions.Undefined;
 //#ifdef CHECKED
-        for (uint opCode = 0; opCode < 256; opCode++)
+        byte opCode;
+        loop
         {
-            WriteToJumpTable(jumpTable, byte(opCode), instructionDelegate);
+            WriteToJumpTable(jumpTable, OpCode(opCode), instructionDelegate);
+            if (opCode == 0xFF) { break; }
+            opCode++;
         }
 //#endif
-        instructionDelegate = Instructions.Die;
-        WriteToJumpTable(jumpTable, byte(OpCode.DIE), instructionDelegate);
+        WriteToJumpTable(jumpTable, OpCode.DIE, Instructions.Die);
         
-        instructionDelegate = Instructions.Add;
-        WriteToJumpTable(jumpTable, byte(OpCode.ADD), instructionDelegate);
-        instructionDelegate = Instructions.Sub;
-        WriteToJumpTable(jumpTable, byte(OpCode.SUB), instructionDelegate);
-        instructionDelegate = Instructions.Div;
-        WriteToJumpTable(jumpTable, byte(OpCode.DIV), instructionDelegate);
-        instructionDelegate = Instructions.Mul;
-        WriteToJumpTable(jumpTable, byte(OpCode.MUL), instructionDelegate);
-        instructionDelegate = Instructions.Mod;
-        WriteToJumpTable(jumpTable, byte(OpCode.MOD), instructionDelegate);
+        WriteToJumpTable(jumpTable, OpCode.ADD, Instructions.Add);
+        WriteToJumpTable(jumpTable, OpCode.SUB, Instructions.Sub);
+        WriteToJumpTable(jumpTable, OpCode.DIV, Instructions.Div);
+        WriteToJumpTable(jumpTable, OpCode.MUL, Instructions.Mul);
+        WriteToJumpTable(jumpTable, OpCode.MOD, Instructions.Mod);
         
-        instructionDelegate = Instructions.EQ;
-        WriteToJumpTable(jumpTable, byte(OpCode.EQ), instructionDelegate);
-        instructionDelegate = Instructions.NE;
-        WriteToJumpTable(jumpTable, byte(OpCode.NE), instructionDelegate);
-        instructionDelegate = Instructions.GT;
-        WriteToJumpTable(jumpTable, byte(OpCode.GT), instructionDelegate);
-        instructionDelegate = Instructions.LT;
-        WriteToJumpTable(jumpTable, byte(OpCode.LT), instructionDelegate);
-        instructionDelegate = Instructions.GE;
-        WriteToJumpTable(jumpTable, byte(OpCode.GE), instructionDelegate);
-        instructionDelegate = Instructions.LE;
-        WriteToJumpTable(jumpTable, byte(OpCode.LE), instructionDelegate);
+        WriteToJumpTable(jumpTable, OpCode.EQ, Instructions.EQ);
+        WriteToJumpTable(jumpTable, OpCode.NE, Instructions.NE);
+        WriteToJumpTable(jumpTable, OpCode.GT, Instructions.GT);
+        WriteToJumpTable(jumpTable, OpCode.LT, Instructions.LT);
+        WriteToJumpTable(jumpTable, OpCode.GE, Instructions.GE);
+        WriteToJumpTable(jumpTable, OpCode.LE, Instructions.LE);
         
-        instructionDelegate = Instructions.BoolOr;
-        WriteToJumpTable(jumpTable, byte(OpCode.BOOLOR), instructionDelegate);
-        instructionDelegate = Instructions.BoolAnd;
-        WriteToJumpTable(jumpTable, byte(OpCode.BOOLAND), instructionDelegate);
-        instructionDelegate = Instructions.BitOr;
-        WriteToJumpTable(jumpTable, byte(OpCode.BITOR), instructionDelegate);
-        instructionDelegate = Instructions.BitAnd;
-        WriteToJumpTable(jumpTable, byte(OpCode.BITAND), instructionDelegate);
-        instructionDelegate = Instructions.BitShl;
-        WriteToJumpTable(jumpTable, byte(OpCode.BITSHL), instructionDelegate);
-        instructionDelegate = Instructions.BitShr;
-        WriteToJumpTable(jumpTable, byte(OpCode.BITSHR), instructionDelegate);
-        
-        instructionDelegate = Instructions.AddI;
-        WriteToJumpTable(jumpTable, byte(OpCode.ADDI), instructionDelegate);
-        instructionDelegate = Instructions.SubI;
-        WriteToJumpTable(jumpTable, byte(OpCode.SUBI), instructionDelegate);
-        instructionDelegate = Instructions.DivI;
-        WriteToJumpTable(jumpTable, byte(OpCode.DIVI), instructionDelegate);
-        instructionDelegate = Instructions.MulI;
-        WriteToJumpTable(jumpTable, byte(OpCode.MULI), instructionDelegate);
-        instructionDelegate = Instructions.ModI;
-        WriteToJumpTable(jumpTable, byte(OpCode.MODI), instructionDelegate);
-        instructionDelegate = Instructions.GTI;
-        WriteToJumpTable(jumpTable, byte(OpCode.GTI), instructionDelegate);
-        instructionDelegate = Instructions.LTI;
-        WriteToJumpTable(jumpTable, byte(OpCode.LTI), instructionDelegate);
-        instructionDelegate = Instructions.GEI;
-        WriteToJumpTable(jumpTable, byte(OpCode.GEI), instructionDelegate);
-        instructionDelegate = Instructions.LEI;
-        WriteToJumpTable(jumpTable, byte(OpCode.LEI), instructionDelegate);
-        
-        instructionDelegate = Instructions.PushIB;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIB), instructionDelegate);
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHDB), instructionDelegate);
-        instructionDelegate = Instructions.PushIBB;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIBB), instructionDelegate);
-        
-        instructionDelegate = Instructions.PopLocalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB), instructionDelegate);
-        instructionDelegate = Instructions.PushLocalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALB), instructionDelegate);
-        instructionDelegate = Instructions.PopRelB;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPRELB), instructionDelegate);
-        instructionDelegate = Instructions.PushRelB;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHRELB), instructionDelegate);
-        instructionDelegate = Instructions.PopGlobalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPGLOBALB), instructionDelegate);
-        instructionDelegate = Instructions.PushGlobalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBALB), instructionDelegate);
-        instructionDelegate = Instructions.PushStackAddrB;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHSTACKADDRB), instructionDelegate);
-        instructionDelegate = Instructions.CallB;
-        WriteToJumpTable(jumpTable, byte(OpCode.CALLB), instructionDelegate);
-        instructionDelegate = Instructions.JZB;
-        WriteToJumpTable(jumpTable, byte(OpCode.JZB), instructionDelegate);
-        instructionDelegate = Instructions.JNZB;
-        WriteToJumpTable(jumpTable, byte(OpCode.JNZB), instructionDelegate);
-        instructionDelegate = Instructions.JB;
-        WriteToJumpTable(jumpTable, byte(OpCode.JB), instructionDelegate);
-        instructionDelegate = Instructions.Ret0;
-        WriteToJumpTable(jumpTable, byte(OpCode.RET0), instructionDelegate);
-        instructionDelegate = Instructions.PushI0;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHI0), instructionDelegate);
-        instructionDelegate = Instructions.PushI1;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHI1), instructionDelegate);
-        
-        instructionDelegate = Instructions.PopLocalB00;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB00), instructionDelegate);
-        instructionDelegate = Instructions.PopLocalB01;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPLOCALB01), instructionDelegate);
-        instructionDelegate = Instructions.PushLocalB00;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALB00), instructionDelegate);
-        instructionDelegate = Instructions.PushLocalB01;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALB01), instructionDelegate);
-        
-        instructionDelegate = Instructions.SysCall0;
-        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL0), instructionDelegate);
-        instructionDelegate = Instructions.SysCall1;
-        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL1), instructionDelegate);
-        instructionDelegate = Instructions.SysCall00;
-        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL00), instructionDelegate);
-        instructionDelegate = Instructions.SysCall01;
-        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL01), instructionDelegate);
-        instructionDelegate = Instructions.SysCall10;
-        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL10), instructionDelegate);
-        instructionDelegate = Instructions.SysCallB0;
-        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALLB0), instructionDelegate);
-        instructionDelegate = Instructions.SysCallB1;
-        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALLB1), instructionDelegate);
-        
-        
-        instructionDelegate = Instructions.PushGlobalBB;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBALBB), instructionDelegate);
-     
-        
-        instructionDelegate = Instructions.PushLocalBB;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCALBB), instructionDelegate);
-        instructionDelegate = Instructions.PopCopyLocalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYLOCALB), instructionDelegate);
-        instructionDelegate = Instructions.PopCopyRelB;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYRELB), instructionDelegate);
-        instructionDelegate = Instructions.PopCopyGlobalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYGLOBALB), instructionDelegate);
-        instructionDelegate = Instructions.PopCopyLocalB00;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYLOCALB00), instructionDelegate);
-        instructionDelegate = Instructions.PopCopyLocalB01;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPCOPYLOCALB01), instructionDelegate);
-        
-        instructionDelegate = Instructions.EnterB;
-        WriteToJumpTable(jumpTable, byte(OpCode.ENTERB), instructionDelegate);
-     
-        
-        instructionDelegate = Instructions.JIXB;
-        WriteToJumpTable(jumpTable, byte(OpCode.JIXB), instructionDelegate);
-        
-        instructionDelegate = Instructions.PushILE;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHILE), instructionDelegate);
-        instructionDelegate = Instructions.PushILT;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHILT), instructionDelegate);
-        instructionDelegate = Instructions.PushIBLE;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIBLE), instructionDelegate);
-        instructionDelegate = Instructions.PushILEI;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHILEI), instructionDelegate);
-        instructionDelegate = Instructions.PushIBEQ;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIBEQ), instructionDelegate);
-        
-        instructionDelegate = Instructions.AddB;
-        WriteToJumpTable(jumpTable, byte(OpCode.ADDB), instructionDelegate);
-        instructionDelegate = Instructions.SubB;
-        WriteToJumpTable(jumpTable, byte(OpCode.SUBB), instructionDelegate);
-        
-        instructionDelegate = Instructions.RetB;
-        WriteToJumpTable(jumpTable, byte(OpCode.RETB), instructionDelegate);
-        instructionDelegate = Instructions.RetResB;
-        WriteToJumpTable(jumpTable, byte(OpCode.RETRESB), instructionDelegate);
-        instructionDelegate = Instructions.RetFast;
-        WriteToJumpTable(jumpTable, byte(OpCode.RETFAST), instructionDelegate);
-        
-        instructionDelegate = Instructions.PopLocal;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPLOCAL), instructionDelegate);
-        instructionDelegate = Instructions.PushLocal;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHLOCAL), instructionDelegate);
-        instructionDelegate = Instructions.PopRel;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPREL), instructionDelegate);
-        instructionDelegate = Instructions.PushRel;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHREL), instructionDelegate);
-        instructionDelegate = Instructions.PopGlobal;
-        WriteToJumpTable(jumpTable, byte(OpCode.POPGLOBAL), instructionDelegate);
-        instructionDelegate = Instructions.PushGlobal;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHGLOBAL), instructionDelegate);
-        instructionDelegate = Instructions.PushStackAddr;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHSTACKADDR), instructionDelegate);
-        
-        instructionDelegate = Instructions.Dup;
-        WriteToJumpTable(jumpTable, byte(OpCode.DUP), instructionDelegate);
-        instructionDelegate = Instructions.DecSP;
-        WriteToJumpTable(jumpTable, byte(OpCode.DECSP), instructionDelegate);
-        
-        instructionDelegate = Instructions.Ret;
-        WriteToJumpTable(jumpTable, byte(OpCode.RET), instructionDelegate);
-        instructionDelegate = Instructions.RetRes;
-        WriteToJumpTable(jumpTable, byte(OpCode.RETRES), instructionDelegate);
-        instructionDelegate = Instructions.TestBPB;
-        WriteToJumpTable(jumpTable, byte(OpCode.TESTBPB), instructionDelegate);
-        
-        instructionDelegate = Instructions.Exit;
-        WriteToJumpTable(jumpTable, byte(OpCode.EXIT), instructionDelegate);
-        
-        
-        instructionDelegate = Instructions.JZ;
-        WriteToJumpTable(jumpTable, byte(OpCode.JZ), instructionDelegate);
-        instructionDelegate = Instructions.JNZ;
-        WriteToJumpTable(jumpTable, byte(OpCode.JNZ), instructionDelegate);
-        instructionDelegate = Instructions.J;
-        WriteToJumpTable(jumpTable, byte(OpCode.JW), instructionDelegate);
-        
-        instructionDelegate = Instructions.PushIW;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHI), instructionDelegate);
-        
-        instructionDelegate = Instructions.BoolNot;
-        WriteToJumpTable(jumpTable, byte(OpCode.BOOLNOT), instructionDelegate);
-        instructionDelegate = Instructions.BitNot;
-        WriteToJumpTable(jumpTable, byte(OpCode.BITNOT), instructionDelegate);
-        
-        instructionDelegate = Instructions.Swap;
-        WriteToJumpTable(jumpTable, byte(OpCode.SWAP), instructionDelegate);
-        instructionDelegate = Instructions.PushIM1;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHIM1), instructionDelegate);
-        instructionDelegate = Instructions.PushGP;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHGP), instructionDelegate);
-        
-        instructionDelegate = Instructions.CNP;
-        WriteToJumpTable(jumpTable, byte(OpCode.COPYNEXTPOP), instructionDelegate);
-        instructionDelegate = Instructions.Enter;
-        WriteToJumpTable(jumpTable, byte(OpCode.ENTER), instructionDelegate);
-     
-        instructionDelegate = Instructions.NOP;
-        WriteToJumpTable(jumpTable, byte(OpCode.NOP), instructionDelegate);
-        instructionDelegate = Instructions.Cast;
-        WriteToJumpTable(jumpTable, byte(OpCode.CAST), instructionDelegate);
-        
-        instructionDelegate = Instructions.PushIW;
-        WriteToJumpTable(jumpTable, byte(OpCode.PUSHD), instructionDelegate);
-        
-        instructionDelegate = Instructions.BitXor;
-        WriteToJumpTable(jumpTable, byte(OpCode.BITXOR), instructionDelegate);
-        
-        instructionDelegate = Instructions.JREL;
-        WriteToJumpTable(jumpTable, byte(OpCode.JREL), instructionDelegate);
-        instructionDelegate = Instructions.JIX;
-        WriteToJumpTable(jumpTable, byte(OpCode.JIX), instructionDelegate);
-        
-        instructionDelegate = Instructions.Call;
-        WriteToJumpTable(jumpTable, byte(OpCode.CALL), instructionDelegate);
-        instructionDelegate = Instructions.CallI;
-        WriteToJumpTable(jumpTable, byte(OpCode.CALLI), instructionDelegate);
-        instructionDelegate = Instructions.CallRel;
-        WriteToJumpTable(jumpTable, byte(OpCode.CALLREL), instructionDelegate);
-        
-        instructionDelegate = Instructions.SysCall;
-        WriteToJumpTable(jumpTable, byte(OpCode.SYSCALL), instructionDelegate);
-        instructionDelegate = Instructions.LibCall0;
-        WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL0), instructionDelegate);
-        instructionDelegate = Instructions.LibCall1;
-        WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL1), instructionDelegate);
-        instructionDelegate = Instructions.LibCall;
-        WriteToJumpTable(jumpTable, byte(OpCode.LIBCALL), instructionDelegate);
-        
-        instructionDelegate = Instructions.IncLocalBB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALBB), instructionDelegate);
-        instructionDelegate = Instructions.IncLocalIBB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALIBB), instructionDelegate);
-        instructionDelegate = Instructions.IncGlobalBB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALBB), instructionDelegate);
-        
-        instructionDelegate = Instructions.IncLocalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALB), instructionDelegate);
-        instructionDelegate = Instructions.DecLocalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.DECLOCALB), instructionDelegate);
-        instructionDelegate = Instructions.IncGlobalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALB), instructionDelegate);
-        instructionDelegate = Instructions.DecGlobalB;
-        WriteToJumpTable(jumpTable, byte(OpCode.DECGLOBALB), instructionDelegate);
-        
-        instructionDelegate = Instructions.IncLocalIB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCLOCALIB), instructionDelegate);
-        instructionDelegate = Instructions.DecLocalIB;
-        WriteToJumpTable(jumpTable, byte(OpCode.DECLOCALIB), instructionDelegate);
-        instructionDelegate = Instructions.IncGlobalIB;
-        WriteToJumpTable(jumpTable, byte(OpCode.INCGLOBALIB), instructionDelegate);
-        instructionDelegate = Instructions.DecGlobalIB;
-        WriteToJumpTable(jumpTable, byte(OpCode.DECGLOBALIB), instructionDelegate);
+        WriteToJumpTable(jumpTable, OpCode.BOOLOR, Instructions.BoolOr);
+        WriteToJumpTable(jumpTable, OpCode.BOOLAND, Instructions.BoolAnd);
+        WriteToJumpTable(jumpTable, OpCode.BITOR, Instructions.BitOr);
+        WriteToJumpTable(jumpTable, OpCode.BITAND, Instructions.BitAnd);
+        WriteToJumpTable(jumpTable, OpCode.BITSHL, Instructions.BitShl);
+        WriteToJumpTable(jumpTable, OpCode.BITSHR, Instructions.BitShr);
+        WriteToJumpTable(jumpTable, OpCode.ADDI, Instructions.AddI);
+        WriteToJumpTable(jumpTable, OpCode.SUBI, Instructions.SubI);
+        WriteToJumpTable(jumpTable, OpCode.DIVI, Instructions.DivI);
+        WriteToJumpTable(jumpTable, OpCode.MULI, Instructions.MulI);
+        WriteToJumpTable(jumpTable, OpCode.MODI, Instructions.ModI);
+        WriteToJumpTable(jumpTable, OpCode.GTI, Instructions.GTI);
+        WriteToJumpTable(jumpTable, OpCode.LTI, Instructions.LTI);
+        WriteToJumpTable(jumpTable, OpCode.GEI, Instructions.GEI);
+        WriteToJumpTable(jumpTable, OpCode.LEI, Instructions.LEI);
+        WriteToJumpTable(jumpTable, OpCode.PUSHIB, Instructions.PushIB);
+        WriteToJumpTable(jumpTable, OpCode.PUSHDB, Instructions.PushIB);
+        WriteToJumpTable(jumpTable, OpCode.PUSHIBB, Instructions.PushIBB);
+        WriteToJumpTable(jumpTable, OpCode.POPLOCALB, Instructions.PopLocalB);
+        WriteToJumpTable(jumpTable, OpCode.PUSHLOCALB, Instructions.PushLocalB);
+        WriteToJumpTable(jumpTable, OpCode.POPRELB, Instructions.PopRelB);
+        WriteToJumpTable(jumpTable, OpCode.PUSHRELB, Instructions.PushRelB);
+        WriteToJumpTable(jumpTable, OpCode.POPGLOBALB, Instructions.PopGlobalB);
+        WriteToJumpTable(jumpTable, OpCode.PUSHGLOBALB, Instructions.PushGlobalB);
+        WriteToJumpTable(jumpTable, OpCode.PUSHSTACKADDRB, Instructions.PushStackAddrB);
+        WriteToJumpTable(jumpTable, OpCode.CALLB, Instructions.CallB);
+        WriteToJumpTable(jumpTable, OpCode.JZB, Instructions.JZB);
+        WriteToJumpTable(jumpTable, OpCode.JNZB, Instructions.JNZB);
+        WriteToJumpTable(jumpTable, OpCode.JB, Instructions.JB);
+        WriteToJumpTable(jumpTable, OpCode.RET0, Instructions.Ret0);
+        WriteToJumpTable(jumpTable, OpCode.PUSHI0, Instructions.PushI0);
+        WriteToJumpTable(jumpTable, OpCode.PUSHI1, Instructions.PushI1);
+        WriteToJumpTable(jumpTable, OpCode.POPLOCALB00, Instructions.PopLocalB00);
+        WriteToJumpTable(jumpTable, OpCode.POPLOCALB01, Instructions.PopLocalB01);
+        WriteToJumpTable(jumpTable, OpCode.PUSHLOCALB00, Instructions.PushLocalB00);
+        WriteToJumpTable(jumpTable, OpCode.PUSHLOCALB01, Instructions.PushLocalB01);
+        WriteToJumpTable(jumpTable, OpCode.SYSCALL0, Instructions.SysCall0);
+        WriteToJumpTable(jumpTable, OpCode.SYSCALL1, Instructions.SysCall1);
+        WriteToJumpTable(jumpTable, OpCode.SYSCALL00, Instructions.SysCall00);
+        WriteToJumpTable(jumpTable, OpCode.SYSCALL01, Instructions.SysCall01);
+        WriteToJumpTable(jumpTable, OpCode.SYSCALL10, Instructions.SysCall10);
+        WriteToJumpTable(jumpTable, OpCode.SYSCALLB0, Instructions.SysCallB0);
+        WriteToJumpTable(jumpTable, OpCode.SYSCALLB1, Instructions.SysCallB1);
+        WriteToJumpTable(jumpTable, OpCode.PUSHGLOBALBB, Instructions.PushGlobalBB);
+        WriteToJumpTable(jumpTable, OpCode.PUSHLOCALBB, Instructions.PushLocalBB);
+        WriteToJumpTable(jumpTable, OpCode.POPCOPYLOCALB, Instructions.PopCopyLocalB);
+        WriteToJumpTable(jumpTable, OpCode.POPCOPYRELB, Instructions.PopCopyRelB);
+        WriteToJumpTable(jumpTable, OpCode.POPCOPYGLOBALB, Instructions.PopCopyGlobalB);
+        WriteToJumpTable(jumpTable, OpCode.POPCOPYLOCALB00, Instructions.PopCopyLocalB00);
+        WriteToJumpTable(jumpTable, OpCode.POPCOPYLOCALB01, Instructions.PopCopyLocalB01);
+        WriteToJumpTable(jumpTable, OpCode.ENTER, Instructions.Enter);
+        WriteToJumpTable(jumpTable, OpCode.ENTERB, Instructions.EnterB);
+        WriteToJumpTable(jumpTable, OpCode.JIXB, Instructions.JIXB);
+        WriteToJumpTable(jumpTable, OpCode.PUSHILE, Instructions.PushILE);
+        WriteToJumpTable(jumpTable, OpCode.PUSHILT, Instructions.PushILT);
+        WriteToJumpTable(jumpTable, OpCode.PUSHIBLE, Instructions.PushIBLE);
+        WriteToJumpTable(jumpTable, OpCode.PUSHILEI, Instructions.PushILEI);
+        WriteToJumpTable(jumpTable, OpCode.PUSHIBEQ, Instructions.PushIBEQ);
+        WriteToJumpTable(jumpTable, OpCode.ADDB, Instructions.AddB);
+        WriteToJumpTable(jumpTable, OpCode.SUBB, Instructions.SubB);
+        WriteToJumpTable(jumpTable, OpCode.RETB, Instructions.RetB);
+        WriteToJumpTable(jumpTable, OpCode.RETRESB, Instructions.RetResB);
+        WriteToJumpTable(jumpTable, OpCode.RETFAST, Instructions.RetFast);
+        WriteToJumpTable(jumpTable, OpCode.POPLOCAL, Instructions.PopLocal);
+        WriteToJumpTable(jumpTable, OpCode.PUSHLOCAL, Instructions.PushLocal);
+        WriteToJumpTable(jumpTable, OpCode.POPREL, Instructions.PopRel);
+        WriteToJumpTable(jumpTable, OpCode.PUSHREL, Instructions.PushRel);
+        WriteToJumpTable(jumpTable, OpCode.POPGLOBAL, Instructions.PopGlobal);
+        WriteToJumpTable(jumpTable, OpCode.PUSHGLOBAL, Instructions.PushGlobal);
+        WriteToJumpTable(jumpTable, OpCode.PUSHSTACKADDR, Instructions.PushStackAddr);
+        WriteToJumpTable(jumpTable, OpCode.DUP, Instructions.Dup);
+        WriteToJumpTable(jumpTable, OpCode.DECSP, Instructions.DecSP);
+        WriteToJumpTable(jumpTable, OpCode.RET, Instructions.Ret);
+        WriteToJumpTable(jumpTable, OpCode.RETRES, Instructions.RetRes);
+        WriteToJumpTable(jumpTable, OpCode.TESTBPB, Instructions.TestBPB);
+        WriteToJumpTable(jumpTable, OpCode.EXIT, Instructions.Exit);
+        WriteToJumpTable(jumpTable, OpCode.JZ, Instructions.JZ);
+        WriteToJumpTable(jumpTable, OpCode.JNZ, Instructions.JNZ);
+        WriteToJumpTable(jumpTable, OpCode.JW, Instructions.J);
+        WriteToJumpTable(jumpTable, OpCode.PUSHI, Instructions.PushIW);
+        WriteToJumpTable(jumpTable, OpCode.PUSHD, Instructions.PushIW);
+        WriteToJumpTable(jumpTable, OpCode.BOOLNOT, Instructions.BoolNot);
+        WriteToJumpTable(jumpTable, OpCode.BITNOT, Instructions.BitNot);
+        WriteToJumpTable(jumpTable, OpCode.SWAP, Instructions.Swap);
+        WriteToJumpTable(jumpTable, OpCode.PUSHIM1, Instructions.PushIM1);
+        WriteToJumpTable(jumpTable, OpCode.PUSHGP, Instructions.PushGP);
+        WriteToJumpTable(jumpTable, OpCode.COPYNEXTPOP, Instructions.CNP);
+        WriteToJumpTable(jumpTable, OpCode.NOP, Instructions.NOP);
+        WriteToJumpTable(jumpTable, OpCode.CAST, Instructions.Cast);
+        WriteToJumpTable(jumpTable, OpCode.BITXOR, Instructions.BitXor);
+        WriteToJumpTable(jumpTable, OpCode.JREL, Instructions.JREL);
+        WriteToJumpTable(jumpTable, OpCode.JIX, Instructions.JIX);
+        WriteToJumpTable(jumpTable, OpCode.CALL, Instructions.Call);
+        WriteToJumpTable(jumpTable, OpCode.CALLI, Instructions.CallI);
+        WriteToJumpTable(jumpTable, OpCode.CALLREL, Instructions.CallRel);
+        WriteToJumpTable(jumpTable, OpCode.SYSCALL, Instructions.SysCall);
+        WriteToJumpTable(jumpTable, OpCode.LIBCALL0, Instructions.LibCall0);
+        WriteToJumpTable(jumpTable, OpCode.LIBCALL1, Instructions.LibCall1);
+        WriteToJumpTable(jumpTable, OpCode.LIBCALL, Instructions.LibCall);
+        WriteToJumpTable(jumpTable, OpCode.INCLOCALBB, Instructions.IncLocalBB);
+        WriteToJumpTable(jumpTable, OpCode.INCLOCALIBB, Instructions.IncLocalIBB);
+        WriteToJumpTable(jumpTable, OpCode.INCGLOBALBB, Instructions.IncGlobalBB);
+        WriteToJumpTable(jumpTable, OpCode.INCLOCALB, Instructions.IncLocalB);
+        WriteToJumpTable(jumpTable, OpCode.DECLOCALB, Instructions.DecLocalB);
+        WriteToJumpTable(jumpTable, OpCode.INCGLOBALB, Instructions.IncGlobalB);
+        WriteToJumpTable(jumpTable, OpCode.DECGLOBALB, Instructions.DecGlobalB);
+        WriteToJumpTable(jumpTable, OpCode.INCLOCALIB, Instructions.IncLocalIB);
+        WriteToJumpTable(jumpTable, OpCode.DECLOCALIB, Instructions.DecLocalIB);
+        WriteToJumpTable(jumpTable, OpCode.INCGLOBALIB, Instructions.IncGlobalIB);
+        WriteToJumpTable(jumpTable, OpCode.DECGLOBALIB, Instructions.DecGlobalIB);
+
         
     }
     
