@@ -111,6 +111,7 @@ unit HRVariant
                 // reference
                 if (ltype == rtype)
                 {
+                    
                     switch (ltype)
                     {
                         case Type.String:
@@ -119,7 +120,11 @@ unit HRVariant
                         }
                         case Type.Long:
                         {
+#ifdef INCLUDE_LONGS                            
                             return 0 != External.LongEQ(left, right);
+#else
+                            Error = 0x0A;
+#endif
                         }
                         //case Type.Float:
                         //{

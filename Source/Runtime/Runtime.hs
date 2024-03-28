@@ -7,11 +7,17 @@ program Runtime
 //#define CHECKED      // mainly stack checks, range checks and division by zero
 //#define MEMORYLEAKS
 
-//#define LOCALDEBUGGER  // for debugging portable runtime locally
-#define CPU_Z80
+#define LOCALDEBUGGER  // for debugging portable runtime locally
+//#define CPU_Z80
 //#define NO_JIX_INSTRUCTIONS
 
-#ifndef CPU_Z80
+// Minimal Runtime is the value-type only, minimal SysCalls version that we translate to Z80
+#ifdef CPU_Z80
+    #define VALUE_TYPE_RUNTIME
+#endif
+#define VALUE_TYPE_RUNTIME
+
+#ifndef VALUE_TYPE_RUNTIME
     #define INCLUDE_FILESYSTEM
     #define INCLUDE_FLOATS
     #define INCLUDE_LONGS
@@ -26,16 +32,18 @@ program Runtime
     uses "Platform/OpCodes"
     uses "Platform/SysCalls"
     uses "Platform/Types"
-    
+
     uses "Platform/GC"
     uses "Platform/Array"
     uses "Platform/Dictionary"
+#ifndef VALUE_TYPE_RUNTIME
     uses "Platform/Directory"
     uses "Platform/File"
     uses "Platform/Float"
+    uses "Platform/Long"
+#endif    
     uses "Platform/Int"
     uses "Platform/List"
-    uses "Platform/Long"
     uses "Platform/Pair"
     uses "Platform/Char"
     uses "Platform/Byte"
@@ -170,7 +178,7 @@ program Runtime
         IO.Write(c1);
         return true;
     }
-    
+#ifdef INCLUDE_FILESYSTEM    
     bool LoadHexe(uint path, uint startAddress, ref uint loadedAddress, ref uint codeLength, bool doCRC)
     {
         bool success;
@@ -192,7 +200,7 @@ program Runtime
         }
         return success;
     }
-    
+#endif
     bool LoadIHex(ref uint loadedAddress, ref uint codeLength)
     {
         bool success = true;
@@ -627,7 +635,7 @@ program Runtime
         HopperVM.Restart();
         bool refresh = true;
         
-#ifndef LOCALDEBUGGER        
+#if !defined(LOCALDEBUGGER) && defined(INCLUDE_FILESYSTEM)
         if (External.LoadAuto)
         {
             uint loadedAddress;
@@ -721,11 +729,16 @@ program Runtime
                     }
                     case 'E': // enter Boot Select mode
                     {
+#ifdef VALUE_TYPE_RUNTIME
                         WaitForEnter();
                         External.MCUReboot(true);
+#else
+                        Error = 0x0A;
+#endif                        
                     }
                     case 'T':
                     {
+#ifdef INCLUDE_FILESYSTEM
                         WaitForEnter();
                         
                         // read name characters till 0x0D
@@ -782,7 +795,9 @@ program Runtime
                         HRFile.Flush(fh);
                         SerialWriteChar(char(enter));
                         SerialWriteChar(char(slash));
-                        
+#else
+                        Error = 0x0A;
+#endif                        
                     }
                     case 'L':
                     {
@@ -829,7 +844,7 @@ program Runtime
                         SerialWriteChar(loaded ? '*' : '!');
                         
                         SerialWriteChar(char(slash)); // confirm the data
-#ifndef LOCALDEBUGGER                        
+#if !defined(LOCALDEBUGGER) && defined(INCLUDE_FILESYSTEM)
                         if (loaded)
                         {
                             FlashProgram(loadedAddress, codeLength, currentCRC);

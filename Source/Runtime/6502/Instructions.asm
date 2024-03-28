@@ -648,7 +648,7 @@ unit Instruction
         Stacks.PopTop();
         Stacks.PopNext();
         
-        LDX #1 // NEXT < TOP
+        LDX #1 // NEXT < TOP   TODO do I have the results the wrong way around here? see Z80 version
         LDA ZP.NEXTH
         CMP ZP.TOPH
         if (Z)

@@ -10,12 +10,14 @@ unit HopperVM
     uses "Platform/GC"
     uses "Platform/Array"
     uses "Platform/Dictionary"
+#ifndef VALUE_TYPE_RUNTIME
     uses "Platform/Directory"
     uses "Platform/File"
     uses "Platform/Float"
+    uses "Platform/Long"
+#endif
     uses "Platform/Int"
     uses "Platform/List"
-    uses "Platform/Long"
     uses "Platform/Pair"
     uses "Platform/String"
     uses "Platform/UInt"
@@ -103,7 +105,6 @@ unit HopperVM
     
     uint jumpTable; // 2 byte delegate slots for Instruction jumps
     
-    
     ClearBreakpoints(bool includingZero)
     {
         for (byte i=2; i < 32; i = i + 2)
@@ -158,7 +159,7 @@ unit HopperVM
     DataMemoryReset()
     {
         HRArray.Release();  // in case we were already called
-#ifndef LOCALDEBUGGER
+#if !defined(LOCALDEBUGGER) && !defined(VALUE_TYPE_RUNTIME)
         External.WebServerRelease();
 #endif
         
@@ -220,7 +221,7 @@ unit HopperVM
     Release()
     {
         HRArray.Release();
-#ifndef LOCALDEBUGGER
+#if !defined(LOCALDEBUGGER) && !defined(VALUE_TYPE_RUNTIME)
         External.WebServerRelease();
 #endif
         
@@ -311,7 +312,9 @@ unit HopperVM
     {
         External.MCUClockSpeedSet(133); // RP2040 default
         DataMemoryReset();
+#ifdef INCLUDE_FILESYSTEM        
         DiskSetup();
+#endif        
 #ifndef LOCALDEBUGGER
         External.TimerInitialize(); // TODO : implement Timer on Windows
 #endif        
@@ -330,6 +333,7 @@ unit HopperVM
         External.SetProgramOffset(programOffset);
     }
     
+#ifdef INCLUDE_FILESYSTEM    
     uint RuntimeExecute(uint hrpath, uint hrargs)
     {
         uint result;
@@ -403,7 +407,7 @@ unit HopperVM
         currentArguments = previousArguments;
         return result;
     }
-    
+#endif    
     
     uint LookupMethod(uint methodIndex)
     {
@@ -576,6 +580,7 @@ unit HopperVM
             }
             case SysCalls.RuntimeExecute:
             {
+#ifdef INCLUDE_FILESYSTEM
                 Type ltype;
                 uint args = Pop(ref ltype);
                 Type stype;
@@ -597,6 +602,9 @@ unit HopperVM
                 GC.Release(path);
                 Push(result, Type.UInt);
                 doNext = false;
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.RuntimeUserCodeGet:
             {
@@ -1397,6 +1405,7 @@ unit HopperVM
             }
             case SysCalls.SerialWriteString:
             {
+#ifndef VALUE_TYPE_RUNTIME
                 Type stype;
                 uint str = Pop(ref stype);
 #ifdef CHECKED
@@ -1407,6 +1416,9 @@ unit HopperVM
                 }
 #endif       
                 External.SerialWriteString(str);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.LongNewFromConstant:
@@ -3598,8 +3610,12 @@ unit HopperVM
             
             case SysCalls.TimeMillis:
             {
+#ifdef INCLUDE_LONGS
                 uint address = External.GetMillis();
                 Push(address, Type.Long);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.TimeDelay:
             {
@@ -4106,7 +4122,7 @@ unit HopperVM
         
         opCode = OpCode(ReadProgramByte(pc));
         pc++;
-
+        
 #ifdef LOCALDEBUGGER                
         uint jump = ReadWord(jumpTable + (byte(opCode) << 1));
 #ifdef CHECKED

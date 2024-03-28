@@ -476,7 +476,7 @@ program DASM
                         hasmFile.Append("" + char(0x0A));
                     }
                     
-                    hasmFile.Flush(); // TODO REMOVE
+                    //hasmFile.Flush(); // TODO REMOVE
                 } // loop
                               
                 Parser.ProgressTick(".");

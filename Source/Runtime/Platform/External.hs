@@ -216,6 +216,16 @@ unit External
         ErrorDump(198); Error = 0x0A;
     }
     
+#ifdef VALUE_TYPE_RUNTIME
+    SerialWriteString(uint hrbuffer)
+    {
+        uint length = HRString.GetLength(hrbuffer);
+        for (uint i = 0; i < length; i++)
+        {
+            SerialWriteChar(HRString.GetChar(hrbuffer, i));
+        }
+    }
+#else
     SerialWriteString(uint hrbuffer)
     {
         string buffer = nativeStringFromHopperString(hrbuffer);
@@ -227,9 +237,10 @@ unit External
 #else        
         Serial.WriteString(buffer);
 #endif
-        
     }
+#endif    
     
+#ifndef VALUE_TYPE_RUNTIME
     bool WiFiConnect(uint hrssid, uint hrpassword)
     {
         string ssid = nativeStringFromHopperString(hrssid);
@@ -280,8 +291,10 @@ unit External
     {
         ErrorDump(209); Error = 0x0A;
     }
+#endif    
     
     bool LoadAuto { get { return true; } }
+#if !defined(VALUE_TYPE_RUNTIME) || defined(LOCALDEBUGGER)
     uint hopperStringFromNativeString(string str)
     {
         uint hrstring = HRString.New();    
@@ -301,7 +314,9 @@ unit External
         }
         return str;
     }
+#endif
     
+#ifdef INCLUDE_FILESYSTEM
     uint DirectoryGetFileCount(uint hrpath, ref uint skipped) 
     {
         string path = nativeStringFromHopperString(hrpath);
@@ -403,7 +418,7 @@ unit External
         string path = nativeStringFromHopperString(hrpath);
         return hopperStringFromNativeString(Directory.GetDate(path));
     }
-    
+
     FileWriteAllBytes(uint hrpath, uint buffer, bool append)
     {
         string path = nativeStringFromHopperString(hrpath);
@@ -443,16 +458,17 @@ unit External
         ErrorDump(156); Error = 0x0A;
         return 0;
     }
-    
+#endif    
     byte GetSegmentPages()
     {
         return 0xFF; // size in 256 byte pages: 0xFF for Pi Pico, 0x30 for Wemos D1 Mini
     }
-    
+#ifdef INCLUDE_LONGS    
     uint GetMillis()
     {
         return hopperLongFromNativeLong(Millis); 
     }
+#endif
     Delay(uint ms)
     {
         Time.Delay(ms);
@@ -525,7 +541,7 @@ unit External
         int result = Int.FromBytes(value.GetByte(0), value.GetByte(1));
         return result;
     }
-    
+#ifdef INCLUDE_LONGS    
     uint hopperLongFromNativeLong(long ln)
     {
         uint this = HRLong.New();    
@@ -540,6 +556,7 @@ unit External
     {
         return Long.FromBytes(ReadByte(hrlong+2), ReadByte(hrlong+3), ReadByte(hrlong+4), ReadByte(hrlong+5));
     }
+
     int LongToInt(uint hrlong)
     {
         long top = nativeLongFromHopperLong(hrlong);
@@ -611,6 +628,8 @@ unit External
         long ln = nativeLongFromHopperLong(hrlong);
         return hopperFloatFromNativeFloat(float(ln));
     }
+#endif
+#ifdef INCLUDE_FLOATS    
     uint FloatToLong(uint hrfloat)
     {
         float fl = nativeFloatFromHopperFloat(hrfloat);
@@ -621,7 +640,6 @@ unit External
         float fl = nativeFloatFromHopperFloat(hrfloat);
         return uint(fl);
     }
-    
     
     uint IntToFloat(int i)
     {
@@ -642,6 +660,8 @@ unit External
         }
         return result;
     }
+#endif
+#ifdef INCLUDE_LONGS    
     uint LongToString(uint hrlong)
     {
         long l = nativeLongFromHopperLong(hrlong);
@@ -653,7 +673,8 @@ unit External
         }
         return result;
     }   
-    
+#endif
+#ifdef INCLUDE_FLOATS    
     uint hopperFloatFromNativeFloat(float fl)
     {
         uint this = HRFloat.New(); 
@@ -728,6 +749,7 @@ unit External
     {
         return (nativeFloatFromHopperFloat(next) >= nativeFloatFromHopperFloat(top)) ? 1 : 0; 
     }
+#endif    
     WatchDog()
     {
         // ping the MCU watchdog here so it knows we are still alive (not needed on RP2040)

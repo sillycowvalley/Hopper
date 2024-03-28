@@ -14,19 +14,35 @@ unit GC
         {
             case Type.Long:
             {
+#ifdef INCLUDE_LONGS
                 return HRLong.Clone(original);
+#else
+                Error = 0x0A;
+#endif
             }
             case Type.Directory:
             {
+#ifdef INCLUDE_FILESYSTEM
                 return HRDirectory.Clone(original);
+#else
+                Error = 0x0A;
+#endif
             }
             case Type.File:
             {
+#ifdef INCLUDE_FILESYSTEM
                 return HRFile.Clone(original);
+#else
+                Error = 0x0A;
+#endif
             }
             case Type.Float:
             {
+#ifdef INCLUDE_FLOATS
                 return HRFloat.Clone(original);
+#else
+                Error = 0x0A;
+#endif
             }
             case Type.String:
             {
@@ -96,21 +112,43 @@ unit GC
             switch (htype)
             {
                 case Type.Array:
-                case Type.Long:
-                case Type.Float:
                 case Type.String:
                 {
                     Memory.Free(address); // easy : nothing to walk
                 }
+                case Type.Long:
+                {
+#ifdef INCLUDE_FLOATS
+                    Memory.Free(address); // easy : nothing to walk
+#else
+                    Error = 0x0A;
+#endif
+                }
+                case Type.Float:
+                {
+#ifdef INCLUDE_LONGS
+                    Memory.Free(address); // easy : nothing to walk
+#else
+                    Error = 0x0A;
+#endif
+                }
                 case Type.Directory:
                 {
+#ifdef INCLUDE_FILESYSTEM
                     HRDirectory.Clear(address);
                     Memory.Free(address);
+#else
+                    Error = 0x0A;
+#endif
                 }
                 case Type.File:
                 {
+#ifdef INCLUDE_FILESYSTEM
                     HRFile.Clear(address);
                     Memory.Free(address);
+#else
+                    Error = 0x0A;
+#endif
                 }
                 case Type.List:
                 {

@@ -28,7 +28,9 @@ program CODEGEN
         }
     }
     <byte, <byte,uint> > sysCallHits;
+    <byte, <byte,string> > sysCallLocations;
     <Instruction, uint> instructionHits;
+    <Instruction, string> instructionLocations;
     
     exportStats(string instrumentingPath)
     {
@@ -39,11 +41,13 @@ program CODEGEN
         {
             byte iSysCall = kv.key;
             name = SysCalls.GetSysCallName(iSysCall);
+            <byte, string> locations = sysCallLocations[iSysCall];
             foreach (var kv2 in kv.value)
             {
                 uint iOverload = kv2.key;
                 uint hits = kv2.value;
-                statsFile.Append(name + "," + iOverload.ToString() + "," + hits.ToString() + char(0x0A));
+                string location = locations[iOverload];
+                statsFile.Append(name + "," + iOverload.ToString() + "," + hits.ToString() + "," + location + char(0x0A));
             }  
         }
         statsFile.Append("" + char(0x0A));
@@ -52,33 +56,40 @@ program CODEGEN
             Instruction instruction = kv.key;
             uint hits = kv.value;
             name = Instructions.ToString(instruction);
-            statsFile.Append(name + "," + hits.ToString() + char(0x0A));
+            string location = instructionLocations[instruction];
+            statsFile.Append(name + "," + hits.ToString() + "," + location + char(0x0A));
         }
         statsFile.Flush();
     }
     
-    instrumentSysCall(byte iSysCall, byte iOverload)
+    instrumentSysCall(byte iSysCall, byte iOverload, string location)
     {
         <byte,uint> hits;
+        <byte,string> locations;
         if (sysCallHits.Contains(iSysCall))
         {
             hits = sysCallHits[iSysCall];
+            locations = sysCallLocations[iSysCall];
         }
         if (!hits.Contains(iOverload))
         {
             hits[iOverload] = 1;
+            locations[iOverload] = location;
         }
         else
         {
             hits[iOverload] = hits[iOverload] + 1;
         }
         sysCallHits[iSysCall] = hits;
+        sysCallLocations[iSysCall] = locations;
+        
     }
-    instrumentInstruction(Instruction instruction)
+    instrumentInstruction(Instruction instruction, string location)
     {
         if (!instructionHits.Contains(instruction))
         {
             instructionHits[instruction] = 1;
+            instructionLocations[instruction] = location;
         }
         else
         {
@@ -86,65 +97,66 @@ program CODEGEN
         }
     }
     
-    instrument(<byte> code)
+    instrument(<byte> code, uint methodIndex)
     {
         uint address = 0;
         loop
         {
             if (address == code.Count) { break; }
             uint operand;
+            string location = "0x" + methodIndex.ToHexString(4) + ":0x" + address.ToHexString(4);
             Instruction instruction = Instructions.GetOperandAndNextAddress(code, ref address, ref operand);
             switch (instruction)
             {
                 case Instruction.SYSCALL0:
                 {
                     byte iSysCall = byte(operand & 0xFF);
-                    instrumentSysCall(iSysCall, 0);
+                    instrumentSysCall(iSysCall, 0, location);
                 }
                 case Instruction.SYSCALL1:
                 {
                     byte iSysCall = byte(operand & 0xFF);
-                    instrumentSysCall(iSysCall, 1);
+                    instrumentSysCall(iSysCall, 1, location);
                 }
                 case Instruction.SYSCALL00:
                 {
                     byte iSysCall = byte(operand & 0xFF);
-                    instrumentSysCall(iSysCall, 0);
+                    instrumentSysCall(iSysCall, 0, location);
                     iSysCall = byte(operand >> 8);
-                    instrumentSysCall(iSysCall, 0);
+                    instrumentSysCall(iSysCall, 0, location);
                 }
                 case Instruction.SYSCALL01:
                 {
                     byte iSysCall = byte(operand & 0xFF);
-                    instrumentSysCall(iSysCall, 0);
+                    instrumentSysCall(iSysCall, 0, location);
                     iSysCall = byte(operand >> 8);
-                    instrumentSysCall(iSysCall, 1);
+                    instrumentSysCall(iSysCall, 1, location);
                 }
                 case Instruction.SYSCALL10:
                 {
                     byte iSysCall = byte(operand & 0xFF);
-                    instrumentSysCall(iSysCall, 1);
+                    instrumentSysCall(iSysCall, 1, location);
                     iSysCall = byte(operand >> 8);
-                    instrumentSysCall(iSysCall, 0);
+                    instrumentSysCall(iSysCall, 0, location);
                 }
                 case Instruction.SYSCALLB0:
                 {
                     byte iSysCall = byte(operand >> 8);
-                    instrumentSysCall(iSysCall, 0);
+                    instrumentSysCall(iSysCall, 0, location);
                 }
                 case Instruction.SYSCALLB1:
                 {
                     byte iSysCall = byte(operand >> 8);
-                    instrumentSysCall(iSysCall, 0);
+                    instrumentSysCall(iSysCall, 0, location);
                 }
                 case Instruction.SYSCALL:
                 {
                     byte iSysCall = byte(operand >> 8);
-                    instrumentSysCall(iSysCall, 2); // probably not 0 or 1?
+                    instrumentSysCall(iSysCall, 2, location); // probably not 0 or 1?
                 }
                 default:
                 {
-                    instrumentInstruction(instruction);
+                    instrumentInstruction(instruction, location);
                 }
             }
             
@@ -308,7 +320,7 @@ program CODEGEN
                 string extension = Path.GetExtension(codePath);
                 string hexePath  = codePath.Replace(extension, ".hexe");
                 string symbolsPath = codePath.Replace(extension, ".json");
-                string instrumentingPath = codePath.Replace(extension, ".stats");
+                string instrumentingPath = codePath.Replace(extension, ".csv");
                 
                 hexePath = Path.GetFileName(hexePath);
                 hexePath = Path.Combine("/Bin/", hexePath);
@@ -394,7 +406,7 @@ program CODEGEN
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 if (doInstrumenting)
                 {
-                    instrument(methodCode);
+                    instrument(methodCode, entryIndex);
                 }
                 writeCode(hexeFile, methodCode);
                 Parser.ProgressTick(".");
@@ -408,7 +420,7 @@ program CODEGEN
                     methodCode = Code.GetMethodCode(index);
                     if (doInstrumenting)
                     {
-                        instrument(methodCode);
+                        instrument(methodCode, index);
                     }
                     writeCode(hexeFile, methodCode);   
                     Parser.ProgressTick(".");
