@@ -2794,6 +2794,165 @@ unit CodePoints
         return modified;  
     }
     
+    bool OptimizeJZxJx()
+    {
+        bool modified;
+        if (iCodes.Count < 2)
+        {
+            return modified;
+        }
+        uint iIndex = 1;
+        uint hits = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            Instruction opCode1 = iCodes[iIndex-1];
+            Instruction opCode0 = iCodes[iIndex]; 
+            
+            if (IsConditionalJumpInstruction(opCode1) && IsUnconditionalJumpInstruction(opCode0) && !IsTargetOfJumps(iIndex))
+            {
+                <uint> jumpTargets1 = iJumpTargets[iIndex-1];
+                uint jumpTarget1 = jumpTargets1[0];
+                if (jumpTarget1 == iIndex + 1)
+                {
+                    <uint> jumpTargets0 = iJumpTargets[iIndex];
+                    uint jumpTarget0 = jumpTargets0[0];
+                    long offset = long(iIndex-1) - long(jumpTarget0);
+                    
+                    Instruction newJumpCode;
+                    switch (opCode1)
+                    {
+                        case Instruction.JZB:
+                        case Instruction.JZ:
+                        {
+                            newJumpCode = Instruction.JNZ;
+                        }
+                        case Instruction.JNZB:
+                        case Instruction.JNZ:
+                        {
+                            newJumpCode = Instruction.JZ;
+                        }
+                    } 
+                    // Change the conditional jump to the opposite of the conditional jump, same target as unconditional jump
+                    // Change it to JZ or JNZ (since there is extra space for a 3 byte instruction after we remove the other one)
+                    iCodes.SetItem(iIndex-1,       newJumpCode);
+                    iLengths.SetItem(iIndex-1,     3);
+                    iJumpTargets.SetItem(iIndex-1, jumpTargets0);
+                    RemoveInstruction(iIndex); // good - this keeps the debug info in a better location
+                    modified = true;
+                }
+            }        
+            iIndex++;
+        } // loop
+        return modified;  
+    }
+    setPUSHI(uint iIndex, uint value)
+    {
+        switch (value)
+        {
+            case 0:
+            {
+                iCodes.SetItem (iIndex,  Instruction.PUSHI0);
+                iLengths.SetItem(iIndex, 1);
+            }
+            case 1:
+            {
+                iCodes.SetItem (iIndex,  Instruction.PUSHI1);
+                iLengths.SetItem(iIndex, 1);
+            }
+            default:
+            {
+                if (value <= 255)
+                {
+                    iCodes.SetItem (iIndex,   Instruction.PUSHIB);
+                    iLengths.SetItem(iIndex,  2);
+                    iOperands.SetItem(iIndex, value);
+                }
+                else
+                {
+                    iCodes.SetItem (iIndex,   Instruction.PUSHI);
+                    iLengths.SetItem(iIndex,  3);
+                    iOperands.SetItem(iIndex, value);   
+                }
+            }
+        }
+    }
+    bool OptimizeMULSHL()
+    {
+        bool modified;
+        if (iCodes.Count < 2)
+        {
+            return modified;
+        }
+        uint iIndex = 1;
+        uint hits = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            Instruction opCode1  = iCodes[iIndex-1];
+            uint        operand1 = iOperands[iIndex-1];
+            Instruction opCode0  = iCodes[iIndex]; 
+            
+            if (IsPUSHImmediateInstruction(opCode1, ref operand1) && ((opCode0 == Instruction.MUL) || (opCode0 == Instruction.DIV)))
+            {
+                uint shift;
+                switch (operand1)
+                {
+                    case    2: { shift =  1; }
+                    case    4: { shift =  2; }
+                    case    8: { shift =  3; }
+                    case   16: { shift =  4; }
+                    case   32: { shift =  5; }
+                    case   64: { shift =  6; }
+                    case  128: { shift =  7; }
+                    case  256: { shift =  8; }
+                }
+                if (shift != 0)
+                {
+                    if (opCode0 == Instruction.MUL)
+                    {
+                        setPUSHI(iIndex-1,     shift);
+                        iCodes.SetItem(iIndex, Instruction.BITSHL);
+                        modified = true;
+                    }
+                    else if (opCode0 == Instruction.DIV)
+                    {
+                        setPUSHI(iIndex-1,     shift);
+                        iCodes.SetItem(iIndex, Instruction.BITSHR);
+                        modified = true;
+                    }
+                }
+                else if (((operand1 == 0) && (opCode0 == Instruction.MUL)) // *= 0
+                      && ((operand1 == 1) && (opCode0 == Instruction.DIV)) // /= 1 
+                        )
+                {
+                    RemoveInstruction(iIndex-1); // good
+                    RemoveInstruction(iIndex-1); // good
+                    modified = true;
+                }
+            }
+            else if ( (operand1 == 0) &&
+                      IsPUSHImmediateInstruction(opCode1, ref operand1) && 
+                     ((opCode0 == Instruction.ADD)  || (opCode0 == Instruction.SUB)  || // += 0
+                      (opCode0 == Instruction.ADDI) || (opCode0 == Instruction.SUBI)    // -= 0
+                     )
+                    )
+            {
+                RemoveInstruction(iIndex-1); // good
+                RemoveInstruction(iIndex-1); // good
+                modified = true;
+            }
+            iIndex++;
+        } // loop
+        return modified;  
+    }
+    
     CountPairs(<OpCodePair> pairList)
     {
         if (iCodes.Count < 3)

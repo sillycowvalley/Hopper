@@ -223,5 +223,28 @@ unit ModelUtilities
         }
         return false;
     }
+    bool IsPUSHImmediateInstruction(Instruction opCode, ref uint operand)
+    {
+        switch (opCode)
+        {
+            case Instruction.PUSHI:
+            case Instruction.PUSHIB:
+            {
+                // from code
+                return true;
+            }
+            case Instruction.PUSHI0:
+            {
+                operand = 0;
+                return true;
+            }
+            case Instruction.PUSHI1:
+            {
+                operand = 1;
+                return true;
+            }
+        }
+        return false;
+    }
     
 }

@@ -302,6 +302,28 @@ program Optimize
 #endif
                 modified = true;    
             }
+            // JXx +2 Jx d -> JNXx d
+            if (OptimizeJZxJx())
+            {
+#ifdef DIAGNOSTICS
+                if (logging)
+                {
+                    CodePoints.DumpInstructions("OptimizeJZxJx");
+                }
+#endif
+                modified = true;    
+            }
+            // PUSHIB 2 MUL -> PUSHIB 1 BITSHL
+            if (OptimizeMULSHL())
+            {
+#ifdef DIAGNOSTICS
+                if (logging)
+                {
+                    CodePoints.DumpInstructions("OptimizeMULSHL");
+                }
+#endif
+                modified = true;    
+            }
             if (CodePoints.OptimizePUSHPUSHSWAP())
             {
 #ifdef DIAGNOSTICS
