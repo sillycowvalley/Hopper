@@ -43,7 +43,7 @@ program Fibo
     }
     Hopper()
     {
-        uint result = Fibo(4); // 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
+        uint result = Fibo(5); // 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
         Serial.WriteChar(' '); WriteUInt(result); Serial.WriteChar('!');Serial.WriteChar(' ');
     }
 }

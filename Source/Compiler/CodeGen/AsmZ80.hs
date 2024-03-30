@@ -5,7 +5,8 @@ unit AsmZ80
     
     // global addresses
     const uint SPBPSwapper       = 0xFE00; // 2 bytes
-    const uint LastError         = 0xFE02; // 2 bytes
+    const uint LastError         = 0xFE02; // 1 bytes
+    const uint Sign              = 0xFE03; // 1 bytes
         
     enum OpCode
     {
@@ -237,6 +238,9 @@ unit AsmZ80
         SET_7_L = 0xCBFD,
         SET_7_iHL = 0xCBFE,
         SET_7_A = 0xCBFF,
+        
+        LD_inn_A = 0x32,
+        LD_A_inn = 0x3A,
         
         LD_A_n = 0x3E,
         LD_B_n = 0x06,
@@ -675,6 +679,10 @@ unit AsmZ80
         RelativeImmediate8 = 0x80, // (XY+d), n
     }
     
+    <OpCode, string>      z80InstructionName;
+    <OpCode, OperandType> z80OperandType;
+    bool initialized;
+
     
     byte GetOpCodeLength(byte leadByte)
     {
@@ -690,2748 +698,23 @@ unit AsmZ80
         }
         return 1;        
     }
+    
+    
     string GetOpCodeInfo(OpCode opCode, ref OperandType operandType, ref byte operandLength, ref bool signed)
     {
+        if (!initialized)
+        {
+            Initialize();
+            initialized = true;
+        }
         string name;
         operandType = OperandType.None;
-        if (uint(opCode) > 256)
+        if (z80InstructionName.Contains(opCode))
         {
-            switch (opCode)
-            {
-                case OpCode.BIT_0_B:
-                {
-                    name = "BIT 0, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_0_C:
-                {
-                    name = "BIT 0, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_0_D:
-                {
-                    name = "BIT 0, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_0_E:
-                {
-                    name = "BIT 0, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_0_H:
-                {
-                    name = "BIT 0, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_0_L:
-                {
-                    name = "BIT 0, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_0_iHL:
-                {
-                    name = "BIT 0, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_0_A:
-                {
-                    name = "BIT 0, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_1_B:
-                {
-                    name = "BIT 1, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_1_C:
-                {
-                    name = "BIT 1, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_1_D:
-                {
-                    name = "BIT 1, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_1_E:
-                {
-                    name = "BIT 1, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_1_H:
-                {
-                    name = "BIT 1, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_1_L:
-                {
-                    name = "BIT 1, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_1_iHL:
-                {
-                    name = "BIT 1, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_1_A:
-                {
-                    name = "BIT 1, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_2_B:
-                {
-                    name = "BIT 2, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_2_C:
-                {
-                    name = "BIT 2, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_2_D:
-                {
-                    name = "BIT 2, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_2_E:
-                {
-                    name = "BIT 2, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_2_H:
-                {
-                    name = "BIT 2, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_2_L:
-                {
-                    name = "BIT 2, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_2_iHL:
-                {
-                    name = "BIT 2, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_2_A:
-                {
-                    name = "BIT 2, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_3_B:
-                {
-                    name = "BIT 3, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_3_C:
-                {
-                    name = "BIT 3, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_3_D:
-                {
-                    name = "BIT 3, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_3_E:
-                {
-                    name = "BIT 3, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_3_H:
-                {
-                    name = "BIT 3, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_3_L:
-                {
-                    name = "BIT 3, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_3_iHL:
-                {
-                    name = "BIT 3, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_3_A:
-                {
-                    name = "BIT 3, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_4_B:
-                {
-                    name = "BIT 4, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_4_C:
-                {
-                    name = "BIT 4, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_4_D:
-                {
-                    name = "BIT 4, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_4_E:
-                {
-                    name = "BIT 4, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_4_H:
-                {
-                    name = "BIT 4, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_4_L:
-                {
-                    name = "BIT 4, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_4_iHL:
-                {
-                    name = "BIT 4, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_4_A:
-                {
-                    name = "BIT 4, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_5_B:
-                {
-                    name = "BIT 5, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_5_C:
-                {
-                    name = "BIT 5, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_5_D:
-                {
-                    name = "BIT 5, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_5_E:
-                {
-                    name = "BIT 5, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_5_H:
-                {
-                    name = "BIT 5, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_5_L:
-                {
-                    name = "BIT 5, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_5_iHL:
-                {
-                    name = "BIT 5, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_5_A:
-                {
-                    name = "BIT 5, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_6_B:
-                {
-                    name = "BIT 6, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_6_C:
-                {
-                    name = "BIT 6, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_6_D:
-                {
-                    name = "BIT 6, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_6_E:
-                {
-                    name = "BIT 6, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_6_H:
-                {
-                    name = "BIT 6, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_6_L:
-                {
-                    name = "BIT 6, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_6_iHL:
-                {
-                    name = "BIT 6, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_6_A:
-                {
-                    name = "BIT 6, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_7_B:
-                {
-                    name = "BIT 7, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_7_C:
-                {
-                    name = "BIT 7, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_7_D:
-                {
-                    name = "BIT 7, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_7_E:
-                {
-                    name = "BIT 7, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_7_H:
-                {
-                    name = "BIT 7, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_7_L:
-                {
-                    name = "BIT 7, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_7_iHL:
-                {
-                    name = "BIT 7, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.BIT_7_A:
-                {
-                    name = "BIT 7, A";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.RES_0_B:
-                {
-                    name = "RES 0, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_0_C:
-                {
-                    name = "RES 0, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_0_D:
-                {
-                    name = "RES 0, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_0_E:
-                {
-                    name = "RES 0, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_0_H:
-                {
-                    name = "RES 0, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_0_L:
-                {
-                    name = "RES 0, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_0_iHL:
-                {
-                    name = "RES 0, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_0_A:
-                {
-                    name = "RES 0, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_1_B:
-                {
-                    name = "RES 1, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_1_C:
-                {
-                    name = "RES 1, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_1_D:
-                {
-                    name = "RES 1, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_1_E:
-                {
-                    name = "RES 1, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_1_H:
-                {
-                    name = "RES 1, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_1_L:
-                {
-                    name = "RES 1, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_1_iHL:
-                {
-                    name = "RES 1, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_1_A:
-                {
-                    name = "RES 1, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_2_B:
-                {
-                    name = "RES 2, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_2_C:
-                {
-                    name = "RES 2, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_2_D:
-                {
-                    name = "RES 2, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_2_E:
-                {
-                    name = "RES 2, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_2_H:
-                {
-                    name = "RES 2, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_2_L:
-                {
-                    name = "RES 2, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_2_iHL:
-                {
-                    name = "RES 2, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_2_A:
-                {
-                    name = "RES 2, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_3_B:
-                {
-                    name = "RES 3, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_3_C:
-                {
-                    name = "RES 3, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_3_D:
-                {
-                    name = "RES 3, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_3_E:
-                {
-                    name = "RES 3, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_3_H:
-                {
-                    name = "RES 3, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_3_L:
-                {
-                    name = "RES 3, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_3_iHL:
-                {
-                    name = "RES 3, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_3_A:
-                {
-                    name = "RES 3, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_4_B:
-                {
-                    name = "RES 4, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_4_C:
-                {
-                    name = "RES 4, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_4_D:
-                {
-                    name = "RES 4, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_4_E:
-                {
-                    name = "RES 4, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_4_H:
-                {
-                    name = "RES 4, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_4_L:
-                {
-                    name = "RES 4, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_4_iHL:
-                {
-                    name = "RES 4, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_4_A:
-                {
-                    name = "RES 4, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_5_B:
-                {
-                    name = "RES 5, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_5_C:
-                {
-                    name = "RES 5, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_5_D:
-                {
-                    name = "RES 5, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_5_E:
-                {
-                    name = "RES 5, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_5_H:
-                {
-                    name = "RES 5, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_5_L:
-                {
-                    name = "RES 5, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_5_iHL:
-                {
-                    name = "RES 5, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_5_A:
-                {
-                    name = "RES 5, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_6_B:
-                {
-                    name = "RES 6, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_6_C:
-                {
-                    name = "RES 6, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_6_D:
-                {
-                    name = "RES 6, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_6_E:
-                {
-                    name = "RES 6, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_6_H:
-                {
-                    name = "RES 6, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_6_L:
-                {
-                    name = "RES 6, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_6_iHL:
-                {
-                    name = "RES 6, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_6_A:
-                {
-                    name = "RES 6, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_7_B:
-                {
-                    name = "RES 7, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_7_C:
-                {
-                    name = "RES 7, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_7_D:
-                {
-                    name = "RES 7, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_7_E:
-                {
-                    name = "RES 7, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_7_H:
-                {
-                    name = "RES 7, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_7_L:
-                {
-                    name = "RES 7, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_7_iHL:
-                {
-                    name = "RES 7, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RES_7_A:
-                {
-                    name = "RES 7, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SET_0_B: { name = "SET 0, B"; operandType = OperandType.Implied; }
-                case OpCode.SET_0_C: { name = "SET 0, C"; operandType = OperandType.Implied; }
-                case OpCode.SET_0_D: { name = "SET 0, D"; operandType = OperandType.Implied; }
-                case OpCode.SET_0_E: { name = "SET 0, E"; operandType = OperandType.Implied; }
-                case OpCode.SET_0_H: { name = "SET 0, H"; operandType = OperandType.Implied; }
-                case OpCode.SET_0_L: { name = "SET 0, L"; operandType = OperandType.Implied; }
-                case OpCode.SET_0_iHL: { name = "SET 0, (HL)"; operandType = OperandType.Implied; }
-                case OpCode.SET_0_A: { name = "SET 0, A"; operandType = OperandType.Implied; }
-                case OpCode.SET_1_B: { name = "SET 1, B"; operandType = OperandType.Implied; }
-                case OpCode.SET_1_C: { name = "SET 1, C"; operandType = OperandType.Implied; }
-                case OpCode.SET_1_D: { name = "SET 1, D"; operandType = OperandType.Implied; }
-                case OpCode.SET_1_E: { name = "SET 1, E"; operandType = OperandType.Implied; }
-                case OpCode.SET_1_H: { name = "SET 1, H"; operandType = OperandType.Implied; }
-                case OpCode.SET_1_L: { name = "SET 1, L"; operandType = OperandType.Implied; }
-                case OpCode.SET_1_iHL: { name = "SET 1, (HL)"; operandType = OperandType.Implied; }
-                case OpCode.SET_1_A: { name = "SET 1, A"; operandType = OperandType.Implied; }
-                case OpCode.SET_2_B: { name = "SET 2, B"; operandType = OperandType.Implied; }
-                case OpCode.SET_2_C: { name = "SET 2, C"; operandType = OperandType.Implied; }
-                case OpCode.SET_2_D: { name = "SET 2, D"; operandType = OperandType.Implied; }
-                case OpCode.SET_2_E: { name = "SET 2, E"; operandType = OperandType.Implied; }
-                case OpCode.SET_2_H: { name = "SET 2, H"; operandType = OperandType.Implied; }
-                case OpCode.SET_2_L: { name = "SET 2, L"; operandType = OperandType.Implied; }
-                case OpCode.SET_2_iHL: { name = "SET 2, (HL)"; operandType = OperandType.Implied; }
-                case OpCode.SET_2_A: { name = "SET 2, A"; operandType = OperandType.Implied; }
-                case OpCode.SET_3_B: { name = "SET 3, B"; operandType = OperandType.Implied; }
-                case OpCode.SET_3_C: { name = "SET 3, C"; operandType = OperandType.Implied; }
-                case OpCode.SET_3_D: { name = "SET 3, D"; operandType = OperandType.Implied; }
-                case OpCode.SET_3_E: { name = "SET 3, E"; operandType = OperandType.Implied; }
-                case OpCode.SET_3_H: { name = "SET 3, H"; operandType = OperandType.Implied; }
-                case OpCode.SET_3_L: { name = "SET 3, L"; operandType = OperandType.Implied; }
-                case OpCode.SET_3_iHL: { name = "SET 3, (HL)"; operandType = OperandType.Implied; }
-                case OpCode.SET_3_A: { name = "SET 3, A"; operandType = OperandType.Implied; }
-                case OpCode.SET_4_B: { name = "SET 4, B"; operandType = OperandType.Implied; }
-                case OpCode.SET_4_C: { name = "SET 4, C"; operandType = OperandType.Implied; }
-                case OpCode.SET_4_D: { name = "SET 4, D"; operandType = OperandType.Implied; }
-                case OpCode.SET_4_E: { name = "SET 4, E"; operandType = OperandType.Implied; }
-                case OpCode.SET_4_H: { name = "SET 4, H"; operandType = OperandType.Implied; }
-                case OpCode.SET_4_L: { name = "SET 4, L"; operandType = OperandType.Implied; }
-                case OpCode.SET_4_iHL: { name = "SET 4, (HL)"; operandType = OperandType.Implied; }
-                case OpCode.SET_4_A: { name = "SET 4, A"; operandType = OperandType.Implied; }
-                case OpCode.SET_5_B: { name = "SET 5, B"; operandType = OperandType.Implied; }
-                case OpCode.SET_5_C: { name = "SET 5, C"; operandType = OperandType.Implied; }
-                case OpCode.SET_5_D: { name = "SET 5, D"; operandType = OperandType.Implied; }
-                case OpCode.SET_5_E: { name = "SET 5, E"; operandType = OperandType.Implied; }
-                case OpCode.SET_5_H: { name = "SET 5, H"; operandType = OperandType.Implied; }
-                case OpCode.SET_5_L: { name = "SET 5, L"; operandType = OperandType.Implied; }
-                case OpCode.SET_5_iHL: { name = "SET 5, (HL)"; operandType = OperandType.Implied; }
-                case OpCode.SET_5_A: { name = "SET 5, A"; operandType = OperandType.Implied; }
-                case OpCode.SET_6_B: { name = "SET 6, B"; operandType = OperandType.Implied; }
-                case OpCode.SET_6_C: { name = "SET 6, C"; operandType = OperandType.Implied; }
-                case OpCode.SET_6_D: { name = "SET 6, D"; operandType = OperandType.Implied; }
-                case OpCode.SET_6_E: { name = "SET 6, E"; operandType = OperandType.Implied; }
-                case OpCode.SET_6_H: { name = "SET 6, H"; operandType = OperandType.Implied; }
-                case OpCode.SET_6_L: { name = "SET 6, L"; operandType = OperandType.Implied; }
-                case OpCode.SET_6_iHL: { name = "SET 6, (HL)"; operandType = OperandType.Implied; }
-                case OpCode.SET_6_A: { name = "SET 6, A"; operandType = OperandType.Implied; }
-                case OpCode.SET_7_B: { name = "SET 7, B"; operandType = OperandType.Implied; }
-                case OpCode.SET_7_C: { name = "SET 7, C"; operandType = OperandType.Implied; }
-                case OpCode.SET_7_D: { name = "SET 7, D"; operandType = OperandType.Implied; }
-                case OpCode.SET_7_E: { name = "SET 7, E"; operandType = OperandType.Implied; }
-                case OpCode.SET_7_H: { name = "SET 7, H"; operandType = OperandType.Implied; }
-                case OpCode.SET_7_L: { name = "SET 7, L"; operandType = OperandType.Implied; }
-                case OpCode.SET_7_iHL: { name = "SET 7, (HL)"; operandType = OperandType.Implied; }
-                case OpCode.SET_7_A: { name = "SET 7, A"; operandType = OperandType.Implied; }
-                                
-                
-
-                case OpCode.RL_B:
-                {
-                    name = "RL B";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.RL_C:
-                {
-                    name = "RL C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_D:
-                {
-                    name = "RL D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_E:
-                {
-                    name = "RL E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_H:
-                {
-                    name = "RL H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_L:
-                {
-                    name = "RL L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_iHL:
-                {
-                    name = "RL (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_A:
-                {
-                    name = "RL A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RR_B:
-                {
-                    name = "RR B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RR_C:
-                {
-                    name = "RR C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RR_D:
-                {
-                    name = "RR D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RR_E:
-                {
-                    name = "RR E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RR_H:
-                {
-                    name = "RR H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RR_L:
-                {
-                    name = "RR L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RR_iHL:
-                {
-                    name = "RR (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RR_A:
-                {
-                    name = "RR A";
-                    operandType = OperandType.Implied;
-                }
-                
-                
-                case OpCode.SLA_iHL:
-                {
-                    name = "SLA (HL)";
-                    operandType = OperandType.Implied;
-                }    
-                case OpCode.SRL_iHL:
-                {
-                    name = "SRL (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SRL_B:
-                {
-                    name = "SRL B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SRL_C:
-                {
-                    name = "SRL C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SRL_D:
-                {
-                    name = "SRL D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SRL_E:
-                {
-                    name = "SRL E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SRL_H:
-                {
-                    name = "SRL H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SRL_L:
-                {
-                    name = "SRL L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SRL_A:
-                {
-                    name = "SRL A";
-                    operandType = OperandType.Implied;
-                }
-
-                case OpCode.LD_D_IYH:
-                {
-                    name = "LD D, IYh";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_IYL:
-                {
-                    name = "LD E, IYl";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.DEC_iIX_d:
-                {
-                    name = "DEC (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.DEC_iIY_d:
-                {
-                    name = "DEC (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                
-                case OpCode.PUSH_IX:
-                {
-                    name = "PUSH IX";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.POP_IX:
-                {
-                    name = "POP IX";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.PUSH_IY:
-                {
-                    name = "PUSH IY";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.POP_IY:
-                {
-                    name = "POP IY";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.SBC_HL_BC:
-                {
-                    name = "SBC HL, BC";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_HL_DE:
-                {
-                    name = "SBC HL, DE";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_HL_HL:
-                {
-                    name = "SBC HL, HL";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_HL_SP:
-                {
-                    name = "SBC HL, SP";
-                    operandType = OperandType.Implied;
-                }
-                        
-                case OpCode.LD_IX_nn:
-                {
-                    name = "LD IX, nn";
-                    operandType = OperandType.Immediate16;
-                }
-                case OpCode.LD_IY_nn:
-                {
-                    name = "LD IY, nn";
-                    operandType = OperandType.Immediate16;
-                }
-                case OpCode.LD_A_iIY_d:
-                {
-                    name = "LD A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_B_iIY_d:
-                {
-                    name = "LD B, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_C_iIY_d:
-                {
-                    name = "LD C, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_D_iIY_d:
-                {
-                    name = "LD D, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_E_iIY_d:
-                {
-                    name = "LD E, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_H_iIY_d:
-                {
-                    name = "LD H, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_L_iIY_d:
-                {
-                    name = "LD L, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                  
-                case OpCode.LD_A_iIY_d:
-                {
-                    name = "LD A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_B_iIY_d:
-                {
-                    name = "LD B, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_C_iIY_d:
-                {
-                    name = "LD C, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_D_iIY_d:
-                {
-                    name = "LD D, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_E_iIY_d:
-                {
-                    name = "LD E, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_H_iIY_d:
-                {
-                    name = "LD H, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_L_iIY_d:
-                {
-                    name = "LD L, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                
-                case OpCode.ADC_HL_BC:
-                {
-                    name = "ADC HL, BC";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADC_HL_DE:
-                {
-                    name = "ADC HL, DE";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADC_HL_HL:
-                {
-                    name = "ADC HL, HL";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADC_HL_SP:
-                {
-                    name = "ADC HL, SP";
-                    operandType = OperandType.Implied;
-                }
-                         
-                            
-                case OpCode.OR_A_iIX_d:
-                {
-                    name = "OR A, (IX+d)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.OR_A_iIY_d:
-                {
-                    name = "OR A, (IY+d)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_A_iIX_d:
-                {
-                    name = "LD A, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_B_iIX_d:
-                {
-                    name = "LD B, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_C_iIX_d:
-                {
-                    name = "LD C, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_D_iIX_d:
-                {
-                    name = "LD D, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_E_iIX_d:
-                {
-                    name = "LD E, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_H_iIX_d:
-                {
-                    name = "LD H, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_L_iIX_d:
-                {
-                    name = "LD L, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                
-                
-                case OpCode.LD_iIX_d_A:
-                {
-                    name = "LD (IX+d), A";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIX_d_B:
-                {
-                    name = "LD (IX+d), B";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIX_d_C:
-                {
-                    name = "LD (IX+d), C";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIX_d_D:
-                {
-                    name = "LD (IX+d), D";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIX_d_E:
-                {
-                    name = "LD (IX+d), E";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIX_d_H:
-                {
-                    name = "LD (IX+d), H";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIX_d_L:
-                {
-                    name = "LD (IX+d), L";
-                    operandType = OperandType.IndexedRelative;
-                }
-                
-                case OpCode.SUB_A_iIX_d:
-                {
-                    name = "SUB A, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.SUB_A_iIY_d:
-                {
-                    name = "SUB A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.INC_IX:
-                {
-                    name = "INC IX";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.INC_IY:
-                {
-                    name = "INC IY";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.DEC_IX:
-                {
-                    name = "DEC IX";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.DEC_IY:
-                {
-                    name = "DEC IY";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.ADD_IX_BC:
-                {
-                    name = "ADD IX, BC";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_IX_DE:
-                {
-                    name = "ADD IX, DE";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_IY_BC:
-                {
-                    name = "ADD IY, BC";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_IY_DE:
-                {
-                    name = "ADD IY, DE";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.AND_A_iIX_d:
-                {
-                    name = "AND A, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                    
-                }
-                case OpCode.AND_A_iIY_d:
-                {
-                    name = "AND A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                    
-                }
-                case OpCode.SBC_A_iIX_d:
-                {
-                    name = "SBC A, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.SBC_A_iIY_d:
-                {
-                    name = "SBC A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.ADD_A_iIX_d:
-                {
-                    name = "ADD A, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.ADD_A_iIY_d:
-                {
-                    name = "ADD A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.ADC_A_iIX_d:
-                {
-                    name = "ADC A, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.ADC_A_iIY_d:
-                {
-                    name = "ADC A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                }
-                
-                case OpCode.LD_iIY_d_A:
-                {
-                    name = "LD (IY+d), A";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIY_d_B:
-                {
-                    name = "LD (IY+d), B";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIY_d_C:
-                {
-                    name = "LD (IY+d), C";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIY_d_D:
-                {
-                    name = "LD (IY+d), D";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIY_d_E:
-                {
-                    name = "LD (IY+d), E";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIY_d_H:
-                {
-                    name = "LD (IY+d), H";
-                    operandType = OperandType.IndexedRelative;
-                }
-                case OpCode.LD_iIY_d_L:
-                {
-                    name = "LD (IY+d), L";
-                    operandType = OperandType.IndexedRelative;
-                }
-                
-                case OpCode.LD_BC_inn:
-                {
-                    name = "LD BC, (nn)";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_DE_inn:
-                {
-                    name = "LD DE, (nn)";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_HL_inn:
-                {
-                    name = "LD HL, (nn)";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_SP_inn:
-                {
-                    name = "LD SP, (nn)";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_IX_inn:
-                {
-                    name = "LD IX, (nn)";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_IY_inn:
-                {
-                    name = "LD IY, (nn)";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                
-                case OpCode.LD_inn_BC:
-                {
-                    name = "LD (nn), BC";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_inn_DE:
-                {
-                    name = "LD (nn), DE";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_inn_HL:
-                {
-                    name = "LD (nn), HL";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_inn_SP:
-                {
-                    name = "LD (nn), SP";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_inn_IX:
-                {
-                    name = "LD (nn), IX";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                case OpCode.LD_inn_IY:
-                {
-                    name = "LD (nn), IY";
-                    operandType = OperandType.ImmediateIndexed;
-                }
-                
-                
-                case OpCode.LD_iIX_d_n:
-                {
-                    name = "LD (IY+d), n";
-                    operandType = OperandType.RelativeImmediate8;
-                }
-                case OpCode.LD_iIY_d_n:
-                {
-                    name = "LD (IY+d), n";
-                    operandType = OperandType.RelativeImmediate8;
-                }
-                case OpCode.OR_A_iIX_d:
-                {
-                    name = "OR A, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                    
-                }
-                 case OpCode.XOR_A_iIX_d:
-                {
-                    name = "XOR A, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                    
-                }
-                case OpCode.XOR_A_iIY_d:
-                {
-                    name = "XOR A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                    
-                }
-                case OpCode.CP_A_iIX_d:
-                {
-                    name = "CP A, (IX+d)";
-                    operandType = OperandType.IndexedRelative;
-                    
-                }
-                case OpCode.CP_A_iIY_d:
-                {
-                    name = "CP A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                    
-                }
-                case OpCode.OR_A_iIY_d:
-                {
-                    name = "OR A, (IY+d)";
-                    operandType = OperandType.IndexedRelative;
-                    
-                }
-                case OpCode.INC_iIX_d:
-                {
-                    name = "INC (IX+d)";
-                    operandType = OperandType.Relative;
-                }
-                case OpCode.INC_iIY_d:
-                {
-                    name = "INC (IY+d)";
-                    operandType = OperandType.Relative;
-                }
-                case OpCode.RL_A:
-                {
-                    name = "RL A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_B:
-                {
-                    name = "RL B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_C:
-                {
-                    name = "RL C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_D:
-                {
-                    name = "RL D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_E:
-                {
-                    name = "RL E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_H:
-                {
-                    name = "RL H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_L:
-                {
-                    name = "RL L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RL_iHL:
-                {
-                    name = "RL (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_B:
-                {
-                    name = "SLA_B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_C:
-                {
-                    name = "SLA_C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_D:
-                {
-                    name = "SLA_D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_E:
-                {
-                    name = "SLA_E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_H:
-                {
-                    name = "SLA_H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_L:
-                {
-                    name = "SLA_L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SLA_A:
-                {
-                    name = "SLA_A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.EX_iSP_IX:
-                {
-                    name = "EX (SP), IX";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.EX_iSP_IY:
-                {
-                    name = "EX (SP), IY";
-                    operandType = OperandType.Implied;
-                }
-                
-                
-                default:
-                {
-                    Print("OpCode.GetName(0x" + (uint(opCode)).ToHexString(4) +") not implemented (long)"); Die(0x0A);
-                }
-            }
+            name = z80InstructionName[opCode];
+            operandType = z80OperandType[opCode];
         }
-        else
-        {
-            switch (opCode)
-            {
-                case OpCode.DEC_iHL:
-                {
-                    name = "DEC (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.JP_HL:
-                {
-                    name = "JP HL";
-                    operandType = OperandType.Implied;
-                }
-                                            
-                case OpCode.ADD_HL_BC:
-                {
-                    name = "ADD HL, BC";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_HL_DE:
-                {
-                    name = "ADD HL, DE";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_HL_HL:
-                {
-                    name = "ADD HL, HL";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_HL_SP:
-                {
-                    name = "ADD HL, SP";
-                    operandType = OperandType.Implied;
-                }
-                                                      
-                case OpCode.OR_A_iHL:
-                {
-                    name = "OR A, (HL)";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.LD_B_B:
-                {
-                    name = "LD B, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_C_B:
-                {
-                    name = "LD C, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_D_B:
-                {
-                    name = "LD D, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_B:
-                {
-                    name = "LD E, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_H_B:
-                {
-                    name = "LD H, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_L_B:
-                {
-                    name = "LD L, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_A_B:
-                {
-                    name = "LD A, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_B_C:
-                {
-                    name = "LD B, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_C_C:
-                {
-                    name = "LD C, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_D_C:
-                {
-                    name = "LD D, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_C:
-                {
-                    name = "LD E, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_H_C:
-                {
-                    name = "LD H, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_L_C:
-                {
-                    name = "LD L, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_A_C:
-                {
-                    name = "LD A, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_B_D:
-                {
-                    name = "LD B, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_C_D:
-                {
-                    name = "LD C, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_D_D:
-                {
-                    name = "LD D, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_D:
-                {
-                    name = "LD E, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_H_D:
-                {
-                    name = "LD H, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_L_D:
-                {
-                    name = "LD L, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_A_D:
-                {
-                    name = "LD A, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_B_E:
-                {
-                    name = "LD B, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_C_E:
-                {
-                    name = "LD C, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_D_E:
-                {
-                    name = "LD D, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_E:
-                {
-                    name = "LD E, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_H_E:
-                {
-                    name = "LD H, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_L_E:
-                {
-                    name = "LD L, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_A_E:
-                {
-                    name = "LD A, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_B_H:
-                {
-                    name = "LD B, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_C_H:
-                {
-                    name = "LD C, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_D_H:
-                {
-                    name = "LD D, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_H:
-                {
-                    name = "LD E, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_H_H:
-                {
-                    name = "LD H, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_L_H:
-                {
-                    name = "LD L, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_A_H:
-                {
-                    name = "LD A, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_B_L:
-                {
-                    name = "LD B, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_C_L:
-                {
-                    name = "LD C, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_D_L:
-                {
-                    name = "LD D, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_L:
-                {
-                    name = "LD E, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_H_L:
-                {
-                    name = "LD H, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_L_L:
-                {
-                    name = "LD L, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_A_L:
-                {
-                    name = "LD A, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_B_A:
-                {
-                    name = "LD B, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_C_A:
-                {
-                    name = "LD C, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_D_A:
-                {
-                    name = "LD D, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_A:
-                {
-                    name = "LD E, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_H_A:
-                {
-                    name = "LD H, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_L_A:
-                {
-                    name = "LD L, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_A_A:
-                {
-                    name = "LD A, A";
-                    operandType = OperandType.Implied;
-                }
-
-                case OpCode.CPL_A_A:
-                {
-                    name = "CLP A, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.XOR_A_B:
-                {
-                    name = "XOR A, B";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.XOR_A_C:
-                {
-                    name = "XOR A, C";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.XOR_A_D:
-                {
-                    name = "XOR A, D";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.XOR_A_E:
-                {
-                    name = "XOR A, E";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.XOR_A_H:
-                {
-                    name = "XOR A, H";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.XOR_A_L:
-                {
-                    name = "XOR A, L";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.XOR_A_A:
-                {
-                    name = "XOR A, A";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.XOR_A_iHL:
-                {
-                    name = "XOR A, (HL)";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.CP_A_B:
-                {
-                    name = "CP A, B";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.CP_A_C:
-                {
-                    name = "CP A, C";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.CP_A_D:
-                {
-                    name = "CP A, D";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.CP_A_E:
-                {
-                    name = "CP A, E";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.CP_A_H:
-                {
-                    name = "CP A, H";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.CP_A_L:
-                {
-                    name = "CP A, L";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.CP_A_A:
-                {
-                    name = "CP A, A";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.CP_A_iHL:
-                {
-                    name = "CP A, (HL)";
-                    operandType = OperandType.Implied;
-                    
-                }
-               case OpCode.OR_A_B:
-                {
-                    name = "OR A, B";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.OR_A_C:
-                {
-                    name = "OR A, C";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.OR_A_D:
-                {
-                    name = "OR A, D";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.OR_A_E:
-                {
-                    name = "OR A, E";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.OR_A_H:
-                {
-                    name = "OR A, H";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.OR_A_L:
-                {
-                    name = "OR A, L";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.OR_A_A:
-                {
-                    name = "OR A, A";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.AND_A_n:
-                {
-                    name = "AND A, n";
-                    operandType = OperandType.Immediate8;
-                    
-                }
-                
-                case OpCode.AND_A_B:
-                {
-                    name = "AND A, B";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.AND_A_C:
-                {
-                    name = "AND A, C";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.AND_A_D:
-                {
-                    name = "AND A, D";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.AND_A_E:
-                {
-                    name = "AND A, E";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.AND_A_H:
-                {
-                    name = "AND A, H";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.AND_A_L:
-                {
-                    name = "AND A, L";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.AND_A_A:
-                {
-                    name = "AND A, A";
-                    operandType = OperandType.Implied;
-                    
-                }
-                case OpCode.AND_A_iHL:
-                {
-                    name = "AND A, (HL)";
-                    operandType = OperandType.Implied;
-                    
-                }
-                
-                            
-                
-                case OpCode.SUB_A_B:
-                {
-                    name = "SUB A, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SUB_A_C:
-                {
-                    name = "SUB A, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SUB_A_D:
-                {
-                    name = "SUB A, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SUB_A_E:
-                {
-                    name = "SUB A, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SUB_A_H:
-                {
-                    name = "SUB A, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SUB_A_L:
-                {
-                    name = "SUB A, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SUB_A_A:
-                {
-                    name = "SUB A, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SUB_A_iHL:
-                {
-                    name = "SUB A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SUB_A_n:
-                {
-                    name = "SUB A, n";
-                    operandType = OperandType.Immediate8;
-                }
-                case OpCode.SBC_A_B:
-                {
-                    name = "SBC A, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_A_C:
-                {
-                    name = "SBC A, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_A_D:
-                {
-                    name = "SBC A, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_A_E:
-                {
-                    name = "SBC A, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_A_H:
-                {
-                    name = "SBC A, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_A_L:
-                {
-                    name = "SBC A, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_A_A:
-                {
-                    name = "SBC A, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_A_iHL:
-                {
-                    name = "SBC A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_A_n:
-                {
-                    name = "SBC A, n";
-                    operandType = OperandType.Immediate8;
-                }
-                case OpCode.ADD_A_B:
-                {
-                    name = "ADD A, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_A_C:
-                {
-                    name = "ADD A, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_A_D:
-                {
-                    name = "ADD A, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_A_E:
-                {
-                    name = "ADD A, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_A_H:
-                {
-                    name = "ADD A, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_A_L:
-                {
-                    name = "ADD A, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_A_A:
-                {
-                    name = "ADD A, A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_A_iHL:
-                {
-                    name = "ADD A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADD_A_n:
-                {
-                    name = "ADD A, n";
-                    operandType = OperandType.Immediate8;
-                }
-                            
-                case OpCode.ADC_A_B:
-                {
-                    name = "ADC A, B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADC_A_C:
-                {
-                    name = "ADC A, C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADC_A_D:
-                {
-                    name = "ADC A, D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADC_A_E:
-                {
-                    name = "ADC A, E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADC_A_H:
-                {
-                    name = "ADC A, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADC_A_L:
-                {
-                    name = "ADC A, L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.ADC_A_A:
-                {
-                    name = "ADC A, A";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.ADC_A_n:
-                {
-                    name = "ADC A, n";
-                    operandType = OperandType.Immediate8;
-                }
-                case OpCode.ADC_A_iHL:
-                {
-                    name = "ADC A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.DJNZ_e:
-                {
-                    name = "DJNZ, e";
-                    operandType = OperandType.Relative;
-                }
-                
-                case OpCode.RLC_B:
-                {
-                    name = "RLC_B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RLC_C:
-                {
-                    name = "RLC_C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RLC_D:
-                {
-                    name = "RLC_D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RLC_E:
-                {
-                    name = "RLC_E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RLC_H:
-                {
-                    name = "RLC_H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RLC_L:
-                {
-                    name = "RLC_L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RLC_A:
-                {
-                    name = "RLC_A";
-                    operandType = OperandType.Implied;
-                }
-                
-                
-                            
-                case OpCode.CP_A_n:
-                {
-                    name = "CP A, n";
-                    operandType = OperandType.Immediate8;
-                }
-                
-                case OpCode.NOP:
-                {
-                    name = "NOP";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.INC_HL:
-                {
-                    name = "INC HL";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.INC_DE:
-                {
-                    name = "INC DE";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.INC_BC:
-                {
-                    name = "INC BC";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.DEC_BC:
-                {
-                    name = "DEC BC";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.DEC_HL:
-                {
-                    name = "DEC HL";
-                    operandType = OperandType.Implied;
-                }
-                
-                
-                case OpCode.ADD_A_iHL:
-                {
-                    name = "ADD A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SUB_A_iHL:
-                {
-                    name = "SUB A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SBC_A_iHL:
-                {
-                    name = "SBC A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.AND_A_iHL:
-                {
-                    name = "AND A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.XOR_A_iHL:
-                {
-                    name = "XOR A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.OR_A_iHL:
-                {
-                    name = "OR A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.CP_A_iHL:
-                {
-                    name = "CP A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.XOR_A:
-                {
-                    name = "XOR A";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.XOR_B:
-                {
-                    name = "XOR B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.XOR_C:
-                {
-                    name = "XOR C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.XOR_D:
-                {
-                    name = "XOR D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.XOR_E:
-                {
-                    name = "XOR E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.XOR_H:
-                {
-                    name = "XOR H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.XOR_L:
-                {
-                    name = "XOR L";
-                    operandType = OperandType.Implied;
-                }
-                
-                
-                case OpCode.AND_A:
-                {
-                    name = "AND A";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.SBC_HL_BC:
-                {
-                    name = "SBC HL, BC";
-                    operandType = OperandType.Implied;
-                }
-
-                case OpCode.JP_nn: { name = "JP nn"; operandType = OperandType.Immediate16; }
-                case OpCode.JP_M_nn: { name = "JP M, nn"; operandType = OperandType.Immediate16; }
-                case OpCode.JP_Z_nn: { name = "JP Z, nn"; operandType = OperandType.Immediate16; }
-                case OpCode.JP_NZ_nn: { name = "JP NZ, nn"; operandType = OperandType.Immediate16; }
-                case OpCode.JP_C_nn: { name = "JP C, nn"; operandType = OperandType.Immediate16; }
-                case OpCode.JP_NC_nn: { name = "JP NC, nn"; operandType = OperandType.Immediate16; }
-                case OpCode.JP_P_nn: { name = "JP P, nn"; operandType = OperandType.Immediate16; }
-                case OpCode.JP_PE_nn: { name = "JP PE, nn"; operandType = OperandType.Immediate16; }
-                case OpCode.JP_PO_nn: { name = "JP PO, nn"; operandType = OperandType.Immediate16; }                
-                
-                case OpCode.JR_Z_e:
-                {
-                    name = "JR Z e";
-                    operandType = OperandType.Relative;
-                }
-                case OpCode.JR_NZ_e:
-                {
-                    name = "JR NZ e";
-                    operandType = OperandType.Relative;
-                }
-                case OpCode.JR_C_e:
-                {
-                    name = "JR C e";
-                    operandType = OperandType.Relative;
-                }
-                case OpCode.JR_NC_e:
-                {
-                    name = "JR NC e";
-                    operandType = OperandType.Relative;
-                }
-                case OpCode.JR_e:
-                {
-                    name = "JR e";
-                    operandType = OperandType.Relative;
-                }
-                
-                case OpCode.RST_Reset:
-                {
-                    name = "RST 0x00";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RST_PopAbsolute:
-                {
-                    name = "RST 0x08";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RST_PushAbsolute:
-                {
-                    name = "RST 0x10";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RST_PushImmediate:
-                {
-                    name = "RST 0x18";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RST_PushOffset:
-                {
-                    name = "RST 0x20";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RST_PopOffset:
-                {
-                    name = "RST 0x28";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RST_SysCall0:
-                {
-                    name = "RST 0x30";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RST_Instruction:
-                {
-                    name = "RST 0x38";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.LD_A_n:
-                {
-                    name = "LD A, n";
-                    operandType = OperandType.Immediate8;
-                }
-                case OpCode.LD_B_n:
-                {
-                    name = "LD B, n";
-                    operandType = OperandType.Immediate8;
-                }
-                case OpCode.LD_C_n:
-                {
-                    name = "LD C, n";
-                    operandType = OperandType.Immediate8;
-                }
-                case OpCode.LD_D_n:
-                {
-                    name = "LD D, n";
-                    operandType = OperandType.Immediate8;
-                }
-                case OpCode.LD_E_n:
-                {
-                    name = "LD E, n";
-                    operandType = OperandType.Immediate8;
-                }
-                case OpCode.LD_H_n:
-                {
-                    name = "LD H, n";
-                    operandType = OperandType.Immediate8;
-                }
-                case OpCode.LD_L_n:
-                {
-                    name = "LD L, n";
-                    operandType = OperandType.Immediate8;
-                }
-                
-                case OpCode.LD_iHL_B:
-                {
-                    name = "LD (HL), B";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_iHL_C:
-                {
-                    name = "LD (HL), C";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_iHL_D:
-                {
-                    name = "LD (HL), D";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_iHL_E:
-                {
-                    name = "LD (HL), E";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_iHL_H:
-                {
-                    name = "LD (HL), H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_iHL_L:
-                {
-                    name = "LD (HL), L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_iHL_A:
-                {
-                    name = "LD (HL), A";
-                    operandType = OperandType.Implied;
-                }
-                
-                
-                
-                case OpCode.LD_A_iHL:
-                {
-                    name = "LD A, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_B_iHL:
-                {
-                    name = "LD B, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_C_iHL:
-                {
-                    name = "LD C, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_D_iHL:
-                {
-                    name = "LD D, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_iHL:
-                {
-                    name = "LD E, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_H_iHL:
-                {
-                    name = "LD H, (HL)";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_L_iHL:
-                {
-                    name = "LD L, (HL)";
-                    operandType = OperandType.Implied;
-                }
-
-                case OpCode.LD_BC_nn:
-                {
-                    name = "LD BC, nn";
-                    operandType = OperandType.Immediate16;
-                }
-                case OpCode.LD_DE_nn:
-                {
-                    name = "LD DE, nn";
-                    operandType = OperandType.Immediate16;
-                }
-                case OpCode.LD_HL_nn:
-                {
-                    name = "LD HL, nn";
-                    operandType = OperandType.Immediate16;
-                }
-                case OpCode.LD_SP_nn:
-                {
-                    name = "LD SP, nn";
-                    operandType = OperandType.Immediate16;
-                }
-                
-                case OpCode.LD_C_B:
-                {
-                    name = "LD C, B";
-                    operandType = OperandType.Implied;
-                }
-
-                case OpCode.LD_D_H:
-                {
-                    name = "LD D, H";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_E_L:
-                {
-                    name = "LD E, L";
-                    operandType = OperandType.Implied;
-                }
-
-
-                case OpCode.EX_iSP_HL:
-                {
-                    name = "EX (SP), HL";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_SP_HL:
-                {
-                    name = "LD SP, HL";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.LD_iHL_n:
-                {
-                    name = "LD (HL), n";
-                    operandType = OperandType.Immediate8;
-                }
-                
-                case OpCode.LD_iHL_B:
-                {
-                    name = "LD (HL), B";
-                    operandType = OperandType.Indexed;
-                }
-                case OpCode.LD_iHL_C:
-                {
-                    name = "LD (HL), C";
-                    operandType = OperandType.Indexed;
-                }
-                case OpCode.LD_iHL_D:
-                {
-                    name = "LD (HL), D";
-                    operandType = OperandType.Indexed;
-                }
-                case OpCode.LD_iHL_E:
-                {
-                    name = "LD (HL), E";
-                    operandType = OperandType.Indexed;
-                }
-                case OpCode.LD_iHL_H:
-                {
-                    name = "LD (HL), H";
-                    operandType = OperandType.Indexed;
-                }
-                case OpCode.LD_iHL_L:
-                {
-                    name = "LD (HL), L";
-                    operandType = OperandType.Indexed;
-                }
-                case OpCode.LD_iHL_A:
-                {
-                    name = "LD (HL), A";
-                    operandType = OperandType.Indexed;
-                }
-                
-                
-                case OpCode.LD_SP_HL:
-                {
-                    name = "LD SP,HL";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.PUSH_BC:
-                {
-                    name = "PUSH BC";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.PUSH_DE:
-                {
-                    name = "PUSH DE";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.PUSH_HL:
-                {
-                    name = "PUSH HL";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.PUSH_AF:
-                {
-                    name = "PUSH AF";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.POP_BC:
-                {
-                    name = "POP BC";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.POP_DE:
-                {
-                    name = "POP DE";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.POP_HL:
-                {
-                    name = "POP HL";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.POP_AF:
-                {
-                    name = "POP AF";
-                    operandType = OperandType.Implied;
-                }
-                               
-                case OpCode.RET:
-                {
-                    name = "RET";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RET_NZ: { name = "RET NZ"; operandType = OperandType.Implied; }
-                case OpCode.RET_Z:  { name = "RET Z"; operandType = OperandType.Implied; }
-                case OpCode.RET_NC: { name = "RET NC"; operandType = OperandType.Implied; }
-                case OpCode.RET_C:  { name = "RET C"; operandType = OperandType.Implied; }
-                case OpCode.RET_PO: { name = "RET PO"; operandType = OperandType.Implied; }
-                case OpCode.RET_PE: { name = "RET PE"; operandType = OperandType.Implied; }
-                case OpCode.RET_P:  { name = "RET P"; operandType = OperandType.Implied; }
-                case OpCode.RET_M:  { name = "RET M"; operandType = OperandType.Implied; }
-                
-                case OpCode.HALT:
-                {
-                    name = "HALT";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.CALL_nn:
-                {
-                    name = "CALL nn";
-                    operandType = OperandType.Immediate16;
-                }
-                                
-                case OpCode.INC_A:
-                {
-                    name = "INC A";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.INC_B:
-                {
-                    name = "INC B";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.INC_C:
-                {
-                    name = "INC C";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.INC_D:
-                {
-                    name = "INC D";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.INC_E:
-                {
-                    name = "INC E";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.INC_H:
-                {
-                    name = "INC H";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.INC_L:
-                {
-                    name = "INC L";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.DEC_A:
-                {
-                    name = "DEC A";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.DEC_B:
-                {
-                    name = "DEC B";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.DEC_C:
-                {
-                    name = "DEC C";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.DEC_D:
-                {
-                    name = "DEC D";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.DEC_E:
-                {
-                    name = "DEC E";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.DEC_H:
-                {
-                    name = "DEC H";
-                    operandType = OperandType.Implied;
-                }
-                
-                case OpCode.DEC_L:
-                {
-                    name = "DEC L";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RLA:
-                {
-                    name = "RLA";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.RRA:
-                {
-                    name = "RRA";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.CLP:
-                {
-                    name = "CLP";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.CCF:
-                {
-                    name = "CCF";
-                    operandType = OperandType.Implied;
-                }
-                case OpCode.SCF:
-                {
-                    name = "SCF";
-                    operandType = OperandType.Implied;
-                }
-                
-                default:
-                {
-                    Print("OpCode.GetName(0x" + (uint(opCode)).ToHexString(4) +") not implemented (short)"); Die(0x0A);
-                }
-            }
-        }
+        
         if (operandType == OperandType.None)
         {
             Print("OpCode.GetName(0x" + (uint(opCode)).ToHexString(4) +") not implemented (operandType)"); Die(0x0A);
@@ -3561,5 +844,1629 @@ unit AsmZ80
         }
         return disassembly;
     }
+
+    Initialize()
+    {
+        z80InstructionName[OpCode.NOP] = "NOP";                           // 0x0000
+        z80OperandType    [OpCode.NOP] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CPL_A_A] = "CPL A, A";                  // 0x002F
+        z80OperandType    [OpCode.CPL_A_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RST_Reset] = "RST Reset";               // 0x00C7
+        z80OperandType    [OpCode.RST_Reset] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RST_PopAbsolute] = "RST PopAbsolute";   // 0x00CF
+        z80OperandType    [OpCode.RST_PopAbsolute] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RST_PushAbsolute] = "RST PushAbsolute"; // 0x00D7
+        z80OperandType    [OpCode.RST_PushAbsolute] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RST_PushImmediate] = "RST PushImmediate";// 0x00DF
+        z80OperandType    [OpCode.RST_PushImmediate] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RST_PushOffset] = "RST PushOffset";     // 0x00E7
+        z80OperandType    [OpCode.RST_PushOffset] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RST_PopOffset] = "RST PopOffset";       // 0x00EF
+        z80OperandType    [OpCode.RST_PopOffset] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RST_SysCall0] = "RST SysCall0";         // 0x00F7
+        z80OperandType    [OpCode.RST_SysCall0] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RST_Instruction] = "RST Instruction";   // 0x00FF
+        z80OperandType    [OpCode.RST_Instruction] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_0_A] = "BIT 0, A";                  // 0xCB47
+        z80OperandType    [OpCode.BIT_0_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_0_B] = "BIT 0, B";                  // 0xCB40
+        z80OperandType    [OpCode.BIT_0_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_0_C] = "BIT 0, C";                  // 0xCB41
+        z80OperandType    [OpCode.BIT_0_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_0_D] = "BIT 0, D";                  // 0xCB42
+        z80OperandType    [OpCode.BIT_0_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_0_E] = "BIT 0, E";                  // 0xCB43
+        z80OperandType    [OpCode.BIT_0_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_0_H] = "BIT 0, H";                  // 0xCB44
+        z80OperandType    [OpCode.BIT_0_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_0_L] = "BIT 0, L";                  // 0xCB45
+        z80OperandType    [OpCode.BIT_0_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_0_iHL] = "BIT 0, (HL)";             // 0xCB46
+        z80OperandType    [OpCode.BIT_0_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_1_B] = "BIT 1, B";                  // 0xCB48
+        z80OperandType    [OpCode.BIT_1_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_1_C] = "BIT 1, C";                  // 0xCB49
+        z80OperandType    [OpCode.BIT_1_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_1_D] = "BIT 1, D";                  // 0xCB4A
+        z80OperandType    [OpCode.BIT_1_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_1_E] = "BIT 1, E";                  // 0xCB4B
+        z80OperandType    [OpCode.BIT_1_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_1_H] = "BIT 1, H";                  // 0xCB4C
+        z80OperandType    [OpCode.BIT_1_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_1_L] = "BIT 1, L";                  // 0xCB4D
+        z80OperandType    [OpCode.BIT_1_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_1_iHL] = "BIT 1, (HL)";             // 0xCB4E
+        z80OperandType    [OpCode.BIT_1_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_1_A] = "BIT 1, A";                  // 0xCB4F
+        z80OperandType    [OpCode.BIT_1_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_2_B] = "BIT 2, B";                  // 0xCB50
+        z80OperandType    [OpCode.BIT_2_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_2_C] = "BIT 2, C";                  // 0xCB51
+        z80OperandType    [OpCode.BIT_2_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_2_D] = "BIT 2, D";                  // 0xCB52
+        z80OperandType    [OpCode.BIT_2_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_2_E] = "BIT 2, E";                  // 0xCB53
+        z80OperandType    [OpCode.BIT_2_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_2_H] = "BIT 2, H";                  // 0xCB54
+        z80OperandType    [OpCode.BIT_2_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_2_L] = "BIT 2, L";                  // 0xCB55
+        z80OperandType    [OpCode.BIT_2_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_2_iHL] = "BIT 2, (HL)";             // 0xCB56
+        z80OperandType    [OpCode.BIT_2_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_2_A] = "BIT 2, A";                  // 0xCB57
+        z80OperandType    [OpCode.BIT_2_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_3_B] = "BIT 3, B";                  // 0xCB58
+        z80OperandType    [OpCode.BIT_3_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_3_C] = "BIT 3, C";                  // 0xCB59
+        z80OperandType    [OpCode.BIT_3_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_3_D] = "BIT 3, D";                  // 0xCB5A
+        z80OperandType    [OpCode.BIT_3_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_3_E] = "BIT 3, E";                  // 0xCB5B
+        z80OperandType    [OpCode.BIT_3_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_3_H] = "BIT 3, H";                  // 0xCB5C
+        z80OperandType    [OpCode.BIT_3_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_3_L] = "BIT 3, L";                  // 0xCB5D
+        z80OperandType    [OpCode.BIT_3_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_3_iHL] = "BIT 3, (HL)";             // 0xCB5E
+        z80OperandType    [OpCode.BIT_3_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_3_A] = "BIT 3, A";                  // 0xCB5F
+        z80OperandType    [OpCode.BIT_3_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_4_B] = "BIT 4, B";                  // 0xCB60
+        z80OperandType    [OpCode.BIT_4_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_4_C] = "BIT 4, C";                  // 0xCB61
+        z80OperandType    [OpCode.BIT_4_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_4_D] = "BIT 4, D";                  // 0xCB62
+        z80OperandType    [OpCode.BIT_4_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_4_E] = "BIT 4, E";                  // 0xCB63
+        z80OperandType    [OpCode.BIT_4_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_4_H] = "BIT 4, H";                  // 0xCB64
+        z80OperandType    [OpCode.BIT_4_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_4_L] = "BIT 4, L";                  // 0xCB65
+        z80OperandType    [OpCode.BIT_4_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_4_iHL] = "BIT 4, (HL)";             // 0xCB66
+        z80OperandType    [OpCode.BIT_4_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_4_A] = "BIT 4, A";                  // 0xCB67
+        z80OperandType    [OpCode.BIT_4_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_5_B] = "BIT 5, B";                  // 0xCB68
+        z80OperandType    [OpCode.BIT_5_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_5_C] = "BIT 5, C";                  // 0xCB69
+        z80OperandType    [OpCode.BIT_5_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_5_D] = "BIT 5, D";                  // 0xCB6A
+        z80OperandType    [OpCode.BIT_5_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_5_E] = "BIT 5, E";                  // 0xCB6B
+        z80OperandType    [OpCode.BIT_5_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_5_H] = "BIT 5, H";                  // 0xCB6C
+        z80OperandType    [OpCode.BIT_5_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_5_L] = "BIT 5, L";                  // 0xCB6D
+        z80OperandType    [OpCode.BIT_5_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_5_iHL] = "BIT 5, (HL)";             // 0xCB6E
+        z80OperandType    [OpCode.BIT_5_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_5_A] = "BIT 5, A";                  // 0xCB6F
+        z80OperandType    [OpCode.BIT_5_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_6_B] = "BIT 6, B";                  // 0xCB70
+        z80OperandType    [OpCode.BIT_6_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_6_C] = "BIT 6, C";                  // 0xCB71
+        z80OperandType    [OpCode.BIT_6_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_6_D] = "BIT 6, D";                  // 0xCB72
+        z80OperandType    [OpCode.BIT_6_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_6_E] = "BIT 6, E";                  // 0xCB73
+        z80OperandType    [OpCode.BIT_6_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_6_H] = "BIT 6, H";                  // 0xCB74
+        z80OperandType    [OpCode.BIT_6_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_6_L] = "BIT 6, L";                  // 0xCB75
+        z80OperandType    [OpCode.BIT_6_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_6_iHL] = "BIT 6, (HL)";             // 0xCB76
+        z80OperandType    [OpCode.BIT_6_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_6_A] = "BIT 6, A";                  // 0xCB77
+        z80OperandType    [OpCode.BIT_6_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_7_B] = "BIT 7, B";                  // 0xCB78
+        z80OperandType    [OpCode.BIT_7_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_7_C] = "BIT 7, C";                  // 0xCB79
+        z80OperandType    [OpCode.BIT_7_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_7_D] = "BIT 7, D";                  // 0xCB7A
+        z80OperandType    [OpCode.BIT_7_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_7_E] = "BIT 7, E";                  // 0xCB7B
+        z80OperandType    [OpCode.BIT_7_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_7_H] = "BIT 7, H";                  // 0xCB7C
+        z80OperandType    [OpCode.BIT_7_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_7_L] = "BIT 7, L";                  // 0xCB7D
+        z80OperandType    [OpCode.BIT_7_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_7_iHL] = "BIT 7, (HL)";             // 0xCB7E
+        z80OperandType    [OpCode.BIT_7_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.BIT_7_A] = "BIT 7, A";                  // 0xCB7F
+        z80OperandType    [OpCode.BIT_7_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_0_B] = "RES 0, B";                  // 0xCB80
+        z80OperandType    [OpCode.RES_0_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_0_C] = "RES 0, C";                  // 0xCB81
+        z80OperandType    [OpCode.RES_0_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_0_D] = "RES 0, D";                  // 0xCB82
+        z80OperandType    [OpCode.RES_0_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_0_E] = "RES 0, E";                  // 0xCB83
+        z80OperandType    [OpCode.RES_0_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_0_H] = "RES 0, H";                  // 0xCB84
+        z80OperandType    [OpCode.RES_0_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_0_L] = "RES 0, L";                  // 0xCB85
+        z80OperandType    [OpCode.RES_0_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_0_iHL] = "RES 0, (HL)";             // 0xCB86
+        z80OperandType    [OpCode.RES_0_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_0_A] = "RES 0, A";                  // 0xCB87
+        z80OperandType    [OpCode.RES_0_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_1_B] = "RES 1, B";                  // 0xCB88
+        z80OperandType    [OpCode.RES_1_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_1_C] = "RES 1, C";                  // 0xCB89
+        z80OperandType    [OpCode.RES_1_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_1_D] = "RES 1, D";                  // 0xCB8A
+        z80OperandType    [OpCode.RES_1_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_1_E] = "RES 1, E";                  // 0xCB8B
+        z80OperandType    [OpCode.RES_1_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_1_H] = "RES 1, H";                  // 0xCB8C
+        z80OperandType    [OpCode.RES_1_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_1_L] = "RES 1, L";                  // 0xCB8D
+        z80OperandType    [OpCode.RES_1_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_1_iHL] = "RES 1, (HL)";             // 0xCB8E
+        z80OperandType    [OpCode.RES_1_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_1_A] = "RES 1, A";                  // 0xCB8F
+        z80OperandType    [OpCode.RES_1_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_2_B] = "RES 2, B";                  // 0xCB90
+        z80OperandType    [OpCode.RES_2_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_2_C] = "RES 2, C";                  // 0xCB91
+        z80OperandType    [OpCode.RES_2_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_2_D] = "RES 2, D";                  // 0xCB92
+        z80OperandType    [OpCode.RES_2_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_2_E] = "RES 2, E";                  // 0xCB93
+        z80OperandType    [OpCode.RES_2_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_2_H] = "RES 2, H";                  // 0xCB94
+        z80OperandType    [OpCode.RES_2_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_2_L] = "RES 2, L";                  // 0xCB95
+        z80OperandType    [OpCode.RES_2_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_2_iHL] = "RES 2, (HL)";             // 0xCB96
+        z80OperandType    [OpCode.RES_2_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_2_A] = "RES 2, A";                  // 0xCB97
+        z80OperandType    [OpCode.RES_2_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_3_B] = "RES 3, B";                  // 0xCB98
+        z80OperandType    [OpCode.RES_3_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_3_C] = "RES 3, C";                  // 0xCB99
+        z80OperandType    [OpCode.RES_3_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_3_D] = "RES 3, D";                  // 0xCB9A
+        z80OperandType    [OpCode.RES_3_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_3_E] = "RES 3, E";                  // 0xCB9B
+        z80OperandType    [OpCode.RES_3_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_3_H] = "RES 3, H";                  // 0xCB9C
+        z80OperandType    [OpCode.RES_3_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_3_L] = "RES 3, L";                  // 0xCB9D
+        z80OperandType    [OpCode.RES_3_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_3_iHL] = "RES 3, (HL)";             // 0xCB9E
+        z80OperandType    [OpCode.RES_3_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_3_A] = "RES 3, A";                  // 0xCB9F
+        z80OperandType    [OpCode.RES_3_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_4_B] = "RES 4, B";                  // 0xCBA0
+        z80OperandType    [OpCode.RES_4_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_4_C] = "RES 4, C";                  // 0xCBA1
+        z80OperandType    [OpCode.RES_4_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_4_D] = "RES 4, D";                  // 0xCBA2
+        z80OperandType    [OpCode.RES_4_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_4_E] = "RES 4, E";                  // 0xCBA3
+        z80OperandType    [OpCode.RES_4_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_4_H] = "RES 4, H";                  // 0xCBA4
+        z80OperandType    [OpCode.RES_4_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_4_L] = "RES 4, L";                  // 0xCBA5
+        z80OperandType    [OpCode.RES_4_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_4_iHL] = "RES 4, (HL)";             // 0xCBA6
+        z80OperandType    [OpCode.RES_4_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_4_A] = "RES 4, A";                  // 0xCBA7
+        z80OperandType    [OpCode.RES_4_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_5_B] = "RES 5, B";                  // 0xCBA8
+        z80OperandType    [OpCode.RES_5_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_5_C] = "RES 5, C";                  // 0xCBA9
+        z80OperandType    [OpCode.RES_5_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_5_D] = "RES 5, D";                  // 0xCBAA
+        z80OperandType    [OpCode.RES_5_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_5_E] = "RES 5, E";                  // 0xCBAB
+        z80OperandType    [OpCode.RES_5_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_5_H] = "RES 5, H";                  // 0xCBAC
+        z80OperandType    [OpCode.RES_5_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_5_L] = "RES 5, L";                  // 0xCBAD
+        z80OperandType    [OpCode.RES_5_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_5_iHL] = "RES 5, (HL)";             // 0xCBAE
+        z80OperandType    [OpCode.RES_5_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_5_A] = "RES 5, A";                  // 0xCBAF
+        z80OperandType    [OpCode.RES_5_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_6_B] = "RES 6, B";                  // 0xCBB0
+        z80OperandType    [OpCode.RES_6_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_6_C] = "RES 6, C";                  // 0xCBB1
+        z80OperandType    [OpCode.RES_6_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_6_D] = "RES 6, D";                  // 0xCBB2
+        z80OperandType    [OpCode.RES_6_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_6_E] = "RES 6, E";                  // 0xCBB3
+        z80OperandType    [OpCode.RES_6_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_6_H] = "RES 6, H";                  // 0xCBB4
+        z80OperandType    [OpCode.RES_6_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_6_L] = "RES 6, L";                  // 0xCBB5
+        z80OperandType    [OpCode.RES_6_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_6_iHL] = "RES 6, (HL)";             // 0xCBB6
+        z80OperandType    [OpCode.RES_6_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_6_A] = "RES 6, A";                  // 0xCBB7
+        z80OperandType    [OpCode.RES_6_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_7_B] = "RES 7, B";                  // 0xCBB8
+        z80OperandType    [OpCode.RES_7_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_7_C] = "RES 7, C";                  // 0xCBB9
+        z80OperandType    [OpCode.RES_7_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_7_D] = "RES 7, D";                  // 0xCBBA
+        z80OperandType    [OpCode.RES_7_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_7_E] = "RES 7, E";                  // 0xCBBB
+        z80OperandType    [OpCode.RES_7_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_7_H] = "RES 7, H";                  // 0xCBBC
+        z80OperandType    [OpCode.RES_7_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_7_L] = "RES 7, L";                  // 0xCBBD
+        z80OperandType    [OpCode.RES_7_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_7_iHL] = "RES 7, (HL)";             // 0xCBBE
+        z80OperandType    [OpCode.RES_7_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RES_7_A] = "RES 7, A";                  // 0xCBBF
+        z80OperandType    [OpCode.RES_7_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_0_B] = "SET 0, B";                  // 0xCBC0
+        z80OperandType    [OpCode.SET_0_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_0_C] = "SET 0, C";                  // 0xCBC1
+        z80OperandType    [OpCode.SET_0_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_0_D] = "SET 0, D";                  // 0xCBC2
+        z80OperandType    [OpCode.SET_0_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_0_E] = "SET 0, E";                  // 0xCBC3
+        z80OperandType    [OpCode.SET_0_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_0_H] = "SET 0, H";                  // 0xCBC4
+        z80OperandType    [OpCode.SET_0_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_0_L] = "SET 0, L";                  // 0xCBC5
+        z80OperandType    [OpCode.SET_0_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_0_iHL] = "SET 0, (HL)";             // 0xCBC6
+        z80OperandType    [OpCode.SET_0_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_0_A] = "SET 0, A";                  // 0xCBC7
+        z80OperandType    [OpCode.SET_0_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_1_B] = "SET 1, B";                  // 0xCBC8
+        z80OperandType    [OpCode.SET_1_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_1_C] = "SET 1, C";                  // 0xCBC9
+        z80OperandType    [OpCode.SET_1_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_1_D] = "SET 1, D";                  // 0xCBCA
+        z80OperandType    [OpCode.SET_1_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_1_E] = "SET 1, E";                  // 0xCBCB
+        z80OperandType    [OpCode.SET_1_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_1_H] = "SET 1, H";                  // 0xCBCC
+        z80OperandType    [OpCode.SET_1_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_1_L] = "SET 1, L";                  // 0xCBCD
+        z80OperandType    [OpCode.SET_1_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_1_iHL] = "SET 1, (HL)";             // 0xCBCE
+        z80OperandType    [OpCode.SET_1_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_1_A] = "SET 1, A";                  // 0xCBCF
+        z80OperandType    [OpCode.SET_1_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_2_B] = "SET 2, B";                  // 0xCBD0
+        z80OperandType    [OpCode.SET_2_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_2_C] = "SET 2, C";                  // 0xCBD1
+        z80OperandType    [OpCode.SET_2_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_2_D] = "SET 2, D";                  // 0xCBD2
+        z80OperandType    [OpCode.SET_2_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_2_E] = "SET 2, E";                  // 0xCBD3
+        z80OperandType    [OpCode.SET_2_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_2_H] = "SET 2, H";                  // 0xCBD4
+        z80OperandType    [OpCode.SET_2_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_2_L] = "SET 2, L";                  // 0xCBD5
+        z80OperandType    [OpCode.SET_2_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_2_iHL] = "SET 2, (HL)";             // 0xCBD6
+        z80OperandType    [OpCode.SET_2_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_2_A] = "SET 2, A";                  // 0xCBD7
+        z80OperandType    [OpCode.SET_2_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_3_B] = "SET 3, B";                  // 0xCBD8
+        z80OperandType    [OpCode.SET_3_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_3_C] = "SET 3, C";                  // 0xCBD9
+        z80OperandType    [OpCode.SET_3_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_3_D] = "SET 3, D";                  // 0xCBDA
+        z80OperandType    [OpCode.SET_3_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_3_E] = "SET 3, E";                  // 0xCBDB
+        z80OperandType    [OpCode.SET_3_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_3_H] = "SET 3, H";                  // 0xCBDC
+        z80OperandType    [OpCode.SET_3_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_3_L] = "SET 3, L";                  // 0xCBDD
+        z80OperandType    [OpCode.SET_3_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_3_iHL] = "SET 3, (HL)";             // 0xCBDE
+        z80OperandType    [OpCode.SET_3_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_3_A] = "SET 3, A";                  // 0xCBDF
+        z80OperandType    [OpCode.SET_3_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_4_B] = "SET 4, B";                  // 0xCBE0
+        z80OperandType    [OpCode.SET_4_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_4_C] = "SET 4, C";                  // 0xCBE1
+        z80OperandType    [OpCode.SET_4_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_4_D] = "SET 4, D";                  // 0xCBE2
+        z80OperandType    [OpCode.SET_4_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_4_E] = "SET 4, E";                  // 0xCBE3
+        z80OperandType    [OpCode.SET_4_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_4_H] = "SET 4, H";                  // 0xCBE4
+        z80OperandType    [OpCode.SET_4_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_4_L] = "SET 4, L";                  // 0xCBE5
+        z80OperandType    [OpCode.SET_4_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_4_iHL] = "SET 4, (HL)";             // 0xCBE6
+        z80OperandType    [OpCode.SET_4_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_4_A] = "SET 4, A";                  // 0xCBE7
+        z80OperandType    [OpCode.SET_4_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_5_B] = "SET 5, B";                  // 0xCBE8
+        z80OperandType    [OpCode.SET_5_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_5_C] = "SET 5, C";                  // 0xCBE9
+        z80OperandType    [OpCode.SET_5_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_5_D] = "SET 5, D";                  // 0xCBEA
+        z80OperandType    [OpCode.SET_5_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_5_E] = "SET 5, E";                  // 0xCBEB
+        z80OperandType    [OpCode.SET_5_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_5_H] = "SET 5, H";                  // 0xCBEC
+        z80OperandType    [OpCode.SET_5_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_5_L] = "SET 5, L";                  // 0xCBED
+        z80OperandType    [OpCode.SET_5_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_5_iHL] = "SET 5, (HL)";             // 0xCBEE
+        z80OperandType    [OpCode.SET_5_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_5_A] = "SET 5, A";                  // 0xCBEF
+        z80OperandType    [OpCode.SET_5_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_6_B] = "SET 6, B";                  // 0xCBF0
+        z80OperandType    [OpCode.SET_6_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_6_C] = "SET 6, C";                  // 0xCBF1
+        z80OperandType    [OpCode.SET_6_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_6_D] = "SET 6, D";                  // 0xCBF2
+        z80OperandType    [OpCode.SET_6_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_6_E] = "SET 6, E";                  // 0xCBF3
+        z80OperandType    [OpCode.SET_6_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_6_H] = "SET 6, H";                  // 0xCBF4
+        z80OperandType    [OpCode.SET_6_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_6_L] = "SET 6, L";                  // 0xCBF5
+        z80OperandType    [OpCode.SET_6_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_6_iHL] = "SET 6, (HL)";             // 0xCBF6
+        z80OperandType    [OpCode.SET_6_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_6_A] = "SET 6, A";                  // 0xCBF7
+        z80OperandType    [OpCode.SET_6_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_7_B] = "SET 7, B";                  // 0xCBF8
+        z80OperandType    [OpCode.SET_7_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_7_C] = "SET 7, C";                  // 0xCBF9
+        z80OperandType    [OpCode.SET_7_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_7_D] = "SET 7, D";                  // 0xCBFA
+        z80OperandType    [OpCode.SET_7_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_7_E] = "SET 7, E";                  // 0xCBFB
+        z80OperandType    [OpCode.SET_7_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_7_H] = "SET 7, H";                  // 0xCBFC
+        z80OperandType    [OpCode.SET_7_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_7_L] = "SET 7, L";                  // 0xCBFD
+        z80OperandType    [OpCode.SET_7_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_7_iHL] = "SET 7, (HL)";             // 0xCBFE
+        z80OperandType    [OpCode.SET_7_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SET_7_A] = "SET 7, A";                  // 0xCBFF
+        z80OperandType    [OpCode.SET_7_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_inn_A] = "LD (nn), A";               // 0x0032
+        z80OperandType    [OpCode.LD_inn_A] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_A_inn] = "LD A, (nn)";               // 0x003A
+        z80OperandType    [OpCode.LD_A_inn] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_A_n] = "LD A, n";                    // 0x003E
+        z80OperandType    [OpCode.LD_A_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.LD_B_n] = "LD B, n";                    // 0x0006
+        z80OperandType    [OpCode.LD_B_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.LD_C_n] = "LD C, n";                    // 0x000E
+        z80OperandType    [OpCode.LD_C_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.LD_D_n] = "LD D, n";                    // 0x0016
+        z80OperandType    [OpCode.LD_D_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.LD_E_n] = "LD E, n";                    // 0x001E
+        z80OperandType    [OpCode.LD_E_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.LD_H_n] = "LD H, n";                    // 0x0026
+        z80OperandType    [OpCode.LD_H_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.LD_L_n] = "LD L, n";                    // 0x002E
+        z80OperandType    [OpCode.LD_L_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.LD_B_B] = "LD B, B";                    // 0x0040
+        z80OperandType    [OpCode.LD_B_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_B_C] = "LD B, C";                    // 0x0041
+        z80OperandType    [OpCode.LD_B_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_B_D] = "LD B, D";                    // 0x0042
+        z80OperandType    [OpCode.LD_B_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_B_E] = "LD B, E";                    // 0x0043
+        z80OperandType    [OpCode.LD_B_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_B_H] = "LD B, H";                    // 0x0044
+        z80OperandType    [OpCode.LD_B_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_B_L] = "LD B, L";                    // 0x0045
+        z80OperandType    [OpCode.LD_B_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_B_A] = "LD B, A";                    // 0x0047
+        z80OperandType    [OpCode.LD_B_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_C_B] = "LD C, B";                    // 0x0048
+        z80OperandType    [OpCode.LD_C_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_C_C] = "LD C, C";                    // 0x0049
+        z80OperandType    [OpCode.LD_C_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_C_D] = "LD C, D";                    // 0x004A
+        z80OperandType    [OpCode.LD_C_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_C_E] = "LD C, E";                    // 0x004B
+        z80OperandType    [OpCode.LD_C_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_C_H] = "LD C, H";                    // 0x004C
+        z80OperandType    [OpCode.LD_C_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_C_L] = "LD C, L";                    // 0x004D
+        z80OperandType    [OpCode.LD_C_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_C_A] = "LD C, A";                    // 0x004F
+        z80OperandType    [OpCode.LD_C_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_D_B] = "LD D, B";                    // 0x0050
+        z80OperandType    [OpCode.LD_D_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_D_C] = "LD D, C";                    // 0x0051
+        z80OperandType    [OpCode.LD_D_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_D_D] = "LD D, D";                    // 0x0052
+        z80OperandType    [OpCode.LD_D_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_D_E] = "LD D, E";                    // 0x0053
+        z80OperandType    [OpCode.LD_D_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_D_H] = "LD D, H";                    // 0x0054
+        z80OperandType    [OpCode.LD_D_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_D_IYH] = "LD D, IYh";                // 0xFD54
+        z80OperandType    [OpCode.LD_D_IYH] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_D_L] = "LD D, L";                    // 0x0055
+        z80OperandType    [OpCode.LD_D_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_D_A] = "LD D, A";                    // 0x0057
+        z80OperandType    [OpCode.LD_D_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_E_B] = "LD E, B";                    // 0x0058
+        z80OperandType    [OpCode.LD_E_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_E_C] = "LD E, C";                    // 0x0059
+        z80OperandType    [OpCode.LD_E_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_E_D] = "LD E, D";                    // 0x005A
+        z80OperandType    [OpCode.LD_E_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_E_E] = "LD E, E";                    // 0x005B
+        z80OperandType    [OpCode.LD_E_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_E_H] = "LD E, H";                    // 0x005C
+        z80OperandType    [OpCode.LD_E_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_E_L] = "LD E, L";                    // 0x005D
+        z80OperandType    [OpCode.LD_E_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_E_IYL] = "LD E, IYl";                // 0xFD5D
+        z80OperandType    [OpCode.LD_E_IYL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_E_A] = "LD E, A";                    // 0x005F
+        z80OperandType    [OpCode.LD_E_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_H_B] = "LD H, B";                    // 0x0060
+        z80OperandType    [OpCode.LD_H_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_H_C] = "LD H, C";                    // 0x0061
+        z80OperandType    [OpCode.LD_H_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_H_D] = "LD H, D";                    // 0x0062
+        z80OperandType    [OpCode.LD_H_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_H_E] = "LD H, E";                    // 0x0063
+        z80OperandType    [OpCode.LD_H_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_H_H] = "LD H, H";                    // 0x0064
+        z80OperandType    [OpCode.LD_H_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_H_L] = "LD H, L";                    // 0x0065
+        z80OperandType    [OpCode.LD_H_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_H_A] = "LD H, A";                    // 0x0067
+        z80OperandType    [OpCode.LD_H_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_L_B] = "LD L, B";                    // 0x0068
+        z80OperandType    [OpCode.LD_L_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_L_C] = "LD L, C";                    // 0x0069
+        z80OperandType    [OpCode.LD_L_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_L_D] = "LD L, D";                    // 0x006A
+        z80OperandType    [OpCode.LD_L_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_L_E] = "LD L, E";                    // 0x006B
+        z80OperandType    [OpCode.LD_L_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_L_H] = "LD L, H";                    // 0x006C
+        z80OperandType    [OpCode.LD_L_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_L_L] = "LD L, L";                    // 0x006D
+        z80OperandType    [OpCode.LD_L_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_L_A] = "LD L, A";                    // 0x006F
+        z80OperandType    [OpCode.LD_L_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_A_B] = "LD A, B";                    // 0x0078
+        z80OperandType    [OpCode.LD_A_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_A_C] = "LD A, C";                    // 0x0079
+        z80OperandType    [OpCode.LD_A_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_A_D] = "LD A, D";                    // 0x007A
+        z80OperandType    [OpCode.LD_A_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_A_E] = "LD A, E";                    // 0x007B
+        z80OperandType    [OpCode.LD_A_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_A_H] = "LD A, H";                    // 0x007C
+        z80OperandType    [OpCode.LD_A_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_A_L] = "LD A, L";                    // 0x007D
+        z80OperandType    [OpCode.LD_A_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_A_A] = "LD A, A";                    // 0x007F
+        z80OperandType    [OpCode.LD_A_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_A_iHL] = "LD A, (HL)";               // 0x007E
+        z80OperandType    [OpCode.LD_A_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_B_iHL] = "LD B, (HL)";               // 0x0046
+        z80OperandType    [OpCode.LD_B_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_C_iHL] = "LD C, (HL)";               // 0x004E
+        z80OperandType    [OpCode.LD_C_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_D_iHL] = "LD D, (HL)";               // 0x0056
+        z80OperandType    [OpCode.LD_D_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_E_iHL] = "LD E, (HL)";               // 0x005E
+        z80OperandType    [OpCode.LD_E_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_H_iHL] = "LD H, (HL)";               // 0x0066
+        z80OperandType    [OpCode.LD_H_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_L_iHL] = "LD L, (HL)";               // 0x006E
+        z80OperandType    [OpCode.LD_L_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_A_iIX_d] = "LD A, (IX+d)";           // 0xDD7E
+        z80OperandType    [OpCode.LD_A_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_B_iIX_d] = "LD B, (IX+d)";           // 0xDD46
+        z80OperandType    [OpCode.LD_B_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_C_iIX_d] = "LD C, (IX+d)";           // 0xDD4E
+        z80OperandType    [OpCode.LD_C_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_D_iIX_d] = "LD D, (IX+d)";           // 0xDD56
+        z80OperandType    [OpCode.LD_D_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_E_iIX_d] = "LD E, (IX+d)";           // 0xDD5E
+        z80OperandType    [OpCode.LD_E_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_H_iIX_d] = "LD H, (IX+d)";           // 0xDD66
+        z80OperandType    [OpCode.LD_H_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_L_iIX_d] = "LD L, (IX+d)";           // 0xDD6E
+        z80OperandType    [OpCode.LD_L_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_A_iIY_d] = "LD A, (IY+d)";           // 0xFD7E
+        z80OperandType    [OpCode.LD_A_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_B_iIY_d] = "LD B, (IY+d)";           // 0xFD46
+        z80OperandType    [OpCode.LD_B_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_C_iIY_d] = "LD C, (IY+d)";           // 0xFD4E
+        z80OperandType    [OpCode.LD_C_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_D_iIY_d] = "LD D, (IY+d)";           // 0xFD56
+        z80OperandType    [OpCode.LD_D_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_E_iIY_d] = "LD E, (IY+d)";           // 0xFD5E
+        z80OperandType    [OpCode.LD_E_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_H_iIY_d] = "LD H, (IY+d)";           // 0xFD66
+        z80OperandType    [OpCode.LD_H_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_L_iIY_d] = "LD L, (IY+d)";           // 0xFD6E
+        z80OperandType    [OpCode.LD_L_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIX_d_A] = "LD (IX+d), A";           // 0xDD77
+        z80OperandType    [OpCode.LD_iIX_d_A] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIX_d_B] = "LD (IX+d), B";           // 0xDD70
+        z80OperandType    [OpCode.LD_iIX_d_B] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIX_d_C] = "LD (IX+d), C";           // 0xDD71
+        z80OperandType    [OpCode.LD_iIX_d_C] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIX_d_D] = "LD (IX+d), D";           // 0xDD72
+        z80OperandType    [OpCode.LD_iIX_d_D] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIX_d_E] = "LD (IX+d), E";           // 0xDD73
+        z80OperandType    [OpCode.LD_iIX_d_E] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIX_d_H] = "LD (IX+d), H";           // 0xDD74
+        z80OperandType    [OpCode.LD_iIX_d_H] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIX_d_L] = "LD (IX+d), L";           // 0xDD75
+        z80OperandType    [OpCode.LD_iIX_d_L] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIY_d_A] = "LD (IY+d), A";           // 0xFD77
+        z80OperandType    [OpCode.LD_iIY_d_A] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIY_d_B] = "LD (IY+d), B";           // 0xFD70
+        z80OperandType    [OpCode.LD_iIY_d_B] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIY_d_C] = "LD (IY+d), C";           // 0xFD71
+        z80OperandType    [OpCode.LD_iIY_d_C] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIY_d_D] = "LD (IY+d), D";           // 0xFD72
+        z80OperandType    [OpCode.LD_iIY_d_D] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIY_d_E] = "LD (IY+d), E";           // 0xFD73
+        z80OperandType    [OpCode.LD_iIY_d_E] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIY_d_H] = "LD (IY+d), H";           // 0xFD74
+        z80OperandType    [OpCode.LD_iIY_d_H] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIY_d_L] = "LD (IY+d), L";           // 0xFD75
+        z80OperandType    [OpCode.LD_iIY_d_L] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.LD_iIX_d_n] = "LD (IX+d), n";           // 0xDD36
+        z80OperandType    [OpCode.LD_iIX_d_n] = OperandType.RelativeImmediate8;
+
+        z80InstructionName[OpCode.LD_iIY_d_n] = "LD (IY+d), n";           // 0xFD36
+        z80OperandType    [OpCode.LD_iIY_d_n] = OperandType.RelativeImmediate8;
+
+        z80InstructionName[OpCode.LD_BC_inn] = "LD BC, (nn)";             // 0xED4B
+        z80OperandType    [OpCode.LD_BC_inn] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_DE_inn] = "LD DE, (nn)";             // 0xED5B
+        z80OperandType    [OpCode.LD_DE_inn] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_HL_inn] = "LD HL, (nn)";             // 0xED6B
+        z80OperandType    [OpCode.LD_HL_inn] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_SP_inn] = "LD SP, (nn)";             // 0xED7B
+        z80OperandType    [OpCode.LD_SP_inn] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_inn_IX] = "LD (nn), IX";             // 0xDD2A
+        z80OperandType    [OpCode.LD_inn_IX] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_inn_IY] = "LD (nn), IY";             // 0xFD2A
+        z80OperandType    [OpCode.LD_inn_IY] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_inn_BC] = "LD (nn), BC";             // 0xED43
+        z80OperandType    [OpCode.LD_inn_BC] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_inn_DE] = "LD (nn), DE";             // 0xED53
+        z80OperandType    [OpCode.LD_inn_DE] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_inn_HL] = "LD (nn), HL";             // 0xED63
+        z80OperandType    [OpCode.LD_inn_HL] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_inn_SP] = "LD (nn), SP";             // 0xED73
+        z80OperandType    [OpCode.LD_inn_SP] = OperandType.ImmediateIndexed;
+
+        z80InstructionName[OpCode.LD_BC_nn] = "LD BC, nn";                // 0x0001
+        z80OperandType    [OpCode.LD_BC_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.LD_DE_nn] = "LD DE, nn";                // 0x0011
+        z80OperandType    [OpCode.LD_DE_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.LD_HL_nn] = "LD HL, nn";                // 0x0021
+        z80OperandType    [OpCode.LD_HL_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.LD_IX_nn] = "LD IX, nn";                // 0xDD21
+        z80OperandType    [OpCode.LD_IX_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.LD_IY_nn] = "LD IY, nn";                // 0xFD21
+        z80OperandType    [OpCode.LD_IY_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.LD_SP_nn] = "LD SP, nn";                // 0x0031
+        z80OperandType    [OpCode.LD_SP_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.LD_SP_HL] = "LD SP, HL";                // 0x00F9
+        z80OperandType    [OpCode.LD_SP_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.EX_iSP_HL] = "EX (SP), HL";             // 0x00E3
+        z80OperandType    [OpCode.EX_iSP_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.EX_iSP_IX] = "EX (SP), IX";             // 0xDDE3
+        z80OperandType    [OpCode.EX_iSP_IX] = OperandType.Implied;
+
+        z80InstructionName[OpCode.EX_iSP_IY] = "EX (SP), IY";             // 0xFDE3
+        z80OperandType    [OpCode.EX_iSP_IY] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_iHL_n] = "LD (HL), n";               // 0x0036
+        z80OperandType    [OpCode.LD_iHL_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.LD_iHL_B] = "LD (HL), B";               // 0x0070
+        z80OperandType    [OpCode.LD_iHL_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_iHL_C] = "LD (HL), C";               // 0x0071
+        z80OperandType    [OpCode.LD_iHL_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_iHL_D] = "LD (HL), D";               // 0x0072
+        z80OperandType    [OpCode.LD_iHL_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_iHL_E] = "LD (HL), E";               // 0x0073
+        z80OperandType    [OpCode.LD_iHL_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_iHL_H] = "LD (HL), H";               // 0x0074
+        z80OperandType    [OpCode.LD_iHL_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_iHL_L] = "LD (HL), L";               // 0x0075
+        z80OperandType    [OpCode.LD_iHL_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.LD_iHL_A] = "LD (HL), A";               // 0x0077
+        z80OperandType    [OpCode.LD_iHL_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_DE] = "INC DE";                     // 0x0003
+        z80OperandType    [OpCode.INC_DE] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_BC] = "INC BC";                     // 0x0013
+        z80OperandType    [OpCode.INC_BC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_HL] = "INC HL";                     // 0x0023
+        z80OperandType    [OpCode.INC_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_IX] = "INC IX";                     // 0xDD23
+        z80OperandType    [OpCode.INC_IX] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_IY] = "INC IY";                     // 0xFD23
+        z80OperandType    [OpCode.INC_IY] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_iIX_d] = "INC (IX+d)";              // 0xDD34
+        z80OperandType    [OpCode.INC_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.INC_iIY_d] = "INC (IY+d)";              // 0xFD34
+        z80OperandType    [OpCode.INC_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.INC_A] = "INC A";                       // 0x003C
+        z80OperandType    [OpCode.INC_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_B] = "INC B";                       // 0x0004
+        z80OperandType    [OpCode.INC_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_C] = "INC C";                       // 0x000C
+        z80OperandType    [OpCode.INC_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_D] = "INC D";                       // 0x0014
+        z80OperandType    [OpCode.INC_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_E] = "INC E";                       // 0x001C
+        z80OperandType    [OpCode.INC_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_H] = "INC H";                       // 0x0024
+        z80OperandType    [OpCode.INC_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.INC_L] = "INC L";                       // 0x002C
+        z80OperandType    [OpCode.INC_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_A] = "DEC A";                       // 0x003D
+        z80OperandType    [OpCode.DEC_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_B] = "DEC B";                       // 0x0005
+        z80OperandType    [OpCode.DEC_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_C] = "DEC C";                       // 0x000D
+        z80OperandType    [OpCode.DEC_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_D] = "DEC D";                       // 0x0015
+        z80OperandType    [OpCode.DEC_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_E] = "DEC E";                       // 0x001D
+        z80OperandType    [OpCode.DEC_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_H] = "DEC H";                       // 0x0025
+        z80OperandType    [OpCode.DEC_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_L] = "DEC L";                       // 0x002D
+        z80OperandType    [OpCode.DEC_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_iHL] = "DEC (HL)";                  // 0x0035
+        z80OperandType    [OpCode.DEC_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_iIX_d] = "DEC (IX+d)";              // 0xDD35
+        z80OperandType    [OpCode.DEC_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.DEC_iIY_d] = "DEC (IY+d)";              // 0xFD35
+        z80OperandType    [OpCode.DEC_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.DEC_BC] = "DEC BC";                     // 0x000B
+        z80OperandType    [OpCode.DEC_BC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_HL] = "DEC HL";                     // 0x002B
+        z80OperandType    [OpCode.DEC_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_IX] = "DEC IX";                     // 0xDD2B
+        z80OperandType    [OpCode.DEC_IX] = OperandType.Implied;
+
+        z80InstructionName[OpCode.DEC_IY] = "DEC IY";                     // 0xFD2B
+        z80OperandType    [OpCode.DEC_IY] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_A_B] = "ADD A, B";                  // 0x0080
+        z80OperandType    [OpCode.ADD_A_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_A_C] = "ADD A, C";                  // 0x0081
+        z80OperandType    [OpCode.ADD_A_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_A_D] = "ADD A, D";                  // 0x0082
+        z80OperandType    [OpCode.ADD_A_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_A_E] = "ADD A, E";                  // 0x0083
+        z80OperandType    [OpCode.ADD_A_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_A_H] = "ADD A, H";                  // 0x0084
+        z80OperandType    [OpCode.ADD_A_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_A_L] = "ADD A, L";                  // 0x0085
+        z80OperandType    [OpCode.ADD_A_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_A_A] = "ADD A, A";                  // 0x0087
+        z80OperandType    [OpCode.ADD_A_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_A_iHL] = "ADD A, (HL)";             // 0x0086
+        z80OperandType    [OpCode.ADD_A_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_A_iIX_d] = "ADD A, (IX+d)";         // 0xDD86
+        z80OperandType    [OpCode.ADD_A_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.ADD_A_iIY_d] = "ADD A, (IY+d)";         // 0xFD86
+        z80OperandType    [OpCode.ADD_A_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.ADD_A_n] = "ADD A, n";                  // 0x00C6
+        z80OperandType    [OpCode.ADD_A_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.SUB_A_B] = "SUB A, B";                  // 0x0090
+        z80OperandType    [OpCode.SUB_A_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SUB_A_C] = "SUB A, C";                  // 0x0091
+        z80OperandType    [OpCode.SUB_A_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SUB_A_D] = "SUB A, D";                  // 0x0092
+        z80OperandType    [OpCode.SUB_A_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SUB_A_E] = "SUB A, E";                  // 0x0093
+        z80OperandType    [OpCode.SUB_A_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SUB_A_H] = "SUB A, H";                  // 0x0094
+        z80OperandType    [OpCode.SUB_A_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SUB_A_L] = "SUB A, L";                  // 0x0095
+        z80OperandType    [OpCode.SUB_A_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SUB_A_A] = "SUB A, A";                  // 0x0097
+        z80OperandType    [OpCode.SUB_A_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SUB_A_iHL] = "SUB A, (HL)";             // 0x0096
+        z80OperandType    [OpCode.SUB_A_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SUB_A_iIX_d] = "SUB A, (IX+d)";         // 0xDD96
+        z80OperandType    [OpCode.SUB_A_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.SUB_A_iIY_d] = "SUB A, (IY+d)";         // 0xFD96
+        z80OperandType    [OpCode.SUB_A_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.SUB_A_n] = "SUB A, n";                  // 0x00D6
+        z80OperandType    [OpCode.SUB_A_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.SBC_A_B] = "SBC A, B";                  // 0x0098
+        z80OperandType    [OpCode.SBC_A_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_A_C] = "SBC A, C";                  // 0x0099
+        z80OperandType    [OpCode.SBC_A_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_A_D] = "SBC A, D";                  // 0x009A
+        z80OperandType    [OpCode.SBC_A_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_A_E] = "SBC A, E";                  // 0x009B
+        z80OperandType    [OpCode.SBC_A_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_A_H] = "SBC A, H";                  // 0x009C
+        z80OperandType    [OpCode.SBC_A_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_A_L] = "SBC A, L";                  // 0x009D
+        z80OperandType    [OpCode.SBC_A_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_A_A] = "SBC A, A";                  // 0x009F
+        z80OperandType    [OpCode.SBC_A_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_A_iHL] = "SBC A, (HL)";             // 0x009E
+        z80OperandType    [OpCode.SBC_A_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_A_iIX_d] = "SBC A, (IX+d)";         // 0xDD9E
+        z80OperandType    [OpCode.SBC_A_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.SBC_A_iIY_d] = "SBC A, (IY+d)";         // 0xFD9E
+        z80OperandType    [OpCode.SBC_A_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.SBC_A_n] = "SBC A, n";                  // 0x00DE
+        z80OperandType    [OpCode.SBC_A_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.AND_A_n] = "AND A, n";                  // 0x00E6
+        z80OperandType    [OpCode.AND_A_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.AND_A_B] = "AND A, B";                  // 0x00A0
+        z80OperandType    [OpCode.AND_A_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.AND_A_C] = "AND A, C";                  // 0x00A1
+        z80OperandType    [OpCode.AND_A_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.AND_A_D] = "AND A, D";                  // 0x00A2
+        z80OperandType    [OpCode.AND_A_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.AND_A_E] = "AND A, E";                  // 0x00A3
+        z80OperandType    [OpCode.AND_A_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.AND_A_H] = "AND A, H";                  // 0x00A4
+        z80OperandType    [OpCode.AND_A_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.AND_A_L] = "AND A, L";                  // 0x00A5
+        z80OperandType    [OpCode.AND_A_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.AND_A] = "AND A";                       // 0x00A7
+        z80OperandType    [OpCode.AND_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.AND_A_iHL] = "AND A, (HL)";             // 0x00A6
+        z80OperandType    [OpCode.AND_A_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.AND_A_iIX_d] = "AND A, (IX+d)";         // 0xDDA6
+        z80OperandType    [OpCode.AND_A_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.AND_A_iIY_d] = "AND A, (IY+d)";         // 0xFDA6
+        z80OperandType    [OpCode.AND_A_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.XOR_B] = "XOR B";                       // 0x00A8
+        z80OperandType    [OpCode.XOR_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.XOR_C] = "XOR C";                       // 0x00A9
+        z80OperandType    [OpCode.XOR_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.XOR_D] = "XOR D";                       // 0x00AA
+        z80OperandType    [OpCode.XOR_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.XOR_E] = "XOR E";                       // 0x00AB
+        z80OperandType    [OpCode.XOR_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.XOR_H] = "XOR H";                       // 0x00AC
+        z80OperandType    [OpCode.XOR_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.XOR_L] = "XOR L";                       // 0x00AD
+        z80OperandType    [OpCode.XOR_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.XOR_A] = "XOR A";                       // 0x00AF
+        z80OperandType    [OpCode.XOR_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.XOR_A_iHL] = "XOR A, (HL)";             // 0x00AE
+        z80OperandType    [OpCode.XOR_A_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.XOR_A_iIX_d] = "XOR A, (IX+d)";         // 0xDDAE
+        z80OperandType    [OpCode.XOR_A_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.XOR_A_iIY_d] = "XOR A, (IY+d)";         // 0xFDAE
+        z80OperandType    [OpCode.XOR_A_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.OR_A_B] = "OR A, B";                    // 0x00B0
+        z80OperandType    [OpCode.OR_A_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.OR_A_C] = "OR A, C";                    // 0x00B1
+        z80OperandType    [OpCode.OR_A_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.OR_A_D] = "OR A, D";                    // 0x00B2
+        z80OperandType    [OpCode.OR_A_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.OR_A_E] = "OR A, E";                    // 0x00B3
+        z80OperandType    [OpCode.OR_A_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.OR_A_H] = "OR A, H";                    // 0x00B4
+        z80OperandType    [OpCode.OR_A_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.OR_A_L] = "OR A, L";                    // 0x00B5
+        z80OperandType    [OpCode.OR_A_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.OR_A_A] = "OR A, A";                    // 0x00B7
+        z80OperandType    [OpCode.OR_A_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.OR_A_iHL] = "OR A, (HL)";               // 0x00B6
+        z80OperandType    [OpCode.OR_A_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.OR_A_iIX_d] = "OR A, (IX+d)";           // 0xDDB6
+        z80OperandType    [OpCode.OR_A_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.OR_A_iIY_d] = "OR A, (IY+d)";           // 0xFDB6
+        z80OperandType    [OpCode.OR_A_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.CP_A_B] = "CP A, B";                    // 0x00B8
+        z80OperandType    [OpCode.CP_A_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CP_A_C] = "CP A, C";                    // 0x00B9
+        z80OperandType    [OpCode.CP_A_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CP_A_D] = "CP A, D";                    // 0x00BA
+        z80OperandType    [OpCode.CP_A_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CP_A_E] = "CP A, E";                    // 0x00BB
+        z80OperandType    [OpCode.CP_A_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CP_A_H] = "CP A, H";                    // 0x00BC
+        z80OperandType    [OpCode.CP_A_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CP_A_L] = "CP A, L";                    // 0x00BD
+        z80OperandType    [OpCode.CP_A_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CP_A_A] = "CP A, A";                    // 0x00BF
+        z80OperandType    [OpCode.CP_A_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CP_A_iHL] = "CP A, (HL)";               // 0x00BE
+        z80OperandType    [OpCode.CP_A_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CP_A_iIX_d] = "CP A, (IX+d)";           // 0xDDBE
+        z80OperandType    [OpCode.CP_A_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.CP_A_iIY_d] = "CP A, (IY+d)";           // 0xFDBE
+        z80OperandType    [OpCode.CP_A_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.ADD_IX_BC] = "ADD IX, BC";              // 0xDD09
+        z80OperandType    [OpCode.ADD_IX_BC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_IX_DE] = "ADD IX, DE";              // 0xDD19
+        z80OperandType    [OpCode.ADD_IX_DE] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_IY_BC] = "ADD IY, BC";              // 0xFD09
+        z80OperandType    [OpCode.ADD_IY_BC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_IY_DE] = "ADD IY, DE";              // 0xFD19
+        z80OperandType    [OpCode.ADD_IY_DE] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_A_B] = "ADC A, B";                  // 0x0088
+        z80OperandType    [OpCode.ADC_A_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_A_C] = "ADC A, C";                  // 0x0089
+        z80OperandType    [OpCode.ADC_A_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_A_D] = "ADC A, D";                  // 0x008A
+        z80OperandType    [OpCode.ADC_A_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_A_E] = "ADC A, E";                  // 0x008B
+        z80OperandType    [OpCode.ADC_A_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_A_H] = "ADC A, H";                  // 0x008C
+        z80OperandType    [OpCode.ADC_A_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_A_L] = "ADC A, L";                  // 0x008D
+        z80OperandType    [OpCode.ADC_A_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_A_A] = "ADC A, A";                  // 0x008F
+        z80OperandType    [OpCode.ADC_A_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_A_n] = "ADC A, n";                  // 0x00CE
+        z80OperandType    [OpCode.ADC_A_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.ADC_A_iHL] = "ADC A, (HL)";             // 0x008E
+        z80OperandType    [OpCode.ADC_A_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_A_iIX_d] = "ADC A, (IX+d)";         // 0xDD8E
+        z80OperandType    [OpCode.ADC_A_iIX_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.ADC_A_iIY_d] = "ADC A, (IY+d)";         // 0xFD8E
+        z80OperandType    [OpCode.ADC_A_iIY_d] = OperandType.IndexedRelative;
+
+        z80InstructionName[OpCode.CP_A_n] = "CP A, n";                    // 0x00FE
+        z80OperandType    [OpCode.CP_A_n] = OperandType.Immediate8;
+
+        z80InstructionName[OpCode.SLA_B] = "SLA B";                       // 0xCB20
+        z80OperandType    [OpCode.SLA_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SLA_C] = "SLA C";                       // 0xCB21
+        z80OperandType    [OpCode.SLA_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SLA_D] = "SLA D";                       // 0xCB22
+        z80OperandType    [OpCode.SLA_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SLA_E] = "SLA E";                       // 0xCB23
+        z80OperandType    [OpCode.SLA_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SLA_H] = "SLA H";                       // 0xCB24
+        z80OperandType    [OpCode.SLA_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SLA_L] = "SLA L";                       // 0xCB25
+        z80OperandType    [OpCode.SLA_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SLA_iHL] = "SLA (HL)";                  // 0xCB26
+        z80OperandType    [OpCode.SLA_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SLA_A] = "SLA A";                       // 0xCB27
+        z80OperandType    [OpCode.SLA_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SRL_B] = "SRL B";                       // 0xCB38
+        z80OperandType    [OpCode.SRL_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SRL_C] = "SRL C";                       // 0xCB39
+        z80OperandType    [OpCode.SRL_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SRL_D] = "SRL D";                       // 0xCB3A
+        z80OperandType    [OpCode.SRL_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SRL_E] = "SRL E";                       // 0xCB3B
+        z80OperandType    [OpCode.SRL_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SRL_H] = "SRL H";                       // 0xCB3C
+        z80OperandType    [OpCode.SRL_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SRL_L] = "SRL L";                       // 0xCB3D
+        z80OperandType    [OpCode.SRL_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SRL_iHL] = "SRL (HL)";                  // 0xCB3E
+        z80OperandType    [OpCode.SRL_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SRL_A] = "SRL A";                       // 0xCB3F
+        z80OperandType    [OpCode.SRL_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RLC_B] = "RLC B";                       // 0xCB00
+        z80OperandType    [OpCode.RLC_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RLC_C] = "RLC C";                       // 0xCB01
+        z80OperandType    [OpCode.RLC_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RLC_D] = "RLC D";                       // 0xCB02
+        z80OperandType    [OpCode.RLC_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RLC_E] = "RLC E";                       // 0xCB03
+        z80OperandType    [OpCode.RLC_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RLC_H] = "RLC H";                       // 0xCB04
+        z80OperandType    [OpCode.RLC_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RLC_L] = "RLC L";                       // 0xCB05
+        z80OperandType    [OpCode.RLC_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RLC_iHL] = "RLC (HL)";                  // 0xCB06
+        z80OperandType    [OpCode.RLC_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RLC_A] = "RLC A";                       // 0xCB07
+        z80OperandType    [OpCode.RLC_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RL_B] = "RL B";                         // 0xCB10
+        z80OperandType    [OpCode.RL_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RL_C] = "RL C";                         // 0xCB11
+        z80OperandType    [OpCode.RL_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RL_D] = "RL D";                         // 0xCB12
+        z80OperandType    [OpCode.RL_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RL_E] = "RL E";                         // 0xCB13
+        z80OperandType    [OpCode.RL_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RL_H] = "RL H";                         // 0xCB14
+        z80OperandType    [OpCode.RL_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RL_L] = "RL L";                         // 0xCB15
+        z80OperandType    [OpCode.RL_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RL_iHL] = "RL (HL)";                    // 0xCB16
+        z80OperandType    [OpCode.RL_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RL_A] = "RL A";                         // 0xCB17
+        z80OperandType    [OpCode.RL_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RR_B] = "RR B";                         // 0xCB18
+        z80OperandType    [OpCode.RR_B] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RR_C] = "RR C";                         // 0xCB19
+        z80OperandType    [OpCode.RR_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RR_D] = "RR D";                         // 0xCB1A
+        z80OperandType    [OpCode.RR_D] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RR_E] = "RR E";                         // 0xCB1B
+        z80OperandType    [OpCode.RR_E] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RR_H] = "RR H";                         // 0xCB1C
+        z80OperandType    [OpCode.RR_H] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RR_L] = "RR L";                         // 0xCB1D
+        z80OperandType    [OpCode.RR_L] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RR_iHL] = "RR (HL)";                    // 0xCB1E
+        z80OperandType    [OpCode.RR_iHL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RR_A] = "RR A";                         // 0xCB1F
+        z80OperandType    [OpCode.RR_A] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RLA] = "RLA";                           // 0x0017
+        z80OperandType    [OpCode.RLA] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RRA] = "RRA";                           // 0x001F
+        z80OperandType    [OpCode.RRA] = OperandType.Implied;
+
+        z80InstructionName[OpCode.CCF] = "CCF";                           // 0x003F
+        z80OperandType    [OpCode.CCF] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SCF] = "SCF";                           // 0x0037
+        z80OperandType    [OpCode.SCF] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_HL_BC] = "SBC HL, BC";              // 0xED42
+        z80OperandType    [OpCode.SBC_HL_BC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_HL_DE] = "SBC HL, DE";              // 0xED52
+        z80OperandType    [OpCode.SBC_HL_DE] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_HL_HL] = "SBC HL, HL";              // 0xED62
+        z80OperandType    [OpCode.SBC_HL_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.SBC_HL_SP] = "SBC HL, SP";              // 0xED72
+        z80OperandType    [OpCode.SBC_HL_SP] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_HL_BC] = "ADD HL, BC";              // 0x0009
+        z80OperandType    [OpCode.ADD_HL_BC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_HL_DE] = "ADD HL, DE";              // 0x0019
+        z80OperandType    [OpCode.ADD_HL_DE] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_HL_HL] = "ADD HL, HL";              // 0x0029
+        z80OperandType    [OpCode.ADD_HL_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADD_HL_SP] = "ADD HL, SP";              // 0x0039
+        z80OperandType    [OpCode.ADD_HL_SP] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_HL_BC] = "ADC HL, BC";              // 0xED4A
+        z80OperandType    [OpCode.ADC_HL_BC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_HL_DE] = "ADC HL, DE";              // 0xED5A
+        z80OperandType    [OpCode.ADC_HL_DE] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_HL_HL] = "ADC HL, HL";              // 0xED6A
+        z80OperandType    [OpCode.ADC_HL_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.ADC_HL_SP] = "ADC HL, SP";              // 0xED7A
+        z80OperandType    [OpCode.ADC_HL_SP] = OperandType.Implied;
+
+        z80InstructionName[OpCode.JP_nn] = "JP nn";                       // 0x00C3
+        z80OperandType    [OpCode.JP_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.JP_M_nn] = "JP M, nn";                  // 0x00FA
+        z80OperandType    [OpCode.JP_M_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.JP_Z_nn] = "JP Z, nn";                  // 0x00CA
+        z80OperandType    [OpCode.JP_Z_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.JP_NZ_nn] = "JP NZ, nn";                // 0x00C2
+        z80OperandType    [OpCode.JP_NZ_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.JP_C_nn] = "JP C, nn";                  // 0x00DA
+        z80OperandType    [OpCode.JP_C_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.JP_NC_nn] = "JP NC, nn";                // 0x00D2
+        z80OperandType    [OpCode.JP_NC_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.JP_P_nn] = "JP P, nn";                  // 0x00F2
+        z80OperandType    [OpCode.JP_P_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.JP_PE_nn] = "JP PE, nn";                // 0x00EA
+        z80OperandType    [OpCode.JP_PE_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.JP_PO_nn] = "JP PO, nn";                // 0x00E2
+        z80OperandType    [OpCode.JP_PO_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.JP_HL] = "JP HL";                       // 0x00E9
+        z80OperandType    [OpCode.JP_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.JR_NZ_e] = "JR NZ, e";                  // 0x0020
+        z80OperandType    [OpCode.JR_NZ_e] = OperandType.Relative;
+
+        z80InstructionName[OpCode.JR_Z_e] = "JR Z, e";                    // 0x0028
+        z80OperandType    [OpCode.JR_Z_e] = OperandType.Relative;
+
+        z80InstructionName[OpCode.JR_NC_e] = "JR NC, e";                  // 0x0030
+        z80OperandType    [OpCode.JR_NC_e] = OperandType.Relative;
+
+        z80InstructionName[OpCode.JR_C_e] = "JR C, e";                    // 0x0038
+        z80OperandType    [OpCode.JR_C_e] = OperandType.Relative;
+
+        z80InstructionName[OpCode.JR_e] = "JR e";                         // 0x0018
+        z80OperandType    [OpCode.JR_e] = OperandType.Relative;
+
+        z80InstructionName[OpCode.DJNZ_e] = "DJNZ e";                     // 0x0010
+        z80OperandType    [OpCode.DJNZ_e] = OperandType.Relative;
+
+        z80InstructionName[OpCode.CALL_nn] = "CALL nn";                   // 0x00CD
+        z80OperandType    [OpCode.CALL_nn] = OperandType.Immediate16;
+
+        z80InstructionName[OpCode.RET] = "RET";                           // 0x00C9
+        z80OperandType    [OpCode.RET] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RET_NZ] = "RET NZ";                     // 0x00C0
+        z80OperandType    [OpCode.RET_NZ] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RET_Z] = "RET Z";                       // 0x00C8
+        z80OperandType    [OpCode.RET_Z] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RET_NC] = "RET NC";                     // 0x00D0
+        z80OperandType    [OpCode.RET_NC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RET_C] = "RET C";                       // 0x00D8
+        z80OperandType    [OpCode.RET_C] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RET_PO] = "RET PO";                     // 0x00E0
+        z80OperandType    [OpCode.RET_PO] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RET_PE] = "RET PE";                     // 0x00E8
+        z80OperandType    [OpCode.RET_PE] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RET_P] = "RET P";                       // 0x00F0
+        z80OperandType    [OpCode.RET_P] = OperandType.Implied;
+
+        z80InstructionName[OpCode.RET_M] = "RET M";                       // 0x00F8
+        z80OperandType    [OpCode.RET_M] = OperandType.Implied;
+
+        z80InstructionName[OpCode.HALT] = "HALT";                         // 0x0076
+        z80OperandType    [OpCode.HALT] = OperandType.Implied;
+
+        z80InstructionName[OpCode.PUSH_IX] = "PUSH IX";                   // 0xDDE5
+        z80OperandType    [OpCode.PUSH_IX] = OperandType.Implied;
+
+        z80InstructionName[OpCode.PUSH_IY] = "PUSH IY";                   // 0xFDE5
+        z80OperandType    [OpCode.PUSH_IY] = OperandType.Implied;
+
+        z80InstructionName[OpCode.POP_IX] = "POP IX";                     // 0xDDE1
+        z80OperandType    [OpCode.POP_IX] = OperandType.Implied;
+
+        z80InstructionName[OpCode.POP_IY] = "POP IY";                     // 0xFDE1
+        z80OperandType    [OpCode.POP_IY] = OperandType.Implied;
+
+        z80InstructionName[OpCode.PUSH_BC] = "PUSH BC";                   // 0x00C5
+        z80OperandType    [OpCode.PUSH_BC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.PUSH_DE] = "PUSH DE";                   // 0x00D5
+        z80OperandType    [OpCode.PUSH_DE] = OperandType.Implied;
+
+        z80InstructionName[OpCode.PUSH_HL] = "PUSH HL";                   // 0x00E5
+        z80OperandType    [OpCode.PUSH_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.PUSH_AF] = "PUSH AF";                   // 0x00F5
+        z80OperandType    [OpCode.PUSH_AF] = OperandType.Implied;
+
+        z80InstructionName[OpCode.POP_BC] = "POP BC";                     // 0x00C1
+        z80OperandType    [OpCode.POP_BC] = OperandType.Implied;
+
+        z80InstructionName[OpCode.POP_DE] = "POP DE";                     // 0x00D1
+        z80OperandType    [OpCode.POP_DE] = OperandType.Implied;
+
+        z80InstructionName[OpCode.POP_HL] = "POP HL";                     // 0x00E1
+        z80OperandType    [OpCode.POP_HL] = OperandType.Implied;
+
+        z80InstructionName[OpCode.POP_AF] = "POP AF";                     // 0x00F1
+        z80OperandType    [OpCode.POP_AF] = OperandType.Implied;
+    }
+
     
 }

@@ -55,8 +55,8 @@ program Z80Gen
         
                
         //      Error = 0;
-        EmitWord(OpCode.LD_HL_nn, 0);
-        EmitWord(OpCode.LD_inn_HL, LastError);
+        Emit(OpCode.XOR_A_A);
+        EmitWord(OpCode.LD_inn_A, LastError);
         
         //      cnp = false;
         
@@ -584,6 +584,34 @@ program Z80Gen
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("DIVMOD"));
                     Emit(OpCode.PUSH_HL);
                 }
+                case Instruction.MULI:
+                {
+                    // top -> BC, next -> DE
+                    // HL = next * top
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_DE);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("MULI"));
+                    Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.DIVI:
+                {
+                    // top -> DE, next -> BC
+                    // BC = next / top
+                    // HL = next % top
+                    Emit(OpCode.POP_DE);    
+                    Emit(OpCode.POP_BC);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("DIVI"));
+                    Emit(OpCode.PUSH_BC);    
+                }
+                case Instruction.MODI:
+                {
+                    // top -> DE, next -> BC
+                    // HL = next % top, always positive signed result
+                    Emit(OpCode.POP_DE);    
+                    Emit(OpCode.POP_BC);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("MODI"));
+                    Emit(OpCode.PUSH_HL);
+                }
                 
                 case Instruction.BITSHL:
                 {
@@ -665,6 +693,15 @@ program Z80Gen
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LT"));
                     Emit(OpCode.PUSH_DE);
                 }
+                case Instruction.PUSHILEI:
+                {
+                    // next -> HL, top -> BC
+                    // LT: DE = HL < BC ? 1 : 0 
+                    EmitWord(OpCode.LD_BC_nn, operand);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LEI"));
+                    Emit(OpCode.PUSH_DE);
+                }
                 
                 case Instruction.LE:
                 {
@@ -727,7 +764,7 @@ program Z80Gen
                     // LE: DE = HL > BC ? 1 : 0 
                     Emit(OpCode.POP_BC);    
                     Emit(OpCode.POP_HL);    
-                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LTI"));
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GTI"));
                     Emit(OpCode.PUSH_DE);
                 }
                 case Instruction.GEI:
@@ -969,6 +1006,12 @@ program Z80Gen
                     Emit(OpCode.XOR_A); // iOverload = 0;
                     if (!Z80Library.SysCall(byte(operand & 0xFF))) { break; }
                 }
+                case Instruction.SYSCALL00:
+                {
+                    Emit(OpCode.XOR_A); // iOverload = 0;
+                    if (!Z80Library.SysCall(byte(operand & 0xFF))) { break; }
+                    if (!Z80Library.SysCall(byte(operand >> 8))) { break; }
+                }
                 case Instruction.SYSCALL1:
                 {
                     EmitByte(OpCode.LD_A_n, 1); // iOverload = 0;
@@ -1199,7 +1242,7 @@ program Z80Gen
                     PrintLn("Failed to create '" + ihexPath + "'");
                     break;
                 }
-
+                
                 Symbols.New();
                 if (File.Exists(symbolsPath))
                 {

@@ -1,5 +1,6 @@
 unit Peephole
 {
+    // http://z80-heaven.wikidot.com/optimization#toc0
     <uint> instructionAddresses;
     
     bool isDisabled;

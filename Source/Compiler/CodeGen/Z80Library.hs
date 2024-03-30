@@ -7,11 +7,22 @@ unit Z80Library
         return libraryAddresses[name];
     }
     uint compareSignedLocation;
+    uint utilityMultiplyLocation;
+    uint utilityDivideLocation;
+    
     Generate()
     {
         uint address = CurrentAddress;
         compareSigned();
         compareSignedLocation = address;
+        
+        address = CurrentAddress;
+        utilityMultiply();
+        utilityMultiplyLocation = address;
+        
+        address = CurrentAddress;
+        utilityDivide();
+        utilityDivideLocation = address;
         
         address = CurrentAddress;
         Peephole.Reset();
@@ -20,8 +31,24 @@ unit Z80Library
         
         address = CurrentAddress;
         Peephole.Reset();
+        EmitMULI();
+        libraryAddresses["MULI"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
         EmitDIVMOD();
         libraryAddresses["DIVMOD"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitDIVI();
+        libraryAddresses["DIVI"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitMODI();
+        libraryAddresses["MODI"] = address;
+        
         
         address = CurrentAddress;
         Peephole.Reset();
@@ -110,6 +137,24 @@ unit Z80Library
         // iOverload is in A if it is needed
         switch (SysCalls(iSysCall))
         {
+            case SysCalls.IntGetByte:
+            {
+                Emit(OpCode.POP_DE);             // pop index: 0 for LSB and 1 for MSB
+                Emit(OpCode.EX_iSP_HL);          // get 'int'
+                Emit(OpCode.BIT_0_E);     // 0 or 1?
+                EmitOffset(OpCode.JR_Z_e, +2);     // skip to where we clear MSB
+                Emit(OpCode.LD_E_H);
+                Emit(OpCode.LD_L_E);
+                Emit(OpCode.LD_H_D);             // use zero D to clear MSB
+                Emit(OpCode.EX_iSP_HL);          // put 'byte'
+            }
+            case SysCalls.IntFromBytes:
+            {
+                Emit(OpCode.POP_DE);             // pop MSB
+                Emit(OpCode.EX_iSP_HL);          // get LSB
+                Emit(OpCode.LD_H_E);             // set MSB
+                Emit(OpCode.EX_iSP_HL);          // put 'int'
+            }
             case SysCalls.MemoryReadByte:
             {
                 Emit(OpCode.EX_iSP_IX);          // get the address from the stack
@@ -158,7 +203,8 @@ unit Z80Library
             case SysCalls.DiagnosticsDie:
             {
                 Emit(OpCode.POP_DE); // error code
-                EmitWord(OpCode.LD_inn_DE, LastError);
+                Emit(OpCode.LD_A_E);
+                EmitWord(OpCode.LD_inn_A, LastError);
                 Emit(OpCode.HALT);
             }
             case SysCalls.DiagnosticsSetError:
@@ -177,25 +223,7 @@ unit Z80Library
         return true;
     }
     
-    EmitMUL()
-    {
-        // top -> BC, next -> DE
-        // HL = next * top
-        
-        utilityMultiply(); // DEHL=BC*DE
-        
-        Emit(OpCode.RET);
-    }
-    EmitDIVMOD()
-    {
-        // top -> BC, next -> DE
-        // BC = next / top
-        // HL = next % top
-        
-        utilityDivide(); // BC = BC / DE, remainder in HL
-        
-        Emit(OpCode.RET);        
-    }
+    
     
     utilityDivide() // BC = BC / DE, remainder in HL
     {
@@ -236,6 +264,8 @@ unit Z80Library
         Emit(OpCode.LD_B_C);
         Emit(OpCode.LD_C_A); 
         
+        Emit(OpCode.RET);
+        
         Peephole.Disabled = false;
         Peephole.Reset();
     }
@@ -257,6 +287,7 @@ unit Z80Library
 //NoMul16:
         Emit(OpCode.DEC_A);
         EmitOffset(OpCode.JR_NZ_e, -14); // //Mul16Loop:
+        Emit(OpCode.RET);
         Peephole.Disabled = false;
         Peephole.Reset();
     }
@@ -603,11 +634,157 @@ unit Z80Library
     
     EmitLEI()
     { 
+        Peephole.Disabled = true;
+        // next -> HL, top -> BC
+        // LE: next = HL <= BC ? 1 : 0   
+        
+        Emit(OpCode.LD_A_H);
+        Emit(OpCode.XOR_A_B);
+        EmitWord(OpCode.JP_M_nn, 0);           // -> differentSigns
+        
+        uint jumpAddress = CurrentAddress-2;
+        Emit(OpCode.SBC_HL_BC);
+        EmitOffset(OpCode.JR_Z_e, +2);        // HL == BC : -> trueExit
+        EmitOffset(OpCode.JR_NC_e, +8);       // HL - BC >= 0? (same signs) : C -> falseExit
+        // C implies HL >= BC
+// trueExit:
+        EmitWord(OpCode.LD_DE_nn, 1);         // result = true
+        Emit(OpCode.RET);
+        
+// differentSigns:        
+        uint jumpToAddress = CurrentAddress;
+        Emit(OpCode.BIT_7_B);        
+        EmitOffset(OpCode.JR_Z_e, -8);        // BC is +ve (which means HL is -ve) -> trueExit
+        
+// falseExit:
+        EmitWord(OpCode.LD_DE_nn, 0);         // result = false
+        Emit(OpCode.RET);
+        
+        
+        PatchByte(jumpAddress+0, byte (jumpToAddress & 0xFF));
+        PatchByte(jumpAddress+1, byte (jumpToAddress >> 8));
+        
+        Peephole.Disabled = false;
+        Peephole.Reset();
     }
     
     
     EmitGTI()
     { 
+        Peephole.Disabled = true;
+        // next -> HL, top -> BC
+        // LE: next = HL > BC ? 1 : 0   
+        
+        Emit(OpCode.LD_A_H);
+        Emit(OpCode.XOR_A_B);
+        EmitWord(OpCode.JP_M_nn, 0);           // -> differentSigns
+        
+        uint jumpAddress = CurrentAddress-2;
+        Emit(OpCode.SBC_HL_BC);
+        EmitOffset(OpCode.JR_Z_e, +2);        // HL == BC : -> falseExit
+        EmitOffset(OpCode.JR_NC_e, +8);       // HL - BC >= 0? (same signs) : C -> trueExit
+        // C implies HL >= BC
+// falseExit:
+        EmitWord(OpCode.LD_DE_nn, 0);         // result = false
+        Emit(OpCode.RET);
+        
+// differentSigns:        
+        uint jumpToAddress = CurrentAddress;
+        Emit(OpCode.BIT_7_B);        
+        EmitOffset(OpCode.JR_Z_e, -8);        // BC is +ve (which means HL is -ve) -> falseExit
+        
+// trueExit:
+        EmitWord(OpCode.LD_DE_nn, 1);         // result = true
+        Emit(OpCode.RET);
+        
+        
+        PatchByte(jumpAddress+0, byte (jumpToAddress & 0xFF));
+        PatchByte(jumpAddress+1, byte (jumpToAddress >> 8));
+        
+        Peephole.Disabled = false;
+        Peephole.Reset();
+    }
+    
+    EmitMUL()
+    {
+        // top -> BC, next -> DE
+        // HL = next * top
+        EmitWord(OpCode.JP_nn, utilityMultiplyLocation); // DEHL=BC*DE
+    }
+    EmitDIVMOD()
+    {
+        // top -> BC, next -> DE
+        // BC = next / top
+        // HL = next % top
+        
+        EmitWord(OpCode.JP_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
+    }
+    negateBC()
+    {
+        Emit(OpCode.XOR_A_A);
+        Emit(OpCode.SUB_A_C);
+        Emit(OpCode.LD_C_A);
+        Emit(OpCode.SUB_A_A);
+        Emit(OpCode.SUB_A_B);
+        Emit(OpCode.LD_B_A);
+        
+    }
+    negateDE()
+    {
+        Emit(OpCode.XOR_A_A);
+        Emit(OpCode.SUB_A_E);
+        Emit(OpCode.LD_E_A);
+        Emit(OpCode.SUB_A_A);
+        Emit(OpCode.SUB_A_D);
+        Emit(OpCode.LD_D_A);
+    }
+    doSigns()
+    {   
+        // next = BC, top = DE
+        Emit(OpCode.XOR_A_A);
+        Emit(OpCode.BIT_7_B);     
+        EmitOffset(OpCode.JR_Z_e, +7);  // -> check DE
+// BC is -ve        
+        Emit(OpCode.INC_A);
+        negateBC();
+// check DE
+        Emit(OpCode.BIT_7_D);
+        EmitOffset(OpCode.JR_Z_e, +7);
+// DE is -ve        
+        Emit(OpCode.INC_A);
+        negateDE();
+// exit 
+        EmitWord(OpCode.LD_inn_A, Sign);
+    }
+    EmitMULI()
+    {
+        doSigns();
+        
+        EmitWord(OpCode.CALL_nn, utilityMultiplyLocation); // DEHL=BC*DE
+     
+        EmitWord(OpCode.LD_A_inn, Sign);   
+        Emit(OpCode.BIT_0_A);
+        Emit(OpCode.RET_Z); // even
+        negateBC();
+        Emit(OpCode.RET);
+    }
+    EmitDIVI()
+    {
+        doSigns();
+        
+        EmitWord(OpCode.CALL_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
+        
+        EmitWord(OpCode.LD_A_inn, Sign);   
+        Emit(OpCode.BIT_0_A);
+        Emit(OpCode.RET_Z); // even
+        negateBC();
+        Emit(OpCode.RET);
+    }
+    EmitMODI()
+    {
+        doSigns();
+        EmitWord(OpCode.CALL_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
+        Emit(OpCode.RET);
     }
 
 }

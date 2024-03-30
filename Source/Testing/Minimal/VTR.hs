@@ -357,7 +357,7 @@ program ValueTypeRuntimeTests
         }
     }
     
-    GTI()
+    GEI()
     {
         uint wins = 0;
         uint losses = 0;
@@ -438,6 +438,169 @@ program ValueTypeRuntimeTests
         }
     }
     
+    LEI()
+    {
+        uint wins = 0;
+        uint losses = 0;
+        
+        
+        int p5  =  5;
+        int m10 = -10;
+        int p10 = 10;
+        int m5  = -5;
+    
+        if (m10 <= m5)
+        {
+            wins++;   
+        }
+        else
+        {
+            losses++;
+        }
+        if (m5 <= p10)
+        {
+            wins++;    
+        }
+        else
+        {
+            losses++;
+        }
+        if (p5 <= m10)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (m5 <= m10)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (p5 <= p10)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (p10 <= p5)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (p5 <= p5)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (m5 <= m5)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        
+        if (wins != 8)
+        {
+            Failure(37);
+        }
+    }
+    
+    GTI()
+    {
+        uint wins = 0;
+        uint losses = 0;
+        
+        
+        int p5  =  5;
+        int m10 = -10;
+        int p10 = 10;
+        int m5  = -5;
+    
+        if (m10 > m5)
+        {
+            losses++;   
+        }
+        else
+        {
+            wins++;
+        }
+        if (m5 > p10)
+        {
+            losses++;    
+        }
+        else
+        {
+            wins++;
+        }
+        if (p5 > m10)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (m5 > m10)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (p5 > p10)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (p10 > p5)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (p5 > p5)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (m5 > m5)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (wins != 8)
+        {
+            Failure(38);
+        }
+    }
+    
     
     Hopper()
     {
@@ -449,7 +612,8 @@ program ValueTypeRuntimeTests
         DIV();  // DIV RETFAST
         MOD();  // MOD
         LTI();  // LTI
+        GEI();  // GEI
+        LEI();  // LEI
         GTI();  // GTI
-        
     }
 }
