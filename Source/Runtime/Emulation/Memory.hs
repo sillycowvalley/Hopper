@@ -1,17 +1,55 @@
 unit Memory
 {
-    byte ReadByte(uint address) system;
-    WriteByte(uint address, byte value) system;
-    
-    byte ReadCodeByte(uint address) system;
-    WriteCodeByte(uint address, byte value) system;
-    
     // defaults don't matter, set in Initialize(..) below
     uint heapStart = 0x8000; // 32K
     uint heapSize  = 0x4000; // 32K-48K    
     
+    byte ReadByte(uint address) system;
+    WriteByte(uint address, byte value) system;
     uint ReadWord(uint address) system;
     WriteWord(uint address, uint value) system;
+    
+#ifdef CPU_Z80
+    const uint z80RAMstart = 0x8000;
+    
+    byte ReadCodeByte(uint address)
+    {
+        return Memory.ReadByte(address + z80RAMstart);
+    }
+    WriteCodeByte(uint address, byte value)
+    {
+        Memory.WriteByte(address + z80RAMstart, value);
+    }
+    uint ReadCodeWord(uint address)
+    {
+        return Memory.ReadWord(address + z80RAMstart);
+    }
+    WriteCodeWord(uint address, uint value)
+    {
+        Memory.WriteWord(address + z80RAMstart, value);
+    }
+    byte ReadProgramByte(uint address)
+    {
+        return Memory.ReadByte(address + z80RAMstart + programOffset);
+    }
+    WriteProgramByte(uint address, byte value)
+    {
+        Memory.WriteByte(address + z80RAMstart + programOffset, value);
+    }
+    uint ReadProgramWord(uint address)
+    {
+        return Memory.ReadWord(address + z80RAMstart + programOffset);
+    }
+    WriteProgramWord(uint address, uint value)
+    {
+        Memory.WriteWord(address + z80RAMstart, value + programOffset);
+    }
+    uint programOffset;
+    uint ProgramOffset { set { programOffset = value; } } // offset between "Code" and "Program" (entry point)
+#else        
+    byte ReadCodeByte(uint address) system;
+    WriteCodeByte(uint address, byte value) system;
+    
     uint ReadCodeWord(uint address) system;
     WriteCodeWord(uint address, uint value) system;
     
@@ -21,7 +59,7 @@ unit Memory
     WriteProgramWord(uint address, uint value) system;
     
     uint ProgramOffset { set system; } // offset between "Code" and "Program" in memoryCodeArray (entry point)
-    
+#endif    
     uint freeList;
     const byte mcbSize = 6;
     
@@ -41,7 +79,6 @@ unit Memory
     uint FreeList  { get { return freeList; } }
     uint HeapStart { get { return heapStart; } }
     uint HeapSize  { get { return heapSize; } }
-    
     
     Initialize(uint start, uint size)
     {

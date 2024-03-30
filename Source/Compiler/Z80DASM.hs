@@ -179,7 +179,7 @@ program DASM
                 }
                 
                 SysCalls.New();
-                string symbolsPath  = codePath.Replace(extension, ".code");
+                string symbolsPath  = codePath.Replace(extension, ".zcode");
                 symbolsPath = Path.GetFileName(symbolsPath);
                 symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
                 
@@ -313,6 +313,7 @@ program DASM
                         lastBC = operand;
                     }
                     
+                    bool bRETFAST;
                     uint switchAddress = address;
                     if (resetVector == switchAddress)
                     {
@@ -320,13 +321,20 @@ program DASM
                     }
                     else if (prevInstruction == OpCode.RET)
                     {
-                        for (uint search = address; search < address+12; search++) // delta is currently 10
+                        for (uint search = address; search < address+20; search++) // delta is currently 10
                         {
                             if (methodFirstAddresses.Contains(search))
                             {
-                                switchAddress = search; 
-                                //PrintLn("    " + address.ToHexString(4) + " " + search.ToHexString(4) + " " + (search - address).ToString() + " !");
-                                break;
+                                if (    ((search - address) == 10) // 'ENTER'   preamble
+                                     || ((search - address) == 18) // 'ENTERB'  preamble (optimized only)
+                                     || ((search - address) == 0)  // 'RETFAST' preamble (optimized only)
+                                   )
+                                {
+                                    switchAddress = search; 
+                                    bRETFAST = (search == address);
+                                    //PrintLn("    " + address.ToHexString(4) + " " + search.ToHexString(4) + " " + (search - address).ToString() + " !");
+                                    break;
+                                }
                             }
                         }
                     }
@@ -335,8 +343,9 @@ program DASM
                     if (methodFirstAddresses.Contains(switchAddress))
                     {
                         //PrintLn(switchAddress.ToHexString(4));
-                        if ((switchAddress != address) || (resetVector == address))
+                        if ((switchAddress != address) || (resetVector == address) || bRETFAST)
                         {
+                            //PrintLn("        " + address.ToHexString(4) + " switch");
                             uint methodIndex = methodFirstAddresses[switchAddress];
                             <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
                             if (methodSymbols.Count != 0)
@@ -360,7 +369,7 @@ program DASM
                         }
                     }
                     string comment;
-                    string addressKey = address.ToString();
+                    string addressKey = "0x" + address.ToHexString(4);
                     if (debugInfo.Contains(addressKey))
                     {
                         string debugLine = debugInfo[addressKey];

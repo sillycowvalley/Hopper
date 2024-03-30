@@ -64,8 +64,12 @@ program Runtime
     const byte escape = 0x1B;
     const byte slash  = 0x5C;
     
+#ifdef CPU_Z80
+    const uint codeMemoryStart = 0x8000; // assuming 32K of RAM starting here for now
+#else    
     const uint codeMemoryStart = 0x0000; // code memory magically exists from 0x0000 to 0xFFFF
-    
+#endif
+
     bool loaded = false;
     uint currentCRC;
     
@@ -91,9 +95,9 @@ program Runtime
     printHex(byte b)
     {
         byte msn = ((b >> 4) & 0xF);
-        print(ToHex(msn));
+        print(HRByte.ToHex(msn));
         byte lsn = b & 0xF;
-        print(ToHex(lsn));
+        print(HRByte.ToHex(lsn));
     }
     printHex(uint u)
     {
@@ -147,35 +151,12 @@ program Runtime
         Serial.WriteChar(c);
     }
     
-    byte FromHex(char ch)
-    {
-        switch (ch)
-        {
-            case '0': { return 0x00; }
-            case '1': { return 0x01; }
-            case '2': { return 0x02; }
-            case '3': { return 0x03; }
-            case '4': { return 0x04; }
-            case '5': { return 0x05; }
-            case '6': { return 0x06; }
-            case '7': { return 0x07; }
-            case '8': { return 0x08; }
-            case '9': { return 0x09; }
-            case 'a': case 'A': { return 0x0A; }
-            case 'b': case 'B': { return 0x0B; }
-            case 'c': case 'C': { return 0x0C; }
-            case 'd': case 'D': { return 0x0D; }
-            case 'e': case 'E': { return 0x0E; }
-            case 'f': case 'F': { return 0x0F; }
-        }
-        return 0;
-    }
     bool TryReadByte(ref byte data)
     {
         char c0 = IO.Read();
         char c1 = IO.Read();
-        byte msn = FromHex(c0);
-        byte lsn = FromHex(c1);
+        byte msn = HRChar.FromHex(c0);
+        byte lsn = HRChar.FromHex(c1);
         data =  (msn << 4) + lsn;
         IO.Write(c0);
         IO.Write(c1);
@@ -281,8 +262,8 @@ program Runtime
     {
         char c0 = SerialReadChar();
         char c1 = SerialReadChar();
-        byte msn = FromHex(c0);
-        byte lsn = FromHex(c1);
+        byte msn = HRChar.FromHex(c0);
+        byte lsn = HRChar.FromHex(c1);
         data =  (msn << 4) + lsn;
         return true;
     }
@@ -681,8 +662,8 @@ program Runtime
                 {
                     case 'F': // fast memory page dump
                     {
-                        byte msn = FromHex(SerialReadChar());
-                        byte lsn = FromHex(SerialReadChar());
+                        byte msn = HRChar.FromHex(SerialReadChar());
+                        byte lsn = HRChar.FromHex(SerialReadChar());
                         WaitForEnter();
                         
                         byte iPage = (msn << 4) + lsn;
@@ -698,11 +679,11 @@ program Runtime
                         }
                         else
                         {
-                            byte n  = FromHex(arg);
-                            byte a3 = FromHex(SerialReadChar());
-                            byte a2 = FromHex(SerialReadChar());
-                            byte a1 = FromHex(SerialReadChar());
-                            byte a0 = FromHex(SerialReadChar());
+                            byte n  = HRChar.FromHex(arg);
+                            byte a3 = HRChar.FromHex(SerialReadChar());
+                            byte a2 = HRChar.FromHex(SerialReadChar());
+                            byte a1 = HRChar.FromHex(SerialReadChar());
+                            byte a0 = HRChar.FromHex(SerialReadChar());
                             uint address = (a3 << 12) + (a2 << 8) + (a1 << 4) + a0;
                             HopperVM.SetBreakpoint(n, address);   
                         }
@@ -779,7 +760,7 @@ program Runtime
                         char h1 = SerialReadChar();
                         char h0 = SerialReadChar();
                         
-                        uint size = (FromHex(h3) << 12) + (FromHex(h2) << 8) + (FromHex(h1) << 4) + FromHex(h0);
+                        uint size = (HRChar.FromHex(h3) << 12) + (HRChar.FromHex(h2) << 8) + (HRChar.FromHex(h1) << 4) + HRChar.FromHex(h0);
                         
                         SerialWriteChar(char(enter));
                         SerialWriteChar(char(slash));
@@ -791,7 +772,7 @@ program Runtime
                         {
                             char n1 = SerialReadChar();
                             char n0 = SerialReadChar();
-                            byte b = (FromHex(n1) << 4) + FromHex(n0);
+                            byte b = (HRChar.FromHex(n1) << 4) + HRChar.FromHex(n0);
                             HRFile.Append(fh, b);
                             size--;
                         }

@@ -1,6 +1,7 @@
 program ValueTypeRuntimeTests
 {
     #define CPU_Z80
+    //#define MCU
     
     #define CDECL
     
@@ -205,13 +206,250 @@ program ValueTypeRuntimeTests
         }
         
     }
+    uint ret0(uint argument)
+    {
+        return argument * 3;
+    }
+    MUL()
+    {
+        uint a = 13;
+        uint b = 41;
+        
+        uint c = a * b;
+        if (c != 533)
+        {
+            Failure(27);
+        }
+        c *= 1;
+        if (c != 533)
+        {
+            Failure(28);
+        }
+        c *= 0;
+        if (c != 0)
+        {
+            Failure(29);
+        }
+        b = b * ret0(a);
+        if (b != 1599)
+        {
+            Failure(30);
+        }
+        
+        
+    }
+    
+    uint one = 3;
+    uint One { get { return 3 * one; } }
+    
+    DIV()
+    {
+        uint c = 533;
+        uint b = 41;
+        
+        uint a = c / b;
+        if (a != 13)
+        {
+            Failure(31);
+        }
+        c /= One;
+        if (c != 59)
+        {
+            Failure(32);
+        }
+    }
+    
+    MOD()
+    {
+        uint c = 512;
+        uint b = 41;
+        
+        uint a = c % b;
+        if (a != 20)
+        {
+            Failure(33);
+        }
+        a = c % 1;
+        if (a != 0)
+        {
+            Failure(34);
+        }
+    }
+        
+    LTI()
+    {
+        uint wins = 0;
+        uint losses = 0;
+        
+        
+        int p5  =  5;
+        int m10 = -10;
+        int p10 = 10;
+        int m5  = -5;
+    
+        if (m10 < m5)
+        {
+            wins++;   
+        }
+        else
+        {
+            losses++;
+        }
+        if (m5 < p10)
+        {
+            wins++;    
+        }
+        else
+        {
+            losses++;
+        }
+        if (p5 < m10)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (m5 < m10)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (p5 < p10)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (p10 < p5)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (p5 < p5)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (m5 < m5)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (wins != 8)
+        {
+            Failure(36);
+        }
+    }
+    
+    GTI()
+    {
+        uint wins = 0;
+        uint losses = 0;
+        
+        
+        int p5  =  5;
+        int m10 = -10;
+        int p10 = 10;
+        int m5  = -5;
+    
+        if (m10 >= m5)
+        {
+            losses++;   
+        }
+        else
+        {
+            wins++;
+        }
+        if (m5 >= p10)
+        {
+            losses++;    
+        }
+        else
+        {
+            wins++;
+        }
+        if (p5 >= m10)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (m5 >= m10)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (p5 >= p10)
+        {
+            losses++;
+        }
+        else
+        {
+            wins++;
+        }
+        if (p10 >= p5)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (p5 >= p5)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (m5 >= m5)
+        {
+            wins++;
+        }
+        else
+        {
+            losses++;
+        }
+        if (wins != 8)
+        {
+            Failure(36);
+        }
+    }
     
     
     Hopper()
     {
-        BITS(); // BITAND, BITOR, BITXOR, BITSHL, BITSHR
-        //ADD();  // ADD, ADDB, INCLOCALB, INCGLOBALB NE, JZB
-        //SUB();  // SUB, SUBB, DECLOCALB, DECGLOBALB
-        //EQ();   // EQ NE
+        BITS(); // BITAND, BITOR, BITXOR, BITSHL, BITSHR, RETB
+        ADD();  // ADD, ADDB, INCLOCALB, INCGLOBALB NE, JZB
+        SUB();  // SUB, SUBB, DECLOCALB, DECGLOBALB
+        EQ();   // EQ NE
+        MUL();  // MUL RET0
+        DIV();  // DIV RETFAST
+        MOD();  // MOD
+        LTI();  // LTI
+        GTI();  // GTI
+        
     }
 }

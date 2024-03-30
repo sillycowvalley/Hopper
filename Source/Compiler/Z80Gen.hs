@@ -62,6 +62,7 @@ program Z80Gen
         
     }
     
+    
     patchRSTJump(uint rst, uint targetAddress)
     {
         uint offset = targetAddress - rst - 2;
@@ -77,6 +78,10 @@ program Z80Gen
         }
     }
     
+    PatchByte(uint address, byte value)
+    {
+        patchByte(address, value);
+    }
     patchByte(uint address, byte value)
     {
         if ((address == 0x0010) || (address == 0x0011))
@@ -240,7 +245,8 @@ program Z80Gen
         
         byte byteOffset = ioffset.GetByte(0);        
         return byteOffset;
-    }    
+    }   
+        
     uint addressOperandToByte(uint operand)
     {
         // calculate the 8-bit signed Hopper address
@@ -290,6 +296,58 @@ program Z80Gen
         EmitByte(OpCode.LD_D_iIY_d, offset + 1);
         Emit(OpCode.PUSH_DE);
     }
+    
+    pushStackAddrB(uint operand)
+    {
+        byte offset = offsetOperandToByte(operand);
+        Emit(OpCode.PUSH_IY);
+        Emit(OpCode.POP_IX);
+        EmitByte(OpCode.LD_E_iIY_d, offset);
+        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
+        Emit(OpCode.ADD_IX_DE);  // absolute address is now in IX
+        Emit(OpCode.POP_IX);
+    }
+    pushRelB(uint operand)
+    {
+        byte offset = offsetOperandToByte(operand);
+        Emit(OpCode.PUSH_IY);
+        Emit(OpCode.POP_IX);
+        EmitByte(OpCode.LD_E_iIY_d, offset);
+        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
+        Emit(OpCode.ADD_IX_DE);  
+        // reference address is now in IX   
+        
+        EmitByte(OpCode.LD_E_iIX_d, +0);
+        EmitByte(OpCode.LD_D_iIX_d, +1);
+        Emit(OpCode.PUSH_DE);
+        Emit(OpCode.POP_IX);
+        // actual address is now in IX
+        
+        EmitByte(OpCode.LD_E_iIY_d, offset);
+        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
+        Emit(OpCode.PUSH_DE);    
+    }
+    popRelB(uint operand)
+    {
+        byte offset = offsetOperandToByte(operand);
+        Emit(OpCode.PUSH_IY);
+        Emit(OpCode.POP_IX);
+        EmitByte(OpCode.LD_E_iIY_d, offset);
+        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
+        Emit(OpCode.ADD_IX_DE);  
+        // reference address is now in IX   
+        
+        EmitByte(OpCode.LD_E_iIX_d, +0);
+        EmitByte(OpCode.LD_D_iIX_d, +1);
+        Emit(OpCode.PUSH_DE);
+        Emit(OpCode.POP_IX);
+        // actual address is now in IX
+        
+        Emit(OpCode.POP_DE);    
+        EmitByte(OpCode.LD_iIY_d_E, offset);
+        EmitByte(OpCode.LD_iIY_d_D, offset + 1);
+    }         
+    
     popLocalB(uint operand)
     {    
         byte offset = offsetOperandToByte(operand);
@@ -357,7 +415,7 @@ program Z80Gen
         <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
         <uint,uint> jumpPatchLocations;   // <hopperAddress,patchAddress>
         
-        //PrintLn(methodIndex.ToHexString(4) + " " + (output.Count).ToHexString(4));
+        //PrintLn(methodIndex.ToString() + ": 0x" + (output.Count).ToHexString(4));
         uint index = 0;
         bool success;
         loop
@@ -405,10 +463,17 @@ program Z80Gen
                     // Create some empty stack slots:
                     EmitWord(OpCode.LD_DE_nn, 0x0000);
                     
-                    EmitByte(OpCode.LD_B_n, byte(operand));
-                    Peephole.Reset();
-                    Emit(OpCode.PUSH_DE);
-                    EmitOffset(OpCode.DJNZ_e, -3);
+                    if (operand == 1)
+                    {
+                        Emit(OpCode.PUSH_DE);
+                    }
+                    else
+                    {
+                        EmitByte(OpCode.LD_B_n, byte(operand));
+                        Peephole.Reset();
+                        Emit(OpCode.PUSH_DE);
+                        EmitOffset(OpCode.DJNZ_e, -3);
+                    }
                 }
                 case Instruction.DECSP:
                 {
@@ -431,10 +496,17 @@ program Z80Gen
                 }
                 case Instruction.RETB:
                 {
-                    EmitByte(OpCode.LD_B_n, byte(operand));
-                    Peephole.Reset();
-                    Emit(OpCode.POP_DE);
-                    EmitOffset(OpCode.DJNZ_e, -3);
+                    if (operand == 1)
+                    {
+                        Emit(OpCode.POP_DE);
+                    }
+                    else
+                    {
+                        EmitByte(OpCode.LD_B_n, byte(operand));
+                        Peephole.Reset();
+                        Emit(OpCode.POP_DE);
+                        EmitOffset(OpCode.DJNZ_e, -3);
+                    }
                     
                     // POP BP
                     Emit(OpCode.POP_IY); 
@@ -446,8 +518,13 @@ program Z80Gen
                     Emit(OpCode.POP_IY); 
                     Emit(OpCode.RET);
                 }
+                case Instruction.RETFAST:
+                {
+                    Emit(OpCode.RET);
+                }
                 
                 case Instruction.ADD:
+                case Instruction.ADDI:
                 {
                     Emit(OpCode.POP_DE);    
                     Emit(OpCode.POP_HL);    
@@ -455,6 +532,7 @@ program Z80Gen
                     Emit(OpCode.PUSH_HL);    
                 }
                 case Instruction.SUB:
+                case Instruction.SUBI:
                 {
                     Emit(OpCode.POP_DE);    
                     Emit(OpCode.POP_HL);    
@@ -485,24 +563,24 @@ program Z80Gen
                     Emit(OpCode.POP_BC);    
                     Emit(OpCode.POP_DE);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("MUL"));
-                    Emit(OpCode.PUSH_BC);    
+                    Emit(OpCode.PUSH_HL);    
                 }
                 case Instruction.DIV:
                 {
-                    // top -> BC, next -> DE
+                    // top -> DE, next -> BC
                     // BC = next / top
                     // HL = next % top
-                    Emit(OpCode.POP_BC);    
                     Emit(OpCode.POP_DE);    
+                    Emit(OpCode.POP_BC);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("DIVMOD"));
                     Emit(OpCode.PUSH_BC);    
                 }
                 case Instruction.MOD:
                 {
-                    // top -> BC, next -> DE
+                    // top -> DE, next -> BC
                     // HL = next % top
-                    Emit(OpCode.POP_BC);    
                     Emit(OpCode.POP_DE);    
+                    Emit(OpCode.POP_BC);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("DIVMOD"));
                     Emit(OpCode.PUSH_HL);
                 }
@@ -578,6 +656,15 @@ program Z80Gen
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("EQ"));
                     Emit(OpCode.PUSH_DE);
                 }
+                case Instruction.PUSHILT:
+                {
+                    // next -> HL, top -> BC
+                    // LT: DE = HL < BC ? 1 : 0 
+                    EmitWord(OpCode.LD_BC_nn, operand);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LT"));
+                    Emit(OpCode.PUSH_DE);
+                }
                 
                 case Instruction.LE:
                 {
@@ -615,6 +702,44 @@ program Z80Gen
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GT"));
                     Emit(OpCode.PUSH_DE);
                 }
+                
+                case Instruction.LTI:
+                {
+                    // next -> HL, top -> BC
+                    // LE: DE = HL < BC ? 1 : 0 
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LTI"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.LEI:
+                {
+                    // next -> HL, top -> BC
+                    // LE: DE = HL <= BC ? 1 : 0 
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LEI"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.GTI:
+                {
+                    // next -> HL, top -> BC
+                    // LE: DE = HL > BC ? 1 : 0 
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LTI"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.GEI:
+                {
+                    // next -> HL, top -> BC
+                    // LE: DE = HL >= BC ? 1 : 0 
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GEI"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                
                 case Instruction.EQ:
                 {
                     // next -> HL, top -> BC
@@ -754,7 +879,27 @@ program Z80Gen
                     EmitWord(OpCode.LD_DE_nn, 1);    
                     Emit(OpCode.PUSH_DE);
                 }
+                case Instruction.PUSHIBB:
+                {
+                    EmitWord(OpCode.LD_DE_nn, operand & 0xFF);    
+                    Emit(OpCode.PUSH_DE);
+                    EmitWord(OpCode.LD_DE_nn, operand >> 8);    
+                    Emit(OpCode.PUSH_DE);
+                }
                 
+                
+                case Instruction.PUSHSTACKADDRB:
+                {
+                    pushStackAddrB(operand);
+                }
+                case Instruction.PUSHRELB:
+                {
+                    pushRelB(operand);
+                }
+                case Instruction.POPRELB:
+                {
+                    popRelB(operand);
+                }
                                 
                 case Instruction.PUSHLOCALB:
                 {
@@ -786,6 +931,7 @@ program Z80Gen
                     popLocalB(1);
                 }
                 case Instruction.INCLOCALB:
+                case Instruction.INCLOCALIB:
                 {
                     incLocalB(operand);
                 }
@@ -797,6 +943,11 @@ program Z80Gen
                 case Instruction.PUSHGLOBALB:
                 {
                     pushGlobalB(operand);
+                }
+                case Instruction.PUSHGLOBALBB:
+                {
+                    pushGlobalB(operand & 0xFF);
+                    pushGlobalB(operand >> 8);
                 }
                 case Instruction.POPGLOBALB:
                 {
@@ -885,7 +1036,7 @@ program Z80Gen
                 if (success || instructionAddresses.Contains(hopperIndex))
                 {
                     uint z80Index = instructionAddresses[hopperIndex];
-                    z80DebugInfo[z80Index.ToString()] = lineNumber;
+                    z80DebugInfo["0x" + z80Index.ToHexString(4)] = lineNumber;
                     modified = true;
                 }
             }
@@ -1104,7 +1255,7 @@ program Z80Gen
                     writeMethod(index, methodCode);   
                     Parser.ProgressTick(".");
                     count++;
-                    if (output.Count > 0x8000)
+                    if (output.Count > 0xF000)
                     {
                         PrintLn();
                         PrintLn((output.Count).ToString() + " bytes Z80 assembly generated.", Colour.Red, Colour.Black);
@@ -1113,15 +1264,15 @@ program Z80Gen
                         break;
                     }
                 }
-                if (failed)
+                if (!failed)
                 {
-                    break;
+                    doCallPatches();
                 }
-                doCallPatches();
                 Parser.ProgressTick(".");
                 writeIHex(ihexFile, 0x0000, output);
-                File.Delete(codePath);
-                if (!Code.ExportCode(codePath)) // after
+                string zcodePath = codePath.Replace(".code", ".zcode");
+                File.Delete(zcodePath);
+                if (!Code.ExportCode(zcodePath)) // after
                 {
                     break;
                 }

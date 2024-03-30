@@ -129,6 +129,7 @@ unit SysCalls
         KeyboardScrollDeltaGet = 0x79,
         
         DiagnosticsDie = 0x7C,
+        DiagnosticsSetError = 0x7D,
         
         TypesTypeOf      = 0x7E,
         TypesValueTypeOf = 0x7F,

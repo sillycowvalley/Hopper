@@ -33,7 +33,11 @@ unit HopperVM
 
     friend Instructions;
     
+#ifdef CPU_Z80
+    uint dataMemoryStart;                // on the Z80 this must be initialized to start where the loaded program ends
+#else    
     const uint dataMemoryStart = 0x0000; // data memory magically exists from 0x0000 to 0xFFFF
+#endif
     
 #ifdef RUNTIME    
     const uint keyboardBufferSize = 256;
@@ -161,6 +165,9 @@ unit HopperVM
         binaryVersion      = ReadCodeWord(binaryAddress + 0x0000);
         constAddress       = ReadCodeWord(binaryAddress + 0x0002);
         methodTable        = binaryAddress + 0x0006;
+#ifdef CPU_Z80
+        dataMemoryStart = loadedAddress + loadedSize;        
+#endif
     }
     
     DataMemoryReset()
@@ -217,7 +224,11 @@ unit HopperVM
         // currently we have 64K on the Pi Pico (actually only 0xFF00 for various reasons)
         // to avoid any boundary condition issues in the heap allocator)
         // For Wemos D1 Mini, 32K segments so 0x8000
+#ifndef CPU_Z80        
         Memory.Initialize(dataMemory, (External.GetSegmentPages() << 8) - dataMemory);
+#else        
+        Memory.Initialize(dataMemory, 0xFFFF - dataMemory + 1); // +1 because it should be 0x10000 - dataMemory
+#endif
 
         breakpoints   = Memory.Allocate(32);
         ClearBreakpoints(true);

@@ -1,7 +1,7 @@
 program Mandelbrot
 {
     uses "/Source/Library/Boards/PiPico"
-        
+    
     {
         IO.Clear();
         IO.WriteLn();

@@ -52,5 +52,22 @@ unit Char
     bool IsWhitespace(char this)
     {
         return this == ' ' || this == char(0x09) || this == char(0x0A) || this == char(0x0C) || this == char(0x0D);
-    }        
+    }     
+    byte FromHex(char this)
+    {
+        byte hex = byte(this);
+        if (hex > 96) // 'a'
+        {
+            hex -= 87;
+        }
+        else if (hex > 64) // 'A'
+        {
+            hex -= 55;
+        }
+        else
+        {
+            hex -= 48; // '0'
+        }
+    }
+    
 }

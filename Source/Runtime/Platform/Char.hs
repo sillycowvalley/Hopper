@@ -54,4 +54,21 @@ unit HRChar
                ((b >= 65) && (b <= 70)) || // A..F
                ((b >= 97) && (b <= 102));  // a..f
     }
+    byte FromHex(char this)
+    {
+        byte hex = byte(this);
+        if (hex >= 97) // 'a'
+        {
+            hex -= 87; // 97 - 87 = 10 ('a' - 10)
+        }
+        else if (hex >= 65) // 'A'
+        {
+            hex -= 55; // 65 - 55 = 10 ('A' - 10)
+        }
+        else
+        {
+            hex -= 48; // '0'
+        }
+        return hex;
+    }
 }

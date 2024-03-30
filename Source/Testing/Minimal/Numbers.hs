@@ -24,7 +24,7 @@ program TestNumbers
     
     PrintFailed(uint instance)
     {    
-#ifndef MINIMAL_RUNTIME        
+#if !defined(MINIMAL_RUNTIME) && !defined(CPU_Z80)
         Serial.Connect();
 #endif
         Serial.WriteChar('D');Serial.WriteChar('A');Serial.WriteChar('N');Serial.WriteChar('G');Serial.WriteChar(':');
@@ -735,7 +735,7 @@ program TestNumbers
         
         //TestConstants();
         //TestEquals();
-        TestLessThan();
+        TestLessThan(); // *
         //TestGreaterThan();
         //TestGreaterThanOrEqual();
         //TestLessThanOrEqual();

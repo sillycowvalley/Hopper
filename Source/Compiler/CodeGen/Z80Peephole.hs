@@ -59,6 +59,10 @@ unit Peephole
                 {
                     continue;
                 }
+                if (LoadImmediatePushPop(output))  // for example, LD DE, nn, PUSH DE, POP HL -> LD HL, nn
+                {
+                    continue;
+                }
             }
             break;
         }
@@ -105,6 +109,74 @@ unit Peephole
         }
         return false;
     }
+    
+    bool LoadImmediatePushPop(<byte> output)
+    {
+        // for example, LD DE, nn, PUSH DE, POP HL -> LD HL, nn
+        
+        uint instructionCount = instructionAddresses.Count;
+        uint address0 = instructionCount-1;
+        uint iIndex0 = instructionAddresses[address0];
+        OpCode opCode0 = OpCode(output[iIndex0]);
+        uint address1 = instructionCount-2;
+        uint iIndex1 = instructionAddresses[address1];
+        OpCode opCode1 = OpCode(output[iIndex1]);
+        uint address2 = instructionCount-3;
+        uint iIndex2 = instructionAddresses[address2];
+        OpCode opCode2 = OpCode(output[iIndex2]);
+        
+        OpCode opCodeNew2 = OpCode.NOP;
+        
+        if ((opCode2 == OpCode.LD_DE_nn) && (opCode1 == OpCode.PUSH_DE))
+        {
+            if (opCode0 == OpCode.POP_HL)
+            {
+                opCodeNew2 = OpCode.LD_HL_nn;
+            }
+            else if (opCode0 == OpCode.POP_BC)
+            {
+                opCodeNew2 = OpCode.LD_BC_nn;
+            }
+        }
+        else if ((opCode2 == OpCode.LD_BC_nn) && (opCode1 == OpCode.PUSH_BC))
+        {
+            if (opCode0 == OpCode.POP_HL)
+            {
+                Print(" C! ");
+                opCodeNew2 = OpCode.LD_HL_nn;
+            }
+            else if (opCode0 == OpCode.POP_DE)
+            {
+                Print(" D! ");
+                opCodeNew2 = OpCode.LD_DE_nn;
+            }
+        }
+        else if ((opCode2 == OpCode.LD_HL_nn) && (opCode1 == OpCode.PUSH_HL))
+        {
+            if (opCode0 == OpCode.POP_DE)
+            {
+                Print(" E! ");
+                opCodeNew2 = OpCode.LD_DE_nn;
+            }
+            else if (opCode0 == OpCode.POP_BC)
+            {
+                Print(" F! ");
+                opCodeNew2 = OpCode.LD_BC_nn;
+            }
+        }
+        if (opCodeNew2 != OpCode.NOP)
+        {
+            output.SetItem(iIndex2, byte(opCodeNew2));     
+            output.Remove(iIndex0);
+            output.Remove(iIndex1);
+            instructionAddresses.Remove(address0);
+            instructionAddresses.Remove(address1);
+            return true;
+        }
+        
+        return false;
+    }
+    
     bool PushPopCompare(<byte> output)    
     {
         // PUSH DE, POP HL, CP A, L -> CP A, E
@@ -118,6 +190,7 @@ unit Peephole
         uint address2 = instructionCount-3;
         uint iIndex2 = instructionAddresses[address2];
         OpCode opCode2 = OpCode(output[iIndex2]);
+        
         OpCode opCodeNew0 = OpCode.NOP;
         
         if ((opCode1 == OpCode.POP_HL) && (opCode0 == OpCode.CP_A_L))
@@ -161,7 +234,6 @@ unit Peephole
             output.Remove(iIndex2);
             instructionAddresses.Remove(address1);
             instructionAddresses.Remove(address2);
-            
             return true;
         }
         return false;
