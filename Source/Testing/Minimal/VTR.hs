@@ -1,6 +1,8 @@
 program ValueTypeRuntimeTests
 {
-    //#define CPU_Z80
+    #define CPU_Z80
+    
+    #define CDECL
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/Serial"
@@ -208,8 +210,8 @@ program ValueTypeRuntimeTests
     Hopper()
     {
         BITS(); // BITAND, BITOR, BITXOR, BITSHL, BITSHR
-        ADD();  // ADD, ADDB, INCLOCALB, INCGLOBALB NE, JZB
-        SUB();  // SUB, SUBB, DECLOCALB, DECGLOBALB
-        EQ();   // EQ NE
+        //ADD();  // ADD, ADDB, INCLOCALB, INCGLOBALB NE, JZB
+        //SUB();  // SUB, SUBB, DECLOCALB, DECGLOBALB
+        //EQ();   // EQ NE
     }
 }

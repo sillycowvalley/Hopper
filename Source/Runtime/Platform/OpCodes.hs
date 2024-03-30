@@ -2,6 +2,10 @@ unit OpCodes
 {
     enum OpCode
     {
+        NOP      = 0x00,
+        PUSHR0   = 0x02,       // R0 -> [top]
+        POPR0    = 0x03,       // [top] -> R0
+        
         LIBCALL  = 0x08,       // <library method index>, iOverload = [top]
         LIBCALL0 = 0x09,       // <library method index>, iOverload = 0
         LIBCALL1 = 0x0A,       // <library method index>, iOverload = 1
@@ -30,7 +34,7 @@ unit OpCodes
         
         ENTER   = 0x49,       // new local stack frame: push BP to callstack, BP = SP
         
-        NOP     = 0x50,       // no operation
+        NOP2    = 0x50,       // no operation
         
         CAST    = 0x51,       // change type of [top] to <byte operand>
         

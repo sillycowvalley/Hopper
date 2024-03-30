@@ -170,7 +170,14 @@ program Compile
                             break;
                         }
                     }
-                    returnBytes = 1;
+                    if (IsCDecl)
+                    {
+                        CodeStream.AddInstruction(Instruction.POPR0);
+                    }
+                    else
+                    {
+                        returnBytes = 1;
+                    }
                 }
             }
             if (CodeStream.CheckedBuild)
@@ -180,33 +187,33 @@ program Compile
                 CodeStream.AddInstruction(Instruction.TESTBPB, byte(localsToPop));
             }
             
-            // bytesToPop = locals + arguments
-            uint bytesToPop = Block.GetLocalsToPop(true, false);
-            if (!NoPackedInstructions && (bytesToPop == 0))
+            // slotsToPop = locals + arguments
+            uint slotsToPop = Block.GetLocalsToPop(true, false);
+            if (!NoPackedInstructions && (slotsToPop == 0))
             {
                 // if there is a return value, then it is already exactly where it needs to be
                 CodeStream.AddInstruction(Instruction.RET0);
             }
             else if (returnBytes > 0)
             {
-                if (!NoPackedInstructions && (bytesToPop < 256))
+                if (!NoPackedInstructions && (slotsToPop < 256))
                 {
-                    CodeStream.AddInstruction(Instruction.RETRESB, byte(bytesToPop));
+                    CodeStream.AddInstruction(Instruction.RETRESB, byte(slotsToPop));
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.RETRES, bytesToPop);
+                    CodeStream.AddInstruction(Instruction.RETRES, slotsToPop);
                 }
             }
             else
             {
-                if (!NoPackedInstructions && (bytesToPop < 256))
+                if (!NoPackedInstructions && (slotsToPop < 256))
                 {
-                    CodeStream.AddInstruction(Instruction.RETB, byte(bytesToPop));
+                    CodeStream.AddInstruction(Instruction.RETB, byte(slotsToPop));
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.RET, bytesToPop);
+                    CodeStream.AddInstruction(Instruction.RET, slotsToPop);
                 }
             }
             success = true;
@@ -222,17 +229,17 @@ program Compile
         Parser.Advance(); // break;
         
         // - pop all locals till inner loop
-        uint bytesToPop = Block.GetBytesToPop(true, false);
-        if (bytesToPop > 0)
+        uint slotsToPop = Block.GetBytesToPop(true, false);
+        if (slotsToPop > 0)
         {
-            while (bytesToPop > 255)
+            while (slotsToPop > 255)
             {
                 CodeStream.AddInstruction(Instruction.DECSP, 0xFE); // even numbered stack slots (254, not 255)
-                bytesToPop = bytesToPop - 254; 
+                slotsToPop = slotsToPop - 254; 
             }
-            if (bytesToPop > 0)
+            if (slotsToPop > 0)
             {
-                CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
+                CodeStream.AddInstruction(Instruction.DECSP, byte(slotsToPop));
             }
         }
                
@@ -255,14 +262,14 @@ program Compile
         Parser.Advance(); // continue;
         
         // - pop all locals till inner loop
-        uint bytesToPop = Block.GetBytesToPop(true, true);
-        if (bytesToPop > 0)
+        uint slotsToPop = Block.GetBytesToPop(true, true);
+        if (slotsToPop > 0)
         {
-            if (bytesToPop > 255)
+            if (slotsToPop > 255)
             {
                 Die(0x0B); // limit
             }
-            CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
+            CodeStream.AddInstruction(Instruction.DECSP, byte(slotsToPop));
         }
         // - jump to current inner loop 'next'
         uint continueJump = CodeStream.NextAddress;
@@ -1609,6 +1616,10 @@ program Compile
                     CodeStream.AddInstruction(Instruction.CALL, igOverload);
                 }
             }
+            if (IsCDecl)
+            {
+                CDeclPostCALL(igOverload); // getter
+            }
             success = true;
             break;
         } // loop
@@ -2674,8 +2685,12 @@ program Compile
                  && (lastInstruction != Instruction.RETRES)
                    )
                 {
-                    Parser.ErrorAtCurrent("'return' expected");
-                    break;
+                    if (!IsCDecl || (lastInstruction != Instruction.RETB)) // CDECL TODO
+                    {
+                        PrintLn(Instructions.ToString(lastInstruction));
+                        Parser.ErrorAtCurrent("'return' expected");
+                        break;
+                    }
                 }
             }
             else
@@ -2699,18 +2714,18 @@ program Compile
                     CodeStream.AddInstruction(Instruction.TESTBPB, byte(localsToPop));
                 }
 
-                uint bytesToPop = Block.GetLocalsToPop(true, isMain);
-                if (!NoPackedInstructions && (bytesToPop == 0))
+                uint slotsToPop = Block.GetLocalsToPop(true, isMain);
+                if (!NoPackedInstructions && (slotsToPop == 0))
                 {
                     CodeStream.AddInstruction(Instruction.RET0);
                 }
-                else if (!NoPackedInstructions && (bytesToPop < 256))
+                else if (!NoPackedInstructions && (slotsToPop < 256))
                 {
-                    CodeStream.AddInstruction(Instruction.RETB, byte(bytesToPop));
+                    CodeStream.AddInstruction(Instruction.RETB, byte(slotsToPop));
                 }
                 else
                 {
-                    CodeStream.AddInstruction(Instruction.RET, bytesToPop);
+                    CodeStream.AddInstruction(Instruction.RET, slotsToPop);
                 }
             }
             if (!isMain)
@@ -2763,6 +2778,12 @@ program Compile
         //   <uint, string> gSourcePath;
         
         CodeStream.New();
+        if (IsCDecl)
+        {
+            // first instructions to the runtime indicate we are using CDecl
+            CodeStream.AddInstruction(Instruction.PUSHR0);
+            CodeStream.AddInstruction(Instruction.POPR0);
+        }
                              
         uint gCount = Symbols.GetGlobalCount();
         for (uint gIndex = 0; gIndex < gCount; gIndex++)
@@ -2912,7 +2933,7 @@ program Compile
             }
             
             string jsonPath = args[0];
-            string ext = ".json";
+            string ext = ".sym";
             if (!File.Exists(ref jsonPath, ref ext, "/Debug/Obj/"))
             {
                 badArguments();

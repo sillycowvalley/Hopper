@@ -1242,7 +1242,7 @@ program Translate
                 break;
             }
             string jsonPath = args[0];
-            string ext = ".json";
+            string ext = ".sym";
             if (!File.Exists(ref jsonPath, ref ext, "/Debug/Obj/"))
             {
                 BadArguments();

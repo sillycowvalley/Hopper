@@ -1,21 +1,24 @@
 program Runtime
 {
-    
+    #define EXPERIMENTAL 
+     
 #define SERIAL_CONSOLE // Source/System/IO uses serial only (for MCU's etc)
 #define RUNTIME        // keyboard buffer to make IO.IsBreak() work cannot be a 'string'
+
  
 //#define CHECKED      // mainly stack checks, range checks and division by zero
 //#define MEMORYLEAKS
 
-#define LOCALDEBUGGER  // for debugging portable runtime locally
-//#define CPU_Z80
+//#define LOCALDEBUGGER  // for debugging portable runtime locally
+#define CPU_Z80
 //#define NO_JIX_INSTRUCTIONS
 
 // Minimal Runtime is the value-type only, minimal SysCalls version that we translate to Z80
 #ifdef CPU_Z80
+    #define CDECL
     #define VALUE_TYPE_RUNTIME
 #endif
-#define VALUE_TYPE_RUNTIME
+//#define VALUE_TYPE_RUNTIME
 
 #ifndef VALUE_TYPE_RUNTIME
     #define INCLUDE_FILESYSTEM

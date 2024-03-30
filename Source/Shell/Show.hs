@@ -202,7 +202,8 @@ program Show
             LinePrinter linePrinter = DefaultLinePrinter;
             string extension = Path.GetExtension(filePath);
             extension = extension.ToLower();
-            if ((extension == ".hs") || (extension == ".asm") || (extension == ".json") || (extension == ".code") || (extension == ".options"))
+            if ((extension == ".hs") || (extension == ".asm") || (extension == ".json") ||
+                (extension == ".sym") || (extension == ".code") || (extension == ".options"))
             {
                 isAssembly = (extension == ".asm");
                 linePrinter = HopperLinePrinter;

@@ -1,9 +1,11 @@
 unit AsmZ80
 {
-    const uint CallStackAddress  = 0xFC00; // 512 bytes
-    const uint CallStackSize     = 0x0200;
+    const uint StackAddress  = 0xFC00; // 512 bytes
+    const uint StackSize     = 0x0200;
     
-    const uint ValueStackAddress = 0xFE00; // 512 bytes
+    // global addresses
+    const uint SPBPSwapper       = 0xFE00; // 2 bytes
+    const uint LastError         = 0xFE02; // 2 bytes
         
     enum OpCode
     {
@@ -135,6 +137,20 @@ unit AsmZ80
         LD_iIX_d_n = 0xDD36,
         LD_iIY_d_n = 0xFD36,
         
+        LD_BC_inn = 0xED4B,
+        LD_DE_inn = 0xED5B,
+        LD_HL_inn = 0xED6B,
+        LD_SP_inn = 0xED7B,
+        LD_IX_inn = 0xDD2A,
+        LD_IY_inn = 0xFD2A,
+        
+        LD_inn_BC = 0xED43,
+        LD_inn_DE = 0xED53,
+        LD_inn_HL = 0xED63,
+        LD_inn_SP = 0xED73,
+        LD_inn_IX = 0xDD2A,
+        LD_inn_IY = 0xFD2A,
+        
         LD_BC_nn = 0x01,
         LD_DE_nn = 0x11,
         LD_HL_nn = 0x21,
@@ -143,6 +159,7 @@ unit AsmZ80
         LD_SP_nn = 0x31,
         
         LD_SP_HL = 0xF9,
+        EX_iSP_HL = 0xE3,
         
         LD_iHL_n = 0x36,
         
@@ -384,24 +401,36 @@ unit AsmZ80
         
         HALT    = 0x76,
         
-        PUSH_DE = 0xD5,
-        POP_DE  = 0xD1,
         PUSH_IX = 0xDDE5,
         PUSH_IY = 0xFDE5,
         POP_IX  = 0xDDE1,
         POP_IY  = 0xFDE1,
+        
+        // PUSH
+        PUSH_BC = 0xC5,
+        PUSH_DE = 0xD5,
+        PUSH_HL = 0xE5,
+        PUSH_AF = 0xF5,
+        
+        // POP
+        POP_BC = 0xC1,
+        POP_DE = 0xD1,
+        POP_HL = 0xE1,
+        POP_AF = 0xF1
+        
         
         
     }
     flags OperandType
     {
         None,
-        Immediate8         = 0x01, //  n
-        Immediate16        = 0x02, // aa | nn
-        ImmediateIndirect  = 0x04, // (aa)
-        Indexed            = 0x08, // (rr)
-        Relative           = 0x10, // d
-        IndexedRelative    = 0x20, // (XY+d)
+        Immediate8         = 0x01,  //  n
+        Immediate16        = 0x02,  // aa | nn
+        ImmediateIndirect  = 0x04,  // (aa)
+        Indexed            = 0x08,  // (ss)
+        Relative           = 0x10,  // d
+        IndexedRelative    = 0x18,  // (XY+d)
+        ImmediateIndexed   = 0x0C,  // (nn)
         Implied            = 0x40,
         RelativeImmediate8 = 0x80, // (XY+d), n
     }
@@ -938,6 +967,69 @@ unit AsmZ80
                     name = "LD (IY+d), L";
                     operandType = OperandType.IndexedRelative;
                 }
+                
+                case OpCode.LD_BC_inn:
+                {
+                    name = "LD BC, (nn)";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_DE_inn:
+                {
+                    name = "LD DE, (nn)";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_HL_inn:
+                {
+                    name = "LD HL, (nn)";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_SP_inn:
+                {
+                    name = "LD SP, (nn)";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_IX_inn:
+                {
+                    name = "LD IX, (nn)";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_IY_inn:
+                {
+                    name = "LD IY, (nn)";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                
+                case OpCode.LD_inn_BC:
+                {
+                    name = "LD (nn), BC";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_inn_DE:
+                {
+                    name = "LD (nn), DE";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_inn_HL:
+                {
+                    name = "LD (nn), HL";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_inn_SP:
+                {
+                    name = "LD (nn), SP";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_inn_IX:
+                {
+                    name = "LD (nn), IX";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                case OpCode.LD_inn_IY:
+                {
+                    name = "LD (nn), IY";
+                    operandType = OperandType.ImmediateIndexed;
+                }
+                
                 
                 case OpCode.LD_iIX_d_n:
                 {
@@ -2130,6 +2222,12 @@ unit AsmZ80
                     operandType = OperandType.Implied;
                 }
 
+
+                case OpCode.EX_iSP_HL:
+                {
+                    name = "LD (SP), HL";
+                    operandType = OperandType.Implied;
+                }
                 case OpCode.LD_SP_HL:
                 {
                     name = "LD SP, HL";
@@ -2183,9 +2281,29 @@ unit AsmZ80
                     name = "LD SP,HL";
                     operandType = OperandType.Implied;
                 }
+                case OpCode.PUSH_BC:
+                {
+                    name = "PUSH BC";
+                    operandType = OperandType.Implied;
+                }
                 case OpCode.PUSH_DE:
                 {
                     name = "PUSH DE";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.PUSH_HL:
+                {
+                    name = "PUSH HL";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.PUSH_AF:
+                {
+                    name = "PUSH AF";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.POP_BC:
+                {
+                    name = "POP BC";
                     operandType = OperandType.Implied;
                 }
                 case OpCode.POP_DE:
@@ -2193,7 +2311,17 @@ unit AsmZ80
                     name = "POP DE";
                     operandType = OperandType.Implied;
                 }
-                
+                case OpCode.POP_HL:
+                {
+                    name = "POP HL";
+                    operandType = OperandType.Implied;
+                }
+                case OpCode.POP_AF:
+                {
+                    name = "POP AF";
+                    operandType = OperandType.Implied;
+                }
+                               
                 case OpCode.RET:
                 {
                     name = "RET";
@@ -2357,6 +2485,10 @@ unit AsmZ80
             {
                 operandLength = 2;
             }
+            case OperandType.ImmediateIndexed:
+            {
+                operandLength = 2;
+            }
         }
         return name;
     }
@@ -2409,6 +2541,10 @@ unit AsmZ80
             case OperandType.ImmediateIndirect:
             {
                 disassembly = disassembly.Replace("nn", "0x" + operand.ToHexString(4));
+            }
+            case OperandType.ImmediateIndexed:
+            {
+                disassembly = disassembly.Replace("(nn)", "(0x" + operand.ToHexString(4) + ")");
             }
             case OperandType.Relative:
             case OperandType.IndexedRelative:

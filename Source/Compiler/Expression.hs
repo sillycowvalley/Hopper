@@ -639,9 +639,12 @@ unit Expression
                 {
                     break;
                 }
-                
                 CodeStream.AddInstructionPushVariable(methodName);
                 CodeStream.AddInstruction(Instruction.CALLREL);
+                if (IsCDecl)
+                {
+                    CDeclPostCALLDelegate(iOverload); // delegate
+                }
                 break;
             }
             if (Parser.HadError)
@@ -656,6 +659,7 @@ unit Expression
             // !isDelegate: already added where the delegate method was assigned to a variable
             Symbols.OverloadToCompile(iOverload); // CompileMethodCall(methodName): Setters, function calls, actual method calls
             Symbols.AddFunctionCall(iOverload);   // CompileMethodCall(methodName)
+            
             if (Symbols.IsSysCall(iOverload))
             {
                 if (collectionValueType.Length != 0)
@@ -699,7 +703,6 @@ unit Expression
                         }
                     }
                 }
-                
                 byte iSysCall = Symbols.GetSysCallIndex(iOverload);
                 byte iSysOverload = Symbols.GetSysCallOverload(iOverload);
                 if ((iSysOverload == 0) && TryUserSysCall(methodName))
@@ -748,6 +751,10 @@ unit Expression
                 {
                     CodeStream.AddInstruction(Instruction.CALL, iOverload);
                 }
+            }
+            if (IsCDecl)
+            {
+                CDeclPostCALL(iOverload); // CompileMethodCall
             }
             break;
         } // loop

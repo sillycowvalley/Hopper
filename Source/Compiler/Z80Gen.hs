@@ -19,6 +19,8 @@ program Z80Gen
     
     
     uses "CODEGEN/AsmZ80"
+    uses "CODEGEN/Z80Library"
+    uses "CODEGEN/Z80Peephole"
     
     uses "Tokens/Token"
     uses "Tokens/Scanner"
@@ -37,821 +39,7 @@ program Z80Gen
     
     bool NoPackedInstructions { get { return false; } }
     
-    Emit(OpCode opCode)
-    {
-        uint ui = uint(opCode);
-        if ((ui & 0xFF00) != 0)
-        {
-            output.Append(byte(ui >> 8));
-        }
-        output.Append(byte(ui & 0xFF));
-    }
-    EmitByte(OpCode opCode, byte lsb)
-    {
-        Emit(opCode);
-        EmitByte(lsb);
-    }
-    EmitOffset(OpCode opCode, int offset)
-    {
-        if (offset < 0)
-        {
-            offset += 256;
-        }
-        byte lsb = byte(offset);
-        Emit(opCode);
-        EmitByte(lsb);
-    }
-    EmitOffsetByte(OpCode opCode, int offset, byte msb)
-    {
-        if (offset < 0)
-        {
-            offset += 256;
-        }
-        byte lsb = byte(offset);
-        Emit(opCode);
-        EmitByte(lsb);
-        EmitByte(msb);
-    }
-    EmitWord(OpCode opCode, uint operand)
-    {
-        Emit(opCode);
-        EmitByte(byte(operand & 0xFF));
-        EmitByte(byte(operand >> 8));
-    }
-    EmitByte(byte lsb)
-    {
-        output.Append(lsb);
-    }
-    EmitWord(uint word)
-    {
-        EmitByte(byte(word & 0xFF));
-        EmitByte(byte(word >> 8));
-    }
-    EmitPushImmediate()
-    {
-        // assumes the immediate value is in BC   
-        EmitOffset(OpCode.LD_iIY_d_C, +0);
-        Emit(OpCode.INC_IY);
-        EmitOffset(OpCode.LD_iIY_d_B, +0);
-        Emit(OpCode.INC_IY);
-#ifndef INLINE_STACK_OPERATIONS        
-        Emit(OpCode.RET);
-#endif
-    }
-    EmitPopAbsolute()
-    {
-        // assumes the address on the stack is in C
-        EmitByte(OpCode.LD_B_n, 0);
-        EmitWord(OpCode.LD_IX_nn, ValueStackAddress);
-        Emit(OpCode.ADD_IX_BC);
-        Emit(OpCode.ADD_IX_BC);
-        
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_A_iIY_d, +0);
-        EmitOffset(OpCode.LD_iIX_d_A, +1);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_A_iIY_d, +0);
-        EmitOffset(OpCode.LD_iIX_d_A, +0);
-        
-#ifndef INLINE_STACK_OPERATIONS        
-        Emit(OpCode.RET);
-#endif
-    }
-    
-    EmitPushAbsolute()
-    {
-        // assumes the address on the stack is in C
-        EmitByte(OpCode.LD_B_n, 0);
-        EmitWord(OpCode.LD_IX_nn, ValueStackAddress);
-        Emit(OpCode.ADD_IX_BC);
-        Emit(OpCode.ADD_IX_BC);
-        
-        EmitOffset(OpCode.LD_A_iIX_d, +0);
-        EmitOffset(OpCode.LD_iIY_d_A, +0);
-        Emit(OpCode.INC_IY);
-        
-        EmitOffset(OpCode.LD_A_iIX_d, +1);
-        EmitOffset(OpCode.LD_iIY_d_A, +0);
-        Emit(OpCode.INC_IY);
-        
-#ifndef INLINE_STACK_OPERATIONS        
-        Emit(OpCode.RET);
-#endif
-    }
-    EmitPushOffset()
-    {
-        // assumes the offset from BP (DE) on the stack is in BC (both because it could be negative)
-        EmitWord(OpCode.LD_IX_nn, 0);
-        Emit(OpCode.ADD_IX_DE); // BP
-        
-        Emit(OpCode.ADD_IX_BC); // +offset
-        Emit(OpCode.ADD_IX_BC);
-        
-        EmitOffset(OpCode.LD_A_iIX_d, +0);
-        EmitOffset(OpCode.LD_iIY_d_A, +0);
-        Emit(OpCode.INC_IY);
-        
-        EmitOffset(OpCode.LD_A_iIX_d, +1);
-        EmitOffset(OpCode.LD_iIY_d_A, +0);
-        Emit(OpCode.INC_IY);
-        
-#ifndef INLINE_STACK_OPERATIONS        
-        Emit(OpCode.RET);
-#endif
-    }
-    EmitPopOffset()
-    {
-        // assumes the offset from BP (DE) on the stack is in BC (both because it could be negative)
-        EmitWord(OpCode.LD_IX_nn, 0);
-        Emit(OpCode.ADD_IX_DE); // BP
-        
-        Emit(OpCode.ADD_IX_BC); // +offset
-        Emit(OpCode.ADD_IX_BC);
-                      
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_A_iIY_d, +0);
-        EmitOffset(OpCode.LD_iIX_d_A, +1);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_A_iIY_d, +0);
-        EmitOffset(OpCode.LD_iIX_d_A, +0);
-        
-#ifndef INLINE_STACK_OPERATIONS        
-        Emit(OpCode.RET);
-#endif
-    }
-    
-    uint compareInstruction(Instruction instruction, uint patchLocation)
-    {
-        if (patchLocation != 0)
-        {
-            uint offset = output.Count - patchLocation - 1;
-            if (offset > 127) { Die(0x0B); }
-            output.SetItem(patchLocation, byte(offset));
-        }
-        EmitByte(OpCode.CP_A_n, byte(instruction));
-        patchLocation = output.Count+1;
-        EmitByte(OpCode.JR_NZ_e, 0);
-        return patchLocation;
-    }
-    
-    popBCAndHL_noDEC() // top -> BC, next -> HL
-    {
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB   
-    }
-    
-    popBCAndDE_noDEC() // top -> BC, next -> DE
-    {
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_E_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_D_iIY_d, -1); // MSB   
-    }
-    
-    popBC_noDEC() // top -> BC
-    {
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
-    }
-    
-    popA() // top -> A
-    {
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_A_iIY_d, 0); // LSB
-        // ignore MSB
-    }
-        
-    pushHL_noINC() // push HL
-    {
-        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-    }
-    pushBC_noINC() // push BC
-    {
-        EmitOffset(OpCode.LD_iIY_d_C, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_B, -1); // MSB
-    }   
-    pushA_noINC() // push A
-    {
-        EmitOffset(OpCode.LD_iIY_d_A, -2);        // LSB
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -1, 0); // MSB
-    }
-    
-    
-    utilityDivide() // BC = BC / DE, remainder in HL
-    {
-        // https://map.grauw.nl/articles/mult_div_shifts.php
-        Emit(OpCode.AND_A);
-// Div16:
-        EmitWord(OpCode.LD_HL_nn, 0);
-        Emit(OpCode.LD_A_B);
-        EmitByte(OpCode.LD_B_n, 8);
-// Div16_Loop1:
-        Emit(OpCode.RLA);
-        Emit(OpCode.ADC_HL_HL);
-        Emit(OpCode.SBC_HL_DE);
-        EmitOffset(OpCode.JR_NC_e, +2); // Div16_NoAdd1
-        Emit(OpCode.ADC_HL_DE);
-// Div16_NoAdd1:
-        EmitOffset(OpCode.DJNZ_e, -11);// Div16_Loop1
-        Emit(OpCode.RLA);
-        Emit(OpCode.CLP);
-        Emit(OpCode.LD_B_A);
-        Emit(OpCode.LD_A_C);
-        Emit(OpCode.LD_C_B);
-        EmitByte(OpCode.LD_B_n, 8);
-// Div16_Loop2:
-        Emit(OpCode.RLA);
-        Emit(OpCode.ADC_HL_HL);
-        Emit(OpCode.SBC_HL_DE);
-        EmitOffset(OpCode.JR_NC_e, +2); // Div16_NoAdd2
-        Emit(OpCode.ADC_HL_DE);
-// Div16_NoAdd2:
-        EmitOffset(OpCode.DJNZ_e, -11);// Div16_Loop2
-        Emit(OpCode.RLA);
-        Emit(OpCode.CLP);
-        Emit(OpCode.LD_B_C);
-        Emit(OpCode.LD_C_A); 
-    }
-    utilityMultiply() // DEHL=BC*DE
-    {
-        // https://tutorials.eeems.ca/Z80ASM/part4.htm
-        EmitWord(OpCode.LD_HL_nn, 0);                          
-        EmitByte(OpCode.LD_A_n, 16);
-//Mul16Loop:
-        Emit(OpCode.ADD_HL_HL);
-        Emit(OpCode.RL_E);
-        Emit(OpCode.RL_D);
-        EmitOffset(OpCode.JR_NC_e, +4); // NoMul16:
-        Emit(OpCode.ADD_HL_BC);
-        EmitOffset(OpCode.JR_NC_e, +1); // NoMul16:
-        Emit(OpCode.INC_DE);
-//NoMul16:
-        Emit(OpCode.DEC_A);
-        EmitOffset(OpCode.JR_NZ_e, -14); // //Mul16Loop:
-    }
-    
-    
-    EmitADDB()
-    {
-        Emit(OpCode.LD_A_C);
-        EmitOffset(OpCode.ADD_A_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_A, -2);
-        EmitOffset(OpCode.JR_NC_e, +3);
-        EmitOffset(OpCode.INC_iIY_d, -1);
-    }
-    EmitSUBB()
-    {
-        EmitByte(OpCode.LD_B_n, 0);
-        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-        Emit(OpCode.SBC_HL_BC);
-        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-    }
-    
-    EmitBITAND()
-    {
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-        Emit(OpCode.LD_A_L);
-        Emit(OpCode.AND_A_C);
-        Emit(OpCode.LD_L_A);
-        Emit(OpCode.LD_A_H);
-        Emit(OpCode.AND_A_B);
-        Emit(OpCode.LD_H_A);
-        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-    }
-    EmitBITOR()
-    {
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-        Emit(OpCode.LD_A_L);
-        Emit(OpCode.OR_A_C);
-        Emit(OpCode.LD_L_A);
-        Emit(OpCode.LD_A_H);
-        Emit(OpCode.OR_A_B);
-        Emit(OpCode.LD_H_A);
-        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-    } 
-    EmitBITXOR()
-    {
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-        Emit(OpCode.LD_A_L);
-        Emit(OpCode.XOR_A_C);
-        Emit(OpCode.LD_L_A);
-        Emit(OpCode.LD_A_H);
-        Emit(OpCode.XOR_A_B);
-        Emit(OpCode.LD_H_A);
-        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-    } 
-    EmitBITNOT()
-    {
-        EmitOffset(OpCode.LD_A_iIY_d, -2); // LSB
-        Emit(OpCode.CPL_A_A);              // Complement (bitwise invert) the contents of A
-        EmitOffset(OpCode.LD_iIY_d_A, -2); // LSB
-        EmitOffset(OpCode.LD_A_iIY_d, -1); // MSB
-        Emit(OpCode.CPL_A_A);              // Complement (bitwise invert) the contents of A
-        EmitOffset(OpCode.LD_iIY_d_A, -1); // MSB
-    } 
-    
-    EmitBITSHR()
-    {
-        EmitOffset(OpCode.LD_B_iIY_d, -2); // assuming the shift is < 256
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-        
-        Emit(OpCode.AND_A);
-        Emit(OpCode.SRL_H);
-        Emit(OpCode.RR_L);
-        EmitOffset(OpCode.DJNZ_e, -7);
-        
-        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-    }
-    EmitBITSHL()
-    {
-        EmitOffset(OpCode.LD_B_iIY_d, -2); // assuming the shift is < 256
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-        
-        Emit(OpCode.AND_A);
-        Emit(OpCode.SLA_L);
-        Emit(OpCode.RL_H);
-        EmitOffset(OpCode.DJNZ_e, -7);
-        
-        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-    }
-    
-    EmitADD()
-    {
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-        Emit(OpCode.ADC_HL_BC);
-        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-    }  
-    EmitSUB()
-    {
-        Emit(OpCode.AND_A);
-        EmitOffset(OpCode.LD_C_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_B_iIY_d, -1); // MSB
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-        Emit(OpCode.SBC_HL_BC);
-        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-    }
-    EmitMUL()
-    {
-        Emit(OpCode.PUSH_DE); // save BP
-        popBCAndDE_noDEC();         // top -> BC, next -> DE
-        
-        utilityMultiply(); // DEHL=BC*DE
-        
-        pushHL_noINC();            // push HL
-        Emit(OpCode.POP_DE); // restore BP
-    }
-    EmitDIV()
-    {
-        Emit(OpCode.PUSH_DE); // save BP
-        popBCAndDE_noDEC();         // top -> BC, next -> DE
-        
-        utilityDivide(); // BC = BC / DE, remainder in HL
-        
-        pushBC_noINC();            // push BC
-        Emit(OpCode.POP_DE); // restore BP
-    }
-    EmitMOD()
-    {
-        Emit(OpCode.PUSH_DE); // save BP
-        popBCAndDE_noDEC();         // top -> BC, next -> DE
-        
-        utilityDivide(); // BC = BC / DE, remainder in HL
-        
-        pushHL_noINC();            // push HL
-        Emit(OpCode.POP_DE); // restore BP
-    }
-    
-    
-
-
-    // | Comparison | C flag | Z flag | Meaning                          |
-    // |------------|--------|--------|----------------------------------|
-    // | A < B      |   1    |   0    | A is less than B                 |
-    // | A <= B     |   *    |   1    | A is less than or equal to B     |
-    // | A > B      |   0    |   0    | A is greater than B              |
-    // | A >= B     |   *    |   1    | A is greater than or equal to B  |
-    // | A == B     |   *    |   1    | A is equal to B                  |
-    // | A != B     |   *    |   0    | A is not equal to B              |
-      
-    
-    EmitLE()
-    {
-        popBCAndHL_noDEC(); // top -> BC, next -> HL 
-        // LE: next = HL <= BC ? 1 : 0   
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -1, 0); // MSB
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 1); // LSB: result = true
-        
-        Emit(OpCode.LD_A_H);              // MSB
-        Emit(OpCode.CP_A_B);     
-        EmitOffset(OpCode.JR_NZ_e,  +2);  // UseMSB
-        Emit(OpCode.LD_A_L);              // LSB
-        Emit(OpCode.CP_A_C);      
-//UseMSB:        
-        EmitOffset(OpCode.JR_Z_e, +6);    // Exit
-        EmitOffset(OpCode.JR_C_e, +4);    // Exit
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 0); // LSB: result = false
-// Exit:        
-    }
-    
-    EmitGE()
-    {
-        popBCAndHL_noDEC(); // top -> BC, next -> HL 
-        // GE: next = HL >= BC ? 1 : 0   
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -1, 0); // MSB
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 0); // LSB: result = false
-
-        Emit(OpCode.LD_A_H);               // MSB
-        Emit(OpCode.CP_A_B);     
-        EmitOffset(OpCode.JR_NZ_e,  +2);   // UseMSB
-        Emit(OpCode.LD_A_L);               // LSB
-        Emit(OpCode.CP_A_C);      
-//UseMSB:
-        EmitOffset(OpCode.JR_C_e, +4);     // Exit
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 1); // LSB: result = true
-// Exit:
-    }
-    EmitLT()
-    {
-        popBCAndHL_noDEC(); // top -> BC, next -> HL 
-        // LT: next = HL < BC  ? 1 : 0   
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -1, 0); // MSB
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 0); // LSB: result = false
-
-        Emit(OpCode.LD_A_H);               // MSB
-        Emit(OpCode.CP_A_B);     
-        EmitOffset(OpCode.JR_NZ_e,  +2);   // UseMSB
-        Emit(OpCode.LD_A_L);               // LSB
-        Emit(OpCode.CP_A_C);      
-//UseMSB:
-        EmitOffset(OpCode.JR_NC_e, +4);   // Exit
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 1); // LSB: result = true
-// Exit:
-    }
-    
-    EmitGT()
-    {
-        popBCAndHL_noDEC(); // top -> BC, next -> HL 
-        // GT : next = HL > BC ? 1 : 0
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -1, 0); // MSB
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 0); // LSB: result = false
-        
-        Emit(OpCode.LD_A_H);              // MSB
-        Emit(OpCode.CP_A_B);     
-        EmitOffset(OpCode.JR_NZ_e,  +2);  // UseMSB
-        Emit(OpCode.LD_A_L);              // LSB
-        Emit(OpCode.CP_A_C);      
-//UseMSB:        
-        EmitOffset(OpCode.JR_Z_e, +6);    // Exit
-        EmitOffset(OpCode.JR_C_e, +4);    // Exit
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 1); // LSB: result = true
-// Exit:        
-    }
-    
-       
-    EmitEQ()
-    {
-        popBCAndHL_noDEC(); // top -> BC, next -> HL 
-        
-        // result = false
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 0); // LSB
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -1, 0); // MSB
-        
-        // Compare BC and HL
-        Emit(OpCode.LD_A_B);            // MSB     
-        Emit(OpCode.CP_A_H);     
-        EmitOffset(OpCode.JR_NZ_e,  +8);  // B!= H -> Exit
-        Emit(OpCode.LD_A_C);            // LSB
-        Emit(OpCode.CP_A_L);      
-        EmitOffset(OpCode.JR_NZ_e,  +4); // C != L -> Exit
-        // BC == HL
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 1); // LSB
-// Exit:        
-    }
-    EmitNE()
-    {
-        popBCAndHL_noDEC(); // top -> BC, next -> HL 
-        
-        // result = true
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 1); // LSB
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -1, 0); // MSB
-        
-        // Compare BC and HL
-        Emit(OpCode.LD_A_B);            // MSB     
-        Emit(OpCode.CP_A_H);     
-        EmitOffset(OpCode.JR_NZ_e,  +8);  // B!= H -> Exit
-        Emit(OpCode.LD_A_C);            // LSB
-        Emit(OpCode.CP_A_L);      
-        EmitOffset(OpCode.JR_NZ_e,  +4); // C != L -> Exit
-        // BC == HL
-        EmitOffsetByte(OpCode.LD_iIY_d_n, -2, 0); // LSB
-// Exit:        
-    }
-    
-    EmitINCLOCALB()
-    {
-        // assumes the offset from BP (DE) on the stack is in BC (both 'B' and 'C' because it could be negative)
-        EmitWord(OpCode.LD_IX_nn, 0);
-        Emit(OpCode.ADD_IX_DE); // BP
-        
-        Emit(OpCode.ADD_IX_BC); // +offset
-        Emit(OpCode.ADD_IX_BC);
-        
-        EmitOffset(OpCode.INC_iIX_d,  +0); // LSB
-        EmitOffset(OpCode.JR_NZ_e,    +3);
-        EmitOffset(OpCode.INC_iIX_d,  +1); // MSB
-    }
-    EmitDECLOCALB()
-    {
-        // assumes the offset from BP (DE) on the stack is in BC (both 'B' and 'C' because it could be negative)
-        EmitWord(OpCode.LD_IX_nn, 0);
-        Emit(OpCode.ADD_IX_DE); // BP
-        
-        Emit(OpCode.ADD_IX_BC); // +offset
-        Emit(OpCode.ADD_IX_BC);
-        
-        EmitOffset(OpCode.DEC_iIX_d,  +0); // LSB
-        EmitByte  (OpCode.LD_A_n,   0xFF);
-        EmitOffset(OpCode.CP_A_iIX_d, +0); // wrapped around from 0x00 to 0xFF?
-        EmitOffset(OpCode.JR_NZ_e,    +3);
-        EmitOffset(OpCode.DEC_iIX_d,  +1); // MSB
-    }
-    EmitINCGLOBALB()
-    {
-        // assumes the address on the stack is in C
-        EmitByte(OpCode.LD_B_n, 0);
-        EmitWord(OpCode.LD_IX_nn, ValueStackAddress);
-        Emit(OpCode.ADD_IX_BC); // + address
-        Emit(OpCode.ADD_IX_BC);
-        
-        EmitOffset(OpCode.INC_iIX_d,  +0); // LSB
-        EmitOffset(OpCode.JR_NZ_e,    +3);
-        EmitOffset(OpCode.INC_iIX_d,  +1); // MSB
-    }
-    EmitDECGLOBALB()
-    {
-        // assumes the address on the stack is in C
-        EmitByte(OpCode.LD_B_n, 0);
-        EmitWord(OpCode.LD_IX_nn, ValueStackAddress);
-        Emit(OpCode.ADD_IX_BC); // + address
-        Emit(OpCode.ADD_IX_BC);
-        
-        EmitOffset(OpCode.DEC_iIX_d,  +0); // LSB
-        EmitByte  (OpCode.LD_A_n,   0xFF);
-        EmitOffset(OpCode.CP_A_iIX_d, +0); // wrapped around from 0x00 to 0xFF?
-        EmitOffset(OpCode.JR_NZ_e,    +3);
-        EmitOffset(OpCode.DEC_iIX_d,  +1); // MSB
-    }
-    
-        
-       
-    EmitInstructions()
-    {
-        uint patchLocation;
-        
-        // instruction is in A, operand (if any) is in C or BC
-        
-        // ADDB - operand to add is in C
-        patchLocation = compareInstruction(Instruction.ADDB, patchLocation);
-        EmitADDB();
-        Emit(OpCode.RET);
-        
-        // SUBB - operand to subtract is in C
-        patchLocation = compareInstruction(Instruction.SUBB, patchLocation);
-        EmitSUBB();
-        Emit(OpCode.RET);
-        
-        // ADD: next = next + top
-        patchLocation = compareInstruction(Instruction.ADD, patchLocation);
-        EmitADD();
-        Emit(OpCode.RET);
-        
-        // SUB: next = next + top
-        patchLocation = compareInstruction(Instruction.SUB, patchLocation);
-        EmitSUB();
-        Emit(OpCode.RET);
-        
-        // ADDI: next = next + top
-        patchLocation = compareInstruction(Instruction.ADDI, patchLocation);
-        EmitADD();
-        Emit(OpCode.RET);
-        
-        // SUBI: next = next + top
-        patchLocation = compareInstruction(Instruction.SUBI, patchLocation);
-        EmitSUB();
-        Emit(OpCode.RET);
-        
-        // MUL: next = next * top
-        patchLocation = compareInstruction(Instruction.MUL, patchLocation);
-        EmitMUL();
-        Emit(OpCode.RET);
-               
-        // DIV: next = next / top
-        patchLocation = compareInstruction(Instruction.DIV, patchLocation);
-        EmitDIV();
-        Emit(OpCode.RET);
-        
-        // MOD: next = next % top
-        patchLocation = compareInstruction(Instruction.MOD, patchLocation);
-        EmitMOD();
-        Emit(OpCode.RET);
-        
-        // BITAND: next = next & top
-        patchLocation = compareInstruction(Instruction.BITAND, patchLocation);
-        EmitBITAND();
-        Emit(OpCode.RET);
-        
-        // BITOR: next = next | top
-        patchLocation = compareInstruction(Instruction.BITOR, patchLocation);
-        EmitBITOR();
-        Emit(OpCode.RET);
-        
-        // BITXOR: next = next ^ top
-        patchLocation = compareInstruction(Instruction.BITXOR, patchLocation);
-        EmitBITXOR();
-        Emit(OpCode.RET);
-        
-        // BITNOT: next = next ^ top
-        patchLocation = compareInstruction(Instruction.BITNOT, patchLocation);
-        EmitBITNOT();
-        Emit(OpCode.RET);
-        
-        // BITSHR: next = next >> top
-        patchLocation = compareInstruction(Instruction.BITSHR, patchLocation);
-        EmitBITSHR();
-        Emit(OpCode.RET);
-        
-        // BITSHL: next = next >> top
-        patchLocation = compareInstruction(Instruction.BITSHL, patchLocation);
-        EmitBITSHL();
-        Emit(OpCode.RET);
-        
-        // LE: next = next <= top ? 1 : 0
-        patchLocation = compareInstruction(Instruction.LE, patchLocation);
-        EmitLE();
-        Emit(OpCode.RET);
-        
-        // LT: next = next < top ? 1 : 0
-        patchLocation = compareInstruction(Instruction.LT, patchLocation);
-        EmitLT();
-        Emit(OpCode.RET);
-        
-        // GE: next = next >= top ? 1 : 0
-        patchLocation = compareInstruction(Instruction.GE, patchLocation);
-        EmitGE();
-        Emit(OpCode.RET);
-        
-        // GT: next = next > top ? 1 : 0
-        patchLocation = compareInstruction(Instruction.GT, patchLocation);
-        EmitGT();
-        Emit(OpCode.RET);
-        
-        // EQ: next = next == top ? 1 : 0
-        patchLocation = compareInstruction(Instruction.EQ, patchLocation);
-        EmitEQ();
-        Emit(OpCode.RET);
-        
-        // NE: next = next == top ? 1 : 0
-        patchLocation = compareInstruction(Instruction.NE, patchLocation);
-        EmitNE();
-        Emit(OpCode.RET);
-        
-        // INCLOCALB: [BP+offset]++
-        patchLocation = compareInstruction(Instruction.INCLOCALB, patchLocation);
-        EmitINCLOCALB();
-        Emit(OpCode.RET);
-        
-        // INCLOCALIB: [BP+offset]++
-        patchLocation = compareInstruction(Instruction.INCLOCALIB, patchLocation);
-        EmitINCLOCALB(); // use the unsigned version
-        Emit(OpCode.RET);        
-        
-        // DECLOCALB: [BP+offset]--
-        patchLocation = compareInstruction(Instruction.DECLOCALB, patchLocation);
-        EmitDECLOCALB();
-        Emit(OpCode.RET);
-        
-        // INCGLOBALB: [address]++
-        patchLocation = compareInstruction(Instruction.INCGLOBALB, patchLocation);
-        EmitINCGLOBALB();
-        Emit(OpCode.RET);
-        
-        // DECGLOBALB: [address]++
-        patchLocation = compareInstruction(Instruction.DECGLOBALB, patchLocation);
-        EmitDECGLOBALB();
-        Emit(OpCode.RET);
-        
-                     
-        // final patch
-        uint offset = output.Count - patchLocation - 1;
-        if (offset > 127) { Die(0x0B); }
-        output.SetItem(patchLocation, byte(offset));
-        
-        Emit(OpCode.HALT); // just so we know we missed one
-    }
-    
-    
-    uint compareSysCall(SysCalls sysCall, uint patchLocation)
-    {
-        if (patchLocation != 0)
-        {
-            uint offset = output.Count - patchLocation - 1;
-            if (offset > 127) { Die(0x0B); }
-            output.SetItem(patchLocation, byte(offset));
-            
-        }
-        EmitByte(OpCode.CP_A_n, byte(sysCall));
-        patchLocation = output.Count+1;
-        EmitByte(OpCode.JR_NZ_e, 0);
-        return patchLocation;
-    }
-    
-    EmitSerialWriteChar()
-    {
-        popBC_noDEC();
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        
-        Emit(OpCode.NOP);   
-    }
-    EmitDiagnosticsDie()
-    {
-        popBC_noDEC();
-        Emit(OpCode.DEC_IY);
-        Emit(OpCode.DEC_IY);
-        
-        Emit(OpCode.HALT);   
-    }
-    EmitSysCalls()
-    {
-        Emit(OpCode.LD_B_A);
-        Emit(OpCode.LD_A_C);
-        
-        // iSysCall is in A, iOverload is in B (0, 1 or 2)
-        uint patchLocation;
-        
-        // Diagnostics.Die(byte error)
-        patchLocation = compareSysCall(SysCalls.DiagnosticsDie, patchLocation);
-        EmitDiagnosticsDie();
-        Emit(OpCode.RET);
-        
-        // Serial.WriteChar(char c)
-        patchLocation = compareSysCall(SysCalls.SerialWriteChar, patchLocation);
-        EmitSerialWriteChar();
-        Emit(OpCode.RET);
-        
-        // final patch
-        uint offset = output.Count - patchLocation - 1;
-        if (offset > 127) { Die(0x0B); }
-        output.SetItem(patchLocation, byte(offset));
-        
-        Emit(OpCode.HALT); // just so we know we missed one
-    }
+    uint CurrentAddress { get { return output.Count; } }
     
     reset()
     {
@@ -862,13 +50,14 @@ program Z80Gen
         // External.TimerInitialize(); - TODO
         //
         //      sp = 0;
-        EmitWord(OpCode.LD_IY_nn, ValueStackAddress);
         
         //      bp = 0;
-        EmitWord(OpCode.LD_DE_nn, ValueStackAddress);
         
                
-        //      Error = 0; - TODO
+        //      Error = 0;
+        EmitWord(OpCode.LD_HL_nn, 0);
+        EmitWord(OpCode.LD_inn_HL, LastError);
+        
         //      cnp = false;
         
     }
@@ -888,1041 +77,6 @@ program Z80Gen
         }
     }
     
-//#define GEN_STATS
-
-    writeSystem()
-    {
-        while (output.Count < 256)
-        {
-#ifndef INLINE_STACK_OPERATIONS
-            if (output.Count == 0x08) // RST_PopAbsolute
-            {
-                EmitWord(OpCode.JP_nn, 0x0000);
-                if (output.Count > 0x10) { Die(0x0B); }
-                continue;
-            }
-            else if (output.Count == 0x10) // RST_PushAbsolute
-            {
-                EmitWord(OpCode.JP_nn, 0x0000);
-                if (output.Count > 0x18) { Die(0x0B); }
-                continue;
-            }
-            else if (output.Count == 0x18) // RST_PushImmediate
-            {
-                EmitWord(OpCode.JP_nn, 0x0000);
-                if (output.Count > 0x20) { Die(0x0B); }
-                continue;
-            }
-            else if (output.Count == 0x20) // RST_PushOffset
-            {
-                EmitWord(OpCode.JP_nn, 0x0070);
-                if (output.Count > 0x28) { Die(0x0B); }
-                continue;
-            }
-            else if (output.Count == 0x28) // RST_PopOffset
-            {
-                EmitWord(OpCode.JP_nn, 0x0000);
-                if (output.Count > 0x30) { Die(0x0B); }
-                continue;
-            }
-#endif      
-        
-            if (output.Count == 0x30) // RST_SysCall0
-            {
-                EmitWord(OpCode.JP_nn, 0x0000);
-                if (output.Count > 0x38) { Die(0x0B); }
-                continue;
-            }                
-            else if (output.Count == 0x38) // RST_Instruction
-            {
-                EmitWord(OpCode.JP_nn, 0x0000);
-                if (output.Count > 0x40) { Die(0x0B); }
-                continue;
-            }
-            else if (output.Count == 0x40)
-            {
-                uint targetAddress;
-#ifndef INLINE_STACK_OPERATIONS
-                targetAddress = output.Count;
-                patchRSTJump(0x08, targetAddress);
-                EmitPopAbsolute();
-#ifdef GEN_STATS                
-                PrintLn("PopAbsolute: " + (output.Count - targetAddress).ToString() + " bytes, offset +" + (targetAddress-0x08).ToString());
-#endif
-                targetAddress = output.Count;
-                patchRSTJump(0x10, targetAddress);
-                EmitPushAbsolute();
-#ifdef GEN_STATS                
-                PrintLn("PushAbsolute: " + (output.Count - targetAddress).ToString() + " bytes, offset +" + (targetAddress-0x10).ToString());
-#endif
-                targetAddress = output.Count;
-                patchRSTJump(0x18, targetAddress);
-                EmitPushImmediate();
-#ifdef GEN_STATS                
-                PrintLn("PushImmediate: " + (output.Count - targetAddress).ToString() + " bytes, offset +" + (targetAddress-0x18).ToString());
-#endif
-                targetAddress = output.Count;
-                patchRSTJump(0x20, targetAddress);
-                EmitPushOffset();
-#ifdef GEN_STATS                
-                PrintLn("PushOffset: " + (output.Count - targetAddress).ToString() + " bytes, offset +" + (targetAddress-0x20).ToString());
-#endif
-                targetAddress = output.Count;
-                patchRSTJump(0x28, targetAddress);
-                EmitPopOffset();
-#ifdef GEN_STATS                
-                PrintLn("PopOffset: " + (output.Count - targetAddress).ToString() + " bytes, offset +" + (targetAddress-0x28).ToString());
-#endif
-#endif                
-                targetAddress = output.Count;
-                patchRSTJump(0x30, targetAddress);
-                EmitSysCalls();
-#ifdef GEN_STATS                
-                PrintLn("SysCalls: " + (output.Count - targetAddress).ToString() + " bytes, offset +" + (targetAddress-0x30).ToString());
-#endif                
-                targetAddress = output.Count;
-                patchRSTJump(0x38, targetAddress);
-                EmitInstructions();
-#ifdef GEN_STATS                
-                PrintLn("Instructions: " + (output.Count - targetAddress).ToString() + " bytes, offset +" + (targetAddress-0x38).ToString());
-#endif
-                continue;
-            }                
-            Emit(OpCode.NOP);
-        }
-        
-    }  
-    
-    
-    writeMethod(uint methodIndex, <byte> code)
-    {
-        if (entryIndex == methodIndex)
-        {
-            writeSystem();
-        }        
-        uint methodAddress   = output.Count;
-        methods[methodIndex] = methodAddress;
-        if (entryIndex == methodIndex)
-        {
-            reset();
-        }
-        
-        
-        //PrintLn(methodIndex.ToHexString(4) + ":");
-        
-        <uint,uint> instructionAddresses; // <hopperAddress,z80Address>
-        
-        <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
-        <uint,uint> jumpPatchLocations;   // <hopperAddress,patchAddress>
-        
-        uint index = 0;
-        loop
-        {
-            if (index == code.Count) { break; }
-            
-            uint hopperAddress = index;
-            instructionAddresses[hopperAddress] = output.Count;
-            uint operand;
-            Instruction instruction = Instructions.GetOperandAndNextAddress(code, ref index, ref operand);
-            string instructionName = Instructions.ToString(instruction);
-            
-            
-            bool isStackOffset;
-            bool isAddressOffset;
-            bool isRET;
-            byte width = Instructions.GetKitchenSinkWidth(instruction, ref isStackOffset, ref isAddressOffset, ref isRET);
-            
-            if (width == 0)
-            {
-                // Examples: EQ, NOP, ADD ..
-                switch (instruction)
-                {
-                    case Instruction.ENTER:
-                    {
-                        // PUSH BP
-                        Emit(OpCode.PUSH_DE); 
-                        
-                        // BP <- SP (DE <- IY)
-                        Emit(OpCode.PUSH_IY);  
-                        Emit(OpCode.POP_DE);
-                        //Emit(OpCode.LD_E_IYL);
-                        //Emit(OpCode.LD_D_IYH);
-                    }
-                    case Instruction.RET0:
-                    {
-                         Emit(OpCode.POP_DE); // POP BP
-                         Emit(OpCode.RET);
-                    }
-                    case Instruction.RETFAST:
-                    {
-                         Emit(OpCode.RET);
-                    }
-                    case Instruction.NOP:
-                    {
-                        Emit(OpCode.NOP);
-                    }
-                    case Instruction.PUSHI0:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, uint(0));
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else
-                        Emit(OpCode.RST_PushImmediate);
-#endif                        
-                    }
-                    case Instruction.PUSHI1:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, uint(1));
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else
-                        Emit(OpCode.RST_PushImmediate);
-#endif                        
-                    }
-                    case Instruction.PUSHIM1:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, 0xFFFF);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        Emit(OpCode.RST_PushImmediate);
-#endif
-                    }
-                    case Instruction.PUSHLOCALB00:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, 0);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushOffset();
-#else                        
-                        Emit(OpCode.RST_PushOffset);
-#endif
-                    }
-                    case Instruction.PUSHLOCALB01:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, 1);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushOffset();
-#else                        
-                        Emit(OpCode.RST_PushOffset);
-#endif
-                    }
-                    case Instruction.POPLOCALB00:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, 0);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPopOffset();
-#else                        
-                        Emit(OpCode.RST_PopOffset);
-#endif
-                    }
-                    case Instruction.POPLOCALB01:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, 1);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPopOffset();
-#else                        
-                        Emit(OpCode.RST_PopOffset);
-#endif
-                    }
-                    default:
-                    {
-#ifdef INLINE_OTHER_INSTRUCTIONS
-                        switch (instruction)
-                        {
-                            case Instruction.BITAND:
-                            {
-                                EmitBITAND();
-                            }
-                            case Instruction.BITOR:
-                            {
-                                EmitBITOR();
-                            }
-                            case Instruction.BITXOR:
-                            {
-                                EmitBITXOR();
-                            }
-                            case Instruction.BITSHR:
-                            {
-                                EmitBITSHR();
-                            }
-                            case Instruction.BITSHL:
-                            {
-                                EmitBITSHL();
-                            }
-                            
-                            case Instruction.ADD:
-                            case Instruction.ADDI:
-                            {
-                                EmitADD();
-                            }
-                            case Instruction.SUB:
-                            case Instruction.SUBI:
-                            {
-                                EmitSUB();
-                            }
-                            case Instruction.MUL:
-                            {
-                                EmitMUL();
-                            }
-                            case Instruction.DIV:
-                            {
-                                EmitDIV();
-                            }
-                            case Instruction.MOD:
-                            {
-                                EmitMOD();
-                            }
-                            case Instruction.GT:
-                            {
-                                EmitGT();
-                            }
-                            case Instruction.GE:
-                            {
-                                EmitGE();
-                            }
-                            case Instruction.LE:
-                            {
-                                EmitLE();
-                            }
-                            case Instruction.LT:
-                            {
-                                EmitLT();
-                            }
-                            case Instruction.EQ:
-                            {
-                                EmitEQ();
-                            }
-                            case Instruction.NE:
-                            {
-                                EmitNE();
-                            }
-                            default:
-                            {
-                                EmitByte(OpCode.LD_A_n, byte(instruction));
-                                Emit(OpCode.RST_Instruction);
-                                if (!missingOpCodes.Contains(instructionName))
-                                {
-                                    missingOpCodes[instructionName] = true;
-                                    Print(instructionName + " ");
-                                }
-                            }
-                        }
-#else                        
-                        EmitByte(OpCode.LD_A_n, byte(instruction));
-                        Emit(OpCode.RST_Instruction);
-#endif
-                        //Print(instructionName + " ");
-                    }
-                }
-            }
-            else if (width == 1)
-            {
-                switch (instruction)
-                {
-                    case Instruction.ENTERB:
-                    {
-                        // PUSH BP
-                        Emit(OpCode.PUSH_DE); 
-                        
-                        // BP <- SP (DE <- IY)
-                        Emit(OpCode.PUSH_IY);  
-                        Emit(OpCode.POP_DE);
-                        //Emit(OpCode.LD_E_IYL);
-                        //Emit(OpCode.LD_D_IYH);
-                        
-                        EmitByte(OpCode.LD_B_n, byte(operand));
-                        EmitOffsetByte(OpCode.LD_iIY_d_n, 0, 0);
-                        Emit(OpCode.INC_IY);
-                        EmitOffsetByte(OpCode.LD_iIY_d_n, 0, 0);
-                        Emit(OpCode.INC_IY);
-                        EmitOffset(OpCode.DJNZ_e, -14);
-                    }
-                    case Instruction.RETB:
-                    {
-                        if (operand == 1)
-                        {
-                            Emit(OpCode.DEC_IY);
-                            Emit(OpCode.DEC_IY);
-                            Emit(OpCode.POP_DE); // POP BP
-                            Emit(OpCode.RET);
-                        }
-                        else
-                        {
-                            EmitByte(OpCode.LD_B_n, byte(operand));
-                            Emit(OpCode.DEC_IY);
-                            Emit(OpCode.DEC_IY);
-                            EmitOffset(OpCode.DJNZ_e, -6);
-                            
-                            Emit(OpCode.POP_DE); // POP BP
-                            Emit(OpCode.RET);
-                        }
-                    }
-                    case Instruction.RETRESB:
-                    {
-                        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-                        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-                        
-                        EmitByte(OpCode.LD_B_n, byte(operand));
-                        Emit(OpCode.DEC_IY);
-                        Emit(OpCode.DEC_IY);
-                        EmitOffset(OpCode.DJNZ_e, -6);
-    
-                        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-                        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-                        
-                        Emit(OpCode.POP_DE); // POP BP
-                        Emit(OpCode.RET);
-                    }
-                    case Instruction.DECSP:
-                    {
-                        // NO INLINE
-                        if (operand == 1)
-                        {
-                            Emit(OpCode.DEC_IY);
-                            Emit(OpCode.DEC_IY);
-                        }
-                        else
-                        {
-                            EmitByte(OpCode.LD_B_n, byte(operand));
-                            Emit(OpCode.DEC_IY);
-                            Emit(OpCode.DEC_IY);
-                            EmitOffset(OpCode.DJNZ_e, -6);
-                        }
-                    }
-                    case Instruction.PUSHIB:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        Emit(OpCode.RST_PushImmediate);   
-#endif 
-                    }
-                    case Instruction.PUSHLOCALB:
-                    {
-                        if ((operand & 0x80) != 0)
-                        {
-                            operand |= 0xFF00;
-                        }
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushOffset();
-#else                        
-                        Emit(OpCode.RST_PushOffset);
-#endif
-                    }
-                    case Instruction.POPLOCALB:
-                    {
-                        if ((operand & 0x80) != 0)
-                        {
-                            operand |= 0xFF00;
-                        }
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPopOffset();
-#else                        
-                        Emit(OpCode.RST_PopOffset);
-#endif
-                    }
-                    case Instruction.PUSHGLOBALB:
-                    {
-                        EmitByte(OpCode.LD_C_n, byte(operand));
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushAbsolute();
-#else                        
-                        Emit(OpCode.RST_PushAbsolute);
-#endif
-                    }
-                    case Instruction.POPGLOBALB:
-                    {
-                        EmitByte(OpCode.LD_C_n, byte(operand));
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPopAbsolute();
-#else                        
-                        Emit(OpCode.RST_PopAbsolute);
-#endif
-                    }
-                    case Instruction.JNZB:
-                    {
-                        Emit(OpCode.DEC_IY);   // SP--
-                        EmitByte(OpCode.LD_A_iIY_d, 0); // A <- [SP]
-                        Emit(OpCode.DEC_IY);   // SP--
-                        EmitByte(OpCode.OR_A_iIY_d, 0); // A = A | [SP] -> Z?
-                        
-                        EmitOffset(OpCode.JR_Z_e, +3);
-                        EmitWord(OpCode.JP_nn, uint(0));
-                        int offset = byte(operand);
-                        if (offset > 127)
-                        {
-                            offset -= 256;
-                        }
-                        jumpPatchLocations[hopperAddress] = output.Count - 2;
-                        jumpPatches[hopperAddress]        = offset;
-                    }
-                    case Instruction.JZB:
-                    {
-                        Emit(OpCode.DEC_IY);   // SP--
-                        EmitByte(OpCode.LD_A_iIY_d, 0); // A <- [SP]
-                        Emit(OpCode.DEC_IY);   // SP--
-                        EmitByte(OpCode.OR_A_iIY_d, 0); // A = A | [SP] -> Z?
-                        
-                        EmitOffset(OpCode.JR_NZ_e, +3);
-                        EmitWord(OpCode.JP_nn, uint(0));
-                        int offset = byte(operand);
-                        if (offset > 127)
-                        {
-                            offset -= 256;
-                        }
-                        jumpPatchLocations[hopperAddress] = output.Count - 2;
-                        jumpPatches[hopperAddress]        = offset;
-                    }
-                    case Instruction.JB:
-                    {
-                        EmitWord(OpCode.JP_nn, uint(0));
-                        int offset = byte(operand);
-                        if (offset > 127)
-                        {
-                            offset -= 256;
-                        }
-                        jumpPatchLocations[hopperAddress] = output.Count - 2;
-                        jumpPatches[hopperAddress]        = offset;
-                    }
-                    case Instruction.SYSCALL0:
-                    {
-                        Emit(OpCode.XOR_A); // iOverload = 0;
-                        EmitByte(OpCode.LD_C_n, byte(operand & 0xFF));
-                        Emit(OpCode.RST_SysCall0);
-                    }
-                    case Instruction.CAST:
-                    {
-                        // NOP since we have no reference types and no type stack
-                        Emit(OpCode.NOP);
-                    }
-                                       
-                    case Instruction.PUSHIBLE:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        EmitByte(OpCode.LD_A_n, byte(Instruction.PUSHIB));
-                        Emit(OpCode.RST_PushImmediate);   
-#endif
-#ifdef INLINE_OTHER_INSTRUCTIONS
-                        EmitLE();
-#else
-                        EmitByte(OpCode.LD_A_n, byte(Instruction.LE));
-                        Emit(OpCode.RST_Instruction);
-#endif
-                    }
-                    case Instruction.PUSHIBEQ:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        EmitByte(OpCode.LD_A_n, byte(Instruction.PUSHIB));
-                        Emit(OpCode.RST_PushImmediate);   
-#endif
-#ifdef INLINE_OTHER_INSTRUCTIONS
-                        EmitEQ();
-#else
-                        EmitByte(OpCode.LD_A_n, byte(Instruction.EQ));
-                        Emit(OpCode.RST_Instruction);
-#endif
-                    }
-                    case Instruction.SYSCALL:
-                    {
-                        popA(); // iOverload
-                        EmitByte(OpCode.LD_C_n, byte(operand & 0xFF));
-                        Emit(OpCode.RST_SysCall0);
-                    }
-                    
-                    
-                    default:
-                    {
-#ifdef INLINE_OTHER_INSTRUCTIONS
-                        switch (instruction)
-                        {
-                            case Instruction.ADDB:
-                            {
-                                EmitWord(OpCode.LD_BC_nn, operand);
-                                EmitADDB();
-                            }
-                            case Instruction.SUBB:
-                            {
-                                EmitWord(OpCode.LD_BC_nn, operand);
-                                EmitSUBB();
-                            }
-                            
-                            case Instruction.INCLOCALIB: 
-                            case Instruction.INCLOCALB:
-                            {
-                                EmitByte(OpCode.LD_C_n, byte(operand));
-                                EmitINCLOCALB();
-                            }
-                            case Instruction.DECLOCALB:
-                            {
-                                EmitByte(OpCode.LD_C_n, byte(operand));
-                                EmitDECLOCALB();
-                            }
-                            case Instruction.PUSHIBLE:
-                            {
-                                EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                                EmitPushImmediate();
-#else                        
-                                EmitByte(OpCode.LD_A_n, byte(Instruction.PUSHIB));
-                                Emit(OpCode.RST_PushImmediate);  
-#endif 
-                                EmitLE();
-                            }
-       
-                            default:
-                            {
-                                EmitByte(OpCode.LD_A_n, byte(instruction));
-                                EmitWord(OpCode.LD_BC_nn, operand);
-                                Emit(OpCode.RST_Instruction);
-                                if (!missingOpCodes.Contains(instructionName))
-                                {
-                                    missingOpCodes[instructionName] = true;
-                                    Print(instructionName + ":" + operand.ToHexString(2) + " ");
-                                }
-                            }
-                        }
-#else                         
-                        EmitByte(OpCode.LD_A_n, byte(instruction));
-                        EmitWord(OpCode.LD_BC_nn, operand);
-                        Emit(OpCode.RST_Instruction);
-#endif                        
-                        //Print(instructionName + ":" + operand.ToHexString(2) + " ");
-                    }
-                }
-            }
-            else if (width == 2)
-            {
-                
-                switch (instruction)
-                {
-                    case Instruction.JZ:
-                    {
-                        Emit(OpCode.DEC_IY);   // SP--
-                        EmitByte(OpCode.LD_A_iIY_d, 0); // A <- [SP]
-                        Emit(OpCode.DEC_IY);   // SP--
-                        EmitByte(OpCode.OR_A_iIY_d, 0); // A = A | [SP] -> Z?
-                        
-                        EmitOffset(OpCode.JR_NZ_e, +3);
-                        EmitWord(OpCode.JP_nn, uint(0));
-                        long loffset = long(Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8)));
-                        if (loffset > 32767)
-                        {
-                            loffset = loffset +  0xFFFF;
-                        }
-                        jumpPatchLocations[hopperAddress] = output.Count - 2;
-                        jumpPatches[hopperAddress]        = int(loffset);
-                    }
-                    case Instruction.JNZ:
-                    {
-                        Emit(OpCode.DEC_IY);   // SP--
-                        EmitByte(OpCode.LD_A_iIY_d, 0); // A <- [SP]
-                        Emit(OpCode.DEC_IY);   // SP--
-                        EmitByte(OpCode.OR_A_iIY_d, 0); // A = A | [SP] -> Z?
-                        
-                        EmitOffset(OpCode.JR_Z_e, +3);
-                        EmitWord(OpCode.JP_nn, uint(0));
-                        long loffset = long(Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8)));
-                        if (loffset > 32767)
-                        {
-                            loffset = loffset +  0xFFFF;
-                        }                        jumpPatchLocations[hopperAddress] = output.Count - 2;
-                        jumpPatches[hopperAddress]        = int(loffset);
-                    }
-                    
-                    case Instruction.RET:
-                    {
-                        if (operand == 0)
-                        {
-                            Emit(OpCode.POP_DE); // POP BP
-                            Emit(OpCode.RET);
-                        }
-                        else if (operand == 1)
-                        {
-                            Emit(OpCode.DEC_IY);
-                            Emit(OpCode.DEC_IY);
-                            Emit(OpCode.POP_DE); // POP BP
-                            Emit(OpCode.RET);
-                        }
-                        else
-                        {
-                            if (operand > 255) { Die(0x0B); } // unlikely to happen with an 8 bit SP 
-                            EmitByte(OpCode.LD_B_n, byte(operand & 0xFF));
-                            Emit(OpCode.DEC_IY);
-                            Emit(OpCode.DEC_IY);
-                            EmitOffset(OpCode.DJNZ_e, -6);
-                            
-                            Emit(OpCode.POP_DE); // POP BP
-                            Emit(OpCode.RET);
-                        }
-                    }
-                    case Instruction.RETRES:
-                    {
-                        EmitOffset(OpCode.LD_L_iIY_d, -2); // LSB
-                        EmitOffset(OpCode.LD_H_iIY_d, -1); // MSB
-                     
-                        if (operand > 255) { Die(0x0B); } // unlikely to happen with an 8 bit SP   
-                        EmitByte(OpCode.LD_B_n, byte(operand & 0xFF));
-                        Emit(OpCode.DEC_IY);
-                        Emit(OpCode.DEC_IY);
-                        EmitOffset(OpCode.DJNZ_e, -6);
-    
-                        EmitOffset(OpCode.LD_iIY_d_L, -2); // LSB
-                        EmitOffset(OpCode.LD_iIY_d_H, -1); // MSB
-                        
-                        Emit(OpCode.POP_DE); // POP BP
-                        Emit(OpCode.RET);
-                    }
-                    
-                    case Instruction.SYSCALLB0:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, operand & 0xFF);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        Emit(OpCode.RST_PushImmediate);   
-#endif                         
-                        EmitByte(OpCode.LD_C_n, byte(operand >> 8));
-                        Emit(OpCode.XOR_A); // iOverload = 0;
-                        Emit(OpCode.RST_SysCall0);
-                    }
-                    
-                    case Instruction.PUSHIBB:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, operand & 0xFF);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        Emit(OpCode.RST_PushImmediate);   
-#endif 
-                        EmitWord(OpCode.LD_BC_nn, operand >> 8);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        Emit(OpCode.RST_PushImmediate);   
-#endif              
-                    }
-                    
-                    case Instruction.PUSHI:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        Emit(OpCode.RST_PushImmediate);
-#endif
-                    }
-                    case Instruction.PUSHILE:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        EmitByte(OpCode.LD_A_n, byte(Instruction.PUSHI));
-                        Emit(OpCode.RST_PushImmediate);   
-#endif
-#ifdef INLINE_OTHER_INSTRUCTIONS
-                        EmitLE();
-#else
-                        EmitByte(OpCode.LD_A_n, byte(Instruction.LE));
-                        Emit(OpCode.RST_Instruction);
-#endif
-                    }
-                    case Instruction.PUSHILT:
-                    {
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushImmediate();
-#else                        
-                        EmitByte(OpCode.LD_A_n, byte(Instruction.PUSHI));
-                        Emit(OpCode.RST_PushImmediate);   
-#endif
-#ifdef INLINE_OTHER_INSTRUCTIONS
-                        EmitLT();
-#else
-                        EmitByte(OpCode.LD_A_n, byte(Instruction.LT));
-                        Emit(OpCode.RST_Instruction);
-#endif
-                    }
-                    
-                    case Instruction.PUSHGLOBAL:
-                    {
-                        EmitByte(OpCode.LD_C_n, byte(operand)); // assume 8 bit stack offsets
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushAbsolute();
-#else                        
-                        Emit(OpCode.RST_PushAbsolute);
-#endif
-                    }
-                    case Instruction.POPGLOBAL:
-                    {
-                        EmitByte(OpCode.LD_C_n, byte(operand)); // assume 8 bit stack offsets
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPopAbsolute();
-#else                        
-                        Emit(OpCode.RST_PopAbsolute);
-#endif
-                    }
-      
-                    
-                    case Instruction.PUSHLOCAL:
-                    {
-                        if ((operand & 0x80) != 0)
-                        {
-                            operand |= 0xFF00;
-                        }
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushOffset();
-#else                        
-                        Emit(OpCode.RST_PushOffset);
-#endif
-                    }
-                    case Instruction.PUSHLOCALBB:
-                    {
-                        uint address = operand & 0xFF;
-                        if ((address & 0x80) != 0)
-                        {
-                            address |= 0xFF00;
-                        }
-                        EmitWord(OpCode.LD_BC_nn, address);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushOffset();
-#else                                                
-                        Emit(OpCode.RST_PushOffset);
-#endif
-                        
-                        address = operand >> 8;
-                        if ((address & 0x80) != 0)
-                        {
-                            address |= 0xFF00;
-                        }
-                        EmitWord(OpCode.LD_BC_nn, address);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushOffset();
-#else                        
-                        Emit(OpCode.RST_PushOffset);
-#endif
-                    }
-                    case Instruction.POPLOCAL:
-                    {
-                        if ((operand & 0x80) != 0)
-                        {
-                            operand |= 0xFF00;
-                        }
-                        EmitWord(OpCode.LD_BC_nn, operand);
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPopOffset();
-#else                        
-                        Emit(OpCode.RST_PopOffset);
-#endif
-                    }
-                    case Instruction.PUSHGLOBAL:
-                    {
-                        EmitByte(OpCode.LD_C_n, byte(operand & 0xFF)); // it is only an 8 bit stack!
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushAbsolute();
-#else                        
-                        Emit(OpCode.RST_PushAbsolute);
-#endif
-                    }
-                    case Instruction.PUSHGLOBALBB:
-                    {
-                        EmitByte(OpCode.LD_C_n, byte(operand & 0xFF));
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushAbsolute();
-#else                        
-                        Emit(OpCode.RST_PushAbsolute);
-#endif
-                        EmitByte(OpCode.LD_C_n, byte(operand >> 8));
-#ifdef INLINE_STACK_OPERATIONS
-                        EmitPushAbsolute();
-#else                        
-                        Emit(OpCode.RST_PushAbsolute);
-#endif
-                    }
-                    
-                    case Instruction.J:
-                    {
-                        EmitWord(OpCode.JP_nn, uint(0));
-                        jumpPatches[hopperAddress]        = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));
-                        jumpPatchLocations[hopperAddress] = output.Count - 2;
-                    }
-                    case Instruction.CALL:
-                    {
-                        EmitWord(OpCode.CALL_nn, uint(operand));
-                        patches[output.Count-2] = operand;
-                    }
-                    case Instruction.JIXB:
-                    case Instruction.JIX:
-                    {
-                        bool wideEntries = instruction == Instruction.JIX;
-                        byte first = byte(operand & 0xFF);
-                        byte last  = byte(operand >> 8);
-                        byte entries = (last - first + 1);
-                        uint offset = code[hopperAddress+3] + (code[hopperAddress+4] << 8);
-                        
-                        // pop A : switch case (always a single byte)
-                        popA();
-                        
-                        // check first?
-                        EmitByte(OpCode.CP_A_n, first);
-                        EmitOffset(OpCode.JR_NC_e, +3); // switch >= first : checkLast 
-
-// default:
-                        EmitWord(OpCode.JP_nn, uint(0));
-                        <uint> defaultPatches;
-                        defaultPatches.Append(output.Count-2);  
-
-//checkLast:                                                                                                                                                
-                        EmitByte(OpCode.CP_A_n, last);
-                        EmitOffset(OpCode.JR_Z_e,  +2);  // switch == last : intable
-                        EmitOffset(OpCode.JR_NC_e, -9);  // switch > last  : default
-                        
-                        
-// intable:                        
-                        EmitByte(OpCode.SUB_A_n, first);
-                        Emit(OpCode.LD_C_A);
-                        EmitByte(OpCode.LD_B_n, 0);
-                        EmitWord(OpCode.LD_HL_nn, 0);
-                        uint tablePatch = output.Count-2;
-                        Emit(OpCode.ADD_HL_BC);
-                        Emit(OpCode.ADD_HL_BC);
-                        Emit(OpCode.LD_A_iHL);
-                        Emit(OpCode.INC_HL);
-                        Emit(OpCode.LD_H_iHL);
-                        Emit(OpCode.LD_L_A);
-                        
-                        Emit(OpCode.JP_HL);
-                        EmitByte(entries); // clue to Z80DASM
-                        
-                        uint tableAddress = output.Count;
-                        patchByte(tablePatch+0, byte(tableAddress & 0xFF));
-                        patchByte(tablePatch+1, byte(tableAddress >> 8));
-                        
-                        for (uint i = 0; i < entries; i++)
-                        {
-                            byte entry = code[hopperAddress+5+i];
-                            if (wideEntries)
-                            {
-                                entry = code[hopperAddress+5+i*2] + (code[hopperAddress+6+i*2] << 8);
-                            }
-                            if (entry == 0)
-                            {
-                                EmitWord(0); // default case
-                                defaultPatches.Append(output.Count-2);  
-                            }
-                            else
-                            {
-                                uint targetAddress = hopperAddress - offset + entry;
-                                EmitWord(instructionAddresses[targetAddress]);
-                            }
-                        }
-                        uint defaultAddress = output.Count;
-                        foreach (var defaultPatch in defaultPatches)
-                        {
-                            patchByte(defaultPatch+0, byte(defaultAddress & 0xFF));
-                            patchByte(defaultPatch+1, byte(defaultAddress >> 8));
-                        }
-                    }
-                    
-                    
-                    default:
-                    {
-#ifdef INLINE_OTHER_INSTRUCTIONS
-                        switch (instruction)
-                        {
-                            default:
-                            {
-                                EmitByte(OpCode.LD_A_n, byte(instruction));
-                                EmitWord(OpCode.LD_BC_nn, operand);
-                                Emit(OpCode.RST_Instruction);
-                                if (!missingOpCodes.Contains(instructionName))
-                                {
-                                    missingOpCodes[instructionName] = true;
-                                    Print(instructionName + ":" + operand.ToHexString(4) + " ");
-                                }
-                            }
-                        }
-#else                        
-                        EmitByte(OpCode.LD_A_n, byte(instruction));
-                        EmitWord(OpCode.LD_BC_nn, operand);
-                        Emit(OpCode.RST_Instruction);
-                        if ((instruction == Instruction.JIX)||(instruction == Instruction.JIXB))
-                        {
-                            if (!missingOpCodes.Contains(instructionName))
-                            {
-                                missingOpCodes[instructionName] = true;
-                                PrintLn(instructionName + " not implemented");
-                            }
-                        }
-                        //Print(instructionName + ":" + operand.ToHexString(4) + " ");
-#endif
-                    }
-                }
-            }
-            else
-            {
-                //Other   = 0xFF, // 0x38
-                if (!missingOpCodes.Contains(instructionName))
-                {
-                    missingOpCodes[instructionName] = true;
-                    PrintLn(instructionName + " not implemented");
-                }
-            }
-            //if (methodIndex == 0x0020)
-            //{
-            //    PrintLn((hopperAddress + 0x08CF).ToHexString(4) + "->" + (instructionAddresses[hopperAddress]).ToHexString(4));
-            //}
-        }
-        
-        // <uint,uint> instructionAddresses; // <hopperAddress,z80Address>
-        // <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
-        // <uint,uint> jumpPatchLocations    // <hopperAddress,patchAddress>
-        //PrintLn(methodIndex.ToString() + ":");
-        foreach (var kv in jumpPatches)
-        {
-            
-            uint hopperJumpLocation = kv.key;
-            int  offset = kv.value;
-            
-            uint hopperJumpTarget = uint(int(hopperJumpLocation) + offset);
-            if (!instructionAddresses.Contains(hopperJumpTarget))
-            {
-                PrintLn("Patch failed: " + hopperJumpLocation.ToHexString(4) + " " + offset.ToString() + " " + hopperJumpTarget.ToHexString(4));
-            }
-            else
-            {
-                uint targetAddress    = instructionAddresses[hopperJumpTarget];
-                uint patchLocation    = jumpPatchLocations[hopperJumpLocation];
-            
-                // PATCH
-                patchByte(patchLocation+0, byte(targetAddress & 0xFF));
-                patchByte(patchLocation+1, byte(targetAddress >> 8));
-            }
-        }
-        <string,string> debugInfo = Code.GetMethodDebugInfo(methodIndex);
-        <string,string> z80DebugInfo;
-        foreach (var kv in debugInfo)
-        {
-            string hopperAddress = kv.key;
-            string lineNumber    = kv.value;
-            uint hopperIndex;
-            _ = UInt.TryParse(hopperAddress, ref hopperIndex);
-            uint z80Index = instructionAddresses[hopperIndex];
-            z80DebugInfo[z80Index.ToString()] = lineNumber;
-        }
-        // save the modified debugInfo
-        Code.SetMethodDebugInfo(methodIndex, z80DebugInfo);
-    }
     patchByte(uint address, byte value)
     {
         if ((address == 0x0010) || (address == 0x0011))
@@ -1948,6 +102,801 @@ program Z80Gen
         patchByte(4, byte(methods[entryIndex] & 0xFF));
         patchByte(5, byte(methods[entryIndex] >> 8));
     }
+    
+    emit(OpCode opCode)
+    {
+        Peephole.AddInstruction(output.Count);
+        uint ui = uint(opCode);
+        if ((ui & 0xFF00) != 0)
+        {
+            output.Append(byte(ui >> 8));
+        }
+        output.Append(byte(ui & 0xFF));
+    }
+    Emit(OpCode opCode)
+    {
+        emit(opCode);
+        Peephole.Optimize(output);
+        switch (opCode)
+        {
+            case OpCode.JP_HL:
+            case OpCode.RET:
+            case OpCode.HALT:
+            {
+                Peephole.Reset();
+            }
+        }
+    }
+    EmitByte(OpCode opCode, byte lsb)
+    {
+        emit(opCode);
+        emitByte(lsb);
+        Peephole.Optimize(output);
+    }
+    EmitOffset(OpCode opCode, int offset)
+    {
+        if (offset < 0)
+        {
+            offset += 256;
+        }
+        byte lsb = byte(offset);
+        emit(opCode);
+        emitByte(lsb);
+        
+        switch (opCode)
+        {
+            case OpCode.JR_NZ_e:
+            case OpCode.JR_Z_e:
+            case OpCode.JR_NC_e:
+            case OpCode.JR_C_e:
+            case OpCode.JR_e:
+            {
+                Peephole.Reset();
+            }
+        }
+        
+        Peephole.Optimize(output);
+    }
+    EmitOffsetByte(OpCode opCode, int offset, byte msb)
+    {
+        if (offset < 0)
+        {
+            offset += 256;
+        }
+        byte lsb = byte(offset);
+        emit(opCode);
+        emitByte(lsb);
+        emitByte(msb);
+        
+        switch (opCode)
+        {
+            case OpCode.JR_NZ_e:
+            case OpCode.JR_Z_e:
+            case OpCode.JR_NC_e:
+            case OpCode.JR_C_e:
+            case OpCode.JR_e:
+            {
+                Peephole.Reset();
+            }
+        }
+        Peephole.Optimize(output);
+    }
+    EmitWord(OpCode opCode, uint operand)
+    {
+        emit(opCode);
+        emitByte(byte(operand & 0xFF));
+        emitByte(byte(operand >> 8));
+        
+        switch (opCode)
+        {
+            case OpCode.JP_nn:
+            {
+                Peephole.Reset();
+            }
+        }
+        
+        Peephole.Optimize(output);
+    }
+    emitByte(byte lsb)
+    {
+        output.Append(lsb);
+    }
+    
+    writeSystem()
+    {
+        while (output.Count < 256)
+        {
+            if (output.Count == 0x0040) // after the RSTx slots
+            {
+                Z80Library.Generate();
+                break;
+            }
+            Emit(OpCode.NOP);
+        }
+    }  
+    
+    byte offsetOperandToByte(uint operand)
+    {
+        // calculate the 8-bit signed Hopper offset
+        int ioffset = byte(operand & 0xFF);
+        if (ioffset > 127)
+        {
+            ioffset = ioffset - 256;
+        }
+        
+        // invert the sign since the Z80 stack grows downward
+        ioffset = -ioffset;
+        
+        // double it to convert from stack slots to bytes
+        ioffset *= 2;
+        if (ioffset > 0)
+        {
+            ioffset += 2; // to skip BP
+        }
+        else
+        {
+            ioffset -= 2; // to skip BP
+        }
+        
+        byte byteOffset = ioffset.GetByte(0);        
+        return byteOffset;
+    }    
+    uint addressOperandToByte(uint operand)
+    {
+        // calculate the 8-bit signed Hopper address
+        int iaddress = byte(operand & 0xFF);
+        
+        // invert the sign since the Z80 stack grows downward
+        iaddress = -iaddress;
+        
+        // double it to convert from stack slots to bytes
+        iaddress *= 2;
+        
+        iaddress -= 4; // skip:
+                       // - the return address from startup
+                       // - the first slot itself
+        
+        long address = long(StackAddress) + long(StackSize) + iaddress;
+        //PrintLn(operand.ToString() + " " + iaddress.ToString() + " -> 0x" + address.ToHexString(4));
+        return uint(address);
+    }
+    
+    incLocalB(uint operand)
+    {
+        byte offset = offsetOperandToByte(operand);
+        Peephole.Disabled = true;
+        EmitByte  (OpCode.INC_iIY_d, offset);
+        EmitOffset(OpCode.JR_NZ_e,    +3);    // did it overflow from 0xFF back around to 0x00?
+        EmitByte  (OpCode.INC_iIY_d, offset+1);
+        Peephole.Disabled = false;
+        Peephole.Reset();
+    }
+    decLocalB(uint operand)
+    {
+        byte offset = offsetOperandToByte(operand);
+        Peephole.Disabled = true;
+        EmitByte  (OpCode.DEC_iIY_d,  offset);
+        EmitByte  (OpCode.LD_A_n,       0xFF);
+        EmitByte  (OpCode.CP_A_iIY_d, offset); // wrapped around from 0x00 to 0xFF?
+        EmitOffset(OpCode.JR_NZ_e,        +3);
+        EmitByte  (OpCode.DEC_iIY_d,  offset+1);
+        Peephole.Disabled = false;
+        Peephole.Reset();
+    }
+    pushLocalB(uint operand)
+    {
+        byte offset = offsetOperandToByte(operand);
+        EmitByte(OpCode.LD_E_iIY_d, offset);
+        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
+        Emit(OpCode.PUSH_DE);
+    }
+    popLocalB(uint operand)
+    {    
+        byte offset = offsetOperandToByte(operand);
+        Emit(OpCode.POP_DE);
+        EmitByte(OpCode.LD_iIY_d_E, offset);
+        EmitByte(OpCode.LD_iIY_d_D, offset + 1);
+    }
+    
+    incGlobalB(uint operand)
+    {
+        uint address = addressOperandToByte(operand);
+        Peephole.Disabled = true;
+        EmitWord  (OpCode.LD_IX_nn,   address);
+        EmitByte  (OpCode.INC_iIX_d, +0);
+        EmitOffset(OpCode.JR_NZ_e,   +3);    // did it overflow from 0xFF back around to 0x00?
+        EmitByte  (OpCode.INC_iIX_d, +1);
+        Peephole.Disabled = false;
+        Peephole.Reset();
+    }
+    decGlobalB(uint operand)
+    {
+        uint address = addressOperandToByte(operand);
+        Peephole.Disabled = true;
+        EmitWord  (OpCode.LD_IX_nn,    address);
+        EmitByte  (OpCode.DEC_iIX_d,  +0);
+        EmitByte  (OpCode.LD_A_n,      0xFF);
+        EmitByte  (OpCode.CP_A_iIX_d, +0); // wrapped around from 0x00 to 0xFF?
+        EmitOffset(OpCode.JR_NZ_e,    +3);
+        EmitByte  (OpCode.DEC_iIX_d,  +1);
+        Peephole.Disabled = false;
+        Peephole.Reset();
+    }
+    pushGlobalB(uint operand)
+    {
+        uint address = addressOperandToByte(operand);
+        EmitWord(OpCode.LD_IX_nn,    address);
+        EmitByte(OpCode.LD_E_iIX_d, +0);
+        EmitByte(OpCode.LD_D_iIX_d, +1);
+        Emit    (OpCode.PUSH_DE);
+    }
+    popGlobalB(uint operand)
+    {    
+        uint address = addressOperandToByte(operand);
+        EmitWord(OpCode.LD_IX_nn,    address);
+        Emit    (OpCode.POP_DE);
+        EmitByte(OpCode.LD_iIX_d_E, +0);
+        EmitByte(OpCode.LD_iIX_d_D, +1);
+    }
+        
+    writeMethod(uint methodIndex, <byte> code)
+    {
+        if (entryIndex == methodIndex)
+        {
+            writeSystem();
+        }        
+        uint methodAddress   = output.Count;
+        methods[methodIndex] = methodAddress;
+        if (entryIndex == methodIndex)
+        {
+            reset();
+        }
+        
+        <uint,uint> instructionAddresses; // <hopperAddress,z80Address>
+        
+        <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
+        <uint,uint> jumpPatchLocations;   // <hopperAddress,patchAddress>
+        
+        //PrintLn(methodIndex.ToHexString(4) + " " + (output.Count).ToHexString(4));
+        uint index = 0;
+        bool success;
+        loop
+        {
+            if (index == code.Count) { success = true; break; }
+            
+            uint hopperAddress = index;
+            instructionAddresses[hopperAddress] = output.Count;
+            uint operand;
+            Instruction instruction = Instructions.GetOperandAndNextAddress(code, ref index, ref operand);
+            string instructionName = Instructions.ToString(instruction);
+            
+            
+            bool isStackOffset;
+            bool isAddressOffset;
+            bool isRET;
+            byte width = Instructions.GetKitchenSinkWidth(instruction, ref isStackOffset, ref isAddressOffset, ref isRET);
+            
+            // ### emit code here
+            
+            switch (instruction)
+            {
+                case Instruction.ENTER:
+                {
+                    Peephole.Reset();
+                    
+                    // PUSH BP
+                    Emit(OpCode.PUSH_IY); 
+                    
+                    // BP <- SP
+                    EmitWord(OpCode.LD_inn_SP, SPBPSwapper);
+                    EmitWord(OpCode.LD_IY_inn, SPBPSwapper);
+                }
+                case Instruction.ENTERB:
+                {
+                    Peephole.Reset();
+                    
+                    // PUSH BP
+                    Emit(OpCode.PUSH_IY); 
+                    
+                    // BP <- SP
+                    EmitWord(OpCode.LD_inn_SP, SPBPSwapper);
+                    EmitWord(OpCode.LD_IY_inn, SPBPSwapper);
+                    
+                    // Create some empty stack slots:
+                    EmitWord(OpCode.LD_DE_nn, 0x0000);
+                    
+                    EmitByte(OpCode.LD_B_n, byte(operand));
+                    Peephole.Reset();
+                    Emit(OpCode.PUSH_DE);
+                    EmitOffset(OpCode.DJNZ_e, -3);
+                }
+                case Instruction.DECSP:
+                {
+                    if (operand == 1)
+                    {
+                        Emit(OpCode.POP_DE);
+                    }
+                    else
+                    {
+                        EmitByte(OpCode.LD_B_n, byte(operand));
+                        Peephole.Reset();
+                        Emit(OpCode.POP_DE);
+                        EmitOffset(OpCode.DJNZ_e, -3);
+                    }
+                }
+                case Instruction.CALL:
+                {
+                    EmitWord(OpCode.CALL_nn, uint(operand));
+                    patches[output.Count-2] = operand;
+                }
+                case Instruction.RETB:
+                {
+                    EmitByte(OpCode.LD_B_n, byte(operand));
+                    Peephole.Reset();
+                    Emit(OpCode.POP_DE);
+                    EmitOffset(OpCode.DJNZ_e, -3);
+                    
+                    // POP BP
+                    Emit(OpCode.POP_IY); 
+                    Emit(OpCode.RET);
+                }
+                case Instruction.RET0:
+                {
+                    // POP BP
+                    Emit(OpCode.POP_IY); 
+                    Emit(OpCode.RET);
+                }
+                
+                case Instruction.ADD:
+                {
+                    Emit(OpCode.POP_DE);    
+                    Emit(OpCode.POP_HL);    
+                    Emit(OpCode.ADC_HL_DE);
+                    Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.SUB:
+                {
+                    Emit(OpCode.POP_DE);    
+                    Emit(OpCode.POP_HL);    
+                    Emit(OpCode.AND_A); // clear carry
+                    Emit(OpCode.SBC_HL_DE);
+                    Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.ADDB:
+                {
+                    EmitWord(OpCode.LD_DE_nn, operand);
+                    Emit(OpCode.POP_HL);    
+                    Emit(OpCode.ADC_HL_DE);
+                    Emit(OpCode.PUSH_HL);
+                }
+                case Instruction.SUBB:
+                {
+                    EmitWord(OpCode.LD_DE_nn, operand);
+                    Emit(OpCode.POP_HL);    
+                    Emit(OpCode.AND_A); // clear carry
+                    Emit(OpCode.SBC_HL_DE);
+                    Emit(OpCode.PUSH_HL);
+                }
+                
+                case Instruction.MUL:
+                {
+                    // top -> BC, next -> DE
+                    // HL = next * top
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_DE);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("MUL"));
+                    Emit(OpCode.PUSH_BC);    
+                }
+                case Instruction.DIV:
+                {
+                    // top -> BC, next -> DE
+                    // BC = next / top
+                    // HL = next % top
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_DE);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("DIVMOD"));
+                    Emit(OpCode.PUSH_BC);    
+                }
+                case Instruction.MOD:
+                {
+                    // top -> BC, next -> DE
+                    // HL = next % top
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_DE);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("DIVMOD"));
+                    Emit(OpCode.PUSH_HL);
+                }
+                
+                case Instruction.BITSHL:
+                {
+                    // top -> BC, next -> HL
+                    // HL = next  << top
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITSHL"));
+                    Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.BITSHR:
+                {
+                    // top -> BC, next -> HL
+                    // HL = next  >> top
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITSHR"));
+                    Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.BITAND:
+                {
+                    // top -> BC, next -> HL
+                    // HL = next & top
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITAND"));
+                    Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.BITOR:
+                {
+                    // top -> BC, next -> HL
+                    // HL = next & top
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITOR"));
+                    Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.BITXOR:
+                {
+                    // top -> BC, next -> HL
+                    // HL = next ^ top
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITXOR"));
+                    Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.BITNOT:
+                {
+                    // top = ~top
+                    Emit(OpCode.POP_HL);
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITNOT"));
+                    Emit(OpCode.PUSH_HL);    
+                }
+                
+                case Instruction.PUSHIBLE:
+                {
+                    // next -> HL, top -> BC
+                    // LE: DE = HL <= BC ? 1 : 0 
+                    EmitWord(OpCode.LD_BC_nn, operand & 0xFF);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LE"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.PUSHIBEQ:
+                {
+                    // next -> HL, top -> BC   
+                    // EQ: DE = HL == BC ? 1 : 0 
+                    EmitWord(OpCode.LD_BC_nn, operand & 0xFF);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("EQ"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                
+                case Instruction.LE:
+                {
+                    // next -> HL, top -> BC
+                    // LE: DE = HL <= BC ? 1 : 0 
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LE"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.GE:
+                {
+                    // next -> HL, top -> BC
+                    // LE: DE = HL >= BC ? 1 : 0 
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GE"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.LT:
+                {
+                    // next -> HL, top -> BC
+                    // LE: DE = HL < BC ? 1 : 0 
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LT"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.GT:
+                {
+                    // next -> HL, top -> BC
+                    // LE: DE = HL > BC ? 1 : 0 
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GT"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.EQ:
+                {
+                    // next -> HL, top -> BC
+                    // EQ: DE = HL == BC ? 1 : 0 
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("EQ"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.NE:
+                {
+                    // next -> HL, top -> BC
+                    // EQ: DE = HL != BC ? 1 : 0
+                    Emit(OpCode.POP_BC);    
+                    Emit(OpCode.POP_HL);    
+                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("NE"));
+                    Emit(OpCode.PUSH_DE);
+                }
+                
+                case Instruction.JZB:
+                {
+                    Emit(OpCode.XOR_A_A);
+                    Emit(OpCode.POP_HL);
+                    Emit(OpCode.CP_A_L);
+                    
+                    EmitOffset(OpCode.JR_NZ_e, +3);
+                    EmitWord(OpCode.JP_nn, uint(0));
+                    int offset = byte(operand);
+                    if (offset > 127)
+                    {
+                        offset -= 256;
+                    }
+                    jumpPatchLocations[hopperAddress] = output.Count - 2;
+                    jumpPatches[hopperAddress]        = offset;
+                }
+                case Instruction.JNZB:
+                {
+                    Emit(OpCode.XOR_A_A);
+                    Emit(OpCode.POP_HL);
+                    Emit(OpCode.CP_A_L);
+                    
+                    EmitOffset(OpCode.JR_Z_e, +3);
+                    EmitWord(OpCode.JP_nn, uint(0));
+                    int offset = byte(operand);
+                    if (offset > 127)
+                    {
+                        offset -= 256;
+                    }
+                    jumpPatchLocations[hopperAddress] = output.Count - 2;
+                    jumpPatches[hopperAddress]        = offset;
+                }
+                case Instruction.JB:
+                {
+                    EmitWord(OpCode.JP_nn, uint(0));
+                    int offset = byte(operand);
+                    if (offset > 127)
+                    {
+                        offset -= 256;
+                    }
+                    jumpPatchLocations[hopperAddress] = output.Count - 2;
+                    jumpPatches[hopperAddress]        = offset;
+                }
+                
+                case Instruction.JZ:
+                {
+                    Emit(OpCode.XOR_A_A);
+                    Emit(OpCode.POP_HL);
+                    Emit(OpCode.CP_A_L);
+                    
+                    EmitOffset(OpCode.JR_NZ_e, +3);
+                    EmitWord(OpCode.JP_nn, uint(0));
+                    long loffset = long(Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8)));
+                    if (loffset > 32767)
+                    {
+                        loffset = loffset +  0xFFFF;
+                    }
+                    jumpPatchLocations[hopperAddress] = output.Count - 2;
+                    jumpPatches[hopperAddress]        = int(loffset);
+                }
+                case Instruction.JNZ:
+                {
+                    Emit(OpCode.XOR_A_A);
+                    Emit(OpCode.POP_HL);
+                    Emit(OpCode.CP_A_L);
+                    
+                    EmitOffset(OpCode.JR_Z_e, +3);
+                    EmitWord(OpCode.JP_nn, uint(0));
+                    long loffset = long(Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8)));
+                    if (loffset > 32767)
+                    {
+                        loffset = loffset +  0xFFFF;
+                    }                        
+                    jumpPatchLocations[hopperAddress] = output.Count - 2;
+                    jumpPatches[hopperAddress]        = int(loffset);
+                }
+                
+                case Instruction.J:
+                {
+                    EmitWord(OpCode.JP_nn, uint(0));
+                    long loffset = long(Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8)));
+                    if (loffset > 32767)
+                    {
+                        loffset = loffset +  0xFFFF;
+                    }                        
+                    jumpPatchLocations[hopperAddress] = output.Count - 2;
+                    jumpPatches[hopperAddress]        = int(loffset);
+                }
+                                
+                case Instruction.CAST:
+                case Instruction.NOP:
+                case Instruction.NOP2:
+                {
+                    // NOP
+                }
+                
+                case Instruction.PUSHR0:
+                {
+                    Emit(OpCode.PUSH_HL);
+                }
+                case Instruction.POPR0:
+                {
+                    Emit(OpCode.POP_HL);
+                }
+                case Instruction.PUSHIB:
+                case Instruction.PUSHI:
+                {
+                    EmitWord(OpCode.LD_DE_nn, operand);    
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.PUSHI0:
+                {
+                    EmitWord(OpCode.LD_DE_nn, 0);    
+                    Emit(OpCode.PUSH_DE);
+                }
+                case Instruction.PUSHI1:
+                {
+                    EmitWord(OpCode.LD_DE_nn, 1);    
+                    Emit(OpCode.PUSH_DE);
+                }
+                
+                                
+                case Instruction.PUSHLOCALB:
+                {
+                    pushLocalB(operand);
+                }
+                case Instruction.PUSHLOCALB00:
+                {
+                    pushLocalB(0);
+                }
+                case Instruction.PUSHLOCALB01:
+                {
+                    pushLocalB(1);
+                }
+                case Instruction.PUSHLOCALBB:
+                {
+                    pushLocalB(operand & 0xFF);
+                    pushLocalB(operand >> 8);
+                }
+                case Instruction.POPLOCALB:
+                {
+                    popLocalB(operand);
+                }
+                case Instruction.POPLOCALB00:
+                {
+                    popLocalB(0);
+                }
+                case Instruction.POPLOCALB01:
+                {
+                    popLocalB(1);
+                }
+                case Instruction.INCLOCALB:
+                {
+                    incLocalB(operand);
+                }
+                case Instruction.DECLOCALB:
+                {
+                    decLocalB(operand);
+                }
+                
+                case Instruction.PUSHGLOBALB:
+                {
+                    pushGlobalB(operand);
+                }
+                case Instruction.POPGLOBALB:
+                {
+                    popGlobalB(operand);
+                }
+                case Instruction.INCGLOBALB:
+                {
+                    incGlobalB(operand);
+                }
+                case Instruction.DECGLOBALB:
+                {
+                    decGlobalB(operand);
+                }
+                
+                
+                
+                case Instruction.SYSCALL0:
+                {
+                    Emit(OpCode.XOR_A); // iOverload = 0;
+                    if (!Z80Library.SysCall(byte(operand & 0xFF))) { break; }
+                }
+                case Instruction.SYSCALL1:
+                {
+                    EmitByte(OpCode.LD_A_n, 1); // iOverload = 0;
+                    if (!Z80Library.SysCall(byte(operand & 0xFF))) { break; }
+                }
+                case Instruction.SYSCALL:
+                {
+                    Emit(OpCode.POP_DE);
+                    Emit(OpCode.LD_A_E); // iOverload
+                    if (!Z80Library.SysCall(byte(operand & 0xFF))) { break; }
+                }
+                case Instruction.SYSCALLB0:
+                {
+                    EmitWord(OpCode.LD_DE_nn, operand & 0xFF);    
+                    Emit(OpCode.PUSH_DE);
+                    
+                    Emit(OpCode.XOR_A); // iOverload = 0;
+                    if (!Z80Library.SysCall(byte(operand >> 8))) { break; }
+                }
+                
+                default:
+                {
+                    PrintLn(Instructions.ToString(instruction) + " not implemented in 0x" + methodIndex.ToHexString(4));
+                    Emit(OpCode.NOP);
+                    break;
+                }
+            }
+        }
+        
+        // <uint,uint> instructionAddresses; // <hopperAddress,z80Address>
+        // <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
+        // <uint,uint> jumpPatchLocations    // <hopperAddress,patchAddress>
+        //PrintLn(methodIndex.ToString() + ":");
+        foreach (var kv in jumpPatches)
+        {
+            uint hopperJumpLocation = kv.key;
+            int  offset = kv.value;
+            
+            uint hopperJumpTarget = uint(int(hopperJumpLocation) + offset);
+            if (!instructionAddresses.Contains(hopperJumpTarget))
+            {
+                PrintLn("Patch failed: " + hopperJumpLocation.ToHexString(4) + " " + offset.ToString() + " " + hopperJumpTarget.ToHexString(4));
+            }
+            else
+            {
+                uint targetAddress    = instructionAddresses[hopperJumpTarget];
+                uint patchLocation    = jumpPatchLocations[hopperJumpLocation];
+            
+                // PATCH
+                patchByte(patchLocation+0, byte(targetAddress & 0xFF));
+                patchByte(patchLocation+1, byte(targetAddress >> 8));
+                //PrintLn("  " +patchLocation.ToHexString(4) + " -> " + targetAddress.ToHexString(4));
+            }
+        }
+        bool modified;
+        <string,string> debugInfo = Code.GetMethodDebugInfo(methodIndex);
+        <string,string> z80DebugInfo;
+        foreach (var kv in debugInfo)
+        {
+            string hopperAddress = kv.key;
+            string lineNumber    = kv.value;
+            uint hopperIndex;
+            if (UInt.TryParse(hopperAddress, ref hopperIndex))
+            {
+                if (success || instructionAddresses.Contains(hopperIndex))
+                {
+                    uint z80Index = instructionAddresses[hopperIndex];
+                    z80DebugInfo[z80Index.ToString()] = lineNumber;
+                    modified = true;
+                }
+            }
+        }
+        // save the modified debugInfo
+        if (modified)
+        {        
+            Code.SetMethodDebugInfo(methodIndex, z80DebugInfo);
+        }
+    }
+    
     
     badArguments()
     {
@@ -2087,7 +1036,7 @@ program Z80Gen
             {
                 string extension = Path.GetExtension(codePath);
                 string ihexPath  = codePath.Replace(extension, ".hex");
-                string symbolsPath = codePath.Replace(extension, ".json");
+                string symbolsPath = codePath.Replace(extension, ".sym");
                 
                 ihexPath = Path.GetFileName(ihexPath);
                 ihexPath = Path.Combine("/Bin/", ihexPath);
@@ -2128,7 +1077,7 @@ program Z80Gen
                 
                 // stack needs to exist before our first CALL
                 // start pointing one byte beyond since it grows downward
-                EmitWord(OpCode.LD_SP_nn, CallStackAddress + CallStackSize); 
+                EmitWord(OpCode.LD_SP_nn, StackAddress + StackSize); 
                 EmitWord(OpCode.CALL_nn, 0);
                 Emit(OpCode.HALT);
                 

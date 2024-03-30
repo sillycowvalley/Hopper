@@ -22,6 +22,7 @@ unit CodeStream
     bool noPackedInstructions;
     bool noJixInstructions;
     bool peepHole;
+    bool isCDecl;
     
     bool CheckedBuild 
     { 
@@ -37,6 +38,7 @@ unit CodeStream
     bool TargetMinimal  { get { return minimalDefined; } }
     bool TargetMCU      { get { return mcuDefined; } }
     bool PeepHole       { get { return peepHole; } }
+    bool IsCDecl        { get { return isCDecl; } }
     
     InitializeSymbolShortcuts()
     {
@@ -49,6 +51,7 @@ unit CodeStream
         h6502Defined      = Symbols.DefineExists("HOPPER_6502"); // Target6502
         mcuDefined        = Symbols.DefineExists("MCU");
         peepHole          = Symbols.DefineExists("PEEPHOLEOPT");
+        isCDecl           = Symbols.DefineExists("CDECL");
     }
     bool InUse { get { return currentStream.Count != 0; } } 
     
@@ -265,7 +268,39 @@ unit CodeStream
         }
         
     }
-    
+    CDeclPostSysCall(byte iSysCall, byte iSysOverload)
+    {
+        uint iOverload = Symbols.GetSysCallMethodIndex(iSysCall, iSysOverload);
+        CDeclPostCALL(iOverload); // CDeclPostSysCall
+    }
+    CDeclPostCALL(uint iOverload)
+    {
+        < < string > > arguments = Symbols.GetOverloadArguments(iOverload);
+        byte slotsToPop = byte(arguments.Count);
+        string returnType = Symbols.GetOverloadReturnType(iOverload);
+        if (slotsToPop != 0)
+        {
+            CodeStream.AddInstruction(Instruction.DECSP, slotsToPop);
+        }
+        if (returnType != "void")
+        {
+            CodeStream.AddInstruction(Instruction.PUSHR0);
+        }
+    }
+    CDeclPostCALLDelegate(uint iOverload)
+    {
+        < < string > > stackArguments = Symbols.GetDelegateArguments(iOverload);
+        byte slotsToPop = byte(stackArguments.Count);
+        string returnType = Symbols.GetDelegateReturnType(iOverload);
+        if (slotsToPop != 0)
+        {
+            CodeStream.AddInstruction(Instruction.DECSP, slotsToPop);
+        }
+        if (returnType != "void")
+        {
+            CodeStream.AddInstruction(Instruction.PUSHR0);
+        }
+    }
     bool TryUserSysCall(string name)
     {
         bool userSupplied = false;
@@ -293,6 +328,10 @@ unit CodeStream
                             CodeStream.AddInstruction(Instruction.CALL, iOverload);
                         }
                         userSupplied = true;
+                        if (IsCDecl)
+                        {
+                            CDeclPostCALL(iOverload); // user supplied 'syscall'
+                        }
                     }
                 }
             }
@@ -391,6 +430,10 @@ unit CodeStream
             {
                 CodeStream.AddInstructionPUSHI(iSysOverload);
                 CodeStream.AddInstruction(Instruction.SYSCALL, iSysCall);
+            }
+            if (IsCDecl)
+            {
+                CDeclPostSysCall(iSysCall, iSysOverload); // AddInstructionSysCall
             }
             break;
         }

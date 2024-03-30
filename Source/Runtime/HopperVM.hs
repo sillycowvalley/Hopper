@@ -78,6 +78,10 @@ unit HopperVM
     byte csp;
     byte cspStart;
     bool cnp;
+    
+    uint r0;
+    Type r0Type;
+    
 #ifdef CHECKED
     uint messagePC;
 #endif    
@@ -89,6 +93,9 @@ unit HopperVM
     byte CSP { get { return csp; } set { csp = value; } }
     byte CSPStart { get { return cspStart; } set { cspStart = value; } }
     byte BP  { get { return bp; }  set { bp = value; } }
+    
+    uint R0      { get { return r0; }      set { r0 = value; } }
+    Type R0Type  { get { return r0Type; }  set { r0Type = value; } }
     
     bool CNP { get { return cnp; } set { cnp = value; } }
     

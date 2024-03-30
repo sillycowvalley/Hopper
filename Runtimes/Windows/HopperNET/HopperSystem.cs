@@ -61,6 +61,9 @@ namespace HopperNET
         public ushort gpBefore;
         public ushort pcBefore;
 
+        public StackSlot r0Before;
+        public bool isCDeclBefore;
+
         // used for Die
         public ushort bpBefore;
         public ushort spBefore;

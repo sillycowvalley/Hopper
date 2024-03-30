@@ -1,6 +1,6 @@
 unit System
 {
-    #define MINIMAL_RUNTIME
+    //#define MINIMAL_RUNTIME
     //#define NO_PACKED_INSTRUCTIONS
 
     uses "Char"

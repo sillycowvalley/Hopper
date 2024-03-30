@@ -25,6 +25,10 @@ namespace HopperNET
 
     public enum Instruction
     {
+        NOP    = 0x00,
+        PUSHR0 = 0x02,       // R0 -> [top]
+        POPR0  = 0x03,       // [top] -> R0
+
         LIBCALL  = 0x08,
         LIBCALL0 = 0x09,
         LIBCALL1 = 0x0A,
@@ -112,7 +116,7 @@ namespace HopperNET
         PUSHLOCALB00,
         PUSHLOCALB01,
 
-        NOP,
+        NOP2,
 
         CAST, // operand is value type (byte) - change top of stack to this type
 
@@ -695,6 +699,9 @@ namespace HopperNET
         ushort gp = 0;
         ushort csp = 0;
 
+        StackSlot r0 = new StackSlot();
+        bool isCDecl = false;
+
         StackSlot[] stack;
         ushort[] callstack;
         ushort lastError;
@@ -848,7 +855,7 @@ namespace HopperNET
             {
                 if (stack[sp2].value > 0xFFFF)
                 {
-                    int why = 0;
+                    //int why = 0;
                 }
             }
 
@@ -1085,7 +1092,7 @@ namespace HopperNET
             {
                 if (stack[address2].value > 0xFFFF)
                 {
-                    int why = 0;
+                    //int why = 0;
                 }
             }
             return stack[address2].value;
@@ -1277,7 +1284,7 @@ namespace HopperNET
                 instructionPC = pc;
                 if (pc == 0x2C5A)
                 {
-                    int why = 0;
+                    //int why = 0;
                 }
                 if (!inISR && (currentISR != 0))
                 {
@@ -1742,7 +1749,7 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            SystemCall(currentContext, (SysCall)operand, (byte)Pop());
+                            SystemCall(currentContext, (SysCall)operand, 2);
                         }
                         break;
 
@@ -1843,7 +1850,7 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            SystemCall(currentContext, (SysCall)operand, (byte)Pop());
+                            SystemCall(currentContext, (SysCall)operand, 2);
                         }
                         break;
 
@@ -2827,7 +2834,25 @@ namespace HopperNET
                         }
                         break;
 
-
+                    case Instruction.PUSHR0:
+                        {
+                            stack[sp].value = r0.value;
+                            stack[sp].reference = r0.reference;
+                            stack[sp].type = r0.type;
+                            sp++;
+                            isCDecl = true; // trick: make a call to this API to tell the runtime we are usind CDecl (should be in the binary version?)
+                        }
+                        break;
+                    case Instruction.POPR0:
+                        {
+                            sp--; 
+                            ushort sp2 = sp;
+                            r0.value = stack[sp].value;
+                            r0.reference = stack[sp].reference;
+                            r0.type = stack[sp].type;
+                            isCDecl = true;  // trick: make a call to this API to tell the runtime we are usind CDecl (should be in the binary version?)
+                        }
+                        break;
                     case Instruction.PUSHI:
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
@@ -3483,6 +3508,7 @@ namespace HopperNET
                         break;
 
                     case Instruction.NOP:
+                    case Instruction.NOP2:
                         break;
 
                     case Instruction.EXIT:
@@ -4244,14 +4270,22 @@ namespace HopperNET
 
         private void SystemCall(Context currentContext, SysCall sysCall, byte iOverload)
         {
+            bool hasResult = false;
+            ushort spBefore = sp;
+            if (iOverload == 2)
+            {
+                iOverload = (byte)Pop();
+            }
             switch (sysCall)
             {
                 /*
                 case SysCall.WebServerMethodGet:
                     Push(new HopperString(WebServer.Method));
+                    hasResult = true;
                     break;
                 case SysCall.WebServerURLGet:
                     Push(new HopperString(WebServer.URL));
+                    hasResult = true;
                     break;
                 case SysCall.WebServerArgumentsGet:
                     {
@@ -4261,6 +4295,7 @@ namespace HopperNET
                             arguments.Value[arg.Key] = new HopperString(arg.Value);
                         }
                         Push(arguments);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.WebServerOn:
@@ -4330,6 +4365,7 @@ namespace HopperNET
                             stack[address].reference = response;
                         }
                         PushBool(success);
+                        hasResult = true;
                     }
                     break;
                 */
@@ -4337,6 +4373,7 @@ namespace HopperNET
                     {
                         HopperString str = new HopperString();
                         Push(str);
+                        hasResult = true;
                     }
                     break;
 
@@ -4358,6 +4395,7 @@ namespace HopperNET
                                 }
                                 HopperString str = new HopperString(s);
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         case 1:
@@ -4372,6 +4410,7 @@ namespace HopperNET
                                 }
                                 HopperString str = new HopperString(value);
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                     }
@@ -4397,6 +4436,7 @@ namespace HopperNET
                         }
                         HopperString str = new HopperString(value);
                         Push(str);
+                        hasResult = true;
                         break;
                     }
                 case SysCall.CharToString:
@@ -4415,6 +4455,7 @@ namespace HopperNET
 #endif
                             break;
                     }
+                    hasResult = true;
                     break;
                 case SysCall.StringAppend:
                     switch (iOverload)
@@ -4425,6 +4466,7 @@ namespace HopperNET
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                                 HopperString str = new HopperString(_this_.Value + more.Value);
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         case 1:
@@ -4434,6 +4476,7 @@ namespace HopperNET
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                                 HopperString str = new HopperString(_this_.Value + more);
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         default:
@@ -4442,6 +4485,7 @@ namespace HopperNET
 #endif
                             break;
                     }
+
                     break;
                 case SysCall.StringBuildFront:
                     switch (iOverload)
@@ -4476,6 +4520,7 @@ namespace HopperNET
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                                 HopperString str = new HopperString(_this_.Value.Trim());
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         // Trim(ref string build) system;
@@ -4512,6 +4557,7 @@ namespace HopperNET
                                     str.Value = str.Value.Substring(1);
                                 }
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         // TrimLeft(ref string build) system;
@@ -4574,6 +4620,7 @@ namespace HopperNET
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                                 HopperString str = new HopperString(_this_.Value.ToUpper());
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         // ToUpper(ref string build) system;
@@ -4605,6 +4652,7 @@ namespace HopperNET
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                                 HopperString str = new HopperString(_this_.Value.ToLower());
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         // ToLower(ref string build) system;
@@ -4688,11 +4736,13 @@ namespace HopperNET
                                 {
                                     HopperString str = new HopperString(_this_.Value);
                                     Push(str);
+                                    hasResult = true;
                                 }
                                 else
                                 {
                                     HopperString str = new HopperString(_this_.Value.Replace(pattern.Value, replace.Value));
                                     Push(str);
+                                    hasResult = true;
                                 }
                             }
                             break;
@@ -4703,6 +4753,7 @@ namespace HopperNET
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                                 HopperString str = new HopperString(_this_.Value.Replace(pattern, replace));
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         default:
@@ -4720,6 +4771,7 @@ namespace HopperNET
                                 char pattern = (char)Pop();
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                                 PushBool(_this_.Value.EndsWith(pattern.ToString()));
+                                hasResult = true;
                             }
                             break;
                         case 1:
@@ -4727,6 +4779,7 @@ namespace HopperNET
                                 HopperString pattern = (HopperString)PopVariant(HopperType.tString);
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                                 PushBool(_this_.Value.EndsWith(pattern.Value));
+                                hasResult = true;
                             }
                             break;
                         default:
@@ -4746,6 +4799,7 @@ namespace HopperNET
                                 HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                                 HopperString str = new HopperString((start >= _this_.Value.Length) ? "" : _this_.Value.Substring(start));
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         case 1:
@@ -4767,6 +4821,7 @@ namespace HopperNET
                                     str = new HopperString(_this_.Value.Substring(start, length));
                                 }
                                 Push(str);
+                                hasResult = true;
                             }
                             break;
                         // Substring(ref string build, uint start) system;
@@ -4795,6 +4850,7 @@ namespace HopperNET
                     {
                         HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                         Push((ushort)_this_.Value.Length, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
 
@@ -4805,6 +4861,7 @@ namespace HopperNET
                         HopperString _this_ = (HopperString)PopVariant(HopperType.tString);
                         HopperString str = new HopperString(_this_.Value.Insert(index, append.ToString()));
                         Push(str);
+                        hasResult = true;
                     }
                     break;
 
@@ -4819,6 +4876,7 @@ namespace HopperNET
                             break;
                         }
                         Push(_this_.Value[index], HopperType.tChar);
+                        hasResult = true;
                     }
                     break;
 
@@ -4844,6 +4902,7 @@ namespace HopperNET
                         }
                         */
                         PushInt(result);
+                        hasResult = true;
                     }
                     break;
 
@@ -4865,6 +4924,7 @@ namespace HopperNET
                                     stack[address].value = (ushort)index;
                                 }
                                 PushBool(index != -1);
+                                hasResult = true;
                             }
                             break;
                         case 1:
@@ -4883,6 +4943,7 @@ namespace HopperNET
                                     stack[address].value = (ushort)index;
                                 }
                                 PushBool(index != -1);
+                                hasResult = true;
                             }
                             break;
                     }
@@ -4897,6 +4958,7 @@ namespace HopperNET
                                     char needle = (char)Pop();
                                     HopperString top = (HopperString)PopVariant(HopperType.tString);
                                     PushBool(top.Value.Contains(needle));
+                                    hasResult = true;
                                 }
                                 break;
                             case 1:
@@ -4905,6 +4967,7 @@ namespace HopperNET
                                     HopperString needle = (HopperString)PopVariant(HopperType.tString);
                                     HopperString top = (HopperString)PopVariant(HopperType.tString);
                                     PushBool(top.Value.Contains(needle.Value));
+                                    hasResult = true;
                                 }
                                 break;
 
@@ -4921,6 +4984,7 @@ namespace HopperNET
                                     char pattern = (char)Pop();
                                     HopperString top = (HopperString)PopVariant(HopperType.tString);
                                     PushBool((top.Value.Length > 0) && (top.Value[0] == pattern));
+                                    hasResult = true;
                                 }
                                 break;
                             case 1:
@@ -4929,6 +4993,7 @@ namespace HopperNET
                                     HopperString pattern = (HopperString)PopVariant(HopperType.tString);
                                     HopperString top = (HopperString)PopVariant(HopperType.tString);
                                     PushBool(top.Value.StartsWith(pattern.Value));
+                                    hasResult = true;
                                 }
                                 break;
 
@@ -4940,16 +5005,19 @@ namespace HopperNET
                     {
                         char ch = (char)Pop();
                         Push(Char.ToLower(ch), HopperType.tChar);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.CharToUpper:
                     {
                         char ch = (char)Pop();
                         Push(Char.ToUpper(ch), HopperType.tChar);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.CharIsDigit:
                     PushBool(Char.IsDigit((char)Pop()));
+                    hasResult = true;
                     break;
                 case SysCall.CharIsHexDigit:
                     {
@@ -4958,21 +5026,26 @@ namespace HopperNET
                                       ((b >= 65) && (b <= 70)) || // A..F
                                       ((b >= 97) && (b <= 102));  // a..f
                         PushBool(isHex);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.CharIsLower:
                     PushBool(Char.IsLower((char)Pop()));
+                    hasResult = true;
                     break;
                 case SysCall.CharIsUpper:
                     PushBool(Char.IsUpper((char)Pop()));
+                    hasResult = true;
                     break;
                 case SysCall.CharIsLetterOrDigit:
                     PushBool(Char.IsLetterOrDigit((char)Pop()));
+                    hasResult = true;
                     break;
                 case SysCall.ByteToDigit:
                     {
                         uint d = Pop() + 48; // +0
                         Push((char)d, HopperType.tChar);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.ByteToHex:
@@ -4987,6 +5060,7 @@ namespace HopperNET
                             h = h + 55; // +A - 10
                         }
                         Push((char)h, HopperType.tChar);
+                        hasResult = true;
                     }
                     break;
 
@@ -4997,6 +5071,7 @@ namespace HopperNET
                         ushort size = (ushort)Pop();
                         HopperArray array = new HopperArray(type, size);
                         Push(array);
+                        hasResult = true;
                     }
                     break;
 
@@ -5015,6 +5090,7 @@ namespace HopperNET
                         }
 
                         Push(arr);
+                        hasResult = true;
                         break;
                     }
 
@@ -5063,10 +5139,12 @@ namespace HopperNET
                             // internally in C# we are converting to 32 bits
                             // ushort will not sign extend, short will
                             PushInt((short)(array[index]));
+                            hasResult = true;
                         }
                         else
                         {
                             Push(array[index], _this_.VType);
+                            hasResult = true;
                         }
 #else
                         if (_this_.VType == HopperType.tInt)
@@ -5088,6 +5166,7 @@ namespace HopperNET
                     {
                         HopperArray _this_ = (HopperArray)PopVariant(HopperType.tArray);
                         Push((ushort)_this_.Value.Length, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
 
@@ -5127,6 +5206,7 @@ namespace HopperNET
                         HopperType kType = (HopperType)Pop();
                         HopperPair pair = new HopperPair(kType, vType);
                         Push(pair);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.PairKey:
@@ -5136,10 +5216,12 @@ namespace HopperNET
                         {
                             HopperValue value = (HopperValue)pair.Key;
                             Push(value.Value, value.Type);
+                            hasResult = true;
                         }
                         else
                         {
                             Push(pair.Key.Clone());
+                            hasResult = true;
                         }
                     }
                     break;
@@ -5150,10 +5232,12 @@ namespace HopperNET
                         {
                             HopperValue value = (HopperValue)pair.Value;
                             Push(value.Value, value.Type);
+                            hasResult = true;
                         }
                         else
                         {
                             Push(pair.Value.Clone());
+                            hasResult = true;
                         }
                     }
                     break;
@@ -5164,10 +5248,12 @@ namespace HopperNET
                         if (kType == HopperType.tString)
                         {
                             Push(new HopperStringDictionary(vType));
+                            hasResult = true;
                         }
                         else if (Type_IsKeyType(kType))
                         {
                             Push(new HopperUIntDictionary(vType));
+                            hasResult = true;
                         }
                         else
                         {
@@ -5181,10 +5267,12 @@ namespace HopperNET
                         if (_this_ as HopperStringDictionary != null)
                         {
                             Push((ushort)((HopperStringDictionary)_this_).Value.Count, HopperType.tUInt);
+                            hasResult = true;
                         }
                         else
                         {
                             Push((ushort)((HopperUIntDictionary)_this_).Value.Count, HopperType.tUInt);
+                            hasResult = true;
                         }
                     }
                     break;
@@ -5200,6 +5288,7 @@ namespace HopperNET
                             PushBool(found);
                             Push(pair);
                             Push(iterator, HopperType.tUInt);
+                            hasResult = true; // TODO : push list?
                         }
                         else
                         {
@@ -5209,6 +5298,7 @@ namespace HopperNET
                             PushBool(found);
                             Push(pair);
                             Push(iterator, HopperType.tUInt);
+                            hasResult = true; // TODO : push list?
                         }
                     }
                     break;
@@ -5284,12 +5374,14 @@ namespace HopperNET
                             HopperString key = (HopperString)PopVariant(HopperType.tString);
                             HopperStringDictionary _this_ = (HopperStringDictionary)PopVariant(HopperType.tDictionary);
                             PushBool(_this_.Value.ContainsKey(key.Value));
+                            hasResult = true;
                         }
                         else if (keyType != HopperType.tString)
                         {
                             ushort key = (ushort)Pop();
                             HopperUIntDictionary _this_ = (HopperUIntDictionary)PopVariant(HopperType.tDictionary);
                             PushBool(_this_.Value.ContainsKey(key));
+                            hasResult = true;
                         }
                         else
                         {
@@ -5313,10 +5405,12 @@ namespace HopperNET
                             {
                                 HopperValue value = (HopperValue)_this_.Value[key.Value];
                                 Push(value.Value, value.Type);
+                                hasResult = true;
                             }
                             else
                             {
                                 Push(_this_.Value[key.Value].Clone());
+                                hasResult = true;
                             }
                         }
                         else if (keyType != HopperType.tString)
@@ -5332,10 +5426,12 @@ namespace HopperNET
                             {
                                 HopperValue value = (HopperValue)_this_.Value[key];
                                 Push(value.Value, value.Type);
+                                hasResult = true;
                             }
                             else
                             {
                                 Push(_this_.Value[key].Clone());
+                                hasResult = true;
                             }
                         }
                         else
@@ -5350,12 +5446,14 @@ namespace HopperNET
                         HopperType type = (HopperType)Pop();
                         HopperList list = new HopperList(type);
                         Push(list);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.ListCountGet:
                     {
                         HopperList _this_ = (HopperList)PopVariant(HopperType.tList);
                         Push((ushort)_this_.Value.Count, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.ListInsert:
@@ -5541,6 +5639,7 @@ namespace HopperNET
                         {
                             HopperValue value = (HopperValue)_this_.Value[index];
                             Push(value.Value, value.Type);
+                            hasResult = true;
                         }
                         else if (_this_.VType == HopperType.tVariant)
                         {
@@ -5548,15 +5647,18 @@ namespace HopperNET
                             if (value != null)
                             {
                                 Push(value.Value, value.Type);
+                                hasResult = true;
                             }
                             else
                             {
                                 Push(_this_.Value[index].Clone());
+                                hasResult = true;
                             }
                         }
                         else
                         {
                             Push(_this_.Value[index].Clone());
+                            hasResult = true;
                         }
                     }
                     break;
@@ -5570,6 +5672,7 @@ namespace HopperNET
                             break;
                         }
                         Push(_this_.Value[index].Clone());
+                        hasResult = true;
                         HopperType topType = GetStackType((ushort)(sp - 1));
                     }
                     break;
@@ -5600,12 +5703,14 @@ namespace HopperNET
                             HopperValue variant = new HopperValue(value, type);
                             HopperList list = (HopperList)PopVariant(HopperType.tList);
                             PushBool(list.Value.Contains(variant));
+                            hasResult = true;
                         }
                         else
                         {
                             Variant variant = PopVariant(HopperType.tUndefined);
                             HopperList list = (HopperList)PopVariant(HopperType.tList);
                             PushBool(list.Value.Contains(variant));
+                            hasResult = true;
                         }
                     }
                     break;
@@ -5614,6 +5719,7 @@ namespace HopperNET
                     {
                         HopperString str = new HopperString(HopperSystem.CurrentDirectory);
                         Push(str);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.SystemCurrentDirectorySet:
@@ -5630,12 +5736,14 @@ namespace HopperNET
                             arguments.Value.Add(new HopperString(arg));
                         }
                         Push(arguments);
+                        hasResult = true;
                     }
                     break;
 
                 case SysCall.SystemHexeVersionGet:
                     {
                         Push(hopperSystem.HexeVersion, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.RuntimeExecute:
@@ -5648,6 +5756,9 @@ namespace HopperNET
                         currentContext.gpBefore = gp;
                         currentContext.cspBefore = csp;
 
+                        currentContext.r0Before = r0;
+                        currentContext.isCDeclBefore = isCDecl;
+
                         List<string> args = new List<string>();
                         foreach (Variant v in arguments.Value)
                         {
@@ -5657,15 +5768,19 @@ namespace HopperNET
 
                         ushort setError = 0;
                         Load(path.Value, args);
+                        isCDecl = false;
                         int result = Execute(ref setError, true);
                         Halted = false;
 
-                        code = currentContext.Code; 
+                        code = currentContext.Code;
                         methodTable = currentContext.MethodTable;
-                        
+
                         pc = currentContext.pcBefore;
                         gp = currentContext.gpBefore;
-                        
+
+                        r0 = currentContext.r0Before;
+                        isCDecl = currentContext.isCDeclBefore;
+
 
                         if (result != 0) // Die happened
                         {
@@ -5683,6 +5798,7 @@ namespace HopperNET
                             Diagnostics.OutputDebug("Runtime.Execute(..) -> " + setError.ToString());
                         }
                         Push(setError, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
 
@@ -5716,16 +5832,20 @@ namespace HopperNET
                     break;
                 case SysCall.ScreenColumnsGet:
                     Push(this.screen.Columns, HopperType.tByte);
+                    hasResult = true;
                     break;
                 case SysCall.ScreenRowsGet:
                     Push(this.screen.Rows, HopperType.tByte);
+                    hasResult = true;
                     break;
 
                 case SysCall.ScreenCursorXGet:
                     Push(this.screen.CursorX, HopperType.tByte);
+                    hasResult = true;
                     break;
                 case SysCall.ScreenCursorYGet:
                     Push(this.screen.CursorY, HopperType.tByte);
+                    hasResult = true;
                     break;
 
                 case SysCall.ScreenSuspend:
@@ -5767,18 +5887,23 @@ namespace HopperNET
 
                 case SysCall.RuntimePCGet:
                     Push((ushort)this.pc, HopperType.tUInt);
+                    hasResult = true;
                     break;
                 case SysCall.RuntimeSPGet:
                     Push((ushort)this.sp, HopperType.tUInt);
+                    hasResult = true;
                     break;
                 case SysCall.RuntimeBPGet:
                     Push((ushort)this.bp, HopperType.tUInt);
+                    hasResult = true;
                     break;
                 case SysCall.RuntimeCSPGet:
                     Push((ushort)this.bp, HopperType.tUInt);
+                    hasResult = true;
                     break;
                 case SysCall.RuntimeUserCodeGet:
                     Push((ushort)this.codeStore.Length, HopperType.tUInt);
+                    hasResult = true;
                     break;
 
                 case SysCall.RuntimeGetStackWord:
@@ -5787,6 +5912,7 @@ namespace HopperNET
                         ushort offset = (ushort)Pop();
                         ushort value = (ushort)GetStack(offset); // doesn't work for long and float on Windows
                         Push(value, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
 
@@ -5795,6 +5921,7 @@ namespace HopperNET
                         ushort offset = (ushort)Pop();
                         HopperType type = GetStackType(offset);
                         Push((ushort)type, HopperType.tType);
+                        hasResult = true;
                         break;
                     }
                 case SysCall.RuntimeGetCallStackWord:
@@ -5803,38 +5930,48 @@ namespace HopperNET
                         ushort offset = (ushort)Pop();
                         ushort value = (ushort)GetCallStack(offset);
                         Push(value, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
 
                 case SysCall.KeyboardReadKey:
                     Push((ushort)this.keyboard.ReadKey(), HopperType.tEnum);
+                    hasResult = true;
                     break;
                 case SysCall.KeyboardIsAvailableGet:
                     PushBool(this.keyboard.IsAvailable());
+                    hasResult = true;
                     break;
                 case SysCall.KeyboardClickXGet:
                     Push((ushort)this.keyboard.ClickX, HopperType.tUInt);
+                    hasResult = true;
                     break;
                 case SysCall.KeyboardClickYGet:
                     Push((ushort)this.keyboard.ClickY, HopperType.tUInt);
+                    hasResult = true;
                     break;
                 case SysCall.KeyboardClickUpGet:
                     PushBool(this.keyboard.ClickUp);
+                    hasResult = true;
                     break;
                 case SysCall.KeyboardClickDoubleGet:
                     PushBool(this.keyboard.ClickDouble);
+                    hasResult = true;
                     break;
                 case SysCall.KeyboardScrollDeltaGet:
                     Push((ushort)this.keyboard.ScrollDelta, HopperType.tInt);
+                    hasResult = true;
                     break;
 
                 case SysCall.FileNew:
                     Push(new HopperFile());
+                    hasResult = true;
                     break;
                 case SysCall.FileExists:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         PushBool(HopperFile.Exists(path.Value));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FileDelete:
@@ -5847,18 +5984,21 @@ namespace HopperNET
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         Push(HopperFile.Open(path.Value));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FileCreate:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         Push(HopperFile.Create(path.Value));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FileIsValid:
                     {
                         HopperFile file = (HopperFile)PopVariant(HopperType.tFile);
                         PushBool(file.IsValid());
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FileRead:
@@ -5868,6 +6008,7 @@ namespace HopperNET
                             {
                                 HopperFile file = (HopperFile)PopVariant(HopperType.tFile);
                                 Push(file.Read(), HopperType.tByte);
+                                hasResult = true;
                                 break;
                             }
                         case 1:
@@ -5875,6 +6016,7 @@ namespace HopperNET
                                 Int32 seekpos = PopLong();
                                 HopperFile file = (HopperFile)PopVariant(HopperType.tFile);
                                 Push(file.Read(seekpos), HopperType.tByte);
+                                hasResult = true;
                                 break;
                             }
                         case 2:
@@ -5884,6 +6026,7 @@ namespace HopperNET
                                 HopperFile file = (HopperFile)PopVariant(HopperType.tFile);
 
                                 Push(file.Read(buffer, bufferSize), HopperType.tUInt);
+                                hasResult = true;
                                 break;
                             }
                         default:
@@ -5898,6 +6041,7 @@ namespace HopperNET
                     {
                         HopperFile file = (HopperFile)PopVariant(HopperType.tFile);
                         Push(new HopperString(file.ReadLine()));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FileAppend:
@@ -5934,54 +6078,63 @@ namespace HopperNET
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         PushLong(HopperFile.GetSize(path.Value));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FileGetTimeStamp:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         PushLong(HopperFile.GetTimeStamp(path.Value));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FileGetTime:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         Push(HopperFile.GetTime(path.Value));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FileGetDate:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         Push(HopperFile.GetDate(path.Value));
+                        hasResult = true;
                     }
                     break;
 
                 case SysCall.DirectoryNew:
                     Push(new HopperDirectory());
+                    hasResult = true;
                     break;
                 case SysCall.DirectoryExists:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         PushBool(HopperDirectory.Exists(path.Value));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.DirectoryOpen:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         Push(HopperDirectory.Open(path.Value));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.DirectoryIsValid:
                     {
                         HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
                         PushBool(directory.IsValid());
+                        hasResult = true;
                     }
                     break;
-                
+
                 case SysCall.DirectoryGetDirectory:
                     {
                         ushort index = (ushort)Pop();
                         HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
                         Push(directory.GetDirectory(index));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.DirectoryGetFile:
@@ -5989,6 +6142,7 @@ namespace HopperNET
                         ushort index = (ushort)Pop();
                         HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
                         Push(directory.GetFile(index));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.DirectoryGetDirectoryCount:
@@ -5999,6 +6153,7 @@ namespace HopperNET
                                 {
                                     HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
                                     Push(directory.GetDirectoryCount(), HopperType.tUInt);
+                                    hasResult = true;
                                     break;
                                 }
                             case 1:
@@ -6011,6 +6166,7 @@ namespace HopperNET
                                     ushort skipped = (ushort)stack[address].value;
                                     HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
                                     Push(directory.GetDirectoryCount(ref skipped), HopperType.tUInt);
+                                    hasResult = true;
                                     stack[address].value = skipped;
                                     stack[address].type = HopperType.tUInt;
                                     break;
@@ -6026,6 +6182,7 @@ namespace HopperNET
                                 {
                                     HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
                                     Push(directory.GetFileCount(), HopperType.tUInt);
+                                    hasResult = true;
                                     break;
                                 }
                             case 1:
@@ -6038,6 +6195,7 @@ namespace HopperNET
                                     ushort skipped = (ushort)stack[address].value;
                                     HopperDirectory directory = (HopperDirectory)PopVariant(HopperType.tDirectory);
                                     Push(directory.GetFileCount(ref skipped), HopperType.tUInt);
+                                    hasResult = true;
 
                                     stack[address].value = skipped;
                                     stack[address].type = HopperType.tUInt;
@@ -6050,12 +6208,14 @@ namespace HopperNET
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         Push(HopperDirectory.GetTime(path.Value));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.DirectoryGetDate:
                     {
                         HopperString path = (HopperString)PopVariant(HopperType.tString);
                         Push(HopperDirectory.GetDate(path.Value));
+                        hasResult = true;
                     }
                     break;
 
@@ -6078,6 +6238,7 @@ namespace HopperNET
                         HopperString password = (HopperString)PopVariant(HopperType.tString);
                         HopperString ssid = (HopperString)PopVariant(HopperType.tString);
                         PushBool(true);
+                        hasResult = true;
                         break;
                     }
 
@@ -6085,6 +6246,7 @@ namespace HopperNET
                 case SysCall.TimeMillisGet:
                     Int32 millis = HopperTime.Millis;
                     PushLong(millis);
+                    hasResult = true;
                     break;
                 //case SysCall.TimeMicrosGet:
                 //    Int32 micros = HopperTime.Micros;
@@ -6100,18 +6262,21 @@ namespace HopperNET
                         HopperString tm = new HopperString();
                         tm.Value = DateTime.Now.ToString("HH:mm:ss");
                         Push(tm);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.TimeDate_Get:
                     HopperString dt = new HopperString();
                     dt.Value = DateTime.Now.ToString("yyyy-MM-dd");
                     Push(dt);
+                    hasResult = true;
                     break;
-                
+
 
 
                 case SysCall.LongNew:
                     Push(0, HopperType.tLong);
+                    hasResult = true;
                     break;
                 case SysCall.LongNewFromConstant:
                     {
@@ -6119,6 +6284,7 @@ namespace HopperNET
                         location = (ushort)(location + currentContext.ConstantsStart);
                         Int32 l = BitConverter.ToInt32(currentContext.Code, location);
                         PushLong(l);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongAdd:
@@ -6126,6 +6292,7 @@ namespace HopperNET
                         Int32 top = PopLong();
                         Int32 next = PopLong();
                         PushLong(next + top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongSub:
@@ -6133,6 +6300,7 @@ namespace HopperNET
                         Int32 top = PopLong();
                         Int32 next = PopLong();
                         PushLong(next - top);
+                        hasResult = true;
                     }
                     break;
 
@@ -6141,24 +6309,24 @@ namespace HopperNET
                         Int32 top = (Int32)Pop();
                         Int32 next = PopLong();
                         PushLong(next + top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongSubB:
                     {
-                        Int32 top  = (Int32)Pop();
+                        Int32 top = (Int32)Pop();
                         Int32 next = PopLong();
                         PushLong(next - top);
+                        hasResult = true;
                     }
                     break;
-
-
-                    
 
                 case SysCall.LongMul:
                     {
                         Int32 top = PopLong();
                         Int32 next = PopLong();
                         PushLong(next * top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongInc:
@@ -6209,7 +6377,7 @@ namespace HopperNET
                     }
                     break;
 
-                
+
                 case SysCall.LongDiv:
                     {
                         Int32 top = PopLong();
@@ -6220,6 +6388,7 @@ namespace HopperNET
                             break;
                         }
                         PushLong(next / top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongMod:
@@ -6232,6 +6401,7 @@ namespace HopperNET
                             break;
                         }
                         PushLong(next % top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongEQ:
@@ -6239,6 +6409,7 @@ namespace HopperNET
                         Int32 top = PopLong();
                         Int32 next = PopLong();
                         PushBool(next == top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongLT:
@@ -6246,6 +6417,7 @@ namespace HopperNET
                         Int32 top = PopLong();
                         Int32 next = PopLong();
                         PushBool(next < top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongLE:
@@ -6253,6 +6425,7 @@ namespace HopperNET
                         Int32 top = PopLong();
                         Int32 next = PopLong();
                         PushBool(next <= top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongGT:
@@ -6260,6 +6433,7 @@ namespace HopperNET
                         Int32 top = PopLong();
                         Int32 next = PopLong();
                         PushBool(next > top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongGE:
@@ -6267,6 +6441,7 @@ namespace HopperNET
                         Int32 top = PopLong();
                         Int32 next = PopLong();
                         PushBool(next >= top);
+                        hasResult = true;
                     }
                     break;
 
@@ -6275,6 +6450,7 @@ namespace HopperNET
                         Int32 top = PopLong();
                         float f = (float)(top * 1.0);
                         PushFloat(f);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongToUInt:
@@ -6286,30 +6462,35 @@ namespace HopperNET
                             break;
                         }
                         Push((ushort)top, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.UIntToLong:
                     {
                         ushort top = (ushort)Pop();
                         PushLong((Int32)top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.IntToLong:
                     {
                         short top = PopInt();
                         PushLong((Int32)top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.IntToFloat:
                     {
                         short top = PopInt();
                         PushFloat((float)top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.UIntToFloat:
                     {
                         ushort top = (ushort)Pop();
                         PushFloat((float)top);
+                        hasResult = true;
                     }
                     break;
 
@@ -6323,6 +6504,7 @@ namespace HopperNET
                         }
                         short i = (short)top;
                         PushInt(i);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.UIntToInt:
@@ -6335,18 +6517,21 @@ namespace HopperNET
                         }
                         short i = (short)top;
                         PushInt(i);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongToString:
                     {
                         Int32 top = PopLong();
                         Push(new HopperString(top.ToString()));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongNegate:
                     {
                         Int32 top = PopLong();
                         PushLong(-top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongToBytes:
@@ -6359,6 +6544,7 @@ namespace HopperNET
                             list.Value.Add(new HopperValue(b, HopperType.tByte));
                         }
                         Push(list);
+                        hasResult = true;
                     }
                     break;
 
@@ -6373,6 +6559,7 @@ namespace HopperNET
                             break;
                         }
                         Push(bytes[index], HopperType.tByte);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.LongFromBytes:
@@ -6385,6 +6572,7 @@ namespace HopperNET
 
                         Int32 l = BitConverter.ToInt32(bytes, 0);
                         PushLong(l);
+                        hasResult = true;
                         break;
                     }
                 case SysCall.FloatGetByte:
@@ -6398,6 +6586,7 @@ namespace HopperNET
                             break;
                         }
                         Push(bytes[index], HopperType.tByte);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatFromBytes:
@@ -6410,6 +6599,7 @@ namespace HopperNET
 
                         float f = BitConverter.ToSingle(bytes, 0);
                         PushFloat(f);
+                        hasResult = true;
                         break;
                     }
                 case SysCall.IntGetByte:
@@ -6423,6 +6613,7 @@ namespace HopperNET
                             break;
                         }
                         Push(bytes[index], HopperType.tByte);
+                        hasResult = true;
                     }
                     break;
 
@@ -6436,6 +6627,7 @@ namespace HopperNET
                             list.Value.Add(new HopperValue(b, HopperType.tByte));
                         }
                         Push(list);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.IntFromBytes:
@@ -6446,10 +6638,12 @@ namespace HopperNET
 
                         Int16 i = BitConverter.ToInt16(bytes, 0);
                         PushInt(i);
+                        hasResult = true;
                         break;
                     }
                 case SysCall.FloatNew:
                     Push(0, HopperType.tFloat);
+                    hasResult = true;
                     break;
                 case SysCall.FloatNewFromConstant:
                     {
@@ -6457,6 +6651,7 @@ namespace HopperNET
                         location = (ushort)(location + currentContext.ConstantsStart);
                         float f = BitConverter.ToSingle(currentContext.Code, location);
                         PushFloat(f);
+                        hasResult = true;
                     }
                     break;
 
@@ -6464,12 +6659,14 @@ namespace HopperNET
                     {
                         float top = PopFloat();
                         PushFloat((float)Math.Sin(top));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatCos:
                     {
                         float top = PopFloat();
                         PushFloat((float)Math.Cos(top));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatATan2:
@@ -6477,12 +6674,14 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushFloat((float)Math.Atan2(next, top));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatSqrt:
                     {
                         float top = PopFloat();
                         PushFloat((float)Math.Sqrt(top));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatAdd:
@@ -6490,6 +6689,7 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushFloat(next + top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatSub:
@@ -6497,6 +6697,7 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushFloat(next - top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatMul:
@@ -6504,6 +6705,7 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushFloat(next * top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatDiv:
@@ -6516,6 +6718,7 @@ namespace HopperNET
                             break;
                         }
                         PushFloat(next / top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatEQ:
@@ -6523,6 +6726,7 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushBool(next == top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatLT:
@@ -6530,6 +6734,7 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushBool(next < top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatLE:
@@ -6537,6 +6742,7 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushBool(next <= top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatGT:
@@ -6544,6 +6750,7 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushBool(next > top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatGE:
@@ -6551,6 +6758,7 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushBool(next >= top);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatToBytes:
@@ -6563,12 +6771,14 @@ namespace HopperNET
                             list.Value.Add(new HopperValue(b, HopperType.tByte));
                         }
                         Push(list);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatToString:
                     {
                         float top = PopFloat();
                         Push(new HopperString(top.ToString()));
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatToUInt:
@@ -6580,6 +6790,7 @@ namespace HopperNET
                             break;
                         }
                         Push((ushort)top, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.FloatToLong:
@@ -6591,6 +6802,7 @@ namespace HopperNET
                             break;
                         }
                         PushLong((Int32)top);
+                        hasResult = true;
                     }
                     break;
 
@@ -6606,6 +6818,7 @@ namespace HopperNET
                             PopVariant(HopperType.tUndefined);
                         }
                         Push((ushort)type, HopperType.tType);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.TypesKeyTypeOf:
@@ -6618,11 +6831,13 @@ namespace HopperNET
                                 {
                                     HopperUIntDictionary dictionary = (HopperUIntDictionary)variant;
                                     Push((ushort)HopperType.tUInt, HopperType.tType);
+                                    hasResult = true;
                                 }
                                 else if (variant as HopperStringDictionary != null)
                                 {
                                     HopperStringDictionary dictionary = (HopperStringDictionary)variant;
                                     Push((ushort)HopperType.tString, HopperType.tType);
+                                    hasResult = true;
                                 }
                                 else
                                 {
@@ -6633,6 +6848,7 @@ namespace HopperNET
                                 {
                                     HopperPair pair = (HopperPair)variant;
                                     Push((ushort)pair.KType, HopperType.tType);
+                                    hasResult = true;
                                 }
                                 break;
                             default:
@@ -6650,11 +6866,13 @@ namespace HopperNET
                                 {
                                     HopperUIntDictionary dictionary = (HopperUIntDictionary)variant;
                                     Push((ushort)dictionary.VType, HopperType.tType);
+                                    hasResult = true;
                                 }
                                 else if (variant as HopperStringDictionary != null)
                                 {
                                     HopperStringDictionary dictionary = (HopperStringDictionary)variant;
                                     Push((ushort)dictionary.VType, HopperType.tType);
+                                    hasResult = true;
                                 }
                                 else
                                 {
@@ -6665,18 +6883,21 @@ namespace HopperNET
                                 {
                                     HopperPair pair = (HopperPair)variant;
                                     Push((ushort)pair.VType, HopperType.tType);
+                                    hasResult = true;
                                 }
                                 break;
                             case HopperType.tList:
                                 {
                                     HopperList list = (HopperList)variant;
                                     Push((ushort)list.VType, HopperType.tType);
+                                    hasResult = true;
                                 }
                                 break;
                             case HopperType.tArray:
                                 {
                                     HopperArray array = (HopperArray)variant;
                                     Push((ushort)array.VType, HopperType.tType);
+                                    hasResult = true;
                                 }
                                 break;
                             default:
@@ -6684,6 +6905,7 @@ namespace HopperNET
                                 {
                                     // box variant
                                     Push((ushort)variant.Type, HopperType.tType);
+                                    hasResult = true;
                                 }
                                 else
                                 {
@@ -6710,6 +6932,7 @@ namespace HopperNET
                             }
                         }
                         Push((ushort)type, HopperType.tType);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.TypesVerifyValueTypes:
@@ -6771,6 +6994,7 @@ namespace HopperNET
                                 break;
                         }
                         PushBool(success);
+                        hasResult = true;
                     }
                     break;
 
@@ -6780,19 +7004,21 @@ namespace HopperNET
                         uint value = Pop();
                         Variant boxed = new HopperValue(value, type);
                         Push(boxed);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.VariantUnBox:
                     {
                         HopperValue value = (HopperValue)PopVariant(HopperType.tVariant);
                         Push(value.Value, value.Type);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.DiagnosticsSetError:
                     currentContext.SetError = (ushort)Pop();
                     break;
 
-                
+
 
                 case SysCall.DiagnosticsOutputDebug:
                     switch (iOverload)
@@ -6906,16 +7132,16 @@ namespace HopperNET
                     switch (iOverload)
                     {
                         case 0:
-                        {
-                            Serial.Connect();
-                            break;
-                        }
+                            {
+                                Serial.Connect();
+                                break;
+                            }
                         case 1:
-                        {
-                            uint port = Pop();
-                            Serial.Connect(port);
-                            break;
-                        }
+                            {
+                                uint port = Pop();
+                                Serial.Connect(port);
+                                break;
+                            }
                     }
                     break;
                 case SysCall.SerialClose:
@@ -6923,14 +7149,17 @@ namespace HopperNET
                     break;
                 case SysCall.SerialIsValid:
                     PushBool(Serial.IsValid());
+                    hasResult = true;
                     break;
 
                 case SysCall.SerialIsAvailableGet:
                     PushBool(Serial.IsAvailableGet());
+                    hasResult = true;
                     break;
 
                 case SysCall.SerialReadChar:
                     Push(Serial.ReadChar(), HopperType.tChar);
+                    hasResult = true;
                     break;
 
                 case SysCall.SerialWriteChar:
@@ -6951,6 +7180,7 @@ namespace HopperNET
                             portList.Value.Add(new HopperString(arg));
                         }
                         Push(portList);
+                        hasResult = true;
                     }
                     break;
 
@@ -6963,6 +7193,7 @@ namespace HopperNET
                         byte mask = (byte)(1 << (byte)(index & 0x07));
                         byte value = (byte)(currentContext.memoryArray[address] & mask);
                         Push((byte)((value != 0) ? 1 : 0), HopperType.tByte);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.MemoryWriteBit:
@@ -6987,12 +7218,14 @@ namespace HopperNET
                     {
                         uint address = Pop();
                         Push(currentContext.memoryArray[address], HopperType.tByte);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.MemoryReadWord:
                     {
                         uint address = Pop();
                         Push((ushort)(currentContext.memoryArray[address] + (currentContext.memoryArray[address + 1] << 8)), HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
 
@@ -7007,13 +7240,14 @@ namespace HopperNET
                     {
                         uint data = Pop();
                         uint address = Pop();
-                        currentContext.memoryArray[address]   = (byte)(data & 0xFF);
-                        currentContext.memoryArray[address+1] = (byte)((data >> 8) & 0xFF);
+                        currentContext.memoryArray[address] = (byte)(data & 0xFF);
+                        currentContext.memoryArray[address + 1] = (byte)((data >> 8) & 0xFF);
                     }
                     break;
                 case SysCall.MemoryAvailable:
                     {
                         Push(0xFFFF, HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
 
@@ -7021,12 +7255,14 @@ namespace HopperNET
                     {
                         uint address = Pop();
                         Push(currentContext.memoryCodeArray[address], HopperType.tByte);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.MemoryReadCodeWord:
                     {
                         uint address = Pop();
-                        Push((ushort)(currentContext.memoryCodeArray[address] + (currentContext.memoryCodeArray[address+1] << 8)), HopperType.tUInt);
+                        Push((ushort)(currentContext.memoryCodeArray[address] + (currentContext.memoryCodeArray[address + 1] << 8)), HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
 
@@ -7050,12 +7286,14 @@ namespace HopperNET
                     {
                         uint address = Pop();
                         Push(currentContext.memoryCodeArray[address + currentContext.ProgramOffset], HopperType.tByte);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.MemoryReadProgramWord:
                     {
                         uint address = Pop();
                         Push((ushort)(currentContext.memoryCodeArray[address + currentContext.ProgramOffset] + (currentContext.memoryCodeArray[address + 1 + currentContext.ProgramOffset] << 8)), HopperType.tUInt);
+                        hasResult = true;
                     }
                     break;
 
@@ -7087,6 +7325,7 @@ namespace HopperNET
                         uint hasText = (uint)((hopper.HasClipboardText()) ? 1 : 0);
                         currentContext.RemainingClipboardText = hopper.GetClipboardText();
                         Push(hasText, HopperType.tBool);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.ClipboardGetText:
@@ -7094,6 +7333,7 @@ namespace HopperNET
                         string clipboardText = hopper.GetClipboardText();
                         HopperString ct = new HopperString(clipboardText);
                         Push(ct);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.ClipboardGetChar:
@@ -7105,6 +7345,7 @@ namespace HopperNET
                             currentContext.RemainingClipboardText = currentContext.RemainingClipboardText.Substring(1);
                         }
                         Push(ch, HopperType.tChar);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.ClipboardSetText:
@@ -7121,9 +7362,30 @@ namespace HopperNET
 #if PROFILE
             KeepSysCallLog(currentContext, sysCall);
 #endif
+            // CDECL TODO : Dictionary.Next is a problem : multiple return values
+            if (isCDecl)
+            {
+                if (hasResult)
+                {
+                    // put the return value where caller expects to find it
+
+                    // POPR0
+                    sp--;
+                    ushort sp2 = sp;
+                    r0.value = stack[sp].value;
+                    r0.reference = stack[sp].reference;
+                    r0.type = stack[sp].type;
+                }
+
+                // replace arguments for caller to pop
+                while (spBefore != sp)
+                {
+                    Push(0, HopperType.tUInt);
+                }
+            }
         }
 
-        
+
         internal void SetError(ushort lastError)
         {
             this.lastError = lastError;

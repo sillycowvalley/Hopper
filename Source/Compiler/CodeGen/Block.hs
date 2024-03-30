@@ -159,8 +159,8 @@ unit Block
             Parser.ErrorAt(Parser.PreviousToken, "translate should not be generating code!!");
             Die(0x0B);
 #endif
-            uint bytesToPop = GetBytesToPop();
-            if (bytesToPop > 0)
+            uint slotsToPop = GetBytesToPop();
+            if (slotsToPop > 0)
             {
 #ifdef ASSEMBLER
                 if (iLast == 0) 
@@ -196,29 +196,29 @@ unit Block
                     }               
                     CodeStream.InsertDebugInfo(true); // PreviousToken is '}'
                     
-                    if (bytesToPop > 255)
+                    if (slotsToPop > 255)
                     {
                         Die(0x0B); // need multiple calls to DECSP (see untested code below)
                     }
                     
-                    CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
+                    CodeStream.AddInstruction(Instruction.DECSP, byte(slotsToPop));
                     if (breakTarget != 0)
                     {
                         breakTarget = breakTarget + 2; // break past the above DECSP
                     }
                     /*
                     uint breakOffset = 0;
-                    while (bytesToPop > 0)
+                    while (slotsToPop > 0)
                     {
-                        if (bytesToPop > 254)
+                        if (slotsToPop > 254)
                         {
                             CodeStream.AddInstruction(Instruction.DECSP, 254);
-                            bytesToPop = bytesToPop - 254;
+                            slotsToPop = slotsToPop - 254;
                         }
                         else
                         {
-                            CodeStream.AddInstruction(Instruction.DECSP, byte(bytesToPop));
-                            bytesToPop = 0;
+                            CodeStream.AddInstruction(Instruction.DECSP, byte(slotsToPop));
+                            slotsToPop = 0;
                         }
                         breakOffset = breakOffset + 2;
                     }
@@ -228,7 +228,7 @@ unit Block
                     }
                     */
                 }
-            } // (bytesToPop > 0)
+            } // (slotsToPop > 0)
 
             <string,variant> blockContext = blockList[iLast];   
             if (blockContext.Contains("breaks"))
@@ -279,7 +279,7 @@ unit Block
     }
     uint GetBytesToPop(bool toLoop, bool isContinue)
     {
-        uint bytesToPop = 0;
+        uint slotsToPop = 0;
         uint iLast = blockList.Count;
         loop
         {
@@ -290,7 +290,7 @@ unit Block
             iLast--;
             <string,variant> blockContext = blockList[iLast];
             uint popMore;
-            if (blockContext.Contains("arguments"))
+            if (!IsCDecl && blockContext.Contains("arguments"))
             {
                 < < string > > arguments = blockContext["arguments"];
                 popMore = popMore + arguments.Count; // slots for arguments
@@ -305,7 +305,7 @@ unit Block
                 < < string > > globals = blockContext["globals"];
                 popMore = popMore + globals.Count; // slots for globals
             }
-            bytesToPop = bytesToPop + popMore;
+            slotsToPop = slotsToPop + popMore;
             if (!toLoop)
             {
                 break;
@@ -314,12 +314,12 @@ unit Block
             {
                 if (isContinue)
                 {
-                    bytesToPop = bytesToPop - popMore;
+                    slotsToPop = slotsToPop - popMore;
                 }
                 break;
             }
         }
-        return bytesToPop;
+        return slotsToPop;
     }
     
     uint GetLocalsToPop(bool andArguments, bool andGlobals)
@@ -339,7 +339,7 @@ unit Block
                 < < string > > locals = blockContext["locals"];
                 localsToPop = localsToPop + locals.Count; // slots for locals
             }
-            if (andArguments && blockContext.Contains("arguments"))
+            if (!IsCDecl && andArguments && blockContext.Contains("arguments"))
             {
                 < < string > > arguments = blockContext["arguments"];
                 localsToPop = localsToPop + arguments.Count; // slots for arguments

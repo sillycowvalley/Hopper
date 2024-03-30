@@ -1485,7 +1485,7 @@ unit Asm6502
     {
         // method entry code
     }
-    AddInstructionRET(uint bytesToPop)
+    AddInstructionRET(uint slotsToPop)
     {
         uint iCurrent = Types.GetCurrentMethod();
         string name = Symbols.GetFunctionName(iCurrent);

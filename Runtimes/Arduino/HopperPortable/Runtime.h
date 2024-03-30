@@ -18,6 +18,9 @@ typedef UInt HandlerDelegate;
 
 // method definitions
 enum OpCode {
+    eNOP = 0x0000,
+    ePUSHR0 = 0x0002,
+    ePOPR0 = 0x0003,
     eLIBCALL = 0x0008,
     eLIBCALL0 = 0x0009,
     eLIBCALL1 = 0x000A,
@@ -39,7 +42,7 @@ enum OpCode {
     eDECSP = 0x0028,
     eDIE = 0x0029,
     eENTER = 0x0049,
-    eNOP = 0x0050,
+    eNOP2 = 0x0050,
     eCAST = 0x0051,
     eJZ = 0x0031,
     eJNZ = 0x0032,
@@ -698,6 +701,8 @@ void HRArray_Initialize();
 void Instructions_PopulateJumpTable(UInt jumpTable);
 Bool Instructions_Undefined();
 Bool Instructions_Die();
+Bool Instructions_PushR0();
+Bool Instructions_PopR0();
 Bool Instructions_Add();
 Bool Instructions_Sub();
 Bool Instructions_Div();
@@ -839,13 +844,17 @@ void Runtime_Out4Hex(UInt value);
 void Runtime_Out2Hex(Byte value);
 OpCode HopperVM_CurrentOpCode_Get();
 UInt HopperVM_Pop_R(Type & htype);
+UInt HopperVM_R0_Get();
+Type HopperVM_R0Type_Get();
+void HopperVM_Push(UInt value, Type htype);
+void HopperVM_R0_Set(UInt value);
+void HopperVM_R0Type_Set(Type value);
 Int HopperVM_PopI();
 void HopperVM_PushI(Int ivalue);
 void HopperVM_CNP_Set(Bool value);
 Int HopperVM_ReadByteOffsetOperand();
 UInt HopperVM_TypeStackLSB_Get();
 void HopperVM_Put(Byte address, UInt value, Type htype);
-void HopperVM_Push(UInt value, Type htype);
 Byte HopperVM_ReadByteOperand();
 Byte HopperVM_GP_Get();
 void HopperVM_PushCS(UInt value);
@@ -989,7 +998,6 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
-
 
 
 

@@ -79,7 +79,7 @@ unit ClickStack
             {
                 string clickProjectPath = Editor.ProjectPath;
                 string extension = Path.GetExtension(clickProjectPath);
-                string jsonPath  = clickProjectPath.Replace(extension, ".json");
+                string jsonPath  = clickProjectPath.Replace(extension, ".sym");
                 jsonPath = Path.GetFileName(jsonPath);
                 jsonPath = Path.Combine("/Debug/Obj/", jsonPath);
                 if (!File.Exists(jsonPath))

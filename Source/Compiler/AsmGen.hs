@@ -245,7 +245,7 @@ program ASMGEN
             {
                 string extension = Path.GetExtension(codePath);
                 string ihexPath  = codePath.Replace(extension, ".hex");
-                string jsonPath  = codePath.Replace(extension, ".json");
+                string jsonPath  = codePath.Replace(extension, ".sym");
                 
                 ihexPath = Path.GetFileName(ihexPath);
                 ihexPath = Path.Combine("/Bin/", ihexPath);

@@ -365,7 +365,7 @@ program CODEGEN
             {
                 string extension = Path.GetExtension(codePath);
                 string hexePath  = codePath.Replace(extension, ".hexe");
-                string symbolsPath = codePath.Replace(extension, ".json");
+                string symbolsPath = codePath.Replace(extension, ".sym");
                 string instrumentingPath = codePath.Replace(extension, ".csv");
                 
                 hexePath = Path.GetFileName(hexePath);

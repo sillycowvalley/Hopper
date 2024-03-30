@@ -677,7 +677,7 @@ program Optimize
                 long codeAfter;
                 string optPath = codePath;
                 string verbosePath = codePath.Replace(extension, ".txt");
-                string symbolsPath = codePath.Replace(extension, ".json");
+                string symbolsPath = codePath.Replace(extension, ".sym");
                 
                 Symbols.New();
                 if (File.Exists(symbolsPath))

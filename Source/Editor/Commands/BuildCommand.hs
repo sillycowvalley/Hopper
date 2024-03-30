@@ -186,7 +186,7 @@ unit BuildCommand
             string extension = Path.GetExtension(fileName);
             fileName = fileName.Replace(extension, "");
             
-            string jsonPath = "/Debug/Obj/" + fileName + ".json";
+            string jsonPath = "/Debug/Obj/" + fileName + ".sym";
             string codePath = "/Debug/Obj/" + fileName + ".code";
             string hexePath = "/Bin/" + fileName + HexeExtension;
             string ihexPath = hexePath.Replace(".hexe", ".ihex");

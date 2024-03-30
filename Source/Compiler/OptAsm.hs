@@ -400,7 +400,7 @@ program OptAsm
                 long codeBefore;
                 long codeAfter;
                 string optPath = codePath;
-                string symbolsPath = codePath.Replace(extension, ".json");
+                string symbolsPath = codePath.Replace(extension, ".sym");
                 string verbosePath = codePath.Replace(extension, ".txt");
                 
                 if (File.Exists(symbolsPath))

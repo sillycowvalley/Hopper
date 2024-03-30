@@ -1438,6 +1438,23 @@ unit Symbols
         fCalls[iOverload] = fCalls[iOverload] + 1;
     }
     
+    uint GetSysCallMethodIndex(byte iSysCall, byte iSysOverload)
+    {
+        uint iOverload;
+        foreach (var kv in fSysCall)
+        {
+            iOverload = kv.key;
+            if (kv.value == iSysCall)
+            {
+                if (fSysCallOverload[iOverload] == iSysOverload)
+                {
+                    break;
+                }
+            }
+        }
+        return iOverload;
+    }
+    
     bool IsSysCall(uint iOverload)
     {
         return fSysCall.Contains(iOverload);

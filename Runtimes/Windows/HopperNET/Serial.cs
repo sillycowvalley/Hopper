@@ -75,7 +75,7 @@ namespace HopperNET
                     File.WriteAllText(ipCPipeName, comPipeName);
                     result.WaitForConnection();
                 }
-                catch (Exception ex)
+                catch (Exception /*ex*/)
                 {
                     iName++;
                     continue;
@@ -104,9 +104,9 @@ namespace HopperNET
             {
                 result = new NamedPipeClientStream(".", "com0Server-" + comPipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             }
-            catch (Exception ex)
+            catch (Exception /*ex*/)
             {
-                int why = 0;
+                //int why = 0;
             }
             return result;
         }
@@ -209,9 +209,9 @@ namespace HopperNET
                             Thread.Sleep(10);
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception /*ex*/)
                     {
-                        int why = 0;
+                        //int why = 0;
                     }
                 }
                 if (isHopperCOM0Client && (com0Client != null))
@@ -235,9 +235,9 @@ namespace HopperNET
                             Thread.Sleep(10);
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception )
                     {
-                        int why = 0;
+                        //int why = 0;
                     }
                 }
             }
@@ -301,7 +301,7 @@ namespace HopperNET
                         b[0] = (byte)c;
                         com0Server.Write(b, 0, 1);
                     }
-                    catch (Exception ex)
+                    catch (Exception )
                     {
                         Thread.Sleep(10);
                     }
@@ -323,7 +323,7 @@ namespace HopperNET
                         b[0] = (byte)c;
                         com0Client.Write(b, 0, 1);
                     }
-                    catch (Exception ex)
+                    catch (Exception )
                     {
                         Thread.Sleep(10);
                     }
@@ -552,9 +552,9 @@ namespace HopperNET
                         {
                             com0Client.Connect();
                         }
-                        catch (Exception ex)
+                        catch (Exception )
                         {
-                            int why = 0;
+                            //int why = 0;
                         }
                     }
                     isValid = com0Client.IsConnected;

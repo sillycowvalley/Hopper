@@ -84,7 +84,7 @@ unit Source
             }
             if (IsDebugger)
             {
-                string symbolsPath  = ihexPath.Replace(extension, ".json");
+                string symbolsPath  = ihexPath.Replace(extension, ".sym");
                 symbolsPath = Path.GetFileName(symbolsPath);
                 symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
                 if (File.Exists(symbolsPath))

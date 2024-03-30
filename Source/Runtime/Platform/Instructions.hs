@@ -21,6 +21,9 @@ unit Instructions
 //#endif
         WriteToJumpTable(jumpTable, OpCode.DIE, Instructions.Die);
         
+        WriteToJumpTable(jumpTable, OpCode.PUSHR0, Instructions.PushR0);
+        WriteToJumpTable(jumpTable, OpCode.POPR0, Instructions.PopR0);
+        
         WriteToJumpTable(jumpTable, OpCode.ADD, Instructions.Add);
         WriteToJumpTable(jumpTable, OpCode.SUB, Instructions.Sub);
         WriteToJumpTable(jumpTable, OpCode.DIV, Instructions.Div);
@@ -122,6 +125,7 @@ unit Instructions
         WriteToJumpTable(jumpTable, OpCode.PUSHGP, Instructions.PushGP);
         WriteToJumpTable(jumpTable, OpCode.COPYNEXTPOP, Instructions.CNP);
         WriteToJumpTable(jumpTable, OpCode.NOP, Instructions.NOP);
+        WriteToJumpTable(jumpTable, OpCode.NOP2, Instructions.NOP);
         WriteToJumpTable(jumpTable, OpCode.CAST, Instructions.Cast);
         WriteToJumpTable(jumpTable, OpCode.BITXOR, Instructions.BitXor);
         WriteToJumpTable(jumpTable, OpCode.JREL, Instructions.JREL);
@@ -479,7 +483,18 @@ unit Instructions
 #endif
         return true;
     }
-
+    bool PushR0()
+    {
+        Push(R0, R0Type);
+        return true;
+    }
+    bool PopR0()
+    {
+        Type rtype;
+        R0 = Pop(ref rtype);
+        R0Type = rtype;
+        return true;
+    }
     bool PushGP()
     {
         Push(GP, Type.UInt);

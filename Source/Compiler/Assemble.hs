@@ -646,9 +646,9 @@ program Assemble
                 }
             }
             
-            // bytesToPop = locals + arguments
-            uint bytesToPop = Block.GetLocalsToPop(true, iCurrentOverload == 0);
-            Asm6502.AddInstructionRET(bytesToPop);
+            // slotsToPop = locals + arguments
+            uint slotsToPop = Block.GetLocalsToPop(true, iCurrentOverload == 0);
+            Asm6502.AddInstructionRET(slotsToPop);
             success = true;
             break;
         }
@@ -661,8 +661,8 @@ program Assemble
         Parser.Advance(); // break;
         
         // - pop all locals till inner loop
-        uint bytesToPop = Block.GetBytesToPop(true, false);
-        if (bytesToPop > 0)
+        uint slotsToPop = Block.GetBytesToPop(true, false);
+        if (slotsToPop > 0)
         {
             Die(0x0B);            
         }
@@ -685,8 +685,8 @@ program Assemble
         Parser.Advance(); // continue;
         
         // - pop all locals till inner loop
-        uint bytesToPop = Block.GetBytesToPop(true, true);
-        if (bytesToPop > 0)
+        uint slotsToPop = Block.GetBytesToPop(true, true);
+        if (slotsToPop > 0)
         {
             Die(0x0B);
         }
@@ -1434,8 +1434,8 @@ program Assemble
             
             Asm6502.InsertDebugInfo(true);
             
-            uint bytesToPop = Block.GetLocalsToPop(true, isMain);
-            Asm6502.AddInstructionRET(bytesToPop);
+            uint slotsToPop = Block.GetLocalsToPop(true, isMain);
+            Asm6502.AddInstructionRET(slotsToPop);
             
             if (!isMain)
             {
@@ -1537,7 +1537,7 @@ program Assemble
             }
             
             string jsonPath = args[0];
-            string ext = ".json";
+            string ext = ".sym";
             if (!File.Exists(ref jsonPath, ref ext, "/Debug/Obj/"))
             {
                 badArguments();

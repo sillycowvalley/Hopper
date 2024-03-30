@@ -1640,7 +1640,7 @@ program PreProcess
           loop
           {
               string extension = Path.GetExtension(projectPath);
-              string jsonPath  = projectPath.Replace(extension, ".json");
+              string jsonPath  = projectPath.Replace(extension, ".sym");
               jsonPath = Path.GetFileName(jsonPath);
               jsonPath = Path.Combine("/Debug/Obj/", jsonPath);
               if (File.Exists(jsonPath))

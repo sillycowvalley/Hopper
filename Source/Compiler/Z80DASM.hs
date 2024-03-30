@@ -320,16 +320,16 @@ program DASM
                     }
                     else if (prevInstruction == OpCode.RET)
                     {
-                        for (uint search = address; search < address+6; search++)
+                        for (uint search = address; search < address+12; search++) // delta is currently 10
                         {
                             if (methodFirstAddresses.Contains(search))
                             {
                                 switchAddress = search; 
+                                //PrintLn("    " + address.ToHexString(4) + " " + search.ToHexString(4) + " " + (search - address).ToString() + " !");
                                 break;
                             }
                         }
                     }
-                    
                     
                     prevInstruction = instruction;
                     if (methodFirstAddresses.Contains(switchAddress))
@@ -380,52 +380,6 @@ program DASM
                         }
                     }
                     
-                    if (comment.Length == 0)
-                    {
-                        if (instruction == OpCode.RST_Instruction)
-                        {
-                            comment = "//     " + Instructions.ToString(Instruction(lastA));
-                        }
-                        switch (instruction)
-                        {
-                            case OpCode.RST_PopAbsolute:
-                            {
-                                comment = "//     POP GLOBAL [" + (lastBC & 0xFF).ToString() + "]";
-                            }
-                            case OpCode.RST_PushAbsolute:
-                            {
-                                comment = "//     PUSH GLOBAL [" + (lastBC & 0xFF).ToString() + "]";
-                            }
-                            case OpCode.RST_PushImmediate:
-                            {
-                                comment = "//     PUSH IMMEDIATE 0x" + lastBC.ToHexString(4);
-                            }
-                            case OpCode.RST_PushOffset:
-                            {
-                                int offset = lastBC.GetByte(0);
-                                if (offset > 127)
-                                {
-                                    offset = offset - 256;
-                                }
-                                string sign = (offset >= 0) ? "+" : "";
-                                comment = "//     PUSH LOCAL (BP" + sign + offset.ToString() + ")";
-                            }
-                            case OpCode.RST_PopOffset:
-                            {
-                                int offset = lastBC.GetByte(0);
-                                if (offset > 127)
-                                {
-                                    offset = offset - 256;
-                                }
-                                string sign = (offset >= 0) ? "+" : "";
-                                comment = "//     POP LOCAL (BP" + sign + offset.ToString() + ")";
-                            }
-                            case OpCode.RST_SysCall0:
-                            {                          
-                                comment = "//     SYSCALL0: " + GetSysCallName(lastC) + "(..)";
-                            }
-                        }
-                    }
                     string disassembly = AsmZ80.Disassemble(address, instruction, operand, bare);
                     if (tableSize != 0)
                     {
