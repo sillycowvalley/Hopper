@@ -6,6 +6,8 @@ unit Instructions
     enum Instruction
     {
         NOP      = 0x00,
+        DUP0     = 0x01,       // push [top]
+        
         PUSHR0   = 0x02,       // R0 -> [top]
         POPR0    = 0x03,       // [top] -> R0
         
@@ -88,7 +90,7 @@ unit Instructions
         PUSHLOCALB00,
         PUSHLOCALB01,
         
-        NOP2,
+        unusedNOP2,
         
         CAST, // operand is value type (byte) - change top of stack to this type
 
@@ -531,7 +533,6 @@ unit Instructions
                 result = "ENTERB";
             }
             case Instruction.NOP:
-            case Instruction.NOP2:
             {
                 result = "NOP";
             }
@@ -1001,6 +1002,10 @@ unit Instructions
             case Instruction.DUP:
             {
                 result = "DUP";
+            }
+            case Instruction.DUP0:
+            {
+                result = "DUP0";
             }
             case Instruction.SWAP:
             {

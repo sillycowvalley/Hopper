@@ -68,7 +68,7 @@ unit CodePoints
     bool InlineCandidatesExist { get { return inlineMethodCandidates.Count != 0; } }
     
     <Instruction> iCodes;
-    <uint>        iLengths;
+    <uint>        iLengths;     // instruction lengths (not operand widths)
     <uint>        iOperands;    // original
     < <byte> >    iContent;     // wide instruction content
     < <uint> >    iJumpTargets; // where can this instruction jump to?
@@ -2353,7 +2353,7 @@ unit CodePoints
             Instruction opCode1 = iCodes[iIndex-1]; 
             Instruction opCode0 = iCodes[iIndex]; 
             if (   (opCode3 == Instruction.ENTER) 
-                && (opCode2 == Instruction.PUSHLOCALB) // -2
+                && (opCode2 == Instruction.PUSHLOCALB) // -1
                 && ((opCode1 == Instruction.POPGLOBALB) || (opCode1 == Instruction.POPGLOBAL))
                 && (opCode0 == Instruction.RETB)
                )
@@ -2365,6 +2365,22 @@ unit CodePoints
                     iCodes.SetItem(iIndex, Instruction.RET0);
                     iLengths.SetItem(iIndex, 1);
                     RemoveInstruction(iIndex-2); // good
+                }
+            }
+            
+            if (   IsCDecl
+                && (opCode3 == Instruction.ENTER) 
+                && (opCode2 == Instruction.PUSHLOCALB) // -1
+                && ((opCode1 == Instruction.POPGLOBALB) || (opCode1 == Instruction.POPGLOBAL))
+                && (opCode0 == Instruction.RET0)
+               )
+            {
+                if (   (iOperands[iIndex-2] == 0xFF) // PUSHLOCALB BP-1
+                   )
+                {
+                    iCodes.SetItem(iIndex-2, Instruction.DUP0);
+                    iLengths.SetItem(iIndex-2, 1);
+                    iOperands.SetItem(iIndex-2, 0);
                 }
             }
         

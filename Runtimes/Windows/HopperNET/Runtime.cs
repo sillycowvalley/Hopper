@@ -26,6 +26,8 @@ namespace HopperNET
     public enum Instruction
     {
         NOP    = 0x00,
+        DUP0   = 0x01,       // push [top]
+
         PUSHR0 = 0x02,       // R0 -> [top]
         POPR0  = 0x03,       // [top] -> R0
 
@@ -116,7 +118,7 @@ namespace HopperNET
         PUSHLOCALB00,
         PUSHLOCALB01,
 
-        NOP2,
+        unusedNOP2,
 
         CAST, // operand is value type (byte) - change top of stack to this type
 
@@ -2682,6 +2684,20 @@ namespace HopperNET
                         }
                         break;
 
+                    case Instruction.DUP0:
+                        {
+                            ushort localAddress = (ushort)(sp - 1); // DUP 0 implies duplicating [top]
+                            HopperType type = GetStackType(localAddress);
+                            if (Type_IsValueType(type))
+                            {
+                                Push(GetStack(localAddress), type);
+                            }
+                            else
+                            {
+                                Push(GetStackVariant(localAddress));
+                            }
+                        }
+                        break;
                     case Instruction.DUP:
                         {
                             operand = code[pc + currentContext.CodeOffset];
@@ -3508,7 +3524,6 @@ namespace HopperNET
                         break;
 
                     case Instruction.NOP:
-                    case Instruction.NOP2:
                         break;
 
                     case Instruction.EXIT:

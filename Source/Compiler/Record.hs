@@ -64,7 +64,7 @@ unit Record
         {
             string memberName = v[0];
             string memberType = v[1];
-            CodeStream.AddInstruction(Instruction.DUP, byte(0));
+            CodeStream.AddInstruction(Instruction.DUP0);
             Expression.InitializeVariable(memberType, true); // new variable at [top]
             CodeStream.AddInstructionSysCall0("List", "Append");
         }
@@ -73,7 +73,7 @@ unit Record
     LazyInitializeMembers(string thisTypeString)
     {
         // list is at [top]
-        CodeStream.AddInstruction(Instruction.DUP, byte(0)); 
+        CodeStream.AddInstruction(Instruction.DUP0); 
         CodeStream.AddInstructionSysCall0("List", "Count_Get");
         uint jumpPast = CodeStream.NextAddress;
         CodeStream.AddInstructionJump(Instruction.JNZ);
@@ -84,7 +84,7 @@ unit Record
         {
             string memberName = v[0];
             string memberType = v[1];
-            CodeStream.AddInstruction(Instruction.DUP, byte(0));
+            CodeStream.AddInstruction(Instruction.DUP0);
             InitializeVariable(memberType, true); // new variable at [top]
             CodeStream.AddInstructionSysCall0("List", "Append");
         }

@@ -3,6 +3,7 @@ unit OpCodes
     enum OpCode
     {
         NOP      = 0x00,
+        DUP0     = 0x01,       // push [top]
         PUSHR0   = 0x02,       // R0 -> [top]
         POPR0    = 0x03,       // [top] -> R0
         
@@ -33,8 +34,6 @@ unit OpCodes
         DIE     = 0x29,       // 0x?? fail setting lastError to <byte operand>
         
         ENTER   = 0x49,       // new local stack frame: push BP to callstack, BP = SP
-        
-        NOP2    = 0x50,       // no operation
         
         CAST    = 0x51,       // change type of [top] to <byte operand>
         

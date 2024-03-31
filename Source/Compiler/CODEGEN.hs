@@ -37,6 +37,7 @@ program CODEGEN
         string name;
         SysCalls.New();
         file statsFile = File.Create(instrumentingPath);
+        statsFile.Append("SysCall,Overload,Hits,FirstUseLocation" + char(0x0A));
         foreach (var kv in sysCallHits)
         {
             byte iSysCall = kv.key;
@@ -51,6 +52,7 @@ program CODEGEN
             }  
         }
         statsFile.Append("" + char(0x0A));
+        statsFile.Append("Instruction,Hits,FirstUseLocation" + char(0x0A));
         foreach (var kv in instructionHits)
         {
             Instruction instruction = kv.key;
@@ -60,19 +62,25 @@ program CODEGEN
             statsFile.Append(name + "," + hits.ToString() + "," + location + char(0x0A));
         }
         statsFile.Append("" + char(0x0A));
+        statsFile.Append("Method,Length,Arguments,ArgumentsSize,Locals,LocalsSize,Frameless" + char(0x0A));
         foreach (var kv in methodSizes)
         {
             name = Code.GetMethodName(kv.key);
             <string,variant> methodSymbols = Code.GetMethodSymbols(kv.key);
             uint argumentsBytes;
             uint argumentCount;
+            uint localsBytes;
+            uint localsCount;
+            bool frameLess = true;
             if (methodSymbols.Contains("arguments"))
             {
                 <string, <string> > argumentInfo = methodSymbols["arguments"];
                 argumentCount = argumentInfo.Count;
+                frameLess = frameLess && (argumentCount <= 1);
                 foreach (var kv2 in argumentInfo)
                 {
-                    <string> argumentList = kv2.value;
+                    // kv2.key is offset
+                    <string> argumentList = kv2.value; // <name,type,ref>
                     switch (argumentList[1])
                     {
                         case "char":
@@ -94,14 +102,55 @@ program CODEGEN
                         }
                         default:
                         {
-                            Print(" " + argumentList[1]);
+                            Print(" A:" + argumentList[1]);
+                            argumentsBytes += 2;
+                        }
+                    }
+                }
+                
+            }
+            if (methodSymbols.Contains("locals"))
+            {
+                <string, <string> > localInfo = methodSymbols["locals"];
+                localsCount = localInfo.Count;
+                frameLess = frameLess && (localsCount == 0);
+                foreach (var kv2 in localInfo)
+                {
+                    // kv2.key is live address range like "0x0001-0x0007"
+                    <string> localList = kv2.value; // <name, type, offset>
+                    switch (localList[1])
+                    {
+                        case "char":
+                        case "byte":
+                        case "bool":
+                        {
+                            localsBytes++;
+                        }
+                        case "uint":
+                        case "int":
+                        {
+                            localsBytes += 2;
+                        }
+                        case "delegate":
+                        case "enum":   // TODO : enum8 ?
+                        case "flags":  // TODO : flags8 ?
+                        {
+                            localsBytes += 2;
+                        }
+                        default:
+                        {
+                            Print(" L:" + localList[1]);
+                            localsBytes += 2;
                         }
                     }
                 }
             }
             
             uint size = kv.value;
-            statsFile.Append(name + "," + size.ToString() + "," + argumentCount.ToString() + "," + argumentsBytes.ToString() + char(0x0A));   
+            statsFile.Append(name + "," + size.ToString() + "," + argumentCount.ToString() + "," + argumentsBytes.ToString()
+                                                          + "," + localsCount.ToString()   + "," + localsBytes.ToString() 
+                                                          + "," + (frameLess ? "true" : "false")
+                                                          + char(0x0A));   
         }
         
         

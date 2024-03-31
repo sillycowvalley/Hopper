@@ -51,7 +51,7 @@ unit CodeStream
         h6502Defined      = Symbols.DefineExists("HOPPER_6502"); // Target6502
         mcuDefined        = Symbols.DefineExists("MCU");
         peepHole          = Symbols.DefineExists("PEEPHOLEOPT");
-        isCDecl           = Symbols.DefineExists("CDECL");
+        isCDecl           = Symbols.DefineExists("CDECL") || Symbols.DefineExists("CPU_Z80");
     }
     bool InUse { get { return currentStream.Count != 0; } } 
     
@@ -555,6 +555,10 @@ unit CodeStream
             case Instruction.JIX:
             {
                 Die(0x0B); // illegal to not use th Jump-specific AddInstructions (to update peephole boundary)
+            }
+            case Instruction.DUP:
+            {
+                Die(0x0B); // did you mean DUP0 ?
             }
         }
         internalAddInstruction(instruction);

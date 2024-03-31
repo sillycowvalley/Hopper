@@ -2,22 +2,14 @@ unit UInt
 {
     byte GetByte(uint this, byte index)
     {
-        switch (index)
+        if (index == 1)
         {
-            case 0:
-            {
-                return byte(this & 0xFF);
-            }
-            case 1:
-            {
-                return byte(this >> 8);
-            }
-            default:
-            {
-                Diagnostics.Die(0x02); // array index out of range
-            }
+            return byte(this >> 8);
         }
-        return 0;
+        else
+        {
+            return byte(this & 0xFF);
+        }
     }
     uint FromBytes(byte b0, byte b1)
     {

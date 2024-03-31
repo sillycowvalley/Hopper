@@ -243,7 +243,7 @@ unit HopperCode
         }
         if (needToCheck)
         {
-            appendCode(Instruction.DUP, 0);     //  // DUP 0 implies duplicating [top]
+            appendCode(Instruction.DUP0);     //  // DUP 0 implies duplicating [top]
             appendCode(Instruction.JNZB, 8);
             appendCode(Instruction.PUSHIB, 16); // Division by zero
             appendCode(Instruction.CALL, uint(Platform.ErrorPtr));   
@@ -453,7 +453,7 @@ unit HopperCode
     Return()
     {
         appendCode(Instruction.CALL, uint(Platform.PopReturnPtr));
-        appendCode(Instruction.DUP,   0);
+        appendCode(Instruction.DUP0);
         appendCode(Instruction.JNZB,  5); // return stack empty?
         appendCode(Instruction.DECSP, 0);
         appendCode(Instruction.EXIT);
@@ -463,7 +463,7 @@ unit HopperCode
     {
         appendCode(Instruction.CALL, uint(Platform.GetChPtr));
 #ifdef CHECKED        
-        appendCode(Instruction.DUP,  0); // DUP 0 implies duplicating [top], char(0) if <ctrl><X> was pressed
+        appendCode(Instruction.DUP0); // DUP 0 implies duplicating [top], char(0) if <ctrl><X> was pressed
         appendCode(Instruction.JNZB, 3);
         appendCode(Instruction.EXIT);
 #endif        
@@ -566,7 +566,7 @@ unit HopperCode
         uint offset = 0;
         foreach (var ch in str)
         {
-            appendCode(Instruction.DUP, 0); // DUP 0 implies duplicating [top], the current value in the variable
+            appendCode(Instruction.DUP0); // DUP 0 implies duplicating [top], the current value in the variable
             if (0 != offset)
             {
                 appendCode(Instruction.PUSHI, offset);

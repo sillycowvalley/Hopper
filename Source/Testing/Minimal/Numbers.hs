@@ -1,6 +1,7 @@
 program TestNumbers
 {
     #define CPU_Z80
+    #define CDECL
     
     uses "/Source/Minimal/System"
     
@@ -739,12 +740,11 @@ program TestNumbers
         TestGreaterThan();
         TestGreaterThanOrEqual();
         TestLessThanOrEqual();
-        //TestUIntMath(); // RETRESB
-        TestIntMath(); // MULI
+        TestUIntMath();
+        TestIntMath();
         TestPropertyMath();
         
-        Serial.WriteChar('O');Serial.WriteChar('K');Serial.WriteChar('!');
-        
+        Serial.WriteChar('O');//Serial.WriteChar('K');Serial.WriteChar('!');
     }
 }
 

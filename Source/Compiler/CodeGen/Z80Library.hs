@@ -10,6 +10,11 @@ unit Z80Library
     uint utilityMultiplyLocation;
     uint utilityDivideLocation;
     
+    uint negateBCLocation;
+    uint negateDELocation;
+    uint negateHLLocation;
+    uint doSignsLocation;
+    
     Generate()
     {
         uint address = CurrentAddress;
@@ -23,6 +28,23 @@ unit Z80Library
         address = CurrentAddress;
         utilityDivide();
         utilityDivideLocation = address;
+        
+        address = CurrentAddress;
+        negateBC();
+        negateBCLocation = address;
+        
+        address = CurrentAddress;
+        negateDE();
+        negateDELocation = address;
+        
+        address = CurrentAddress;
+        negateHL();
+        negateHLLocation = address;
+        
+        address = CurrentAddress;
+        doSigns();
+        doSignsLocation = address;
+    
         
         address = CurrentAddress;
         Peephole.Reset();
@@ -130,89 +152,106 @@ unit Z80Library
         Peephole.Reset();
         EmitBITSHR();
         libraryAddresses["BITSHR"] = address;
+        
+        // SysCalls
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitIntGetByte();
+        libraryAddresses["IntGetByte"] = address;
     }
     
-    bool SysCall(byte iSysCall)
+    EmitIntGetByte()
+    {
+        Emit(OpCode.BIT_0_E);     // 0 or 1?
+        EmitOffset(OpCode.JR_Z_e, +2);     // skip to where we clear MSB
+        Emit(OpCode.LD_E_H);
+        Emit(OpCode.LD_L_E);
+        Emit(OpCode.LD_H_D);             // use zero D to clear MSB
+        Emit(OpCode.RET);
+    }
+    
+    
+    bool SysCall(byte iSysCall, byte iOverload)
     {
         // iOverload is in A if it is needed
         switch (SysCalls(iSysCall))
         {
+            // EXAMPLE of CALL: (for longer syscalls in future)
             case SysCalls.IntGetByte:
             {
                 Emit(OpCode.POP_DE);             // pop index: 0 for LSB and 1 for MSB
                 Emit(OpCode.EX_iSP_HL);          // get 'int'
-                Emit(OpCode.BIT_0_E);     // 0 or 1?
-                EmitOffset(OpCode.JR_Z_e, +2);     // skip to where we clear MSB
-                Emit(OpCode.LD_E_H);
-                Emit(OpCode.LD_L_E);
-                Emit(OpCode.LD_H_D);             // use zero D to clear MSB
-                Emit(OpCode.EX_iSP_HL);          // put 'byte'
+                Emit(OpCode.PUSH_DE);            // restore index (caller clears in CDecl)
+                EmitWord(OpCode.CALL_nn, GetAddress("IntGetByte")); // 
+                // return it in R0 (HL)
             }
             case SysCalls.IntFromBytes:
             {
                 Emit(OpCode.POP_DE);             // pop MSB
                 Emit(OpCode.EX_iSP_HL);          // get LSB
-                Emit(OpCode.LD_H_E);             // set MSB
-                Emit(OpCode.EX_iSP_HL);          // put 'int'
+                Emit(OpCode.PUSH_DE);            // restore MSB (caller clears in CDecl)
+                Emit(OpCode.LD_H_E);             // set MSB and return it in R0 (HL)
             }
-            case SysCalls.MemoryReadByte:
-            {
-                Emit(OpCode.EX_iSP_IX);          // get the address from the stack
-                EmitByte(OpCode.LD_L_iIX_d, +0); // read  the LSB
-                EmitByte(OpCode.LD_H_n, 0);      // clear the MSB
-                Emit(OpCode.EX_iSP_HL);          // put it on the stack
-            }
-            case SysCalls.MemoryReadWord:
-            {
-                Emit(OpCode.EX_iSP_IX);          // get the address from the stack
-                EmitByte(OpCode.LD_L_iIX_d, +0); // read the LSB
-                EmitByte(OpCode.LD_H_iIX_d, +1); // read the MSB
-                Emit(OpCode.EX_iSP_HL);          // put it on the stack
-            }
-            case SysCalls.MemoryWriteByte:
-            {
-                Emit(OpCode.POP_HL);                      // pop the value
-                Emit(OpCode.POP_IX);                      // pop the address
-                EmitByte(OpCode.LD_iIX_d_L, +0);          // write the LSB
-                EmitOffsetByte(OpCode.LD_iIX_d_n, +0, 0); // clear the MSB
-            }
-            case SysCalls.MemoryWriteWord:
-            {
-                Emit(OpCode.POP_HL);              // pop the value
-                Emit(OpCode.POP_IX);              // pop the address
-                EmitByte(OpCode.LD_iIX_d_L, +0);  // write the LSB
-                EmitByte(OpCode.LD_iIX_d_H, +1);  // write the MSB
-            }
+            
             case SysCalls.SerialWriteChar:
             {
-                Emit(OpCode.POP_DE); // character to emit is in 'E'
+                Emit(OpCode.EX_iSP_HL); // character to emit is in [top] (HL)
                 // ...
             }
             case SysCalls.SerialReadChar:
             {
                 // ...
-                Emit(OpCode.PUSH_DE); // character read pushed t stack in 'E'
+                EmitWord(OpCode.LD_HL_nn, 0x0000); // load zero into R0 empty character return for now
             }
             case SysCalls.SerialIsAvailableGet:
             {
                 // ...
-                EmitWord(OpCode.LD_DE_nn, 0x0000); // push false for now
-                Emit(OpCode.PUSH_DE);   
+                EmitWord(OpCode.LD_HL_nn, 0x0000); // load zero into R0 false for now
             }
             
             case SysCalls.DiagnosticsDie:
             {
-                Emit(OpCode.POP_DE); // error code
-                Emit(OpCode.LD_A_E);
+                Emit(OpCode.EX_iSP_HL); // error code is in [top] (HL)
+                Emit(OpCode.LD_A_L);
                 EmitWord(OpCode.LD_inn_A, LastError);
                 Emit(OpCode.HALT);
             }
             case SysCalls.DiagnosticsSetError:
             {
-                Emit(OpCode.POP_DE); // error code
-                EmitWord(OpCode.LD_inn_DE, LastError);
+                Emit(OpCode.EX_iSP_HL); // error code is in [top] (HL)
+                EmitWord(OpCode.LD_inn_HL, LastError);
             }
             
+            case SysCalls.MemoryReadByte:
+            {
+                Emit(OpCode.EX_iSP_IX);          // get the address from the stack
+                EmitByte(OpCode.LD_L_iIX_d, +0); // read  the LSB
+                EmitByte(OpCode.LD_H_n, 0);      // clear the MSB and return it in R0 (HL)
+            }
+            case SysCalls.MemoryReadWord:
+            {
+                Emit(OpCode.EX_iSP_IX);          // get the address from the stack
+                EmitByte(OpCode.LD_L_iIX_d, +0); // read the LSB
+                EmitByte(OpCode.LD_H_iIX_d, +1); // read the MSB and  return it in R0 (HL)
+            }
+            case SysCalls.MemoryWriteByte:
+            {
+                Emit(OpCode.POP_HL);                      // pop the value
+                Emit(OpCode.POP_IX);                      // pop the address
+                Emit(OpCode.PUSH_HL);                     // restore value (caller clears in CDecl)
+                EmitByte(OpCode.LD_iIX_d_L, +0);          // write the LSB
+                EmitOffsetByte(OpCode.LD_iIX_d_n, +0, 0); // clear the MSB
+            }
+            case SysCalls.MemoryWriteWord:
+            {
+                // TODO
+                Emit(OpCode.POP_HL);              // pop the value
+                Emit(OpCode.POP_IX);              // pop the address
+                Emit(OpCode.PUSH_HL);             // restore value (caller clears in CDecl)
+                EmitByte(OpCode.LD_iIX_d_L, +0);  // write the LSB
+                EmitByte(OpCode.LD_iIX_d_H, +1);  // write the MSB
+            }
+                        
             default:
             {
                 PrintLn("iSysCall=0x" + (byte(iSysCall)).ToHexString(2) + " not implemented");
@@ -721,68 +760,91 @@ unit Z80Library
     }
     negateBC()
     {
-        Emit(OpCode.XOR_A_A);
-        Emit(OpCode.SUB_A_C);
+        Emit(OpCode.XOR_A); // clear carry
+        Emit(OpCode.LD_A_C);
+        Emit(OpCode.CPL);
+        EmitByte(OpCode.ADD_A_n, 1);
         Emit(OpCode.LD_C_A);
-        Emit(OpCode.SUB_A_A);
-        Emit(OpCode.SUB_A_B);
-        Emit(OpCode.LD_B_A);
         
+        Emit(OpCode.LD_A_B);
+        Emit(OpCode.CPL);
+        EmitByte(OpCode.ADC_A_n, 0);
+        Emit(OpCode.LD_B_A);
+        Emit(OpCode.RET);
     }
     negateDE()
     {
-        Emit(OpCode.XOR_A_A);
-        Emit(OpCode.SUB_A_E);
+        Emit(OpCode.XOR_A); // clear carry
+        Emit(OpCode.LD_A_E);
+        Emit(OpCode.CPL);
+        EmitByte(OpCode.ADD_A_n, 1);
         Emit(OpCode.LD_E_A);
-        Emit(OpCode.SUB_A_A);
-        Emit(OpCode.SUB_A_D);
-        Emit(OpCode.LD_D_A);
+        
+        Emit(OpCode.LD_A_D);
+        Emit(OpCode.CPL);
+        EmitByte(OpCode.ADC_A_n, 0);
+        Emit(OpCode.LD_D_A);  
+        Emit(OpCode.RET);  
+    }
+    negateHL()
+    {
+        Emit(OpCode.XOR_A); // clear carry
+        Emit(OpCode.LD_A_L);
+        Emit(OpCode.CPL);
+        EmitByte(OpCode.ADD_A_n, 1);
+        Emit(OpCode.LD_L_A);
+        
+        Emit(OpCode.LD_A_H);
+        Emit(OpCode.CPL);
+        EmitByte(OpCode.ADC_A_n, 0);
+        Emit(OpCode.LD_H_A);
+        Emit(OpCode.RET);
     }
     doSigns()
     {   
         // next = BC, top = DE
-        Emit(OpCode.XOR_A_A);
+        EmitWord(OpCode.LD_HL_nn, Sign);
+        EmitByte(OpCode.LD_iHL_n, 0);
+        
         Emit(OpCode.BIT_7_B);     
-        EmitOffset(OpCode.JR_Z_e, +7);  // -> check DE
+        EmitOffset(OpCode.JR_Z_e, +4);  // -> check DE
 // BC is -ve        
-        Emit(OpCode.INC_A);
-        negateBC();
+        Emit(OpCode.INC_iHL);
+        EmitWord(OpCode.CALL_nn, negateBCLocation);
 // check DE
         Emit(OpCode.BIT_7_D);
-        EmitOffset(OpCode.JR_Z_e, +7);
+        EmitOffset(OpCode.JR_Z_e, +4);
 // DE is -ve        
-        Emit(OpCode.INC_A);
-        negateDE();
+        Emit(OpCode.INC_iHL);
+        EmitWord(OpCode.CALL_nn, negateDELocation);
 // exit 
-        EmitWord(OpCode.LD_inn_A, Sign);
+        Emit(OpCode.RET);   
     }
     EmitMULI()
     {
-        doSigns();
-        
+        EmitWord(OpCode.CALL_nn, doSignsLocation);
         EmitWord(OpCode.CALL_nn, utilityMultiplyLocation); // DEHL=BC*DE
      
         EmitWord(OpCode.LD_A_inn, Sign);   
-        Emit(OpCode.BIT_0_A);
-        Emit(OpCode.RET_Z); // even
-        negateBC();
+        Emit(OpCode.RRA);    // bit 0 -> C
+        Emit(OpCode.RET_NC); // even
+        EmitWord(OpCode.CALL_nn, negateHLLocation);
         Emit(OpCode.RET);
     }
     EmitDIVI()
     {
-        doSigns();
-        
+        EmitWord(OpCode.CALL_nn, doSignsLocation);
         EmitWord(OpCode.CALL_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
         
         EmitWord(OpCode.LD_A_inn, Sign);   
-        Emit(OpCode.BIT_0_A);
-        Emit(OpCode.RET_Z); // even
-        negateBC();
+        Emit(OpCode.RRA);    // bit 0 -> C
+        Emit(OpCode.RET_NC); // even
+        EmitWord(OpCode.CALL_nn, negateBCLocation);
         Emit(OpCode.RET);
     }
     EmitMODI()
     {
-        doSigns();
+        EmitWord(OpCode.CALL_nn, doSignsLocation);
         EmitWord(OpCode.CALL_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
         Emit(OpCode.RET);
     }

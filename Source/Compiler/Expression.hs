@@ -2927,7 +2927,7 @@ unit Expression
                     }
                     
                     // short circuit check:                 
-                    CodeStream.AddInstruction(Instruction.DUP, byte(0));
+                    CodeStream.AddInstruction(Instruction.DUP0);
                     jumpShortCircuits.Append(CodeStream.NextAddress);
                     CodeStream.AddInstructionJump(Instruction.JZ);
                     
@@ -2977,7 +2977,7 @@ unit Expression
                     }
                     
                     // short circuit check:                 
-                    CodeStream.AddInstruction(Instruction.DUP, byte(0));
+                    CodeStream.AddInstruction(Instruction.DUP0);
                     jumpShortCircuits.Append(CodeStream.NextAddress);
                     CodeStream.AddInstructionJump(Instruction.JNZ);
                                             

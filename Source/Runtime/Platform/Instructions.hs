@@ -108,6 +108,7 @@ unit Instructions
         WriteToJumpTable(jumpTable, OpCode.PUSHGLOBAL, Instructions.PushGlobal);
         WriteToJumpTable(jumpTable, OpCode.PUSHSTACKADDR, Instructions.PushStackAddr);
         WriteToJumpTable(jumpTable, OpCode.DUP, Instructions.Dup);
+        WriteToJumpTable(jumpTable, OpCode.DUP0, Instructions.Dup0);
         WriteToJumpTable(jumpTable, OpCode.DECSP, Instructions.DecSP);
         WriteToJumpTable(jumpTable, OpCode.RET, Instructions.Ret);
         WriteToJumpTable(jumpTable, OpCode.RETRES, Instructions.RetRes);
@@ -125,7 +126,6 @@ unit Instructions
         WriteToJumpTable(jumpTable, OpCode.PUSHGP, Instructions.PushGP);
         WriteToJumpTable(jumpTable, OpCode.COPYNEXTPOP, Instructions.CNP);
         WriteToJumpTable(jumpTable, OpCode.NOP, Instructions.NOP);
-        WriteToJumpTable(jumpTable, OpCode.NOP2, Instructions.NOP);
         WriteToJumpTable(jumpTable, OpCode.CAST, Instructions.Cast);
         WriteToJumpTable(jumpTable, OpCode.BITXOR, Instructions.BitXor);
         WriteToJumpTable(jumpTable, OpCode.JREL, Instructions.JREL);
@@ -1937,6 +1937,19 @@ unit Instructions
         // operand is offset 0..255 into stack where 0=[top], 1=[next], etc
         byte  offset  = ReadByteOperand();
         byte address = byte(SP - 1 - offset);
+        Type htype;
+        uint value = HopperVM.Get(address, ref htype);
+        Push(value, htype);
+        if (IsReferenceType(htype))
+        {
+            GC.AddReference(value);
+        }
+        return true;
+    }
+    bool Dup0()
+    {
+        // push [top]
+        byte address = byte(SP - 1);
         Type htype;
         uint value = HopperVM.Get(address, ref htype);
         Push(value, htype);

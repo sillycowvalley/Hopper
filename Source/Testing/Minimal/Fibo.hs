@@ -1,7 +1,5 @@
 program Fibo
 {
-    #define CDECL
-  
     #define CPU_Z80
     //#define MCU
 
@@ -43,7 +41,7 @@ program Fibo
     }
     Hopper()
     {
-        uint result = Fibo(5); // 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
+        uint result = Fibo(8); // 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
         Serial.WriteChar(' '); WriteUInt(result); Serial.WriteChar('!');Serial.WriteChar(' ');
     }
 }

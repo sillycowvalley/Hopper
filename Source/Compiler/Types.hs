@@ -1328,9 +1328,9 @@ unit Types
     {
         byte vt = Types.ToByte(castToType);
                         
-        CodeStream.AddInstruction(Instruction.DUP, byte(0)); // copy of expression result
+        CodeStream.AddInstruction(Instruction.DUP0); // copy of expression result
 #ifndef JSON_EXPRESS
-        CodeStream.AddInstruction(Instruction.DUP, byte(0)); // 2nd copy
+        CodeStream.AddInstruction(Instruction.DUP0); // 2nd copy
 #endif
         CodeStream.AddInstructionSysCall0("Types", "TypeOf");
         CodeStream.AddInstructionPUSHI(byte(variant));
@@ -1369,8 +1369,8 @@ unit Types
         {
             byte vt = Types.ToByte(variableType);
             
-            CodeStream.AddInstruction(Instruction.DUP, byte(0)); // copy of [top]
-            CodeStream.AddInstruction(Instruction.DUP, byte(0)); // 2nd copy
+            CodeStream.AddInstruction(Instruction.DUP0); // copy of [top]
+            CodeStream.AddInstruction(Instruction.DUP0); // 2nd copy
             CodeStream.AddInstructionSysCall0("Types", "ValueTypeOf");
             CodeStream.AddInstructionPUSHI(byte(variant));
             CodeStream.AddInstruction(Instruction.EQ);           // is it a variant?
@@ -1403,7 +1403,7 @@ unit Types
         if (CodeStream.CheckedBuild)
         {
             // DUP [top]
-            CodeStream.AddInstruction(Instruction.DUP, byte(0)); 
+            CodeStream.AddInstruction(Instruction.DUP0); 
             
             // [top] >> 15
             CodeStream.AddInstructionPUSHI(0x0F);
@@ -1421,7 +1421,7 @@ unit Types
         if (CodeStream.CheckedBuild)
         {
             // DUP [top]
-            CodeStream.AddInstruction(Instruction.DUP, byte(0)); 
+            CodeStream.AddInstruction(Instruction.DUP0); 
             
             // [top] >> 8
             CodeStream.AddInstructionPUSHI(0x08);
@@ -1438,7 +1438,7 @@ unit Types
         if (CodeStream.CheckedBuild)
         {
             // DUP [top]
-            CodeStream.AddInstruction(Instruction.DUP, byte(0)); 
+            CodeStream.AddInstruction(Instruction.DUP0); 
             
             // byte > 25?
             CodeStream.AddInstructionPUSHI(0x19); // tList = 25
@@ -1455,7 +1455,7 @@ unit Types
     {
         if (CodeStream.CheckedBuild)
         {
-            CodeStream.AddInstruction(Instruction.DUP, byte(0)); // copy of [top]
+            CodeStream.AddInstruction(Instruction.DUP0); // copy of [top]
             CodeStream.AddInstructionSysCall0("Types", prefix + "TypeOf");
             
             // TODO : support trivial automatic upcasts like 'byte' -> 'uint'

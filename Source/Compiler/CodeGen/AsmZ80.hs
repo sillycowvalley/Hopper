@@ -368,8 +368,8 @@ unit AsmZ80
         LD_inn_DE = 0xED53,
         LD_inn_HL = 0xED63,
         LD_inn_SP = 0xED73,
-        LD_inn_IX = 0xDD2A,
-        LD_inn_IY = 0xFD2A,
+        LD_inn_IX = 0xDD22,
+        LD_inn_IY = 0xFD22,
         
         LD_BC_nn = 0x01,
         LD_DE_nn = 0x11,
@@ -399,6 +399,7 @@ unit AsmZ80
         INC_IX  = 0xDD23,
         INC_IY  = 0xFD23,
         
+        INC_iHL   = 0x34,
         INC_iIX_d = 0xDD34,
         INC_iIY_d = 0xFD34,
         
@@ -590,6 +591,8 @@ unit AsmZ80
         RLA  = 0x17,
         RRA  = 0x1F,
         
+        CPL = 0x2F,
+        
         CCF = 0x3F,
         SCF = 0x37,
         
@@ -697,6 +700,33 @@ unit AsmZ80
             }   
         }
         return 1;        
+    }
+    string GetName(OpCode opCode) 
+    { 
+        if (!initialized)
+        {
+            Initialize();
+            initialized = true;
+        }
+        if (z80InstructionName.Contains(opCode))
+        {
+            return z80InstructionName[opCode]; 
+        }
+        return "0x" + (uint(opCode)).ToHexString(4);
+    } 
+    OpCode GetOpCode(<byte> code, uint index)
+    {
+        if (!initialized)
+        {
+            Initialize();
+            initialized = true;
+        }
+        uint value = code[index];
+        if ((value == 0xFD) || (value == 0xDD) || (value == 0xCB) || (value == 0xED))
+        {
+            value = (value << 8) + code[index+1];
+        }
+        return OpCode(value);
     }
     
     
@@ -1756,11 +1786,17 @@ unit AsmZ80
         z80InstructionName[OpCode.LD_SP_inn] = "LD SP, (nn)";             // 0xED7B
         z80OperandType    [OpCode.LD_SP_inn] = OperandType.ImmediateIndexed;
 
-        z80InstructionName[OpCode.LD_inn_IX] = "LD (nn), IX";             // 0xDD2A
+        z80InstructionName[OpCode.LD_inn_IX] = "LD (nn), IX";             // 0xDD22
         z80OperandType    [OpCode.LD_inn_IX] = OperandType.ImmediateIndexed;
 
-        z80InstructionName[OpCode.LD_inn_IY] = "LD (nn), IY";             // 0xFD2A
+        z80InstructionName[OpCode.LD_inn_IY] = "LD (nn), IY";             // 0xFD22
         z80OperandType    [OpCode.LD_inn_IY] = OperandType.ImmediateIndexed;
+        
+        z80InstructionName[OpCode.LD_IX_inn] = "LD IX, (nn)";             // 0xDD2A
+        z80OperandType    [OpCode.LD_IX_inn] = OperandType.ImmediateIndexed;
+        z80InstructionName[OpCode.LD_IY_inn] = "LD IY, (nn)";             // 0xFD2A
+        z80OperandType    [OpCode.LD_IY_inn] = OperandType.ImmediateIndexed;
+        
 
         z80InstructionName[OpCode.LD_inn_BC] = "LD (nn), BC";             // 0xED43
         z80OperandType    [OpCode.LD_inn_BC] = OperandType.ImmediateIndexed;
@@ -1843,6 +1879,9 @@ unit AsmZ80
         z80InstructionName[OpCode.INC_IY] = "INC IY";                     // 0xFD23
         z80OperandType    [OpCode.INC_IY] = OperandType.Implied;
 
+        z80InstructionName[OpCode.INC_iHL] = "INC (HL)";                  // 0x0034
+        z80OperandType    [OpCode.INC_iHL] = OperandType.Implied;
+        
         z80InstructionName[OpCode.INC_iIX_d] = "INC (IX+d)";              // 0xDD34
         z80OperandType    [OpCode.INC_iIX_d] = OperandType.IndexedRelative;
 
@@ -2307,6 +2346,9 @@ unit AsmZ80
 
         z80InstructionName[OpCode.RRA] = "RRA";                           // 0x001F
         z80OperandType    [OpCode.RRA] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.CPL] = "CPL";                           // 0x002F
+        z80OperandType    [OpCode.CPL] = OperandType.Implied;
 
         z80InstructionName[OpCode.CCF] = "CCF";                           // 0x003F
         z80OperandType    [OpCode.CCF] = OperandType.Implied;

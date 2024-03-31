@@ -19,6 +19,7 @@ typedef UInt HandlerDelegate;
 // method definitions
 enum OpCode {
     eNOP = 0x0000,
+    eDUP0 = 0x0001,
     ePUSHR0 = 0x0002,
     ePOPR0 = 0x0003,
     eLIBCALL = 0x0008,
@@ -42,7 +43,6 @@ enum OpCode {
     eDECSP = 0x0028,
     eDIE = 0x0029,
     eENTER = 0x0049,
-    eNOP2 = 0x0050,
     eCAST = 0x0051,
     eJZ = 0x0031,
     eJNZ = 0x0032,
@@ -261,6 +261,7 @@ enum SysCalls {
     eKeyboardClickDoubleGet = 0x0078,
     eKeyboardScrollDeltaGet = 0x0079,
     eDiagnosticsDie = 0x007C,
+    eDiagnosticsSetError = 0x007D,
     eTypesTypeOf = 0x007E,
     eTypesValueTypeOf = 0x007F,
     eTypesKeyTypeOf = 0x0080,
@@ -619,7 +620,6 @@ void HopperEntryPoint();
 Bool Runtime_LoadHexe_R(UInt path, UInt startAddress, UInt & loadedAddress, UInt & codeLength, Bool doCRC);
 void Runtime_SerialWriteChar(Char c);
 Char Runtime_SerialReadChar();
-Byte Runtime_FromHex(Char ch);
 void Runtime_WaitForEnter();
 void Runtime_DumpPage(Byte iPage);
 void Runtime_out4Hex_R(UInt & pageBuffer, UInt value);
@@ -653,6 +653,7 @@ Bool HopperVM_ExecuteOpCode();
 void HopperVM_WriteERROR();
 void HopperVM_WriteBREAK();
 void GC_Release(UInt address);
+Byte HRChar_FromHex(Char _this);
 UInt HRString_New();
 void HRString_BuildChar_R(UInt & _this, Char ch);
 UInt HRString_GetLength(UInt _this);
@@ -784,6 +785,7 @@ Bool Instructions_PopGlobal();
 Bool Instructions_PushGlobal();
 Bool Instructions_PushStackAddr();
 Bool Instructions_Dup();
+Bool Instructions_Dup0();
 Bool Instructions_DecSP();
 Bool Instructions_Ret();
 Bool Instructions_RetRes();
@@ -998,6 +1000,7 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+
 
 
 

@@ -194,7 +194,7 @@ program Compile
                 // if there is a return value, then it is already exactly where it needs to be
                 CodeStream.AddInstruction(Instruction.RET0);
             }
-            else if (returnBytes > 0)
+            else if ((returnBytes > 0) && !IsCDecl)
             {
                 if (!NoPackedInstructions && (slotsToPop < 256))
                 {
@@ -207,6 +207,14 @@ program Compile
             }
             else
             {
+                //if (IsCDecl)
+                //{
+                //    PrintLn("compileReturn: returnBytes=" + returnBytes.ToString() + " slotsToPop=" + slotsToPop.ToString());
+                //}
+                if (IsCDecl && (returnBytes > 0))
+                {
+                    CodeStream.AddInstruction(Instruction.POPR0);
+                }
                 if (!NoPackedInstructions && (slotsToPop < 256))
                 {
                     CodeStream.AddInstruction(Instruction.RETB, byte(slotsToPop));
