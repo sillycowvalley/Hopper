@@ -185,11 +185,13 @@ program Shell
         
         Print(currentDirectory + ">", Colour.MatrixBlue, Colour.Black);
         uint x = currentDirectory.Length+1;
-        uint w = Screen.Columns;
+        
         uint current = x;
         string commandLine;
         loop
         {
+            uint w = Screen.Columns; // update in case we resize screen
+            
             bool redraw = false;
             Key  key = ReadKey();
             switch (key)

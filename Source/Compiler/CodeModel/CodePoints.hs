@@ -109,7 +109,53 @@ unit CodePoints
         ProgessNudge();
         return false;
     }
-    
+    <uint,bool> GetAllJumpTargets()
+    {
+        <uint,bool> allTargets;
+        
+        foreach (var v in iJumpTargets)
+        {
+            <uint> jumps = v;
+            foreach (var jump in jumps)
+            {
+                allTargets[jump] = true;
+            }
+        }
+        foreach (var kv in iJIXMaps)
+        {
+            foreach (var kv2 in kv.value)
+            {
+                uint jump = kv2.value;
+                allTargets[jump] = true;
+            }
+        }
+        ProgessNudge();
+        return allTargets;
+    }
+    bool IsNoJumps()
+    {
+        foreach (var v in iJumpTargets)
+        {
+            <uint> jumps = v;
+            foreach (var jump in jumps)
+            {
+                return false;
+            }
+        }
+        if (iJIXMaps.Count > 0)
+        {
+            return false;
+        }
+        return true;
+    }
+    bool IsAllReachable()
+    {
+        foreach (var kv in iReachable)
+        {
+            if (!kv.value) { return false; }
+        }
+        return true;
+    }
     DumpDebugInfo()
     {
         PrintLn("DebugInfo:");
@@ -119,11 +165,16 @@ unit CodePoints
         }
     }
     
+    
     RemoveInstruction(uint iRemoval)
     {
         RemoveInstruction(iRemoval, true);
     }
     RemoveInstruction(uint iRemoval, bool keepDebugLine)
+    {
+        RemoveInstruction(iRemoval, keepDebugLine, false, false);
+    }
+    RemoveInstruction(uint iRemoval, bool keepDebugLine, bool allReachable, bool noJumps)
     {
         // lists:
         
@@ -133,57 +184,62 @@ unit CodePoints
         iContent.Remove(iRemoval);
         iJumpTargets.Remove(iRemoval);
         
-        // iReachable
-        <uint,bool>   newReachable;
-        foreach (var kv in iReachable)
+        if (!allReachable)
         {
-            uint iR = kv.key;
-            if (iR == iRemoval)
+            // iReachable
+            <uint,bool>   newReachable;
+            foreach (var kv in iReachable)
             {
-                // gone
-            }
-            else 
-            {
-                if (iR > iRemoval)
+                uint iR = kv.key;
+                if (iR == iRemoval)
                 {
-                    iR--;
+                    // gone
                 }
-                newReachable[iR] = kv.value;
-            }
-        }
-        iReachable = newReachable;
-        
-        // iJIXMaps
-        <uint, <byte, uint> > newJIXMaps;
-        foreach (var kv in iJIXMaps)
-        {
-            uint iX = kv.key;
-            if (iX ==  iRemoval)
-            {
-                // gone
-            }
-            else 
-            {
-                <byte, uint> newJIXMap;
-                <byte, uint> iJIXMap = kv.value;
-                foreach (var kv2 in iJIXMap)
+                else 
                 {
-                    byte switchByte = kv2.key;
-                    uint switchJump = kv2.value;
-                    if (switchJump > iRemoval)
+                    if (iR > iRemoval)
                     {
-                        switchJump--;
+                        iR--;
                     }
-                    newJIXMap[switchByte] = switchJump;
+                    newReachable[iR] = kv.value;
                 }
-                if (iX > iRemoval)
-                {
-                    iX--;
-                }
-                newJIXMaps[iX] = newJIXMap;           
             }
+            iReachable = newReachable;
         }
-        iJIXMaps = newJIXMaps;
+        if (!noJumps)
+        {
+            // iJIXMaps
+            <uint, <byte, uint> > newJIXMaps;
+            foreach (var kv in iJIXMaps)
+            {
+                uint iX = kv.key;
+                if (iX ==  iRemoval)
+                {
+                    // gone
+                }
+                else 
+                {
+                    <byte, uint> newJIXMap;
+                    <byte, uint> iJIXMap = kv.value;
+                    foreach (var kv2 in iJIXMap)
+                    {
+                        byte switchByte = kv2.key;
+                        uint switchJump = kv2.value;
+                        if (switchJump > iRemoval)
+                        {
+                            switchJump--;
+                        }
+                        newJIXMap[switchByte] = switchJump;
+                    }
+                    if (iX > iRemoval)
+                    {
+                        iX--;
+                    }
+                    newJIXMaps[iX] = newJIXMap;           
+                }
+            }
+            iJIXMaps = newJIXMaps;
+        }
         
         // indexDebugInfo
         <uint,string> newDebugInfo;
@@ -228,22 +284,25 @@ unit CodePoints
         }
         indexDebugInfo = newDebugInfo;
         
-        // update all jumpTargets:
-        uint iCodeLength = iCodes.Count;
-        for (uint iIndex = 0; iIndex < iCodeLength; iIndex++)
+        if (!noJumps)
         {
-            <uint> jumpTargets = iJumpTargets[iIndex];
-            <uint> newJumpTargets;
-            foreach (var v in jumpTargets)
+            // update all jumpTargets:
+            uint iCodeLength = iCodes.Count;
+            for (uint iIndex = 0; iIndex < iCodeLength; iIndex++)
             {
-                uint jumpTarget = v;
-                if (jumpTarget > iRemoval)
+                <uint> jumpTargets = iJumpTargets[iIndex];
+                <uint> newJumpTargets;
+                foreach (var v in jumpTargets)
                 {
-                    jumpTarget--;
+                    uint jumpTarget = v;
+                    if (jumpTarget > iRemoval)
+                    {
+                        jumpTarget--;
+                    }
+                    newJumpTargets.Append(jumpTarget);
                 }
-                newJumpTargets.Append(jumpTarget);
+                iJumpTargets.SetItem(iIndex, newJumpTargets);
             }
-            iJumpTargets.SetItem(iIndex, newJumpTargets);
         }
         ProgessNudge();
     }
@@ -1405,15 +1464,18 @@ unit CodePoints
         }
     }
     
-    bool OptimizeUnconditionalJumps()
+    bool OptimizeUnconditionalJumps(/*bool verbose*/)
     {
         uint iCodesLength = iCodes.Count;
         if (iCodesLength < 2)
         {
             return false;
         }
+        <uint,bool> allTargets = GetAllJumpTargets();
         bool modified = false;
         uint iIndex = 0;
+        //uint count = 0;
+        //uint conditionals = 0;
         loop
         {
             if (iIndex == iCodesLength)
@@ -1421,7 +1483,12 @@ unit CodePoints
                 break;
             }
             Instruction opCode = iCodes[iIndex];
-            if (IsConditionalJumpInstruction(opCode) && !IsTargetOfJumps(iIndex-0))
+            bool isConditionalJump = IsConditionalJumpInstruction(opCode);
+            //if (verbose && isConditionalJump)
+            //{
+            //    conditionals++;
+            //}
+            if (isConditionalJump && !allTargets.Contains(iIndex-0))
             {
                 bool jumpPathIsValid = true;
                 bool mainPathIsValid = true;
@@ -1575,21 +1642,37 @@ unit CodePoints
                     iCodes.SetItem(iIndex-1, Instruction.NOP);
                     modified = true;
                 }
+                if (modified)
+                {
+                    //count++;
+                    allTargets = GetAllJumpTargets();
+                }
             } // conditional jump
             iIndex++;
         } // loop
+        //if (verbose && (count > 0))
+        //{
+        //    uint targetCount = allTargets.Count;
+        //    Print("(" + conditionals.ToString() +" conditionals, " + count.ToString() + " changes,"  + targetCount.ToString() + " targets)");
+        //}
         return modified;    
     }
     
     // not just NOP, also JMP -> JMP + 1, can cause more short JumpToJump's to work
-    bool OptimizeRemoveNOPs()
+    bool OptimizeRemoveNOPs(/*bool verbose*/)
     {
         if (iCodes.Count < 1)
         {
             return false;
         }
+        
+        // NOP removal and JMP+1 removal cannot affect reachability or noJumps
+        bool allReachable = IsAllReachable();
+        bool noJumps = IsNoJumps();
+    
         bool modified = false;
         uint iIndex = 0;
+        //uint count = 0;
         loop
         {
             if (iIndex == iCodes.Count)
@@ -1610,7 +1693,8 @@ unit CodePoints
             }
             if (removeIt)
             {
-                RemoveInstruction(iIndex);
+                RemoveInstruction(iIndex, true, allReachable, noJumps);
+                //count++;
                 modified = true;
             }
             else
@@ -1618,39 +1702,11 @@ unit CodePoints
                 iIndex++;
             }
         } // loop
-        return modified;
-    }
-    bool OptimizeCOPYPOP()
-    {
-        if (iCodes.Count < 2)
-        {
-            return false;
-        }
-        bool modified = false;
-        uint iIndex = 1;
-        loop
-        {
-            if (iIndex >= iCodes.Count)
-            {
-                break;
-            }
-            Instruction opCode = iCodes[iIndex-1];
-            if (opCode == Instruction.COPYNEXTPOP)
-            {
-                Instruction opCodeNext = iCodes[iIndex];
-                if (IsPOPInstruction(opCodeNext))
-                {
-                    // switcharoo:
-                    opCodeNext = SwitchToCOPYPOP(opCodeNext);
-                    iCodes.SetItem(iIndex, opCodeNext);
-                    
-                    RemoveInstruction(iIndex-1); // good
-                    modified = true;
-                    continue;
-                }
-            }
-            iIndex++;
-        } // loop
+        //if (verbose && (count > 0))
+        //{
+        //    Print("(" + count.ToString() + " NOPs" + (allReachable ? ", reachable" : "") + (noJumps ? " , no jumps" : ""));
+        //    Print(")");
+        //}
         return modified;
     }
     bool OptimizeJumpW()
@@ -2705,6 +2761,51 @@ unit CodePoints
         } // loop
         return modified;
     }
+    bool OptimizeCOPYPOP()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        
+        // COPYNEXTPOP change cannot change reachability or jumps
+        bool noJumps = IsNoJumps();
+        bool allReachable = IsAllReachable();
+        
+        bool modified = false;
+        uint iIndex = 1;
+        //uint count = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            Instruction opCode = iCodes[iIndex-1];
+            if (opCode == Instruction.COPYNEXTPOP)
+            {
+                Instruction opCodeNext = iCodes[iIndex];
+                if (IsPOPInstruction(opCodeNext))
+                {
+                    // switcharoo:
+                    opCodeNext = SwitchToCOPYPOP(opCodeNext);
+                    iCodes.SetItem(iIndex, opCodeNext);
+                    
+                    RemoveInstruction(iIndex-1, true , allReachable, noJumps); // good
+                    modified = true;
+                    //count++;
+                    continue;
+                }
+            }
+            iIndex++;
+        } // loop
+        //if (count > 0)
+        //{
+        //    Print("[" + count.ToString() +(noJumps ? " no jumps" : "") +(allReachable ? " reachable" : "")+ "]");
+        //}
+        return modified;
+    }
+    
     bool OptimizeSYSCALL00()
     {
         bool modified;
@@ -2712,83 +2813,111 @@ unit CodePoints
         {
             return modified;
         }
+        
+        <uint,bool> allTargets = GetAllJumpTargets();
+        bool noJumps = allTargets.Count == 0;
+        
         uint iIndex = 1;
         uint hits = 0;
+        
         loop
         {
             if (iIndex >= iCodes.Count)
             {
                 break;
             }
-            Instruction opCode1 = iCodes[iIndex-1];
             Instruction opCode0 = iCodes[iIndex]; 
-            if ((opCode1 == Instruction.PUSHIB) && (opCode0 == Instruction.SYSCALL0))
+            if (opCode0 == Instruction.SYSCALL0)
             {
-                if (!IsTargetOfJumps(iIndex))
+                Instruction opCode1 = iCodes[iIndex-1];
+                if (opCode1 == Instruction.PUSHIB)
                 {
-                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
-                    
-                    iCodes.SetItem   (iIndex, Instruction.SYSCALLB0);
-                    iOperands.SetItem(iIndex, operand);
-                    iLengths.SetItem (iIndex, 3);
-                    RemoveInstruction(iIndex-1); // good
-                    modified = true;
-                    continue;
+                    if (noJumps || !allTargets.Contains(iIndex))
+                    {
+                        uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                        
+                        iCodes.SetItem   (iIndex, Instruction.SYSCALLB0);
+                        iOperands.SetItem(iIndex, operand);
+                        iLengths.SetItem (iIndex, 3);
+                        
+                        iCodes.SetItem   (iIndex-1, Instruction.NOP);
+                        iLengths.SetItem (iIndex-1, 1);
+                        
+                        modified = true;
+                        continue;
+                    }
+                }
+                else if (opCode1 == Instruction.SYSCALL0)
+                {
+                    if (noJumps || !allTargets.Contains(iIndex))
+                    {
+                        uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                        iCodes.SetItem   (iIndex, Instruction.SYSCALL00);
+                        iOperands.SetItem(iIndex, operand);
+                        iLengths.SetItem (iIndex, 3);
+                        
+                        iCodes.SetItem   (iIndex-1, Instruction.NOP);
+                        iLengths.SetItem (iIndex-1, 1);
+                        
+                        modified = true;
+                        continue;
+                    }
+                }
+                else if (opCode1 == Instruction.SYSCALL1)
+                {
+                    if (noJumps || !allTargets.Contains(iIndex))
+                    {
+                        uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                        iCodes.SetItem   (iIndex, Instruction.SYSCALL10);
+                        iOperands.SetItem(iIndex, operand);
+                        iLengths.SetItem (iIndex, 3);
+                        
+                        iCodes.SetItem   (iIndex-1, Instruction.NOP);
+                        iLengths.SetItem (iIndex-1, 1);
+                        
+                        modified = true;
+                        continue;
+                    }
                 }
             }
-            if ((opCode1 == Instruction.PUSHIB) && (opCode0 == Instruction.SYSCALL1))
+            else if (opCode0 == Instruction.SYSCALL1)
             {
-                if (!IsTargetOfJumps(iIndex))
+                Instruction opCode1 = iCodes[iIndex-1];
+                if (opCode1 == Instruction.PUSHIB)
                 {
-                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
-                    
-                    iCodes.SetItem   (iIndex, Instruction.SYSCALLB1);
-                    iOperands.SetItem(iIndex, operand);
-                    iLengths.SetItem (iIndex, 3);
-                    RemoveInstruction(iIndex-1); // good
-                    modified = true;
-                    continue;
+                    if (noJumps || !allTargets.Contains(iIndex))
+                    {
+                        uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                        
+                        iCodes.SetItem   (iIndex, Instruction.SYSCALLB1);
+                        iOperands.SetItem(iIndex, operand);
+                        iLengths.SetItem (iIndex, 3);
+                        
+                        iCodes.SetItem   (iIndex-1, Instruction.NOP);
+                        iLengths.SetItem (iIndex-1, 1);
+                        
+                        modified = true;
+                        continue;
+                    }
+                }
+                else if (opCode1 == Instruction.SYSCALL0)
+                {
+                    if (noJumps || !allTargets.Contains(iIndex))
+                    {
+                        uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
+                        iCodes.SetItem   (iIndex, Instruction.SYSCALL01);
+                        iOperands.SetItem(iIndex, operand);
+                        iLengths.SetItem (iIndex, 3);
+                        
+                        iCodes.SetItem   (iIndex-1, Instruction.NOP);
+                        iLengths.SetItem (iIndex-1, 1);
+                        
+                        modified = !noJumps;
+                        continue;
+                    }
                 }
             }
-            if ((opCode1 == Instruction.SYSCALL0) && (opCode0 == Instruction.SYSCALL0))
-            {
-                if (!IsTargetOfJumps(iIndex))
-                {
-                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
-                    iCodes.SetItem   (iIndex, Instruction.SYSCALL00);
-                    iOperands.SetItem(iIndex, operand);
-                    iLengths.SetItem (iIndex, 3);
-                    RemoveInstruction(iIndex-1); // good
-                    modified = true;
-                    continue;
-                }
-            }
-            if ((opCode1 == Instruction.SYSCALL0) && (opCode0 == Instruction.SYSCALL1))
-            {
-                if (!IsTargetOfJumps(iIndex))
-                {
-                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
-                    iCodes.SetItem   (iIndex, Instruction.SYSCALL01);
-                    iOperands.SetItem(iIndex, operand);
-                    iLengths.SetItem (iIndex, 3);
-                    RemoveInstruction(iIndex-1); // good
-                    modified = true;
-                    continue;
-                }
-            }
-            if ((opCode1 == Instruction.SYSCALL1) && (opCode0 == Instruction.SYSCALL0))
-            {
-                if (!IsTargetOfJumps(iIndex))
-                {
-                    uint operand = iOperands[iIndex-1] + (iOperands[iIndex] << 8);
-                    iCodes.SetItem   (iIndex, Instruction.SYSCALL10);
-                    iOperands.SetItem(iIndex, operand);
-                    iLengths.SetItem (iIndex, 3);
-                    RemoveInstruction(iIndex-1); // good
-                    modified = true;
-                    continue;
-                }
-            }
+
             iIndex++;
         } // loop
         return modified;  
