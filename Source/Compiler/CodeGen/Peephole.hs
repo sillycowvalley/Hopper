@@ -486,6 +486,61 @@ unit Peephole
     bool peepholeOptimize2(<byte> currentStream)
     {    
         if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITSHL))
+           )
+        {
+            byte value = currentStream[lastInstruction1+1];
+            if (value == 8)
+            {
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHL8));
+                TrimTail(currentStream, 2);
+                lastInstruction0 = lastInstruction1;
+                lastInstruction1 = lastInstruction2;
+                lastInstruction2 = lastInstruction3;
+                lastInstruction3 = lastInstruction4;
+                lastInstruction4 = 0;
+                return true; // hunt for more
+            }
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITSHR))
+           )
+        {
+            byte value = currentStream[lastInstruction1+1];
+            if (value == 8)
+            {
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHR8));
+                TrimTail(currentStream, 2);
+                lastInstruction0 = lastInstruction1;
+                lastInstruction1 = lastInstruction2;
+                lastInstruction2 = lastInstruction3;
+                lastInstruction3 = lastInstruction4;
+                lastInstruction4 = 0;
+                return true; // hunt for more
+            }
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITAND))
+           )
+        {
+            byte value = currentStream[lastInstruction1+1];
+            if (value == 0xFF)
+            {
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDFF));
+                TrimTail(currentStream, 2);
+                lastInstruction0 = lastInstruction1;
+                lastInstruction1 = lastInstruction2;
+                lastInstruction2 = lastInstruction3;
+                lastInstruction3 = lastInstruction4;
+                lastInstruction4 = 0;
+                return true; // hunt for more
+            }
+            
+        }
+        if (
             (currentStream[lastInstruction1] == byte(Instruction.PUSHI)) 
          && (currentStream[lastInstruction0] == byte(Instruction.LE))
            )

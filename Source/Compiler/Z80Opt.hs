@@ -16,16 +16,12 @@ program Z80Opt
     
     uses "CodeGen/AsmZ80"
     
+    uses "CodeModel/Z80Code"
     uses "CodeModel/Z80Points"
     
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; }}
 
-    <uint,uint>   methodAddresses; // <index,address>
-    <uint,uint>   methodLengths;   // <index,length>
-    <uint,string> methodNames;     // <index,name>
-    <string,variant> symbols;
-    <byte> code;
     
     const uint progressSteps = 256;
     uint progressInstructions;
@@ -50,115 +46,12 @@ program Z80Opt
     BadArguments()
     {
         PrintLn("Invalid arguments for Z80Opt:");
-        PrintLn("  Z80OPT <code file>");
+        PrintLn("  Z80OPT <hex file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
         PrintLn("    -x         : experimental");
     }
     
-    byte hexCheckSum(string values)
-    {
-        uint sum = 0;
-        for (uint i = 0; i < values.Length / 2; i++)
-        {
-            string substr = values.Substring(i * 2, 2);
-            uint b = 0;
-            if (UInt.TryParse("0x" + substr, ref b))
-            {
-            }
-            sum = sum + b;
-        }
-        sum = sum % 256;
-        byte chk = byte(sum);
-        chk = ~chk;
-        chk++;
-        return chk;
-    }
-    
-    emitBuffer(file ihexFile, uint address, string buffer)
-    {
-        uint bytes = buffer.Length / 2;
-        string ln = bytes.ToHexString(2) + address.ToHexString(4) + "00" + buffer;
-        byte chk = hexCheckSum(ln);
-        ihexFile.Append(":" + ln + chk.ToHexString(2) + char(0x0A));
-    }
-    
-    writeIHex(file ihexFile, uint romAddress, <byte> output)
-    {
-        // https://en.wikipedia.org/wikie/Intel_HEX#Format
-        
-        uint byteCount = 0;
-        uint index = 0;
-        
-        byte currentTick = 0;
-        string progressTicks = "-\\|/-\\|/";
-        
-        string buffer;
-        uint emitAddress = 0;
-        loop
-        {
-            if (index == output.Count)
-            {
-                // done
-                break;
-            }
-            byte cb = output[index]; index++;
-            
-            buffer = buffer + cb.ToHexString(2);
-            if (buffer.Length == 32)
-            {
-                emitBuffer(ihexFile, emitAddress + romAddress, buffer);
-                emitAddress = emitAddress + 16;
-                buffer = "";
-            }
-            
-            byteCount++;
-            if (byteCount % 32 == 0)
-            {
-                Parser.ProgressTick("x");
-            }
-        }
-        if (buffer.Length != 0)
-        {
-            emitBuffer(ihexFile, emitAddress + romAddress, buffer);
-            buffer = "";
-        }
-        
-        ihexFile.Append(":00000001FF" + char(0x0A)); // eof
-        ihexFile.Flush();
-    }
-    
-    readIHex(file hexFile, ref uint org)
-    {
-        bool first = true;
-        code.Clear();
-        loop
-        {
-            string ln = hexFile.ReadLine();
-            if (!hexFile.IsValid()) { break; }
-            string len = ln.Substring(1,2);
-            uint length;
-            _ = UInt.TryParse("0x" + len, ref length);
-            if (length == 0) { continue; }
-            if (first)
-            {
-                string orgString = ln.Substring(3,4);
-                _ = UInt.TryParse("0x" + orgString, ref org);
-            }
-            ln = ln.Substring(9);
-            while (length > 0)
-            {
-                string br = ln.Substring(0, 2);
-                ln = ln.Substring(2);
-                uint b;
-                _ = UInt.TryParse("0x" + br, ref b);
-                code.Append(byte(b));
-                length--;
-            }
-            first = false;
-        }
-    }
-    
-    
+      
     Hopper()
     {
         bool success = false;
@@ -226,103 +119,24 @@ program Z80Opt
                 string optPath = codePath;
                 
                 string extension = Path.GetExtension(codePath);
-                string symbolsPath  = codePath.Replace(extension, ".zcode");
-                symbolsPath = Path.GetFileName(symbolsPath);
-                symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
+                string zcodePath  = codePath.Replace(extension, ".zcode");
+                zcodePath = Path.GetFileName(zcodePath);
+                zcodePath = Path.Combine("/Debug/Obj", zcodePath);
                 
-                if (File.Exists(symbolsPath))
+                if (File.Exists(zcodePath))
                 {
-                    PrintLn(symbolsPath);
-                    if (!ParseCode(symbolsPath, false, true))
+                    PrintLn(zcodePath);
+                    if (!ParseCode(zcodePath, false, true))
                     {
                         break;
                     }
                 }
                 PrintLn("Success");
                 
-                uint org = 0;
                 uint address = 0;
-                file hexFile = File.Open(codePath);
-                readIHex(hexFile, ref org); // -> code[]
                 
-                <uint, uint> methodSizes = Code.GetMethodSizes();
-                uint indexMax = 0;
-                foreach (var sz in methodSizes)
-                {
-                    if (sz.key > indexMax)
-                    {
-                        indexMax = sz.key;
-                    }
-                }
-                
-                uint entryAddress = code[4] + code[5] << 8;
-                
-                <string,string> debugInfo;
-                uint previousIndex;
-                for (uint index = 0; index <= indexMax; index++)
-                {
-                    <string,variant> methodSymbols = Code.GetMethodSymbols(index);
-                    if (methodSymbols.Count != 0)
-                    {
-                        debugInfo = methodSymbols["debug"];
-                        foreach (var kv in debugInfo)
-                        {
-                            uint codeAddress;
-                            if (UInt.TryParse(kv.key, ref codeAddress))
-                            {
-                                if (index == 0)
-                                {
-                                    codeAddress = entryAddress; // taken from the code at the reset vector
-                                }
-                                else 
-                                {
-                                    // -10 'ENTER'   preamble
-                                    // -18 'ENTERB'  preamble (optimized only)
-                                    // -14 'ENTERB' 1 ?
-                                    // - 0'RETFAST'  preamble (optimized only)
-                                    uint seek = codeAddress;
-                                    loop
-                                    {
-                                        OpCode opCode2 = GetOpCode(code, seek-6);  
-                                        OpCode opCode1 = GetOpCode(code, seek-4);  
-                                        OpCode opCode0 = GetOpCode(code, seek);
-                                            
-                                        if ((opCode2 == OpCode.PUSH_IY)  && (opCode1 == OpCode.LD_inn_SP) && (opCode0 == OpCode.LD_IY_inn)) 
-                                        {
-                                            // "PUSH BP, BP = SP" stack frame setup
-                                            //Print(AsmZ80.GetName(opCode2) + "   " + AsmZ80.GetName(opCode1) + "   " + AsmZ80.GetName(opCode0) + ",   ");
-                                            codeAddress = seek - 6;
-                                        }
-                                        seek--;
-                                        if (codeAddress - seek > 25) { break; }
-                                    }
-                                    OpCode opCode = GetOpCode(code, codeAddress-1);
-                                    //Print((codeAddress-1).ToHexString(4) +":" + AsmZ80.GetName(opCode) + ",   ");
-                                    if (opCode == OpCode.RET)
-                                    {
-                                        methodLengths[previousIndex] = codeAddress - methodAddresses[previousIndex];
-                                    }
-                                }
-                                methodAddresses[index] = codeAddress;
-                                string name = methodSymbols["name"];
-                                methodNames[index] = name;
-                                //PrintLn(index.ToString() + ": 0x" + codeAddress.ToHexString(4));
-                                previousIndex = index;
-                                break;
-                            }
-                        }
-                    }
-                }
-                methodLengths[previousIndex] = code.Count - methodAddresses[previousIndex];
-                foreach (var kv in methodAddresses)
-                {
-                    uint methodIndex = kv.key;
-                    uint methodAddress = kv.value;
-                    uint methodLength = methodLengths[methodIndex];
-                    uint methodEnd = methodAddress + methodLength - 1;
-                    PrintLn(methodIndex.ToHexString(4) + ": 0x" + methodAddress.ToHexString(4) + "-0x" + methodEnd.ToHexString(4) + "  " + (methodNames[methodIndex]).Pad(' ', 30) + " (" + methodLength.ToString() + " bytes)");
-                }
-                
+                codeBefore = Z80Code.Load(codePath);
+                              
                 uint pass = 0;
                 loop
                 {
@@ -335,15 +149,15 @@ program Z80Opt
                                
                 Parser.ProgressTick(".");
                 
-                /* save on success:
-                
-                writeIHex(ihexFile, 0x0000, output);
-                File.Delete(zcodePath);
-                if (!Code.ExportCode(zcodePath)) // after
+                // save on success:
+                if (!Z80Code.Save(codePath, ref codeAfter)) // testing round trip for now
                 {
                     break;
                 }
-                */
+                if (!Z80Code.SaveSymbols(zcodePath))
+                {
+                    break;
+                }
                 
                 success = true;
                 if (!Parser.IsInteractive())

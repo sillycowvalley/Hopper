@@ -3,6 +3,8 @@ program TestNumbers
     #define CPU_Z80
     #define CDECL
     
+    //#define EXPERIMENTAL
+    
     uses "/Source/Minimal/System"
     
     uses "/Source/Minimal/Diagnostics"

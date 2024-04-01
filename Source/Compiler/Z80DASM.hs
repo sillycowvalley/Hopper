@@ -228,7 +228,8 @@ program DASM
                                 {
                                     entryAddress = codeAddress;
                                 }
-                                //PrintLn(index.ToString() + ": 0x" + codeAddress.ToHexString(4));
+                                //string name = methodSymbols["name"];
+                                //PrintLn(index.ToHexString(4) + ": 0x" + codeAddress.ToHexString(4) + " " + name);
                                 break;
                             }
                         }
@@ -324,21 +325,41 @@ program DASM
                     }
                     else if (prevInstruction == OpCode.RET)
                     {
-                        for (uint search = address; search < address+20; search++) // delta is currently 10
-                        {
+                        for (uint search = address; search < address+25; search++) // delta is currently 10
+                       {
                             if (methodFirstAddresses.Contains(search))
-                            {
-                                if (    ((search - address) == 10) // 'ENTER'   preamble
-                                     || ((search - address) == 18) // 'ENTERB'  preamble (optimized only)
-                                     || ((search - address) == 0)  // 'RETFAST' preamble (optimized only)
-                                   )
+                           {
+                                if ((search - address) == 0)  // 'RETFAST' preamble (optimized only)
                                 {
                                     switchAddress = search; 
                                     bRETFAST = (search == address);
                                     //PrintLn("    " + address.ToHexString(4) + " " + search.ToHexString(4) + " " + (search - address).ToString() + " !");
                                     break;
                                 }
-                            }
+                                else
+                                {
+                                    // -10 'ENTER'   preamble
+                                    // -18 'ENTERB'  preamble (optimized only)
+                                    // -14 'ENTERB' 1 ?
+                                    uint seek = search;
+                                    loop
+                                    {
+                                        OpCode opCode2 = GetOpCode(code, seek-6);  
+                                        OpCode opCode1 = GetOpCode(code, seek-4);  
+                                        OpCode opCode0 = GetOpCode(code, seek);
+                                            
+                                        if ((opCode2 == OpCode.PUSH_IY)  && (opCode1 == OpCode.LD_inn_SP) && (opCode0 == OpCode.LD_IY_inn)) 
+                                        {
+                                            // "PUSH BP, BP = SP" stack frame setup
+                                            //Print(AsmZ80.GetName(opCode2) + "   " + AsmZ80.GetName(opCode1) + "   " + AsmZ80.GetName(opCode0) + ",   ");
+                                            switchAddress = search;
+                                            break;
+                                        }
+                                        seek--;
+                                        if (seek < address) { break; }
+                                    }
+                                }
+                            }// methodFirstAddresses.Contains(search)
                         }
                     }
                     

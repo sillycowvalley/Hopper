@@ -39,7 +39,7 @@ unit Peephole
         return bytesRemoved;
     }
     
-    const bool laxRules = true;
+    const bool laxRules = false;
     
     Optimize(<byte> output)
     {

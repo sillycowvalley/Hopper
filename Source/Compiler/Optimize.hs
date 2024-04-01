@@ -579,7 +579,7 @@ program Optimize
             CodePoints.CollectMethodCalls(methodsCalled);
             if (verbose) { showElapsedEnd(); } 
             
-            if (IsExperimental)
+            if (false && IsExperimental)
             {
                 CodePoints.CountPairs(pairList);
             }
@@ -627,7 +627,7 @@ program Optimize
             ReportMethodSizes();
         }
         methodsCalled.Clear(); // just to be sure ..
-        if (IsExperimental)
+        if (false && IsExperimental)
         {
             ListCompareDelegate sorter = CompairPair;
             pairList.Sort(sorter);

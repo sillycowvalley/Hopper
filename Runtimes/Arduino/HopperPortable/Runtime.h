@@ -22,6 +22,9 @@ enum OpCode {
     eDUP0 = 0x0001,
     ePUSHR0 = 0x0002,
     ePOPR0 = 0x0003,
+    eBITSHL8 = 0x0004,
+    eBITSHR8 = 0x0005,
+    eBITANDFF = 0x0006,
     eLIBCALL = 0x0008,
     eLIBCALL0 = 0x0009,
     eLIBCALL1 = 0x000A,
@@ -797,6 +800,9 @@ Bool Instructions_J();
 Bool Instructions_PushIW();
 Bool Instructions_BoolNot();
 Bool Instructions_BitNot();
+Bool Instructions_BitShl8();
+Bool Instructions_BitShr8();
+Bool Instructions_BitAndFF();
 Bool Instructions_Swap();
 Bool Instructions_PushIM1();
 Bool Instructions_PushGP();
@@ -1000,9 +1006,6 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
-
-
-
 
 
 #endif // HOPPERRUNTIME_H

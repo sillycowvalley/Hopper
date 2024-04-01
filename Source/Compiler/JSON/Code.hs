@@ -1265,8 +1265,11 @@ unit Code
         }
         return success;
     }
-    
     bool ExportCode(string codePath)
+    {
+        return ExportCode(codePath, true)
+    }
+    bool ExportCode(string codePath, bool saveCode)
     {
         bool success = true;
         
@@ -1330,7 +1333,10 @@ unit Code
                     {
                         if (mkv.key == "debug") // "code" comes before "debug"
                         {
-                            methodDictionary["code"] = methodCode[index];
+                            if (saveCode && (methodCode.Count != 0)) // was code loaded?
+                            {
+                                methodDictionary["code"] = methodCode[index];
+                            }
                         }
                         methodDictionary[mkv.key] = mkv.value;
                     }

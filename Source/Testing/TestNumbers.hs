@@ -1,6 +1,9 @@
 program TestNumbers
 {
-//#define MCU
+#define MCU
+//#define CDECL
+//#define NO_PACKED_INSTRUCTIONS
+#define EXPERIMENTAL
     uses "/Source/System/System"
     
 #ifndef HOPPER_6502
@@ -1721,6 +1724,38 @@ program TestNumbers
     } // TestFloatMath(..)
 #endif    
     
+    TestShifts()
+    {
+        WriteLn("'bit' math");
+        
+        uint value = 0xAA55;
+        
+        value = uint((value << 8) | (value >> 8));
+        if (value != 0x55AA)
+        {
+            PrintFailed("'bit' 1");
+        }
+        byte lsb = byte(value & 0xff);
+        if (lsb != 0xAA)
+        {
+            PrintFailed("'bit' 2");
+        }
+        byte msb = byte(value >> 8);
+        if (msb != 0x55)
+        {
+            PrintFailed("'bit' 3");
+        }
+        value = (value << 4);
+        if (value != 0x5AA0)
+        {
+            PrintFailed("'bit' 4");
+        }
+        value = (value >> 4);
+        if (value != 0x05AA)
+        {
+            PrintFailed("'bit' 5");
+        }
+    }
     {
         //EchoToLCD = true;
         //Screen.Clear();
@@ -1740,6 +1775,7 @@ program TestNumbers
         TestLongMath();
         TestUIntMath();
         TestIntMath();
+        TestShifts();
         
         TestPropertyMath();
         

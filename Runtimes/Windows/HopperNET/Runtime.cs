@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace HopperNET
@@ -30,6 +31,10 @@ namespace HopperNET
 
         PUSHR0 = 0x02,       // R0 -> [top]
         POPR0  = 0x03,       // [top] -> R0
+
+        BITSHL8  = 0x04,
+        BITSHR8  = 0x05,
+        BITANDFF = 0x06,
 
         LIBCALL  = 0x08,
         LIBCALL0 = 0x09,
@@ -1618,9 +1623,9 @@ namespace HopperNET
                             int lnext = (int)next;
                             lnext = lnext >> (int)top;
 #if UNDOINLINED
-                            Push((uint)lnext, HopperType.tUInt);
+                            Push((ushort)lnext, HopperType.tUInt);
 #else
-                            stack[sp2].value = (uint)lnext;
+                            stack[sp2].value = (ushort)lnext;
                             stack[sp2].type = HopperType.tUInt;
 #endif
                         }
@@ -1639,11 +1644,33 @@ namespace HopperNET
                             int lnext = (int)next;
                             lnext = lnext << (int)top;
 #if UNDOINLINED
-                            Push((uint)lnext, HopperType.tUInt);
+                            Push((ushort)lnext, HopperType.tUInt);
 #else
-                            stack[sp2].value = (uint)lnext;
+                            stack[sp2].value = (ushort)lnext;
                             stack[sp2].type = HopperType.tUInt;
 #endif
+                        }
+                        break;
+
+                    case Instruction.BITSHL8:
+                        {
+                            uint top = Pop();
+                            int lnext = (int)top;
+                            lnext = lnext << 8;
+                            Push((ushort)lnext, HopperType.tUInt);
+                        }
+                        break;
+                    case Instruction.BITSHR8:
+                        {
+                            uint top = Pop();
+                            int lnext = (int)top;
+                            lnext = lnext >> 8;
+                            Push((ushort)lnext, HopperType.tUInt);
+                        }
+                        break;
+                    case Instruction.BITANDFF:
+                        {
+                            Push((ushort)(Pop() & 0xFF), HopperType.tUInt);
                         }
                         break;
 

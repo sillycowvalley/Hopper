@@ -6,11 +6,6 @@
 
 
 
-
-
-
-
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -20,6 +15,7 @@ UInt Memory_freeList = 0;
 UInt HRArray_setSlots = 0;
 UInt HRArray_clearSlots = 0;
 Bool External_interruptsDisabled = false;
+UInt External_jumpTableAddress = 0;
 Bool Library_isrExists = false;
 UInt HopperVM_binaryAddress = 0;
 UInt HopperVM_programSize = 0;
@@ -1852,11 +1848,12 @@ void HRArray_Initialize()
 
 void Instructions_PopulateJumpTable(UInt jumpTable)
 {
+    External_SetJumpTableAddress(jumpTable);
     InstructionDelegate instructionDelegate = &Instructions_Undefined;
     Byte opCode = 0;
     for (;;)
     {
-        External_WriteToJumpTable(jumpTable, OpCode(opCode), instructionDelegate);
+        External_WriteToJumpTable(OpCode(opCode), instructionDelegate);
         if (opCode == 0xFF)
         {
             break;;
@@ -1864,131 +1861,134 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
         
         opCode++;
     }
-    External_WriteToJumpTable(jumpTable, OpCode::eDIE, &Instructions_Die);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHR0, &Instructions_PushR0);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPR0, &Instructions_PopR0);
-    External_WriteToJumpTable(jumpTable, OpCode::eADD, &Instructions_Add);
-    External_WriteToJumpTable(jumpTable, OpCode::eSUB, &Instructions_Sub);
-    External_WriteToJumpTable(jumpTable, OpCode::eDIV, &Instructions_Div);
-    External_WriteToJumpTable(jumpTable, OpCode::eMUL, &Instructions_Mul);
-    External_WriteToJumpTable(jumpTable, OpCode::eMOD, &Instructions_Mod);
-    External_WriteToJumpTable(jumpTable, OpCode::eEQ, &Instructions_EQ);
-    External_WriteToJumpTable(jumpTable, OpCode::eNE, &Instructions_NE);
-    External_WriteToJumpTable(jumpTable, OpCode::eGT, &Instructions_GT);
-    External_WriteToJumpTable(jumpTable, OpCode::eLT, &Instructions_LT);
-    External_WriteToJumpTable(jumpTable, OpCode::eGE, &Instructions_GE);
-    External_WriteToJumpTable(jumpTable, OpCode::eLE, &Instructions_LE);
-    External_WriteToJumpTable(jumpTable, OpCode::eBOOLOR, &Instructions_BoolOr);
-    External_WriteToJumpTable(jumpTable, OpCode::eBOOLAND, &Instructions_BoolAnd);
-    External_WriteToJumpTable(jumpTable, OpCode::eBITOR, &Instructions_BitOr);
-    External_WriteToJumpTable(jumpTable, OpCode::eBITAND, &Instructions_BitAnd);
-    External_WriteToJumpTable(jumpTable, OpCode::eBITSHL, &Instructions_BitShl);
-    External_WriteToJumpTable(jumpTable, OpCode::eBITSHR, &Instructions_BitShr);
-    External_WriteToJumpTable(jumpTable, OpCode::eADDI, &Instructions_AddI);
-    External_WriteToJumpTable(jumpTable, OpCode::eSUBI, &Instructions_SubI);
-    External_WriteToJumpTable(jumpTable, OpCode::eDIVI, &Instructions_DivI);
-    External_WriteToJumpTable(jumpTable, OpCode::eMULI, &Instructions_MulI);
-    External_WriteToJumpTable(jumpTable, OpCode::eMODI, &Instructions_ModI);
-    External_WriteToJumpTable(jumpTable, OpCode::eGTI, &Instructions_GTI);
-    External_WriteToJumpTable(jumpTable, OpCode::eLTI, &Instructions_LTI);
-    External_WriteToJumpTable(jumpTable, OpCode::eGEI, &Instructions_GEI);
-    External_WriteToJumpTable(jumpTable, OpCode::eLEI, &Instructions_LEI);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHIB, &Instructions_PushIB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHDB, &Instructions_PushIB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHIBB, &Instructions_PushIBB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPLOCALB, &Instructions_PopLocalB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHLOCALB, &Instructions_PushLocalB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPRELB, &Instructions_PopRelB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHRELB, &Instructions_PushRelB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPGLOBALB, &Instructions_PopGlobalB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHGLOBALB, &Instructions_PushGlobalB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHSTACKADDRB, &Instructions_PushStackAddrB);
-    External_WriteToJumpTable(jumpTable, OpCode::eCALLB, &Instructions_CallB);
-    External_WriteToJumpTable(jumpTable, OpCode::eJZB, &Instructions_JZB);
-    External_WriteToJumpTable(jumpTable, OpCode::eJNZB, &Instructions_JNZB);
-    External_WriteToJumpTable(jumpTable, OpCode::eJB, &Instructions_JB);
-    External_WriteToJumpTable(jumpTable, OpCode::eRET0, &Instructions_Ret0);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHI0, &Instructions_PushI0);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHI1, &Instructions_PushI1);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPLOCALB00, &Instructions_PopLocalB00);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPLOCALB01, &Instructions_PopLocalB01);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHLOCALB00, &Instructions_PushLocalB00);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHLOCALB01, &Instructions_PushLocalB01);
-    External_WriteToJumpTable(jumpTable, OpCode::eSYSCALL0, &Instructions_SysCall0);
-    External_WriteToJumpTable(jumpTable, OpCode::eSYSCALL1, &Instructions_SysCall1);
-    External_WriteToJumpTable(jumpTable, OpCode::eSYSCALL00, &Instructions_SysCall00);
-    External_WriteToJumpTable(jumpTable, OpCode::eSYSCALL01, &Instructions_SysCall01);
-    External_WriteToJumpTable(jumpTable, OpCode::eSYSCALL10, &Instructions_SysCall10);
-    External_WriteToJumpTable(jumpTable, OpCode::eSYSCALLB0, &Instructions_SysCallB0);
-    External_WriteToJumpTable(jumpTable, OpCode::eSYSCALLB1, &Instructions_SysCallB1);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHGLOBALBB, &Instructions_PushGlobalBB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHLOCALBB, &Instructions_PushLocalBB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPCOPYLOCALB, &Instructions_PopCopyLocalB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPCOPYRELB, &Instructions_PopCopyRelB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPCOPYGLOBALB, &Instructions_PopCopyGlobalB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPCOPYLOCALB00, &Instructions_PopCopyLocalB00);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPCOPYLOCALB01, &Instructions_PopCopyLocalB01);
-    External_WriteToJumpTable(jumpTable, OpCode::eENTER, &Instructions_Enter);
-    External_WriteToJumpTable(jumpTable, OpCode::eENTERB, &Instructions_EnterB);
-    External_WriteToJumpTable(jumpTable, OpCode::eJIXB, &Instructions_JIXB);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHILE, &Instructions_PushILE);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHILT, &Instructions_PushILT);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHIBLE, &Instructions_PushIBLE);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHILEI, &Instructions_PushILEI);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHIBEQ, &Instructions_PushIBEQ);
-    External_WriteToJumpTable(jumpTable, OpCode::eADDB, &Instructions_AddB);
-    External_WriteToJumpTable(jumpTable, OpCode::eSUBB, &Instructions_SubB);
-    External_WriteToJumpTable(jumpTable, OpCode::eRETB, &Instructions_RetB);
-    External_WriteToJumpTable(jumpTable, OpCode::eRETRESB, &Instructions_RetResB);
-    External_WriteToJumpTable(jumpTable, OpCode::eRETFAST, &Instructions_RetFast);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPLOCAL, &Instructions_PopLocal);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHLOCAL, &Instructions_PushLocal);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPREL, &Instructions_PopRel);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHREL, &Instructions_PushRel);
-    External_WriteToJumpTable(jumpTable, OpCode::ePOPGLOBAL, &Instructions_PopGlobal);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHGLOBAL, &Instructions_PushGlobal);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHSTACKADDR, &Instructions_PushStackAddr);
-    External_WriteToJumpTable(jumpTable, OpCode::eDUP, &Instructions_Dup);
-    External_WriteToJumpTable(jumpTable, OpCode::eDUP0, &Instructions_Dup0);
-    External_WriteToJumpTable(jumpTable, OpCode::eDECSP, &Instructions_DecSP);
-    External_WriteToJumpTable(jumpTable, OpCode::eRET, &Instructions_Ret);
-    External_WriteToJumpTable(jumpTable, OpCode::eRETRES, &Instructions_RetRes);
-    External_WriteToJumpTable(jumpTable, OpCode::eTESTBPB, &Instructions_TestBPB);
-    External_WriteToJumpTable(jumpTable, OpCode::eEXIT, &Instructions_Exit);
-    External_WriteToJumpTable(jumpTable, OpCode::eJZ, &Instructions_JZ);
-    External_WriteToJumpTable(jumpTable, OpCode::eJNZ, &Instructions_JNZ);
-    External_WriteToJumpTable(jumpTable, OpCode::eJW, &Instructions_J);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHI, &Instructions_PushIW);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHD, &Instructions_PushIW);
-    External_WriteToJumpTable(jumpTable, OpCode::eBOOLNOT, &Instructions_BoolNot);
-    External_WriteToJumpTable(jumpTable, OpCode::eBITNOT, &Instructions_BitNot);
-    External_WriteToJumpTable(jumpTable, OpCode::eSWAP, &Instructions_Swap);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHIM1, &Instructions_PushIM1);
-    External_WriteToJumpTable(jumpTable, OpCode::ePUSHGP, &Instructions_PushGP);
-    External_WriteToJumpTable(jumpTable, OpCode::eCOPYNEXTPOP, &Instructions_CNP);
-    External_WriteToJumpTable(jumpTable, OpCode::eNOP, &Instructions_NOP);
-    External_WriteToJumpTable(jumpTable, OpCode::eCAST, &Instructions_Cast);
-    External_WriteToJumpTable(jumpTable, OpCode::eBITXOR, &Instructions_BitXor);
-    External_WriteToJumpTable(jumpTable, OpCode::eJREL, &Instructions_JREL);
-    External_WriteToJumpTable(jumpTable, OpCode::eJIX, &Instructions_JIX);
-    External_WriteToJumpTable(jumpTable, OpCode::eCALL, &Instructions_Call);
-    External_WriteToJumpTable(jumpTable, OpCode::eCALLI, &Instructions_CallI);
-    External_WriteToJumpTable(jumpTable, OpCode::eCALLREL, &Instructions_CallRel);
-    External_WriteToJumpTable(jumpTable, OpCode::eSYSCALL, &Instructions_SysCall);
-    External_WriteToJumpTable(jumpTable, OpCode::eLIBCALL0, &Instructions_LibCall0);
-    External_WriteToJumpTable(jumpTable, OpCode::eLIBCALL1, &Instructions_LibCall1);
-    External_WriteToJumpTable(jumpTable, OpCode::eLIBCALL, &Instructions_LibCall);
-    External_WriteToJumpTable(jumpTable, OpCode::eINCLOCALBB, &Instructions_IncLocalBB);
-    External_WriteToJumpTable(jumpTable, OpCode::eINCLOCALIBB, &Instructions_IncLocalIBB);
-    External_WriteToJumpTable(jumpTable, OpCode::eINCGLOBALBB, &Instructions_IncGlobalBB);
-    External_WriteToJumpTable(jumpTable, OpCode::eINCLOCALB, &Instructions_IncLocalB);
-    External_WriteToJumpTable(jumpTable, OpCode::eDECLOCALB, &Instructions_DecLocalB);
-    External_WriteToJumpTable(jumpTable, OpCode::eINCGLOBALB, &Instructions_IncGlobalB);
-    External_WriteToJumpTable(jumpTable, OpCode::eDECGLOBALB, &Instructions_DecGlobalB);
-    External_WriteToJumpTable(jumpTable, OpCode::eINCLOCALIB, &Instructions_IncLocalIB);
-    External_WriteToJumpTable(jumpTable, OpCode::eDECLOCALIB, &Instructions_DecLocalIB);
-    External_WriteToJumpTable(jumpTable, OpCode::eINCGLOBALIB, &Instructions_IncGlobalIB);
-    External_WriteToJumpTable(jumpTable, OpCode::eDECGLOBALIB, &Instructions_DecGlobalIB);
+    External_WriteToJumpTable(OpCode::eDIE, &Instructions_Die);
+    External_WriteToJumpTable(OpCode::ePUSHR0, &Instructions_PushR0);
+    External_WriteToJumpTable(OpCode::ePOPR0, &Instructions_PopR0);
+    External_WriteToJumpTable(OpCode::eADD, &Instructions_Add);
+    External_WriteToJumpTable(OpCode::eSUB, &Instructions_Sub);
+    External_WriteToJumpTable(OpCode::eDIV, &Instructions_Div);
+    External_WriteToJumpTable(OpCode::eMUL, &Instructions_Mul);
+    External_WriteToJumpTable(OpCode::eMOD, &Instructions_Mod);
+    External_WriteToJumpTable(OpCode::eEQ, &Instructions_EQ);
+    External_WriteToJumpTable(OpCode::eNE, &Instructions_NE);
+    External_WriteToJumpTable(OpCode::eGT, &Instructions_GT);
+    External_WriteToJumpTable(OpCode::eLT, &Instructions_LT);
+    External_WriteToJumpTable(OpCode::eGE, &Instructions_GE);
+    External_WriteToJumpTable(OpCode::eLE, &Instructions_LE);
+    External_WriteToJumpTable(OpCode::eBOOLOR, &Instructions_BoolOr);
+    External_WriteToJumpTable(OpCode::eBOOLAND, &Instructions_BoolAnd);
+    External_WriteToJumpTable(OpCode::eBITOR, &Instructions_BitOr);
+    External_WriteToJumpTable(OpCode::eBITAND, &Instructions_BitAnd);
+    External_WriteToJumpTable(OpCode::eBITSHL, &Instructions_BitShl);
+    External_WriteToJumpTable(OpCode::eBITSHR, &Instructions_BitShr);
+    External_WriteToJumpTable(OpCode::eADDI, &Instructions_AddI);
+    External_WriteToJumpTable(OpCode::eSUBI, &Instructions_SubI);
+    External_WriteToJumpTable(OpCode::eDIVI, &Instructions_DivI);
+    External_WriteToJumpTable(OpCode::eMULI, &Instructions_MulI);
+    External_WriteToJumpTable(OpCode::eMODI, &Instructions_ModI);
+    External_WriteToJumpTable(OpCode::eGTI, &Instructions_GTI);
+    External_WriteToJumpTable(OpCode::eLTI, &Instructions_LTI);
+    External_WriteToJumpTable(OpCode::eGEI, &Instructions_GEI);
+    External_WriteToJumpTable(OpCode::eLEI, &Instructions_LEI);
+    External_WriteToJumpTable(OpCode::ePUSHIB, &Instructions_PushIB);
+    External_WriteToJumpTable(OpCode::ePUSHDB, &Instructions_PushIB);
+    External_WriteToJumpTable(OpCode::ePUSHIBB, &Instructions_PushIBB);
+    External_WriteToJumpTable(OpCode::ePOPLOCALB, &Instructions_PopLocalB);
+    External_WriteToJumpTable(OpCode::ePUSHLOCALB, &Instructions_PushLocalB);
+    External_WriteToJumpTable(OpCode::ePOPRELB, &Instructions_PopRelB);
+    External_WriteToJumpTable(OpCode::ePUSHRELB, &Instructions_PushRelB);
+    External_WriteToJumpTable(OpCode::ePOPGLOBALB, &Instructions_PopGlobalB);
+    External_WriteToJumpTable(OpCode::ePUSHGLOBALB, &Instructions_PushGlobalB);
+    External_WriteToJumpTable(OpCode::ePUSHSTACKADDRB, &Instructions_PushStackAddrB);
+    External_WriteToJumpTable(OpCode::eCALLB, &Instructions_CallB);
+    External_WriteToJumpTable(OpCode::eJZB, &Instructions_JZB);
+    External_WriteToJumpTable(OpCode::eJNZB, &Instructions_JNZB);
+    External_WriteToJumpTable(OpCode::eJB, &Instructions_JB);
+    External_WriteToJumpTable(OpCode::eRET0, &Instructions_Ret0);
+    External_WriteToJumpTable(OpCode::ePUSHI0, &Instructions_PushI0);
+    External_WriteToJumpTable(OpCode::ePUSHI1, &Instructions_PushI1);
+    External_WriteToJumpTable(OpCode::ePOPLOCALB00, &Instructions_PopLocalB00);
+    External_WriteToJumpTable(OpCode::ePOPLOCALB01, &Instructions_PopLocalB01);
+    External_WriteToJumpTable(OpCode::ePUSHLOCALB00, &Instructions_PushLocalB00);
+    External_WriteToJumpTable(OpCode::ePUSHLOCALB01, &Instructions_PushLocalB01);
+    External_WriteToJumpTable(OpCode::eSYSCALL0, &Instructions_SysCall0);
+    External_WriteToJumpTable(OpCode::eSYSCALL1, &Instructions_SysCall1);
+    External_WriteToJumpTable(OpCode::eSYSCALL00, &Instructions_SysCall00);
+    External_WriteToJumpTable(OpCode::eSYSCALL01, &Instructions_SysCall01);
+    External_WriteToJumpTable(OpCode::eSYSCALL10, &Instructions_SysCall10);
+    External_WriteToJumpTable(OpCode::eSYSCALLB0, &Instructions_SysCallB0);
+    External_WriteToJumpTable(OpCode::eSYSCALLB1, &Instructions_SysCallB1);
+    External_WriteToJumpTable(OpCode::ePUSHGLOBALBB, &Instructions_PushGlobalBB);
+    External_WriteToJumpTable(OpCode::ePUSHLOCALBB, &Instructions_PushLocalBB);
+    External_WriteToJumpTable(OpCode::ePOPCOPYLOCALB, &Instructions_PopCopyLocalB);
+    External_WriteToJumpTable(OpCode::ePOPCOPYRELB, &Instructions_PopCopyRelB);
+    External_WriteToJumpTable(OpCode::ePOPCOPYGLOBALB, &Instructions_PopCopyGlobalB);
+    External_WriteToJumpTable(OpCode::ePOPCOPYLOCALB00, &Instructions_PopCopyLocalB00);
+    External_WriteToJumpTable(OpCode::ePOPCOPYLOCALB01, &Instructions_PopCopyLocalB01);
+    External_WriteToJumpTable(OpCode::eENTER, &Instructions_Enter);
+    External_WriteToJumpTable(OpCode::eENTERB, &Instructions_EnterB);
+    External_WriteToJumpTable(OpCode::eJIXB, &Instructions_JIXB);
+    External_WriteToJumpTable(OpCode::ePUSHILE, &Instructions_PushILE);
+    External_WriteToJumpTable(OpCode::ePUSHILT, &Instructions_PushILT);
+    External_WriteToJumpTable(OpCode::ePUSHIBLE, &Instructions_PushIBLE);
+    External_WriteToJumpTable(OpCode::ePUSHILEI, &Instructions_PushILEI);
+    External_WriteToJumpTable(OpCode::ePUSHIBEQ, &Instructions_PushIBEQ);
+    External_WriteToJumpTable(OpCode::eADDB, &Instructions_AddB);
+    External_WriteToJumpTable(OpCode::eSUBB, &Instructions_SubB);
+    External_WriteToJumpTable(OpCode::eRETB, &Instructions_RetB);
+    External_WriteToJumpTable(OpCode::eRETRESB, &Instructions_RetResB);
+    External_WriteToJumpTable(OpCode::eRETFAST, &Instructions_RetFast);
+    External_WriteToJumpTable(OpCode::ePOPLOCAL, &Instructions_PopLocal);
+    External_WriteToJumpTable(OpCode::ePUSHLOCAL, &Instructions_PushLocal);
+    External_WriteToJumpTable(OpCode::ePOPREL, &Instructions_PopRel);
+    External_WriteToJumpTable(OpCode::ePUSHREL, &Instructions_PushRel);
+    External_WriteToJumpTable(OpCode::ePOPGLOBAL, &Instructions_PopGlobal);
+    External_WriteToJumpTable(OpCode::ePUSHGLOBAL, &Instructions_PushGlobal);
+    External_WriteToJumpTable(OpCode::ePUSHSTACKADDR, &Instructions_PushStackAddr);
+    External_WriteToJumpTable(OpCode::eDUP, &Instructions_Dup);
+    External_WriteToJumpTable(OpCode::eDUP0, &Instructions_Dup0);
+    External_WriteToJumpTable(OpCode::eDECSP, &Instructions_DecSP);
+    External_WriteToJumpTable(OpCode::eRET, &Instructions_Ret);
+    External_WriteToJumpTable(OpCode::eRETRES, &Instructions_RetRes);
+    External_WriteToJumpTable(OpCode::eTESTBPB, &Instructions_TestBPB);
+    External_WriteToJumpTable(OpCode::eEXIT, &Instructions_Exit);
+    External_WriteToJumpTable(OpCode::eJZ, &Instructions_JZ);
+    External_WriteToJumpTable(OpCode::eJNZ, &Instructions_JNZ);
+    External_WriteToJumpTable(OpCode::eJW, &Instructions_J);
+    External_WriteToJumpTable(OpCode::ePUSHI, &Instructions_PushIW);
+    External_WriteToJumpTable(OpCode::ePUSHD, &Instructions_PushIW);
+    External_WriteToJumpTable(OpCode::eBOOLNOT, &Instructions_BoolNot);
+    External_WriteToJumpTable(OpCode::eBITNOT, &Instructions_BitNot);
+    External_WriteToJumpTable(OpCode::eBITSHL8, &Instructions_BitShl8);
+    External_WriteToJumpTable(OpCode::eBITSHR8, &Instructions_BitShr8);
+    External_WriteToJumpTable(OpCode::eBITANDFF, &Instructions_BitAndFF);
+    External_WriteToJumpTable(OpCode::eSWAP, &Instructions_Swap);
+    External_WriteToJumpTable(OpCode::ePUSHIM1, &Instructions_PushIM1);
+    External_WriteToJumpTable(OpCode::ePUSHGP, &Instructions_PushGP);
+    External_WriteToJumpTable(OpCode::eCOPYNEXTPOP, &Instructions_CNP);
+    External_WriteToJumpTable(OpCode::eNOP, &Instructions_NOP);
+    External_WriteToJumpTable(OpCode::eCAST, &Instructions_Cast);
+    External_WriteToJumpTable(OpCode::eBITXOR, &Instructions_BitXor);
+    External_WriteToJumpTable(OpCode::eJREL, &Instructions_JREL);
+    External_WriteToJumpTable(OpCode::eJIX, &Instructions_JIX);
+    External_WriteToJumpTable(OpCode::eCALL, &Instructions_Call);
+    External_WriteToJumpTable(OpCode::eCALLI, &Instructions_CallI);
+    External_WriteToJumpTable(OpCode::eCALLREL, &Instructions_CallRel);
+    External_WriteToJumpTable(OpCode::eSYSCALL, &Instructions_SysCall);
+    External_WriteToJumpTable(OpCode::eLIBCALL0, &Instructions_LibCall0);
+    External_WriteToJumpTable(OpCode::eLIBCALL1, &Instructions_LibCall1);
+    External_WriteToJumpTable(OpCode::eLIBCALL, &Instructions_LibCall);
+    External_WriteToJumpTable(OpCode::eINCLOCALBB, &Instructions_IncLocalBB);
+    External_WriteToJumpTable(OpCode::eINCLOCALIBB, &Instructions_IncLocalIBB);
+    External_WriteToJumpTable(OpCode::eINCGLOBALBB, &Instructions_IncGlobalBB);
+    External_WriteToJumpTable(OpCode::eINCLOCALB, &Instructions_IncLocalB);
+    External_WriteToJumpTable(OpCode::eDECLOCALB, &Instructions_DecLocalB);
+    External_WriteToJumpTable(OpCode::eINCGLOBALB, &Instructions_IncGlobalB);
+    External_WriteToJumpTable(OpCode::eDECGLOBALB, &Instructions_DecGlobalB);
+    External_WriteToJumpTable(OpCode::eINCLOCALIB, &Instructions_IncLocalIB);
+    External_WriteToJumpTable(OpCode::eDECLOCALIB, &Instructions_DecLocalIB);
+    External_WriteToJumpTable(OpCode::eINCGLOBALIB, &Instructions_IncGlobalIB);
+    External_WriteToJumpTable(OpCode::eDECGLOBALIB, &Instructions_DecGlobalIB);
 }
 
 Bool Instructions_Undefined()
@@ -3401,6 +3401,34 @@ Bool Instructions_BitNot()
     top = ~top;
     Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(top & 0xFF));
     Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(top >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
+    return true;
+}
+
+Bool Instructions_BitShl8()
+{
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt lsb = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(lsb));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
+    return true;
+}
+
+Bool Instructions_BitShr8()
+{
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt msb = Memory_ReadByte(HopperVM_valueStackMSBPage + sp1);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(msb));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
+    return true;
+}
+
+Bool Instructions_BitAndFF()
+{
+    UInt sp1 = HopperVM_sp - 0x01;
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
     Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
@@ -9437,6 +9465,3 @@ UInt HRInt_FromBytes(Byte b0, Byte b1)
 {
     return b0 + (b1 << 0x08);
 }
-
-
-

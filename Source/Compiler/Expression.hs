@@ -2370,7 +2370,7 @@ unit Expression
                         Parser.ErrorAtCurrent("shift operand must be positive integral type");
                         break;
                     }
-                    // TODO : runtime check to verify that 15 >= [top] >= 0
+                                        // TODO : runtime check to verify that 15 >= [top] >= 0
                     if (operation == HopperToken.ShiftRight)
                     {
                         CodeStream.AddInstruction(Instruction.BITSHR);

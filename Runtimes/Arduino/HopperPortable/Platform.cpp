@@ -34,6 +34,8 @@ unsigned char * dataMemoryBlock  = nullptr;
 unsigned char * codeMemoryBlock  = nullptr;
 unsigned char * codeStartAddress = nullptr;
 
+uint jumpTableAddress;
+
 Byte lastError;
 bool exited;
 bool interruptsEnabled;
@@ -489,10 +491,14 @@ void Diagnostics_SetError(Byte value)
     Error(value, HopperVM_PC_Get());
 }
 
-void External_WriteToJumpTable(UInt jumpTable, Byte opCode, InstructionDelegate instructionDelegate)
+void External_SetJumpTableAddress(UInt jumpTable)
+{
+    jumpTableAddress = jumpTable;
+}
+void External_WriteToJumpTable(Byte opCode, InstructionDelegate instructionDelegate)
 {
     UInt opOffset = (opCode << 2);
-    InstructionDelegate * jumpLocation = (InstructionDelegate * )(&dataMemoryBlock[jumpTable] + opOffset);
+    InstructionDelegate * jumpLocation = (InstructionDelegate * )(&dataMemoryBlock[jumpTableAddress] + opOffset);
     *jumpLocation = instructionDelegate;
 }
 

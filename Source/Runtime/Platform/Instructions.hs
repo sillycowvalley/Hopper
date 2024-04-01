@@ -123,6 +123,9 @@ unit Instructions
         WriteToJumpTable(OpCode.PUSHD, Instructions.PushIW);
         WriteToJumpTable(OpCode.BOOLNOT, Instructions.BoolNot);
         WriteToJumpTable(OpCode.BITNOT, Instructions.BitNot);
+        WriteToJumpTable(OpCode.BITSHL8, Instructions.BitShl8);
+        WriteToJumpTable(OpCode.BITSHR8, Instructions.BitShr8);
+        WriteToJumpTable(OpCode.BITANDFF, Instructions.BitAndFF);
         WriteToJumpTable(OpCode.SWAP, Instructions.Swap);
         WriteToJumpTable(OpCode.PUSHIM1, Instructions.PushIM1);
         WriteToJumpTable(OpCode.PUSHGP, Instructions.PushGP);
@@ -215,7 +218,7 @@ unit Instructions
 #else
         HopperVM.sp--;
         uint top   = ReadByte(HopperVM.valueStackLSBPage + HopperVM.sp) + (ReadByte(HopperVM.valueStackMSBPage + HopperVM.sp) << 8); 
-        uint sp1 = HopperVM.sp-1;
+        uint sp1   = HopperVM.sp-1;
         uint next  = ReadByte(HopperVM.valueStackLSBPage + sp1) + (ReadByte(HopperVM.valueStackMSBPage + sp1) << 8); 
         
         next = next * top;
@@ -896,6 +899,55 @@ unit Instructions
 #endif              
         return true;
     }
+    
+    bool BitAndFF()
+    {
+#ifdef CHECKED                
+        Type ttype;
+        uint top = Pop(ref ttype);
+        AssertUInt(ttype, top);
+        Push(top & 0xFF, Type.UInt); 
+#else
+        uint sp1 = HopperVM.sp-1;
+        WriteByte(HopperVM.valueStackMSBPage + sp1, 0); // clear th MSB
+        WriteByte(HopperVM.typeStackPage + sp1, byte(Type.UInt)); 
+#endif              
+        return true;
+    }
+    
+    bool BitShl8()
+    {
+#ifdef CHECKED                
+        Type ttype;
+        uint top = Pop(ref ttype);
+        AssertUInt(ttype, top);
+        Push((top & 0xFF) << 8, Type.UInt); 
+#else
+        uint sp1 = HopperVM.sp-1;
+        uint lsb  = ReadByte(HopperVM.valueStackLSBPage + sp1); 
+        WriteByte(HopperVM.valueStackLSBPage + sp1, 0);
+        WriteByte(HopperVM.valueStackMSBPage + sp1, byte(lsb));
+        WriteByte(HopperVM.typeStackPage + sp1, byte(Type.UInt)); 
+#endif              
+        return true;
+    }
+    bool BitShr8()
+    {
+#ifdef CHECKED                
+        Type ttype;
+        uint top = Pop(ref ttype);
+        AssertUInt(ttype, top);
+        Push(top >> 8, Type.UInt); 
+#else
+        uint sp1 = HopperVM.sp-1;
+        uint msb  = ReadByte(HopperVM.valueStackMSBPage + sp1); 
+        WriteByte(HopperVM.valueStackLSBPage + sp1, byte(msb));
+        WriteByte(HopperVM.valueStackMSBPage + sp1, 0);
+        WriteByte(HopperVM.typeStackPage + sp1, byte(Type.UInt)); 
+#endif              
+        return true;
+    }    
+    
     bool BoolAnd()
     {
 #ifdef CHECKED

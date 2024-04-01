@@ -6,6 +6,7 @@ program Z80Gen
     //#define INLINE_OTHER_INSTRUCTIONS
     
     #define CHECKED
+//  #define PATCHCHECKED
     
     uses "/Source/System/System"
     uses "/Source/System/Screen"
@@ -109,7 +110,7 @@ program Z80Gen
         bool success;
         loop
         {
-#ifdef CHECKED            
+#ifdef PATCHCHECKED            
             if ((patchLocation < methodAddress) || (patchLocation > methodAddress+methodLength-2))
             {
                 PrintLn("0x" + methodIndex.ToHexString(4) + ": jumpPatch: patchLocation 0x" + patchLocation.ToHexString(4) + 
@@ -158,7 +159,7 @@ program Z80Gen
                 uint targetMethod  = kv.value;
                 uint targetAddress = methods[targetMethod];
             
-#ifdef CHECKED  
+#ifdef PATCHCHECKED  
                 bool patchOk = false;          
                 OpCode instruction = GetOpCode(output, patchAddress-1);
                 patchOk = (instruction == OpCode.CALL_nn);
@@ -362,13 +363,13 @@ program Z80Gen
     {
         byte offset0 = offsetOperandToByte(operand0);
         byte offset1 = offsetOperandToByte(operand1);
-        EmitByte(OpCode.LD_iIY_d_L, offset0);
-        EmitByte(OpCode.LD_iIY_d_H, offset0 + 1);
-        EmitByte(OpCode.LD_iIY_d_E, offset1);
-        EmitByte(OpCode.LD_iIY_d_D, offset1 + 1);
+        EmitByte(OpCode.LD_E_iIY_d, offset0);
+        EmitByte(OpCode.LD_D_iIY_d, offset0 + 1);
+        EmitByte(OpCode.LD_L_iIY_d, offset1);
+        EmitByte(OpCode.LD_H_iIY_d, offset1 + 1);
         Emit(OpCode.ADD_HL_DE);
-        EmitByte(OpCode.LD_L_iIY_d, offset0);
-        EmitByte(OpCode.LD_H_iIY_d, offset0 + 1);
+        EmitByte(OpCode.LD_iIY_d_H, offset0);
+        EmitByte(OpCode.LD_iIY_d_L, offset0 + 1);
         
     }
     
@@ -473,18 +474,14 @@ program Z80Gen
     pushGlobalB(uint operand)
     {
         uint address = addressOperandToByte(operand);
-        EmitWord(OpCode.LD_IX_nn,    address);
-        EmitByte(OpCode.LD_E_iIX_d, +0);
-        EmitByte(OpCode.LD_D_iIX_d, +1);
+        EmitWord(OpCode.LD_DE_inn, address);
         Emit    (OpCode.PUSH_DE);
     }
     popGlobalB(uint operand)
     {    
         uint address = addressOperandToByte(operand);
-        EmitWord(OpCode.LD_IX_nn,    address);
         Emit    (OpCode.POP_DE);
-        EmitByte(OpCode.LD_iIX_d_E, +0);
-        EmitByte(OpCode.LD_iIX_d_D, +1);
+        EmitWord(OpCode.LD_inn_DE, address);
     }
         
     bool writeMethod(uint methodIndex, <byte> code)
@@ -548,7 +545,7 @@ program Z80Gen
                     EmitWord(OpCode.LD_IY_inn, SPBPSwapper);
                     
                     // Create some empty stack slots:
-                    EmitWord(OpCode.LD_DE_nn, 0x0000);
+                    EmitWord(OpCode.LD_IX_nn, 0x0000);
                     
                     if (operand == 1) // don't do this : makes an extra case for Z80Dasm and Z80Opt
                     {
@@ -598,7 +595,7 @@ program Z80Gen
                     {
                         loop
                         {
-                            Emit(OpCode.POP_DE); // up to 4 pops is less code than the alternative below
+                            Emit(OpCode.POP_IX); // up to 4 pops is less code than the alternative below
                             operand--;
                             if (operand == 0) { break; }
                         }
@@ -607,13 +604,13 @@ program Z80Gen
                     {
                         EmitByte(OpCode.LD_B_n, byte(operand));
                         Peephole.Reset();
-                        Emit(OpCode.POP_DE);
+                        Emit(OpCode.POP_IX);
                         EmitOffset(OpCode.DJNZ_e, -3);
                     }
                 }
                 case Instruction.PUSHD:
                 {
-#ifdef CHECKED
+#ifdef PATCHCHECKED
                     Emit(OpCode.NOP); // for patch validation
 #endif                                        
                     EmitWord(OpCode.LD_DE_nn, operand);    
@@ -631,7 +628,7 @@ program Z80Gen
                     {
                         loop
                         {
-                            Emit(OpCode.POP_DE); // up to 4 pops is less code than the alternative below
+                            Emit(OpCode.POP_IX); // up to 4 pops is less code than the alternative below
                             operand--;
                             if (operand == 0) { break; }
                         }
@@ -640,7 +637,7 @@ program Z80Gen
                     {
                         EmitByte(OpCode.LD_B_n, byte(operand));
                         Peephole.Reset();
-                        Emit(OpCode.POP_DE);
+                        Emit(OpCode.POP_IX);
                         EmitOffset(OpCode.DJNZ_e, -3);
                     }
                     
@@ -664,7 +661,7 @@ program Z80Gen
                 {
                     Emit(OpCode.POP_DE);    
                     Emit(OpCode.POP_HL);    
-                    Emit(OpCode.ADC_HL_DE);
+                    Emit(OpCode.ADD_HL_DE);
                     Emit(OpCode.PUSH_HL);  
                 }
                 case Instruction.SUB:
@@ -680,7 +677,7 @@ program Z80Gen
                 {
                     EmitWord(OpCode.LD_DE_nn, operand);
                     Emit(OpCode.POP_HL);    
-                    Emit(OpCode.ADC_HL_DE);
+                    Emit(OpCode.ADD_HL_DE);
                     Emit(OpCode.PUSH_HL);
                 }
                 case Instruction.SUBB:
@@ -802,6 +799,30 @@ program Z80Gen
                     Emit(OpCode.POP_HL);
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITNOT"));
                     Emit(OpCode.PUSH_HL);    
+                }
+                
+                case Instruction.BITSHL8:
+                {
+                    // top = top << 8
+                    Emit(OpCode.POP_HL);
+                    Emit(OpCode.LD_H_L);                   
+                    EmitByte(OpCode.LD_L_n, 0);   
+                    Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.BITSHR8:
+                {
+                    // top = top >> 8
+                    Emit(OpCode.EX_iSP_HL);
+                    Emit(OpCode.LD_L_H);                   
+                    EmitByte(OpCode.LD_H_n, 0);
+                    Emit(OpCode.EX_iSP_HL);    
+                }
+                case Instruction.BITANDFF:
+                {
+                    // top = top & 0x00FF
+                    Emit(OpCode.EX_iSP_HL);
+                    EmitByte(OpCode.LD_H_n, 0);                   
+                    Emit(OpCode.EX_iSP_HL);    
                 }
                 
                 case Instruction.PUSHIBLE:
@@ -1470,7 +1491,7 @@ program Z80Gen
                 writeIHex(ihexFile, 0x0000, output);
                 string zcodePath = codePath.Replace(".code", ".zcode");
                 File.Delete(zcodePath);
-                if (!Code.ExportCode(zcodePath)) // after
+                if (!Code.ExportCode(zcodePath, false)) // after
                 {
                     break;
                 }

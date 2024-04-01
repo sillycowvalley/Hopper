@@ -81,7 +81,8 @@ bool External_LoadAuto_Get();
 UInt External_GetSegmentPages();
 void External_WatchDog();
 
-void External_WriteToJumpTable(UInt jumpTable, Byte opCode, InstructionDelegate instructionDelegate);
+void External_SetJumpTableAddress(UInt jumpTable);
+void External_WriteToJumpTable(Byte opCode, InstructionDelegate instructionDelegate);
 bool External_FunctionCall(UInt jumpTable, Byte opCode);
 
 UInt External_GetMillis();

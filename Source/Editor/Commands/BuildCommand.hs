@@ -25,7 +25,7 @@ unit BuildCommand
     
     uint runtimeExecute(string path, <string> arguments)
     {
-        if (false) // for diagnostics
+        if (false) // for CLI diagnostics
         {
             PrintLn();
             Print(path + " ");
@@ -398,6 +398,32 @@ unit BuildCommand
                 DisplayError(genName, error);
                 break;
             }
+            
+            if (isZ80 && BuildOptions.IsOptimizeEnabled()) // Z80 has 2nd optimization stage!
+            {   
+                string optName = "Z80Opt";
+                     
+                binaryPath ="/Bin/" + optName + HexeExtension;
+                if (!File.Exists(binaryPath))
+                {
+                    Editor.SetStatusBarText("No " + optName + ": '" + binaryPath + "'");
+                    break;
+                }
+                Editor.SetStatusBarText("Optimizing Code '" + outputPath + "' -> '" + outputPath + "'" + target);
+                
+                arguments.Clear();
+                arguments.Append(outputPath);
+                arguments.Append("-g");
+                arguments.Append(col.ToString());
+                arguments.Append(row.ToString());
+                error = runtimeExecute(binaryPath, arguments);
+                if (error != 0)
+                {
+                    DisplayError(optName, error);
+                    break;
+                }
+            } // BuildOptions.IsOptimizeEnabled()
+            
             
             if (BuildOptions.IsDisassembleEnabled())
             { 

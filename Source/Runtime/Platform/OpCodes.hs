@@ -7,6 +7,10 @@ unit OpCodes
         PUSHR0   = 0x02,       // R0 -> [top]
         POPR0    = 0x03,       // [top] -> R0
         
+        BITSHL8  = 0x04,
+        BITSHR8  = 0x05,
+        BITANDFF = 0x06,
+        
         LIBCALL  = 0x08,       // <library method index>, iOverload = [top]
         LIBCALL0 = 0x09,       // <library method index>, iOverload = 0
         LIBCALL1 = 0x0A,       // <library method index>, iOverload = 1
