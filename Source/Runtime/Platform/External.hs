@@ -764,8 +764,13 @@ unit External
         ErrorDump(160); Error = 0x0A; 
         return false;    
     }
-    WriteToJumpTable(uint jumpTable, OpCode opCode, InstructionDelegate instructionDelegate)
+    uint jumpTableAddress;
+    SetJumpTableAddress(uint jumpTable)
     {
-        WriteWord(jumpTable + (byte(opCode) << 1), uint(instructionDelegate));
+        jumpTableAddress = jumpTable;
+    }
+    WriteToJumpTable(OpCode opCode, InstructionDelegate instructionDelegate)
+    {
+        WriteWord(jumpTableAddress + (byte(opCode) << 1), uint(instructionDelegate));
     }
 }

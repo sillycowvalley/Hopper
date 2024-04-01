@@ -1,12 +1,18 @@
 unit Peephole
 {
     // http://z80-heaven.wikidot.com/optimization#toc0
+    // https://github.com/Zeda/Z80-Optimized-Routines
     <uint> instructionAddresses;
     
     bool isDisabled;
     
     bool Disabled { get { return isDisabled; } set { isDisabled = value; } }
     
+    uint strictSavings;
+    uint laxSavings;
+    
+    uint StrictSavings { get { return strictSavings; } }
+    uint LaxSavings { get { return laxSavings; } }
     AddInstruction(uint address)
     {
         instructionAddresses.Append(address);
@@ -33,34 +39,14 @@ unit Peephole
         return bytesRemoved;
     }
     
+    const bool laxRules = true;
+    
     Optimize(<byte> output)
     {
         //return; // peephole off
         loop
         {
             uint instructionCount = instructionAddresses.Count;
-            /*
-            if (instructionCount > 1)
-            {
-                uint iIndex0 = instructionAddresses[instructionCount-1];
-                OpCode opCode0 = OpCode(output[iIndex0]);
-                if (opCode0 == OpCode.XOR_A_A)
-                {
-                    Print("XOR A, A ");
-                    if (instructionCount > 2)
-                    {
-                        uint iIndex1 = instructionAddresses[instructionCount-2];
-                        OpCode opCode1 = OpCode(output[iIndex1]);
-                        if (opCode1 == OpCode.PUSH_DE)
-                        {
-                            Print(" after PUSH DE");
-                        }
-                    }
-                    PrintLn(" : " + instructionCount.ToString());
-                }
-            }
-            */
-            
             if (instructionCount >= 2)
             {
                 if (SymmetricPushPop(output))  // NOP folding
@@ -93,6 +79,10 @@ unit Peephole
                 {
                     continue;
                 }
+                if (PushLoadLoadPop(output))  // for example, PUSH HL, LD E, LD D, POP HL
+                {
+                    continue;
+                }
             }
             if (instructionCount >= 5)
             {
@@ -122,11 +112,12 @@ unit Peephole
             _ = removeInstruction(output, iIndex1);
             instructionAddresses.Remove(instructionCount-1);
             instructionAddresses.Remove(instructionCount-2);
+            strictSavings += 2;
             return true;
         }
         return false;
     }
-    
+      
     bool PushAfterClearA(<byte> output)
     {
         // PUSH ss, XOR A, A -> XOR A, A, PUSH ss
@@ -145,6 +136,42 @@ unit Peephole
                 return true;
             }
         }
+        return false;
+    }
+    bool PushLoadLoadPop(<byte> output)
+    {
+        // for example, PUSH HL, LD E, LD D, POP HL
+        uint instructionCount = instructionAddresses.Count;
+        
+        uint iIndex0 = instructionCount-1;
+        uint address0 = instructionAddresses[iIndex0];
+        OpCode opCode0 = GetOpCode(output, address0);
+        if (opCode0 == OpCode.POP_HL)
+        {
+            uint iIndex3 = instructionCount-4;
+            uint address3 = instructionAddresses[iIndex3];
+            OpCode opCode3 = GetOpCode(output, address3);
+            if (opCode3 == OpCode.PUSH_HL)
+            {
+                uint iIndex2 = instructionCount-3;
+                uint address2 = instructionAddresses[iIndex2];
+                OpCode opCode2 = GetOpCode(output, address2);
+                uint iIndex1 = instructionCount-2;
+                uint address1 = instructionAddresses[iIndex1];
+                OpCode opCode1 = GetOpCode(output, address1);
+                if ((opCode2 == OpCode.LD_E_iIY_d) && (opCode1 == OpCode.LD_D_iIY_d))
+                {
+                    _ = removeInstruction(output, address0);
+                    instructionAddresses.Remove(iIndex0);        
+                    byte bytesRemoved = removeInstruction(output, address3);
+                    instructionAddresses[iIndex1] = instructionAddresses[iIndex1] - bytesRemoved;
+                    instructionAddresses[iIndex2] = instructionAddresses[iIndex2] - bytesRemoved;
+                    instructionAddresses.Remove(iIndex3);   
+                    strictSavings -= 2;   
+                    return true;
+                }   
+            }
+        } 
         return false;
     }
     bool PushLoadPop(<byte> output)
@@ -171,16 +198,10 @@ unit Peephole
                     instructionAddresses.Remove(iIndex0);        
                     byte bytesRemoved = removeInstruction(output, address2);
                     instructionAddresses[iIndex1] = instructionAddresses[iIndex1] - bytesRemoved;
-                    instructionAddresses.Remove(iIndex2);        
+                    instructionAddresses.Remove(iIndex2);   
+                    strictSavings -= 2;     
                     return true;
                 }   
-                else if ((opCode1 == OpCode.POP_BC) || (opCode1 == OpCode.POP_DE) || (opCode1 == OpCode.EX_iSP_HL))
-                {
-                }
-                else
-                {
-                    Print(" H:" + AsmZ80.GetName(opCode1));  
-                }
             }
         } 
         else if (opCode0 == OpCode.POP_DE)
@@ -200,33 +221,11 @@ unit Peephole
                     byte bytesRemoved = removeInstruction(output, address2);
                     instructionAddresses[iIndex1] = instructionAddresses[iIndex1] - bytesRemoved;
                     instructionAddresses.Remove(iIndex2);        
+                    strictSavings -= 2;
                     return true;
                 }   
-                else if ((opCode1 == OpCode.CALL_nn) || (opCode1 == OpCode.EX_iSP_HL) 
-                      || (opCode1 == OpCode.POP_BC) || (opCode1 == OpCode.POP_DE) || (opCode1 == OpCode.POP_HL) || (opCode1 == OpCode.POP_IX)
-                      || (opCode1 == OpCode.PUSH_BC)
-                        )
-                {
-                }
-                else
-                {
-                    Print(" I:" + AsmZ80.GetName(opCode1));          
-                }
             }   
         }
-        else if (opCode0 == OpCode.POP_BC)
-        {
-            uint iIndex2 = instructionCount-3;
-            uint address2 = instructionAddresses[iIndex2];
-            OpCode opCode2 = GetOpCode(output, address2);
-            if (opCode2 == OpCode.PUSH_BC)
-            {
-                uint iIndex1 = instructionCount-2;
-                uint address1 = instructionAddresses[iIndex1];
-                OpCode opCode1 = GetOpCode(output, address1);
-                Print(" J:" + AsmZ80.GetName(opCode1));          
-            }   
-        }  
         return false;
     }
     bool LoadPushPopLoad(<byte> output) 
@@ -254,7 +253,6 @@ unit Peephole
                 uint iIndex2 = instructionCount-3;
                 uint address2 = instructionAddresses[iIndex2];            
                 OpCode opCode2 = GetOpCode(output, address2);
-                // Print(" Z:" + AsmZ80.GetName(opCode2));
                 
                 if (opCode2 == OpCode.PUSH_DE)
                 {
@@ -268,6 +266,7 @@ unit Peephole
                         _ = removeInstruction(output, address1);
                         instructionAddresses.Remove(iIndex0);
                         instructionAddresses.Remove(iIndex1);
+                        strictSavings -=2;
                         return true;
                     }
                 }
@@ -289,7 +288,7 @@ unit Peephole
         
         // for example: PUSH HL, POP DE, LD (nn), E, LD (nn), D    ->     LD (nn), L LD (nn), H
         //     this changes the resulting contents of DE - NOT SAFE IN PEEPHOLE
-        if (false && (opCode0 == OpCode.LD_iIY_d_D) && (opCode1 == OpCode.LD_iIY_d_E))
+        if (laxRules && (opCode0 == OpCode.LD_iIY_d_D) && (opCode1 == OpCode.LD_iIY_d_E))
         {
             uint iIndex2 = instructionCount-3;
             uint address2 = instructionAddresses[iIndex2];
@@ -311,6 +310,7 @@ unit Peephole
                 instructionAddresses[iIndex1] = instructionAddresses[iIndex1] - bytesRemoved;
                 instructionAddresses.Remove(iIndex2);
                 instructionAddresses.Remove(iIndex3);
+                laxSavings -=2;
                 return true;
             }
         }
@@ -337,7 +337,37 @@ unit Peephole
                     _ = removeInstruction(output, address0);
                     _ = removeInstruction(output, address1);
                     instructionAddresses.Remove(iIndex0);
-                    instructionAddresses.Remove(iIndex1);        
+                    instructionAddresses.Remove(iIndex1);
+                    strictSavings -=2;        
+                    return true;
+                }
+            }
+        }
+        // LD (IX), DE followed by LD DE (IX)
+        //   safe to delete the extra load
+        if ((opCode0 == OpCode.LD_D_iIX_d) && (opCode1 == OpCode.LD_E_iIX_d))
+        {
+            uint iIndex2 = instructionCount-3;
+            uint address2 = instructionAddresses[iIndex2];
+            uint iIndex3 = instructionCount-4;
+            uint address3 = instructionAddresses[iIndex3];
+        
+            OpCode opCode2 = GetOpCode(output, address2);
+            OpCode opCode3 = GetOpCode(output, address3);
+            if ((opCode2 == OpCode.LD_iIX_d_D) && (opCode3 == OpCode.LD_iIX_d_E))
+            {
+                byte operand0 = output[address0+2];
+                byte operand1 = output[address1+2];
+                byte operand2 = output[address2+2];
+                byte operand3 = output[address3+2];
+                if ((operand0 == operand2) && (operand1 == operand3))
+                {
+                    
+                    _ = removeInstruction(output, address0);
+                    _ = removeInstruction(output, address1);
+                    instructionAddresses.Remove(iIndex0);
+                    instructionAddresses.Remove(iIndex1);  
+                    strictSavings -=2;      
                     return true;
                 }
             }
@@ -364,7 +394,7 @@ unit Peephole
         OpCode opCodeNew2 = OpCode.NOP;
         
         // this changes the resulting contents of DE - NOT SAFE IN PEEPHOLE
-        if (false && (opCode2 == OpCode.LD_DE_nn) && (opCode1 == OpCode.PUSH_DE))
+        if (laxRules && (opCode2 == OpCode.LD_DE_nn) && (opCode1 == OpCode.PUSH_DE))
         {
             if (opCode0 == OpCode.POP_HL)
             {
@@ -373,34 +403,14 @@ unit Peephole
             else if (opCode0 == OpCode.POP_BC)
             {
                 opCodeNew2 = OpCode.LD_BC_nn;
-            }
-        }
-        // this changes the resulting contents of BC - NOT SAFE IN PEEPHOLE
-        else if (false && (opCode2 == OpCode.LD_BC_nn) && (opCode1 == OpCode.PUSH_BC))
-        {
-            if (opCode0 == OpCode.POP_HL)
-            {
-                Print(" C! ");
-                opCodeNew2 = OpCode.LD_HL_nn;
-            }
-            else if (opCode0 == OpCode.POP_DE)
-            {
-                Print(" D! ");
-                opCodeNew2 = OpCode.LD_DE_nn;
             }
         }
         // this changes the resulting contents of HL - NOT SAFE IN PEEPHOLE
-        else if (false && (opCode2 == OpCode.LD_HL_nn) && (opCode1 == OpCode.PUSH_HL))
+        else if (laxRules && (opCode2 == OpCode.LD_HL_nn) && (opCode1 == OpCode.PUSH_HL))
         {
             if (opCode0 == OpCode.POP_DE)
             {
-                Print(" E! ");
                 opCodeNew2 = OpCode.LD_DE_nn;
-            }
-            else if (opCode0 == OpCode.POP_BC)
-            {
-                Print(" F! ");
-                opCodeNew2 = OpCode.LD_BC_nn;
             }
         }
         if (opCodeNew2 != OpCode.NOP)
@@ -410,6 +420,7 @@ unit Peephole
             _ = removeInstruction(output, iIndex1);
             instructionAddresses.Remove(address0);
             instructionAddresses.Remove(address1);
+            laxSavings -=2;
             return true;
         }
         
@@ -433,7 +444,7 @@ unit Peephole
         OpCode opCodeNew0 = OpCode.NOP;
         
         // this changes the resulting contents of HL - NOT SAFE IN PEEPHOLE
-        if (false && (opCode1 == OpCode.POP_HL) && (opCode0 == OpCode.CP_A_L))
+        if (laxRules && (opCode1 == OpCode.POP_HL) && (opCode0 == OpCode.CP_A_L))
         {
             if (opCode2 == OpCode.PUSH_DE)
             {
@@ -445,7 +456,7 @@ unit Peephole
             }
         }       
         // this changes the resulting contents of DE - NOT SAFE IN PEEPHOLE
-        else if (false && (opCode1 == OpCode.POP_DE) && (opCode0 == OpCode.CP_A_E))
+        else if (laxRules && (opCode1 == OpCode.POP_DE) && (opCode0 == OpCode.CP_A_E))
         {
             if (opCode2 == OpCode.PUSH_HL)
             {
@@ -457,7 +468,7 @@ unit Peephole
             }
         }
         // this changes the resulting contents of BC - NOT SAFE IN PEEPHOLE
-        else if (false && (opCode1 == OpCode.POP_BC) && (opCode0 == OpCode.CP_A_C))
+        else if (laxRules && (opCode1 == OpCode.POP_BC) && (opCode0 == OpCode.CP_A_C))
         {
             if (opCode2 == OpCode.PUSH_DE)
             {
@@ -476,6 +487,7 @@ unit Peephole
             _ = removeInstruction(output, iIndex2);
             instructionAddresses.Remove(address1);
             instructionAddresses.Remove(address2);
+            laxSavings -=2;
             return true;
         }
         return false;

@@ -271,8 +271,9 @@ program DASM
                          instruction = OpCode((code[index] << 8) + code[index+1]);
                          index += 2;
                     }
-                    string name = GetOpCodeInfo(instruction, ref operandType, ref operandLength, ref signed);
+                    string name = GetOpCodeInfo(instruction, ref operandType, ref operandLength, ref signed, false);
                     uint operand = 0;
+                    if (name.Length == 0) { Print(" BadOp: 0x" + address.ToHexString(4)); continue; }
                     
                     //if (index + operandLength > code.Count) { hasmFile.Flush(); break; }
                     
@@ -440,7 +441,6 @@ program DASM
                         }    
                         hasmFile.Append("" + char(0x0A));
                     }
-                    
                     //hasmFile.Flush(); // TODO REMOVE
                 } // loop
                               

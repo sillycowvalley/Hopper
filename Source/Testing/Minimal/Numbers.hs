@@ -11,15 +11,15 @@ program TestNumbers
     WriteHex(byte b)
     {
         byte msn = ((b >> 4) & 0xF);
-        Serial.WriteChar(msn.ToHex());
         byte lsn = b & 0xF;
+        Serial.WriteChar(msn.ToHex());
         Serial.WriteChar(lsn.ToHex());
     }
     WriteHex(uint u)
     {
         byte msb = byte(u >> 8);
-        WriteHex(msb);
         byte lsb = byte(u & 0xFF);
+        WriteHex(msb);
         WriteHex(lsb);
     }
     
@@ -366,6 +366,12 @@ program TestNumbers
         {
             PrintFailed(64);
         }
+        Prop = Prop + Prop;
+        if (Prop != 6)
+        {
+            PrintFailed(64);
+        }
+        
         
         fProp |= PFlags.Four;
         if (fProp != PFlags.Four)

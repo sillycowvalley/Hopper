@@ -10,15 +10,14 @@ program Runtime
 //#define MEMORYLEAKS
 
 //#define LOCALDEBUGGER  // for debugging portable runtime locally
-//#define CPU_Z80
-//#define NO_JIX_INSTRUCTIONS
+#define CPU_Z80
+#define NO_JIX_INSTRUCTIONS
 
 // Minimal Runtime is the value-type only, minimal SysCalls version that we translate to Z80
 #ifdef CPU_Z80
     #define CDECL
     #define VALUE_TYPE_RUNTIME
 #endif
-//#define VALUE_TYPE_RUNTIME
 
 #ifndef VALUE_TYPE_RUNTIME
     #define INCLUDE_FILESYSTEM
@@ -27,6 +26,11 @@ program Runtime
     #define INCLUDE_LIBRARY
     #define INCLUDE_WIFI
 #endif
+
+//#ifndef CPU_Z80
+    #define INCLUDE_DICTIONARIES // just to make it smaller for now : only saves 829 bytes of Hopper code 
+//#endif
+
     uses "/Source/Debugger/6502/ZeroPage"
 
     uses "Emulation/Minimal" // minimal use of actual 'system' APIs
@@ -38,7 +42,9 @@ program Runtime
 
     uses "Platform/GC"
     uses "Platform/Array"
+#ifdef INCLUDE_DICTIONARIES    
     uses "Platform/Dictionary"
+#endif    
 #ifndef VALUE_TYPE_RUNTIME
     uses "Platform/Directory"
     uses "Platform/File"

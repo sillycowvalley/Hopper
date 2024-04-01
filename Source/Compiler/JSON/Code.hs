@@ -556,9 +556,10 @@ unit Code
         }
         return methodSymbols;
     }
-    <uint, bool> GetFramelessMethods()
+    <uint, uint> GetFramelessMethodCandidates()
     {
-        <uint, bool> framelessMethods;
+        // <= 1 argument, number of locals in the result: <methodindex, localsCount>
+        <uint, uint> framelessMethodCandidates;
         foreach (var kv in debugSymbols)
         {
             string methodIndex = kv.key; // hex
@@ -566,24 +567,27 @@ unit Code
             {
                 uint iMethod;
                 _ = UInt.TryParse(methodIndex, ref iMethod);
-                bool frameless = true;
+                
+                uint argumentCount;
+                uint localsCount;
                 <string,variant> methodSymbols = kv.value;
                 if (methodSymbols.Contains("arguments"))
                 {
                     <string, <string> > argumentInfo = methodSymbols["arguments"];
-                    uint argumentCount = argumentInfo.Count; 
-                    frameless = frameless && (argumentCount <= 1);
+                    argumentCount = argumentInfo.Count; 
                 }
                 if (methodSymbols.Contains("locals"))
                 {
                     <string, <string> > localInfo = methodSymbols["locals"];
-                    uint localsCount = localInfo.Count;
-                    frameless = frameless && (localsCount == 0);
+                    localsCount = localInfo.Count;
                 }
-                framelessMethods[iMethod] = frameless;
+                if (argumentCount <= 1)
+                {
+                    framelessMethodCandidates[iMethod] = localsCount;
+                }
             }
         }
-        return framelessMethods;
+        return framelessMethodCandidates;
     }
         
     bool ParseMethod(string methodIndex, bool keepCode, bool keepSymbols, ref string methodName, ref <byte> code, ref uint codeLength)

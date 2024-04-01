@@ -15,6 +15,8 @@ unit Byte
             this += 6;
         }
         this += 48; // +'0'
+        
+        //this = (this + 42) * (this + 42);
         return char(this);
     } 
     

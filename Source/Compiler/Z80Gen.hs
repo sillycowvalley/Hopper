@@ -5,6 +5,8 @@ program Z80Gen
     //#define INLINE_STACK_OPERATIONS
     //#define INLINE_OTHER_INSTRUCTIONS
     
+    #define CHECKED
+    
     uses "/Source/System/System"
     uses "/Source/System/Screen"
     uses "/Source/System/Keyboard"
@@ -62,13 +64,13 @@ program Z80Gen
         
     }
     
-    
+    /*
     patchRSTJump(uint rst, uint targetAddress)
     {
         uint offset = targetAddress - rst - 2;
         if (offset < 127)
         {
-            output.SetItem(rst+0, byte(OpCode.JR_e));
+            output.SetItem(rst+0, byte(OpCode.J R_e));
             output.SetItem(rst+1, byte(offset));
         }
         else
@@ -77,32 +79,104 @@ program Z80Gen
             output.SetItem(rst+2, byte(targetAddress >> 8));
         }
     }
+    */
     
     PatchByte(uint address, byte value)
     {
         patchByte(address, value);
     }
+    bool firstBadPatch = true;
+    bool firstPatchFailed = true;
+    bool firstOpNotImplemented = true;
     patchByte(uint address, byte value)
     {
-        if ((address == 0x0010) || (address == 0x0011))
+        if (address >= output.Count)
         {
-            Die(0x0B);
+            if (firstBadPatch)
+            {
+                PrintLn(" Bad patchByte: 0x" + address.ToHexString(4));
+            }
+            firstBadPatch = false;
         }
-        output.SetItem(address, value);
-    }
-        
-    doCallPatches()
-    {
-        // <uint,uint> patches; // <callLocation,methodIndex>
-        // <uint,uint> methods; // <methodIndex,address>
-        foreach (var kv in patches)
+        else
         {
-            uint patchAddress  = kv.key;
-            uint targetMethod  = kv.value;
-            uint targetAddress = methods[targetMethod];
+            output.SetItem(address, value);
+        }
+    }
+    
+    bool jumpPatch(uint methodIndex, uint patchLocation, uint targetAddress, uint methodAddress, uint methodLength)
+    {
+        bool success;
+        loop
+        {
+#ifdef CHECKED            
+            if ((patchLocation < methodAddress) || (patchLocation > methodAddress+methodLength-2))
+            {
+                PrintLn("0x" + methodIndex.ToHexString(4) + ": jumpPatch: patchLocation 0x" + patchLocation.ToHexString(4) + 
+                        " outside method [0x"+methodAddress.ToHexString(4)+"-0x"+(methodAddress+methodLength-2).ToHexString(4) +"]");
+                break;
+            }
+            if ((targetAddress < methodAddress) || (targetAddress > methodAddress+methodLength-2))
+            {
+                PrintLn("0x" + methodIndex.ToHexString(4) + ": jumpPatch: targetAddress 0x" + targetAddress.ToHexString(4) +
+                        " outside method [0x"+methodAddress.ToHexString(4)+"-0x"+(methodAddress+methodLength-2).ToHexString(4) +"]");
+                break;
+            }
+            OpCode jump = OpCode(output[patchLocation-1]);
+            switch (jump)
+            {
+                case OpCode.JP_nn:
+                case OpCode.JP_Z_nn:
+                case OpCode.JP_NZ_nn:
+                {
+                }
+                default:
+                {
+                    PrintLn("0x" + methodIndex.ToHexString(4) + ": jumpPatch: targetAddress-1 0x" + (targetAddress-1).ToHexString(4) + " is not a jump instruction (" + (output[patchLocation-1]).ToHexString(2) + ")");
+                    break;
+                }
+            }
+#endif
             // PATCH
-            patchByte(patchAddress+0, byte(targetAddress & 0xFF));
-            patchByte(patchAddress+1, byte(targetAddress >> 8));
+            patchByte(patchLocation+0, byte(targetAddress & 0xFF));
+            patchByte(patchLocation+1, byte(targetAddress >> 8));
+            success = true;
+            break;
+        } // loop
+        return success;
+    }           
+        
+    doCallPatches(bool onlyEntry)
+    {
+        if (!onlyEntry)
+        {
+            // <uint,uint> patches; // <callLocation,methodIndex>
+            // <uint,uint> methods; // <methodIndex,address>
+            foreach (var kv in patches)
+            {
+                uint patchAddress  = kv.key;
+                uint targetMethod  = kv.value;
+                uint targetAddress = methods[targetMethod];
+            
+#ifdef CHECKED  
+                bool patchOk = false;          
+                OpCode instruction = GetOpCode(output, patchAddress-1);
+                patchOk = (instruction == OpCode.CALL_nn);
+                if (!patchOk)
+                {
+                    OpCode instruction1 = GetOpCode(output, patchAddress-2);
+                    patchOk = (instruction == OpCode.LD_DE_nn) && (instruction1 == OpCode.NOP); // PUSHD signature
+                }
+                if (!patchOk)
+                {
+                    PrintLn("doCallPatches: patchLocation-1 0x" + (patchAddress-1).ToHexString(4) + " is not a CALL instruction (" + (uint(instruction)).ToHexString(4) + ")");
+                    continue;
+                }
+#endif
+                // PATCH
+                patchByte(patchAddress+0, byte(targetAddress & 0xFF));
+                patchByte(patchAddress+1, byte(targetAddress >> 8));
+            }
         }
         patchByte(4, byte(methods[entryIndex] & 0xFF));
         patchByte(5, byte(methods[entryIndex] >> 8));
@@ -138,6 +212,7 @@ program Z80Gen
         emitByte(lsb);
         Peephole.Optimize(output);
     }
+    
     EmitOffset(OpCode opCode, int offset)
     {
         if (offset < 0)
@@ -159,9 +234,9 @@ program Z80Gen
                 Peephole.Reset();
             }
         }
-        
         Peephole.Optimize(output);
     }
+    
     EmitOffsetByte(OpCode opCode, int offset, byte msb)
     {
         if (offset < 0)
@@ -181,11 +256,12 @@ program Z80Gen
             case OpCode.JR_C_e:
             case OpCode.JR_e:
             {
-                Peephole.Reset();
+                Die(0x0B); // Peephole.Reset();
             }
         }
         Peephole.Optimize(output);
     }
+
     EmitWord(OpCode opCode, uint operand)
     {
         emit(opCode);
@@ -267,6 +343,35 @@ program Z80Gen
         return uint(address);
     }
     
+    pushLocalB(uint operand)
+    {
+        byte offset = offsetOperandToByte(operand);
+        EmitByte(OpCode.LD_E_iIY_d, offset);
+        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
+        Emit(OpCode.PUSH_DE);
+    }
+    popLocalB(uint operand)
+    {    
+        byte offset = offsetOperandToByte(operand);
+        Emit(OpCode.POP_DE);
+        EmitByte(OpCode.LD_iIY_d_E, offset);
+        EmitByte(OpCode.LD_iIY_d_D, offset + 1);
+    }
+    
+    incLocalBB(uint operand0, uint operand1)
+    {
+        byte offset0 = offsetOperandToByte(operand0);
+        byte offset1 = offsetOperandToByte(operand1);
+        EmitByte(OpCode.LD_iIY_d_L, offset0);
+        EmitByte(OpCode.LD_iIY_d_H, offset0 + 1);
+        EmitByte(OpCode.LD_iIY_d_E, offset1);
+        EmitByte(OpCode.LD_iIY_d_D, offset1 + 1);
+        Emit(OpCode.ADD_HL_DE);
+        EmitByte(OpCode.LD_L_iIY_d, offset0);
+        EmitByte(OpCode.LD_H_iIY_d, offset0 + 1);
+        
+    }
+    
     incLocalB(uint operand)
     {
         byte offset = offsetOperandToByte(operand);
@@ -289,14 +394,6 @@ program Z80Gen
         Peephole.Disabled = false;
         Peephole.Reset();
     }
-    pushLocalB(uint operand)
-    {
-        byte offset = offsetOperandToByte(operand);
-        EmitByte(OpCode.LD_E_iIY_d, offset);
-        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
-        Emit(OpCode.PUSH_DE);
-    }
-    
     pushStackAddrB(uint operand)
     {
         byte offset = offsetOperandToByte(operand);
@@ -348,13 +445,6 @@ program Z80Gen
         EmitByte(OpCode.LD_iIY_d_D, offset + 1);
     }         
     
-    popLocalB(uint operand)
-    {    
-        byte offset = offsetOperandToByte(operand);
-        Emit(OpCode.POP_DE);
-        EmitByte(OpCode.LD_iIY_d_E, offset);
-        EmitByte(OpCode.LD_iIY_d_D, offset + 1);
-    }
     
     incGlobalB(uint operand)
     {
@@ -397,8 +487,9 @@ program Z80Gen
         EmitByte(OpCode.LD_iIX_d_D, +1);
     }
         
-    writeMethod(uint methodIndex, <byte> code, bool frameless)
+    bool writeMethod(uint methodIndex, <byte> code)
     {
+        bool success;
         if (entryIndex == methodIndex)
         {
             writeSystem();
@@ -415,15 +506,7 @@ program Z80Gen
         <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
         <uint,uint> jumpPatchLocations;   // <hopperAddress,patchAddress>
         
-        if (frameless)
-        {
-            PrintLn();
-            Print(methodIndex.ToString() + ": 0x" + (output.Count).ToHexString(4) + (frameless ? " Frameless! " : " "));
-        }
-        
-        uint index = 0;
-        uint currentDepth = 0;
-        bool success;
+        uint index;
         loop
         {
             if (index == code.Count) { success = true; break; }
@@ -447,43 +530,36 @@ program Z80Gen
                 case Instruction.ENTER:
                 {
                     Peephole.Reset();
-                    if (!frameless)
-                    {
-                        // PUSH BP
-                        Emit(OpCode.PUSH_IY); 
-                        
-                        // BP <- SP
-                        EmitWord(OpCode.LD_inn_SP, SPBPSwapper);
-                        EmitWord(OpCode.LD_IY_inn, SPBPSwapper);
-                    }
+                    // PUSH BP
+                    Emit(OpCode.PUSH_IY); 
+                    
+                    // BP <- SP
+                    EmitWord(OpCode.LD_inn_SP, SPBPSwapper);
+                    EmitWord(OpCode.LD_IY_inn, SPBPSwapper);
                 }
                 case Instruction.ENTERB:
                 {
                     Peephole.Reset();
-                    if (!frameless)
+                    // PUSH BP
+                    Emit(OpCode.PUSH_IY); 
+                    
+                    // BP <- SP
+                    EmitWord(OpCode.LD_inn_SP, SPBPSwapper);
+                    EmitWord(OpCode.LD_IY_inn, SPBPSwapper);
+                    
+                    // Create some empty stack slots:
+                    EmitWord(OpCode.LD_DE_nn, 0x0000);
+                    
+                    if (operand == 1) // don't do this : makes an extra case for Z80Dasm and Z80Opt
                     {
-                        // PUSH BP
-                        Emit(OpCode.PUSH_IY); 
-                        
-                        // BP <- SP
-                        EmitWord(OpCode.LD_inn_SP, SPBPSwapper);
-                        EmitWord(OpCode.LD_IY_inn, SPBPSwapper);
-                        
-                        // Create some empty stack slots:
-                        EmitWord(OpCode.LD_DE_nn, 0x0000);
-                        
-                        if (operand == 1) // don't do this : makes an extra case for Z80Dasm and Z80Opt
-                        {
-                            Emit(OpCode.PUSH_DE);
-                        }
-                        else
-                        {
-                            EmitByte(OpCode.LD_B_n, byte(operand));
-                            Peephole.Reset();
-                            Emit(OpCode.PUSH_DE);
-                            EmitOffset(OpCode.DJNZ_e, -3);
-                        }
-                        currentDepth += operand;
+                        Emit(OpCode.PUSH_DE);
+                    }
+                    else
+                    {
+                        EmitByte(OpCode.LD_B_n, byte(operand));
+                        Peephole.Reset();
+                        Emit(OpCode.PUSH_DE);
+                        EmitOffset(OpCode.DJNZ_e, -3);
                     }
                 }
                 case Instruction.SWAP:
@@ -501,13 +577,11 @@ program Z80Gen
                     }
                     Emit(OpCode.EX_iSP_HL);
                     Emit(OpCode.PUSH_HL);   
-                    currentDepth++;
                 }
                 case Instruction.DUP0:
                 {
                     Emit(OpCode.EX_iSP_HL);
                     Emit(OpCode.PUSH_HL);   
-                    currentDepth++;
                 }
                 case Instruction.BOOLNOT:
                 {
@@ -520,9 +594,14 @@ program Z80Gen
                 }
                 case Instruction.DECSP:
                 {
-                    if (operand == 1)
+                    if (operand <= 4)
                     {
-                        Emit(OpCode.POP_DE);
+                        loop
+                        {
+                            Emit(OpCode.POP_DE); // up to 4 pops is less code than the alternative below
+                            operand--;
+                            if (operand == 0) { break; }
+                        }
                     }
                     else
                     {
@@ -531,7 +610,15 @@ program Z80Gen
                         Emit(OpCode.POP_DE);
                         EmitOffset(OpCode.DJNZ_e, -3);
                     }
-                    currentDepth -= operand;
+                }
+                case Instruction.PUSHD:
+                {
+#ifdef CHECKED
+                    Emit(OpCode.NOP); // for patch validation
+#endif                                        
+                    EmitWord(OpCode.LD_DE_nn, operand);    
+                    patches[output.Count-2] = operand; // patch it like a method
+                    Emit(OpCode.PUSH_DE);
                 }
                 case Instruction.CALL:
                 {
@@ -540,33 +627,31 @@ program Z80Gen
                 }
                 case Instruction.RETB:
                 {
-                    if (!frameless)
+                    if (operand <= 4)
                     {
-                        if (operand == 1)
+                        loop
                         {
-                            Emit(OpCode.POP_DE);
+                            Emit(OpCode.POP_DE); // up to 4 pops is less code than the alternative below
+                            operand--;
+                            if (operand == 0) { break; }
                         }
-                        else
-                        {
-                            EmitByte(OpCode.LD_B_n, byte(operand));
-                            Peephole.Reset();
-                            Emit(OpCode.POP_DE);
-                            EmitOffset(OpCode.DJNZ_e, -3);
-                        }
-                        
-                        // POP BP
-                        Emit(OpCode.POP_IY); 
-                        currentDepth -= operand;
                     }
+                    else
+                    {
+                        EmitByte(OpCode.LD_B_n, byte(operand));
+                        Peephole.Reset();
+                        Emit(OpCode.POP_DE);
+                        EmitOffset(OpCode.DJNZ_e, -3);
+                    }
+                    
+                    // POP BP
+                    Emit(OpCode.POP_IY); 
                     Emit(OpCode.RET);
                 }
                 case Instruction.RET0:
                 {
-                    if (!frameless)
-                    {
-                        // POP BP
-                        Emit(OpCode.POP_IY); 
-                    }
+                    // POP BP
+                    Emit(OpCode.POP_IY); 
                     Emit(OpCode.RET);
                 }
                 case Instruction.RETFAST:
@@ -581,8 +666,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     Emit(OpCode.ADC_HL_DE);
                     Emit(OpCode.PUSH_HL);  
-                    
-                    currentDepth -= 1;  
                 }
                 case Instruction.SUB:
                 case Instruction.SUBI:
@@ -592,8 +675,6 @@ program Z80Gen
                     Emit(OpCode.AND_A); // clear carry
                     Emit(OpCode.SBC_HL_DE);
                     Emit(OpCode.PUSH_HL);  
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.ADDB:
                 {
@@ -619,8 +700,6 @@ program Z80Gen
                     Emit(OpCode.POP_DE);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("MUL"));
                     Emit(OpCode.PUSH_HL);   
-                    
-                    currentDepth -= 1;     
                 }
                 case Instruction.DIV:
                 {
@@ -631,8 +710,6 @@ program Z80Gen
                     Emit(OpCode.POP_BC);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("DIVMOD"));
                     Emit(OpCode.PUSH_BC);  
-                    
-                    currentDepth -= 1;      
                 }
                 case Instruction.MOD:
                 {
@@ -642,8 +719,6 @@ program Z80Gen
                     Emit(OpCode.POP_BC);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("DIVMOD"));
                     Emit(OpCode.PUSH_HL);
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.MULI:
                 {
@@ -653,8 +728,6 @@ program Z80Gen
                     Emit(OpCode.POP_DE);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("MULI"));
                     Emit(OpCode.PUSH_HL);  
-                    
-                    currentDepth -= 1;      
                 }
                 case Instruction.DIVI:
                 {
@@ -674,8 +747,6 @@ program Z80Gen
                     Emit(OpCode.POP_BC);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("MODI"));
                     Emit(OpCode.PUSH_HL);
-                    
-                    currentDepth -= 1;    
                 }
                 
                 case Instruction.BITSHL:
@@ -686,8 +757,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITSHL"));
                     Emit(OpCode.PUSH_HL);   
-                    
-                    currentDepth -= 1;     
                 }
                 case Instruction.BITSHR:
                 {
@@ -697,9 +766,8 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITSHR"));
                     Emit(OpCode.PUSH_HL);    
-                    
-                    currentDepth -= 1;    
                 }
+                case Instruction.BOOLAND:
                 case Instruction.BITAND:
                 {
                     // top -> BC, next -> HL
@@ -708,9 +776,8 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITAND"));
                     Emit(OpCode.PUSH_HL);  
-                    
-                    currentDepth -= 1;      
                 }
+                case Instruction.BOOLOR:
                 case Instruction.BITOR:
                 {
                     // top -> BC, next -> HL
@@ -728,8 +795,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITXOR"));
                     Emit(OpCode.PUSH_HL);    
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.BITNOT:
                 {
@@ -784,8 +849,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LE"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.GE:
                 {
@@ -795,8 +858,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GE"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.LT:
                 {
@@ -806,8 +867,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LT"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.GT:
                 {
@@ -817,8 +876,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GT"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 
                 case Instruction.LTI:
@@ -829,8 +886,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LTI"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.LEI:
                 {
@@ -840,8 +895,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("LEI"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.GTI:
                 {
@@ -851,8 +904,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GTI"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.GEI:
                 {
@@ -862,8 +913,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GEI"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 
                 case Instruction.EQ:
@@ -874,8 +923,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("EQ"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.NE:
                 {
@@ -885,8 +932,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("NE"));
                     Emit(OpCode.PUSH_DE);
-                    
-                    currentDepth -= 1;    
                 }
                 
                 case Instruction.JZB:
@@ -895,8 +940,7 @@ program Z80Gen
                     Emit(OpCode.POP_HL);
                     Emit(OpCode.CP_A_L);
                     
-                    EmitOffset(OpCode.JR_NZ_e, +3);
-                    EmitWord(OpCode.JP_nn, uint(0));
+                    EmitWord(OpCode.JP_Z_nn, uint(0));
                     int offset = byte(operand);
                     if (offset > 127)
                     {
@@ -904,8 +948,6 @@ program Z80Gen
                     }
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = offset;
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.JNZB:
                 {
@@ -913,8 +955,7 @@ program Z80Gen
                     Emit(OpCode.POP_HL);
                     Emit(OpCode.CP_A_L);
                     
-                    EmitOffset(OpCode.JR_Z_e, +3);
-                    EmitWord(OpCode.JP_nn, uint(0));
+                    EmitWord(OpCode.JP_NZ_nn, uint(0));
                     int offset = byte(operand);
                     if (offset > 127)
                     {
@@ -922,8 +963,6 @@ program Z80Gen
                     }
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = offset;
-                    
-                    currentDepth -= 1;    
                 }
                 case Instruction.JB:
                 {
@@ -943,17 +982,10 @@ program Z80Gen
                     Emit(OpCode.POP_HL);
                     Emit(OpCode.CP_A_L);
                     
-                    EmitOffset(OpCode.JR_NZ_e, +3);
-                    EmitWord(OpCode.JP_nn, uint(0));
-                    long loffset = long(Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8)));
-                    if (loffset > 32767)
-                    {
-                        loffset = loffset +  0xFFFF;
-                    }
+                    EmitWord(OpCode.JP_Z_nn, uint(0));
+                    int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
-                    jumpPatches[hopperAddress]        = int(loffset);
-                    
-                    currentDepth -= 1;    
+                    jumpPatches[hopperAddress]        = ioffset;
                 }
                 case Instruction.JNZ:
                 {
@@ -961,29 +993,18 @@ program Z80Gen
                     Emit(OpCode.POP_HL);
                     Emit(OpCode.CP_A_L);
                     
-                    EmitOffset(OpCode.JR_Z_e, +3);
-                    EmitWord(OpCode.JP_nn, uint(0));
-                    long loffset = long(Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8)));
-                    if (loffset > 32767)
-                    {
-                        loffset = loffset +  0xFFFF;
-                    }                        
+                    EmitWord(OpCode.JP_NZ_nn, uint(0));
+                    int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
-                    jumpPatches[hopperAddress]        = int(loffset);
-                    
-                    currentDepth -= 1;    
+                    jumpPatches[hopperAddress]        = ioffset;
                 }
                 
                 case Instruction.J:
                 {
                     EmitWord(OpCode.JP_nn, uint(0));
-                    long loffset = long(Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8)));
-                    if (loffset > 32767)
-                    {
-                        loffset = loffset +  0xFFFF;
-                    }                        
+                    int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));                        
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
-                    jumpPatches[hopperAddress]        = int(loffset);
+                    jumpPatches[hopperAddress]        = ioffset;
                 }
                                 
                 case Instruction.CAST:
@@ -995,32 +1016,26 @@ program Z80Gen
                 case Instruction.PUSHR0:
                 {
                     Emit(OpCode.PUSH_HL);
-                    
-                    currentDepth += 1;    
                 }
                 case Instruction.POPR0:
                 {
                     Emit(OpCode.POP_HL);
-                    currentDepth -= 1;    
                 }
                 case Instruction.PUSHIB:
                 case Instruction.PUSHI:
                 {
                     EmitWord(OpCode.LD_DE_nn, operand);    
                     Emit(OpCode.PUSH_DE);
-                    currentDepth += 1; 
                 }
                 case Instruction.PUSHI0:
                 {
                     EmitWord(OpCode.LD_DE_nn, 0);    
                     Emit(OpCode.PUSH_DE);
-                    currentDepth += 1; 
                 }
                 case Instruction.PUSHI1:
                 {
                     EmitWord(OpCode.LD_DE_nn, 1);    
                     Emit(OpCode.PUSH_DE);
-                    currentDepth += 1; 
                 }
                 case Instruction.PUSHIBB:
                 {
@@ -1028,66 +1043,55 @@ program Z80Gen
                     Emit(OpCode.PUSH_DE);
                     EmitWord(OpCode.LD_DE_nn, operand >> 8);    
                     Emit(OpCode.PUSH_DE);
-                    currentDepth += 2; 
                 }
                 
                 
                 case Instruction.PUSHSTACKADDRB:
                 {
                     pushStackAddrB(operand);
-                    currentDepth += 1; 
                 }
                 case Instruction.PUSHRELB:
                 {
                     pushRelB(operand);
-                    currentDepth += 1; 
                 }
                 case Instruction.POPRELB:
                 {
                     popRelB(operand);
-                    currentDepth -= 1; 
                 }
                                 
                 case Instruction.PUSHLOCALB:
                 {
-                    if (frameless && (operand == 0xFF))
-                    {
-                        PrintLn();
-                        PrintLn("PUSHLOCALB 0xFF:" + currentDepth.ToString());
-                    }
                     pushLocalB(operand);
-                    currentDepth += 1; 
+                }
+                case Instruction.POPLOCALB:
+                {
+                    popLocalB(operand);
                 }
                 case Instruction.PUSHLOCALB00:
                 {
                     pushLocalB(0);
-                    currentDepth += 1; 
                 }
                 case Instruction.PUSHLOCALB01:
                 {
                     pushLocalB(1);
-                    currentDepth += 1; 
                 }
                 case Instruction.PUSHLOCALBB:
                 {
                     pushLocalB(operand & 0xFF);
                     pushLocalB(operand >> 8);
-                    currentDepth += 2; 
-                }
-                case Instruction.POPLOCALB:
-                {
-                    popLocalB(operand);
-                    currentDepth -= 1; 
                 }
                 case Instruction.POPLOCALB00:
                 {
                     popLocalB(0);
-                    currentDepth -= 1; 
                 }
                 case Instruction.POPLOCALB01:
                 {
                     popLocalB(1);
-                    currentDepth -= 1; 
+                }
+                case Instruction.INCLOCALBB:
+                case Instruction.INCLOCALIBB:
+                {
+                    incLocalBB(operand & 0xFF, operand >> 8);
                 }
                 case Instruction.INCLOCALB:
                 case Instruction.INCLOCALIB:
@@ -1095,6 +1099,7 @@ program Z80Gen
                     incLocalB(operand);
                 }
                 case Instruction.DECLOCALB:
+                case Instruction.DECLOCALIB:
                 {
                     decLocalB(operand);
                 }
@@ -1102,18 +1107,15 @@ program Z80Gen
                 case Instruction.PUSHGLOBALB:
                 {
                     pushGlobalB(operand);
-                    currentDepth += 1; 
                 }
                 case Instruction.PUSHGLOBALBB:
                 {
                     pushGlobalB(operand & 0xFF);
                     pushGlobalB(operand >> 8);
-                    currentDepth += 2; 
                 }
                 case Instruction.POPGLOBALB:
                 {
                     popGlobalB(operand);
-                    currentDepth += 1; 
                 }
                 case Instruction.INCGLOBALB:
                 {
@@ -1123,8 +1125,6 @@ program Z80Gen
                 {
                     decGlobalB(operand);
                 }
-                
-                
                 
                 case Instruction.SYSCALL0:
                 {
@@ -1153,42 +1153,57 @@ program Z80Gen
                 {
                     EmitWord(OpCode.LD_DE_nn, operand & 0xFF);    
                     Emit(OpCode.PUSH_DE);
-                    
                     if (!Z80Library.SysCall(byte(operand >> 8), 0)) { break; }
                 }
                 
                 default:
                 {
-                    PrintLn(Instructions.ToString(instruction) + " not implemented in 0x" + methodIndex.ToHexString(4));
+                    if (firstOpNotImplemented)
+                    {
+                        PrintLn(Instructions.ToString(instruction) + " not implemented in 0x" + methodIndex.ToHexString(4));
+                    }
+                    firstOpNotImplemented = false;
                     Emit(OpCode.NOP);
                     break;
                 }
-            }
-        }
+            } // switch
+        } // loop
         
         // <uint,uint> instructionAddresses; // <hopperAddress,z80Address>
         // <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
         // <uint,uint> jumpPatchLocations    // <hopperAddress,patchAddress>
         //PrintLn(methodIndex.ToString() + ":");
-        foreach (var kv in jumpPatches)
+        if (success)
         {
-            uint hopperJumpLocation = kv.key;
-            int  offset = kv.value;
-            
-            uint hopperJumpTarget = uint(int(hopperJumpLocation) + offset);
-            if (!instructionAddresses.Contains(hopperJumpTarget))
+            foreach (var kv in jumpPatches)
             {
-                PrintLn("Patch failed: " + hopperJumpLocation.ToHexString(4) + " " + offset.ToString() + " " + hopperJumpTarget.ToHexString(4));
-            }
-            else
-            {
-                uint targetAddress    = instructionAddresses[hopperJumpTarget];
-                uint patchLocation    = jumpPatchLocations[hopperJumpLocation];
-            
-                // PATCH
-                patchByte(patchLocation+0, byte(targetAddress & 0xFF));
-                patchByte(patchLocation+1, byte(targetAddress >> 8));
-                //PrintLn("  " +patchLocation.ToHexString(4) + " -> " + targetAddress.ToHexString(4));
+                uint hopperJumpLocation = kv.key;
+                int  offset = kv.value;
+                
+                uint hopperJumpTarget = uint(int(hopperJumpLocation) + offset);
+                if (!instructionAddresses.Contains(hopperJumpTarget))
+                {
+                    if (firstPatchFailed)
+                    {
+                        if (firstPatchFailed)
+                        {
+                            PrintLn("Patch failed: " + hopperJumpLocation.ToHexString(4) + " " + offset.ToString() + " " + hopperJumpTarget.ToHexString(4));
+                        }
+                        firstPatchFailed = false;
+                    }
+                }
+                else
+                {
+                    uint targetAddress    = instructionAddresses[hopperJumpTarget];
+                    uint patchLocation    = jumpPatchLocations[hopperJumpLocation];
+                
+                    // PATCH
+                    uint methodLength = output.Count - methodAddress;
+                    if (!jumpPatch(methodIndex, patchLocation, targetAddress, methodAddress, methodLength))
+                    {
+                        success = false;
+                    }
+                }
             }
         }
         bool modified;
@@ -1214,6 +1229,7 @@ program Z80Gen
         {        
             Code.SetMethodDebugInfo(methodIndex, z80DebugInfo);
         }
+        return success;
     }
     
     
@@ -1392,7 +1408,7 @@ program Z80Gen
                 }
                 entryIndex = Code.GetEntryIndex();
                 <uint, uint> methodSizes = Code.GetMethodSizes();
-                <uint,bool>  framelessMethods = Code.GetFramelessMethods();
+                <uint,uint>  framelessMethodCandidates = Code.GetFramelessMethodCandidates();
                 Parser.ProgressTick(".");
                 
                 // stack needs to exist before our first CALL
@@ -1402,7 +1418,7 @@ program Z80Gen
                 Emit(OpCode.HALT);
                 
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
-                writeMethod(entryIndex, methodCode, framelessMethods[entryIndex]);
+                bool failed = !writeMethod(entryIndex, methodCode);
                 Parser.ProgressTick(".");
                 uint indexMax = 0;
                 foreach (var sz in methodSizes)
@@ -1412,31 +1428,44 @@ program Z80Gen
                         indexMax = sz.key;
                     }
                 }
-                // if we emit the methods in increasing order of indices
-                // then we can find them again in the binary (for debug info)
-                uint count = 1;
-                bool failed = false;
-                for (uint index = 0; index <= indexMax; index++)
-                {
-                    if (index == entryIndex)          { continue; }
-                    if (!methodSizes.Contains(index)) { continue; }   
-                    methodCode = Code.GetMethodCode(index);
-                    writeMethod(index, methodCode, framelessMethods[index]);   
-                    Parser.ProgressTick(".");
-                    count++;
-                    if (output.Count > 0xF000)
-                    {
-                        PrintLn();
-                        PrintLn((output.Count).ToString() + " bytes Z80 assembly generated.", Colour.Red, Colour.Black);
-                        PrintLn("Only on method " + count.ToString() + " of " + (methodSizes.Count).ToString() + ". Abandoning build.", Colour.Red, Colour.Black);
-                        failed = true;
-                        break;
-                    }
-                }
                 if (!failed)
                 {
-                    doCallPatches();
+                    uint total = output.Count;
+                    // if we emit the methods in increasing order of indices
+                    // then we can find them again in the binary (for debug info)
+                    uint count = 1;
+                    for (uint index = 0; index <= indexMax; index++)
+                    {
+                        if (index == entryIndex)          { continue; }
+                        if (!methodSizes.Contains(index)) { continue; }   
+                        methodCode = Code.GetMethodCode(index);
+                        uint startAddress = output.Count;
+                        if (!writeMethod(index, methodCode))
+                        {
+                            failed = true;
+                            break;
+                        }
+                        Parser.ProgressTick(".");
+                        count++;
+                        if (output.Count > 0xF000)
+                        {
+                            PrintLn();
+                            PrintLn("0x"  + (output.Count).ToHexString(4) + " bytes Z80 assembly generated.", Colour.Red, Colour.Black);
+                            PrintLn("Only on method " + count.ToString() + " of " + (methodSizes.Count).ToString() + ". Abandoning build.", Colour.Red, Colour.Black);
+                            failed = true;
+                            break;
+                        }
+                        uint length = output.Count - startAddress;
+                        total += length;
+                        if (length > 500)
+                        {
+                            //PrintLn();
+                            //Print("0x" + index.ToHexString(4) + ": 0x" + startAddress.ToHexString(4) + " length: " + length.ToString() + " total: " + total.ToString() + " size: " + (methodCode.Count).ToString());
+                        }
+                    }
                 }
+                doCallPatches(failed);
+                
                 Parser.ProgressTick(".");
                 writeIHex(ihexFile, 0x0000, output);
                 string zcodePath = codePath.Replace(".code", ".zcode");
@@ -1453,7 +1482,11 @@ program Z80Gen
                 if (!Parser.IsInteractive())
                 {
                     PrintLn();
-                    Print("Success, " + codeSize.ToString() + " bytes of code, ", Colour.ProgressText, Colour.ProgressFace);
+                    string laxReport = (LaxSavings == 0) ? "" : ", " + (LaxSavings).ToString() + " 'unsafe' Lax savings)";
+                    Print("Success, " + codeSize.ToString() + " bytes of code (" +
+                                        (StrictSavings).ToString() + " bytes of peephole savings" +
+                                        laxReport +
+                                        "), ", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
                     PrintLn("  " + seconds.ToString() +"s", Colour.ProgressHighlight, Colour.ProgressFace);

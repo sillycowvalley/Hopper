@@ -1110,7 +1110,23 @@ unit CodePoints
                 break;
             }
             Instruction opCode1 = iCodes[iIndex-1];  // DECSP
-            Instruction opCode0 = iCodes[iIndex];    // RET0 | RETB
+            Instruction opCode0 = iCodes[iIndex];    // RET0 | RETB | DECSP
+            
+            // first roll up DECSP .. later roll them into RET below ..
+            if ((opCode0 == Instruction.DECSP) && (opCode1 == Instruction.DECSP))
+            {
+                if (!IsTargetOfJumps(iIndex))
+                {
+                    uint decCount = iOperands[iIndex-1] + iOperands[iIndex];
+                    if (decCount <= 255)
+                    {
+                        iOperands.SetItem(iIndex-1, decCount);
+                        RemoveInstruction(iIndex);
+                        modified = true;
+                    }                  
+                }
+            }
+            
             if (((opCode0 == Instruction.RETB) || (opCode0 == Instruction.RET0)) 
               && (opCode1 == Instruction.DECSP)
             )
@@ -1680,20 +1696,41 @@ unit CodePoints
                 break;
             }
             Instruction opCode = iCodes[iIndex];
-            bool removeIt = false;
+            uint removeIt = 0;
             if (opCode == Instruction.NOP)
             {
-                removeIt = true;
+                removeIt = 1;
+            }
+            else if (IsValueTypeRuntime && (opCode == Instruction.CAST))
+            {
+                removeIt = 1;
             }
             else if ((opCode == Instruction.JB) || (opCode == Instruction.J))
             {
                 <uint> jumpTargets = iJumpTargets[iIndex];
                 uint jumpTarget = jumpTargets[0];
-                removeIt = jumpTarget == iIndex+1;
+                removeIt = (jumpTarget == iIndex+1) ? 1 : 0;
             }
-            if (removeIt)
+            else if ((opCode == Instruction.PUSHR0) && (iIndex > 0) && !IsTargetOfJumps(iIndex))
             {
-                RemoveInstruction(iIndex, true, allReachable, noJumps);
+                Instruction opCode1 = iCodes[iIndex-1];
+                if (opCode1 == Instruction.POPR0)
+                {
+                    removeIt = 2;
+                }
+            }
+            
+            if (removeIt != 0)
+            {
+                if (removeIt == 2)
+                {
+                    RemoveInstruction(iIndex-1, true, allReachable, noJumps);
+                    RemoveInstruction(iIndex-1, true, allReachable, noJumps);
+                }
+                else
+                {
+                    RemoveInstruction(iIndex, true, allReachable, noJumps);
+                }
                 //count++;
                 modified = true;
             }

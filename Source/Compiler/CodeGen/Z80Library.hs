@@ -170,7 +170,7 @@ unit Z80Library
         Emit(OpCode.RET);
     }
     
-    
+    bool firstSysNotImplemented = true;
     bool SysCall(byte iSysCall, byte iOverload)
     {
         // iOverload is in A if it is needed
@@ -191,6 +191,17 @@ unit Z80Library
                 Emit(OpCode.EX_iSP_HL);          // get LSB
                 Emit(OpCode.PUSH_DE);            // restore MSB (caller clears in CDecl)
                 Emit(OpCode.LD_H_E);             // set MSB and return it in R0 (HL)
+            }
+            case SysCalls.UIntToInt:
+            {
+#ifdef CHECKED
+                // TODO : validate that it is <= 32767 and Die(0x0D) if not
+#endif                
+            }
+            case SysCalls.TimeDelay:
+            {
+                Emit(OpCode.EX_iSP_HL);          // load delay in ms into HL
+                Emit(OpCode.NOP); // TODO
             }
             
             case SysCalls.SerialWriteChar:
@@ -254,7 +265,11 @@ unit Z80Library
                         
             default:
             {
-                PrintLn("iSysCall=0x" + (byte(iSysCall)).ToHexString(2) + " not implemented");
+                if (firstSysNotImplemented)
+                {
+                    PrintLn("iSysCall=0x" + (byte(iSysCall)).ToHexString(2) + " not implemented");
+                }
+                firstSysNotImplemented = false;
                 Emit(OpCode.NOP);
                 return false;
             }
@@ -758,45 +773,35 @@ unit Z80Library
         
         EmitWord(OpCode.JP_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
     }
+    
+    // https://github.com/Zeda/Z80-Optimized-Routines/blob/master/math/subtraction/A_Minus_HL.z80
     negateBC()
     {
-        Emit(OpCode.XOR_A); // clear carry
-        Emit(OpCode.LD_A_C);
-        Emit(OpCode.CPL);
-        EmitByte(OpCode.ADD_A_n, 1);
+        Emit(OpCode.XOR_A);
+        Emit(OpCode.SUB_A_C);
         Emit(OpCode.LD_C_A);
-        
-        Emit(OpCode.LD_A_B);
-        Emit(OpCode.CPL);
-        EmitByte(OpCode.ADC_A_n, 0);
+        Emit(OpCode.SBC_A_A);
+        Emit(OpCode.SUB_A_B);
         Emit(OpCode.LD_B_A);
         Emit(OpCode.RET);
     }
     negateDE()
     {
-        Emit(OpCode.XOR_A); // clear carry
-        Emit(OpCode.LD_A_E);
-        Emit(OpCode.CPL);
-        EmitByte(OpCode.ADD_A_n, 1);
+        Emit(OpCode.XOR_A);
+        Emit(OpCode.SUB_A_E);
         Emit(OpCode.LD_E_A);
-        
-        Emit(OpCode.LD_A_D);
-        Emit(OpCode.CPL);
-        EmitByte(OpCode.ADC_A_n, 0);
-        Emit(OpCode.LD_D_A);  
-        Emit(OpCode.RET);  
+        Emit(OpCode.SBC_A_A);
+        Emit(OpCode.SUB_A_D);
+        Emit(OpCode.LD_D_A);
+        Emit(OpCode.RET);
     }
     negateHL()
     {
-        Emit(OpCode.XOR_A); // clear carry
-        Emit(OpCode.LD_A_L);
-        Emit(OpCode.CPL);
-        EmitByte(OpCode.ADD_A_n, 1);
+        Emit(OpCode.XOR_A);
+        Emit(OpCode.SUB_A_L);
         Emit(OpCode.LD_L_A);
-        
-        Emit(OpCode.LD_A_H);
-        Emit(OpCode.CPL);
-        EmitByte(OpCode.ADC_A_n, 0);
+        Emit(OpCode.SBC_A_A);
+        Emit(OpCode.SUB_A_H);
         Emit(OpCode.LD_H_A);
         Emit(OpCode.RET);
     }

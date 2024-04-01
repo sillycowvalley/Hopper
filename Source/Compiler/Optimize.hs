@@ -45,9 +45,11 @@ program Optimize
             Parser.ProgressTick(".");
         }
     }
-    
+
+    bool isValueTypeRuntime;
+    bool IsValueTypeRuntime { get { return isValueTypeRuntime; } set { isValueTypeRuntime = value; }}
+        
     bool mergedRET0Exists;
-    
     bool MergedRET0Exists { get { return mergedRET0Exists; } set { mergedRET0Exists = value; }}
     
     bool CompareBeforeAndAfter(string codePath, string optPath)
@@ -577,7 +579,7 @@ program Optimize
             CodePoints.CollectMethodCalls(methodsCalled);
             if (verbose) { showElapsedEnd(); } 
             
-            if (false && IsExperimental)
+            if (IsExperimental)
             {
                 CodePoints.CountPairs(pairList);
             }
@@ -625,7 +627,7 @@ program Optimize
             ReportMethodSizes();
         }
         methodsCalled.Clear(); // just to be sure ..
-        if (false && IsExperimental)
+        if (IsExperimental)
         {
             ListCompareDelegate sorter = CompairPair;
             pairList.Sort(sorter);
@@ -792,6 +794,7 @@ program Optimize
                     if (Symbols.Import(symbolsPath, false))
                     {
                         CodeStream.InitializeSymbolShortcuts();
+                        IsValueTypeRuntime   = Symbols.DefineExists("VALUE_TYPE_RUNTIME");
                     }
                 }
                 if (argIsExperimental)

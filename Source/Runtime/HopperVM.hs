@@ -9,7 +9,9 @@ unit HopperVM
     
     uses "Platform/GC"
     uses "Platform/Array"
+#ifdef INCLUDE_DICTIONARIES    
     uses "Platform/Dictionary"
+#endif    
 #ifndef VALUE_TYPE_RUNTIME
     uses "Platform/Directory"
     uses "Platform/File"
@@ -582,6 +584,72 @@ unit HopperVM
     bool ExecuteSysCall(byte iSysCall, uint iOverload)
     {
         bool doNext = true;
+#ifdef CPU_Z80
+        switch (SysCalls(iSysCall))
+        {
+            case SysCalls.DiagnosticsDie:
+            {
+                doNext = Instructions.Die();
+            }
+            
+            case SysCalls.IntGetByte:
+            {
+                uint index = Pop();
+                Type htype;
+                uint i = Pop();
+                byte b = HRInt.GetByte(i, index);
+                Push(b, Type.Byte);                
+            }
+            case SysCalls.IntFromBytes:
+            {
+                byte b1 = byte(Pop());
+                byte b0 = byte(Pop());
+                
+                uint i = HRInt.FromBytes(b0, b1);
+                Push(i, Type.Int);  
+            }
+            case SysCalls.UIntToInt:
+            {
+                Type htype;
+                uint value = Pop(ref htype);
+#ifdef CHECKED
+                AssertUInt(htype, value);
+                if (value > 32767)
+                {
+                    ErrorDump(131);
+                    Error = 0x0D; // system failure (internal error)
+                }
+#endif        
+                PushI(int(value));             
+            }
+            case SysCalls.TimeDelay:
+            {
+                External.Delay(Pop());
+                doNext = false;
+            }
+            case SysCalls.SerialIsAvailableGet:
+            {
+                bool avail = Serial.IsAvailable;
+                Push(uint(avail), Type.Bool);
+            }
+            case SysCalls.SerialReadChar:
+            {
+                char ch = SerialReadChar();
+                Push(uint(ch), Type.Char);
+            }
+            case SysCalls.SerialWriteChar:
+            {
+                Type atype;
+                uint ch = Pop(ref atype);
+#ifdef CHECKED
+                AssertChar(atype, ch);
+#endif
+                SerialWriteChar(char(ch));
+            }
+            
+            
+        } // switch
+#else        
         switch (SysCalls(iSysCall))
         {
             case SysCalls.DiagnosticsDie:
@@ -2677,6 +2745,7 @@ unit HopperVM
                     }
                     case Type.Dictionary:
                     {
+#ifdef INCLUDE_DICTIONARIES
                         // verify that all members of the dictionary are of type valueType
                         uint iterator;
                         uint hrpair;
@@ -2690,6 +2759,9 @@ unit HopperVM
                                 break;
                             }
                         }
+#else
+                        Error = 0x0A;
+#endif                        
                     }
                     default:
                     {
@@ -2710,7 +2782,11 @@ unit HopperVM
                 {
                     case Type.Dictionary:
                     {
+#ifdef INCLUDE_DICTIONARIES                        
                         Push(uint(HRDictionary.GetKeyType(this)), Type.Type);
+#else
+                        Error = 0x0A;
+#endif                        
                     }
                     case Type.Pair:
                     {
@@ -2735,7 +2811,11 @@ unit HopperVM
                 {
                     case Type.Dictionary:
                     {
+#ifdef INCLUDE_DICTIONARIES                        
                         Push(uint(HRDictionary.GetValueType(this)), Type.Type);
+#else
+                        Error = 0x0A;
+#endif
                     }
                     case Type.Pair:
                     {
@@ -2771,6 +2851,7 @@ unit HopperVM
             
             case SysCalls.DictionaryNew:
             {   
+#ifdef INCLUDE_DICTIONARIES
                 Type stype;
                 Type vtype = Type(Pop(ref stype));
                 Type ktype = Type(Pop(ref stype));
@@ -2783,10 +2864,14 @@ unit HopperVM
 #endif
                 uint address = HRDictionary.New(ktype, vtype);
                 Push(address, Type.Dictionary);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.DictionaryCountGet:
             {
+#ifdef INCLUDE_DICTIONARIES
                 Type ttype;
                 uint this = Pop(ref ttype);
 #ifdef CHECKED
@@ -2799,10 +2884,14 @@ unit HopperVM
                 uint count = HRDictionary.GetCount(this);
                 GC.Release(this);
                 Push(count, Type.UInt);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.DictionarySet:
             {
+#ifdef INCLUDE_DICTIONARIES
                 Type vtype;
                 uint value  = Pop(ref vtype);
                 Type ktype;
@@ -2827,10 +2916,14 @@ unit HopperVM
                     GC.Release(value);
                 }
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.DictionaryNext:
             {
+#ifdef INCLUDE_DICTIONARIES
                 Type htype;
                 uint iterator = Pop(ref htype);
                 
@@ -2850,11 +2943,15 @@ unit HopperVM
                 GC.Release(this);
                 Push(found, Type.Bool);
                 Push(hrpair, Type.Pair);    
-                Push(iterator, Type.UInt);    
+                Push(iterator, Type.UInt);  
+#else
+                Error = 0x0A;
+#endif  
             }
             
             case SysCalls.DictionaryContains:
             {
+#ifdef INCLUDE_DICTIONARIES
                 Type ktype;
                 uint key = Pop(ref ktype);
                 
@@ -2878,10 +2975,14 @@ unit HopperVM
                 }
                 GC.Release(this);
                 Push(found, Type.Bool);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.DictionaryGet:
             {
+#ifdef INCLUDE_DICTIONARIES
                 Type ktype;
                 uint key = Pop(ref ktype);
                 
@@ -2906,9 +3007,13 @@ unit HopperVM
                 }
                 GC.Release(this);
                 Push(result, vtype);
+#else
+                Error = 0x0A;
+#endif
             }
             case SysCalls.DictionaryClear:
             {
+#ifdef INCLUDE_DICTIONARIES
                 Type ttype;
                 uint this  = Pop(ref ttype);
 #ifdef CHECKED
@@ -2920,6 +3025,9 @@ unit HopperVM
 #endif                  
                 HRDictionary.Clear(this);
                 GC.Release(this);
+#else
+                Error = 0x0A;
+#endif
             }
             
             case SysCalls.CharToString:
@@ -3860,7 +3968,8 @@ unit HopperVM
                 IO.Write(' '); ErrorDump(2);
                 Error = 0x0A; // not implemented
             }
-        }
+        } // switch
+#endif
         return doNext && (Error == 0);
     }
     

@@ -379,6 +379,8 @@ unit AsmZ80
         LD_SP_nn = 0x31,
         
         LD_SP_HL = 0xF9,
+        
+        EX_DE_HL  = 0xEB,
         EX_iSP_HL = 0xE3,
         EX_iSP_IX = 0xDDE3,
         EX_iSP_IY = 0xFDE3,
@@ -729,8 +731,11 @@ unit AsmZ80
         return OpCode(value);
     }
     
-    
     string GetOpCodeInfo(OpCode opCode, ref OperandType operandType, ref byte operandLength, ref bool signed)
+    {
+        return GetOpCodeInfo(opCode, ref operandType, ref operandLength, ref signed, true);
+    }
+    string GetOpCodeInfo(OpCode opCode, ref OperandType operandType, ref byte operandLength, ref bool signed, bool strict)
     {
         if (!initialized)
         {
@@ -747,6 +752,10 @@ unit AsmZ80
         
         if (operandType == OperandType.None)
         {
+            if (!strict)
+            {
+                return name;
+            }
             Print("OpCode.GetName(0x" + (uint(opCode)).ToHexString(4) +") not implemented (operandType)"); Die(0x0A);
         }
         signed = false;
@@ -1830,6 +1839,10 @@ unit AsmZ80
 
         z80InstructionName[OpCode.LD_SP_HL] = "LD SP, HL";                // 0x00F9
         z80OperandType    [OpCode.LD_SP_HL] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.EX_DE_HL] = "EX DE, HL";                // 0x00EB
+        z80OperandType    [OpCode.EX_DE_HL] = OperandType.Implied;
+        
 
         z80InstructionName[OpCode.EX_iSP_HL] = "EX (SP), HL";             // 0x00E3
         z80OperandType    [OpCode.EX_iSP_HL] = OperandType.Implied;
