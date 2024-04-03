@@ -714,6 +714,38 @@ unit AsmZ80
         }
         return 1;        
     }
+    bool IsPush(OpCode opCode)
+    {
+        switch (opCode)
+        {
+            case OpCode.PUSH_AF:
+            case OpCode.PUSH_DE:
+            case OpCode.PUSH_HL:
+            case OpCode.PUSH_BC:
+            case OpCode.PUSH_IX:
+            case OpCode.PUSH_IY:
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    bool IsPop(OpCode opCode)
+    {
+        switch (opCode)
+        {
+            case OpCode.POP_AF:
+            case OpCode.POP_DE:
+            case OpCode.POP_HL:
+            case OpCode.POP_BC:
+            case OpCode.POP_IX:
+            case OpCode.POP_IY:
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     string GetName(OpCode opCode) 
     { 
         if (!initialized)

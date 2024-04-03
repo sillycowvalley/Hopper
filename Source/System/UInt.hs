@@ -180,11 +180,20 @@ unit UInt
         }
         return result;
     }
+    string ToBinaryString(uint this, byte digits)
+    {
+        string result = UInt.ToBinaryString(this);
+        if (result.Length > digits)
+        {
+            result = result.Substring(result.Length-digits);
+        }
+        return result;
+    }
     string ToBinaryString(uint this)
     {
-        int digit;
+        uint digit;
         char c;
-        int i;
+        uint i;
         string result;
         for (i = 16; i > 0; i--)
         {

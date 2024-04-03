@@ -333,7 +333,7 @@ unit BuildCommand
                     break;
                 }
             }
-            if (BuildOptions.IsOptimizeEnabled())
+            if (BuildOptions.IsOptimizeEnabled() || isZ80)
             {   
                 string optName = "Optimize";
                 if (isAssembly)

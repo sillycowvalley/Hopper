@@ -66,7 +66,7 @@ program Z80Opt
             
             // load codepoints
             methodsWalked[methodIndex] = true;
-            uint size = CodePoints.Load(methodIndex);
+            uint size = CodePoints.Load(methodIndex, pass);
             if (pass == 0)
             {
                 codeBefore += size;
@@ -74,33 +74,69 @@ program Z80Opt
             
             CodePoints.MarkInstructions();
             
-            CodePoints.CountCases(); // TODO REMOVE
+            if (CodePoints.OptimizeLDtoNOP())
+            {
+                methodModified = true;
+            }
+            if (CodePoints.OptimizeIncrement())
+            {
+                methodModified = true;
+            }
+            if (CodePoints.OptimizeAdd())
+            {
+                methodModified = true;
+            }
+            if (CodePoints.OptimizeConstantReturn())
+            {
+                methodModified = true;
+            }
+            if (CodePoints.OptimizePopLocalPushLocal())
+            {
+                methodModified = true;
+            }
+            if (CodePoints.OptimizePushPop())
+            {
+                methodModified = true;
+            }
+            if (CodePoints.OptimizePushPopAdd())
+            {
+                methodModified = true;
+            }            
+            if (OptimizeShift8())
+            {
+                methodModified = true;
+            }
+            if (OptimizePushSandwichPop())
+            {
+                methodModified = true;
+            } 
+            if (OptimizeMoveXOR())
+            {
+                methodModified = true;
+            }
+            if (OptimizePushPopCompare())
+            {
+                methodModified = true;
+            }
+            if (OptimizeNOP8BitLoad())
+            {
+                methodModified = true;
+            }
+            if (Optimize8BitLoadLoad())
+            {
+                methodModified = true;
+            }
             
-            if (OptimizeLDtoNOP())
-            {
-                methodModified = true;
-            }
-            if (OptimizeIncrement())
-            {
-                methodModified = true;
-            }
-            if (OptimizeAdd())
-            {
-                methodModified = true;
-            }
-            if (OptimizeConstantProperties())
-            {
-                methodModified = true;
-            }
+            
+            
             
             // mark unreachable code
-            if (OptimizeUnreachableToNOP())
+            if (CodePoints.OptimizeUnreachableToNOP())
             {
                 methodModified = true;
             }
-            
             // remove NOPs : should be last OptimizeXXX
-            if (OptimizeRemoveNOPs())
+            if (CodePoints.OptimizeRemoveNOPs())
             {
                 methodModified = true;
             }
@@ -152,7 +188,7 @@ program Z80Opt
             indices = Code.GetMethodIndices(); // reload: some methods may be gone
             foreach (var methodIndex in indices)
             {
-                uint size = CodePoints.Load(methodIndex);
+                uint size = CodePoints.Load(methodIndex, pass);
                 <byte> rawCode = Code.GetMethodCode(methodIndex);
                 if (InlineSmallMethods(rawCode))
                 {
