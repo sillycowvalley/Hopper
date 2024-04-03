@@ -1267,7 +1267,7 @@ unit Code
     }
     bool ExportCode(string codePath)
     {
-        return ExportCode(codePath, true)
+        return ExportCode(codePath, true);
     }
     bool ExportCode(string codePath, bool saveCode)
     {

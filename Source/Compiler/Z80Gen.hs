@@ -165,8 +165,8 @@ program Z80Gen
                 patchOk = (instruction == OpCode.CALL_nn);
                 if (!patchOk)
                 {
-                    OpCode instruction1 = GetOpCode(output, patchAddress-2);
-                    patchOk = (instruction == OpCode.LD_DE_nn) && (instruction1 == OpCode.NOP); // PUSHD signature
+                    OpCode instruction1 = GetOpCode(output, patchAddress-3);
+                    patchOk = (instruction == OpCode.LD_DE_nn) && (instruction1 == OpCode.DDDD); // PUSHD signature
                 }
                 if (!patchOk)
                 {
@@ -272,6 +272,8 @@ program Z80Gen
         switch (opCode)
         {
             case OpCode.JP_nn:
+            case OpCode.JP_Z_nn:
+            case OpCode.JP_NZ_nn:
             {
                 Peephole.Reset();
             }
@@ -503,10 +505,17 @@ program Z80Gen
         <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
         <uint,uint> jumpPatchLocations;   // <hopperAddress,patchAddress>
         
+        uint peepholeSinbin;
         uint index;
         loop
         {
             if (index == code.Count) { success = true; break; }
+            
+            if (peepholeSinbin > 0)
+            {
+                peepholeSinbin--;
+                Peephole.Reset();
+            }
             
             uint hopperAddress = index;
             instructionAddresses[hopperAddress] = output.Count;
@@ -547,9 +556,14 @@ program Z80Gen
                     // Create some empty stack slots:
                     EmitWord(OpCode.LD_IX_nn, 0x0000);
                     
-                    if (operand == 1) // don't do this : makes an extra case for Z80Dasm and Z80Opt
+                    if (operand <= 5) // don't do this : makes an extra case for Z80Dasm and Z80Opt
                     {
-                        Emit(OpCode.PUSH_DE);
+                        loop
+                        {
+                            Emit(OpCode.PUSH_DE); // up to 5 pushes is the same length as the alternative below, but faster
+                            operand--;
+                            if (operand == 0) { break; }
+                        }
                     }
                     else
                     {
@@ -591,11 +605,11 @@ program Z80Gen
                 }
                 case Instruction.DECSP:
                 {
-                    if (operand <= 4)
+                    if (operand <= 5)
                     {
                         loop
                         {
-                            Emit(OpCode.POP_IX); // up to 4 pops is less code than the alternative below
+                            Emit(OpCode.POP_DE); // up to 5 pops is the same length as the alternative below, but faster
                             operand--;
                             if (operand == 0) { break; }
                         }
@@ -604,15 +618,13 @@ program Z80Gen
                     {
                         EmitByte(OpCode.LD_B_n, byte(operand));
                         Peephole.Reset();
-                        Emit(OpCode.POP_IX);
+                        Emit(OpCode.POP_DE);
                         EmitOffset(OpCode.DJNZ_e, -3);
                     }
                 }
                 case Instruction.PUSHD:
                 {
-#ifdef PATCHCHECKED
-                    Emit(OpCode.NOP); // for patch validation
-#endif                                        
+                    Emit(OpCode.DDDD); // for patch signature used for validation and for the optimizer
                     EmitWord(OpCode.LD_DE_nn, operand);    
                     patches[output.Count-2] = operand; // patch it like a method
                     Emit(OpCode.PUSH_DE);
@@ -624,11 +636,11 @@ program Z80Gen
                 }
                 case Instruction.RETB:
                 {
-                    if (operand <= 4)
+                    if (operand <= 5)
                     {
                         loop
                         {
-                            Emit(OpCode.POP_IX); // up to 4 pops is less code than the alternative below
+                            Emit(OpCode.POP_DE); // up to 5 pops is the same length as the alternative below, but faster
                             operand--;
                             if (operand == 0) { break; }
                         }
@@ -637,7 +649,7 @@ program Z80Gen
                     {
                         EmitByte(OpCode.LD_B_n, byte(operand));
                         Peephole.Reset();
-                        Emit(OpCode.POP_IX);
+                        Emit(OpCode.POP_DE);
                         EmitOffset(OpCode.DJNZ_e, -3);
                     }
                     
@@ -969,6 +981,10 @@ program Z80Gen
                     }
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = offset;
+                    if (offset > 0)
+                    {
+                        peepholeSinbin = uint(offset);
+                    }
                 }
                 case Instruction.JNZB:
                 {
@@ -984,6 +1000,10 @@ program Z80Gen
                     }
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = offset;
+                    if (offset > 0)
+                    {
+                        peepholeSinbin = uint(offset);
+                    }
                 }
                 case Instruction.JB:
                 {
@@ -995,6 +1015,10 @@ program Z80Gen
                     }
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = offset;
+                    if (offset > 0)
+                    {
+                        peepholeSinbin = uint(offset);
+                    }
                 }
                 
                 case Instruction.JZ:
@@ -1007,6 +1031,10 @@ program Z80Gen
                     int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = ioffset;
+                    if (ioffset > 0)
+                    {
+                        peepholeSinbin = uint(ioffset);
+                    }
                 }
                 case Instruction.JNZ:
                 {
@@ -1018,6 +1046,10 @@ program Z80Gen
                     int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = ioffset;
+                    if (ioffset > 0)
+                    {
+                        peepholeSinbin = uint(ioffset);
+                    }
                 }
                 
                 case Instruction.J:
@@ -1026,6 +1058,10 @@ program Z80Gen
                     int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));                        
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = ioffset;
+                    if (ioffset > 0)
+                    {
+                        peepholeSinbin = uint(ioffset);
+                    }
                 }
                                 
                 case Instruction.CAST:
@@ -1296,7 +1332,7 @@ program Z80Gen
         uint index = 0;
         
         byte currentTick = 0;
-        string progressTicks = "-\\|/-\\|/";
+        Parser.ProgressTick("x");
         
         string buffer;
         uint emitAddress = 0;
@@ -1318,7 +1354,7 @@ program Z80Gen
             }
             
             byteCount++;
-            if (byteCount % 32 == 0)
+            if (byteCount % 1024 == 0)
             {
                 Parser.ProgressTick("x");
             }
@@ -1478,10 +1514,10 @@ program Z80Gen
                         }
                         uint length = output.Count - startAddress;
                         total += length;
-                        if (length > 500)
+                        if (false && (length > 500))
                         {
-                            //PrintLn();
-                            //Print("0x" + index.ToHexString(4) + ": 0x" + startAddress.ToHexString(4) + " length: " + length.ToString() + " total: " + total.ToString() + " size: " + (methodCode.Count).ToString());
+                            PrintLn();
+                            Print("  0x" + index.ToHexString(4) + ": 0x" + startAddress.ToHexString(4) + " length: " + length.ToString() + " total: " + total.ToString() + " size: " + (methodCode.Count).ToString());
                         }
                     }
                 }

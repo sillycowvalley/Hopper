@@ -34,13 +34,137 @@ program Z80Opt
         }
     }
     
+    bool RemoveUnreachableMethods()
+    {
+        bool removed = false;
+        // TODO
+        return removed;
+    }
+    
     bool Optimize(uint pass, ref long codeBefore, ref long codeAfter)
     {
-        //PrintLn("Optimize: " + pass.ToString());
+        bool anyModified = false;
         
-        bool modified = false;
+        <uint> indices = Code.GetMethodIndices();
+        
+        <uint, bool> methodsWalked;
+        <uint, bool> methodsCalled;
+        foreach (var index in indices)
+        {
+            methodsCalled[index] = false;
+            methodsWalked[index] = false;
+        }
+        
+        <uint,string> methodNames = GetMethodNames(); // <index, name>
+        
+        uint methodIndex = 0;              // "main"
+        methodsCalled[methodIndex] = true; // "main"
+        loop
+        {
+            bool methodModified = false;
+            //PrintLn("  Optimize: 0x" + methodIndex.ToHexString(4) + " " + methodNames[methodIndex] + " (" + pass.ToString() + ")");    
+            
+            // load codepoints
+            methodsWalked[methodIndex] = true;
+            uint size = CodePoints.Load(methodIndex);
+            if (pass == 0)
+            {
+                codeBefore += size;
+            }
+            
+            CodePoints.MarkInstructions();
+            
+            CodePoints.CountCases(); // TODO REMOVE
+            
+            if (OptimizeLDtoNOP())
+            {
+                methodModified = true;
+            }
+            if (OptimizeIncrement())
+            {
+                methodModified = true;
+            }
+            if (OptimizeAdd())
+            {
+                methodModified = true;
+            }
+            if (OptimizeConstantProperties())
+            {
+                methodModified = true;
+            }
+            
+            // mark unreachable code
+            if (OptimizeUnreachableToNOP())
+            {
+                methodModified = true;
+            }
+            
+            // remove NOPs : should be last OptimizeXXX
+            if (OptimizeRemoveNOPs())
+            {
+                methodModified = true;
+            }
+            
+            CodePoints.CollectMethodCalls(methodsCalled);
+            
+            if (methodModified)
+            {
+                size = CodePoints.Save();
+                codeAfter = codeAfter + size;
+                anyModified = true;
+            }
+            else
+            {
+                codeAfter = codeAfter + size; // same as size before
+            }
+            ProgessNudge();
+            
+            
+            bool walkNextMethod;
+            foreach (var kv in methodsCalled)
+            {
+                bool isCalled = kv.value;
+                if (isCalled)
+                {
+                    uint iMethod = kv.key;
+                    if (!methodsWalked[iMethod])
+                    {
+                        // called but not yet walked
+                        methodIndex = iMethod;
+                        walkNextMethod = true;
+                        break;
+                    }
+                }
+            }
+            if (!walkNextMethod) // no more to walk
+            {
+                break;
+            }
+            
+        } // method loop
+        
+        if (RemoveUnreachableMethods())
+        {
+            anyModified = true;
+        }
+        if (CodePoints.InlineCandidatesExist)
+        {
+            indices = Code.GetMethodIndices(); // reload: some methods may be gone
+            foreach (var methodIndex in indices)
+            {
+                uint size = CodePoints.Load(methodIndex);
+                <byte> rawCode = Code.GetMethodCode(methodIndex);
+                if (InlineSmallMethods(rawCode))
+                {
+                    // update the method with the optimized code: no size change, pure replacement          
+                    Code.SetMethodCode(methodIndex, rawCode);
+                    anyModified = true;
+                }
+                ProgessNudge();
+            }
+        }
     
-        return modified;    
+        return anyModified;    
     }
     
     BadArguments()
@@ -114,8 +238,8 @@ program Z80Opt
             long startTime = Millis;
             loop
             {
-                long codeBefore;
-                long codeAfter;
+                
+                
                 string optPath = codePath;
                 
                 string extension = Path.GetExtension(codePath);
@@ -125,18 +249,17 @@ program Z80Opt
                 
                 if (File.Exists(zcodePath))
                 {
-                    PrintLn(zcodePath);
                     if (!ParseCode(zcodePath, false, true))
                     {
                         break;
                     }
                 }
-                PrintLn("Success");
                 
-                uint address = 0;
                 
-                codeBefore = Z80Code.Load(codePath);
-                              
+                uint loadCode = Z80Code.Load(codePath);
+                long codeBefore = Z80Code.GetPreAmbleSize();
+                long codeAfter;
+                
                 uint pass = 0;
                 loop
                 {
@@ -145,6 +268,11 @@ program Z80Opt
                         break;
                     }
                     pass++;
+                }
+                if (codeBefore != loadCode) 
+                { 
+                    PrintLn("loadCode=" + loadCode.ToString() + ", codeBefore=" + codeBefore.ToString());
+                    Die(0x0B); 
                 }
                                
                 Parser.ProgressTick(".");
@@ -162,8 +290,9 @@ program Z80Opt
                 success = true;
                 if (!Parser.IsInteractive())
                 {
+                    long saved = codeBefore - codeAfter;
                     PrintLn();
-                    Print("Success, " + codeBefore.ToString() + "->" + codeAfter.ToString() + " bytes of code,", Colour.ProgressText, Colour.ProgressFace);
+                    Print("Success, " + codeBefore.ToString() + "->" + codeAfter.ToString() + " bytes of code (" + saved.ToString() + " bytes saved),", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
                     PrintLn("  " + seconds.ToString() + "s", Colour.ProgressHighlight, Colour.ProgressFace);

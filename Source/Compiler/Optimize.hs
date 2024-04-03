@@ -214,7 +214,7 @@ program Optimize
         
         pairList.Clear();
         
-        bool modified = false;
+        bool anyModified = false;
         <uint> indices = Code.GetMethodIndices();
         methodsCalled.Clear();
         if (pass == 0)
@@ -246,6 +246,8 @@ program Optimize
         methodsCalled[methodIndex] = true; // "main"
         loop
         {
+            bool methodModified = false;
+            
             bool optimizeMethod = methodsModified[methodIndex];
             methodsModified[methodIndex] = false;
             
@@ -287,12 +289,12 @@ program Optimize
                             CodePoints.DumpInstructions("OptimizeINCDEC");
                         }
     #endif
-                        modified = true;
+                        methodModified = true;
                     }
                     if (verbose) { showElapsed("b"); } 
                     if (CodePoints.OptimizeFrameRemoval())
                     {
-                        modified = true;
+                        methodModified = true;
     #ifdef DIAGNOSTICS
                         if (logging)
                         {
@@ -309,7 +311,7 @@ program Optimize
                             CodePoints.DumpInstructions("OptimizeENTERPUSHI0");
                         }
     #endif
-                        modified = true;
+                        methodModified = true;
                     }
                 }
                 if (verbose) { showElapsed("d"); } 
@@ -321,7 +323,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeDECSPRET");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 if (verbose) { showElapsed("e"); } 
                 if (CodePoints.OptimizePUSHRETRES())
@@ -332,7 +334,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizePUSHRETRES");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 if (verbose) { showElapsed("f"); } 
                 if (CodePoints.OptimizeSymmetricCompare())
@@ -343,7 +345,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeSymetricCompare");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 if (verbose) { showElapsed("g"); } 
                 if (CodePoints.OptimizeUnconditionalJumps(/*verbose*/))
@@ -354,7 +356,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeUnconditionalJumps");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 if (!NoPackedInstructions)
                 {
@@ -367,7 +369,7 @@ program Optimize
                             CodePoints.DumpInstructions("OptimizeJumpW");
                         }
     #endif
-                        modified = true;
+                        methodModified = true;
                     }
                 }
                 if (verbose) { showElapsed("i"); } 
@@ -379,7 +381,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeJumpToJump");
                     }
     #endif
-                    modified = true;    
+                    methodModified = true;    
                 }
                 // JXx +2 Jx d -> JNXx d
                 if (verbose) { showElapsed("j"); } 
@@ -391,7 +393,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeJZxJx");
                     }
     #endif
-                    modified = true;    
+                    methodModified = true;    
                 }
                 // PUSHIB 2 MUL -> PUSHIB 1 BITSHL
                 if (verbose) { showElapsed("k"); } 
@@ -403,7 +405,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeMULSHL");
                     }
     #endif
-                    modified = true;    
+                    methodModified = true;    
                 }
                 if (verbose) { showElapsed("l"); } 
                 if (CodePoints.OptimizePUSHPUSHSWAP())
@@ -414,7 +416,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizePUSHPUSHSWAP");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 if (verbose) { showElapsed("m"); } 
                 if (CodePoints.OptimizeCommutativeSWAP())
@@ -425,7 +427,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeCommutativeSWAP");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 if (CodePoints.OptimizePUSH01LEEQ())
                 {
@@ -435,7 +437,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizePUSH01LEEQ");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 if (verbose) { showElapsed("n"); } 
                 if (CodePoints.OptimizeLongAddSub())
@@ -446,7 +448,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeLongAddSub");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 
                 if ((CodeStream.Target6502 || CodeStream.TargetMinimal))
@@ -482,7 +484,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeSetters");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 
                 // str = str.Trim() -> Trim(ref str),  str = str.Append(x) -> Build(ref str, x), etc.
@@ -495,7 +497,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeStringRef");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 
                 // not just NOP, also JMP -> JMP + 1, can cause more short JumpToJump's to work
@@ -508,7 +510,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeRemoveNOPs");
                     }
     #endif
-                    modified = true;
+                    methodModified = true;
                 }
                 if (verbose) { showElapsed("r"); } 
                 if (!NoPackedInstructions && CodePoints.OptimizeCOPYPOP())
@@ -519,7 +521,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeCOPYPOP");
                     }
     #endif                
-                    modified = true;
+                    methodModified = true;
                 }
                 if (verbose) { showElapsed("s"); } 
                 if (!NoPackedInstructions && CodePoints.OptimizeSYSCALL00())
@@ -530,7 +532,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizeSYSCALL00");
                     }
     #endif                
-                    modified = true;
+                    methodModified = true;
                 }
                 if (verbose) { showElapsed("t"); } 
                 if (!NoPackedInstructions && CodePoints.OptimizePUSHIBB())
@@ -541,7 +543,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizePUSHIBB");
                     }
     #endif                
-                    modified = true;
+                    methodModified = true;
                 }
                 if (verbose) { showElapsed("u"); } 
                 if (!NoPackedInstructions && CodePoints.OptimizePUSHLOCALBB())
@@ -552,7 +554,7 @@ program Optimize
                         CodePoints.DumpInstructions("OptimizePUSHLOCALBB");
                     }
     #endif                
-                    modified = true;
+                    methodModified = true;
                 }
             } // optimizeMethod
             
@@ -563,7 +565,7 @@ program Optimize
                 if (verbose) { showElapsed("v"); } 
                 if (CodePoints.OptimizeRemoveUnreachable())
                 {
-                    modified = true;
+                    methodModified = true;
 #ifdef DIAGNOSTICS
                     if (logging)
                     {
@@ -584,12 +586,18 @@ program Optimize
                 CodePoints.CountPairs(pairList);
             }
             
-            size = CodePoints.Save();
-            codeAfter = codeAfter + size;
+            if (methodModified)
+            {
+                size = CodePoints.Save();
+                codeAfter = codeAfter + size;
+                anyModified = true;
+            }
+            else
+            {
+                codeAfter = codeAfter + size; // same as size before
+            }
             
-            
-            
-            methodsModified[methodIndex] = modified;
+            methodsModified[methodIndex] = methodModified;
             
             if (!IsExperimental)
             {
@@ -620,7 +628,7 @@ program Optimize
         
         if (RemoveUnreachableMethods())
         {
-            modified = true;
+            anyModified = true;
         }
         if (showSizes)
         {
@@ -662,15 +670,13 @@ program Optimize
                 {
                     // update the method with the optimized code: no size change, pure replacement          
                     Code.SetMethodCode(methodIndex, rawCode);
-                    modified = true;
-                    methodsModified[methodIndex] = modified;
+                    anyModified = true;
+                    methodsModified[methodIndex] = true;
                 }
                 ProgessNudge();
            }
         }
-        
-        
-        return modified;
+        return anyModified;
     }
     
     record OpCodePair

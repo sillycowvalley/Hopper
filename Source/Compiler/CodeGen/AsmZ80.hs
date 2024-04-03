@@ -371,6 +371,8 @@ unit AsmZ80
         LD_inn_IX = 0xDD22,
         LD_inn_IY = 0xFD22,
         
+        DDDD      = 0xDDDD,
+        
         LD_BC_nn = 0x01,
         LD_DE_nn = 0x11,
         LD_HL_nn = 0x21,
@@ -688,7 +690,16 @@ unit AsmZ80
     <OpCode, OperandType> z80OperandType;
     bool initialized;
 
-    
+    byte GetOpCodeLength(OpCode instruction)
+    {
+        uint ui = uint(instruction);
+        byte leadByte = ui.GetByte(1);
+        if (leadByte == 0)
+        {
+            leadByte = ui.GetByte(0);
+        }
+        return GetOpCodeLength(leadByte);
+    }
     byte GetOpCodeLength(byte leadByte)
     {
         switch (leadByte)
@@ -798,7 +809,7 @@ unit AsmZ80
         OperandType operandType;
         byte operandLength;
         bool signed;
-        byte opCodeLength = GetOpCodeLength(byte(uint(instruction) >> 8));
+        byte opCodeLength = GetOpCodeLength(instruction);
         string name = GetOpCodeInfo(instruction, ref operandType, ref operandLength, ref signed);
         
         string disassembly = "0x" + address.ToHexString(4);
@@ -1824,6 +1835,9 @@ unit AsmZ80
 
         z80InstructionName[OpCode.LD_DE_nn] = "LD DE, nn";                // 0x0011
         z80OperandType    [OpCode.LD_DE_nn] = OperandType.Immediate16;
+        
+        z80InstructionName[OpCode.DDDD]     = "DDDD";                     // 0xDDDD
+        z80OperandType    [OpCode.DDDD]     = OperandType.Implied;
 
         z80InstructionName[OpCode.LD_HL_nn] = "LD HL, nn";                // 0x0021
         z80OperandType    [OpCode.LD_HL_nn] = OperandType.Immediate16;

@@ -26,7 +26,7 @@ unit Peephole
         OpCode opCode = GetOpCode(output, index);
         
         OperandType operandType; byte operandLength; bool signed;
-        byte opCodeLength = GetOpCodeLength(output[index]);
+        byte opCodeLength = GetOpCodeLength(opCode);
         string name = GetOpCodeInfo(opCode, ref operandType, ref operandLength, ref signed);
         byte bytes = opCodeLength + operandLength;
         byte bytesRemoved = bytes;

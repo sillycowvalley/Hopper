@@ -9,8 +9,12 @@ unit Instructions
         DUP0     = 0x01,       // push [top]
         
         PUSHR0   = 0x02,       // R0 -> [top]
-        POPR0    = 0x03,       // [top] -> R0
+        POPR0    = 0x03,       // [top] -> R0 
         
+        BITSHL8  = 0x04,
+        BITSHR8  = 0x05,
+        BITANDFF = 0x06,
+               
         LIBCALL  = 0x08,
         LIBCALL0 = 0x09,
         LIBCALL1 = 0x0A,
@@ -879,6 +883,18 @@ unit Instructions
             {
                 result = "BITNOT";
             }
+            case Instruction.BITSHL8:
+            {
+                result = "BITSHL8";
+            }
+            case Instruction.BITSHR8:
+            {
+                result = "BITSHR8";
+            }
+            case Instruction.BITANDFF:
+            {
+                result = "BITANDFF";
+            }
             
             case Instruction.JB:
             {
@@ -1228,7 +1244,7 @@ unit Instructions
             }
             case 1:
             {
-                long jumpTarget = address;
+                long jumpTarget = long(address);
                 address++;
                 byte op = code[address];
                 

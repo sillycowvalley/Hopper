@@ -1,9 +1,10 @@
 unit Z80Code
 {
     <uint,uint>            methodAddresses; // <index, address>
+    <uint,uint>            methodIndices;   // <address, index>
     <uint,uint>            methodLengths;   // <index, length>
     <uint,string>          methodNames;     // <index, name>
-    <uint, <uint,string> > methodDebug;     // <index, <address, sourceLineNumber> >
+    <uint, <uint,uint> >   methodDebug;     // <index, <address, sourceLineNumber> >
 
     <byte>           preAmble;        // code before entryPoint: not optimized
     <uint, <byte> >  methodCode;      // <index, <byte> >
@@ -12,6 +13,29 @@ unit Z80Code
     <byte> codeAfter;
     
     uint org;
+    
+    uint GetPreAmbleSize() { return preAmble.Count; }
+    
+    <uint,string> GetMethodNames() // <index, name>
+    {
+        return methodNames;     
+    }
+    <byte> GetMethodCode(uint methodIndex)
+    {
+        return methodCode[methodIndex];
+    }
+    SetMethodCode(uint methodIndex, <byte> code)
+    {
+        methodCode[methodIndex] = code;
+    }
+    <uint,uint> GetMethodDebugLines(uint methodIndex)
+    {
+        return methodDebug[methodIndex];
+    }
+    SetMethodDebugLines(uint methodIndex, <uint,uint> debugLines)
+    {
+        methodDebug[methodIndex] = debugLines;
+    }
     
     byte hexCheckSum(string values)
     {
@@ -48,7 +72,7 @@ unit Z80Code
         uint index = 0;
         
         byte currentTick = 0;
-        string progressTicks = "-\\|/-\\|/";
+        Parser.ProgressTick("x");
         
         string buffer;
         uint emitAddress = 0;
@@ -70,7 +94,7 @@ unit Z80Code
             }
             
             byteCount++;
-            if (byteCount % 32 == 0)
+            if (byteCount % 1024 == 0)
             {
                 Parser.ProgressTick("x");
             }
@@ -89,6 +113,8 @@ unit Z80Code
     {
         bool first = true;
         code.Clear();
+        uint byteCount = 0;
+        Parser.ProgressTick("x");
         loop
         {
             string ln = hexFile.ReadLine();
@@ -113,6 +139,11 @@ unit Z80Code
                 length--;
             }
             first = false;
+            byteCount += 16;
+            if (byteCount % 1024 == 0)
+            {
+                Parser.ProgressTick("x");
+            }
         }
     }
     long Load(string codePath)
@@ -178,41 +209,43 @@ unit Z80Code
                                 seek--;
                                 if (codeAddress - seek > 25) { break; }
                             }
-                            OpCode opCode = GetOpCode(code, codeAddress-1);
-                            //Print((codeAddress-1).ToHexString(4) +":" + AsmZ80.GetName(opCode) + ",   ");
-                            if (opCode == OpCode.RET)
-                            {
-                                methodLengths[previousIndex] = codeAddress - methodAddresses[previousIndex];
-                            }
+                            methodLengths[previousIndex] = codeAddress - methodAddresses[previousIndex];
                         }
                         methodAddresses[index] = codeAddress;
+                        methodIndices[codeAddress] = index;
                         string name = methodSymbols["name"];
                         methodNames[index] = name;
-                        //PrintLn(index.ToString() + ": 0x" + codeAddress.ToHexString(4));
                         previousIndex = index;
                         break;
                     }
                 }
             }
         }
+        //PrintLn("preAmble=" + (preAmble.Count).ToString());
+        //PrintLn("length=" + (code.Count).ToString());
         methodLengths[previousIndex] = code.Count - methodAddresses[previousIndex];
         foreach (var kv in methodAddresses)
         {
             uint methodIndex = kv.key;
             uint methodAddress = kv.value;
+            //Print(methodIndex.ToHexString(4) + ": ");
             uint methodLength = methodLengths[methodIndex];
             uint methodEnd = methodAddress + methodLength - 1;
-            PrintLn(methodIndex.ToHexString(4) + ": 0x" + methodAddress.ToHexString(4) + "-0x" + methodEnd.ToHexString(4) + "  " + (methodNames[methodIndex]).Pad(' ', 30) + " (" + methodLength.ToString() + " bytes)");
+            
+            //PrintLn();
+            //Print("  0x" + methodIndex.ToHexString(4) + ": 0x" + methodAddress.ToHexString(4) + "-0x" + methodEnd.ToHexString(4) + "  " + (methodNames[methodIndex]).Pad(' ', 30) + " (" + methodLength.ToString() + " bytes)");
             
             <byte> method;
-            methodEnd++;
-            for (uint i = methodAddress; i < methodEnd; i++)
+            for (uint i = 0; i < methodLength; i++)
             {
-                method.Append(code[i]);
+                byte b = code[methodAddress + i];
+                method.Append(b);
             }
+            convertToRelative(methodIndex, method);
+            
             methodCode[methodIndex] = method;
             
-            <uint, string> debugLines;
+            <uint, uint> debugLines;
             <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
             if (methodSymbols.Count != 0)
             {
@@ -222,7 +255,9 @@ unit Z80Code
                     uint codeAddress;
                     if (UInt.TryParse(kv.key, ref codeAddress))
                     {
-                        debugLines[codeAddress - methodAddress] = kv.value; // 0-based based on the code bytes of the method
+                        uint sourceLine;
+                        _ = UInt.TryParse(kv.value, ref sourceLine);
+                        debugLines[codeAddress - methodAddress] = sourceLine; // 0-based based on the code bytes of the method
                     }
                 }
             }
@@ -242,11 +277,26 @@ unit Z80Code
     {
         codeAfter.Clear();
         appendBytes(codeAfter, preAmble);
+        
+        // Rebuild: methodAddresses and methodIndices based on new methodCode sizes
+        uint address = preAmble.Count;
+        methodAddresses.Clear();
+        methodIndices.Clear();
+        foreach (var kv in methodNames)
+        {
+            uint methodIndex = kv.key;
+            <byte> method = methodCode[methodIndex];
+            methodAddresses[methodIndex] = address;
+            methodIndices[address] = methodIndex;
+            address += method.Count;
+        }
+        
         foreach (var kv in methodAddresses)
         {
             uint methodIndex = kv.key;
-            <byte> append = methodCode[methodIndex];
-            appendBytes(codeAfter, append);
+            <byte> method = methodCode[methodIndex];
+            convertToAbsolute(methodIndex, method);
+            appendBytes(codeAfter, method);
         }
     }
     bool Save(string codePath, ref long sizeAfter)
@@ -255,19 +305,25 @@ unit Z80Code
         loop
         {
             reAssemble();
+            /*
+            if (codeAfter.Count <= code.Count)
+            {
+                for (uint i = 0; i < codeAfter.Count; i++)
+                {
+                    if (code[i] != codeAfter[i])
+                    {
+                        PrintLn();
+                        Print("  " + i.ToHexString(4) + ": Failed!   was 0x" + (code[i]).ToHexString(2) + ", now 0x" + (codeAfter[i]).ToHexString(2));
+                        break;
+                    }
+                }
+            }
             if (code.Count != codeAfter.Count)
             {
                 PrintLn("code.Count=" + (code.Count).ToString() + ", codeAfter.Count=" + (codeAfter.Count).ToString());
-                break;
+                // break;
             }
-            for (uint i = 0; i < codeAfter.Count; i++)
-            {
-                if (code[i] != codeAfter[i])
-                {
-                    PrintLn(i.ToHexString(4) + ": Failed!");
-                    break;
-                }
-            }
+            */
             File.Delete(codePath);
             file hexFile = File.Create(codePath);   
             writeIHex(hexFile, 0x0000, codeAfter);
@@ -288,35 +344,14 @@ unit Z80Code
             {
                 uint methodIndex    = kv.key;
                 uint methodAddress = kv.value;
-                <uint, string> debugLines = methodDebug[methodIndex];
+                <uint, uint> debugLines = methodDebug[methodIndex];
                 <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
                 <string,string> debugInfo = methodSymbols["debug"];
                 <string,string> modifiedDebugInfo;
-                if (debugInfo.Count != debugLines.Count)
-                {
-                    PrintLn("debugInfo.Count=" + (debugInfo.Count).ToString() + ", debugLines.Count=" + (debugLines.Count).ToString());
-                    break;
-                }    
                 foreach (var kv in debugLines)
                 {
                     uint   address   = kv.key + methodAddress;
-                    string debugLine = kv.value;
-                    bool   found;
-                    uint   oldCodeAddress;
-                    foreach (var kv2 in debugInfo)
-                    {
-                        if (kv2.value == debugLine)
-                        {   
-                            _ = UInt.TryParse(kv2.key, ref oldCodeAddress);
-                            found = (oldCodeAddress == address);
-                            break;
-                        }
-                    }
-                    if (!found)
-                    {
-                        PrintLn("debugLine: " + debugLine + ", oldCodeAddress=" + oldCodeAddress.ToHexString(4)+ ", address=" + address.ToHexString(4));
-                        break;
-                    }
+                    string debugLine = (kv.value).ToString();
                     modifiedDebugInfo["0x" + address.ToHexString(4)] = debugLine;
                 }
                 Code.SetMethodDebugInfo(methodIndex, modifiedDebugInfo);
@@ -326,6 +361,194 @@ unit Z80Code
         }
         return success;
     }
-                
     
+    convertToRelative(uint methodIndex, <byte> method)
+    {
+        // convert CALL_nn :           methodAddress -> methodIndex
+        // convert DDDD, LD_DE_nn :    methodAddress -> methodIndex
+        // convert JP_x_nn        :    globalAddress -> methodAddress (start of method is '0x0000')
+     
+        uint methodAddress = methodAddresses[methodIndex];
+        uint preAmbleLast  = preAmble.Count-1;
+        //PrintLn();
+        //Print("  convertToRelative: 0x" + methodIndex.ToHexString(4) + " 0x" + methodAddress.ToHexString(4) + " " + (method.Count).ToString());   
+        
+        uint index = 0;
+        bool expectDelegate;
+        loop
+        {
+            if (index == method.Count) { break; }
+            uint instructionAddress = index;
+            
+            OpCode instruction;
+            OperandType operandType;
+            byte operandLength;
+            bool signed;
+            
+            if (index > method.Count)
+            {
+                PrintLn();
+                Print("  " + index.ToString() + " (" + (methodAddress + index).ToHexString(4) + " bytes)");
+            }
+            
+            byte opCodeLength = GetOpCodeLength(method[index]);
+            
+            if (opCodeLength == 1)
+            {
+                 instruction = OpCode(method[index]);
+                 index++;
+            }
+            else if (opCodeLength == 2)
+            {
+                 instruction = OpCode((method[index] << 8) + method[index+1]);
+                 index += 2;
+            }
+            string name = GetOpCodeInfo(instruction, ref operandType, ref operandLength, ref signed, false);
+            uint operand = 0;
+            if (operandLength == 1)
+            {
+                 operand = method[index];
+                 index++;
+            }
+            else if (operandLength == 2)
+            {
+                 operand = method[index] + (method[index+1] << 8);
+                 index += 2;
+            }
+            if (expectDelegate)
+            {
+                if (instruction != OpCode.LD_DE_nn)
+                {
+                    Die(0x0B);
+                }
+                uint targetIndex = methodIndices[operand];
+                //PrintLn();
+                //Print("    D: 0x" + instructionAddress.ToHexString(4) + " " + name + " " + (operandLength + opCodeLength).ToString() + " 0x" + operand.ToHexString(4) +" -> 0x" + targetIndex.ToHexString(4));
+                method[index-2] = byte(targetIndex & 0xFF);
+                method[index-1] = byte(targetIndex >> 8);
+                expectDelegate = false;
+            }
+            switch (instruction)
+            {
+                case OpCode.CALL_nn:
+                {
+                    if (operand > preAmbleLast)
+                    {
+                        uint targetIndex = methodIndices[operand] | 0x8000;
+                        //PrintLn();
+                        //Print("    0x" + instructionAddress.ToHexString(4) + " " + name + " " + (operandLength + opCodeLength).ToString() + " 0x" + operand.ToHexString(4) +" -> 0x" + targetIndex.ToHexString(4));
+                        method[index-2] = byte(targetIndex & 0xFF);
+                        method[index-1] = byte(targetIndex >> 8);
+                    }
+                }
+                case OpCode.JP_nn:
+                case OpCode.JP_Z_nn:
+                case OpCode.JP_NZ_nn:
+                {
+                    long jumpOffset = long(operand - methodAddress) - long(instructionAddress + 3);
+                    int iJumpOffset = int(jumpOffset);
+                    //PrintLn();
+                    //Print("    0x" + instructionAddress.ToHexString(4) + " " + name + " " + (operandLength + opCodeLength).ToString() + " 0x" + operand.ToHexString(4) + " -> " + iJumpOffset.ToString());
+                    method[index-2] = iJumpOffset.GetByte(0);
+                    method[index-1] = iJumpOffset.GetByte(1);
+                }
+                case OpCode.DDDD:
+                {
+                    expectDelegate = true;
+                }
+            }
+        } // loop
+    }
+    convertToAbsolute(uint methodIndex, <byte> method)
+    {
+        // convert CALL_nn :           methodIndex -> methodAddress
+        // convert DDDD, LD_DE_nn :    methodIndex -> methodAddress
+        // convert JP_x_nn        :    methodAddress -> methodAddress
+        
+        uint methodAddress = methodAddresses[methodIndex];
+        uint index = 0;
+        bool expectDelegate;
+        loop
+        {
+            if (index == method.Count) { break; }
+            uint instructionAddress = index;
+            
+            OpCode instruction;
+            OperandType operandType;
+            byte operandLength;
+            bool signed;
+            
+            byte opCodeLength = GetOpCodeLength(method[index]);
+            
+            if (opCodeLength == 1)
+            {
+                 instruction = OpCode(method[index]);
+                 index++;
+            }
+            else if (opCodeLength == 2)
+            {
+                 instruction = OpCode((method[index] << 8) + method[index+1]);
+                 index += 2;
+            }
+            string name = GetOpCodeInfo(instruction, ref operandType, ref operandLength, ref signed, false);
+            uint operand = 0;
+            if (operandLength == 1)
+            {
+                 operand = method[index];
+                 index++;
+            }
+            else if (operandLength == 2)
+            {
+                 operand = method[index] + (method[index+1] << 8);
+                 index += 2;
+            }
+            if (expectDelegate)
+            {
+                if (instruction != OpCode.LD_DE_nn)
+                {
+                    Die(0x0B);
+                }
+                uint targetAddress = methodAddresses[operand];
+                //PrintLn();
+                //Print("    D: 0x" + instructionAddress.ToHexString(4) + " " + name + " " + (operandLength + opCodeLength).ToString() + " 0x" + operand.ToHexString(4) +" -> 0x" + targetAddress.ToHexString(4));
+                method[index-2] = byte(targetAddress & 0xFF);
+                method[index-1] = byte(targetAddress >> 8);               
+                expectDelegate = false;
+            }
+            switch (instruction)
+            {
+                case OpCode.CALL_nn:
+                {
+                    if (operand & 0x8000 != 0)
+                    {
+                        operand &= 0x7FFF;
+                        uint targetAddress = methodAddresses[operand];
+                        //PrintLn();
+                        //Print("    0x" + instructionAddress.ToHexString(4) + " " + name + " " + (operandLength + opCodeLength).ToString() + " 0x" + operand.ToHexString(4) +" -> 0x" + targetAddress.ToHexString(4));
+                        method[index-2] = byte(targetAddress & 0xFF);
+                        method[index-1] = byte(targetAddress >> 8);
+                    }
+                }
+                case OpCode.JP_nn:
+                case OpCode.JP_Z_nn:
+                case OpCode.JP_NZ_nn:
+                {
+                    int iJumpOffset = Int.FromBytes(operand.GetByte(0), operand.GetByte(1));
+                    uint lTargetAddress = long(instructionAddress) + long(iJumpOffset) + opCodeLength + operandLength; 
+                    uint targetAddress = methodAddress + uint(lTargetAddress);
+                    //PrintLn();
+                    //Print("    0x" + instructionAddress.ToHexString(4) + " " + name + " " + (operandLength + opCodeLength).ToString() + " " + iJumpOffset.ToString() + " -> 0x" + targetAddress.ToHexString(4));
+                    method[index-2] = byte(targetAddress & 0xFF);
+                    method[index-1] = byte(targetAddress >> 8);
+                }
+                case OpCode.DDDD:
+                {
+                    expectDelegate = true;
+                }
+            }
+        } // loop  
+        
+        //PrintLn();
+        //Print("  convertToAbsolute: 0x" + methodIndex.ToHexString(4) + " " + (method.Count).ToString());   
+    }
 }

@@ -70,6 +70,8 @@ program DASM
     {
         bool first = true;
         <byte> code;
+        uint byteCount = 0;
+        Parser.ProgressTick("x");
         loop
         {
             string ln = hexFile.ReadLine();
@@ -94,6 +96,11 @@ program DASM
                 length--;
             }
             first = false;
+            byteCount += 16;
+            if (byteCount % 1024 == 0)
+            {
+                Parser.ProgressTick("x");
+            }
         }
         return code;
     }
@@ -198,7 +205,7 @@ program DASM
                 file hexFile = File.Open(codePath);
                 <byte> code = readIHex(hexFile, ref org);
                 
-                uint resetVector = code[4] + (code[5] << 8);
+                uint entryAddress = code[4] + (code[5] << 8);
                 
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 uint indexMax = 0;
@@ -209,9 +216,11 @@ program DASM
                         indexMax = sz.key;
                     }
                 }
-                uint entryAddress;
                 <string,string> debugInfo;
                 <uint,uint> methodFirstAddresses; // <address,index>
+                <uint,uint> methodLastAddresses; // <address,index>
+                
+                uint prevIndex;
                 for (uint index = 0; index <= indexMax; index++)
                 {
                     <string,variant> methodSymbols = Code.GetMethodSymbols(index);
@@ -223,36 +232,77 @@ program DASM
                             uint codeAddress;
                             if (UInt.TryParse(kv.key, ref codeAddress))
                             {
-                                methodFirstAddresses[codeAddress] = index;
                                 if (index == 0)
                                 {
-                                    entryAddress = codeAddress;
+                                    codeAddress = entryAddress;
                                 }
-                                //string name = methodSymbols["name"];
-                                //PrintLn(index.ToHexString(4) + ": 0x" + codeAddress.ToHexString(4) + " " + name);
+                                else
+                                {
+                                    // -10 'ENTER'   preamble
+                                    // -18 'ENTERB'  preamble (optimized only)
+                                    // -14 'ENTERB' 1 ?
+                                    // - 0'RETFAST'  preamble (optimized only)
+                                    uint seek = codeAddress;
+                                    loop
+                                    {
+                                        OpCode opCode2 = GetOpCode(code, seek-6);  
+                                        OpCode opCode1 = GetOpCode(code, seek-4);  
+                                        OpCode opCode0 = GetOpCode(code, seek);
+                                            
+                                        if ((opCode2 == OpCode.PUSH_IY)  && (opCode1 == OpCode.LD_inn_SP) && (opCode0 == OpCode.LD_IY_inn)) 
+                                        {
+                                            // "PUSH BP, BP = SP" stack frame setup
+                                            //Print(AsmZ80.GetName(opCode2) + "   " + AsmZ80.GetName(opCode1) + "   " + AsmZ80.GetName(opCode0) + ",   ");
+                                            codeAddress = seek - 6;
+                                        }
+                                        seek--;
+                                        if (codeAddress - seek > 25) { break; }
+                                    }
+                                }
+                                methodFirstAddresses[codeAddress] = index;
+                                methodLastAddresses[prevIndex] = codeAddress-1;
+                                
+                                /*
+                                if (index < 10)
+                                {
+                                    string name = methodSymbols["name"];
+                                    PrintLn(index.ToHexString(4) + ": 0x" + codeAddress.ToHexString(4) + " " + name);
+                                }
+                                */
+                                prevIndex = index;
                                 break;
                             }
                         }
                     }
                 }
-                //PrintLn("resetVector: 0x" + resetVector.ToHexString(4));
+                methodLastAddresses[prevIndex] = code.Count-1;
+                
+                /*
+                foreach (var kv in methodFirstAddresses)
+                {
+                    uint index = kv.value;
+                    uint startAddress = kv.key;
+                    if (index < 10)
+                    {
+                        PrintLn(index.ToHexString(4) + ": 0x" + startAddress.ToHexString(4) + "-0x" + (methodLastAddresses[index]).ToHexString(4));
+                    }
+                }
+                */
                 
                 uint doffset = 0;
                 string src;
                 string srcName;
                  
                 uint index;
-                byte lastA;
-                byte lastB;
-                byte lastC;
-                uint lastBC;
-                OpCode prevInstruction;
+                uint currentMethodIndex = 0;
+                uint instructionAddress;
+                
                 loop
                 {
                     if (index == code.Count) { break; }
+                    instructionAddress = index;
                     
                     byte opCodeLength = GetOpCodeLength(code[index]);
-                    address = index;
                     
                     OpCode instruction;
                     OperandType operandType;
@@ -274,7 +324,7 @@ program DASM
                     }
                     string name = GetOpCodeInfo(instruction, ref operandType, ref operandLength, ref signed, false);
                     uint operand = 0;
-                    if (name.Length == 0) { Print(" BadOp: 0x" + address.ToHexString(4)); continue; }
+                    if (name.Length == 0) { Print(" BadOp: 0x" + instructionAddress.ToHexString(4)); continue; }
                     
                     //if (index + operandLength > code.Count) { hasmFile.Flush(); break; }
                     
@@ -298,102 +348,43 @@ program DASM
                         codeSize += 1;
                     }
                     
-                    if (instruction == OpCode.LD_A_n)
-                    {
-                        lastA = byte(operand & 0xFF);
-                    }
-                    if (instruction == OpCode.LD_B_n)
-                    {
-                        lastB = byte(operand & 0xFF);
-                        lastBC = (lastBC & 0x00FF) | (lastB << 8);
-                    }
-                    if (instruction == OpCode.LD_C_n)
-                    {
-                        lastC = byte(operand & 0xFF);
-                        lastBC = (lastBC & 0xFF00) | lastC;
-                    }
-                    if (instruction == OpCode.LD_BC_nn)
-                    {
-                        lastBC = operand;
-                    }
-                    
-                    bool bRETFAST;
-                    uint switchAddress = address;
-                    if (resetVector == switchAddress)
+                    // switch to next methods debugInfo:
+                    uint switchAddress = 0;
+                    if (entryAddress == instructionAddress)
                     {
                         switchAddress = entryAddress;
                     }
-                    else if (prevInstruction == OpCode.RET)
+                    else if (instructionAddress-1 == methodLastAddresses[currentMethodIndex])
                     {
-                        for (uint search = address; search < address+25; search++) // delta is currently 10
-                       {
-                            if (methodFirstAddresses.Contains(search))
-                           {
-                                if ((search - address) == 0)  // 'RETFAST' preamble (optimized only)
-                                {
-                                    switchAddress = search; 
-                                    bRETFAST = (search == address);
-                                    //PrintLn("    " + address.ToHexString(4) + " " + search.ToHexString(4) + " " + (search - address).ToString() + " !");
-                                    break;
-                                }
-                                else
-                                {
-                                    // -10 'ENTER'   preamble
-                                    // -18 'ENTERB'  preamble (optimized only)
-                                    // -14 'ENTERB' 1 ?
-                                    uint seek = search;
-                                    loop
-                                    {
-                                        OpCode opCode2 = GetOpCode(code, seek-6);  
-                                        OpCode opCode1 = GetOpCode(code, seek-4);  
-                                        OpCode opCode0 = GetOpCode(code, seek);
-                                            
-                                        if ((opCode2 == OpCode.PUSH_IY)  && (opCode1 == OpCode.LD_inn_SP) && (opCode0 == OpCode.LD_IY_inn)) 
-                                        {
-                                            // "PUSH BP, BP = SP" stack frame setup
-                                            //Print(AsmZ80.GetName(opCode2) + "   " + AsmZ80.GetName(opCode1) + "   " + AsmZ80.GetName(opCode0) + ",   ");
-                                            switchAddress = search;
-                                            break;
-                                        }
-                                        seek--;
-                                        if (seek < address) { break; }
-                                    }
-                                }
-                            }// methodFirstAddresses.Contains(search)
-                        }
+                        switchAddress = instructionAddress;
                     }
                     
-                    prevInstruction = instruction;
                     if (methodFirstAddresses.Contains(switchAddress))
                     {
-                        //PrintLn(switchAddress.ToHexString(4));
-                        if ((switchAddress != address) || (resetVector == address) || bRETFAST)
+                        uint methodIndex = methodFirstAddresses[switchAddress];
+                        <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
+                        if (methodSymbols.Count != 0)
                         {
-                            //PrintLn("        " + address.ToHexString(4) + " switch");
-                            uint methodIndex = methodFirstAddresses[switchAddress];
-                            <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
-                            if (methodSymbols.Count != 0)
-                            {
-                                src = methodSymbols["source"];
-                                srcName = Path.GetFileName(src);
-                                string ln = methodSymbols["line"];
-                                string nm = methodSymbols["name"];
-                                debugInfo = methodSymbols["debug"];
-                                doffset = address;
-                                hasmFile.Append("" + char(0x0A)); 
-                                hasmFile.Append("// " + src + ":" + ln + char(0x0A));  
-                                
-                                string mname = "// ####  " + nm + "()  ####";
-                                mname = mname.Pad(' ', 80);
-                                mname = mname + "0x" + methodIndex.ToHexString(4) + char(0x0A);
-                                hasmFile.Append(mname);  
-                                hasmFile.Append("" + char(0x0A)); 
-                                Parser.ProgressTick(".");
-                            }
+                            src = methodSymbols["source"];
+                            srcName = Path.GetFileName(src);
+                            string ln = methodSymbols["line"];
+                            string nm = methodSymbols["name"];
+                            debugInfo = methodSymbols["debug"];
+                            doffset = instructionAddress;
+                            hasmFile.Append("" + char(0x0A)); 
+                            hasmFile.Append("// " + src + ":" + ln + char(0x0A));  
+                            
+                            string mname = "// ####  " + nm + "()  ####";
+                            mname = mname.Pad(' ', 80);
+                            mname = mname + "0x" + methodIndex.ToHexString(4) + char(0x0A);
+                            hasmFile.Append(mname);  
+                            hasmFile.Append("" + char(0x0A)); 
+                            Parser.ProgressTick(".");
                         }
+                        currentMethodIndex = methodIndex;
                     }
                     string comment;
-                    string addressKey = "0x" + address.ToHexString(4);
+                    string addressKey = "0x" + instructionAddress.ToHexString(4);
                     if (debugInfo.Contains(addressKey))
                     {
                         string debugLine = debugInfo[addressKey];
@@ -413,7 +404,7 @@ program DASM
                         }
                     }
                     
-                    string disassembly = AsmZ80.Disassemble(address, instruction, operand, bare);
+                    string disassembly = AsmZ80.Disassemble(instructionAddress, instruction, operand, bare);
                     if (tableSize != 0)
                     {
                         disassembly = disassembly.Replace("JP HL", "JP HL              // " + tableSize.ToString() + " table entries follow:");

@@ -311,7 +311,6 @@ program CODEGEN
         uint byteCount = 0;
         
         byte currentTick = 0;
-        string progressTicks = "-\\|/-\\|/";
         
         string buffer;
         uint emitAddress = 0x0000;

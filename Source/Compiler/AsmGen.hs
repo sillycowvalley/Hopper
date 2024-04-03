@@ -142,7 +142,7 @@ program ASMGEN
         uint index = 0;
         
         byte currentTick = 0;
-        string progressTicks = "-\\|/-\\|/";
+        Parser.ProgressTick("x");
         
         string buffer;
         uint emitAddress = 0;
@@ -164,7 +164,7 @@ program ASMGEN
             }
             
             byteCount++;
-            if (byteCount % 32 == 0)
+            if (byteCount % 1024 == 0)
             {
                 Parser.ProgressTick("x");
             }
