@@ -113,12 +113,14 @@ unit CodePoints
                 case OpCode.LD_L_iIY_d:
                 case OpCode.LD_L_iIX_d:
                 case OpCode.LD_L_n:
+                case OpCode.LD_L_A:
                 {
                     walkStats |= WalkStats.WriteL;
                 }
                 case OpCode.LD_H_iIY_d:
                 case OpCode.LD_H_iIX_d:
                 case OpCode.LD_H_n:
+                case OpCode.LD_H_A:
                 {
                     walkStats |= WalkStats.WriteH;
                 }
@@ -174,6 +176,16 @@ unit CodePoints
                     walkStats |= WalkStats.ReadH;
                     walkStats |= WalkStats.WriteL;
                 }
+                case OpCode.LD_E_L:
+                {
+                    walkStats |= WalkStats.ReadL;
+                    walkStats |= WalkStats.WriteE;
+                }
+                case OpCode.LD_D_H:
+                {
+                    walkStats |= WalkStats.ReadH;
+                    walkStats |= WalkStats.WriteD;
+                }
                 case OpCode.ADD_HL_DE:
                 case OpCode.ADC_HL_DE:
                 case OpCode.SBC_HL_DE:
@@ -218,11 +230,13 @@ unit CodePoints
                 case OpCode.LD_iIY_d_L:
                 case OpCode.LD_iIX_d_L:
                 case OpCode.CP_A_L:
+                case OpCode.LD_A_L:
                 {
                     walkStats |= WalkStats.ReadL;
                 }
                 case OpCode.LD_iIY_d_H:
                 case OpCode.LD_iIX_d_H:
+                case OpCode.LD_A_H:
                 {
                     walkStats |= WalkStats.ReadH;
                 }
@@ -233,11 +247,16 @@ unit CodePoints
                 }
                 case OpCode.LD_iIY_d_C:
                 case OpCode.LD_iIX_d_C:
+                case OpCode.AND_A_C:
+                case OpCode.OR_A_C:
                 {
                     walkStats |= WalkStats.ReadC;
                 }
                 case OpCode.LD_iIY_d_B:
                 case OpCode.LD_iIX_d_B:
+                case OpCode.AND_A_B:
+                case OpCode.OR_A_B:
+                case OpCode.LD_A_B:
                 {
                     walkStats |= WalkStats.ReadB;
                 }
@@ -253,6 +272,8 @@ unit CodePoints
                 case OpCode.NOP:
                 case OpCode.XOR_A:
                 case OpCode.AND_A:
+                case OpCode.AND_A_n:
+                case OpCode.OR_A_n:
                 case OpCode.LD_A_n:
                 case OpCode.CP_A_iIX_d:
                 case OpCode.CP_A_iIY_d:
@@ -260,6 +281,8 @@ unit CodePoints
                 case OpCode.LD_IY_nn:
                 case OpCode.LD_iIX_d_n:
                 case OpCode.LD_iIY_d_n:
+                case OpCode.DEC_iHL:
+                case OpCode.INC_iHL:
                 case OpCode.INC_iIX_d:
                 case OpCode.INC_iIY_d:
                 case OpCode.DEC_iIX_d:
@@ -841,12 +864,13 @@ unit CodePoints
     bool OptimizeIncrement()
     {
         bool modified;
-        if (iCodes.Count < 4) { return modified; }
-        uint iIndex = 3;
+        if (iCodes.Count < 5) { return modified; }
+        uint iIndex = 4;
         loop
         {
             if (iIndex == iCodes.Count) { break; }
     
+            OpCode opCode4 = iCodes[iIndex-4];
             OpCode opCode3 = iCodes[iIndex-3];
             OpCode opCode2 = iCodes[iIndex-2];
             OpCode opCode1 = iCodes[iIndex-1];
@@ -865,6 +889,19 @@ unit CodePoints
                     modified = true;
                 }
             }
+            if ((opCode4 == OpCode.LD_DE_inn) && (opCode3 == OpCode.PUSH_DE) && (opCode2 == OpCode.LD_E_iIY_d) && (opCode1 == OpCode.LD_D_iIY_d) && (opCode0 == OpCode.POP_HL))
+            {
+                if (   (Flags.Target != iFlags[iIndex-3] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+                {
+                    iCodes  [iIndex-4] = OpCode.LD_HL_inn;
+                    iCodes  [iIndex-3] = OpCode.NOP;
+                    iCodes  [iIndex-0] = OpCode.NOP;
+                    modified = true;
+                }
+            }
             iIndex++;
         
         }
@@ -879,15 +916,16 @@ unit CodePoints
         loop
         {
             if (iIndex == iCodes.Count) { break; }
+            
+            OpCode opCode4 = iCodes[iIndex-4];
+            OpCode opCode3 = iCodes[iIndex-3];
+            OpCode opCode2 = iCodes[iIndex-2];
+            OpCode opCode1 = iCodes[iIndex-1];
             OpCode opCode0 = iCodes[iIndex-0];
                 
             if (opCode0 == OpCode.ADD_HL_DE)
             {
                 OpCode opCode5 = iCodes[iIndex-5];
-                OpCode opCode4 = iCodes[iIndex-4];
-                OpCode opCode3 = iCodes[iIndex-3];
-                OpCode opCode2 = iCodes[iIndex-2];
-                OpCode opCode1 = iCodes[iIndex-1];
                 
                 if ((opCode5 == OpCode.LD_E_iIY_d) && (opCode4 == OpCode.LD_D_iIY_d) && (opCode3 == OpCode.PUSH_DE) && (opCode2 == OpCode.LD_DE_nn) && (opCode1 == OpCode.POP_HL))
                 {
@@ -905,11 +943,173 @@ unit CodePoints
                     }
                 }
             }
+            if ((opCode4 == OpCode.LD_E_iIY_d) && (opCode3 == OpCode.LD_D_iIY_d) && (opCode2 == OpCode.PUSH_DE) && (opCode1 == OpCode.LD_BC_nn) && (opCode0 == OpCode.POP_HL))
+            {
+                if (   (Flags.Target != iFlags[iIndex-3] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteDE, WalkStats.ReadDE, 20))
+                    {
+                        iCodes  [iIndex-4] = OpCode.LD_L_iIY_d;
+                        iCodes  [iIndex-3] = OpCode.LD_H_iIY_d;
+                        iCodes  [iIndex-2] = OpCode.NOP;
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        modified = true;
+                    }
+                }
+            }
             iIndex++;
         
         }
         return modified;
-    }     
+    }    
+    
+    bool OptimizeAnd()
+    {
+        bool modified;
+        if (iCodes.Count < 7) { return modified; }
+        uint iIndex = 6;
+        loop
+        {
+            if (iIndex == iCodes.Count) { break; }
+            
+            OpCode opCode6 = iCodes[iIndex-6];
+            OpCode opCode5 = iCodes[iIndex-5];
+            OpCode opCode4 = iCodes[iIndex-4];
+            OpCode opCode3 = iCodes[iIndex-3];
+            OpCode opCode2 = iCodes[iIndex-2];
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex-0];
+                
+                       
+            if ((opCode6 == OpCode.LD_BC_nn) && (opCode5 == OpCode.LD_A_L) && (opCode4 == OpCode.AND_A_C) && (opCode3 == OpCode.LD_L_A) && (opCode2 == OpCode.LD_A_H) && (opCode1 == OpCode.AND_A_B) && (opCode0 == OpCode.LD_H_A))
+            {
+                if (   (Flags.Target != iFlags[iIndex-5] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-4] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-3] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteBC, WalkStats.ReadBC, 30))
+                    {
+                        uint lsb = (iOperands[iIndex-6] & 0xFF);
+                        uint msb = (iOperands[iIndex-6] >> 8);
+                        iCodes   [iIndex-6] = OpCode.NOP;
+                        iLengths [iIndex-6] = 1;
+                        
+                        if (lsb == 0xFF)
+                        {
+                            iCodes   [iIndex-5] = OpCode.NOP;
+                            iLengths [iIndex-5] = 1;
+                            iCodes   [iIndex-4] = OpCode.NOP;
+                            iLengths [iIndex-4] = 1;
+                            iCodes   [iIndex-3] = OpCode.NOP;
+                            iLengths [iIndex-3] = 1;
+                        }
+                        else if (lsb != 0)
+                        {
+                            iCodes   [iIndex-4] = OpCode.AND_A_n;
+                            iOperands[iIndex-4] = lsb;
+                            iLengths [iIndex-4] = 2;
+                        }
+                        else
+                        {
+                            iCodes   [iIndex-5] = OpCode.NOP;
+                            iLengths [iIndex-5] = 1;
+                            iCodes   [iIndex-4] = OpCode.NOP;
+                            iLengths [iIndex-4] = 1;
+                            iCodes   [iIndex-3] = OpCode.LD_L_n;
+                            iOperands[iIndex-3] = lsb;
+                            iLengths [iIndex-3] = 2;
+                        }
+                        if (msb == 0xFF)
+                        {
+                            iCodes   [iIndex-2] = OpCode.NOP;
+                            iLengths [iIndex-2] = 1;
+                            iCodes   [iIndex-1] = OpCode.NOP;
+                            iLengths [iIndex-1] = 1;
+                            iCodes   [iIndex-0] = OpCode.NOP;
+                            iLengths [iIndex-0] = 1;
+                        }
+                        else if (msb != 0)
+                        {
+                            iCodes   [iIndex-1] = OpCode.AND_A_n;
+                            iOperands[iIndex-1] = msb;
+                            iLengths [iIndex-1] = 2;
+                        }
+                        else
+                        {
+                            iCodes   [iIndex-2] = OpCode.NOP;
+                            iLengths [iIndex-2] = 1;
+                            iCodes   [iIndex-1] = OpCode.NOP;
+                            iLengths [iIndex-1] = 1;
+                            iCodes   [iIndex-0] = OpCode.LD_H_n;
+                            iOperands[iIndex-0] = msb;
+                            iLengths [iIndex-0] = 2;
+                        }
+                        modified = true;
+                    }
+                }
+            }
+            
+            if ((opCode6 == OpCode.LD_BC_nn) && (opCode5 == OpCode.LD_A_L) && (opCode4 == OpCode.OR_A_C) && (opCode3 == OpCode.LD_L_A) && (opCode2 == OpCode.LD_A_H) && (opCode1 == OpCode.OR_A_B) && (opCode0 == OpCode.LD_H_A))
+            {
+                if (   (Flags.Target != iFlags[iIndex-5] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-4] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-3] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteBC, WalkStats.ReadBC, 30))
+                    {
+                        uint lsb = (iOperands[iIndex-6] & 0xFF);
+                        uint msb = (iOperands[iIndex-6] >> 8);
+                        iCodes   [iIndex-6] = OpCode.NOP;
+                        iLengths [iIndex-6] = 1;
+                        
+                        if (lsb != 0)
+                        {
+                            iCodes   [iIndex-4] = OpCode.OR_A_n;
+                            iOperands[iIndex-4] = lsb;
+                            iLengths [iIndex-4] = 2;
+                        }
+                        else
+                        {
+                            iCodes   [iIndex-5] = OpCode.NOP;
+                            iLengths [iIndex-5] = 1;
+                            iCodes   [iIndex-4] = OpCode.NOP;
+                            iLengths [iIndex-4] = 1;
+                            iCodes   [iIndex-3] = OpCode.NOP;
+                            iLengths [iIndex-3] = 1;
+                        }
+                        if (msb != 0)
+                        {
+                            iCodes   [iIndex-1] = OpCode.OR_A_n;
+                            iOperands[iIndex-1] = msb;
+                            iLengths [iIndex-1] = 2;
+                        }
+                        else
+                        {
+                            iCodes   [iIndex-2] = OpCode.NOP;
+                            iLengths [iIndex-2] = 1;
+                            iCodes   [iIndex-1] = OpCode.NOP;
+                            iLengths [iIndex-1] = 1;
+                            iCodes   [iIndex-0] = OpCode.NOP;
+                            iLengths [iIndex-0] = 1;
+                        }
+                        modified = true;
+                    }
+                }
+            }
+            iIndex++;
+        
+        }
+        return modified;
+    }    
     
     bool OptimizeUnreachableToNOP()
     {
@@ -1232,6 +1432,42 @@ unit CodePoints
         }
         return modified;
     }  
+    
+    bool OptimizeWriteByte()
+    {
+        bool modified;
+        if (iCodes.Count < 5) { return modified; }
+        uint iIndex = 4;
+        loop
+        {
+            if (iIndex == iCodes.Count) { break; }
+    
+            OpCode opCode4 = iCodes[iIndex-4];
+            OpCode opCode3 = iCodes[iIndex-3];
+            OpCode opCode2 = iCodes[iIndex-2];
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex-0];
+            
+            if ((opCode4 == OpCode.PUSH_HL) && (opCode3 == OpCode.LD_iIX_d_L) && (opCode2 == OpCode.LD_iIX_d_n) && (opCode1 == OpCode.POP_DE) && (opCode0 == OpCode.POP_DE))
+            {
+                if (   (Flags.Target != iFlags[iIndex-3] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+                {
+                    iCodes  [iIndex-4] = OpCode.NOP;
+                    iLengths[iIndex-4] = 1;
+                    iCodes  [iIndex-1] = OpCode.NOP;
+                    iLengths[iIndex-1] = 1;
+                    modified = true;
+                }
+            }
+            iIndex++;
+        
+        }
+        return modified;
+    }  
+    
     bool OptimizePushPop()
     {
         bool modified = false;
@@ -1262,6 +1498,40 @@ unit CodePoints
                         iCodes  [iIndex-2] = OpCode.NOP;
                         iCodes  [iIndex-1] = OpCode.LD_iIY_d_L;
                         iCodes  [iIndex-0] = OpCode.LD_iIY_d_H;
+                        modified = true;
+                    }
+                }
+            }
+            if ((opCode2 == OpCode.LD_DE_nn) && (opCode1 == OpCode.PUSH_DE) && (opCode0 == OpCode.POP_BC))
+            {
+                if (    (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                     && (Flags.Target != iFlags[iIndex-0] & Flags.Target)
+                   )
+                {
+                    // alters remaining value in DE .. need to look forward
+                    if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteDE, WalkStats.ReadDE, 10))
+                    {
+                        iCodes  [iIndex-2] = OpCode.LD_BC_nn;
+                        iCodes  [iIndex-1] = OpCode.NOP;
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        modified = true;
+                    }
+                }
+            }
+            if ((opCode3 == OpCode.LD_iIY_d_L) && (opCode2 == OpCode.LD_iIY_d_H) && (opCode1 == OpCode.LD_E_iIY_d) && (opCode0 == OpCode.LD_D_iIY_d))
+            {
+                if (    (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                     && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                     && (Flags.Target != iFlags[iIndex-0] & Flags.Target)
+                   )
+                {
+                    if ((iOperands[iIndex-3] == iOperands[iIndex-1]) && (iOperands[iIndex-2] == iOperands[iIndex-0]))
+                    {
+                        iCodes  [iIndex-1] = OpCode.LD_E_L;
+                        iLengths[iIndex-1] = 1;
+                        iCodes  [iIndex-0] = OpCode.LD_D_H;
+                        iLengths[iIndex-0] = 1;
+                        Print(" X ");
                         modified = true;
                     }
                 }
@@ -1304,6 +1574,33 @@ unit CodePoints
                     }
                 }
             }
+            if ((opCode3 == OpCode.LD_DE_nn) && (opCode2 == OpCode.PUSH_DE) && (opCode1 == OpCode.LD_DE_nn) && (opCode0 == OpCode.POP_HL))
+            {
+                if (    (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                     && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                     && (Flags.Target != iFlags[iIndex-0] & Flags.Target)
+                   )
+                {
+                    iCodes  [iIndex-3] = OpCode.LD_HL_nn;
+                    iCodes  [iIndex-2] = OpCode.NOP;
+                    iCodes  [iIndex-0] = OpCode.NOP;
+                    modified = true;
+                }
+            }
+            if ((opCode3 == OpCode.LD_DE_inn) && (opCode2 == OpCode.PUSH_DE) && (opCode1 == OpCode.LD_DE_inn) && (opCode0 == OpCode.POP_HL))
+            {
+                if (    (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                     && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                     && (Flags.Target != iFlags[iIndex-0] & Flags.Target)
+                   )
+                {
+                    iCodes  [iIndex-3] = OpCode.LD_HL_inn;
+                    iCodes  [iIndex-2] = OpCode.NOP;
+                    iCodes  [iIndex-0] = OpCode.NOP;
+                    modified = true;
+                }
+            }
+            
             iIndex++;
         }
         return modified;
@@ -1427,6 +1724,11 @@ unit CodePoints
                         iCodes  [iIndex-2] = OpCode.NOP;
                         iCodes  [iIndex-0] = OpCode.NOP;
                         modified = true;
+                        continue;
+                    }
+                    else if (opCode1 == OpCode.LD_BC_nn)
+                    {
+                        // munts Numbers.hs
                     }
                     else
                     {
@@ -1435,11 +1737,12 @@ unit CodePoints
                 }
                 if ((opCode2 == OpCode.PUSH_HL) && (opCode0 == OpCode.POP_HL))
                 {
-                    if ((opCode1 == OpCode.XOR_A) || (opCode1 == OpCode.LD_DE_inn) || (opCode1 == OpCode.LD_DE_nn))
+                    if ((opCode1 == OpCode.XOR_A) || (opCode1 == OpCode.LD_DE_inn) || (opCode1 == OpCode.LD_DE_nn) || (opCode1 == OpCode.LD_BC_nn))
                     {
                         iCodes  [iIndex-2] = OpCode.NOP;
                         iCodes  [iIndex-0] = OpCode.NOP;
                         modified = true;
+                        continue;
                     }
                     else
                     {
@@ -1461,6 +1764,7 @@ unit CodePoints
                             iCodes  [iIndex-3] = OpCode.NOP;
                             iCodes  [iIndex-0] = OpCode.NOP;
                             modified = true;
+                            continue;
                         }
                         else
                         {
@@ -1522,11 +1826,72 @@ unit CodePoints
                     )
                 {
                     // alters remaining value in HL .. need to look forward
-                    if (WalkAhead(iIndex+1, WalkStats.WriteHL | WalkStats.Exit, WalkStats.ReadHL, 10))
+                    if (WalkAhead(iIndex+1, WalkStats.WriteHL | WalkStats.Exit, WalkStats.ReadHL, 25))
                     {
                         iCodes[iIndex-2] = OpCode.NOP;
                         iCodes[iIndex-1] = OpCode.NOP;
                         iCodes[iIndex-0] = OpCode.CP_A_E;
+                        modified = true;
+                    }
+                }
+            }
+            iIndex++;
+        }
+        return modified;
+    }
+    bool OptimizeIndirectLoadByte()
+    {
+        bool modified = false;
+        if (iCodes.Count < 5) { return modified; }
+        uint iIndex = 4;
+        
+        loop
+        {
+            if (iIndex == iCodes.Count) { break; }
+            
+            OpCode opCode4 = iCodes[iIndex-4];
+            OpCode opCode3 = iCodes[iIndex-3];
+            OpCode opCode2 = iCodes[iIndex-2];
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex-0];
+            if ((opCode4 == OpCode.PUSH_HL) && (opCode3 == OpCode.EX_iSP_IX) && (opCode2 == OpCode.LD_L_iIX_d) && (opCode1 == OpCode.LD_H_n) && (opCode0 == OpCode.POP_DE))
+            {
+                if (   (Flags.Target != iFlags[iIndex-3] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-0] & Flags.Target)
+                    )
+                {
+                    // alters remaining value in HL .. need to look forward
+                    if (WalkAhead(iIndex+1, WalkStats.WriteDE | WalkStats.Exit, WalkStats.ReadDE, 10))
+                    {
+                        iCodes  [iIndex-4] = OpCode.NOP;
+                        iLengths[iIndex-4] = 1;
+                        iCodes  [iIndex-3] = OpCode.NOP;
+                        iLengths[iIndex-3] = 1;
+                        iCodes  [iIndex-2] = OpCode.LD_L_iHL;
+                        iLengths[iIndex-2] = 1;
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        iLengths[iIndex-0] = 1;
+                        modified = true;
+                    }
+                }
+            }
+            if ((opCode3 == OpCode.LD_L_iHL) && (opCode2 == OpCode.LD_H_n) && (opCode1 == OpCode.LD_H_L) && (opCode0 == OpCode.LD_L_n))
+            {
+                if (   (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-1] & Flags.Target)
+                    && (Flags.Target != iFlags[iIndex-0] & Flags.Target)
+                    )
+                {
+                    if (iOperands[iIndex-2] == iOperands[iIndex-0])
+                    {
+                        iCodes  [iIndex-3] = OpCode.LD_H_iHL;
+                        iLengths[iIndex-3] = 1;
+                        iCodes  [iIndex-2] = OpCode.NOP;
+                        iLengths[iIndex-2] = 1;
+                        iCodes  [iIndex-1] = OpCode.NOP;
+                        iLengths[iIndex-1] = 1;
                         modified = true;
                     }
                 }
@@ -1570,7 +1935,7 @@ unit CodePoints
             else if ((opCode0 == OpCode.LD_H_iIY_d) || (opCode0 == OpCode.LD_H_iIX_d))
             {
                 // do we ever read this value from H?
-                if (WalkAhead(iIndex+1, WalkStats.WriteH, WalkStats.ReadH | WalkStats.Exit, 10))
+                if (WalkAhead(iIndex+1, WalkStats.WriteH, WalkStats.ReadH | WalkStats.Exit, 10)) // HL is the return value so Exit DQ's
                 {
                     iCodes  [iIndex-0] = OpCode.NOP;
                     iLengths[iIndex-0] = 1;
@@ -1580,7 +1945,7 @@ unit CodePoints
             else if ((opCode0 == OpCode.LD_L_iIY_d) || (opCode0 == OpCode.LD_L_iIX_d))
             {
                 // do we ever read this value from L?
-                if (WalkAhead(iIndex+1, WalkStats.WriteL, WalkStats.ReadL | WalkStats.Exit, 10))
+                if (WalkAhead(iIndex+1, WalkStats.WriteL, WalkStats.ReadL | WalkStats.Exit, 10)) // HL is the return value so Exit DQ's
                 {
                     iCodes  [iIndex-0] = OpCode.NOP;
                     iLengths[iIndex-0] = 1;
@@ -1613,7 +1978,6 @@ unit CodePoints
                     {
                         iCodes  [iIndex-1] = OpCode.LD_L_iIY_d;
                         iCodes  [iIndex-0] = OpCode.NOP;
-                        Print(" D:" + currentMethod.ToHexString(4) + "-" + iIndex.ToString());
                         modified = true;
                     }
                 }
@@ -1627,7 +1991,6 @@ unit CodePoints
                     {
                         iCodes  [iIndex-1] = OpCode.LD_L_iIY_d;
                         iCodes  [iIndex-0] = OpCode.NOP;
-                        Print(" E:" + currentMethod.ToHexString(4) + "-" + iIndex.ToString());
                         modified = true;
                     }
                 }

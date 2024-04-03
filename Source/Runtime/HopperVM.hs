@@ -179,6 +179,10 @@ unit HopperVM
         External.WebServerRelease();
 #endif
         
+#ifdef CPU_Z80        
+        dataMemoryStart = 0xC000; // TODO : fix later
+#endif
+        
         uint nextAddress   = dataMemoryStart;
         callStackLSBPage   = nextAddress;
         nextAddress        = nextAddress + 256;

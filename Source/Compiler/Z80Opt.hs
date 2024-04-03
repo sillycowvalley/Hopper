@@ -86,6 +86,10 @@ program Z80Opt
             {
                 methodModified = true;
             }
+            if (CodePoints.OptimizeAnd())
+            {
+                methodModified = true;
+            }
             if (CodePoints.OptimizeConstantReturn())
             {
                 methodModified = true;
@@ -123,6 +127,14 @@ program Z80Opt
                 methodModified = true;
             }
             if (Optimize8BitLoadLoad())
+            {
+                methodModified = true;
+            }
+            if (OptimizeIndirectLoadByte())
+            {
+                methodModified = true;
+            }
+            if (OptimizeWriteByte())
             {
                 methodModified = true;
             }

@@ -449,27 +449,45 @@ program Z80Gen
     }         
     
     
-    incGlobalB(uint operand)
+    incGlobalB(uint operand, string typeName)
     {
         uint address = addressOperandToByte(operand);
         Peephole.Disabled = true;
-        EmitWord  (OpCode.LD_IX_nn,   address);
-        EmitByte  (OpCode.INC_iIX_d, +0);
-        EmitOffset(OpCode.JR_NZ_e,   +3);    // did it overflow from 0xFF back around to 0x00?
-        EmitByte  (OpCode.INC_iIX_d, +1);
+        if (typeName == "byte")
+        {
+            EmitWord(OpCode.LD_HL_nn,    address);
+            Emit    (OpCode.INC_iHL);
+        }
+        else
+        {
+            EmitWord  (OpCode.LD_IX_nn,   address);
+            EmitByte  (OpCode.INC_iIX_d, +0);
+            EmitOffset(OpCode.JR_NZ_e,   +3);    // did it overflow from 0xFF back around to 0x00?
+            EmitByte  (OpCode.INC_iIX_d, +1);
+        }
         Peephole.Disabled = false;
         Peephole.Reset();
     }
-    decGlobalB(uint operand)
+    decGlobalB(uint operand, string typeName)
     {
         uint address = addressOperandToByte(operand);
         Peephole.Disabled = true;
-        EmitWord  (OpCode.LD_IX_nn,    address);
-        EmitByte  (OpCode.DEC_iIX_d,  +0);
-        EmitByte  (OpCode.LD_A_n,      0xFF);
-        EmitByte  (OpCode.CP_A_iIX_d, +0); // wrapped around from 0x00 to 0xFF?
-        EmitOffset(OpCode.JR_NZ_e,    +3);
-        EmitByte  (OpCode.DEC_iIX_d,  +1);
+        
+        if (typeName == "byte")
+        {
+            EmitWord(OpCode.LD_HL_nn,    address);
+            Emit    (OpCode.DEC_iHL);
+        }
+        else
+        {
+            EmitWord  (OpCode.LD_IX_nn,    address);
+            EmitByte  (OpCode.DEC_iIX_d,  +0);
+            EmitByte  (OpCode.LD_A_n,      0xFF);
+            EmitByte  (OpCode.CP_A_iIX_d, +0); // wrapped around from 0x00 to 0xFF?
+            EmitOffset(OpCode.JR_NZ_e,    +3);
+            EmitByte  (OpCode.DEC_iIX_d,  +1);
+        }
+        
         Peephole.Disabled = false;
         Peephole.Reset();
     }
@@ -485,7 +503,7 @@ program Z80Gen
         Emit    (OpCode.POP_DE);
         EmitWord(OpCode.LD_inn_DE, address);
     }
-        
+    
     bool writeMethod(uint methodIndex, <byte> code)
     {
         bool success;
@@ -499,6 +517,10 @@ program Z80Gen
         {
             reset();
         }
+        
+        //<string, <string> > localVariables  = Code.GetLocals(code,  methodIndex); // TODO
+        <uint, string>      globalTypes     = Code.GetGlobalTypes();
+        
         
         <uint,uint> instructionAddresses; // <hopperAddress,z80Address>
         
@@ -783,7 +805,8 @@ program Z80Gen
                     // HL = next & top
                     Emit(OpCode.POP_BC);    
                     Emit(OpCode.POP_HL);    
-                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITAND"));
+                    //EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITAND"));
+                    EmitBITAND();
                     Emit(OpCode.PUSH_HL);  
                 }
                 case Instruction.BOOLOR:
@@ -793,7 +816,8 @@ program Z80Gen
                     // HL = next & top
                     Emit(OpCode.POP_BC);    
                     Emit(OpCode.POP_HL);    
-                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITOR"));
+                    //EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITOR"));
+                    EmitBITOR();
                     Emit(OpCode.PUSH_HL);    
                 }
                 case Instruction.BITXOR:
@@ -1176,11 +1200,11 @@ program Z80Gen
                 }
                 case Instruction.INCGLOBALB:
                 {
-                    incGlobalB(operand);
+                    incGlobalB(operand, globalTypes[operand]);
                 }
                 case Instruction.DECGLOBALB:
                 {
-                    decGlobalB(operand);
+                    decGlobalB(operand, globalTypes[operand]);
                 }
                 
                 case Instruction.SYSCALL0:

@@ -177,6 +177,40 @@ unit Code
         }
         return localsList;
     }
+    
+    <string, <string> > GetLocals(<byte> code, uint methodIndex)
+    {
+        string index = "0x" + methodIndex.ToHexString(4);
+        <string, <string> > localsList;
+        if (debugSymbols.Contains(index))
+        {
+            <string,variant> methodSymbols = debugSymbols[index];
+            if (methodSymbols.Contains("locals"))
+            {
+                localsList = methodSymbols["locals"];
+            }
+        }
+        return localsList;
+    }
+    
+    <uint, string> GetGlobalTypes()
+    {
+        <uint, string> globalTypes;
+        if (debugSymbols.Contains("globals"))
+        {
+            <string, variant > globalLists = debugSymbols["globals"];
+            foreach (var kv in globalLists)
+            {
+                uint offset;
+                if (UInt.TryParse(kv.key, ref offset))
+                {
+                    <string> globalList = kv.value;
+                    globalTypes[offset] = globalList[0];
+                }
+            }
+        }
+        return globalTypes;
+    }
     <uint, <string> > GetGlobals(<byte> code, uint methodIndex, uint pc, uint distance)
     {
         <uint, <string> > globalOffsets;

@@ -493,6 +493,7 @@ unit AsmZ80
         XOR_A_iIX_d = 0xDDAE,
         XOR_A_iIY_d = 0xFDAE,
         
+        OR_A_n = 0xF6,
         OR_A_B = 0xB0,
         OR_A_C = 0xB1,
         OR_A_D = 0xB2,
@@ -596,6 +597,8 @@ unit AsmZ80
         RRA  = 0x1F,
         
         CPL = 0x2F,
+        
+        OUT_n_A = 0xD3,
         
         CCF = 0x3F,
         SCF = 0x37,
@@ -931,6 +934,9 @@ unit AsmZ80
     {
         z80InstructionName[OpCode.NOP] = "NOP";                           // 0x0000
         z80OperandType    [OpCode.NOP] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.OUT_n_A] = "OUT (n), A";                // 0x001F
+        z80OperandType    [OpCode.OUT_n_A] = OperandType.Immediate8;
 
         z80InstructionName[OpCode.CPL_A_A] = "CPL A, A";                  // 0x002F
         z80OperandType    [OpCode.CPL_A_A] = OperandType.Implied;
@@ -2112,6 +2118,9 @@ unit AsmZ80
         z80InstructionName[OpCode.AND_A_n] = "AND A, n";                  // 0x00E6
         z80OperandType    [OpCode.AND_A_n] = OperandType.Immediate8;
 
+        z80InstructionName[OpCode.OR_A_n] = "OR A, n";                    // 0x00F6
+        z80OperandType    [OpCode.OR_A_n] = OperandType.Immediate8;
+        
         z80InstructionName[OpCode.AND_A_B] = "AND A, B";                  // 0x00A0
         z80OperandType    [OpCode.AND_A_B] = OperandType.Implied;
 

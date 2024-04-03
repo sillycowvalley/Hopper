@@ -752,7 +752,7 @@ program TestNumbers
         TestIntMath();
         TestPropertyMath();
         
-        Serial.WriteChar('O');//Serial.WriteChar('K');Serial.WriteChar('!');
+        Serial.WriteChar(char(0x0D)); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
     }
 }
 

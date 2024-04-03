@@ -207,7 +207,8 @@ unit Z80Library
             case SysCalls.SerialWriteChar:
             {
                 Emit(OpCode.EX_iSP_HL); // character to emit is in [top] (HL)
-                // ...
+                Emit(OpCode.LD_A_L);
+                EmitByte(OpCode.OUT_n_A, 0x1F);
             }
             case SysCalls.SerialReadChar:
             {
@@ -524,7 +525,7 @@ unit Z80Library
         Emit(OpCode.LD_A_H);
         Emit(OpCode.AND_A_B);
         Emit(OpCode.LD_H_A);
-        Emit(OpCode.RET);
+        //Emit(OpCode.RET);
     }
     
     EmitBITOR()
@@ -538,7 +539,7 @@ unit Z80Library
         Emit(OpCode.LD_A_H);
         Emit(OpCode.OR_A_B);
         Emit(OpCode.LD_H_A);
-        Emit(OpCode.RET);
+        //Emit(OpCode.RET);
     }
     
     EmitBITXOR()
