@@ -311,6 +311,7 @@ program CODEGEN
         uint byteCount = 0;
         
         byte currentTick = 0;
+        Parser.ProgressTick("i"); // convertToIHex
         
         string buffer;
         uint emitAddress = 0x0000;
@@ -331,11 +332,12 @@ program CODEGEN
                 buffer = "";
             }
             
-            byteCount++;
-            if (byteCount % 32 == 0)
+            if (byteCount % 8192 == 0)
             {
-                Parser.ProgressTick("x");
+                Parser.ProgressTick("i"); // convertToIHex
             }
+            byteCount++;
+            
         }
         if (buffer.Length != 0)
         {
@@ -492,18 +494,19 @@ program CODEGEN
                     
                     offset = offset + sz.value;
                 }
-                Parser.ProgressTick(".");
+                Parser.ProgressTick("g"); // codegen
                 
                 // emit data
                 writeCode(hexeFile, constantData);
-                Parser.ProgressTick(".");
+                Parser.ProgressTick("g");  // codegen
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 if (doInstrumenting)
                 {
                     instrument(methodCode, entryIndex);
                 }
                 writeCode(hexeFile, methodCode);
-                Parser.ProgressTick(".");
+                Parser.ProgressTick("g");  // codegen
+                uint progressCount = 0;
                 foreach (var sz in methodSizes)
                 {
                     uint index = sz.key;
@@ -517,7 +520,11 @@ program CODEGEN
                         instrument(methodCode, index);
                     }
                     writeCode(hexeFile, methodCode);   
-                    Parser.ProgressTick(".");
+                    if (progressCount % 64 == 0)
+                    {
+                        Parser.ProgressTick("g");  // codegen
+                    }
+                    progressCount++;
                 }
                                 
                 hexeFile.Flush();

@@ -2603,6 +2603,7 @@ program Compile
         
         bool success = false;
         bool isMain = true;
+        uint progressCount = 0;
         loop
         {
             if (HadError)
@@ -2676,7 +2677,11 @@ program Compile
             {
                 break;
             }
-            Parser.ProgressTick(".");
+            if (progressCount % 16 == 0)
+            {
+                Parser.ProgressTick("h"); // Hopper compiler
+            }
+            progressCount++;
             
             // check that #ifdef nesting is zero
             if (Directives.IsStillOpen)

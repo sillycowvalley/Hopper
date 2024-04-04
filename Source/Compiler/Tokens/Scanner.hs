@@ -67,15 +67,15 @@ unit Scanner
                 sourceLines.Append(ln);
                 
                 progress = progress + ln.Length;
-                if (progress > 10240)
+                if (progress > 40960)
                 {
-                    Parser.ProgressTick("+");
+                    Parser.ProgressTick("s"); // scanner
                     progress = 0;
                 }
             } // loop
-            if (progress > 2560)
+            if (progress > 5120)
             {
-                Parser.ProgressTick("+");
+                Parser.ProgressTick("s"); // scanner
             }
         }
         currentSourcePath = sourcePath;

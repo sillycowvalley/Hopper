@@ -71,7 +71,7 @@ unit Code
                 counter++;
                 if (counter % 1024 == 0)
                 {
-                    Parser.ProgressTick(".");
+                    Parser.ProgressTick("x"); // .hexe loaded by debugger
                 }
             }
         }
@@ -713,6 +713,16 @@ unit Code
                     }
                     methodDictionary["hits"] = hits;
                 }
+                case "returntype":
+                {
+                    Parser.Consume(HopperToken.StringConstant, "type name expected");
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    previousToken = PreviousToken;
+                    methodDictionary["returntype"] = previousToken["lexeme"];
+                }
                 case "locals":
                 {
                     <string, <string> > localLists;
@@ -1087,6 +1097,11 @@ unit Code
     
     bool ParseCode(string codePath, bool keepCode, bool keepSymbols)
     {
+        string progMark = "c";
+        if (codePath.Contains(".zcode"))
+        {
+            progMark = "z";
+        }
         bool success;
         long pos;
         bool first;
@@ -1100,6 +1115,7 @@ unit Code
             Parser.Advance(); // load up first token
             Parser.Consume(HopperToken.LBrace);
             first = true;
+            uint loopCount;
             loop
             {
                 if (Parser.HadError)
@@ -1284,7 +1300,11 @@ unit Code
                         break;
                     }
                 }
-                Parser.ProgressTick(".");
+                if (loopCount % 32 == 0)
+                {
+                    Parser.ProgressTick(progMark); // loading .code or .zcode
+                }
+                loopCount++;
             } // loop  
             if (Parser.HadError)
             {
@@ -1306,7 +1326,6 @@ unit Code
     bool ExportCode(string codePath, bool saveCode)
     {
         bool success = true;
-        
         <string, variant> dict;
         
         if (constantData.Count != 0)
@@ -1362,6 +1381,11 @@ unit Code
                         {
                             methodDictionary[mkv.key] = ln;
                         }
+                    }
+                    else if (mkv.key == "returntype")
+                    {
+                        string tp = mkv.value;
+                        methodDictionary[mkv.key] = tp;
                     }
                     else
                     {

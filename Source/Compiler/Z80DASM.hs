@@ -71,7 +71,7 @@ program DASM
         bool first = true;
         <byte> code;
         uint byteCount = 0;
-        Parser.ProgressTick("x");
+        Parser.ProgressTick("i"); // readIHex
         loop
         {
             string ln = hexFile.ReadLine();
@@ -97,9 +97,9 @@ program DASM
             }
             first = false;
             byteCount += 16;
-            if (byteCount % 1024 == 0)
+            if (byteCount % 8192 == 0)
             {
-                Parser.ProgressTick("x");
+                Parser.ProgressTick("i"); // readIHex
             }
         }
         return code;
@@ -297,6 +297,7 @@ program DASM
                 uint currentMethodIndex = 0;
                 uint instructionAddress;
                 
+                uint progressCount;
                 loop
                 {
                     if (index == code.Count) { break; }
@@ -379,7 +380,11 @@ program DASM
                             mname = mname + "0x" + methodIndex.ToHexString(4) + char(0x0A);
                             hasmFile.Append(mname);  
                             hasmFile.Append("" + char(0x0A)); 
-                            Parser.ProgressTick(".");
+                            if (progressCount % 64 == 0)
+                            {
+                                Parser.ProgressTick("d");
+                            }
+                            progressCount++;
                         }
                         currentMethodIndex = methodIndex;
                     }
@@ -456,7 +461,7 @@ program DASM
                     //hasmFile.Flush(); // TODO REMOVE
                 } // loop
                               
-                Parser.ProgressTick(".");
+                Parser.ProgressTick("d");
                 hasmFile.Flush();
                 if (!Parser.IsInteractive())
                 {

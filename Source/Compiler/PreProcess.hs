@@ -1456,6 +1456,7 @@ program PreProcess
           bool endedProperly = false;
           uint curlyDeclarations;
           string lastID;
+          uint progressCount = 0;
           loop
           {
               if (Parser.Check(HopperToken.EOF))
@@ -1478,7 +1479,11 @@ program PreProcess
                   success = false;
                   break;
               }
-              Parser.ProgressTick(".");
+              if (progressCount % 32 == 0)
+              {
+                  Parser.ProgressTick("p"); // preprocess
+              }
+              progressCount++;
           }   
           if (Parser.HadError)
           {

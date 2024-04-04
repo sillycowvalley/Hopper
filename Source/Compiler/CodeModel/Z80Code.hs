@@ -5,6 +5,7 @@ unit Z80Code
     <uint,uint>            methodLengths;   // <index, length>
     <uint,string>          methodNames;     // <index, name>
     <uint, <uint,uint> >   methodDebug;     // <index, <address, sourceLineNumber> >
+    <uint, string>         methodReturns;   // <index, returntype>
 
     <byte>           preAmble;        // code before entryPoint: not optimized
     <uint, <byte> >  methodCode;      // <index, <byte> >
@@ -15,6 +16,60 @@ unit Z80Code
     uint org;
     
     uint GetPreAmbleSize() { return preAmble.Count; }
+    
+    
+    <OpCode> GetCallStream(uint index)
+    {
+        <OpCode> callStream;
+        
+        
+        loop
+        {
+            OpCode instruction;
+            OperandType operandType;
+            byte operandLength;
+            bool signed;
+            
+            byte opCodeLength = GetOpCodeLength(preAmble[index]);
+            if (opCodeLength == 1)
+            {
+                 instruction = OpCode(preAmble[index]);
+                 index++;
+            }
+            else if (opCodeLength == 2)
+            {
+                 instruction = OpCode((preAmble[index] << 8) + preAmble[index+1]);
+                 index += 2;
+            }
+            string name = GetOpCodeInfo(instruction, ref operandType, ref operandLength, ref signed, false);
+            uint operand = 0;
+            if (operandLength == 1)
+            {
+                 operand = preAmble[index];
+                 index++;
+            }
+            else if (operandLength == 2)
+            {
+                 operand = preAmble[index] + (preAmble[index+1] << 8);
+                 index += 2;
+            }
+            if (instruction == OpCode.JP_nn)
+            {
+                index = operand;
+            }
+            if (instruction == OpCode.RET) { break; }
+            if (instruction == OpCode.CALL_nn) { break; }
+            
+            if (   (instruction != OpCode.JR_NZ_e) && (instruction != OpCode.JR_Z_e) 
+                && (instruction != OpCode.JR_NC_e) && (instruction != OpCode.JR_C_e) 
+                && (instruction != OpCode.JP_M_nn)
+                )
+            {
+                callStream.Append(instruction);
+            }
+        }
+        return callStream; 
+    }
     
     <uint,string> GetMethodNames() // <index, name>
     {
@@ -35,6 +90,10 @@ unit Z80Code
     SetMethodDebugLines(uint methodIndex, <uint,uint> debugLines)
     {
         methodDebug[methodIndex] = debugLines;
+    }
+    string GetMethodReturnType(uint methodIndex)
+    {
+        return methodReturns[methodIndex];
     }
     
     byte hexCheckSum(string values)
@@ -72,7 +131,7 @@ unit Z80Code
         uint index = 0;
         
         byte currentTick = 0;
-        Parser.ProgressTick("x");
+        Parser.ProgressTick("i"); // writeIHex
         
         string buffer;
         uint emitAddress = 0;
@@ -93,11 +152,12 @@ unit Z80Code
                 buffer = "";
             }
             
-            byteCount++;
-            if (byteCount % 1024 == 0)
+            if (byteCount % 8192 == 0)
             {
-                Parser.ProgressTick("x");
+                Parser.ProgressTick("i"); // writeIHex
             }
+            byteCount++;
+            
         }
         if (buffer.Length != 0)
         {
@@ -114,7 +174,8 @@ unit Z80Code
         bool first = true;
         code.Clear();
         uint byteCount = 0;
-        Parser.ProgressTick("x");
+        Parser.ProgressTick("i"); // readIHex
+        
         loop
         {
             string ln = hexFile.ReadLine();
@@ -139,11 +200,11 @@ unit Z80Code
                 length--;
             }
             first = false;
-            byteCount += 16;
-            if (byteCount % 1024 == 0)
+            if (byteCount % 8192 == 0)
             {
-                Parser.ProgressTick("x");
+                Parser.ProgressTick("i"); // readIHex
             }
+            byteCount += 16;
         }
     }
     long Load(string codePath)
@@ -262,6 +323,12 @@ unit Z80Code
                 }
             }
             methodDebug[methodIndex] = debugLines;
+            string returnType = "void";
+            if (methodSymbols.Contains("returntype"))
+            {
+                returnType = methodSymbols["returntype"];
+            }
+            methodReturns[methodIndex] = returnType;
         }
         return long(code.Count);
     }

@@ -1976,6 +1976,12 @@ unit Symbols
                 }
                 if (fCodeStream.Contains(iUsedOverload))
                 {
+                    string returnType = fReturnTypes[iUsedOverload];
+                    if (returnType != "void")
+                    {
+                        mdict["returntype"]   = returnType;
+                    }
+                    
                     < < string > > argsAndTypes = fArgumentNamesAndTypes[iUsedOverload];
                     uint argCount = argsAndTypes.Count;
                     int acount;

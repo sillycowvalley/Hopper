@@ -576,7 +576,7 @@ program Z80Gen
                     EmitWord(OpCode.LD_IY_inn, SPBPSwapper);
                     
                     // Create some empty stack slots:
-                    EmitWord(OpCode.LD_IX_nn, 0x0000);
+                    EmitWord(OpCode.LD_DE_nn, 0x0000);
                     
                     if (operand <= 5) // don't do this : makes an extra case for Z80Dasm and Z80Opt
                     {
@@ -615,15 +615,6 @@ program Z80Gen
                 {
                     Emit(OpCode.EX_iSP_HL);
                     Emit(OpCode.PUSH_HL);   
-                }
-                case Instruction.BOOLNOT:
-                {
-                    // assumes [top] is 0 or 1
-                    Emit(OpCode.EX_iSP_HL);
-                    Emit(OpCode.LD_A_L);   
-                    Emit(OpCode.XOR_A_A);  
-                    Emit(OpCode.LD_L_A);  
-                    Emit(OpCode.EX_iSP_HL);
                 }
                 case Instruction.DECSP:
                 {
@@ -826,15 +817,26 @@ program Z80Gen
                     // HL = next ^ top
                     Emit(OpCode.POP_BC);    
                     Emit(OpCode.POP_HL);
-                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITXOR"));
+                    //EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITXOR"));
+                    EmitBITXOR();
                     Emit(OpCode.PUSH_HL);    
                 }
                 case Instruction.BITNOT:
                 {
                     // top = ~top
                     Emit(OpCode.POP_HL);
-                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITNOT"));
+                    //EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITNOT"));
+                    EmitBITNOT();
                     Emit(OpCode.PUSH_HL);    
+                }
+                case Instruction.BOOLNOT:
+                {
+                    // assumes [top] is 0 or 1
+                    Emit(OpCode.EX_iSP_HL);
+                    Emit(OpCode.LD_A_L);   
+                    Emit(OpCode.XOR_A_A);  
+                    Emit(OpCode.LD_L_A);  
+                    Emit(OpCode.EX_iSP_HL);
                 }
                 
                 case Instruction.BITSHL8:
@@ -876,7 +878,8 @@ program Z80Gen
                     // EQ: DE = HL == BC ? 1 : 0 
                     EmitWord(OpCode.LD_BC_nn, operand & 0xFF);    
                     Emit(OpCode.POP_HL);    
-                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("EQ"));
+                    //EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("EQ"));
+                    EmitEQ();
                     Emit(OpCode.PUSH_DE);
                 }
                 case Instruction.PUSHILT:
@@ -978,7 +981,8 @@ program Z80Gen
                     // EQ: DE = HL == BC ? 1 : 0 
                     Emit(OpCode.POP_BC);    
                     Emit(OpCode.POP_HL);    
-                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("EQ"));
+                    //EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("EQ"));
+                    EmitEQ();
                     Emit(OpCode.PUSH_DE);
                 }
                 case Instruction.NE:
@@ -987,7 +991,8 @@ program Z80Gen
                     // EQ: DE = HL != BC ? 1 : 0
                     Emit(OpCode.POP_BC);    
                     Emit(OpCode.POP_HL);    
-                    EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("NE"));
+                    //EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("NE"));
+                    EmitNE();
                     Emit(OpCode.PUSH_DE);
                 }
                 
@@ -1356,7 +1361,7 @@ program Z80Gen
         uint index = 0;
         
         byte currentTick = 0;
-        Parser.ProgressTick("x");
+        Parser.ProgressTick("i"); // writeIHex
         
         string buffer;
         uint emitAddress = 0;
@@ -1377,11 +1382,12 @@ program Z80Gen
                 buffer = "";
             }
             
-            byteCount++;
-            if (byteCount % 1024 == 0)
+            if (byteCount % 8192 == 0)
             {
-                Parser.ProgressTick("x");
+                Parser.ProgressTick("i"); // writeIHex
             }
+            byteCount++;
+            
         }
         if (buffer.Length != 0)
         {
@@ -1490,7 +1496,7 @@ program Z80Gen
                 entryIndex = Code.GetEntryIndex();
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 <uint,uint>  framelessMethodCandidates = Code.GetFramelessMethodCandidates();
-                Parser.ProgressTick(".");
+                Parser.ProgressTick("g");
                 
                 // stack needs to exist before our first CALL
                 // start pointing one byte beyond since it grows downward
@@ -1500,7 +1506,7 @@ program Z80Gen
                 
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 bool failed = !writeMethod(entryIndex, methodCode);
-                Parser.ProgressTick(".");
+                Parser.ProgressTick("g");
                 uint indexMax = 0;
                 foreach (var sz in methodSizes)
                 {
@@ -1515,6 +1521,7 @@ program Z80Gen
                     // if we emit the methods in increasing order of indices
                     // then we can find them again in the binary (for debug info)
                     uint count = 1;
+                    uint progressCount;
                     for (uint index = 0; index <= indexMax; index++)
                     {
                         if (index == entryIndex)          { continue; }
@@ -1526,7 +1533,11 @@ program Z80Gen
                             failed = true;
                             break;
                         }
-                        Parser.ProgressTick(".");
+                        if (progressCount % 64 == 0)
+                        {
+                            Parser.ProgressTick("g");
+                        }
+                        progressCount++;
                         count++;
                         if (output.Count > 0xF000)
                         {

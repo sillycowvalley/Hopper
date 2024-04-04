@@ -1005,7 +1005,7 @@ program Translate
             {
                 break;
             }
-            Parser.ProgressTick(".");
+            Parser.ProgressTick("t"); // translate
             
             // check that #ifdef nesting is zero
             if (Directives.IsStillOpen)

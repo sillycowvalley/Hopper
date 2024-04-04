@@ -34,7 +34,7 @@ program Optimize
     uint     totalMethodsRemoved;
     uint     totalMethodBytes;
     
-    const uint progressSteps = 100;
+    const uint progressSteps = 512;
     uint progressInstructions;
     
     ProgessNudge()
@@ -42,7 +42,7 @@ program Optimize
         progressInstructions++;
         if ((progressInstructions % progressSteps) == 0)
         {
-            Parser.ProgressTick(".");
+            Parser.ProgressTick("o"); // optimizer
         }
     }
 

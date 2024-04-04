@@ -30,7 +30,7 @@ program Z80Opt
         progressInstructions++;
         if ((progressInstructions % progressSteps) == 0)
         {
-            Parser.ProgressTick(".");
+            Parser.ProgressTick("o"); // optimizer
         }
     }
     
@@ -135,6 +135,18 @@ program Z80Opt
                 methodModified = true;
             }
             if (OptimizeWriteByte())
+            {
+                methodModified = true;
+            }
+            if (OptimizeTernary())
+            {
+                methodModified = true;
+            }
+            if (OptimizeTrivialPushPop())
+            {
+                methodModified = true;
+            }
+            if (OptimizeEQJ())
             {
                 methodModified = true;
             }

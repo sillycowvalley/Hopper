@@ -73,6 +73,8 @@ program DASM
         string content;
         uint length = code.Count;
 
+        uint progressCount;
+        
         for (uint address = 0; address < length; address++)
         {
             uint actualAddress = startAddress + address;
@@ -105,7 +107,11 @@ program DASM
                 {
                     hasmFile.Append("// " + methodIndex + char(0x0A)); 
                 }
-                Parser.ProgressTick(".");
+                if (progressCount % 64 == 0)
+                {
+                    Parser.ProgressTick("d"); // dasm
+                }
+                progressCount++;
             }
             uint delta = (address-doffset);
             string debugAddress = delta.ToString();
@@ -378,7 +384,7 @@ program DASM
                         address = address + 4;
                         methodNames[methodOffset] = "0x" + methodIndex.ToHexString(4);
                     }
-                    Parser.ProgressTick(".");
+                    Parser.ProgressTick("d"); // dasm
                 }
                 if (!binFile.IsValid())
                 {
@@ -410,7 +416,7 @@ program DASM
                     DisassembleData(hasmFile, code, address);
                     address = address   + code.Count;
                     codeSize = codeSize + code.Count;
-                    Parser.ProgressTick(".");
+                    Parser.ProgressTick("d"); // dasm
                 }
                 code.Clear();
                 loop
@@ -425,7 +431,7 @@ program DASM
                 address = 0;
                 DisassembleCode(hasmFile, code, address, methodNames);
                 codeSize = codeSize + code.Count;
-                Parser.ProgressTick(".");
+                Parser.ProgressTick("d"); // dasm
                 hasmFile.Flush();
                 if (!Parser.IsInteractive())
                 {

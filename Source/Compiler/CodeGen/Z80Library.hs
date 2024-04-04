@@ -71,7 +71,7 @@ unit Z80Library
         EmitMODI();
         libraryAddresses["MODI"] = address;
         
-        
+        /*
         address = CurrentAddress;
         Peephole.Reset();
         EmitEQ();
@@ -81,6 +81,8 @@ unit Z80Library
         Peephole.Reset();
         EmitNE();
         libraryAddresses["NE"] = address;
+        
+        */
         
         address = CurrentAddress;
         Peephole.Reset();
@@ -122,7 +124,7 @@ unit Z80Library
         EmitGEI();
         libraryAddresses["GEI"] = address;
         
-        
+        /*
         address = CurrentAddress;
         Peephole.Reset();
         EmitBITAND();
@@ -142,7 +144,7 @@ unit Z80Library
         Peephole.Reset();
         EmitBITNOT();
         libraryAddresses["BITNOT"] = address;
-        
+        */
         address = CurrentAddress;
         Peephole.Reset();
         EmitBITSHL();
@@ -432,7 +434,7 @@ unit Z80Library
         // BC == HL
         EmitByte(OpCode.LD_E_n, 1);      // LSB: result = true
 // Exit:        
-        Emit(OpCode.RET);
+        //Emit(OpCode.RET);
         Peephole.Disabled = false;
         Peephole.Reset();
     }
@@ -453,7 +455,7 @@ unit Z80Library
         // BC == HL
         EmitByte(OpCode.LD_E_n, 0);       // LSB: result = false
 // Exit:        
-        Emit(OpCode.RET);
+        //Emit(OpCode.RET);
         Peephole.Disabled = false;
         Peephole.Reset();
     }
@@ -553,7 +555,7 @@ unit Z80Library
         Emit(OpCode.LD_A_H);
         Emit(OpCode.XOR_A_B);
         Emit(OpCode.LD_H_A);
-        Emit(OpCode.RET);
+        //Emit(OpCode.RET);
     }
     
     EmitBITNOT()
@@ -567,7 +569,7 @@ unit Z80Library
         Emit(OpCode.LD_A_H);
         Emit(OpCode.CPL_A_A);
         Emit(OpCode.LD_H_A);
-        Emit(OpCode.RET);
+        //Emit(OpCode.RET);
     }
     
     compareSigned()

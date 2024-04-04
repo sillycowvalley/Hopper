@@ -142,7 +142,7 @@ program ASMGEN
         uint index = 0;
         
         byte currentTick = 0;
-        Parser.ProgressTick("x");
+        Parser.ProgressTick("i"); // writeIHex
         
         string buffer;
         uint emitAddress = 0;
@@ -163,11 +163,12 @@ program ASMGEN
                 buffer = "";
             }
             
-            byteCount++;
-            if (byteCount % 1024 == 0)
+            if (byteCount % 8192 == 0)
             {
-                Parser.ProgressTick("x");
+                Parser.ProgressTick("i"); // writeIHex
             }
+            byteCount++;
+            
         }
         if (buffer.Length != 0)
         {

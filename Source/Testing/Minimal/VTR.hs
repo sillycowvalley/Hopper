@@ -9,13 +9,52 @@ program ValueTypeRuntimeTests
     uses "/Source/Minimal/Serial"
     uses "/Source/Minimal/Diagnostics"
     
-    Failure(uint instance)
+    writeDigit(uint uthis)
     {
-        uint local0 = instance;
-        uint local1 = instance;
-        uint local2 = instance;
-        uint local3 = instance;
-        Die(0x0B);    
+        byte digit = byte(uthis % 10);
+        char c = digit.ToDigit();
+        uthis = uthis / 10;
+        if (uthis != 0)
+        {
+            writeDigit(uthis);
+        }
+        Serial.WriteChar(c);
+    }
+    WriteInt(int this)
+    {
+        if (this < 0)
+        {
+            Write('-');
+            this = 0 - this;
+        }
+        uint uthis = uint(this);
+        writeDigit(uthis);
+    }
+    WriteUInt(uint this)
+    {
+        writeDigit(this);
+    }
+    
+    WriteHex(byte b)
+    {
+        byte msn = ((b >> 4) & 0xF);
+        byte lsn = b & 0xF;
+        Serial.WriteChar(msn.ToHex());
+        Serial.WriteChar(lsn.ToHex());
+    }
+    WriteHex(uint u)
+    {
+        byte msb = byte(u >> 8);
+        byte lsb = byte(u & 0xFF);
+        WriteHex(msb);
+        WriteHex(lsb);
+    }
+    
+    Failure(uint instance)
+    {    
+        Serial.WriteChar(char(0x0D));Serial.WriteChar('D');Serial.WriteChar('A');Serial.WriteChar('N');Serial.WriteChar('G');Serial.WriteChar(':');
+        WriteUInt(instance);
+        Diagnostics.Die(0x0B); // system failure / internal error
     }
     
     uint uiGlobal;
@@ -250,6 +289,9 @@ program ValueTypeRuntimeTests
         uint a = c / b;
         if (a != 13)
         {
+            Serial.WriteChar(' '); WriteUInt(c);
+            Serial.WriteChar(' '); WriteUInt(b);
+            Serial.WriteChar(' '); WriteUInt(a);
             Failure(31);
         }
         c /= One;
@@ -281,7 +323,6 @@ program ValueTypeRuntimeTests
         uint wins = 0;
         uint losses = 0;
         
-        
         int p5  =  5;
         int m10 = -10;
         int p10 = 10;
@@ -289,7 +330,7 @@ program ValueTypeRuntimeTests
     
         if (m10 < m5)
         {
-            wins++;   
+            wins++;
         }
         else
         {
@@ -297,7 +338,7 @@ program ValueTypeRuntimeTests
         }
         if (m5 < p10)
         {
-            wins++;    
+            wins++;
         }
         else
         {
@@ -351,10 +392,11 @@ program ValueTypeRuntimeTests
         {
             wins++;
         }
-        if (wins != 8)
-        {
-            Failure(36);
+        if (wins != 8)  
+        { 
+            Failure(36); 
         }
+
     }
     
     GEI()
@@ -371,6 +413,7 @@ program ValueTypeRuntimeTests
         if (m10 >= m5)
         {
             losses++;   
+            Failure(1);
         }
         else
         {
@@ -379,6 +422,7 @@ program ValueTypeRuntimeTests
         if (m5 >= p10)
         {
             losses++;    
+            Failure(2);
         }
         else
         {
@@ -391,6 +435,7 @@ program ValueTypeRuntimeTests
         else
         {
             losses++;
+            Failure(3);
         }
         if (m5 >= m10)
         {
@@ -399,10 +444,12 @@ program ValueTypeRuntimeTests
         else
         {
             losses++;
+            Failure(4);
         }
         if (p5 >= p10)
         {
             losses++;
+            Failure(5);
         }
         else
         {
@@ -415,6 +462,7 @@ program ValueTypeRuntimeTests
         else
         {
             losses++;
+            Failure(6);
         }
         if (p5 >= p5)
         {
@@ -423,6 +471,7 @@ program ValueTypeRuntimeTests
         else
         {
             losses++;
+            Failure(7);
         }
         if (m5 >= m5)
         {
@@ -431,10 +480,11 @@ program ValueTypeRuntimeTests
         else
         {
             losses++;
+            Failure(8);
         }
         if (wins != 8)
         {
-            Failure(36);
+            Failure(39);
         }
     }
     
@@ -615,5 +665,7 @@ program ValueTypeRuntimeTests
         GEI();  // GEI
         LEI();  // LEI
         GTI();  // GTI
+        
+        Serial.WriteChar(char(0x0D)); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
     }
 }

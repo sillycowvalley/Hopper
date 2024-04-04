@@ -69,7 +69,7 @@ program DASM
         bool first = true;
         <byte> code;
         uint byteCount = 0;
-        Parser.ProgressTick("x");
+        Parser.ProgressTick("i");  // readIHex
         loop
         {
             string ln = hexFile.ReadLine();
@@ -94,11 +94,11 @@ program DASM
                 length--;
             }
             first = false;
-            byteCount += 16;
-            if (byteCount % 1024 == 0)
+            if (byteCount % 8192 == 0)
             {
-                Parser.ProgressTick("x");
+                Parser.ProgressTick("i");  // readIHex
             }
+            byteCount += 16;
         }
         return code;
     }

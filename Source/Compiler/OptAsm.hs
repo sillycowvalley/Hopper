@@ -46,7 +46,7 @@ program OptAsm
         progressInstructions++;
         if ((progressInstructions % progressSteps) == 0)
         {
-            Parser.ProgressTick(".");
+            Parser.ProgressTick("o"); // optimizer
         }
     }
     
