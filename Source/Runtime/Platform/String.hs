@@ -532,11 +532,13 @@ unit HRString
     }
     BuildChar(ref uint this, char ch)
     {
+        uint length;
+        uint copy;
         uint capacity = getCapacity(this);
-        uint length   = GetLength(this);
+        length   = GetLength(this);
         if (capacity < length+1)
         {
-            uint copy = clone(this, 1);
+            copy = clone(this, 1);
             GC.Release(this);
             this = copy;
         }
@@ -545,35 +547,46 @@ unit HRString
     }
     BuildString(ref uint this, uint append)
     {
+        uint capacity;
+        uint length0;
+        uint copy;
+        uint i;
+        uint src;
+        uint dst;
         uint length1 = GetLength(append);
         if (length1 > 0)
         {
-            uint capacity = getCapacity(this);
-            uint length0  = GetLength(this);
+            capacity = getCapacity(this);
+            length0  = GetLength(this);
             if (capacity < length0+length1)
             {
-                uint copy = clone(this, length1);
+                copy = clone(this, length1);
                 GC.Release(this);
                 this = copy;
             }
-            for (uint i = 0; i < length1; i++)
+            dst = this+siChars+length0;
+            src = append+siChars;
+            for (; i < length1; i++)
             {
-                WriteByte(this+siChars+length0+i, ReadByte(append+siChars+i));
+                WriteByte(dst+i, ReadByte(src+i));
             }
             WriteWord(this+siLength, length0+length1);
         }
     }
     BuildFront(ref uint this, char ch)
     {
+        uint length;
+        uint copy;
+        uint i;
         uint capacity = getCapacity(this);
-        uint length = GetLength(this);
+        length = GetLength(this);
         if (capacity < length+1)
         {
-            uint copy = clone(this, 1);
+            copy = clone(this, 1);
             GC.Release(this);
             this = copy;
         }
-        uint i = length;
+        i = length;
         loop
         {
             if (i == 0)

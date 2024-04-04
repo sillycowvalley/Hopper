@@ -359,14 +359,14 @@ unit AsmZ80
         
         LD_BC_inn = 0xED4B,
         LD_DE_inn = 0xED5B,
-        LD_HL_inn = 0xED6B,
+        LD_HL_inn = 0x2A, // 0xED6B,
         LD_SP_inn = 0xED7B,
         LD_IX_inn = 0xDD2A,
         LD_IY_inn = 0xFD2A,
         
         LD_inn_BC = 0xED43,
         LD_inn_DE = 0xED53,
-        LD_inn_HL = 0xED63,
+        LD_inn_HL = 0x22, // 0xED63,
         LD_inn_SP = 0xED73,
         LD_inn_IX = 0xDD22,
         LD_inn_IY = 0xFD22,
@@ -381,6 +381,7 @@ unit AsmZ80
         LD_SP_nn = 0x31,
         
         LD_SP_HL = 0xF9,
+        LD_SP_IY = 0xFDF9,
         
         EX_DE_HL  = 0xEB,
         EX_iSP_HL = 0xE3,
@@ -1891,6 +1892,10 @@ unit AsmZ80
 
         z80InstructionName[OpCode.LD_SP_HL] = "LD SP, HL";                // 0x00F9
         z80OperandType    [OpCode.LD_SP_HL] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.LD_SP_IY] = "LD SP, IY";                // 0xFDF9
+        z80OperandType    [OpCode.LD_SP_IY] = OperandType.Implied;
+        
         
         z80InstructionName[OpCode.EX_DE_HL] = "EX DE, HL";                // 0x00EB
         z80OperandType    [OpCode.EX_DE_HL] = OperandType.Implied;

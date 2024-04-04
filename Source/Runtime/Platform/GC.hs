@@ -50,7 +50,9 @@ unit GC
             }
             case Type.List:
             {
+#ifdef INCLUDE_LISTS
                 return HRList.Clone(original);
+#endif
             }
             case Type.Array:
             {
@@ -58,11 +60,15 @@ unit GC
             }
             case Type.Dictionary:
             {
+#ifdef INCLUDE_DICTIONARIES
                 return HRDictionary.Clone(original);
+#endif
             }
             case Type.Pair:
             {
+#ifdef INCLUDE_DICTIONARIES
                 return HRPair.Clone(original);
+#endif
             }
             case Type.Variant:
             {
@@ -111,8 +117,11 @@ unit GC
         {
             switch (htype)
             {
-                case Type.Array:
                 case Type.String:
+                {
+                    Memory.Free(address); // easy : nothing to walk
+                }
+                case Type.Array:
                 {
                     Memory.Free(address); // easy : nothing to walk
                 }
@@ -152,18 +161,24 @@ unit GC
                 }
                 case Type.List:
                 {
+#ifdef INCLUDE_LISTS
                     HRList.Clear(address);
                     Memory.Free(address);
+#endif
                 }
                 case Type.Dictionary:
                 {
+#ifdef INCLUDE_DICTIONARIES
                     HRDictionary.Clear(address);
                     Memory.Free(address);
+#endif
                 }
                 case Type.Pair:
                 {
+#ifdef INCLUDE_DICTIONARIES
                     HRPair.Clear(address);
                     Memory.Free(address);
+#endif
                 }
                 case Type.Variant:
                 {

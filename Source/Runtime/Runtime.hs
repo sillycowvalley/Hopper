@@ -16,7 +16,8 @@ program Runtime
 #ifdef CPU_Z80
     #define NO_JIX_INSTRUCTIONS
     #define CDECL
-    #define VALUE_TYPE_RUNTIME
+    #define VALUE_TYPE_RUNTIME        // what we are building
+    #define MINIMAL_RUNTIME_SYSCALLS  // limited set of SysCalls available to the user
 #endif
 
 #ifndef VALUE_TYPE_RUNTIME
@@ -27,9 +28,10 @@ program Runtime
     #define INCLUDE_WIFI
 #endif
 
-//#ifndef CPU_Z80
-    #define INCLUDE_DICTIONARIES // just to make it smaller for now : only saves 829 bytes of Hopper code 
-//#endif
+#ifndef CPU_Z80
+    #define INCLUDE_LISTS
+    #define INCLUDE_DICTIONARIES
+#endif
 
     uses "/Source/Debugger/6502/ZeroPage"
 
@@ -266,22 +268,38 @@ program Runtime
     
     bool TryReadSerialByte(ref byte data)
     {
-        char c0 = SerialReadChar();
-        char c1 = SerialReadChar();
-        byte msn = HRChar.FromHex(c0);
-        byte lsn = HRChar.FromHex(c1);
+        char c0;
+        char c1;
+        byte msn;
+        byte lsn;
+        c0 = SerialReadChar();
+        c1 = SerialReadChar();
+        msn = HRChar.FromHex(c0);
+        lsn = HRChar.FromHex(c1);
         data =  (msn << 4) + lsn;
         return true;
     }
     
     bool SerialLoadIHex(ref uint loadedAddress, ref uint codeLength)
     {
+        byte crc0;
+        byte crc1;
+        byte checkSum;
+        byte lsb;
+        byte msb;
+        char eol;    
+        uint codeLimit;
+        uint c;
+        char colon;
+        byte byteCount;
+        byte dataByte;
+        byte recordType;
+        uint recordAddress;
         bool success = true;
+        
         loadedAddress = codeMemoryStart;
         
         currentCRC = 0;
-        byte crc0;
-        byte crc1;
         if (!TryReadSerialByte(ref crc0)) { success = false; }
         if (success)
         {
@@ -289,7 +307,7 @@ program Runtime
         }
         if (success)
         {
-            char eol = SerialReadChar();
+            eol = SerialReadChar();
             if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
             { 
                 success = false;
@@ -300,60 +318,55 @@ program Runtime
             }
         }
         
-        uint codeLimit = External.GetSegmentPages() << 8;
+        codeLimit = External.GetSegmentPages() << 8;
         
         codeLength = 0;
         loop
         {
             if (!success) { break; }
-            char colon = SerialReadChar();
+            colon = SerialReadChar();
             if (colon != ':') { success = false; break; }
             
-            byte byteCount;
+            
             if (!TryReadSerialByte(ref byteCount)) { success = false; break; }
             
-            byte lsb;
-            byte msb;
             if (!TryReadSerialByte(ref msb)) { success = false; break; }
             if (!TryReadSerialByte(ref lsb)) { success = false; break; }
-            uint recordAddress = lsb + (msb << 8);
+            recordAddress = lsb + (msb << 8);
             
-            byte recordType;
             if (!TryReadSerialByte(ref recordType)) { success = false; break; }
             
-            switch (recordType)
+            if (recordType == 0x00)
             {
-                case 0x00: // data
+                // data
+                for (c=0; c < byteCount; c++)
                 {
-                    for (uint c=0; c < byteCount; c++)
-                    {
-                        byte dataByte;
-                        if (!TryReadSerialByte(ref dataByte))             { success = false; break; }
-                        if (codeMemoryStart + recordAddress >= codeLimit) { success = false; break; }
-                        WriteCodeByte(codeMemoryStart + recordAddress, dataByte);
-                        codeLength++;
-                        recordAddress++;
-                    }
-                    byte checkSum;
-                    if (!TryReadSerialByte(ref checkSum)) { success = false; break; }
-                    
-                    char eol = SerialReadChar();
-                    if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
-                    { 
-                        success = false; break;
-                    }
-                    continue; // next record
+                    if (!TryReadSerialByte(ref dataByte))             { success = false; break; }
+                    if (codeMemoryStart + recordAddress >= codeLimit) { success = false; break; }
+                    WriteCodeByte(codeMemoryStart + recordAddress, dataByte);
+                    codeLength++;
+                    recordAddress++;
                 }
-                case 0x01:
-                {
-                    byte checkSum;
-                    if (!TryReadSerialByte(ref checkSum)) { success = false; break; }
-                    break; // EOF
-                }
-                default:
-                {
+                if (!TryReadSerialByte(ref checkSum)) { success = false; break; }
+                
+                eol = SerialReadChar();
+                if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
+                { 
                     success = false; break;
                 }
+                continue; // next record
+            }
+            else if (recordType == 0x01)
+            {
+                // EOF
+                if (!TryReadSerialByte(ref checkSum)) 
+                { 
+                    success = false; 
+                }
+            }
+            else
+            {
+                success = false;
             }
             break;
         } // loop
@@ -362,9 +375,10 @@ program Runtime
     
     WaitForEnter()
     {
+        char ch;
         loop
         {
-            char ch = SerialReadChar();
+            ch = SerialReadChar();
             if (ch == char(enter))
             {
                 break;
@@ -375,7 +389,8 @@ program Runtime
     
     Out4Hex(uint value)
     {
-        byte b = byte(value >> 12);
+        byte b;
+        b = byte(value >> 12);
         SerialWriteChar(HRByte.ToHex(b));
         b = byte((value >> 8) & 0x0F); 
         SerialWriteChar(HRByte.ToHex(b));
@@ -387,7 +402,8 @@ program Runtime
     
     Out2Hex(byte value)
     {
-        byte b = byte((value >> 4) & 0x0F); 
+        byte b;
+        b = byte((value >> 4) & 0x0F); 
         SerialWriteChar(ToHex(b));
         b = byte(value & 0x0F); 
         SerialWriteChar(HRByte.ToHex(b));
@@ -395,7 +411,8 @@ program Runtime
     
     out4Hex(ref uint pageBuffer, uint value)
     {
-        byte b = byte(value >> 12);
+        byte b;
+        b = byte(value >> 12);
         HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
         b = byte((value >> 8) & 0x0F); 
         HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
@@ -407,13 +424,14 @@ program Runtime
     
     out2HexOrDot(ref uint pageBuffer, byte value)
     {
+        byte b;
         if (value == 0)
         {
             HRString.BuildChar(ref pageBuffer, '.'); // '.' means '00'
         }
         else
         {
-            byte b = byte((value >> 4) & 0x0F); 
+            b = byte((value >> 4) & 0x0F); 
             HRString.BuildChar(ref pageBuffer, ToHex(b));
             b = byte(value & 0x0F); 
             HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
@@ -422,9 +440,12 @@ program Runtime
     
     DumpPage(byte iPage)
     {
-        uint pageBuffer = HRString.New();
-        uint rowAddress = (iPage << 8);
-        for (byte row = 0; row < 16; row++)
+        uint pageBuffer;
+        uint rowAddress;
+        byte row;
+        pageBuffer = HRString.New();
+        rowAddress = (iPage << 8);
+        for (row = 0; row < 16; row++)
         {
             if (iPage == 0)
             {
@@ -719,7 +740,7 @@ program Runtime
                     }
                     case 'E': // enter Boot Select mode
                     {
-#ifdef VALUE_TYPE_RUNTIME
+#ifndef VALUE_TYPE_RUNTIME
                         WaitForEnter();
                         External.MCUReboot(true);
 #else

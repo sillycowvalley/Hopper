@@ -334,7 +334,9 @@ unit HopperVM
     }
     Restart()
     {
+#ifndef CPU_Z80        
         External.MCUClockSpeedSet(133); // RP2040 default
+#endif
         DataMemoryReset();
 #ifdef INCLUDE_FILESYSTEM        
         DiskSetup();
@@ -587,10 +589,125 @@ unit HopperVM
 #endif    
     bool ExecuteSysCall(byte iSysCall, uint iOverload)
     {
+        
+#ifdef MINIMAL_RUNTIME_SYSCALLS
+        char ch;
+        uint doubleChar;
+        byte address;
+        uint this;
+        uint item;
+        uint length;
+        uint index;
+        Type etype;
         bool doNext = true;
-#ifdef CPU_Z80
         switch (SysCalls(iSysCall))
         {
+            
+            case SysCalls.ArrayNew:
+            {   
+                etype = Type(Pop());
+                length = Pop();
+                this = HRArray.New(etype, length);
+                Push(this, Type.Array);
+            }
+            
+            case SysCalls.ArrayGetItem:
+            {
+                index = Pop();
+                this = Pop();
+                item = HRArray.GetItem(this, index, ref etype);
+                GC.Release(this);
+                Push(item, etype);
+            }
+            case SysCalls.ArraySetItem:
+            {
+                item = Pop();
+                index = Pop();
+                this = Pop();
+                HRArray.SetItem(this, index, item);
+                GC.Release(this);
+            }
+            case SysCalls.ArrayCountGet:
+            {
+                this = Pop();
+                length = HRArray.GetCount(this);
+                GC.Release(this);
+                Push(length, Type.UInt);
+            }
+            
+            case SysCalls.StringNewFromConstant:
+            {
+                if (iOverload == 0)
+                {
+                    length  = Pop();
+                    uint location = Pop();
+                    this = HRString.NewFromConstant0(constAddress + location, length);
+                    Push(this, Type.String);
+                }
+                else
+                {
+                    doubleChar = Pop();
+                    this = HRString.NewFromConstant1(doubleChar);
+                    Push(this, Type.String);
+                }
+            }
+            case SysCalls.StringNew:
+            {
+                this = HRString.New();
+                Push(this, Type.String);
+            }
+            case SysCalls.StringLengthGet:
+            {
+                this = Pop();
+                length = HRString.GetLength(this);
+                GC.Release(this);
+                Push(length, Type.UInt);
+            }
+            case SysCalls.StringGetChar:
+            {
+                index = Pop();
+                this = Pop();
+                ch = HRString.GetChar(this, index);
+                GC.Release(this);
+                Push(uint(ch), Type.Char);
+            }
+            case SysCalls.StringBuild:
+            {
+                if (iOverload == 0)
+                {
+                    uint append = Pop();
+                    address = byte(Pop());
+                    this = Get(address);
+                    HRString.BuildString(ref this, append);
+                    Put(address, this, Type.String);
+                    GC.Release(append);
+                }
+                else if (iOverload == 1)
+                {
+                    ch = char(Pop());
+                    address = byte(Pop());
+                    this = Get(address);
+                    HRString.BuildChar(ref this, ch);
+                    Put(address, this, Type.String);
+                }
+                else
+                {
+                    address = byte(Pop());
+                    this = Get(address);
+                    HRString.BuildClear(ref this);
+                    Put(address, this, Type.String);                        
+                }
+            }
+            case SysCalls.StringBuildFront:
+            {
+                ch = char(Pop());
+                address = byte(Pop());
+                this = Get(address);
+                HRString.BuildFront(ref this, ch);
+                Put(address, this, Type.String);
+            }
+            
+            
             case SysCalls.DiagnosticsDie:
             {
                 doNext = Instructions.Die();
@@ -598,8 +715,7 @@ unit HopperVM
             
             case SysCalls.IntGetByte:
             {
-                uint index = Pop();
-                Type htype;
+                index = Pop();
                 uint i = Pop();
                 byte b = HRInt.GetByte(i, index);
                 Push(b, Type.Byte);                
@@ -614,16 +730,7 @@ unit HopperVM
             }
             case SysCalls.UIntToInt:
             {
-                Type htype;
-                uint value = Pop(ref htype);
-#ifdef CHECKED
-                AssertUInt(htype, value);
-                if (value > 32767)
-                {
-                    ErrorDump(131);
-                    Error = 0x0D; // system failure (internal error)
-                }
-#endif        
+                uint value = Pop();
                 PushI(int(value));             
             }
             case SysCalls.TimeDelay:
@@ -638,22 +745,19 @@ unit HopperVM
             }
             case SysCalls.SerialReadChar:
             {
-                char ch = SerialReadChar();
+                ch = SerialReadChar();
                 Push(uint(ch), Type.Char);
             }
             case SysCalls.SerialWriteChar:
             {
-                Type atype;
-                uint ch = Pop(ref atype);
-#ifdef CHECKED
-                AssertChar(atype, ch);
-#endif
-                SerialWriteChar(char(ch));
+                ch = char(Pop());
+                SerialWriteChar(ch);
             }
             
             
         } // switch
-#else        
+#else      
+        bool doNext = true;  
         switch (SysCalls(iSysCall))
         {
             case SysCalls.DiagnosticsDie:

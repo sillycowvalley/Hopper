@@ -91,7 +91,9 @@ unit Instructions
         WriteToJumpTable(OpCode.POPCOPYLOCALB01, Instructions.PopCopyLocalB01);
         WriteToJumpTable(OpCode.ENTER, Instructions.Enter);
         WriteToJumpTable(OpCode.ENTERB, Instructions.EnterB);
+#ifndef NO_JIX_INSTRUCTIONS        
         WriteToJumpTable(OpCode.JIXB, Instructions.JIXB);
+#endif
         WriteToJumpTable(OpCode.PUSHILE, Instructions.PushILE);
         WriteToJumpTable(OpCode.PUSHILT, Instructions.PushILT);
         WriteToJumpTable(OpCode.PUSHIBLE, Instructions.PushIBLE);
@@ -115,7 +117,9 @@ unit Instructions
         WriteToJumpTable(OpCode.RET, Instructions.Ret);
         WriteToJumpTable(OpCode.RETRES, Instructions.RetRes);
         WriteToJumpTable(OpCode.TESTBPB, Instructions.TestBPB);
+#ifndef CPU_Z80
         WriteToJumpTable(OpCode.EXIT, Instructions.Exit);
+#endif        
         WriteToJumpTable(OpCode.JZ, Instructions.JZ);
         WriteToJumpTable(OpCode.JNZ, Instructions.JNZ);
         WriteToJumpTable(OpCode.JW, Instructions.J);
@@ -134,7 +138,9 @@ unit Instructions
         WriteToJumpTable(OpCode.CAST, Instructions.Cast);
         WriteToJumpTable(OpCode.BITXOR, Instructions.BitXor);
         WriteToJumpTable(OpCode.JREL, Instructions.JREL);
+#ifndef NO_JIX_INSTRUCTIONS                
         WriteToJumpTable(OpCode.JIX, Instructions.JIX);
+#endif
         WriteToJumpTable(OpCode.CALL, Instructions.Call);
         WriteToJumpTable(OpCode.CALLI, Instructions.CallI);
         WriteToJumpTable(OpCode.CALLREL, Instructions.CallRel);
@@ -209,19 +215,21 @@ unit Instructions
     {
 #ifdef CHECKED                
         Type ttype;
-        uint top = Pop(ref ttype);
         Type ntype;
+        uint top;
+        top = Pop(ref ttype);
         uint next = Pop(ref ntype);
         AssertUInt(ttype, top);
         AssertUInt(ntype, next);
         Push(next * top, Type.UInt); 
 #else
+        uint top;
+        uint next;
+        uint sp1;
         HopperVM.sp--;
-        uint top   = ReadByte(HopperVM.valueStackLSBPage + HopperVM.sp) + (ReadByte(HopperVM.valueStackMSBPage + HopperVM.sp) << 8); 
-        uint sp1   = HopperVM.sp-1;
-        uint next  = ReadByte(HopperVM.valueStackLSBPage + sp1) + (ReadByte(HopperVM.valueStackMSBPage + sp1) << 8); 
-        
-        next = next * top;
+        top   = ReadByte(HopperVM.valueStackLSBPage + HopperVM.sp) + (ReadByte(HopperVM.valueStackMSBPage + HopperVM.sp) << 8); 
+        sp1   = HopperVM.sp-1;
+        next  = (ReadByte(HopperVM.valueStackLSBPage + sp1) + (ReadByte(HopperVM.valueStackMSBPage + sp1) << 8)) * top; 
         
         WriteByte(HopperVM.valueStackLSBPage + sp1, byte(next & 0xFF));
         WriteByte(HopperVM.valueStackMSBPage + sp1, byte(next >> 8));
@@ -2340,20 +2348,28 @@ unit Instructions
 
     bool PopCopyRel()
     {
-        int  offset = ReadWordOffsetOperand();
-        byte referenceAddress = byte(int(BP) + offset);
+        int  offset;
+        byte referenceAddress;
         Type rtype;
-        byte localAddress = byte(HopperVM.Get(referenceAddress, ref rtype));
+        byte localAddress;
+        uint oldvalue;
+        uint value;
+        uint newvalue;
+        
+        offset = ReadWordOffsetOperand();
+        referenceAddress = byte(int(BP) + offset);
+        localAddress = byte(HopperVM.Get(referenceAddress, ref rtype));
+        
 #ifdef CHECKED
         AssertReference(rtype, localAddress);
 #endif
         // this is the slot we are about to overwrite: decrease reference count if reference type
-        uint oldvalue = HopperVM.Get(localAddress, ref rtype);
+        oldvalue = HopperVM.Get(localAddress, ref rtype);
         if (IsReferenceType(rtype))
         {
             GC.Release(oldvalue);
         }
-        uint value = Pop(ref rtype);
+        value = Pop(ref rtype);
         if (value == oldvalue)
         {
             // nothing more to do
@@ -2361,7 +2377,7 @@ unit Instructions
         else
         {
             // clone self, release the original
-            uint newvalue = GC.Clone(value);
+            newvalue = GC.Clone(value);
             GC.Release(value);
             Put(localAddress, newvalue, rtype);
         }
@@ -2392,12 +2408,14 @@ unit Instructions
     
     bool IncGlobalBB()
     {
-        byte address0     = byte(ReadByteOperand() + HopperVM.gp);
-        byte address1     = byte(ReadByteOperand() + HopperVM.gp);
+        byte address0;
+        byte address1;
         Type type0;
-        uint value = HopperVM.Get(address0, ref type0);
         Type type1;   
-        Put(address0, value + HopperVM.Get(address1, ref type1), type0);
+        
+        address0     = byte(ReadByteOperand() + HopperVM.gp);
+        address1     = byte(ReadByteOperand() + HopperVM.gp);
+        Put(address0, HopperVM.Get(address0, ref type0) + HopperVM.Get(address1, ref type1), type0);
         return true;
     }
     
@@ -2599,10 +2617,13 @@ unit Instructions
         int value = HopperVM.GetI(address);
         PutI(address, value-1);
 #else
-        byte address     = (ReadProgramByte(HopperVM.pc) + HopperVM.gp);
+        byte address;
+        int value;
+        
+        address     = (ReadProgramByte(HopperVM.pc) + HopperVM.gp);
         HopperVM.pc++;
         
-        int value  = External.UIntToInt(ReadByte(HopperVM.valueStackLSBPage + address) + (ReadByte(HopperVM.valueStackMSBPage + address) << 8)) - 1; 
+        value  = External.UIntToInt(ReadByte(HopperVM.valueStackLSBPage + address) + (ReadByte(HopperVM.valueStackMSBPage + address) << 8)) - 1; 
         WriteByte(HopperVM.valueStackLSBPage + address, byte(value & 0xFF));
         WriteByte(HopperVM.valueStackMSBPage + address, byte(value >> 8));
 #endif
@@ -2662,29 +2683,34 @@ unit Instructions
         Type htype;
         HopperVM.Put(address0, HopperVM.Get(address0, ref htype) + HopperVM.Get(address1), htype);
 #else
-        int offset0 = int(ReadProgramByte(HopperVM.pc)); 
+        int offset0;
+        int offset1;
+        byte address0;
+        byte address1;
+        byte htype;
+        uint value;
+        
+        offset0 = int(ReadProgramByte(HopperVM.pc)); 
         HopperVM.pc++;
         if (offset0 > 127)
         {
             offset0 = offset0 - 256; // 0xFF -> -1
         } 
-        int offset1 = int(ReadProgramByte(HopperVM.pc)); 
+        offset1 = int(ReadProgramByte(HopperVM.pc)); 
         HopperVM.pc++;
         if (offset1 > 127)
         {
             offset1 = offset1 - 256; // 0xFF -> -1
         }
-        byte address0 = byte(int(HopperVM.bp) + offset0);
-        byte address1 = byte(int(HopperVM.bp) + offset1);
+        address0 = byte(int(HopperVM.bp) + offset0);
+        address1 = byte(int(HopperVM.bp) + offset1);
         
-        byte htype = ReadByte(HopperVM.typeStackPage + address0);
-        uint value0 = ReadByte(HopperVM.valueStackLSBPage + address0) + (ReadByte(HopperVM.valueStackMSBPage + address0) << 8);
-        uint value1 = ReadByte(HopperVM.valueStackLSBPage + address1) + (ReadByte(HopperVM.valueStackMSBPage + address1) << 8);
+        htype = ReadByte(HopperVM.typeStackPage + address0);
+        value  = ReadByte(HopperVM.valueStackLSBPage + address0) + (ReadByte(HopperVM.valueStackMSBPage + address0) << 8)
+               + ReadByte(HopperVM.valueStackLSBPage + address1) + (ReadByte(HopperVM.valueStackMSBPage + address1) << 8);
         
-        value0 = value0 + value1;
-        
-        WriteByte(HopperVM.valueStackLSBPage + address0, byte(value0 & 0xFF));
-        WriteByte(HopperVM.valueStackMSBPage + address0, byte(value0 >> 8));
+        WriteByte(HopperVM.valueStackLSBPage + address0, byte(value & 0xFF));
+        WriteByte(HopperVM.valueStackMSBPage + address0, byte(value >> 8));
         WriteByte(HopperVM.typeStackPage + address0, htype);
         
 #endif        

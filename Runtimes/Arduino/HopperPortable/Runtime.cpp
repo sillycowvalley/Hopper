@@ -6,6 +6,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -354,9 +355,10 @@ Char Runtime_SerialReadChar()
 
 void Runtime_WaitForEnter()
 {
+    Char ch = 0;
     for (;;)
     {
-        Char ch = Runtime_SerialReadChar();
+        ch = Runtime_SerialReadChar();
         if (ch == Char(13))
         {
             break;;
@@ -367,9 +369,12 @@ void Runtime_WaitForEnter()
 
 void Runtime_DumpPage(Byte iPage)
 {
-    UInt pageBuffer = HRString_New();
-    UInt rowAddress = (iPage << 0x08);;
-    for (Byte row = 0x00; row < 0x10; row++)
+    UInt pageBuffer = 0;
+    UInt rowAddress = 0;
+    Byte row = 0;
+    pageBuffer = HRString_New();
+    rowAddress = (iPage << 0x08);;
+    for (row = 0x00; row < 0x10; row++)
     {
         if (iPage == 0x00)
         {;
@@ -563,7 +568,8 @@ void Runtime_DumpPage(Byte iPage)
 
 void Runtime_out4Hex_R(UInt & pageBuffer, UInt value)
 {
-    Byte b = Byte(value >> 0x0C);
+    Byte b = 0;
+    b = Byte(value >> 0x0C);
     HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
     b = Byte((value >> 0x08) & 0x0F);
     HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
@@ -575,11 +581,22 @@ void Runtime_out4Hex_R(UInt & pageBuffer, UInt value)
 
 Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength)
 {
+    Byte crc0 = 0;
+    Byte crc1 = 0;
+    Byte checkSum = 0;
+    Byte lsb = 0;
+    Byte msb = 0;
+    Char eol = 0;
+    UInt codeLimit = 0;
+    UInt c = 0;
+    Char colon = 0;
+    Byte byteCount = 0;
+    Byte dataByte = 0;
+    Byte recordType = 0;
+    UInt recordAddress = 0;
     Bool success = true;
     loadedAddress = 0;
     Runtime_currentCRC = 0x00;
-    Byte crc0 = 0;
-    Byte crc1 = 0;
     if (!Runtime_TryReadSerialByte_R(crc0))
     {
         success = false;
@@ -593,7 +610,7 @@ Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength)
     }
     if (success)
     {
-        Char eol = Runtime_SerialReadChar();
+        eol = Runtime_SerialReadChar();
         if ((eol != Char(0x0D)) && (eol != Char(0x0A)))
         {
             success = false;
@@ -603,7 +620,7 @@ Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength)
             Runtime_currentCRC = crc0 + (crc1 << 0x08);
         }
     }
-    UInt codeLimit = External_GetSegmentPages() << 0x08;
+    codeLimit = External_GetSegmentPages() << 0x08;
     codeLength = 0x00;
     for (;;)
     {
@@ -611,20 +628,17 @@ Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength)
         {
             break;;
         }
-        Char colon = Runtime_SerialReadChar();
+        colon = Runtime_SerialReadChar();
         if (colon != ':')
         {
             success = false;
             break;;
         }
-        Byte byteCount = 0;
         if (!Runtime_TryReadSerialByte_R(byteCount))
         {
             success = false;
             break;;
         }
-        Byte lsb = 0;
-        Byte msb = 0;
         if (!Runtime_TryReadSerialByte_R(msb))
         {
             success = false;
@@ -635,20 +649,16 @@ Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength)
             success = false;
             break;;
         }
-        UInt recordAddress = lsb + (msb << 0x08);
-        Byte recordType = 0;
+        recordAddress = lsb + (msb << 0x08);
         if (!Runtime_TryReadSerialByte_R(recordType))
         {
             success = false;
             break;;
         }
-        switch (recordType)
-        {
-        case 0x00:
+        if (recordType == 0x00)
         {;
-            for (UInt c = 0x00; c < byteCount; c++)
+            for (c = 0x00; c < byteCount; c++)
             {
-                Byte dataByte = 0;
                 if (!Runtime_TryReadSerialByte_R(dataByte))
                 {
                     success = false;
@@ -665,39 +675,30 @@ Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength)
                 
                 recordAddress++;
             }
-            Byte checkSum = 0;
             if (!Runtime_TryReadSerialByte_R(checkSum))
             {
                 success = false;
                 break;;
             }
-            Char eol = Runtime_SerialReadChar();
+            eol = Runtime_SerialReadChar();
             if ((eol != Char(0x0D)) && (eol != Char(0x0A)))
             {
                 success = false;
                 break;;
             }
             continue;;
-            break;
         }
-        case 0x01:
+        else if (recordType == 0x01)
         {
-            Byte checkSum = 0;
             if (!Runtime_TryReadSerialByte_R(checkSum))
             {
                 success = false;
-                break;;
             }
-            break;;
-            break;
         }
-        default:
+        else
         {
             success = false;
-            break;;
-            break;
         }
-        } // switch
         break;;
     }
     return success;
@@ -705,13 +706,14 @@ Bool Runtime_SerialLoadIHex_R(UInt & loadedAddress, UInt & codeLength)
 
 void Runtime_out2HexOrDot_R(UInt & pageBuffer, Byte value)
 {
+    Byte b = 0;
     if (value == 0x00)
     {
         HRString_BuildChar_R(pageBuffer, '.');
     }
     else
     {
-        Byte b = Byte((value >> 0x04) & 0x0F);
+        b = Byte((value >> 0x04) & 0x0F);
         HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
         b = Byte(value & 0x0F);
         HRString_BuildChar_R(pageBuffer, HRByte_ToHex(b));
@@ -4133,7 +4135,8 @@ void Runtime_ErrorDump(UInt number)
 
 void Runtime_Out4Hex(UInt value)
 {
-    Byte b = Byte(value >> 0x0C);
+    Byte b = 0;
+    b = Byte(value >> 0x0C);
     Runtime_SerialWriteChar(HRByte_ToHex(b));
     b = Byte((value >> 0x08) & 0x0F);
     Runtime_SerialWriteChar(HRByte_ToHex(b));
@@ -4145,7 +4148,8 @@ void Runtime_Out4Hex(UInt value)
 
 void Runtime_Out2Hex(Byte value)
 {
-    Byte b = Byte((value >> 0x04) & 0x0F);
+    Byte b = 0;
+    b = Byte((value >> 0x04) & 0x0F);
     Runtime_SerialWriteChar(HRByte_ToHex(b));
     b = Byte(value & 0x0F);
     Runtime_SerialWriteChar(HRByte_ToHex(b));

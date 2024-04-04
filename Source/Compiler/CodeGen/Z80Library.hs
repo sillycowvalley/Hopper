@@ -254,11 +254,9 @@ unit Z80Library
                 Emit(OpCode.POP_IX);                      // pop the address
                 Emit(OpCode.PUSH_HL);                     // restore value (caller clears in CDecl)
                 EmitByte(OpCode.LD_iIX_d_L,       +0);    // write the LSB
-                EmitOffsetByte(OpCode.LD_iIX_d_n, +1, 0); // clear the MSB
             }
             case SysCalls.MemoryWriteWord:
             {
-                // TODO
                 Emit(OpCode.POP_HL);              // pop the value
                 Emit(OpCode.POP_IX);              // pop the address
                 Emit(OpCode.PUSH_HL);             // restore value (caller clears in CDecl)

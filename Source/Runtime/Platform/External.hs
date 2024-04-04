@@ -163,7 +163,7 @@ unit External
     {
         ErrorDump(187); Error = 0x0A;
     }
-    
+#ifndef CPU_Z80    
     MCUReboot(bool bootsel)
     {
         ErrorDump(188); Error = 0x0A;
@@ -178,7 +178,7 @@ unit External
         ErrorDump(190); Error = 0x0A;
         return 0;
     }
-    
+#endif    
     TimerRelease()
     {
         ErrorDump(191); Error = 0x0A;
@@ -505,7 +505,7 @@ unit External
         ErrorDump(170); Error = 0x0A; 
         return false;
     }
-    
+#ifndef CPU_Z80    
     // NOP on Windows but keeps track of state
     bool interruptsDisabled;
     MCUInterruptsEnabledSet(bool value)
@@ -526,6 +526,7 @@ unit External
         ErrorDump(174); Error = 0x0A; 
         return 0;
     }
+#endif    
     
     
     
@@ -750,14 +751,17 @@ unit External
         return (nativeFloatFromHopperFloat(next) >= nativeFloatFromHopperFloat(top)) ? 1 : 0; 
     }
 #endif    
+
     WatchDog()
     {
+#ifndef CPU_Z80                    
         // ping the MCU watchdog here so it knows we are still alive (not needed on RP2040)
         
         // any code to prevent the optimizer from removing WatchDog()
         for (uint i = 0; i < 1; i++)
         {
         }
+#endif
     }
     bool FunctionCall(uint address, byte opCode)
     {

@@ -353,6 +353,17 @@ program Z80Gen
         EmitByte(OpCode.LD_D_iIY_d, offset + 1);
         Emit(OpCode.PUSH_DE);
     }
+    pushLocalBB(uint operand0, uint operand1)
+    {
+        byte offset0 = offsetOperandToByte(operand0);
+        byte offset1 = offsetOperandToByte(operand1);
+        EmitByte(OpCode.LD_E_iIY_d, offset0);
+        EmitByte(OpCode.LD_D_iIY_d, offset0 + 1);
+        Emit(OpCode.PUSH_DE);
+        EmitByte(OpCode.LD_E_iIY_d, offset1);
+        EmitByte(OpCode.LD_D_iIY_d, offset1 + 1);
+        Emit(OpCode.PUSH_DE);
+    }
     popLocalB(uint operand)
     {    
         byte offset = offsetOperandToByte(operand);
@@ -495,6 +506,15 @@ program Z80Gen
     {
         uint address = addressOperandToByte(operand);
         EmitWord(OpCode.LD_DE_inn, address);
+        Emit    (OpCode.PUSH_DE);
+    }
+    pushGlobalBB(uint operand0, uint operand1)
+    {
+        uint address0 = addressOperandToByte(operand0);
+        uint address1 = addressOperandToByte(operand1);
+        EmitWord(OpCode.LD_DE_inn, address0);
+        Emit    (OpCode.PUSH_DE);
+        EmitWord(OpCode.LD_DE_inn, address1);
         Emit    (OpCode.PUSH_DE);
     }
     popGlobalB(uint operand)
@@ -649,23 +669,38 @@ program Z80Gen
                 }
                 case Instruction.RETB:
                 {
-                    if (operand <= 5)
+                    if (methodIndex == 0)
                     {
-                        loop
+                        // main needs to free globals too (which is more complicated than just BP -> SP)
+                        if (operand <= 5)
                         {
-                            Emit(OpCode.POP_DE); // up to 5 pops is the same length as the alternative below, but faster
-                            operand--;
-                            if (operand == 0) { break; }
+                            loop
+                            {
+                                Emit(OpCode.POP_DE); // up to 5 pops is the same length as the alternative below, but faster
+                                operand--;
+                                if (operand == 0) { break; }
+                            }
+                        }
+                        else
+                        {
+                            EmitByte(OpCode.LD_B_n, byte(operand));
+                            Peephole.Reset();
+                            Emit(OpCode.POP_DE);
+                            EmitOffset(OpCode.DJNZ_e, -3);
                         }
                     }
                     else
                     {
-                        EmitByte(OpCode.LD_B_n, byte(operand));
-                        Peephole.Reset();
-                        Emit(OpCode.POP_DE);
-                        EmitOffset(OpCode.DJNZ_e, -3);
+                        // BP -> SP on exit:
+                        if (operand == 1)
+                        {
+                            Emit(OpCode.POP_DE); // 1 byte
+                        }
+                        else
+                        {
+                            Emit(OpCode.LD_SP_IY);  // 2 bytes
+                        }
                     }
-                    
                     // POP BP
                     Emit(OpCode.POP_IY); 
                     Emit(OpCode.RET);
@@ -1163,8 +1198,7 @@ program Z80Gen
                 }
                 case Instruction.PUSHLOCALBB:
                 {
-                    pushLocalB(operand & 0xFF);
-                    pushLocalB(operand >> 8);
+                    pushLocalBB(operand & 0xFF, operand >> 8);
                 }
                 case Instruction.POPLOCALB00:
                 {
@@ -1196,8 +1230,7 @@ program Z80Gen
                 }
                 case Instruction.PUSHGLOBALBB:
                 {
-                    pushGlobalB(operand & 0xFF);
-                    pushGlobalB(operand >> 8);
+                    pushGlobalBB(operand & 0xFF, operand >> 8);
                 }
                 case Instruction.POPGLOBALB:
                 {
