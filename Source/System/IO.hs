@@ -92,8 +92,10 @@ unit IO
     }
     writeDigit(uint uthis)
     {
-        uint digit = uthis % 10;
-        char c = HRByte.ToDigit(byte(digit));
+        char c;
+        uint digit;
+        digit = uthis % 10;
+        c = HRByte.ToDigit(byte(digit));
         uthis = uthis / 10;
         if (uthis != 0)
         {
@@ -103,12 +105,13 @@ unit IO
     }
     WriteInt(int this)
     {
+        uint uthis;
         if (this < 0)
         {
             Write('-');
             this = 0 - this;
         }
-        uint uthis = uint(this);
+        uthis = uint(this);
         writeDigit(uthis);
     }
     WriteUInt(uint this)
@@ -118,16 +121,20 @@ unit IO
     
     WriteHex(byte b)
     {
-        byte msn = ((b >> 4) & 0xF);
+        byte msn;
+        byte lsn;
+        msn = ((b >> 4) & 0xF);
         Write(ToHex(msn));
-        byte lsn = b & 0xF;
+        lsn = b & 0xF;
         Write(ToHex(lsn));
     }
     WriteHex(uint u)
     {
-        byte msb = byte(u >> 8);
+        byte msb;
+        byte lsb;
+        msb = byte(u >> 8);
         WriteHex(msb);
-        byte lsb = byte(u & 0xFF);
+        lsb = byte(u & 0xFF);
         WriteHex(lsb);
     }
 #ifdef SERIAL_CONSOLE

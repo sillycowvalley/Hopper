@@ -118,6 +118,13 @@ program Term
                     {
                         Screen.Clear();
                     }
+                    else if (ch == char(0x08))
+                    {
+                        Screen.Print(ch);
+                    }
+                    else if ((byte(ch) < 32) || (byte(ch) > 127))
+                    {
+                    }
                     else
                     {
                         Screen.Print(ch);

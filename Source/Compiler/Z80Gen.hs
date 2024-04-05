@@ -410,53 +410,106 @@ program Z80Gen
     }
     pushStackAddrB(uint operand)
     {
-        byte offset = offsetOperandToByte(operand);
+        // address = BP + operand
+        
+        // HL = IY
         Emit(OpCode.PUSH_IY);
-        Emit(OpCode.POP_IX);
-        EmitByte(OpCode.LD_E_iIY_d, offset);
-        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
-        Emit(OpCode.ADD_IX_DE);  // absolute address is now in IX
-        Emit(OpCode.POP_IX);
+        Emit(OpCode.POP_HL);
+        
+        // HL -= StackAddress
+        EmitWord(OpCode.LD_DE_nn, StackAddress);
+        Emit    (OpCode.XOR_A);
+        Emit    (OpCode.SBC_HL_DE);
+
+        // HL /= 2
+        Emit    (OpCode.SRL_H);
+        Emit    (OpCode.RR_L);
+        
+        // HL -= 1  to skip BP itself
+        // HL -= operand 
+        // HL += 2 start return address and initial BP
+        
+        if (1 + operand == 2)
+        {
+            // -2 +2 = NOP
+            
+        }
+        else if (1 + operand == 1)
+        {
+            // -1 +2 = +1
+            Emit    (OpCode.INC_HL);
+        }
+        else if (1 + operand == 0)
+        {
+            // -0 +2 = +2
+            Emit    (OpCode.INC_HL);
+            Emit    (OpCode.INC_HL);
+        }
+        else if (1 + operand < 2) // Never?
+        {
+            EmitWord(OpCode.LD_DE_nn, 1 + operand);
+            Emit    (OpCode.XOR_A);
+            Emit    (OpCode.SBC_HL_DE);        
+            Emit    (OpCode.INC_HL);
+            Emit    (OpCode.INC_HL);
+        }
+        else // (1 + operand > 2)
+        {
+            EmitWord(OpCode.LD_DE_nn, 1 + operand - 2);
+            Emit    (OpCode.XOR_A);
+            Emit    (OpCode.SBC_HL_DE);        
+        }
+        
+        // IX = 0 - IX
+        Emit    (OpCode.LD_E_L);
+        Emit    (OpCode.LD_D_H);
+        EmitWord(OpCode.LD_HL_nn, 0);
+        Emit    (OpCode.XOR_A);
+        Emit    (OpCode.SBC_HL_DE);
+        
+        Emit(OpCode.PUSH_HL);
     }
+    
     pushRelB(uint operand)
     {
         byte offset = offsetOperandToByte(operand);
-        Emit(OpCode.PUSH_IY);
-        Emit(OpCode.POP_IX);
-        EmitByte(OpCode.LD_E_iIY_d, offset);
-        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
-        Emit(OpCode.ADD_IX_DE);  
-        // reference address is now in IX   
+        Emit    (OpCode.XOR_A);
+        EmitByte(OpCode.SUB_A_iIY_d, offset); // invert the sign since the Z80 stack grows downward
+        
+        EmitByte(OpCode.SUB_A_n, 2);          // skip:
+                                              // - the return address from startup
+                                              // - the first slot itself
+                                              
+        EmitWord(OpCode.LD_IX_nn, StackAddress + StackSize); 
+        Emit    (OpCode.LD_E_A);
+        EmitByte(OpCode.LD_D_n, 0xFF);
+        Emit    (OpCode.ADD_IX_DE);           // double it to convert from stack slots to bytes
+        Emit    (OpCode.ADD_IX_DE);
         
         EmitByte(OpCode.LD_E_iIX_d, +0);
         EmitByte(OpCode.LD_D_iIX_d, +1);
-        Emit(OpCode.PUSH_DE);
-        Emit(OpCode.POP_IX);
-        // actual address is now in IX
+        Emit    (OpCode.PUSH_DE);
         
-        EmitByte(OpCode.LD_E_iIY_d, offset);
-        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
-        Emit(OpCode.PUSH_DE);    
     }
     popRelB(uint operand)
     {
         byte offset = offsetOperandToByte(operand);
-        Emit(OpCode.PUSH_IY);
-        Emit(OpCode.POP_IX);
-        EmitByte(OpCode.LD_E_iIY_d, offset);
-        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
-        Emit(OpCode.ADD_IX_DE);  
-        // reference address is now in IX   
+        Emit    (OpCode.XOR_A);
+        EmitByte(OpCode.SUB_A_iIY_d, offset); // invert the sign since the Z80 stack grows downward
         
-        EmitByte(OpCode.LD_E_iIX_d, +0);
-        EmitByte(OpCode.LD_D_iIX_d, +1);
-        Emit(OpCode.PUSH_DE);
-        Emit(OpCode.POP_IX);
-        // actual address is now in IX
+        EmitByte(OpCode.SUB_A_n, 2);          // skip:
+                                              // - the return address from startup
+                                              // - the first slot itself
+                                              
+        EmitWord(OpCode.LD_IX_nn, StackAddress + StackSize); 
+        Emit    (OpCode.LD_E_A);
+        EmitByte(OpCode.LD_D_n, 0xFF);
+        Emit    (OpCode.ADD_IX_DE);           // double it to convert from stack slots to bytes
+        Emit    (OpCode.ADD_IX_DE);
         
         Emit(OpCode.POP_DE);    
-        EmitByte(OpCode.LD_iIY_d_E, offset);
-        EmitByte(OpCode.LD_iIY_d_D, offset + 1);
+        EmitByte(OpCode.LD_iIX_d_E, +0);
+        EmitByte(OpCode.LD_iIX_d_D, +1);
     }         
     
     
@@ -1165,6 +1218,12 @@ program Z80Gen
                     EmitWord(OpCode.LD_DE_nn, operand >> 8);    
                     Emit(OpCode.PUSH_DE);
                 }
+                case Instruction.PUSHGP:
+                {
+                    EmitWord(OpCode.LD_DE_nn, 0); // always zero for now
+                    Emit(OpCode.PUSH_DE);
+                }
+                
                 
                 
                 case Instruction.PUSHSTACKADDRB:

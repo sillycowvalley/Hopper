@@ -11,6 +11,8 @@
 *.user
 \obj
 
+Runtimes/Arduino/8bitforceOriginals
+
 Runtimes/Windows/HopperNet/bin
 Runtimes/Windows/Restart/bin
 Source/Samples/MCU/Secrets2

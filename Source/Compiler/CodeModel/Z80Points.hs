@@ -163,6 +163,7 @@ unit CodePoints
                 case OpCode.LD_E_iIY_d:
                 case OpCode.LD_E_iIX_d:
                 case OpCode.LD_E_n:
+                case OpCode.LD_E_A:
                 {
                     walkStats |= WalkStats.WriteE;
                 }
@@ -294,7 +295,9 @@ unit CodePoints
                 
                 case OpCode.ADD_HL_HL:
                 case OpCode.ADC_HL_HL:
-                case OpCode.SBC_HL_HL:
+                case OpCode.SBC_HL_HL: 
+                case OpCode.INC_HL: 
+                case OpCode.DEC_HL: 
                 {
                     walkStats |= WalkStats.WriteHL;
                     walkStats |= WalkStats.ReadHL;
@@ -378,6 +381,8 @@ unit CodePoints
                 case OpCode.CPL:
                 case OpCode.RLA:
                 case OpCode.AND_A:
+                case OpCode.SUB_A_n:
+                case OpCode.SUB_A_iIY_d:
                 case OpCode.AND_A_n:
                 case OpCode.OR_A_n:
                 case OpCode.LD_A_n:

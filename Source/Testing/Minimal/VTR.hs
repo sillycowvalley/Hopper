@@ -57,6 +57,7 @@ program ValueTypeRuntimeTests
         Diagnostics.Die(0x0B); // system failure / internal error
     }
     
+    uint uiGlobal0;
     uint uiGlobal;
     
     uint uiFunction()
@@ -651,6 +652,72 @@ program ValueTypeRuntimeTests
         }
     }
     
+    bool ref2(ref uint arg)
+    {
+        if (arg != 0x55)
+        {
+            Failure(43);
+        }
+        arg = 0xAA;
+        if (arg != 0xAA)
+        {
+            Failure(44);
+        }
+        return true;
+    }
+    bool ref1(ref uint arg)
+    {
+        if (arg != 0x55)
+        {
+            Failure(42);
+        }
+        bool result = ref2(ref arg);
+        if (arg != 0xAA)
+        {
+            Failure(45);
+        }
+        return result;
+    }
+    Ref()
+    {
+        uint local1;
+        uint local2;
+        bool result;
+        uint local;
+        local2 = 0x55;
+        result = ref1(ref local2);
+        if (local2 != 0xAA)
+        {
+            Failure(40);
+        }
+        
+        local = 0x55;
+        result = ref1(ref local);
+        if (local != 0xAA)
+        {
+            Failure(46);
+        }
+        
+        local1 = 0x55;
+        result = ref1(ref local1);
+        if (local1 != 0xAA)
+        {
+            Failure(46);
+        }
+        
+        uiGlobal = 0x55;
+        result = ref1(ref uiGlobal);
+        if (uiGlobal != 0xAA)
+        {
+            Failure(41);
+        }
+    }
+    RefRef()
+    {
+        uint another;
+        Ref();
+    }
+    
     
     Hopper()
     {
@@ -665,6 +732,9 @@ program ValueTypeRuntimeTests
         GEI();  // GEI
         LEI();  // LEI
         GTI();  // GTI
+        
+        Ref();  // PUSHSTACKADDR, PUSHREL, POPREL
+        RefRef();
         
         Serial.WriteChar(char(0x0D)); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
     }
