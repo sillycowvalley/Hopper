@@ -155,8 +155,8 @@ program Assemble
         bool success = false;
         loop
         {
-            uint opcodeJSR = GetJSRInstruction();
-            uint opcodeJMP = GetJMPInstruction();
+            OpCode opcodeJSR = GetJSRInstruction();
+            OpCode opcodeJMP = GetJMPInstruction();
             bool tableCandidate;
             
             <byte,uint> jumpRecords; // <caseLabel,methodIndex>
@@ -291,7 +291,7 @@ program Assemble
                     if (!isDefault)
                     {
                         // compare with case constant
-                        Asm6502.AppendCode(GetBInstruction("Z"));
+                        Asm6502.AppendCode(byte(GetBInstruction("Z")));
                         Asm6502.AppendCode(+3);
             
                         uint jumpNext = Asm6502.NextAddress;
@@ -341,7 +341,7 @@ program Assemble
                     }
                     else
                     {
-                        byte opCode  = Asm6502.GetCodeByte(afterBlock - blockSize);
+                        OpCode opCode  = OpCode(Asm6502.GetCodeByte(afterBlock - blockSize));
                         uint methodIndex = Asm6502.GetCodeByte(afterBlock - blockSize+1) + (Asm6502.GetCodeByte(afterBlock - blockSize+2) << 8);
                         if (opCode == opcodeJSR)
                         {
@@ -421,7 +421,7 @@ program Assemble
                 Asm6502.PatchJump(jumpToTable, tableAddress);
                 
                 Asm6502.AddInstructionCMP('X', 0x80);
-                Asm6502.AppendCode(GetBInstruction("NC"));
+                Asm6502.AppendCode(byte(GetBInstruction("NC")));
                 Asm6502.AppendCode(+3);
                 uint jumpSecond = Asm6502.NextAddress;
                 Asm6502.AddInstructionJ();
@@ -432,7 +432,7 @@ program Assemble
                 
                 uint indexJump  = Asm6502.NextAddress;
                 fakeJump = indexJump + 3;
-                Asm6502.AppendCode(GetJMPIndexInstruction()); // JMP [nnnn,X]
+                Asm6502.AppendCode(byte(GetJMPIndexInstruction())); // JMP [nnnn,X]
                 Asm6502.AppendCode(byte(fakeJump & 0xFF));
                 Asm6502.AppendCode(byte(fakeJump >> 8));
                 for (uint ii=0; ii < 0x80; ii++)
@@ -452,7 +452,7 @@ program Assemble
                 
                 indexJump  = Asm6502.NextAddress;
                 fakeJump = indexJump + 3;
-                Asm6502.AppendCode(0x7C); // JMP [nnnn,X]
+                Asm6502.AppendCode(byte(GetJMPIndexInstruction())); // JMP [nnnn,X]
                 Asm6502.AppendCode(byte(fakeJump & 0xFF));
                 Asm6502.AppendCode(byte(fakeJump >> 8));
                 for (uint ii=0x80; ii < 0x100; ii++)
@@ -540,7 +540,7 @@ program Assemble
             }
             else
             {
-                Asm6502.AppendCode(GetBInstruction(conditionString));
+                Asm6502.AppendCode(byte(GetBInstruction(conditionString)));
                 Asm6502.AppendCode(+3);
             }
             

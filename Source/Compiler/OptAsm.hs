@@ -83,6 +83,10 @@ program OptAsm
                 {
                     romSize = 0x1000;
                 }
+                if (pdValues.Contains("ROM_1K"))
+                {
+                    romSize = 0x0400;
+                }
                 break;
             }
         } // kv
@@ -217,10 +221,13 @@ program OptAsm
             {
                 modified = true;
             }
-            // JMP -> BRA
-            if (AsmPoints.OptimizeJMP())
+            if (Architecture == CPUArchitecture.W65C02)
             {
-                modified = true;
+                // JMP -> BRA
+                if (AsmPoints.OptimizeJMP())
+                {
+                    modified = true;
+                }
             }
             // BEQ BRA -> BNE (for example
             if (AsmPoints.OptimizeBEQBRA())

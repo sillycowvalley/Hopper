@@ -196,23 +196,8 @@ program DASM
                 uint address = 0;
                 file hexFile = File.Open(codePath);
                 <byte> code = readIHex(hexFile, ref org);
-                
-                if (code.Count < 2)
-                {
-                    break;
-                }
-                byte version = code[0];
-                byte arch    = code[1];
-                
-                Architecture = CPUArchitecture(arch);
-                
                 address = org;
                 
-                hasmFile.Append("0x" + address.ToHexString(4) + "  0x" + version.ToHexString(2) + "   // binary version number" + char(0x0A));
-                address++;
-                hasmFile.Append("0x" + address.ToHexString(4) + "  0x" + arch.ToHexString(2) + "   // CPU Architecture" + char(0x0A));
-                address++;
-                                    
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 uint indexMax = 0;
                 foreach (var sz in methodSizes)
@@ -237,15 +222,15 @@ program DASM
                 string src;
                 string srcName;
                 
-                uint jumpIndexinstruction = GetJMPIndexInstruction();
+                OpCode jumpIndexinstruction = GetJMPIndexInstruction();
                         
                 bool secondHalf = false;        
-                uint index = 2;
+                uint index;
                 loop
                 {
                     if (index == code.Count-6) { break; }
                     
-                    byte instruction = code[index];
+                    OpCode instruction = OpCode(code[index]);
                     uint length      = UInt.Min(Asm6502.GetInstructionLength(instruction), 3);
                     
                     codeSize += length;

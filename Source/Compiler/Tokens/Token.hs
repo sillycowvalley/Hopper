@@ -297,6 +297,7 @@ unit Token
         registerKeywords.Clear();
         conditionKeywords.Clear();
         
+        
         if (architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
             // 6502 instructions:
@@ -312,7 +313,6 @@ unit Token
             instructionKeywords["STA"] = true;
             instructionKeywords["STX"] = true;
             instructionKeywords["STY"] = true;
-            instructionKeywords["STZ"] = true;
             
             instructionKeywords["TYA"] = true;
             instructionKeywords["TAY"] = true;
@@ -328,7 +328,6 @@ unit Token
             instructionKeywords["BRK"] = true;
             instructionKeywords["RTI"] = true;
             
-            instructionKeywords["BRA"] = true;
             instructionKeywords["BEQ"] = true;
             instructionKeywords["BNE"] = true;
             instructionKeywords["BCC"] = true;
@@ -340,10 +339,6 @@ unit Token
             
             instructionKeywords["PHA"] = true;
             instructionKeywords["PLA"] = true;
-            instructionKeywords["PHX"] = true;
-            instructionKeywords["PLX"] = true;
-            instructionKeywords["PHY"] = true;
-            instructionKeywords["PLY"] = true;
             
             instructionKeywords["INC"] = true;
             instructionKeywords["DEC"] = true;
@@ -372,15 +367,7 @@ unit Token
             
             instructionKeywords["NOP"] = true;
             
-            for (byte i=0; i < 8; i++)
-            {
-                instructionKeywords["RMB" + i.ToString()] = true;
-                instructionKeywords["SMB" + i.ToString()] = true;
-                instructionKeywords["BBR" + i.ToString()] = true;
-                instructionKeywords["BBS" + i.ToString()] = true;
-            }
-
-            // 6502 registers:
+             // 6502 registers:
             registerKeywords["A"] = true;
             registerKeywords["X"] = true;
             registerKeywords["Y"] = true;
@@ -401,6 +388,28 @@ unit Token
             conditionKeywords["NV"] = true; // ?
             conditionKeywords["PL"] = true;
             conditionKeywords["MI"] = true;
+        }
+        if (architecture & CPUArchitecture.W65C02 != CPUArchitecture.None)
+        {
+            instructionKeywords["BRA"] = true;
+            instructionKeywords["TSB"] = true;
+            instructionKeywords["TRB"] = true;
+            instructionKeywords["STZ"] = true;
+            
+            instructionKeywords["PHX"] = true;
+            instructionKeywords["PLX"] = true;
+            instructionKeywords["PHY"] = true;
+            instructionKeywords["PLY"] = true;
+            
+            
+            
+            for (byte i=0; i < 8; i++)
+            {
+                instructionKeywords["RMB" + i.ToString()] = true;
+                instructionKeywords["SMB" + i.ToString()] = true;
+                instructionKeywords["BBR" + i.ToString()] = true;
+                instructionKeywords["BBS" + i.ToString()] = true;
+            }
         }
     }
     

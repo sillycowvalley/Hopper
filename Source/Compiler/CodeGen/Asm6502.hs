@@ -15,20 +15,265 @@ unit Asm6502
         None=0,
         Implied=0x0001,
         Accumulator=0x0002,       // A
-        Immediate=0x0004,         // #nn
-        Absolute=0x0008,          // nnnn
-        AbsoluteX=0x0010,         // nnnn,X
-        AbsoluteY=0x0020,         // nnnn,Y
-        AbsoluteIndirect=0x0040,  // [nnnn]
-        AbsoluteIndirectX=0x0080, // [nnnn,X]
-        ZeroPage=0x0100,          // nn
-        ZeroPageX=0x0200,         // nn,X
-        ZeroPageY=0x0400,         // nn,Y
-        ZeroPageIndirect=0x0800,  // [nn]
-        XIndexedZeroPage=0x1000,  // [nn,X]
-        YIndexedZeroPage=0x2000,  // [nn], Y
-        Relative=0x4000,          // dd
-        ZeroPageRelative=0x8000,  // nn,dd
+        Immediate=0x0004,         // #nn       n
+        Absolute=0x0008,          // nnnn      nn
+        AbsoluteX=0x0010,         // nnnn,X    nnX
+        AbsoluteY=0x0020,         // nnnn,Y    nnY
+        AbsoluteIndirect=0x0040,  // [nnnn]    inn
+        AbsoluteIndirectX=0x0080, // [nnnn,X]  innX
+        ZeroPage=0x0100,          // nn        z
+        ZeroPageX=0x0200,         // nn,X      zX
+        ZeroPageY=0x0400,         // nn,Y      zY
+        ZeroPageIndirect=0x0800,  // [nn]      iz
+        XIndexedZeroPage=0x1000,  // [nn,X]    izX
+        YIndexedZeroPage=0x2000,  // [nn], Y   izY
+        Relative=0x4000,          // dd        e
+        ZeroPageRelative=0x8000,  // nn,dd     z_e
+    }
+    
+    enum OpCode
+    {
+        BRK      = 0x00,   
+        BPL_e    = 0x10,  
+        JSR_nn   = 0x20,  
+        BMI_e    = 0x30,  
+        RTI      = 0x40,
+        BVC_e    = 0x50,
+        RTS      = 0x60,  
+        BVS_e    = 0x70,
+        BRA_e    = 0x80,
+        BCC_e    = 0x90,
+        LDY_n    = 0xA0,
+        BCS_e    = 0xB0,
+        CPY_n    = 0xC0,        
+        BNE_e    = 0xD0,
+        CPX_n    = 0xE0,
+        BEQ_e    = 0xF0,
+        
+        ORA_izX  = 0x01,
+        ORA_izY  = 0x11,
+        AND_izX  = 0x21,
+        AND_izY  = 0x31,
+        EOR_izX  = 0x41,
+        EOR_izY  = 0x51,
+        ADC_izX  = 0x61,
+        ADC_izY  = 0x71,
+        STA_izX  = 0x81,
+        STA_izY  = 0x91,
+        LDA_izX  = 0xA1,
+        LDA_izY  = 0xB1,
+        CMP_izX  = 0xC1,
+        CMP_izY  = 0xD1,
+        SBC_izX  = 0xE1,
+        SBC_izY  = 0xF1,
+        
+        ORA_iz   = 0x12,
+        
+        AND_iz   = 0x32,
+        
+        EOR_iz   = 0x52,
+        
+        ADC_iz   = 0x72,
+        
+        STA_iz   = 0x92,
+        LDX_n    = 0xA2,
+        LDA_iz   = 0xB2,
+        
+        CMP_iz   = 0xD2,
+        
+        SBC_iz   = 0xF2,
+        
+        TSB_z    = 0x04,
+        TRB_z    = 0x14,
+        BIT_z    = 0x24,
+        BIT_zX   = 0x34,
+        
+        STZ_z    = 0x64,
+        STZ_zX   = 0x74,
+        STY_z    = 0x84,
+        STY_zX   = 0x94,
+        LDY_z    = 0xA4,
+        LDY_zX   = 0xB4,
+        CPY_z    = 0xC4,
+        
+        CPX_z    = 0xE4,
+        
+        ORA_z    = 0x05,
+        ORA_zX   = 0x15,
+        AND_z    = 0x25,
+        AND_zX   = 0x35,
+        EOR_z    = 0x45,
+        EOR_zX   = 0x55,
+        ADC_z    = 0x65,
+        ADC_zX   = 0x75,
+        STA_z    = 0x85,
+        STA_zX   = 0x95,
+        LDA_z    = 0xA5,
+        LDA_zX   = 0xB5,
+        CMP_z    = 0xC5,
+        CMP_zX   = 0xD5,
+        SBC_z    = 0xE5,
+        SBC_zX   = 0xF5,
+        
+        ASL_z    = 0x06,
+        ASL_zX   = 0x16,
+        ROL_z    = 0x26,
+        ROL_zX   = 0x36,
+        LSR_z    = 0x46,
+        LSR_zX   = 0x56,
+        ROR_z    = 0x66,
+        ROR_zX   = 0x76,
+        STX_z    = 0x86,
+        STX_zY   = 0x96,
+        LDX_z    = 0xA6,
+        LDX_zY   = 0xB6,
+        DEC_z    = 0xC6,
+        DEC_zX   = 0xD6,
+        INC_z    = 0xE6,
+        INC_zX   = 0xF6,
+        
+        
+        RMB0_z   = 0x07,
+        RMB1_z   = 0x17,
+        RMB2_z   = 0x27,
+        RMB3_z   = 0x37,
+        RMB4_z   = 0x47,
+        RMB5_z   = 0x57,
+        RMB6_z   = 0x67,
+        RMB7_z   = 0x77,
+        SMB0_z   = 0x87,
+        SMB1_z   = 0x97,
+        SMB2_z   = 0xA7,
+        SMB3_z   = 0xB7,
+        SMB4_z   = 0xC7,
+        SMB5_z   = 0xD7,
+        SMB6_z   = 0xE7,
+        SMB7_z   = 0xF7,
+        
+        PHP      = 0x08,
+        CLC      = 0x18,
+        PLP      = 0x28,
+        SEC      = 0x38,
+        PHA      = 0x48,
+        CLI      = 0x58,
+        PLA      = 0x68,
+        SEI      = 0x78,
+        DEY      = 0x88,
+        TYA      = 0x98,
+        TAY      = 0xA8,
+        CLV      = 0xB8,
+        INY      = 0xC8,
+        CLD      = 0xD8,
+        INX      = 0xE8,
+        SED      = 0xF8,
+        
+        ORA_n    = 0x09,
+        ORA_nnY  = 0x19,
+        AND_n    = 0x29,
+        AND_nnY  = 0x39,
+        EOR_n    = 0x49,
+        EOR_nnY  = 0x59,
+        ADC_n    = 0x69,
+        ADC_nnY  = 0x79,
+        BIT_n    = 0x89,
+        STA_nnY  = 0x99,
+        LDA_n    = 0xA9,
+        LDA_nnY  = 0xB9,
+        CMP_n    = 0xC9,
+        CMP_nnY  = 0xD9,
+        SBC_n    = 0xE9,
+        SBC_nnY  = 0xF9,
+        
+        ASL      = 0x0A,
+        INC      = 0x1A,
+        ROL      = 0x2A,
+        DEC      = 0x3A,
+        LSR      = 0x4A,
+        PHY      = 0x5A,
+        ROR      = 0x6A,
+        PLY      = 0x7A,
+        TXA      = 0x8A,
+        TXS      = 0x9A,
+        TAX      = 0xAA,
+        TSX      = 0xBA,
+        DEX      = 0xCA,
+        PHX      = 0xDA,
+        NOP      = 0xEA,
+        PLX      = 0xFA,
+        
+        WAI      = 0xCB,
+        STP      = 0xDB,
+        
+        TSB_nn   = 0x0C,
+        TRB_nn   = 0x1C,
+        BIT_nn   = 0x2C,
+        BIT_nnX  = 0x3C,
+        JMP_nn   = 0x4C,
+        
+        JMP_inn  = 0x6C,
+        JMP_innX = 0x7C,
+        STY_nn   = 0x8C,
+        STZ_nn   = 0x9C,
+        LDY_nn   = 0xAC,
+        LDY_nnX  = 0xBC,
+        CPY_nn   = 0xCC,
+        
+        CPX_nn   = 0xEC,
+        
+        iJMP_nn  = 0xFC, // internal instruction : jump to methodIndex place holder
+        
+        ORA_nn   = 0x0D,
+        ORA_nnX  = 0x1D,
+        AND_nn   = 0x2D,
+        AND_nnX  = 0x3D,
+        EOR_nn   = 0x4D,
+        EOR_nnX  = 0x5D,
+        ADC_nn   = 0x6D,
+        ADC_nnX  = 0x7D,
+        STA_nn   = 0x8D,
+        STA_nnX  = 0x9D,
+        LDA_nn   = 0xAD,
+        LDA_nnX  = 0xBD,
+        CMP_nn   = 0xCD,
+        CMP_nnX  = 0xDD,
+        SBC_nn   = 0xED,
+        SBC_nnX  = 0xFD,
+        
+        ASL_nn   = 0x0E,
+        ASL_nnX  = 0x1E,
+        ROL_nn   = 0x2E,
+        ROL_nnX  = 0x3E,
+        LSR_nn   = 0x4E,
+        LSR_nnX  = 0x5E,
+        ROR_nn   = 0x6E,
+        ROR_nnX  = 0x7E,
+        STX_nn   = 0x8E,
+        STZ_nnX  = 0x9E,
+        LDX_nn   = 0xAE,
+        LDX_nnY  = 0xBE,
+        DEC_nn   = 0xCE,
+        DEC_nnX  = 0xDE,
+        INC_nn   = 0xEE,
+        INC_nnX  = 0xFE,
+        
+        BBR0_z_e = 0x0F,
+        BBR1_z_e = 0x1F,
+        BBR2_z_e = 0x2F,
+        BBR3_z_e = 0x3F,
+        BBR4_z_e = 0x4F,
+        BBR5_z_e = 0x5F,
+        BBR6_z_e = 0x6F,
+        BBR7_z_e = 0x7F,
+        BBS0_z_e = 0x8F,
+        BBS1_z_e = 0x9F,
+        BBS2_z_e = 0xAF,
+        BBS3_z_e = 0xBF,
+        BBS4_z_e = 0xCF,
+        BBS5_z_e = 0xDF,
+        BBS6_z_e = 0xEF,
+        BBS7_z_e = 0xFF,
+        
+        
     }
     
     IE()
@@ -39,6 +284,103 @@ unit Asm6502
     {
         Parser.Error("not implemented"); Die(0x0A);
     }
+    
+    ValidateInstruction(OpCode instruction)
+    {
+        if (!IsValidInstruction(instruction))
+        {
+            if (Architecture == CPUArchitecture.M6502)
+            {
+                Parser.Error("Invalid instruction for original 6502 (CPU_6502). ");
+            }
+            else
+            {
+                Die(0x0A);
+            }
+        }
+    }
+    
+    
+    bool IsValidInstruction(OpCode instruction)
+    {
+        bool valid = true;
+        
+        if (Architecture == CPUArchitecture.M6502)
+        {
+            switch (instruction)
+            {
+                case OpCode.ORA_iz:
+                case OpCode.AND_iz:
+                case OpCode.EOR_iz:
+                case OpCode.ADC_iz:
+                case OpCode.STA_iz:
+                case OpCode.LDA_iz:
+                case OpCode.CMP_iz:
+                case OpCode.SBC_iz:
+                
+                case OpCode.TSB_z:
+                case OpCode.TRB_z:
+                case OpCode.BIT_zX:
+                
+                case OpCode.STZ_z:
+                case OpCode.STZ_zX:
+                
+                case OpCode.BIT_n:
+                
+                case OpCode.INC:
+                case OpCode.DEC:
+                case OpCode.PHY:
+                case OpCode.PLY:
+                case OpCode.PHX:
+                case OpCode.PLX:
+                
+                case OpCode.STZ_nnX:
+                
+                case OpCode.BBR0_z_e:
+                case OpCode.BBR1_z_e:
+                case OpCode.BBR2_z_e:
+                case OpCode.BBR3_z_e:
+                case OpCode.BBR4_z_e:
+                case OpCode.BBR5_z_e:
+                case OpCode.BBR6_z_e:
+                case OpCode.BBR7_z_e:
+                case OpCode.BBS0_z_e:
+                case OpCode.BBS1_z_e:
+                case OpCode.BBS2_z_e:
+                case OpCode.BBS3_z_e:
+                case OpCode.BBS4_z_e:
+                case OpCode.BBS5_z_e:
+                case OpCode.BBS6_z_e:
+                case OpCode.BBS7_z_e:
+                
+                case OpCode.RMB0_z:
+                case OpCode.RMB1_z:
+                case OpCode.RMB2_z:
+                case OpCode.RMB3_z:
+                case OpCode.RMB4_z:
+                case OpCode.RMB5_z:
+                case OpCode.RMB6_z:
+                case OpCode.RMB7_z:
+                case OpCode.SMB0_z:
+                case OpCode.SMB1_z:
+                case OpCode.SMB2_z:
+                case OpCode.SMB3_z:
+                case OpCode.SMB4_z:
+                case OpCode.SMB5_z:
+                case OpCode.SMB6_z:
+                case OpCode.SMB7_z:
+                
+                case OpCode.BRA_e:
+                case OpCode.JMP_innX:
+                {
+                    valid = false;
+                }
+                
+            }
+        }
+        return valid;
+    }
+    
     
     AddressingModes GetAddressingModes(string instructionName)
     {
@@ -238,12 +580,12 @@ unit Asm6502
         return addressingModes;
     }
     
-    uint GetInstructionLength(byte instruction)
+    uint GetInstructionLength(OpCode instruction)
     {
         uint length;
         // https://llx.com/Neil/a2/opcodes.html
-        byte cc  = instruction & 0b11;
-        byte bbb = (instruction >> 2) & 0b111;
+        byte cc  = byte(instruction) & 0b11;
+        byte bbb = (byte(instruction) >> 2) & 0b111;
         switch (cc)
         {
             case 0b01: // group one
@@ -277,573 +619,570 @@ unit Asm6502
         }
         switch (instruction)
         {
-            case 0x20: { length = 3; } // JSR
-            case 0xFC: { length = 3; } // iJMP
+            case OpCode.JSR_nn:  { length = 3; } // JSR
+            case OpCode.iJMP_nn: { length = 3; } // iJMP
             
-            case 0x00: // BRK
-            case 0x40: // RTI
-            case 0x60: // RTS
-            case 0x08: // PHP
-            case 0x28: // PLP
-            case 0x48: // PHA
-            case 0x68: // PLA
-            case 0x88: // DEY
-            case 0xA8: // TAY
-            case 0xC8: // INX
-            case 0xE8: // INY
-            case 0x18: // CLC
-            case 0x38: // SEC
-            case 0x58: // CLI
-            case 0x78: // SEI
-            case 0x98: // TAY
-            case 0xB8: // CLV
-            case 0xD8: // CLD
-            case 0xF8: // SED
-            case 0x8A: // TXA
-            case 0x9A: // TXS
-            case 0xAA: // TAX
-            case 0xBA: // TSX
-            case 0xCA: // DEX
-            case 0xEA: // NOP
+            case OpCode.BRK: 
+            case OpCode.CLC:  
+            case OpCode.CLD:  
+            case OpCode.CLI:  
+            case OpCode.CLV:  
+            case OpCode.DEY:  
+            case OpCode.DEX:  
+            case OpCode.INX:  
+            case OpCode.INY:  
+            case OpCode.NOP:  
             
-            case 0xDB: // STP
-            case 0xCB: // WAI
+            case OpCode.PHP:  
+            case OpCode.PHX: 
+            case OpCode.PHA:  
+            case OpCode.PHY: 
+            case OpCode.PLY: 
+            case OpCode.PLX: 
+            case OpCode.PLP:  
+            case OpCode.PLA:  
             
-            case 0x1A: // INC A
-            case 0x3A: // DEC A
-            case 0x5A: // PHY
-            case 0x7A: // PLY
-            case 0xDA: // PHX
-            case 0xFA: // PLX
+            case OpCode.RTI:  
+            case OpCode.RTS:  
+            case OpCode.SEC:  
+            case OpCode.SEI:  
+            case OpCode.SED:  
+            case OpCode.STP:  
+            
+            case OpCode.TAX:  
+            case OpCode.TAY:  
+            case OpCode.TSX:  
+            case OpCode.TXA:  
+            case OpCode.TXS:  
+            case OpCode.TYA:  
+            case OpCode.WAI:  
+            
+            case OpCode.INC:
+            case OpCode.DEC:
+            case OpCode.ASL:
+            case OpCode.LSR:
+            case OpCode.ROL:
+            case OpCode.ROR:
+            
+            
             { length = 1; } 
                 
-            case 0x0F:
-            case 0x1F:
-            case 0x2F:
-            case 0x3F:
-            case 0x4F:
-            case 0x4C: // JMP
-            case 0x5F:
-            case 0x6C: // JMP
-            case 0x6F:
-            case 0x7F:
-            case 0x8F:
-            case 0x9F:
-            case 0xAF:
-            case 0xBF:
-            case 0xCF:
-            case 0xDF:
-            case 0xEF:
-            case 0xFF:
+            case OpCode.BBR0_z_e:
+            case OpCode.BBR1_z_e:
+            case OpCode.BBR2_z_e:
+            case OpCode.BBR3_z_e:
+            case OpCode.BBR4_z_e:
+            case OpCode.BBR5_z_e:
+            case OpCode.BBR6_z_e:
+            case OpCode.BBR7_z_e:
+            case OpCode.BBS0_z_e:
+            case OpCode.BBS1_z_e:
+            case OpCode.BBS2_z_e:
+            case OpCode.BBS3_z_e:
+            case OpCode.BBS4_z_e:
+            case OpCode.BBS5_z_e:
+            case OpCode.BBS6_z_e:
+            case OpCode.BBS7_z_e:
+            
+            case OpCode.JMP_nn:
+            case OpCode.JMP_inn:
             { length = 3; }
             
-            case 0x7C: // JMP
+            case OpCode.JMP_innX:
             { length = 3 + 256; }
             
-            case 0x07:
-            case 0x17:
-            case 0x27:
-            case 0x37:
-            case 0x47:
-            case 0x57:
-            case 0x67:
-            case 0x77:
-            case 0x87:
-            case 0x97:
-            case 0xA7:
-            case 0xB7:
-            case 0xC7:
-            case 0xD7:
-            case 0xE7:
-            case 0xF7:
+            case OpCode.RMB0_z:
+            case OpCode.RMB1_z:
+            case OpCode.RMB2_z:
+            case OpCode.RMB3_z:
+            case OpCode.RMB4_z:
+            case OpCode.RMB5_z:
+            case OpCode.RMB6_z:
+            case OpCode.RMB7_z:
+            case OpCode.SMB0_z:
+            case OpCode.SMB1_z:
+            case OpCode.SMB2_z:
+            case OpCode.SMB3_z:
+            case OpCode.SMB4_z:
+            case OpCode.SMB5_z:
+            case OpCode.SMB6_z:
+            case OpCode.SMB7_z:
             { length = 2; }
         }
         if (length == 0)
         {
-            PrintLn("GetInstructionLength: 0x" + instruction.ToHexString(2)); Die(0x0B);
+            PrintLn("GetInstructionLength: 0x" + (byte(instruction)).ToHexString(2)); Die(0x0B);
             length = 1;
         }
         return length;
     }
     
-    AddressingModes GetAddressingMode(byte instruction)
+    AddressingModes GetAddressingMode(OpCode instruction)
     {
         AddressingModes addressingMode = AddressingModes.None;
         switch (instruction)
         {
-            case 0x0F:
-            case 0x1F:
-            case 0x2F:
-            case 0x3F:
-            case 0x4F:
-            case 0x5F:
-            case 0x6F:
-            case 0x7F:
-            case 0x8F:
-            case 0x9F:
-            case 0xAF:
-            case 0xBF:
-            case 0xCF:
-            case 0xDF:
-            case 0xEF:
-            case 0xFF:
+            case OpCode.BBR0_z_e:
+            case OpCode.BBR1_z_e:
+            case OpCode.BBR2_z_e:
+            case OpCode.BBR3_z_e:
+            case OpCode.BBR4_z_e:
+            case OpCode.BBR5_z_e:
+            case OpCode.BBR6_z_e:
+            case OpCode.BBR7_z_e:
+            case OpCode.BBS0_z_e:
+            case OpCode.BBS1_z_e:
+            case OpCode.BBS2_z_e:
+            case OpCode.BBS3_z_e:
+            case OpCode.BBS4_z_e:
+            case OpCode.BBS5_z_e:
+            case OpCode.BBS6_z_e:
+            case OpCode.BBS7_z_e:
             {
                 addressingMode = AddressingModes.ZeroPageRelative;
             }
             
-            case 0x07:
-            case 0x17:
-            case 0x27:
-            case 0x37:
-            case 0x47:
-            case 0x57:
-            case 0x67:
-            case 0x77:
-            case 0x87:
-            case 0x97:
-            case 0xA7:
-            case 0xB7:
-            case 0xC7:
-            case 0xD7:
-            case 0xE7:
-            case 0xF7:
+            case OpCode.RMB0_z:
+            case OpCode.RMB1_z:
+            case OpCode.RMB2_z:
+            case OpCode.RMB3_z:
+            case OpCode.RMB4_z:
+            case OpCode.RMB5_z:
+            case OpCode.RMB6_z:
+            case OpCode.RMB7_z:
+            case OpCode.SMB0_z:
+            case OpCode.SMB1_z:
+            case OpCode.SMB2_z:
+            case OpCode.SMB3_z:
+            case OpCode.SMB4_z:
+            case OpCode.SMB5_z:
+            case OpCode.SMB6_z:
+            case OpCode.SMB7_z:
             {
                 addressingMode = AddressingModes.ZeroPage;
             }
+        
+            case OpCode.ORA_izY:
+            case OpCode.AND_izY:
+            case OpCode.ADC_izY:
+            case OpCode.EOR_izY:
+            case OpCode.STA_izY:
+            case OpCode.LDA_izY:
+            case OpCode.CMP_izY:
+            case OpCode.SBC_izY: { addressingMode = AddressingModes.YIndexedZeroPage; }
             
-            case 0x71:
-            case 0x31:
-            case 0xD1:
-            case 0x51:
-            case 0xB1:
-            case 0x11:
-            case 0xF1:
-            case 0x91: { addressingMode = AddressingModes.YIndexedZeroPage; }
+            case OpCode.ORA_izX:
+            case OpCode.AND_izX:
+            case OpCode.EOR_izX:
+            case OpCode.ADC_izX:
+            case OpCode.STA_izX:
+            case OpCode.LDA_izX:
+            case OpCode.SBC_izX:
+            case OpCode.CMP_izX: { addressingMode = AddressingModes.XIndexedZeroPage; }
             
-            case 0x61:
-            case 0x21:
-            case 0xC1:
-            case 0x41:
-            case 0xA1:
-            case 0x01:
-            case 0xE1:
-            case 0x81: { addressingMode = AddressingModes.XIndexedZeroPage; }
+            case OpCode.ORA_iz:
+            case OpCode.AND_iz:
+            case OpCode.EOR_iz:
+            case OpCode.ADC_iz:
+            case OpCode.STA_iz:
+            case OpCode.LDA_iz:
+            case OpCode.CMP_iz:
+            case OpCode.SBC_iz: { addressingMode = AddressingModes.ZeroPageIndirect; }
             
-            case 0x72:
-            case 0x32:
-            case 0xD2:
-            case 0x52:
-            case 0xB2:
-            case 0x12:
-            case 0xF2:
-            case 0x92: { addressingMode = AddressingModes.ZeroPageIndirect; }
+            case OpCode.BIT_zX:
+            case OpCode.STZ_zX:
+            case OpCode.STY_zX:
+            case OpCode.LDY_zX:
+            case OpCode.ORA_zX:
+            case OpCode.AND_zX:
+            case OpCode.EOR_zX:
+            case OpCode.ADC_zX:
+            case OpCode.STA_zX:
+            case OpCode.LDA_zX:
+            case OpCode.CMP_zX:
+            case OpCode.SBC_zX:
+            case OpCode.ASL_zX:
+            case OpCode.ROL_zX:
+            case OpCode.LSR_zX:
+            case OpCode.ROR_zX:
+            case OpCode.DEC_zX:
+            case OpCode.INC_zX: { addressingMode = AddressingModes.ZeroPageX; }
             
-            case 0x75:
-            case 0x35:
-            case 0x16:
-            case 0x34:
-            case 0xD5:
-            case 0xD6:
-            case 0x55:
-            case 0xF6:
-            case 0xB5:
-            case 0xB4:
-            case 0x56:
-            case 0x15:
-            case 0x36:
-            case 0x76:
-            case 0xF5:
-            case 0x95:
-            case 0x94:
-            case 0x74: { addressingMode = AddressingModes.ZeroPageX; }
+            case OpCode.STX_zY:
+            case OpCode.LDX_zY: { addressingMode = AddressingModes.ZeroPageY; }
             
-            case 0xB6:
-            case 0x96: { addressingMode = AddressingModes.ZeroPageY; }
+            case OpCode.LDX_nnY:
+            case OpCode.AND_nnY:
+            case OpCode.EOR_nnY:
+            case OpCode.ADC_nnY:
+            case OpCode.STA_nnY:
+            case OpCode.ORA_nnY:
+            case OpCode.LDA_nnY:
+            case OpCode.CMP_nnY:
+            case OpCode.SBC_nnY: { addressingMode = AddressingModes.AbsoluteY; }
             
-            case 0x79:
-            case 0x39:
-            case 0xD9:
-            case 0x59:
-            case 0xB9:
-            case 0xBE:
-            case 0x19:
-            case 0xF9:
-            case 0x99: { addressingMode = AddressingModes.AbsoluteY; }
+            case OpCode.EOR_nnX:
+            case OpCode.ADC_nnX:
+            case OpCode.STA_nnX:
+            case OpCode.LDA_nnX:
+            case OpCode.ASL_nnX:
+            case OpCode.SBC_nnX:
+            case OpCode.CMP_nnX:
+            case OpCode.ROL_nnX:
+            case OpCode.LSR_nnX:
+            case OpCode.DEC_nnX:
+            case OpCode.STZ_nnX:
+            case OpCode.ROR_nnX:
+            case OpCode.INC_nnX:
+            case OpCode.BIT_nnX:
+            case OpCode.AND_nnX:
+            case OpCode.ORA_nnX:
+            case OpCode.LDY_nnX:  { addressingMode = AddressingModes.AbsoluteX; }
             
-            case 0x7D:
-            case 0x3D:
-            case 0x1E:
-            case 0x3C:
-            case 0xDD:
-            case 0xDE:
-            case 0x5D:
-            case 0xFE:
-            case 0xBD:
-            case 0xBC:
-            case 0x5E:
-            case 0x1D:
-            case 0x3E:
-            case 0x7E:
-            case 0xFD:
-            case 0x9D:
-            case 0x9E: { addressingMode = AddressingModes.AbsoluteX; }
+            case OpCode.JMP_inn:  { addressingMode = AddressingModes.AbsoluteIndirect; }
+            case OpCode.JMP_innX: { addressingMode = AddressingModes.AbsoluteIndirectX; }
             
-            case 0x6C: { addressingMode = AddressingModes.AbsoluteIndirect; }
-            case 0x7C: { addressingMode = AddressingModes.AbsoluteIndirectX; }
+            case OpCode.PHY:
+            case OpCode.PLY:
+            case OpCode.SED:
+            case OpCode.TXA:
+            case OpCode.INX:
+            case OpCode.TXS:
+            case OpCode.TAX:
+            case OpCode.TSX:
+            case OpCode.DEX:
+            case OpCode.PHX:
+            case OpCode.NOP:
+            case OpCode.PLX:
+            case OpCode.WAI:
+            case OpCode.STP:
+            case OpCode.BRK:
+            case OpCode.RTI:
+            case OpCode.RTS:
+            case OpCode.CLD:
+            case OpCode.INY:
+            case OpCode.CLV:
+            case OpCode.TAY:
+            case OpCode.TYA:
+            case OpCode.DEY:
+            case OpCode.SEI:
+            case OpCode.PLA:
+            case OpCode.CLI:
+            case OpCode.PLP:
+            case OpCode.CLC:
+            case OpCode.SEC:
+            case OpCode.PHA:
+            case OpCode.PHP: { addressingMode = AddressingModes.Implied; }
             
-            case 0x00:
-            case 0x18:
-            case 0xD8:
-            case 0x58:
-            case 0xB8:
-            case 0xCA:
-            case 0x88:
-            case 0xE8:
-            case 0xC8:
-            case 0xEA:
-            case 0x48:
-            case 0x08:
-            case 0xDA:
-            case 0x5A:
-            case 0x68:
-            case 0x28:
-            case 0xFA:
-            case 0x7A:
-            case 0x40:
-            case 0x60:
-            case 0x38:
-            case 0xF8:
-            case 0x78:
-            case 0xAA:
-            case 0xA8:
-            case 0xBA:
-            case 0x8A:
-            case 0x9A:
-            case 0x98:
-            case 0xDB:
-            case 0xCB: { addressingMode = AddressingModes.Implied; }
+            case OpCode.ASL:
+            case OpCode.INC:
+            case OpCode.ROL:
+            case OpCode.DEC:
+            case OpCode.ROR:
+            case OpCode.LSR: { addressingMode = AddressingModes.Accumulator; }
             
-            case 0x0A:
-            case 0x3A:
-            case 0x1A:
-            case 0x4A:
-            case 0x2A:
-            case 0x6A: { addressingMode = AddressingModes.Accumulator; }
+            case OpCode.ORA_n:
+            case OpCode.AND_n:
+            case OpCode.EOR_n:
+            case OpCode.ADC_n:
+            case OpCode.BIT_n:
+            case OpCode.LDA_n:
+            case OpCode.CMP_n:
+            case OpCode.SBC_n:
+            case OpCode.LDX_n:
+            case OpCode.LDY_n:
+            case OpCode.CPY_n:
+            case OpCode.CPX_n:{ addressingMode = AddressingModes.Immediate; }
             
-            case 0x69:
-            case 0x29:
-            case 0x89:
-            case 0xC9:
-            case 0xE0:
-            case 0xC0:
-            case 0x49:
-            case 0xA9:
-            case 0xA2:
-            case 0xA0:
-            case 0x09:
-            case 0xE9:{ addressingMode = AddressingModes.Immediate; }
+            case OpCode.ORA_nn: 
+            case OpCode.AND_nn: 
+            case OpCode.EOR_nn: 
+            case OpCode.INC_nn: 
+            case OpCode.DEC_nn: 
+            case OpCode.LDX_nn: 
+            case OpCode.STX_nn: 
+            case OpCode.ROR_nn: 
+            case OpCode.LSR_nn: 
+            case OpCode.ROL_nn: 
+            case OpCode.ASL_nn: 
+            case OpCode.SBC_nn: 
+            case OpCode.CMP_nn: 
+            case OpCode.LDA_nn: 
+            case OpCode.STA_nn: 
+            case OpCode.ADC_nn: 
+            case OpCode.CPX_nn: 
+            case OpCode.CPY_nn: 
+            case OpCode.LDY_nn: 
+            case OpCode.STZ_nn: 
+            case OpCode.STY_nn: 
+            case OpCode.JMP_nn: 
+            case OpCode.BIT_nn: 
+            case OpCode.TRB_nn: 
+            case OpCode.TSB_nn: 
+            case OpCode.JSR_nn: { addressingMode = AddressingModes.Absolute; }
             
-            case 0x6D: 
-            case 0x2D: 
-            case 0x0E: 
-            case 0x2C: 
-            case 0xCD: 
-            case 0xEC: 
-            case 0xCC: 
-            case 0xCE: 
-            case 0x4D: 
-            case 0xEE: 
-            case 0x4C: 
-            case 0x20: 
-            case 0xAD: 
-            case 0xAE: 
-            case 0xAC: 
-            case 0x4E: 
-            case 0x0D: 
-            case 0x2E: 
-            case 0x6E: 
-            case 0xED: 
-            case 0x8D: 
-            case 0x8E: 
-            case 0x8C: 
-            case 0x9C: 
-            case 0x1C: 
-            case 0x0C: { addressingMode = AddressingModes.Absolute; }
+            case OpCode.TSB_z: 
+            case OpCode.TRB_z: 
+            case OpCode.BIT_z: 
+            case OpCode.STZ_z: 
+            case OpCode.STY_z: 
+            case OpCode.LDY_z: 
+            case OpCode.CPY_z: 
+            case OpCode.CPX_z: 
+            case OpCode.ORA_z: 
+            case OpCode.AND_z: 
+            case OpCode.EOR_z: 
+            case OpCode.ADC_z: 
+            case OpCode.STA_z: 
+            case OpCode.LDA_z: 
+            case OpCode.CMP_z: 
+            case OpCode.SBC_z: 
+            case OpCode.ASL_z: 
+            case OpCode.ROL_z: 
+            case OpCode.LSR_z: 
+            case OpCode.ROR_z: 
+            case OpCode.STX_z: 
+            case OpCode.LDX_z: 
+            case OpCode.DEC_z: 
+            case OpCode.INC_z: { addressingMode = AddressingModes.ZeroPage; }
             
-            case 0x65: 
-            case 0x25: 
-            case 0x06: 
-            case 0x24: 
-            case 0xC5: 
-            case 0xE4: 
-            case 0xC4: 
-            case 0xC6: 
-            case 0x45: 
-            case 0xE6: 
-            case 0xA5: 
-            case 0xA6: 
-            case 0xA4: 
-            case 0x46: 
-            case 0x05: 
-            case 0x26: 
-            case 0x66: 
-            case 0xE5: 
-            case 0x85: 
-            case 0x86: 
-            case 0x84: 
-            case 0x64: 
-            case 0x14: 
-            case 0x04: { addressingMode = AddressingModes.ZeroPage; }
-            
-            case 0x90:
-            case 0xB0:
-            case 0xF0:
-            case 0x30:
-            case 0xD0:
-            case 0x10:
-            case 0x80:
-            case 0x50:
-            case 0x70: { addressingMode = AddressingModes.Relative; }
+            case OpCode.BPL_e:
+            case OpCode.BMI_e:
+            case OpCode.BVC_e:
+            case OpCode.BVS_e:
+            case OpCode.BRA_e:
+            case OpCode.BCC_e:
+            case OpCode.BCS_e:
+            case OpCode.BNE_e:
+            case OpCode.BEQ_e: { addressingMode = AddressingModes.Relative; }
         }
         return addressingMode;
     }
     
-    string GetName(byte instruction)
+    
+    string GetName(OpCode instruction)
     {
         string name = "???";
         switch (instruction)
         {
-            case 0x00: { name = "BRK"; }
-            case 0x01: { name = "ORA"; }
-            case 0x04: { name = "TSB"; }
-            case 0x05: { name = "ORA"; }
-            case 0x06: { name = "ASL"; }
-            case 0x08: { name = "PHP"; }
-            case 0x09: { name = "ORA"; }
-            case 0x0A: { name = "ASL"; }
-            case 0x0C: { name = "TSB"; }
-            case 0x0D: { name = "ORA"; }
-            case 0x0E: { name = "ASL"; }
+            case OpCode.BRK:    { name = "BRK"; }
+            case OpCode.BPL_e:  { name = "BPL"; }
+            case OpCode.JSR_nn: { name = "JSR"; }
+            case OpCode.BMI_e:  { name = "BMI"; }
+            case OpCode.RTI:    { name = "RTI"; }
+            case OpCode.BVC_e:  { name = "BVC"; }
+            case OpCode.RTS:    { name = "RTS"; }
+            case OpCode.BVS_e:  { name = "BVS"; }
+            case OpCode.BRA_e:  { name = "BRA"; }
+            case OpCode.BCC_e:  { name = "BCC"; }
+            case OpCode.LDY_n:  { name = "LDY"; }
+            case OpCode.BCS_e:  { name = "BCS"; }
+            case OpCode.CPY_n:  { name = "CPY"; }
+            case OpCode.BNE_e:  { name = "BNE"; }
+            case OpCode.CPX_n:  { name = "CPX"; }
+            case OpCode.BEQ_e:  { name = "BEQ"; }
+            case OpCode.ORA_izX:{ name = "ORA"; }
+            case OpCode.ORA_izY:{ name = "ORA"; }
+            case OpCode.AND_izX:{ name = "AND"; }
+            case OpCode.AND_izY:{ name = "AND"; }
+            case OpCode.EOR_izX:{ name = "EOR"; }
+            case OpCode.EOR_izY:{ name = "EOR"; }
+            case OpCode.ADC_izX:{ name = "ADC"; }
+            case OpCode.ADC_izY:{ name = "ADC"; }
+            case OpCode.STA_izX:{ name = "STA"; }
+            case OpCode.STA_izY:{ name = "STA"; }
+            case OpCode.LDA_izX:{ name = "LDA"; }
+            case OpCode.LDA_izY:{ name = "LDA"; }
+            case OpCode.CMP_izX:{ name = "CMP"; }
+            case OpCode.CMP_izY:{ name = "CMP"; }
+            case OpCode.SBC_izX:{ name = "SBC"; }
+            case OpCode.SBC_izY:{ name = "SBC"; }
+            case OpCode.ORA_iz: { name = "ORA"; }
+            case OpCode.AND_iz: { name = "AND"; }
+            case OpCode.EOR_iz: { name = "EOR"; }
+            case OpCode.ADC_iz: { name = "ADC"; }
+            case OpCode.STA_iz: { name = "STA"; }
+            case OpCode.LDX_n:  { name = "LDX"; }
+            case OpCode.LDA_iz: { name = "LDA"; }
+            case OpCode.CMP_iz: { name = "CMP"; }
+            case OpCode.SBC_iz: { name = "SBC"; }
+            case OpCode.TSB_z:  { name = "TSB"; }
+            case OpCode.TRB_z:  { name = "TRB"; }
+            case OpCode.BIT_z:  { name = "BIT"; }
+            case OpCode.BIT_zX: { name = "BIT"; }
+            case OpCode.STZ_z:  { name = "STZ"; }
+            case OpCode.STZ_zX: { name = "STZ"; }
+            case OpCode.STY_z:  { name = "STY"; }
+            case OpCode.STY_zX: { name = "STY"; }
+            case OpCode.LDY_z:  { name = "LDY"; }
+            case OpCode.LDY_zX: { name = "LDY"; }
+            case OpCode.CPY_z:  { name = "CPY"; }
+            case OpCode.CPX_z:  { name = "CPX"; }
+            case OpCode.ORA_z:  { name = "ORA"; }
+            case OpCode.ORA_zX: { name = "ORA"; }
+            case OpCode.AND_z:  { name = "AND"; }
+            case OpCode.AND_zX: { name = "AND"; }
+            case OpCode.EOR_z:  { name = "EOR"; }
+            case OpCode.EOR_zX: { name = "EOR"; }
+            case OpCode.ADC_z:  { name = "ADC"; }
+            case OpCode.ADC_zX: { name = "ADC"; }
+            case OpCode.STA_z:  { name = "STA"; }
+            case OpCode.STA_zX: { name = "STA"; }
+            case OpCode.LDA_z:  { name = "LDA"; }
+            case OpCode.LDA_zX: { name = "LDA"; }
+            case OpCode.CMP_z:  { name = "CMP"; }
+            case OpCode.CMP_zX: { name = "CMP"; }
+            case OpCode.SBC_z:  { name = "SBC"; }
+            case OpCode.SBC_zX: { name = "SBC"; }
+            case OpCode.ASL_z:  { name = "ASL"; }
+            case OpCode.ASL_zX: { name = "ASL"; }
+            case OpCode.ROL_z:  { name = "ROL"; }
+            case OpCode.ROL_zX: { name = "ROL"; }
+            case OpCode.LSR_z:  { name = "LSR"; }
+            case OpCode.LSR_zX: { name = "LSR"; }
+            case OpCode.ROR_z:  { name = "ROR"; }
+            case OpCode.ROR_zX: { name = "ROR"; }
+            case OpCode.STX_z:  { name = "STX"; }
+            case OpCode.STX_zY: { name = "STX"; }
+            case OpCode.LDX_z:  { name = "LDX"; }
+            case OpCode.LDX_zY: { name = "LDX"; }
+            case OpCode.DEC_z:  { name = "DEC"; }
+            case OpCode.DEC_zX: { name = "DEC"; }
+            case OpCode.INC_z:  { name = "INC"; }
+            case OpCode.INC_zX: { name = "INC"; }
+            case OpCode.PHP:     { name = "PHP"; }
+            case OpCode.CLC:     { name = "CLC"; }
+            case OpCode.PLP:     { name = "PLP"; }
+            case OpCode.SEC:     { name = "SEC"; }
+            case OpCode.PHA:     { name = "PHA"; }
+            case OpCode.CLI:     { name = "CLI"; }
+            case OpCode.PLA:     { name = "PLA"; }
+            case OpCode.SEI:     { name = "SEI"; }
+            case OpCode.DEY:     { name = "DEY"; }
+            case OpCode.TYA:     { name = "TYA"; }
+            case OpCode.TAY:     { name = "TAY"; }
+            case OpCode.CLV:     { name = "CLV"; }
+            case OpCode.INY:     { name = "INY"; }
+            case OpCode.CLD:     { name = "CLD"; }
+            case OpCode.INX:     { name = "INX"; }
+            case OpCode.SED:     { name = "SED"; }
+            case OpCode.ORA_n:   { name = "ORA"; }
+            case OpCode.ORA_nnY: { name = "ORA"; }
+            case OpCode.AND_n:   { name = "AND"; }
+            case OpCode.AND_nnY: { name = "AND"; }
+            case OpCode.EOR_n:   { name = "EOR"; }
+            case OpCode.EOR_nnY: { name = "EOR"; }
+            case OpCode.ADC_n:   { name = "ADC"; }
+            case OpCode.ADC_nnY: { name = "ADC"; }
+            case OpCode.BIT_n:   { name = "BIT"; }
+            case OpCode.STA_nnY: { name = "STA"; }
+            case OpCode.LDA_n:   { name = "LDA"; }
+            case OpCode.LDA_nnY: { name = "LDA"; }
+            case OpCode.CMP_n:   { name = "CMP"; }
+            case OpCode.CMP_nnY: { name = "CMP"; }
+            case OpCode.SBC_n:   { name = "SBC"; }
+            case OpCode.SBC_nnY: { name = "SBC"; }
+            case OpCode.ASL:     { name = "ASL"; }
+            case OpCode.INC:     { name = "INC"; }
+            case OpCode.ROL:     { name = "ROL"; }
+            case OpCode.DEC:     { name = "DEC"; }
+            case OpCode.LSR:     { name = "LSR"; }
+            case OpCode.PHY:     { name = "PHY"; }
+            case OpCode.ROR:     { name = "ROR"; }
+            case OpCode.PLY:     { name = "PLY"; }
+            case OpCode.TXA:     { name = "TXA"; }
+            case OpCode.TXS:     { name = "TXS"; }
+            case OpCode.TAX:     { name = "TAX"; }
+            case OpCode.TSX:     { name = "TSX"; }
+            case OpCode.DEX:     { name = "DEX"; }
+            case OpCode.PHX:     { name = "PHX"; }
+            case OpCode.NOP:     { name = "NOP"; }
+            case OpCode.PLX:     { name = "PLX"; }
+            case OpCode.WAI:     { name = "WAI"; }
+            case OpCode.STP:     { name = "STP"; }
+            case OpCode.TSB_nn:  { name = "TSB"; }
+            case OpCode.TRB_nn:  { name = "TRB"; }
+            case OpCode.BIT_nn:  { name = "BIT"; }
+            case OpCode.BIT_nnX: { name = "BIT"; }
+            case OpCode.JMP_nn:  { name = "JMP"; }
+            case OpCode.JMP_inn: { name = "JMP"; }
+            case OpCode.JMP_innX:{ name = "JMP"; }
+            case OpCode.STY_nn:  { name = "STY"; }
+            case OpCode.STZ_nn:  { name = "STZ"; }
+            case OpCode.LDY_nn:  { name = "LDY"; }
+            case OpCode.LDY_nnX: { name = "LDY"; }
+            case OpCode.CPY_nn:  { name = "CPY"; }
+            case OpCode.CPX_nn:  { name = "CPX"; }
+            case OpCode.ORA_nn:  { name = "ORA"; }
+            case OpCode.ORA_nnX: { name = "ORA"; }
+            case OpCode.AND_nn:  { name = "AND"; }
+            case OpCode.AND_nnX: { name = "AND"; }
+            case OpCode.EOR_nn:  { name = "EOR"; }
+            case OpCode.EOR_nnX: { name = "EOR"; }
+            case OpCode.ADC_nn:  { name = "ADC"; }
+            case OpCode.ADC_nnX: { name = "ADC"; }
+            case OpCode.STA_nn:  { name = "STA"; }
+            case OpCode.STA_nnX: { name = "STA"; }
+            case OpCode.LDA_nn:  { name = "LDA"; }
+            case OpCode.LDA_nnX: { name = "LDA"; }
+            case OpCode.CMP_nn:  { name = "CMP"; }
+            case OpCode.CMP_nnX: { name = "CMP"; }
+            case OpCode.SBC_nn:  { name = "SBC"; }
+            case OpCode.SBC_nnX: { name = "SBC"; }
+            case OpCode.ASL_nn:  { name = "ASL"; }
+            case OpCode.ASL_nnX: { name = "ASL"; }
+            case OpCode.ROL_nn:  { name = "ROL"; }
+            case OpCode.ROL_nnX: { name = "ROL"; }
+            case OpCode.LSR_nn:  { name = "LSR"; }
+            case OpCode.LSR_nnX: { name = "LSR"; }
+            case OpCode.ROR_nn:  { name = "ROR"; }
+            case OpCode.ROR_nnX: { name = "ROR"; }
+            case OpCode.STX_nn:  { name = "STX"; }
+            case OpCode.STZ_nnX: { name = "STZ"; }
+            case OpCode.LDX_nn:  { name = "LDX"; }
+            case OpCode.LDX_nnY: { name = "LDX"; }
+            case OpCode.DEC_nn:  { name = "DEC"; }
+            case OpCode.DEC_nnX: { name = "DEC"; }
+            case OpCode.INC_nn:  { name = "INC"; }
+            case OpCode.INC_nnX: { name = "INC"; }
+        
+        
             
-            case 0x10: { name = "BPL"; }
-            case 0x11: { name = "ORA"; }
-            case 0x12: { name = "ORA"; }
-            case 0x14: { name = "TRB"; }
-            case 0x15: { name = "ORA"; }
-            case 0x16: { name = "ASL"; }
-            case 0x18: { name = "CLC"; }
-            case 0x19: { name = "ORA"; }
-            case 0x1A: { name = "INC"; }
-            case 0x1C: { name = "TRB"; }
-            case 0x1D: { name = "ORA"; }
-            case 0x1E: { name = "ASL"; }
+            case OpCode.BBR0_z_e: { name = "BBR0"; }
+            case OpCode.BBR1_z_e: { name = "BBR1"; }
+            case OpCode.BBR2_z_e: { name = "BBR2"; }
+            case OpCode.BBR3_z_e: { name = "BBR3"; }
+            case OpCode.BBR4_z_e: { name = "BBR4"; }
+            case OpCode.BBR5_z_e: { name = "BBR5"; }
+            case OpCode.BBR6_z_e: { name = "BBR6"; }
+            case OpCode.BBR7_z_e: { name = "BBR7"; }
+            case OpCode.BBS0_z_e: { name = "BBS0"; }
+            case OpCode.BBS1_z_e: { name = "BBS1"; }
+            case OpCode.BBS2_z_e: { name = "BBS2"; }
+            case OpCode.BBS3_z_e: { name = "BBS3"; }
+            case OpCode.BBS4_z_e: { name = "BBS4"; }
+            case OpCode.BBS5_z_e: { name = "BBS5"; }
+            case OpCode.BBS6_z_e: { name = "BBS6"; }
+            case OpCode.BBS7_z_e: { name = "BBS7"; }
             
-            case 0x20: { name = "JSR"; }
-            case 0x21: { name = "AND"; }
-            case 0x24: { name = "BIT"; }
-            case 0x25: { name = "AND"; }
-            case 0x26: { name = "ROL"; }
-            case 0x28: { name = "PLP"; }
-            case 0x29: { name = "AND"; }
-            case 0x2A: { name = "ROL"; }
-            case 0x2C: { name = "BIT"; }
-            case 0x2D: { name = "AND"; }
-            case 0x2E: { name = "ROL"; }
+            case OpCode.RMB0_z: { name = "RMB0"; }
+            case OpCode.RMB1_z: { name = "RMB1"; }
+            case OpCode.RMB2_z: { name = "RMB2"; }
+            case OpCode.RMB3_z: { name = "RMB3"; }
+            case OpCode.RMB4_z: { name = "RMB4"; }
+            case OpCode.RMB5_z: { name = "RMB5"; }
+            case OpCode.RMB6_z: { name = "RMB6"; }
+            case OpCode.RMB7_z: { name = "RMB7"; }
+            case OpCode.SMB0_z: { name = "SMB0"; }
+            case OpCode.SMB1_z: { name = "SMB1"; }
+            case OpCode.SMB2_z: { name = "SMB2"; }
+            case OpCode.SMB3_z: { name = "SMB3"; }
+            case OpCode.SMB4_z: { name = "SMB4"; }
+            case OpCode.SMB5_z: { name = "SMB5"; }
+            case OpCode.SMB6_z: { name = "SMB6"; }
+            case OpCode.SMB7_z: { name = "SMB7"; }
             
-            case 0x30: { name = "BMI"; }
-            case 0x31: { name = "AND"; }
-            case 0x32: { name = "AND"; }
-            case 0x34: { name = "BIT"; }
-            case 0x35: { name = "AND"; }
-            case 0x36: { name = "ROL"; }
-            case 0x38: { name = "SEC"; }
-            case 0x39: { name = "AND"; }
-            case 0x3A: { name = "DEC"; }
-            case 0x3C: { name = "BIT"; }
-            case 0x3D: { name = "AND"; }
-            case 0x3E: { name = "ROL"; }
-            
-            case 0x40: { name = "RTI"; }
-            case 0x41: { name = "EOR"; }
-            case 0x45: { name = "EOR"; }
-            case 0x46: { name = "LSR"; }
-            case 0x48: { name = "PHA"; }
-            case 0x49: { name = "EOR"; }
-            case 0x4A: { name = "LSR"; }
-            case 0x4C: { name = "JMP"; }
-            case 0x4D: { name = "EOR"; }
-            case 0x4E: { name = "LSR"; }
-            
-            case 0x50: { name = "BVC"; }
-            case 0x51: { name = "EOR"; }
-            case 0x52: { name = "EOR"; }
-            case 0x55: { name = "EOR"; }
-            case 0x56: { name = "LSR"; }
-            case 0x58: { name = "CLI"; }
-            case 0x59: { name = "EOR"; }
-            case 0x5A: { name = "PHY"; }
-            case 0x5D: { name = "EOR"; }
-            case 0x5E: { name = "LSR"; }
-            
-            case 0x60: { name = "RTS"; }
-            case 0x61: { name = "ADC"; }
-            case 0x64: { name = "STZ"; }
-            case 0x65: { name = "ADC"; }
-            case 0x66: { name = "ROR"; }
-            case 0x68: { name = "PLA"; }
-            case 0x69: { name = "ADC"; }
-            case 0x6A: { name = "ROR"; }
-            case 0x6C: { name = "JMP"; }
-            case 0x6D: { name = "ADC"; }
-            case 0x6E: { name = "ROR"; }
-            
-            case 0x70: { name = "BVS"; }
-            case 0x71: { name = "ADC"; }
-            case 0x72: { name = "ADC"; }
-            case 0x74: { name = "STZ"; }
-            case 0x75: { name = "ADC"; }
-            case 0x76: { name = "ROR"; }
-            case 0x78: { name = "SEI"; }
-            case 0x79: { name = "ADC"; }
-            case 0x7A: { name = "PLY"; }
-            case 0x7C: { name = "JMP"; }
-            case 0x7D: { name = "ADC"; }
-            case 0x7E: { name = "ROR"; }
-            
-            case 0x80: { name = "BRA"; }
-            case 0x81: { name = "STA"; }
-            case 0x84: { name = "STY"; }
-            case 0x85: { name = "STA"; }
-            case 0x86: { name = "STX"; }
-            case 0x88: { name = "DEY"; }
-            case 0x89: { name = "BIT"; }
-            case 0x8A: { name = "TXA"; }
-            case 0x8C: { name = "STY"; }
-            case 0x8D: { name = "STA"; }
-            case 0x8E: { name = "STX"; }
-            
-            case 0x90: { name = "BCC"; }
-            case 0x91: { name = "STA"; }
-            case 0x92: { name = "STA"; }
-            case 0x94: { name = "STY"; }
-            case 0x95: { name = "STA"; }
-            case 0x96: { name = "STX"; }
-            case 0x98: { name = "TYA"; }
-            case 0x99: { name = "STA"; }
-            case 0x9A: { name = "TXS"; }
-            case 0x9C: { name = "STZ"; }
-            case 0x9D: { name = "STA"; }
-            case 0x9E: { name = "STZ"; }
-            
-            case 0xA0: { name = "LDY"; }
-            case 0xA1: { name = "LDA"; }
-            case 0xA2: { name = "LDX"; }
-            case 0xA4: { name = "LDY"; }
-            case 0xA5: { name = "LDA"; }
-            case 0xA6: { name = "LDX"; }
-            case 0xA8: { name = "TAY"; }
-            case 0xA9: { name = "LDA"; }
-            case 0xAA: { name = "TAX"; }
-            case 0xAC: { name = "LDY"; }
-            case 0xAD: { name = "LDA"; }
-            case 0xAE: { name = "LDX"; }
-            
-            case 0xB0: { name = "BCS"; }
-            case 0xB1: { name = "LDA"; }
-            case 0xB2: { name = "LDA"; }
-            case 0xB4: { name = "LDY"; }
-            case 0xB5: { name = "LDA"; }
-            case 0xB6: { name = "LDX"; }
-            case 0xB8: { name = "CLV"; }
-            case 0xB9: { name = "LDA"; }
-            case 0xBA: { name = "TSX"; }
-            case 0xBC: { name = "LDY"; }
-            case 0xBD: { name = "LDA"; }
-            case 0xBE: { name = "LDX"; }
-            
-            case 0xC0: { name = "CPY"; }
-            case 0xC1: { name = "CMP"; }
-            case 0xC4: { name = "CPY"; }
-            case 0xC5: { name = "CMP"; }
-            case 0xC6: { name = "DEC"; }
-            case 0xC8: { name = "INY"; }
-            case 0xC9: { name = "CMP"; }
-            case 0xCA: { name = "DEX"; }
-            case 0xCB: { name = "WAI"; }
-            case 0xCC: { name = "CPY"; }
-            case 0xCD: { name = "CMP"; }
-            case 0xCE: { name = "DEC"; }
-            
-            case 0xD0: { name = "BNE"; }
-            case 0xD1: { name = "CMP"; }
-            case 0xD2: { name = "CMP"; }
-            case 0xD5: { name = "CMP"; }
-            case 0xD6: { name = "DEC"; }
-            case 0xD8: { name = "CLD"; }
-            case 0xD9: { name = "CMP"; }
-            case 0xDA: { name = "PHX"; }
-            case 0xDB: { name = "STP"; }
-            case 0xDD: { name = "CMP"; }
-            case 0xDE: { name = "DEC"; }
-            
-            case 0xE0: { name = "CPX"; }
-            case 0xE1: { name = "SBC"; }
-            case 0xE4: { name = "CPX"; }
-            case 0xE5: { name = "SBC"; }
-            case 0xE6: { name = "INC"; }
-            case 0xE8: { name = "INX"; }
-            case 0xE9: { name = "SBC"; }
-            case 0xEA: { name = "NOP"; }
-            case 0xEC: { name = "CPX"; }
-            case 0xED: { name = "SBC"; }
-            case 0xEE: { name = "INC"; }
-            
-            case 0xF0: { name = "BEQ"; }
-            case 0xF1: { name = "SBC"; }
-            case 0xF2: { name = "SBC"; }
-            case 0xF5: { name = "SBC"; }
-            case 0xF6: { name = "INC"; }
-            case 0xF8: { name = "SED"; }
-            case 0xF9: { name = "SBC"; }
-            case 0xFA: { name = "PLX"; }
-            case 0xFD: { name = "SBC"; }
-            case 0xFE: { name = "INC"; }
-            
-            case 0x0F: { name = "BBR0"; }
-            case 0x1F: { name = "BBR1"; }
-            case 0x2F: { name = "BBR2"; }
-            case 0x3F: { name = "BBR3"; }
-            case 0x4F: { name = "BBR4"; }
-            case 0x5F: { name = "BBR5"; }
-            case 0x6F: { name = "BBR6"; }
-            case 0x7F: { name = "BBR7"; }
-            case 0x8F: { name = "BBS0"; }
-            case 0x9F: { name = "BBS1"; }
-            case 0xAF: { name = "BBS2"; }
-            case 0xBF: { name = "BBS3"; }
-            case 0xCF: { name = "BBS4"; }
-            case 0xDF: { name = "BBS5"; }
-            case 0xEF: { name = "BBS6"; }
-            case 0xFF: { name = "BBS7"; }
-            
-            case 0x07: { name = "RMB0"; }
-            case 0x17: { name = "RMB1"; }
-            case 0x27: { name = "RMB2"; }
-            case 0x37: { name = "RMB3"; }
-            case 0x47: { name = "RMB4"; }
-            case 0x57: { name = "RMB5"; }
-            case 0x67: { name = "RMB6"; }
-            case 0x77: { name = "RMB7"; }
-            case 0x87: { name = "SMB0"; }
-            case 0x97: { name = "SMB1"; }
-            case 0xA7: { name = "SMB2"; }
-            case 0xB7: { name = "SMB3"; }
-            case 0xC7: { name = "SMB4"; }
-            case 0xD7: { name = "SMB5"; }
-            case 0xE7: { name = "SMB6"; }
-            case 0xF7: { name = "SMB7"; }
-            
-            case 0xFC: { name = "iJMP"; }
+            case OpCode.iJMP_nn: { name = "iJMP"; }
         }
         return name;
     }
@@ -851,59 +1190,61 @@ unit Asm6502
     EmitInstruction(string instructionName, byte operand)
     {
         // Immediate AddressingMode
-        byte code;
+        OpCode code;
         switch (instructionName)
         {
-            case "ADC": { code = 0x69; }
-            case "AND": { code = 0x29; }
-            case "BIT": { code = 0x89; }
-            case "CMP": { code = 0xC9; }
-            case "CPX": { code = 0xE0; }
-            case "CPY": { code = 0xC0; }
-            case "EOR": { code = 0x49; }
-            case "LDA": { code = 0xA9; }
-            case "LDX": { code = 0xA2; }
-            case "LDY": { code = 0xA0; }
-            case "ORA": { code = 0x09; }
-            case "SBC": { code = 0xE9; }
+            case "ADC": { code = OpCode.ADC_n; }
+            case "AND": { code = OpCode.AND_n; }
+            case "BIT": { code = OpCode.BIT_n; }
+            case "CMP": { code = OpCode.CMP_n; }
+            case "CPX": { code = OpCode.CPX_n; }
+            case "CPY": { code = OpCode.CPY_n; }
+            case "EOR": { code = OpCode.EOR_n; }
+            case "LDA": { code = OpCode.LDA_n; }
+            case "LDX": { code = OpCode.LDX_n; }
+            case "LDY": { code = OpCode.LDY_n; }
+            case "ORA": { code = OpCode.ORA_n; }
+            case "SBC": { code = OpCode.SBC_n; }
             
             default:
             {
                 NI();
             }
         }
-        Asm6502.AppendCode(code);
+        ValidateInstruction(code);
+        Asm6502.AppendCode(byte(code));
         Asm6502.AppendCode(operand);
     }
     EmitInstructionZeroPageRelative(string instructionName, byte immediateValue, int offset)
     {
         // ZeroPageRelative
-        byte code;
+        OpCode code;
         switch (instructionName)
         {
-            case "BBR0": { code = 0x0F; }
-            case "BBR1": { code = 0x1F; }
-            case "BBR2": { code = 0x2F; }
-            case "BBR3": { code = 0x3F; }
-            case "BBR4": { code = 0x4F; }
-            case "BBR5": { code = 0x5F; }
-            case "BBR6": { code = 0x6F; }
-            case "BBR7": { code = 0x7F; }
-            case "BBS0": { code = 0x8F; }
-            case "BBS1": { code = 0x9F; }
-            case "BBS2": { code = 0xAF; }
-            case "BBS3": { code = 0xBF; }
-            case "BBS4": { code = 0xCF; }
-            case "BBS5": { code = 0xDF; }
-            case "BBS6": { code = 0xEF; }
-            case "BBS7": { code = 0xFF; }
+            case "BBR0": { code = OpCode.BBR0_z_e; }
+            case "BBR1": { code = OpCode.BBR1_z_e; }
+            case "BBR2": { code = OpCode.BBR2_z_e; }
+            case "BBR3": { code = OpCode.BBR3_z_e; }
+            case "BBR4": { code = OpCode.BBR4_z_e; }
+            case "BBR5": { code = OpCode.BBR5_z_e; }
+            case "BBR6": { code = OpCode.BBR6_z_e; }
+            case "BBR7": { code = OpCode.BBR7_z_e; }
+            case "BBS0": { code = OpCode.BBS0_z_e; }
+            case "BBS1": { code = OpCode.BBS1_z_e; }
+            case "BBS2": { code = OpCode.BBS2_z_e; }
+            case "BBS3": { code = OpCode.BBS3_z_e; }
+            case "BBS4": { code = OpCode.BBS4_z_e; }
+            case "BBS5": { code = OpCode.BBS5_z_e; }
+            case "BBS6": { code = OpCode.BBS6_z_e; }
+            case "BBS7": { code = OpCode.BBS7_z_e; }
                        
             default:
             {
                 NI();
             }
         }
-        Asm6502.AppendCode(code);
+        ValidateInstruction(code);
+        Asm6502.AppendCode(byte(code));
         Asm6502.AppendCode(immediateValue);
         byte b = offset.GetByte(0);
         Asm6502.AppendCode(b);
@@ -912,107 +1253,108 @@ unit Asm6502
     EmitInstruction(string instructionName, int offset)
     {
         // Relative AddressingMode
-        byte code;
+        OpCode code;
         switch (instructionName)
         {
-            case "BCC": { code = 0x90; }
-            case "BCS": { code = 0xB0; }
-            case "BEQ": { code = 0xF0; }
-            case "BMI": { code = 0x30; }
-            case "BNE": { code = 0xD0; }
-            case "BPL": { code = 0x10; }
-            case "BRA": { code = 0x80; }
-            case "BVC": { code = 0x50; }
-            case "BVS": { code = 0x70; }
+            case "BCC": { code = OpCode.BCC_e; }
+            case "BCS": { code = OpCode.BCS_e; }
+            case "BEQ": { code = OpCode.BEQ_e; }
+            case "BMI": { code = OpCode.BMI_e; }
+            case "BNE": { code = OpCode.BNE_e; }
+            case "BPL": { code = OpCode.BPL_e; }
+            case "BRA": { code = OpCode.BRA_e; }
+            case "BVC": { code = OpCode.BRA_e; }
+            case "BVS": { code = OpCode.BVS_e; }
             default:
             {
                 NI();
             }
         }
-        Asm6502.AppendCode(code);
+        ValidateInstruction(code);
+        Asm6502.AppendCode(byte(code));
         byte b = offset.GetByte(0);
         Asm6502.AppendCode(b);
     }
     EmitInstructionAbsolute(string instructionName, uint operand, AddressingModes addressingMode)
     {
-        byte code;
+        OpCode code;
         if (addressingMode == AddressingModes.Absolute)
         {
             // Absolute=0x0008,          // nnnn
             switch (instructionName)
             {
-                case "ADC": { code = 0x6D; }
-                case "AND": { code = 0x2D; }
-                case "ASL": { code = 0x0E; }
-                case "BIT": { code = 0x2C; }
-                case "CMP": { code = 0xCD; }
-                case "CPX": { code = 0xEC; }
-                case "CPY": { code = 0xCC; }
-                case "DEC": { code = 0xCE; }
-                case "EOR": { code = 0x4D; }
-                case "INC": { code = 0xEE; }
-                case "JMP": { code = 0x4C; }
-                case "JSR": { code = 0x20; }
-                case "iJMP":{ code = 0xFC; }
-                case "LDA": { code = 0xAD; }
-                case "LDX": { code = 0xAE; }
-                case "LDY": { code = 0xAC; }
-                case "LSR": { code = 0x4E; }
-                case "ORA": { code = 0x0D; }
-                case "ROL": { code = 0x2E; }
-                case "ROR": { code = 0x6E; }
-                case "SBC": { code = 0xED; }
-                case "STA": { code = 0x8D; }    
-                case "STX": { code = 0x8E; }
-                case "STY": { code = 0x8C; }
-                case "STZ": { code = 0x9C; }
-                case "TRB": { code = 0x1C; }
-                case "TSB": { code = 0x0C; }
+                case "ADC": { code = OpCode.ADC_nn; }
+                case "AND": { code = OpCode.AND_nn; }
+                case "ASL": { code = OpCode.ASL_nn; }
+                case "BIT": { code = OpCode.BIT_nn; }
+                case "CMP": { code = OpCode.CMP_nn; }
+                case "CPX": { code = OpCode.CPX_nn; }
+                case "CPY": { code = OpCode.CPY_nn; }
+                case "DEC": { code = OpCode.DEC_nn; }
+                case "EOR": { code = OpCode.EOR_nn; }
+                case "INC": { code = OpCode.INC_nn; }
+                case "JMP": { code = OpCode.JMP_nn; }
+                case "JSR": { code = OpCode.JSR_nn; }
+                case "iJMP":{ code = OpCode.iJMP_nn; }
+                case "LDA": { code = OpCode.LDA_nn; }
+                case "LDX": { code = OpCode.LDX_nn; }
+                case "LDY": { code = OpCode.LDY_nn; }
+                case "LSR": { code = OpCode.LSR_nn; }
+                case "ORA": { code = OpCode.ORA_nn; }
+                case "ROL": { code = OpCode.ROL_nn; }
+                case "ROR": { code = OpCode.ROR_nn; }
+                case "SBC": { code = OpCode.SBC_nn; }
+                case "STA": { code = OpCode.STA_nn; }    
+                case "STX": { code = OpCode.STX_nn; }
+                case "STY": { code = OpCode.STY_nn; }
+                case "STZ": { code = OpCode.STZ_nn; }
+                case "TRB": { code = OpCode.TRB_nn; }
+                case "TSB": { code = OpCode.TSB_nn; }
             }
         }
         else if (addressingMode == AddressingModes.AbsoluteX)
         {
             switch (instructionName)
             {
-                case "ADC": { code = 0x7D; }
-                case "AND": { code = 0x3D; }
-                case "ASL": { code = 0x1E; }
-                case "BIT": { code = 0x3C; }
-                case "CMP": { code = 0xDD; }
-                case "DEC": { code = 0xDE; }
-                case "EOR": { code = 0x5D; }
-                case "INC": { code = 0xFE; }
-                case "LDA": { code = 0xBD; }
-                case "LDY": { code = 0xBC; }
-                case "LSR": { code = 0x5E; }
-                case "ORA": { code = 0x1D; }
-                case "ROL": { code = 0x3E; }
-                case "ROR": { code = 0x7E; }
-                case "SBC": { code = 0xFD; }
-                case "STA": { code = 0x9D; }    
-                case "STZ": { code = 0x9E; }
+                case "ADC": { code = OpCode.ADC_nnX; }
+                case "AND": { code = OpCode.AND_nnX; }
+                case "ASL": { code = OpCode.ASL_nnX; }
+                case "BIT": { code = OpCode.BIT_nnX; }
+                case "CMP": { code = OpCode.CMP_nnX; }
+                case "DEC": { code = OpCode.DEC_nnX; }
+                case "EOR": { code = OpCode.EOR_nnX; }
+                case "INC": { code = OpCode.INC_nnX; }
+                case "LDA": { code = OpCode.LDA_nnX; }
+                case "LDY": { code = OpCode.LDY_nnX; }
+                case "LSR": { code = OpCode.LSR_nnX; }
+                case "ORA": { code = OpCode.ORA_nnX; }
+                case "ROL": { code = OpCode.ROL_nnX; }
+                case "ROR": { code = OpCode.ROR_nnX; }
+                case "SBC": { code = OpCode.SBC_nnX; }
+                case "STA": { code = OpCode.STA_nnX; }    
+                case "STZ": { code = OpCode.STZ_nnX; }
             }
         }
         else if (addressingMode == AddressingModes.AbsoluteY)
         {
             switch (instructionName)
             {
-                case "ADC": { code = 0x79; }
-                case "AND": { code = 0x39; }
-                case "CMP": { code = 0xD9; }
-                case "EOR": { code = 0x59; }
-                case "LDA": { code = 0xB9; }
-                case "LDX": { code = 0xBE; }
-                case "ORA": { code = 0x19; }
-                case "SBC": { code = 0xF9; }
-                case "STA": { code = 0x99; }    
+                case "ADC": { code = OpCode.ADC_nnY; }
+                case "AND": { code = OpCode.AND_nnY; }
+                case "CMP": { code = OpCode.CMP_nnY; }
+                case "EOR": { code = OpCode.EOR_nnY; }
+                case "LDA": { code = OpCode.LDA_nnY; }
+                case "LDX": { code = OpCode.LDX_nnY; }
+                case "ORA": { code = OpCode.ORA_nnY; }
+                case "SBC": { code = OpCode.SBC_nnY; }
+                case "STA": { code = OpCode.STA_nnY; }    
             }
         }
         else if (addressingMode == AddressingModes.AbsoluteIndirectX)
         {
             switch (instructionName)
             {
-                case "JMP": { code = 0x7C; }
+                case "JMP": { code = OpCode.JMP_innX; }
                 default:
                 {
                     NI();
@@ -1023,7 +1365,7 @@ unit Asm6502
         {
             switch (instructionName)
             {
-                case "JMP": { code = 0x6C; }
+                case "JMP": { code = OpCode.JMP_inn; }
                 default:
                 {
                     NI();
@@ -1034,26 +1376,27 @@ unit Asm6502
         {
             IE();
         }
-        Asm6502.AppendCode(code);
+        ValidateInstruction(code);
+        Asm6502.AppendCode(byte(code));
         Asm6502.AppendCode(byte(operand & 0xFF));
         Asm6502.AppendCode(byte(operand >> 8));
     }
     EmitInstructionZeroPage(string instructionName, byte operand, AddressingModes addressingMode)
     {
-        byte code;
+        OpCode code;
         if (addressingMode == AddressingModes.XIndexedZeroPage)
         {
             // XIndexedZeroPage=0x1000,  // [nn,X]
             switch (instructionName)
             {
-                case "ADC": { code = 0x61; }
-                case "AND": { code = 0x21; }
-                case "CMP": { code = 0xC1; }
-                case "EOR": { code = 0x41; }
-                case "LDA": { code = 0xA1; }
-                case "ORA": { code = 0x01; }
-                case "SBC": { code = 0xE1; }
-                case "STA": { code = 0x81; }
+                case "ADC": { code = OpCode.ADC_izX; }
+                case "AND": { code = OpCode.AND_izX; }
+                case "CMP": { code = OpCode.CMP_izX; }
+                case "EOR": { code = OpCode.EOR_izX; }
+                case "LDA": { code = OpCode.LDA_izX; }
+                case "ORA": { code = OpCode.ORA_izX; }
+                case "SBC": { code = OpCode.SBC_izX; }
+                case "STA": { code = OpCode.STA_izX; }
                 default: { IE(); }
             }
         }
@@ -1062,14 +1405,14 @@ unit Asm6502
             // YIndexedZeroPage=0x2000,  // [nn], Y
             switch (instructionName)
             {
-                case "ADC": { code = 0x71; }
-                case "AND": { code = 0x31; }
-                case "CMP": { code = 0xD1; }
-                case "EOR": { code = 0x51; }
-                case "LDA": { code = 0xB1; }
-                case "ORA": { code = 0x11; }
-                case "SBC": { code = 0xF1; }
-                case "STA": { code = 0x91; }
+                case "ADC": { code = OpCode.ADC_izY; }
+                case "AND": { code = OpCode.AND_izY; }
+                case "CMP": { code = OpCode.CMP_izY; }
+                case "EOR": { code = OpCode.EOR_izY; }
+                case "LDA": { code = OpCode.LDA_izY; }
+                case "ORA": { code = OpCode.ORA_izY; }
+                case "SBC": { code = OpCode.SBC_izY; }
+                case "STA": { code = OpCode.STA_izY; }
                 default: { IE(); }
             }
         }
@@ -1078,14 +1421,14 @@ unit Asm6502
             // ZeroPageIndirect=0x0800,  // [nn]        
             switch (instructionName)
             {
-                case "ADC": { code = 0x72; }
-                case "AND": { code = 0x32; }
-                case "CMP": { code = 0xD2; }
-                case "EOR": { code = 0x52; }
-                case "LDA": { code = 0xB2; }
-                case "ORA": { code = 0x12; }
-                case "SBC": { code = 0xF2; }
-                case "STA": { code = 0x92; }
+                case "ADC": { code = OpCode.ADC_iz; }
+                case "AND": { code = OpCode.AND_iz; }
+                case "CMP": { code = OpCode.CMP_iz; }
+                case "EOR": { code = OpCode.EOR_iz; }
+                case "LDA": { code = OpCode.LDA_iz; }
+                case "ORA": { code = OpCode.ORA_iz; }
+                case "SBC": { code = OpCode.SBC_iz; }
+                case "STA": { code = OpCode.STA_iz; }
                 default: { IE(); }
             }
         }
@@ -1094,8 +1437,8 @@ unit Asm6502
             // ZeroPageY,  // nn, Y        
             switch (instructionName)
             {
-                case "LDX": { code = 0xB6; }
-                case "STX": { code = 0x96; }
+                case "LDX": { code = OpCode.LDX_zY; }
+                case "STX": { code = OpCode.STX_zY; }
                 default: { IE(); }
             }
         }
@@ -1104,24 +1447,24 @@ unit Asm6502
             // ZeroPageX,  // nn, X        
             switch (instructionName)
             {
-                case "ADC": { code = 0x75; }
-                case "AND": { code = 0x35; }
-                case "ASL": { code = 0x16; }
-                case "BIT": { code = 0x34; }
-                case "CMP": { code = 0xD5; }
-                case "DEC": { code = 0xD6; }
-                case "EOR": { code = 0x55; }
-                case "INC": { code = 0xF6; }
-                case "LDA": { code = 0xB5; }
-                case "LDY": { code = 0xB4; }
-                case "LSR": { code = 0x56; }
-                case "ORA": { code = 0x15; }
-                case "ROL": { code = 0x36; }
-                case "ROR": { code = 0x76; }
-                case "SBC": { code = 0xF5; }
-                case "STA": { code = 0x95; }
-                case "STY": { code = 0x94; }
-                case "STZ": { code = 0x74; }
+                case "ADC": { code = OpCode.ADC_zX; }
+                case "AND": { code = OpCode.AND_zX; }
+                case "ASL": { code = OpCode.ASL_zX; }
+                case "BIT": { code = OpCode.BIT_zX; }
+                case "CMP": { code = OpCode.CMP_zX; }
+                case "DEC": { code = OpCode.DEC_zX; }
+                case "EOR": { code = OpCode.EOR_zX; }
+                case "INC": { code = OpCode.INC_zX; }
+                case "LDA": { code = OpCode.LDA_zX; }
+                case "LDY": { code = OpCode.LDY_zX; }
+                case "LSR": { code = OpCode.LSR_zX; }
+                case "ORA": { code = OpCode.ORA_zX; }
+                case "ROL": { code = OpCode.ROL_zX; }
+                case "ROR": { code = OpCode.ROR_zX; }
+                case "SBC": { code = OpCode.SBC_zX; }
+                case "STA": { code = OpCode.STA_zX; }
+                case "STY": { code = OpCode.STY_zX; }
+                case "STZ": { code = OpCode.STZ_zX; }
                 default: { IE(); }
             }
         }
@@ -1130,47 +1473,47 @@ unit Asm6502
             // ZeroPage=0x0100,          // nn       
             switch (instructionName)
             {
-                case "ADC": { code = 0x65; }
-                case "AND": { code = 0x25; }
-                case "ASL": { code = 0x06; }
-                case "BIT": { code = 0x24; }
-                case "CMP": { code = 0xC5; }
-                case "CPX": { code = 0xE4; }
-                case "CPY": { code = 0xC4; }
-                case "DEC": { code = 0xC6; }
-                case "EOR": { code = 0x45; }
-                case "INC": { code = 0xE6; }
-                case "LDA": { code = 0xA5; }
-                case "LDX": { code = 0xA6; }
-                case "LDY": { code = 0xA4; }
-                case "LSR": { code = 0x46; }
-                case "ORA": { code = 0x05; }
-                case "ROL": { code = 0x26; }
-                case "ROR": { code = 0x66; }
-                case "SBC": { code = 0xE5; }
-                case "STA": { code = 0x85; }
-                case "STX": { code = 0x86; }
-                case "STY": { code = 0x84; }
-                case "STZ": { code = 0x64; }
-                case "TRB": { code = 0x14; }
-                case "TSB": { code = 0x04; }
+                case "ADC": { code = OpCode.ADC_z; }
+                case "AND": { code = OpCode.AND_z; }
+                case "ASL": { code = OpCode.ASL_z; }
+                case "BIT": { code = OpCode.BIT_z; }
+                case "CMP": { code = OpCode.CMP_z; }
+                case "CPX": { code = OpCode.CPX_z; }
+                case "CPY": { code = OpCode.CPY_z; }
+                case "DEC": { code = OpCode.DEC_z; }
+                case "EOR": { code = OpCode.EOR_z; }
+                case "INC": { code = OpCode.INC_z; }
+                case "LDA": { code = OpCode.LDA_z; }
+                case "LDX": { code = OpCode.LDX_z; }
+                case "LDY": { code = OpCode.LDY_z; }
+                case "LSR": { code = OpCode.LSR_z; }
+                case "ORA": { code = OpCode.ORA_z; }
+                case "ROL": { code = OpCode.ROL_z; }
+                case "ROR": { code = OpCode.ROR_z; }
+                case "SBC": { code = OpCode.SBC_z; }
+                case "STA": { code = OpCode.STA_z; }
+                case "STX": { code = OpCode.STX_z; }
+                case "STY": { code = OpCode.STY_z; }
+                case "STZ": { code = OpCode.STZ_z; }
+                case "TRB": { code = OpCode.TRB_z; }
+                case "TSB": { code = OpCode.TSB_z; }
                 
-                case "RMB0": { code = 0x07; }
-                case "RMB1": { code = 0x17; }
-                case "RMB2": { code = 0x27; }
-                case "RMB3": { code = 0x37; }
-                case "RMB4": { code = 0x47; }
-                case "RMB5": { code = 0x57; }
-                case "RMB6": { code = 0x67; }
-                case "RMB7": { code = 0x77; }
-                case "SMB0": { code = 0x87; }
-                case "SMB1": { code = 0x97; }
-                case "SMB2": { code = 0xA7; }
-                case "SMB3": { code = 0xB7; }
-                case "SMB4": { code = 0xC7; }
-                case "SMB5": { code = 0xD7; }
-                case "SMB6": { code = 0xE7; }
-                case "SMB7": { code = 0xF7; }
+                case "RMB0": { code = OpCode.RMB0_z; }
+                case "RMB1": { code = OpCode.RMB1_z; }
+                case "RMB2": { code = OpCode.RMB2_z; }
+                case "RMB3": { code = OpCode.RMB3_z; }
+                case "RMB4": { code = OpCode.RMB4_z; }
+                case "RMB5": { code = OpCode.RMB5_z; }
+                case "RMB6": { code = OpCode.RMB6_z; }
+                case "RMB7": { code = OpCode.RMB7_z; }
+                case "SMB0": { code = OpCode.SMB0_z; }
+                case "SMB1": { code = OpCode.SMB1_z; }
+                case "SMB2": { code = OpCode.SMB2_z; }
+                case "SMB3": { code = OpCode.SMB3_z; }
+                case "SMB4": { code = OpCode.SMB4_z; }
+                case "SMB5": { code = OpCode.SMB5_z; }
+                case "SMB6": { code = OpCode.SMB6_z; }
+                case "SMB7": { code = OpCode.SMB7_z; }
                 
                 default: { IE(); }
             }
@@ -1180,134 +1523,138 @@ unit Asm6502
         {
             IE();
         }
-        Asm6502.AppendCode(code);
+        ValidateInstruction(code);
+        Asm6502.AppendCode(byte(code));
         Asm6502.AppendCode(operand);
     }
     EmitInstruction(string instructionName)
     {
         // Implied AddressingMode
         // Accumulator AddressingMode
-        byte code;
+        OpCode code;
         switch (instructionName)
         {
-            case "ASL": { code = 0x0A; }
-            case "DEC": { code = 0x3A; }
-            case "INC": { code = 0x1A; }
-            case "LSR": { code = 0x4A; }
-            case "ROL": { code = 0x2A; }
-            case "ROR": { code = 0x6A; }
+            case "ASL": { code = OpCode.ASL; }
+            case "DEC": { code = OpCode.DEC; }
+            case "INC": { code = OpCode.INC; }
+            case "LSR": { code = OpCode.LSR; }
+            case "ROL": { code = OpCode.ROL; }
+            case "ROR": { code = OpCode.ROR; }
             
-            case "BRK": { code = 0x00; }
-            case "CLC": { code = 0x18; }
-            case "CLD": { code = 0xD8; }
-            case "CLI": { code = 0x58; }
-            case "CLV": { code = 0xB8; }
-            case "DEX": { code = 0xCA; }
-            case "DEY": { code = 0x88; }
-            case "INX": { code = 0xE8; }
-            case "INY": { code = 0xC8; }
-            case "NOP": { code = 0xEA; }
-            case "PHA": { code = 0x48; }
-            case "PHP": { code = 0x08; }
-            case "PHX": { code = 0xDA; }
-            case "PHY": { code = 0x5A; }
-            case "PLA": { code = 0x68; }
-            case "PLP": { code = 0x28; }
-            case "PLX": { code = 0xFA; }
-            case "PLY": { code = 0x7A; }
-            case "RTI": { code = 0x40; }
-            case "RTS": { code = 0x60; }
-            case "SEC": { code = 0x38; }
-            case "SED": { code = 0xF8; }
-            case "SEI": { code = 0x78; }
-            case "TAX": { code = 0xAA; }
-            case "TAY": { code = 0xA8; }
-            case "TSX": { code = 0xBA; }
-            case "TXA": { code = 0x8A; }
-            case "TXS": { code = 0x9A; }
-            case "TYA": { code = 0x98; }
+            case "BRK": { code = OpCode.BRK; }
+            case "CLC": { code = OpCode.CLC; }
+            case "CLD": { code = OpCode.CLD; }
+            case "CLI": { code = OpCode.CLI; }
+            case "CLV": { code = OpCode.CLV; }
+            case "DEX": { code = OpCode.DEX; }
+            case "DEY": { code = OpCode.DEY; }
+            case "INX": { code = OpCode.INX; }
+            case "INY": { code = OpCode.INY; }
+            case "NOP": { code = OpCode.NOP; }
+            case "PHA": { code = OpCode.PHA; }
+            case "PHP": { code = OpCode.PHP; }
+            case "PHX": { code = OpCode.PHX; }
+            case "PHY": { code = OpCode.PHY; }
+            case "PLA": { code = OpCode.PLA; }
+            case "PLP": { code = OpCode.PLP; }
+            case "PLX": { code = OpCode.PLX; }
+            case "PLY": { code = OpCode.PLY; }
+            case "RTI": { code = OpCode.RTI; }
+            case "RTS": { code = OpCode.RTS; }
+            case "SEC": { code = OpCode.SEC; }
+            case "SED": { code = OpCode.SED; }
+            case "SEI": { code = OpCode.SEI; }
+            case "TAX": { code = OpCode.TAX; }
+            case "TAY": { code = OpCode.TAY; }
+            case "TSX": { code = OpCode.TSX; }
+            case "TXA": { code = OpCode.TXA; }
+            case "TXS": { code = OpCode.TXS; }
+            case "TYA": { code = OpCode.TYA; }
             default:
             {
                 NI();
             }
         }
-        Asm6502.AppendCode(code);
+        ValidateInstruction(code);
+        Asm6502.AppendCode(byte(code));
     }
     
     // Direct support for a small subset of instructions that 
     // are used directly by the assembler:
-    byte GetRETInstruction()
+    OpCode GetRETInstruction()
     {
-        return 0x60; // RTS
+        return OpCode.RTS; // RTS
     }
-    uint GetRTIInstruction()
+    OpCode GetRTIInstruction()
     {
-        return 0x40; // RTI
-    }
-    
-    uint GetHALTInstruction()
-    {
-        return 0xDB; // STP (stop)
+        return OpCode.RTI; // RTI
     }
     
-    byte GetJMPInstruction()
+    OpCode GetHALTInstruction()
     {
-        return 0x4C; // JMP
+        return OpCode.STP; // STP (stop)
     }
-    byte GetJMPIndexInstruction()
+    
+    OpCode GetJMPInstruction()
     {
-        return 0x7C; // JMP
+        return OpCode.JMP_nn; // JMP
     }
-    byte GetNOPInstruction()
+    OpCode GetJMPIndexInstruction()
     {
-        return 0xEA; // NOP
+        return OpCode.JMP_innX; // JMP
     }
-    byte GetBInstruction(string condition)
+    OpCode GetNOPInstruction()
     {
+        return OpCode.NOP; // NOP
+    }
+    OpCode GetBInstruction(string condition)
+    {
+        OpCode code;
         switch (condition)
         {
-            case "Z":  { return 0xF0; } // BEQ
-            case "NZ": { return 0xD0; } // BNE
-            case "C":  { return 0xB0; } // BCS
-            case "NC": { return 0x90; } // BCC
-            case "":   { return 0x80; } // BRA
+            case "Z":  { code = OpCode.BEQ_e; } // BEQ
+            case "NZ": { code = OpCode.BNE_e; } // BNE
+            case "C":  { code = OpCode.BCS_e; } // BCS
+            case "NC": { code = OpCode.BCC_e; } // BCC
+            case "":   { code = OpCode.BRA_e; } // BRA
             default:   { NI();   }
         }
-        return 0;
+        ValidateInstruction(code);
+        return code;
     }
     
-    byte GetJPInstruction(string condition)
+    OpCode GetJPInstruction(string condition)
     {
         switch (condition)
         {
-            case "Z":  { return 0xCA; } // JP Z
-            case "NZ": { return 0xC2; } // JP NZ
+            case "Z":  { return OpCode.BEQ_e; } // JP Z
+            case "NZ": { return OpCode.BNE_e; } // JP NZ
             default:   { NI(); }
         }
-        return 0;
+        return OpCode.NOP;
     }
-    byte GetJSRInstruction()
+    OpCode GetJSRInstruction()
     {
-        return 0x20; // JSR
+        return OpCode.JSR_nn; // JSR
     }
-    byte GetiJMPInstruction()
+    OpCode GetiJMPInstruction()
     {
-        return 0xFC; // iJMP - fake internal instruction : JMP to an unresolved methodIndex
+        return OpCode.iJMP_nn; // iJMP - fake internal instruction : JMP to an unresolved methodIndex
     }
-    byte GetCALLInstruction()
+    OpCode GetCALLInstruction()
     {
-        return 0xCD; // CALL
+        return OpCode.JSR_nn; // CALL
     }
     
-    bool IsMethodExitInstruction(uint opCode)
+    bool IsMethodExitInstruction(OpCode opCode)
     {
         switch (opCode)
         {
-            case 0x40: // RTI
-            case 0x60: // RTS
-            case 0xDB: // STP
-            case 0xFC: // iJMP
-            case 0x7C: // JMPIndex
+            case OpCode.RTI: // RTI
+            case OpCode.RTS: // RTS
+            case OpCode.STP: // STP
+            case OpCode.iJMP_nn: // iJMP
+            case OpCode.JMP_innX: // JMPIndex
             {
                 return true;
             }
@@ -1315,48 +1662,48 @@ unit Asm6502
         return false;
     }
     
-    bool IsJumpInstruction(uint instruction, ref AddressingModes addressingMode, ref bool isConditional)
+    bool IsJumpInstruction(OpCode instruction, ref AddressingModes addressingMode, ref bool isConditional)
     {
-        addressingMode = GetAddressingMode(byte(instruction));
+        addressingMode = GetAddressingMode(instruction);
         isConditional = false;
         switch (instruction)
         {
-            case 0x4C: //  JMP nnnn
+            case OpCode.JMP_nn: //  JMP nnnn
             {
                 return true;
             }
-            case 0x6C: // JMP [nnnn]
+            case OpCode.JMP_inn: // JMP [nnnn]
             //case 0x7C: // JMP [nnnn, X]
-            case 0x80: // BRA
+            case OpCode.BRA_e:
             {
                 return true;
             }
             
-            case 0x90: // BCC
-            case 0xB0: // BCS
-            case 0xF0: // BEQ
-            case 0x30: // BMI
-            case 0xD0: // BNE
-            case 0x10: // BPL
-            case 0x50: // BVC
-            case 0x70: // BVS
+            case OpCode.BCC_e:
+            case OpCode.BCS_e:
+            case OpCode.BEQ_e:
+            case OpCode.BMI_e:
+            case OpCode.BNE_e:
+            case OpCode.BPL_e:
+            case OpCode.BVC_e:
+            case OpCode.BVS_e:
             
-            case 0x0F: // BBR0
-            case 0x1F: // BBR1
-            case 0x2F: // BBR2
-            case 0x3F: // BBR3
-            case 0x4F: // BBR4
-            case 0x5F: // BBR5
-            case 0x6F: // BBR6
-            case 0x7F: // BBR7
-            case 0x8F: // BBS0
-            case 0x9F: // BBS1
-            case 0xAF: // BBS2
-            case 0xBF: // BBS3
-            case 0xCF: // BBS4
-            case 0xDF: // BBS5
-            case 0xEF: // BBS6
-            case 0xFF: // BBS7
+            case OpCode.BBR0_z_e: // BBR0
+            case OpCode.BBR1_z_e: // BBR1
+            case OpCode.BBR2_z_e: // BBR2
+            case OpCode.BBR3_z_e: // BBR3
+            case OpCode.BBR4_z_e: // BBR4
+            case OpCode.BBR5_z_e: // BBR5
+            case OpCode.BBR6_z_e: // BBR6
+            case OpCode.BBR7_z_e: // BBR7
+            case OpCode.BBS0_z_e: // BBS0
+            case OpCode.BBS1_z_e: // BBS1
+            case OpCode.BBS2_z_e: // BBS2
+            case OpCode.BBS3_z_e: // BBS3
+            case OpCode.BBS4_z_e: // BBS4
+            case OpCode.BBS5_z_e: // BBS5
+            case OpCode.BBS6_z_e: // BBS6
+            case OpCode.BBS7_z_e: // BBS7
             {
                 isConditional = true;
                 return true;
@@ -1453,22 +1800,11 @@ unit Asm6502
         if (currentStream.Count > 0)
         {
             uint iLast = currentStream.Count - 1;
-            byte last = currentStream[iLast];
-            uint lastw = last;
-            if (currentStream.Count > 1)
-            {
-                lastw = currentStream[iLast-1] + (last << 8);
-            }
-            isRET = (last == Asm6502.GetRETInstruction());
-            if (!isRET)
-            {
-                uint ret = Asm6502.GetRTIInstruction();
-                isRET = (ret <= 0xFF) ? (ret == last) : (ret == lastw);
-                if (!isRET && orHALT)
-                {      
-                    ret = Asm6502.GetHALTInstruction();
-                    isRET = (ret <= 0xFF) ? (ret == last) : (ret == lastw);
-                }
+            OpCode last = OpCode(currentStream[iLast]);
+            isRET = (last == Asm6502.GetRETInstruction()) || (last == Asm6502.GetRTIInstruction());
+            if (!isRET && orHALT)
+            {      
+                isRET = (last == Asm6502.GetHALTInstruction());
             }
         }    
         return isRET;
@@ -1490,7 +1826,7 @@ unit Asm6502
         uint iCurrent = Types.GetCurrentMethod();
         string name = Symbols.GetFunctionName(iCurrent);
         
-        uint retw = Asm6502.GetRETInstruction();
+        OpCode retw = Asm6502.GetRETInstruction();
         bool addNOP;
         if (name.EndsWith(".Hopper")) // TODO : only allow in 'program'
         {
@@ -1502,20 +1838,15 @@ unit Asm6502
             retw = Asm6502.GetRTIInstruction();
         }
         
-        currentStream.Append(byte(retw & 0xFF));
-        retw = retw >> 8;
-        if (retw != 0)
-        {
-            currentStream.Append(byte(retw & 0xFF));
-        }
+        currentStream.Append(byte(retw));
     }
-    string Disassemble(uint address, byte instruction, uint operand)
+    string Disassemble(uint address, OpCode instruction, uint operand)
     {
         string disassembly;
         disassembly += "0x" + address.ToHexString(4);
         disassembly += " ";
         
-        disassembly +=  " 0x" + instruction.ToHexString(2);
+        disassembly +=  " 0x" + (byte(instruction)).ToHexString(2);
         disassembly += " ";
         
         uint length = GetInstructionLength(instruction);
@@ -1580,8 +1911,8 @@ unit Asm6502
     {
         if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {
-            byte braInstruction = GetBInstruction("");
-            byte jmpInstruction = GetJMPInstruction();
+            OpCode braInstruction = GetBInstruction("");
+            OpCode jmpInstruction = GetJMPInstruction();
             int offset = int(jumpToAddress) - int(jumpAddress) - 2;
             
             bool testJMP = false; //((currentStream[jumpAddress+0] == braInstruction) || (currentStream[jumpAddress+0] == jmpInstruction));
@@ -1589,25 +1920,25 @@ unit Asm6502
             if (testJMP || (offset < -128) || (offset > 127))
             {
                 // long jump
-                if ((currentStream[jumpAddress+0] != braInstruction) &&
-                    (currentStream[jumpAddress+0] != jmpInstruction))
+                if ((OpCode(currentStream[jumpAddress+0]) != braInstruction) &&
+                    (OpCode(currentStream[jumpAddress+0]) != jmpInstruction))
                 {
                     Parser.Error("jump target exceeds 6502 relative limit (" + offset.ToString() + ")");
                     return;
                 }
-                currentStream.SetItem(jumpAddress+0, GetJMPInstruction());
+                currentStream.SetItem(jumpAddress+0, byte(GetJMPInstruction()));
                 currentStream.SetItem(jumpAddress+1, jumpToAddress.GetByte(0));
                 currentStream.SetItem(jumpAddress+2, jumpToAddress.GetByte(1));
             }
             else
             {
                 // short jump
-                if (currentStream[jumpAddress+0] == jmpInstruction)
+                if (OpCode(currentStream[jumpAddress+0]) == jmpInstruction)
                 {
-                    currentStream.SetItem(jumpAddress+0, GetBInstruction(""));
+                    currentStream.SetItem(jumpAddress+0, byte(GetBInstruction("")));
                 }
                 currentStream.SetItem(jumpAddress+1, offset.GetByte(0));
-                currentStream.SetItem(jumpAddress+2, GetNOPInstruction());
+                currentStream.SetItem(jumpAddress+2, byte(GetNOPInstruction()));
             }
         }
         else
@@ -1626,40 +1957,38 @@ unit Asm6502
         uint jumpAddress = NextAddress;
         int offset = int(jumpToAddress) - int(jumpAddress) - 2;
         
-        bool testJMP = false;
-        
-        if (testJMP || (offset < -128) || (offset > 127))
+        if ((Architecture != CPUArchitecture.W65C02) || (offset < -128) || (offset > 127))
         {
             // long jump
-            currentStream.Append(GetJMPInstruction());
+            currentStream.Append(byte(GetJMPInstruction()));
             currentStream.Append(byte(jumpToAddress & 0xFF));
             currentStream.Append(byte(jumpToAddress >> 8));
         }
         else
         {
             // short jump
-            currentStream.Append(GetBInstruction(""));
+            currentStream.Append(byte(GetBInstruction("")));
             currentStream.Append(offset.GetByte(0));
-            currentStream.Append(GetNOPInstruction());
+            currentStream.Append(byte(GetNOPInstruction()));
         }
     }
     AddInstructionJZ()
     {
-        currentStream.Append(GetBInstruction("Z"));
+        currentStream.Append(byte(GetBInstruction("Z")));
         // placeholder address
         currentStream.Append(0x00);
-        currentStream.Append(GetNOPInstruction());
+        currentStream.Append(byte(GetNOPInstruction()));
     }
     AddInstructionJNZ()
     {
-        currentStream.Append(GetBInstruction("NZ"));
+        currentStream.Append(byte(GetBInstruction("NZ")));
         // placeholder address
         currentStream.Append(0x00);
-        currentStream.Append(GetNOPInstruction());
+        currentStream.Append(byte(GetNOPInstruction()));
     }
     AddInstructionCALL(uint iOverload)
     {
-        currentStream.Append(GetJSRInstruction());
+        currentStream.Append(byte(GetJSRInstruction()));
 
         // unresolved method index for now
         currentStream.Append(byte(iOverload & 0xFF));

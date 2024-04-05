@@ -39,10 +39,10 @@ program ASMGEN
         
         methods[methodIndex] = methodAddress;
         
-        byte callInstruction      = GetJSRInstruction();
-        byte jumpInstruction      = GetJMPInstruction(); // TODO: 0x6C
-        byte ijmpInstruction      = GetiJMPInstruction();
-        byte jumpIndexinstruction = GetJMPIndexInstruction();
+        OpCode callInstruction      = GetJSRInstruction();
+        OpCode jumpInstruction      = GetJMPInstruction(); // TODO: 0x6C
+        OpCode ijmpInstruction      = GetiJMPInstruction();
+        OpCode jumpIndexinstruction = GetJMPIndexInstruction();
         
         uint index = 0;
         loop
@@ -50,7 +50,7 @@ program ASMGEN
             
             if (index == code.Count) { break; }
             
-            byte instruction = code[index];
+            OpCode instruction = OpCode(code[index]);
             
             uint instructionLength = Asm6502.GetInstructionLength(instruction);
             
@@ -63,7 +63,7 @@ program ASMGEN
             {
                 uint address = code[index+1] + code[index+2] << 8;
                 patches[output.Count+1] = address;
-                code[index] = jumpInstruction;
+                code[index] = byte(jumpInstruction);
             }
             else if ((instruction == jumpInstruction) || (instruction == jumpIndexinstruction))
             {
@@ -188,6 +188,47 @@ program ASMGEN
         ihexFile.Flush();
     }
     
+    writeSrc(file srcFile, uint romAddress, <byte> output, <byte> vectors)
+    {
+        srcFile.Append("#define ROM_START   0x" + romAddress.ToHexString(4) + char(0x0A));
+        srcFile.Append("#define ROM_END     0xFFFF" + char(0x0A));
+        srcFile.Append("" + char(0x0A));
+        
+        srcFile.Append("PROGMEM const unsigned char rom_bin[] = {");
+        uint address = romAddress;
+        uint length  = output.Count;
+        uint index   = 0;
+        loop
+        {
+            byte b = 0;
+            if (address >= 0xFFFA)
+            {
+                index = address - 0xFFFA;
+                b = vectors[index];
+            }
+            else if (index < length)
+            {
+                b = output[index];
+            }
+            string prefix;
+            if (index % 16 == 0)
+            {
+                prefix = char(0x0A) + "    ";
+            }
+            if (index % 16 == 7)
+            {
+                prefix = "  ";
+            }
+            srcFile.Append(prefix + "0x" + b.ToHexString(2) + ", ");    
+            if (address == 0xFFFF) { break; } 
+            address++;
+            index++;
+        }
+        
+        srcFile.Append("};" + char(0x0A));
+        srcFile.Flush();
+    }
+    
     {
         bool success = false;
         loop
@@ -281,6 +322,10 @@ program ASMGEN
                 {
                     romSize = 0x1000;
                 }
+                if (DefineExists("ROM_1K"))
+                {
+                    romSize = 0x0400;
+                }
                 
                 long startAddress = 0x10000 - romSize; 
                 uint romAddress = uint(startAddress);
@@ -311,9 +356,9 @@ program ASMGEN
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 
                 Parser.ProgressTick(".");
-                byte arch = byte(Architecture);
-                output.Append(0);    // version
-                output.Append(arch); // CPU
+                //byte arch = byte(Architecture);
+                //output.Append(0);    // version
+                //output.Append(arch); // CPU
                 
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 writeMethod(entryIndex, methodCode, romAddress);
@@ -366,6 +411,17 @@ program ASMGEN
                 vectors.Append(byte(methods[iIndex] >> 8));
                 
                 writeIHex(ihexFile, romAddress, output, vectors);
+                
+                string srcPath = ihexPath.Replace(".hex", ".c");
+                file srcFile = File.Create(srcPath);
+                if (!srcFile.IsValid())
+                {
+                    PrintLn("Failed to create '" + srcPath + "'");
+                    break;
+                }
+                writeSrc(srcFile, romAddress, output, vectors);
+                
+                
                 
                 if (!Parser.IsInteractive())
                 {
