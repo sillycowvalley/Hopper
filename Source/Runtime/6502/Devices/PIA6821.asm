@@ -12,6 +12,10 @@ unit SerialDevice
     const uint DDRB = 0xD012; // (when CRB-2 == 0)
     const uint CRB  = 0xD013;
     
+#ifndef CPU_65C02S    
+    const byte WorkSpacePollRead  = ZP.M2;
+#endif    
+    
     
     friend Serial;
     
@@ -71,7 +75,7 @@ unit SerialDevice
 #ifdef CPU_65C02S
                 PHX
 #else            
-                TXA PHA    
+                STX WorkSpacePollRead    
 #endif
                 LDX Serial.InWritePointer    // push it into serial input buffer
                 STA Serial.InBuffer, X
@@ -79,7 +83,7 @@ unit SerialDevice
 #ifdef CPU_65C02S
                 PLX
 #else
-                PLA TAX
+                LDX WorkSpacePollRead
 #endif
             }
         }

@@ -1,10 +1,13 @@
 unit Serial
 {
     // Zero Page locations used by Serial:
-    const byte InWritePointer  = ZP.SerialInWritePointer;
-    const byte InReadPointer   = ZP.SerialInReadPointer;
-    const byte BreakFlag       = ZP.SerialBreakFlag;
-    const byte WorkSpace       = ZP.ACCL;
+    const byte InWritePointer        = ZP.SerialInWritePointer;
+    const byte InReadPointer         = ZP.SerialInReadPointer;
+    const byte BreakFlag             = ZP.SerialBreakFlag;
+    const byte WorkSpaceHexIn        = ZP.M0;
+#ifndef CPU_65C02S    
+    const byte WorkSpaceWaitForChar  = ZP.M1;
+#endif
     
     // Location of the Serial input buffer (256 bytes)
     const uint InBuffer        = Address.SerialInBuffer;
@@ -95,9 +98,9 @@ unit Serial
 #ifdef CPU_65C02S
             PLX       
 #else
-            STA ZP.ACCL
+            STA WorkSpaceWaitForChar
             PLA TAX
-            LDA ZP.ACCL
+            LDA WorkSpaceWaitForChar
 #endif
         }
     }
@@ -138,16 +141,16 @@ unit Serial
     }
     
     // loads two hex characters from Serial to byte in A
-    //    uses WorkSpace (ZP.ACCL  )
+    //    uses ZP.U0
     HexIn()
     {
         Serial.WaitForChar();
         Utilities.MakeNibble();
         ASL ASL ASL ASL
         AND #0xF0
-        STA WorkSpace
+        STA WorkSpaceHexIn
         Serial.WaitForChar();
         Utilities.MakeNibble();
-        ORA WorkSpace
+        ORA WorkSpaceHexIn
     }
 }

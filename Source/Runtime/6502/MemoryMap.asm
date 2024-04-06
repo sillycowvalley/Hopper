@@ -12,7 +12,8 @@ unit Address
     
     const uint HopperData           = 0x0800;  // start of Hopper RAM (program, then heap)
        
-    const uint RamSize              = 0x8000;  // we assume RAM always starts at 0x0000 and that we have 32K, for now
+    //const uint RamSize              = 0x8000;  // we assume RAM always starts at 0x0000 and that we have 32K, for now
+    const uint RamSize              = 0x1800; // 6K on the Mega2560
     
     const uint InvalidAddress       = 0xFFFF;  // used to signify that program run has completed
 }

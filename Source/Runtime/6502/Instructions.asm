@@ -522,13 +522,6 @@ unit Instruction
         STA ZP.TOPH
         LDA #Types.UInt
         STA ZP.TOPT
-#ifdef CPU_65C02S
-        // cleared to make zero page faster in debugger
-        STZ ZP.UWIDE0
-        STZ ZP.UWIDE1
-        STZ ZP.UWIDE2
-        STZ ZP.UWIDE3
-#endif
     }
     mul()
     {

@@ -69,6 +69,11 @@ unit ZP
     const byte U2                   = 0x72;
     const byte U3                   = 0x73;
     
+    const byte M0                   = 0x40;
+    const byte M1                   = 0x41;
+    const byte M2                   = 0x42;
+    const byte M3                   = 0x43;
+    
     // used for UInt library
     const byte UWIDE0               = U0;
     const byte UWIDE1               = U1;
