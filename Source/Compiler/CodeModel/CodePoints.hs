@@ -3081,8 +3081,13 @@ unit CodePoints
             uint        operand1 = iOperands[iIndex-1];
             Instruction opCode0  = iCodes[iIndex]; 
             
-            if (IsPUSHImmediateInstruction(opCode1, ref operand1) && ((opCode0 == Instruction.MUL) || (opCode0 == Instruction.DIV)))
+            if (IsPUSHImmediateInstruction(opCode1, ref operand1) 
+             && ((opCode0 == Instruction.MUL) || (opCode0 == Instruction.DIV))
+             && !IsTargetOfJumps(iIndex)
+               )
             {
+                
+                
                 uint shift;
                 switch (operand1)
                 {

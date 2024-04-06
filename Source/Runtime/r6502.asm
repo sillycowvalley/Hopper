@@ -1,13 +1,13 @@
 program R6502
 {
-    #define CHECKED
+    //#define CHECKED
     
     // mapping of Z80 -> 6502
     // https://litwr2.github.io/8080-8085-z80-8088-6502/z80-6502.html
     
     #define ROM_8K
-    #define CPU_65C02  // Rockwell and WDC
-    //#define CPU_6502  // MOS
+    //#define CPU_65C02S  // Rockwell and WDC
+    #define CPU_6502  // MOS
 
     // HopperMon commands to support:
     //
@@ -40,13 +40,7 @@ program R6502
     
     IRQ()
     {
-        if (BBS7, ZP.ACIASTATUS) // interrupt request by 6850
-        {
-            if (BBS0, ZP.ACIASTATUS) // RDRF : receive data register full
-            {
-                Serial.ISR();
-            }
-        }
+        Serial.ISR();
     }
     NMI()
     {
@@ -60,7 +54,7 @@ program R6502
         CMP #'X'
         if (Z)
         {
-            Breakpoints.Clear();
+            Breakpoints.Clear(); // munts X
         }
         else
         {
@@ -75,7 +69,13 @@ program R6502
             Serial.HexIn();
             STA ZP.BRKL, X
             
+#ifdef CPU_65C02S            
             SMB5 ZP.FLAGS
+#else
+            LDA ZP.FLAGS
+            ORA # 0b00100000
+            STA ZP.FLAGS
+#endif
         }
         Utilities.WaitForEnter();
     }
@@ -85,7 +85,7 @@ program R6502
         Serial.HexIn();             
         // A now contains the page number for the memory dump
         PHA
-        
+
         Utilities.WaitForEnter();
         
         PLA
@@ -163,10 +163,12 @@ program R6502
                             INY
                             DEX
                         }
-                        // ignore data checksum and EOL for now
+                        
+                                     // ignore data checksum and EOL for now
                         Serial.WaitForChar();
                         Serial.WaitForChar();
                         Serial.WaitForChar();
+                        
                         LDA # 0x00 // not '!' or '*'
                     }
                     case 0x01: // EOF record
@@ -200,8 +202,9 @@ program R6502
         Serial.WaitForChar();
         Serial.WaitForChar(); // <enter>
         
-        STZ IDYH
-        STZ IDYL
+        LDA #0
+        STA IDYH
+        STA IDYL
         loop
         {
             loadRecord();
@@ -214,8 +217,13 @@ program R6502
         if (Z) 
         {
             hopperInit();                // good defaults for HopperVM
-            
+#ifdef CPU_65C02S            
             SMB0 ZP.FLAGS                // program is loaded
+#else
+            LDA ZP.FLAGS
+            ORA # 0b00000001
+            STA ZP.FLAGS
+#endif            
             
             LDA # 0x0D
             Serial.WriteChar();
@@ -252,7 +260,13 @@ program R6502
         }
         else
         {
+#ifdef CPU_65C02S            
             RMB0 ZP.FLAGS           // no program loaded
+#else
+            LDA ZP.FLAGS
+            AND # 0b11111110
+            STA ZP.FLAGS
+#endif                        
         }
         Serial.WriteChar();         // success or failure ('*' or '!')?
         Utilities.SendSlash();      // confirm the data
@@ -262,11 +276,12 @@ program R6502
     {
         Memory.InitializeHeapSize(); // sets HEAPSTART and HEAPSIZE based on size of program loaded
         Stacks.Init();
-        STZ ZP.CNP
+        LDA #0
+        STA ZP.CNP
         
         // hopperInitPC -> 0x0000
-        STZ ZP.PCL
-        STZ ZP.PCH
+        STA ZP.PCL
+        STA ZP.PCH
     }
     
     
@@ -284,16 +299,25 @@ program R6502
         ADC (HopperData+5)
         STA ZP.CODESTARTH
         
-        STZ ZP.CNP
-        STZ ZP.FLAGS
-#ifdef CHECKED
-        SMB2 ZP.FLAGS // this is a checked build
-#endif        
-        SMB3 ZP.FLAGS // 8 bit SP and BP
+        LDA #0
+        STA ZP.CNP
+        LDA #0
+        STA ZP.PCL
+        STA ZP.PCH
         
-        // hopperInitPC -> 0x0000
-        STZ ZP.PCL
-        STZ ZP.PCH
+#ifdef CPU_65C02S        
+        STA ZP.FLAGS
+  #ifdef CHECKED
+        SMB2 ZP.FLAGS // this is a checked build
+  #endif        
+        SMB3 ZP.FLAGS // 8 bit SP and BP
+#else
+  #ifdef CHECKED
+        ORA # 0b00000100  // this is a checked build
+  #endif
+        ORA # 0b00001000  // 8 bit SP and BP
+        STA ZP.FLAGS
+#endif                                
     }
    
     resetVector()
@@ -307,13 +331,15 @@ program R6502
             CPX # ACIADATA // don't write to ACIA data register (on Zero Page right now)
             if (NZ) 
             {
-                STZ 0x00, X
+                LDA #0
+                STA 0x00, X
             }
             DEX
             if (Z) { break; }
         }
         
-        STZ IDXL
+        LDA #0
+        STA IDXL
         LDA # (SerialInBuffer >> 8)
         STA IDXH
         LDX # 1
@@ -332,13 +358,20 @@ program R6502
     runCommand()
     {
         // Bit 1 set - run ignoring breakpoints
+#ifdef CPU_65C02S            
         SMB1 ZP.FLAGS
+#else
+        LDA ZP.FLAGS
+        ORA # 0b00000010
+        STA ZP.FLAGS
+#endif                                
         loop
         {
             LDA ZP.SerialBreakFlag
             if (NZ) 
             { 
-                STZ ZP.SerialBreakFlag
+                LDA #0
+                STA ZP.SerialBreakFlag
                 break; 
             }
             LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
@@ -355,12 +388,24 @@ program R6502
         }
         
         // Bit 1 clear - run until breakpoint
-        RMB1 ZP.FLAGS   
+#ifdef CPU_65C02S            
+        RMB1 ZP.FLAGS
+#else
+        LDA ZP.FLAGS
+        AND # 0b11111101
+        STA ZP.FLAGS
+#endif                                           
     }
     debugCommand()
     {
         // Bit 1 clear - run until breakpoint
+#ifdef CPU_65C02S            
         RMB1 ZP.FLAGS
+#else
+        LDA ZP.FLAGS
+        AND # 0b11111101
+        STA ZP.FLAGS
+#endif                                           
         
         // for first instruction, don't check for breakpoint (in case we are already stopped on one)
         stepintoCommand();
@@ -370,7 +415,8 @@ program R6502
             LDA ZP.SerialBreakFlag
             if (NZ) 
             { 
-                STZ ZP.SerialBreakFlag
+                LDA #0
+                STA ZP.SerialBreakFlag
                 break; 
             }
             
@@ -413,13 +459,13 @@ program R6502
         }
         
         // is the instruction about to be executed a CALL/JSR?
-        Instruction.IsCurrentCALL();
+        Instruction.IsCurrentCALL(); // munts X
         if (Z)
         {
             // set breakpoint '0' on next instruction
             
             // ACC = PC + CODESTART + instruction length
-            Instruction.GetNextAddress();
+            Instruction.GetNextAddress(); // munts X
             
             // machine address - CODESTART = Hopper address
             SEC
@@ -430,7 +476,13 @@ program R6502
             SBC ZP.CODESTARTH
             STA ZP.BRKH
             
+#ifdef CPU_65C02S            
             SMB5 ZP.FLAGS
+#else
+            LDA ZP.FLAGS
+            ORA # 0b00100000
+            STA ZP.FLAGS
+#endif            
             
             // run to breakpoint
             debugCommand();
@@ -463,13 +515,15 @@ program R6502
         resetVector();
         
         Utilities.SendSlash(); // ready
+        
         loop
         {
             LDA ZP.SerialBreakFlag
             if (NZ) 
             { 
                 // <ctrl><C> from Debugger but we were not running
-                STZ ZP.SerialBreakFlag
+                LDA #0
+                STA ZP.SerialBreakFlag
                 Utilities.SendSlash();
                 continue;
             }
@@ -482,12 +536,12 @@ program R6502
             {
                 LDA #0
             }
-            //CMP #0x03 // <ctrl><C> from Debugger but we were not running 
-            //if (Z)
-            //{
-            //    Utilities.SendSlash();
-            //    continue;
-            //}
+            CMP #0x03 // <ctrl><C> from Debugger but we were not running 
+            if (Z)
+            {
+                Utilities.SendSlash();
+                continue;
+            }
             CMP #Escape
             if (Z)
             {
@@ -522,11 +576,22 @@ program R6502
                         continue;
                     }
                 }
-                
+#ifdef CPU_65C02S                
                 if (BBR0, ZP.FLAGS)
                 {
                     continue; // no program is loaded
                 }
+#else
+                PHA
+                LDA #0b00000001
+                CMP ZP.FLAGS
+                if (Z)
+                {
+                    PLA
+                    continue; // no program is loaded
+                }
+                PLA
+#endif
                 
                 // Execution commands:
                 switch (A)

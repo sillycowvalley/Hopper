@@ -302,7 +302,7 @@ program ASMGEN
                 {
                     Architecture = CPUArchitecture.M6502;
                 }
-                if (DefineExists("CPU_65C02"))
+                if (DefineExists("CPU_65C02S"))
                 {
                     Architecture = CPUArchitecture.W65C02;
                 }

@@ -397,7 +397,7 @@ program Optimize
                 }
                 // PUSHIB 2 MUL -> PUSHIB 1 BITSHL
                 if (verbose) { showElapsed("k"); } 
-                if (CodePoints.OptimizeMULSHL())
+                if (false && CodePoints.OptimizeMULSHL())
                 {
     #ifdef DIAGNOSTICS
                     if (logging)

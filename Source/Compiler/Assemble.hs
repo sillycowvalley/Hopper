@@ -978,7 +978,7 @@ program Assemble
                 {
                     if ((addressingModes & (AddressingModes.YIndexedZeroPage)) == AddressingModes.YIndexedZeroPage)
                     {
-                        Parser.Advance(); // ')'
+                        Parser.Advance(); // ']'
                         currentToken = Parser.CurrentToken;
                         tokenType = Token.GetType(currentToken);
                         rparenConsumed = true;
@@ -999,6 +999,18 @@ program Assemble
                     Parser.Advance(); // X|Y
                     currentToken = Parser.CurrentToken;
                     tokenType = Token.GetType(currentToken);
+                    
+                    //Print(" " + currentToken["line"] + registerName);
+                }
+                if (tokenType == HopperToken.RBracket)
+                {
+                    if ((addressingModes & (AddressingModes.XIndexedZeroPage)) == AddressingModes.XIndexedZeroPage)
+                    {
+                        Parser.Advance(); // ']'
+                        currentToken = Parser.CurrentToken;
+                        tokenType = Token.GetType(currentToken);
+                        rparenConsumed = true;
+                    }
                 }
             }
                        

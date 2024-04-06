@@ -475,7 +475,7 @@ namespace HopperNET
 
             serialPort = new SerialPort();
             serialPort.PortName = portName;
-            serialPort.BaudRate = 115200; //  57600 for my 6502 machine, 115200 for Arduino MEGA2560 apps from 8bitforce;
+            serialPort.BaudRate = 19200; //  115200; //  57600 for my 6502 machine, 115200 for Arduino MEGA2560 apps from 8bitforce;
             serialPort.Parity = Parity.None;
             serialPort.DataBits = 8;
             serialPort.StopBits = StopBits.One;
@@ -598,6 +598,7 @@ namespace HopperNET
                     }
                 }
             }
+            Diagnostics.OutputDebug("\nWriteChar: 0x" + ((byte)outChar).ToString("X2") + " " + (outChar >= ' ' ? outChar : ' '));
         }
         public static void WriteString(HopperString str)
         {
@@ -630,6 +631,7 @@ namespace HopperNET
                     }
                 }
             }
+            
         }
 
 
@@ -668,6 +670,7 @@ namespace HopperNET
                     Diagnostics.OutputDebug("ReadChar: " + ex.Message);
                 }
             }
+            Diagnostics.OutputDebug("\nReadChar: 0x" + ((byte)readChar).ToString("X2") + " " + (readChar >= ' ' ? readChar : ' ') );
             return readChar;
         }
 

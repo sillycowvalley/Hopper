@@ -116,6 +116,7 @@ unit Pages
                     if (!ParseHexLine(address, ref ln))
                     {
                         OutputDebug("Failed:" + address.ToHexString(4));
+                        OutputDebug(serialOutput);
                         return false; // failure
                     }
                     address = address + 16;
@@ -180,7 +181,11 @@ unit Pages
     }
     uint GetZeroPage(string key)
     {
-        return zeroPage[key];
+        if (zeroPage.Contains(key))
+        {
+            return zeroPage[key];
+        }
+        return 0xAA55;
     }
     <string, uint> GetZeroPageEntries()
     {

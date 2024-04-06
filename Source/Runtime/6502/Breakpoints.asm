@@ -1,8 +1,7 @@
 unit Breakpoints
 {
-    Check()
+    check() // munts X, (only called from Clear and ClearX which preserve A)
     {
-        PHX
         LDX # 0
         loop
         {
@@ -10,60 +9,73 @@ unit Breakpoints
             LDA ZP.BRKH, X
             if (NZ)
             {
-                SMB5 ZP.FLAGS // at least one breakpoint
-                PLX
+                LDA ZP.FLAGS
+                ORA #0b00100000
+                STA ZP.FLAGS // at least one breakpoint
                 RTS
             }
             LDA ZP.BRKL, X
             if (NZ)
             {
-                SMB5 ZP.FLAGS // at least one breakpoint
-                PLX
+                LDA ZP.FLAGS
+                ORA #0b00100000
+                STA ZP.FLAGS // at least one breakpoint
                 RTS
             }
             INX
             CPX # 0x10
             if (Z) { break; }
         }
-        RMB5 ZP.FLAGS // no breakpoints
-        PLX
+        LDA ZP.FLAGS
+        AND #0b11011111
+        STA ZP.FLAGS // no breakpoints
     }
-    Clear()
+    Clear() // munts X
     {
-        PHX
+        PHA
         LDX #1
         loop
         {
             // clearNextBreakPoint
-            STZ ZP.BRKH, X
-            STZ ZP.BRKL, X
+            LDA # 0
+            STA ZP.BRKH, X
+            STA ZP.BRKL, X
             INX
             CPX # 0x10
             if (Z) { break; }
         }
-        PLX
         
         // check if breakpoint #0 is set
-        Breakpoints.Check();
+        check();
+        PLA
     }
     
     // clear the breakpoint in X
-    ClearX()
+    ClearX() // munts X
     {
-        STZ ZP.BRKH, X
-        STZ ZP.BRKL, X
+        PHA
+        
+        LDA #0
+        STA ZP.BRKH, X
+        STA ZP.BRKL, X
         
         // check if any breakpoint is set
-        Breakpoints.Check();
+        check();
+        
+        PLA
     }
     
     // is current hopper PC at a a breakpoint?
     //     Z set if true, Z clear if not, breakpoint in X
     IsPCBreakpoint()
     {
+        PHA
+        
         LDX # 0x10 // Z is clear
         
-        if (BBS5, ZP.FLAGS) // are there breakpoints set?
+        LDA ZP.FLAGS
+        AND # 0b00100000
+        if (NZ) // are there breakpoints set?
         {  
             LDX #0
             loop
@@ -85,5 +97,6 @@ unit Breakpoints
             }
             CPX # 0 // clear Z (since X is 0x10)
         }
+        PLA
     }
 }

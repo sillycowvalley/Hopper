@@ -63,6 +63,12 @@ unit W65C02
         vFlag = (isum < -127) || (isum > 127);
         aRegister = isum.GetByte(0);
     }
+    BIT(byte operand)
+    {
+        zFlag = (aRegister & operand  == 0);
+        nFlag = (operand & 0b10000000 != 0);
+        vFlag = (operand & 0b01000000 != 0);
+    }
     
     byte Pop()
     {
@@ -241,7 +247,7 @@ unit W65C02
         }
         
         
-        byte instruction               = memory[pcRegister];
+        OpCode instruction             = OpCode(memory[pcRegister]);
         uint length                    = Asm6502.GetInstructionLength(instruction);
         AddressingModes addressingMode = Asm6502.GetAddressingMode(instruction);
         uint operand;
@@ -335,98 +341,117 @@ unit W65C02
         {
             switch (instruction)
             {
-                case 0x20: { JSR(operand); break; } 
-                case 0x60: { RTS();        break; }
-                case 0x40: { RTI();        break; }
-                case 0x00: { BRK();        break; }
-                case 0x4C: { JMP(operand); break; } 
-                case 0x7C: { JMPIndexed(operand); break; } 
-                case 0x80: { BRA(offset);  break; }
+                case OpCode.NOP:      { break; } 
+                case OpCode.JSR_nn:   { JSR(operand); break; } 
+                case OpCode.RTS:      { RTS();        break; }
+                case OpCode.RTI:      { RTI();        break; }
+                case OpCode.BRK:      { BRK();        break; }
+                case OpCode.JMP_nn:   { JMP(operand); break; } 
+                case OpCode.JMP_innX: { JMPIndexed(operand); break; } 
+                case OpCode.BRA_e:    { BRA(offset);  break; }
                 
-                case 0x90: { if (!cFlag) { BRA(offset); break; } } // BCC
-                case 0xB0: { if (cFlag)  { BRA(offset); break; } } // BCS
-                case 0xF0: { if (zFlag)  { BRA(offset); break; } } // BEQ
-                case 0x30: { if (nFlag)  { BRA(offset); break; } } // BMI
-                case 0xD0: { if (!zFlag) { BRA(offset); break; } } // BNE
-                case 0x10: { if (!nFlag) { BRA(offset); break; } } // BPL
-                case 0x50: { if (!vFlag) { BRA(offset); break; } } // BVC
-                case 0x70: { if (vFlag)  { BRA(offset); break; } } // BVS
+                case OpCode.BCC_e: { if (!cFlag) { BRA(offset); break; } }
+                case OpCode.BCS_e: { if (cFlag)  { BRA(offset); break; } }
+                case OpCode.BEQ_e: { if (zFlag)  { BRA(offset); break; } }
+                case OpCode.BMI_e: { if (nFlag)  { BRA(offset); break; } }
+                case OpCode.BNE_e: { if (!zFlag) { BRA(offset); break; } }
+                case OpCode.BPL_e: { if (!nFlag) { BRA(offset); break; } }
+                case OpCode.BVC_e: { if (!vFlag) { BRA(offset); break; } }
+                case OpCode.BVS_e: { if (vFlag)  { BRA(offset); break; } }
                 
                 
-                case 0x48: { Push(aRegister);   } // PHA
-                case 0xDA: { Push(xRegister);   } // PHX
-                case 0x5A: { Push(yRegister);   } // PHY
-                case 0x08: { PushFlags();       } // PHP
-                case 0x68: { aRegister = Pop(); CheckNZ(aRegister); } // PLA
-                case 0xFA: { xRegister = Pop(); CheckNZ(xRegister); } // PLX
-                case 0x7A: { yRegister = Pop(); CheckNZ(yRegister); } // PLY
-                case 0x28: { PopFlags();       } // PLP
+                case OpCode.PHA: { Push(aRegister);   } 
+                case OpCode.PHX: { Push(xRegister);   } 
+                case OpCode.PHY: { Push(yRegister);   } 
+                case OpCode.PHP: { PushFlags();       } 
+                case OpCode.PLA: { aRegister = Pop(); CheckNZ(aRegister); }
+                case OpCode.PLX: { xRegister = Pop(); CheckNZ(xRegister); }
+                case OpCode.PLY: { yRegister = Pop(); CheckNZ(yRegister); }
+                case OpCode.PLP: { PopFlags();       }
                 
-                case 0x18: { cFlag = false; } // CLC
-                case 0xD8: { dFlag = false; } // CLD
-                case 0x58: { iFlag = false; } // CLI
-                case 0xB8: { vFlag = false; } // CLV
+                case OpCode.CLC: { cFlag = false; }
+                case OpCode.CLD: { dFlag = false; }
+                case OpCode.CLI: { iFlag = false; }
+                case OpCode.CLV: { vFlag = false; }
                 
-                case 0x38: { cFlag = true; } // SEC
-                case 0xF8: { dFlag = true; } // SED
-                case 0x78: { iFlag = true; } // SEI
+                case OpCode.SEC: { cFlag = true; }
+                case OpCode.SED: { dFlag = true; }
+                case OpCode.SEI: { iFlag = true; }
                 
-                case 0xAA: { xRegister = aRegister;  CheckNZ(xRegister); } // TAX
-                case 0xA8: { yRegister = aRegister;  CheckNZ(yRegister); } // TAY
-                case 0x8A: { aRegister = xRegister;  CheckNZ(aRegister); } // TXA
-                case 0x98: { aRegister = yRegister;  CheckNZ(aRegister); } // TYA
-                case 0x9A: { spRegister = xRegister;                     } // TXS
-                case 0xBA: { xRegister = spRegister; CheckNZ(xRegister); } // TSX
+                case OpCode.TAX: { xRegister = aRegister;  CheckNZ(xRegister); }
+                case OpCode.TAY: { yRegister = aRegister;  CheckNZ(yRegister); }
+                case OpCode.TXA: { aRegister = xRegister;  CheckNZ(aRegister); }
+                case OpCode.TYA: { aRegister = yRegister;  CheckNZ(aRegister); }
+                case OpCode.TXS: { spRegister = xRegister;                     }
+                case OpCode.TSX: { xRegister = spRegister; CheckNZ(xRegister); }
                 
-                case 0x29: { aRegister &= byte(operand);   CheckNZ(aRegister); }    // AND #nn
-                case 0x2D:                                                          // AND nnnn
-                case 0x3D:                                                          // AND nnnn,X
-                case 0x39:                                                          // AND nnnn,Y
-                case 0x25:                                                          // AND nn
-                case 0x35:                                                          // AND nn,X
-                case 0x32:                                                          // AND (nn)
-                case 0x21:                                                          // AND (nn,X)
-                case 0x31: { aRegister &= GetMemory(operand); CheckNZ(aRegister); } // AND (nn),Y
+                case OpCode.AND_n:   { aRegister = aRegister & byte(operand);   CheckNZ(aRegister); }   
+                case OpCode.AND_nn:                               
+                case OpCode.AND_nnX:                              
+                case OpCode.AND_nnY:                              
+                case OpCode.AND_z:                                
+                case OpCode.AND_zX:                               
+                case OpCode.AND_iz:                               
+                case OpCode.AND_izX:                              
+                case OpCode.AND_izY: { aRegister = aRegister & GetMemory(operand); CheckNZ(aRegister); }
                 
-                case 0x09: { aRegister |= byte(operand);   CheckNZ(aRegister); }    // OR #nn
-                case 0x0D:                                                          // OR nnnn
-                case 0x1D:                                                          // OR nnnn,X
-                case 0x19:                                                          // OR nnnn,Y
-                case 0x05:                                                          // OR nn
-                case 0x15:                                                          // OR nn,X
-                case 0x12:                                                          // OR (nn)
-                case 0x01:                                                          // OR (nn,X)
-                case 0x11: { aRegister |= GetMemory(operand); CheckNZ(aRegister); } // OR (nn),Y
+                case OpCode.BIT_n:   { BIT(byte(operand)); }
+                case OpCode.BIT_nn:  
+                case OpCode.BIT_nnX:  
+                case OpCode.BIT_z:  
+                case OpCode.BIT_zX:  { BIT(GetMemory(operand)); }
                 
-                case 0x69: { ADC(byte(operand));              CheckNZ(aRegister); } // ADC #nn
-                case 0x6D:                                                          // ADC nnnn
-                case 0x7D:                                                          // ADC nnnn,X
-                case 0x79:                                                          // ADC nnnn,Y
-                case 0x65:                                                          // ADC nn
-                case 0x75:                                                          // ADC nn,X
-                case 0x72:                                                          // ADC (nn)
-                case 0x61:                                                          // ADC (nn,X)
-                case 0x71: { ADC(GetMemory(operand));         CheckNZ(aRegister); } // ADC (nn),Y
                 
-                case 0xE9: { SBC(byte(operand));              CheckNZ(aRegister); } // SBC #nn
-                case 0xED:                                                          // SBC nnnn
-                case 0xFD:                                                          // SBC nnnn,X
-                case 0xF9:                                                          // SBC nnnn,Y
-                case 0xE5:                                                          // SBC nn
-                case 0xF5:                                                          // SBC nn,X
-                case 0xF2:                                                          // SBC (nn)
-                case 0xE1:                                                          // SBC (nn,X)
-                case 0xF1: { SBC(GetMemory(operand));         CheckNZ(aRegister); } // SBC (nn),Y
+                case OpCode.ORA_n:   { aRegister = aRegister | byte(operand);   CheckNZ(aRegister); } 
+                case OpCode.ORA_nn:                    
+                case OpCode.ORA_nnX:                   
+                case OpCode.ORA_nnY:                   
+                case OpCode.ORA_z:        
+                case OpCode.ORA_zX:       
+                case OpCode.ORA_iz:       
+                case OpCode.ORA_izX:      
+                case OpCode.ORA_izY: { aRegister = aRegister | GetMemory(operand); CheckNZ(aRegister); } 
                 
-                case 0x4A: 
+                case OpCode.EOR_n:   { aRegister = aRegister ^ byte(operand);   CheckNZ(aRegister); } 
+                case OpCode.EOR_nn:                    
+                case OpCode.EOR_nnX:                   
+                case OpCode.EOR_nnY:                   
+                case OpCode.EOR_z:        
+                case OpCode.EOR_zX:       
+                case OpCode.EOR_iz:       
+                case OpCode.EOR_izX:      
+                case OpCode.EOR_izY: { aRegister = aRegister ^ GetMemory(operand); CheckNZ(aRegister); } 
+                
+                
+                case OpCode.ADC_n: { ADC(byte(operand));              CheckNZ(aRegister); } 
+                case OpCode.ADC_nn:    
+                case OpCode.ADC_nnX:   
+                case OpCode.ADC_nnY:   
+                case OpCode.ADC_z:     
+                case OpCode.ADC_zX:    
+                case OpCode.ADC_iz:    
+                case OpCode.ADC_izX:   
+                case OpCode.ADC_izY: { ADC(GetMemory(operand));         CheckNZ(aRegister); } 
+                
+                case OpCode.SBC_n: { SBC(byte(operand));              CheckNZ(aRegister); } 
+                case OpCode.SBC_nn:        
+                case OpCode.SBC_nnX:       
+                case OpCode.SBC_nnY:       
+                case OpCode.SBC_z:         
+                case OpCode.SBC_zX:        
+                case OpCode.SBC_iz:        
+                case OpCode.SBC_izX:       
+                case OpCode.SBC_izY: { SBC(GetMemory(operand));         CheckNZ(aRegister); } 
+                
+                case OpCode.LSR: 
                 { 
                     cFlag = ((aRegister & 0x01) != 0);
-                    aRegister = aRegister >> 1; CheckNZ(aRegister);                 // LSR A
+                    aRegister = aRegister >> 1; CheckNZ(aRegister); 
                 }
-                case 0x4E:                                                          // LSR nnnn
-                case 0x5E:                                                          // LSR nnnn,X
-                case 0x46:                                                          // LSR nn
-                case 0x56:                                                          // LSR nn, X
+                case OpCode.LSR_nn: 
+                case OpCode.LSR_nnX:
+                case OpCode.LSR_z:  
+                case OpCode.LSR_zX: 
                 { 
                     byte value = GetMemory(operand);
                     cFlag = ((value & 0x01) != 0);
@@ -434,15 +459,15 @@ unit W65C02
                     SetMemory(operand, value);                         
                 }
                 
-                case 0x0A: 
+                case OpCode.ASL: 
                 { 
                     cFlag     = ((aRegister & 0x80) != 0);
-                    aRegister = (aRegister << 1) & 0xFF; CheckNZ(aRegister);        // ASL A
+                    aRegister = (aRegister << 1) & 0xFF; CheckNZ(aRegister);   
                 }
-                case 0x0E:                                                          // ASL nnnn
-                case 0x1E:                                                          // ASL nnnn,X
-                case 0x06:                                                          // ASL nn
-                case 0x16:                                                          // ASL nn, X
+                case OpCode.ASL_nn:
+                case OpCode.ASL_nnX:  
+                case OpCode.ASL_z:    
+                case OpCode.ASL_zX:   
                 { 
                     byte value = GetMemory(operand);
                     cFlag = ((value & 0x80) != 0);
@@ -450,17 +475,17 @@ unit W65C02
                     SetMemory(operand, value);                         
                 }
                 
-                case 0x2A: 
+                case OpCode.ROL: 
                 { 
                     bool cAfter = ((aRegister & 0x80) != 0);
                     aRegister   = ((aRegister << 1) & 0xFF) | (cFlag ? 1 : 0); 
                     cFlag       = cAfter;
-                    CheckNZ(aRegister);                                             // ROL A
+                    CheckNZ(aRegister);                                  
                 }
-                case 0x2E:                                                          // ROL nnnn
-                case 0x3E:                                                          // ROL nnnn,X
-                case 0x26:                                                          // ROL nn
-                case 0x36:                                                          // ROL nn, X
+                case OpCode.ROL_nn:     
+                case OpCode.ROL_nnX:    
+                case OpCode.ROL_z:      
+                case OpCode.ROL_zX:     
                 { 
                     byte value = GetMemory(operand);
                     bool cAfter = ((value & 0x80) != 0);
@@ -470,17 +495,17 @@ unit W65C02
                     SetMemory(operand, value);                         
                 }
                 
-                case 0x6A: 
+                case OpCode.ROR: 
                 { 
                     bool cAfter = ((aRegister & 0x01) != 0);
                     aRegister   = (aRegister >> 1) | (cFlag ? 0x80 : 0); 
                     cFlag       = cAfter;
-                    CheckNZ(aRegister);                                             // ROR A
+                    CheckNZ(aRegister);                                           
                 }
-                case 0x6E:                                                          // ROR nnnn
-                case 0x7E:                                                          // ROR nnnn,X
-                case 0x66:                                                          // ROR nn
-                case 0x76:                                                          // ROR nn, X
+                case OpCode.ROR_nn:          
+                case OpCode.ROR_nnX:         
+                case OpCode.ROR_z:           
+                case OpCode.ROR_zX:          
                 { 
                     byte value  = GetMemory(operand);
                     bool cAfter = ((value & 0x01) != 0);
@@ -490,31 +515,31 @@ unit W65C02
                     SetMemory(operand, value);                         
                 }
                 
-                case 0x1A: 
+                case OpCode.INC: 
                 { 
                     if (aRegister == 0xFF) 
                     { aRegister = 0; } 
                     else
-                    { aRegister++; }   CheckNZ(aRegister);                          // INC A
+                    { aRegister++; }   CheckNZ(aRegister);
                 }
-                case 0xC8: 
+                case OpCode.INY: 
                 { 
                     if (yRegister == 0xFF) 
                     { yRegister = 0; } 
                     else
-                    { yRegister++; }   CheckNZ(yRegister);                          // INC Y
+                    { yRegister++; }   CheckNZ(yRegister);  
                 }
-                case 0xE8: 
+                case OpCode.INX: 
                 { 
                     if (xRegister == 0xFF) 
                     { xRegister = 0; } 
                     else
-                    { xRegister++; }   CheckNZ(xRegister);                          // INC X
+                    { xRegister++; }   CheckNZ(xRegister);      
                 }
-                case 0xEE:                                                          // INC nnnn
-                case 0xFE:                                                          // INC nnnn,X
-                case 0xE6:                                                          // INC nn
-                case 0xF6:                                                          // INC nn, X
+                case OpCode.INC_nn:   
+                case OpCode.INC_nnX:  
+                case OpCode.INC_z:    
+                case OpCode.INC_zX:   
                 { 
                     byte value = GetMemory(operand);
                     if (value == 0xFF) 
@@ -524,31 +549,31 @@ unit W65C02
                     SetMemory(operand, value);                         
                 }
                 
-                case 0x3A: 
+                case OpCode.DEC: 
                 { 
                     if (aRegister == 0) 
                     { aRegister = 0xFF; } 
                     else
-                    { aRegister--; }   CheckNZ(aRegister);                          // DEC A
+                    { aRegister--; }   CheckNZ(aRegister);  
                 }
-                case 0x88: 
+                case OpCode.DEY: 
                 { 
                     if (yRegister == 0) 
                     { yRegister = 0xFF; } 
                     else
-                    { yRegister--; }   CheckNZ(yRegister);                          // DEC Y
+                    { yRegister--; }   CheckNZ(yRegister);
                 }
-                case 0xCA: 
+                case OpCode.DEX: 
                 { 
                     if (xRegister == 0) 
                     { xRegister = 0xFF; } 
                     else
-                    { xRegister--; }   CheckNZ(xRegister);                          // DEC X
+                    { xRegister--; }   CheckNZ(xRegister);  
                 }
-                case 0xCE:                                                          // DEC nnnn
-                case 0xDE:                                                          // DEC nnnn,X
-                case 0xC6:                                                          // DEC nn
-                case 0xD6:                                                          // DEC nn, X
+                case OpCode.DEC_nn:  
+                case OpCode.DEC_nnX: 
+                case OpCode.DEC_z:   
+                case OpCode.DEC_zX:  
                 { 
                     byte value = GetMemory(operand);
                     if (value == 0) 
@@ -558,107 +583,108 @@ unit W65C02
                     SetMemory(operand, value);                         
                 }
                 
-                case 0xA9: { aRegister = byte(operand);   CheckNZ(aRegister); }    // LDA #nn
-                case 0xAD:                                                         // LDA nnnn
-                case 0xBD:                                                         // LDA nnnn,X
-                case 0xB9:                                                         // LDA nnnn,Y
-                case 0xA5:                                                         // LDA nn
-                case 0xB5:                                                         // LDA nn,X
-                case 0xB2:                                                         // LDA (nn)
-                case 0xA1:                                                         // LDA (nn,X)
-                case 0xB1: { aRegister = GetMemory(operand); CheckNZ(aRegister); } // LDA (nn),Y
+                case OpCode.LDA_n: { aRegister = byte(operand);   CheckNZ(aRegister); }
+                case OpCode.LDA_nn:                                                       
+                case OpCode.LDA_nnX:                                                      
+                case OpCode.LDA_nnY:                                                      
+                case OpCode.LDA_z:                                                        
+                case OpCode.LDA_zX:                                                         
+                case OpCode.LDA_iz:                                                         
+                case OpCode.LDA_izX:                                                        
+                case OpCode.LDA_izY: { aRegister = GetMemory(operand); CheckNZ(aRegister); }
                 
-                case 0xA2: { xRegister = byte(operand);   CheckNZ(xRegister); }    // LDX #nn
-                case 0xAE:                                                         // LDX nnnn
-                case 0xBE:                                                         // LDX nnnn,Y
-                case 0xA6:                                                         // LDX nn
-                case 0xB6: { xRegister = GetMemory(operand); CheckNZ(xRegister); } // LDX nn,Y
+                case OpCode.LDX_n: { xRegister = byte(operand);   CheckNZ(xRegister); }   
+                case OpCode.LDX_nn:                                                        
+                case OpCode.LDX_nnY:                                                       
+                case OpCode.LDX_z:                                                         
+                case OpCode.LDX_zY: { xRegister = GetMemory(operand); CheckNZ(xRegister); }
                 
-                case 0xA0: { yRegister = byte(operand);   CheckNZ(yRegister); }    // LDY #nn
-                case 0xAC:                                                         // LDY nnnn
-                case 0xBC:                                                         // LDY nnnn,X
-                case 0xA4:                                                         // LDY nn
-                case 0xB4: { yRegister = GetMemory(operand); CheckNZ(yRegister); } // LDY nn,X
+                case OpCode.LDY_n: { yRegister = byte(operand);   CheckNZ(yRegister); }
+                case OpCode.LDY_nn:                                                        
+                case OpCode.LDY_nnX:                                                       
+                case OpCode.LDY_z:                                                         
+                case OpCode.LDY_zX: { yRegister = GetMemory(operand); CheckNZ(yRegister); }
                 
-                case 0x8D:                                                        // STA nnnn
-                case 0x9D:                                                        // STA nnnn,X
-                case 0x99:                                                        // STA nnnn,Y
-                case 0x85:                                                        // STA nn
-                case 0x95:                                                        // STA nn,X
-                case 0x92:                                                        // STA (nn)
-                case 0x81:                                                        // STA (nn,X)
-                case 0x91: { SetMemory(operand, aRegister);                     } // STA (nn),Y
+                case OpCode.STA_nn:                   
+                case OpCode.STA_nnX:                  
+                case OpCode.STA_nnY:                  
+                case OpCode.STA_z:                    
+                case OpCode.STA_zX:                   
+                case OpCode.STA_iz:                   
+                case OpCode.STA_izX:                  
+                case OpCode.STA_izY: { SetMemory(operand, aRegister);                     } 
                 
-                case 0x8E:                                                        // STX nnnn
-                case 0x86:                                                        // STX nn
-                case 0x96: { SetMemory(operand, xRegister);                    }  // STX nn,Y
+                case OpCode.STX_nn:                                                      
+                case OpCode.STX_z:                                                       
+                case OpCode.STX_zY: { SetMemory(operand, xRegister);                    }
                 
-                case 0x8C:                                                        // STY nnnn
-                case 0x84:                                                        // STY nn
-                case 0x94: { SetMemory(operand, yRegister);                    }  // STY nn,X
+                case OpCode.STY_nn:                                                      
+                case OpCode.STY_z:                                                       
+                case OpCode.STY_zX: { SetMemory(operand, yRegister);                    }
                 
-                case 0x9C:                                                        // STZ nnnn
-                case 0x9E:                                                        // STZ nnnn,X
-                case 0x64:                                                        // STZ nn
-                case 0x74: { SetMemory(operand, 0);                             } // STZ nn,X
+                case OpCode.STZ_nn:                                                  
+                case OpCode.STZ_nnX:                                                 
+                case OpCode.STZ_z:                                                   
+                case OpCode.STZ_zX: { SetMemory(operand, 0);                             }
                 
-                case 0xC9: { Compare(aRegister, byte(operand));               } // CMP #nn
-                case 0xCD:                                                      // CMP nnnn
-                case 0xDD:                                                      // CMP nnnn,X
-                case 0xD9:                                                      // CMP nnnn,Y
-                case 0xC5:                                                      // CMP nn
-                case 0xD5:                                                      // CMP nn,X
-                case 0xD2:                                                      // CMP (nn)
-                case 0xC1:                                                      // CMP (nn,X)
-                case 0xD1: { Compare(aRegister, GetMemory(operand));          } // CMP (nn),Y
+                case OpCode.CMP_n: { Compare(aRegister, byte(operand));               } 
+                case OpCode.CMP_nn:                    
+                case OpCode.CMP_nnX:                   
+                case OpCode.CMP_nnY:                   
+                case OpCode.CMP_z:                     
+                case OpCode.CMP_zX:                    
+                case OpCode.CMP_iz:                    
+                case OpCode.CMP_izX:                   
+                case OpCode.CMP_izY: { Compare(aRegister, GetMemory(operand));          }
                 
-                case 0xE0: { Compare(xRegister, byte(operand));               } // CPX #nn
-                case 0xEC:                                                      // CPX nnnn
-                case 0xE4: { Compare(xRegister, GetMemory(operand));          } // CPX nn
+                case OpCode.CPX_n: { Compare(xRegister, byte(operand));               } 
+                case OpCode.CPX_nn:                                                    
+                case OpCode.CPX_z: { Compare(xRegister, GetMemory(operand));          }
                 
-                case 0xC0: { Compare(yRegister, byte(operand));               } // CPY #nn
-                case 0xCC:                                                      // CPY nnnn
-                case 0xC4: { Compare(yRegister, GetMemory(operand));          } // CPY nn
+                case OpCode.CPY_n: { Compare(yRegister, byte(operand));               } // CPY #nn
+                case OpCode.CPY_nn:                                                      // CPY nnnn
+                case OpCode.CPY_z: { Compare(yRegister, GetMemory(operand));          } // CPY nn
                 
-                case 0xDB: { pcRegister = InvalidAddress; break;              } // STP
+                case OpCode.STP: { pcRegister = InvalidAddress; break;              } // STP
                 
-                case 0x0F:
-                case 0x1F:
-                case 0x2F:
-                case 0x3F:
-                case 0x4F:
-                case 0x5F:
-                case 0x6F:
-                case 0x7F: { if (BBR((instruction & 0x70) >> 4, operand, offset)) { break; } }
-                case 0x8F:
-                case 0x9F:
-                case 0xAF:
-                case 0xBF:
-                case 0xCF:
-                case 0xDF:
-                case 0xEF:
-                case 0xFF: { if (BBS((instruction & 0x70) >> 4, operand, offset)) { break; } }
+                case OpCode.BBR0_z_e:
+                case OpCode.BBR1_z_e:
+                case OpCode.BBR2_z_e:
+                case OpCode.BBR3_z_e:
+                case OpCode.BBR4_z_e:
+                case OpCode.BBR5_z_e:
+                case OpCode.BBR6_z_e:
+                case OpCode.BBR7_z_e: { if (BBR((byte(instruction) & 0x70) >> 4, operand, offset)) { break; } }
+                case OpCode.BBS0_z_e:
+                case OpCode.BBS1_z_e:
+                case OpCode.BBS2_z_e:
+                case OpCode.BBS3_z_e:
+                case OpCode.BBS4_z_e:
+                case OpCode.BBS5_z_e:
+                case OpCode.BBS6_z_e:
+                case OpCode.BBS7_z_e: { if (BBS((byte(instruction) & 0x70) >> 4, operand, offset)) { break; } }
                 
-                case 0x07:
-                case 0x17:
-                case 0x27:
-                case 0x37:
-                case 0x47:
-                case 0x57:
-                case 0x67:
-                case 0x77: { RMB((instruction & 0x70) >> 4, operand); }
-                case 0x87:
-                case 0x97:
-                case 0xA7:
-                case 0xB7:
-                case 0xC7:
-                case 0xD7:
-                case 0xE7:
-                case 0xF7: { SMB((instruction & 0x70) >> 4, operand); }
+                
+                case OpCode.RMB0_z:
+                case OpCode.RMB1_z:
+                case OpCode.RMB2_z:
+                case OpCode.RMB3_z:
+                case OpCode.RMB4_z:
+                case OpCode.RMB5_z:
+                case OpCode.RMB6_z:
+                case OpCode.RMB7_z: { RMB((byte(instruction) & 0x70) >> 4, operand); }
+                case OpCode.SMB0_z:
+                case OpCode.SMB1_z:
+                case OpCode.SMB2_z:
+                case OpCode.SMB3_z:
+                case OpCode.SMB4_z:
+                case OpCode.SMB5_z:
+                case OpCode.SMB6_z:
+                case OpCode.SMB7_z: { SMB((byte(instruction) & 0x70) >> 4, operand); }
                                 
                 default: 
                 { 
-                    PrintLn("Instruction: " + instruction.ToHexString(2)); Die(0x0A); 
+                    PrintLn("Instruction: " + (byte(instruction)).ToHexString(2)); Die(0x0A); 
                 }
             }
             pcRegister += length;

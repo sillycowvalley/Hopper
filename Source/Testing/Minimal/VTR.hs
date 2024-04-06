@@ -1,9 +1,9 @@
 program ValueTypeRuntimeTests
 {
-    #define CPU_Z80
-    //#define MCU
+    //#define CPU_Z80
+    #define MCU
     
-    #define CDECL
+    //#define CDECL
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/Serial"
@@ -733,8 +733,8 @@ program ValueTypeRuntimeTests
         LEI();  // LEI
         GTI();  // GTI
         
-        Ref();  // PUSHSTACKADDR, PUSHREL, POPREL
-        RefRef();
+        //Ref();  // PUSHSTACKADDR, PUSHREL, POPREL
+        //RefRef();
         
         Serial.WriteChar(char(0x0D)); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
     }

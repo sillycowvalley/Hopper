@@ -1,6 +1,6 @@
 unit SerialDevice
 {
-    // Motorolla 6850
+    // Motorola 6850
     #define HAS_SERIAL_ISR
     
     // On the 6850 the control and status registers are at the same
@@ -27,6 +27,13 @@ unit SerialDevice
     
     writeChar()
     {
+#ifdef CPU_65C02S
+        loop
+        {
+            if (BBS1, StatusRegister) { break; } // loop if not ready (bit set means TDRE is empty and ready)
+        } // loop
+        STA DataRegister           // output character to TDRE
+#else
         PHA
         loop
         {
@@ -36,15 +43,16 @@ unit SerialDevice
         } // loop
         PLA
         STA DataRegister           // output character to TDRE
+#endif
     }
     
     isr()
     {
+#ifdef CPU_65C02S
         if (BBS7, StatusRegister) // interrupt request by 6850
         {
             if (BBS0, StatusRegister) // RDRF : receive data register full
             {
-                PHA
                 PHA
                 LDA DataRegister // read serial byte
                 CMP #0x03               // is it break? (<ctrl><C>)
@@ -63,5 +71,32 @@ unit SerialDevice
                 PLA
             }
         }
+#else
+        BIT StatusRegister 
+        if (MI) // interrupt request by 6850
+        {
+            PHA
+            LDA StatusRegister 
+            AND # 0b00000001
+            if (NZ) // RDRF : receive data register full
+            {
+                TXA PHA // can't use XREG in ISR
+                LDA DataRegister // read serial byte
+                CMP #0x03               // is it break? (<ctrl><C>)
+                if (Z)
+                {
+                    INC Serial.BreakFlag
+                }
+                else
+                {
+                    LDX Serial.InWritePointer    // push it into serial input buffer
+                    STA Serial.InBuffer, X
+                    INC Serial.InWritePointer
+                }
+                PLA TAX // can't use XREG in ISR
+            }
+            PLA
+        }
+#endif        
     }
 }

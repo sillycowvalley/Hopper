@@ -1,6 +1,6 @@
 unit SerialDevice
 {
-    // Motorolla 6821
+    // Motorola 6821
     
     // A used for Rx
     const uint PRA  = 0xD010; // (when CRA-2 == 1)
@@ -68,14 +68,18 @@ unit SerialDevice
             }
             else
             {
-#ifdef CPU_65C02
+#ifdef CPU_65C02S
                 PHX
+#else            
+                TXA PHA    
 #endif
                 LDX Serial.InWritePointer    // push it into serial input buffer
                 STA Serial.InBuffer, X
                 INC Serial.InWritePointer
-#ifdef CPU_65C02
+#ifdef CPU_65C02S
                 PLX
+#else
+                PLA TAX
 #endif
             }
         }

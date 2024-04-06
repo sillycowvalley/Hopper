@@ -63,7 +63,7 @@ program OptAsm
                 {
                     Architecture = CPUArchitecture.M6502;
                 }
-                if (pdValues.Contains("CPU_65C02"))
+                if (pdValues.Contains("CPU_65C02S"))
                 {
                     Architecture = CPUArchitecture.W65C02;
                 }
@@ -244,10 +244,13 @@ program OptAsm
             {
                 modified = true;
             }
-            // JSR|RTS - > iJMP
-            if (AsmPoints.OptimizeJSRRTS())
+            if ((methodIndex != irqIndex) && (methodIndex != nmiIndex)) // TODO: // JSR|RTI - > iJMP .. RTI
             {
-                modified = true;
+                // JSR|RTS - > iJMP
+                if (AsmPoints.OptimizeJSRRTS())
+                {
+                    modified = true;
+                }
             }
             // TODO:
             //

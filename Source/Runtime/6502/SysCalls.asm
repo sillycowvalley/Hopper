@@ -46,7 +46,8 @@ unit SysCall
         ADC # '0' // 48
         
         STA ZP.TOPL
-        STZ ZP.TOPH
+        LDA # 0
+        STA ZP.TOPH
         LDA # Types.Char
         STA ZP.TOPT
         Stacks.PushTop();
@@ -61,7 +62,8 @@ unit SysCall
             LDA ZP.NEXTH // MSB
             STA ZP.NEXTL
         }
-        STZ ZP.NEXTH
+        LDA # 0
+        STA ZP.NEXTH
         LDA # Types.Byte
         STA ZP.NEXTT
         PushNext();
@@ -126,7 +128,12 @@ unit SysCall
         PopAcc();          // iOverload -> ACC
         
         // load iSyscCall into X (because JMP [nnnn,X] is then possible)
+#ifdef CPU_65C02S
         PLX
+#else        
+        PLA
+        TAX
+#endif
         sysCall();
     }
 }

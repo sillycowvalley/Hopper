@@ -9,7 +9,6 @@ unit Serial
     // Location of the Serial input buffer (256 bytes)
     const uint InBuffer        = Address.SerialInBuffer;
     
-    
     //uses "Devices/ACIA6850"
     uses "Devices/PIA6821"
     
@@ -33,7 +32,9 @@ unit Serial
     
     ISR()
     {
+#ifdef HAS_SERIAL_ISR        
         SerialDevice.isr();
+#endif        
     }
     
     EmptyTheBuffer()
@@ -73,9 +74,6 @@ unit Serial
             IsAvailable();
             if (NZ) { break; }
         }
-#ifdef CPU_65C02        
-        PHX
-#endif        
         LDA ZP.SerialBreakFlag
         if (NZ)
         {
@@ -86,15 +84,23 @@ unit Serial
         }
         else
         {
+#ifdef CPU_65C02S
+            PHX
+#else      
+            TXA PHA
+#endif        
             LDX Serial.InReadPointer
             LDA Serial.InBuffer, X
             INC Serial.InReadPointer
-        }
-#ifdef CPU_65C02        
-        PLX
+#ifdef CPU_65C02S
+            PLX       
+#else
+            STA ZP.ACCL
+            PLA TAX
+            LDA ZP.ACCL
 #endif
+        }
     }
-    
        
     // transmits A
     WriteChar()

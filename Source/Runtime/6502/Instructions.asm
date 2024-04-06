@@ -4,6 +4,16 @@ unit Instruction
     
     enum Instructions
     {
+        NOP    = 0x00,
+        DUP0   = 0x01,       // push [top]
+        
+        PUSHR0 = 0x02,       // R0 -> [top]
+        POPR0  = 0x03,       // [top] -> R0
+        
+        BITSHL8  = 0x04,
+        BITSHR8  = 0x05,
+        BITANDFF = 0x06,
+
         ENTER      = 0x49,
         
         CALL       = 0x34,
@@ -17,12 +27,17 @@ unit Instruction
         JZ         = 0x31,
         JNZ        = 0x32,
         
+        JW         = 0x33,
+        
         PUSHI      = 0x37,
         POPLOCAL   = 0x38,
         PUSHLOCAL  = 0x39,
         
         POPGLOBAL  = 0x3C,
         PUSHGLOBAL = 0x3D,
+        
+        BOOLNOT    = 0x41,
+        BITNOT     = 0x42,
         
         CAST       = 0x51,
         
@@ -76,9 +91,8 @@ unit Instruction
     }
     
     // return the width of the operand of the current opCode (in X), in A
-    GetOperandWidth()
+    GetOperandWidth() // munts X
     {
-        PHX
         TAX
         // current instruction into X (because JMP [nnnn,X] is then possible)
         switch (X)
@@ -97,9 +111,11 @@ unit Instruction
             
             case Instructions.BOOLAND:
             case Instructions.BOOLOR:
+            case Instructions.BOOLNOT:
             case Instructions.BITAND:
             case Instructions.BITOR:
             case Instructions.BITXOR:
+            case Instructions.BITNOT:
             
             case Instructions.EQ:
             case Instructions.NE:
@@ -113,6 +129,9 @@ unit Instruction
             case Instructions.GEI:
             case Instructions.BITSHR:
             case Instructions.BITSHL:
+            case Instructions.BITSHR8:
+            case Instructions.BITSHL8:
+            case Instructions.BITANDFF:
             {
                 LDA #0
             }
@@ -129,7 +148,8 @@ unit Instruction
 
             case Instructions.JZ:
             case Instructions.JNZ:
-
+            case Instructions.JW:
+            
             case Instructions.PUSHI:
             case Instructions.POPLOCAL:
             case Instructions.PUSHLOCAL:
@@ -143,17 +163,21 @@ unit Instruction
                 TXA BRK // operand length not implemented!
             }
         }
-        PLX
     }
     
     // Z set if next instruction is CALL, Z clear if not
-    IsCurrentCALL()
+    IsCurrentCALL() // munts Y
     {
         // ACC = PC + CODESTART + instruction length
         GetCurrentAddress(); // GetNextAddress();
         
         // load next instruction into A
+#ifdef CPU_65C02S
         LDA [ZP.ACC]
+#else
+        LDY #0
+        LDA [ZP.ACC], Y
+#endif        
         
         CMP # Instructions.CALL
         if (NZ)
@@ -181,12 +205,22 @@ unit Instruction
         GetCurrentAddress();
         
         // load current instruction into A
+#ifdef CPU_65C02S
         LDA [ZP.ACC]
+#else
+        LDY #0
+        LDA [ZP.ACC], Y
+#endif        
         
         // get the width of the operand of the current opCode (in A), in A
-        GetOperandWidth();
-        
+        GetOperandWidth(); // munts X
+     
+#ifdef CPU_65C02S
         INC A // add the opCode size to get instruction length
+#else
+        CLC
+        ADC #1
+#endif
         
         // add current instruction length to current address
         CLC
@@ -212,11 +246,12 @@ unit Instruction
         
         loop
         {
-            LDA [IDY]
+            LDY # 0
+            LDA [IDY], Y
             CMP IDXL
             if (Z)
             {
-                LDY #1
+                INY
                 LDA [IDY], Y
                 CMP IDXH
                 if (Z)
@@ -246,9 +281,10 @@ unit Instruction
     {
         Utilities.IncACC();
         
-        LDY #1
-        LDA [ZP.ACC]
+        LDY #0
+        LDA [ZP.ACC], Y
         STA ZP.IDXL
+        INY
         LDA [ZP.ACC], Y
         STA ZP.IDXH
         
@@ -259,16 +295,34 @@ unit Instruction
     ConsumeOperandB()
     {
         Utilities.IncACC();
-        LDA [ZP.ACC]
+        LDY # 0
+        LDA [ZP.ACC], Y
         Utilities.IncPC();
     }
     
+    nop()
+    {
+        NOP
+    }
        
     enter()
     {
         Stacks.PushBP();
         LDA ZP.SP
         STA ZP.BP
+    }
+    boolNot()
+    {
+        Stacks.PopTop();
+        
+        // [top] ? 0 : 1 -> [top] // assumes Type.Bool (0 or 1)
+        LDA ZP.TOPL
+        EOR # 0x01
+        STA ZP.TOPL
+        
+        LDA #Types.UInt
+        STA ZP.TOPT
+        Stacks.PushTop();
     }
     boolOr()
     {
@@ -315,6 +369,16 @@ unit Instruction
         STA ZP.NEXTT
         Stacks.PushNext();
     }
+    bitAndFF()
+    {
+        Stacks.PopTop();
+        // [top] &  0xFF -> [top]
+        LDA #0
+        STA ZP.TOPH
+        LDA #Types.UInt
+        STA ZP.TOPT
+        Stacks.PushTop();
+    }
     bitOr()
     {
         Stacks.PopTop();
@@ -341,13 +405,29 @@ unit Instruction
         LDA ZP.NEXTL
         EOR ZP.TOPL
         STA ZP.NEXTL
-        EOR ZP.NEXTH
-        ORA ZP.TOPH
+        LDA ZP.NEXTH
+        EOR ZP.TOPH
         STA ZP.NEXTH
         
         LDA #Types.UInt
         STA ZP.NEXTT
         Stacks.PushNext();
+    }
+    bitNot()
+    {
+        Stacks.PopTop();
+        
+        //  ~[top] -> [top]
+        LDA ZP.TOPL
+        EOR # 0xFF
+        STA ZP.TOPL
+        LDA ZP.TOPH
+        EOR # 0xFF
+        STA ZP.TOPH
+        
+        LDA #Types.UInt
+        STA ZP.TOPT
+        Stacks.PushTop();
     }
     
     addShared()
@@ -442,6 +522,13 @@ unit Instruction
         STA ZP.TOPH
         LDA #Types.UInt
         STA ZP.TOPT
+#ifdef CPU_65C02S
+        // cleared to make zero page faster in debugger
+        STZ ZP.UWIDE0
+        STZ ZP.UWIDE1
+        STZ ZP.UWIDE2
+        STZ ZP.UWIDE3
+#endif
     }
     mul()
     {
@@ -458,8 +545,9 @@ unit Instruction
         
         // https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
         // https://llx.com/Neil/a2/mult.html
-        STZ ZP.ACCL
-        STZ ZP.ACCH
+        LDA #0
+        STA ZP.ACCL
+        STA ZP.ACCH
         LDX #16
         
         loop
@@ -526,10 +614,8 @@ unit Instruction
         SBC ZP.TOPH
         STA ZP.TOPH        
     }
-    doSigns()
+    doSigns() // munts X
     {   
-        PHX
-        
         LDX #0 
         LDA ZP.NEXTH
         ASL // sign bit into carry
@@ -546,14 +632,12 @@ unit Instruction
             negateTop(); // TOP = -TOP
         }
         STX ZP.FSIGN // store the sign count
-        
-        PLX
     }
     muli()
     {
         Stacks.PopTop();
         Stacks.PopNext();
-        doSigns();
+        doSigns(); // munts X
         mulShared();
         LDA ZP.FSIGN     // load the sign count
         CMP #1
@@ -569,7 +653,7 @@ unit Instruction
     {
         Stacks.PopTop();
         Stacks.PopNext();
-        doSigns();
+        doSigns(); // munts X
         divmod();
         
         LDA ZP.FSIGN     // load the sign count
@@ -860,7 +944,7 @@ unit Instruction
             
             DEC ZP.TOPL
         }
-        LDA #Types.Int
+        LDA #Types.UInt
         STA ZP.NEXTT
         Stacks.PushNext();
     }
@@ -879,9 +963,33 @@ unit Instruction
             
             DEC ZP.TOPL
         }
-        LDA #Types.Int
+        LDA #Types.UInt
         STA ZP.NEXTT
         Stacks.PushNext();
+    }
+    bitShr8()
+    {
+        Stacks.PopTop();
+        // top = top >> 8
+        LDA ZP.TOPH
+        STA ZP.TOPL
+        LDA #0
+        STA ZP.TOPH
+        LDA #Types.UInt
+        STA ZP.TOPT
+        Stacks.PushTop();
+    }
+    bitShl8()
+    {
+        Stacks.PopTop();
+        // top = top << 8
+        LDA ZP.TOPL
+        STA ZP.TOPH
+        LDA #0
+        STA ZP.TOPL
+        LDA #Types.UInt
+        STA ZP.TOPT
+        Stacks.PushTop();
     }
     
     ret()
@@ -958,6 +1066,10 @@ unit Instruction
         LDA ZP.PCH
         SBC # 0
         STA ZP.PCH
+    }
+    jw()
+    {
+        jCommon();
     }
     jz()
     {
@@ -1068,7 +1180,8 @@ unit Instruction
     {
         // change CALL to CALLI
         LDA #Instructions.CALLI
-        STA [ZP.ACC]
+        LDY #0
+        STA [ZP.ACC], Y
         
         ConsumeOperand();
         PushPC();
@@ -1077,9 +1190,10 @@ unit Instruction
         lookupMethod();
         
         // address store back to [ACC] and PC
-        LDY #1
+        LDY #0
         LDA ZP.IDXL
-        STA [ZP.ACC]
+        STA [ZP.ACC], Y
+        INY
         STA ZP.PCL
         LDA ZP.IDXH
         STA [ZP.ACC], Y
@@ -1103,7 +1217,7 @@ unit Instruction
         TXA BRK // OpCode not Implemented!
     }
       
-    Execute()
+    Execute() // munts X
     {
         LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
         CMP PCH
@@ -1120,7 +1234,12 @@ unit Instruction
         GetCurrentAddress();
         
         // load current instruction into X (because JMP [nnnn,X] is then possible)
+#ifdef CPU_65C02S
         LDA [ZP.ACC]
+#else
+        LDY #0
+        LDA [ZP.ACC], Y
+#endif                
         
         Utilities.IncPC();
 #ifdef CHECKED
@@ -1129,6 +1248,10 @@ unit Instruction
         TAX
         switch (X)
         {
+            case Instructions.NOP:
+            {
+                nop();
+            }
             case Instructions.ENTER:
             {
                 enter();
@@ -1202,9 +1325,17 @@ unit Instruction
             {
                 boolOr();
             }
+            case Instructions.BOOLNOT:
+            {
+                boolNot();
+            }
             case Instructions.BITAND:
             {
                 bitAnd();
+            }
+            case Instructions.BITANDFF:
+            {
+                bitAndFF();
             }
             case Instructions.BITOR:
             {
@@ -1213,6 +1344,10 @@ unit Instruction
             case Instructions.BITXOR:
             {
                 bitXor();
+            }
+            case Instructions.BITNOT:
+            {
+                bitNot();
             }
             
             
@@ -1268,7 +1403,19 @@ unit Instruction
             {
                 bitShl();
             }
+            case Instructions.BITSHR8:
+            {
+                bitShr8();
+            }
+            case Instructions.BITSHL8:
+            {
+                bitShl8();
+            }
             
+            case Instructions.JW:
+            {
+                jw();
+            }
             case Instructions.JZ:
             {
                 jz();

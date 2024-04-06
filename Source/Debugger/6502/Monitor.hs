@@ -30,14 +30,14 @@ unit Monitor
         loop
         {
             if (waitCount >= 100) { break; }
-            if (Serial.IsAvailable)
+            if (SerialIsAvailable)
             {
                 // Typically: 
                 //    "\nBREAK/" if process was running
                 //    "/" if we aleady stopped in the debugger
                 // The waiting is in case we were in a long running system call
                 // when the <ctrl><C> arrived. I Delay(..) of >= 5000 would defeat this.
-                while (Serial.IsAvailable)
+                while (SerialIsAvailable)
                 {
                     char c = SerialReadChar(); 
                 }
@@ -95,9 +95,46 @@ unit Monitor
         Serial.WriteChar(maker);
         Serial.WriteChar(ch);
     }
+    bool haveCharacter;
+    char lastCharacter;
+    bool SerialIsAvailable
+    {
+        get 
+        {
+            if (!haveCharacter)
+            {
+                while (Serial.IsAvailable)
+                {
+                    lastCharacter = Serial.ReadChar();
+                    if (!lastCharacter.IsLower())
+                    {
+                        haveCharacter = true;
+                        break;
+                        
+                    }
+                    Print(lastCharacter, Colour.Ocean, Colour.Black);
+                }
+            }
+            return haveCharacter;
+        }
+    }
     char SerialReadChar()
     {
-        return Serial.ReadChar();
+        if (haveCharacter)
+        {
+            haveCharacter = false;
+            return lastCharacter;
+        }
+        loop
+        {
+            char character = Serial.ReadChar();
+            if (!character.IsLower())
+            {
+                return character;
+            }
+            Print(character, Colour.Ocean, Colour.Black);
+        }
+        return char(0);
     }
 #endif
 
@@ -112,7 +149,7 @@ unit Monitor
         loop
         {
             SerialWriteChar(char(0x1B)); // to break VM if it is running
-            while (Serial.IsAvailable)
+            while (SerialIsAvailable)
             {
                 c = SerialReadChar();
                 if (c == '\\')
@@ -146,7 +183,7 @@ unit Monitor
         char prev = ' ';
         loop
         {
-            if (!Serial.IsAvailable)
+            if (!SerialIsAvailable)
             {
                 if (!waitForSlash)
                 {
@@ -216,7 +253,7 @@ unit Monitor
         Screen.ShowCursor = true;
         loop
         {
-            if (!Serial.IsAvailable)
+            if (!SerialIsAvailable)
             {
                 // write to the remote device?
                 if (!Serial.IsValid())
@@ -276,13 +313,13 @@ unit Monitor
                     }
                 }
                 continue;
-            } // !Serial.IsAvailable
+            } // !SerialIsAvailable
             
-            if (Serial.IsAvailable)
+            if (SerialIsAvailable)
             {
                 char c;
                 Screen.ShowCursor = false;
-                while (Serial.IsAvailable)
+                while (SerialIsAvailable)
                 {
                     // read from the remote device
                     c = SerialReadChar();
@@ -316,13 +353,13 @@ unit Monitor
                             }
                         }
                     }
-                } // while (Serial.IsAvailable)
+                } // while (SerialIsAvailable)
                 Screen.ShowCursor = true;
                 if (c == '\\')
                 {
                     break;
                 }
-            } // if (Serial.IsAvailable)
+            } // if (SerialIsAvailable)
         } // loop
         Screen.ShowCursor = false;
         return success;

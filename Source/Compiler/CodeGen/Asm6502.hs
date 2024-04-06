@@ -427,6 +427,12 @@ unit Asm6502
             {
                 addressingModes = AddressingModes.ZeroPage;
             }
+            
+            case "BIT":
+            {
+                addressingModes = AddressingModes.ZeroPage
+                                | AddressingModes.Absolute;
+            }
             case "BRK":
             case "CLC":
             case "CLD":
@@ -1612,11 +1618,13 @@ unit Asm6502
         OpCode code;
         switch (condition)
         {
-            case "Z":  { code = OpCode.BEQ_e; } // BEQ
-            case "NZ": { code = OpCode.BNE_e; } // BNE
-            case "C":  { code = OpCode.BCS_e; } // BCS
-            case "NC": { code = OpCode.BCC_e; } // BCC
-            case "":   { code = OpCode.BRA_e; } // BRA
+            case "Z":  { code = OpCode.BEQ_e; }
+            case "NZ": { code = OpCode.BNE_e; }
+            case "C":  { code = OpCode.BCS_e; }
+            case "NC": { code = OpCode.BCC_e; }
+            case "MI": { code = OpCode.BMI_e; }
+            case "PL": { code = OpCode.BPL_e; }
+            case "":   { code = OpCode.BRA_e; }
             default:   { NI();   }
         }
         ValidateInstruction(code);

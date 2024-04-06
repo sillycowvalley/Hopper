@@ -5,7 +5,8 @@ unit Diagnostic
     {
         // page # : A -> IDX
         STA ZP.IDXH
-        STZ ZP.IDXL
+        LDA # 0
+        STA ZP.IDXL
         
         // find the first non-zero from the back
         

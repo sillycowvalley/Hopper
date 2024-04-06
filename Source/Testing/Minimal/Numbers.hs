@@ -1,7 +1,7 @@
 program TestNumbers
 {
-    #define CPU_Z80
-    #define CDECL
+    //#define CPU_Z80
+    //#define CDECL
     
     //#define EXPERIMENTAL
     

@@ -244,7 +244,7 @@ unit BuildCommand
             {
                 if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502))
                 {
-                    Editor.SetStatusBarText("#define CPU_6502 or CPU_65C02 for '.asm' projects");
+                    Editor.SetStatusBarText("#define CPU_6502 or CPU_65C02S for '.asm' projects");
                     break;
                 }
                 arguments.Append("-a");
@@ -253,7 +253,7 @@ unit BuildCommand
             {
                 if ((cpuArchitecture == CPUArchitecture.W65C02) || (cpuArchitecture == CPUArchitecture.M6502))
                 {
-                    Editor.SetStatusBarText("#define CPU_6502 and CPU_65C02 only valid for '.asm' projects");
+                    Editor.SetStatusBarText("#define CPU_6502 and CPU_65C02S only valid for '.asm' projects");
                     break;
                 }
             }

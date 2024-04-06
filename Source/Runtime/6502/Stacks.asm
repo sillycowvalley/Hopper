@@ -2,25 +2,28 @@ unit Stacks
 {
     Init()
     {
-        STZ ZP.SP
-        STZ ZP.BP
-        STZ ZP.CSP
+        LDA # 0
+        STA ZP.SP
+        STA ZP.BP
+        STA ZP.CSP
         
         // zeroes mean faster debug protocol
-        STZ IDXL
+        STA IDXL
         LDA # (Address.ValueStackLSB >> 8)
         STA IDXH
         LDX # 1
         LDX # 2
         Utilities.ClearPages(); // with IDX (memory location) and X (number of pages) initialized
         
-        STZ IDXL
+        LDA # 0
+        STA IDXL
         LDA # (Address.TypeStackLSB >> 8)
         STA IDXH
         LDX # 1
         Utilities.ClearPages(); // with IDX (memory location) and X (number of pages) initialized
         
-        STZ IDXL
+        LDA # 0
+        STA IDXL
         LDA # (Address.CallStackLSB >> 8)
         STA IDXH
         LDX # 2
@@ -29,49 +32,85 @@ unit Stacks
     
     PopBP()
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         DEC ZP.CSP    
         LDY ZP.CSP
         LDA Address.CallStackLSB, Y
         STA ZP.BP
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PushBP()
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         LDY ZP.CSP
         LDA ZP.BP
         STA Address.CallStackLSB, Y
         LDA # 0
         STA Address.CallStackMSB, Y
         INC ZP.CSP
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PopPC()
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         DEC ZP.CSP    
         LDY ZP.CSP
         LDA Address.CallStackLSB, Y
         STA ZP.PCL
         LDA Address.CallStackMSB, Y
         STA ZP.PCH
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PushPC()
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         LDY ZP.CSP
         LDA ZP.PCL
         STA Address.CallStackLSB, Y
         LDA ZP.PCH
         STA Address.CallStackMSB, Y
         INC ZP.CSP
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PopTop()
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         DEC ZP.SP
         LDY ZP.SP
         LDA Address.ValueStackLSB, Y
@@ -80,11 +119,19 @@ unit Stacks
         STA ZP.TOPH
         LDA Address.TypeStackLSB, Y
         STA ZP.TOPT
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PushTop()
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         LDY ZP.SP
         LDA ZP.TOPL
         STA Address.ValueStackLSB, Y
@@ -93,11 +140,19 @@ unit Stacks
         LDA ZP.TOPT
         STA Address.TypeStackLSB, Y
         INC ZP.SP
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PopNext()
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         DEC ZP.SP
         LDY ZP.SP
         LDA Address.ValueStackLSB, Y
@@ -106,11 +161,19 @@ unit Stacks
         STA ZP.NEXTH
         LDA Address.TypeStackLSB, Y
         STA ZP.NEXTT
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PushNext()
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         LDY ZP.SP
         LDA ZP.NEXTL
         STA Address.ValueStackLSB, Y
@@ -119,11 +182,19 @@ unit Stacks
         LDA ZP.NEXTT
         STA Address.TypeStackLSB, Y
         INC ZP.SP
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PushAcc()
     {
-        PHY
+#ifdef CPU_65C02S      
+       PHY  
+#else
+       TYA PHA
+#endif        
         LDY ZP.SP
         LDA ZP.ACCL
         STA Address.ValueStackLSB, Y
@@ -132,20 +203,39 @@ unit Stacks
         LDA ZP.ACCT
         STA Address.TypeStackLSB, Y
         INC ZP.SP
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PushBool()
     {
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         // value is in X: 0 or 1
         STX ZP.NEXTL
-        STZ ZP.NEXTH
+        LDA # 0
+        STA ZP.NEXTH
         LDA #Types.Bool
         STA ZP.NEXTT
         PushNext();
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     PopAcc()
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         DEC ZP.SP
         LDY ZP.SP
         LDA Address.ValueStackLSB, Y
@@ -154,15 +244,27 @@ unit Stacks
         STA ZP.ACCH
         LDA Address.TypeStackLSB, Y
         STA ZP.ACCT
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
     }
     
     PopA() // pop a byte (don't care about type or MSB)
     {
-        PHY
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
         DEC ZP.SP
         LDY ZP.SP
         LDA Address.ValueStackLSB, Y
-        PLY
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        TAX PLA TAY TXA
+#endif        
     }
 }

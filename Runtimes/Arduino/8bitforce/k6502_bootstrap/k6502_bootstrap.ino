@@ -194,6 +194,10 @@ void cpu_tick()
               if (txControl & 0x04)
               { 
                   txData = data;
+                  if (txData == 0x0D)
+                  {
+                      txData = 0x0A;
+                  }
                   Serial.write(txData);
               }
               else
@@ -219,7 +223,7 @@ void cpu_tick()
   }
   else if ( false
             //|| ((uP_ADDR >= 0x00)    && (uP_ADDR <= 0xFF))   // zero page?
-            //|| ((KBD     <= uP_ADDR) && (uP_ADDR <= DSPCR))  // 6821?
+            //|| ((PIA_START <=uP_ADDR && uP_ADDR <= PIA_END))  // 6821?
             //|| ((0x0200  <= uP_ADDR) && (uP_ADDR <= 0x02FF)) // serial buffer
           )
   {
@@ -257,12 +261,17 @@ void serialEvent()
   {
     if ((rxControl & 0x80) == 0x00)        // read serial byte only if we can set 6821 interrupt
     {
-      cli();                              // stop interrupts while messing with 6821 registers
-      // 6821 portA is available      
-      int ch = Serial.read();
-      rxData   = ch & 0xFF;               // byte from int?          
-      rxControl = rxControl | 0x80;         // set 6821 interrupt
-      sei();
+        int ch = Serial.read();
+        cli();                              // stop interrupts while messing with 6821 registers
+        // 6821 portA is available      
+        if (ch == 0x0A)
+        {
+            // I wish serial protocols would just leave line endings the hell alone!  (I sent 0x0D, not 0x0D 0x0A!)
+            ch = 0x0D;
+        }
+        rxData   = ch & 0xFF;               // byte from int?          
+        rxControl = rxControl | 0x80;       // set 6821 interrupt
+        sei();
     }
   }
   return;
@@ -274,15 +283,17 @@ void serialEvent()
 
 void setup() 
 {
-  Serial.begin(115200);
+  Serial.begin(19200);
 
+/*
   Serial.println("\n");
   Serial.println("Configuration:");
   Serial.println("==============");
   Serial.print("SRAM Size:  "); Serial.print(RAM_END - RAM_START + 1, DEC); Serial.println(" Bytes");
   Serial.print("SRAM_START: 0x"); Serial.println(RAM_START, HEX); 
   Serial.print("SRAM_END:   0x"); Serial.println(RAM_END, HEX); 
-  
+  */
+
   clockCycle = 0;
 
   // 6821 init:
@@ -322,7 +333,6 @@ void setup()
   // Release RESET
   digitalWrite(uP_RESET_N, HIGH);
 
-  Serial.println("\n");
 }
 
 
@@ -330,8 +340,14 @@ void setup()
 // Loop()
 ////////////////////////////////////////////////////////////////////
 
+byte clicks = 0;
 void loop()
 {
-    serialEvent();
+    if (clicks == 100)
+    {
+        serialEvent();
+        clicks = 0;
+    }
     cpu_tick();
+    clicks++;
 }

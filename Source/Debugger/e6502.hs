@@ -68,7 +68,7 @@ program E6502
     {
         uint pc = W65C02.PC;
         if (pc == InvalidAddress) { return; }
-        byte instruction = W65C02.GetMemory(pc);
+        OpCode instruction = OpCode(W65C02.GetMemory(pc));
         if (instruction == Asm6502.GetJSRInstruction())
         {
             uint length = Asm6502.GetInstructionLength(instruction);
@@ -165,7 +165,7 @@ program E6502
             {
                 if (instructions == 0) { break; }
                 if (address > methodStart + methodLength-1) { break; }
-                byte instruction = W65C02.GetMemory(address);
+                OpCode instruction = OpCode(W65C02.GetMemory(address));
                 uint length      = Asm6502.GetInstructionLength(instruction);
                 
                 uint operand;
@@ -547,16 +547,11 @@ program E6502
             PrintLn();
             file hexFile = File.Open(ihexPath);
             <byte> code = readIHex(hexFile, ref orgROM);
-            if (code.Count < 2)
+            if (code.Count == 0)
             {
                 PrintLn("Failed to load '" + ihexPath + "'");
                 break;
             }
-            
-            byte version = code[0];
-            byte arch    = code[1];
-            
-            Architecture = CPUArchitecture(arch);
             
             // find the method address ranges for disassembly
             methodSizes = Code.GetMethodSizes();
@@ -568,7 +563,7 @@ program E6502
                     indexMax = sz.key;
                 }
             }
-            uint methodAddress = 2;
+            uint methodAddress = 0;
             for (uint index = 0; index <= indexMax; index++)
             {
                 if (!methodSizes.Contains(index)) { continue; }   

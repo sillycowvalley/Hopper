@@ -348,6 +348,7 @@ unit Token
             instructionKeywords["DEY"] = true;
             
             instructionKeywords["AND"] = true;
+            instructionKeywords["BIT"] = true;
             instructionKeywords["ORA"] = true;
             instructionKeywords["EOR"] = true;
             instructionKeywords["LSR"] = true;
