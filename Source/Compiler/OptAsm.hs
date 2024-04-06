@@ -250,7 +250,10 @@ program OptAsm
                 modified = true;
             }
             // TODO:
-            // CMP #0 after LDA, LDX, LDY, INC, INX, INY, DEC, DEX, DEY, INA, DEA, AND, ORA, EOR, ASL, LSR, ROL, 
+            //
+            // 1. check for LDA|X|Y #0 followed by STA|X|Y and replace with STZ on W65C02
+            //
+            // 2. CMP #0 after LDA, LDX, LDY, INC, INX, INY, DEC, DEX, DEY, INA, DEA, AND, ORA, EOR, ASL, LSR, ROL, 
             //              ROR, PLA, PLX, PLY, SBC, ADC, TAX, TXA, TAY, TYA, and TSX
             // is redundant if checking Z or V. They all set the Z and V flags. C is a different story.
             

@@ -490,7 +490,7 @@ program Assemble
             string bitBranchInstruction;
             byte zeroPageAddress;
             HopperToken tokenType = Token.GetType(currentToken);
-            if (tokenType == HopperToken.Instruction)
+            if (tokenType == HopperToken.Instruction) // BBRn or BBSn
             {
                 if (AddressingModes.ZeroPageRelative == Asm6502.GetAddressingModes(conditionString))
                 {

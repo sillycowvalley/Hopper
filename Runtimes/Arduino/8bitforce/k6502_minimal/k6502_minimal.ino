@@ -92,10 +92,10 @@ PROGMEM const unsigned char rom_bin[] = {
 // emulate just enough so keyboard/display works thru serial port.
 ////////////////////////////////////////////////////////////////////
 
-#define KBD   0xd010
-#define KBDCR 0xd011
-#define DSP   0xd012
-#define DSPCR 0xd013
+#define KBD   0xd010 // DA and DDRA (when CA0 == 0)
+#define KBDCR 0xd011 // CA
+#define DSP   0xd012 // DB and DDRB (when CB0 == 0)
+#define DSPCR 0xd013 // CB
 byte regKBD;
 byte regKBDDIR;    // Dir register when KBDCR.bit2 == 0
 byte regKBDCR;

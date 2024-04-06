@@ -1,5 +1,17 @@
 unit Serial
 {
+    // Zero Page locations used by Serial:
+    const byte InWritePointer  = ZP.SerialInWritePointer;
+    const byte InReadPointer   = ZP.SerialInReadPointer;
+    const byte BreakFlag       = ZP.SerialBreakFlag;
+    const byte WorkSpace       = ZP.ACCL;
+    
+    // Location of the Serial input buffer (256 bytes)
+    const uint InBuffer        = Address.SerialInBuffer;
+    
+    
+    //uses "Devices/ACIA6850"
+    uses "Devices/PIA6821"
     
     // initialize or reset the serial ACIA firmware
     Initialize()
@@ -8,40 +20,20 @@ unit Serial
         
         // reset buffer so at least start and end are the same
         SEI                    // disable interrupts
-        STZ ZP.SerialInWritePointer
-        STZ ZP.SerialInReadPointer
-        //STZ ZP.SerialBreakFlag
+        LDA #0
+        STA Serial.InWritePointer
+        STA Serial.InReadPointer
+        STA Serial.BreakFlag
         CLI                    // enable interrupts
         
-        LDA #0b00000011        // reset the 6850
-        STA ZP.ACIACONTROL
-        
-        // LDA #0b00010101     // 8-N-1, 115200 baud (/16 for  1.8432 mHz), no rx interrupt
-        // LDA #0b00010110     // 8-N-1,  28800 baud (/64 for  1.8432 mHz), no rx interrupt
-        LDA #0b10010110        // 8-N-1,  28800 baud (/64 for  1.8432 mHz), rx interrupt
-        STA ZP.ACIACONTROL
-        
+        SerialDevice.initialize(); // device-specific initialization
+                        
         PLA
     }
     
     ISR()
     {
-        PHA
-        LDA ZP.ACIADATA   // read serial byte
-        CMP #0x03         // is it break? (<ctrl><C>)
-        if (Z)
-        {
-            INC ZP.SerialBreakFlag
-        }
-        else
-        {
-            PHX
-            LDX ZP.SerialInWritePointer    // push it into serial input buffer
-            STA Address.SerialInBuffer, X
-            INC ZP.SerialInWritePointer
-            PLX
-        }
-        PLA
+        SerialDevice.isr();
     }
     
     EmptyTheBuffer()
@@ -59,17 +51,21 @@ unit Serial
     // returns Z flag clear if there is a character available in the buffer, Z set if not (disables and enables interrupts)
     IsAvailable()
     {
+#ifndef HAS_SERIAL_ISR
+        SerialDevice.pollRead();        
+#endif        
         SEI
-        LDA ZP.SerialBreakFlag
+        LDA BreakFlag
         if (Z)
         {
-            LDA ZP.SerialInReadPointer
-            CMP ZP.SerialInWritePointer
+            LDA InReadPointer
+            CMP InWritePointer
         }
         CLI
     }
     
     // consumes the next character from the buffer and returns value in A
+    //     munts X on CPU_6502
     WaitForChar()
     {
         loop
@@ -77,39 +73,33 @@ unit Serial
             IsAvailable();
             if (NZ) { break; }
         }
+#ifdef CPU_65C02        
         PHX
+#endif        
         LDA ZP.SerialBreakFlag
         if (NZ)
         {
             SEI
-            DEC ZP.SerialBreakFlag
+            DEC Serial.BreakFlag
             CLI
             LDA #0x03
         }
         else
         {
-            LDX ZP.SerialInReadPointer
-            LDA Address.SerialInBuffer, X
-            INC ZP.SerialInReadPointer
+            LDX Serial.InReadPointer
+            LDA Serial.InBuffer, X
+            INC Serial.InReadPointer
         }
+#ifdef CPU_65C02        
         PLX
+#endif
     }
     
        
     // transmits A
     WriteChar()
     {
-        PHX
-        PHA
-        loop
-        {
-            LDA ZP.ACIASTATUS  
-            AND #0b00000010   // Bit 1 - Transmit Data Register Empty (TDRE)
-            if (NZ) { break; } // loop if not ready (bit set means TDRE is empty and ready)
-        } // loop
-        PLA
-        STA ZP.ACIADATA           // output character to TDRE
-        PLX
+        SerialDevice.writeChar();
     }
     // transmits A as two hex characters
     HexOut()
@@ -142,16 +132,16 @@ unit Serial
     }
     
     // loads two hex characters from Serial to byte in A
-    //    uses ZP.ACCL  
+    //    uses WorkSpace (ZP.ACCL  )
     HexIn()
     {
         Serial.WaitForChar();
         Utilities.MakeNibble();
         ASL ASL ASL ASL
         AND #0xF0
-        STA ZP.ACCL
+        STA WorkSpace
         Serial.WaitForChar();
         Utilities.MakeNibble();
-        ORA ZP.ACCL
+        ORA WorkSpace
     }
 }

@@ -107,12 +107,20 @@ program Term
             if (Serial.IsAvailable)
             {
                 Screen.ShowCursor = false;
+                char pch;
                 while (Serial.IsAvailable)
                 {
                     char ch = Serial.ReadChar();
-                    if (ch == char(0x0A))
+                    if ((ch == char(0x0A)) || (ch == char(0x0D)))
                     {
-                        Screen.PrintLn();
+                        if ((pch == char(0x0D)) && (ch == char(0x0A)))
+                        {
+                            // convert '\r\n' to '\n'
+                        }
+                        else
+                        {
+                            Screen.PrintLn();
+                        }
                     }
                     else if (ch == char(0x0C))
                     {
@@ -129,6 +137,7 @@ program Term
                     {
                         Screen.Print(ch);
                     }
+                    pch = ch;
                 }
                 Screen.ShowCursor = true;
             }

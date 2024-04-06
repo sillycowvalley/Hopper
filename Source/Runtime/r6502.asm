@@ -7,6 +7,7 @@ program R6502
     
     #define ROM_8K
     #define CPU_65C02  // Rockwell and WDC
+    //#define CPU_6502  // MOS
 
     // HopperMon commands to support:
     //

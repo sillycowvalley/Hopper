@@ -1909,7 +1909,7 @@ unit Asm6502
        
     PatchJump(uint jumpAddress, uint jumpToAddress)
     {
-        if (Architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        if (Architecture != CPUArchitecture.M6502)       
         {
             OpCode braInstruction = GetBInstruction("");
             OpCode jmpInstruction = GetJMPInstruction();
@@ -1957,7 +1957,7 @@ unit Asm6502
         uint jumpAddress = NextAddress;
         int offset = int(jumpToAddress) - int(jumpAddress) - 2;
         
-        if ((Architecture != CPUArchitecture.W65C02) || (offset < -128) || (offset > 127))
+        if ((Architecture == CPUArchitecture.M6502) || (offset < -128) || (offset > 127))
         {
             // long jump
             currentStream.Append(byte(GetJMPInstruction()));
