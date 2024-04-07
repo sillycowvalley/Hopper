@@ -104,7 +104,7 @@ unit Pages
         uint address = page << 8;
         foreach (var c in serialOutput)
         {
-            if ((c == char(0x0D)) || (c == char(0x0A)))
+            if (c == Char.EOL)
             {
                 if (ln.Length == 0)
                 {

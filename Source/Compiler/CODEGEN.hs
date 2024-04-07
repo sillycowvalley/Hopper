@@ -37,7 +37,7 @@ program CODEGEN
         string name;
         SysCalls.New();
         file statsFile = File.Create(instrumentingPath);
-        statsFile.Append("SysCall,Overload,Hits,FirstUseLocation" + char(0x0A));
+        statsFile.Append("SysCall,Overload,Hits,FirstUseLocation" + Char.EOL);
         foreach (var kv in sysCallHits)
         {
             byte iSysCall = kv.key;
@@ -48,21 +48,21 @@ program CODEGEN
                 uint iOverload = kv2.key;
                 uint hits = kv2.value;
                 string location = locations[iOverload];
-                statsFile.Append(name + "," + iOverload.ToString() + "," + hits.ToString() + "," + location + char(0x0A));
+                statsFile.Append(name + "," + iOverload.ToString() + "," + hits.ToString() + "," + location + Char.EOL);
             }  
         }
-        statsFile.Append("" + char(0x0A));
-        statsFile.Append("Instruction,Hits,FirstUseLocation" + char(0x0A));
+        statsFile.Append("" + Char.EOL);
+        statsFile.Append("Instruction,Hits,FirstUseLocation" + Char.EOL);
         foreach (var kv in instructionHits)
         {
             Instruction instruction = kv.key;
             uint hits = kv.value;
             name = Instructions.ToString(instruction);
             string location = instructionLocations[instruction];
-            statsFile.Append(name + "," + hits.ToString() + "," + location + char(0x0A));
+            statsFile.Append(name + "," + hits.ToString() + "," + location + Char.EOL);
         }
-        statsFile.Append("" + char(0x0A));
-        statsFile.Append("Method,Length,Arguments,ArgumentsSize,Locals,LocalsSize,Frameless" + char(0x0A));
+        statsFile.Append("" + Char.EOL);
+        statsFile.Append("Method,Length,Arguments,ArgumentsSize,Locals,LocalsSize,Frameless" + Char.EOL);
         foreach (var kv in methodSizes)
         {
             name = Code.GetMethodName(kv.key);
@@ -150,7 +150,7 @@ program CODEGEN
             statsFile.Append(name + "," + size.ToString() + "," + argumentCount.ToString() + "," + argumentsBytes.ToString()
                                                           + "," + localsCount.ToString()   + "," + localsBytes.ToString() 
                                                           + "," + (frameLess ? "true" : "false")
-                                                          + char(0x0A));   
+                                                          + Char.EOL);   
         }
         
         
@@ -291,7 +291,7 @@ program CODEGEN
         uint bytes = buffer.Length / 2;
         string ln = bytes.ToHexString(2) + address.ToHexString(4) + "00" + buffer;
         byte chk = hexCheckSum(ln);
-        ihexFile.Append(":" + ln + chk.ToHexString(2) + char(0x0A));
+        ihexFile.Append(":" + ln + chk.ToHexString(2) + Char.EOL);
     }
     
     convertToIHex(string hexePath)
@@ -343,7 +343,7 @@ program CODEGEN
         {
             emitBuffer(ihexFile, emitAddress, buffer);
         }
-        ihexFile.Append(":00000001FF" + char(0x0A)); // eof
+        ihexFile.Append(":00000001FF" + Char.EOL); // eof
         ihexFile.Flush();
     }
     

@@ -796,6 +796,24 @@ unit Expression
                             actualType = "bool";
                         }
                     }
+                    case "char":
+                    {
+                        uint ui;
+                        if (UInt.TryParse(value, ref ui) && (ui >= 0) && (ui <= 255))
+                        {
+                            CodeStream.AddInstructionPUSHI(ui);       
+                            actualType = "char";
+                        }
+                        else if (value.Length == 1)
+                        {
+                            ui = uint(value[0]);
+                            if (ui < 32)
+                            {
+                                CodeStream.AddInstructionPUSHI(ui);       
+                                actualType = "char";
+                            }
+                        }
+                    }
                     case "string":
                     {
                         CodeStream.AddString(constantType, value);

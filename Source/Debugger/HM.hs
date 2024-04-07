@@ -49,7 +49,7 @@ program HopperMonitor
         bool sysCalls = false; // TODO LIBCALL
         foreach (var c in dataString)
         {
-            if (c == char(0x0D))
+            if (c == Char.EOL)
             {
                 ln = ln.Trim();
                 if (ln.Length != 0)
@@ -85,7 +85,7 @@ program HopperMonitor
                                 {
                                     name = Instructions.ToString(Instruction(index));
                                 }
-                                profileFile.Append(name + char(0x09) + count.ToString() + char(0x0A));
+                                profileFile.Append(name + char(0x09) + count.ToString() + Char.EOL);
                             }
                         }
                     }
@@ -830,8 +830,7 @@ program HopperMonitor
                             Monitor.Command(commandLine.Substring(0,1) + hexpage, true, true);
                             refresh = true;
                             string output = Monitor.GetSerialOutput();
-                            output = output.Replace(""+ char(0x0D), "");
-                            output = output.Replace(""+ char(0x0A), "");
+                            output = output.Replace("" + Char.EOL, "");
                             if (output.Length == 512)
                             {
                                 uint iPage;
@@ -883,8 +882,7 @@ program HopperMonitor
                             refresh = true;
                             
                             string output = Monitor.GetSerialOutput();
-                            output = output.Replace(""+ char(0x0D), "");
-                            output = output.Replace(""+ char(0x0A), "");
+                            output = output.Replace("" + Char.EOL, "");
                             if (output.Length == 512)
                             {
                                 PrintLn();

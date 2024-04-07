@@ -842,9 +842,9 @@ unit CodePoints
         
         string mname = "// ####  " + methodName + "(..)  ####";
         mname = mname.Pad(' ', 80);
-        mname = mname + currentMethod.ToString() + char(0x0A);
+        mname = mname + currentMethod.ToString() + Char.EOL;
         dumpFile.Append(mname);  
-        dumpFile.Append("" + char(0x0A)); 
+        dumpFile.Append("" + Char.EOL); 
         
         uint icodesLength = iCodes.Count;
         uint iIndex;
@@ -914,16 +914,16 @@ unit CodePoints
             {
                 string debugLine = indexDebugInfo[iIndex];
                 
-                dumpFile.Append("" + char(0x0A));
+                dumpFile.Append("" + Char.EOL);
                 string debugContent = "// " + srcPath + ":" + debugLine;
-                dumpFile.Append(debugContent + char(0x0A));  
+                dumpFile.Append(debugContent + Char.EOL);  
                 string sourceLine = GetSourceLine(srcPath, debugLine);
                 sourceLine = sourceLine.Trim();
-                dumpFile.Append(sourceLine + char(0x0A));  
-                dumpFile.Append("" + char(0x0A)); 
+                dumpFile.Append(sourceLine + Char.EOL);  
+                dumpFile.Append("" + Char.EOL); 
             }
             
-            dumpFile.Append(content + char(0x0A));
+            dumpFile.Append(content + Char.EOL);
             
             iIndex++;
         }

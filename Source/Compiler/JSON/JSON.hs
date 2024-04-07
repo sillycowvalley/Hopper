@@ -7,7 +7,7 @@ unit JSON
     
     string eol()
     {
-        return "" + char(0x0A);
+        return "" + Char.EOL;
     }
     string spaces(uint count)
     {
@@ -94,7 +94,7 @@ unit JSON
             comma = ", ";
         }
         String.Build(ref content, ']');
-        String.Build(ref content, char(0x0A));
+        String.Build(ref content, Char.EOL);
         jsonFile.Append(content);
     }
     
@@ -146,12 +146,57 @@ unit JSON
                 {
                     string v = kv.value;
                     bool isBinary;
+                    string e;
                     foreach (var c in v)
                     {
-                        if (byte(c) < 32)
+                        byte b = byte(c);
+                        if ((b < 32) || (b == 0x5C))
                         {
-                            isBinary = true;
-                            break;
+                            switch (b)
+                            {
+                                case 0x03:
+                                {
+                                    e = e + "\\x03";
+                                }
+                                case 0x08:
+                                {
+                                    e = e + "\\b";
+                                }
+                                case 0x09:
+                                {
+                                    e = e + "\\t";
+                                }
+                                case 0x0A:
+                                {
+                                    e = e + "\\n";
+                                }
+                                case 0x0C:
+                                {
+                                    e = e + "\\f";
+                                }
+                                case 0x0D:
+                                {
+                                    e = e + "\\r";
+                                }
+                                case 0x1B:
+                                {
+                                    e = e + "\\e";
+                                }
+                                case 0x5C:
+                                {
+                                    e = e + "\\x5C";
+                                }
+                                default:
+                                {
+                                    isBinary = true;
+                                    break;
+                                }
+                            }
+                            
+                        }
+                        else 
+                        {
+                            e = e + c;
                         }
                     }
                     if (isBinary)
@@ -173,7 +218,7 @@ unit JSON
                     else
                     {
                         String.Build(ref content, '"');
-                        String.Build(ref content, v);
+                        String.Build(ref content, e);
                         String.Build(ref content, '"');
                     }
                 }
@@ -192,7 +237,7 @@ unit JSON
                 case list:
                 {
                     <variant> v = kv.value;
-                    String.Build(ref content, char(0x0A));
+                    String.Build(ref content, Char.EOL);
                     jsonFile.Append(content);
                     content = "";
                     exportList(jsonFile, v, indent);
@@ -200,7 +245,7 @@ unit JSON
                 case dictionary:
                 {
                     <string, variant> v = kv.value;
-                    String.Build(ref content, char(0x0A));
+                    String.Build(ref content, Char.EOL);
                     jsonFile.Append(content);
                     content = "";
                     exportDictionary(jsonFile, v, indent);
@@ -217,7 +262,7 @@ unit JSON
             }
             if (content.Length != 0)
             {
-                String.Build(ref content, char(0x0A));
+                String.Build(ref content, Char.EOL);
                 jsonFile.Append(content);
                 content = "";
             }
@@ -226,7 +271,7 @@ unit JSON
         indent = indent - 2;
         String.Build(ref content, spaces(indent));
         String.Build(ref content, '}');
-        String.Build(ref content, char(0x0A));
+        String.Build(ref content, Char.EOL);
         jsonFile.Append(content);
     }
     
@@ -373,7 +418,20 @@ unit JSON
             if (Parser.Check(HopperToken.StringConstant))
             {
                 Parser.Advance();
-                dict[name] = currentToken["lexeme"];
+                string value = currentToken["lexeme"];
+                if (value.Contains('\\'))
+                {
+                    // supported escaped characters
+                    value = value.Replace("\\x03", "" + char(0x03)); // Char.Break);
+                    value = value.Replace("\\b",   "" + char(0x08)); // Char.Backspace);
+                    value = value.Replace("\\t",   "" + char(0x09)); // Char.Tab);
+                    value = value.Replace("\\n",   "" + Char.EOL); // Char.EOL);
+                    value = value.Replace("\\f",   "" + char(0x0C)); // Char.Formfeed);
+                    value = value.Replace("\\r",   "" + char(0x0D));
+                    value = value.Replace("\\e",   "" + char(0x1B)); // Char.Escape);
+                    value = value.Replace("\\x5C", "" + char(0x5C)); // Char.Slash
+                }
+                dict[name] = value;
             }
             else if (Parser.Check(HopperToken.Integer))
             {

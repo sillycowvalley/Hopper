@@ -4449,7 +4449,7 @@ unit HopperVM
         loop
         {
             char ch = SerialReadChar();
-            if (ch == char(0x0D))
+            if (ch == Char.EOL)
             {
                 break;
             }

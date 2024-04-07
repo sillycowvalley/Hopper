@@ -36,7 +36,7 @@ program WebServer
         {
             foreach (var argument in arguments)
             {
-                content += char(0x0A) + "  " + argument.key + " = " + argument.value;
+                content += Char.EOL + "  " + argument.key + " = " + argument.value;
             }
         }
         WebServer.Send(content);

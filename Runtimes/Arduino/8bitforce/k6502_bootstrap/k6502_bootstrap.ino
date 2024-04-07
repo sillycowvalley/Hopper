@@ -194,11 +194,11 @@ void cpu_tick()
               if (txControl & 0x04)
               { 
                   txData = data;
-                  if (txData == 0x0D)
-                  {
-                      txData = 0x0A;
-                  }
-                  Serial.write(txData);
+                  //Serial.write(txData);
+                  char str[2];
+                  str[0] = txData;
+                  str[1] = 0;
+                  Serial.print(str);
               }
               else
               {
@@ -264,11 +264,6 @@ void serialEvent()
         int ch = Serial.read();
         cli();                              // stop interrupts while messing with 6821 registers
         // 6821 portA is available      
-        if (ch == 0x0A)
-        {
-            // I wish serial protocols would just leave line endings the hell alone!  (I sent 0x0D, not 0x0D 0x0A!)
-            ch = 0x0D;
-        }
         rxData   = ch & 0xFF;               // byte from int?          
         rxControl = rxControl | 0x80;       // set 6821 interrupt
         sei();

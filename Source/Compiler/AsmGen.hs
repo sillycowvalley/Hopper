@@ -131,7 +131,7 @@ program ASMGEN
         uint bytes = buffer.Length / 2;
         string ln = bytes.ToHexString(2) + address.ToHexString(4) + "00" + buffer;
         byte chk = hexCheckSum(ln);
-        ihexFile.Append(":" + ln + chk.ToHexString(2) + char(0x0A));
+        ihexFile.Append(":" + ln + chk.ToHexString(2) + Char.EOL);
     }
     
     writeIHex(file ihexFile, uint romAddress, <byte> output, <byte> vectors)
@@ -184,15 +184,15 @@ program ASMGEN
         emitBuffer(ihexFile, 0xFFFA /*- romAddress*/, buffer);
         
         
-        ihexFile.Append(":00000001FF" + char(0x0A)); // eof
+        ihexFile.Append(":00000001FF" + Char.EOL); // eof
         ihexFile.Flush();
     }
     
     writeSrc(file srcFile, uint romAddress, <byte> output, <byte> vectors)
     {
-        srcFile.Append("#define ROM_START   0x" + romAddress.ToHexString(4) + char(0x0A));
-        srcFile.Append("#define ROM_END     0xFFFF" + char(0x0A));
-        srcFile.Append("" + char(0x0A));
+        srcFile.Append("#define ROM_START   0x" + romAddress.ToHexString(4) + Char.EOL);
+        srcFile.Append("#define ROM_END     0xFFFF" + Char.EOL);
+        srcFile.Append("" + Char.EOL);
         
         srcFile.Append("PROGMEM const unsigned char rom_bin[] = {");
         uint address = romAddress;
@@ -213,7 +213,7 @@ program ASMGEN
             string prefix;
             if (index % 16 == 0)
             {
-                prefix = char(0x0A) + "    ";
+                prefix = Char.EOL + "    ";
             }
             if (index % 16 == 7)
             {
@@ -225,7 +225,7 @@ program ASMGEN
             index++;
         }
         
-        srcFile.Append("};" + char(0x0A));
+        srcFile.Append("};" + Char.EOL);
         srcFile.Flush();
     }
     

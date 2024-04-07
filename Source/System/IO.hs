@@ -69,7 +69,7 @@ unit IO
     Clear()
     {
 #ifdef SERIAL_CONSOLE
-        Serial.WriteChar(char(0x0C)); // form feed
+        Serial.WriteChar(Char.Formfeed);
         if (echoToLCD)
         {
 #ifdef RUNTIME
@@ -84,7 +84,7 @@ unit IO
         {
             Screen.Clear();
         }
-        Serial.WriteChar(char(0x0C)); // form feed
+        Serial.WriteChar(Char.Formfeed);
     #else
         Screen.Clear();
     #endif
@@ -144,11 +144,11 @@ unit IO
 #ifndef RUNTIME
         if (echoToLCD)
         {
-            if (char(0x0D) == c)
+            if (Char.EOL == c)
             {
                 Screen.PrintLn();
             }
-            else if (char(0x0C) == c)
+            else if (Char.Formfeed == c)
             {
                 Screen.Clear();
             }
@@ -168,7 +168,7 @@ unit IO
     }
     WriteLn()
     {
-        Write(char(0x0D));
+        Write(Char.EOL);
     }
     WriteLn(string s)
     {
@@ -209,7 +209,7 @@ unit IO
     }
     WriteLnBoth(bool both)
     {
-        WriteBoth(char(0x0D), both);
+        WriteBoth(Char.EOL, both);
     }
     
 #ifdef HOPPER_6502    
@@ -219,11 +219,11 @@ unit IO
         Serial.WriteChar(c);
         if (both)
         {
-            if (c == char(0x0D))
+            if (c == Char.EOL)
             {
                 Screen.PrintLn(); // PLATFORM
             }
-            else if (c == char(0x0C))
+            else if (c == Char.Formfeed)
             {
                 Screen.Clear();
             }
@@ -236,11 +236,11 @@ unit IO
 #else
     WriteBoth(char c, bool both)
     {
-        if (c == char(0x0D))
+        if (c == Char.EOL)
         {
             Screen.PrintLn(); // PLATFORM
         }
-        else if (c == char(0x0C))
+        else if (c == Char.Formfeed)
         {
             Screen.Clear();
         }
@@ -259,22 +259,22 @@ unit IO
         char ch = key.ToChar();
         if (key == (Key.Control | Key.ModC))
         {
-            ch = char(0x03); // for the debugger (on Windows)
+            ch = Char.Break; // for the debugger (on Windows)
         }
         else
         {
             key = (key & Keyboard.Key.Mask); // strip the modifiers
             if ((key == Key.Enter) || (key == Key.ModEnter))
             {
-                ch = char(0x0D);
+                ch = Char.EOL;
             }
             else if ((key == Key.Escape) || (key == Key.ModEscape))
             {
-                ch = char(0x1B);
+                ch = Char.Escape;
             }
             else if ((key == Key.Backspace) || (key == Key.ModBackspace))
             {
-                ch = char(0x08);
+                ch = Char.Backspace;
             }
             else if (key == Key.ModSpace)
             {
@@ -303,7 +303,6 @@ unit IO
                 {
                     if (Clipboard.HasText)
                     {
-                        char pc = char(0);
                         loop
                         {
                             char cch = Clipboard.GetChar();
@@ -312,27 +311,13 @@ unit IO
                                 break;
                             }
                             
-                            if ((cch == char(0x0A)) && (pc == char(0x0D)))      // 0x0D 0x0A -> 0x0D
+                            if (cch == Char.EOL)
                             {
-                                pc = cch;
-                                continue;
-                            }
-                            else if ((cch == char(0x0D)) && (pc == char(0x0A))) // 0x0A 0x0D -> 0x0A
-                            {
-                                pc = cch;
                                 continue;
                             }
                             else
                             {
-                                pc = cch;
-                                if (cch == char(0x0A))
-                                {
-                                    PushKey(char(0x0D));
-                                }
-                                else
-                                {
-                                    PushKey(cch);
-                                }        
+                                PushKey(cch);
                             }
                         }
                         continue; // get the first ch from the keyboardBuffer above
@@ -342,11 +327,11 @@ unit IO
 #endif                
             }
             byte b = byte(ch);
-            if ((ch == char(0x08)) || (ch == char(0x0D)) || (ch == char(0x1B)))
+            if ((ch == Char.Backspace) || (ch == Char.EOL) || (ch == Char.Escape))
             {
                 // from above : ok
             }
-            else if (ch == char(0x03))
+            else if (ch == Char.Break)
             {
                 // <ctrl><C> from Read() ?
             }
@@ -383,7 +368,7 @@ unit IO
         while (Serial.IsAvailable)
         {
             char ch = Serial.ReadChar();
-            if (ch == char(0x03)) // <ctrl><C>?
+            if (ch == Char.Break) // <ctrl><C>?
             {
                 return true;
             }

@@ -128,7 +128,7 @@ unit TextBuffer
         
         string yLine = textBuffer.GetItem(y);
         uint yL = yLine.Length;
-        if (c == char(0x0A)) // special case - inserting a line
+        if (c == Char.EOL) // special case - inserting a line
         {
             string remainder;
             if (yL > x)
@@ -203,7 +203,7 @@ unit TextBuffer
 #ifdef PROFILER 
     SaveJournalEntry(file diag, < <string, uint > > record)
     {
-        string eol = (char(0x0A)).ToString();
+        string eol = (Char.EOL).ToString();
         foreach (var item in record)
         {
             uint i = item["c"];
@@ -214,7 +214,7 @@ unit TextBuffer
     }
     SaveJournalEntries(file diag, < < <string, uint > > > currentRecords)
     {
-        string eol = (char(0x0A)).ToString();
+        string eol = (Char.EOL).ToString();
         foreach (var record in currentRecords)
         {
             foreach (var item in record)
@@ -235,7 +235,7 @@ unit TextBuffer
             File.Delete(path);
         }
         file diag = File.Create(path);
-        string eol = (char(0x0A)).ToString();
+        string eol = (Char.EOL).ToString();
         File.Append(diag, "textBuffer:" + eol);
         foreach (var ln in textBuffer)
         {

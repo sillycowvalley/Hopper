@@ -230,7 +230,7 @@ unit Scanner
             {
                 c = advance();
             }
-            else if (c == char(0x0A))
+            else if (c == Char.EOL)
             {
                 currentLine++;
                 c = advance();
@@ -244,7 +244,7 @@ unit Scanner
                     loop
                     {
                         c = sourceGetFromPos(currentPos, true); // peek
-                        if ((c == char(0)) || (c == char(0x0A)) || isAtEnd())
+                        if ((c == char(0)) || (c == Char.EOL) || isAtEnd())
                         {
                             break;
                         }
@@ -302,7 +302,7 @@ unit Scanner
                             inString = !inString;
                         }
                         c = advance(); // gobble gobble   
-                        if (c == char(0x0A))
+                        if (c == Char.EOL)
                         {
                             currentLine++;    
                         }
@@ -332,7 +332,7 @@ unit Scanner
             {
                 break;
             }
-            if (p == char(0x0A))
+            if (p == Char.EOL)
             {
                 return errorToken("unexpected EOL in string");
             }

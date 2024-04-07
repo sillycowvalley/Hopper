@@ -44,7 +44,7 @@ unit ConsoleCapture
         {
             AppendToLog(ch);
         }
-        AppendToLog(char(0x0A));
+        AppendToLog(Char.EOL);
     }
     AppendToLog(char ch)
     {

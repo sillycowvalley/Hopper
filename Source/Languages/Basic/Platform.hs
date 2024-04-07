@@ -258,7 +258,7 @@ unit Platform
                 {
                     content = content + ch;
                 }
-                else if ((ch == char(0x0D)) && ok)
+                else if ((ch == Char.EOL) && ok)
                 {
                     break;
                 }

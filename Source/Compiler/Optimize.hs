@@ -850,12 +850,12 @@ program Optimize
                         if (outputLinesSizes.Count != 0)
                         {
                             string content = "Method sizes after optimization:";
-                            logFile.Append(content + char(0x0D));
+                            logFile.Append(content + Char.EOL);
                             PrintLn(content);
                             uint count;
                             foreach (var str in outputLinesSizes)
                             {
-                                logFile.Append(str + char(0x0D));
+                                logFile.Append(str + Char.EOL);
                                 PrintLn(str);
                                 count++;
                             }
@@ -863,7 +863,7 @@ program Optimize
                             string sizeString = totalMethodBytes.ToString();
                             content = space.Pad(' ', 42) + sizeString.LeftPad(' ', 5) +
                                       " (" + count.ToString() + " methods)";
-                            logFile.Append(content + char(0x0D));
+                            logFile.Append(content + Char.EOL);
                             PrintLn(content);
                             addNewLine = true;
                         }
@@ -871,22 +871,22 @@ program Optimize
                         {
                             if (addNewLine)
                             {
-                                logFile.Append("" + char(0x0D));
+                                logFile.Append("" + Char.EOL);
                                 PrintLn();
                             }
                             string content = "Unreachable Code (includes inlined and removed):";
-                            logFile.Append(content + char(0x0D));
+                            logFile.Append(content + Char.EOL);
                             PrintLn(content);
                             foreach (var str in outputLinesRemoved)
                             {
-                                logFile.Append(str + char(0x0D));
+                                logFile.Append(str + Char.EOL);
                                 PrintLn(str);
                             }
                             string space;
                             string sizeString = totalBytesRemoved.ToString();
                             content = space.Pad(' ', 42) + sizeString.LeftPad(' ', 5) +
                                       " (" + totalMethodsRemoved.ToString() + " methods)";
-                            logFile.Append(content + char(0x0D));
+                            logFile.Append(content + Char.EOL);
                             PrintLn(content);
                         }
                         <string,variant> gValues;

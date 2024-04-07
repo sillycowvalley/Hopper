@@ -66,7 +66,7 @@ unit Source
                 }
                 else
                 {
-                    Output.Print(char(0x0D));
+                    Output.Print(Char.EOL);
                 }
                 if (Code.ParseCode(codegenPath, false, true))
                 {
@@ -77,7 +77,7 @@ unit Source
                     }
                     else
                     {
-                        Output.Print(char(0x0D) + "Symbols loaded for " + methods.ToString() + " methods.");
+                        Output.Print(Char.EOL + "Symbols loaded for " + methods.ToString() + " methods.");
                     }
                     symbolsLoaded = true;
                 }

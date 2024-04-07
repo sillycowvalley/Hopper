@@ -391,7 +391,7 @@ unit Editor
                     if ((column == 0) && wasSelected)
                     {
                         // first character on new line isSelected and last character on previous line wasSelected so
-                        text = text + char(0x0A);
+                        text = text + Char.EOL;
                     }
                     text = text + ln[column];
                     if (!wasSelected)
@@ -538,7 +538,7 @@ unit Editor
                     if ((column == 0) && wasSelected)
                     {
                         // first character on new line isSelected and last character on previous line wasSelected so
-                        clipboardText = clipboardText + char(0x0A);
+                        clipboardText = clipboardText + Char.EOL;
                     }
                     clipboardText = clipboardText + ln[column];
                 }
@@ -1389,7 +1389,7 @@ unit Editor
                         }
                     }
                     uint length = currentLine.Length;
-                    char c = char(0x0A);
+                    char c = Char.EOL;
                     TextBuffer.StartJournal();
                     TextBuffer.Insert(ref x, ref y, c);
                     x = x + spaceCount;
@@ -1854,7 +1854,7 @@ unit Editor
             for (uint i = 0; i < lines; i++)
             {
                 string ln = TextBuffer.GetLine(i);
-                ln = ln + char(0x0A);
+                ln = ln + Char.EOL;
                 textFile.Append(ln);
             }
             textFile.Flush();

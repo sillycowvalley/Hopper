@@ -372,14 +372,14 @@ program DASM
                             string nm = methodSymbols["name"];
                             debugInfo = methodSymbols["debug"];
                             doffset = instructionAddress;
-                            hasmFile.Append("" + char(0x0A)); 
-                            hasmFile.Append("// " + src + ":" + ln + char(0x0A));  
+                            hasmFile.Append("" + Char.EOL); 
+                            hasmFile.Append("// " + src + ":" + ln + Char.EOL);  
                             
                             string mname = "// ####  " + nm + "()  ####";
                             mname = mname.Pad(' ', 80);
-                            mname = mname + "0x" + methodIndex.ToHexString(4) + char(0x0A);
+                            mname = mname + "0x" + methodIndex.ToHexString(4) + Char.EOL;
                             hasmFile.Append(mname);  
-                            hasmFile.Append("" + char(0x0A)); 
+                            hasmFile.Append("" + Char.EOL); 
                             if (progressCount % 64 == 0)
                             {
                                 Parser.ProgressTick("d");
@@ -421,19 +421,19 @@ program DASM
                         {
                             if (!lastwasNOP)
                             {
-                                hasmFile.Append("" +char(0x0A));
+                                hasmFile.Append("" +Char.EOL);
                                 lastwasNOP = true;
                             }
                         }
                         else
                         {
-                            hasmFile.Append(disassembly + char(0x0A));
+                            hasmFile.Append(disassembly + Char.EOL);
                             lastwasNOP = false;
                         }
                     }
                     else
                     {                  
-                        hasmFile.Append(disassembly.Pad(' ', 48) + comment + char(0x0A));
+                        hasmFile.Append(disassembly.Pad(' ', 48) + comment + Char.EOL);
                     }
                     if (tableSize > 0)
                     {
@@ -446,7 +446,7 @@ program DASM
                             {
                                 if (count != 0)
                                 {
-                                    hasmFile.Append("" + char(0x0A));
+                                    hasmFile.Append("" + Char.EOL);
                                 }
                                 hasmFile.Append("                               ");
                             }
@@ -456,7 +456,7 @@ program DASM
                             tableSize--;
                             count++;
                         }    
-                        hasmFile.Append("" + char(0x0A));
+                        hasmFile.Append("" + Char.EOL);
                     }
                     //hasmFile.Flush(); // TODO REMOVE
                 } // loop

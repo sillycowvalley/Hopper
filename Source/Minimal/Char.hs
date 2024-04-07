@@ -1,5 +1,13 @@
 unit Char
 {
+    const char EOL        = char(0x0A);
+    const char Escape     = char(0x1B);
+    const char Slash      = char(0x5C);
+    const char Formfeed   = char(0x0C);
+    const char Backspace  = char(0x08);
+    const char Break      = char(0x03);
+    const char Tab        = char(0x09);
+    
     bool IsUpper(char this)
     {
         return this >= 'A' && this <= 'Z';
@@ -51,7 +59,7 @@ unit Char
     }
     bool IsWhitespace(char this)
     {
-        return this == ' ' || this == char(0x09) || this == char(0x0A) || this == char(0x0C) || this == char(0x0D);
+        return this == ' ' || this == char(0x09) || this == Char.EOL || this == char(0x0C) || this == char(0x0D);
     }     
     byte FromHex(char this)
     {
@@ -69,5 +77,4 @@ unit Char
             hex -= 48; // '0'
         }
     }
-    
 }

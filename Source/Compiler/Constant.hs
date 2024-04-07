@@ -556,6 +556,7 @@ unit Constant
                             switch (typeExpected)
                             {
                                 case "char": { supportedType = "byte"; }
+                                case "byte": { supportedType = "byte"; }
                                 default:
                                 {
                                     Parser.ErrorAtCurrent("invalid simple constant cast: '" + name + "'");

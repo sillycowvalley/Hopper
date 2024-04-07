@@ -10,7 +10,7 @@ program Runtime
 //#define MEMORYLEAKS
 
 //#define LOCALDEBUGGER  // for debugging portable runtime locally
-#define CPU_Z80
+//#define CPU_Z80
 
 // Minimal Runtime is the value-type only, minimal SysCalls version that we translate to Z80
 #ifdef CPU_Z80
@@ -68,7 +68,7 @@ program Runtime
     
     uses "HopperVM"
     
-    const byte enter  = 0x0D;
+    const byte enter  = 0x0A;
     const byte escape = 0x1B;
     const byte slash  = 0x5C;
     
@@ -234,7 +234,7 @@ program Runtime
                     if (!TryReadByte(ref checkSum)) { success = false; break; }
                     
                     char eol = IO.Read();
-                    if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
+                    if (eol != Char.EOL)
                     { 
                         success = false; break;
                     }
@@ -308,7 +308,7 @@ program Runtime
         if (success)
         {
             eol = SerialReadChar();
-            if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
+            if (eol != Char.EOL)
             { 
                 success = false;
             }
@@ -350,7 +350,7 @@ program Runtime
                 if (!TryReadSerialByte(ref checkSum)) { success = false; break; }
                 
                 eol = SerialReadChar();
-                if ((eol != char(0x0D)) && (eol != char(0x0A))) // either will do
+                if (eol != Char.EOL)
                 { 
                     success = false; break;
                 }
@@ -752,7 +752,7 @@ program Runtime
 #ifdef INCLUDE_FILESYSTEM
                         WaitForEnter();
                         
-                        // read name characters till 0x0D
+                        // read name characters till 0x0A
                         uint destinationName = HRString.New();
                         loop
                         {
@@ -766,7 +766,7 @@ program Runtime
                         SerialWriteChar(char(enter));
                         SerialWriteChar(char(slash));
                         
-                        // read path characters till 0x0D
+                        // read path characters till 0x0A
                         uint destinationFolder = HRString.New();
                         loop
                         {

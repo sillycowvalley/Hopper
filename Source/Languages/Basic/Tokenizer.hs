@@ -689,7 +689,7 @@ unit Tokenizer
                 } // loop
                 if ((Condition == Conditions.None) && !suppressEOL)
                 {
-                    HopperCode.PrintString("" + char(0x0D)); // newline
+                    HopperCode.PrintString("" + Char.EOL); // newline
                 }
             } // Print
             else if ((basicInstruction == Basic.PokeW) || (basicInstruction == Basic.PokeB) || (basicInstruction == Basic.Poke1))

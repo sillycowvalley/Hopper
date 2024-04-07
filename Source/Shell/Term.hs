@@ -111,16 +111,9 @@ program Term
                 while (Serial.IsAvailable)
                 {
                     char ch = Serial.ReadChar();
-                    if ((ch == char(0x0A)) || (ch == char(0x0D)))
+                    if (ch == Char.EOL)
                     {
-                        if ((pch == char(0x0D)) && (ch == char(0x0A)))
-                        {
-                            // convert '\r\n' to '\n'
-                        }
-                        else
-                        {
-                            Screen.PrintLn();
-                        }
+                        Screen.PrintLn();
                     }
                     else if (ch == char(0x0C))
                     {

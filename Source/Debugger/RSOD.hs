@@ -286,7 +286,7 @@ program  RedScreenOfDeath
                 uint tableEntries = (constOffset - 6) / 4;
                 if (tableEntries > 0)
                 {
-                    hasmFile.Append(""  + char(0x0A));
+                    hasmFile.Append(""  + Char.EOL);
                     for (uint i=0; i < tableEntries; i++)
                     {
                         lsb = binFile.Read();

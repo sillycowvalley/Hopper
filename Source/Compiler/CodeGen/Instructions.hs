@@ -1127,7 +1127,7 @@ unit Instructions
             uint backJump = (msb << 8) + lsb;
             
             string content = addressContent + opcontent;
-            String.Build(ref content, char(0x0A));
+            String.Build(ref content, Char.EOL);
             String.Build(ref disassembledContent, content);
             
             uint tableSize = Instructions.AddJIXTableSize(instruction, operand) - 2;
@@ -1161,7 +1161,7 @@ unit Instructions
                         count++;
                         if (count == 8)
                         {
-                            String.Build(ref content, char(0x0A));
+                            String.Build(ref content, Char.EOL);
                             String.Build(ref disassembledContent, widePadding);
                             String.Build(ref disassembledContent, content);
                             String.Build(ref content);
@@ -1194,7 +1194,7 @@ unit Instructions
                         count++;
                         if (count == 16)
                         {
-                            String.Build(ref content, char(0x0A));
+                            String.Build(ref content, Char.EOL);
                             String.Build(ref disassembledContent, widePadding);
                             String.Build(ref disassembledContent, content);
                             String.Build(ref content);
@@ -1205,7 +1205,7 @@ unit Instructions
             }
             if (content.Length != 0)
             {
-                String.Build(ref content, char(0x0A));
+                String.Build(ref content, Char.EOL);
                 String.Build(ref disassembledContent, widePadding);
                 String.Build(ref disassembledContent, content);
             }

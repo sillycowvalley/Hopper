@@ -63,10 +63,10 @@ unit SourceStream
             }
             
             
-            headerFile.Append("// method definitions" + char(0x0A));
+            headerFile.Append("// method definitions" + Char.EOL);
             foreach (var line in headerStream)
             {
-                headerFile.Append(line + char(0x0A));
+                headerFile.Append(line + Char.EOL);
                 if (!headerFile.IsValid())
                 {
                     break;
@@ -78,10 +78,10 @@ unit SourceStream
                 break;
             }
             
-            codeFile.Append("" + char(0x0A));
+            codeFile.Append("" + Char.EOL);
             foreach (var line in sourceStream)
             {
-                codeFile.Append(line + char(0x0A));
+                codeFile.Append(line + Char.EOL);
                 if (!codeFile.IsValid())
                 {
                     break;

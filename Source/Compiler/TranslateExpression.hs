@@ -170,6 +170,65 @@ unit TranslateExpression
         loop
         {
             content = Symbols.GetConstantValue(constantName);
+            string constantType = Symbols.GetConstantType(constantName);
+            if (expectedType.Length == 0)
+            {
+                expectedType = constantType;
+            }
+            else if ((expectedType == "bool") && (constantType != "bool")) // part of a comparison expression?
+            {
+                expectedType = constantType;
+            }
+            switch (expectedType)
+            {
+                case "char":
+                {
+                    uint ui;
+                    if (content.Length == 1)
+                    {
+                        ui = uint(content[0]);
+                    }
+                    else if (UInt.TryParse(content, ref ui))
+                    {
+                        
+                    }
+                    if ((ui < 0x20) || (ui == 0x5C))
+                    {
+                        content = "'\x" + ui.ToHexString(2) + "'";
+                    }
+                    else
+                    {
+                        content = "'" + char(ui) + "'";
+                    }
+                    actualType = "char";
+                }
+                case "byte":
+                case "uint":
+                case "int":
+                {
+                    // content = content
+                    uint ui;
+                    if (UInt.TryParse(content, ref ui))
+                    {
+                        if (ui < 0)
+                        {
+                            actualType = "int";
+                        }
+                        else if (ui < 256)
+                        {
+                            actualType = "byte";
+                        }
+                        else
+                        {
+                            actualType = "uint";
+                        }
+                    }
+                }
+                default:
+                {
+                    PrintLn("Constant Type Issue: " + constantName + ", " + content + ", '" + expectedType + "', '" + actualType + "', " + constantType + ",");
+                }
+            }
             break;
         }
         return content;
@@ -507,6 +566,7 @@ unit TranslateExpression
                 tokenType = HopperToken.Identifier;
                 isDotted = true;
             }
+            string value = currentToken["lexeme"];
             switch (tokenType)
             {
                 case HopperToken.Bool:

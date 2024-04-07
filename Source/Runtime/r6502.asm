@@ -47,6 +47,34 @@ program R6502
         INC ZP.SerialBreakFlag // hardware <ctrl><C>
         RTI
     }
+    clearWorkSpace()
+    {
+        LDA # 0
+        
+        STA ZP.ACCL
+        STA ZP.ACCH
+        STA ZP.TOPL
+        STA ZP.TOPH
+        STA ZP.NEXTL
+        STA ZP.NEXTH
+        STA ZP.IDXL
+        STA ZP.IDXH
+        STA ZP.IDYL
+        STA ZP.IDYH
+        STA ZP.ACCT
+        STA ZP.TOPT
+        STA ZP.NEXTT
+        
+        STA ZP.M0
+#ifndef CPU_65C02S 
+        STA ZP.M1
+        STA ZP.M2
+#endif    
+        STA ZP.U0    
+        STA ZP.U1    
+        STA ZP.U2    
+        STA ZP.U3    
+    }
      
     breakpointCommand()
     {
@@ -88,6 +116,8 @@ program R6502
 
         Utilities.WaitForEnter();
         
+        clearWorkSpace(); // clear M0..M3 and U0..U3 to make zero page transfer faster
+        
         PLA
         Diagnostic.PageMemory();
         
@@ -96,7 +126,7 @@ program R6502
     crcCommand()
     {
         Utilities.WaitForEnter();  // consume <enter>
-        LDA # 0x0D
+        LDA # Enter
         Serial.WriteChar();
         LDA #0
         Serial.HexOut();
@@ -107,7 +137,7 @@ program R6502
     {
         Utilities.WaitForEnter();  // consume <enter>
         
-        LDA # 0x0D
+        LDA # Enter
         Serial.WriteChar();
         LDA PCH
         Serial.HexOut();
@@ -224,8 +254,7 @@ program R6502
             ORA # 0b00000001
             STA ZP.FLAGS
 #endif            
-            
-            LDA # 0x0D
+            LDA # Enter
             Serial.WriteChar();
             
             LDA ZP.IDYH
@@ -249,12 +278,12 @@ program R6502
             LDA #' '
             Serial.WriteChar();
             
-            Serial.WaitForChar(); // 0x0D
-            Serial.WaitForChar(); // 0x0D
+            Serial.WaitForChar(); // Enter
+            Serial.WaitForChar(); // Enter
             
             Serial.WaitForChar(); // arbitrary '*' terminator from client
             
-            LDA # 0x0D
+            LDA # Enter
             Serial.WriteChar();
             LDA # '*'               // restore success terminator
         }
@@ -583,8 +612,8 @@ program R6502
                 }
 #else
                 PHA
-                LDA #0b00000001
-                CMP ZP.FLAGS
+                LDA ZP.FLAGS
+                AND #0b00000001
                 if (Z)
                 {
                     PLA

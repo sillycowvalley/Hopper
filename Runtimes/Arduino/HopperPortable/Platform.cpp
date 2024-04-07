@@ -238,10 +238,6 @@ void Platform_Release()
 
 void Serial_WriteChar(Char value)
 {
-    if (value == (Char)0x0D)
-    {
-        value = (Char)0x0A;
-    }
     char str[2];
     str[0] = value;
     str[1] = 0;
@@ -264,10 +260,6 @@ Char Serial_ReadChar()
         External_WatchDog();
     }
     int ch = Serial.read();
-    if (ch == (Char)0x0A)
-    {
-        ch = 0x0D;
-    }
     return (Char)ch;
 }
 Bool Serial_IsAvailable_Get()

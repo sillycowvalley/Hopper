@@ -67,7 +67,7 @@ unit Monitor
         {
             logLine = logLine + " " + ch;
         }
-        captureFile.Append(logLine + char(0x0A));
+        captureFile.Append(logLine + Char.EOL);
         captureFile.Flush();
     }
     char SerialReadChar()
@@ -80,7 +80,7 @@ unit Monitor
         {
             logLine = logLine + " " + ch;
         }
-        captureFile.Append(logLine + char(0x0A));
+        captureFile.Append(logLine + Char.EOL);
         captureFile.Flush();
         
         return ch;
@@ -95,6 +95,19 @@ unit Monitor
         Serial.WriteChar(maker);
         Serial.WriteChar(ch);
     }
+    
+    bool SerialIsAvailable
+    {
+        get 
+        {
+            return Serial.IsAvailable;
+        }
+    }
+    char SerialReadChar()
+    {
+        return Serial.ReadChar();
+    }
+    /*
     bool haveCharacter;
     char lastCharacter;
     bool SerialIsAvailable
@@ -136,13 +149,14 @@ unit Monitor
         }
         return char(0);
     }
+    */
 #endif
 
     WaitForDeviceReady()
     {
         return;
 #ifdef CAPTURESERIAL        
-        captureFile.Append("WaitForDeviceReady" + char(0x0A));
+        captureFile.Append("WaitForDeviceReady" + Char.EOL);
         captureFile.Flush();        
 #endif
         char c;
@@ -172,7 +186,7 @@ unit Monitor
             }
         }
 #ifdef CAPTURESERIAL                
-        captureFile.Append("Done" + char(0x0A));
+        captureFile.Append("Done" + Char.EOL);
         captureFile.Flush();        
 #endif
     }
@@ -197,7 +211,7 @@ unit Monitor
                 continue;
             }
             char c = SerialReadChar();
-            if ((c == char(0x0D)) || (c == char(0x0A)))
+            if (c == Char.EOL)
             {
                 if (collectOutput)
                 {
@@ -242,7 +256,7 @@ unit Monitor
                 }
             }
         }
-        SerialWriteChar(char(0x0D));
+        SerialWriteChar(Char.EOL);
     }
     
     bool checkEchoRun(bool makersAllowed)
@@ -265,14 +279,11 @@ unit Monitor
                 {
                     char ch = keyboardBuffer[0];
                     keyboardBuffer = keyboardBuffer.Substring(1);
-                    if (ch != char(0x0A)) // only do the 0x0D's
+                    SerialWriteChar(ch);
+                    Delay(3);
+                    if (ch == Char.EOL)
                     {
-                        SerialWriteChar(ch);
-                        Delay(3);
-                        if (ch == char (0x0D))
-                        {
-                            waitingForPrompt = true;
-                        }
+                        waitingForPrompt = true;
                     }
                 }
                 else if (Keyboard.IsAvailable)
@@ -323,7 +334,7 @@ unit Monitor
                 {
                     // read from the remote device
                     c = SerialReadChar();
-                    if ((c == char(0x0D)) || (c == char(0x0A)))
+                    if (c == Char.EOL)
                     {
                         Output.Print(c);
                     }
@@ -375,7 +386,7 @@ unit Monitor
             {
                 SerialWriteChar(ch);
             }
-            SerialWriteChar(char(0x0D));
+            SerialWriteChar(Char.EOL);
             _ = checkEcho(true);
         }
     }
@@ -397,7 +408,7 @@ unit Monitor
             for (uint i=0; i < 16; i++)
             {
                 String.Build(ref expanded, serialOutput.Substring(0, 32));
-                String.Build(ref expanded, char(0x0D));
+                String.Build(ref expanded, Char.EOL);
                 serialOutput = serialOutput.Substring(32);
             }
             serialOutput =expanded;
@@ -495,7 +506,7 @@ unit Monitor
             {
                 SerialWriteChar(ch); 
             }
-            SerialWriteChar(char(0x0D));
+            SerialWriteChar(Char.EOL);
             if (!checkEcho(true)) // waits for \ confirmation    
             {
                 Output.Print("  Failed to upload '" + filePath + "'");
@@ -507,7 +518,7 @@ unit Monitor
             {
                 SerialWriteChar(ch); 
             }
-            SerialWriteChar(char(0x0D));
+            SerialWriteChar(Char.EOL);
             if (!checkEcho(true)) // waits for \ confirmation    
             {
                 Output.Print("  Failed to upload '" + filePath + "'");
@@ -598,7 +609,7 @@ unit Monitor
         _ = checkEcho(false);
         SerialWriteChar(Byte.ToHex(byte((crc >> 8) & 0xF))); 
         _ = checkEcho(false);
-        SerialWriteChar(char(0x0D));
+        SerialWriteChar(Char.EOL);
         _ = checkEcho(false);
 
         collectOutput = true; // just to toss it away    
@@ -610,7 +621,7 @@ unit Monitor
                 SerialWriteChar(c); 
                 _ = checkEcho(false);
             }
-            SerialWriteChar(char(0x0D));
+            SerialWriteChar(Char.EOL);
             _ = checkEcho(false);
             if (IsDebugger)
             {
@@ -698,7 +709,7 @@ unit Monitor
     {
         Monitor.Command("P", true, true);
         string serialOutput = Monitor.GetSerialOutput();
-        while ((serialOutput.Length >= 5) && ((serialOutput[0] == char(0x0A)) || (serialOutput[0] == char(0x0D))))
+        while ((serialOutput.Length >= 5) && (serialOutput[0] == Char.EOL))
         {
             serialOutput = serialOutput.Substring(1);
         }
@@ -710,7 +721,7 @@ unit Monitor
     {
         Monitor.Command("K", true, true);
         string serialOutput = Monitor.GetSerialOutput();
-        while ((serialOutput.Length >= 5) && ((serialOutput[0] == char(0x0A)) || (serialOutput[0] == char(0x0D))))
+        while ((serialOutput.Length >= 5) && (serialOutput[0] == Char.EOL))
         {
             serialOutput = serialOutput.Substring(1);
         }

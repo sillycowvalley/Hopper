@@ -156,7 +156,7 @@ unit Output
 #endif
         if (passThrough)
         {
-            if ((byte(c) == 0x0D) || (byte(c) == 0x0A))
+            if (c == Char.EOL)
             {
                 Screen.PrintLn();
             }
@@ -186,7 +186,7 @@ unit Output
             {
                 currentY = outputTop;
             }
-            if ((byte(c) == 0x0D) || (byte(c) == 0x0A))
+            if (c == Char.EOL)
             {
                 // enter
                 currentY++;
@@ -974,7 +974,7 @@ unit Output
         }
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";         
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         indent = indent + 2;
         content = "";
@@ -1022,7 +1022,7 @@ unit Output
             }
             else if (laps == columns*2)
             {
-                memoryFile.Append(content + char(0x0A));
+                memoryFile.Append(content + Char.EOL);
                 DebugFlush(memoryFile);
                 content = "";
                 content = content.Pad(' ', indent);
@@ -1034,7 +1034,7 @@ unit Output
         if (content.Length != 0)
         {
             SafePad(ref content, paddingWidth);
-            memoryFile.Append(content + char(0x0A));
+            memoryFile.Append(content + Char.EOL);
             DebugFlush(memoryFile);
         }
         return size;   
@@ -1064,14 +1064,14 @@ unit Output
         }
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";         
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         if (pEntries != 0)
         {
             content = "";
             content = content.Pad(' ', indent+2);
             content +=  WalkHeader(pEntries);
-            memoryFile.Append(content + char(0x0A));
+            memoryFile.Append(content + Char.EOL);
             DebugFlush(memoryFile);
         }
         
@@ -1096,7 +1096,7 @@ unit Output
                 content += " -> " + valueText + " " + ValueTypeToString(valueType, vValue);
             }
          
-            memoryFile.Append(content + char(0x0A));
+            memoryFile.Append(content + Char.EOL);
             DebugFlush(memoryFile);
             if (IsMachineReferenceType(keyType) && (kValue != 0))
             {
@@ -1108,7 +1108,7 @@ unit Output
                 content = "";
                 content = content.Pad(' ', indent);
                 content += valueText;
-                memoryFile.Append(content + char(0x0A));
+                memoryFile.Append(content + Char.EOL);
                 DebugFlush(memoryFile);
                 if (vValue != 0) // reference types
                 {
@@ -1121,7 +1121,7 @@ unit Output
         content = "";
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";         
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         return size;   
     }
@@ -1155,7 +1155,7 @@ unit Output
             
             SafePad(ref content, paddingWidth);
             content += " (" + itemSize.ToString() + " bytes)";         
-            memoryFile.Append(content + char(0x0A));
+            memoryFile.Append(content + Char.EOL);
             DebugFlush(memoryFile);
             if (IsMachineReferenceType(listItemTypes) && (pData != 0)) // reference types
             {
@@ -1201,7 +1201,7 @@ unit Output
         content += "0x" + iRecent.ToHexString(4) + " ";
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";         
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         if (pFirst != 0)
         {
@@ -1210,7 +1210,7 @@ unit Output
         content = "";
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";         
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         return size;   
     }
@@ -1232,7 +1232,7 @@ unit Output
         uint path = Pages.GetPageWord(address + 3);
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";         
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         if (isValid != 0)
         {
@@ -1241,7 +1241,7 @@ unit Output
         content = "";
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";         
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         return size;   
     }
@@ -1283,7 +1283,7 @@ unit Output
         
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";         
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         if (isValid != 0)
         {
@@ -1293,7 +1293,7 @@ unit Output
         content = "";
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";         
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         return size;   
     }
@@ -1323,7 +1323,7 @@ unit Output
         content += '"';
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         return size;
     }
@@ -1347,7 +1347,7 @@ unit Output
         content += l.ToString();
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         return size;
     }
@@ -1375,7 +1375,7 @@ unit Output
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";
     
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         return size;
     }
@@ -1396,7 +1396,7 @@ unit Output
         
         SafePad(ref content, paddingWidth);
         content += " (" + size.ToString() + " bytes)";
-        memoryFile.Append(content + char(0x0A));
+        memoryFile.Append(content + Char.EOL);
         DebugFlush(memoryFile);
         return size;
     }
@@ -1521,7 +1521,7 @@ unit Output
                 }
                 SafePad(ref content, paddingWidth);
                 content += " (" + blockSize.ToString() + " bytes)";
-                memoryFile.Append(content + char(0x0A));
+                memoryFile.Append(content + Char.EOL);
                 DebugFlush(memoryFile);
                 memoryFile.Flush(); // TODO REMOVE
                 size = size + blockSize;
@@ -1592,7 +1592,7 @@ unit Output
                 }
                 SafePad(ref content, paddingWidth);
                 content += " (" + blockSize.ToString() + " bytes)";
-                memoryFile.Append(content + char(0x0A));
+                memoryFile.Append(content + Char.EOL);
                 DebugFlush(memoryFile);
                 memoryFile.Flush(); // TODO REMOVE
                 size = size + blockSize;
@@ -1731,7 +1731,7 @@ unit Output
                     <string> globalList = globalLists[key];
                     content += "  // " + globalList[2] + " " + globalList[1];
                 }
-                memoryFile.Append(content + char(0x0A));
+                memoryFile.Append(content + Char.EOL);
                 DebugFlush(memoryFile);
                 size = size + WalkMemory(memoryFile, v, t, 9);
                 Parser.ProgressTick(".");
@@ -1739,8 +1739,8 @@ unit Output
             content = "";
             SafePad(ref content, paddingWidth);
             content += " (" + size.ToString() + " bytes)";
-            memoryFile.Append(content + char(0x0A));
-            memoryFile.Append("" + char(0x0A));
+            memoryFile.Append(content + Char.EOL);
+            memoryFile.Append("" + Char.EOL);
             DebugFlush(memoryFile);
             
             Parser.ProgressTick(".");
@@ -1753,8 +1753,8 @@ unit Output
                 content = "";
                 SafePad(ref content, paddingWidth);
                 content += " (" + size.ToString() + " bytes)";
-                memoryFile.Append(content + char(0x0A));
-                memoryFile.Append("" + char(0x0A));
+                memoryFile.Append(content + Char.EOL);
+                memoryFile.Append("" + Char.EOL);
                 DebugFlush(memoryFile);
             }
             Parser.ProgressTick(".");
@@ -1765,7 +1765,7 @@ unit Output
                 content = "";
                 SafePad(ref content, paddingWidth);
                 content += " (" + size.ToString() + " bytes)";
-                memoryFile.Append(content + char(0x0A));
+                memoryFile.Append(content + Char.EOL);
                 DebugFlush(memoryFile);
             }
             Parser.ProgressTick(".");

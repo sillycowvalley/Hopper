@@ -2,7 +2,7 @@ unit Utilities
 {
     const byte Slash  = 0x5C;
     const byte Escape = 0x1B;
-    const byte Enter  = 0x0D;
+    const byte Enter  = 0x0A;
     
     // Converts '0'..'9' or 'A'..'F' to 4-bit value
     // only uses A

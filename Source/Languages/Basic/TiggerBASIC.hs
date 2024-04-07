@@ -55,7 +55,7 @@ program TiggerBASIC
         loop
         {
             char ch = IO.Read();
-            if (ch == char(0x0D))
+            if (ch == Char.EOL)
             {
                 break;
             }

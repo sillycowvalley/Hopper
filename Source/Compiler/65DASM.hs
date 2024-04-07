@@ -258,14 +258,14 @@ program DASM
                             string nm = methodSymbols["name"];
                             debugInfo = methodSymbols["debug"];
                             doffset = address;
-                            hasmFile.Append("" + char(0x0A)); 
-                            hasmFile.Append("// " + src + ":" + ln + char(0x0A));  
+                            hasmFile.Append("" + Char.EOL); 
+                            hasmFile.Append("// " + src + ":" + ln + Char.EOL);  
                             
                             string mname = "// ####  " + nm + "()  ####";
                             mname = mname.Pad(' ', 80);
-                            mname = mname + "0x" + methodIndex.ToHexString(4) + char(0x0A);
+                            mname = mname + "0x" + methodIndex.ToHexString(4) + Char.EOL;
                             hasmFile.Append(mname);  
-                            hasmFile.Append("" + char(0x0A)); 
+                            hasmFile.Append("" + Char.EOL); 
                             Parser.ProgressTick(".");
                         }
                     }
@@ -292,7 +292,7 @@ program DASM
                     }
                     
                     string disassembly = Asm6502.Disassemble(address, instruction, operand);
-                    hasmFile.Append(disassembly.Pad(' ', 48) + comment + char(0x0A));
+                    hasmFile.Append(disassembly.Pad(' ', 48) + comment + Char.EOL);
                     
                     index += length;
                     address += length;
@@ -324,20 +324,20 @@ program DASM
                             }
                             uint ii = secondHalf ? (i + 0x80) : i;
                             hasmFile.Append("    0x" + address.ToHexString(4) + " 0x" + ii.ToHexString(2) + " 0x" + 
-                                                       tableEntry.ToHexString(4) + "    " + comment + char(0x0A)); 
+                                                       tableEntry.ToHexString(4) + "    " + comment + Char.EOL); 
                             index += 2;
                             address += 2;
                         }
                         secondHalf = !secondHalf;
                     }
                 }
-                hasmFile.Append("" +  char(0x0A));
+                hasmFile.Append("" +  Char.EOL);
                 uint vector = code[index] + code[index+1] << 8;
-                hasmFile.Append("0xFFFA 0x" + vector.ToHexString(4) + " // NMI vector" + char(0x0A));
+                hasmFile.Append("0xFFFA 0x" + vector.ToHexString(4) + " // NMI vector" + Char.EOL);
                 vector = code[index+2] + code[index+3] << 8;
-                hasmFile.Append("0xFFFC 0x" + vector.ToHexString(4) + " // Reset vector" + char(0x0A));
+                hasmFile.Append("0xFFFC 0x" + vector.ToHexString(4) + " // Reset vector" + Char.EOL);
                 vector = code[index+4] + code[index+5] << 8;
-                hasmFile.Append("0xFFFE 0x" + vector.ToHexString(4) + " // IRQ vector" + char(0x0A));
+                hasmFile.Append("0xFFFE 0x" + vector.ToHexString(4) + " // IRQ vector" + Char.EOL);
                               
                 Parser.ProgressTick(".");
                 hasmFile.Flush();

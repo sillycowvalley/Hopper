@@ -120,7 +120,7 @@ unit Z80Code
         uint bytes = buffer.Length / 2;
         string ln = bytes.ToHexString(2) + address.ToHexString(4) + "00" + buffer;
         byte chk = hexCheckSum(ln);
-        ihexFile.Append(":" + ln + chk.ToHexString(2) + char(0x0A));
+        ihexFile.Append(":" + ln + chk.ToHexString(2) + Char.EOL);
     }
     
     writeIHex(file ihexFile, uint romAddress, <byte> output)
@@ -165,7 +165,7 @@ unit Z80Code
             buffer = "";
         }
         
-        ihexFile.Append(":00000001FF" + char(0x0A)); // eof
+        ihexFile.Append(":00000001FF" + Char.EOL); // eof
         ihexFile.Flush();
     }
     

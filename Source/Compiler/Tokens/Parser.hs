@@ -51,7 +51,7 @@ unit Parser
         if (IsInteractive())
         {
             ProgressDone();
-            string eol = "" + char(0x0A);
+            string eol = "" + Char.EOL;
             errorFile.Append(errorMessage + eol);
             errorFile.Flush();
             Diagnostics.SetError(0x0E);

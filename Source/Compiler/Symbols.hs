@@ -2842,7 +2842,7 @@ unit Symbols
         file touchesFile = File.Create(path);
         foreach (var line in contentLines)
         {
-            touchesFile.Append(char(0x0A) + line);
+            touchesFile.Append(Char.EOL + line);
         }
         touchesFile.Flush();
     }

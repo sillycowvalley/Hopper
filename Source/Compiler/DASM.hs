@@ -81,7 +81,7 @@ program DASM
             
             if (methodNames.Contains(actualAddress))
             {
-                hasmFile.Append(""  + char(0x0A));        
+                hasmFile.Append(""  + Char.EOL);        
                     
                 string methodIndex = methodNames[actualAddress];
                 <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
@@ -93,19 +93,19 @@ program DASM
                     string nm = methodSymbols["name"];
                     debugInfo = methodSymbols["debug"];
                     doffset = address;
-                    hasmFile.Append("" + char(0x0A)); 
-                    hasmFile.Append("// " + src + ":" + ln + char(0x0A));  
+                    hasmFile.Append("" + Char.EOL); 
+                    hasmFile.Append("// " + src + ":" + ln + Char.EOL);  
                     
                     string mname = "// ####  " + nm + "(..)  ####";
                     mname = mname.Pad(' ', 80);
-                    mname = mname + methodIndex + char(0x0A);
+                    mname = mname + methodIndex + Char.EOL;
                     hasmFile.Append(mname);  
                     
-                    hasmFile.Append("" + char(0x0A)); 
+                    hasmFile.Append("" + Char.EOL); 
                 }
                 else
                 {
-                    hasmFile.Append("// " + methodIndex + char(0x0A)); 
+                    hasmFile.Append("// " + methodIndex + Char.EOL); 
                 }
                 if (progressCount % 64 == 0)
                 {
@@ -118,7 +118,7 @@ program DASM
             if (debugInfo.Contains(debugAddress))
             {
                 string debugLine = debugInfo[debugAddress];
-                hasmFile.Append("" + char(0x0A)); 
+                hasmFile.Append("" + Char.EOL); 
                 string sourceLine = GetSourceLine(src, debugLine);
                 if (sourceLine.Length != 0)
                 {
@@ -130,20 +130,20 @@ program DASM
                         sourceLine = sourceLine.Pad(' ', 90);
                         sourceLine = sourceLine + srcName + ":" + debugLine;
                     }
-                    hasmFile.Append(sourceLine + char(0x0A));  
+                    hasmFile.Append(sourceLine + Char.EOL);  
                 }
                 else
                 {
-                    hasmFile.Append("// " + src + ":" + debugLine + char(0x0A));  
+                    hasmFile.Append("// " + src + ":" + debugLine + Char.EOL);  
                 }
-                hasmFile.Append("" + char(0x0A)); 
+                hasmFile.Append("" + Char.EOL); 
             }
             <uint> jumpTargets;
             <uint> jixLabels;
             
             content = Instructions.Disassemble(code, ref address, long(startAddress), ref jumpTargets, ref jixLabels, false);
             instructionCount++;
-            String.Build(ref content, char(0x0A));
+            String.Build(ref content, Char.EOL);
             hasmFile.Append(content);
         } // for (address..
     }
@@ -158,7 +158,7 @@ program DASM
             if ((address % 16) == 0)
             {
                 uint actualAddress = startAddress + address;
-                content = char(0x0A) + "0x" + actualAddress.ToHexString(4) + "  ";
+                content = Char.EOL + "0x" + actualAddress.ToHexString(4) + "  ";
                 hasmFile.Append(content);
                 literal = "";
             }
@@ -191,7 +191,7 @@ program DASM
             content = content.Pad(' ', padding);
             content = content + literal;
         }
-        content = content + char(0x0A);
+        content = content + Char.EOL;
         hasmFile.Append(content);
     }
     
@@ -302,7 +302,7 @@ program DASM
                 //extendedCodeSegment = (version & 0x0001) != 0;
                 //flatStack           = (version & 0x0002) != 0;
 
-                hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + version.ToHexString(4) + " // binary version number" + char(0x0A));
+                hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + version.ToHexString(4) + " // binary version number" + Char.EOL);
                 address = address + 2;
                                     
                 lsb = binFile.Read();
@@ -316,7 +316,7 @@ program DASM
                     break;
                 }
                 uint constOffset = lsb + (msb << 8);
-                hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + constOffset.ToHexString(4) + " // offset to constant data" + char(0x0A));
+                hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + constOffset.ToHexString(4) + " // offset to constant data" + Char.EOL);
                 address = address + 2;
                 
                 lsb = binFile.Read();
@@ -331,7 +331,7 @@ program DASM
                 }
                 
                 uint codeOffset = lsb + (msb << 8);
-                hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + codeOffset.ToHexString(4) + " // 'Hopper' entry point offset" + char(0x0A));
+                hasmFile.Append("0x" + address.ToHexString(4) + " 0x" + codeOffset.ToHexString(4) + " // 'Hopper' entry point offset" + Char.EOL);
                 address = address + 2;
                 
                 codeSize = codeSize + 6;
@@ -349,7 +349,7 @@ program DASM
                 uint tableEntries = (constOffset - 6) / 4;
                 if (tableEntries > 0)
                 {
-                    hasmFile.Append(""  + char(0x0A));
+                    hasmFile.Append(""  + Char.EOL);
                     for (uint i=0; i < tableEntries; i++)
                     {
                         lsb = binFile.Read();
@@ -379,7 +379,7 @@ program DASM
                         
                         hasmFile.Append("0x" + address.ToHexString(4) 
                                      + " 0x" + methodIndex.ToHexString(4)
-                                     + " 0x" + methodOffset.ToHexString(4) + char(0x0A));
+                                     + " 0x" + methodOffset.ToHexString(4) + Char.EOL);
                         codeSize = codeSize + 4;
                         address = address + 4;
                         methodNames[methodOffset] = "0x" + methodIndex.ToHexString(4);
@@ -396,8 +396,8 @@ program DASM
                     if (methodNames.Contains(address))
                     {
                         string name = methodNames[address];
-                        hasmFile.Append(""  + char(0x0A));        
-                        hasmFile.Append("// " + name + "  [" + constLength.ToString() +"]" +char(0x0A));            
+                        hasmFile.Append(""  + Char.EOL);        
+                        hasmFile.Append("// " + name + "  [" + constLength.ToString() +"]" +Char.EOL);            
                     }
                     loop
                     {

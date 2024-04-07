@@ -106,10 +106,6 @@ unit ACIA
                 {
                     Print(" " +value.ToHexString(2) + " ", Colour.MatrixRed, Colour.Black);
                 }
-                //if (value == 0x0D)
-                //{
-                //    PrintLn();
-                //}
                 written = true;
             }
         }

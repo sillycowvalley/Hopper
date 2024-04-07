@@ -52,7 +52,7 @@ program ValueTypeRuntimeTests
     
     Failure(uint instance)
     {    
-        Serial.WriteChar(char(0x0D));Serial.WriteChar('D');Serial.WriteChar('A');Serial.WriteChar('N');Serial.WriteChar('G');Serial.WriteChar(':');
+        Serial.WriteChar(Char.EOL);Serial.WriteChar('D');Serial.WriteChar('A');Serial.WriteChar('N');Serial.WriteChar('G');Serial.WriteChar(':');
         WriteUInt(instance);
         Diagnostics.Die(0x0B); // system failure / internal error
     }
@@ -736,6 +736,6 @@ program ValueTypeRuntimeTests
         //Ref();  // PUSHSTACKADDR, PUSHREL, POPREL
         //RefRef();
         
-        Serial.WriteChar(char(0x0D)); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
+        Serial.WriteChar(Char.EOL); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
     }
 }
