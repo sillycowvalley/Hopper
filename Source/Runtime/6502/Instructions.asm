@@ -1226,7 +1226,7 @@ unit Instruction
         // ACC = PC + CODESTART
         GetCurrentAddress();
         
-        // load current instruction into X (because JMP [nnnn,X] is then possible)
+        // load current instruction into X
 #ifdef CPU_65C02S
         LDA [ZP.ACC]
 #else
@@ -1235,9 +1235,7 @@ unit Instruction
 #endif                
         
         Utilities.IncPC();
-#ifdef CHECKED
-        TAY // so we can see the original A at BRK
-#endif        
+        
         TAX
         switch (X)
         {

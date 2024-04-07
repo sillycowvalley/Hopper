@@ -96,6 +96,7 @@ unit Monitor
         Serial.WriteChar(ch);
     }
     
+    /*
     bool SerialIsAvailable
     {
         get 
@@ -107,7 +108,7 @@ unit Monitor
     {
         return Serial.ReadChar();
     }
-    /*
+    */
     bool haveCharacter;
     char lastCharacter;
     bool SerialIsAvailable
@@ -149,7 +150,7 @@ unit Monitor
         }
         return char(0);
     }
-    */
+    
 #endif
 
     WaitForDeviceReady()
@@ -612,13 +613,15 @@ unit Monitor
         SerialWriteChar(Char.EOL);
         _ = checkEcho(false);
 
-        collectOutput = true; // just to toss it away    
+        collectOutput = true;
+        ClearSerialOutput();
         while (iFile.IsValid())
         {
             string ln = iFile.ReadLine();
             foreach (var c in ln)
             {
                 SerialWriteChar(c); 
+                Time.Delay(1);        // so we don't overwhelm the 100kHz 6502
                 _ = checkEcho(false);
             }
             SerialWriteChar(Char.EOL);
@@ -629,7 +632,13 @@ unit Monitor
             }
         }
         SerialWriteChar('*'); // arbitrary terminator to get a \ back
-        if (checkEcho(true)) // waits for \ confirmation    
+        
+        bool positiveResponse = checkEcho(true);  // waits for \ confirmation    
+        string output = GetSerialOutput();
+        ClearSerialOutput(); // toss it
+        
+        
+        if (positiveResponse && output.EndsWith("*"))
         {
             if (IsDebugger)
             {
@@ -637,7 +646,11 @@ unit Monitor
             }
             else
             {
-                Output.Print("  Successfully uploaded '" + ihexPath + "'");
+                output = output.Replace("" + Char.EOL, "");
+                <string> parts = output.Split(' ');
+                string results = "Code Length: " + parts[0] + " HeapStart: "  + parts[1] + " HeapSize: "  + parts[2];
+                Output.Print(Char.EOL + "  Successfully uploaded '" + ihexPath + "'");
+                Output.Print(Char.EOL + "  " + results, Colour.Ocean, Colour.Black);
             }
             lastHexPath = ihexPath;
         }
@@ -649,10 +662,10 @@ unit Monitor
             }
             else
             {
-                Output.Print("  Failed to upload '" + ihexPath + "'");
+                Output.Print(Char.EOL + "  Failed to upload '" + ihexPath + "'", Colour.MatrixRed, Colour.Black);
             }
         }
-        ClearSerialOutput(); // toss it
+        
         Source.ClearSymbols();
         if (IsDebugger)
         {

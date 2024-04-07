@@ -224,7 +224,6 @@ program DASM
                 
                 OpCode jumpIndexinstruction = GetJMPIndexInstruction();
                         
-                bool secondHalf = false;        
                 uint index;
                 loop
                 {
@@ -297,12 +296,14 @@ program DASM
                     index += length;
                     address += length;
                     
-                    if (instruction == jumpIndexinstruction)
+                    if (instruction == OpCode.JMP_inn)
                     {
+                        uint tableSizeInWords = 256;
+                        
                         string previousComment;
-                        for (byte i = 0; i < 0x80; i++)
+                        for (byte i = 0; i < tableSizeInWords; i++)
                         {
-                            uint tableEntry = code[index] + code[index+1] << 8; 
+                            uint tableEntry = code[index] + code[index+tableSizeInWords] << 8; 
                             comment = "";
                             if (methodAddresses.Contains(tableEntry))
                             {
@@ -322,13 +323,13 @@ program DASM
                                     }
                                 }
                             }
-                            uint ii = secondHalf ? (i + 0x80) : i;
-                            hasmFile.Append("    0x" + address.ToHexString(4) + " 0x" + ii.ToHexString(2) + " 0x" + 
+                            hasmFile.Append("    0x" + address.ToHexString(4) + " 0x" + i.ToHexString(2) + " 0x" + 
                                                        tableEntry.ToHexString(4) + "    " + comment + Char.EOL); 
-                            index += 2;
-                            address += 2;
+                            index++;
+                            address++;
                         }
-                        secondHalf = !secondHalf;
+                        index   += tableSizeInWords;
+                        address += tableSizeInWords;
                     }
                 }
                 hasmFile.Append("" +  Char.EOL);

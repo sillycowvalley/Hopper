@@ -21,7 +21,9 @@ program ASMGEN
     long codeSize = 0;
     
     <byte> output;
-    <uint,uint> patches; // <callLocation,methodIndex>
+    <uint,uint> patches;         // <callLocation,methodIndex>
+    <uint,uint> splitPatchesLSB; // <callLSBLocation,methodIndex>
+    <uint,uint> splitPatchesMSB; // <callMSBLocation,methodIndex>
     <uint,uint> methods; // <methodIndex,address>
     
     bool NoPackedInstructions { get { return false; } }
@@ -40,9 +42,12 @@ program ASMGEN
         methods[methodIndex] = methodAddress;
         
         OpCode callInstruction      = GetJSRInstruction();
-        OpCode jumpInstruction      = GetJMPInstruction(); // TODO: 0x6C
+        OpCode jumpInstruction      = GetJMPInstruction();
         OpCode ijmpInstruction      = GetiJMPInstruction();
         OpCode jumpIndexinstruction = GetJMPIndexInstruction();
+        
+        uint tableLoadLSB;
+        uint tableLoadMSB;
         
         uint index = 0;
         loop
@@ -53,6 +58,12 @@ program ASMGEN
             OpCode instruction = OpCode(code[index]);
             
             uint instructionLength = Asm6502.GetInstructionLength(instruction);
+            
+            if ((instruction == OpCode.LDA_nnY) || (instruction == OpCode.LDA_nnX))
+            {
+                tableLoadLSB = tableLoadMSB;
+                tableLoadMSB = output.Count;
+            }
             
             if (instruction == callInstruction)
             {
@@ -65,28 +76,47 @@ program ASMGEN
                 patches[output.Count+1] = address;
                 code[index] = byte(jumpInstruction);
             }
-            else if ((instruction == jumpInstruction) || (instruction == jumpIndexinstruction))
+            else if (instruction == jumpInstruction)
             {
                 uint address = code[index+1] + (code[index+2] << 8);
                 address += methodAddress;
                 code[index+1] = address.GetByte(0);
                 code[index+2] = address.GetByte(1);
             }
+            else if (instruction == jumpIndexinstruction)
+            {
+                code[index] = byte(OpCode.JMP_inn);
+                // fix the last two LDA nnnn,Y instructions
+                uint address = index + methodAddress + 3;
+                output[tableLoadLSB+1] = address.GetByte(0);
+                output[tableLoadLSB+2] = address.GetByte(1);
+                address += 256;
+                output[tableLoadMSB+1] = address.GetByte(0);
+                output[tableLoadMSB+2] = address.GetByte(1);
+            }
             
-            for (uint i=0; i < UInt.Min(instructionLength, 3); i++)
+            for (uint i=0; i < instructionLength; i++)
             {
                 output.Append(code[index+i]);
             }
-            index += UInt.Min(instructionLength, 3);
+            index += instructionLength;
             
             if (instruction == jumpIndexinstruction)
             {
-                for (uint ii = 0; ii < 0x80; ii++)
+                uint tableSizeInWords = 256;  
+                
+                // LSBs
+                for (uint i = 0; i < tableSizeInWords; i++)
                 {
-                    uint mIndex = code[index] + (code[index+1] << 8);
-                    patches[output.Count] = mIndex;
+                    uint mIndex = code[index] + (code[index+tableSizeInWords] << 8);
+                    splitPatchesLSB[output.Count] = mIndex;
+                    splitPatchesMSB[output.Count+tableSizeInWords] = mIndex;
                     output.Append(code[index]);
                     index++;
+                }
+                // MSBs
+                for (uint i = 0; i < tableSizeInWords; i++)
+                {
                     output.Append(code[index]);
                     index++;
                 }
@@ -105,6 +135,21 @@ program ASMGEN
             output.SetItem(patchAddress,   byte(targetAddress & 0xFF));
             output.SetItem(patchAddress+1, byte(targetAddress >> 8));
         }
+        foreach (var kv in splitPatchesLSB)
+        {
+            uint patchAddress  = kv.key;
+            uint targetMethod  = kv.value;
+            uint targetAddress = methods[targetMethod];
+            output.SetItem(patchAddress,   byte(targetAddress & 0xFF));
+        }
+        foreach (var kv in splitPatchesMSB)
+        {
+            uint patchAddress  = kv.key;
+            uint targetMethod  = kv.value;
+            uint targetAddress = methods[targetMethod];
+            output.SetItem(patchAddress,   byte(targetAddress >> 8));
+        }
+        
     }
     
     byte hexCheckSum(string values)

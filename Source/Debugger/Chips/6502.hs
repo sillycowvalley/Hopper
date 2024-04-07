@@ -273,17 +273,14 @@ unit W65C02
             }
             case AddressingModes.AbsoluteIndirect:  // (nnnn)
             {
-                operand = memory[pcRegister+1] + (memory[pcRegister+2] << 8);
-                Die(0x0A);
+                uint address = memory[pcRegister+1] + (memory[pcRegister+2] << 8);
+                operand      = memory[address   +0] + (memory[address   +1] << 8);
             }
             case AddressingModes.AbsoluteIndirectX: // (nnnn,X)
             {
                 operand = memory[pcRegister+1] + (memory[pcRegister+2] << 8);
-                //PrintLn("operand=" + operand.ToHexString(4));
                 operand = operand + xRegister;
-                //PrintLn("operand+xRegister=" + operand.ToHexString(4));
                 uint address = memory[operand] + (memory[operand+1] << 8);
-                //PrintLn("address=" + address.ToHexString(4));
                 operand = address;
             }
             case AddressingModes.Immediate:         // #nn
@@ -348,6 +345,7 @@ unit W65C02
                 case OpCode.BRK:      { BRK();        break; }
                 case OpCode.JMP_nn:   { JMP(operand); break; } 
                 case OpCode.JMP_innX: { JMPIndexed(operand); break; } 
+                case OpCode.JMP_inn:  { JMPIndexed(operand);  break; } 
                 case OpCode.BRA_e:    { BRA(offset);  break; }
                 
                 case OpCode.BCC_e: { if (!cFlag) { BRA(offset); break; } }

@@ -188,7 +188,7 @@ program Assemble
             char registerName = (currentToken["lexeme"]).GetChar(0);
             Parser.Advance();
             
-            tableCandidate = (registerName == 'X'); // JMP [nnnn,X]
+            tableCandidate = ((registerName == 'X') || (registerName == 'Y')); // JMP nnnn
             Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
@@ -291,7 +291,7 @@ program Assemble
                     if (!isDefault)
                     {
                         // compare with case constant
-                        Asm6502.AppendCode(byte(GetBInstruction("Z")));
+                        Asm6502.AppendCode(GetBInstruction("Z"));
                         Asm6502.AppendCode(+3);
             
                         uint jumpNext = Asm6502.NextAddress;
@@ -420,45 +420,32 @@ program Assemble
                 uint tableAddress = Asm6502.NextAddress;
                 Asm6502.PatchJump(jumpToTable, tableAddress);
                 
-                Asm6502.AddInstructionCMP('X', 0x80);
-                Asm6502.AppendCode(byte(GetBInstruction("NC")));
-                Asm6502.AppendCode(+3);
-                uint jumpSecond = Asm6502.NextAddress;
-                Asm6502.AddInstructionJ();
-            
-                Asm6502.EmitInstruction("TXA");
-                Asm6502.EmitInstruction("ASL");
-                Asm6502.EmitInstruction("TAX");
+                uint loadLSBTableAddress = Asm6502.NextAddress;
+                EmitInstructionAbsolute("LDA", 0, (registerName == 'X') ? AddressingModes.AbsoluteX : AddressingModes.AbsoluteY);
+                EmitInstructionZeroPage("STA", byte(SwitchJumpAddress+0), AddressingModes.ZeroPage);
                 
-                uint indexJump  = Asm6502.NextAddress;
-                fakeJump = indexJump + 3;
-                Asm6502.AppendCode(byte(GetJMPIndexInstruction())); // JMP [nnnn,X]
-                Asm6502.AppendCode(byte(fakeJump & 0xFF));
-                Asm6502.AppendCode(byte(fakeJump >> 8));
-                for (uint ii=0; ii < 0x80; ii++)
+                uint loadMSBTableAddress = Asm6502.NextAddress;
+                EmitInstructionAbsolute("LDA", 0, (registerName == 'X') ? AddressingModes.AbsoluteX : AddressingModes.AbsoluteY);
+                EmitInstructionZeroPage("STA", byte(SwitchJumpAddress+1), AddressingModes.ZeroPage);
+                
+                Asm6502.AppendCode(GetJMPIndexInstruction());
+                Asm6502.AppendCode(byte(SwitchJumpAddress & 0xFF));
+                Asm6502.AppendCode(byte(SwitchJumpAddress >> 8));
+                
+                // LSBs
+                tableAddress = Asm6502.NextAddress;
+                Asm6502.PatchJump(loadLSBTableAddress, tableAddress);
+                for (uint ii=0; ii <= 0xFF; ii++)
                 {
                     uint methodIndex = jumpList[ii];
                     Asm6502.AppendCode(byte(methodIndex & 0xFF));
-                    Asm6502.AppendCode(byte(methodIndex >> 8));
                 }
-                
-                uint secondTableAddress = Asm6502.NextAddress;
-                Asm6502.PatchJump(jumpSecond, secondTableAddress);
-                Asm6502.EmitInstruction("TXA");
-                Asm6502.EmitInstruction("SEC");
-                Asm6502.EmitInstruction("SBC", 0x80);
-                Asm6502.EmitInstruction("ASL");
-                Asm6502.EmitInstruction("TAX");
-                
-                indexJump  = Asm6502.NextAddress;
-                fakeJump = indexJump + 3;
-                Asm6502.AppendCode(byte(GetJMPIndexInstruction())); // JMP [nnnn,X]
-                Asm6502.AppendCode(byte(fakeJump & 0xFF));
-                Asm6502.AppendCode(byte(fakeJump >> 8));
-                for (uint ii=0x80; ii < 0x100; ii++)
+                // MSBs
+                tableAddress = Asm6502.NextAddress;
+                Asm6502.PatchJump(loadMSBTableAddress, tableAddress);
+                for (uint ii=0; ii <= 0xFF; ii++)
                 {
                     uint methodIndex = jumpList[ii];
-                    Asm6502.AppendCode(byte(methodIndex & 0xFF));
                     Asm6502.AppendCode(byte(methodIndex >> 8));
                 }
             }
@@ -540,7 +527,7 @@ program Assemble
             }
             else
             {
-                Asm6502.AppendCode(byte(GetBInstruction(conditionString)));
+                Asm6502.AppendCode(GetBInstruction(conditionString));
                 Asm6502.AppendCode(+3);
             }
             

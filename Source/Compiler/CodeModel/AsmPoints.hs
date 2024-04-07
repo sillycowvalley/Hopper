@@ -130,11 +130,14 @@ unit AsmPoints
                 {
                     operand = code[i+1];
                 }
-                case 3+256:
                 case 3:
                 {
                     operand = code[i+1] + (code[i+2] << 8);
                 }
+            }
+            if (opCode == opcodeJMPIndex)
+            {
+                instructionLength += 512;
             }
             
             iCodes.Append(byte(opCode));
@@ -150,11 +153,12 @@ unit AsmPoints
             
             if (opCode == opcodeJMPIndex)
             {
+                uint tableSizeInWords = 256;
                 <uint> jumps;
-                for (uint ii=0; ii < 0x80; ii++)
+                for (uint ii=0; ii < tableSizeInWords; ii++)
                 {
-                    uint mi = code[iTable] + (code[iTable+1] << 8);
-                    iTable += 2;
+                    uint mi = code[iTable] + (code[tableSizeInWords+iTable] << 8);
+                    iTable++;
                     jumps.Append(mi);
                 }
                 iJumpTables.SetItem(iIndex, jumps);
@@ -277,7 +281,6 @@ unit AsmPoints
         
         RebuildMaps();
         
-        //PrintLn("Save:");
         loop
         {
             
@@ -343,34 +346,30 @@ unit AsmPoints
                     {
                         Die(0x0B);
                     }
-                    //PrintLn();
+                } // isJump
+                
+                byte lsb = byte(operand & 0xFF);
+                byte msb = byte(operand >> 8);
+                code.Append(lsb);
+                if (instructionLength > 2)
+                {
+                    code.Append(msb);
+                }
+                else if (msb != 0)
+                {
+                    Die(0x0B); // why is MSB != 0 for instructionLength == 2?
                 }
                 
                 if (opCode == opcodeJMPIndex)
                 {
-                    // JMP [nnnn,X] always just to the table just ahead of itself
-                    uint jumpAddress = code.Count+2;
-                    code.Append(byte(jumpAddress & 0xFF));
-                    code.Append(byte(jumpAddress >> 8));
                     <uint> jumps = iJumpTables[index];
                     foreach (var iMethod in jumps)
                     {
-                        code.Append(byte(iMethod & 0xFF));
-                        code.Append(byte(iMethod >> 8));
+                        code.Append(byte(iMethod & 0xFF));// LSBs
                     }
-                }
-                else
-                {
-                    byte lsb = byte(operand & 0xFF);
-                    byte msb = byte(operand >> 8);
-                    code.Append(lsb);
-                    if (instructionLength > 2)
+                    foreach (var iMethod in jumps)
                     {
-                        code.Append(msb);
-                    }
-                    else if (msb != 0)
-                    {
-                        Die(0x0B); // why is MSB != 0 for instructionLength == 2?
+                        code.Append(byte(iMethod >> 8));// MSBs
                     }
                 }
             }

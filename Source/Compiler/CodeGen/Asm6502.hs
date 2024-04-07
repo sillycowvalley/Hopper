@@ -10,6 +10,8 @@ unit Asm6502
     
     uint InvalidAddress { get { return 0xFFFF; } }
     
+    uint SwitchJumpAddress { get { return 0x0040; } } // M0 and M1 on Zero page used by switch statements
+    
     flags AddressingModes
     {
         None=0,
@@ -220,6 +222,7 @@ unit Asm6502
         
         CPX_nn   = 0xEC,
         
+        sJMP_inn = 0xFB, // internal instruction : used for switch statements
         iJMP_nn  = 0xFC, // internal instruction : jump to methodIndex place holder
         
         ORA_nn   = 0x0D,
@@ -589,136 +592,28 @@ unit Asm6502
     uint GetInstructionLength(OpCode instruction)
     {
         uint length;
-        // https://llx.com/Neil/a2/opcodes.html
-        byte cc  = byte(instruction) & 0b11;
-        byte bbb = (byte(instruction) >> 2) & 0b111;
-        switch (cc)
+        switch (GetAddressingMode(instruction))
         {
-            case 0b01: // group one
-            {
-                length = 2;
-                if ((bbb == 0b011) || (bbb == 0b110) || (bbb == 0b111))
-                {
-                    length = 3;
-                }
+            case AddressingModes.Implied:           { length = 1; }
+            case AddressingModes.Accumulator:       { length = 1; }
+            case AddressingModes.Immediate:         { length = 2; }
+            case AddressingModes.Absolute:          { length = 3; }
+            case AddressingModes.AbsoluteX:         { length = 3; }
+            case AddressingModes.AbsoluteY:         { length = 3; }
+            case AddressingModes.AbsoluteIndirect:  { length = 3; }
+            case AddressingModes.AbsoluteIndirectX: { length = 3; }
+            case AddressingModes.ZeroPage:          { length = 2; }
+            case AddressingModes.ZeroPageX:         { length = 2; }
+            case AddressingModes.ZeroPageY:         { length = 2; }
+            case AddressingModes.ZeroPageIndirect:  { length = 2; }
+            case AddressingModes.XIndexedZeroPage:  { length = 2; }
+            case AddressingModes.YIndexedZeroPage:  { length = 2; }
+            case AddressingModes.Relative:          { length = 2; }
+            case AddressingModes.ZeroPageRelative:  { length = 3; }
+            default:
+            { 
+                string name = GetName(instruction); Print(name); Die(0x0B); 
             }
-            case 0b10: // group two
-            {
-                length = 2;
-                if ((bbb == 0b011) || (bbb == 0b111))
-                {
-                    length = 3;
-                }
-                if (bbb == 0b010)
-                {
-                    length = 1;
-                }
-            }
-            case 0b00: // group 3
-            {
-                length = 2;
-                if ((bbb == 0b011) || (bbb == 0b111))
-                {
-                    length = 3;
-                }
-            }
-        }
-        switch (instruction)
-        {
-            case OpCode.JSR_nn:  { length = 3; } // JSR
-            case OpCode.iJMP_nn: { length = 3; } // iJMP
-            
-            case OpCode.BRK: 
-            case OpCode.CLC:  
-            case OpCode.CLD:  
-            case OpCode.CLI:  
-            case OpCode.CLV:  
-            case OpCode.DEY:  
-            case OpCode.DEX:  
-            case OpCode.INX:  
-            case OpCode.INY:  
-            case OpCode.NOP:  
-            
-            case OpCode.PHP:  
-            case OpCode.PHX: 
-            case OpCode.PHA:  
-            case OpCode.PHY: 
-            case OpCode.PLY: 
-            case OpCode.PLX: 
-            case OpCode.PLP:  
-            case OpCode.PLA:  
-            
-            case OpCode.RTI:  
-            case OpCode.RTS:  
-            case OpCode.SEC:  
-            case OpCode.SEI:  
-            case OpCode.SED:  
-            case OpCode.STP:  
-            
-            case OpCode.TAX:  
-            case OpCode.TAY:  
-            case OpCode.TSX:  
-            case OpCode.TXA:  
-            case OpCode.TXS:  
-            case OpCode.TYA:  
-            case OpCode.WAI:  
-            
-            case OpCode.INC:
-            case OpCode.DEC:
-            case OpCode.ASL:
-            case OpCode.LSR:
-            case OpCode.ROL:
-            case OpCode.ROR:
-            
-            
-            { length = 1; } 
-                
-            case OpCode.BBR0_z_e:
-            case OpCode.BBR1_z_e:
-            case OpCode.BBR2_z_e:
-            case OpCode.BBR3_z_e:
-            case OpCode.BBR4_z_e:
-            case OpCode.BBR5_z_e:
-            case OpCode.BBR6_z_e:
-            case OpCode.BBR7_z_e:
-            case OpCode.BBS0_z_e:
-            case OpCode.BBS1_z_e:
-            case OpCode.BBS2_z_e:
-            case OpCode.BBS3_z_e:
-            case OpCode.BBS4_z_e:
-            case OpCode.BBS5_z_e:
-            case OpCode.BBS6_z_e:
-            case OpCode.BBS7_z_e:
-            
-            case OpCode.JMP_nn:
-            case OpCode.JMP_inn:
-            { length = 3; }
-            
-            case OpCode.JMP_innX:
-            { length = 3 + 256; }
-            
-            case OpCode.RMB0_z:
-            case OpCode.RMB1_z:
-            case OpCode.RMB2_z:
-            case OpCode.RMB3_z:
-            case OpCode.RMB4_z:
-            case OpCode.RMB5_z:
-            case OpCode.RMB6_z:
-            case OpCode.RMB7_z:
-            case OpCode.SMB0_z:
-            case OpCode.SMB1_z:
-            case OpCode.SMB2_z:
-            case OpCode.SMB3_z:
-            case OpCode.SMB4_z:
-            case OpCode.SMB5_z:
-            case OpCode.SMB6_z:
-            case OpCode.SMB7_z:
-            { length = 2; }
-        }
-        if (length == 0)
-        {
-            PrintLn("GetInstructionLength: 0x" + (byte(instruction)).ToHexString(2)); Die(0x0B);
-            length = 1;
         }
         return length;
     }
@@ -845,7 +740,9 @@ unit Asm6502
             case OpCode.ORA_nnX:
             case OpCode.LDY_nnX:  { addressingMode = AddressingModes.AbsoluteX; }
             
+            case OpCode.sJMP_inn:
             case OpCode.JMP_inn:  { addressingMode = AddressingModes.AbsoluteIndirect; }
+            
             case OpCode.JMP_innX: { addressingMode = AddressingModes.AbsoluteIndirectX; }
             
             case OpCode.PHY:
@@ -922,6 +819,7 @@ unit Asm6502
             case OpCode.STZ_nn: 
             case OpCode.STY_nn: 
             case OpCode.JMP_nn: 
+            case OpCode.iJMP_nn: 
             case OpCode.BIT_nn: 
             case OpCode.TRB_nn: 
             case OpCode.TSB_nn: 
@@ -1112,6 +1010,7 @@ unit Asm6502
             case OpCode.BIT_nnX: { name = "BIT"; }
             case OpCode.JMP_nn:  { name = "JMP"; }
             case OpCode.JMP_inn: { name = "JMP"; }
+            case OpCode.sJMP_inn: { name = "sJMP"; }
             case OpCode.JMP_innX:{ name = "JMP"; }
             case OpCode.STY_nn:  { name = "STY"; }
             case OpCode.STZ_nn:  { name = "STZ"; }
@@ -1372,6 +1271,7 @@ unit Asm6502
             switch (instructionName)
             {
                 case "JMP": { code = OpCode.JMP_inn; }
+                case "sJMP": { code = OpCode.sJMP_inn; }
                 default:
                 {
                     NI();
@@ -1607,7 +1507,7 @@ unit Asm6502
     }
     OpCode GetJMPIndexInstruction()
     {
-        return OpCode.JMP_innX; // JMP
+        return OpCode.sJMP_inn;
     }
     OpCode GetNOPInstruction()
     {
@@ -1662,7 +1562,7 @@ unit Asm6502
             case OpCode.RTS: // RTS
             case OpCode.STP: // STP
             case OpCode.iJMP_nn: // iJMP
-            case OpCode.JMP_innX: // JMPIndex
+            case OpCode.sJMP_inn:
             {
                 return true;
             }
@@ -1680,8 +1580,8 @@ unit Asm6502
             {
                 return true;
             }
-            case OpCode.JMP_inn: // JMP [nnnn]
-            //case 0x7C: // JMP [nnnn, X]
+            case OpCode.JMP_inn:  // JMP [nnnn]
+            case OpCode.JMP_innX: // JMP [nnnn, X]
             case OpCode.BRA_e:
             {
                 return true;
@@ -1754,6 +1654,11 @@ unit Asm6502
     AppendCode(byte b)
     {
         currentStream.Append(b);        
+    }
+    AppendCode(OpCode code)
+    {
+        ValidateInstruction(code);
+        currentStream.Append(byte(code));
     }
     New()
     {
