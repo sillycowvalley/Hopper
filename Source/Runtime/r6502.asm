@@ -246,6 +246,11 @@ program R6502
         CMP # '*' // success terminator
         if (Z) 
         {
+            Serial.WaitForChar(); // Enter
+            Serial.WaitForChar(); // Enter
+            
+            Serial.WaitForChar(); // arbitrary '*' terminator from client
+                        
             hopperInit();                // good defaults for HopperVM
 #ifdef CPU_65C02S            
             SMB0 ZP.FLAGS                // program is loaded
@@ -277,12 +282,7 @@ program R6502
             Serial.HexOut();
             LDA #' '
             Serial.WriteChar();
-            
-            Serial.WaitForChar(); // Enter
-            Serial.WaitForChar(); // Enter
-            
-            Serial.WaitForChar(); // arbitrary '*' terminator from client
-            
+                 
             LDA # Enter
             Serial.WriteChar();
             LDA # '*'               // restore success terminator

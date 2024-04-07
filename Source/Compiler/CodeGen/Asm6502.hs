@@ -1819,24 +1819,26 @@ unit Asm6502
             }
         return disassembly;
     }
-       
-    PatchJump(uint jumpAddress, uint jumpToAddress)
+    
+    PatchJump(uint jumpAddress, uint jumpToAddress) 
     {
-        if (Architecture != CPUArchitecture.M6502)       
+        PatchJump(jumpAddress, jumpToAddress, false);
+    }  
+    PatchJump(uint jumpAddress, uint jumpToAddress, bool forceLong) 
+    {
+        if (!forceLong && (Architecture != CPUArchitecture.M6502))       
         {
             OpCode braInstruction = GetBInstruction("");
             OpCode jmpInstruction = GetJMPInstruction();
             int offset = int(jumpToAddress) - int(jumpAddress) - 2;
             
-            bool testJMP = false; //((currentStream[jumpAddress+0] == braInstruction) || (currentStream[jumpAddress+0] == jmpInstruction));
-            
-            if (testJMP || (offset < -128) || (offset > 127))
+            if ((offset < -128) || (offset > 127))
             {
                 // long jump
                 if ((OpCode(currentStream[jumpAddress+0]) != braInstruction) &&
                     (OpCode(currentStream[jumpAddress+0]) != jmpInstruction))
                 {
-                    Parser.Error("jump target exceeds 6502 relative limit (" + offset.ToString() + ")");
+                    Parser.Error("jump target exceeds 6502 relative limit (" + offset.ToString() + ")"); Die(0x0B);
                     return;
                 }
                 currentStream.SetItem(jumpAddress+0, byte(GetJMPInstruction()));

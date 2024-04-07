@@ -1,7 +1,7 @@
 unit SerialDevice
 {
     // Motorola 6850
-    #define HAS_SERIAL_ISR
+    //#define HAS_SERIAL_ISR
     
     // On the 6850 the control and status registers are at the same
     // address and are selected based on R or W.
@@ -38,7 +38,7 @@ unit SerialDevice
         loop
         {
             LDA StatusRegister  
-            AND #0b00000010   // Bit 1 - Transmit Data Register Empty (TDRE)
+            AND #0b00000010    // Bit 1 - Transmit Data Register Empty (TDRE)
             if (NZ) { break; } // loop if not ready (bit set means TDRE is empty and ready)
         } // loop
         PLA
@@ -99,4 +99,37 @@ unit SerialDevice
         }
 #endif        
     }
+    
+#ifndef HAS_SERIAL_ISR    
+    // munts X on CPU_6502
+    pollRead()
+    {
+        PHA
+        LDA StatusRegister 
+        AND # 0b10000000
+        if (NZ) // interrupt request by 6850
+        {
+            LDA StatusRegister 
+            AND # 0b00000001
+            if (NZ) // RDRF : receive data register full
+            {
+                TXA PHA // can't use XREG in ISR
+                LDA DataRegister // read serial byte
+                CMP #0x03               // is it break? (<ctrl><C>)
+                if (Z)
+                {
+                    INC Serial.BreakFlag
+                }
+                else
+                {
+                    LDX Serial.InWritePointer    // push it into serial input buffer
+                    STA Serial.InBuffer, X
+                    INC Serial.InWritePointer
+                }
+                PLA TAX // can't use XREG in ISR
+            }
+        }
+        PLA        
+    }
+#endif    
 }

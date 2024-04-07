@@ -18,6 +18,20 @@ unit Diagnostic
             LDY #0
             loop
             {
+                // avoid ever reading the ACIA status register
+                LDA ZP.IDXH
+                if (Z) // Zero Page?
+                {
+                    CPY # ZP.ACIASTATUS
+                    if (Z)
+                    {
+                        LDA # '.'
+                        Serial.WriteChar();
+                        INY
+                        continue;
+                    }
+                }
+                
                 LDA [ZP.IDX], Y
                 if (Z)
                 {
@@ -38,6 +52,19 @@ unit Diagnostic
         loop
         {
             DEY
+            
+            // avoid ever reading the ACIA status register
+            LDA ZP.IDXH
+            if (Z) // Zero Page?
+            {
+                CPY # (0xFF - ZP.ACIASTATUS)
+                if (Z)
+                {
+                    continue;
+                }
+            }
+            
+            
             LDA [ZP.IDX], Y
             if (NZ) { break; } // [ZP.IDX], Y is first non-zero from the end
             CPY #0
@@ -55,6 +82,20 @@ unit Diagnostic
         TAX // Y -> X
         loop
         {
+            // avoid ever reading the ACIA status or data register
+            LDA ZP.IDXH
+            if (Z) // Zero Page?
+            {
+                CPY # ZP.ACIASTATUS
+                if (Z)
+                {
+                    LDA # '.'
+                    Serial.WriteChar();
+                    INY
+                    continue;
+                }
+            }
+            
             LDA [ZP.IDX], Y
             if (Z)
             {

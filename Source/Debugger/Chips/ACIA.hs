@@ -124,8 +124,8 @@ unit ACIA
                 if (readWaiting)
                 {
                     // Bit 7 - is the irq bit
-                    // Bit 0 - When high, the RDRF bit indicatesthat received data has been transferred 
-                    //         into the receiver data register andis ready to be read by the microprocessor.
+                    // Bit 0 - When high, the RDRF bit indicates that received data has been transferred 
+                    //         into the receiver data register and is ready to be read by the microprocessor.
                     value |= 0b10000001;
                 }
                 read = true;

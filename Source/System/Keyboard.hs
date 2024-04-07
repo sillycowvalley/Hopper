@@ -560,6 +560,10 @@ unit Keyboard
                     byte msb = byte(uint(key) >> 8);
                     byte lsb = byte(uint(key) & 0xFF);
                     ch    = char(lsb);
+                    if (ch == char(0x0D))
+                    {
+                        ch = Char.EOL;
+                    }
                     if ((msb & 0xE0) == 0xE0)
                     {
                         maker = char(msb); // include modifiers

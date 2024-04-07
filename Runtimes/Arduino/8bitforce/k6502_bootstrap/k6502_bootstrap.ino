@@ -45,8 +45,94 @@ byte    RAM[RAM_END-RAM_START+1];
 #include "romImage.h"
 
 ////////////////////////////////////////////////////////////////////
+// Motorolla 6850 ACIA
+////////////////////////////////////////////////////////////////////
+
+#define ACIA6850
+#ifdef ACIA6850
+
+#define ACIA_CONTROL 0x001E
+#define ACIA_STATUS  0x001E
+#define ACIA_DATA    0x001F
+
+byte aciaControl;
+byte aciaRxData;
+byte aciaTxData;
+byte aciaStatus;
+
+const byte ACIA_TDRE = 0b00000010;
+const byte ACIA_RDRF = 0b00000001;
+const byte ACIA_INTR = 0b10000000;
+
+void init6850ACIA()
+{
+    aciaControl = 0;
+    aciaRxData  = 0;
+    aciaTxData  = 0;
+    aciaStatus  = ACIA_TDRE;  // bit 1 set means TDRE is empty and ready - we should always be ready to send data
+}
+
+inline __attribute__((always_inline))
+void service6850ACIA() 
+{
+    if (Serial.available())
+    {
+        if ((aciaStatus & ACIA_INTR) == 0)               // read serial byte only if 6850 interrupt is clear 
+        {
+            if ((aciaStatus & ACIA_RDRF) == 0)           // and receive data register (RDRF) is not full
+            {
+                int ch = Serial.read();
+                aciaRxData   = ch & 0xFF;                             // byte from int?          
+                aciaStatus   = aciaStatus | (ACIA_INTR | ACIA_RDRF);  // interrupt and RDRF bits set to indicate that data is ready
+            }
+        }
+        
+    }
+}
+
+inline __attribute__((always_inline))
+void tx6850ACIA(unsigned int address, byte data) 
+{
+    if (address == ACIA_CONTROL)
+    {
+        aciaControl = data; // we never use this
+    }
+    else if (address == ACIA_DATA)
+    {
+        aciaTxData = data; // we just transmit it immediately, TDRF remains set
+        char str[2];
+        str[0] = aciaTxData;
+        str[1] = 0;
+        Serial.print(str);
+    }
+}
+inline __attribute__((always_inline))
+byte rx6850ACIA(unsigned int address) 
+{
+    byte data;
+    if (address == ACIA_STATUS)
+    {
+        data = aciaStatus;
+        aciaStatus = aciaStatus & 0b01111111; // reading the status register clears the interrupt flag
+    }
+    else if (address == ACIA_DATA)
+    {
+        data = aciaRxData;  
+        // reading the data register clears the RDRF bit
+        aciaStatus = aciaStatus & 0b11111110;
+    }
+    return data;
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////
 // 6821 PIA
 ////////////////////////////////////////////////////////////////////
+
+//#define PIA6821
+
+#ifdef PIA6821
 
 #define PIA_START 0xD010
 #define PIA_END   0xD013
@@ -63,6 +149,112 @@ byte rxControl;
 byte txData;
 byte txDirection;
 byte txControl;
+
+void init6821PIA()
+{
+    rxData      = 0x00;
+    rxDirection = 0x00;
+    rxControl   = 0x00;
+    txData      = 0x00;
+    txDirection = 0x00;
+    txControl   = 0x00;
+}
+
+inline __attribute__((always_inline))
+void service6821PIA() 
+{
+    if (Serial.available())
+    {
+        if ((rxControl & 0x80) == 0x00)        // read serial byte only if we can set 6821 interrupt
+        {
+            int ch = Serial.read();
+            cli();                              // stop interrupts while messing with 6821 registers
+            // 6821 portA is available      
+            rxData   = ch & 0xFF;               // byte from int?          
+            rxControl = rxControl | 0x80;       // set 6821 interrupt
+            sei();
+        }
+    }
+}
+
+inline __attribute__((always_inline))
+void tx6821PIA(uint16_t address, byte data) 
+{
+    if (address == PIA_PRA)
+    {
+        if (rxControl & 0x04)
+        {  
+            rxData = data;
+        }
+        else
+        {
+            rxDirection = data;
+        }
+    }
+    else if (address == PIA_CRA)
+    {
+        rxControl = data & 0X7F;
+    }
+    else if (address == PIA_PRB)
+    {
+        if (txControl & 0x04)
+        { 
+            txData = data;
+            char str[2];
+            str[0] = txData;
+            str[1] = 0;
+            Serial.print(str);
+        }
+        else
+        {
+            txDirection = data;  
+        }
+    }
+    else if (address == PIA_CRB)
+    {
+        txControl = data;
+    }
+}
+
+inline __attribute__((always_inline))
+byte rx6821PIA(uint16_t address) 
+{
+    byte data;
+    if (address == PIA_PRA)
+    {
+        if (rxControl & 0x04)
+        {
+            data = rxData;
+            rxControl = rxControl & 0x7F;    // clear IRQA bit upon read
+        }
+        else
+        {
+            data = rxDirection;
+        }
+    }
+    else if (address == PIA_CRA)
+    {
+        data = rxControl;
+    }
+    else if (address == PIA_PRB)
+    {
+        if (txControl & 0x04)
+        {
+            data = txData;
+            txControl = txControl & 0x7F;    // clear IRQA bit upon read
+        }
+        else
+        {
+            data = txDirection;
+        }
+    }
+    else if (address == PIA_CRB) // DSPCR?
+    {
+        data = txControl;
+    }  
+    return data;
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////
 // 65c02 Processor Control
@@ -100,7 +292,7 @@ byte txControl;
 #define ADDR_H_DIR DDRC
 #define ADDR_L_DIR DDRA
 
-unsigned int  uP_ADDR;
+uint16_t  uP_ADDR;
 unsigned int  clockCycle;
 
 ////////////////////////////////////////////////////////////////////
@@ -108,6 +300,7 @@ unsigned int  clockCycle;
 ////////////////////////////////////////////////////////////////////
 // This is where the action is.
 // it reads processor control signals and acts accordingly.
+
 
 inline __attribute__((always_inline))
 void cpu_tick()
@@ -122,41 +315,18 @@ void cpu_tick()
       {
           data = pgm_read_byte_near(rom_bin + (uP_ADDR - ROM_START));
       }
+#ifdef PIA6821      
       else if ( PIA_START <=uP_ADDR && uP_ADDR <= PIA_END )   // 6821?
       {
-          if (uP_ADDR == PIA_PRA)
-          {
-              if (rxControl & 0x04)
-              {
-                  data = rxData;
-                  rxControl = rxControl & 0x7F;    // clear IRQA bit upon read
-              }
-              else
-              {
-                  data = rxDirection;
-              }
-          }
-          else if (uP_ADDR == PIA_CRA)
-          {
-              data = rxControl;
-          }
-          else if (uP_ADDR == PIA_PRB)
-          {
-              if (txControl & 0x04)
-              {
-                  data = txData;
-                  txControl = txControl & 0x7F;    // clear IRQA bit upon read
-              }
-              else
-              {
-                  data = txDirection;
-              }
-          }
-          else if (uP_ADDR == PIA_CRB) // DSPCR?
-          {
-              data = txControl;
-          }  
+          data = rx6821PIA(uP_ADDR);
       }
+#endif
+#ifdef ACIA6850      
+      else if ( (ACIA_STATUS == uP_ADDR) || (ACIA_DATA == uP_ADDR) )   // 6850 ?
+      {
+          data = rx6850ACIA(uP_ADDR);
+      }
+#endif
       else if ( (uP_ADDR <= RAM_END) && (RAM_START <= uP_ADDR) ) // RAM?
       {
           data = RAM[uP_ADDR - RAM_START];
@@ -166,50 +336,26 @@ void cpu_tick()
 
   else  // R/W = LOW = WRITE
   {
+#ifdef ACIA6850      
+      if ( (ACIA_CONTROL == uP_ADDR) || (ACIA_DATA == uP_ADDR)  )   // 6850 ?
+      {
+          data = DATA_IN;
+          tx6850ACIA(uP_ADDR, data);
+      } else 
+#endif
       if ( (uP_ADDR <= RAM_END) && (RAM_START <= uP_ADDR) ) // RAM?
       {
           data = DATA_IN;
           RAM[uP_ADDR - RAM_START] = data;
       }
+#ifdef PIA6821
       else if ( PIA_START <=uP_ADDR && uP_ADDR <= PIA_END ) // 6821?
       {
           data = DATA_IN;
-          if (uP_ADDR == PIA_PRA)
-          {
-              if (rxControl & 0x04)
-              {  
-                  rxData = data;
-              }
-              else
-              {
-                  rxDirection = data;
-              }
-          }
-          else if (uP_ADDR == PIA_CRA)
-          {
-              rxControl = data & 0X7F;
-          }
-          else if (uP_ADDR == PIA_PRB)
-          {
-              if (txControl & 0x04)
-              { 
-                  txData = data;
-                  //Serial.write(txData);
-                  char str[2];
-                  str[0] = txData;
-                  str[1] = 0;
-                  Serial.print(str);
-              }
-              else
-              {
-                  txDirection = data;  
-              }
-          }
-          else if (uP_ADDR == PIA_CRB)
-          {
-              txControl = data;
-          }
+          tx6821PIA(uP_ADDR, data);
       }
+#endif
+
   }
 
   //////////////////////////////////////////////////////////////////
@@ -245,32 +391,7 @@ void cpu_tick()
   //CLK_E_HIGH; 
 }
 
-////////////////////////////////////////////////////////////////////
-// Serial Event
-////////////////////////////////////////////////////////////////////
 
-//  SerialEvent occurs whenever a new data comes in the
-//  hardware serial RX.  This routine is run between each
-//  time loop() runs, so using delay inside loop can delay
-//  response.  Multiple bytes of data may be available.
- 
-inline __attribute__((always_inline))
-void serialEvent() 
-{
-  if (Serial.available())
-  {
-    if ((rxControl & 0x80) == 0x00)        // read serial byte only if we can set 6821 interrupt
-    {
-        int ch = Serial.read();
-        cli();                              // stop interrupts while messing with 6821 registers
-        // 6821 portA is available      
-        rxData   = ch & 0xFF;               // byte from int?          
-        rxControl = rxControl | 0x80;       // set 6821 interrupt
-        sei();
-    }
-  }
-  return;
-}
 
 ////////////////////////////////////////////////////////////////////
 // Setup
@@ -287,18 +408,16 @@ void setup()
   Serial.print("SRAM Size:  "); Serial.print(RAM_END - RAM_START + 1, DEC); Serial.println(" Bytes");
   Serial.print("SRAM_START: 0x"); Serial.println(RAM_START, HEX); 
   Serial.print("SRAM_END:   0x"); Serial.println(RAM_END, HEX); 
-  */
-
+*/
   clockCycle = 0;
 
-  // 6821 init:
-  rxData      = 0x00;
-  rxDirection = 0x00;
-  rxControl   = 0x00;
-  txData      = 0x00;
-  txDirection = 0x00;
-  txControl   = 0x00;
-
+#ifdef PIA6821
+  init6821PIA();
+#endif
+#ifdef ACIA6850
+  init6850ACIA();
+#endif  
+  
   // pin directions:
   DATA_DIR = DIR_IN;
   ADDR_H_DIR = DIR_IN;
@@ -338,11 +457,21 @@ void setup()
 byte clicks = 0;
 void loop()
 {
+#ifdef PIA6821
     if (clicks == 100)
     {
-        serialEvent();
+        service6821PIA();
         clicks = 0;
     }
+#endif
+#ifdef ACIA6850
+    
+    if (clicks == 24)
+    {
+        service6850ACIA();
+        clicks = 0;
+    }
+#endif
     cpu_tick();
     clicks++;
 }

@@ -432,9 +432,10 @@ program Assemble
                 Asm6502.AppendCode(byte(SwitchJumpAddress & 0xFF));
                 Asm6502.AppendCode(byte(SwitchJumpAddress >> 8));
                 
+                uint tableDataAddress = Asm6502.NextAddress;
+                Asm6502.PatchJump(loadLSBTableAddress, tableDataAddress, true);
+                
                 // LSBs
-                tableAddress = Asm6502.NextAddress;
-                Asm6502.PatchJump(loadLSBTableAddress, tableAddress);
                 for (uint ii=0; ii <= 0xFF; ii++)
                 {
                     uint methodIndex = jumpList[ii];
@@ -442,7 +443,7 @@ program Assemble
                 }
                 // MSBs
                 tableAddress = Asm6502.NextAddress;
-                Asm6502.PatchJump(loadMSBTableAddress, tableAddress);
+                Asm6502.PatchJump(loadMSBTableAddress, tableAddress, true);
                 for (uint ii=0; ii <= 0xFF; ii++)
                 {
                     uint methodIndex = jumpList[ii];
