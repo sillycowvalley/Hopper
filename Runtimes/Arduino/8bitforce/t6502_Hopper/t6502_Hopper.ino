@@ -1,9 +1,7 @@
-////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 // RetroShield 6502 for Teensy 3.5
-// Apple 1
 //
-// 2019/09/13
-// Version 0.1
+// This work for Hopper is a derivative of the work by Erturk Kocalar, 8Bitforce.com:
 
 // The MIT License (MIT)
 
@@ -27,17 +25,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-// Date         Comments                                            Author
-// -----------------------------------------------------------------------------
-// 09/13/2019   Bring-up on Teensy 3.5.                             Erturk
-// 01/11/2024   Added Teensy 4.1 support.                           Erturk
 
-////////////////////////////////////////////////////////////////////
-// Options
-//   outputDEBUG: Print memory access debugging messages.
-////////////////////////////////////////////////////////////////////
 #define outputDEBUG     0
 
+////////////////////////////////////////////////////////////////////
+// Time APIs on Zero Page
+////////////////////////////////////////////////////////////////////
+
+#define TICKS_START   0x0028
+#define TICKS_END     0x002B
+
+uint32_t ticks;
+
+inline __attribute__((always_inline))
+byte getTicks(uint16_t address)
+{
+    address -= 0x0028; // 0..3
+    if (address == 0)
+    {
+        ticks = millis();
+    }
+    byte * pTicks = (byte *)&ticks;
+    return pTicks[address];
+}
+
+
+////////////////////////////////////////////////////////////////////
+// Motorolla 6850 ACIA
+////////////////////////////////////////////////////////////////////
 
 #define ACIA_CONTROL 0x001E
 #define ACIA_STATUS  0x001E
@@ -62,25 +77,7 @@ void init6850ACIA()
     aciaIRQTicks = 0;
 }
 
-inline __attribute__((always_inline))
-void service6850ACIA() 
-{
-    if (Serial.available())
-    {
-        if ((aciaStatus & ACIA_INTR) == 0)               // read serial byte only if 6850 interrupt is clear 
-        {
-            if ((aciaStatus & ACIA_RDRF) == 0)           // and receive data register (RDRF) is not full
-            {
-                int ch = Serial.read();
-                aciaRxData   = ch & 0xFF;                             // byte from int?          
-                aciaStatus   = aciaStatus | (ACIA_INTR | ACIA_RDRF);  // interrupt and RDRF bits set to indicate that data is ready
 
-                //digitalWrite(uP_IRQ_N, LOW);
-                //aciaIRQTicks = 2;
-            }
-        }
-    }
-}
 
 inline __attribute__((always_inline))
 void tx6850ACIA(unsigned int address, byte data) 
@@ -117,6 +114,28 @@ byte rx6850ACIA(unsigned int address)
 }
 
 
+inline __attribute__((always_inline))
+void service6850ACIA() 
+{
+    if (Serial.available())
+    {
+        if ((aciaStatus & ACIA_INTR) == 0)               // read serial byte only if 6850 interrupt is clear 
+        {
+            cli();
+            if ((aciaStatus & ACIA_RDRF) == 0)           // and receive data register (RDRF) is not full
+            {
+                int ch = Serial.read();
+                aciaRxData   = ch & 0xFF;                             // byte from int?          
+                aciaStatus   = aciaStatus | (ACIA_INTR | ACIA_RDRF);  // interrupt and RDRF bits set to indicate that data is ready
+
+                //digitalWrite(uP_IRQ_N, LOW);
+                //aciaIRQTicks = 2;
+            }
+            sei();
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////
 // BOARD DEFINITIONS
 ////////////////////////////////////////////////////////////////////
@@ -124,7 +143,6 @@ byte rx6850ACIA(unsigned int address)
 #include "memorymap.h"      // Memory Map (ROM, RAM, PERIPHERALS)
 #include "portmap.h"        // Pin mapping to cpu
 #include "setuphold.h"      // Delays required to meet setup/hold
-#include "6821.h"           // 6821 Emulation
 
 unsigned long clock_cycle_count;
 unsigned long clock_cycle_last;
@@ -194,63 +212,22 @@ void cpu_tick()
     if (STATE_RW_N)	   // HIGH = READ
     {
         xDATA_DIR_OUT();  // change DATA port to output to uP:
-            
         if ( (ROM_START <= uP_ADDR) && (uP_ADDR <= ROM_END) ) // ROM?
         {
-          data = rom_bin[ (uP_ADDR - ROM_START) ];
+            data = rom_bin[ (uP_ADDR - ROM_START) ];
         }
-        else
-        // RAM?
-        if ( (RAM_START <= uP_ADDR) && (uP_ADDR <= RAM_END) )
-          // Use Arduino RAM for stack/important stuff
-          data = ( RAM[uP_ADDR - RAM_START] );
-        else
-        // 6821?
-        if ( KBD <=uP_ADDR && uP_ADDR <= DSPCR )   
-        {      
-          // KBD?
-          if (uP_ADDR == KBD)
-          {
-            if (regKBDCR & 0x02)
-              // KBD register  
-              {
-                data = regKBD;
-                regKBDCR = regKBDCR & 0x7F;    // clear IRQA bit upon read
-              }
-            else
-              data = regKBDDIR;
-          }
-          else
-          // KBDCR?
-          if (uP_ADDR == KBDCR)
-          {
-            // KBDCR register
-            data = regKBDCR;  
-          }
-          else
-          // DSP?
-          if (uP_ADDR == DSP)
-          {
-            if (regDSPCR & 0x02) 
-              // DSP register  
-              {
-                data = regDSP;
-                regDSPCR = regDSPCR & 0x7F;    // clear IRQA bit upon read
-              }
-            else
-              data = regDSPDIR;
-          }
-          else
-          // DSPCR?
-          if (uP_ADDR == DSPCR)
-          {
-            // DSPCR register
-            data = regDSPCR;  
-          }   
-          
+        else if ( (ACIA_STATUS == uP_ADDR) || (ACIA_DATA == uP_ADDR) ) // 6850 ?
+        {
+            data = rx6850ACIA(uP_ADDR);
         }
-
-        // Start driving the databus out
+        else if ( (uP_ADDR <= TICKS_END) && (TICKS_START <= uP_ADDR) ) // Time on Zero Page
+        {
+            data = getTicks(uP_ADDR);
+        }
+        else if ( (RAM_START <= uP_ADDR) && (uP_ADDR <= RAM_END) ) // RAM?
+        {
+            data = ( RAM[uP_ADDR - RAM_START] );
+        }
         SET_DATA_OUT( data );
           
     #if outputDEBUG
@@ -263,67 +240,25 @@ void cpu_tick()
     #endif
 
     } 
-    else 
-    //////////////////////////////////////////////////////////////////
-    // R/W = LOW = WRITE
+    else // R/W = LOW = WRITE
     {
-      data = xDATA_IN();
-      
-      // RAM?
-      if ( (RAM_START <= uP_ADDR) && (uP_ADDR <= RAM_END) )
-        // Use Arduino RAM for stack/important stuff
-        RAM[uP_ADDR - RAM_START] = data;
-      else
-      // 6821?
-      if ( KBD <=uP_ADDR && uP_ADDR <= DSPCR )
-      {
-        // KBD?
-        if (uP_ADDR == KBD)
+        data = xDATA_IN();
+        if ( (ACIA_CONTROL == uP_ADDR) || (ACIA_DATA == uP_ADDR)  )   // 6850 ?
         {
-          if (regKBDCR & 0x02)
-            // KBD register
-            {  
-              regKBD = data;
-            }
-          else
-            regKBDDIR = data;
-        }
-        else
-        // KBDCR?
-        if (uP_ADDR == KBDCR)
+            tx6850ACIA(uP_ADDR, data);
+        } 
+        else if ( (RAM_START <= uP_ADDR) && (uP_ADDR <= RAM_END) ) // RAM?
         {
-          // KBDCR register
-          regKBDCR = data & 0X7F;  
+            RAM[uP_ADDR - RAM_START] = data;
         }
-        else
-        // DSP?
-        if (uP_ADDR == DSP)
-        {
-          if (regDSPCR & 0x02)
-          {
-            // DSP register
-            regDSP = data;
-            Serial.write(regDSP);
-          }
-          else
-            regDSPDIR = data;  
-        }
-        else
-        // DSPCR?
-        if (uP_ADDR == DSPCR)
-        {
-          // DSPCR register
-          regDSPCR = data;  
-        }
-      }
       
   #if outputDEBUG
-      if (1) // (clock_cycle_count > 0x3065A)
-      {
-        char tmp[50];
-        sprintf(tmp, "WR A=%0.4X D=%0.2X\n", uP_ADDR, data);
-        Serial.write(tmp);
-      }
+        if (1) // (clock_cycle_count > 0x3065A)
+        {
+            char tmp[50];
+            sprintf(tmp, "WR A=%0.4X D=%0.2X\n", uP_ADDR, data);
+            Serial.write(tmp);
+        }
   #endif
     }
 
@@ -341,32 +276,7 @@ void cpu_tick()
 #endif
 }
 
-////////////////////////////////////////////////////////////////////
-// Serial Event
-////////////////////////////////////////////////////////////////////
 
-/*
-  SerialEvent occurs whenever a new data comes in the
- hardware serial RX.  This routine is run between each
- time loop() runs, so using delay inside loop can delay
- response.  Multiple bytes of data may be available.
- */
-
-inline __attribute__((always_inline))
-void serialEvent0() 
-{
-  if (Serial.available())
-    if ((regKBDCR & 0x80) == 0x00)      // read serial byte only if we can set 6821 interrupt
-    {
-      cli();                            // stop interrupts while changing 6821 guts.
-      // 6821 portA is available      
-      int ch = Serial.read();
-      regKBD = byte(ch);                // apple1 expects bit 7 set for incoming characters.
-      regKBDCR = regKBDCR | 0x80;       // set 6821 interrupt
-      sei();
-    }
-  return;
-}
 
 ////////////////////////////////////////////////////////////////////
 // Setup
@@ -376,11 +286,6 @@ void setup()
   Serial.begin(0);
   while (!Serial);
 
-  Serial.write(27);       // ESC command
-  Serial.print("[2J");    // clear screen command
-  Serial.write(27);
-  Serial.print("[H");
-  Serial.println("\n");
   Serial.println("Configuration:");
   Serial.println("==============");
   print_teensy_version();
@@ -389,20 +294,10 @@ void setup()
   Serial.print("SRAM_START: 0x"); Serial.println(RAM_START, HEX); 
   Serial.print("SRAM_END:   0x"); Serial.println(RAM_END, HEX); 
   Serial.println("");
-  Serial.println("=======================================================");
-  Serial.println("> WOZ Monitor, Integer BASIC, Apple Cassette Interface");
-  Serial.println("> by Steve Wozniak");
-  Serial.println("=======================================================");
-  Serial.println("Notes:");
-  Serial.println("1) Enter E000R to start Apple BASIC.");  
-  Serial.println("2) Cassette Interface added to RetroShield 6502 by Lorenz Born.");  
-  Serial.println("   ACI Audio Out is available on GPIO output."); 
-  Serial.println("   Somebody should write code to handle incoming audio :)"); 
-   
 
   // Initialize processor GPIO's
   uP_init();
-  m6821_init();
+  init6850ACIA();
 
   // Reset processor for 25 cycles
   uP_assert_reset();
@@ -417,21 +312,11 @@ void setup()
 // Loop()
 ////////////////////////////////////////////////////////////////////
 
+byte i = 0;
 void loop()
 {
-  byte i = 0;
-  
-  // Loop forever
-  //  
-  while(1)
-  {
-
     cpu_tick();
-
-    // Check serial events but not every cycle.
-    // Watch out for clock mismatch (cpu tick vs serialEvent counters are /128)
     i++;
-    if (i == 0) serialEvent0();
+    if (i == 0) service6850ACIA();
     if (i == 0) Serial.flush();
-  }
 }

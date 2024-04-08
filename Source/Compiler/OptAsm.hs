@@ -187,12 +187,6 @@ program OptAsm
         }
         codeAfter = 0;
         
-        // Inlining and inlineMethodCandidates:
-        //
-        // - AsmPoints.Reset() clears the list of inline method candidates
-        // - AsmPoints.OptimizeFrameRemoval() builds the new list of inline method candidates based on size after frame removal
-        // - at the end of each Optimize pass, if InlineMethodCandidatesExist, call InlineSmallMethods() which will ..
-        //   .. cause RemoveUnreachableMethods() to remove completely inlined methods on the next pass
         AsmPoints.Reset(); 
         
         uint methodIndex = 0; // "main"
@@ -208,7 +202,7 @@ program OptAsm
             {
                 codeBefore += size;
             }
-            AsmPoints.MarkReachableInstructions();
+            AsmPoints.MarkInstructions();
             
             // BRA|JMP to BRA|JMP -> BRA|JMP
             if (AsmPoints.OptimizeJMPJMP())
@@ -216,8 +210,8 @@ program OptAsm
                 modified = true;
             }
             
-            // not just NOP, also JMP -> JMP + 1, can cause more short JumpToJump's to work
-            if (AsmPoints.OptimizeRemoveNOPs())
+            // removing JMP -> JMP + 1, can cause more short JumpToJump's to work
+            if (AsmPoints.OptimizeRemoveJMPJMPs())
             {
                 modified = true;
             }
@@ -262,7 +256,12 @@ program OptAsm
             
             if (pass > 0) // allow inlining to happen first
             {
-                if (AsmPoints.OptimizeRemoveUnreachable())
+                if (AsmPoints.OptimizeUnreachableToNOP())
+                {
+                    modified = true;
+                }
+                // remove NOPs : should be last OptimizeXXX
+                if (AsmPoints.OptimizeRemoveNOPs())
                 {
                     modified = true;
                 }
@@ -281,6 +280,10 @@ program OptAsm
                 if (isCalled)
                 {
                     uint iMethod = kv.key;
+                    if (!methodsWalked.Contains(iMethod))
+                    {
+                        PrintLn("Pass:" + pass.ToString() + " " + iMethod.ToHexString(4));
+                    }
                     if (!methodsWalked[iMethod])
                     {
                         // called but not yet walked
@@ -295,6 +298,7 @@ program OptAsm
                 break;
             }
         } // loop
+        
         if (RemoveUnreachableMethods())
         {
             modified = true;
@@ -304,23 +308,6 @@ program OptAsm
             ReportMethodSizes();
         }
         methodsCalled.Clear(); // just to be sure 
-        
-        if (AsmPoints.InlineCandidatesExist)
-        {
-            indices = Code.GetMethodIndices(); // reload: some methods may be gone
-            foreach (var methodIndex in indices)
-            {
-                uint size = AsmPoints.Load(methodIndex, "after pass " + pass.ToString());
-                <byte> rawCode = Code.GetMethodCode(methodIndex);
-                if (AsmPoints.InlineSmallMethods(rawCode))
-                {
-                    // update the method with the optimized code: no size change, pure replacement          
-                    Code.SetMethodCode(methodIndex, rawCode);
-                    modified = true;
-                }
-                ProgessNudge();
-           }
-        }
         
         return modified;
     }

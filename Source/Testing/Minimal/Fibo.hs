@@ -41,6 +41,10 @@ program Fibo
     }
     Hopper()
     {
+        uint start = Time.Seconds;
         uint result = Fibo(10); // 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
-        Serial.WriteChar(Char.EOL); WriteUInt(result); Serial.WriteChar('!');    }
+        uint elapsed = Time.Seconds - start;
+        Serial.WriteChar(Char.EOL); WriteUInt(elapsed); Serial.WriteChar('s');
+        Serial.WriteChar(Char.EOL); WriteUInt(result); Serial.WriteChar('!');    
+    }
 }

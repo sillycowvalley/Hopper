@@ -3,8 +3,6 @@ program ValueTypeRuntimeTests
     //#define CPU_Z80
     //#define MCU
     
-    #define CPU_6502
-    
     //#define CDECL
     
     uses "/Source/Minimal/System"

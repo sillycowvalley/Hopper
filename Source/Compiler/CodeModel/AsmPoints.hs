@@ -2,23 +2,37 @@ unit AsmPoints
 {
     uses "../CodeGen/Asm6502"
     
+    flags Flags
+    {
+        Unreached = 0b0000000000000000,
+        Walked    = 0b0000000000000001,
+        Target    = 0b0000000000000010,
+    }
     
-    <uint>    iCodes;
-    <uint>    iLengths;
-    <uint>    iOperands;    // original
-    <uint>    iJumpTargets; // where can this instruction jump to?
+    flags WalkStats
+    {
+        None      = 0b0000000000000000,
+        Exit      = 0b0000000000000001,
+        ReadA     = 0b0000000000000010,
+        ReadX     = 0b0000000000000100,
+        ReadY     = 0b0000000000001000,
+        WriteA    = 0b0000000000010000,
+        WriteX    = 0b0000000000100000,
+        WriteY    = 0b0000000001000000,
+    }
+    
+    <OpCode> iCodes;       // 6502 instruction opCodes
+    <uint>   iOperands;    // 6502 instruction operands (could be byte or word)
+    <uint>   iLengths;     // 6502 instruction lengths (not operand width)
+    <Flags>  iFlags;        // reachable? jump target?
+    <uint>   iDebugLines;   // Hopper source line associated with this instruction (mostly 0)
     
     < <uint> > iJumpTables;
     
-    <uint,bool>   iReachable;
-    
     uint currentMethod;
-    <uint,string> indexDebugInfo;
-    <uint,uint> indexMap;   // index -> address
-    <uint,uint> addressMap; // address -> index
-    
-    <uint,uint> inlineMethodCandidates; 
-    
+    <uint,uint> indexToAddress; // <iIndex,address>
+    <uint,uint> addressToIndex; // <address,iIndex>
+           
     OpCode opcodeNOP;
     OpCode opcodeCALL;
     
@@ -72,15 +86,7 @@ unit AsmPoints
     
     bool IsTargetOfJumps(uint iIndex)
     {
-        foreach (var jump in iJumpTargets)
-        {
-            if (jump == iIndex)
-            {
-                return true;
-            }
-        }
-        ProgessNudge();
-        return false;
+        return Flags.Target == (iFlags[iIndex] & Flags.Target);
     }
     
     Reset()
@@ -96,9 +102,7 @@ unit AsmPoints
         opcodeiJMP = Asm6502.GetiJMPInstruction();
         opcodeJMPIndex = GetJMPIndexInstruction();
         opcodeCALL = Asm6502.GetJSRInstruction();
-        inlineMethodCandidates.Clear();
     }
-    bool InlineCandidatesExist { get { return inlineMethodCandidates.Count != 0; } }
     
     uint Load(uint methodIndex, string when)
     {
@@ -107,13 +111,15 @@ unit AsmPoints
         iCodes.Clear();
         iLengths.Clear();
         iOperands.Clear();
-        iJumpTargets.Clear();
+        iDebugLines.Clear();
         iJumpTables.Clear();
-        
-        indexDebugInfo.Clear();
-        iReachable.Clear();
+        iFlags.Clear();
         
         <byte> code = Code.GetMethodCode(currentMethod);
+        
+        <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
+        <string,string> debugInfo = methodSymbols["debug"];
+        
         uint codeLength = code.Count;
         uint i = 0;
         
@@ -123,6 +129,7 @@ unit AsmPoints
                       
             
             OpCode opCode = OpCode(code[i]);
+            uint instructionAddress = i;
             uint instructionLength = Asm6502.GetInstructionLength(opCode);
             switch (instructionLength)
             {
@@ -140,10 +147,18 @@ unit AsmPoints
                 instructionLength += 512;
             }
             
-            iCodes.Append(byte(opCode));
+            iCodes.Append(opCode);
             iLengths.Append(instructionLength);
             iOperands.Append(operand);
-            iJumpTargets.Append(Asm6502.InvalidAddress); // invalid for now
+            iFlags.Append(Flags.Unreached);
+            
+            uint debugLine = 0;
+            if (debugInfo.Contains(instructionAddress.ToString()))
+            {
+                _ = UInt.TryParse(debugInfo[instructionAddress.ToString()], ref debugLine);
+            }
+            iDebugLines.Append(debugLine);
+            
             <uint> empty;
             iJumpTables.Append(empty); // place holder
             
@@ -176,30 +191,6 @@ unit AsmPoints
         
         InitializeJumpTargets();
         
-        // convert the debugInfo from instruction addresses to instruction indices
-        <string,string> debugInfo = Code.GetMethodDebugInfo(currentMethod);
-        
-        foreach (var kv in debugInfo)
-        {
-            string saddress = kv.key;
-            uint address;
-            if (UInt.TryParse(saddress, ref address))
-            {
-            }      
-            if (address < code.Count) // why?
-            {
-                uint index;
-                if (!addressMap.Contains(address)) // address -> index
-                {
-                    PrintLn();
-                    PrintLn("Bad DebugInfo for method 0x" + currentMethod.ToHexString(4) + " : " + kv.key + "->" + kv.value + " " + when);
-                }
-                else
-                {
-                    indexDebugInfo[addressMap[address]] = kv.value;
-                }
-            }
-        }
         ProgessNudge();
         return codeLength;
     }
@@ -217,7 +208,7 @@ unit AsmPoints
             {
                 break;
             }
-            OpCode opCode  = OpCode(iCodes[iIndex]);
+            OpCode opCode  = iCodes[iIndex];
             AddressingModes addressingMode;
             bool isConditional;
             if (Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional))
@@ -256,9 +247,9 @@ unit AsmPoints
                     Die(0x0B); 
                 }
                 uint jumpIndex;
-                if (addressMap.Contains(jumpTargetAddress))
+                if (addressToIndex.Contains(jumpTargetAddress))
                 {
-                    jumpIndex = addressMap[jumpTargetAddress];
+                    jumpIndex = addressToIndex[jumpTargetAddress];
                 }
                 else
                 {
@@ -266,7 +257,7 @@ unit AsmPoints
                     // does not mess up reachableness.
                     jumpIndex = iIndex;
                 }
-                iJumpTargets.SetItem(iIndex, jumpIndex);
+                iOperands.SetItem(iIndex, jumpIndex);
             }
             instructionAddress += iLengths[iIndex];
             iIndex++;
@@ -281,10 +272,11 @@ unit AsmPoints
         
         RebuildMaps();
         
+        <string,string> debugInfo;
         loop
         {
             
-            OpCode opCode = OpCode(iCodes[index]);
+            OpCode opCode = iCodes[index];
             uint instructionLength = iLengths[index];
             
             code.Append(byte(opCode));
@@ -299,19 +291,19 @@ unit AsmPoints
                 if (isJump)
                 {
                     // use the index to calculate the new offset
-                    long currentAddress = indexMap[index];
+                    long currentAddress = indexToAddress[index];
                     
                     //Print((index.ToString()).Pad(' ', 3) + (currentAddress+0xE004).ToHexString(4) + " " + opCode.ToHexString(2) + " " + Asm6502.GetName(byte(opCode)) + " ");
                     
-                    uint jumpTarget     = iJumpTargets[index];
+                    uint jumpTarget     = iOperands[index];
                     long jumpAddress;
-                    if (indexMap.Contains(jumpTarget))
+                    if (indexToAddress.Contains(jumpTarget))
                     {
-                        jumpAddress = indexMap[jumpTarget];
+                        jumpAddress = indexToAddress[jumpTarget];
                     }
                     else
                     {
-                        if (iReachable[index])
+                        if (Flags.Walked == (iFlags[index] & Flags.Walked))
                         {
                             Die(0x0B); // a reachable jump instruction has a target not in the map!?
                         }
@@ -373,6 +365,10 @@ unit AsmPoints
                     }
                 }
             }
+            if (iDebugLines[index] != 0)
+            {
+                debugInfo[(indexToAddress[index]).ToString()] = (iDebugLines[index]).ToString();
+            }
             
             index++;
             if (index == instructionCount)
@@ -380,19 +376,7 @@ unit AsmPoints
                 break;
             }
         }
-        
-        // convert the indexDebugInfo back from instruction indices to instruction addresses
-        <string,string> debugInfo;
-        foreach (var kv in indexDebugInfo)
-        {
-            index = kv.key;
-            if (indexMap.Contains(index)) // why?
-            {
-                uint address = indexMap[index];
-                debugInfo[address.ToString()] = kv.value;
-            }
-        }
-        
+           
         // update the method with the optimized code            
         Code.SetMethodCode(currentMethod, code);
         Code.SetMethodDebugInfo(currentMethod, debugInfo);
@@ -402,8 +386,8 @@ unit AsmPoints
     
     RebuildMaps()
     {
-        indexMap.Clear();   // index -> address
-        addressMap.Clear(); // address -> index
+        indexToAddress.Clear();   // index -> address
+        addressToIndex.Clear(); // address -> index
         
         uint address;
         uint index;
@@ -413,93 +397,92 @@ unit AsmPoints
             {
                 break;
             }
-            indexMap[index] = address;
-            addressMap[address] = index;
+            indexToAddress[index] = address;
+            addressToIndex[address] = index;
             address = address + iLengths[index];
             index++;
         }
     }
-    MarkReachableInstructions()
+    
+    walkInstructions(uint iIndex)
+    {
+        loop
+        {
+            if (iIndex == iCodes.Count) { break; }
+            if (Flags.Unreached != iFlags[iIndex])
+            {
+                return; // already been here
+            }
+            iFlags[iIndex] = Flags.Walked;
+            
+            OpCode opCode = iCodes[iIndex];
+            AddressingModes addressingMode;
+            bool isConditional;
+            bool isJump = Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional);
+            if (isJump)
+            {
+                if (isConditional)
+                {
+                    uint iTarget = iOperands[iIndex];
+                    walkInstructions(iTarget); // second potential path
+                }
+                else
+                {
+                    iIndex = iOperands[iIndex]; // unconditional branch
+                    continue;
+                }
+            }
+            else if (Asm6502.IsMethodExitInstruction(opCode))
+            {
+                break; // end of this path
+            }
+            iIndex++;
+        }
+    }
+    
+    MarkInstructions()
     {
         uint iIndex = 0;
-        uint icodesLength = iCodes.Count;
-        
-        // reset
-        iReachable.Clear();
-        for (uint i = 0; i < icodesLength; i++)
+        loop
         {
-            iReachable[i] = false;
+            if (iIndex == iCodes.Count) { break; }
+            iFlags[iIndex] = Flags.Unreached;
+            iIndex++;
         }
-        
-        <uint> tailCalls;
-        
-        if ((icodesLength == 0) || (iIndex >= icodesLength))
+        walkInstructions(0);        
+        iIndex = 0;
+        loop
         {
-            return; // empty method?
-        }
-        loop // tailCalls
-        {
-            loop
+            if (iIndex == iCodes.Count) { break; }
+            if (Flags.Unreached != iFlags[iIndex])
             {
-                if (iReachable[iIndex])
-                {
-                    break;
-                }
-                iReachable[iIndex] = true;
-                OpCode opCode = OpCode(iCodes[iIndex]);
+                OpCode opCode = iCodes[iIndex];
                 AddressingModes addressingMode;
                 bool isConditional;
                 bool isJump = Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional);
-                if (isJump && isConditional)
+                if (isJump)
                 {
-                    // conditional branch: explore both paths
-                    tailCalls.Append(iJumpTargets[iIndex]);
-                    
-                    // fall through to 'continue' on the non-branch path ..
-                }
-                else if (isJump)
-                {
-                    // unconditional branch: continue on the branch path only
-                    iIndex = iJumpTargets[iIndex];
-                    continue;
-                }
-                else if (Asm6502.IsMethodExitInstruction(opCode))
-                {
-                    break; // end of this path
-                }
-                iIndex++;
-            } // loop
-            
-            iIndex = 0;
-            while (tailCalls.Count != 0)
-            {
-                iIndex = tailCalls[0];
-                tailCalls.Remove(0);
-                if (!iReachable[iIndex])
-                {
-                    break; // not visited yet, do it ..
+                    uint iTarget = iOperands[iIndex];
+                    iFlags[iTarget] = iFlags[iTarget] | Flags.Target;    
                 }
             }
-            if (iIndex == 0)
-            {
-                break;
-            }
-        } // loop tailCalls
-        ProgessNudge();
+            iIndex++;
+        }
     }
     CollectMethodCalls(<uint,bool> methodsCalled)
     {
         uint iIndex;
         uint icodesLength = iCodes.Count;
+        
         loop
         {
             if (iIndex == icodesLength)
             {
                 break;
             }
-            if (iReachable[iIndex])
+            if ((iFlags[iIndex] & Flags.Walked) == Flags.Walked)
             {
-                OpCode opCode = OpCode(iCodes[iIndex]);
+                OpCode opCode = iCodes[iIndex];
                 if ((opCode == opcodeCALL) || (opCode == opcodeiJMP))
                 {
                     uint callMethodIndex = iOperands[iIndex];
@@ -518,194 +501,9 @@ unit AsmPoints
         } // loop
         ProgessNudge();
     }
-    bool InlineSmallMethods(<byte> rawCode)
-    {
-        uint iCodesLength = iCodes.Count;
-        if (iCodesLength < 2)
-        {
-            return false;
-        }
-        bool modified = false;
-        uint iIndex = 0;
-        loop
-        {
-            if (iIndex >= iCodesLength)
-            {
-                break;
-            }
-            OpCode opCode = OpCode(iCodes[iIndex]);
-            if (opCode == opcodeCALL)
-            {
-                uint callMethodIndex = iOperands[iIndex];
-                foreach (var kv in inlineMethodCandidates)
-                {
-                    uint methodIndex = kv.key;
-                    if (callMethodIndex == methodIndex)
-                    {
-                        uint sizeInBytes = kv.value;
-                        uint availableSpace = iLengths[iIndex];
-                        if (sizeInBytes <= availableSpace)
-                        {
-                            uint inlineAddress = GetInstructionAddress(iIndex);
-                            <byte> inlineCode = Code.GetMethodCode(methodIndex);
-                            
-                            //Instruction retFast = Instruction(inlineCode[inlineCode.Count-1]);
-                            //if (retFast == Instruction.RETFAST)
-                            //{
-                            //    // just so this never ends up inlined
-                            //    inlineCode[inlineCode.Count-1] = byte(Instruction.NOP);
-                            //}
-                            
-                            // replace what was the method call with NOPs
-                            for (uint i=0; i < availableSpace; i++)
-                            {
-                                rawCode.SetItem(inlineAddress+i, byte(opcodeNOP));
-                            }
-                            
-                            // put the NOPs in front so that unconditional branches with PUSHI0 or PUSHI1 are spotted sooner
-                            uint nopOffset = availableSpace - sizeInBytes;
-                            
-                            // fill the space with the bytes from the method (could be trailing NOPs to remove later)
-                            while (inlineCode.Count < sizeInBytes)
-                            {
-                                inlineCode.Append(byte(opcodeNOP));
-                            }
-                            
-                            for (uint i=0; i < sizeInBytes; i++)
-                            {
-                                byte bCode = inlineCode[i];
-                                rawCode.SetItem(inlineAddress+i+nopOffset, bCode);
-                            }
-                            modified = true;
-                        }
-                    }
-                }
-            }
-            iIndex++;
-        } // loop
-        return modified;
-    }
-    
-    RemoveInstruction(uint iRemoval)
-    {
-        RemoveInstruction(iRemoval, true);
-    }
-    RemoveInstruction(uint iRemoval, bool keepDebugLine)
-    {
-        iCodes.Remove(iRemoval);
-        iLengths.Remove(iRemoval);
-        iOperands.Remove(iRemoval);
-        iJumpTargets.Remove(iRemoval);
-        
-        iJumpTables.Remove(iRemoval);
-        
-        // iReachable
-        <uint,bool>   newReachable;
-        foreach (var kv in iReachable)
-        {
-            uint iR = kv.key;
-            if (iR == iRemoval)
-            {
-                // gone
-            }
-            else 
-            {
-                if (iR > iRemoval)
-                {
-                    iR--;
-                }
-                newReachable[iR] = kv.value;
-            }
-        }
-        iReachable = newReachable;
-               
-        // indexDebugInfo
-        <uint,string> newDebugInfo;
-        foreach (var kv in indexDebugInfo)
-        {
-            uint iD          = kv.key;   // instruction index
-            string debugLine = kv.value; // debug source location
-            
-            // 3 scenarios:
-            //   a) instruction index is before iRemoval
-            //   b) instruction index is iRemoval
-            //   c) instruction index after iRemoval
-            
-            if (iD < iRemoval)
-            {
-                // a) trivial:
-                newDebugInfo[iD] = debugLine;
-            }
-            else if ((iD == iRemoval) && keepDebugLine)
-            {
-                // b) absorb the debugLine from the next instruction
-                if (indexDebugInfo.Contains(iD))
-                {
-                    newDebugInfo[iD] = debugLine;
-                }
-            }
-            else  // (iD > iRemoval)
-            {
-                // c)
-                iD--;
-                if (newDebugInfo.Contains(iD))
-                {
-                    // keep the earlier line
-                    // TODO : assumes keys are iterated in order
-                }
-                else
-                {
-                    newDebugInfo[iD] = debugLine;
-                }
-            }
-        }
-        
-        indexDebugInfo = newDebugInfo;
-        
-        // update all jumpTargets:
-        uint iCodeLength = iCodes.Count;
-        for (uint iIndex = 0; iIndex < iCodeLength; iIndex++)
-        {
-            uint jumpTarget = iJumpTargets[iIndex];
-            if (jumpTarget != Asm6502.InvalidAddress)
-            {
-                if (jumpTarget > iRemoval)
-                {
-                    jumpTarget--;
-                }
-                iJumpTargets.SetItem(iIndex, jumpTarget);
-            }
-        }
-        ProgessNudge();
-    }
-    
-    
-    bool OptimizeRemoveUnreachable()
-    {
-        bool modified = false;
-        uint iIndex = 0;
-        loop
-        {
-            if (iIndex >= iCodes.Count)
-            {
-                break;
-            }
-            bool removeInstruction = !iReachable[iIndex];
-            if (removeInstruction)
-            {
-                RemoveInstruction(iIndex, false); // good
-                modified = true;
-            }
-            else
-            {
-                iIndex++;
-            }
-        } // loop
-        return modified;
-    }
     
     // not just NOP, also JMP -> JMP + 1, can cause more short JumpToJump's to work
-    bool OptimizeRemoveNOPs()
+    bool OptimizeRemoveJMPJMPs()
     {
         if (iCodes.Count < 1)
         {
@@ -719,27 +517,24 @@ unit AsmPoints
             {
                 break;
             }
-            OpCode opCode = OpCode(iCodes[iIndex]);
+            OpCode opCode = iCodes[iIndex];
             bool removeIt = false;
             
             AddressingModes addressingMode;
             bool isConditional;
             
-            if (opCode == opcodeNOP)
-            {
-                removeIt = true;
-            }
-            else if (Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional) 
+            if (Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional) 
                   //&& !isConditional - makes no difference if it is conditional, still does nothing
                   && (addressingMode != AddressingModes.AbsoluteIndirect)  // [nnnn]
                   && (addressingMode != AddressingModes.AbsoluteIndirectX) // [nnnn,X]
                   )
             {
-                removeIt = iJumpTargets[iIndex] == iIndex+1;
+                removeIt = iOperands[iIndex] == iIndex+1;
             }
             if (removeIt)
             {
-                RemoveInstruction(iIndex);
+                iCodes[iIndex]   = OpCode.NOP;
+                iLengths[iIndex] = 1;
                 modified = true;
             }
             else
@@ -765,7 +560,7 @@ unit AsmPoints
             {
                 break;
             }
-            OpCode opCode = OpCode(iCodes[iIndex]);
+            OpCode opCode = iCodes[iIndex];
             
             AddressingModes addressingMode;
             bool isConditional;
@@ -776,12 +571,12 @@ unit AsmPoints
                )
             {
                 long myAddress     = GetInstructionAddress(iIndex);
-                long targetAddress = GetInstructionAddress(iJumpTargets[iIndex]);
+                long targetAddress = GetInstructionAddress(iOperands[iIndex]);
                 long offset = myAddress - targetAddress;
                 if ((offset >= -127) && (offset <= 127))
                 {
                     opCode = opcodeBRA;
-                    iCodes.SetItem(iIndex, byte(opCode));
+                    iCodes.SetItem(iIndex, opCode);
                     iLengths.SetItem(iIndex, 2);
                     modified = true;
                 }
@@ -790,6 +585,112 @@ unit AsmPoints
         } // loop
         return modified;
     }
+    
+    bool OptimizeUnreachableToNOP()
+    {
+        if (iCodes.Count < 1)
+        {
+            return false;
+        }
+        bool modified = false;
+        uint iIndex = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode = iCodes[iIndex];
+            
+            AddressingModes addressingMode;
+            bool isConditional;
+            
+            if ((opCode != OpCode.NOP) && (iFlags[iIndex] == Flags.Unreached))
+            {
+                iCodes.SetItem  (iIndex, OpCode.NOP);
+                iLengths.SetItem(iIndex, 1);
+                modified = true;
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    
+    bool OptimizeRemoveNOPs()
+    {
+        bool modified;
+        if (iCodes.Count == 0) { return modified; }
+        uint iIndex = 0;
+        loop
+        {
+            if (iIndex == iCodes.Count) { break; }
+            
+            OpCode opCode0 = iCodes[iIndex];
+            if (opCode0 == OpCode.NOP)
+            {
+                uint debugLine = iDebugLines[iIndex];
+                Flags flags0 =   iFlags[iIndex];
+                
+                // preserve debugLine
+                if (debugLine != 0)
+                {
+                    if (iIndex + 1 < iCodes.Count)
+                    {
+                        if (iDebugLines[iIndex+1] == 0)
+                        {
+                            iDebugLines[iIndex+1] = debugLine;
+                        }
+                    }
+                }
+                // preserve Flags
+                if (Flags.Target == (flags0 & Flags.Target))
+                {
+                    if (iIndex + 1 < iCodes.Count)
+                    {
+                        iFlags[iIndex+1] = iFlags[iIndex+1] | Flags.Target;
+                    }
+                } 
+                
+                // fix jumps
+                uint jIndex = 0;
+                loop
+                {
+                    if (jIndex == iCodes.Count) { break; }
+                    OpCode opCodej = iCodes[jIndex];
+                    
+                    AddressingModes addressingMode;
+                    bool isConditional;
+                    if (Asm6502.IsJumpInstruction(opCodej, ref addressingMode, ref isConditional))
+                    {
+                        uint iTarget = iOperands[jIndex];
+                        if (iTarget > iIndex)
+                        {
+                            iOperands[jIndex] = iTarget - 1; // one slot closer now
+                        }
+                    }
+                    jIndex++;
+                }
+                             
+                // do the deed
+                iCodes.Remove(iIndex);
+                iOperands.Remove(iIndex);
+                iLengths.Remove(iIndex);
+                iDebugLines.Remove(iIndex);
+                iFlags.Remove(iIndex);
+                iJumpTables.Remove(iIndex);
+                              
+                modified = true;
+                continue;
+            }            
+            iIndex++;
+        }
+        
+        return modified;
+    }
+    
+    
+    
+    
     // BEQ BRA -> BNE (for example)
     bool OptimizeBEQBRA()
     {
@@ -806,8 +707,8 @@ unit AsmPoints
             {
                 break;
             }
-            OpCode opCode1 = OpCode(iCodes[iIndex-1]);
-            OpCode opCode0 = OpCode(iCodes[iIndex]);
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex];
             
             AddressingModes addressingMode0;
             bool isConditional0;
@@ -821,7 +722,7 @@ unit AsmPoints
             {
                 if (!IsTargetOfJumps(iIndex))
                 {
-                    if (iJumpTargets[iIndex-1] == iIndex + 1)
+                    if (iOperands[iIndex-1] == iIndex + 1)
                     {
                         if (addressingMode1 == AddressingModes.Relative)        // BnC or BnS
                         {
@@ -835,8 +736,12 @@ unit AsmPoints
                             iOperands.SetItem(iIndex, iOperands[iIndex-1]);
                             iLengths.SetItem (iIndex, iLengths[iIndex-1]);
                         }
-                        iCodes.SetItem(iIndex, byte(opCode1));
-                        RemoveInstruction(iIndex-1);
+                        iCodes.SetItem(iIndex, opCode1);
+                        
+                        
+                        iCodes  [iIndex-1] = OpCode.NOP;
+                        iLengths[iIndex-1] = 1;
+                
                         modified = true;
                     }
                 }
@@ -862,7 +767,7 @@ unit AsmPoints
             {
                 break;
             }
-            OpCode opCode0 = OpCode(iCodes[iIndex]);
+            OpCode opCode0 = iCodes[iIndex];
             
             AddressingModes addressingMode0;
             bool isConditional0;
@@ -874,11 +779,11 @@ unit AsmPoints
                 AddressingModes addressingMode1;
                 bool isConditional1;
                 
-                uint iTarget = iJumpTargets[iIndex];
-                OpCode opCode1 = OpCode(iCodes[iTarget]);
+                uint iTarget = iOperands[iIndex];
+                OpCode opCode1 = iCodes[iTarget];
                 if (Asm6502.IsMethodExitInstruction(opCode1))
                 {
-                    iCodes.SetItem(iIndex, byte(opCode1));
+                    iCodes.SetItem(iIndex, opCode1);
                     iLengths.SetItem(iIndex, iLengths[iTarget]);
                     iOperands.SetItem(iIndex, iOperands[iTarget]);
                     modified = true;
@@ -905,7 +810,7 @@ unit AsmPoints
             {
                 break;
             }
-            OpCode opCode0 = OpCode(iCodes[iIndex]);
+            OpCode opCode0 = iCodes[iIndex];
             
             AddressingModes addressingMode0;
             bool isConditional0;
@@ -917,21 +822,21 @@ unit AsmPoints
                 AddressingModes addressingMode1;
                 bool isConditional1;
                 
-                uint iTarget0 = iJumpTargets[iIndex];
-                OpCode opCode1 = OpCode(iCodes[iTarget0]);                               // the 2nd jump can be conditional - future optimization ..
+                uint iTarget0 = iOperands[iIndex];
+                OpCode opCode1 = iCodes[iTarget0];                               // the 2nd jump can be conditional - future optimization ..
                 if (   Asm6502.IsJumpInstruction(opCode1, ref addressingMode1, ref isConditional1) && !isConditional1 
                     && ((addressingMode1 == AddressingModes.Relative) || (addressingMode1 == AddressingModes.Absolute))
                     && (iTarget0 != iIndex) // circular
                    )
                 {
-                    uint iTarget1 = iJumpTargets[iTarget0];
+                    uint iTarget1 = iOperands[iTarget0];
                     
                     long myAddress     = GetInstructionAddress(iIndex);
                     long targetAddress = GetInstructionAddress(iTarget1);
                     if (addressingMode0 == AddressingModes.Absolute)
                     {
                         // easy case
-                        iJumpTargets.SetItem(iIndex, iTarget1);
+                        iOperands.SetItem(iIndex, iTarget1);
                         modified = true;
                     }
                     else
@@ -942,7 +847,7 @@ unit AsmPoints
                         long offset = targetAddress - (myAddress+instructionLength);
                         if ((offset >= -128) && (offset <= 127))
                         {
-                            iJumpTargets.SetItem(iIndex, iTarget1);
+                            iOperands.SetItem(iIndex, iTarget1);
                             modified = true;
                         }
                     }
@@ -969,16 +874,18 @@ unit AsmPoints
             {
                 break;
             }
-            OpCode opCode1 = OpCode(iCodes[iIndex-1]);
-            OpCode opCode0 = OpCode(iCodes[iIndex]);
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex];
             if ((opCode0 == opcodeRTS) && (opCode1 == opcodeRTS))
             {
-                RemoveInstruction(iIndex-1);
+                iCodes  [iIndex-1] = OpCode.NOP;
+                iLengths[iIndex-1] = 1;
                 modified = true;
             }
             else if ((opCode0 == opcodeRTI) && (opCode1 == opcodeRTI))
             {
-                RemoveInstruction(iIndex-1);
+                iCodes  [iIndex-1] = OpCode.NOP;
+                iLengths[iIndex-1] = 1;
                 modified = true;
             }
             iIndex++;
@@ -1002,13 +909,13 @@ unit AsmPoints
             {
                 break;
             }
-            OpCode opCode1 = OpCode(iCodes[iIndex-1]);
-            OpCode opCode0 = OpCode(iCodes[iIndex]);
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex];
             if ((opCode0 == opcodeRTS) && (opCode1 == opcodeJSR))
             {
                 if (!IsTargetOfJumps(iIndex))
                 {
-                    iCodes.SetItem(iIndex-1, byte(opcodeiJMP));
+                    iCodes.SetItem(iIndex-1, opcodeiJMP);
                     modified = true;
                 }
             }
