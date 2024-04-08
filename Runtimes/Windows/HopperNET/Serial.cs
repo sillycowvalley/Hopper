@@ -598,7 +598,7 @@ namespace HopperNET
                     }
                 }
             }
-            //Diagnostics.OutputDebug("\nWriteChar: 0x" + ((byte)outChar).ToString("X2") + " " + (outChar >= ' ' ? outChar : ' '));
+            Diagnostics.OutputDebug("\nWriteChar: 0x" + ((byte)outChar).ToString("X2") + " " + (outChar >= ' ' ? outChar : ' '));
         }
         public static void WriteString(HopperString str)
         {
@@ -670,7 +670,7 @@ namespace HopperNET
                     Diagnostics.OutputDebug("ReadChar: " + ex.Message);
                 }
             }
-            //Diagnostics.OutputDebug("\nReadChar: 0x" + ((byte)readChar).ToString("X2") + " " + (readChar >= ' ' ? readChar : ' ') );
+            Diagnostics.OutputDebug("\nReadChar: 0x" + ((byte)readChar).ToString("X2") + " " + (readChar >= ' ' ? readChar : ' ') );
             return readChar;
         }
 

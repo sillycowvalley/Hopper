@@ -29,7 +29,7 @@ unit SerialDevice
         LDA #0b00000000 // all pins are inputs
         STA DDRA
         
-        LDA #0b00000100 // select PRA and clear interrupt flags
+        LDA #0b00000010 // select PRA and clear interrupt flags
         STA CRA
         
         LDA #0b00000000 // select DDRB and clear interrupt flags
@@ -38,7 +38,7 @@ unit SerialDevice
         LDA #0b11111111 // all pins are outputs
         STA DDRB
         
-        LDA #0b00000100 // select PRB and clear interrupt flags
+        LDA #0b00000010 // select PRB and clear interrupt flags
         STA CRB
         
     }

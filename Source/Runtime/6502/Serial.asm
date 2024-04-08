@@ -12,8 +12,8 @@ unit Serial
     // Location of the Serial input buffer (256 bytes)
     const uint InBuffer        = Address.SerialInBuffer;
     
-    uses "Devices/ACIA6850"
-    //uses "Devices/PIA6821"
+    //uses "Devices/ACIA6850"
+    uses "Devices/PIA6821"
     
     // initialize or reset the serial ACIA firmware
     Initialize()
