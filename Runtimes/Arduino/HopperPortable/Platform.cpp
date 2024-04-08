@@ -543,7 +543,12 @@ float nativeFloatFromHopperFloat(UInt hopperFloat)
 
     return nativeFloat;
 }
-
+UInt External_GetSeconds()
+{
+  unsigned long ticks = millis();
+  UInt seconds = (UInt)(ticks / 1000);
+  return seconds;
+}
 UInt External_GetMillis()
 {
     unsigned long ticks = millis();

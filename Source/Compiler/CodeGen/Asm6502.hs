@@ -10,7 +10,7 @@ unit Asm6502
     
     uint InvalidAddress { get { return 0xFFFF; } }
     
-    uint SwitchJumpAddress { get { return 0x0040; } } // M0 and M1 on Zero page used by switch statements
+    uint SwitchJumpAddress { get { return 0x0020; } } // W0 and W1 on Zero page used by switch statements
     
     flags AddressingModes
     {

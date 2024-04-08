@@ -45,6 +45,67 @@ byte    RAM[RAM_END-RAM_START+1];
 #include "romImage.h"
 
 ////////////////////////////////////////////////////////////////////
+// 65c02 Processor Control
+////////////////////////////////////////////////////////////////////
+
+// Digital Pin Assignments
+#define DATA_OUT PORTL
+#define DATA_IN  PINL
+#define ADDR_H   PINC
+#define ADDR_L   PINA
+#define ADDR     ((unsigned int) (ADDR_H << 8 | ADDR_L))
+
+#define uP_RESET_N  38
+#define uP_RW_N     40
+#define uP_RDY      39
+#define uP_SO_N     41
+#define uP_IRQ_N    50
+#define uP_NMI_N    51
+#define uP_E        52
+#define uP_GPIO     53
+
+// Fast routines to drive clock signals high/low; faster than digitalWrite
+// required to meet >100kHz clock freq for 6809e.
+// 6502 & z80 do not have this requirement.
+//
+#define CLK_Q_HIGH  (PORTB = PORTB | 0x01)
+#define CLK_Q_LOW   (PORTB = PORTB & 0xFE)
+#define CLK_E_HIGH  (PORTB = PORTB | 0x02)
+#define CLK_E_LOW   (PORTB = PORTB & 0xFD)
+#define STATE_RW_N  (PING & 0x02)
+
+#define DIR_IN  0x00
+#define DIR_OUT 0xFF
+#define DATA_DIR   DDRL
+#define ADDR_H_DIR DDRC
+#define ADDR_L_DIR DDRA
+
+uint16_t  uP_ADDR;
+unsigned int  clockCycle;
+
+////////////////////////////////////////////////////////////////////
+// Time APIs on Zero Page
+////////////////////////////////////////////////////////////////////
+
+#define TICKS_START   0x0028
+#define TICKS_END     0x002B
+
+uint32_t ticks;
+
+inline __attribute__((always_inline))
+byte getTicks(uint16_t address)
+{
+    address -= 0x0028; // 0..3
+    if (address == 0)
+    {
+        ticks = millis();
+    }
+    byte * pTicks = (byte *)&ticks;
+    return pTicks[address];
+}
+
+
+////////////////////////////////////////////////////////////////////
 // Motorolla 6850 ACIA
 ////////////////////////////////////////////////////////////////////
 
@@ -59,6 +120,7 @@ byte aciaControl;
 byte aciaRxData;
 byte aciaTxData;
 byte aciaStatus;
+byte aciaIRQTicks;
 
 const byte ACIA_TDRE = 0b00000010;
 const byte ACIA_RDRF = 0b00000001;
@@ -66,10 +128,11 @@ const byte ACIA_INTR = 0b10000000;
 
 void init6850ACIA()
 {
-    aciaControl = 0;
-    aciaRxData  = 0;
-    aciaTxData  = 0;
-    aciaStatus  = ACIA_TDRE;  // bit 1 set means TDRE is empty and ready - we should always be ready to send data
+    aciaControl  = 0;
+    aciaRxData   = 0;
+    aciaTxData   = 0;
+    aciaStatus   = ACIA_TDRE;  // bit 1 set means TDRE is empty and ready - we should always be ready to send data
+    aciaIRQTicks = 0;
 }
 
 inline __attribute__((always_inline))
@@ -84,9 +147,11 @@ void service6850ACIA()
                 int ch = Serial.read();
                 aciaRxData   = ch & 0xFF;                             // byte from int?          
                 aciaStatus   = aciaStatus | (ACIA_INTR | ACIA_RDRF);  // interrupt and RDRF bits set to indicate that data is ready
+
+                //digitalWrite(uP_IRQ_N, LOW);
+                //aciaIRQTicks = 2;
             }
         }
-        
     }
 }
 
@@ -256,44 +321,7 @@ byte rx6821PIA(uint16_t address)
 }
 #endif
 
-////////////////////////////////////////////////////////////////////
-// 65c02 Processor Control
-////////////////////////////////////////////////////////////////////
 
-// Digital Pin Assignments
-#define DATA_OUT PORTL
-#define DATA_IN  PINL
-#define ADDR_H   PINC
-#define ADDR_L   PINA
-#define ADDR     ((unsigned int) (ADDR_H << 8 | ADDR_L))
-
-#define uP_RESET_N  38
-#define uP_RW_N     40
-#define uP_RDY      39
-#define uP_SO_N     41
-#define uP_IRQ_N    50
-#define uP_NMI_N    51
-#define uP_E        52
-#define uP_GPIO     53
-
-// Fast routines to drive clock signals high/low; faster than digitalWrite
-// required to meet >100kHz clock freq for 6809e.
-// 6502 & z80 do not have this requirement.
-//
-#define CLK_Q_HIGH  (PORTB = PORTB | 0x01)
-#define CLK_Q_LOW   (PORTB = PORTB & 0xFE)
-#define CLK_E_HIGH  (PORTB = PORTB | 0x02)
-#define CLK_E_LOW   (PORTB = PORTB & 0xFD)
-#define STATE_RW_N  (PING & 0x02)
-
-#define DIR_IN  0x00
-#define DIR_OUT 0xFF
-#define DATA_DIR   DDRL
-#define ADDR_H_DIR DDRC
-#define ADDR_L_DIR DDRA
-
-uint16_t  uP_ADDR;
-unsigned int  clockCycle;
 
 ////////////////////////////////////////////////////////////////////
 // Processor Control Loop
@@ -327,6 +355,10 @@ void cpu_tick()
           data = rx6850ACIA(uP_ADDR);
       }
 #endif
+      else if ( (uP_ADDR <= TICKS_END) && (TICKS_START <= uP_ADDR) ) // Time on Zero Page
+      {
+          data = getTicks(uP_ADDR);
+      }
       else if ( (uP_ADDR <= RAM_END) && (RAM_START <= uP_ADDR) ) // RAM?
       {
           data = RAM[uP_ADDR - RAM_START];
@@ -465,7 +497,14 @@ void loop()
     }
 #endif
 #ifdef ACIA6850
-    
+    //if (aciaIRQTicks != 0)
+    //{
+    //    aciaIRQTicks--;
+    //    if (aciaIRQTicks == 0)
+    //    {
+    //        digitalWrite(uP_IRQ_N, HIGH);    
+    //    }
+    //}
     if (clicks == 24)
     {
         service6850ACIA();

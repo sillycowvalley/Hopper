@@ -236,6 +236,7 @@ enum SysCalls {
     eSystemArgumentsGet = 0x0059,
     eSystemCurrentDirectoryGet = 0x005A,
     eSystemCurrentDirectorySet = 0x005B,
+    eTimeSeconds = 0x005D,
     eFileExists = 0x005F,
     eFileNew = 0x0060,
     eFileOpen = 0x0061,

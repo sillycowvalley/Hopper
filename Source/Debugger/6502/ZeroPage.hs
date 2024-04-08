@@ -27,10 +27,6 @@ unit ZP
     
     const byte ZCNP                  = 0x0F;
     
-    const byte ZBRKL                 = 0x20; // .. 0x2F
-    const byte ZBRKH                 = 0x30; // .. 0x3F
-    
-    
     const byte ZACC                  = 0x10;
     const byte ZACCL                 = 0x10;
     const byte ZACCH                 = 0x11;
@@ -53,7 +49,15 @@ unit ZP
     
     const byte ZACCT                 = 0x1A;
     const byte ZTOPT                 = 0x1B;
-    const byte ZNEXTT                = 0x1C;    
+    const byte ZNEXTT                = 0x1C;  
+    
+    const byte ZT0                   = 0x28;
+    const byte ZT1                   = 0x29;
+    const byte ZT2                   = 0x2A;
+    const byte ZT3                   = 0x2B;
+          
+    const byte ZBRKL                 = 0x30; // .. 0x3F
+    const byte ZBRKH                 = 0x40; // .. 0x4F  
     
     // Zero Page FLAGS:
     flags HopperFlags

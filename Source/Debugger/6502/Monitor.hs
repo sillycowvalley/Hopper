@@ -96,7 +96,7 @@ unit Monitor
         Serial.WriteChar(ch);
     }
     
-    /*
+    
     bool SerialIsAvailable
     {
         get 
@@ -108,7 +108,7 @@ unit Monitor
     {
         return Serial.ReadChar();
     }
-    */
+    /*
     bool haveCharacter;
     char lastCharacter;
     bool SerialIsAvailable
@@ -150,6 +150,7 @@ unit Monitor
         }
         return char(0);
     }
+    */
     
 #endif
 

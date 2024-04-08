@@ -98,6 +98,8 @@ unit SysCalls
         SystemCurrentDirectoryGet = 0x5A,
         SystemCurrentDirectorySet = 0x5B,
         
+        TimeSeconds      = 0x5D,
+        
         FileExists   = 0x5F,
         FileNew      = 0x60,
         FileOpen     = 0x61,

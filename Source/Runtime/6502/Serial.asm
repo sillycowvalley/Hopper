@@ -4,9 +4,9 @@ unit Serial
     const byte InWritePointer        = ZP.SerialInWritePointer;
     const byte InReadPointer         = ZP.SerialInReadPointer;
     const byte BreakFlag             = ZP.SerialBreakFlag;
-    const byte WorkSpaceHexIn        = ZP.M0;
+    const byte WorkSpaceHexIn        = ZP.W0;
 #ifndef CPU_65C02S    
-    const byte WorkSpaceWaitForChar  = ZP.M1;
+    const byte WorkSpaceWaitForChar  = ZP.W1;
 #endif
     
     // Location of the Serial input buffer (256 bytes)

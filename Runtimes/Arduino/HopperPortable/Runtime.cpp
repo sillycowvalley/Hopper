@@ -457,13 +457,13 @@ void Runtime_DumpPage(Byte iPage)
                 }
                 default:
                 {
-                    if ((address >= 32) && (address <= 32 + 0x0F))
+                    if ((address >= 48) && (address <= 48 + 0x0F))
                     {
-                        data = Byte(HopperVM_GetBreakpoint(address - 32) & 0xFF);
+                        data = Byte(HopperVM_GetBreakpoint(address - 48) & 0xFF);
                     }
-                    else if ((address >= 48) && (address <= 48 + 0x0F))
+                    else if ((address >= 64) && (address <= 64 + 0x0F))
                     {
-                        data = Byte(HopperVM_GetBreakpoint(address - 48) >> 0x08);
+                        data = Byte(HopperVM_GetBreakpoint(address - 64) >> 0x08);
                     }
                     else
                     {
@@ -6397,6 +6397,12 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         UInt address = External_GetMillis();
         HopperVM_Push(address, Type::eLong);
+        break;
+    }
+    case SysCalls::eTimeSeconds:
+    {
+        UInt seconds = External_GetSeconds();
+        HopperVM_Push(seconds, Type::eUInt);
         break;
     }
     case SysCalls::eTimeDelay:

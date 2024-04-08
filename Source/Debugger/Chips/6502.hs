@@ -737,9 +737,20 @@ unit W65C02
              " " + idy.ToHexString(4) + " ";
         return registers;
     }
+    long ms;
     byte GetMemory(uint address)
     {
         byte value;
+        if ((address >= ZT0) && (address <= ZT3))
+        {
+            if (address == ZT0)
+            {
+                ms = Time.Millis; // update all 4 at the same time
+            }
+            byte index = byte(address-ZT0);
+            value = ms.GetByte(index);
+        }
+        else 
         if (!ACIA.OfferRead(address, ref value))
         {
             if (address >= 0xFFFA)

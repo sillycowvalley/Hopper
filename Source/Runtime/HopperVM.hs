@@ -3851,6 +3851,11 @@ unit HopperVM
                 Error = 0x0A;
 #endif
             }
+            case SysCalls.TimeSeconds:
+            {
+                uint seconds = External.GetSeconds();
+                Push(seconds, Type.UInt);
+            }
             case SysCalls.TimeDelay:
             {
                 External.Delay(Pop());

@@ -314,7 +314,8 @@ namespace HopperNET
         SystemCurrentDirectoryGet = 0x5A,
         SystemCurrentDirectorySet = 0x5B,
         SystemBeep = 0x5C,
-        //SystemExecute = 0x5D,
+        TimeSecondsGet = 0x5D,
+
         //SystemRegisterObject = 0x5E, unused
         FileExists = 0x5F,
         FileNew = 0x60,
@@ -6294,10 +6295,10 @@ namespace HopperNET
                 //    Int32 micros = HopperTime.Micros;
                 //    PushLong(micros);
                 //    break;
-                //case SysCall.TimeSecondsGet:
-                //    UInt16 seconds = HopperTime.Seconds;
-                //    Push(seconds, HopperType.tUInt);
-                //    break;
+                case SysCall.TimeSecondsGet:
+                    UInt16 seconds = HopperTime.Seconds;
+                    Push(seconds, HopperType.tUInt);
+                    break;
 
                 case SysCall.TimeTime_Get:
                     {

@@ -21,6 +21,8 @@ unit Instruction
         
         SYSCALL    = 0x26,
         
+        DECSP      = 0x28,
+        
         RET        = 0x35,
         RETRES     = 0x36,
         
@@ -137,6 +139,7 @@ unit Instruction
             }
             case Instructions.SYSCALL:
             case Instructions.CAST:
+            case Instructions.DECSP:
             {
                 LDA #1
             }
@@ -1121,6 +1124,20 @@ unit Instruction
      
         PushTop();   
     }
+    
+    decSP()
+    {
+        ConsumeOperandB();
+        // SP -= A
+        TAX
+        loop
+        {
+            CPX #0
+            if (Z) { break; }
+            DEC ZP.SP
+            DEX
+        }
+    }
     popLocal()
     {
         ConsumeOperand();
@@ -1246,6 +1263,10 @@ unit Instruction
             case Instructions.ENTER:
             {
                 enter();
+            }
+            case Instructions.DECSP:
+            {
+                decSP();
             }
             case Instructions.PUSHI:
             {

@@ -116,8 +116,8 @@ unit SysCalls
         addEntry("System.CurrentDirectory_Get");
         addEntry("System.CurrentDirectory_Set");
         addEntry("System.Beep");
-        addEntry("System.Execute"); // unused
-        addEntry("System.RegisterObject");
+        addEntry("Time.Seconds_Get");
+        addEntry("System.RegisterObject"); // unused
         
         addEntry("File.Exists");
         addEntry("File.New");

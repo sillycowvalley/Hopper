@@ -72,10 +72,11 @@ unit SerialDevice
             }
         }
 #else
-        BIT StatusRegister 
-        if (MI) // interrupt request by 6850
+        PHA
+        LDA StatusRegister 
+        AND # 0b10000000
+        if (NZ) // interrupt request by 6850
         {
-            PHA
             LDA StatusRegister 
             AND # 0b00000001
             if (NZ) // RDRF : receive data register full
@@ -95,8 +96,8 @@ unit SerialDevice
                 }
                 PLA TAX // can't use XREG in ISR
             }
-            PLA
         }
+        PLA
 #endif        
     }
     

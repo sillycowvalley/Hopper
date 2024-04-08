@@ -469,6 +469,10 @@ unit External
         return hopperLongFromNativeLong(Millis); 
     }
 #endif
+    uint GetSeconds()
+    {
+        return uint(Millis / 1000); 
+    }
     Delay(uint ms)
     {
         Time.Delay(ms);

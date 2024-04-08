@@ -86,6 +86,7 @@ void External_WriteToJumpTable(Byte opCode, InstructionDelegate instructionDeleg
 bool External_FunctionCall(UInt jumpTable, Byte opCode);
 
 UInt External_GetMillis();
+UInt External_GetSeconds();
 void External_Delay(UInt ms);
 void External_PinMode(Byte pin, Byte value);
 void External_DigitalWrite(Byte pin, Byte value);

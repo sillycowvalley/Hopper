@@ -1,13 +1,21 @@
 unit SysCall
 {
+    uses "6502/Time"
+    uses "6502/Long"
+    
     enum SysCalls
     {
+        TimeSeconds     = 0x5D,
+        
         DiagnosticsDie  = 0x7C,
         
         SerialConnect   = 0xA2,
         SerialWriteChar = 0xA7,
         
         ByteToHex       = 0xBE,
+        
+        TimeDelay       = 0xC6,
+        
         IntGetByte      = 0xE1,
         IntFromBytes    = 0xE4,
     }
@@ -101,6 +109,15 @@ unit SysCall
             case SysCalls.SerialWriteChar:
             {
                 serialWriteChar();
+            }
+            
+            case SysCalls.TimeDelay:
+            {
+                Time.Delay();
+            }
+            case SysCalls.TimeSeconds:
+            {
+                Time.Seconds();
             }
             
             case SysCalls.ByteToHex:
