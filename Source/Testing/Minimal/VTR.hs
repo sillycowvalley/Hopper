@@ -732,9 +732,8 @@ program ValueTypeRuntimeTests
         GEI();  // GEI
         LEI();  // LEI
         GTI();  // GTI
-        
-        //Ref();  // PUSHSTACKADDR, PUSHREL, POPREL
-        //RefRef();
+        Ref();  // PUSHSTACKADDR, PUSHREL, POPREL
+        RefRef();
         
         Serial.WriteChar(Char.EOL); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
     }

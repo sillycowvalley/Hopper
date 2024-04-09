@@ -35,11 +35,20 @@ unit Instruction
         POPLOCAL   = 0x38,
         PUSHLOCAL  = 0x39,
         
+        POPREL     = 0x3A,
+        PUSHREL    = 0x3B,
+        
         POPGLOBAL  = 0x3C,
         PUSHGLOBAL = 0x3D,
         
+        PUSHSTACKADDR = 0x3E, 
+        
         BOOLNOT    = 0x41,
         BITNOT     = 0x42,
+        
+        PUSHI0     = 0x44,
+        
+        PUSHGP     = 0x47,
         
         CAST       = 0x51,
         
@@ -100,6 +109,10 @@ unit Instruction
         switch (X)
         {
             case Instructions.ENTER:
+            
+            case Instructions.PUSHI0:
+            case Instructions.PUSHGP:
+            
             case Instructions.ADD:
             case Instructions.ADDI:
             case Instructions.SUB:
@@ -158,6 +171,10 @@ unit Instruction
             case Instructions.PUSHLOCAL:
             case Instructions.POPGLOBAL:
             case Instructions.PUSHGLOBAL:
+            
+            case Instructions.PUSHSTACKADDR:
+            case Instructions.PUSHREL:
+            case Instructions.POPREL:
             {
                 LDA #2
             }
@@ -1107,6 +1124,15 @@ unit Instruction
         STA ZP.TOPT
         Stacks.PushTop();
     }
+    pushI0()
+    {
+        LDA # 0
+        STA ZP.TOPL
+        STA ZP.TOPH
+        LDA #Types.UInt
+        STA ZP.TOPT
+        Stacks.PushTop();
+    }
     pushLocal()
     {
         ConsumeOperand();
@@ -1138,6 +1164,64 @@ unit Instruction
             DEX
         }
     }
+    
+    pushStackAddr()
+    {
+        // <int offset operand> pushed to [top] as uint stack address
+        ConsumeOperand(); // -> IDX
+        // address = BP + operand
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        
+        STA ZP.TOPL
+        LDA # 0
+        STA ZP.TOPH
+        LDA # Types.Reference
+        STA ZP.TOPT
+        PushTop();
+    }
+    
+    pushRel()
+    {
+        ConsumeOperand(); // -> IDX    
+        // address of reference = BP + operand
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAX
+        // get the actual address from reference address:
+        LDY Address.ValueStackLSB, X
+                 
+        LDA Address.ValueStackLSB, Y
+        STA ZP.TOPL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.TOPH
+        LDA Address.TypeStackLSB, Y
+        STA ZP.TOPT
+        PushTop();
+    }
+    
+    popRel()
+    {
+        ConsumeOperand(); // -> IDX    
+        // address of reference = BP + operand
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAX
+        // get the actual address from reference address:
+        LDY Address.ValueStackLSB, X
+        
+        PopTop(); // -> TOP
+        LDA ZP.TOPL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.TOPH
+        STA Address.ValueStackMSB, Y
+        LDA ZP.TOPT
+        STA Address.TypeStackLSB, Y
+    }
+    
     popLocal()
     {
         ConsumeOperand();
@@ -1272,6 +1356,10 @@ unit Instruction
             {
                 pushI();
             }
+            case Instructions.PUSHGP:
+            {
+                pushI0();
+            }
             case Instructions.PUSHLOCAL:
             {
                 pushLocal();
@@ -1287,6 +1375,18 @@ unit Instruction
             case Instructions.POPGLOBAL:
             {
                 popGlobal();
+            }
+            case Instructions.PUSHSTACKADDR:
+            {
+                pushStackAddr();
+            }
+            case Instructions.PUSHREL:
+            {
+                pushRel();
+            }
+            case Instructions.POPREL:
+            {
+                popRel();
             }
             case Instructions.ADD:
             {

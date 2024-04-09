@@ -260,7 +260,7 @@ program ASMGEN
             {
                 prefix = Char.EOL + "    ";
             }
-            if (index % 16 == 7)
+            if (index % 16 == 8)
             {
                 prefix = "  ";
             }
