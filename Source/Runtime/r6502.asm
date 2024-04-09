@@ -182,7 +182,7 @@ program R6502
                         LDX ZP.ACCH // record length
                         loop
                         {
-                            CPX # 0
+                            //CPX # 0 - redundant CPX
                             if (Z) { break; }
                             
                             Serial.HexIn(); // A contains data byte
@@ -243,6 +243,7 @@ program R6502
             CMP # '!' // failure terminator
             if (Z) { break; }
         }
+        PHA
         CMP # '*' // success terminator
         if (Z) 
         {
@@ -252,13 +253,11 @@ program R6502
             Serial.WaitForChar(); // arbitrary '*' terminator from client
                         
             hopperInit();                // good defaults for HopperVM
-#ifdef CPU_65C02S            
-            SMB0 ZP.FLAGS                // program is loaded
-#else
+
             LDA ZP.FLAGS
-            ORA # 0b00000001
+            ORA # 0b00000001             // program is loaded
             STA ZP.FLAGS
-#endif            
+      
             LDA # Enter
             Serial.WriteChar();
             
@@ -285,18 +284,14 @@ program R6502
                  
             LDA # Enter
             Serial.WriteChar();
-            LDA # '*'               // restore success terminator
         }
         else
         {
-#ifdef CPU_65C02S            
-            RMB0 ZP.FLAGS           // no program loaded
-#else
             LDA ZP.FLAGS
             AND # 0b11111110
             STA ZP.FLAGS
-#endif                        
         }
+        PLA // restore terminator   
         Serial.WriteChar();         // success or failure ('*' or '!')?
         Utilities.SendSlash();      // confirm the data
     }
@@ -330,12 +325,11 @@ program R6502
         
         LDA #0
         STA ZP.CNP
-        LDA #0
         STA ZP.PCL
         STA ZP.PCH
         
 #ifdef CPU_65C02S        
-        STA ZP.FLAGS
+        STZ ZP.FLAGS
   #ifdef CHECKED
         SMB2 ZP.FLAGS // this is a checked build
   #endif        
@@ -387,13 +381,10 @@ program R6502
     runCommand()
     {
         // Bit 1 set - run ignoring breakpoints
-#ifdef CPU_65C02S            
-        SMB1 ZP.FLAGS
-#else
         LDA ZP.FLAGS
         ORA # 0b00000010
         STA ZP.FLAGS
-#endif                                
+
         loop
         {
             LDA ZP.SerialBreakFlag

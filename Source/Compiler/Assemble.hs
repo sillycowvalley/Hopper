@@ -53,7 +53,7 @@ program Assemble
         PrintLn("Invalid arguments for ASSEMBLE:");
         PrintLn("  ASSEMBLE <object json>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
-        PrintLn("    -a <arch>  : target CPU: M6502|W65C02");
+        PrintLn("    -a <arch>  : target CPU: 6502|65C02S");
         PrintLn("    -x         : use experimental features");
     }
     
@@ -1509,8 +1509,8 @@ program Assemble
                             iArg++;
                             switch (rawArgs[iArg])
                             {
-                                case "M6502":  { Architecture = CPUArchitecture.M6502;  }
-                                case "W65C02": { Architecture = CPUArchitecture.W65C02; }
+                                case "6502":    { Architecture = CPUArchitecture.M6502;  }
+                                case "65C02S": { Architecture = CPUArchitecture.W65C02; }
                             } 
                         }
                         case "-x":

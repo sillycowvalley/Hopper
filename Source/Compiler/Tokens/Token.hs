@@ -78,6 +78,51 @@ unit Token
         
         EOF
     }
+    bool IsDelimiter(HopperToken tokenType)
+    {
+        switch (tokenType)
+        {
+            case HopperToken.LParen:   // (
+            case HopperToken.RParen:   // )
+            case HopperToken.LBrace:   // {
+            case HopperToken.RBrace:   // }
+            case HopperToken.LBracket: // [
+            case HopperToken.RBracket: // ]
+            
+            case HopperToken.SemiColon:
+            case HopperToken.Comma:
+            case HopperToken.Dot:
+            case HopperToken.Colon:    // case x:
+            case HopperToken.Question: // (xxx) ? yyy : zzz
+            
+            case HopperToken.Hash:     // #
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    string ToString(HopperToken tokenType)
+    {
+        switch (tokenType)
+        {
+            case HopperToken.LParen:    { return "("; }
+            case HopperToken.RParen:    { return ")"; }
+            case HopperToken.LBrace:    { return "{"; }
+            case HopperToken.RBrace:    { return "}"; }
+            case HopperToken.LBracket:  { return "["; }
+            case HopperToken.RBracket:  { return "]"; }
+            
+            case HopperToken.SemiColon: { return ";"; }
+            case HopperToken.Comma:     { return ","; }
+            case HopperToken.Dot:
+            case HopperToken.Colon:     { return ":"; }
+            case HopperToken.Question:  { return "?"; }            
+            case HopperToken.Hash:      { return "#"; }
+        }
+        return hopperTokenNames[tokenType];
+    }
+    
     flags CPUArchitecture
     {
         None    = 0x0000,
@@ -104,6 +149,7 @@ unit Token
         }
         return content;
     }
+    
     
     HopperToken GetType(<string, string> token)
     {

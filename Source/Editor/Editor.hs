@@ -131,7 +131,7 @@ unit Editor
     New(<string, variant> sb, <string, variant> mb)
     {
         Token.Initialize();
-        OutputDebug("Editor.New()");
+        //OutputDebug("Editor.New()");
         statusbar = sb;
         menubar = mb;
         x0 = Editor.Left;
@@ -169,8 +169,12 @@ unit Editor
     DisplayCursor(bool show)
     {
         Suspend();
-        SetCursor(x0 + cursorX - bufferTopLeftX + lineNumberWidth, y0 + cursorY - bufferTopLeftY);
-        // TODO: show and hide
+        uint col = x0 + cursorX - bufferTopLeftX + lineNumberWidth;
+        uint row = y0 + cursorY - bufferTopLeftY;
+        
+        //OutputDebug("DisplayCursor: x=" + col.ToString() + ", y=" + row.ToString() + (show ? " show" : ""));
+        
+        SetCursor(col, row);
         Resume(true); // probably interactive (waiting for a key)
     }
     
@@ -349,6 +353,8 @@ unit Editor
         DisplayCursor(true);
         StatusBar.SetLocation(statusbar, cursorX, cursorY);
         Resume(true); // probably interactive (waiting for a key)
+        
+        //OutputDebug("TextBufferUpdated: " + cursorX.ToString() +"," + cursorY.ToString() + (draw ? " draw" : ""));
     }
     
     
@@ -602,6 +608,10 @@ unit Editor
     { 
         return cursorY+1; 
     }
+    uint GetCurrentColumnNumber() 
+    { 
+        return cursorX+1; 
+    }
     
     SetActiveLine(uint gotoLine, string path, bool setActive)
     {
@@ -641,6 +651,9 @@ unit Editor
         // gotoColumn    : first nonSpace on line
         uint x = cursorX;
         uint y = cursorY;
+        
+        //OutputDebug("GotoLineNumber: " + gotoLine.ToString() + "," + gotoColumn.ToString() 
+        //           + (defaultLine ? " defaultLine" : "") + (defaultColumn ? " defaultColumn" : ""));
         
         if (defaultLine)
         {
@@ -832,10 +845,9 @@ unit Editor
                         
                     if (Contains(cx, cy))
                     {
-                        
-                        
                         uint cX = cx - x0 - lineNumberWidth + bufferTopLeftX;
                         uint cY = cy - y0 + bufferTopLeftY;
+                        uint clickColumn = cX+1;
                         if (cY > TextBuffer.GetLineCount()-1)
                         {
                             // clicked below the content of the file
@@ -885,7 +897,7 @@ unit Editor
                                     string contextWord = clickedLine.Substring(startX, endX-startX);
                                     string beforeWord  = clickedLine.Substring(0,startX).Trim();
                                     string afterWord   = clickedLine.Substring(endX).Trim();
-                                    if (ClickStack.ContextClick(contextWord, beforeWord, afterWord, cX-startX, cY+1))
+                                    if (ClickStack.ContextClick(contextWord, beforeWord, afterWord, cx-startX, cY+1, clickColumn))
                                     {
                                         x = cursorX;
                                         y = cursorY;
@@ -997,10 +1009,34 @@ unit Editor
                     }
                 }
             }
+        case Key.ModBackspace:
+            {
+                if (isControlled && !isAlted && !isShifted)
+                {
+                    ClickStack.Pop(CurrentPath, Editor.GetCurrentLineNumber(), Editor.GetCurrentColumnNumber());
+                    x = cursorX;
+                    y = cursorY;
+                    selectionActive = false;
+                }
+            }
+        
         case Key.Tab:
             {
-                if (IsEditor)
-                {                    
+                if (isControlled && !isAlted && !isShifted)
+                {
+                    string localCurrent = CurrentPath;
+                    if (localCurrent.Length != 0)
+                    { 
+                        if (ClickStack.Flip(localCurrent, Editor.GetCurrentLineNumber(), Editor.GetCurrentColumnNumber()))
+                        {
+                            x = cursorX;
+                            y = cursorY;
+                            selectionActive = false;
+                        }
+                    }
+                }
+                else if (IsEditor)
+                {   
                     TextBuffer.StartJournal();
                     if (hasSelection)
                     {
@@ -1408,19 +1444,6 @@ unit Editor
                     draw = true;
                 } // IsEditor
             }
-        case Key.ModBackspace:
-            {
-                //if (IsEditor)
-                //{
-                    if (isControlled && !isAlted && !isShifted)
-                    {
-                        ClickStack.Pop();
-                        x = cursorX;
-                        y = cursorY;
-                        selectionActive = false;
-                    }
-                //}
-            }
         case Key.Backspace:
             {
                 if (IsEditor)
@@ -1523,26 +1546,6 @@ unit Editor
             if (y >= 0)
             {
                 TextBufferUpdated(x, y, draw);
-            }
-            if ((Key.Click == unmaskedKey) && ClickDouble && HasOneLineSelection())
-            {
-                string usesLine;
-                string candidate = GetSelectedText(ref usesLine);
-                if (usesLine.Length != 0)
-                {
-                    candidate = ResolveUsesPath(usesLine, candidate);
-                    if (candidate.Length != 0)
-                    {
-                        if (Editor.CanUndo())
-                        {
-                            Editor.OpenPath(candidate); // offer undo
-                        }
-                        else
-                        {
-                            Editor.LoadFile(candidate); // just open it
-                        }
-                    }
-                }
             }
             return true; // used this key
         }
@@ -1945,6 +1948,15 @@ unit Editor
     }
     LoadFile(string path, uint gotoLine, bool defaultLine)
     {
+        LoadFile(path, gotoLine, defaultLine, true);
+    }
+    LoadFile(string path, uint gotoLine, bool defaultLine, bool pushClick)
+    {
+        //OutputDebug("LoadFile: " + gotoLine.ToString()   //+ "," + gotoColumn.ToString() 
+        //           + (defaultLine ? " defaultLine" : "") //+ (defaultColumn ? " defaultColumn" : "")
+        //           + (pushClick ? " pushClick" : "")
+        //);
+                   
         path = Path.GetCorrectCase(path); // full path, correct case
 #ifdef PROFILER    
         isProfiler = false;
@@ -1991,9 +2003,9 @@ unit Editor
         
 #endif       
         string localCurrent = CurrentPath;
-        if (localCurrent.Length != 0)
+        if (pushClick && (localCurrent.Length != 0))
         { 
-            ClickStack.Push(localCurrent, Editor.GetCurrentLineNumber());
+            ClickStack.Push(localCurrent, Editor.GetCurrentLineNumber(), Editor.GetCurrentColumnNumber());
         }
         
         TextBuffer.Clear();
@@ -2220,6 +2232,10 @@ unit Editor
     
     OpenPath(string suggestedPath)
     {
+        OpenPath(suggestedPath, true, true);
+    }
+    OpenPath(string suggestedPath, bool openPrompt, bool pushClick)
+    {
         loop
         {
             if (Editor.CanUndo())
@@ -2263,21 +2279,28 @@ unit Editor
                         initialText = candidate;
                     }
                 }
-            }      
-            <string, string> fields = mb["fields"];
-            fields["0"] = initialText;
-            mb["fields"] = fields;
-            mb["allowed"] = "";
-            
-            MessageBox.ValidationDelegate validation = ValidateFilePathExists;
-            
-            string result = MessageBox.Execute(mb, validation);
-            DisplayCursor(true);
-            Draw();
-            if (result == "OK")
+            }  
+            if (openPrompt || !File.Exists(initialText))
             {
-                <string, string> fieldsAfter = mb["fields"];
-                LoadFile(fieldsAfter["0"]);
+                <string, string> fields = mb["fields"];
+                fields["0"] = initialText;
+                mb["fields"] = fields;
+                mb["allowed"] = "";
+                
+                MessageBox.ValidationDelegate validation = ValidateFilePathExists;
+                
+                string result = MessageBox.Execute(mb, validation);
+                DisplayCursor(true);
+                Draw();
+                if (result == "OK")
+                {
+                    <string, string> fieldsAfter = mb["fields"];
+                    LoadFile(fieldsAfter["0"], 0, true, pushClick);
+                }
+            }
+            else
+            {
+                LoadFile(initialText, 0, true, pushClick);
             }
            
             break;

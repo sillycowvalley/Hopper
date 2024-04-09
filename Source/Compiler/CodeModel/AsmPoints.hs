@@ -13,20 +13,21 @@ unit AsmPoints
     {
         None      = 0b0000000000000000,
         Exit      = 0b0000000000000001,
-        ReadA     = 0b0000000000000010,
-        ReadX     = 0b0000000000000100,
-        ReadY     = 0b0000000000001000,
-        WriteA    = 0b0000000000010000,
-        WriteX    = 0b0000000000100000,
-        WriteY    = 0b0000000001000000,
+        CallRet   = 0b0000000000000010,
+        ReadA     = 0b0000000000000100,
+        ReadX     = 0b0000000000001000,
+        ReadY     = 0b0000000000010000,
+        WriteA    = 0b0000000000100000,
+        WriteX    = 0b0000000001000000,
+        WriteY    = 0b0000000010000000,
     }
     
-    <OpCode> iCodes;       // 6502 instruction opCodes
-    <uint>   iOperands;    // 6502 instruction operands (could be byte or word)
-    <uint>   iLengths;     // 6502 instruction lengths (not operand width)
+    <OpCode> iCodes;        // 6502 instruction opCodes
+    <uint>   iOperands;     // 6502 instruction operands (could be byte or word)
+    <uint>   iLengths;      // 6502 instruction lengths (not operand width)
     <Flags>  iFlags;        // reachable? jump target?
     <uint>   iDebugLines;   // Hopper source line associated with this instruction (mostly 0)
-    
+    <byte>   iExtras;        // used by BBRx and BBSz
     < <uint> > iJumpTables;
     
     uint currentMethod;
@@ -45,6 +46,306 @@ unit AsmPoints
     OpCode opcodeiJMP;
     OpCode opcodeRTI;
     OpCode opcodeJMPIndex;
+    
+    
+    bool walkVerbose;   
+    WalkVerbose(uint iIndex, WalkStats searchFor, WalkStats searchAgainst, uint pointLimit)
+    {
+        walkVerbose = true;
+        _ = WalkAhead(iIndex, searchFor, searchAgainst, pointLimit, "");
+        walkVerbose = false;
+    }
+    bool WalkAhead(uint iIndex, WalkStats searchFor, WalkStats searchAgainst, uint pointLimit)
+    {
+        return WalkAhead(iIndex, searchFor, searchAgainst, pointLimit, "");
+    }
+    bool WalkAhead(uint iIndex, WalkStats searchFor, WalkStats searchAgainst, uint pointLimit, string indent)
+    {
+        bool success = false;
+        WalkStats walkStats;
+        
+        loop
+        {
+            if ((pointLimit == 0) || (iIndex == iCodes.Count)) 
+            { 
+                if (walkVerbose)
+                {
+                    Print("   -> " + currentMethod.ToHexString(4) + ":" + iIndex.ToString() + " -ve Exit Limit");
+                }
+                break; 
+            }
+            
+            OpCode opCode0 = iCodes[iIndex];
+            bool noIncrement;
+            if (walkVerbose)
+            {
+                Print("  " + GetName(opCode0));
+            }
+            switch (opCode0)
+            {
+                // Exit
+                case OpCode.RTI:
+                case OpCode.STP:
+                case OpCode.BRK:
+                {
+                    walkStats |= WalkStats.Exit;
+                }
+                case OpCode.RTS:
+                case OpCode.JSR_nn:
+                case OpCode.iJMP_nn:
+                {
+                    walkStats |= WalkStats.CallRet;
+                }
+                
+                // Write:
+                case OpCode.LDA_n:
+                case OpCode.PLA:
+                case OpCode.LDA_z:
+                {
+                    walkStats |= WalkStats.WriteA;
+                }
+                case OpCode.LDX_n:
+                case OpCode.PLX:
+                {
+                    walkStats |= WalkStats.WriteX;
+                }
+                case OpCode.LDY_n:
+                case OpCode.PLY:
+                {
+                    walkStats |= WalkStats.WriteY;
+                }
+                
+                // Read:
+                case OpCode.STA_nn:
+                case OpCode.STA_z:
+                case OpCode.STA_iz:
+                case OpCode.PHA:
+                {
+                    walkStats |= WalkStats.ReadA;
+                }
+                case OpCode.STA_nnX:
+                case OpCode.STA_zX:
+                case OpCode.STA_izX:
+                {
+                    walkStats |= WalkStats.ReadA;
+                    walkStats |= WalkStats.ReadX;
+                }
+                case OpCode.STA_nnY:
+                case OpCode.STA_izY:
+                {
+                    walkStats |= WalkStats.ReadA;
+                    walkStats |= WalkStats.ReadY;
+                }
+                case OpCode.STX_nn:
+                case OpCode.STX_z:
+                case OpCode.PHX:
+                case OpCode.CPX_n:
+                {
+                    walkStats |= WalkStats.ReadX;
+                }
+                case OpCode.STX_zY:
+                case OpCode.STY_zX:
+                {
+                    walkStats |= WalkStats.ReadX;
+                    walkStats |= WalkStats.ReadY;
+                }
+                case OpCode.STY_nn:
+                case OpCode.STY_z:
+                case OpCode.PHY:
+                {
+                    walkStats |= WalkStats.ReadY;
+                }
+                
+                case OpCode.LDA_izY:
+                {
+                    walkStats |= WalkStats.ReadY;
+                    walkStats |= WalkStats.WriteA;
+                }
+                
+                // Read and Write
+                case OpCode.ADC_n:
+                case OpCode.ADC_nn:
+                case OpCode.ADC_z:
+                case OpCode.ADC_iz:
+                case OpCode.SBC_n:
+                case OpCode.SBC_nn:
+                case OpCode.SBC_z:
+                case OpCode.SBC_iz:
+                case OpCode.ROR:
+                case OpCode.AND_n:
+                {
+                    walkStats |= WalkStats.ReadA;
+                    walkStats |= WalkStats.WriteA;
+                }
+                
+                case OpCode.ADC_izX:
+                case OpCode.ADC_nnX:
+                case OpCode.ADC_zX:
+                case OpCode.SBC_zX:
+                case OpCode.SBC_izX:
+                case OpCode.SBC_nnX:
+                {
+                    walkStats |= WalkStats.ReadX;
+                    walkStats |= WalkStats.ReadA;
+                    walkStats |= WalkStats.WriteA;
+                }
+                case OpCode.ADC_nnY:
+                case OpCode.ADC_izY:
+                case OpCode.SBC_izY:
+                case OpCode.SBC_nnY:
+                {
+                    walkStats |= WalkStats.ReadY;
+                    walkStats |= WalkStats.ReadA;
+                    walkStats |= WalkStats.WriteA;
+                }
+                
+                case OpCode.TAY:
+                {
+                    walkStats |= WalkStats.ReadA;
+                    walkStats |= WalkStats.WriteY;
+                }
+                case OpCode.TAX:
+                {
+                    walkStats |= WalkStats.ReadA;
+                    walkStats |= WalkStats.WriteX;
+                }
+                case OpCode.TYA:
+                {
+                    walkStats |= WalkStats.ReadY;
+                    walkStats |= WalkStats.WriteA;
+                }
+                case OpCode.TXA:
+                {
+                    walkStats |= WalkStats.ReadX;
+                    walkStats |= WalkStats.WriteA;
+                }
+                
+                case OpCode.INX:
+                case OpCode.DEX:
+                {
+                    walkStats |= WalkStats.ReadX;
+                    walkStats |= WalkStats.WriteX;
+                }
+                
+                case OpCode.INY:
+                case OpCode.DEY:
+                {
+                    walkStats |= WalkStats.ReadY;
+                    walkStats |= WalkStats.WriteY;
+                }
+                
+                // Ignore:
+                case OpCode.RMB0_z:
+                case OpCode.RMB1_z:
+                case OpCode.RMB2_z:
+                case OpCode.RMB3_z:
+                case OpCode.RMB4_z:
+                case OpCode.RMB5_z:
+                case OpCode.RMB6_z:
+                case OpCode.RMB7_z:
+                case OpCode.SMB0_z:
+                case OpCode.SMB1_z:
+                case OpCode.SMB2_z:
+                case OpCode.SMB3_z:
+                case OpCode.SMB4_z:
+                case OpCode.SMB5_z:
+                case OpCode.SMB6_z:
+                case OpCode.SMB7_z:
+                
+                case OpCode.INC_z:
+                case OpCode.LSR_z:
+                case OpCode.NOP:
+                case OpCode.ROR_z:
+                case OpCode.STZ_z:
+                {
+                }
+                
+                // Jump!
+                case OpCode.BRA_e:
+                case OpCode.JMP_nn:
+                {
+                    iIndex = iOperands[iIndex];
+                    noIncrement = true;
+                }
+                
+                // Branch:
+                case OpCode.BCC_e:
+                case OpCode.BCS_e:
+                case OpCode.BEQ_e:
+                case OpCode.BMI_e:
+                case OpCode.BNE_e:
+                case OpCode.BPL_e:
+                case OpCode.BVC_e:
+                case OpCode.BVS_e:
+                {
+                    bool success0 = WalkAhead(iIndex+1,          searchFor, searchAgainst, pointLimit, indent + "  ");
+                    bool success1 = WalkAhead(iOperands[iIndex], searchFor, searchAgainst, pointLimit, indent + "  ");
+                    success = success0 && success1;
+                    return success; 
+                }
+                 // Abandon:
+                default:
+                {
+                    string name = Asm6502.ToString(opCode0);
+                    PrintLn();
+                    Print("'" + name + "' not supported in WalkAhead");
+                    walkStats = WalkStats.None;
+                    break;
+                }
+            }
+            if (WalkStats.None != (walkStats & searchAgainst))
+            {
+                success = false; // any negative hit is a failure
+                if (walkVerbose)
+                {
+                    string reason = "Registers";
+                    if (WalkStats.Exit == (walkStats & searchAgainst))
+                    {
+                        reason = "Exit";
+                    }
+                    if (WalkStats.CallRet == (walkStats & searchAgainst))
+                    {
+                        reason = "Call|Ret";
+                    }
+                    Print("   -> " + currentMethod.ToHexString(4) + ":" + iIndex.ToString() + " -ve " + reason);
+                }
+                break;
+            }
+            if (WalkStats.Exit == (walkStats & searchFor))
+            {
+                success = true; // positive exit is always a success
+                if (walkVerbose)
+                {
+                    Print("   -> " + currentMethod.ToHexString(4) + ":" + iIndex.ToString() + " +ve Exit");
+                }
+                break;
+            }    
+            if (WalkStats.None != (walkStats & searchFor))
+            {
+                if (walkVerbose)
+                {
+                    string reason = "Registers";
+                    if (WalkStats.Exit == (walkStats & searchFor))
+                    {
+                        reason = "Exit";
+                    }
+                    if (WalkStats.CallRet == (walkStats & searchFor))
+                    {
+                        reason = "Call|Ret";
+                    }
+                    Print("   -> " + currentMethod.ToHexString(4) + ":" + iIndex.ToString() + " +ve " + reason);
+                }
+                success = true;
+                break;
+            }
+            if (!noIncrement)
+            {
+                iIndex++;
+            }
+            pointLimit--;
+        }
+        return success;
+    }       
     
     uint GetInstructionAddress(uint seekIndex)
     {
@@ -114,6 +415,7 @@ unit AsmPoints
         iDebugLines.Clear();
         iJumpTables.Clear();
         iFlags.Clear();
+        iExtras.Clear();
         
         <byte> code = Code.GetMethodCode(currentMethod);
         
@@ -147,6 +449,16 @@ unit AsmPoints
                 instructionLength += 512;
             }
             
+            byte extra = 0;
+            AddressingModes addressingMode = GetAddressingMode(opCode);
+            if (AddressingModes.ZeroPageRelative == addressingMode)
+            {
+                // nn,dd 
+                extra = byte(operand & 0xFF);
+                operand = (operand >> 8);
+            }
+            iExtras.Append(extra);
+            
             iCodes.Append(opCode);
             iLengths.Append(instructionLength);
             iOperands.Append(operand);
@@ -158,6 +470,7 @@ unit AsmPoints
                 _ = UInt.TryParse(debugInfo[instructionAddress.ToString()], ref debugLine);
             }
             iDebugLines.Append(debugLine);
+            
             
             <uint> empty;
             iJumpTables.Append(empty); // place holder
@@ -235,7 +548,7 @@ unit AsmPoints
                 }
                 else if (addressingMode == AddressingModes.ZeroPageRelative) // nn,dd
                 {
-                    offset = byte(operand >> 8);
+                    offset = operand;
                     if (offset > 127)
                     {
                         offset = offset - 256; // 255 -> -1
@@ -327,7 +640,7 @@ unit AsmPoints
                         }
                         else if (addressingMode == AddressingModes.ZeroPageRelative) // nn,dd
                         {
-                            operand = (operand & 0xFF) + (uint(offset) << 8);
+                            operand = iExtras[index] + (uint(offset) << 8);
                         }
                     }
                     else if (isJump && (addressingMode == AddressingModes.Absolute))
@@ -678,6 +991,7 @@ unit AsmPoints
                 iDebugLines.Remove(iIndex);
                 iFlags.Remove(iIndex);
                 iJumpTables.Remove(iIndex);
+                iExtras.Remove(iIndex);
                               
                 modified = true;
                 continue;
@@ -733,15 +1047,15 @@ unit AsmPoints
                         {
                             // flipping this bit switches to the opposite condition instruction
                             opCode1 = OpCode(byte(opCode1) ^ 0x80);
-                            iOperands.SetItem(iIndex, iOperands[iIndex-1]);
+                                                        
+                            // Keep the length and the zero page address (iExtras) from the BBSx|BBRx instruction (iIndex-1)
+                            // but use the jump index from the branch instruction (iIndex-0):
                             iLengths.SetItem (iIndex, iLengths[iIndex-1]);
+                            iExtras.SetItem  (iIndex, iExtras[iIndex-1]);
                         }
-                        iCodes.SetItem(iIndex, opCode1);
-                        
-                        
+                        iCodes  [iIndex]   = opCode1;
                         iCodes  [iIndex-1] = OpCode.NOP;
                         iLengths[iIndex-1] = 1;
-                
                         modified = true;
                     }
                 }
@@ -923,4 +1237,238 @@ unit AsmPoints
         } // loop
         return modified;
     }
+    
+    bool OptimizeLDASTAtoSTZ()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 1;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode0 = iCodes[iIndex];
+            if (!IsTargetOfJumps(iIndex))
+            {
+                OpCode opCode1 = iCodes[iIndex-1];
+                if ((opCode1 == OpCode.LDA_n) && (iOperands[iIndex-1] == 0) && (Asm6502.GetName(opCode0) == "STA")) // TODO : loop on consecutive STA's
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10))
+                    {
+                        if (opCode0 == OpCode.STA_z)
+                        {
+                            iCodes  [iIndex-1] = OpCode.NOP;
+                            iLengths[iIndex-1] = 1;
+                            iCodes  [iIndex]   = OpCode.STZ_z;
+                            modified = true;
+                        }
+                        else if (opCode0 == OpCode.STA_nnX)
+                        {
+                            iCodes  [iIndex-1] = OpCode.NOP;
+                            iLengths[iIndex-1] = 1;
+                            iCodes  [iIndex]   = OpCode.STZ_nnX;
+                            modified = true;
+                        }
+                        else
+                        {
+                            // TODO
+                            PrintLn();
+                            Print("STZ:"); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                        }
+                    }
+                    else
+                    {
+                        //PrintLn();
+                        //Print("STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                    }
+                } 
+                else if ((opCode1 == OpCode.LDX_n) && (iOperands[iIndex-1] == 0) && (Asm6502.GetName(opCode0) == "STX")) // TODO : loop on consecutive STX's
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteX, WalkStats.ReadX | WalkStats.CallRet, 10))
+                    {
+                        // TODO
+                        PrintLn();
+                        Print("X STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                    }
+                    else
+                    {
+                        PrintLn();
+                        Print("X STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                    }
+                }
+                else if ((opCode1 == OpCode.LDY_n) && (iOperands[iIndex-1] == 0) && (Asm6502.GetName(opCode0) == "STY")) // TODO : loop on consecutive STY's
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteY, WalkStats.ReadY | WalkStats.CallRet, 10))
+                    {
+                        // TODO
+                        PrintLn();
+                        Print("Y STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                    }
+                    else
+                    {
+                        PrintLn();
+                        Print("Y STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                    }
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    bool OptimizeSMBandRMB()
+    {
+        if (iCodes.Count < 3)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 2;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode2 = iCodes[iIndex-2];
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex];
+            if (!IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
+            {
+                if ((opCode2  == OpCode.LDA_z) && (opCode1 == OpCode.ORA_n) && (opCode0 == OpCode.STA_z) &&
+                    (iOperands[iIndex-2] == iOperands[iIndex-0]))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10))
+                    {
+                        OpCode newOpCode = OpCode.NOP;
+                        switch (iOperands[iIndex-1])
+                        {
+                            case 0b00000001: { newOpCode = OpCode.SMB0_z; }
+                            case 0b00000010: { newOpCode = OpCode.SMB1_z; }
+                            case 0b00000100: { newOpCode = OpCode.SMB2_z; }
+                            case 0b00001000: { newOpCode = OpCode.SMB3_z; }
+                            case 0b00010000: { newOpCode = OpCode.SMB4_z; }
+                            case 0b00100000: { newOpCode = OpCode.SMB5_z; }
+                            case 0b01000000: { newOpCode = OpCode.SMB6_z; }
+                            case 0b10000000: { newOpCode = OpCode.SMB7_z; }
+                        }
+                        if (newOpCode != OpCode.NOP)
+                        {
+                            iCodes  [iIndex-2] = OpCode.NOP;
+                            iLengths[iIndex-2] = 1;
+                            iCodes  [iIndex-1] = OpCode.NOP;
+                            iLengths[iIndex-1] = 1;
+                            iCodes  [iIndex-0] = newOpCode;
+                            iLengths[iIndex-0] = 2;
+                            modified = true;
+                        }
+                            
+                    }
+                }
+                if ((opCode2  == OpCode.LDA_z) && (opCode1 == OpCode.AND_n) && (opCode0 == OpCode.STA_z) &&
+                    (iOperands[iIndex-2] == iOperands[iIndex-0]))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10))
+                    {
+                        OpCode newOpCode = OpCode.NOP;
+                        switch (iOperands[iIndex-1])
+                        {
+                            case 0b11111110: { newOpCode = OpCode.RMB0_z; }
+                            case 0b11111101: { newOpCode = OpCode.RMB1_z; }
+                            case 0b11111011: { newOpCode = OpCode.RMB2_z; }
+                            case 0b11110111: { newOpCode = OpCode.RMB3_z; }
+                            case 0b11101111: { newOpCode = OpCode.RMB4_z; }
+                            case 0b11011111: { newOpCode = OpCode.RMB5_z; }
+                            case 0b10111111: { newOpCode = OpCode.RMB6_z; }
+                            case 0b01111111: { newOpCode = OpCode.RMB7_z; }
+                        }
+                        if (newOpCode != OpCode.NOP)
+                        {
+                            iCodes  [iIndex-2] = OpCode.NOP;
+                            iLengths[iIndex-2] = 1;
+                            iCodes  [iIndex-1] = OpCode.NOP;
+                            iLengths[iIndex-1] = 1;
+                            iCodes  [iIndex-0] = newOpCode;
+                            iLengths[iIndex-0] = 2;
+                            modified = true;
+                        }
+                            
+                    }
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    
+    // 2. CMP #0 after LDA, LDX, LDY, INC, INX, INY, DEC, DEX, DEY, INA, DEA, AND, ORA, EOR, ASL, LSR, ROL, 
+    //              ROR, PLA, PLX, PLY, SBC, ADC, TAX, TXA, TAY, TYA, and TSX
+    // is redundant if checking Z or V. They all set the Z and V flags. C is a different story.
+    bool OptimizeCMP()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 1;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex];
+            if (!IsTargetOfJumps(iIndex) )
+            {
+                if ((opCode0 == OpCode.CMP_n) && (iOperands[iIndex] == 0))
+                {
+                    string name = GetName(opCode1);
+                    switch (name)
+                    {
+                        case "LDA":
+                        case "LDX":
+                        case "LDY":
+                        case "INC":
+                        case "INX":
+                        case "INY":
+                        case "DEC":
+                        case "DEX":
+                        case "DEY":
+                        case "AND":
+                        case "ORA":
+                        case "EOR":
+                        case "ASL":
+                        case "LSR":
+                        case "ROL":
+                        case "ROR":
+                        case "PLA":
+                        case "PLX":
+                        case "SBC":
+                        case "TAX":
+                        case "TXA":
+                        case "TAY":
+                        case "TYA":
+                        case "TSX":
+                        {
+                            // TODO
+                            Print(" " + name + "->" + "CMP #0");
+                        }
+                    }
+                }
+                
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
 }
+

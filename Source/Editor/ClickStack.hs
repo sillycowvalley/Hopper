@@ -6,27 +6,46 @@ unit ClickStack
     
     <string> clickStack;
     
-    Push(string path, uint ln)
+    string poppedFromLocation;
+    
+    Push(string path, uint ln, uint column)
     {
-        string location = path + ":" + ln.ToString();
+        string location = path + ":" + ln.ToString() + "," + column.ToString();
         clickStack.Append(location);
+        poppedFromLocation = "";
     }
-    Pop()
+    Pop(string path, uint ln, uint column)
     {
         uint length = clickStack.Count;
         if (0 != length)
         {
-            string location = clickStack[length-1];
+            string toLocation = clickStack[length-1];
             clickStack.Remove(length-1);
-            ClickStack.Load(location);
-            
-            // don't keep this Load(..) in the stack:
-            length = clickStack.Count;
-            if (0 != length)
-            {
-                clickStack.Remove(length-1);
-            }
+            ClickStack.Load(toLocation);
+            poppedFromLocation = path + ":" + ln.ToString() + "," + column.ToString();
         }
+    }
+    bool Flip(string path, uint ln, uint column)
+    {
+        bool flipped;
+        string fromLocation = path + ":" + ln.ToString() + "," + column.ToString();
+        if (poppedFromLocation.Length != 0)
+        {
+            // revert the last pop instead of flipping
+            clickStack.Append(fromLocation);
+            ClickStack.Load(poppedFromLocation);
+            poppedFromLocation = "";
+            flipped = true;
+        }
+        else if (clickStack.Count > 0)
+        {
+            uint length = clickStack.Count;
+            string toLocation = clickStack[length-1];
+            clickStack[length-1] = fromLocation; // the flip
+            ClickStack.Load(toLocation);
+            flipped = true;
+        }
+        return flipped;
     }
     Load(string location)
     {
@@ -36,20 +55,31 @@ unit ClickStack
             string sourcePath = parts[0];
             string clickCurrentPath = Editor.CurrentPath;
             uint ln;
+            uint col;
             bool gotoLine = false;
-            if (UInt.TryParse(parts[1], ref ln))
+            bool gotoColumn = false;
+            <string> locationParts = (parts[1]).Split(',');
+            if (UInt.TryParse(locationParts[0], ref ln))
             {
                 gotoLine = true;
             }
+            if ((locationParts.Count == 2) && UInt.TryParse(locationParts[1], ref col))
+            {
+                gotoColumn = true;
+            }
+            //OutputDebug("Load: " + ln.ToString() + "," + col.ToString() + 
+            //           (gotoLine ? " gotoLine" : "") + (gotoColumn ? " gotoColumn" :""));
             if (sourcePath.ToLower() != clickCurrentPath.ToLower())
             {
                 if (Editor.CanUndo())
                 {
-                    Editor.OpenPath(sourcePath); // offer undo
+                    // OpenPath(string suggestedPath, bool openPrompt, bool pushClick)
+                    Editor.OpenPath(sourcePath, false, false); // offer undo
                 }
                 else
                 {
-                    Editor.LoadFile(sourcePath);
+                    // LoadFile(string path, uint gotoLine, bool defaultLine, bool pushClick)
+                    Editor.LoadFile(sourcePath, 0, true, false);
                 }
                 clickCurrentPath = Editor.CurrentPath;
                 gotoLine = (sourcePath.ToLower() == clickCurrentPath.ToLower());
@@ -62,13 +92,25 @@ unit ClickStack
                 //                bool defaultLine,   true: EOF
                 //                bool defaultColumn) true: first non-space character on the line
                 //
-                if (Editor.GotoLineNumber(ln, 0, false, true))
+                if (Editor.GotoLineNumber(ln, col, false, !gotoColumn))
                 {
                 }
+                if (gotoColumn)
+                {
+                    //OutputDebug("Loaded: " + ln.ToString() + "," + col.ToString() + ", clickStack.Count=" + (clickStack.Count).ToString());
+                }
+                else
+                {
+                    //OutputDebug("Loaded: " + ln.ToString()+ ", clickStack.Count=" + (clickStack.Count).ToString());
+                }
+            }
+            else 
+            {
+                //OutputDebug("Loaded: no gotoLine" );
             }
         }
     }
-    bool ContextClick(string contextWord, string beforeWord, string afterWord, uint clickPos, uint clickLine)
+    bool ContextClick(string contextWord, string beforeWord, string afterWord, uint clickPos, uint clickLine, uint clickColumn)
     {
         bool clickedThrough;
         string location;
@@ -310,6 +352,13 @@ unit ClickStack
                 break;
             }
             
+            string candidate = ResolveUsesPath(beforeWord + contextWord + afterWord, contextWord);
+            if (candidate.Length != 0)
+            {
+                //OutputDebug("Uses candidate: '" + candidate + "'");
+                location = candidate + ":1";
+                break;
+            }
             OutputDebug("Unresolved ContextClick: '"+ beforeWord + "' '" + contextWord + "' '" + afterWord + "' (" + currentNamespace + ")");                
             break;
         }
@@ -320,7 +369,7 @@ unit ClickStack
                 string cursorLocation = (Editor.CurrentPath).ToLower() + ":" + Editor.GetCurrentLineNumber().ToString();
                 if (cursorLocation != location)
                 {
-                    ClickStack.Push(Editor.CurrentPath, Editor.GetCurrentLineNumber());
+                    ClickStack.Push(Editor.CurrentPath, clickLine, clickColumn);
                     ClickStack.Load(location);
                     clickedThrough = true;
                 }

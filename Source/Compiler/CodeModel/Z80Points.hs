@@ -417,6 +417,7 @@ unit CodePoints
                 case OpCode.JP_nn:
                 {
                     iIndex = iOperands[iIndex];
+                    skipIncrement = true;
                 }
                 
                 // Branch:

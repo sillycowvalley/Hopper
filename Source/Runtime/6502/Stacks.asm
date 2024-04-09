@@ -50,20 +50,20 @@ unit Stacks
     PushBP()
     {
 #ifdef CPU_65C02S      
-        PHY  
+        PHX
 #else
-        TYA PHA
+        TXA PHA
 #endif        
-        LDY ZP.CSP
+        LDX ZP.CSP
         LDA ZP.BP
-        STA Address.CallStackLSB, Y
+        STA Address.CallStackLSB, X
         LDA # 0
-        STA Address.CallStackMSB, Y
+        STA Address.CallStackMSB, X
         INC ZP.CSP
 #ifdef CPU_65C02S      
-        PLY  
+        PLX
 #else
-        PLA TAY
+        PLA TAX
 #endif        
     }
     PopPC()

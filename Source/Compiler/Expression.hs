@@ -2000,9 +2000,16 @@ unit Expression
                 }
                 default:
                 {
-                    Parser.ErrorAtCurrent("compilePrimary not implemented for " + currentToken["type"]);
+                    if (Token.IsDelimiter(tokenType))
+                    {
+                        Parser.ErrorAtCurrent("unexpected '" + Token.ToString(tokenType) + "'");
+                    }
+                    else
+                    {
+                        Parser.ErrorAtCurrent("compilePrimary not implemented for " + currentToken["type"]);
+                    }
                 }
-            }
+            } // switch
             break;
         } // loop
         return actualType;

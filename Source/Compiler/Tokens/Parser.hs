@@ -46,7 +46,7 @@ unit Parser
         return interactive; 
     }
     
-    EmitError(string errorMessage)
+    emitError(string errorMessage)
     {
         if (IsInteractive())
         {
@@ -131,7 +131,18 @@ unit Parser
             {
                 string ln = token["line"];
                 string path = token["source"];
-                errorMessage = "[" + path + ":" + ln + "]";
+                errorMessage = "[" + path + ":" + ln;
+                long eolPos = Scanner.PosEOL;
+                if (eolPos != -1)
+                {
+                    long pos;
+                    if (Long.TryParse(token["pos"], ref pos))
+                    {
+                        long col = pos - eolPos - 1;
+                        errorMessage += "," + col.ToString();        
+                    }
+                }
+                errorMessage += "]";
             }
             HopperToken ttype = Token.GetType(token);
             if (ttype == HopperToken.EOF)
@@ -147,7 +158,7 @@ unit Parser
                 errorMessage = errorMessage + " Error at '" + lexeme + "':";
             }
             errorMessage = errorMessage + " " + message;
-            EmitError(errorMessage);
+            emitError(errorMessage);
         }
         hadError = true;
     }

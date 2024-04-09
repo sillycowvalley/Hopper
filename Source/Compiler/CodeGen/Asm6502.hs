@@ -33,6 +33,33 @@ unit Asm6502
         ZeroPageRelative=0x8000,  // nn,dd     z_e
     }
     
+    string ToString(OpCode instruction)
+    {
+        string name = Asm6502.GetName(instruction);
+        AddressingModes addressingMode = Asm6502.GetAddressingMode(instruction);
+        switch (addressingMode)
+        {
+            case AddressingModes.Implied: {}
+            case AddressingModes.Accumulator: { name += " A"; }
+            case AddressingModes.Immediate: { name += " #nn"; }
+            case AddressingModes.Absolute: { name += " nnnn"; }
+            case AddressingModes.AbsoluteX: { name += " nnnn,X"; }
+            case AddressingModes.AbsoluteY: { name += " nnnn,Y"; }
+            case AddressingModes.AbsoluteIndirect: { name += " [nnnn]"; }
+            case AddressingModes.AbsoluteIndirectX: { name += " [nnnn,X]"; }
+            case AddressingModes.ZeroPage: { name += " zz"; }
+            case AddressingModes.ZeroPageX: { name += " zz,X"; }
+            case AddressingModes.ZeroPageY: { name += " zz,Y"; }
+            case AddressingModes.ZeroPageIndirect: { name += " [zz]"; }
+            case AddressingModes.XIndexedZeroPage: { name += " [zz,X]"; }
+            case AddressingModes.YIndexedZeroPage: { name += " [zz],Y"; }
+            case AddressingModes.Relative: { name += " dd"; }
+            case AddressingModes.ZeroPageRelative: { name += " zz,dd"; }
+        }
+        return name;
+    }
+                    
+    
     enum OpCode
     {
         BRK      = 0x00,   

@@ -76,6 +76,10 @@ program Compile
             }
             
             string ifCheckType = CompileExpression("bool");
+            if (Parser.HadError)
+            {
+                break;
+            }
             if ("bool" != ifCheckType)
             {
                 Parser.Error("boolean expression expected, (was '" + ifCheckType + "')");

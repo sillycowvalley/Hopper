@@ -7,6 +7,7 @@ unit Scanner
 
     <string> sourceLines;
     long currentPos;
+    long currentPosEOL; // position of most recently seen EOL (to calculate 'col' in error messages from currentPos;
     uint currentLine;
     long sourceLength;
     uint iCurrentSourceLine;
@@ -31,6 +32,8 @@ unit Scanner
         sourceLines.Clear();
         Token.Initialize();
     }
+    
+    long PosEOL { get { return currentPosEOL; } }
     
     Load(string sourcePath)
     {
@@ -87,6 +90,7 @@ unit Scanner
             Load(sourcePath);
         }
         currentPos = pos;
+        currentPosEOL = -1;
         currentLine = ln;
         <string,string> empty;
         peekedToken = empty;
@@ -233,6 +237,7 @@ unit Scanner
             else if (c == Char.EOL)
             {
                 currentLine++;
+                currentPosEOL = currentPos;
                 c = advance();
             }
             else if (c == '/')
@@ -305,6 +310,7 @@ unit Scanner
                         if (c == Char.EOL)
                         {
                             currentLine++;    
+                            currentPosEOL = currentPosEOL;
                         }
                     } // loop
                 }

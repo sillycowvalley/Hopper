@@ -213,14 +213,14 @@ unit BuildCommand
             {
                 case CPUArchitecture.W65C02:
                 {
-                    target = " for 65C02"; 
-                    arch = "W65C02";
+                    target = " for 65C02S"; 
+                    arch = "65C02S";
                     cpuArchitecture = Architecture;
                 }
                 case CPUArchitecture.M6502:
                 {
                     target = " for 6502";
-                    arch = "M6502";
+                    arch = "6502";
                     cpuArchitecture = Architecture;
                 }
                 case CPUArchitecture.Z80:
