@@ -12,12 +12,19 @@ unit SysCall
         SerialConnect   = 0xA2,
         SerialWriteChar = 0xA7,
         
+        MemoryAvailable = 0xAB,
+        MemoryMaximum   = 0xAC,
+        MemoryAllocate  = 0xAD,
+        MemoryFree      = 0xAE,
+        
         ByteToHex       = 0xBE,
         
         TimeDelay       = 0xC6,
         
         IntGetByte      = 0xE1,
         IntFromBytes    = 0xE4,
+        
+                
     }
     
     missing()
@@ -132,6 +139,23 @@ unit SysCall
             {
                 intFromBytes();
             }
+            
+            case SysCalls.MemoryAvailable:
+            {
+                Memory.Available();
+            }
+            case SysCalls.MemoryMaximum:
+            {
+                Memory.Maximum();
+            }
+            case SysCalls.MemoryAllocate:
+            {
+                Memory.Allocate();
+            }
+            case SysCalls.MemoryFree:
+            {
+                Memory.Free();
+            }
             default:
             {
                 missing();
@@ -142,7 +166,7 @@ unit SysCall
     {
         ConsumeOperandB(); // iSysCall  -> A (uses ACC)
         PHA
-        PopAcc();          // iOverload -> ACC
+        PopACC();          // iOverload -> ACC
         
         // load iSyscCall into X (because JMP [nnnn,X] is then possible)
 #ifdef CPU_65C02S

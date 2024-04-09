@@ -188,7 +188,7 @@ unit Stacks
         PLA TAY
 #endif        
     }
-    PushAcc()
+    PushACC()
     {
 #ifdef CPU_65C02S      
        PHY  
@@ -201,6 +201,27 @@ unit Stacks
         LDA ZP.ACCH
         STA Address.ValueStackMSB, Y
         LDA ZP.ACCT
+        STA Address.TypeStackLSB, Y
+        INC ZP.SP
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
+    }
+    PushIDX()
+    {
+#ifdef CPU_65C02S      
+       PHY  
+#else
+       TYA PHA
+#endif        
+        LDY ZP.SP
+        LDA ZP.IDXL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.IDXH
+        STA Address.ValueStackMSB, Y
+        LDA #Types.UInt
         STA Address.TypeStackLSB, Y
         INC ZP.SP
 #ifdef CPU_65C02S      
@@ -229,7 +250,7 @@ unit Stacks
         PLA TAY
 #endif        
     }
-    PopAcc()
+    PopACC()
     {
 #ifdef CPU_65C02S      
         PHY  
@@ -244,6 +265,25 @@ unit Stacks
         STA ZP.ACCH
         LDA Address.TypeStackLSB, Y
         STA ZP.ACCT
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
+    }
+    PopIDX()
+    {
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
+        DEC ZP.SP
+        LDY ZP.SP
+        LDA Address.ValueStackLSB, Y
+        STA ZP.IDXL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.IDXH
 #ifdef CPU_65C02S      
         PLY  
 #else
@@ -267,4 +307,5 @@ unit Stacks
         TAX PLA TAY TXA
 #endif        
     }
+    
 }

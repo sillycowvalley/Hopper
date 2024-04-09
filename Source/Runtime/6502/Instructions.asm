@@ -603,7 +603,7 @@ unit Instruction
         divmod();
         LDA #Types.UInt
         STA ZP.ACCT
-        Stacks.PushAcc();
+        Stacks.PushACC();
     }
     negateNext()
     {
@@ -697,7 +697,7 @@ unit Instruction
         // always leave remainder ACC as positive
         LDA #Types.Int
         STA ZP.ACCT
-        PushAcc();
+        PushACC();
     }
     
     eq()

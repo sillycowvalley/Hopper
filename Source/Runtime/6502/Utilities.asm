@@ -55,6 +55,14 @@ unit Utilities
         }
             
     }
+    IncIDX()
+    {
+        INC ZP.IDXL
+        if (Z)
+        {
+            INC ZP.IDXH
+        }
+    }
     IncIDY()
     {
         INC ZP.IDYL
@@ -78,5 +86,27 @@ unit Utilities
         {
             INC ZP.ACCH
         }
+    }
+    DecACC()
+    {
+        PHA
+        LDA ACCL
+        if (Z)
+        {
+            DEC ACCH
+        }
+        DEC ACCL
+        PLA
+    }
+    DecIDY()
+    {
+        PHA
+        LDA IDYL
+        if (Z)
+        {
+            DEC IDYH
+        }
+        DEC IDYL
+        PLA
     }
 }

@@ -82,6 +82,18 @@ unit ZP
     const byte M1                   = 0x51;
     const byte M2                   = 0x52;
     const byte M3                   = 0x53;
+    const byte M4                   = 0x54;
+    const byte M5                   = 0x55;
+    const byte M6                   = 0x56;
+    const byte M7                   = 0x57;
+    const byte M8                   = 0x58;
+    const byte M9                   = 0x59;
+    const byte M10                  = 0x5A;
+    const byte M11                  = 0x5B;
+    const byte M12                  = 0x5C;
+    const byte M13                  = 0x5D;
+    const byte M14                  = 0x5E;
+    const byte M15                  = 0x5F;
     
     // used by general syscall 'F'unctions  
     const byte F0                   = 0x60;
