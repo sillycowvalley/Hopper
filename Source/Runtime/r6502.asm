@@ -31,6 +31,7 @@ program R6502
     uses "6502/Breakpoints"
     uses "6502/Stacks"
     uses "6502/Memory"
+    uses "6502/GC"
     
     uses "6502/Utilities"
     uses "6502/Serial"
@@ -252,6 +253,15 @@ program R6502
             
             Serial.WaitForChar(); // arbitrary '*' terminator from client
                         
+            // PROGSIZE: program size in pages (rounded up to the nearest page)
+            LDA ZP.IDYH
+            STA ZP.PROGSIZE
+            LDA ZP.IDYL
+            if (NZ)
+            {
+                INC ZP.PROGSIZE
+            }
+            
             hopperInit();                // good defaults for HopperVM
 
             LDA ZP.FLAGS
@@ -290,6 +300,9 @@ program R6502
             LDA ZP.FLAGS
             AND # 0b11111110
             STA ZP.FLAGS
+            
+            LDA #0
+            STA ZP.PROGSIZE
         }
         PLA // restore terminator   
         Serial.WriteChar();         // success or failure ('*' or '!')?
@@ -367,12 +380,6 @@ program R6502
         STA IDXH
         LDX # 1
         Utilities.ClearPages(); // clear the serial buffer
-        
-        // arbitrary default heap until we load a program
-        LDA #0x60
-        STA ZP.HEAPSTART
-        LDA #0x20
-        STA ZP.HEAPSIZE
         
         Serial.Initialize();
         hopperInit();        

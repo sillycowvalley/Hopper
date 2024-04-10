@@ -5,24 +5,39 @@ unit SysCall
     
     enum SysCalls
     {
-        TimeSeconds     = 0x5D,
+        StringNewFromConstant = 0x00,
+        StringNew             = 0x02,
+        StringLengthGet       = 0x06,
+        StringGetChar         = 0x0A,
+        StringBuild           = 0x83,
+        StringBuildFront      = 0xB5,
         
-        DiagnosticsDie  = 0x7C,
+        ArrayNew              = 0x0B,
+        ArrayCountGet         = 0x0C,
+        ArrayGetItem          = 0x0D,
+        ArraySetItem          = 0x0E,
+        ArrayNewFromConstant  = 0x88,
         
-        SerialConnect   = 0xA2,
-        SerialWriteChar = 0xA7,
+        TimeSeconds      = 0x5D,
         
-        MemoryAvailable = 0xAB,
-        MemoryMaximum   = 0xAC,
-        MemoryAllocate  = 0xAD,
-        MemoryFree      = 0xAE,
+        DiagnosticsDie   = 0x7C,
         
-        ByteToHex       = 0xBE,
+        SerialConnect    = 0xA2,
+        SerialWriteChar  = 0xA7,
         
-        TimeDelay       = 0xC6,
+        MemoryReadByte   = 0xA9,
+        MemoryWriteByte  = 0xAA,
+        MemoryAvailable  = 0xAB,
+        MemoryMaximum    = 0xAC,
+        MemoryAllocate   = 0xAD,
+        MemoryFree       = 0xAE,
         
-        IntGetByte      = 0xE1,
-        IntFromBytes    = 0xE4,
+        ByteToHex        = 0xBE,
+        
+        TimeDelay        = 0xC6,
+        
+        IntGetByte       = 0xE1,
+        IntFromBytes     = 0xE4,
         
                 
     }
@@ -140,6 +155,14 @@ unit SysCall
                 intFromBytes();
             }
             
+            case SysCalls.MemoryReadByte:
+            {
+                Memory.ReadByte();
+            }
+            case SysCalls.MemoryWriteByte:
+            {
+                Memory.WriteByte();
+            }
             case SysCalls.MemoryAvailable:
             {
                 Memory.Available();

@@ -55,6 +55,8 @@ unit ZP
     const byte TOPT                 = 0x1B;
     const byte NEXTT                = 0x1C;
     
+    const byte PROGSIZE             = 0x1D;
+    
     const byte ACIACONTROL          = 0x1E;
     const byte ACIASTATUS           = 0x1E;
     const byte ACIADATA             = 0x1F;

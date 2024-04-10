@@ -112,6 +112,7 @@ unit Instruction
             
             case Instructions.PUSHI0:
             case Instructions.PUSHGP:
+            case Instructions.DUP0:
             
             case Instructions.ADD:
             case Instructions.ADDI:
@@ -1133,6 +1134,19 @@ unit Instruction
         STA ZP.TOPT
         Stacks.PushTop();
     }
+    dup0()
+    {
+        LDY ZP.SP
+        DEY
+        
+        LDA Address.ValueStackLSB, Y
+        STA ZP.TOPL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.TOPH
+        LDA Address.TypeStackLSB, Y
+        STA ZP.TOPT
+        PushTop(); 
+    }
     pushLocal()
     {
         ConsumeOperand();
@@ -1351,6 +1365,10 @@ unit Instruction
             case Instructions.DECSP:
             {
                 decSP();
+            }
+            case Instructions.DUP0:
+            {
+                dup0();
             }
             case Instructions.PUSHI:
             {

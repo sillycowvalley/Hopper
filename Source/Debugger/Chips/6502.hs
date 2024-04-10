@@ -13,8 +13,11 @@ unit W65C02
     uint NMI   { get { return vectorNMI;   } set { vectorNMI = value;   } }
     uint PC    { get { return pcRegister;  } set { pcRegister = value;  } }
     
+    byte LastError { get { return lastError; } }
     int nmiWaiting;
     int irqWaiting;
+    
+    byte lastError;
     
     // registers
     uint pcRegister;
@@ -202,6 +205,7 @@ unit W65C02
     BRK()
     {
         // #### BRK: a way for 6502 code to panic for now
+        lastError = aRegister;
         PrintLn();
         PrintLn("6502 Panic at PC=0x" + pcRegister.ToHexString(4) 
                            + ", A=0x" + aRegister.ToHexString(2)
@@ -209,15 +213,22 @@ unit W65C02
                            + ", Y=0x" + yRegister.ToHexString(2)
                            , Colour.Red, Colour.Black);
         PrintLn();
-        ACIA.Close();
-        Die(0x0B); 
-        // ####
         
+        // stop e6502
+        pcRegister = InvalidAddress;
+        
+        // stop Hopper VM
+        //SetMemory(ZP.ZPCL, 0xFF);
+        //SetMemory(ZP.ZPCH, 0xFF);
+        
+        // #### What BRK actually does:
+        /*
         Push(pcRegister+1);
         PushFlags();
         pcRegister = IRQ;
         iFlag = true;
         bFlag = true;
+        */
     }
     RTS()
     {
@@ -338,6 +349,7 @@ unit W65C02
         {
             switch (instruction)
             {
+                // 'break' here means don't increment the pcRegister by instruction length
                 case OpCode.NOP:      { break; } 
                 case OpCode.JSR_nn:   { JSR(operand); break; } 
                 case OpCode.RTS:      { RTS();        break; }
@@ -684,7 +696,7 @@ unit W65C02
                 { 
                     PrintLn("Instruction: " + (byte(instruction)).ToHexString(2)); Die(0x0A); 
                 }
-            }
+            } // switch
             pcRegister += length;
             break;
         }
@@ -778,6 +790,12 @@ unit W65C02
         {
             memory[address] = value;
         }
+        /*
+        if (address == ZHEAPSTART)
+        {
+            Print(" " + pcRegister.ToHexString(4) + ":" + value.ToHexString(2) + " ", Colour.Red, Colour.Black);
+        }
+        */
     }
     ShowStack()
     {

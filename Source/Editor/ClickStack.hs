@@ -117,6 +117,24 @@ unit ClickStack
         string clickLocation;
         loop
         {
+            // Bypass symbol loading to:
+            // - jump instantly on 'uses' paths
+            // - allow 'uses' jumps to work even if .sym does not exist
+            string clickLineFragment = beforeWord + contextWord + afterWord;
+            clickLineFragment = clickLineFragment.Trim();
+            if (clickLineFragment.StartsWith("uses"))
+            {
+                string candidate = contextWord.Replace("\"", "");
+                candidate = ResolveUsesPath(clickLineFragment, candidate);
+                if (candidate.Length != 0)
+                {
+                    location = candidate + ":1";
+                    ClickStack.Push(Editor.CurrentPath, clickLine, clickColumn);
+                    ClickStack.Load(location);
+                    return true;
+                }
+            }
+            
             if (!Source.DefinitionSymbolsLoaded)
             {
                 string clickProjectPath = Editor.ProjectPath;

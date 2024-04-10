@@ -2,6 +2,8 @@ unit Allocate
 {
     uses "ZeroPage"
     
+    friend Memory, GC;
+    
 
     const byte maBEST  = M0;
     const byte maBESTL = M0;
@@ -31,7 +33,7 @@ unit Allocate
     const byte maNEWHOLESIZEL = M12;
     const byte maNEWHOLESIZEH = M13;
        
-    Allocate()
+    allocate()
     {
         // size is in ACC
         // return address in IDX

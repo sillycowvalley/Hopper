@@ -761,7 +761,7 @@ program E6502
                     }
                     else if (currentCommand == 'W') // Warm Restart (keep program, reset data)
                     {
-                        DoReset();
+                        W65C02.Reset();
                         refresh = true;
                     }
                     else if (currentCommand == 'R') // Registers

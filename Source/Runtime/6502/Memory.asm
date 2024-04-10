@@ -9,13 +9,12 @@ unit Memory
     {
         // Assumes that:
         // - entire program was loaded at HopperData (typically $0800)
-        // - size in bytes of loaded program is in IDY
+        // - size in pages of loaded program is in PROGSIZE
         
         CLC
         LDA # (Address.HopperData >> 8)
-        ADC ZP.IDYH
+        ADC ZP.PROGSIZE  // program size in pages (rounded up to the nearest page)
         STA ZP.HEAPSTART
-        INC ZP.HEAPSTART // next page after program
         
         SEC
         LDA # (Address.RamSize >> 8) // top page of RAM (typically 0x80)
@@ -61,13 +60,28 @@ unit Memory
     Allocate()
     {
         PopACC();
-        Allocate.Allocate();
+        Allocate.allocate();
         PushIDX();
     }
     Free()
     {
         PopIDX();
-        Free.Free();
+        Free.free();
+    }
+    ReadByte()
+    {
+        PopIDX();
+        LDY # 0
+        LDA [IDX], Y
+        PushA();
+    }
+    WriteByte()
+    {
+        PopACC();
+        PopIDX();
+        LDY # 0
+        LDA ACCL
+        STA [IDX], Y
     }
     
     Available()
@@ -105,6 +119,7 @@ unit Memory
             ADC ACCH
             STA ACCH
             
+            // 2 byte cost for each allocated block:
             DecACC();
             DecACC();
             
@@ -159,7 +174,8 @@ unit Memory
                             break; 
                         } 
                     }
-                    // available--
+                    
+                    // 2 byte cost for the block
                     DecACC();
                     DecACC();
                     break;

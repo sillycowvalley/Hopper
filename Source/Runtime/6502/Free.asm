@@ -1,6 +1,8 @@
 unit Free
 {
     uses "ZeroPage"
+    
+    friend Memory, GC;
         
     const byte mfCURRENT = IDYL;
     const byte mfCURRENTL = IDYL;
@@ -56,7 +58,7 @@ unit Free
 
     const byte mfOFFSET = M15; // used in releaseSP, no need to preserve
            
-    Free()
+    free()
     {
         // address is in IDX
         // uses mfCURRENT
@@ -119,11 +121,12 @@ unit Free
                     CMP IDXL
                 }
         
-                if (Z)// mfCURRENT == IDX (not >)
+                // http://6502.org/tutorials/compare_instructions.html
+                if (NZ) // mfCURRENT != IDX (not >)
                 {
-                    if (C) // mfCURRENT <  IDX (not >)
+                    if (C)
                     {
-                        break;
+                        break; // (mfCURRENT > IDX)
                     }
                 }
 

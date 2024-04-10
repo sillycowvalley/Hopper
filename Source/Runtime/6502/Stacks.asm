@@ -232,11 +232,6 @@ unit Stacks
     }
     PushBool()
     {
-#ifdef CPU_65C02S      
-        PHY  
-#else
-        TYA PHA
-#endif        
         // value is in X: 0 or 1
         STX ZP.NEXTL
         LDA # 0
@@ -244,11 +239,15 @@ unit Stacks
         LDA #Types.Bool
         STA ZP.NEXTT
         PushNext();
-#ifdef CPU_65C02S      
-        PLY  
-#else
-        PLA TAY
-#endif        
+    }
+    PushA()
+    {
+        STA ZP.NEXTL
+        LDA # 0
+        STA ZP.NEXTH
+        LDA #Types.Byte
+        STA ZP.NEXTT
+        PushNext();
     }
     PopACC()
     {
@@ -307,5 +306,5 @@ unit Stacks
         TAX PLA TAY TXA
 #endif        
     }
-    
+        
 }

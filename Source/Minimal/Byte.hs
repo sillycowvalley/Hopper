@@ -11,12 +11,9 @@ unit Byte
         {
             // +'A' - 10   = 55
             // + 48 below  = 7
-            // + 1 (carry) = 6
-            this += 6;
+            this += 7;
         }
         this += 48; // +'0'
-        
-        //this = (this + 42) * (this + 42);
         return char(this);
     } 
     
