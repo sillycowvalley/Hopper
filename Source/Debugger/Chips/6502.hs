@@ -35,6 +35,16 @@ unit W65C02
     bool zFlag;
     bool cFlag;
     
+    <byte> GetRAM()
+    {
+        <byte> ram;
+        for (uint i = 0; i < 0x8000; i++)
+        {
+            ram.Append(memory[i]);
+        }
+        return ram;
+    }
+    
     CheckNZ(byte value)
     {
         zFlag = (value == 0);
@@ -790,12 +800,10 @@ unit W65C02
         {
             memory[address] = value;
         }
-        /*
-        if (address == ZHEAPSTART)
+        if (address == ZCSP)
         {
             Print(" " + pcRegister.ToHexString(4) + ":" + value.ToHexString(2) + " ", Colour.Red, Colour.Black);
         }
-        */
     }
     ShowStack()
     {
@@ -807,5 +815,8 @@ unit W65C02
             address++;
             PrintLn(address.ToHexString(4) + " " + (memory[address]).ToHexString(2));
         }
+    }
+    ShowDump()
+    {
     }
 }

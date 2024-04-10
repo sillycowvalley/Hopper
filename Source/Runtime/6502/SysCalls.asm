@@ -1,7 +1,9 @@
 unit SysCall
 {
-    uses "6502/Time"
+    uses "6502/Array"
+    uses "6502/String"
     uses "6502/Long"
+    uses "6502/Time"
     
     enum SysCalls
     {
@@ -45,10 +47,6 @@ unit SysCall
     missing()
     {
         TXA BRK // SysCall not Implemented!
-    }
-    die()
-    {
-        PopA(); BRK // user error from Hopper in A
     }
     serialConnect()
     {
@@ -121,7 +119,7 @@ unit SysCall
         {
             case SysCalls.DiagnosticsDie:
             {
-                die();
+                Diagnostics.Die();
             }
             
             case SysCalls.SerialConnect:
@@ -178,6 +176,22 @@ unit SysCall
             case SysCalls.MemoryFree:
             {
                 Memory.Free();
+            }
+            case SysCalls.ArrayNew:
+            {
+                Array.New();
+            }
+            case SysCalls.ArrayCountGet:
+            {
+                Array.CountGet();
+            }
+            case SysCalls.ArrayGetItem:
+            {
+                Array.GetItem();
+            }
+            case SysCalls.ArraySetItem:
+            {
+                Array.SetItem();
             }
             default:
             {

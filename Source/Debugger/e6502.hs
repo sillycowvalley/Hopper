@@ -16,6 +16,8 @@ program E6502
     uses "Chips/6502"
     uses "Chips/ACIA"
     
+    uses "6502/Shared"
+    
     uint orgROM;
     uint[16] breakpoints;
     
@@ -678,6 +680,18 @@ program E6502
                         ShowCallStack();
                         refresh = true;
                     }
+                    else if (currentCommand == 'H') // show Hopper heap
+                    {
+                        GetRAMByteDelegate getRAMByte = W65C02.GetMemory;
+                        ShowHopperHeap(getRAMByte);
+                        refresh = true;
+                    }
+                    else if (currentCommand == 'V') // show Hopper heap
+                    {
+                        GetRAMByteDelegate getRAMByte = W65C02.GetMemory;
+                        ShowHopperValueStack(getRAMByte);
+                        refresh = true;
+                    }
                     else if (currentCommand == 'M') // memory dump
                     {
                         string hexpage = "";
@@ -740,6 +754,7 @@ program E6502
                         {
                             ShowCurrentInstruction(3);
                             ShowRegisters();
+                            W65C02.ShowDump();
                         }
                         refresh = true;
                     }
@@ -810,7 +825,7 @@ program E6502
                         if (clength == 0)
                         {
                             // first character must be command key
-                            if (String.Contains("?BCDHIMOQRSWXZ", ch))
+                            if (String.Contains("?BCDHIMOQRSVWXZ", ch))
                             {
                                 currentCommand = ch;
                             }

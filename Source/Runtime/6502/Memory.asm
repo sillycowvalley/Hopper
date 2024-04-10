@@ -133,7 +133,7 @@ unit Memory
             STA IDXL
         } // loop
         
-        LDA #Types.UInt
+        LDA # Types.UInt
         STA ZP.ACCT
         Stacks.PushACC();
    }

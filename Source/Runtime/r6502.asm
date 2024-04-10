@@ -1,6 +1,6 @@
 program R6502
 {
-    //#define CHECKED
+    #define CHECKED
     
     // mapping of Z80 -> 6502
     // https://litwr2.github.io/8080-8085-z80-8088-6502/z80-6502.html
@@ -35,7 +35,8 @@ program R6502
     
     uses "6502/Utilities"
     uses "6502/Serial"
-    uses "6502/Diagnostic"
+    uses "6502/Diagnostics"
+    
     uses "6502/SysCalls"
     uses "6502/Instructions"
     
@@ -120,7 +121,7 @@ program R6502
         clearWorkSpace(); // clear M0..M3 and U0..U3 to make zero page transfer faster
         
         PLA
-        Diagnostic.PageMemory();
+        Diagnostics.PageMemory();
         
         Utilities.SendSlash();  // confirm the data
     }

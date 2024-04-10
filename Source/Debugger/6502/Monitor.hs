@@ -627,7 +627,7 @@ unit Monitor
             foreach (var c in ln)
             {
                 SerialWriteChar(c); 
-                //Time.Delay(1);        // so we don't overwhelm the 100kHz 6502
+                Time.Delay(1);        // so we don't overwhelm the 100kHz 6502
                 _ = checkEcho(false);
             }
             SerialWriteChar(Char.EOL);

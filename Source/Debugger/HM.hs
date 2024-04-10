@@ -14,6 +14,8 @@ program HopperMonitor
     uses "6502/Pages"
     uses "6502/Monitor"
     
+    uses "6502/Shared"
+    
     uses "/Source/Compiler/JSON/JSON"
     
     string optionsPath;
@@ -1051,8 +1053,9 @@ program HopperMonitor
                 }
                 else if (currentCommand == 'H') // Heap
                 {
-                    // TODO : rewrite on client side
-                    //Monitor.Command(commandLine, false, true);
+                    Pages.ClearPageData(); // fresh data
+                    GetRAMByteDelegate getRAMByte = Pages.GetPageByte;
+                    ShowHopperHeap(getRAMByte);
                     refresh = true;
                 }
                 if (refresh)

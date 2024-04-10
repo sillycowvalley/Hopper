@@ -131,8 +131,35 @@ unit ZP
     const byte UWIDE2               = U2;
     const byte UWIDE3               = U3;
     
+
+    // These are shared across type sysCalls and opCodes that don't call each other:
+
     // used for Int library for sign
     const byte FSIGN                = F0;
+
+    const byte FSIZE = F1;
+    const byte FSIZEL = F1;
+    const byte FSIZEH = F2;
+
+    // used by strings, long, dictionaries and arrays
+
+    const byte FSOURCEADDRESS  = F3;
+    const byte FSOURCEADDRESSL = F3;
+    const byte FSOURCEADDRESSH = F4;
+
+    const byte FDESTINATIONADDRESS  = F5;
+    const byte FDESTINATIONADDRESSL = F5;
+    const byte FDESTINATIONADDRESSH = F6;
+
+    const byte FTYPE = F7;
+
+    const byte FLENGTH  = F8;
+    const byte FLENGTHL = F8;
+    const byte FLENGTHH = F9;
+
+    const byte FVALUE = F10;
+    const byte FVALUEL = F10;
+    const byte FVALUEH = F11;
     
     // used by long:
     const byte LTOP0 = F5;
@@ -154,5 +181,39 @@ unit ZP
     const byte LRESULT5 = U5;
     const byte LRESULT6 = U6;
     const byte LRESULT7 = U7;
+    
+    // used by lists:
+   const byte LTYPE    = F3;
+
+    const byte LLENGTH  = F4;
+    const byte LLENGTHL = F4;
+    const byte LLENGTHH = F5;
+
+    const byte LPREVIOUS  = F6;
+    const byte LPREVIOUSL = F6;
+    const byte LPREVIOUSH = F7;
+    
+    // preserved during recursive clone calls
+    const byte LNEXT  = F8;
+    const byte LNEXTL = F8;
+    const byte LNEXTH = F9;
+
+    // preserved during recursive clone calls
+    const byte LCURRENT  = F10;
+    const byte LCURRENTL = F10;
+    const byte LCURRENTH = F11;
+
+    const byte FITEM  = F12;
+    const byte FITEML = F12;
+    const byte FITEMH = F13;
+
+    const byte LCOUNT  = F14;
+    const byte LCOUNTL = F14;
+    const byte LCOUNTH = F15;
+
+    // used by arrays
+
+    const byte ACARRY   = F14;
+    const byte ABITMASK = F15;   
     
 }

@@ -289,6 +289,25 @@ unit Stacks
         PLA TAY
 #endif        
     }
+    PopIDY()
+    {
+#ifdef CPU_65C02S      
+        PHY  
+#else
+        TYA PHA
+#endif        
+        DEC ZP.SP
+        LDY ZP.SP
+        LDA Address.ValueStackLSB, Y
+        STA ZP.IDYL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.IDYH
+#ifdef CPU_65C02S      
+        PLY  
+#else
+        PLA TAY
+#endif        
+    }
     
     PopA() // pop a byte (don't care about type or MSB)
     {

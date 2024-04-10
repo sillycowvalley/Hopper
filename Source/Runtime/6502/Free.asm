@@ -63,6 +63,7 @@ unit Free
         // address is in IDX
         // uses mfCURRENT
 
+#ifdef CHECKED
         LDA #0
         CMP IDXL
         if (Z)
@@ -74,6 +75,7 @@ unit Free
                 LDA 0x0B BRK
             }
         }
+#endif
         loop
         {
             // mfSIZE  = ReadWord(IDX - 2)
@@ -309,9 +311,11 @@ unit Free
                             {
                                 LDA #0
                                 CMP mfNEXTNEXTL
-                                if (NZ) { break; }
-                                CMP mfNEXTNEXTH
-                                if (NZ) { break; }
+                                if (Z)
+                                {
+                                    CMP mfNEXTNEXTH
+                                    if (Z) { break; }
+                                }
 
                                 // mfNEXTNEXT != 0
 

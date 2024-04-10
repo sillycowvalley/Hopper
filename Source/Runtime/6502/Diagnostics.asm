@@ -1,5 +1,11 @@
-unit Diagnostic
+unit Diagnostics
 {
+    Die()
+    {
+        PopA(); BRK // user error from Hopper in A
+    }
+    
+    
     // used by 'F' command
     PageMemory()
     {

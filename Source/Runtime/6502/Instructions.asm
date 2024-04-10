@@ -1,6 +1,7 @@
 unit Instruction
 {
     uses "SysCalls"
+    uses "6502/GC"
     
     enum Instructions
     {
@@ -86,21 +87,7 @@ unit Instruction
         BITSHL     = 0xA2,
         
     }
-    
-    enum Types
-    {
-        Undefined,
-        Char,   // char (for now)
-        Int,    // 16 bit signed
-
-        Byte,   // unsigned char
-        UInt,   // internal type for unsigned 16 bit int (tFlags and tEnum)
-
-        Reference,  // internal type for "ref" addresses (tUInt)
-
-        Bool,
-    }
-    
+        
     // return the width of the operand of the current opCode (in X), in A
     GetOperandWidth() // munts X
     {
@@ -321,6 +308,7 @@ unit Instruction
         Utilities.IncPC();
     }
     
+       
     nop()
     {
         NOP
@@ -1011,10 +999,25 @@ unit Instruction
         ConsumeOperand();
         
         // SP -= IDX
+        /*
         SEC
         LDA ZP.SP
         SBC ZP.IDXL
         STA ZP.SP
+        */
+        
+        LDX ZP.IDXL
+        loop
+        {
+            CPX #0
+            if (Z) { break; }
+            DEC ZP.SP
+            
+            LDY ZP.SP
+            checkDecReferenceY();
+            
+            DEX
+        }
         
         Stacks.PopBP();
         LDA ZP.CSP
@@ -1038,10 +1041,18 @@ unit Instruction
         Stacks.PopTop();
         
         // SP -= IDX
-        SEC
-        LDA ZP.SP
-        SBC ZP.IDXL
-        STA ZP.SP
+        LDX ZP.IDXL
+        loop
+        {
+            CPX #0
+            if (Z) { break; }
+            DEC ZP.SP
+            
+            LDY ZP.SP
+            checkDecReferenceY();
+            
+            DEX
+        }
         
         Stacks.PushTop();
         
@@ -1134,6 +1145,36 @@ unit Instruction
         STA ZP.TOPT
         Stacks.PushTop();
     }
+    
+    checkIncReferenceY()
+    {
+        // Y is pointing at the stack slot in question
+        LDA Address.TypeStackLSB, Y
+        CMP # Types.ReferenceType // C set if heap type, C clear if value type
+        if (C)
+        {
+            LDA Address.ValueStackLSB, Y
+            STA IDXL
+            LDA Address.ValueStackMSB, Y
+            STA IDXH
+            GC.AddReference();
+        }
+    }
+    checkDecReferenceY()
+    {
+        // Y is pointing at the stack slot in question
+        LDA Address.TypeStackLSB, Y
+        CMP # Types.ReferenceType // C set if heap type, C clear if value type
+        if (C)
+        {
+            LDA Address.ValueStackLSB, Y
+            STA IDXL
+            LDA Address.ValueStackMSB, Y
+            STA IDXH
+            GC.Release(); // munts IDY
+        }
+    }
+    
     dup0()
     {
         LDY ZP.SP
@@ -1145,8 +1186,13 @@ unit Instruction
         STA ZP.TOPH
         LDA Address.TypeStackLSB, Y
         STA ZP.TOPT
+        
+        checkIncReferenceY();
+        
         PushTop(); 
     }
+    
+        
     pushLocal()
     {
         ConsumeOperand();
@@ -1161,10 +1207,13 @@ unit Instruction
         STA ZP.TOPH
         LDA Address.TypeStackLSB, Y
         STA ZP.TOPT
+        
+        checkIncReferenceY();
      
         PushTop();   
     }
     
+        
     decSP()
     {
         ConsumeOperandB();
@@ -1175,6 +1224,10 @@ unit Instruction
             CPX #0
             if (Z) { break; }
             DEC ZP.SP
+            
+            LDY ZP.SP
+            checkDecReferenceY();
+            
             DEX
         }
     }
@@ -1213,6 +1266,9 @@ unit Instruction
         STA ZP.TOPH
         LDA Address.TypeStackLSB, Y
         STA ZP.TOPT
+        
+        checkIncReferenceY();
+        
         PushTop();
     }
     
@@ -1234,6 +1290,8 @@ unit Instruction
         STA Address.ValueStackMSB, Y
         LDA ZP.TOPT
         STA Address.TypeStackLSB, Y
+        
+        checkDecReferenceY();
     }
     
     popLocal()
@@ -1252,6 +1310,8 @@ unit Instruction
         STA Address.ValueStackMSB, Y
         LDA ZP.TOPT
         STA Address.TypeStackLSB, Y
+        
+        checkDecReferenceY();
     }
     pushGlobal()
     {
@@ -1265,6 +1325,8 @@ unit Instruction
         STA ZP.TOPH
         LDA Address.TypeStackLSB, Y
         STA ZP.TOPT
+        
+        checkIncReferenceY();
      
         PushTop();   
     }
@@ -1282,6 +1344,8 @@ unit Instruction
         STA Address.ValueStackMSB, Y
         LDA ZP.TOPT
         STA Address.TypeStackLSB, Y
+        
+        checkDecReferenceY();
     }
     
     call()
