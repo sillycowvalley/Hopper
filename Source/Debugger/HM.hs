@@ -338,7 +338,7 @@ program HopperMonitor
             bool isReference = tstring == "ref";
             string content = TypeToString(value, tstring, isReference, 30);
             
-            string referenceCount = "    ";
+            string referenceCount = "      ";
             if (IsMachineReferenceType(vtype))
             {
                 byte count = Pages.GetPageByte(value + 1);

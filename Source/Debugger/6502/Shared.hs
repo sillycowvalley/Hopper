@@ -259,17 +259,22 @@ unit Shared
                 byte objectType     = getRAMByte(current+2);
                 byte referenceCount = getRAMByte(current+3);
                 
-                PrintLn("  0x" + current.ToHexString(4) + " 0x" + blockSize.ToHexString(4) + " [0x" + objectType.ToHexString(2) + "-" + referenceCount.ToHexString(2) + "]", Colour.LightestGray, Colour.Black);
+                Print("  0x" + current.ToHexString(4) + " 0x" + blockSize.ToHexString(4) + " [0x" + objectType.ToHexString(2) + "-" + referenceCount.ToHexString(2) + "]", Colour.LightestGray, Colour.Black);
                 type et = type(objectType);
                 switch (et)
                 {
                     case array:
                     {
+                        PrintLn(" (array)");
                         string content = TypeToString(current+2, "array", false, 100);
                         if (content.Length > 0)
                         {
-                            PrintLn("      " + content, Colour.LightestGray, Colour.Black);
+                            PrintLn("      " + content);
                         }
+                    }
+                    default:
+                    {
+                        PrintLn();
                     }
                 }
             }
@@ -282,9 +287,10 @@ unit Shared
         }
         
     }
-    ShowHopperValueStack(GetRAMByteDelegate getRAMByte)
+    ShowHopperValueStack(GetRAMByteDelegate currentGetRAMByte)
     {
-        
+        getRAMByte = currentGetRAMByte;
+           
         byte sp        = getRAMByte(ZSP);
         byte bp        = getRAMByte(ZBP);
         
@@ -311,7 +317,7 @@ unit Shared
             bool isReference = tstring == "ref";
             string content = TypeToString(value, tstring, isReference, 30);
             
-            string referenceCount = "    ";
+            string referenceCount = "      ";
             if (IsMachineReferenceType(vtype))
             {
                 byte count = getRAMByte(value + 1);

@@ -67,10 +67,9 @@ unit Breakpoints
     
     // is current hopper PC at a a breakpoint?
     //     Z set if true, Z clear if not, breakpoint in X
+    //     munts A and X
     IsPCBreakpoint()
     {
-        PHA
-        
         LDX # 0x10 // Z is clear
         
         LDA ZP.FLAGS
@@ -95,8 +94,7 @@ unit Breakpoints
                 CPX # 0x10
                 if (Z) { break; }
             }
-            CPX # 0 // clear Z (since X is 0x10)
         }
-        PLA
+        CPX # 0 // clear Z (since X is 0x10 for both exits above)
     }
 }

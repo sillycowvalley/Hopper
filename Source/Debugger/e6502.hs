@@ -741,8 +741,8 @@ program E6502
                         uint pc = W65C02.PC;
                         if (pc != InvalidAddress)
                         {
-                            ShowCurrentInstruction(3);
                             ShowRegisters();
+                            ShowCurrentInstruction(3);
                         }
                         refresh = true;
                     }
@@ -752,9 +752,8 @@ program E6502
                         uint pc = W65C02.PC;
                         if (pc != InvalidAddress)
                         {
-                            ShowCurrentInstruction(3);
                             ShowRegisters();
-                            W65C02.ShowDump();
+                            ShowCurrentInstruction(3);
                         }
                         refresh = true;
                     }
@@ -764,8 +763,8 @@ program E6502
                         uint pc = W65C02.PC;
                         if (pc != InvalidAddress)
                         {
-                            ShowCurrentInstruction(3);
                             ShowRegisters();
+                            ShowCurrentInstruction(3);
                         }
                         refresh = true;
                     }

@@ -102,6 +102,7 @@ unit Highlighter
         isAssembler = isAssemblerSource;
         
         uint lengthBefore = ln.Length;
+        ln = ln.Replace(Char.Tab, ' ');
         ln = ln.TrimRight();
         uint length = ln.Length;
         uint extras = lengthBefore -length;

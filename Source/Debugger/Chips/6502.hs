@@ -800,10 +800,10 @@ unit W65C02
         {
             memory[address] = value;
         }
-        if (address == ZCSP)
-        {
-            Print(" " + pcRegister.ToHexString(4) + ":" + value.ToHexString(2) + " ", Colour.Red, Colour.Black);
-        }
+        //if (address == ZCSP)
+        //{
+        //    Print(" " + pcRegister.ToHexString(4) + ":" + value.ToHexString(2) + " ", Colour.Red, Colour.Black);
+        //}
     }
     ShowStack()
     {
@@ -815,8 +815,5 @@ unit W65C02
             address++;
             PrintLn(address.ToHexString(4) + " " + (memory[address]).ToHexString(2));
         }
-    }
-    ShowDump()
-    {
     }
 }

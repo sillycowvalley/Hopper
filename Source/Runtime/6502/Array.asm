@@ -109,6 +109,16 @@ unit Array
         LDY  # aiElements
         loop
         {
+            LDA FLENGTHL
+            if (Z)
+            {
+                LDA FLENGTHH
+                if (Z)
+                {
+                    break;
+                }
+            }
+            
             LDA # 0
             STA [IDX], Y
             IncIDX();
@@ -119,14 +129,6 @@ unit Array
                 DEC FLENGTHH
             }
             DEC FLENGTHL
-            if (Z)
-            {
-                LDA FLENGTHH
-                if (Z)
-                {
-                    break;
-                }
-            }
         }
         
         LDA # Types.Array
@@ -164,14 +166,14 @@ unit Array
                 AND # 0x07
                 switch (A)
                 {
-                    case 0: { LDA 0b00000001 STA ABITMASK}
-                    case 1: { LDA 0b00000010 STA ABITMASK}
-                    case 2: { LDA 0b00000100 STA ABITMASK}
-                    case 3: { LDA 0b00001000 STA ABITMASK}
-                    case 4: { LDA 0b00010000 STA ABITMASK}
-                    case 5: { LDA 0b00100000 STA ABITMASK}
-                    case 6: { LDA 0b01000000 STA ABITMASK}
-                    case 7: { LDA 0b10000000 STA ABITMASK}
+                    case 0: { LDA # 0b00000001 STA ABITMASK}
+                    case 1: { LDA # 0b00000010 STA ABITMASK}
+                    case 2: { LDA # 0b00000100 STA ABITMASK}
+                    case 3: { LDA # 0b00001000 STA ABITMASK}
+                    case 4: { LDA # 0b00010000 STA ABITMASK}
+                    case 5: { LDA # 0b00100000 STA ABITMASK}
+                    case 6: { LDA # 0b01000000 STA ABITMASK}
+                    case 7: { LDA # 0b10000000 STA ABITMASK}
                 }
                 // divide offset by 8
                 LSR IDYH
@@ -200,6 +202,14 @@ unit Array
         LDA IDXH  // MSB
         ADC IDYH
         STA IDYH
+        
+        CLC
+        LDA IDYL  // LSB
+        ADC # aiElements
+        STA IDYL
+        LDA IDYH  // MSB
+        ADC # 0
+        STA IDYH
     }
     GetItem()
     {
@@ -212,8 +222,7 @@ unit Array
         
         getIndexAndMask();
                 
-        LDY # aiElements
-        
+        LDY # 0        
         LDA # 0
         STA NEXTH
                       
@@ -268,8 +277,7 @@ unit Array
         
         getIndexAndMask();
                 
-        LDY # aiElements
-        
+        LDY # 0        
         LDA # 0
         STA NEXTH
                       
@@ -279,15 +287,16 @@ unit Array
             case Types.Bool:
             {
                 LDA TOPL
-                AND ABITMASK
-                if (Z)
+                if (NZ)
                 {
-                    LDA [IDY], Y    
-                    EOR ABITMASK
+                    // set the bit
+                    LDA ABITMASK
+                    ORA [IDY], Y    
                     STA [IDY], Y
                 }
                 else
                 {
+                    // clear the bit
                     LDA ABITMASK
                     EOR # 0
                     AND [IDY], Y    
@@ -309,8 +318,7 @@ unit Array
                 STA [IDY], Y
             }
         }      
-        
-        
         GC.Release();   
     }
 }
+    

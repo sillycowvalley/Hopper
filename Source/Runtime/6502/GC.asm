@@ -148,6 +148,7 @@ unit GC
         // type is in A
         // reference type to clone is at IDY, resulting clone in IDX
         TAX
+        TYA PHA
         
         // Clone.List and Clone.Dictionary can go recursive:       preserve lCURRENT, lNEXT, IDY
         LDA LCURRENTL
@@ -166,12 +167,10 @@ unit GC
         switch (X)
         {
             case Types.String:
-            {
-                String.Clone();
-            }
             case Types.Array:
+            case Types.Long:
             {
-                Array.Clone();
+                genericClone();
             }
             default:
             {
@@ -190,6 +189,87 @@ unit GC
         STA LCURRENTH
         PLA
         STA LCURRENTL
- 
+        
+        PLA TAY
+    }
+    
+    // IDY -> source, returns cloned object in IDX
+    genericClone()
+    {
+        /*
+        LDA FSOURCEADDRESSH
+        PHA
+        LDA FSOURCEADDRESSL
+        PHA
+        */
+        // get the memory block size  
+        LDA IDYL
+        STA IDXL      
+        LDA IDYH
+        STA IDXH
+        DecIDX();
+        DecIDX();
+        LDY # 0 
+        LDA [IDX], Y
+        STA ACCL
+        INY 
+        LDA [IDX], Y
+        STA ACCH
+        
+        // size = size - size word of block
+        DecACC();
+        DecACC();
+        
+        LDA ACCL
+        STA FLENGTHL
+        LDA ACCH
+        STA FLENGTHH
+        
+        // initialized from source at IDY (before it gets munted in Allocate)
+        LDA IDYL
+        STA FSOURCEADDRESSL
+        LDA IDYH
+        STA FSOURCEADDRESSH
+        
+        // size is in ACC
+        // return address in IDX
+        Allocate.allocate();
+        
+        // initialized from destination at IDX
+        LDA IDXL
+        STA FDESTINATIONADDRESSL
+        LDA IDXH
+        STA FDESTINATIONADDRESSH
+        
+        // SOURCEADDRESS -> DESTINATIONADDRESS
+        LDY # 0
+        loop
+        {
+            LDA FLENGTHL
+            if (Z)
+            {
+                LDA FLENGTHH
+                if (Z) { break; }
+            }
+            
+            LDA [FSOURCEADDRESS], Y
+            STA [FDESTINATIONADDRESS], Y
+            
+            IncDESTINATIONADDRESS();
+            IncSOURCEADDRESS();
+            DecLENGTH();
+        }
+        
+        // exact clone : make sure reference count is only one
+        LDY # 1
+        LDA # 1
+        STA [IDX], Y
+        
+        /*
+        PLA
+        STA FSOURCEADDRESSL
+        PLA
+        STA FSOURCEADDRESSH
+        */
     }
 }

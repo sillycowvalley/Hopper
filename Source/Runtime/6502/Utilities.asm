@@ -109,4 +109,44 @@ unit Utilities
         DEC IDYL
         PLA
     }
+    DecIDX()
+    {
+        PHA
+        LDA IDXL
+        if (Z)
+        {
+            DEC IDXH
+        }
+        DEC IDXL
+        PLA
+    }
+    DecLENGTH()
+    {
+        PHA
+        LDA FLENGTHL
+        if (Z)
+        {
+            DEC FLENGTHH
+        }
+        DEC FLENGTHL
+        PLA
+    }
+    IncSOURCEADDRESS()
+    {
+        INC ZP.FSOURCEADDRESSL
+        if (Z)
+        {
+            INC ZP.FSOURCEADDRESSH
+        }
+    }
+    IncDESTINATIONADDRESS()
+    {
+        INC ZP.FDESTINATIONADDRESSL
+        if (Z)
+        {
+            INC ZP.FDESTINATIONADDRESSH
+        }
+    }
+    
+    
 }

@@ -51,6 +51,8 @@ unit Instruction
         
         PUSHGP     = 0x47,
         
+        COPYNEXTPOP = 0x48,
+        
         CAST       = 0x51,
         
         ADD        = 0x80,
@@ -100,6 +102,7 @@ unit Instruction
             case Instructions.PUSHI0:
             case Instructions.PUSHGP:
             case Instructions.DUP0:
+            case Instructions.COPYNEXTPOP:
             
             case Instructions.ADD:
             case Instructions.ADDI:
@@ -1146,6 +1149,12 @@ unit Instruction
         Stacks.PushTop();
     }
     
+    copyNextPop()
+    {
+        LDA # 1
+        STA ZP.CNP
+    }
+    
     checkIncReferenceY()
     {
         // Y is pointing at the stack slot in question
@@ -1193,25 +1202,7 @@ unit Instruction
     }
     
         
-    pushLocal()
-    {
-        ConsumeOperand();
-        CLC
-        LDA ZP.IDXL
-        ADC ZP.BP
-        TAY
-        
-        LDA Address.ValueStackLSB, Y
-        STA ZP.TOPL
-        LDA Address.ValueStackMSB, Y
-        STA ZP.TOPH
-        LDA Address.TypeStackLSB, Y
-        STA ZP.TOPT
-        
-        checkIncReferenceY();
-     
-        PushTop();   
-    }
+    
     
         
     decSP()
@@ -1249,27 +1240,93 @@ unit Instruction
         PushTop();
     }
     
-    pushRel()
+    popCopyShared()
     {
-        ConsumeOperand(); // -> IDX    
-        // address of reference = BP + operand
+        // slot to pop to is in Y
+        // this is the slot we are about to overwrite: decrease reference count if reference type
+        LDA Address.TypeStackLSB, Y
+        CMP # Types.ReferenceType // C set if heap type, C clear if value type
+        if (C)
+        {
+            checkDecReferenceY();
+        }
+        
+        PopTop();
+        LDA ZP.TOPL
+        CMP Address.ValueStackLSB, Y
+        if (Z)
+        {
+            LDA ZP.TOPH
+            CMP Address.ValueStackMSB, Y
+            if (Z)
+            {
+                // overwriting self - no more to do
+                return;
+            }
+        }
+        // clone self, release the original
+        LDA ZP.TOPL
+        STA IDYL
+        LDA ZP.TOPH
+        STA IDYH
+        LDA ZP.TOPT
+        // type is in A
+        // reference type to clone is at IDY, resulting clone in IDX
+        GC.Clone();
+        
+        // store the clone
+        LDA IDXL
+        STA Address.ValueStackLSB, Y
+        LDA IDXH
+        STA Address.ValueStackMSB, Y
+        LDA ZP.TOPT
+        STA Address.TypeStackLSB, Y
+        
+        LDY ZP.SP
+        checkDecReferenceY();
+    }
+    
+    popShared()
+    {
+        // slot to pop to is in Y
+        LDA ZP.CNP
+        if (NZ)
+        {
+            LDA # 0
+            STA ZP.CNP
+            popCopyShared();
+            return;
+        }
+                        
+        PopTop();
+        
+        LDA ZP.TOPL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.TOPH
+        STA Address.ValueStackMSB, Y
+        LDA ZP.TOPT
+        STA Address.TypeStackLSB, Y
+        
+        checkDecReferenceY();
+    }
+    popLocal()
+    {
+        ConsumeOperand();
         CLC
         LDA ZP.IDXL
         ADC ZP.BP
-        TAX
-        // get the actual address from reference address:
-        LDY Address.ValueStackLSB, X
-                 
-        LDA Address.ValueStackLSB, Y
-        STA ZP.TOPL
-        LDA Address.ValueStackMSB, Y
-        STA ZP.TOPH
-        LDA Address.TypeStackLSB, Y
-        STA ZP.TOPT
+        TAY
         
-        checkIncReferenceY();
+        popShared(); // slot to pop to is in Y
+    }
+    
+    popGlobal()
+    {
+        ConsumeOperand();
+        CLC
+        LDY ZP.IDXL
         
-        PushTop();
+        popShared(); // slot to pop to is in Y
     }
     
     popRel()
@@ -1283,41 +1340,12 @@ unit Instruction
         // get the actual address from reference address:
         LDY Address.ValueStackLSB, X
         
-        PopTop(); // -> TOP
-        LDA ZP.TOPL
-        STA Address.ValueStackLSB, Y
-        LDA ZP.TOPH
-        STA Address.ValueStackMSB, Y
-        LDA ZP.TOPT
-        STA Address.TypeStackLSB, Y
-        
-        checkDecReferenceY();
+        popShared(); // slot to pop to is in Y
     }
     
-    popLocal()
+    pushShared()
     {
-        ConsumeOperand();
-        CLC
-        LDA ZP.IDXL
-        ADC ZP.BP
-        TAY
-                
-        PopTop();
-        
-        LDA ZP.TOPL
-        STA Address.ValueStackLSB, Y
-        LDA ZP.TOPH
-        STA Address.ValueStackMSB, Y
-        LDA ZP.TOPT
-        STA Address.TypeStackLSB, Y
-        
-        checkDecReferenceY();
-    }
-    pushGlobal()
-    {
-        ConsumeOperand();
-        CLC
-        LDY ZP.IDXL
+        // slot to push is in Y
         
         LDA Address.ValueStackLSB, Y
         STA ZP.TOPL
@@ -1328,26 +1356,42 @@ unit Instruction
         
         checkIncReferenceY();
      
-        PushTop();   
+        PushTop(); 
     }
-    popGlobal()
+    pushLocal()
+    {
+        ConsumeOperand();
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        pushShared(); // slot to push is in Y
+    }
+    
+    pushGlobal()
     {
         ConsumeOperand();
         CLC
         LDY ZP.IDXL
-                
-        PopTop();
         
-        LDA ZP.TOPL
-        STA Address.ValueStackLSB, Y
-        LDA ZP.TOPH
-        STA Address.ValueStackMSB, Y
-        LDA ZP.TOPT
-        STA Address.TypeStackLSB, Y
-        
-        checkDecReferenceY();
+        pushShared(); // slot to push is in Y
     }
     
+    pushRel()
+    {
+        ConsumeOperand(); // -> IDX    
+        // address of reference = BP + operand
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAX
+        // get the actual address from reference address:
+        LDY Address.ValueStackLSB, X
+                 
+        pushShared(); // slot to push is in Y
+    }
+        
     call()
     {
         // change CALL to CALLI
@@ -1441,6 +1485,10 @@ unit Instruction
             case Instructions.PUSHGP:
             {
                 pushI0();
+            }
+            case Instructions.COPYNEXTPOP:
+            {
+                copyNextPop();
             }
             case Instructions.PUSHLOCAL:
             {

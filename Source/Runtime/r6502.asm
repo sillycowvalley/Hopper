@@ -459,7 +459,9 @@ program R6502
                 }
             }
             
-            Breakpoints.IsPCBreakpoint();
+            // munts A and X, 
+            //   if hit, Z set and breakpoint in X
+            Breakpoints.IsPCBreakpoint(); 
             if (Z)
             {
                 // if breakpoint '0', clear it

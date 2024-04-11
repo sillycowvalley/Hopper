@@ -639,7 +639,7 @@ unit Asm6502
             case AddressingModes.ZeroPageRelative:  { length = 3; }
             default:
             { 
-                string name = GetName(instruction); Print(name); Die(0x0B); 
+                string name = GetName(instruction); Print("0x" + (uint(instruction)).ToHexString(2) + ":" + name); Die(0x0B); 
             }
         }
         return length;
