@@ -3,6 +3,7 @@ unit Shared
     uses "ZeroPage"
     
     uses "/Source/Compiler/Types"
+    uses "/Source/Runtime/6502/ZeroPage.asm"
     
     delegate byte GetRAMByteDelegate(uint address);
     GetRAMByteDelegate getRAMByte;
@@ -247,7 +248,6 @@ unit Shared
             PrintLn("  0x" + current.ToHexString(4) + " 0x" + blockSize.ToHexString(4)+ " 0x" + nextBlock.ToHexString(4)+ " 0x" + prevBlock.ToHexString(4), Colour.LightestGray, Colour.Black); 
             if (nextBlock == 0) { break; }
             current = nextBlock;
-            Key k = ReadKey();
         }
         PrintLn("Heap: " + heapStart.ToHexString(4));
         current = heapStart;
@@ -265,8 +265,19 @@ unit Shared
                 {
                     case array:
                     {
-                        PrintLn(" (array)");
+                        uint count = getRAMByte(current+4) + getRAMByte(current+5) << 8;
+                        PrintLn(" (array: [" + count.ToString() + "])");
                         string content = TypeToString(current+2, "array", false, 100);
+                        if (content.Length > 0)
+                        {
+                            PrintLn("      " + content);
+                        }
+                    }
+                    case string:
+                    {
+                        uint length = getRAMByte(current+4) + getRAMByte(current+5) << 8;
+                        PrintLn(" (string: [" + length.ToString() + "])");
+                        string content = TypeToString(current+2, "string", false, 100);
                         if (content.Length > 0)
                         {
                             PrintLn("      " + content);
@@ -285,12 +296,10 @@ unit Shared
             current += blockSize;
             if (current >= heapStart + heapSize) { break; }
         }
-        
     }
     ShowHopperValueStack(GetRAMByteDelegate currentGetRAMByte)
     {
-        getRAMByte = currentGetRAMByte;
-           
+        getRAMByte = currentGetRAMByte;           
         byte sp        = getRAMByte(ZSP);
         byte bp        = getRAMByte(ZBP);
         
@@ -343,5 +352,28 @@ unit Shared
                break; 
             }
         }
+    }
+    ShowVariableW(string name, byte zpIndex)
+    {
+        Print("  " + (name + ":").Pad(' ', 20));
+        uint ui = getRAMByte(zpIndex) + getRAMByte(zpIndex+1) << 8;
+        PrintLn(" 0x" + ui.ToHexString(4) + " (" + ui.ToString() + ")", Colour.LightestGray, Colour.Black); 
+    }
+    ShowVariableB(string name, byte zpIndex)
+    {
+        Print("  " + (name + ":").Pad(' ', 20));
+        uint b = getRAMByte(zpIndex);
+        PrintLn(" 0x" + b.ToHexString(2), Colour.LightestGray, Colour.Black); 
+    }
+    ShowHopperStringVariables(GetRAMByteDelegate currentGetRAMByte)
+    {
+        getRAMByte = currentGetRAMByte;
+        PrintLn();
+        ShowVariableW("FLENGTH", ZP.LLENGTH);
+        ShowVariableW("LCOUNT",  ZP.LCOUNT);
+        ShowVariableW("FSIZE",   ZP.FSIZE);
+        ShowVariableB("FTYPE",   ZP.FTYPE);
+        ShowVariableW("FSOURCEADDRESS",      ZP.FSOURCEADDRESS);
+        ShowVariableW("FDESTINATIONADDRESS", ZP.FDESTINATIONADDRESS);
     }
 }

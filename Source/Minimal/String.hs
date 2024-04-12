@@ -165,7 +165,7 @@ unit String
         {
             return true; // An empty string is always contained in any string
         }
-       for (uint i = 0; i <= this.Length - needle.Length; i++)
+        for (uint i = 0; i <= this.Length - needle.Length; i++)
         {
             bool found = true;
             for (uint j = 0; j < needle.Length; j++)

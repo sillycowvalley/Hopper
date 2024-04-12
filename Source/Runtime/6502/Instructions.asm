@@ -90,19 +90,27 @@ unit Instruction
         BITSHR     = 0xA0,
         BITSHL     = 0xA2,
         
+        
+        
         // PACKED_INSTRUCTIONS
         PUSHIB       = 0x1A,
         POPLOCALB    = 0x1B,
         PUSHLOCALB   = 0x1C,
         PUSHGLOBALB  = 0x20,
+        PUSHSTACKADDRB = 0x21,
         INCLOCALB    = 0x22,
+        INCLOCALIB   = 0xA4,
+        
         SYSCALL0     = 0x24,
+        SYSCALL1     = 0x25,
         RETB         = 0x2A,
         RETRESB      = 0x2B,
         JZB          = 0x2E,
+        JNZB         = 0x2F,
         JB           = 0x30,
         PUSHILT      = 0x55,
         ENTERB       = 0x5F,
+        RETFAST      = 0x61,
         PUSHIBLE     = 0x6B,
         ADDB         = 0x6D,
         SUBB         = 0x6E,
@@ -110,6 +118,12 @@ unit Instruction
         INCLOCALBB   = 0x3F,
         PUSHLOCALBB  = 0x56,
         SYSCALLB0    = 0xA8,
+        SYSCALL00    = 0xA9,
+        PUSHIBB      = 0xAA,
+        SYSCALLB1    = 0xAB,
+        SYSCALL01    = 0xAC,
+        SYSCALL10    = 0xAD,
+        
         
         PUSHI0       = 0x44,
         PUSHI1       = 0x45,
@@ -118,6 +132,13 @@ unit Instruction
         POPLOCALB01  = 0x4D,
         PUSHLOCALB00 = 0x4E,
         PUSHLOCALB01 = 0x4F,
+        
+        POPCOPYLOCALB   = 0x57,
+        POPCOPYRELB     = 0x58,
+        POPCOPYGLOBALB  = 0x59,
+        
+        POPCOPYLOCALB00 = 0x5D,
+        POPCOPYLOCALB01 = 0x5E,
     }
         
     // return the width of the operand of the current opCode (in X), in A
@@ -173,10 +194,13 @@ unit Instruction
             case Instructions.PUSHI0:
             case Instructions.PUSHI1:
             case Instructions.RET0:
+            case Instructions.RETFAST:
             case Instructions.POPLOCALB00:
             case Instructions.POPLOCALB01:
             case Instructions.PUSHLOCALB00:
             case Instructions.PUSHLOCALB01:
+            case Instructions.POPCOPYLOCALB00:
+            case Instructions.POPCOPYLOCALB01:
             {
                 LDA #0
             }
@@ -190,15 +214,22 @@ unit Instruction
             case Instructions.PUSHLOCALB:
             case Instructions.PUSHGLOBALB:
             case Instructions.INCLOCALB:
+            case Instructions.INCLOCALIB:
             case Instructions.SYSCALL0:
+            case Instructions.SYSCALL1:
             case Instructions.RETB:
             case Instructions.RETRESB:
             case Instructions.JZB:
+            case Instructions.JNZB:
             case Instructions.JB:
             case Instructions.ENTERB:
             case Instructions.PUSHIBLE:
             case Instructions.ADDB:
             case Instructions.SUBB:
+            case Instructions.POPCOPYLOCALB:
+            case Instructions.POPCOPYRELB:
+            case Instructions.POPCOPYGLOBALB:
+            case Instructions.PUSHSTACKADDRB:
             {
                 LDA #1
             }
@@ -227,6 +258,11 @@ unit Instruction
             case Instructions.INCLOCALBB:
             case Instructions.PUSHLOCALBB:
             case Instructions.SYSCALLB0:
+            case Instructions.SYSCALLB1:
+            case Instructions.SYSCALL00:
+            case Instructions.SYSCALL01:
+            case Instructions.SYSCALL10:
+            case Instructions.PUSHIBB:
             case Instructions.PUSHILT:
             {
                 LDA #2
@@ -1214,6 +1250,10 @@ unit Instruction
         STA ZP.IDXH
         retShared();
     }
+    retFast()
+    {
+        Stacks.PopPC();
+    }
     
     retResShared()
     {
@@ -1363,7 +1403,7 @@ unit Instruction
         if (NZ)
         {
             ConsumeOperandSB();
-            jCommon();
+            jCommonB();
             return;
         }
         // skip operand
@@ -1396,6 +1436,31 @@ unit Instruction
     {
         pushIB();
         SysCall0();
+    }
+    sysCallB1()
+    {
+        pushIB();
+        SysCall1();
+    }
+    sysCall00()
+    {
+        SysCall0();
+        SysCall0();
+    }
+    sysCall01()
+    {
+        SysCall0();
+        SysCall1();
+    }
+    sysCall10()
+    {
+        SysCall1();
+        SysCall0();
+    }
+    pushIBB()
+    {
+        pushIB();
+        pushIB();
     }
     
     pushI0()
@@ -1508,6 +1573,21 @@ unit Instruction
         STA ZP.TOPT
         PushTop();
     }
+    pushStackAddrB()
+    {
+        // <int offset operand> pushed to [top] as uint stack address
+        ConsumeOperandA(); // -> A
+        // address = BP + operand
+        CLC
+        ADC ZP.BP
+        
+        STA ZP.TOPL
+        LDA # 0
+        STA ZP.TOPH
+        LDA # Types.Reference
+        STA ZP.TOPT
+        PushTop();
+    }
     
     popCopyShared()
     {
@@ -1598,6 +1678,16 @@ unit Instruction
         
         popShared(); // slot to pop to is in Y
     }
+    popCopyLocalB()
+    {
+        ConsumeOperandB();
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        popCopyShared(); // slot to pop to is in Y
+    }
     popLocalB00()
     {
         LDA # 0 
@@ -1610,6 +1700,19 @@ unit Instruction
         TAY
         
         popShared(); // slot to pop to is in Y
+    }
+    popCopyLocalB00()
+    {
+        LDA # 0 
+        STA IDXL
+        STA IDXH
+        
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        popCopyShared(); // slot to pop to is in Y
     }
     popLocalB01()
     {
@@ -1624,6 +1727,20 @@ unit Instruction
         TAY
         
         popShared(); // slot to pop to is in Y
+    }
+    popCopyLocalB01()
+    {
+        LDA # 1
+        STA IDXL
+        LDA # 0 
+        STA IDXH
+        
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        popCopyShared(); // slot to pop to is in Y
     }
     
     popGlobal()
@@ -1641,6 +1758,14 @@ unit Instruction
         LDY ZP.IDXL
         
         popShared(); // slot to pop to is in Y
+    }
+    popCopyGlobalB()
+    {
+        ConsumeOperandB();
+        CLC
+        LDY ZP.IDXL
+        
+        popCopyShared(); // slot to pop to is in Y
     }
     
     popRel()
@@ -1668,6 +1793,19 @@ unit Instruction
         LDY Address.ValueStackLSB, X
         
         popShared(); // slot to pop to is in Y
+    }
+    popCopyRelB()
+    {
+        ConsumeOperandB(); // -> IDX    
+        // address of reference = BP + operand
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAX
+        // get the actual address from reference address:
+        LDY Address.ValueStackLSB, X
+        
+        popCopyShared(); // slot to pop to is in Y
     }
     
     pushShared()
@@ -1703,6 +1841,27 @@ unit Instruction
         if (NZ)
         {
             LDA # Types.UInt          // just in case it was Types.Byte
+            STA Address.TypeStackLSB, Y
+        }
+    }
+    incLocalIB()
+    {
+        ConsumeOperandA();
+        CLC
+        ADC ZP.BP
+        TAY
+        
+        // slot to INC is in Y
+        CLC
+        LDA Address.ValueStackLSB, Y
+        ADC # 1
+        STA Address.ValueStackLSB, Y
+        LDA Address.ValueStackMSB, Y
+        ADC # 0
+        STA Address.ValueStackMSB, Y
+        if (NZ)
+        {
+            LDA # Types.Int          // just in case it was Types.Byte
             STA Address.TypeStackLSB, Y
         }
     }
@@ -2150,7 +2309,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushI0();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.PUSHI1:
@@ -2158,7 +2317,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushI1();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.RET0:
@@ -2166,7 +2325,15 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 ret0();
 #else
-                LDA 0x0A BRK
+                missing();
+#endif
+            }
+            case Instructions.RETFAST:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                retFast();
+#else
+                missing();
 #endif
             }
             case Instructions.POPLOCALB00:
@@ -2174,7 +2341,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 popLocalB00();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.POPLOCALB01:
@@ -2182,7 +2349,23 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 popLocalB01();
 #else
-                LDA 0x0A BRK
+                missing();
+#endif
+            }
+            case Instructions.POPCOPYLOCALB00:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                popCopyLocalB00();
+#else
+                missing();
+#endif
+            }
+            case Instructions.POPCOPYLOCALB01:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                popCopyLocalB01();
+#else
+                missing();
 #endif
             }
             case Instructions.PUSHLOCALB00:
@@ -2190,7 +2373,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushLocalB00();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.PUSHLOCALB01:
@@ -2198,7 +2381,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushLocalB01();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.PUSHIB:
@@ -2206,7 +2389,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushIB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.POPLOCALB:
@@ -2214,7 +2397,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 popLocalB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.PUSHLOCALB:
@@ -2222,7 +2405,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushLocalB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.PUSHGLOBALB:
@@ -2230,7 +2413,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushGlobalB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.INCLOCALB:
@@ -2238,7 +2421,15 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 incLocalB();
 #else
-                LDA 0x0A BRK
+                missing();
+#endif
+            }
+            case Instructions.INCLOCALIB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                incLocalIB();
+#else
+                missing();
 #endif
             }
             case Instructions.SYSCALL0:
@@ -2246,7 +2437,15 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 SysCall0();
 #else
-                LDA 0x0A BRK
+                missing();
+#endif
+            }
+            case Instructions.SYSCALL1:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                SysCall1();
+#else
+                missing();
 #endif
             }
             case Instructions.RETB:
@@ -2254,7 +2453,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 retB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.RETRESB:
@@ -2262,7 +2461,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 retResB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.JZB:
@@ -2270,7 +2469,15 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 jzb();
 #else
-                LDA 0x0A BRK
+                missing();
+#endif
+            }
+            case Instructions.JNZB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                jnzb();
+#else
+                missing();
 #endif
             }
             case Instructions.JB:
@@ -2278,7 +2485,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 jb();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.ENTERB:
@@ -2286,7 +2493,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 enterB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.PUSHIBLE:
@@ -2294,7 +2501,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushIBLE();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.PUSHILT:
@@ -2302,7 +2509,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushILT();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.ADDB:
@@ -2310,7 +2517,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 addB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.SUBB:
@@ -2318,7 +2525,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 subB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.INCLOCALBB:
@@ -2326,7 +2533,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 incLocalBB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.PUSHLOCALBB:
@@ -2334,7 +2541,7 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 pushLocalBB();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
             case Instructions.SYSCALLB0:
@@ -2342,9 +2549,83 @@ unit Instruction
 #ifdef PACKED_INSTRUCTIONS
                 sysCallB0();
 #else
-                LDA 0x0A BRK
+                missing();
 #endif
             }
+            case Instructions.SYSCALLB1:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                sysCallB1();
+#else
+                missing();
+#endif
+            }
+            case Instructions.SYSCALL00:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                sysCall00();
+#else
+                missing();
+#endif
+            }
+            case Instructions.SYSCALL10:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                sysCall10();
+#else
+                missing();
+#endif
+            }
+            case Instructions.SYSCALL01:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                sysCall01();
+#else
+                missing();
+#endif
+            }
+            case Instructions.PUSHIBB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushIBB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.POPCOPYLOCALB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                popCopyLocalB();
+#else
+                missing();
+#endif
+            }
+            
+            case Instructions.POPCOPYGLOBALB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                popCopyGlobalB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.POPCOPYRELB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                popCopyRelB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.PUSHSTACKADDRB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushStackAddrB();
+#else
+                missing();
+#endif
+            }
+            
             default:
             {
                 missing();

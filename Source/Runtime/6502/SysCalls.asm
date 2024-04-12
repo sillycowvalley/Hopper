@@ -177,6 +177,7 @@ unit SysCall
             {
                 Memory.Free();
             }
+            
             case SysCalls.ArrayNew:
             {
                 Array.New();
@@ -192,6 +193,31 @@ unit SysCall
             case SysCalls.ArraySetItem:
             {
                 Array.SetItem();
+            }
+            
+            case SysCalls.StringNewFromConstant:
+            {
+                String.NewFromConstant();
+            }
+            case SysCalls.StringNew:
+            {
+                String.New();
+            }
+            case SysCalls.StringLengthGet:
+            {
+                String.LengthGet();
+            }
+            case SysCalls.StringGetChar:
+            {
+                String.GetChar();
+            }
+            case SysCalls.StringBuild:
+            {
+                String.Build();
+            }
+            case SysCalls.StringBuildFront:
+            {
+                String.BuildFront();
             }
             default:
             {
@@ -222,6 +248,27 @@ unit SysCall
         
         // iOverload -> ACC
         LDA # 0
+        STA ACCL
+        STA ACCH
+        
+        // load iSyscCall into X (because JMP [nnnn,X] is then possible)
+#ifdef CPU_65C02S
+        PLX
+#else        
+        PLA
+        TAX
+#endif
+        sysCall();
+    }
+#endif
+#ifdef PACKED_INSTRUCTIONS    
+    SysCall1()
+    {
+        ConsumeOperandA(); // iSysCall  -> A (uses ACC)
+        PHA
+        
+        // iOverload -> ACC
+        LDA # 1
         STA ACCL
         STA ACCH
         

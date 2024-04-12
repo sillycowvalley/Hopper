@@ -705,7 +705,7 @@ unit Expression
                 }
                 byte iSysCall = Symbols.GetSysCallIndex(iOverload);
                 byte iSysOverload = Symbols.GetSysCallOverload(iOverload);
-                if ((iSysOverload == 0) && TryUserSysCall(methodName))
+                if (TryUserSysCall(methodName, iSysOverload))
                 {
                     // done
                 }

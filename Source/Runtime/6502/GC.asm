@@ -168,7 +168,6 @@ unit GC
         {
             case Types.String:
             case Types.Array:
-            case Types.Long:
             {
                 genericClone();
             }

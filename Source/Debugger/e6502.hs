@@ -18,6 +18,7 @@ program E6502
     
     uses "6502/Shared"
     
+    bool showStringVariables;
     uint orgROM;
     uint[16] breakpoints;
     
@@ -291,7 +292,13 @@ program E6502
         string names = W65C02.GetRegisterNames();
         string registers = W65C02.GetRegisters();
         PrintLn(names);
-        PrintLn(registers, Colour.LightestGray, Colour.Black);
+        Print(registers, Colour.LightestGray, Colour.Black);
+        if (showStringVariables)
+        {
+            GetRAMByteDelegate getRAMByte = W65C02.GetMemory;
+            ShowHopperStringVariables(getRAMByte);
+        }
+        PrintLn();
     }
     
     string pathLoaded;
@@ -697,11 +704,19 @@ program E6502
                         string hexpage = "";
                         if (commandLine.Length > 2)
                         {
-                            hexpage = commandLine.Substring(2, commandLine.Length-2);
-                            if (ValidateHexPage(ref hexpage))
+                            if (commandLine == "M S")
                             {
-                                MemoryDump(hexpage);
+                                showStringVariables = !showStringVariables;
                                 refresh = true;
+                            }
+                            else
+                            {
+                                hexpage = commandLine.Substring(2, commandLine.Length-2);
+                                if (ValidateHexPage(ref hexpage))
+                                {
+                                    MemoryDump(hexpage);
+                                    refresh = true;
+                                }
                             }
                         }
                     } // case 'M'

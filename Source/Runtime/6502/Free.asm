@@ -2,7 +2,7 @@ unit Free
 {
     uses "ZeroPage"
     
-    friend Memory, GC;
+    friend Memory, GC, String;
         
     const byte mfCURRENT = IDYL;
     const byte mfCURRENTL = IDYL;

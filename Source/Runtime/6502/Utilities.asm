@@ -131,6 +131,17 @@ unit Utilities
         DEC FLENGTHL
         PLA
     }
+    DecCOUNT()
+    {
+        PHA
+        LDA LCOUNTL
+        if (Z)
+        {
+            DEC LCOUNTH
+        }
+        DEC LCOUNTL
+        PLA
+    }
     IncSOURCEADDRESS()
     {
         INC ZP.FSOURCEADDRESSL
@@ -146,6 +157,55 @@ unit Utilities
         {
             INC ZP.FDESTINATIONADDRESSH
         }
+    }
+    IncLENGTH()
+    {
+        INC ZP.FLENGTHL
+        if (Z)
+        {
+            INC ZP.FLENGTHH
+        }
+    }
+    IncSIZE()
+    {
+        INC ZP.FSIZEL
+        if (Z)
+        {
+            INC ZP.FSIZEH
+        }
+    }
+    DecSIZE()
+    {
+        PHA
+        LDA FSIZEL
+        if (Z)
+        {
+            DEC FSIZEH
+        }
+        DEC FSIZEL
+        PLA
+    }
+    DecSOURCEADDRESS()
+    {
+        PHA
+        LDA FSOURCEADDRESSL
+        if (Z)
+        {
+            DEC FSOURCEADDRESSH
+        }
+        DEC FSOURCEADDRESSL
+        PLA
+    }
+    DecDESTINATIONADDRESS()
+    {
+        PHA
+        LDA FDESTINATIONADDRESSL
+        if (Z)
+        {
+            DEC FDESTINATIONADDRESSH
+        }
+        DEC FDESTINATIONADDRESSL
+        PLA
     }
     
     

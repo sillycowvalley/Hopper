@@ -1581,7 +1581,7 @@ program Compile
             {
                 byte iSysCall = Symbols.GetSysCallIndex(igOverload);
                 byte iSysOverload = Symbols.GetSysCallOverload(igOverload);
-                if ((iSysOverload == 0) && TryUserSysCall(getterMethod))
+                if (TryUserSysCall(getterMethod, iSysOverload))
                 {
                     // done
                 }

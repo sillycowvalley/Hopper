@@ -15,4 +15,18 @@ unit UInt
     {
         return b0 + b1 << 8;
     }
+    string ToString(uint this)
+    {
+        string result;
+        if (this == 0)
+        {
+            String.Build(ref result, '0');
+        }
+        while (this != 0)
+        {
+            String.BuildFront(ref result, char((this % 10) + 48));
+            this = this / 10;
+        }
+        return result;
+    }
 }

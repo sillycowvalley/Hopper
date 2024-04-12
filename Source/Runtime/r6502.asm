@@ -2,9 +2,7 @@ program R6502
 {
     //#define CHECKED
     
-#ifndef NO_PACKED_INSTRUCTIONS
     #define PACKED_INSTRUCTIONS
-#endif    
     
     // mapping of Z80 -> 6502
     // https://litwr2.github.io/8080-8085-z80-8088-6502/z80-6502.html

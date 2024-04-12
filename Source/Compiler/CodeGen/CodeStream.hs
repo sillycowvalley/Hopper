@@ -301,7 +301,7 @@ unit CodeStream
             CodeStream.AddInstruction(Instruction.PUSHR0);
         }
     }
-    bool TryUserSysCall(string name)
+    bool TryUserSysCall(string name, byte iSysOverload)
     {
         bool userSupplied = false;
         // Are we targetting an 8 bit platform?
@@ -313,7 +313,7 @@ unit CodeStream
             if (GetFunctionIndex(name, ref fIndex))
             {
                 <uint> iOverloads = GetFunctionOverloads(fIndex);
-                if (iOverloads.Count == 1)
+                if (iSysOverload < iOverloads.Count)
                 {
                     uint iOverload = iOverloads[0];
                     if (!IsSysCall(iOverload))
@@ -409,7 +409,7 @@ unit CodeStream
         {
             byte iSysCall;
             string name = sysCallUnit + '.' + sysCallMethod;
-            if (TryUserSysCall(name))
+            if (TryUserSysCall(name, iSysOverload))
             {
                 break;
             }

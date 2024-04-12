@@ -606,9 +606,11 @@ program PreProcess
             <string, string> pathToken = Parser.PreviousToken;
             string usesPath = pathToken["lexeme"];
             string usesPathLower = usesPath.ToLower();
-            string usesExtension = IsAssembly ? ".asm" : ".hs";
-            if (!usesPathLower.EndsWith(usesExtension))
+            
+            string usesExtension = Path.GetExtension(usesPathLower);
+            if (usesExtension == ".")
             {
+                usesExtension = IsAssembly ? ".asm" : ".hs";
                 usesPath = usesPath + usesExtension;
             }
             if (!File.Exists(usesPath))
