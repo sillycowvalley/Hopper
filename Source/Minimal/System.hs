@@ -1,7 +1,7 @@
 unit System
 {
     #define MINIMAL_RUNTIME
-    #define NO_PACKED_INSTRUCTIONS
+    //#define NO_PACKED_INSTRUCTIONS
 
     uses "Char"
     uses "Bool"

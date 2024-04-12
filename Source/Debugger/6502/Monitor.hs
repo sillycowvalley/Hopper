@@ -9,6 +9,8 @@ unit Monitor
     string serialOutput;
     string lastHexPath;
     
+    uint portConnected;
+    
     uint entryPC;
     bool entryPCIsSet;
     
@@ -613,7 +615,7 @@ unit Monitor
         _ = checkEcho(false);
         SerialWriteChar(Char.EOL);
         _ = checkEcho(false);
-
+        
         collectOutput = true;
         ClearSerialOutput();
         if (!IsDebugger)
@@ -627,7 +629,11 @@ unit Monitor
             foreach (var c in ln)
             {
                 SerialWriteChar(c); 
-                Time.Delay(1);        // so we don't overwhelm the 100kHz 6502
+                // This delay stops Teensy RetroBoard from working reliably
+                if (portConnected == 0)
+                {
+                    Time.Delay(1);        // so we don't overwhelm the slow fake COM port connection to the emulator
+                }
                 _ = checkEcho(false);
             }
             SerialWriteChar(Char.EOL);
@@ -763,6 +769,7 @@ unit Monitor
     bool Connect(uint comPort)
     {
         bool success;
+        portConnected = 4242;
         loop
         {
             if (comPort == 4242)
@@ -784,6 +791,7 @@ unit Monitor
                 if (Serial.IsValid())
                 {
                     success = true;
+                    portConnected = comPort;
                     break; // success
                 }
             }

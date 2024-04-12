@@ -55,6 +55,24 @@ unit Array
                 {
                     INC FSIZEH
                 }
+                // initialize bit masks
+                LDA # 0b00000001
+                STA ZP.A0
+                LDA # 0b00000010
+                STA ZP.A1
+                LDA # 0b00000100
+                STA ZP.A2
+                LDA # 0b00001000
+                STA ZP.A3
+                LDA # 0b00010000
+                STA ZP.A4
+                LDA # 0b00100000
+                STA ZP.A5
+                LDA # 0b01000000
+                STA ZP.A6
+                LDA # 0b10000000
+                STA ZP.A7
+                
             }
             case Types.Char:
             case Types.Byte:
@@ -161,9 +179,14 @@ unit Array
         {
             case Types.Bool:
             {
-                // capture the bit: TODO : lookuptable
+                // capture the bit
                 LDA IDYL
                 AND # 0x07
+                TAX
+                LDA ZP.A0, X
+                STA ZP.ABITMASK
+                
+                /*
                 switch (A)
                 {
                     case 0: { LDA # 0b00000001 STA ABITMASK}
@@ -175,6 +198,9 @@ unit Array
                     case 6: { LDA # 0b01000000 STA ABITMASK}
                     case 7: { LDA # 0b10000000 STA ABITMASK}
                 }
+                */
+                
+                
                 // divide offset by 8
                 LSR IDYH
                 ROR IDYL
@@ -203,6 +229,7 @@ unit Array
         ADC IDYH
         STA IDYH
         
+        /*
         CLC
         LDA IDYL  // LSB
         ADC # aiElements
@@ -210,19 +237,39 @@ unit Array
         LDA IDYH  // MSB
         ADC # 0
         STA IDYH
+        */
     }
     GetItem()
     {
         PopIDY();  // index
         PopIDX();  // this
         
+#ifdef CHECKED
+        // index < aiCount?
+        LDY # aiCount+1
+        LDA ZP.IDYH        // index MSB
+        CMP [IDX], Y       // aiCount MSB
+        if (Z)
+        {
+            DEY
+            LDA ZP.IDYL    // index LSB
+            CMP [IDX], Y   // aiCount LSB
+        }
+        if (C) // index < aiCount?
+        {
+            // index >= aiCount
+            LDA # 0x02 // array index out of range
+            BRK
+        }
+#endif        
         LDY # aiType
         LDA [IDX], Y
         STA FTYPE
         
         getIndexAndMask();
                 
-        LDY # 0        
+        //LDY # 0        
+        LDY # aiElements
         LDA # 0
         STA NEXTH
                       
@@ -271,13 +318,33 @@ unit Array
         PopIDY(); // index
         PopIDX(); // this
         
+#ifdef CHECKED
+        // index < aiCount?
+        LDY # aiCount+1
+        LDA ZP.IDYH        // index MSB
+        CMP [IDX], Y       // aiCount MSB
+        if (Z)
+        {
+            DEY
+            LDA ZP.IDYL    // index LSB
+            CMP [IDX], Y   // aiCount LSB
+        }
+        if (C) // index < aiCount?
+        {
+            // index >= aiCount
+            LDA # 0x02 // array index out of range
+            BRK
+        }
+#endif                  
+        
         LDY # aiType
         LDA [IDX], Y
         STA FTYPE
         
         getIndexAndMask();
                 
-        LDY # 0        
+        //LDY # 0        
+        LDY # aiElements
         LDA # 0
         STA NEXTH
                       
@@ -298,7 +365,7 @@ unit Array
                 {
                     // clear the bit
                     LDA ABITMASK
-                    EOR # 0
+                    EOR # 0xFF
                     AND [IDY], Y    
                     STA [IDY], Y       
                 }

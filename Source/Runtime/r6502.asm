@@ -1,11 +1,15 @@
 program R6502
 {
-    #define CHECKED
+    //#define CHECKED
+    
+#ifndef NO_PACKED_INSTRUCTIONS
+    #define PACKED_INSTRUCTIONS
+#endif    
     
     // mapping of Z80 -> 6502
     // https://litwr2.github.io/8080-8085-z80-8088-6502/z80-6502.html
     
-    #define ROM_8K
+    #define ROM_16K
     //#define CPU_65C02S  // Rockwell and WDC
     #define CPU_6502  // MOS
 
@@ -473,6 +477,9 @@ program R6502
                 break;
             }
             stepintoCommand();
+#ifndef HAS_SERIAL_ISR            
+            IsAvailable(); // used to poll serial port
+#endif                
         }
     }
     stepoverCommand()

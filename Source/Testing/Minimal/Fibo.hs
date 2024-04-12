@@ -32,6 +32,8 @@ program Fibo
         writeDigit(this);
     }
     
+    delegate uint FiboDelegate(uint n);
+    
     uint Fibo(uint n)
     {
         if ( n <= 1 ) 
@@ -39,12 +41,23 @@ program Fibo
         else
         { return Fibo(n-1) + Fibo(n-2); }
     }
-    Hopper()
+    Benchmark(/*string name,*/ FiboDelegate func, uint arg, uint loops)
     {
         uint start = Time.Seconds;
-        uint result = Fibo(10); // 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
+        uint result = 0;
+        for(uint count=0; count < loops; count++)
+        {
+            result = func(arg);
+        }
         uint elapsed = Time.Seconds - start;
         Serial.WriteChar(Char.EOL); WriteUInt(elapsed); Serial.WriteChar('s');
         Serial.WriteChar(Char.EOL); WriteUInt(result); Serial.WriteChar('!');    
+        //WriteLn("Fibo (" + arg.ToString() + ") = " + result.ToString() + " in " + elapsed.ToString() + " seconds");
+    }
+    Hopper()
+    {
+        FiboDelegate fiboDelegate = Fibo;
+        // 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
+        Benchmark(/*"Fibo", */ fiboDelegate, 10, 1); // Fibo(24) = 46368
     }
 }

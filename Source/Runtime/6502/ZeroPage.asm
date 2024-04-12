@@ -125,6 +125,17 @@ unit ZP
     const byte U6                   = 0x86;
     const byte U7                   = 0x87;
     
+    // bit masks for bool arrays
+    const byte A0                   = 0x90;
+    const byte A1                   = 0x91;
+    const byte A2                   = 0x92;
+    const byte A3                   = 0x93;
+    const byte A4                   = 0x94;
+    const byte A5                   = 0x95;
+    const byte A6                   = 0x96;
+    const byte A7                   = 0x97;
+    
+    
     // used for UInt library
     const byte UWIDE0               = U0;
     const byte UWIDE1               = U1;
@@ -183,7 +194,7 @@ unit ZP
     const byte LRESULT7 = U7;
     
     // used by lists:
-   const byte LTYPE    = F3;
+   const byte LTYPE    = F3;
 
     const byte LLENGTH  = F4;
     const byte LLENGTHL = F4;

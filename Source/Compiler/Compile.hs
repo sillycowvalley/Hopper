@@ -662,7 +662,7 @@ program Compile
             // load identifier using identifier_i
             CodeStream.AddInstructionPushLocal(collectionOffset); // array collection object
             CodeStream.AddInstructionPushLocal(iteratorOffset);
-            if ((CodeStream.Target6502 || CodeStream.TargetMinimal) && IsWordValueType(iteratorType))
+            if (CodeStream.Target6502 && IsWordValueType(iteratorType))
             {
                 CodeStream.AddInstructionSysCall0("Array", "GetItemUInt");
             }
@@ -2436,7 +2436,7 @@ program Compile
                                 }                          
                                 if (isArray)
                                 {           
-                                    if ((CodeStream.Target6502 || CodeStream.TargetMinimal) && IsWordValueType(valueType))
+                                    if (CodeStream.Target6502 && IsWordValueType(valueType))
                                     {
                                         CodeStream.AddInstructionSysCall0("Array", "SetItemUInt");
                                     }

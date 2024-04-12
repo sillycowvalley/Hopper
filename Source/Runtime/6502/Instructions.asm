@@ -47,13 +47,15 @@ unit Instruction
         BOOLNOT    = 0x41,
         BITNOT     = 0x42,
         
-        PUSHI0     = 0x44,
-        
         PUSHGP     = 0x47,
         
         COPYNEXTPOP = 0x48,
         
+        CALLREL    = 0x4B,
+        
         CAST       = 0x51,
+        
+        PUSHD      = 0x60,
         
         ADD        = 0x80,
         ADDI       = 0x81,
@@ -88,6 +90,34 @@ unit Instruction
         BITSHR     = 0xA0,
         BITSHL     = 0xA2,
         
+        // PACKED_INSTRUCTIONS
+        PUSHIB       = 0x1A,
+        POPLOCALB    = 0x1B,
+        PUSHLOCALB   = 0x1C,
+        PUSHGLOBALB  = 0x20,
+        INCLOCALB    = 0x22,
+        SYSCALL0     = 0x24,
+        RETB         = 0x2A,
+        RETRESB      = 0x2B,
+        JZB          = 0x2E,
+        JB           = 0x30,
+        PUSHILT      = 0x55,
+        ENTERB       = 0x5F,
+        PUSHIBLE     = 0x6B,
+        ADDB         = 0x6D,
+        SUBB         = 0x6E,
+        
+        INCLOCALBB   = 0x3F,
+        PUSHLOCALBB  = 0x56,
+        SYSCALLB0    = 0xA8,
+        
+        PUSHI0       = 0x44,
+        PUSHI1       = 0x45,
+        RET0         = 0x4A,
+        POPLOCALB00  = 0x4C,
+        POPLOCALB01  = 0x4D,
+        PUSHLOCALB00 = 0x4E,
+        PUSHLOCALB01 = 0x4F,
     }
         
     // return the width of the operand of the current opCode (in X), in A
@@ -99,10 +129,10 @@ unit Instruction
         {
             case Instructions.ENTER:
             
-            case Instructions.PUSHI0:
             case Instructions.PUSHGP:
             case Instructions.DUP0:
             case Instructions.COPYNEXTPOP:
+            case Instructions.CALLREL:
             
             case Instructions.ADD:
             case Instructions.ADDI:
@@ -138,12 +168,37 @@ unit Instruction
             case Instructions.BITSHR8:
             case Instructions.BITSHL8:
             case Instructions.BITANDFF:
+            
+            // PACKED_INSTRUCTIONS
+            case Instructions.PUSHI0:
+            case Instructions.PUSHI1:
+            case Instructions.RET0:
+            case Instructions.POPLOCALB00:
+            case Instructions.POPLOCALB01:
+            case Instructions.PUSHLOCALB00:
+            case Instructions.PUSHLOCALB01:
             {
                 LDA #0
             }
             case Instructions.SYSCALL:
             case Instructions.CAST:
             case Instructions.DECSP:
+            
+            // PACKED_INSTRUCTIONS
+            case Instructions.PUSHIB:
+            case Instructions.POPLOCALB:
+            case Instructions.PUSHLOCALB:
+            case Instructions.PUSHGLOBALB:
+            case Instructions.INCLOCALB:
+            case Instructions.SYSCALL0:
+            case Instructions.RETB:
+            case Instructions.RETRESB:
+            case Instructions.JZB:
+            case Instructions.JB:
+            case Instructions.ENTERB:
+            case Instructions.PUSHIBLE:
+            case Instructions.ADDB:
+            case Instructions.SUBB:
             {
                 LDA #1
             }
@@ -158,6 +213,7 @@ unit Instruction
             case Instructions.JW:
             
             case Instructions.PUSHI:
+            case Instructions.PUSHD:
             case Instructions.POPLOCAL:
             case Instructions.PUSHLOCAL:
             case Instructions.POPGLOBAL:
@@ -166,6 +222,12 @@ unit Instruction
             case Instructions.PUSHSTACKADDR:
             case Instructions.PUSHREL:
             case Instructions.POPREL:
+        
+            // PACKED_INSTRUCTIONS
+            case Instructions.INCLOCALBB:
+            case Instructions.PUSHLOCALBB:
+            case Instructions.SYSCALLB0:
+            case Instructions.PUSHILT:
             {
                 LDA #2
             }
@@ -277,7 +339,6 @@ unit Instruction
                     RTS
                 }
             }
-        
             CLC
             LDA IDYL
             ADC #4
@@ -302,8 +363,38 @@ unit Instruction
         Utilities.IncPC();
         Utilities.IncPC();
     }
-    // increment the PC by 1, load the operand into A
+    // load the operand into IDX, increment the PC by 1
     ConsumeOperandB()
+    {
+        Utilities.IncACC();
+        
+        LDY #0
+        STY ZP.IDXH
+        LDA [ZP.ACC], Y
+        STA ZP.IDXL
+        
+        Utilities.IncPC();
+    }
+    // load the operand into IDX, increment the PC by 1
+    ConsumeOperandSB()
+    {
+        Utilities.IncACC();
+        
+        LDY #0
+        STY ZP.IDXH
+        LDA [ZP.ACC], Y
+        STA ZP.IDXL
+        if (MI)
+        {
+            // signed byte, extend the sign
+            LDA # 0xFF
+            STA ZP.IDXH  
+        }
+        
+        Utilities.IncPC();
+    }
+    // increment the PC by 1, load the operand into A
+    ConsumeOperandA()
     {
         Utilities.IncACC();
         LDY # 0
@@ -323,6 +414,30 @@ unit Instruction
         LDA ZP.SP
         STA ZP.BP
     }
+    enterB()
+    {
+        Stacks.PushBP();
+        LDA ZP.SP
+        STA ZP.BP
+        
+        LDA # 0
+        STA ZP.TOPL
+        STA ZP.TOPH
+        LDA #Types.Byte
+        STA ZP.TOPT
+            
+        ConsumeOperandA();
+        TAX
+        loop
+        {
+            if (Z) { break; }
+            
+            Stacks.PushTop();
+            
+            DEX
+        }   
+    }
+    
     boolNot()
     {
         Stacks.PopTop();
@@ -441,12 +556,9 @@ unit Instruction
         STA ZP.TOPT
         Stacks.PushTop();
     }
-    
     addShared()
     {
-        Stacks.PopTop();
         Stacks.PopNext();
-        
         CLC
         LDA ZP.NEXTL
         ADC ZP.TOPL
@@ -454,14 +566,39 @@ unit Instruction
         LDA ZP.NEXTH
         ADC ZP.TOPH
         STA ZP.NEXTH
-        
     }
-    
-    subShared()
+    add()
     {
         Stacks.PopTop();
+        addShared();
+        LDA #Types.UInt
+        STA ZP.NEXTT
+        Stacks.PushNext();
+    }
+    addB()
+    {
+        ConsumeOperandA();
+        STA TOPL
+        LDA # 0
+        STA TOPH
+        LDA #Types.Byte
+        STA TOPT
+        addShared();
+        LDA #Types.UInt
+        STA ZP.NEXTT
+        Stacks.PushNext();
+    }
+    addi()
+    {
+        Stacks.PopTop();
+        addShared();
+        LDA #Types.Int
+        STA ZP.NEXTT
+        Stacks.PushNext();
+    }
+    subShared()
+    {
         Stacks.PopNext();
-        
         SEC
         LDA ZP.NEXTL
         SBC ZP.TOPL
@@ -470,22 +607,23 @@ unit Instruction
         SBC ZP.TOPH
         STA ZP.NEXTH
     }
-    add()
+    
+    subB()
     {
-        addShared();
+        ConsumeOperandA();
+        STA TOPL
+        LDA # 0
+        STA TOPH
+        LDA #Types.Byte
+        STA TOPT
+        subShared();
         LDA #Types.UInt
-        STA ZP.NEXTT
-        Stacks.PushNext();
-    }
-    addi()
-    {
-        addShared();
-        LDA #Types.Int
         STA ZP.NEXTT
         Stacks.PushNext();
     }
     sub()
     {
+        Stacks.PopTop();
         subShared();
         LDA #Types.UInt
         STA ZP.NEXTT
@@ -493,6 +631,7 @@ unit Instruction
     }
     subi()
     {
+        Stacks.PopTop();
         subShared();
         LDA #Types.Int
         STA ZP.NEXTT
@@ -732,9 +871,8 @@ unit Instruction
     }
     
     // http://6502.org/tutorials/compare_instructions.html
-    lt()
+    ltShared()
     {
-        Stacks.PopTop();
         Stacks.PopNext();
         
         LDX #1 // NEXT < TOP   TODO do I have the results the wrong way around here? see Z80 version
@@ -751,9 +889,24 @@ unit Instruction
         }
         Stacks.PushBool(); // X
     }
-    le()
+    lt()
     {
         Stacks.PopTop();
+        ltShared();
+    }
+    pushILT()
+    {
+        ConsumeOperand();
+        LDA ZP.IDXL
+        STA ZP.TOPL
+        LDA ZP.IDXH
+        STA ZP.TOPH
+        LDA #Types.UInt
+        STA ZP.TOPT
+        leShared();
+    }
+    leShared()
+    {
         Stacks.PopNext();
         LDX #1 // NEXT <= TOP
         LDA ZP.NEXTH
@@ -770,8 +923,25 @@ unit Instruction
                 LDX #0  // NEXT > TOP
             }
         }
-        Stacks.PushBool(); // X   
+        Stacks.PushBool(); // X 
     }
+    le()
+    {
+        Stacks.PopTop();
+        leShared();
+    }
+    
+    pushIBLE()
+    {
+        ConsumeOperandA();
+        STA ZP.TOPL
+        LDA # 0 
+        STA ZP.TOPH
+        LDA #Types.Byte
+        STA ZP.TOPT
+        leShared();
+    }
+    
     ge()
     {
         Stacks.PopTop();
@@ -928,7 +1098,7 @@ unit Instruction
     }
     cast()
     {
-        ConsumeOperandB(); // type -> A
+        ConsumeOperandA(); // type -> A
         LDY ZP.SP
         DEY
         STA Address.TypeStackLSB, Y
@@ -997,18 +1167,8 @@ unit Instruction
         Stacks.PushTop();
     }
     
-    ret()
+    retShared()
     {
-        ConsumeOperand();
-        
-        // SP -= IDX
-        /*
-        SEC
-        LDA ZP.SP
-        SBC ZP.IDXL
-        STA ZP.SP
-        */
-        
         LDX ZP.IDXL
         loop
         {
@@ -1037,10 +1197,26 @@ unit Instruction
             Stacks.PopPC();
         }
     }
-    
-    retRes()
+    ret()
     {
         ConsumeOperand();
+        retShared();
+    }
+    retB()
+    {
+        ConsumeOperandB();
+        retShared();
+    }
+    ret0()
+    {
+        LDA # 0 
+        STA ZP.IDXL
+        STA ZP.IDXH
+        retShared();
+    }
+    
+    retResShared()
+    {
         Stacks.PopTop();
         
         // SP -= IDX
@@ -1075,10 +1251,19 @@ unit Instruction
             Stacks.PopPC();
         }
     }
+    retRes()
+    {
+        ConsumeOperand();
+        retResShared();
+    }
+    retResB()
+    {
+        ConsumeOperandB();
+        retResShared();
+    }
     
     jCommon()
     {
-        ConsumeOperand();
         // PC += offset - 3
         CLC
         LDA ZP.PCL
@@ -1095,8 +1280,10 @@ unit Instruction
         SBC # 0
         STA ZP.PCH
     }
+    
     jw()
     {
+        ConsumeOperand();
         jCommon();
     }
     jz()
@@ -1106,6 +1293,7 @@ unit Instruction
         ORA ZP.TOPH
         if (Z)
         {
+            ConsumeOperand();
             jCommon();
             return;
         }
@@ -1120,6 +1308,7 @@ unit Instruction
         ORA ZP.TOPH
         if (NZ)
         {
+            ConsumeOperand();
             jCommon();
             return;
         }
@@ -1128,6 +1317,59 @@ unit Instruction
         Utilities.IncPC();
     }
     
+    jCommonB()
+    {
+        // PC += offset - 2
+        CLC
+        LDA ZP.PCL
+        ADC ZP.IDXL
+        STA ZP.PCL
+        LDA ZP.PCH
+        ADC ZP.IDXH
+        STA ZP.PCH
+        SEC
+        LDA ZP.PCL
+        SBC # 2
+        STA ZP.PCL
+        LDA ZP.PCH
+        SBC # 0
+        STA ZP.PCH
+    }
+    jb()
+    {
+        ConsumeOperandSB();
+        jCommonB();
+    }
+    
+    jzb()
+    {
+        Stacks.PopTop();
+        LDA ZP.TOPL
+        ORA ZP.TOPH
+        if (Z)
+        {
+            ConsumeOperandSB();
+            jCommonB();
+            return;
+        }
+        // skip operand
+        Utilities.IncPC();
+    }
+    jnzb()
+    {
+        Stacks.PopTop();
+        LDA ZP.TOPL
+        ORA ZP.TOPH
+        if (NZ)
+        {
+            ConsumeOperandSB();
+            jCommon();
+            return;
+        }
+        // skip operand
+        Utilities.IncPC();
+    }
+       
     pushI()
     {
         ConsumeOperand();
@@ -1139,12 +1381,39 @@ unit Instruction
         STA ZP.TOPT
         Stacks.PushTop();
     }
+    pushIB()
+    {
+        ConsumeOperandB();
+        LDA ZP.IDXL
+        STA ZP.TOPL
+        LDA ZP.IDXH
+        STA ZP.TOPH
+        LDA #Types.Byte
+        STA ZP.TOPT
+        Stacks.PushTop();
+    }
+    sysCallB0()
+    {
+        pushIB();
+        SysCall0();
+    }
+    
     pushI0()
     {
         LDA # 0
         STA ZP.TOPL
         STA ZP.TOPH
-        LDA #Types.UInt
+        LDA #Types.Byte
+        STA ZP.TOPT
+        Stacks.PushTop();
+    }
+    pushI1()
+    {
+        LDA # 1
+        STA ZP.TOPL
+        LDA # 0
+        STA ZP.TOPH
+        LDA #Types.Byte
         STA ZP.TOPT
         Stacks.PushTop();
     }
@@ -1207,7 +1476,7 @@ unit Instruction
         
     decSP()
     {
-        ConsumeOperandB();
+        ConsumeOperandA();
         // SP -= A
         TAX
         loop
@@ -1319,6 +1588,43 @@ unit Instruction
         
         popShared(); // slot to pop to is in Y
     }
+    popLocalB()
+    {
+        ConsumeOperandB();
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        popShared(); // slot to pop to is in Y
+    }
+    popLocalB00()
+    {
+        LDA # 0 
+        STA IDXL
+        STA IDXH
+        
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        popShared(); // slot to pop to is in Y
+    }
+    popLocalB01()
+    {
+        LDA # 1
+        STA IDXL
+        LDA # 0 
+        STA IDXH
+        
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        popShared(); // slot to pop to is in Y
+    }
     
     popGlobal()
     {
@@ -1328,10 +1634,31 @@ unit Instruction
         
         popShared(); // slot to pop to is in Y
     }
+    popGlobalB()
+    {
+        ConsumeOperandB();
+        CLC
+        LDY ZP.IDXL
+        
+        popShared(); // slot to pop to is in Y
+    }
     
     popRel()
     {
         ConsumeOperand(); // -> IDX    
+        // address of reference = BP + operand
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAX
+        // get the actual address from reference address:
+        LDY Address.ValueStackLSB, X
+        
+        popShared(); // slot to pop to is in Y
+    }
+    popRelB()
+    {
+        ConsumeOperandB(); // -> IDX    
         // address of reference = BP + operand
         CLC
         LDA ZP.IDXL
@@ -1358,9 +1685,110 @@ unit Instruction
      
         PushTop(); 
     }
+    incLocalB()
+    {
+        ConsumeOperandA();
+        CLC
+        ADC ZP.BP
+        TAY
+        
+        // slot to INC is in Y
+        CLC
+        LDA Address.ValueStackLSB, Y
+        ADC # 1
+        STA Address.ValueStackLSB, Y
+        LDA Address.ValueStackMSB, Y
+        ADC # 0
+        STA Address.ValueStackMSB, Y
+        if (NZ)
+        {
+            LDA # Types.UInt          // just in case it was Types.Byte
+            STA Address.TypeStackLSB, Y
+        }
+    }
+    incLocalBB()
+    {
+        ConsumeOperandA();
+        CLC
+        ADC ZP.BP
+        PHA
+        
+        
+        ConsumeOperandA();
+        CLC
+        ADC ZP.BP
+        TAY
+        
+        LDA Address.ValueStackLSB, Y
+        STA ZP.TOPL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.TOPH
+        // value to add is in TOP
+        
+        PLA
+        TAY
+        // slot to add to is in Y
+                
+        CLC
+        LDA Address.ValueStackLSB, Y
+        ADC ZP.TOPL
+        STA Address.ValueStackLSB, Y
+        LDA Address.ValueStackMSB, Y
+        ADC ZP.TOPH
+        STA Address.ValueStackMSB, Y
+        if (NZ)
+        {
+            LDA # Types.UInt          // just in case it was Types.Byte
+            STA Address.TypeStackLSB, Y
+        }
+        
+    }
     pushLocal()
     {
         ConsumeOperand();
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        pushShared(); // slot to push is in Y
+    }
+    pushLocalB()
+    {
+        ConsumeOperandB();
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        pushShared(); // slot to push is in Y
+    }
+    pushLocalBB()
+    {
+        pushLocalB();
+        pushLocalB();
+    }
+    
+    pushLocalB00()
+    {
+        LDA # 0
+        STA IDXL
+        STA IDXH
+        
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY
+        
+        pushShared(); // slot to push is in Y
+    }
+    pushLocalB01()
+    {
+        LDA # 1
+        STA IDXL
+        LDA # 0
+        STA IDXH
+        
         CLC
         LDA ZP.IDXL
         ADC ZP.BP
@@ -1372,6 +1800,14 @@ unit Instruction
     pushGlobal()
     {
         ConsumeOperand();
+        CLC
+        LDY ZP.IDXL
+        
+        pushShared(); // slot to push is in Y
+    }
+    pushGlobalB()
+    {
+        ConsumeOperandB();
         CLC
         LDY ZP.IDXL
         
@@ -1413,6 +1849,22 @@ unit Instruction
         STA ZP.PCL
         LDA ZP.IDXH
         STA [ZP.ACC], Y
+        STA ZP.PCH
+    }
+    
+    callRel()
+    {
+        PopIDX();
+        
+        PushPC();
+        
+        // resolve index (IDX) to address (IDX)
+        lookupMethod();
+        
+        // IDX -> PC
+        LDA ZP.IDXL
+        STA ZP.PCL
+        LDA ZP.IDXH
         STA ZP.PCH
     }
     
@@ -1479,6 +1931,7 @@ unit Instruction
                 dup0();
             }
             case Instructions.PUSHI:
+            case Instructions.PUSHD:
             {
                 pushI();
             }
@@ -1671,6 +2124,10 @@ unit Instruction
             {
                 call();
             }
+            case Instructions.CALLREL:
+            {
+                callRel();
+            }
             case Instructions.CALLI:
             {
                 callI();
@@ -1686,6 +2143,207 @@ unit Instruction
             case Instructions.RETRES:
             {
                 retRes();
+            }
+            // PACKED_INSTRUCTIONS
+            case Instructions.PUSHI0:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushI0();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.PUSHI1:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushI1();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.RET0:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                ret0();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.POPLOCALB00:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                popLocalB00();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.POPLOCALB01:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                popLocalB01();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.PUSHLOCALB00:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushLocalB00();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.PUSHLOCALB01:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushLocalB01();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.PUSHIB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushIB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.POPLOCALB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                popLocalB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.PUSHLOCALB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushLocalB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.PUSHGLOBALB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushGlobalB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.INCLOCALB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                incLocalB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.SYSCALL0:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                SysCall0();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.RETB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                retB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.RETRESB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                retResB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.JZB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                jzb();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.JB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                jb();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.ENTERB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                enterB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.PUSHIBLE:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushIBLE();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.PUSHILT:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushILT();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.ADDB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                addB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.SUBB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                subB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.INCLOCALBB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                incLocalBB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.PUSHLOCALBB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushLocalBB();
+#else
+                LDA 0x0A BRK
+#endif
+            }
+            case Instructions.SYSCALLB0:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                sysCallB0();
+#else
+                LDA 0x0A BRK
+#endif
             }
             default:
             {

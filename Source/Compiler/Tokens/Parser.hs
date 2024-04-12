@@ -133,7 +133,7 @@ unit Parser
                 string path = token["source"];
                 errorMessage = "[" + path + ":" + ln;
                 long eolPos = Scanner.PosEOL;
-                if (eolPos != -1)
+                if ((eolPos != -1) && token.Contains("pos"))
                 {
                     long pos;
                     if (Long.TryParse(token["pos"], ref pos))

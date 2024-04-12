@@ -201,7 +201,7 @@ unit SysCall
     }
     SysCall()
     {
-        ConsumeOperandB(); // iSysCall  -> A (uses ACC)
+        ConsumeOperandA(); // iSysCall  -> A (uses ACC)
         PHA
         PopACC();          // iOverload -> ACC
         
@@ -214,4 +214,25 @@ unit SysCall
 #endif
         sysCall();
     }
+#ifdef PACKED_INSTRUCTIONS    
+    SysCall0()
+    {
+        ConsumeOperandA(); // iSysCall  -> A (uses ACC)
+        PHA
+        
+        // iOverload -> ACC
+        LDA # 0
+        STA ACCL
+        STA ACCH
+        
+        // load iSyscCall into X (because JMP [nnnn,X] is then possible)
+#ifdef CPU_65C02S
+        PLX
+#else        
+        PLA
+        TAX
+#endif
+        sysCall();
+    }
+#endif
 }
