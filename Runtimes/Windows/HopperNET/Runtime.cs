@@ -248,13 +248,13 @@ namespace HopperNET
         MemoryFree = 0x17,
         //ListContains2 = 0x18,
 
-        DictionaryNew = 0x19,
-        DictionaryCountGet = 0x1A,
-        DictionarySet = 0x1B,
-        DictionaryContains = 0x1C,
-        DictionaryGet = 0x1D,
-        DictionaryNext = 0x1E,
-        DictionaryClear = 0x1F,
+        //DictionaryNew2 = 0x19,
+        //DictionaryCountGet2 = 0x1A,
+        //DictionarySet2 = 0x1B,
+        //DictionaryContains2 = 0x1C,
+        //DictionaryGet2 = 0x1D,
+        //DictionaryNext2 = 0x1E,
+        //DictionaryClear2 = 0x1F,
         PairNew = 0x20,
         StringAppend = 0x21,
         PairKey = 0x22,
@@ -394,13 +394,20 @@ namespace HopperNET
         MemoryProgramOffsetSet = 0x9F,
 
         SerialWriteString = 0xA0,
-
+        DictionaryNew = 0xA2,
         SerialClose = 0xA3,
         SerialIsValid = 0xA4,
         
         // 6502
         HardwareLEDSet = 0xA8,
-        
+        DictionaryCountGet = 0xA9,
+        DictionarySet = 0xAA,
+        DictionaryContains = 0xAB,
+        DictionaryGet = 0xAC,
+        DictionaryNext = 0xAD,
+        DictionaryClear = 0xAE,
+
+
         TraceSet = 0xAF,
         TraceGet = 0xB0,
         DictionaryHashKey = 0xB1,
@@ -5290,6 +5297,7 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryNew:
+                //case SysCall.DictionaryNew2:
                     {
                         HopperType vType = (HopperType)Pop();
                         HopperType kType = (HopperType)Pop();
@@ -5310,6 +5318,7 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryCountGet:
+                //case SysCall.DictionaryCountGet2:
                     {
                         Variant _this_ = (Variant)PopVariant(HopperType.tDictionary);
                         if (_this_ as HopperStringDictionary != null)
@@ -5325,6 +5334,7 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryNext:
+                //case SysCall.DictionaryNext2:
                     {
                         ushort iterator = (ushort)Pop();
                         Variant _this_ = (Variant)PopVariant(HopperType.tDictionary);
@@ -5351,6 +5361,7 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryClear:
+                //case SysCall.DictionaryClear2:
                     {
                         Variant _this_ = (Variant)PopVariant(HopperType.tDictionary);
                         if (_this_ as HopperStringDictionary != null)
@@ -5364,6 +5375,7 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionarySet:
+                //case SysCall.DictionarySet2:
                     {
                         HopperType valueType = GetStackType((ushort)(sp - 1));
                         HopperType keyType = GetStackType((ushort)(sp - 2));
@@ -5415,6 +5427,7 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryContains:
+                //case SysCall.DictionaryContains2:
                     {
                         HopperType keyType = GetStackType((ushort)(sp - 1));
                         if (keyType == HopperType.tString)
@@ -5438,6 +5451,7 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryGet:
+                //case SysCall.DictionaryGet2:
                     {
                         HopperType keyType = GetStackType((ushort)(sp - 1));
                         if (keyType == HopperType.tString)

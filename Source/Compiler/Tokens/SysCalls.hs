@@ -39,13 +39,13 @@ unit SysCalls
         addEntry("Memory.Free");
         addEntry("_List.Contains2");
         
-        addEntry("Dictionary.New");
-        addEntry("Dictionary.Count_Get");
-        addEntry("Dictionary.Set");
-        addEntry("Dictionary.Contains");
-        addEntry("Dictionary.Get");
-        addEntry("Dictionary.Next");
-        addEntry("Dictionary.Clear");
+        addEntry("Dictionary.New2");
+        addEntry("Dictionary.Count_Get2");
+        addEntry("Dictionary.Set2");
+        addEntry("Dictionary.Contains2");
+        addEntry("Dictionary.Get2");
+        addEntry("Dictionary.Next2");
+        addEntry("Dictionary.Clear2");
         
         addEntry("Pair.New");
         addEntry("String.Append");
@@ -206,7 +206,7 @@ unit SysCalls
         // placeholder:
         addEntry("_Runtime.SetStatement");  // A1
         
-        addEntry("_Serial.Connect2");
+        addEntry("Dictionary.New");
         addEntry("Serial.Close");
         addEntry("Serial.IsValid");
         addEntry("_Serial.IsAvailable_Get2");
@@ -215,12 +215,12 @@ unit SysCalls
         
         addEntry("Hardware.LED_Set");
         
-        addEntry("_Memory.ReadByte");
-        addEntry("_Memory.WriteByte");
-        addEntry("_Memory.Available");
-        addEntry("_Memory.Maximum");
-        addEntry("_Memory.Allocate");
-        addEntry("_Memory.Free");
+        addEntry("Dictionary.Count_Get");
+        addEntry("Dictionary.Set");
+        addEntry("Dictionary.Contains");
+        addEntry("Dictionary.Get");
+        addEntry("Dictionary.Next");
+        addEntry("Dictionary.Clear");
         
         addEntry("System.Trace_Set");
         addEntry("System.Trace_Get");

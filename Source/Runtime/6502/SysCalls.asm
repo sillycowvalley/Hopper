@@ -24,7 +24,7 @@ unit SysCall
         ArrayGetItem          = 0x0D,
         ArraySetItem          = 0x0E,
         
-        SerialWriteChar       = 0x0F,
+        SerialReadChar        = 0x0F,
         SerialWriteChar       = 0x10,
         SerialIsAvailable     = 0x11,
         
@@ -35,12 +35,10 @@ unit SysCall
         MemoryAllocate        = 0x16,
         MemoryFree            = 0x17,
         
-        ByteToHex             = 0xBE,
+        ByteToHex             = 0x18,
+        IntGetByte            = 0x19,
+        IntFromBytes          = 0x1A,
         
-        IntGetByte            = 0xE1,
-        IntFromBytes          = 0xE4,
-        
-                
     }
     
     missing()

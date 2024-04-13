@@ -3,43 +3,43 @@ unit SysCalls
     enum SysCalls
     {
         StringNewFromConstant = 0x00,
-        CharToString       = 0x01,
-        StringNew          = 0x02,
-        StringAppend       = 0x03,
-        StringInsertChar   = 0x04,
-        StringCompare      = 0x05,
-        StringLengthGet    = 0x06,
-        StringEndsWith     = 0x07,
-        StringSubstring    = 0x08,
-        StringReplace      = 0x09,
-        StringGetChar      = 0x0A,
-        ArrayNew           = 0x0B,
-        ArrayCountGet      = 0x0C,
-        ArrayGetItem       = 0x0D,
-        ArraySetItem       = 0x0E,
-        ListNew            = 0x0F,
-        ListCountGet       = 0x10,
-        ListAppend         = 0x11,
-        ListInsert         = 0x12,
-        ListGetItem        = 0x13,
-      ListGetItemAsVariant = 0x14,
-        ListSetItem        = 0x15,
-        ListClear          = 0x16,
-        ListRemove         = 0x17,
-        ListContains       = 0x18,
-        DictionaryNew      = 0x19,
-        DictionaryCountGet = 0x1A,
-        DictionarySet      = 0x1B,
-        DictionaryContains = 0x1C,
-        DictionaryGet      = 0x1D,
-        DictionaryNext     = 0x1E,
-        DictionaryClear    = 0x1F,
+        StringBuild           = 0x01,
+        StringNew             = 0x02,
+        StringBuildFront      = 0x03,
+        ArrayNewFromConstant  = 0x04,
+        TimeSecondsGet        = 0x05,
+        StringLengthGet       = 0x06,
+        TimeDelay             = 0x07,
+        DiagnosticsDie        = 0x08,
+        SerialConnect         = 0x09,
+        StringGetChar         = 0x0A,
+        
+        ArrayNew              = 0x0B,
+        ArrayCountGet         = 0x0C,
+        ArrayGetItem          = 0x0D,
+        ArraySetItem          = 0x0E,
+        
+        SerialReadChar        = 0x0F,
+        SerialWriteChar       = 0x10,
+        SerialIsAvailableGet  = 0x11,
+        
+        MemoryReadByte        = 0x12,
+        MemoryWriteByte       = 0x13,
+        MemoryAvailable       = 0x14,
+        MemoryMaximum         = 0x15,
+        MemoryAllocate        = 0x16,
+        MemoryFree            = 0x17,
+        
+        ByteToHex             = 0x18,
+        IntGetByte            = 0x19,
+        IntFromBytes          = 0x1A,
+        
         PairNew            = 0x20,
-      //PairSet            = 0x21, // unused
+        StringAppend       = 0x21,
         PairKey            = 0x22,
-      //PairKeyType        = 0x23, // unused
+        StringInsertChar   = 0x23,
         PairValue          = 0x24,
-      //PairValueType      = 0x25, // unused
+        CharToString       = 0x25,
       //VariantType        = 0x26, // unused
         VariantBox         = 0x27,  
         VariantUnBox       = 0x28,      
@@ -98,8 +98,6 @@ unit SysCalls
         SystemCurrentDirectoryGet = 0x5A,
         SystemCurrentDirectorySet = 0x5B,
         
-        TimeSeconds      = 0x5D,
-        
         FileExists   = 0x5F,
         FileNew      = 0x60,
         FileOpen     = 0x61,
@@ -130,7 +128,6 @@ unit SysCalls
         KeyboardClickDoubleGet = 0x78,
         KeyboardScrollDeltaGet = 0x79,
         
-        DiagnosticsDie = 0x7C,
         DiagnosticsSetError = 0x7D,
         
         TypesTypeOf      = 0x7E,
@@ -139,14 +136,10 @@ unit SysCalls
         TypesBoxTypeOf   = 0x81,
         TypesVerifyValueTypes = 0x82,
         
-        StringBuild      = 0x83,
-        
         WiFiConnect    = 0x84,
         WiFiIPGet      = 0x85,
         WiFiStatusGet  = 0x86,
         WiFiDisconnect = 0x87,
-        
-        ArrayNewFromConstant = 0x88,
         
         DirectoryCreate  = 0x89,
         DirectoryDelete  = 0x8A,
@@ -177,19 +170,14 @@ unit SysCalls
         
         SerialWriteString = 0xA0,
         
-        SerialIsAvailableGet = 0xA5,
-        SerialReadChar       = 0xA6,
-        SerialWriteChar      = 0xA7,
+        DictionaryNew = 0xA2,
         
-        MemoryReadByte = 0xA9,
-        MemoryWriteByte = 0xAA,
-        MemoryAvailable = 0xAB,
-        MemoryMaximum = 0xAC,
-        MemoryAllocate = 0xAD,
-        MemoryFree = 0xAE,
-        
-        
-        StringBuildFront = 0xB5,
+        DictionaryCountGet = 0xA9,
+        DictionarySet = 0xAA,
+        DictionaryContains = 0xAB,
+        DictionaryGet = 0xAC,
+        DictionaryNext = 0xAD,
+        DictionaryClear = 0xAE,
         
         MemoryReadBit = 0xB6,
         MemoryWriteBit = 0xB7,
@@ -200,15 +188,12 @@ unit SysCalls
         CharIsLetterOrDigit = 0xBB,
         CharIsLower = 0xBC,
         ByteToDigit = 0xBD,
-        ByteToHex = 0xBE,
         CharIsHexDigit = 0xBF,
         CharToLower = 0xC0,
         
         StringStartsWith = 0xC1,
         StringContains = 0xC2,
         StringIndexOf = 0xC3,
-        
-        TimeDelay        = 0xC6,
         
         FileGetTimeStamp = 0xCC,
         IntToBytes       = 0xCD,
@@ -232,12 +217,15 @@ unit SysCalls
         //MCUDigitalWrite  = 0xDB,
         
         LongGetByte      = 0xE0,
-        IntGetByte       = 0xE1,
         FloatGetByte     = 0xE2,
         LongFromBytes    = 0xE3,
-        IntFromBytes     = 0xE4,
         FloatFromBytes   = 0xE5,
         UIntToFloat      = 0xE6,
+        
+        StringCompare   = 0xE8,
+        StringEndsWith  = 0xE9,
+        StringSubstring = 0xEA,
+        StringReplace = 0xEB,
         
         FloatToUInt     = 0xEC,
         FloatToLong     = 0xED,
@@ -248,6 +236,17 @@ unit SysCalls
         FloatCos   = 0xF1,
         FloatATan2 = 0xF2,
         FloatSqrt  = 0xF3,
+        
+        ListNew = 0xF4,
+        ListCountGet = 0xF5,
+        ListAppend = 0xF6,
+        ListInsert = 0xF7,
+        ListGetItem = 0xF8,
+        ListGetItemAsVariant = 0xF9,
+        ListSetItem = 0xFA,
+        ListClear = 0xFB,
+        ListRemove = 0xFC,
+        ListContains = 0xFD,
         
     }
 }
