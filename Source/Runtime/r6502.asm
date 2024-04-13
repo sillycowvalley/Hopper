@@ -51,35 +51,7 @@ program R6502
         INC ZP.SerialBreakFlag // hardware <ctrl><C>
         RTI
     }
-    clearWorkSpace()
-    {
-        LDA # 0
-        
-        STA ZP.ACCL
-        STA ZP.ACCH
-        STA ZP.TOPL
-        STA ZP.TOPH
-        STA ZP.NEXTL
-        STA ZP.NEXTH
-        STA ZP.IDXL
-        STA ZP.IDXH
-        STA ZP.IDYL
-        STA ZP.IDYH
-        STA ZP.ACCT
-        STA ZP.TOPT
-        STA ZP.NEXTT
-        
-        STA ZP.M0
-#ifndef CPU_65C02S 
-        STA ZP.M1
-        STA ZP.M2
-#endif    
-        STA ZP.U0    
-        STA ZP.U1    
-        STA ZP.U2    
-        STA ZP.U3    
-    }
-     
+    
     breakpointCommand()
     {
         Serial.WaitForChar();
@@ -120,7 +92,17 @@ program R6502
 
         Utilities.WaitForEnter();
         
-        clearWorkSpace(); // clear M0..M3 and U0..U3 to make zero page transfer faster
+        // clear M0..M3 and U0..U3 to make zero page transfer faster
+        LDA # 0
+        STA ZP.M0
+#ifndef CPU_65C02S 
+        STA ZP.M1
+        STA ZP.M2
+#endif    
+        STA ZP.U0    
+        STA ZP.U1    
+        STA ZP.U2    
+        STA ZP.U3  
         
         PLA
         Diagnostics.PageMemory();

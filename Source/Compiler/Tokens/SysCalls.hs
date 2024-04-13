@@ -37,15 +37,16 @@ unit SysCalls
         addEntry("Memory.Maximum");
         addEntry("Memory.Allocate");
         addEntry("Memory.Free");
-        addEntry("_List.Contains2");
+        addEntry("Byte.ToHex");
         
-        addEntry("Dictionary.New2");
-        addEntry("Dictionary.Count_Get2");
-        addEntry("Dictionary.Set2");
-        addEntry("Dictionary.Contains2");
-        addEntry("Dictionary.Get2");
-        addEntry("Dictionary.Next2");
-        addEntry("Dictionary.Clear2");
+        addEntry("Int.GetByte");
+        addEntry("Int.FromBytes");
+        
+        addEntry("_Dictionary.Set2");
+        addEntry("_Dictionary.Contains2");
+        addEntry("_Dictionary.Get2");
+        addEntry("_Dictionary.Next2");
+        addEntry("_Dictionary.Clear2");
         
         addEntry("Pair.New");
         addEntry("String.Append");
@@ -242,7 +243,7 @@ unit SysCalls
         addEntry("Char.IsLetterOrDigit");
         addEntry("Char.IsLower");
         addEntry("Byte.ToDigit");
-        addEntry("Byte.ToHex");
+        addEntry("_Byte.ToHex2");
         addEntry("Char.IsHexDigit");
         addEntry("Char.ToLower");
         
@@ -290,10 +291,10 @@ unit SysCalls
         addEntry("Memory.WriteCodeWord");
         
         addEntry("Long.GetByte");
-        addEntry("Int.GetByte");
+        addEntry("_Int.GetByte2");
         addEntry("Float.GetByte");
         addEntry("Long.FromBytes");
-        addEntry("Int.FromBytes");
+        addEntry("_Int.FromBytes2");
         addEntry("Float.FromBytes");
         addEntry("UInt.ToFloat");
         addEntry("Serial.Ports_Get");

@@ -246,10 +246,10 @@ namespace HopperNET
         MemoryMaximum = 0x15,
         MemoryAllocate = 0x16,
         MemoryFree = 0x17,
-        //ListContains2 = 0x18,
+        ByteToHex = 0x18,
 
-        //DictionaryNew2 = 0x19,
-        //DictionaryCountGet2 = 0x1A,
+        IntGetByte = 0x19,
+        IntFromBytes = 0x1A,
         //DictionarySet2 = 0x1B,
         //DictionaryContains2 = 0x1C,
         //DictionaryGet2 = 0x1D,
@@ -425,7 +425,6 @@ namespace HopperNET
         CharIsLetterOrDigit = 0xBB,
         CharIsLower = 0xBC,
         ByteToDigit = 0xBD,
-        ByteToHex = 0xBE,
         CharIsHexDigit = 0xBF,
         CharToLower = 0xC0,
         StringStartsWith = 0xC1,
@@ -459,20 +458,14 @@ namespace HopperNET
         MemoryReadWord = 0xD7,
         MemoryWriteWord = 0xD8,
 
-        //MCUPinMode = 0xD9,
-        //MCUDigitalRead = 0xDA,
-        //MCUDigitalWrite = 0xDB,
-
         MemoryReadCodeByte = 0xDC,
         MemoryWriteCodeByte = 0xDD,
         MemoryReadCodeWord = 0xDE,
         MemoryWriteCodeWord = 0xDF,
 
         LongGetByte = 0xE0,
-        IntGetByte = 0xE1,
         FloatGetByte = 0xE2,
         LongFromBytes = 0xE3,
-        IntFromBytes = 0xE4,
         FloatFromBytes = 0xE5,
         UIntToFloat = 0xE6,
 
@@ -4540,7 +4533,6 @@ namespace HopperNET
 
                     break;
                 case SysCall.StringBuildFront:
-                //case SysCall.StringBuildFront2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4730,7 +4722,6 @@ namespace HopperNET
                     break;
 
                 case SysCall.StringBuild:
-                //case SysCall.StringBuild2:
                     switch (iOverload)
                     {
                         case 0:
@@ -5130,7 +5121,6 @@ namespace HopperNET
                     break;
 
                 case SysCall.ArrayNewFromConstant:
-                //case SysCall.ArrayNewFromConstant2:
                     {
                         HopperType type = (HopperType)Pop();
                         ushort length = (ushort)Pop();
@@ -5297,7 +5287,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryNew:
-                //case SysCall.DictionaryNew2:
                     {
                         HopperType vType = (HopperType)Pop();
                         HopperType kType = (HopperType)Pop();
@@ -5318,7 +5307,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryCountGet:
-                //case SysCall.DictionaryCountGet2:
                     {
                         Variant _this_ = (Variant)PopVariant(HopperType.tDictionary);
                         if (_this_ as HopperStringDictionary != null)
@@ -5334,7 +5322,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryNext:
-                //case SysCall.DictionaryNext2:
                     {
                         ushort iterator = (ushort)Pop();
                         Variant _this_ = (Variant)PopVariant(HopperType.tDictionary);
@@ -5361,7 +5348,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryClear:
-                //case SysCall.DictionaryClear2:
                     {
                         Variant _this_ = (Variant)PopVariant(HopperType.tDictionary);
                         if (_this_ as HopperStringDictionary != null)
@@ -5375,7 +5361,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionarySet:
-                //case SysCall.DictionarySet2:
                     {
                         HopperType valueType = GetStackType((ushort)(sp - 1));
                         HopperType keyType = GetStackType((ushort)(sp - 2));
@@ -5427,7 +5412,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryContains:
-                //case SysCall.DictionaryContains2:
                     {
                         HopperType keyType = GetStackType((ushort)(sp - 1));
                         if (keyType == HopperType.tString)
@@ -5451,7 +5435,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.DictionaryGet:
-                //case SysCall.DictionaryGet2:
                     {
                         HopperType keyType = GetStackType((ushort)(sp - 1));
                         if (keyType == HopperType.tString)
@@ -6309,7 +6292,6 @@ namespace HopperNET
                 //    PushLong(micros);
                 //    break;
                 case SysCall.TimeSecondsGet:
-                //case SysCall.TimeSecondsGet2:
                     UInt16 seconds = HopperTime.Seconds;
                     Push(seconds, HopperType.tUInt);
                     break;
@@ -7181,13 +7163,11 @@ namespace HopperNET
                     break;
 
                 case SysCall.DiagnosticsDie:
-                //case SysCall.DiagnosticsDie2:
                     Diagnostics.Die((int)Pop(), this);
                     break;
 
 
                 case SysCall.SerialConnect:
-                //case SysCall.SerialConnect2:
                     switch (iOverload)
                     {
                         case 0:
@@ -7212,19 +7192,16 @@ namespace HopperNET
                     break;
 
                 case SysCall.SerialIsAvailableGet:
-                //case SysCall.SerialIsAvailableGet2:
                     PushBool(Serial.IsAvailableGet());
                     hasResult = true;
                     break;
 
                 case SysCall.SerialReadChar:
-                //case SysCall.SerialReadChar2:
                     Push(Serial.ReadChar(), HopperType.tChar);
                     hasResult = true;
                     break;
 
                 case SysCall.SerialWriteChar:
-                //case SysCall.SerialWriteChar2:
                     Serial.WriteChar((char)Pop());
                     break;
                 case SysCall.SerialWriteString:

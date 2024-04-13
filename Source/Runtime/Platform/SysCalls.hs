@@ -7,7 +7,7 @@ unit SysCalls
         StringNew             = 0x02,
         StringBuildFront      = 0x03,
         ArrayNewFromConstant  = 0x04,
-        TimeSecondsGet        = 0x05,
+        TimeSeconds           = 0x05,
         StringLengthGet       = 0x06,
         TimeDelay             = 0x07,
         DiagnosticsDie        = 0x08,
