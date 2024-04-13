@@ -11,33 +11,33 @@ unit SysCalls
     {
         syscalls.Clear(); // in case called a 2nd time
         
-        addEntry("String.NewFromConstant"); // keep
-          addEntry("Char.ToString");
-        addEntry("String.New"); // keep
-          addEntry("String.Append");
-          addEntry("String.InsertChar");
-          addEntry("String.Compare");
-        addEntry("String.Length_Get"); // keep
-          addEntry("String.EndsWith");
-          addEntry("String.Substring");
-          addEntry("String.Replace");
-        addEntry("String.GetChar"); // keep
+        addEntry("String.NewFromConstant");
+        addEntry("String.Build");
+        addEntry("String.New");
+        addEntry("String.BuildFront");
+        addEntry("Array.NewFromConstant");
+        addEntry("Time.Seconds_Get");
+        addEntry("String.Length_Get");
+        addEntry("Time.Delay");
+        addEntry("Diagnostics.Die");
+        addEntry("Serial.Connect");
+        addEntry("String.GetChar");
         
         addEntry("Array.New");
         addEntry("Array.Count_Get");
         addEntry("Array.GetItem");
         addEntry("Array.SetItem");
         
-          addEntry("List.New");
-          addEntry("List.Count_Get");
-          addEntry("List.Append");
-          addEntry("List.Insert");
-          addEntry("List.GetItem");
-          addEntry("List.GetItemAsVariant");
-          addEntry("List.SetItem");
-          addEntry("List.Clear");
-          addEntry("List.Remove");
-          addEntry("List.Contains");
+        addEntry("Serial.ReadChar");
+        addEntry("Serial.WriteChar");
+        addEntry("Serial.IsAvailable_Get");
+        addEntry("Memory.ReadByte");
+        addEntry("Memory.WriteByte");
+        addEntry("Memory.Available");
+        addEntry("Memory.Maximum");
+        addEntry("Memory.Allocate");
+        addEntry("Memory.Free");
+        addEntry("_List.Contains2");
         
         addEntry("Dictionary.New");
         addEntry("Dictionary.Count_Get");
@@ -48,11 +48,11 @@ unit SysCalls
         addEntry("Dictionary.Clear");
         
         addEntry("Pair.New");
-        addEntry("String.Append2");
+        addEntry("String.Append");
         addEntry("Pair.Key");
-        addEntry("String.InsertChar2");
+        addEntry("String.InsertChar");
         addEntry("Pair.Value");
-        addEntry("Char.ToString2");
+        addEntry("Char.ToString");
         
         addEntry("_Variant.Type"); // unused
         addEntry("Variant.Box");
@@ -116,7 +116,7 @@ unit SysCalls
         addEntry("System.CurrentDirectory_Get");
         addEntry("System.CurrentDirectory_Set");
         addEntry("System.Beep");
-        addEntry("Time.Seconds_Get");
+        addEntry("_Time.Seconds_Get2");
         addEntry("System.RegisterObject"); // unused
         
         addEntry("File.Exists");
@@ -152,7 +152,7 @@ unit SysCalls
         
         addEntry("Diagnostics.OutputDebug");
         addEntry("Diagnostics.Assert");
-        addEntry("Diagnostics.Die");
+        addEntry("_Diagnostics.Die2");
         addEntry("Diagnostics.SetError");
 
         addEntry("Types.TypeOf");      // gives 'true' type (for instance, "variant" and not the boxed contents of a variant)
@@ -161,14 +161,14 @@ unit SysCalls
         addEntry("Types.BoxTypeOf");   // regular "TypeOf" except for boxed variants where the boxed value type is returned (used for "typeof")
         addEntry("Types.VerifyValueTypes");
         
-        addEntry("String.Build");
+        addEntry("_String.Build2");
         
         addEntry("WiFi.Connect");
         addEntry("WiFi.IP_Get");
         addEntry("WiFi.Status_Get");
         addEntry("WiFi.Disconnect");
         
-        addEntry("Array.NewFromConstant");
+        addEntry("_Array.NewFromConstant2");
         
         addEntry("Directory.Create");
         addEntry("Directory.Delete");
@@ -206,21 +206,21 @@ unit SysCalls
         // placeholder:
         addEntry("_Runtime.SetStatement");  // A1
         
-        addEntry("Serial.Connect");
+        addEntry("_Serial.Connect2");
         addEntry("Serial.Close");
         addEntry("Serial.IsValid");
-        addEntry("Serial.IsAvailable_Get");
-        addEntry("Serial.ReadChar");
-        addEntry("Serial.WriteChar");
+        addEntry("_Serial.IsAvailable_Get2");
+        addEntry("_Serial.ReadChar2");
+        addEntry("_Serial.WriteChar2");
         
         addEntry("Hardware.LED_Set");
         
-        addEntry("Memory.ReadByte");
-        addEntry("Memory.WriteByte");
-        addEntry("Memory.Available");
-        addEntry("Memory.Maximum");
-        addEntry("Memory.Allocate");
-        addEntry("Memory.Free");
+        addEntry("_Memory.ReadByte");
+        addEntry("_Memory.WriteByte");
+        addEntry("_Memory.Available");
+        addEntry("_Memory.Maximum");
+        addEntry("_Memory.Allocate");
+        addEntry("_Memory.Free");
         
         addEntry("System.Trace_Set");
         addEntry("System.Trace_Get");
@@ -231,7 +231,7 @@ unit SysCalls
         addEntry("Clipboard.GetText");
         addEntry("Clipboard.SetText");
         
-        addEntry("String.BuildFront");
+        addEntry("_String.BuildFront2");
         
         addEntry("Memory.ReadBit");
         addEntry("Memory.WriteBit");
@@ -253,7 +253,7 @@ unit SysCalls
         addEntry("System.Warp_Set");
         addEntry("System.Warp_Get");
         
-        addEntry("Time.Delay");
+        addEntry("_Time.Delay2");
         
         addEntry("Long.Inc");
         addEntry("Long.AddRef");
@@ -280,9 +280,9 @@ unit SysCalls
         addEntry("Memory.ReadWord");
         addEntry("Memory.WriteWord");
         
-        addEntry("Unused.PinMode");
-        addEntry("Unused.DigitalRead");
-        addEntry("Unused.DigitalWrite");
+        addEntry("_Unused.PinMode");
+        addEntry("_Unused.DigitalRead");
+        addEntry("_Unused.DigitalWrite");
         
         addEntry("Memory.ReadCodeByte");
         addEntry("Memory.WriteCodeByte");
@@ -298,10 +298,10 @@ unit SysCalls
         addEntry("UInt.ToFloat");
         addEntry("Serial.Ports_Get");
         
-        addEntry("String.Compare2");
-        addEntry("String.EndsWith2");
-        addEntry("String.Substring2");
-        addEntry("String.Replace2");
+        addEntry("String.Compare");
+        addEntry("String.EndsWith");
+        addEntry("String.Substring");
+        addEntry("String.Replace");
         
         addEntry("Float.ToUInt");
         addEntry("Float.ToLong");
@@ -314,16 +314,16 @@ unit SysCalls
         addEntry("Float.ATan2");
         addEntry("Float.Sqrt");
         
-        addEntry("List.New2");
-        addEntry("List.Count_Get2");
-        addEntry("List.Append2");
-        addEntry("List.Insert2");
-        addEntry("List.GetItem2");
-        addEntry("List.GetItemAsVariant2");
-        addEntry("List.SetItem2");
-        addEntry("List.Clear2");
-        addEntry("List.Remove2");
-        addEntry("List.Contains2");
+        addEntry("List.New");
+        addEntry("List.Count_Get");
+        addEntry("List.Append");
+        addEntry("List.Insert");
+        addEntry("List.GetItem");
+        addEntry("List.GetItemAsVariant");
+        addEntry("List.SetItem");
+        addEntry("List.Clear");
+        addEntry("List.Remove");
+        addEntry("List.Contains");
         
     }
     

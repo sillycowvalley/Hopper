@@ -222,30 +222,32 @@ namespace HopperNET
     public enum SysCall
     {
         StringNewFromConstant = 0x00,
-        CharToString2 = 0x01,
+        StringBuild = 0x01,
         StringNew = 0x02,
-        StringAppend2 = 0x03,
-        StringInsertChar2 = 0x04,
-        StringCompare2 = 0x05,
+        StringBuildFront = 0x03,
+        ArrayNewFromConstant = 0x04,
+        TimeSecondsGet = 0x05,
         StringLengthGet = 0x06,
-        StringEndsWith2 = 0x07,
-        StringSubstring2 = 0x08,
-        StringReplace2 = 0x09,
+        TimeDelay = 0x07,
+        DiagnosticsDie = 0x08,
+        SerialConnect = 0x09,
         StringGetChar = 0x0A,
         ArrayNew = 0x0B,
         ArrayCountGet = 0x0C,
         ArrayGetItem = 0x0D,
         ArraySetItem = 0x0E,
-        ListNew2 = 0x0F,
-        ListCountGet2  = 0x10,
-        ListAppend2 = 0x11,
-        ListInsert2 = 0x12,
-        ListGetItem2 = 0x13,
-        ListGetItemAsVariant2 = 0x14,
-        ListSetItem2 = 0x15,
-        ListClear2 = 0x16,
-        ListRemove2 = 0x17,
-        ListContains2 = 0x18,
+
+        SerialReadChar = 0x0F,
+        SerialWriteChar  = 0x10,
+        SerialIsAvailableGet = 0x11,
+        MemoryReadByte = 0x12,
+        MemoryWriteByte = 0x13,
+        MemoryAvailable = 0x14,
+        MemoryMaximum = 0x15,
+        MemoryAllocate = 0x16,
+        MemoryFree = 0x17,
+        //ListContains2 = 0x18,
+
         DictionaryNew = 0x19,
         DictionaryCountGet = 0x1A,
         DictionarySet = 0x1B,
@@ -314,9 +316,8 @@ namespace HopperNET
         SystemCurrentDirectoryGet = 0x5A,
         SystemCurrentDirectorySet = 0x5B,
         SystemBeep = 0x5C,
-        TimeSecondsGet = 0x5D,
-
-        //SystemRegisterObject = 0x5E, unused
+        
+        
         FileExists = 0x5F,
         FileNew = 0x60,
         FileOpen = 0x61,
@@ -346,7 +347,7 @@ namespace HopperNET
         KeyboardScrollDeltaGet = 0x79,
         DiagnosticsOutputDebug = 0x7A,
         DiagnosticsAssert = 0x7B,
-        DiagnosticsDie = 0x7C,
+        
         DiagnosticsSetError = 0x7D,
         TypesTypeOf = 0x7E,
         TypesValueTypeOf = 0x7F,
@@ -354,14 +355,10 @@ namespace HopperNET
         TypesBoxTypeOf = 0x81,
         TypesVerifyValueTypes = 0x82,
 
-        StringBuild = 0x83,
-
         WiFiConnect = 0x84,
         WiFiIPGet = 0x85,
         WiFiStatusGet = 0x86,
         WiFiDisconnect = 0x87,
-
-        ArrayNewFromConstant = 0x88,
 
         DirectoryCreate = 0x89,
         DirectoryDelete = 0x8A,
@@ -398,21 +395,12 @@ namespace HopperNET
 
         SerialWriteString = 0xA0,
 
-        SerialConnect = 0xA2,
         SerialClose = 0xA3,
         SerialIsValid = 0xA4,
-        SerialIsAvailableGet = 0xA5,
-        SerialReadChar = 0xA6,
-        SerialWriteChar = 0xA7,
-
+        
         // 6502
         HardwareLEDSet = 0xA8,
-        MemoryReadByte = 0xA9,
-        MemoryWriteByte = 0xAA,
-        MemoryAvailable = 0xAB,
-        MemoryMaximum = 0xAC,
-        MemoryAllocate = 0xAD,
-        MemoryFree = 0xAE,
+        
         TraceSet = 0xAF,
         TraceGet = 0xB0,
         DictionaryHashKey = 0xB1,
@@ -420,8 +408,6 @@ namespace HopperNET
         ClipboardHasTextGet = 0xB2,
         ClipboardGetText = 0xB3,
         ClipboardSetText = 0xB4,
-
-        StringBuildFront = 0xB5,
 
         // 6502
         MemoryReadBit = 0xB6,
@@ -441,7 +427,6 @@ namespace HopperNET
         SystemWarp_Set = 0xC4,
         SystemWarp_Get = 0xC5,
 
-        TimeDelay = 0xC6,
         LongInc = 0xC7,
         LongAddRef = 0xC8,
         LongMulRef = 0xC9,
@@ -503,16 +488,16 @@ namespace HopperNET
         FloatATan2 = 0xF2,
         FloatSqrt  = 0xF3,
 
-        ListNew = 0xF5,
-        ListCountGet = 0xF6,
-        ListAppend = 0xF7,
-        ListInsert = 0xF8,
-        ListGetItem = 0xF9,
-        ListGetItemAsVariant = 0xFA,
-        ListSetItem = 0xFB,
-        ListClear = 0xFC,
-        ListRemove = 0xFD,
-        ListContains = 0xFE,
+        ListNew = 0xF4,
+        ListCountGet = 0xF5,
+        ListAppend = 0xF6,
+        ListInsert = 0xF7,
+        ListGetItem = 0xF8,
+        ListGetItemAsVariant = 0xF9,
+        ListSetItem = 0xFA,
+        ListClear = 0xFB,
+        ListRemove = 0xFC,
+        ListContains = 0xFD,
         
 
     };
@@ -4500,7 +4485,6 @@ namespace HopperNET
                         break;
                     }
                 case SysCall.CharToString:
-                case SysCall.CharToString2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4519,7 +4503,6 @@ namespace HopperNET
                     hasResult = true;
                     break;
                 case SysCall.StringAppend:
-                case SysCall.StringAppend2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4550,6 +4533,7 @@ namespace HopperNET
 
                     break;
                 case SysCall.StringBuildFront:
+                //case SysCall.StringBuildFront2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4739,6 +4723,7 @@ namespace HopperNET
                     break;
 
                 case SysCall.StringBuild:
+                //case SysCall.StringBuild2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4787,7 +4772,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.StringReplace:
-                case SysCall.StringReplace2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4827,7 +4811,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.StringEndsWith:
-                case SysCall.StringEndsWith2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4855,7 +4838,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.StringSubstring:
-                case SysCall.StringSubstring2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4920,7 +4902,6 @@ namespace HopperNET
                     break;
 
                 case SysCall.StringInsertChar:
-                case SysCall.StringInsertChar2:
                     {
                         char append = (char)Pop();
                         ushort index = (ushort)Pop();
@@ -4947,7 +4928,6 @@ namespace HopperNET
                     break;
 
                 case SysCall.StringCompare:
-                case SysCall.StringCompare2:
                     {
                         HopperString top = (HopperString)PopVariant(HopperType.tString);
                         HopperString next = (HopperString)PopVariant(HopperType.tString);
@@ -5143,6 +5123,7 @@ namespace HopperNET
                     break;
 
                 case SysCall.ArrayNewFromConstant:
+                //case SysCall.ArrayNewFromConstant2:
                     {
                         HopperType type = (HopperType)Pop();
                         ushort length = (ushort)Pop();
@@ -5509,7 +5490,6 @@ namespace HopperNET
                     break;
 
                 case SysCall.ListNew:
-                case SysCall.ListNew2:
                     {
                         HopperType type = (HopperType)Pop();
                         HopperList list = new HopperList(type);
@@ -5518,7 +5498,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.ListCountGet:
-                case SysCall.ListCountGet2:
                     {
                         HopperList _this_ = (HopperList)PopVariant(HopperType.tList);
                         Push((ushort)_this_.Value.Count, HopperType.tUInt);
@@ -5526,7 +5505,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.ListInsert:
-                case SysCall.ListInsert2:
                     {
                         HopperType topType = GetStackType((ushort)(sp - 1));
                         if (Type_IsValueType(topType))
@@ -5560,7 +5538,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.ListAppend:
-                case SysCall.ListAppend2:
                     {
                         HopperType topType = GetStackType((ushort)(sp - 1));
                         if (Type_IsValueType(topType))
@@ -5663,7 +5640,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.ListSetItem:
-                case SysCall.ListSetItem2:
                     {
                         HopperType topType = GetStackType((ushort)(sp - 1));
                         uint value = 0;
@@ -5699,7 +5675,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.ListGetItem:
-                case SysCall.ListGetItem2:
                     {
                         ushort index = (ushort)Pop();
                         HopperList _this_ = (HopperList)PopVariant(HopperType.tList);
@@ -5736,7 +5711,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.ListGetItemAsVariant:
-                case SysCall.ListGetItemAsVariant2:
                     {
                         ushort index = (ushort)Pop();
                         HopperList _this_ = (HopperList)PopVariant(HopperType.tList);
@@ -5751,7 +5725,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.ListRemove:
-                case SysCall.ListRemove2:
                     {
                         ushort index = (ushort)Pop();
                         HopperList _this_ = (HopperList)PopVariant(HopperType.tList);
@@ -5764,14 +5737,12 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.ListClear:
-                case SysCall.ListClear2:
                     {
                         HopperList _this_ = (HopperList)PopVariant(HopperType.tList);
                         _this_.Value.Clear();
                     }
                     break;
                 case SysCall.ListContains:
-                case SysCall.ListContains2:
                     {
                         HopperType type = GetStackType((ushort)(sp - 1));
                         if (Type_IsValueType(type))
@@ -6324,6 +6295,7 @@ namespace HopperNET
                 //    PushLong(micros);
                 //    break;
                 case SysCall.TimeSecondsGet:
+                //case SysCall.TimeSecondsGet2:
                     UInt16 seconds = HopperTime.Seconds;
                     Push(seconds, HopperType.tUInt);
                     break;
@@ -7195,11 +7167,13 @@ namespace HopperNET
                     break;
 
                 case SysCall.DiagnosticsDie:
+                //case SysCall.DiagnosticsDie2:
                     Diagnostics.Die((int)Pop(), this);
                     break;
 
 
                 case SysCall.SerialConnect:
+                //case SysCall.SerialConnect2:
                     switch (iOverload)
                     {
                         case 0:
@@ -7224,16 +7198,19 @@ namespace HopperNET
                     break;
 
                 case SysCall.SerialIsAvailableGet:
+                //case SysCall.SerialIsAvailableGet2:
                     PushBool(Serial.IsAvailableGet());
                     hasResult = true;
                     break;
 
                 case SysCall.SerialReadChar:
+                //case SysCall.SerialReadChar2:
                     Push(Serial.ReadChar(), HopperType.tChar);
                     hasResult = true;
                     break;
 
                 case SysCall.SerialWriteChar:
+                //case SysCall.SerialWriteChar2:
                     Serial.WriteChar((char)Pop());
                     break;
                 case SysCall.SerialWriteString:

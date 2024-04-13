@@ -8,38 +8,37 @@ unit SysCall
     enum SysCalls
     {
         StringNewFromConstant = 0x00,
+        StringBuild           = 0x01,
         StringNew             = 0x02,
+        StringBuildFront      = 0x03,
+        ArrayNewFromConstant  = 0x04,
+        TimeSeconds           = 0x05,
         StringLengthGet       = 0x06,
+        TimeDelay             = 0x07,
+        DiagnosticsDie        = 0x08,
+        SerialConnect         = 0x09,
         StringGetChar         = 0x0A,
-        StringBuild           = 0x83,
-        StringBuildFront      = 0xB5,
         
         ArrayNew              = 0x0B,
         ArrayCountGet         = 0x0C,
         ArrayGetItem          = 0x0D,
         ArraySetItem          = 0x0E,
-        ArrayNewFromConstant  = 0x88,
         
-        TimeSeconds      = 0x5D,
+        SerialWriteChar       = 0x0F,
+        SerialWriteChar       = 0x10,
+        SerialIsAvailable     = 0x11,
         
-        DiagnosticsDie   = 0x7C,
+        MemoryReadByte        = 0x12,
+        MemoryWriteByte       = 0x13,
+        MemoryAvailable       = 0x14,
+        MemoryMaximum         = 0x15,
+        MemoryAllocate        = 0x16,
+        MemoryFree            = 0x17,
         
-        SerialConnect    = 0xA2,
-        SerialWriteChar  = 0xA7,
+        ByteToHex             = 0xBE,
         
-        MemoryReadByte   = 0xA9,
-        MemoryWriteByte  = 0xAA,
-        MemoryAvailable  = 0xAB,
-        MemoryMaximum    = 0xAC,
-        MemoryAllocate   = 0xAD,
-        MemoryFree       = 0xAE,
-        
-        ByteToHex        = 0xBE,
-        
-        TimeDelay        = 0xC6,
-        
-        IntGetByte       = 0xE1,
-        IntFromBytes     = 0xE4,
+        IntGetByte            = 0xE1,
+        IntFromBytes          = 0xE4,
         
                 
     }
