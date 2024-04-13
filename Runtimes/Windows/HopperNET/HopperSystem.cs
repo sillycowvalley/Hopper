@@ -330,13 +330,6 @@ namespace HopperNET
                 return new List<string>(arguments);
             } 
         }
-        public ushort HexeVersion
-        {
-            get
-            {
-                return hexeVersion;
-            }
-        }
         static public string CurrentDirectory { get { return currentDirectory; } set { currentDirectory = value; } }
     }
 }

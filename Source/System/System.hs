@@ -24,7 +24,6 @@ unit System
     uses "Type"
     uses "Variant"
     
-    uint     HexeVersion { get system ; }
     <string> Arguments { get system; }
     string CurrentDirectory { get system; set system; }
     Beep() system;

@@ -11,33 +11,33 @@ unit SysCalls
     {
         syscalls.Clear(); // in case called a 2nd time
         
-        addEntry("String.NewFromConstant");
-        addEntry("Char.ToString");
-        addEntry("String.New");
-        addEntry("String.Append");
-        addEntry("String.InsertChar");
-        addEntry("String.Compare");
-        addEntry("String.Length_Get");
-        addEntry("String.EndsWith");
-        addEntry("String.Substring");
-        addEntry("String.Replace");
-        addEntry("String.GetChar");
+        addEntry("String.NewFromConstant"); // keep
+          addEntry("Char.ToString");
+        addEntry("String.New"); // keep
+          addEntry("String.Append");
+          addEntry("String.InsertChar");
+          addEntry("String.Compare");
+        addEntry("String.Length_Get"); // keep
+          addEntry("String.EndsWith");
+          addEntry("String.Substring");
+          addEntry("String.Replace");
+        addEntry("String.GetChar"); // keep
         
         addEntry("Array.New");
         addEntry("Array.Count_Get");
         addEntry("Array.GetItem");
         addEntry("Array.SetItem");
         
-        addEntry("List.New");
-        addEntry("List.Count_Get");
-        addEntry("List.Append");
-        addEntry("List.Insert");
-        addEntry("List.GetItem");
-        addEntry("List.GetItemAsVariant");
-        addEntry("List.SetItem");
-        addEntry("List.Clear");
-        addEntry("List.Remove");
-        addEntry("List.Contains");
+          addEntry("List.New");
+          addEntry("List.Count_Get");
+          addEntry("List.Append");
+          addEntry("List.Insert");
+          addEntry("List.GetItem");
+          addEntry("List.GetItemAsVariant");
+          addEntry("List.SetItem");
+          addEntry("List.Clear");
+          addEntry("List.Remove");
+          addEntry("List.Contains");
         
         addEntry("Dictionary.New");
         addEntry("Dictionary.Count_Get");
@@ -48,15 +48,15 @@ unit SysCalls
         addEntry("Dictionary.Clear");
         
         addEntry("Pair.New");
-        addEntry("_Pair.Set"); // unused
+        addEntry("String.Append2");
         addEntry("Pair.Key");
-        addEntry("_Pair.KeyType"); // unused
+        addEntry("String.InsertChar2");
         addEntry("Pair.Value");
-        addEntry("_Pair.ValueType"); // unused
+        addEntry("Char.ToString2");
         
         addEntry("_Variant.Type"); // unused
         addEntry("Variant.Box");
-        addEntry("Variant.UnBox"); // unused
+        addEntry("Variant.UnBox");
         
         addEntry("Screen.Print");
         addEntry("Screen.PrintLn");
@@ -298,12 +298,10 @@ unit SysCalls
         addEntry("UInt.ToFloat");
         addEntry("Serial.Ports_Get");
         
-        addEntry("System.HexeVersion_Get");
-
-        // placeholders:        
-        addEntry("_Directory.Create");
-        addEntry("_Directory.Delete");
-        addEntry("_WiFi.Connect");
+        addEntry("String.Compare2");
+        addEntry("String.EndsWith2");
+        addEntry("String.Substring2");
+        addEntry("String.Replace2");
         
         addEntry("Float.ToUInt");
         addEntry("Float.ToLong");
@@ -315,6 +313,18 @@ unit SysCalls
         addEntry("Float.Cos");
         addEntry("Float.ATan2");
         addEntry("Float.Sqrt");
+        
+        addEntry("List.New2");
+        addEntry("List.Count_Get2");
+        addEntry("List.Append2");
+        addEntry("List.Insert2");
+        addEntry("List.GetItem2");
+        addEntry("List.GetItemAsVariant2");
+        addEntry("List.SetItem2");
+        addEntry("List.Clear2");
+        addEntry("List.Remove2");
+        addEntry("List.Contains2");
+        
     }
     
     bool TryParseSysCall(string name, ref byte index)
