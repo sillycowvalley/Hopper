@@ -3,8 +3,6 @@ program TestNumbers
     //#define CPU_Z80
     //#define CDECL
     
-    //#define EXPERIMENTAL
-    
     uses "/Source/Minimal/System"
     
     uses "/Source/Minimal/Diagnostics"
@@ -728,20 +726,19 @@ program TestNumbers
         int testAfter = Int.FromBytes(test.GetByte(0), test.GetByte(1));
         if (test != testAfter)
         {
-            PrintFailed(137);
+            PrintFailed(138);
         }
         
         testAfter = Int.FromBytes(test.GetByte(0), test.GetByte(1));
         if (test != testAfter)
         {
-            PrintFailed(138);
+            PrintFailed(139);
         }
         
     } // TestIntMath
 	
 	
     {
-        
         TestConstants();
         TestEquals();
         TestLessThan();

@@ -65,6 +65,7 @@ unit ZP
     // (for example, Serial also uses these, especially on 6502 where PLX, PLY, PHX and PHY are missing)
     const byte W0                   = 0x20;
     const byte W1                   = 0x21;
+    const byte W2                   = 0x22; // used by packed syscalls
     
     // used by 'T'ime APIs Millis and Delay
     const byte T0                   = 0x28;

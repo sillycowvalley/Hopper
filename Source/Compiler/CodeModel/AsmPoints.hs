@@ -425,6 +425,7 @@ unit AsmPoints
         uint codeLength = code.Count;
         uint i = 0;
         
+        uint tableSizeInWords;
         loop
         {
             uint operand;
@@ -444,9 +445,13 @@ unit AsmPoints
                     operand = code[i+1] + (code[i+2] << 8);
                 }
             }
+            if ((opCode == OpCode.CPX_n) || (opCode == OpCode.CPY_n))
+            {
+                tableSizeInWords = operand + 1;
+            }
             if (opCode == opcodeJMPIndex)
             {
-                instructionLength += 512;
+                instructionLength += tableSizeInWords * 2;
             }
             
             byte extra = 0;
@@ -481,7 +486,6 @@ unit AsmPoints
             
             if (opCode == opcodeJMPIndex)
             {
-                uint tableSizeInWords = 256;
                 <uint> jumps;
                 for (uint ii=0; ii < tableSizeInWords; ii++)
                 {
@@ -597,7 +601,6 @@ unit AsmPoints
             if (instructionLength > 1)
             {
                 uint operand = iOperands[index];
-                
                 AddressingModes addressingMode;
                 bool isConditional;
                 bool isJump = Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional);
@@ -1043,7 +1046,7 @@ unit AsmPoints
                             // flipping this bit switches to the opposite condition instruction
                             opCode1 = OpCode(byte(opCode1) ^ 0x20); 
                         }
-                        if (addressingMode1 == AddressingModes.ZeroPageRelative) // BBSx or BBRx
+                        else if (addressingMode1 == AddressingModes.ZeroPageRelative) // BBSx or BBRx
                         {
                             // flipping this bit switches to the opposite condition instruction
                             opCode1 = OpCode(byte(opCode1) ^ 0x80);
@@ -1053,10 +1056,85 @@ unit AsmPoints
                             iLengths.SetItem (iIndex, iLengths[iIndex-1]);
                             iExtras.SetItem  (iIndex, iExtras[iIndex-1]);
                         }
+                        else
+                        {
+                            Die(0x0B);
+                        }
                         iCodes  [iIndex]   = opCode1;
                         iCodes  [iIndex-1] = OpCode.NOP;
                         iLengths[iIndex-1] = 1;
                         modified = true;
+                    }
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    
+    // BEQ JMP -> BNE (for example)
+    bool OptimizeBEQJMP()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 1;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex];
+            
+            AddressingModes addressingMode1;
+            bool isConditional1;
+            
+            if (   Asm6502.IsJumpInstruction(opCode1, ref addressingMode1, ref isConditional1) &&  isConditional1
+                && (opCode0 == OpCode.JMP_nn)
+               )
+            {
+                if (!IsTargetOfJumps(iIndex))
+                {
+                    if (iOperands[iIndex-1] == iIndex + 1)
+                    {
+                        uint address0 = indexToAddress[iIndex-0];
+                        uint addressJ = indexToAddress[iOperands[iIndex-0]];
+                        
+                        long distance = long(addressJ) - long(address0);
+                        if ((distance > -128) && (distance < 127)) 
+                        {
+                            // even if all the instructions inbetween are 3 bytes long,
+                            // this is still within range for the conditional relative offset
+                            if (addressingMode1 == AddressingModes.Relative)        // BnC or BnS
+                            {
+                                // flipping this bit switches to the opposite condition instruction
+                                opCode1 = OpCode(byte(opCode1) ^ 0x20); 
+                            }
+                            else if (addressingMode1 == AddressingModes.ZeroPageRelative) // BBSx or BBRx
+                            {
+                                // flipping this bit switches to the opposite condition instruction
+                                opCode1 = OpCode(byte(opCode1) ^ 0x80);
+                                                            
+                                // Keep the length and the zero page address (iExtras) from the BBSx|BBRx instruction (iIndex-1)
+                                // but use the jump index from the branch instruction (iIndex-0):
+                                iLengths.SetItem (iIndex, iLengths[iIndex-1]);
+                                iExtras.SetItem  (iIndex, iExtras[iIndex-1]);
+                            }
+                            else
+                            {
+                                Die(0x0B);
+                            }
+                            iCodes  [iIndex]   = opCode1;
+                            iLengths[iIndex]   = 2;
+                            iCodes  [iIndex-1] = OpCode.NOP;
+                            iLengths[iIndex-1] = 1;
+                            modified = true;
+                        }
                     }
                 }
             }

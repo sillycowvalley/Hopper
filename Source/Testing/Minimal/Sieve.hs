@@ -6,7 +6,7 @@ program Sieve
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
     
-    const uint size = 200;  // 200 -> 78
+    const uint size = 200; //8191;  // 200 -> 78
     const uint iterations = 1;
     
     bool[size] flagsGlobal;

@@ -104,14 +104,11 @@ unit SysCall
         PushNext();
     }
     
-    sysCall()
+    SysCallShared()
     {
-        // iOverload in ACC
+        // iOverload in ACCL
         // iSysCall  in X
         
-#ifdef CHECKED
-        TXA TAY // so we can see the original A at BRK
-#endif                
         switch (X)
         {
             case SysCalls.DiagnosticsDie:
@@ -235,48 +232,36 @@ unit SysCall
         PLA
         TAX
 #endif
-        sysCall();
+        // iOverload in ACCL
+        // iSysCall  in X
+        SysCallShared();
     }
 #ifdef PACKED_INSTRUCTIONS    
     SysCall0()
     {
         ConsumeOperandA(); // iSysCall  -> A (uses ACC)
-        PHA
+        TAX                // load iSyscCall into X (because JMP [nnnn,X] is then possible)
         
-        // iOverload -> ACC
+        // iOverload -> ACCL
         LDA # 0
         STA ACCL
-        STA ACCH
         
-        // load iSyscCall into X (because JMP [nnnn,X] is then possible)
-#ifdef CPU_65C02S
-        PLX
-#else        
-        PLA
-        TAX
-#endif
-        sysCall();
+        // iOverload in ACCL
+        // iSysCall  in X
+        SysCallShared();
     }
-#endif
-#ifdef PACKED_INSTRUCTIONS    
     SysCall1()
     {
         ConsumeOperandA(); // iSysCall  -> A (uses ACC)
-        PHA
+        TAX                // load iSyscCall into X (because JMP [nnnn,X] is then possible)
         
-        // iOverload -> ACC
+        // iOverload -> ACCL
         LDA # 1
         STA ACCL
-        STA ACCH
         
-        // load iSyscCall into X (because JMP [nnnn,X] is then possible)
-#ifdef CPU_65C02S
-        PLX
-#else        
-        PLA
-        TAX
-#endif
-        sysCall();
+        // iOverload in ACCL
+        // iSysCall  in X
+        SysCallShared();
     }
 #endif
 }

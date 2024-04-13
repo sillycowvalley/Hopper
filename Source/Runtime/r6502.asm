@@ -1,11 +1,9 @@
 program R6502
 {
-    //#define CHECKED
+    #define CHECKED
     
     #define PACKED_INSTRUCTIONS
-    
-    // mapping of Z80 -> 6502
-    // https://litwr2.github.io/8080-8085-z80-8088-6502/z80-6502.html
+    //#define FASTINTS
     
     #define ROM_16K
     //#define CPU_65C02S  // Rockwell and WDC

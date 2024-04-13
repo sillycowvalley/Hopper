@@ -333,6 +333,7 @@ program Assemble
                 
                 uint afterBlock = Asm6502.NextAddress;
                 uint blockSize  = afterBlock - beforeBlock;
+                
                 if (tableCandidate)
                 {
                     if (blockSize != 3)
@@ -384,9 +385,15 @@ program Assemble
                 uint ui = jumpEnd;
                 Asm6502.PatchJump(ui, endAddress);
             }
+            if (tableCandidate && (defaultIndex == 0))
+            {
+                tableCandidate = false;
+            }
+            if (tableCandidate && (jumpRecords.Count <= 8))
+            {
+                tableCandidate = false;
+            }
             
-            tableCandidate = tableCandidate && (defaultIndex != 0);
-            tableCandidate = tableCandidate && (jumpRecords.Count > 8);
             if (tableCandidate)
             {
                 tableCandidate = false;
@@ -394,7 +401,7 @@ program Assemble
                 tokenType      = Token.GetType(currentToken);
                 if (tokenType == HopperToken.Keyword)
                 {
-                    tableCandidate = currentToken["lexeme"] == "return";
+                    tableCandidate = (currentToken["lexeme"] == "return");
                 }
                 else if (tokenType == HopperToken.RBrace)
                 {
@@ -405,6 +412,7 @@ program Assemble
             {   
                 <uint> jumpList;
                 uint i = 0;
+                uint iLastNonDefault = 0;
                 for (; i < 256; i++)
                 {
                     if (!jumpRecords.Contains(byte(i)))
@@ -414,11 +422,18 @@ program Assemble
                     else
                     {
                         jumpList.Append(jumpRecords[i]);
+                        iLastNonDefault = i;
                     }
                 }
                 
                 uint tableAddress = Asm6502.NextAddress;
                 Asm6502.PatchJump(jumpToTable, tableAddress);
+                
+                EmitInstruction((registerName == 'X') ? "CPX" : "CPY", byte(iLastNonDefault));
+                EmitInstruction("BEQ", int(+5));
+                EmitInstruction("BCC", int(+3));
+                
+                EmitInstructionAbsolute("iJMP", defaultIndex, AddressingModes.Absolute);
                 
                 uint loadLSBTableAddress = Asm6502.NextAddress;
                 EmitInstructionAbsolute("LDA", 0, (registerName == 'X') ? AddressingModes.AbsoluteX : AddressingModes.AbsoluteY);
@@ -436,7 +451,7 @@ program Assemble
                 Asm6502.PatchJump(loadLSBTableAddress, tableDataAddress, true);
                 
                 // LSBs
-                for (uint ii=0; ii <= 0xFF; ii++)
+                for (uint ii=0; ii <= iLastNonDefault; ii++)
                 {
                     uint methodIndex = jumpList[ii];
                     Asm6502.AppendCode(byte(methodIndex & 0xFF));
@@ -444,7 +459,7 @@ program Assemble
                 // MSBs
                 tableAddress = Asm6502.NextAddress;
                 Asm6502.PatchJump(loadMSBTableAddress, tableAddress, true);
-                for (uint ii=0; ii <= 0xFF; ii++)
+                for (uint ii=0; ii <= iLastNonDefault; ii++)
                 {
                     uint methodIndex = jumpList[ii];
                     Asm6502.AppendCode(byte(methodIndex >> 8));

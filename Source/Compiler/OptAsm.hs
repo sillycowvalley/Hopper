@@ -230,11 +230,19 @@ program OptAsm
                 {
                     modified = true;
                 }
+                // BEQ BRA -> BNE (for example)
+                if (AsmPoints.OptimizeBEQBRA())
+                {
+                    modified = true;
+                }
             }
-            // BEQ BRA -> BNE (for example
-            if (AsmPoints.OptimizeBEQBRA())
+            else
             {
-                modified = true;
+                // BEQ JMP -> BNE (for example)
+                if (AsmPoints.OptimizeBEQJMP())
+                {
+                    modified = true;
+                }   
             }
             // BRA|JMP to RTS - > RTS
             if (AsmPoints.OptimizeJMPRTS())

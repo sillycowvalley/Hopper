@@ -46,6 +46,7 @@ program ASMGEN
         OpCode ijmpInstruction      = GetiJMPInstruction();
         OpCode jumpIndexinstruction = GetJMPIndexInstruction();
         
+        byte tableEntries;
         uint tableLoadLSB;
         uint tableLoadMSB;
         
@@ -64,7 +65,10 @@ program ASMGEN
                 tableLoadLSB = tableLoadMSB;
                 tableLoadMSB = output.Count;
             }
-            
+            else if ((instruction == OpCode.CPY_n) || (instruction == OpCode.CPX_n))
+            {
+                tableEntries = code[index+1]+1;
+            }
             if (instruction == callInstruction)
             {
                 uint address = code[index+1] + code[index+2] << 8;
@@ -90,7 +94,7 @@ program ASMGEN
                 uint address = index + methodAddress + 3;
                 output[tableLoadLSB+1] = address.GetByte(0);
                 output[tableLoadLSB+2] = address.GetByte(1);
-                address += 256;
+                address += tableEntries;
                 output[tableLoadMSB+1] = address.GetByte(0);
                 output[tableLoadMSB+2] = address.GetByte(1);
             }
@@ -103,7 +107,7 @@ program ASMGEN
             
             if (instruction == jumpIndexinstruction)
             {
-                uint tableSizeInWords = 256;  
+                uint tableSizeInWords = tableEntries;  
                 
                 // LSBs
                 for (uint i = 0; i < tableSizeInWords; i++)

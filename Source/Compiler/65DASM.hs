@@ -225,6 +225,7 @@ program DASM
                 OpCode jumpIndexinstruction = GetJMPIndexInstruction();
                         
                 uint index;
+                uint tableSizeInWords;
                 loop
                 {
                     if (index == code.Count-6) { break; }
@@ -244,6 +245,10 @@ program DASM
                     else if (length == 3)
                     {
                         operand = code[index+1] + code[index+2] << 8; 
+                    }
+                    if ((instruction == OpCode.CPX_n) || (instruction == OpCode.CPY_n))
+                    {
+                        tableSizeInWords = operand + 1;
                     }
                     if (methodAddresses.Contains(address))
                     {
@@ -298,8 +303,6 @@ program DASM
                     
                     if (instruction == OpCode.JMP_inn)
                     {
-                        uint tableSizeInWords = 256;
-                        
                         string previousComment;
                         for (byte i = 0; i < tableSizeInWords; i++)
                         {
