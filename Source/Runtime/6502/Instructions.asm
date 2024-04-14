@@ -446,10 +446,16 @@ unit Instruction
     {
         Utilities.IncACC();
         
+#ifdef CPU_65C02S
+        STZ ZP.IDXH
+        LDA [ZP.ACC]
+        STA ZP.IDXL
+#else        
         LDY #0
         STY ZP.IDXH
         LDA [ZP.ACC], Y
         STA ZP.IDXL
+#endif
         
         Utilities.IncPC();
     }
@@ -458,10 +464,16 @@ unit Instruction
     {
         Utilities.IncACC();
         
+#ifdef CPU_65C02S
+        STZ ZP.IDXH
+        LDA [ZP.ACC]
+        STA ZP.IDXL
+#else        
         LDY #0
         STY ZP.IDXH
         LDA [ZP.ACC], Y
         STA ZP.IDXL
+#endif
         if (MI)
         {
             // signed byte, extend the sign
@@ -475,8 +487,12 @@ unit Instruction
     ConsumeOperandA()
     {
         Utilities.IncACC();
+#ifdef CPU_65C02S        
+        LDA [ZP.ACC]
+#else
         LDY # 0
         LDA [ZP.ACC], Y
+#endif
         Utilities.IncPC();
     }
     
@@ -531,8 +547,7 @@ unit Instruction
     }
     boolOr()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         
         // [next] || [top] -> [top] // assumes Type.Bool (0 or 1)
         LDA ZP.NEXTL
@@ -545,8 +560,7 @@ unit Instruction
     }
     boolAnd()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         
         // [next] && [top] -> [top] // assumes Type.Bool (0 or 1)
         LDA ZP.NEXTL
@@ -559,8 +573,7 @@ unit Instruction
     }
     bitAnd()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         
         // [next] &  [top] -> [top]
         LDA ZP.NEXTL
@@ -586,8 +599,7 @@ unit Instruction
     }
     bitOr()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         
         // [next] |  [top] -> [top]
         LDA ZP.NEXTL
@@ -603,8 +615,7 @@ unit Instruction
     }
     bitXor()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         
         // [next] ^  [top] -> [top]
         LDA ZP.NEXTL
@@ -751,8 +762,7 @@ unit Instruction
     }
     ne()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         
         LDX # 1
         LDA ZP.NEXTL
@@ -843,8 +853,7 @@ unit Instruction
        
     ge()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         LDX #0 // NEXT < TOP
         LDA ZP.NEXTH
         CMP ZP.TOPH
@@ -861,8 +870,7 @@ unit Instruction
     }
     gt()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         LDX #0 // NEXT <= TOP
         LDA ZP.NEXTH
         CMP ZP.TOPH
@@ -882,8 +890,7 @@ unit Instruction
     }
     lti()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         // NEXT < TOP?
         // TOP - NEXT > 0
         SEC
@@ -955,8 +962,7 @@ unit Instruction
     
     gti()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         // NEXT > TOP?
         // NEXT - TOP > 0
         
@@ -988,8 +994,7 @@ unit Instruction
     }
     gei()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         // NEXT >= TOP?
         // NEXT - TOP >= 0
         
@@ -1020,8 +1025,7 @@ unit Instruction
     }
     bitShr()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
 
         // next = next >> top
         loop
@@ -1040,8 +1044,7 @@ unit Instruction
     }
     bitShl()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        PopTopNext();
         // next = next << top
         loop
         {

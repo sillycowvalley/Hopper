@@ -22,7 +22,8 @@ program PreProcess
     bool isAssembly;
     bool IsAssembly { get { return isAssembly; } set { isAssembly = value; } }
     
-    bool IsDebugger   { get { return false; } }
+    bool IsDebugger  { get { return false; } }
+    
     bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
     
     // Documentation:

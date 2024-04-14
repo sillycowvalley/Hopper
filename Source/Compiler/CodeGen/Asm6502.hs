@@ -3,7 +3,10 @@ unit Asm6502
     <string,string> debugInfo;
     <string,bool> debugInfoLineUsed;
     <byte> currentStream;
+    
     <byte> constantStream;
+    <string,uint> usedConstants;
+    uint romStart;
     
     CPUArchitecture cpuArchitecture;
     CPUArchitecture Architecture { get { return cpuArchitecture; } set { cpuArchitecture = value; } }
@@ -1699,6 +1702,29 @@ unit Asm6502
     {
         return constantStream;
     }
+    SetOrg(uint org)
+    {
+        romStart = org;
+    }
+    uint GetConstantAddress(string name, string value)
+    {
+        uint address;
+        if (usedConstants.Contains(name))
+        {
+            address = usedConstants[name];
+        }
+        else
+        {
+            address = constantStream.Count + romStart;
+            usedConstants[name] = address;
+            foreach (var c in value)
+            {
+                constantStream.Append(byte(c));
+            }
+        }
+        return address;
+    }
+    
     InsertDebugInfo(bool usePreviousToken)
     {
         <string,string> token;

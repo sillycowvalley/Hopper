@@ -394,10 +394,9 @@ program ASMGEN
                 uint methodCount = Code.GetMethodCount();
                 
                 <byte> constantData = Code.GetConstantData();
-                if (constantData.Count != 0)
+                foreach (var b in constantData)
                 {
-                    PrintLn("Unexpected constant data");
-                    break;
+                    output.Append(b);
                 }
                 
                 uint entryIndex = Code.GetEntryIndex();

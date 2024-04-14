@@ -1893,6 +1893,11 @@ unit Symbols
     
     bool ExportCode(string codePath)
     {
+        <byte> constantStream = CodeStream.GetConstantStream();
+        return ExportCode(codePath, constantStream)
+    }
+    bool ExportCode(string codePath, <byte> constantStream)
+    {
         // <uint,<byte> > fCodeStream;
         // <uint, <string,string> > fDebugInfo;
         // <uint,uint> fCalls;    
@@ -1916,7 +1921,6 @@ unit Symbols
             }
             <string, variant> dict;
             
-            <byte> constantStream = CodeStream.GetConstantStream();
             if (constantStream.Count != 0)
             {
                 <string,variant> cdict;

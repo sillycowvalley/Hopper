@@ -208,25 +208,21 @@ unit BuildCommand
             arguments.Append(row.ToString());
 
             isZ80 = false;            
-            string arch;
             switch (Architecture)
             {
                 case CPUArchitecture.W65C02:
                 {
                     target = " for 65C02S"; 
-                    arch = "65C02S";
                     cpuArchitecture = Architecture;
                 }
                 case CPUArchitecture.M6502:
                 {
                     target = " for 6502";
-                    arch = "6502";
                     cpuArchitecture = Architecture;
                 }
                 case CPUArchitecture.Z80:
                 {
                     target = " for Z80";
-                    arch = "Z80A";
                     cpuArchitecture = Architecture;
                     isZ80 = true;
                 }
@@ -279,8 +275,6 @@ unit BuildCommand
                 arguments.Append("-g");
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
-                arguments.Append("-a");
-                arguments.Append(arch);
                 
                 Editor.SetStatusBarText("Assembling '" + jsonPath + "' -> '" + codePath);
                 error = runtimeExecute(binaryPath, arguments);

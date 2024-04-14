@@ -13,7 +13,7 @@ unit SerialDevice
     const uint CRB  = 0xD013;
     
 #ifndef CPU_65C02S    
-    const byte WorkSpacePollRead  = ZP.M2;
+    const byte WorkSpacePollRead  = ZP.W2;
 #endif    
     
     

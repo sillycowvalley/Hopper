@@ -384,7 +384,7 @@ unit Constant
                 case HopperToken.Identifier:
                 {
                     string name = currentToken["lexeme"];
-#ifdef ASSEMBLER                    
+#ifdef ASSEMBLER
                     if (name.StartsWith('#')) // immediate addressing mode, not directive identifier
                     {
                         name = name.Substring(1);
@@ -533,6 +533,20 @@ unit Constant
                     {
                         constantType = "byte";
                         value = (byte(value[0])).ToString();
+                    }
+                    else if (constantType.StartsWith("byte[")) // also "string"?
+                    {
+                        value = (GetConstantAddress(name, value)).ToString();
+                        constantType = "uint";
+                    }
+                    else if (constantType == "string")
+                    {
+                        if (!value.EndsWith(char(0x00)))
+                        {
+                            value = value + char(0x00); // null terminate it
+                        }
+                        value = (GetConstantAddress(name, value)).ToString();
+                        constantType = "uint";
                     }
 #endif
                     if (!validateIntegralConstant(typeExpected, constantType, ref actualType, value, CurrentToken))

@@ -167,6 +167,11 @@ unit Stacks
         PLA TAY
 #endif        
     }
+    PopTopNext()
+    {
+        PopTop();
+        PopNext();
+    }
     PushNext()
     {
 #ifdef CPU_65C02S      

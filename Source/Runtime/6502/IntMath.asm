@@ -163,9 +163,10 @@ unit IntMath
         LDA #Types.UInt
         STA ZP.TOPT
     }
-    /*
-    const byte tensRemaining = { 0,25,51,76,102,128,153,179,204,230 }
-    const byte modRemaining  = { 0,6,2,8,4,0,6,2,8,4 }
+    
+    const byte[] modRemaining  = { 0x00, 0x06, 0x02, 0x08, 0x04, 0x00, 0x06, 0x02, 0x08, 0x04 };
+    const byte[] tensRemaining = { 0,25,51,76,102,128,153,179,204,230 };
+    
     
     utilityDiv10()
     {
@@ -201,7 +202,7 @@ unit IntMath
             ADC    ACCL                  // highTen (times 5)
             ASL                          // highTen (times 10)
             SBC    TOPH
-            EOR    #$FF
+            EOR    # 0xFF
             TAY                          // mod 10 result!
             LDA    tensRemaining, Y      // Fill the low byte with the tens it should
             STA    NEXTL                 // have at this point from the high byte divide.
@@ -238,7 +239,7 @@ unit IntMath
         ADC    NEXTL
         STA    NEXTL
     }
-    */
+    
     utilityDiv()
     {
         // NEXT = NEXT (dividend=result) / TOP (divisor)
@@ -257,6 +258,7 @@ unit IntMath
             {
                 LSR NEXTH //   / 2
                 ROR NEXTL
+                return;
             }
             CMP # 4
             if (Z)
@@ -265,8 +267,8 @@ unit IntMath
                 ROR NEXTL
                 LSR NEXTH //   / 2
                 ROR NEXTL
+                return;
             }
-            /*
             CMP # 10
             if (Z)
             {
@@ -289,7 +291,6 @@ unit IntMath
                 utilityDiv10(); //  / 10
                 return;
             }
-            */
         }
 #endif        
         divmod();

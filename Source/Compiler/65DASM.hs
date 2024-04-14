@@ -20,7 +20,6 @@ program DASM
     
     bool extendedCodeSegment;
     
-    uint codeSize = 0;
     uint instructionCount = 0;
     
     string pathLoaded;
@@ -192,12 +191,39 @@ program DASM
                 }
                 
                 uint org;
-                
+                uint codeSize = 0;
                 uint address = 0;
                 file hexFile = File.Open(codePath);
                 <byte> code = readIHex(hexFile, ref org);
-                address = org;
                 
+                uint resetVector = code[code.Count-4] + (code[code.Count-3] << 8);
+                
+                address = resetVector;
+                uint constantSize = resetVector - org;
+                uint index = constantSize;
+                if (constantSize > 0)
+                {
+                    hasmFile.Append("// constant data" + Char.EOL);
+                    uint i;
+                    loop
+                    {
+                        if (i == constantSize) { break; }
+                        byte b = code[i];
+                        codeSize++;
+                        if (i % 16 == 0)
+                        {
+                            hasmFile.Append(Char.EOL + "0x" + (i + org).ToHexString(4) + " ");
+                        }
+                        else if (i % 8 == 0)
+                        {
+                            hasmFile.Append(" ");
+                        }
+                        hasmFile.Append(" 0x" + b.ToHexString(2));       
+                        i++;
+                    }
+                    hasmFile.Append("" + Char.EOL);
+                }
+                              
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 uint indexMax = 0;
                 foreach (var sz in methodSizes)
@@ -209,11 +235,11 @@ program DASM
                 }
                 <uint,uint> methodAddresses; // <address,index>
                 uint methodAddress = address;
-                for (uint index = 0; index <= indexMax; index++)
+                for (uint mi = 0; mi <= indexMax; mi++)
                 {
-                    if (!methodSizes.Contains(index)) { continue; }   
-                    uint methodSize = methodSizes[index];
-                    methodAddresses[methodAddress] = index;
+                    if (!methodSizes.Contains(mi)) { continue; }   
+                    uint methodSize = methodSizes[mi];
+                    methodAddresses[methodAddress] = mi;
                     methodAddress += methodSize;
                 }
                 
@@ -224,16 +250,15 @@ program DASM
                 
                 OpCode jumpIndexinstruction = GetJMPIndexInstruction();
                         
-                uint index;
+                
                 uint tableSizeInWords;
                 loop
                 {
                     if (index == code.Count-6) { break; }
                     
                     OpCode instruction = OpCode(code[index]);
-                    uint length      = UInt.Min(Asm6502.GetInstructionLength(instruction), 3);
+                    uint length      = Asm6502.GetInstructionLength(instruction);
                     
-                    codeSize += length;
                     instructionCount++;
                     
                     uint operand;
@@ -298,8 +323,9 @@ program DASM
                     string disassembly = Asm6502.Disassemble(address, instruction, operand);
                     hasmFile.Append(disassembly.Pad(' ', 48) + comment + Char.EOL);
                     
-                    index += length;
-                    address += length;
+                    index    += length;
+                    address  += length;
+                    codeSize += length;
                     
                     if (instruction == OpCode.JMP_inn)
                     {
@@ -330,9 +356,11 @@ program DASM
                                                        tableEntry.ToHexString(4) + "    " + comment + Char.EOL); 
                             index++;
                             address++;
+                            codeSize++;
                         }
-                        index   += tableSizeInWords;
-                        address += tableSizeInWords;
+                        index    += tableSizeInWords;
+                        address  += tableSizeInWords;
+                        codeSize += tableSizeInWords;
                     }
                 }
                 hasmFile.Append("" +  Char.EOL);
@@ -342,13 +370,20 @@ program DASM
                 hasmFile.Append("0xFFFC 0x" + vector.ToHexString(4) + " // Reset vector" + Char.EOL);
                 vector = code[index+4] + code[index+5] << 8;
                 hasmFile.Append("0xFFFE 0x" + vector.ToHexString(4) + " // IRQ vector" + Char.EOL);
+                
+                codeSize += 6;
                               
                 Parser.ProgressTick(".");
                 hasmFile.Flush();
                 if (!Parser.IsInteractive())
                 {
                     PrintLn();
-                    Print("Success, " + codeSize.ToString() + " bytes of code, ", Colour.ProgressText, Colour.ProgressFace);
+                    Print("Success, " + codeSize.ToString() + " bytes of code", Colour.ProgressText, Colour.ProgressFace);
+                    if ((codeSize > 8192) && ((codeSize - 8192) < 256))
+                    {
+                        Print(" (" + (codeSize - 8192).ToString() + " over 8K)", Colour.MatrixRed, Colour.ProgressFace);   
+                    }
+                    Print(", ", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
                     PrintLn("  " + seconds.ToString() +"s", Colour.ProgressHighlight, Colour.ProgressFace);

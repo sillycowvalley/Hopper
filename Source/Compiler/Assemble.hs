@@ -53,7 +53,6 @@ program Assemble
         PrintLn("Invalid arguments for ASSEMBLE:");
         PrintLn("  ASSEMBLE <object json>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
-        PrintLn("    -a <arch>  : target CPU: 6502|65C02S");
         PrintLn("    -x         : use experimental features");
     }
     
@@ -1519,15 +1518,6 @@ program Assemble
                             }
                             Parser.SetInteractive(byte(col), byte(row));
                         }
-                        case "-a":
-                        {
-                            iArg++;
-                            switch (rawArgs[iArg])
-                            {
-                                case "6502":    { Architecture = CPUArchitecture.M6502;  }
-                                case "65C02S": { Architecture = CPUArchitecture.W65C02; }
-                            } 
-                        }
                         case "-x":
                         {
                             isExperimental = true;   
@@ -1545,7 +1535,7 @@ program Assemble
                 }
             }
           
-            if ((args.Count != 1) || (Architecture == CPUArchitecture.None))
+            if (args.Count != 1)
             {
                 badArguments();
                 break;
@@ -1567,6 +1557,31 @@ program Assemble
                     break;
                 }
                 isExperimental       = isExperimental || Symbols.DefineExists("EXPERIMENTAL");
+                Architecture = CPUArchitecture.M6502; 
+                if (Symbols.DefineExists("CPU_65C02S"))
+                {
+                    Architecture = CPUArchitecture.W65C02;
+                }
+                if (Symbols.DefineExists("ROM_16K"))
+                {
+                    Asm6502.SetOrg(0xC000);
+                }
+                else if (Symbols.DefineExists("ROM_8K"))
+                {
+                    Asm6502.SetOrg(0xE000);
+                }
+                else if (Symbols.DefineExists("ROM_4K"))
+                {
+                    Asm6502.SetOrg(0xFC00);
+                }
+                else if (Symbols.DefineExists("ROM_1K"))
+                {
+                    Asm6502.SetOrg(0xFC00);
+                }
+                else
+                {
+                    Asm6502.SetOrg(0x8000); // assume 32K ROM
+                }
                 
                 uint mIndex;
                 if (!Symbols.GetFunctionIndex("Hopper", ref mIndex))
@@ -1583,6 +1598,7 @@ program Assemble
                 
                 Scanner.New();
                 Token.InitializeAssembler(Architecture);
+                
                 
                 iHopper = mOverloads[0];
                 Symbols.AddFunctionCall(iHopper); // yup, main is called at least once
@@ -1632,7 +1648,7 @@ program Assemble
                 
                 string extension = Path.GetExtension(jsonPath);
                 string codePath = jsonPath.Replace(extension, ".code");
-                if (!Symbols.ExportCode(codePath))
+                if (!Symbols.ExportCode(codePath, Asm6502.GetConstantStream()))
                 {
                     break;
                 }

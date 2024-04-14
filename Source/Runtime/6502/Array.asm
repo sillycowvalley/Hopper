@@ -16,6 +16,8 @@ unit Array
     const uint aiType     = 4;
     const uint aiElements = 5;
     
+    const byte[] bitMasks = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
+                              0b00010000, 0b00100000, 0b01000000, 0b10000000 };
     New()
     {
         PopTop(); // element type
@@ -55,24 +57,6 @@ unit Array
                 {
                     INC FSIZEH
                 }
-                // initialize bit masks
-                LDA # 0b00000001
-                STA ZP.A0
-                LDA # 0b00000010
-                STA ZP.A1
-                LDA # 0b00000100
-                STA ZP.A2
-                LDA # 0b00001000
-                STA ZP.A3
-                LDA # 0b00010000
-                STA ZP.A4
-                LDA # 0b00100000
-                STA ZP.A5
-                LDA # 0b01000000
-                STA ZP.A6
-                LDA # 0b10000000
-                STA ZP.A7
-                
             }
             case Types.Char:
             case Types.Byte:
@@ -183,23 +167,6 @@ unit Array
                 LDA IDYL
                 AND # 0x07
                 TAX
-                LDA ZP.A0, X
-                STA ZP.ABITMASK
-                
-                /*
-                switch (A)
-                {
-                    case 0: { LDA # 0b00000001 STA ABITMASK}
-                    case 1: { LDA # 0b00000010 STA ABITMASK}
-                    case 2: { LDA # 0b00000100 STA ABITMASK}
-                    case 3: { LDA # 0b00001000 STA ABITMASK}
-                    case 4: { LDA # 0b00010000 STA ABITMASK}
-                    case 5: { LDA # 0b00100000 STA ABITMASK}
-                    case 6: { LDA # 0b01000000 STA ABITMASK}
-                    case 7: { LDA # 0b10000000 STA ABITMASK}
-                }
-                */
-                
                 
                 // divide offset by 8
                 LSR IDYH
@@ -228,16 +195,6 @@ unit Array
         LDA IDXH  // MSB
         ADC IDYH
         STA IDYH
-        
-        /*
-        CLC
-        LDA IDYL  // LSB
-        ADC # aiElements
-        STA IDYL
-        LDA IDYH  // MSB
-        ADC # 0
-        STA IDYH
-        */
     }
     GetItem()
     {
@@ -266,7 +223,7 @@ unit Array
         LDA [IDX], Y
         STA FTYPE
         
-        getIndexAndMask();
+        getIndexAndMask(); // returns index in IDY and bit # in X
                 
         //LDY # 0        
         LDY # aiElements
@@ -279,7 +236,7 @@ unit Array
             case Types.Bool:
             {
                 LDA [IDY], Y           
-                AND ABITMASK
+                AND bitMasks, X
                 if (Z)
                 {
                     STA NEXTL
@@ -341,7 +298,7 @@ unit Array
         LDA [IDX], Y
         STA FTYPE
         
-        getIndexAndMask();
+        getIndexAndMask(); // returns index in IDY and bit # in X
                 
         //LDY # 0        
         LDY # aiElements
@@ -357,14 +314,14 @@ unit Array
                 if (NZ)
                 {
                     // set the bit
-                    LDA ABITMASK
+                    LDA bitMasks, X
                     ORA [IDY], Y    
                     STA [IDY], Y
                 }
                 else
                 {
                     // clear the bit
-                    LDA ABITMASK
+                    LDA bitMasks, X
                     EOR # 0xFF
                     AND [IDY], Y    
                     STA [IDY], Y       

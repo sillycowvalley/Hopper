@@ -106,6 +106,7 @@ unit AsmPoints
                 }
                 case OpCode.LDX_n:
                 case OpCode.PLX:
+                case OpCode.LDX_z:
                 {
                     walkStats |= WalkStats.WriteX;
                 }
@@ -256,7 +257,14 @@ unit AsmPoints
                 case OpCode.LSR_z:
                 case OpCode.NOP:
                 case OpCode.ROR_z:
+                
+                case OpCode.CLC:
+                case OpCode.SEC:
+                
                 case OpCode.STZ_z:
+                case OpCode.STZ_zX:
+                case OpCode.STZ_nn:
+                case OpCode.STZ_nnX:
                 {
                 }
                 
@@ -1366,32 +1374,32 @@ unit AsmPoints
                         //Print("STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
                     }
                 } 
-                else if ((opCode1 == OpCode.LDX_n) && (iOperands[iIndex-1] == 0) && (Asm6502.GetName(opCode0) == "STX")) // TODO : loop on consecutive STX's
+                else if ((opCode1 == OpCode.LDX_n) && (iOperands[iIndex-1] == 0) && (Asm6502.GetName(opCode0) == "STX"))
                 {
                     if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteX, WalkStats.ReadX | WalkStats.CallRet, 10))
                     {
                         // TODO
                         PrintLn();
-                        Print("X STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                        Print("X " + Asm6502.ToString(opCode0) + ": " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteX, WalkStats.ReadX | WalkStats.CallRet, 10);
                     }
                     else
                     {
-                        PrintLn();
-                        Print("X STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                        //PrintLn();
+                        //Print("X " + Asm6502.ToString(opCode0) + ": " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteX, WalkStats.ReadX | WalkStats.CallRet, 10);
                     }
                 }
-                else if ((opCode1 == OpCode.LDY_n) && (iOperands[iIndex-1] == 0) && (Asm6502.GetName(opCode0) == "STY")) // TODO : loop on consecutive STY's
+                else if ((opCode1 == OpCode.LDY_n) && (iOperands[iIndex-1] == 0) && (Asm6502.GetName(opCode0) == "STY"))
                 {
                     if (WalkAhead(iIndex+1, WalkStats.Exit | WalkStats.WriteY, WalkStats.ReadY | WalkStats.CallRet, 10))
                     {
                         // TODO
                         PrintLn();
-                        Print("Y STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                        Print("Y " + Asm6502.ToString(opCode0) + ": " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteY, WalkStats.ReadY | WalkStats.CallRet, 10);
                     }
                     else
                     {
-                        PrintLn();
-                        Print("Y STZ: " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet, 10);
+                        //PrintLn();
+                        //Print("Y " + Asm6502.ToString(opCode0) + ": " + iIndex.ToString() + " "); WalkVerbose(iIndex+1, WalkStats.Exit | WalkStats.WriteY, WalkStats.ReadY | WalkStats.CallRet, 10);
                     }
                 }
             }

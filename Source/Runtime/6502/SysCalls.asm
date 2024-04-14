@@ -79,8 +79,7 @@ unit SysCall
     }
     intGetByte()
     {
-        PopTop();        // Index
-        PopNext();       // Int
+        PopTopNext();
         LDA ZP.TOPL
         if (NZ)
         {
@@ -95,8 +94,7 @@ unit SysCall
     }
     intFromBytes()
     {
-        PopTop();   // MSB
-        PopNext();  // LSB
+        PopTopNext();
         LDA ZP.TOPL
         STA ZP.NEXTH
         LDA # Types.Int

@@ -286,6 +286,7 @@ void setup()
   Serial.begin(0);
   while (!Serial);
 
+  /*
   Serial.println("Configuration:");
   Serial.println("==============");
   print_teensy_version();
@@ -294,6 +295,7 @@ void setup()
   Serial.print("SRAM_START: 0x"); Serial.println(RAM_START, HEX); 
   Serial.print("SRAM_END:   0x"); Serial.println(RAM_END, HEX); 
   Serial.println("");
+  */
 
   // Initialize processor GPIO's
   uP_init();
@@ -304,7 +306,7 @@ void setup()
   for (int i=0; i<25; i++) cpu_tick();
   uP_release_reset();
 
-  Serial.println("\n");
+  //Serial.println("\n");
 }
 
 

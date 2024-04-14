@@ -1,13 +1,13 @@
 program R6502
 {
-    #define CHECKED
+    //#define CHECKED
     
     #define PACKED_INSTRUCTIONS
     //#define FASTINTS
     
     #define ROM_16K
-    //#define CPU_65C02S  // Rockwell and WDC
-    #define CPU_6502  // MOS
+    #define CPU_65C02S  // Rockwell and WDC
+    //#define CPU_6502  // MOS
 
     // HopperMon commands to support:
     //
@@ -90,18 +90,20 @@ program R6502
 
         Utilities.WaitForEnter();
         
-        // clear M0..M3 and U0..U3 to make zero page transfer faster
-        LDA # 0
-        STA ZP.M0
-#ifndef CPU_65C02S 
-        STA ZP.M1
-        STA ZP.M2
-#endif    
+        // clear U0..U3 to make zero page transfer faster
+        
+#ifdef CPU_65C02S 
+        STZ ZP.U0    
+        STZ ZP.U1    
+        STZ ZP.U2    
+        STZ ZP.U3  
+#else        
+        LDA # 0  
         STA ZP.U0    
         STA ZP.U1    
         STA ZP.U2    
         STA ZP.U3  
-        
+#endif        
         PLA
         Diagnostics.PageMemory();
         
@@ -296,12 +298,21 @@ program R6502
     {
         Memory.InitializeHeapSize(); // sets HEAPSTART and HEAPSIZE based on size of program loaded
         Stacks.Init();
+        
+#ifdef CPU_65C02S        
+        STZ ZP.CNP
+        
+        // hopperInitPC -> 0x0000
+        STZ ZP.PCL
+        STZ ZP.PCH
+#else
         LDA #0
         STA ZP.CNP
         
         // hopperInitPC -> 0x0000
         STA ZP.PCL
         STA ZP.PCH
+#endif
     }
     
     
@@ -425,8 +436,12 @@ program R6502
             LDA ZP.SerialBreakFlag
             if (NZ) 
             { 
+#ifdef CPU_65C02S
+                STZ ZP.SerialBreakFlag
+#else                
                 LDA #0
                 STA ZP.SerialBreakFlag
+#endif
                 break; 
             }
             
@@ -491,7 +506,7 @@ program R6502
             SBC ZP.CODESTARTH
             STA ZP.BRKH
             
-#ifdef CPU_65C02S            
+#ifdef CPU_65C02S
             SMB5 ZP.FLAGS
 #else
             LDA ZP.FLAGS
@@ -537,8 +552,12 @@ program R6502
             if (NZ) 
             { 
                 // <ctrl><C> from Debugger but we were not running
+#ifdef CPU_65C02S
+                STZ ZP.SerialBreakFlag
+#else
                 LDA #0
                 STA ZP.SerialBreakFlag
+#endif
                 Utilities.SendSlash();
                 continue;
             }
