@@ -306,7 +306,7 @@ void setup()
   for (int i=0; i<25; i++) cpu_tick();
   uP_release_reset();
 
-  //Serial.println("\n");
+  //Serial.write((uint8_t)0x5C);
 }
 
 

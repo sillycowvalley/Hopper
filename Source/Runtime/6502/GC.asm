@@ -87,7 +87,11 @@ unit GC
     
     AddReference()
     {
+#ifdef CPU_65C02S
+        PHY
+#else
         TYA PHA
+#endif
         
         // increment the reference count by 1
         // address in IDX
@@ -96,13 +100,20 @@ unit GC
         CLC
         ADC # 1
         STA [IDX], Y
-        
+#ifdef CPU_65C02S
+        PLY
+#else        
         PLA TAY
+#endif
     }
     Release()
     {
+#ifdef CPU_65C02S
+        PHY PHX
+#else
         TYA PHA
         TXA PHA
+#endif
         
         // decrement reference count, if zero, free
         
@@ -135,22 +146,32 @@ unit GC
                 }
                 default:
                 {
+#ifdef CHECKED
                     LDA # 0x0B BRK // unsupported reference type
+#endif
                 }
             }
         }
-        
+#ifdef CPU_65C02S
+        PLX PLY
+#else
         PLA TAX
         PLA TAY
+#endif
     }
     Clone()
     {
         // type is in A
         // reference type to clone is at IDY, resulting clone in IDX
         TAX
+#ifdef CPU_65C02S
+        PHY
+#else
         TYA PHA
+#endif
         
         // Clone.List and Clone.Dictionary can go recursive:       preserve lCURRENT, lNEXT, IDY
+        /*
         LDA LCURRENTL
         PHA
         LDA LCURRENTH
@@ -159,6 +180,7 @@ unit GC
         PHA
         LDA LNEXTH
         PHA
+        */
         LDA IDYL
         PHA
         LDA IDYH
@@ -173,13 +195,16 @@ unit GC
             }
             default:
             {
+#ifdef CHECKED
                 LDA # 0x0B BRK // unsupported reference type
+#endif
             }
         }
         PLA
         STA IDYH
         PLA
         STA IDYL
+        /*
         PLA
         STA LNEXTH
         PLA
@@ -188,8 +213,12 @@ unit GC
         STA LCURRENTH
         PLA
         STA LCURRENTL
-        
+        */
+#ifdef CPU_65C02S
+        PLY
+#else        
         PLA TAY
+#endif
     }
     
     // IDY -> source, returns cloned object in IDX
@@ -216,8 +245,7 @@ unit GC
         STA ACCH
         
         // size = size - size word of block
-        DecACC();
-        DecACC();
+        DecACCx2();
         
         LDA ACCL
         STA FLENGTHL

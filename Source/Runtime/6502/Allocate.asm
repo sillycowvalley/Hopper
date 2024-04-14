@@ -433,9 +433,8 @@ unit Allocate
         // zero initialize
 
         // size -= 2 (space for 'size')
-        DecACC();
-        DecACC();
-
+        DecACCx2();
+        
         CLC
         LDA IDXL
         ADC ACCL

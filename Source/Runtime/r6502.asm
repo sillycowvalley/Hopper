@@ -1,13 +1,18 @@
 program R6502
 {
     //#define CHECKED
-    
     #define PACKED_INSTRUCTIONS
-    //#define FASTINTS
+    #define FASTINTS
     
+    //#define CPU_65C02S  // Rockwell and WDC
+    #define CPU_6502  // MOS
+
+        
+#if defined(CPU_65C02S) && !defined(FASTINTS) && !defined(CHECKED)
+    #define ROM_8K
+#else 
     #define ROM_16K
-    #define CPU_65C02S  // Rockwell and WDC
-    //#define CPU_6502  // MOS
+#endif
 
     // HopperMon commands to support:
     //
@@ -335,7 +340,7 @@ program R6502
         STA ZP.PCL
         STA ZP.PCH
         
-#ifdef CPU_65C02S        
+#ifdef CPU_65C02S
         STZ ZP.FLAGS
   #ifdef CHECKED
         SMB2 ZP.FLAGS // this is a checked build
@@ -361,13 +366,16 @@ program R6502
             CPX # ACIADATA // don't write to ACIA data register (on Zero Page right now)
             if (NZ) 
             {
+#ifdef CPU_65C02S
+                STZ 0x00, X
+#else
                 LDA #0
                 STA 0x00, X
+#endif
             }
             DEX
             if (Z) { break; }
-        }
-        
+        }  
         LDA #0
         STA IDXL
         LDA # (SerialInBuffer >> 8)

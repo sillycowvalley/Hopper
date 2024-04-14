@@ -310,7 +310,7 @@ unit Instruction
 #ifdef CHECKED                
                 lengthMissing();
 #else
-                return0();
+                return2();
 #endif
             }
         }
@@ -514,9 +514,14 @@ unit Instruction
         LDA ZP.SP
         STA ZP.BP
         
+#ifdef CPU_65C02S
+        STZ ZP.TOPL
+        STZ ZP.TOPH
+#else        
         LDA # 0
         STA ZP.TOPL
         STA ZP.TOPH
+#endif
         LDA #Types.Byte
         STA ZP.TOPT
             
@@ -2071,7 +2076,9 @@ unit Instruction
     
     missing()
     {
+#ifdef CHECKED        
         TXA BRK // OpCode not Implemented!
+#endif
     }
       
     Execute() // munts X

@@ -22,7 +22,7 @@ unit IntMath
         // TOP = NEXT * TOP
         
 #ifdef FASTINTS
-
+       // TODO : 8x8 from v0
         LDA TOPH
         if (Z)
         {
@@ -374,16 +374,13 @@ unit IntMath
     
     Mul()
     {
-        // TODO : there is a lot of fast multiply code in v0 (incluing 8x8)
-        Stacks.PopTop();
-        Stacks.PopNext();
+        Stacks.PopTopNext();
         mulShared();
         Stacks.PushTop();
     }
     MulI()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        Stacks.PopTopNext();
         doSigns(); // munts X
         mulShared();
         LDA ZP.FSIGN     // load the sign count
@@ -398,8 +395,7 @@ unit IntMath
     }
     Div()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        Stacks.PopTopNext();
         // NEXT = NEXT / TOP
         utilityDiv();
         LDA #Types.UInt
@@ -408,8 +404,7 @@ unit IntMath
     }
     Mod()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        Stacks.PopTopNext();
         // ACC = NEXT % TOP
         divmod();
         LDA #Types.UInt
@@ -418,8 +413,7 @@ unit IntMath
     }
     DivI()
     {
-        Stacks.PopTop();
-        Stacks.PopNext();
+        Stacks.PopTopNext();
         doSigns(); // munts X
         utilityDiv();
         
@@ -443,8 +437,7 @@ unit IntMath
         //   -10 /  3 = q -3, r -1
         //    10 / -3 = q -3, r -11 ?!
         
-        Stacks.PopTop();
-        Stacks.PopNext();
+        Stacks.PopTopNext();
         doSigns();
         divmod();
     

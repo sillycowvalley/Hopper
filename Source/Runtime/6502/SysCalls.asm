@@ -43,7 +43,9 @@ unit SysCall
     
     missing()
     {
+#ifdef CHECKED
         TXA BRK // SysCall not Implemented!
+#endif
     }
     serialConnect()
     {
@@ -238,11 +240,15 @@ unit SysCall
     SysCall0()
     {
         ConsumeOperandA(); // iSysCall  -> A (uses ACC)
-        TAX                // load iSyscCall into X (because JMP [nnnn,X] is then possible)
+        TAX                // load iSysCall into X (because JMP [nnnn,X] is then possible)
         
         // iOverload -> ACCL
+#ifdef CPU_65C02S
+        STZ ACCL
+#else        
         LDA # 0
         STA ACCL
+#endif
         
         // iOverload in ACCL
         // iSysCall  in X
@@ -251,7 +257,7 @@ unit SysCall
     SysCall1()
     {
         ConsumeOperandA(); // iSysCall  -> A (uses ACC)
-        TAX                // load iSyscCall into X (because JMP [nnnn,X] is then possible)
+        TAX                // load iSysCall into X (because JMP [nnnn,X] is then possible)
         
         // iOverload -> ACCL
         LDA # 1

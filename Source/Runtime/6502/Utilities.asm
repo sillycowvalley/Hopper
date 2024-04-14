@@ -36,6 +36,7 @@ unit Utilities
     
     // IDX (memory location) and X (number of pages):
     //    inspired by: https://forums.atariage.com/topic/186656-clearing-a-section-of-memory/
+    //    munts A, X, Y And IDXH but doesn't modify IDXL
     ClearPages()
     {
         LDA #0
@@ -87,15 +88,16 @@ unit Utilities
             INC ZP.ACCH
         }
     }
-    DecACC()
+    DecACCx2()
     {
         PHA
+        SEC
         LDA ACCL
-        if (Z)
-        {
-            DEC ACCH
-        }
-        DEC ACCL
+        SBC # 2
+        STA ACCL
+        LDA ACCH
+        SBC # 0
+        STA ACCH
         PLA
     }
     DecIDY()

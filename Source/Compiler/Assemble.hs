@@ -420,8 +420,12 @@ program Assemble
                     }
                     else
                     {
-                        jumpList.Append(jumpRecords[i]);
-                        iLastNonDefault = i;
+                        uint jumpIndex = jumpRecords[i];
+                        jumpList.Append(jumpIndex);
+                        if (jumpIndex != defaultIndex)
+                        {
+                            iLastNonDefault = i;
+                        }
                     }
                 }
                 

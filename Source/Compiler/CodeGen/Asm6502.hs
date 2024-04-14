@@ -1834,7 +1834,17 @@ unit Asm6502
         {
             case AddressingModes.Accumulator:       { disassembly += (name + " A"); }
             case AddressingModes.Implied:           { disassembly += name; }
-            case AddressingModes.Immediate:         { disassembly += (name + " #0x" + operand.ToHexString(2)); }
+            case AddressingModes.Immediate:         
+            { 
+                if ((operand == 0) || (operand == 1))
+                {
+                    disassembly += (name + " # " + operand.ToString()); 
+                }
+                else
+                {
+                    disassembly += (name + " # 0x" + operand.ToHexString(2)); 
+                }
+            }
             case AddressingModes.Absolute:          { disassembly += (name + " 0x" + operand.ToHexString(4)); }
             case AddressingModes.AbsoluteX:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",X"); }
             case AddressingModes.AbsoluteY:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",Y"); }

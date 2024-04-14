@@ -2,32 +2,37 @@ unit Stacks
 {
     Init()
     {
+#ifdef CPU_65C02S        
+        STZ ZP.SP
+        STZ ZP.BP
+        STZ ZP.CSP
+        
+        // zeroes mean faster debug protocol
+        STZ IDXL  // setting this to 0 once is enough (ClearPages does not modify IDXL)
+#else
         LDA # 0
         STA ZP.SP
         STA ZP.BP
         STA ZP.CSP
         
         // zeroes mean faster debug protocol
-        STA IDXL
+        STA IDXL // setting this to 0 once is enough (ClearPages does not modify IDXL)
+#endif
         LDA # (Address.ValueStackLSB >> 8)
         STA IDXH
         LDX # 1
         LDX # 2
         Utilities.ClearPages(); // with IDX (memory location) and X (number of pages) initialized
         
-        LDA # 0
-        STA IDXL
         LDA # (Address.TypeStackLSB >> 8)
         STA IDXH
         LDX # 1
         Utilities.ClearPages(); // with IDX (memory location) and X (number of pages) initialized
         
-        LDA # 0
-        STA IDXL
         LDA # (Address.CallStackLSB >> 8)
         STA IDXH
         LDX # 2
-        Utilities.ClearPages(); // with IDX (memory location) and X (number of pages) initialized
+        Utilities.ClearPages(); // with IDX (memory location) and X (number of pages) initialized (does not modify IDXL)
     }
     
     PopBP()
@@ -57,8 +62,12 @@ unit Stacks
         LDX ZP.CSP
         LDA ZP.BP
         STA Address.CallStackLSB, X
+#ifdef CPU_65C02S
+        STZ Address.CallStackMSB, X
+#else        
         LDA # 0
         STA Address.CallStackMSB, X
+#endif
         INC ZP.CSP
 #ifdef CPU_65C02S      
         PLX
@@ -239,8 +248,12 @@ unit Stacks
     {
         // value is in X: 0 or 1
         STX ZP.NEXTL
+#ifdef CPU_65C02S   
+        STZ ZP.NEXTH     
+#else
         LDA # 0
         STA ZP.NEXTH
+#endif
         LDA #Types.Bool
         STA ZP.NEXTT
         PushNext();
@@ -248,8 +261,12 @@ unit Stacks
     PushA()
     {
         STA ZP.NEXTL
+#ifdef CPU_65C02S
+        STZ ZP.NEXTH
+#else
         LDA # 0
         STA ZP.NEXTH
+#endif
         LDA #Types.Byte
         STA ZP.NEXTT
         PushNext();

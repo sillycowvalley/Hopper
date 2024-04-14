@@ -71,26 +71,40 @@ unit Memory
     ReadByte()
     {
         PopIDX();
+#ifdef CPU_65C02S
+        LDA [IDX]
+#else
         LDY # 0
         LDA [IDX], Y
+#endif
         PushA();
     }
     WriteByte()
     {
         PopACC();
         PopIDX();
-        LDY # 0
+        
         LDA ACCL
+#ifdef CPU_65C02S
+        STA [IDX]
+#else
+        LDY # 0
         STA [IDX], Y
+#endif
     }
     
     Available()
     {
         // uses IDXand ACC
         // pushes result to [top]
+#ifdef CPU_65C02S
+        STZ ACCL
+        STZ ACCH
+#else
         LDA # 0
         STA ACCL
         STA ACCH
+#endif
         LDA FREELISTL
         STA IDXL
         LDA FREELISTH
@@ -120,8 +134,7 @@ unit Memory
             STA ACCH
             
             // 2 byte cost for each allocated block:
-            DecACC();
-            DecACC();
+            DecACCx2();
             
             INY
             LDA [IDX], Y
@@ -176,8 +189,7 @@ unit Memory
                     }
                     
                     // 2 byte cost for the block
-                    DecACC();
-                    DecACC();
+                    DecACCx2();
                     break;
                 }
             }
