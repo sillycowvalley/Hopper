@@ -2312,10 +2312,9 @@ program MRVT
         
         TestHexStrings();
         TestArray();
-        
+        TestSwitch();
         TestRef();
         TestBooleanShortCircuit();
-        TestSwitch();
         TestWhile();
         TestForEach();
         

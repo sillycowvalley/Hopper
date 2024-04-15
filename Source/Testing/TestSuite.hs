@@ -1,6 +1,6 @@
 program TestSuite
 {
-//#define MCU
+#define MCU
     uses "/Source/System/System"
     
 #ifndef HOPPER_6502
@@ -265,7 +265,6 @@ program TestSuite
             PrintFailed("Array Bool: foreach failed");
         }
         count = 0;
-        
     }
     
     TestDictionary()

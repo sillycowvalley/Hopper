@@ -1,11 +1,12 @@
 program R6502
 {
-    //#define CHECKED
-    #define PACKED_INSTRUCTIONS
-    #define FASTINTS
+    //#define CHECKED              // 111 bytes
+    #define PACKED_INSTRUCTIONS    // 984 bytes
+    #define JIX_INSTRUCTIONS       // 317 bytes
+    #define FASTINTS               // 407 bytes
     
     //#define CPU_65C02S  // Rockwell and WDC
-    #define CPU_6502  // MOS
+    #define CPU_6502      // MOS
 
         
 #if defined(CPU_65C02S) && !defined(FASTINTS) && !defined(CHECKED)

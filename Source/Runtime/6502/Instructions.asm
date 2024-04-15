@@ -61,6 +61,8 @@ unit Instruction
         
         PUSHD      = 0x60,
         
+        JIX        = 0x69,
+        
         ADD        = 0x80,
         ADDI       = 0x81,
         SUB        = 0x82,
@@ -137,6 +139,8 @@ unit Instruction
         SYSCALLB1    = 0xAB,
         SYSCALL01    = 0xAC,
         SYSCALL10    = 0xAD,
+        
+        JIXB         = 0x68,
         
         
         PUSHI0       = 0x44,
@@ -285,6 +289,7 @@ unit Instruction
             case Instructions.JZ:
             case Instructions.JNZ:
             case Instructions.JW:
+            case Instructions.JIX:
             
             case Instructions.PUSHI:
             case Instructions.PUSHD:
@@ -309,6 +314,7 @@ unit Instruction
             case Instructions.PUSHIBB:
             case Instructions.PUSHILT:
             case Instructions.PUSHILEI:
+            case Instructions.JIXB:
             {
                 return2();
             }
@@ -1213,6 +1219,257 @@ unit Instruction
         LDA ZP.PCH
         SBC # 0
         STA ZP.PCH
+    }
+    
+    jixArguments()
+    {
+        PopA();             // switchCase -> FVALUEL
+        STA FVALUEL
+             
+        ConsumeOperand();
+        LDA IDXL
+        STA TOPL            // minRange -> TOPL
+        LDA IDXH
+        STA TOPH            // maxRange -> TOPL
+        
+        Utilities.IncACC();
+        ConsumeOperand();
+        LDA IDXL
+        STA NEXTL           // -offset -> NEXT
+        LDA IDXH
+        STA NEXTH
+        
+        Utilities.IncACC(); // move to start of table
+        Utilities.IncACC();
+    }
+    
+    jixUseTable()
+    {
+        // switchCase = switchCase - minRange
+        SEC
+        LDA FVALUEL
+        SBC TOPL
+        STA FVALUEL
+        
+        // index = pc + switchCase x 2
+        CLC
+        LDA ACCL
+        ADC FVALUEL
+        STA IDXL
+        LDA ACCH
+        ADC # 0
+        STA IDXH
+        
+        CLC
+        LDA IDXL
+        ADC FVALUEL
+        STA IDXL
+        LDA IDXH
+        ADC # 0
+        STA IDXH
+                
+        // offset = code[index]
+        LDY # 0
+        LDA [IDX], Y
+        STA IDYL
+        INY
+        LDA [IDX], Y
+        STA IDYH
+        
+        // zero offset?
+        if (Z)
+        {
+            LDA IDYL
+            if (Z)
+            {
+                jixDefault();
+                return;
+            }
+        }
+        
+        // pc = pc - jumpBackOffset - 5 + offset
+        SEC
+        LDA PCL
+        SBC NEXTL
+        STA PCL
+        LDA PCH
+        SBC NEXTH
+        STA PCH
+        
+        SEC
+        LDA PCL
+        SBC # 5
+        STA PCL
+        LDA PCH
+        SBC # 0
+        STA PCH
+        
+        CLC
+        LDA PCL
+        ADC IDYL
+        STA PCL
+        LDA PCH
+        ADC IDYH
+        STA PCH
+    }
+    jixbUseTable()
+    {
+        // switchCase = switchCase - minRange
+        SEC
+        LDA FVALUEL
+        SBC TOPL
+        STA FVALUEL
+        
+        // index = pc + switchCase
+        CLC
+        LDA ACCL
+        ADC FVALUEL
+        STA IDXL
+        LDA ACCH
+        ADC #0
+        STA IDXH
+        
+        // offset = code[index]
+        LDY # 0
+        LDA [IDX], Y
+        STA IDYL
+        
+        // zero offset?
+        if (Z)
+        {
+            jixbDefault();
+            return;
+        }
+        
+        // pc = pc - jumpBackOffset - 5 + offset
+        SEC
+        LDA PCL
+        SBC NEXTL
+        STA PCL
+        LDA PCH
+        SBC NEXTH
+        STA PCH
+        
+        SEC
+        LDA PCL
+        SBC # 5
+        STA PCL
+        LDA PCH
+        SBC # 0
+        STA PCH
+        
+        CLC
+        LDA PCL
+        ADC IDYL
+        STA PCL
+        LDA PCH
+        ADC # 0
+        STA PCH
+    }
+    jixDefault()
+    {
+        // default: simply add PC to tableSize
+        // tableSize = (maxRange + 1 - minRange)
+        CLC
+        LDA TOPH
+        ADC # 1
+        SEC
+        SBC TOPL
+        
+        STA ACCH // tableSize in slots (2 byte slots for JIXW)
+        
+        // + tableSize x 2
+        CLC
+        LDA PCL
+        ADC ACCH
+        STA PCL
+        LDA PCH
+        ADC # 0
+        STA PCH
+        
+        CLC
+        LDA PCL
+        ADC ACCH
+        STA PCL
+        LDA PCH
+        ADC # 0
+        STA PCH
+        jCommon(); // PC += offset - 3
+    }
+    jix()
+    {
+#ifdef JIX_INSTRUCTIONS
+        jixArguments();
+        
+        LDA FVALUEL
+        CMP TOPL
+        if (C)                     // switchCase >= minRange
+        {
+            CMP TOPH
+            if (Z)                 // switchCase == maxRange
+            {
+                jixUseTable();
+                return;
+            }
+            if (NC)                // switchCase < maxRange
+            {
+                jixUseTable();
+                return;
+            }
+        }
+        // default: simply add PC to tableSize
+        jixDefault();
+#else
+        LDA 0x0A BRK // no JIX instructions
+#endif
+    }
+    jixbDefault()
+    {
+        // default: simply add PC to tableSize
+        // tableSize = (maxRange + 1 - minRange)
+        CLC
+        LDA TOPH
+        ADC # 1
+        SEC
+        SBC TOPL
+        
+        STA ACCH // tableSize
+        
+        CLC
+        LDA PCL
+        ADC ACCH
+        STA PCL
+        LDA PCH
+        ADC # 0
+        STA PCH
+        jCommon(); // PC += offset - 3
+    }
+    jixb()
+    {
+#ifdef JIX_INSTRUCTIONS
+        jixArguments();
+        
+        LDA FVALUEL
+        CMP TOPL
+        if (C)                         // switchCase >= minRange
+        {
+            CMP TOPH
+            if (Z)                     // switchCase == maxRange
+            {
+                jixbUseTable();
+                return;
+            }
+            if (NC)                    // switchCase < maxRange
+            {
+                jixbUseTable();
+                return;
+            }
+        }
+        // default: simply add PC to tableSize
+        jixbDefault();
+#else
+        LDA 0x0A BRK // no JIX instructions
+#endif
     }
     
     jw()
@@ -2367,6 +2624,11 @@ unit Instruction
             {
                 jnz();
             }
+            case Instructions.JIX:
+            {
+                jix();
+            }
+            
             
             case Instructions.CALL:
             {
@@ -2630,6 +2892,14 @@ unit Instruction
             {
 #ifdef PACKED_INSTRUCTIONS
                 jb();
+#else
+                missing();
+#endif
+            }
+            case Instructions.JIXB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                jixb();
 #else
                 missing();
 #endif

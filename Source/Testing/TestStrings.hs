@@ -1040,13 +1040,13 @@ program TestStrings
     {
         
         TestStringSystem();
-        
         TestStringCompare();
         TestCharSystem();
         TestStringTrim();
         TestString();
         TestStringCase();
         TestHexStrings();
+        TestRef();
         
         // bool IndexOf(string this, string pattern, ref uint index)
         // bool IndexOf(string this, char pattern, uint startIndex, ref uint index)

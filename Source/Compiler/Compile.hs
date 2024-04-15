@@ -1076,7 +1076,8 @@ program Compile
                 // expression has already been parsed, result is on the stack
                 uint operand = byte(minByte) + (byte(maxByte) << 8);
                 
-                if (maxOffset <= 255)
+                bool useJIXB = (maxOffset <= 255) && !NoPackedInstructions;
+                if (useJIXB)
                 {
                     CodeStream.AddInstruction(Instruction.JIXB, operand);
                 }
@@ -1101,7 +1102,7 @@ program Compile
                     {
                         offset = caseOffsets[i];
                     }
-                    if (maxOffset <= 255)
+                    if (useJIXB)
                     {
                         // emit offset byte
                         tableBytes.Append(byte(offset));
@@ -1146,7 +1147,7 @@ program Compile
             
             string switchType = CompileExpression("");
             byte upperBound;
-            if (!NoPackedInstructions && !NoJIXInstructions && Types.IsByteRange(switchType, ref upperBound))
+            if (!NoJIXInstructions && Types.IsByteRange(switchType, ref upperBound))
             {
                 success = compileFastSwitch(switchType, upperBound);
                 break;

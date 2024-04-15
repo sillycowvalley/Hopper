@@ -22,6 +22,7 @@ program E6502
     
     bool showStringVariables;
     uint orgROM;
+    uint entryAddress;
     uint[16] breakpoints;
     
     <uint,uint> methodSizes;     // <index, length>
@@ -153,7 +154,7 @@ program E6502
         bool found;
         foreach (var kv in methodAddresses)
         {
-            methodStart = kv.key + orgROM;
+            methodStart = kv.key + entryAddress;
             //PrintLn(methodStart.ToHexString(4));
             if (address >= methodStart)
             {
@@ -611,6 +612,8 @@ program E6502
             W65C02.NMI   = code[length-6] + (code[length-5] << 8);
             W65C02.Reset = code[length-4] + (code[length-3] << 8);
             W65C02.IRQ   = code[length-2] + (code[length-1] << 8);
+            
+            entryAddress = W65C02.Reset;
             
             DoReset();
             for (uint i = 0; i < length-vectorUse; i++)
