@@ -18,9 +18,13 @@ program DASM
     uses "Tokens/LibCalls"
     uses "Tokens/Parser"
     
+    uses "Symbols"
+    
     bool extendedCodeSegment;
     
     uint instructionCount = 0;
+    
+    <uint, long> profileHits;
     
     string pathLoaded;
     <string> sourceLines;
@@ -107,10 +111,12 @@ program DASM
         PrintLn("Invalid arguments for 65DASM:");
         PrintLn("  65DASM <hexe file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
+        PrintLn("    -p         : include profile hits");
     }
     
     {
         bool success = false;
+        bool includeHits;
         loop
         {
             <string> rawArgs = System.Arguments;
@@ -136,6 +142,10 @@ program DASM
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));
+                        }
+                        case "-p":
+                        {
+                            includeHits = true;
                         }
                         default:
                         {
@@ -181,12 +191,76 @@ program DASM
                 string symbolsPath  = codePath.Replace(extension, ".code");
                 symbolsPath = Path.GetFileName(symbolsPath);
                 symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
+                string jsonPath  = symbolsPath.Replace(".code", ".sym");
                 
                 if (File.Exists(symbolsPath))
                 {
                     if (!ParseCode(symbolsPath, false, true))
                     {
                         break;
+                    }
+                }
+                Symbols.New();
+                string description;
+                uint romSize = 0x8000;
+                if (Symbols.Import(jsonPath))
+                {
+                    if (DefineExists("CPU_6502"))
+                    {
+                        description = " for 6502";
+                    }
+                    if (DefineExists("CPU_65C02S"))
+                    {
+                        description = " for 65C02S";
+                    }
+                    if (DefineExists("ROM_32K"))
+                    {
+                        description += " (32K ROM)";
+                        romSize = 0x8000;
+                    }
+                    if (DefineExists("ROM_16K"))
+                    {
+                        description += " (16K ROM)";
+                        romSize = 0x4000;
+                    }
+                    if (DefineExists("ROM_8K"))
+                    {
+                        description += " (8K ROM)";
+                        romSize = 0x2000;
+                    }
+                    if (DefineExists("ROM_4K"))
+                    {
+                        description += " (4K ROM)";
+                        romSize = 0x1000;
+                    }
+                    if (DefineExists("ROM_1K"))
+                    {
+                        description += " (1K ROM)";
+                        romSize = 0x0400;
+                    }
+                }
+                if (includeHits)
+                {
+                    if (File.Exists("/Temp/Profile.csv"))
+                    {
+                        file hitFile = File.Open("/Temp/Profile.csv");
+                        loop
+                        {
+                            string ln = hitFile.ReadLine();
+                            if (!hitFile.IsValid()) { break ; }
+                            <string> parts = ln.Split(",");
+                            uint address;
+                            if (UInt.TryParse(parts[0], ref address))
+                            {
+                                long l;
+                                _ = Long.TryParse(parts[1], ref l);
+                                profileHits[address] = l;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        includeHits = false;
                     }
                 }
                 
@@ -321,6 +395,15 @@ program DASM
                     }
                     
                     string disassembly = Asm6502.Disassemble(address, instruction, operand);
+                    if (includeHits)
+                    {
+                        string hits = "          ";
+                        if (profileHits.Contains(address))
+                        {
+                            hits = ((profileHits[address]).ToString()).Pad(' ', 10);
+                        }
+                        disassembly = hits + disassembly;
+                    }
                     hasmFile.Append(disassembly.Pad(' ', 48) + comment + Char.EOL);
                     
                     index    += length;
@@ -379,11 +462,26 @@ program DASM
                 {
                     PrintLn();
                     Print("Success, " + codeSize.ToString() + " bytes of code", Colour.ProgressText, Colour.ProgressFace);
-                    if ((codeSize > 8192) && ((codeSize - 8192) < 256))
+                    if (description.Contains("ROM"))
                     {
-                        Print(" (" + (codeSize - 8192).ToString() + " over 8K)", Colour.MatrixRed, Colour.ProgressFace);   
+                        description = description.Replace("ROM)", "ROM");
+                        Print(description, Colour.ProgressText, Colour.ProgressFace);
+                        if (codeSize < romSize)
+                        {
+                            Print(" : ", Colour.ProgressText, Colour.ProgressFace);
+                            Print((romSize - codeSize).ToString() + " bytes free", Colour.Ocean, Colour.ProgressFace);   
+                        }
+                        if (romSize < codeSize)
+                        {
+                            Print(" : ", Colour.ProgressText, Colour.ProgressFace);
+                            Print((codeSize - romSize).ToString() + " bytes overrun", Colour.Red, Colour.ProgressFace);   
+                        }
+                        Print("),", Colour.ProgressText, Colour.ProgressFace);
                     }
-                    Print(", ", Colour.ProgressText, Colour.ProgressFace);
+                    else
+                    {
+                        Print(description + ",", Colour.ProgressText, Colour.ProgressFace);
+                    }
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
                     PrintLn("  " + seconds.ToString() +"s", Colour.ProgressHighlight, Colour.ProgressFace);

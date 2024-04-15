@@ -49,6 +49,8 @@ unit Instruction
         BOOLNOT    = 0x41,
         BITNOT     = 0x42,
         
+        SWAP       = 0x43,
+        
         PUSHGP     = 0x47,
         
         COPYNEXTPOP = 0x48,
@@ -127,6 +129,7 @@ unit Instruction
         
         
         INCLOCALBB   = 0x3F,
+        INCLOCALIBB  = 0xA3,
         PUSHLOCALBB  = 0x56,
         SYSCALLB0    = 0xA8,
         SYSCALL00    = 0xA9,
@@ -138,6 +141,7 @@ unit Instruction
         
         PUSHI0       = 0x44,
         PUSHI1       = 0x45,
+        PUSHIM1      = 0x46,
         RET0         = 0x4A,
         POPLOCALB00  = 0x4C,
         POPLOCALB01  = 0x4D,
@@ -184,6 +188,7 @@ unit Instruction
             case Instructions.DUP0:
             case Instructions.COPYNEXTPOP:
             case Instructions.CALLREL:
+            case Instructions.SWAP:
             
             case Instructions.ADD:
             case Instructions.ADDI:
@@ -223,6 +228,7 @@ unit Instruction
             // PACKED_INSTRUCTIONS
             case Instructions.PUSHI0:
             case Instructions.PUSHI1:
+            case Instructions.PUSHIM1:
             case Instructions.RET0:
             case Instructions.RETFAST:
             case Instructions.POPLOCALB00:
@@ -293,6 +299,7 @@ unit Instruction
         
             // PACKED_INSTRUCTIONS
             case Instructions.INCLOCALBB:
+            case Instructions.INCLOCALIBB:
             case Instructions.PUSHLOCALBB:
             case Instructions.SYSCALLB0:
             case Instructions.SYSCALLB1:
@@ -1449,6 +1456,15 @@ unit Instruction
         STA ZP.TOPT
         Stacks.PushTop();
     }
+    pushIM1()
+    {
+        LDA # 0xFF
+        STA ZP.TOPL
+        STA ZP.TOPH
+        LDA #Types.Int
+        STA ZP.TOPT
+        Stacks.PushTop();
+    }
     
     copyNextPop()
     {
@@ -1483,6 +1499,13 @@ unit Instruction
             STA IDXH
             GC.Release(); // munts IDY
         }
+    }
+    swap()
+    {
+        PopTop();
+        PopNext();
+        PushTop();
+        PushNext();
     }
     
     dup0()
@@ -1560,12 +1583,7 @@ unit Instruction
     {
         // slot to pop to is in Y
         // this is the slot we are about to overwrite: decrease reference count if reference type
-        LDA Address.TypeStackLSB, Y
-        CMP # Types.ReferenceType // C set if heap type, C clear if value type
-        if (C)
-        {
-            checkDecReferenceY();
-        }
+        checkDecReferenceY();
         
         PopTop();
         LDA ZP.TOPL
@@ -1616,14 +1634,15 @@ unit Instruction
                         
         PopTop();
         
+        // this is the slot we are about to overwrite: decrease reference count if reference type
+        checkDecReferenceY();
+        
         LDA ZP.TOPL
         STA Address.ValueStackLSB, Y
         LDA ZP.TOPH
         STA Address.ValueStackMSB, Y
         LDA ZP.TOPT
         STA Address.TypeStackLSB, Y
-        
-        checkDecReferenceY();
     }
     popLocal()
     {
@@ -1878,7 +1897,36 @@ unit Instruction
             LDA # Types.UInt          // just in case it was Types.Byte
             STA Address.TypeStackLSB, Y
         }
+    }
+    incLocalIBB()
+    {
+        ConsumeOperand(); // -> IDX
+        CLC
+        LDA ZP.IDXL
+        ADC ZP.BP
+        TAY 
+        // slot to add to is in Y
         
+        CLC
+        LDA ZP.IDXH
+        ADC ZP.BP
+        TAX
+        
+        LDA Address.ValueStackLSB, X
+        STA ZP.TOPL
+        LDA Address.ValueStackMSB, X
+        STA ZP.TOPH
+        // value to add is in TOP
+        
+        CLC
+        LDA Address.ValueStackLSB, Y
+        ADC ZP.TOPL
+        STA Address.ValueStackLSB, Y
+        LDA Address.ValueStackMSB, Y
+        ADC ZP.TOPH
+        STA Address.ValueStackMSB, Y
+        LDA # Types.Int
+        STA Address.TypeStackLSB, Y
     }
     pushLocal()
     {
@@ -2126,6 +2174,10 @@ unit Instruction
             {
                 dup0();
             }
+            case Instructions.SWAP:
+            {
+                swap();
+            }
             case Instructions.PUSHI:
             case Instructions.PUSHD:
             {
@@ -2353,6 +2405,14 @@ unit Instruction
             {
 #ifdef PACKED_INSTRUCTIONS
                 pushI1();
+#else
+                missing();
+#endif
+            }
+            case Instructions.PUSHIM1:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushIM1();
 #else
                 missing();
 #endif
@@ -2635,6 +2695,14 @@ unit Instruction
             {
 #ifdef PACKED_INSTRUCTIONS
                 incLocalBB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.INCLOCALIBB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                incLocalIBB();
 #else
                 missing();
 #endif

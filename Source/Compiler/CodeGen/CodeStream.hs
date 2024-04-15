@@ -315,7 +315,7 @@ unit CodeStream
                 <uint> iOverloads = GetFunctionOverloads(fIndex);
                 if (iSysOverload < iOverloads.Count)
                 {
-                    uint iOverload = iOverloads[0];
+                    uint iOverload = iOverloads[iSysOverload];
                     if (!IsSysCall(iOverload))
                     {
                         Symbols.OverloadToCompile(iOverload); // User supplied SysCall as Hopper source

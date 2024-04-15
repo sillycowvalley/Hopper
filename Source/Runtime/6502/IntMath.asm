@@ -21,19 +21,18 @@ unit IntMath
     {
         // TOP = NEXT * TOP
         
+        LDA #Types.UInt
+        STA ZP.TOPT
+        
 #ifdef FASTINTS
-       // TODO : 8x8 from v0
         LDA TOPH
         if (Z)
         {
             loop
             {
-                LDA NEXTL
+                LDA TOPL
                 if (Z)
                 {
-                    LDA #0
-                    STA TOPL
-                    STA TOPH
                     return;
                 }
                 CMP #1
@@ -75,9 +74,14 @@ unit IntMath
             LDA NEXTL
             if (Z)
             {
+#ifdef CPU_65C02S
+                STZ TOPL
+                STZ TOPH
+#else                
                 LDA #0
                 STA TOPL
                 STA TOPH
+#endif
                 return;
             }
             CMP #1
@@ -125,8 +129,69 @@ unit IntMath
                 ROL TOPH
                 return;
             }
+        
+            LDA TOPH // 8x8 since TOPH and NEXTH are zero
+            if (Z)
+            {
+                // https://codebase64.org/doku.php?id=base:8bit_multiplication_16bit_product_fast_no_tables
+                LDX TOPL
+                DEX          // decrement TOPL because we will be adding with carry set for speed (an extra one)
+                STX TOPL
+                ROR NEXTL
+                if (C)
+                {
+                    ADC TOPL
+                }
+                ROR
+                ROR NEXTL
+                if (C)
+                {
+                    ADC TOPL
+                }
+                ROR
+                ROR NEXTL
+                if (C)
+                {
+                    ADC TOPL
+                }
+                ROR
+                ROR NEXTL
+                if (C)
+                {
+                    ADC TOPL
+                }
+                ROR
+                ROR NEXTL
+                if (C)
+                {
+                    ADC TOPL
+                }
+                ROR
+                ROR NEXTL
+                if (C)
+                {
+                    ADC TOPL
+                }
+                ROR
+                ROR NEXTL
+                if (C)
+                {
+                    ADC TOPL
+                }
+                ROR
+                ROR NEXTL
+                if (C)
+                {
+                    ADC TOPL
+                }
+                ROR
+                ROR NEXTL
+                STA TOPH
+                LDA NEXTL
+                STA TOPL                
+                return;
+            }
         }
-               
 #endif        
         // https://llx.com/Neil/a2/mult.html
         // Initialize RESULT to 0
@@ -160,8 +225,6 @@ unit IntMath
         STA ZP.TOPL
         LDA ZP.UWIDE1
         STA ZP.TOPH
-        LDA #Types.UInt
-        STA ZP.TOPT
     }
     
     const byte[] modRemaining  = { 0x00, 0x06, 0x02, 0x08, 0x04, 0x00, 0x06, 0x02, 0x08, 0x04 };

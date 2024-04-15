@@ -10,25 +10,25 @@ unit Char
     
     bool IsUpper(char this)
     {
-        return this >= 'A' && this <= 'Z';
+        return (this >= 'A') && (this <= 'Z');
     }
 
     bool IsLower(char this)
     {
-        return this >= 'a' && this <= 'z';
+        return (this >= 'a') && (this <= 'z');
     }
 
     char ToUpper(char this)
     {
         if (this >= 'a' && this <= 'z')
         {
-            return this - ('a' - 'A');
+            return char(byte(this) - (byte('a') - byte('A')));
         }
         return this;
     }
     bool IsDigit(char this)
     {
-        return this >= '0' && this <= '9';
+        return (this >= '0') && (this <= '9');
     }
     bool IsLetterOrDigit(char this)
     {
@@ -41,7 +41,7 @@ unit Char
     {
         if ((this >= 'A') && (this <= 'Z'))
         {
-            return this + ('a' - 'A');
+            return char(byte(this) + (byte('a') - byte('A')));
         }
         return this;
     }
@@ -59,7 +59,7 @@ unit Char
     }
     bool IsWhitespace(char this)
     {
-        return this == ' ' || this == char(0x09) || this == Char.EOL || this == char(0x0C) || this == char(0x0D);
+        return (this == ' ') || (this == Char.Tab) || (this == Char.EOL) || (this == Char.Formfeed) || (this == char(0x0D));
     }     
     byte FromHex(char this)
     {
@@ -76,5 +76,11 @@ unit Char
         {
             hex -= 48; // '0'
         }
+    }
+    string ToString(char this)
+    {
+        string result;
+        String.Build(ref result, this);
+        return result;
     }
 }

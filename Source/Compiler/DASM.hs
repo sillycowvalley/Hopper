@@ -63,7 +63,7 @@ program DASM
         }
         return sourceLine;
     }
-        
+    
     DisassembleCode(file hasmFile, <byte> code, uint startAddress, <uint,string> methodNames)
     {
         <string,string> debugInfo;
@@ -74,6 +74,7 @@ program DASM
         uint length = code.Count;
 
         uint progressCount;
+        string methodIndex;
         
         for (uint address = 0; address < length; address++)
         {
@@ -83,7 +84,7 @@ program DASM
             {
                 hasmFile.Append(""  + Char.EOL);        
                     
-                string methodIndex = methodNames[actualAddress];
+                methodIndex = methodNames[actualAddress];
                 <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
                 if (methodSymbols.Count != 0)
                 {
@@ -96,8 +97,10 @@ program DASM
                     hasmFile.Append("" + Char.EOL); 
                     hasmFile.Append("// " + src + ":" + ln + Char.EOL);  
                     
-                    string mname = "// ####  " + nm + "(..)  ####";
-                    mname = mname.Pad(' ', 80);
+                    string returnType = Instructions.RenderReturnType(methodIndex);
+                    string arguments  = Instructions.RenderArguments(methodIndex);
+                    string mname = "// ####   '" + returnType + " " + nm + "(" + arguments + ")'   ####";
+                    mname = mname.Pad(' ', 90);
                     mname = mname + methodIndex + Char.EOL;
                     hasmFile.Append(mname);  
                     

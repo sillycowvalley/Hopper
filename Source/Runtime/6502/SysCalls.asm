@@ -188,6 +188,10 @@ unit SysCall
             {
                 Array.SetItem();
             }
+            case SysCalls.ArrayNewFromConstant:
+            {
+                Array.NewFromConstant();
+            }
             
             case SysCalls.StringNewFromConstant:
             {

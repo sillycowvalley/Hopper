@@ -1093,6 +1093,8 @@ unit Instructions
         return instruction;
     }
     
+    
+    
     string Disassemble(<byte> code, ref uint address, long entryPointOffset, ref <uint> jumpLabels, ref <uint> jixLabels, bool doLabels)
     {
         string disassembledContent;
@@ -1216,6 +1218,73 @@ unit Instructions
         }
         return disassembledContent;
     }
+    
+    
+    string RenderReturnType(string methodKey)
+    {
+        <string,variant> methodSymbols = Code.GetMethodSymbols(methodKey);
+        string returnType;
+        if (methodSymbols.Contains("returntype"))
+        {
+            returnType = methodSymbols["returntype"];
+        }
+        return returnType;
+    }
+    string RenderArguments(string methodKey)
+    {
+        <string,variant> methodSymbols = Code.GetMethodSymbols(methodKey);
+        string arguments;
+        if (methodSymbols.Contains("arguments"))
+        {
+            <string, <string> > argumentDict = methodSymbols["arguments"];
+            uint i;
+            foreach (var kv in argumentDict)
+            {
+                <string> argumentList = kv.value;
+                if (i != 0)
+                {
+                    arguments += ", ";
+                }
+                if (argumentList[0] == "ref")
+                {
+                    arguments = arguments + "ref ";
+                }
+                arguments = arguments + argumentList[1] + " " + argumentList[2];
+                i++;   
+           
+            }      
+        }
+        return arguments;
+    }
+    
+    bool isPackedBytes(Instruction instruction)
+    {
+        switch (instruction)
+        {
+            case Instruction.SYSCALL00:
+            case Instruction.SYSCALL01:
+            case Instruction.SYSCALL10:
+            case Instruction.SYSCALLB0:
+            case Instruction.SYSCALLB1:
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    bool isPackedStackOffsets(Instruction instruction)
+    {
+        switch (instruction)
+        {
+            case Instruction.PUSHLOCALBB:
+            case Instruction.INCLOCALBB:
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     string disassembleSingle(<byte> code, ref uint address, long entryPointOffset, ref <uint> jumpLabels)
     {
         long actualAddress = entryPointOffset + address;
@@ -1230,7 +1299,7 @@ unit Instructions
         addressContent = addressContent + "0x" + cd.ToHexString(2) + " ";
         
         byte operandWidth = Instructions.GetSimpleOperandWidth(instruction); // JIX never gets here
-        byte iSysCall;
+        uint op;
         
         string methodKey;
         bool isStackOffset = Instructions.OperandIsStackOffset(instruction);
@@ -1246,15 +1315,14 @@ unit Instructions
             {
                 long jumpTarget = long(address);
                 address++;
-                byte op = code[address];
+                op = code[address];
                 
                 addressContent = addressContent + "0x" + op.ToHexString(2) + "       ";
                 
-                iSysCall = op;
                 string offsetString;
                 if (isStackOffset || isJumpOffset)
                 {
-                    int offset = op;
+                    int offset = int(op);
                     if (offset > 127)
                     {
                         offset = offset - 256; // 255 -> -1
@@ -1293,7 +1361,7 @@ unit Instructions
                 address++;
                 byte msb = code[address];
                 addressContent = addressContent + "0x" + msb.ToHexString(2) + "  ";
-                uint op = lsb + (msb << 8);
+                op = lsb + (msb << 8);
                 string offsetString;
                 if (isStackOffset || isJumpOffset)
                 {
@@ -1321,6 +1389,35 @@ unit Instructions
                     content = content + " 0x" + op.ToHexString(4);
                     content = content + " (BP" + offsetString  + ")";
                 }
+                else if (isPackedBytes(instruction))
+                {
+                    content = content + " 0x" + (op & 0xFF).ToHexString(2) + ", 0x" + (op >> 8).ToHexString(2);
+                }
+                else if (isPackedStackOffsets(instruction))
+                {
+                    int offset = int(op & 0xFF);
+                    if (offset > 127)
+                    {
+                        offset = offset - 256; // 255 -> -1
+                    }
+                    string sign;
+                    if (offset >= 0)
+                    {
+                        sign = "+";
+                    }
+                    content = content + " 0x" + (op & 0xFF).ToHexString(2) + " (BP" + sign + offset.ToString() + ")";
+                    offset = int(op >> 8);
+                    if (offset > 127)
+                    {
+                        offset = offset - 256; // 255 -> -1
+                    }
+                    sign = "";
+                    if (offset >= 0)
+                    {
+                        sign = "+";
+                    }
+                    content = content + ", 0x" + (op >> 8).ToHexString(2) +" (BP" + sign + offset.ToString() + ")";
+                }
                 else
                 {
                     methodKey = "0x" + op.ToHexString(4);
@@ -1328,48 +1425,77 @@ unit Instructions
                 }
             }
         }
-        
-        if ((instruction == Instruction.SYSCALL)
-         || (instruction == Instruction.SYSCALL0)
-         || (instruction == Instruction.SYSCALL1)
-           )
+        switch (instruction)
         {
-            string syscallName = SysCalls.GetSysCallName(iSysCall);
-            content = content + "  // " + syscallName;
-        }
-        if ((instruction == Instruction.LIBCALL)
-         || (instruction == Instruction.LIBCALL0)
-         || (instruction == Instruction.LIBCALL1)
-           )
-        {
-            string libcallName = LibCalls.GetLibCallName(iSysCall);
-            content = content + "  // " + libcallName;
-        }
-        if ((instruction == Instruction.CALLB)
-         || (instruction == Instruction.CALL)
-           )
-        {
-            <string,variant> methodSymbols =  Code.GetMethodSymbols(methodKey);
-            if ((methodSymbols.Count == 0) && methodKey.StartsWith("0xC"))
+            case Instruction.PUSHLOCALB00:
+            case Instruction.POPLOCALB00:
+            case Instruction.POPCOPYLOCALB00:
             {
-                // HOPPER_6502 method indices marked with 0xCnnn before replaced with addresses
-                methodKey = methodKey.Replace("0xC", "0x0");
-                methodSymbols =  Code.GetMethodSymbols(methodKey);
+                content = content + " (BP+0)";
             }
-            if (methodSymbols.Count != 0)
+            case Instruction.PUSHLOCALB01:
+            case Instruction.POPLOCALB01:
+            case Instruction.POPCOPYLOCALB01:
             {
-                string name = methodSymbols["name"];
-                if (instruction == Instruction.CALLB)
+                content = content + " (BP+1)";
+            }
+            case Instruction.SYSCALL:
+            case Instruction.SYSCALL0:
+            case Instruction.SYSCALL1:
+            {
+                byte iSysCall = byte(op & 0xFF);
+                string syscallName = SysCalls.GetSysCallName(iSysCall);
+                content = content.Pad(' ', 18);
+                content = content + "// " + syscallName + "(..)";
+            }
+            case Instruction.SYSCALLB0:
+            case Instruction.SYSCALLB1:
+            {
+                byte iSysCall = byte(op >> 8);
+                string syscallName = SysCalls.GetSysCallName(iSysCall);
+                content = content.Pad(' ', 18);
+                content = content + "// " + syscallName + "(..)";
+            }
+            case Instruction.SYSCALL00:
+            case Instruction.SYSCALL01:
+            case Instruction.SYSCALL10:
+            {
+                byte iSysCall = byte(op & 0xFF);
+                string syscallName = SysCalls.GetSysCallName(iSysCall);
+                content = content.Pad(' ', 18);
+                content = content + "// " + syscallName + "(..)";
+                
+                iSysCall = byte(op >> 8);
+                syscallName = SysCalls.GetSysCallName(iSysCall);
+                content = content + ", " + syscallName + "(..)";
+            }
+            case Instruction.LIBCALL:
+            case Instruction.LIBCALL0:
+            case Instruction.LIBCALL1:
+            {
+                byte iSysCall = byte(op & 0xFF);
+                string libcallName = LibCalls.GetLibCallName(iSysCall);
+                content = content.Pad(' ', 18);
+                content = content + "// " + libcallName;
+            }
+            case Instruction.CALLB:
+            case Instruction.CALL:
+            {
+                <string,variant> methodSymbols =  Code.GetMethodSymbols(methodKey);
+                if ((methodSymbols.Count == 0) && methodKey.StartsWith("0xC"))
                 {
-                    content = content + "  ";
+                    // HOPPER_6502 method indices marked with 0xCnnn before replaced with addresses
+                    methodKey = methodKey.Replace("0xC", "0x0");
+                    methodSymbols =  Code.GetMethodSymbols(methodKey);
                 }
-                content = content + "   // " + name;
+                if (methodSymbols.Count != 0)
+                {
+                    string name = methodSymbols["name"];
+                    content = content.Pad(' ', 17);
+                    content = content + "// " + RenderReturnType(methodKey) + " " + name + "(" + RenderArguments(methodKey) + ") ";
+                }
             }
-        }
-        if (instruction == Instruction.CALLI)
-        {
-            // TODO : reverse lookup of method from address to index to add name to comment
-        }
+        } // switch
         content = addressContent + content;
         return content;
     }

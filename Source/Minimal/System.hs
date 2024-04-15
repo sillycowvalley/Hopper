@@ -1,6 +1,7 @@
 unit System
 {
     #define MINIMAL_RUNTIME
+    #define NO_JIX_INSTRUCTIONS
     //#define NO_PACKED_INSTRUCTIONS
     
     uses "Char"
@@ -12,5 +13,7 @@ unit System
     uses "String"
     uses "Array"
     uses "Type"
+    
     uses "Serial"
+    uses "Diagnostics"
 }

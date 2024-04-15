@@ -298,7 +298,7 @@ unit String
         STA FLENGTHH
         STA FSIZEH
         
-        // constant date address -> FSOURCEADDRESSL
+        // constant data address -> FSOURCEADDRESSL
         LDY # 2
         CLC
         LDA Address.HopperData, Y
@@ -432,10 +432,10 @@ unit String
         LDA [IDX], Y
         STA NEXTH
         
-        GC.Release();
-        
         LDA # Types.UInt
         STA NEXTT
+        
+        GC.Release();
         PushNext();
     }
     GetChar()
@@ -475,6 +475,8 @@ unit String
         STA TOPH
         LDA # Types.Char
         STA TOPT
+        
+        GC.Release(); // this
         PushTop();
     }
     build0()

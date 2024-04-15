@@ -5,9 +5,9 @@
 // MEMORY LAYOUT
 ////////////////////////////////////////////////////////////////////
 
-// 32K MEMORY
+// 48K MEMORY
 #define RAM_START   0x0000
-#define RAM_END     0x7FFF
+#define RAM_END     0xBFFF
 byte    RAM[RAM_END-RAM_START+1];
 
 

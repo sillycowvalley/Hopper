@@ -18,17 +18,11 @@ unit Array
     
     const byte[] bitMasks = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
                               0b00010000, 0b00100000, 0b01000000, 0b10000000 };
-    New()
+    new()
     {
-        PopTop(); // element type
-        PopNext(); // number of elements
-        
-        LDA NEXTL
-        STA FSIZEL
-        LDA NEXTH
-        STA FSIZEH
-        
-        LDA TOPL 
+        // element type in FTYPE, number of elements in FSIZE
+        //    returns array at IDX and length in bytes in FLENGTH
+        LDA FTYPE
         switch (A)
         {
             case Types.Bool:
@@ -99,8 +93,27 @@ unit Array
         LDA NEXTH
         STA [IDX], Y
         INY
-        LDA TOPL
+        LDA FTYPE
         STA [IDX], Y
+        
+    }
+    
+    New()
+    {
+        PopTop();  // element type
+        PopNext(); // number of elements
+        
+        LDA NEXTL
+        STA FSIZEL
+        LDA NEXTH
+        STA FSIZEH
+        
+        LDA TOPL 
+        STA FTYPE
+        
+        // element type in FTYPE, number of elements in FSIZE
+        //    returns array at IDX and length in bytes in FLENGTH
+        new();
         
         LDA IDXL
         STA TOPL
@@ -124,6 +137,87 @@ unit Array
             LDA # 0
             STA [IDX], Y
             IncIDX();
+            
+            LDA FLENGTHL
+            if (Z)
+            {
+                DEC FLENGTHH
+            }
+            DEC FLENGTHL
+        }
+        
+        LDA # Types.Array
+        STA TOPT
+        PushTop();
+    }
+    
+    NewFromConstant()
+    {
+        PopTop();  // element type
+        PopNext(); // number of elements
+        PopACC();  // location
+        
+        LDA NEXTL
+        STA FSIZEL
+        LDA NEXTH
+        STA FSIZEH
+        
+        LDA TOPL 
+        STA FTYPE
+        CMP # Types.Byte
+        if (NZ)
+        {
+            LDA 0x0A BRK // only Types.Byte supported for Array.NewFromConstant
+        }
+        
+        // constant data address -> FSOURCEADDRESSL
+        LDY # 2
+        CLC
+        LDA Address.HopperData, Y
+        ADC # (Address.HopperData & 0xFF)
+        STA FSOURCEADDRESSL
+        INY
+        LDA Address.HopperData, Y
+        ADC # (Address.HopperData >> 8)
+        STA FSOURCEADDRESSH
+        
+        // += location
+        CLC
+        LDA ACCL
+        ADC FSOURCEADDRESSL
+        STA FSOURCEADDRESSL
+        LDA ACCH
+        ADC FSOURCEADDRESSH
+        STA FSOURCEADDRESSH
+        
+        // element type in FTYPE, number of elements in FSIZE
+        //    returns array at IDX and length in bytes in FLENGTH
+        new();
+        
+        LDA IDXL
+        STA TOPL
+        LDA IDXH
+        STA TOPH
+        
+        // initialize from constant data
+        LDY # aiElements
+        LDX # 0
+        loop
+        {
+            LDA FLENGTHL
+            if (Z)
+            {
+                LDA FLENGTHH
+                if (Z)
+                {
+                    break;
+                }
+            }
+            
+            LDA [FSOURCEADDRESS], X
+            STA [IDX], Y
+            IncIDX();
+            IncSOURCEADDRESS();
             
             LDA FLENGTHL
             if (Z)
@@ -338,7 +432,7 @@ unit Array
                 LDA TOPL
                 STA [IDY], Y
                 INY
-                LDA TOPL
+                LDA TOPH
                 STA [IDY], Y
             }
         }      

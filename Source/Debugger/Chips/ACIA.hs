@@ -137,6 +137,7 @@ unit ACIA
                 {
                     value = byte(readChar);
                     readWaiting = false;
+                    /*
                     if (value > 32)
                     {
                         Print(char(value), Colour.MatrixBlue, Colour.Black);
@@ -145,6 +146,7 @@ unit ACIA
                     {
                         Print(" " + value.ToHexString(2) + " ", Colour.MatrixBlue, Colour.Black);
                     }
+                    */
                 }
                 else
                 {

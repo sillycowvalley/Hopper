@@ -1894,7 +1894,7 @@ unit Symbols
     bool ExportCode(string codePath)
     {
         <byte> constantStream = CodeStream.GetConstantStream();
-        return ExportCode(codePath, constantStream)
+        return ExportCode(codePath, constantStream);
     }
     bool ExportCode(string codePath, <byte> constantStream)
     {

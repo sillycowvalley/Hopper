@@ -59,7 +59,7 @@ unit String
     }
     bool IndexOf(string this, char pattern, uint searchIndex, ref uint index)
     {
-        if (searchIndex >= this.Length || this.Length == 0)
+        if (searchIndex >= this.Length || (this.Length == 0))
         {
             return false;
         }
@@ -227,11 +227,11 @@ unit String
     
     bool IndexOf(string this, string pattern, uint startIndex, ref uint index)
     {
-        if (pattern.Length == 0 || startIndex >= this.Length)
+        if ((pattern.Length == 0) || (startIndex >= this.Length))
         {
             return false;
         }
-       for (uint i = startIndex; i <= this.Length - pattern.Length; i++)
+        for (uint i = startIndex; i <= this.Length - pattern.Length; i++)
         {
             bool found = true;
             for (uint j = 0; j < pattern.Length; j++)
@@ -256,7 +256,7 @@ unit String
         {
             return false;
         }
-       for (uint i = this.Length - 1; i > 0; i--)
+        for (uint i = this.Length - 1; i > 0; i--)
         {
             if (this[i] == pattern)
             {
@@ -264,7 +264,7 @@ unit String
                 return true;
             }
         }
-       // Check the first character separately
+        // Check the first character separately
         if (this[0] == pattern)
         {
             index = 0;
@@ -274,11 +274,11 @@ unit String
     }
     bool LastIndexOf(string this, char pattern, uint startIndex, ref uint index)
     {
-        if (this.Length == 0 || startIndex >= this.Length)
+        if ((this.Length == 0) || (startIndex >= this.Length))
         {
             return false;
         }
-       for (uint i = UInt.Min(startIndex, this.Length - 1); i > 0; i--)
+        for (uint i = UInt.Min(startIndex, this.Length - 1); i > 0; i--)
         {
             if (this[i] == pattern)
             {
@@ -286,8 +286,8 @@ unit String
                 return true;
             }
         }
-       // Check the first character separately
-        if (startIndex == 0 && this[0] == pattern)
+        // Check the first character separately
+        if ((startIndex == 0) && (this[0] == pattern))
         {
             index = 0;
             return true;
@@ -446,5 +446,31 @@ unit String
     TrimRight(ref string build)
     {
         build = build.TrimRight();
+    }
+    string ToUpper(string this)
+    {
+        string result;
+        foreach (var ch in this)
+        {
+            String.Build(ref result, ch.ToUpper());
+        }
+        return result;
+    }
+    string ToLower(string this)
+    {
+        string result;
+        foreach (var ch in this)
+        {
+            String.Build(ref result, ch.ToLower());
+        }
+        return result;
+    }
+    ToUpper(ref string str)
+    {
+        str = str.ToUpper();
+    }
+    ToLower(ref string str)
+    {
+        str = str.ToLower();
     }
 }

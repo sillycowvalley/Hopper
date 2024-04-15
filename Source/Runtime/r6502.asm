@@ -10,7 +10,12 @@ program R6502
         
 #if defined(CPU_65C02S) && !defined(FASTINTS) && !defined(CHECKED)
     #define ROM_8K
-#else 
+#endif
+#if !defined(PACKED_INSTRUCTIONS)
+    #define ROM_8K
+#endif
+
+#ifndef ROM_8K
     #define ROM_16K
 #endif
 
