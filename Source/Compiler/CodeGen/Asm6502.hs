@@ -1553,10 +1553,12 @@ unit Asm6502
             case "NZ": { code = OpCode.BNE_e; }
             case "C":  { code = OpCode.BCS_e; }
             case "NC": { code = OpCode.BCC_e; }
+            case "V":  { code = OpCode.BVS_e; }
+            case "NV": { code = OpCode.BVC_e; }
             case "MI": { code = OpCode.BMI_e; }
             case "PL": { code = OpCode.BPL_e; }
             case "":   { code = OpCode.BRA_e; }
-            default:   { NI();   }
+            default:   { NI();                }
         }
         ValidateInstruction(code);
         return code;
@@ -1818,26 +1820,47 @@ unit Asm6502
     string Disassemble(uint address, OpCode instruction, uint operand)
     {
         string disassembly;
-        disassembly += "0x" + address.ToHexString(4);
+        string hexPrefix = "0x";
+        string immediatePrefix = "# ";
+        if (OGMode)
+        {
+            hexPrefix = "";
+            immediatePrefix = "#";
+        }
+        disassembly += hexPrefix + address.ToHexString(4);
         disassembly += " ";
         
-        disassembly +=  " 0x" + (byte(instruction)).ToHexString(2);
+        disassembly +=  " " + hexPrefix + (byte(instruction)).ToHexString(2);
         disassembly += " ";
         
         uint length = GetInstructionLength(instruction);
-        string operandString = "         "; 
+        string operandString = "     "; 
         if (length == 2)
         {
-            operandString = "0x" + operand.ToHexString(2) + "     "; 
+            operandString = hexPrefix + operand.ToHexString(2) + "   "; 
+            if (!OGMode)
+            {
+                operandString += "  ";
+            }
         }
         else if (length >= 3)
         {
-            
-            operandString = "0x" + (operand & 0xFF).ToHexString(2) + " 0x" + (operand >> 8).ToHexString(2); 
+            operandString = hexPrefix + (operand & 0xFF).ToHexString(2) + " " + hexPrefix + (operand >> 8).ToHexString(2); 
         }
+        else if (!OGMode)
+        {
+            operandString += "    ";
+        }
+        
         disassembly += operandString;
         disassembly += "  ";
         string name = Asm6502.GetName(instruction);
+        
+        if (OGMode)
+        {
+            hexPrefix = "$";
+        }
+        
         AddressingModes addressingMode = Asm6502.GetAddressingMode(instruction);
         switch (addressingMode)
         {
@@ -1847,24 +1870,24 @@ unit Asm6502
             { 
                 if ((operand == 0) || (operand == 1))
                 {
-                    disassembly += (name + " # " + operand.ToString()); 
+                    disassembly += (name + " " + immediatePrefix + operand.ToString()); 
                 }
                 else
                 {
-                    disassembly += (name + " # 0x" + operand.ToHexString(2)); 
+                    disassembly += (name + " " + immediatePrefix + hexPrefix + operand.ToHexString(2)); 
                 }
             }
-            case AddressingModes.Absolute:          { disassembly += (name + " 0x" + operand.ToHexString(4)); }
-            case AddressingModes.AbsoluteX:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",X"); }
-            case AddressingModes.AbsoluteY:         { disassembly += (name + " 0x" + operand.ToHexString(4) + ",Y"); }
-            case AddressingModes.AbsoluteIndirect:  { disassembly += (name + " [0x" + operand.ToHexString(4) + "]"); }
-            case AddressingModes.AbsoluteIndirectX: { disassembly += (name + " [0x" + operand.ToHexString(4) + ",X]"); }
-            case AddressingModes.ZeroPage:          { disassembly += (name + " 0x" + operand.ToHexString(2)); }
-            case AddressingModes.ZeroPageX:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",X"); }
-            case AddressingModes.ZeroPageY:         { disassembly += (name + " 0x" + operand.ToHexString(2) + ",Y"); }
-            case AddressingModes.ZeroPageIndirect:  { disassembly += (name + " [0x" + operand.ToHexString(2) +"]"); }
-            case AddressingModes.XIndexedZeroPage:  { disassembly += (name + " [0x" + operand.ToHexString(2) +",X]"); }
-            case AddressingModes.YIndexedZeroPage:  { disassembly += (name + " [0x" + operand.ToHexString(2) +"],Y"); }
+            case AddressingModes.Absolute:          { disassembly += (name + " " + hexPrefix + operand.ToHexString(4)); }
+            case AddressingModes.AbsoluteX:         { disassembly += (name + " " + hexPrefix + operand.ToHexString(4) + ",X"); }
+            case AddressingModes.AbsoluteY:         { disassembly += (name + " " + hexPrefix + operand.ToHexString(4) + ",Y"); }
+            case AddressingModes.AbsoluteIndirect:  { disassembly += (name + " [" + hexPrefix + operand.ToHexString(4) + "]"); }
+            case AddressingModes.AbsoluteIndirectX: { disassembly += (name + " [" + hexPrefix + operand.ToHexString(4) + ",X]"); }
+            case AddressingModes.ZeroPage:          { disassembly += (name + " " + hexPrefix + operand.ToHexString(2)); }
+            case AddressingModes.ZeroPageX:         { disassembly += (name + " " + hexPrefix + operand.ToHexString(2) + ",X"); }
+            case AddressingModes.ZeroPageY:         { disassembly += (name + " " + hexPrefix + operand.ToHexString(2) + ",Y"); }
+            case AddressingModes.ZeroPageIndirect:  { disassembly += (name + " [" + hexPrefix + operand.ToHexString(2) +"]"); }
+            case AddressingModes.XIndexedZeroPage:  { disassembly += (name + " [" + hexPrefix + operand.ToHexString(2) +",X]"); }
+            case AddressingModes.YIndexedZeroPage:  { disassembly += (name + " [" + hexPrefix + operand.ToHexString(2) +"],Y"); }
             
             case AddressingModes.Relative:  
             { 
@@ -1874,7 +1897,7 @@ unit Asm6502
                     ioperand = ioperand - 256; // 0xFF -> -1
                 }
                 long target = long(address) + length + ioperand;
-                disassembly += (name + " 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
+                disassembly += (name + " " + hexPrefix + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
             }
             case AddressingModes.ZeroPageRelative:
             {
@@ -1884,11 +1907,16 @@ unit Asm6502
                     ioperand = ioperand - 256; // 0xFF -> -1
                 }
                 long target = long(address) + length + ioperand;
-                disassembly += (name + " 0x" + (operand & 0xFF).ToHexString(2) +", 0x" + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
+                disassembly += (name + " " + hexPrefix + (operand & 0xFF).ToHexString(2) +", " + hexPrefix + target.ToHexString(4) + " (" + (ioperand < 0 ? "" : "+") + ioperand.ToString() + ")"); 
             }
             
-                default: { disassembly += name; }
-            }
+            default: { disassembly += name; }
+        }
+        if (OGMode)
+        {
+            disassembly = disassembly.Replace("[", "(");
+            disassembly = disassembly.Replace("]", ")");
+        }
         return disassembly;
     }
     

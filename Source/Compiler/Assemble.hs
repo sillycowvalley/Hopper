@@ -840,6 +840,7 @@ program Assemble
                         case "BPL": { instructionName = "BMI"; }
                         case "BVC": { instructionName = "BVS"; }
                         case "BVS": { instructionName = "BVC"; }
+                        default:    { NI();                    }
                         
                     }
                     Asm6502.EmitInstruction(instructionName, int(3));
@@ -1751,7 +1752,7 @@ program Assemble
                         Symbols.OverloadToCompile(iIRQ);
                         Symbols.AddFunctionCall(iIRQ);
                     }
-                    if (!Symbols.GetFunctionIndex("NMI", ref nIndex))
+                    if (Symbols.GetFunctionIndex("NMI", ref nIndex))
                     {
                         mOverloads = Symbols.GetFunctionOverloads(nIndex);
                         if (mOverloads.Count != 1)

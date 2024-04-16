@@ -12,6 +12,7 @@ program WozMon
     // A9 20 AA 20 ED FF E8 8A C9 7F D0 F6 4C 00 FF
     
     #define CPU_6502
+    //#define CPU_65C02S
     #define ROM_1K
 
     // Zero Page Variables
@@ -43,7 +44,6 @@ program WozMon
                 
         LDY # 0x7F      // Mask for DSP data direction register (this value is assumed in Y below, incremented to 0x80)
         
-        //STY DSP         // Set it up.
         LDA # 0xA7      // KBD and DSP control register mask.
         STA KBDCR       // Enable interrupts, set CA1, CB1, for
         STA DSPCR       //  positive edge sense/output mode.
@@ -87,54 +87,73 @@ SETMODE:
         STA MODE        // 0x00=XAM 0x74=STOR 0xB8=BLOCK XAM
 BLSKIP:
         INY             // Advance text index.
-NEXTITEM:
-        LDA IN, Y       // Get character.
-        CMP # (0x0A + 0x80)       // <enter> ?
-        BEQ GETLINE     // Yes, done this line.
-        CMP # ('.' + 0x80)       // "."?
-        BCC BLSKIP      // Skip delimiter.
-        BEQ SETMODE     // Set BLOCK XAM mode
-        CMP # (':' + 0x80)       // ":"?
-        BEQ SETSTOR     // Yes. Set STOR mode.
-        CMP # ('R' + 0x80)       // "R"?
-        BEQ RUN         // Yes. Run user program.
-        STX L           // 0x00-> L.
-        STX H           // and H.
-        STY YSAV        // Save Y for comparison.
-NEXTHEX:        
-        LDA IN,Y        // Get character for hex test.
-        EOR # 0xB0      // Map digits to 0x0-9.
-        CMP # 0x0A      // Digit?
-        BCC DIG         // Yes.
-        ADC # 0x88      // Map letter "A"-"F" to 0xFA-FF.
-        CMP # 0xFA      // Hex letter?
-        BCC NOTHEX      // No, character not hex.
-DIG:            
-        ASL
-        ASL             // Hex digit to MSD of A.
-        ASL
-        ASL
-        LDX # 0x04      // Shift count.
-HEXSHIFT:       
-        ASL             // Hex digit left, MSB to carry.
-        ROL L           // Rotate into LSD.
-        ROL H           //  Rotate into MSD's.
-        DEX             // Done 4 shifts?
-        BNE HEXSHIFT    // No, loop.
-        INY             // Advance text index.
-        BNE NEXTHEX     // Always taken. Check next char for hex.
-NOTHEX:         
-        CPY YSAV        // Check if L, H empty (no hex digits).
-        BEQ ESCAPE      // Yes, generate ESC sequence.
-        BIT MODE        // Test MODE byte.
-        BVC NOTSTOR     //  B6=0 STOR 1 for XAM & BLOCK XAM
-        LDA L           // LSD's of hex data.
-        STA [STL,X]     // Store at current 'store index'.
-        INC STL         // Increment store index.
-        BNE NEXTITEM    // Get next item. (no carry).
-        INC STH         // Add carry to 'store index' high order.
-TONEXTITEM:     
-        JMP NEXTITEM    // Get next command item.
+        loop
+        {
+            // Command Loop:
+
+            LDA IN, Y       // Get character.
+            CMP # (0x0A + 0x80)       // <enter> ?
+            BEQ GETLINE     // Yes, done this line.
+            CMP # ('.' + 0x80)       // "."?
+            BCC BLSKIP      // Skip delimiter.
+            BEQ SETMODE     // Set BLOCK XAM mode
+            CMP # (':' + 0x80)       // ":"?
+            BEQ SETSTOR     // Yes. Set STOR mode.
+            CMP # ('R' + 0x80)       // "R"?
+            BEQ RUN         // Yes. Run user program.
+            STX L           // 0x00-> L.
+            STX H           // and H.
+            STY YSAV        // Save Y for comparison.
+            
+            loop
+            {
+                // Rotate the hex characters as values into 'HL':
+                
+                LDA IN,Y          // Get character for hex test.
+                EOR # 0xB0        // Map digits to 0x0-9.
+                CMP # 0x0A        // Digit?
+                if (C)            // No.
+                {
+                    ADC # 0x88    // Map letter "A"-"F" to 0xFA-FF.
+                    CMP # 0xFA    // Hex letter?
+                    if (NC)       // No, character not hex.
+                    { 
+                        break; 
+                    }
+                }
+                ASL
+                ASL             // Hex digit to MSD of A.
+                ASL
+                ASL
+                LDX # 0x04      // Shift count.
+                loop
+                {    
+                    ASL               // Hex digit left, MSB to carry.
+                    ROL L             // Rotate into LSD.
+                    ROL H             // Rotate into MSD's.
+                    DEX               // Done 4 shifts?
+                    if (Z)
+                    { 
+                        break; 
+                    }
+                }
+                INY             // Advance text index.
+                                // Check next char for hex.
+            }
+             
+            CPY YSAV        // Check if L, H empty (no hex digits).
+            BEQ ESCAPE      // Yes, generate ESC sequence.
+            BIT MODE        // Test MODE byte.
+            BVC NOTSTOR     //  B6=0 STOR 1 for XAM & BLOCK XAM
+            LDA L           // LSD's of hex data.
+            STA [STL,X]     // Store at current 'store index'.
+            INC STL         // Increment store index.
+            if (Z)         
+            { 
+                INC STH     // Add carry to 'store index' high order.
+            }
+TONEXTITEM: 
+        }    
 RUN:            
         JMP [XAML]      // Run at current XAM index.
 NOTSTOR:        
@@ -149,38 +168,43 @@ NOTSTOR:
             DEX               // Next of 2 bytes.
             if (Z) { break; } // Loop unless X=0.
         }
-NXTPRNT:        
-        if (Z)          // EQ means address to print.
-        {
-            LDA # (0x0A + 0x80)       // Newline
-            Echo();         // Output it.
-            LDA XAMH        // 'Examine index' high-order byte.
-            PrintByte();    // Output it in hex format.
-            LDA XAML        // Low-order 'examine index' byte.
-            PrintByte();    // Output it in hex format.
-            LDA # (':' + 0x80)        // ":".
-            Echo();         // Output it.
-        }
-         
-        LDA # (' ' + 0x80)  // Blank.
-        Echo();             // Output it.
-        LDA [XAML,X]        // Get data byte at 'examine index'.
-        PrintByte();        // Output it in hex format.
+        
+        loop
+        {    
+            // Data printing loop:
+            
+            if (Z)              // Z means first or mod 8 so address to print.
+            {
+                LDA # (0x0A + 0x80)  // Newline
+                Echo();         // Output it.
+                LDA XAMH        // 'Examine index' high-order byte.
+                PrintByte();    // Output it in hex format.
+                LDA XAML        // Low-order 'examine index' byte.
+                PrintByte();    // Output it in hex format.
+                LDA # (':' + 0x80)        // ":".
+                Echo();         // Output it.
+            }
+             
+            LDA # (' ' + 0x80)  // Blank.
+            Echo();             // Output it.
+            LDA [XAML,X]        // Get data byte at 'examine index'.
+            PrintByte();        // Output it in hex format.
 XAMNEXT:        
-        STX MODE        // 0->MODE (XAM mode).
-        LDA XAML
-        CMP L           // Compare 'examine index' to hex data.
-        LDA XAMH
-        SBC H
-        BCS TONEXTITEM  // Not less, so no more data to output.
-        INC XAML
-        if (Z)          // Increment 'examine index'.
-        {
-            INC XAMH
+            STX MODE        // 0->MODE (XAM mode).
+            LDA XAML
+            CMP L           // Compare 'examine index' to hex data.
+            LDA XAMH
+            SBC H
+            BCS TONEXTITEM  // Not less, so no more data to output.
+            INC XAML
+            if (Z)          // Increment 'examine index'.
+            {
+                INC XAMH
+            }
+            LDA XAML        // Check low-order 'examine index' byte
+            AND # 0x07      // For MOD 8=0
         }
-        LDA XAML        // Check low-order 'examine index' byte
-        AND # 0x07      // For MOD 8=0
-        BPL NXTPRNT     // Always taken.
+        
     } // Hopper
     
     PrintByte()

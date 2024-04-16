@@ -202,12 +202,16 @@ program Show
             LinePrinter linePrinter = DefaultLinePrinter;
             string extension = Path.GetExtension(filePath);
             extension = extension.ToLower();
-            if ((extension == ".hs") || (extension == ".asm") || (extension == ".json") ||
+            if ((extension == ".hs")  || (extension == ".asm")  || (extension == ".lst")  || (extension == ".json") ||
                 (extension == ".sym") || (extension == ".code") || (extension == ".options"))
             {
-                isAssembly = (extension == ".asm");
+                isAssembly = ((extension == ".asm") || (extension == ".lst"));
                 linePrinter = HopperLinePrinter;
                 Token.Initialize();// inialize the tokenizer
+                if (isAssembly)
+                {
+                    Token.InitializeAssembler(CPUArchitecture.W65C02);
+                }
             }
             else if (extension == ".hasm")
             {

@@ -20,7 +20,8 @@ program DASM
     
     uses "Symbols"
     
-    bool extendedCodeSegment;
+    bool ogMode;
+    bool OGMode { get { return ogMode; } }
     
     uint instructionCount = 0;
     
@@ -112,6 +113,7 @@ program DASM
         PrintLn("  65DASM <hexe file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
         PrintLn("    -p         : include profile hits");
+        PrintLn("    -og        : traditional syntax to keep the OG's happy");
     }
     
     {
@@ -124,7 +126,7 @@ program DASM
             for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
                 string arg = rawArgs[iArg];
-                if ((arg.Length == 2) && (arg[0] == '-'))
+                if (((arg.Length == 2) || (arg.Length == 3)) && (arg[0] == '-'))
                 {
                     arg = arg.ToLower();
                     switch (arg)
@@ -146,6 +148,10 @@ program DASM
                         case "-p":
                         {
                             includeHits = true;
+                        }
+                        case "-og":
+                        {
+                            ogMode = true;
                         }
                         default:
                         {
@@ -324,8 +330,14 @@ program DASM
                 string srcName;
                 
                 OpCode jumpIndexinstruction = GetJMPIndexInstruction();
-                        
-                
+                      
+                uint commentColumn = 48;  
+                string commentPrefix = "// ";
+                if (OGMode)
+                {
+                    commentPrefix = "; ";
+                    commentColumn = 36;
+                }
                 uint tableSizeInWords;
                 loop
                 {
@@ -368,9 +380,9 @@ program DASM
                             }
                             doffset = address;
                             hasmFile.Append("" + Char.EOL); 
-                            hasmFile.Append("// " + src + ":" + ln + Char.EOL);  
+                            hasmFile.Append(commentPrefix + src + ":" + ln + Char.EOL);  
                             
-                            string mname = "// ####  " + nm + "()  ####";
+                            string mname = commentPrefix + "####  " + nm + "()  ####";
                             mname = mname.Pad(' ', 80);
                             mname = mname + "0x" + methodIndex.ToHexString(4) + Char.EOL;
                             hasmFile.Append(mname);  
@@ -383,16 +395,21 @@ program DASM
                     if (labelInfo.Contains(debugAddress))
                     {
                         string label = labelInfo[debugAddress];
-                        hasmFile.Append("                      " + label + ":" + Char.EOL);    
+                        if (!OGMode)
+                        {
+                            hasmFile.Append("        ");
+                        }
+                        hasmFile.Append("              " + label + ":" + Char.EOL);    
                     }
                     string comment;
+                    
                     if (debugInfo.Contains(debugAddress))
                     {
                         string debugLine = debugInfo[debugAddress];
                         string sourceLine = getSourceLine(src, debugLine);
                         if (sourceLine.Length != 0)
                         {
-                            comment = "// " + sourceLine.Trim();
+                            comment = sourceLine.Trim();
                             if (comment.Length < 34)
                             {
                                 comment = comment.Pad(' ', 34);
@@ -401,7 +418,7 @@ program DASM
                         }
                         else
                         {
-                            comment = "// " + src + ":" + debugLine;  
+                            comment = src + ":" + debugLine;  
                         }
                     }
                     
@@ -415,7 +432,12 @@ program DASM
                         }
                         disassembly = hits + disassembly;
                     }
-                    hasmFile.Append(disassembly.Pad(' ', 48) + comment + Char.EOL);
+                    if (comment.Length > 0)
+                    {
+                        comment = comment.Replace("//", "  ");
+                        comment = commentPrefix + comment;
+                    }
+                    hasmFile.Append(disassembly.Pad(' ', commentColumn) + comment + Char.EOL);
                     
                     index    += length;
                     address  += length;

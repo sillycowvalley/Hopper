@@ -468,7 +468,6 @@ program OptAsm
                     nmiExists  = true;
                 }
                 
-                
                 uint pass = 0;
                 loop
                 {

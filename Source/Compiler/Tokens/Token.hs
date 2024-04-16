@@ -368,6 +368,8 @@ unit Token
             instructionKeywords["TAY"] = true;
             instructionKeywords["TXA"] = true;
             instructionKeywords["TAX"] = true;
+            instructionKeywords["TXS"] = true;
+            instructionKeywords["TSX"] = true;
             
             instructionKeywords["CMP"] = true;
             instructionKeywords["CPX"] = true;
