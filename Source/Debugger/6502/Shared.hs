@@ -361,9 +361,13 @@ unit Shared
     }
     ShowVariableB(string name, byte zpIndex)
     {
+        ShowVariableB(name, zpIndex, "");
+    }
+    ShowVariableB(string name, byte zpIndex, string extra)
+    {
         Print("  " + (name + ":").Pad(' ', 20));
         uint b = getRAMByte(zpIndex);
-        PrintLn(" 0x" + b.ToHexString(2), Colour.LightestGray, Colour.Black); 
+        PrintLn(" 0x" + b.ToHexString(2) + extra, Colour.LightestGray, Colour.Black); 
     }
     ShowHopperStringVariables(GetRAMByteDelegate currentGetRAMByte)
     {
@@ -375,5 +379,24 @@ unit Shared
         ShowVariableB("FTYPE",   ZP.FTYPE);
         ShowVariableW("FSOURCEADDRESS",      ZP.FSOURCEADDRESS);
         ShowVariableW("FDESTINATIONADDRESS", ZP.FDESTINATIONADDRESS);
+    }
+    ShowWozMonVariables(GetRAMByteDelegate currentGetRAMByte)
+    {
+        getRAMByte = currentGetRAMByte;
+        PrintLn();
+        ShowVariableW("XAM",  0x24);
+        ShowVariableW("ST",   0x26);
+        ShowVariableB("L",    0x28);
+        ShowVariableB("H",    0x29);
+        ShowVariableB("YSAV", 0x2A);
+        string mode = "";
+        uint b = getRAMByte(0x2B);
+        switch (b)
+        {
+            case 0x00: { mode = " = XAM"; }
+            case 0x7F: { mode = " = STOR"; }
+            case 0xAE: { mode = " = BLOCK XAM"; }
+        }
+        ShowVariableB("MODE", 0x2B, mode);
     }
 }

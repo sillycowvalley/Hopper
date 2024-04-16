@@ -1,6 +1,7 @@
 unit Asm6502
 {
     <string,string> debugInfo;
+    <string,string> labelInfo;
     <string,bool> debugInfoLineUsed;
     <byte> currentStream;
     
@@ -1198,7 +1199,7 @@ unit Asm6502
             case "BNE": { code = OpCode.BNE_e; }
             case "BPL": { code = OpCode.BPL_e; }
             case "BRA": { code = OpCode.BRA_e; }
-            case "BVC": { code = OpCode.BRA_e; }
+            case "BVC": { code = OpCode.BVC_e; }
             case "BVS": { code = OpCode.BVS_e; }
             default:
             {
@@ -1654,9 +1655,11 @@ unit Asm6502
     
     <byte> CurrentStream { get { return currentStream; } }
     <string,string> DebugInfo { get { return debugInfo; } }
+    <string,string> LabelInfo { get { return labelInfo; } }
     ClearDebugInfo()
     {
         debugInfo.Clear();
+        labelInfo.Clear();
         debugInfoLineUsed.Clear();
     }
     
@@ -1744,6 +1747,12 @@ unit Asm6502
             debugInfo[nextAddress] = ln;       
             debugInfoLineUsed[ln] = true;
         }
+    }
+    InsertLabel(string label)
+    {
+        uint na = NextAddress;
+        string nextAddress = na.ToString();
+        labelInfo[nextAddress] = label;
     }
     
     PopTail(uint pops)

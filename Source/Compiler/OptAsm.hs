@@ -30,7 +30,10 @@ program OptAsm
     uint romAddress;
     
     uint irqIndex;
+    bool irqExists;
     uint nmiIndex;
+    bool nmiExists;
+    
     
     <string> outputLinesRemoved;
     <string> outputLinesSizes;
@@ -107,7 +110,7 @@ program OptAsm
         foreach (var methodCall in methodsCalled)
         {
             uint methodIndex = methodCall.key;
-            if (methodCall.value || (methodIndex == 0) || (methodIndex == irqIndex) || (methodIndex == nmiIndex))
+            if (methodCall.value || (methodIndex == 0) || (irqExists && (methodIndex == irqIndex)) || (nmiExists && (methodIndex == nmiIndex)))
             {
                  string index = "0x" + methodIndex.ToHexString(4);
                  newDebugSymbols[index] = debugSymbols[index];
@@ -191,8 +194,14 @@ program OptAsm
         
         uint methodIndex = 0; // "main"
         methodsCalled[methodIndex] = true; // "main"
-        methodsCalled[irqIndex] = true;
-        methodsCalled[nmiIndex] = true;
+        if (irqExists)
+        {
+            methodsCalled[irqIndex] = true;
+        }
+        if (nmiExists)
+        {
+            methodsCalled[nmiIndex] = true;
+        }
         
         loop
         {
@@ -254,7 +263,16 @@ program OptAsm
             {
                 modified = true;
             }
-            if ((methodIndex != irqIndex) && (methodIndex != nmiIndex)) // TODO: // JSR|RTI - > iJMP .. RTI
+            
+            if (irqExists && (methodIndex == irqIndex))
+            {
+                // skip    
+            }
+            else if (nmiExists && (methodIndex == nmiIndex))
+            {
+                // skip    
+            }
+            else // TODO: // JSR|RTI - > iJMP .. RTI
             {
                 // JSR|RTS - > iJMP
                 if (AsmPoints.OptimizeJSRRTS())
@@ -439,8 +457,16 @@ program OptAsm
                 string hopperMethod = Code.GetMethodName(0);
                 string irqMethod = hopperMethod.Replace(".Hopper", ".IRQ");
                 string nmiMethod = hopperMethod.Replace(".Hopper", ".NMI");
-                irqIndex = Code.GetMethodIndex(irqMethod);
-                nmiIndex = Code.GetMethodIndex(nmiMethod);
+                if (Code.MethodExists(irqMethod))
+                {
+                    irqIndex = Code.GetMethodIndex(irqMethod);
+                    irqExists  = true;
+                }
+                if (Code.MethodExists(nmiMethod))
+                {
+                    nmiIndex = Code.GetMethodIndex(nmiMethod);
+                    nmiExists  = true;
+                }
                 
                 
                 uint pass = 0;

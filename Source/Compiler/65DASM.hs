@@ -318,6 +318,7 @@ program DASM
                 }
                 
                 <string,string> debugInfo;
+                <string,string> labelInfo;
                 uint doffset = 0;
                 string src;
                 string srcName;
@@ -360,6 +361,11 @@ program DASM
                             string ln = methodSymbols["line"];
                             string nm = methodSymbols["name"];
                             debugInfo = methodSymbols["debug"];
+                            labelInfo.Clear();
+                            if (methodSymbols.Contains("labels"))
+                            {
+                                labelInfo = methodSymbols["labels"];
+                            }
                             doffset = address;
                             hasmFile.Append("" + Char.EOL); 
                             hasmFile.Append("// " + src + ":" + ln + Char.EOL);  
@@ -374,6 +380,11 @@ program DASM
                     }
                     uint delta = (address-doffset);
                     string debugAddress = delta.ToString();
+                    if (labelInfo.Contains(debugAddress))
+                    {
+                        string label = labelInfo[debugAddress];
+                        hasmFile.Append("                      " + label + ":" + Char.EOL);    
+                    }
                     string comment;
                     if (debugInfo.Contains(debugAddress))
                     {

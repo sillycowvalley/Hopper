@@ -13,6 +13,7 @@ unit Token
         Dot,
         Keyword,          // "system"
         Directive,        // #ifdef
+        LabelIdentifier,  // <label>: for assembly
 
         Bool,    // true/false
         Char,    // ' '
@@ -206,6 +207,9 @@ unit Token
         hopperTokenTypes["Identifier"] = HopperToken.Identifier;
         hopperTokenTypes["Discarder"]  = HopperToken.Discarder;
         hopperTokenTypes["DottedIdentifier"] = HopperToken.DottedIdentifier;
+#ifdef ASSEMBLER        
+        hopperTokenTypes["LabelIdentifier"] = HopperToken.LabelIdentifier;
+#endif
         hopperTokenTypes["Integer"] = HopperToken.Integer;
         hopperTokenTypes["Float"] = HopperToken.Float;
         hopperTokenTypes["StringConstant"] = HopperToken.StringConstant;
@@ -419,8 +423,8 @@ unit Token
             registerKeywords["X"] = true;
             registerKeywords["Y"] = true;
             
-            registerKeywords["PC"] = true;
-            registerKeywords["SP"] = true;
+            //registerKeywords["PC"] = true;
+            //registerKeywords["SP"] = true;
             
             // 6502 flags / 'conditions':
             conditionKeywords["C"] = true;
@@ -525,6 +529,7 @@ unit Token
                 case HopperToken.Identifier:
                 case HopperToken.DottedIdentifier:
                 case HopperToken.Discarder:
+                case HopperToken.LabelIdentifier:
                 {
                     content = content + " '" + token["lexeme"] + "'";
                 }

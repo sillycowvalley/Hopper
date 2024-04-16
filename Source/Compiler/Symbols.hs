@@ -39,6 +39,7 @@ unit Symbols
     
     <uint,<byte> > fCodeStream;
     <uint, <string,string> > fDebugInfo;
+    <uint, <string,string> > fLabelInfo;
     <uint,uint> fCalls;
 
     uint iNextOverload; // not needed after first pass
@@ -108,6 +109,7 @@ unit Symbols
         fSourcePath.Clear();  
         fCodeStream.Clear();
         fDebugInfo.Clear();
+        fLabelInfo.Clear();
         fCalls.Clear();
         fTouches.Clear();
         
@@ -1424,6 +1426,12 @@ unit Symbols
       return overloads;
     }
     
+    SetCodeStream(uint iOverload, <byte> codeStream, <string,string> debugInfo, <string,string> labelInfo)
+    {
+        fCodeStream[iOverload] = codeStream;
+        fDebugInfo[iOverload] = debugInfo;
+        fLabelInfo[iOverload] = labelInfo;
+    }
     SetCodeStream(uint iOverload, <byte> codeStream, <string,string> debugInfo)
     {
         fCodeStream[iOverload] = codeStream;
@@ -1900,6 +1908,7 @@ unit Symbols
     {
         // <uint,<byte> > fCodeStream;
         // <uint, <string,string> > fDebugInfo;
+        // <uint, <string,string> > fLabelInfo;
         // <uint,uint> fCalls;    
         <uint> usedOverloads;
         bool success = true;
@@ -2041,7 +2050,12 @@ unit Symbols
                         }
                     }
                     mdict["code"]   = fCodeStream[iUsedOverload];
-                    mdict["debug"]   = fDebugInfo[iUsedOverload];
+                    mdict["debug"]  = fDebugInfo[iUsedOverload];
+                    <string,string> labelsDict = fLabelInfo[iUsedOverload];
+                    if (labelsDict.Count != 0)
+                    {
+                        mdict["labels"]  = labelsDict;
+                    }
                     mdict["line"]   = fStartLine[iUsedOverload];
                     mdict["source"] = fSourcePath[iUsedOverload];
                     mdict["name"] = GetFunctionName(iUsedOverload);

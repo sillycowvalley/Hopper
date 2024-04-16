@@ -20,7 +20,37 @@ program E6502
     
     uses "6502/Shared"
     
+    bool emulateAppleI;
+    bool EmulateAppleI { get { return emulateAppleI; } }
+    
+    bool haveKey;
+    Key  peekKey;
+    bool KeyAvailable()
+    {
+        return haveKey || Keyboard.IsAvailable;
+    }
+    Key PeekKey()
+    {
+        if (!haveKey)
+        {
+            peekKey = ReadKey();
+            haveKey = true;
+        }
+        return peekKey;
+    }
+    Key GetKey()
+    {
+        if (haveKey)
+        {
+            haveKey = false;
+            return peekKey;
+        }
+        return ReadKey(); 
+    }
+    
     bool showStringVariables;
+    bool showWozVariables;
+    
     uint orgROM;
     uint entryAddress;
     uint[16] breakpoints;
@@ -44,11 +74,12 @@ program E6502
     
     bool BreakCheck()
     {
-        if (Keyboard.IsAvailable)
+        if (KeyAvailable())
         {
-            Key key = Keyboard.ReadKey();
+            Key key = PeekKey();
             if (key == Key.ControlC)
             {
+                _ = GetKey(); // consume it
                 PrintLn("<ctrl><C>");
                 return true;
             }
@@ -102,7 +133,11 @@ program E6502
     }
     StepInto()
     {
-        if (ACIA.ServiceSerial())
+        if (EmulateAppleI)
+        {
+            W65C02.ServiceAppleIO();
+        }
+        else if (ACIA.ServiceSerial())
         {
             W65C02.RaiseIRQ();
         }
@@ -264,7 +299,10 @@ program E6502
        
     DoReset()
     {
-        ACIA.Initialize();
+        if (!EmulateAppleI)
+        {
+            ACIA.Initialize();
+        }
         W65C02.Reset();
     }
     
@@ -285,7 +323,7 @@ program E6502
                Print(' ');
            }  
         }
-        
+        string plainText;
         for (uint i = 0; i < 256; i++)
         {
             uint address = page + i;
@@ -298,7 +336,23 @@ program E6502
             {
                 Print(" ");
             }
-            Print(" " + (W65C02.GetMemory(address)).ToHexString(2), Colour.LightestGray, Colour.Black);
+            byte b = W65C02.GetMemory(address);
+            Print(" " + (b).ToHexString(2), Colour.LightestGray, Colour.Black);
+            char ch = '.';
+            if ((b >= 32) && (b < 127))
+            {
+                ch = char(b);
+            }
+            plainText += ch;
+            if (i % 16 == 15)
+            {
+                Print("  " + plainText);
+                plainText = "";
+            }
+        }
+        if (plainText != "")
+        {
+            Print("  " + plainText);
         }
         PrintLn();
     }
@@ -322,6 +376,11 @@ program E6502
         {
             GetRAMByteDelegate getRAMByte = W65C02.GetMemory;
             ShowHopperStringVariables(getRAMByte);
+        }
+        if (showWozVariables)
+        {
+            GetRAMByteDelegate getRAMByte = W65C02.GetMemory;
+            ShowWozMonVariables(getRAMByte);
         }
         PrintLn();
     }
@@ -449,6 +508,13 @@ program E6502
         PrintPad("M <page> - dump a 256 byte page of memory", 4);
     }
     
+    BadArguments()
+    {
+        PrintLn("Invalid arguments for E6502:");
+        PrintLn("  E6502 <.asm filepath>");
+        PrintLn("    -1         : emulate Apple I DSP and KBD");
+    }
+    
     Hopper()
     {
         string filePath;
@@ -465,6 +531,10 @@ program E6502
               arg = arg.ToLower();
               switch (arg)
               {
+                  case "-1":
+                  {
+                      emulateAppleI = true;
+                  }
                   default:
                   {
                       args.Clear();
@@ -557,7 +627,7 @@ program E6502
             
             if (showHelp)
             {
-                PrintLn("6502 <.asm filepath>");
+                BadArguments();
                 if ((ihexPath.Length != 0) && !File.Exists(ihexPath))
                 {
                     PrintLn("    '" + ihexPath + "' not found");
@@ -651,7 +721,7 @@ program E6502
                 }
                 else
                 {
-                    key = ReadKey();
+                    key = GetKey();
                 }
                 
                 char ch = key.ToChar();
@@ -734,6 +804,11 @@ program E6502
                             if (commandLine == "M S")
                             {
                                 showStringVariables = !showStringVariables;
+                                refresh = true;
+                            }
+                            if (commandLine == "M W")
+                            {
+                                showWozVariables = !showWozVariables;
                                 refresh = true;
                             }
                             else
@@ -948,6 +1023,9 @@ program E6502
             
             break;
         } // loop
-        ACIA.Close();
+        if (!EmulateAppleI)
+        {
+            ACIA.Close();
+        }
     }
 }

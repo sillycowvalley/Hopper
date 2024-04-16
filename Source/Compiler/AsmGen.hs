@@ -434,29 +434,29 @@ program ASMGEN
                 
                 uint iIndex;
                 uint nIndex;
-                if (!Symbols.GetFunctionIndex("IRQ", ref iIndex))
+                uint nmiVector = 0;
+                uint irqVector = 0;
+                if (Symbols.GetFunctionIndex("IRQ", ref iIndex))
                 {
-                    PrintLn("6502 should have an 'IRQ()' method for the isr vector destination");
-                    break;
+                    <uint> mOverloads = Symbols.GetFunctionOverloads(iIndex);
+                    iIndex = mOverloads[0];
+                    irqVector = methods[iIndex];
                 }
-                if (!Symbols.GetFunctionIndex("NMI", ref nIndex))
+                if (Symbols.GetFunctionIndex("NMI", ref nIndex))
                 {
-                    PrintLn("6502 should have an 'NMI()' method for the isr vector destination");
-                    break;    
+                    <uint> mOverloads = Symbols.GetFunctionOverloads(nIndex);
+                    nIndex = mOverloads[0];
+                    nmiVector = methods[nIndex];
                 }
-                <uint> mOverloads = Symbols.GetFunctionOverloads(iIndex);
-                iIndex = mOverloads[0];
-                mOverloads = Symbols.GetFunctionOverloads(nIndex);
-                nIndex = mOverloads[0];
-                
+                                
                 // 6502 vectors
                 <byte>vectors;
-                vectors.Append(byte(methods[nIndex] & 0xFF));
-                vectors.Append(byte(methods[nIndex] >> 8));
+                vectors.Append(byte(nmiVector & 0xFF));
+                vectors.Append(byte(nmiVector >> 8));
                 vectors.Append(byte(methods[entryIndex] & 0xFF));
                 vectors.Append(byte(methods[entryIndex] >> 8));
-                vectors.Append(byte(methods[iIndex] & 0xFF));
-                vectors.Append(byte(methods[iIndex] >> 8));
+                vectors.Append(byte(irqVector & 0xFF));
+                vectors.Append(byte(irqVector >> 8));
                 
                 writeIHex(ihexFile, romAddress, output, vectors);
                 

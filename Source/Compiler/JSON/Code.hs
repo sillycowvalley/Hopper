@@ -513,6 +513,17 @@ unit Code
     {
         return methodName.Contains(methodIndex);
     }
+    bool MethodExists(string name)
+    {
+        foreach (var kv in methodName)
+        {
+            if (kv.value == name)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     string GetMethodName(uint methodIndex)
     {
         return methodName[methodIndex];
@@ -555,7 +566,13 @@ unit Code
         methodSymbols["debug"] = debugInfo;
         debugSymbols[key] = methodSymbols;
     }
-    
+    SetMethodLabelInfo(uint methodIndex, <string,string> labelInfo)
+    {
+        string key = "0x" + methodIndex.ToHexString(4);
+        <string, variant> methodSymbols = debugSymbols[key];
+        methodSymbols["labels"] = labelInfo;
+        debugSymbols[key] = methodSymbols;
+    }
     
     <uint> GetMethodIndices()
     {
@@ -1028,6 +1045,66 @@ unit Code
                         methodDictionary["debug"] = debugInfo;
                     }
                 }
+                case "labels":
+                {
+                    <string,string> labelInfo;
+                    Parser.Consume(HopperToken.LBrace);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    bool fc = true;
+                    loop
+                    {
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }    
+                        if (Parser.Check(HopperToken.RBrace))
+                        {
+                            Parser.Advance(); // }
+                            break;
+                        }
+                        if (!fc)
+                        {
+                            Parser.Consume(HopperToken.Comma);
+                            if (Parser.HadError)
+                            {
+                                break;
+                            }
+                        }
+                            
+                        Parser.Consume(HopperToken.StringConstant, "offset key expected");
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        previousToken = PreviousToken;
+                        string offset = previousToken["lexeme"];
+                        
+                        Parser.Consume(HopperToken.Colon);
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        
+                        Parser.Consume(HopperToken.StringConstant, "label name expected");
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        previousToken = PreviousToken;
+                        string ln = previousToken["lexeme"];
+                        
+                        labelInfo[offset] = ln;
+                        
+                        fc = false;
+                    } // loop   
+                    if (keepSymbols)
+                    {
+                        methodDictionary["labels"] = labelInfo;
+                    }
+                } // "labels"
                 case "code":
                 {
                     Parser.Consume(HopperToken.LBracket);

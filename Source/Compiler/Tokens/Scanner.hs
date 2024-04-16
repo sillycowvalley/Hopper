@@ -504,6 +504,16 @@ unit Scanner
         loop
         {
             c = sourceGetFromPos(currentPos, true); // peek
+#ifdef ASSEMBLER
+            if ((c == ':') && !Token.IsKeyword(value) && !value.Contains('.')) 
+            {
+                // labels can end in ':',
+                //    - but not keywords like "default:")   
+                //    - and not dotted identifiers (used for "case xxx.yyy:")
+                String.Build(ref value, advance());
+                break;
+            }
+#endif            
             if (!c.IsLetter() && !c.IsDigit() && (c != '_'))
             {
                 if ((c == '.') && (dotSeen == 0))
@@ -521,6 +531,12 @@ unit Scanner
         {
             ttype = HopperToken.DottedIdentifier;
         }
+#ifdef ASSEMBLER
+        if (value.EndsWith(':'))
+        {
+            ttype = HopperToken.LabelIdentifier;
+        }
+#endif
         if (Token.IsKeyword(value))
         {
             ttype = HopperToken.Keyword;

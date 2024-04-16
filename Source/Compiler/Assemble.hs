@@ -37,6 +37,9 @@ program Assemble
     uses "CodeGen/Block"
     uses "CodeGen/Asm6502"
     
+    <string,uint> labelLocations;
+    <uint,string> labelBranches;
+    
     bool IsDebugger  { get { return false; } }
     bool NoPackedInstructions { get { return false; } }
     
@@ -823,6 +826,29 @@ program Assemble
                     success = true;
                     break;
                 }
+                else if (tokenType == HopperToken.Identifier)
+                {
+                    Parser.Advance(); // label
+                    // flip the condition
+                    switch (instructionName)
+                    {
+                        case "BCC": { instructionName = "BCS"; }
+                        case "BCS": { instructionName = "BCC"; }
+                        case "BEQ": { instructionName = "BNE"; }
+                        case "BNE": { instructionName = "BEQ"; }
+                        case "BMI": { instructionName = "BPL"; }
+                        case "BPL": { instructionName = "BMI"; }
+                        case "BVC": { instructionName = "BVS"; }
+                        case "BVS": { instructionName = "BVC"; }
+                        
+                    }
+                    Asm6502.EmitInstruction(instructionName, int(3));
+                    string label = (currentToken["lexeme"]).Replace(":", "");
+                    labelBranches[Asm6502.NextAddress] = label;
+                    Asm6502.EmitInstructionAbsolute("JMP", uint(0), AddressingModes.Absolute);
+                    success = true;
+                    break;
+                }
                 else
                 {
                     Parser.ErrorAtCurrent("integer offset (-128..127) expected");
@@ -880,13 +906,37 @@ program Assemble
             {
                 case HopperToken.Char:
                 case HopperToken.Integer:
-                case HopperToken.Identifier:
                 case HopperToken.DottedIdentifier:
                 case HopperToken.LParen:
                 {
                     hasImmediate = assembleConstantExpression(ref immediateValue);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
                     currentToken = Parser.CurrentToken;
                     tokenType = Token.GetType(currentToken);
+                }
+                case HopperToken.Identifier:
+                {
+                    if (!expectIndirect && (instructionName == "JMP"))
+                    {
+                        labelBranches[Asm6502.NextAddress] = currentToken["lexeme"];
+                        Asm6502.EmitInstructionAbsolute(instructionName, uint(0), AddressingModes.Absolute);
+                        Parser.Advance(); // label
+                        success = true;
+                        break;
+                    }
+                    else
+                    {
+                        hasImmediate = assembleConstantExpression(ref immediateValue);
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        currentToken = Parser.CurrentToken;
+                        tokenType = Token.GetType(currentToken);
+                    }
                 }
             }
             
@@ -961,16 +1011,37 @@ program Assemble
                     success = true;
                     break;
                 }
+                else if (tokenType == HopperToken.Identifier)
+                {
+                    Parser.Advance(); // label
+                    // flip the condition
+                    if (instructionName.StartsWith("BBR"))
+                    {
+                        instructionName = instructionName.Replace("BBR", "BBS");
+                    }
+                    if (instructionName.StartsWith("BBS"))
+                    {
+                        instructionName = instructionName.Replace("BBS", "BBR");
+                    }
+                    Asm6502.EmitInstructionZeroPageRelative(instructionName, byte(immediateValue), int(3));
+                    string label = (currentToken["lexeme"]).Replace(":", "");
+                    labelBranches[Asm6502.NextAddress] = label;
+                    Asm6502.EmitInstructionAbsolute("JMP", uint(0), AddressingModes.Absolute);
+                    success = true;
+                    break;
+                }
+                
                 else
                 {
                     Parser.ErrorAtCurrent("integer offset (-128..127) expected");
                     break;
                 }
-           }
+            }
             
             char registerName;
             bool rparenConsumed;
             if ((addressingModes & (AddressingModes.AbsoluteIndirectX
+                                   |AddressingModes.AbsoluteIndirect
                                    |AddressingModes.XIndexedZeroPage
                                    |AddressingModes.YIndexedZeroPage
                                    |AddressingModes.ZeroPageX
@@ -982,7 +1053,7 @@ program Assemble
             {
                 if (tokenType == HopperToken.RBracket)
                 {
-                    if ((addressingModes & (AddressingModes.YIndexedZeroPage)) == AddressingModes.YIndexedZeroPage)
+                    if ((addressingModes & (AddressingModes.YIndexedZeroPage|AddressingModes.AbsoluteIndirect)) != AddressingModes.None)
                     {
                         Parser.Advance(); // ']'
                         currentToken = Parser.CurrentToken;
@@ -1047,12 +1118,25 @@ program Assemble
                         }
                         default:
                         {
-                            if ((addressingModes & (AddressingModes.ZeroPageIndirect)) != AddressingModes.ZeroPageIndirect)
+                            if ((addressingModes & (AddressingModes.ZeroPageIndirect)) == AddressingModes.ZeroPageIndirect)
+                            {
+                                // ZeroPageIndirect=0x0800,  // [nn]
+                                Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageIndirect);
+                            }
+                            else if ((addressingModes & (AddressingModes.AbsoluteIndirect)) == AddressingModes.AbsoluteIndirect)
+                            {
+                                // JMP [nnnn]
+                                if (instructionName != "JMP")
+                                {
+                                    Parser.ErrorAtCurrent("JMP instruction expected");
+                                    break;
+                                }
+                                Asm6502.EmitInstructionAbsolute("JMP", immediateValue, AddressingModes.AbsoluteIndirect);
+                            }
+                            else
                             {
                                 Parser.Error("internal error"); Die(0x0B);
                             }
-                            // ZeroPageIndirect=0x0800,  // [nn]
-                            Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPageIndirect);
                         }
                     }
                 }
@@ -1080,12 +1164,15 @@ program Assemble
                         }
                         default:
                         {
-                            if ((addressingModes & (AddressingModes.ZeroPage)) != AddressingModes.ZeroPage)
+                            if ((addressingModes & (AddressingModes.ZeroPage)) == AddressingModes.ZeroPage)
+                            {
+                                // ZeroPage=0x0100,          // nn
+                                Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPage);
+                            }
+                            else
                             {
                                 Parser.Error("internal error"); Die(0x0B);
                             }
-                            // ZeroPage=0x0100,          // nn
-                            Asm6502.EmitInstructionZeroPage(instructionName, byte(immediateValue), AddressingModes.ZeroPage);
                         }
                     }
                 }
@@ -1216,6 +1303,22 @@ program Assemble
                 success = assembleInstruction6502();
                 noSemiColon = true;
             }
+            case HopperToken.LabelIdentifier:
+            {
+                Advance(); // label:
+                string label = (currentToken["lexeme"]).Replace(":", "");
+                if (labelLocations.Contains(label))
+                {
+                    Parser.ErrorAtCurrent("duplicate label");
+                }
+                else
+                {
+                    labelLocations[label] = Asm6502.NextAddress;
+                    Asm6502.InsertLabel(label);
+                    noSemiColon = true;
+                    success = true;
+                }
+            }
             default:
             {
                 if (   (tokenType == HopperToken.Identifier) 
@@ -1321,11 +1424,13 @@ program Assemble
                     {      
                         <string,string> currentToken = Parser.CurrentToken;
                         HopperToken tokenType = Token.GetType(currentToken);
-                        if (   (tokenType == HopperToken.Keyword)           // simple type, "if", "while", ...
-                            || (tokenType == HopperToken.Identifier)        // assignment, procedure call
-                            || (tokenType == HopperToken.Discarder)         // assignment   
+                        if (   (tokenType == HopperToken.Keyword)           // "if", "loop", "switch" ...
+                            
+                            || (tokenType == HopperToken.Identifier)        // procedure call
                             || (tokenType == HopperToken.DottedIdentifier) 
+                            
                             || (tokenType == HopperToken.Instruction)
+                            || (tokenType == HopperToken.LabelIdentifier)   // label:
                             )
                         {
                             if (!assembleStatement(false, true))
@@ -1424,13 +1529,34 @@ program Assemble
                 Die(0x0B); // no return types in Assembly : preprocess should catch this
             }
             Block.ReplaceTop(blockContext);
+            
+            labelLocations.Clear();
+            labelBranches.Clear();
                      
             assembleBlock();
+            if (Parser.HadError)
+            {
+                break;
+            }
+            
+            foreach (var kv in labelBranches)
+            {
+                string label = kv.value;
+                if (!labelLocations.Contains(label))
+                {
+                    Parser.ErrorAtCurrent("undefined label '" + label + "'");
+                    break;
+                }
+                uint jumpAddress    = kv.key;
+                uint jumpToAddress  = labelLocations[label];
+                Asm6502.PatchJump(jumpAddress, jumpToAddress);
+            }
             
             if (Parser.HadError)
             {
                 break;
             }
+            
             Parser.ProgressTick(".");
             
             // check that #ifdef nesting is zero
@@ -1473,7 +1599,8 @@ program Assemble
             
             <byte> asmStream = Asm6502.CurrentStream;
             <string,string> debugInfo = Asm6502.DebugInfo;
-            Symbols.SetCodeStream(iCurrentOverload, asmStream, debugInfo);
+            <string,string> labelInfo = Asm6502.LabelInfo;
+            Symbols.SetCodeStream(iCurrentOverload, asmStream, debugInfo, labelInfo);
             Asm6502.ClearDebugInfo();
             
             Symbols.OverloadWasCompiled(iCurrentOverload);         
@@ -1611,34 +1738,31 @@ program Assemble
                 {
                     uint iIndex;
                     uint nIndex;
-                    if (!Symbols.GetFunctionIndex("IRQ", ref iIndex))
+                    
+                    if (Symbols.GetFunctionIndex("IRQ", ref iIndex))
                     {
-                        Parser.Error("6502 should have an 'IRQ()' method for the isr vector destination");
-                        break;
+                        mOverloads = Symbols.GetFunctionOverloads(iIndex);
+                        if (mOverloads.Count != 1)
+                        {
+                            Parser.Error("'IRQ' has overloads?");
+                            break;
+                        }
+                        iIRQ = mOverloads[0];
+                        Symbols.OverloadToCompile(iIRQ);
+                        Symbols.AddFunctionCall(iIRQ);
                     }
                     if (!Symbols.GetFunctionIndex("NMI", ref nIndex))
                     {
-                        Parser.Error("6502 should have an 'NMI()' method for the nmi vector destination");
-                        break;
+                        mOverloads = Symbols.GetFunctionOverloads(nIndex);
+                        if (mOverloads.Count != 1)
+                        {
+                            Parser.Error("'NMI' has overloads?");
+                            break;
+                        }
+                        iNMI = mOverloads[0];
+                        Symbols.OverloadToCompile(iNMI);
+                        Symbols.AddFunctionCall(iNMI);
                     }
-                    mOverloads = Symbols.GetFunctionOverloads(iIndex);
-                    if (mOverloads.Count != 1)
-                    {
-                        Parser.Error("'IRQ' has overloads?");
-                        break;
-                    }
-                    iIRQ = mOverloads[0];
-                    Symbols.OverloadToCompile(iIRQ);
-                    Symbols.AddFunctionCall(iIRQ);
-                    mOverloads = Symbols.GetFunctionOverloads(nIndex);
-                    if (mOverloads.Count != 1)
-                    {
-                        Parser.Error("'NMI' has overloads?");
-                        break;
-                    }
-                    iNMI = mOverloads[0];
-                    Symbols.OverloadToCompile(iNMI);
-                    Symbols.AddFunctionCall(iNMI);
                 }
 
                 // start with iHopper

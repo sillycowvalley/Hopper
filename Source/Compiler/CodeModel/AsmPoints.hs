@@ -27,7 +27,8 @@ unit AsmPoints
     <uint>   iLengths;      // 6502 instruction lengths (not operand width)
     <Flags>  iFlags;        // reachable? jump target?
     <uint>   iDebugLines;   // Hopper source line associated with this instruction (mostly 0)
-    <byte>   iExtras;        // used by BBRx and BBSz
+    <string> iLabels;       // lable associated with this instruction (mostly "")
+    <byte>   iExtras;       // used by BBRx and BBSz
     < <uint> > iJumpTables;
     
     uint currentMethod;
@@ -421,6 +422,7 @@ unit AsmPoints
         iLengths.Clear();
         iOperands.Clear();
         iDebugLines.Clear();
+        iLabels.Clear();
         iJumpTables.Clear();
         iFlags.Clear();
         iExtras.Clear();
@@ -429,6 +431,11 @@ unit AsmPoints
         
         <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
         <string,string> debugInfo = methodSymbols["debug"];
+        <string,string> labelInfo;
+        if (methodSymbols.Contains("labels"))
+        {
+            labelInfo = methodSymbols["labels"];
+        }
         
         uint codeLength = code.Count;
         uint i = 0;
@@ -483,6 +490,12 @@ unit AsmPoints
                 _ = UInt.TryParse(debugInfo[instructionAddress.ToString()], ref debugLine);
             }
             iDebugLines.Append(debugLine);
+            string label;
+            if (labelInfo.Contains(instructionAddress.ToString()))
+            {
+                label = labelInfo[instructionAddress.ToString()];
+            }
+            iLabels.Append(label);
             
             
             <uint> empty;
@@ -543,8 +556,10 @@ unit AsmPoints
                 uint instructionLength = iLengths[iIndex];
                 
                 long offset;
-                long jumpTargetAddress;
-            
+                long jumpTargetAddress; 
+                
+                bool fixedAddress;
+                           
                 if (addressingMode == AddressingModes.Absolute) // nnnn
                 {
                     jumpTargetAddress = long(operand);
@@ -567,22 +582,29 @@ unit AsmPoints
                     }
                     jumpTargetAddress = long(instructionAddress) + offset + instructionLength;
                 }
+                else if (addressingMode == AddressingModes.AbsoluteIndirect) // [nnnn]
+                {
+                    fixedAddress = true;
+                }
                 else
                 {
                     Die(0x0B); 
                 }
-                uint jumpIndex;
-                if (addressToIndex.Contains(jumpTargetAddress))
+                if (!fixedAddress)
                 {
-                    jumpIndex = addressToIndex[jumpTargetAddress];
+                    uint jumpIndex;
+                    if (addressToIndex.Contains(jumpTargetAddress))
+                    {
+                        jumpIndex = addressToIndex[jumpTargetAddress];
+                    }
+                    else
+                    {
+                        // Most likely unreachable dead code so jumping to self
+                        // does not mess up reachableness.
+                        jumpIndex = iIndex;
+                    }
+                    iOperands.SetItem(iIndex, jumpIndex);
                 }
-                else
-                {
-                    // Most likely unreachable dead code so jumping to self
-                    // does not mess up reachableness.
-                    jumpIndex = iIndex;
-                }
-                iOperands.SetItem(iIndex, jumpIndex);
             }
             instructionAddress += iLengths[iIndex];
             iIndex++;
@@ -598,6 +620,7 @@ unit AsmPoints
         RebuildMaps();
         
         <string,string> debugInfo;
+        <string,string> labelInfo;
         loop
         {
             
@@ -612,6 +635,10 @@ unit AsmPoints
                 AddressingModes addressingMode;
                 bool isConditional;
                 bool isJump = Asm6502.IsJumpInstruction(opCode, ref addressingMode, ref isConditional);
+                if (isJump)
+                {
+                    isJump = (addressingMode != AddressingModes.AbsoluteIndirect); // [nnnn]
+                }
                 if (isJump)
                 {
                     // use the index to calculate the new offset
@@ -654,7 +681,7 @@ unit AsmPoints
                             operand = iExtras[index] + (uint(offset) << 8);
                         }
                     }
-                    else if (isJump && (addressingMode == AddressingModes.Absolute))
+                    else if (addressingMode == AddressingModes.Absolute)
                     {
                         operand = jumpAddress;
                     }
@@ -693,6 +720,10 @@ unit AsmPoints
             {
                 debugInfo[(indexToAddress[index]).ToString()] = (iDebugLines[index]).ToString();
             }
+            if (iLabels[index] != "")
+            {
+                labelInfo[(indexToAddress[index]).ToString()] = iLabels[index];
+            }
             
             index++;
             if (index == instructionCount)
@@ -704,6 +735,7 @@ unit AsmPoints
         // update the method with the optimized code            
         Code.SetMethodCode(currentMethod, code);
         Code.SetMethodDebugInfo(currentMethod, debugInfo);
+        Code.SetMethodLabelInfo(currentMethod, labelInfo);
         ProgessNudge();
         return code.Count;
     }
@@ -953,7 +985,8 @@ unit AsmPoints
             if (opCode0 == OpCode.NOP)
             {
                 uint debugLine = iDebugLines[iIndex];
-                Flags flags0 =   iFlags[iIndex];
+                string label   = iLabels[iIndex];
+                Flags flags0   = iFlags[iIndex];
                 
                 // preserve debugLine
                 if (debugLine != 0)
@@ -963,6 +996,17 @@ unit AsmPoints
                         if (iDebugLines[iIndex+1] == 0)
                         {
                             iDebugLines[iIndex+1] = debugLine;
+                        }
+                    }
+                }
+                // preserve label
+                if (label != "")
+                {
+                    if (iIndex + 1 < iCodes.Count)
+                    {
+                        if (iLabels[iIndex+1] == "")
+                        {
+                            iLabels[iIndex+1] = label;
                         }
                     }
                 }
@@ -1000,6 +1044,7 @@ unit AsmPoints
                 iOperands.Remove(iIndex);
                 iLengths.Remove(iIndex);
                 iDebugLines.Remove(iIndex);
+                iLabels.Remove(iIndex);
                 iFlags.Remove(iIndex);
                 iJumpTables.Remove(iIndex);
                 iExtras.Remove(iIndex);

@@ -3,6 +3,8 @@ unit W65C02
     uses "/Source/Compiler/CODEGEN/Asm6502"
     uses "/Source/Debugger/6502/ZeroPage"
     
+    uses "/Source/System/Screen"
+    
     byte[0xFFFA] memory;
     uint vectorReset;
     uint vectorIRQ;
@@ -759,11 +761,35 @@ unit W65C02
              " " + idy.ToHexString(4) + " ";
         return registers;
     }
+    
+    bool haveAppleKey = false;
+    char appleKey;
+    ServiceAppleIO()
+    {
+        if (!haveAppleKey && KeyAvailable())
+        {
+            Key key = PeekKey();
+            if (key != Key.ControlC)
+            {
+                _ = GetKey(); // consume it
+                char maker;
+                appleKey = ToSerial(key, ref maker);
+                appleKey = appleKey.ToUpper(); // Apple I was uppercase only
+                if (appleKey == char(0x0D))
+                {
+                    appleKey = Char.EOL;
+                }
+                //Print(" " + (byte(appleKey)).ToHexString(2), Colour.Red, Colour.Black);
+                haveAppleKey = true;
+            }
+        }
+    }
+    
     long ms;
     byte GetMemory(uint address)
     {
         byte value;
-        if ((address >= ZT0) && (address <= ZT3))
+        if (!EmulateAppleI && ((address >= ZT0) && (address <= ZT3)))
         {
             if (address == ZT0)
             {
@@ -775,7 +801,20 @@ unit W65C02
         else 
         if (!ACIA.OfferRead(address, ref value))
         {
-            if (address >= 0xFFFA)
+            if (EmulateAppleI && (address >= 0xD010) && (address <= 0xD013))
+            {
+                if (address == 0xD010) // KBD
+                {
+                    value = byte(appleKey)  | 0x80;
+                    //Print(" " + value.ToHexString(2), Colour.Blue, Colour.Black);
+                    haveAppleKey = false;
+                }
+                else if (address == 0xD011) // KBDCR
+                {
+                    value = haveAppleKey ? 0b10000000 : 0; // set bit 7 if there is a key available
+                }
+            }
+            else if (address >= 0xFFFA)
             {
                 switch (address)
                 {
@@ -798,7 +837,34 @@ unit W65C02
     {
         if (!ACIA.OfferWrite(address, value))
         {
-            memory[address] = value;
+            if (EmulateAppleI && (address >= 0xD010) && (address <= 0xD013))
+            {
+                if (address == 0xD012) // DSP
+                {
+                    char ch = char(value & 0x7F);
+                    //Print(" " + value.ToHexString(2) +":", Colour.Ocean, Colour.Black);
+                    if (ch == Char.Escape)
+                    {
+                        // don't echo escape .. what else?
+                    }
+                    else if (ch == Char.EOL)
+                    {
+                        PrintLn();
+                    }
+                    else
+                    {
+                        Print(ch, Colour.Ocean, Colour.Black);
+                    }
+                }
+                else if (address == 0xD013) // DSPCR
+                {
+                    value = 0; // display is always ready
+                }
+            }
+            else
+            {
+                memory[address] = value;
+            }
         }
         //if (address == ZCSP)
         //{
