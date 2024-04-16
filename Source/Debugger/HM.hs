@@ -23,6 +23,7 @@ program HopperMonitor
     
     bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
     bool IsInteractive { get { return false; } } // for Monitor.Connect(..)
+    bool OGMode { get { return false; } }
     
     <Key> keyboardBuffer;
     InjectKey(Key key)

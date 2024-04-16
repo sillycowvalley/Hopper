@@ -44,8 +44,8 @@ dasm Z80DASM
 dasm e6502
 
 preprocess /source/runtime/r6502.asm -a
-assemble r6502
-optasm r6502
-asmgen r6502
+65asm r6502
+65opt r6502
+65gen r6502
 65dasm r6502
 
