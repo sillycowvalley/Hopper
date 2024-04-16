@@ -21,7 +21,9 @@ program E6502
     uses "6502/Shared"
     
     bool emulateAppleI;
+    bool ogMode;
     bool EmulateAppleI { get { return emulateAppleI; } }
+    bool OGMode { get { return ogMode; } }
     
     bool haveKey;
     Key  peekKey;
@@ -180,6 +182,11 @@ program E6502
     
     ShowDisassembly(uint address, uint instructions)
     {
+        string commentPrefix = "// ";
+        if (OGMode)
+        {
+            commentPrefix = "; ";
+        }
         PrintLn();
         //<uint,uint> methodSizes;     // <index, length>
         //<uint,uint> methodAddresses; // <address,index>
@@ -251,7 +258,7 @@ program E6502
                     string sourceLine = getSourceLine(src, debugLine);
                     if (sourceLine.Length != 0)
                     {
-                        comment = "// " + sourceLine.Trim();
+                        comment = sourceLine.Trim();
                         if (comment.Length < 34)
                         {
                             comment = comment.Pad(' ', 34);
@@ -260,7 +267,7 @@ program E6502
                     }
                     else
                     {
-                        comment = "// " + src + ":" + debugLine;  
+                        comment = src + ":" + debugLine;  
                     }
                 }
                 
@@ -282,7 +289,12 @@ program E6502
                 {
                     Print("      " + disassembly.Pad(' ', 48), colour, Colour.Black); // disassembly
                 }
-                PrintLn(comment, Colour.MatrixGreen, Colour.Black); // comment
+                if (comment.Length != 0)
+                {
+                    comment = comment.Replace("//", "  ");
+                    Print(commentPrefix + comment, Colour.MatrixGreen, Colour.Black); // comment
+                }
+                PrintLn();
                 
                 address += length;
                 instructions--;
@@ -513,6 +525,7 @@ program E6502
         PrintLn("Invalid arguments for E6502:");
         PrintLn("  E6502 <.asm filepath>");
         PrintLn("    -1         : emulate Apple I DSP and KBD");
+        PrintLn("    -og        : traditional syntax to keep the OG's happy");
     }
     
     Hopper()
@@ -526,7 +539,7 @@ program E6502
         for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
         {
           string arg = rawArgs[iArg];
-          if ((arg.Length == 2) && (arg[0] == '-'))
+          if (((arg.Length == 2) || (arg.Length == 3)) && (arg[0] == '-'))
           {
               arg = arg.ToLower();
               switch (arg)
@@ -534,6 +547,10 @@ program E6502
                   case "-1":
                   {
                       emulateAppleI = true;
+                  }
+                  case "-og":
+                  {
+                      ogMode = true;
                   }
                   default:
                   {

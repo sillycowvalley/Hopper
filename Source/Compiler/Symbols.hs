@@ -2051,10 +2051,13 @@ unit Symbols
                     }
                     mdict["code"]   = fCodeStream[iUsedOverload];
                     mdict["debug"]  = fDebugInfo[iUsedOverload];
-                    <string,string> labelsDict = fLabelInfo[iUsedOverload];
-                    if (labelsDict.Count != 0)
+                    if (fLabelInfo.Contains(iUsedOverload))
                     {
-                        mdict["labels"]  = labelsDict;
+                        <string,string> labelsDict = fLabelInfo[iUsedOverload];
+                        if (labelsDict.Count != 0)
+                        {
+                            mdict["labels"]  = labelsDict;
+                        }
                     }
                     mdict["line"]   = fStartLine[iUsedOverload];
                     mdict["source"] = fSourcePath[iUsedOverload];

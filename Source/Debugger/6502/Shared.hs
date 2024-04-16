@@ -94,6 +94,11 @@ unit Shared
     
     string TypeToString(uint value, string vtype, bool isReference, uint limit)
     {
+        string hexPrefix = "0x";
+        if (OGMode)
+        {
+            hexPrefix = "";
+        }
         string content;
         if (isReference)
         {
@@ -116,7 +121,7 @@ unit Shared
                 {
                     if (IsHexDisplayMode)
                     {
-                        content = "0x" + value.ToHexString(2);
+                        content = hexPrefix + value.ToHexString(2);
                     }
                     else
                     {
@@ -127,7 +132,7 @@ unit Shared
                 {
                     if (IsHexDisplayMode)
                     {
-                        content = "0x" + value.ToHexString(4);
+                        content = hexPrefix + value.ToHexString(4);
                     }
                     else
                     {
@@ -204,7 +209,7 @@ unit Shared
                 {
                     if (IsHexDisplayMode)
                     {
-                        content = "0x" + value.ToHexString(4); // easy since 'value' is a uint
+                        content = hexPrefix + value.ToHexString(4); // easy since 'value' is a uint
                     }
                     else
                     {
@@ -227,6 +232,12 @@ unit Shared
     {
         getRAMByte = currentGetRAMByte;
         
+        string hexPrefix = "0x";
+        if (OGMode)
+        {
+            hexPrefix = "";
+        }
+        
         uint heapStart = getRAMByte(ZHEAPSTART) << 8;
         uint heapSize  = getRAMByte(ZHEAPSIZE)  << 8;
         uint freeList  = getRAMByte(ZFREELISTL) + getRAMByte(ZFREELISTH) << 8;
@@ -245,7 +256,7 @@ unit Shared
             
             freeBlocks.Append(current);
             
-            PrintLn("  0x" + current.ToHexString(4) + " 0x" + blockSize.ToHexString(4)+ " 0x" + nextBlock.ToHexString(4)+ " 0x" + prevBlock.ToHexString(4), Colour.LightestGray, Colour.Black); 
+            PrintLn("  " + hexPrefix + current.ToHexString(4) + " " + hexPrefix + blockSize.ToHexString(4)+ " " + hexPrefix + nextBlock.ToHexString(4)+ " " + hexPrefix + prevBlock.ToHexString(4), Colour.LightestGray, Colour.Black); 
             if (nextBlock == 0) { break; }
             current = nextBlock;
         }
@@ -259,7 +270,7 @@ unit Shared
                 byte objectType     = getRAMByte(current+2);
                 byte referenceCount = getRAMByte(current+3);
                 
-                Print("  0x" + current.ToHexString(4) + " 0x" + blockSize.ToHexString(4) + " [0x" + objectType.ToHexString(2) + "-" + referenceCount.ToHexString(2) + "]", Colour.LightestGray, Colour.Black);
+                Print("  " + hexPrefix + current.ToHexString(4) + " " + hexPrefix + blockSize.ToHexString(4) + " [" + hexPrefix + objectType.ToHexString(2) + "-" + referenceCount.ToHexString(2) + "]", Colour.LightestGray, Colour.Black);
                 type et = type(objectType);
                 switch (et)
                 {
@@ -303,11 +314,17 @@ unit Shared
         byte sp        = getRAMByte(ZSP);
         byte bp        = getRAMByte(ZBP);
         
+        string hexPrefix = "0x";
+        if (OGMode)
+        {
+            hexPrefix = "";
+        }
+        
         PrintLn();
         byte spi = sp;
         
         Print("SP -> ", Colour.MatrixRed, Colour.Black);
-        PrintLn("0x" + sp.ToHexString(2), Colour.LightestGray, Colour.Black);
+        PrintLn(hexPrefix + sp.ToHexString(2), Colour.LightestGray, Colour.Black);
         uint entries = 0;
         loop
         {
@@ -330,19 +347,19 @@ unit Shared
             if (IsMachineReferenceType(vtype))
             {
                 byte count = getRAMByte(value + 1);
-                referenceCount = "[0x" + count.ToHexString(2) + "]";
+                referenceCount = "[" + hexPrefix + count.ToHexString(2) + "]";
             }
             
             Print(leftText, Colour.MatrixRed, Colour.Black);
             if (spi == bp)
             {
-                Print("0x" + spi.ToHexString(2), Colour.LightestGray, Colour.Black);
+                Print(hexPrefix + spi.ToHexString(2), Colour.LightestGray, Colour.Black);
             }
             else
             {
-                Print("0x" + spi.ToHexString(2));
+                Print(hexPrefix + spi.ToHexString(2));
             }
-            Print(" 0x" + value.ToHexString(4) + ":0x" + vtype.ToHexString(2) + referenceCount, Colour.LightestGray, Colour.Black); 
+            Print(" " + hexPrefix + value.ToHexString(4) + ":" + hexPrefix + vtype.ToHexString(2) + referenceCount, Colour.LightestGray, Colour.Black); 
             Print(" (" + tstring + ")" + " " + content);
             PrintLn();
             entries++;
@@ -355,9 +372,14 @@ unit Shared
     }
     ShowVariableW(string name, byte zpIndex)
     {
+        string hexPrefix = "0x";
+        if (OGMode)
+        {
+            hexPrefix = "";
+        }
         Print("  " + (name + ":").Pad(' ', 20));
         uint ui = getRAMByte(zpIndex) + getRAMByte(zpIndex+1) << 8;
-        PrintLn(" 0x" + ui.ToHexString(4) + " (" + ui.ToString() + ")", Colour.LightestGray, Colour.Black); 
+        PrintLn(" " + hexPrefix + ui.ToHexString(4) + " (" + ui.ToString() + ")", Colour.LightestGray, Colour.Black); 
     }
     ShowVariableB(string name, byte zpIndex)
     {
@@ -365,9 +387,14 @@ unit Shared
     }
     ShowVariableB(string name, byte zpIndex, string extra)
     {
+        string hexPrefix = "0x";
+        if (OGMode)
+        {
+            hexPrefix = "";
+        }
         Print("  " + (name + ":").Pad(' ', 20));
         uint b = getRAMByte(zpIndex);
-        PrintLn(" 0x" + b.ToHexString(2) + extra, Colour.LightestGray, Colour.Black); 
+        PrintLn(" " + hexPrefix + b.ToHexString(2) + extra, Colour.LightestGray, Colour.Black); 
     }
     ShowHopperStringVariables(GetRAMByteDelegate currentGetRAMByte)
     {

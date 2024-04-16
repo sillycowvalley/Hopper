@@ -263,7 +263,7 @@ unit BuildCommand
             if (isAssembly)
             {
                 hasmPath = "/Debug/" + fileName + ".asm";
-                binaryPath ="/Bin/Assemble" + HexeExtension;
+                binaryPath ="/Bin/65asm" + HexeExtension;
                 if (!File.Exists(binaryPath))
                 {
                     Editor.SetStatusBarText("No Assembler: '" + binaryPath + "'");
@@ -332,7 +332,7 @@ unit BuildCommand
                 string optName = "Optimize";
                 if (isAssembly)
                 {
-                    optName = "OptAsm";
+                    optName = "65opt";
                 }
                      
                 binaryPath ="/Bin/" + optName + HexeExtension;
@@ -360,7 +360,7 @@ unit BuildCommand
             string outputPath = hexePath;
             if (isAssembly)
             {
-                genName = "ASMGEN";
+                genName = "65gen";
                 outputPath = ihexPath;
             }
             if (isZ80)
@@ -425,7 +425,7 @@ unit BuildCommand
                 string dasmInput = hexePath;
                 if (isAssembly)
                 {
-                    dasmName = "65DASM";
+                    dasmName = "65dasm";
                     dasmInput = ihexPath;
                 }
                 if (isZ80)
