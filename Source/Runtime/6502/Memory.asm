@@ -59,30 +59,39 @@ unit Memory
     }
     Allocate()
     {
-        PopACC();
+        Stacks.PopACC();
         Allocate.allocate();
-        PushIDX();
+        
+        // Push IDX:
+        LDY ZP.SP
+        LDA ZP.IDXL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.IDXH
+        STA Address.ValueStackMSB, Y
+        LDA #Types.UInt
+        STA Address.TypeStackLSB, Y
+        INC ZP.SP
     }
     Free()
     {
-        PopIDX();
+        Stacks.PopIDX();
         Free.free();
     }
     ReadByte()
     {
-        PopIDX();
+        Stacks.PopIDX();
 #ifdef CPU_65C02S
         LDA [IDX]
 #else
         LDY # 0
         LDA [IDX], Y
 #endif
-        PushA();
+        Stacks.PushA();
     }
     WriteByte()
     {
-        PopACC();
-        PopIDX();
+        Stacks.PopACC();
+        Stacks.PopIDX();
         
         LDA ACCL
 #ifdef CPU_65C02S
@@ -148,7 +157,7 @@ unit Memory
         
         LDA # Types.UInt
         STA ZP.ACCT
-        Stacks.PushACC();
+        Stacks.PushACC();  // munts Y, A
    }
     
     Maximum()

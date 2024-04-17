@@ -160,10 +160,6 @@ unit Instruction
         POPCOPYLOCALB01 = 0x5E,
     }
     
-    return0()
-    {
-        LDA #0
-    }
     return1()
     {
         LDA #1
@@ -172,6 +168,10 @@ unit Instruction
     {
         LDA #2
     }
+    return3()
+    {
+        LDA #3
+    }
 #ifdef CHECKED    
     lengthMissing()
     {
@@ -179,8 +179,8 @@ unit Instruction
     }
 #endif
         
-    // return the width of the operand of the current opCode (in X), in A
-    GetOperandWidth() // munts X
+    // get the width of the current instruction (in A), in A (opCode + operands)
+    GetInstructionWidth() // munts X
     {
         TAX
         // current instruction into X (because JMP [nnnn,X] is then possible)
@@ -242,7 +242,7 @@ unit Instruction
             case Instructions.POPCOPYLOCALB00:
             case Instructions.POPCOPYLOCALB01:
             {
-                return0();
+                return1();
             }
             case Instructions.SYSCALL:
             case Instructions.CAST:
@@ -278,7 +278,7 @@ unit Instruction
             case Instructions.PUSHRELB:
             case Instructions.POPRELB:
             {
-                return1();
+                return2();
             }
             case Instructions.CALL:
             case Instructions.CALLI:
@@ -316,14 +316,14 @@ unit Instruction
             case Instructions.PUSHILEI:
             case Instructions.JIXB:
             {
-                return2();
+                return3();
             }
             default:
             {
 #ifdef CHECKED                
                 lengthMissing();
 #else
-                return2();
+                return3();
 #endif
             }
         }
@@ -376,15 +376,8 @@ unit Instruction
         LDA [ZP.ACC], Y
 #endif        
         
-        // get the width of the operand of the current opCode (in A), in A
-        GetOperandWidth(); // munts X
-     
-#ifdef CPU_65C02S
-        INC A // add the opCode size to get instruction length
-#else
-        CLC
-        ADC #1
-#endif
+        // get the width of the current instruction (in A), in A (opCode + operands)
+        GetInstructionWidth(); // munts X
         
         // add current instruction length to current address
         CLC
@@ -432,7 +425,7 @@ unit Instruction
             }
             CLC
             LDA IDYL
-            ADC #4
+            ADC # 4
             STA IDYL
             if (NC) { continue; }
             INC IDYH
@@ -517,13 +510,13 @@ unit Instruction
        
     enter()
     {
-        Stacks.PushBP();
+        Stacks.PushBP(); // munts X, A
         LDA ZP.SP
         STA ZP.BP
     }
     enterB()
     {
-        Stacks.PushBP();
+        Stacks.PushBP(); // munts X, A
         LDA ZP.SP
         STA ZP.BP
         
@@ -543,9 +536,7 @@ unit Instruction
         loop
         {
             if (Z) { break; }
-            
             Stacks.PushTop();
-            
             DEX
         }   
     }
@@ -565,7 +556,7 @@ unit Instruction
     }
     boolOr()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         
         // [next] || [top] -> [top] // assumes Type.Bool (0 or 1)
         LDA ZP.NEXTL
@@ -578,7 +569,7 @@ unit Instruction
     }
     boolAnd()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         
         // [next] && [top] -> [top] // assumes Type.Bool (0 or 1)
         LDA ZP.NEXTL
@@ -591,7 +582,7 @@ unit Instruction
     }
     bitAnd()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         
         // [next] &  [top] -> [top]
         LDA ZP.NEXTL
@@ -617,7 +608,7 @@ unit Instruction
     }
     bitOr()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         
         // [next] |  [top] -> [top]
         LDA ZP.NEXTL
@@ -633,7 +624,7 @@ unit Instruction
     }
     bitXor()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         
         // [next] ^  [top] -> [top]
         LDA ZP.NEXTL
@@ -780,7 +771,7 @@ unit Instruction
     }
     ne()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         
         LDX # 1
         LDA ZP.NEXTL
@@ -871,7 +862,7 @@ unit Instruction
        
     ge()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         LDX #0 // NEXT < TOP
         LDA ZP.NEXTH
         CMP ZP.TOPH
@@ -888,7 +879,7 @@ unit Instruction
     }
     gt()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         LDX #0 // NEXT <= TOP
         LDA ZP.NEXTH
         CMP ZP.TOPH
@@ -908,7 +899,7 @@ unit Instruction
     }
     lti()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         // NEXT < TOP?
         // TOP - NEXT > 0
         SEC
@@ -980,7 +971,7 @@ unit Instruction
     
     gti()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         // NEXT > TOP?
         // NEXT - TOP > 0
         
@@ -1012,7 +1003,7 @@ unit Instruction
     }
     gei()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         // NEXT >= TOP?
         // NEXT - TOP >= 0
         
@@ -1043,7 +1034,7 @@ unit Instruction
     }
     bitShr()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
 
         // next = next >> top
         loop
@@ -1062,7 +1053,7 @@ unit Instruction
     }
     bitShl()
     {
-        PopTopNext();
+        Stacks.PopTopNext();
         // next = next << top
         loop
         {
@@ -1118,7 +1109,7 @@ unit Instruction
             DEX
         }
         
-        Stacks.PopBP();
+        Stacks.PopBP(); // munts Y, A
         LDA ZP.CSP
         if (Z)
         {
@@ -1130,7 +1121,7 @@ unit Instruction
         }
         else
         {
-            Stacks.PopPC();
+            Stacks.PopPC(); // munts Y, A
         }
     }
     ret()
@@ -1152,7 +1143,7 @@ unit Instruction
     }
     retFast()
     {
-        Stacks.PopPC();
+        Stacks.PopPC();  // munts Y, A
     }
     
     retResShared()
@@ -1175,7 +1166,7 @@ unit Instruction
         
         Stacks.PushTop();
         
-        Stacks.PopBP();
+        Stacks.PopBP();  // munts Y, A
         
         LDA ZP.CSP
         if (Z)
@@ -1188,7 +1179,7 @@ unit Instruction
         }
         else
         {
-            Stacks.PopPC();
+            Stacks.PopPC();  // munts Y, A
         }
     }
     retRes()
@@ -1223,7 +1214,7 @@ unit Instruction
     
     jixArguments()
     {
-        PopA();             // switchCase -> FVALUEL
+        Stacks.PopA();             // switchCase -> FVALUEL
         STA FVALUEL
              
         ConsumeOperand();
@@ -1264,9 +1255,10 @@ unit Instruction
         LDA IDXL
         ADC FVALUEL
         STA IDXL
-        LDA IDXH
-        ADC # 0
-        STA IDXH
+        if (C)
+        {
+            INC IDXH
+        }
                 
         // offset = code[index]
         LDY # 0
@@ -1362,9 +1354,10 @@ unit Instruction
         LDA PCL
         ADC IDYL
         STA PCL
-        LDA PCH
-        ADC # 0
-        STA PCH
+        if (C)
+        {
+            INC PCH
+        }
     }
     jixDefault()
     {
@@ -1383,17 +1376,40 @@ unit Instruction
         LDA PCL
         ADC ACCH
         STA PCL
-        LDA PCH
-        ADC # 0
-        STA PCH
-        
+        if (C)
+        {
+            INC PCH
+        }
+                
         CLC
         LDA PCL
         ADC ACCH
         STA PCL
-        LDA PCH
-        ADC # 0
-        STA PCH
+        if (C)
+        {
+            INC PCH
+        }
+        jCommon(); // PC += offset - 3
+    }
+    jixbDefault()
+    {
+        // default: simply add PC to tableSize
+        // tableSize = (maxRange + 1 - minRange)
+        CLC
+        LDA TOPH
+        ADC # 1
+        SEC
+        SBC TOPL
+        // tableSize is in A
+        
+        CLC
+        // tableSize is in A
+        ADC PCL
+        STA PCL
+        if (C)
+        {
+            INC PCH
+        }
         jCommon(); // PC += offset - 3
     }
     jix()
@@ -1422,27 +1438,6 @@ unit Instruction
 #else
         LDA 0x0A BRK // no JIX instructions
 #endif
-    }
-    jixbDefault()
-    {
-        // default: simply add PC to tableSize
-        // tableSize = (maxRange + 1 - minRange)
-        CLC
-        LDA TOPH
-        ADC # 1
-        SEC
-        SBC TOPL
-        
-        STA ACCH // tableSize
-        
-        CLC
-        LDA PCL
-        ADC ACCH
-        STA PCL
-        LDA PCH
-        ADC # 0
-        STA PCH
-        jCommon(); // PC += offset - 3
     }
     jixb()
     {
@@ -1759,10 +1754,9 @@ unit Instruction
     }
     swap()
     {
-        PopTop();
-        PopNext();
-        PushTop();
-        PushNext();
+        Stacks.PopTopNext();
+        Stacks.PushTop();
+        Stacks.PushNext();
     }
     
     dup0()
@@ -1779,7 +1773,7 @@ unit Instruction
         
         checkIncReferenceY();
         
-        PushTop(); 
+        Stacks.PushTop(); 
     }
     
         
@@ -1818,7 +1812,7 @@ unit Instruction
         STA ZP.TOPH
         LDA # Types.Reference
         STA ZP.TOPT
-        PushTop();
+        Stacks.PushTop();
     }
     pushStackAddrB()
     {
@@ -1833,7 +1827,7 @@ unit Instruction
         STA ZP.TOPH
         LDA # Types.Reference
         STA ZP.TOPT
-        PushTop();
+        Stacks.PushTop();
     }
     
     popCopyShared()
@@ -1842,7 +1836,7 @@ unit Instruction
         // this is the slot we are about to overwrite: decrease reference count if reference type
         checkDecReferenceY();
         
-        PopTop();
+        Stacks.PopTop();
         LDA ZP.TOPL
         CMP Address.ValueStackLSB, Y
         if (Z)
@@ -1889,7 +1883,7 @@ unit Instruction
             return;
         }
                         
-        PopTop();
+        Stacks.PopTop();
         
         // this is the slot we are about to overwrite: decrease reference count if reference type
         checkDecReferenceY();
@@ -2062,7 +2056,7 @@ unit Instruction
         
         checkIncReferenceY();
      
-        PushTop(); 
+        Stacks.PushTop(); 
     }
     incLocalB()
     {
@@ -2331,11 +2325,15 @@ unit Instruction
     {
         // change CALL to CALLI
         LDA #Instructions.CALLI
+#ifdef CPU_65C02S
+        STA [ZP.ACC]
+#else        
         LDY #0
         STA [ZP.ACC], Y
+#endif
         
         ConsumeOperand();
-        PushPC();
+        Stacks.PushPC(); // munts Y, A
         
         // resolve index (IDX) to address (IDX)
         lookupMethod();
@@ -2353,9 +2351,9 @@ unit Instruction
     
     callRel()
     {
-        PopIDX();
+        Stacks.PopIDX();
         
-        PushPC();
+        Stacks.PushPC();  // munts Y, A
         
         // resolve index (IDX) to address (IDX)
         lookupMethod();
@@ -2370,7 +2368,7 @@ unit Instruction
     callI()
     {
         ConsumeOperand();
-        Stacks.PushPC();
+        Stacks.PushPC();  // munts Y, A
         
         // IDX -> PC
         LDA ZP.IDXL

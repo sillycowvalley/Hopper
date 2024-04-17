@@ -52,14 +52,14 @@ unit SysCall
     }
     serialWriteChar()
     {
-        PopA();
+        Stacks.PopA();
         Serial.WriteChar();
     }
     
     byteToHex()
     {
         // convert nibble to hex char
-        PopA();
+        Stacks.PopA();
         CMP # 0x0A
         if (C)
         {
@@ -91,7 +91,7 @@ unit SysCall
         STA ZP.NEXTH
         LDA # Types.Byte
         STA ZP.NEXTT
-        PushNext();
+        Stacks.PushNext();
     }
     intFromBytes()
     {
@@ -100,7 +100,7 @@ unit SysCall
         STA ZP.NEXTH
         LDA # Types.Int
         STA ZP.NEXTT
-        PushNext();
+        Stacks.PushNext();
     }
     
     SysCallShared()
@@ -226,7 +226,7 @@ unit SysCall
     {
         ConsumeOperandA(); // iSysCall  -> A (uses ACC)
         PHA
-        PopACC();          // iOverload -> ACC
+        Stacks.PopACC();   // iOverload -> ACC
         
         // load iSyscCall into X (because JMP [nnnn,X] is then possible)
 #ifdef CPU_65C02S

@@ -77,6 +77,6 @@ unit Time
         STA TOPH
         LDA # Types.UInt
         STA ZP.TOPT
-        PushTop();
+        Stacks.PushTop();
     }
 }

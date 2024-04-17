@@ -100,8 +100,7 @@ unit Array
     
     New()
     {
-        PopTop();  // element type
-        PopNext(); // number of elements
+        Stacks.PopTopNext();  // element type, number of elements
         
         LDA NEXTL
         STA FSIZEL
@@ -148,14 +147,13 @@ unit Array
         
         LDA # Types.Array
         STA TOPT
-        PushTop();
+        Stacks.PushTop();
     }
     
     NewFromConstant()
     {
-        PopTop();  // element type
-        PopNext(); // number of elements
-        PopACC();  // location
+        Stacks.PopTopNext();  // element type, number of elements
+        Stacks.PopACC();      // location
         
         LDA NEXTL
         STA FSIZEL
@@ -229,11 +227,11 @@ unit Array
         
         LDA # Types.Array
         STA TOPT
-        PushTop();
+        Stacks.PushTop();
     }
     CountGet()
     {
-        PopIDX(); // this
+        Stacks.PopIDX(); // this
         
         LDY # aiCount
         LDA [IDX], Y
@@ -246,7 +244,7 @@ unit Array
         
         LDA # Types.UInt
         STA NEXTT
-        PushNext();
+        Stacks.PushNext();
     }
     
     getIndexAndMask()
@@ -292,8 +290,8 @@ unit Array
     }
     GetItem()
     {
-        PopIDY();  // index
-        PopIDX();  // this
+        Stacks.PopIDY();  // index
+        Stacks.PopIDX();  // this
         
 #ifdef CHECKED
         // index < aiCount?
@@ -361,13 +359,13 @@ unit Array
         
         LDA FTYPE
         STA NEXTT
-        PushNext();  
+        Stacks.PushNext();  
     }
     SetItem()
     {
-        PopTop(); // value
-        PopIDY(); // index
-        PopIDX(); // this
+        Stacks.PopTop(); // value
+        Stacks.PopIDY(); // index
+        Stacks.PopIDX(); // this
         
 #ifdef CHECKED
         // index < aiCount?

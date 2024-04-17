@@ -36,35 +36,23 @@ unit IntMath
                     return;
                 }
                 CMP #1
-                if (Z)
+                if (NZ)
                 {
-                    swapNEXTandTOP();
-                    break;
+                    CMP #2
+                    if (NZ)
+                    {
+                        CMP #4
+                        if (NZ)
+                        {
+                            CMP #8
+                            if (NZ)
+                            {
+                                break;
+                            }
+                        }
+                    }
                 }
-                CMP #2
-                if (Z)
-                {
-                    swapNEXTandTOP();
-                    break;
-                }
-                CMP #4
-                if (Z)
-                {
-                    swapNEXTandTOP();
-                    break;
-                }
-                CMP #8
-                if (Z)
-                {
-                    swapNEXTandTOP();
-                    break;
-                }
-                CMP #16
-                if (Z)
-                {
-                    swapNEXTandTOP();
-                    break;
-                }
+                swapNEXTandTOP();
                 break;
             }
         }
@@ -108,19 +96,6 @@ unit IntMath
             CMP #8
             if (Z)
             {
-                ASL TOPL
-                ROL TOPH
-                ASL TOPL
-                ROL TOPH
-                ASL TOPL
-                ROL TOPH
-                return;
-            }
-            CMP #16
-            if (Z)
-            {
-                ASL TOPL
-                ROL TOPH
                 ASL TOPL
                 ROL TOPH
                 ASL TOPL
@@ -454,7 +429,7 @@ unit IntMath
         }
         LDA #Types.Int
         STA ZP.TOPT
-        PushTop();
+        Stacks.PushTop();
     }
     Div()
     {
@@ -472,7 +447,7 @@ unit IntMath
         divmod();
         LDA #Types.UInt
         STA ZP.ACCT
-        Stacks.PushACC();
+        Stacks.PushACC(); // munts Y, A
     }
     DivI()
     {
@@ -488,7 +463,7 @@ unit IntMath
         }
         LDA #Types.Int
         STA ZP.NEXTT
-        PushNext();
+        Stacks.PushNext();
     }
     ModI()
     {
@@ -507,6 +482,6 @@ unit IntMath
         // always leave remainder ACC as positive
         LDA #Types.Int
         STA ZP.ACCT
-        PushACC();
+        Stacks.PushACC();  // munts Y, A
     }
 }

@@ -2,7 +2,7 @@ unit Diagnostics
 {
     Die()
     {
-        PopA(); BRK // user error from Hopper in A
+        Stacks.PopA(); BRK // user error from Hopper in A
     }
     
     

@@ -285,12 +285,11 @@ unit String
         STA TOPH
         LDA # Types.String
         STA TOPT
-        PushTop();
+        Stacks.PushTop();
     }
     newFromConstant0()
     {
-        PopTop();  // size
-        PopNext(); // location
+        Stacks.PopTopNext();  // size, location
         LDA TOPL
         STA FLENGTHL
         STA FSIZEL
@@ -340,11 +339,11 @@ unit String
         STA TOPH
         LDA # Types.String
         STA TOPT
-        PushTop();
+        Stacks.PushTop();
     }
     newFromConstant1()
     {
-        PopTop();  // char0 and char1
+        Stacks.PopTop();  // char0 and char1
         LDA TOPH
         //CMP # 0
         if (NZ)
@@ -399,7 +398,7 @@ unit String
         STA TOPH
         LDA # Types.String
         STA TOPT
-        PushTop();
+        Stacks.PushTop();
     }
     NewFromConstant()
     {
@@ -423,7 +422,7 @@ unit String
     }
     LengthGet()
     {
-        PopIDX(); // this
+        Stacks.PopIDX(); // this
         
         LDY # siLength
         LDA [IDX], Y
@@ -436,12 +435,12 @@ unit String
         STA NEXTT
         
         GC.Release();
-        PushNext();
+        Stacks.PushNext();
     }
     GetChar()
     {
-        PopIDY();  // index
-        PopIDX();  // this
+        Stacks.PopIDY();  // index
+        Stacks.PopIDX();  // this
 #ifdef CHECKED
         // index < siLength?
         LDY # siLength+1
@@ -477,13 +476,12 @@ unit String
         STA TOPT
         
         GC.Release(); // this
-        PushTop();
+        Stacks.PushTop();
     }
     build0()
     {
         // Build(ref string build, string append) system;
-        PopTop();
-        PopNext(); 
+        Stacks.PopTopNext();
         
         // appendString -> IDX
         LDA TOPL
@@ -563,8 +561,7 @@ unit String
     build1()
     {
         // Build(ref string build, char append) system;
-        PopTop();
-        PopNext(); 
+        Stacks.PopTopNext();
         
         // ref build -> IDY  X      
         LDY NEXTL
@@ -616,8 +613,7 @@ unit String
     BuildFront()
     {
         // BuildFront(ref string build, char insert) system;
-        PopTop();
-        PopNext(); 
+        Stacks.PopTopNext();
         
         // ref build -> IDY  X     
         LDY NEXTL
@@ -701,7 +697,7 @@ unit String
     build2()
     {
         // Build(ref string build) system;
-        PopTop(); 
+        Stacks.PopTop(); 
 
         LDY TOPL
         LDA Address.ValueStackLSB, Y
