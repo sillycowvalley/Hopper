@@ -55,7 +55,6 @@ unit Memory
         STA [ZP.FREELIST], Y
         INY
         STA [ZP.FREELIST], Y
-        
     }
     Allocate()
     {
@@ -121,11 +120,10 @@ unit Memory
             
         loop
         {
-            LDA #0
-            CMP IDXL
+            LDA IDXL
             if (Z)
             {
-                CMP IDXH
+                LDA IDXH
                 if (Z)
                 {
                     break;
@@ -166,9 +164,14 @@ unit Memory
         // pushes result to [top]
                
         // available = 0
+#ifdef CPU_65C02S
+        STZ ACCL
+        STZ ACCH
+#else        
         LDA #0
         STA ACCL
         STA ACCH
+#endif
         
         // current = FREELIST
         LDA FREELISTL
@@ -178,18 +181,17 @@ unit Memory
         
         loop
         {
-            LDA #0
-            CMP IDXL
+            LDA IDXL
             if (Z)
             {
-                CMP IDXH
+                LDA IDXH
                 if (Z)
                 {
                     // current == 0
-                    CMP ACCL
+                    LDA ACCL
                     if (Z)
                     {
-                        CMP ACCH
+                        LDA ACCH
                         if (Z)
                         { 
                             // available== 0

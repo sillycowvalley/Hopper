@@ -75,7 +75,6 @@ unit SysCall
         LDA # 0
         STA ZP.TOPH
         LDA # Types.Char
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     intGetByte()
@@ -90,7 +89,6 @@ unit SysCall
         LDA # 0
         STA ZP.NEXTH
         LDA # Types.Byte
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     intFromBytes()
@@ -99,7 +97,6 @@ unit SysCall
         LDA ZP.TOPL
         STA ZP.NEXTH
         LDA # Types.Int
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     

@@ -528,14 +528,13 @@ unit Instruction
         STA ZP.TOPL
         STA ZP.TOPH
 #endif
-        LDA #Types.Byte
-        STA ZP.TOPT
             
         ConsumeOperandA();
         TAX
         loop
         {
             if (Z) { break; }
+            LDA #Types.Byte
             Stacks.PushTop();
             DEX
         }   
@@ -551,7 +550,6 @@ unit Instruction
         STA ZP.TOPL
         
         LDA #Types.UInt
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     boolOr()
@@ -564,7 +562,6 @@ unit Instruction
         STA ZP.NEXTL
         
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     boolAnd()
@@ -577,7 +574,6 @@ unit Instruction
         STA ZP.NEXTL
         
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     bitAnd()
@@ -593,7 +589,6 @@ unit Instruction
         STA ZP.NEXTH
         
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     bitAndFF()
@@ -603,7 +598,6 @@ unit Instruction
         LDA #0
         STA ZP.TOPH
         LDA #Types.UInt
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     bitOr()
@@ -619,7 +613,6 @@ unit Instruction
         STA ZP.NEXTH
         
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     bitXor()
@@ -635,7 +628,6 @@ unit Instruction
         STA ZP.NEXTH
         
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     bitNot()
@@ -651,7 +643,6 @@ unit Instruction
         STA ZP.TOPH
         
         LDA #Types.UInt
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     addShared()
@@ -670,7 +661,6 @@ unit Instruction
         Stacks.PopTop();
         addShared();
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     addB()
@@ -683,7 +673,6 @@ unit Instruction
         STA TOPT
         addShared();
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     addi()
@@ -691,7 +680,6 @@ unit Instruction
         Stacks.PopTop();
         addShared();
         LDA #Types.Int
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     subShared()
@@ -716,7 +704,6 @@ unit Instruction
         STA TOPT
         subShared();
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     sub()
@@ -724,7 +711,6 @@ unit Instruction
         Stacks.PopTop();
         subShared();
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     subi()
@@ -732,7 +718,6 @@ unit Instruction
         Stacks.PopTop();
         subShared();
         LDA #Types.Int
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
       
@@ -1048,7 +1033,6 @@ unit Instruction
             DEC ZP.TOPL
         }
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     bitShl()
@@ -1066,7 +1050,6 @@ unit Instruction
             DEC ZP.TOPL
         }
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     bitShr8()
@@ -1078,7 +1061,6 @@ unit Instruction
         LDA #0
         STA ZP.TOPH
         LDA #Types.UInt
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     bitShl8()
@@ -1090,7 +1072,6 @@ unit Instruction
         LDA #0
         STA ZP.TOPL
         LDA #Types.UInt
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     
@@ -1164,6 +1145,7 @@ unit Instruction
             DEX
         }
         
+        LDA ZP.TOPT
         Stacks.PushTop();
         
         Stacks.PopBP();  // munts Y, A
@@ -1576,7 +1558,6 @@ unit Instruction
         LDA ZP.IDXH
         STA ZP.TOPH
         LDA #Types.UInt
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     pushIB()
@@ -1587,7 +1568,6 @@ unit Instruction
         LDA ZP.IDXH
         STA ZP.TOPH
         LDA #Types.Byte
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     pushA()
@@ -1596,7 +1576,6 @@ unit Instruction
         LDA # 0
         STA ZP.TOPH
         LDA #Types.Byte
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     sysCallB0()
@@ -1707,7 +1686,6 @@ unit Instruction
         STA ZP.TOPL
         STA ZP.TOPH
         LDA #Types.Byte
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     pushI1()
@@ -1717,7 +1695,6 @@ unit Instruction
         LDA # 0
         STA ZP.TOPH
         LDA #Types.Byte
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     pushIM1()
@@ -1726,7 +1703,6 @@ unit Instruction
         STA ZP.TOPL
         STA ZP.TOPH
         LDA #Types.Int
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     
@@ -1767,7 +1743,9 @@ unit Instruction
     swap()
     {
         Stacks.PopTopNext();
+        LDA ZP.TOPT
         Stacks.PushTop();
+        LDA ZP.NEXTT
         Stacks.PushNext();
     }
     
@@ -1785,6 +1763,7 @@ unit Instruction
         
         checkIncReferenceY();
         
+        LDA ZP.TOPT
         Stacks.PushTop(); 
     }
     
@@ -1823,7 +1802,6 @@ unit Instruction
         LDA # 0
         STA ZP.TOPH
         LDA # Types.Reference
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     pushStackAddrB()
@@ -1838,7 +1816,6 @@ unit Instruction
         LDA # 0
         STA ZP.TOPH
         LDA # Types.Reference
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     
@@ -2067,7 +2044,8 @@ unit Instruction
         STA ZP.TOPT
         
         checkIncReferenceY();
-     
+        
+        LDA ZP.TOPT
         Stacks.PushTop(); 
     }
     incLocalB()

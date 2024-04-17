@@ -6,16 +6,17 @@ unit IntMath
     {
         LDA NEXTL
         PHA
-        LDA NEXTH
-        PHA
         LDA TOPL
         STA NEXTL
+        PLA
+        STA TOPL
+        
+        LDA NEXTH
+        PHA
         LDA TOPH
         STA NEXTH
         PLA
         STA TOPH
-        PLA
-        STA TOPL 
     }
     mulShared()
     {
@@ -414,6 +415,7 @@ unit IntMath
     {
         Stacks.PopTopNext();
         mulShared();
+        LDA ZP.TOPT
         Stacks.PushTop();
     }
     MulI()
@@ -428,7 +430,6 @@ unit IntMath
             negateTop(); // TOP = -TOP
         }
         LDA #Types.Int
-        STA ZP.TOPT
         Stacks.PushTop();
     }
     Div()
@@ -437,7 +438,6 @@ unit IntMath
         // NEXT = NEXT / TOP
         utilityDiv();
         LDA #Types.UInt
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     Mod()
@@ -462,7 +462,6 @@ unit IntMath
             negateNext(); // NEXT = -NEXT
         }
         LDA #Types.Int
-        STA ZP.NEXTT
         Stacks.PushNext();
     }
     ModI()

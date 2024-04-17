@@ -146,7 +146,6 @@ unit Array
         }
         
         LDA # Types.Array
-        STA TOPT
         Stacks.PushTop();
     }
     
@@ -226,7 +225,6 @@ unit Array
         }
         
         LDA # Types.Array
-        STA TOPT
         Stacks.PushTop();
     }
     CountGet()
@@ -243,7 +241,6 @@ unit Array
         GC.Release();
         
         LDA # Types.UInt
-        STA NEXTT
         Stacks.PushNext();
     }
     
@@ -358,7 +355,6 @@ unit Array
         GC.Release(); 
         
         LDA FTYPE
-        STA NEXTT
         Stacks.PushNext();  
     }
     SetItem()

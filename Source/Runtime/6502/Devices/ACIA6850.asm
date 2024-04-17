@@ -102,7 +102,7 @@ unit SerialDevice
     }
     
 #ifndef HAS_SERIAL_ISR    
-    // munts X on CPU_6502
+    // munts X
     pollRead()
     {
         PHA

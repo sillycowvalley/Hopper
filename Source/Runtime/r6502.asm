@@ -1,19 +1,19 @@
 program R6502
 {
     //#define CHECKED              // 111/109 bytes
-    //#define PACKED_INSTRUCTIONS  // 984/960 bytes
+    #define PACKED_INSTRUCTIONS  // 984/960 bytes
     #define JIX_INSTRUCTIONS       // 301/311 bytes
     #define FASTINTS               // 411/403 bytes
     
-    //#define CPU_65C02S  // Rockwell and WDC
-    #define CPU_6502      // MOS
+    #define CPU_65C02S  // Rockwell and WDC
+    //#define CPU_6502      // MOS
 
         
 #if defined(CPU_65C02S) && !defined(PACKED_INSTRUCTIONS) && !defined(CHECKED)
-    #define ROM_8K // 377 bytes to spare (697 bytes required for PACKED)
+    #define ROM_8K // 418 bytes to spare (578 more bytes required for PACKED)
 #endif
 #if defined(CPU_6502)   && !defined(PACKED_INSTRUCTIONS) && !defined(CHECKED)
-    #define ROM_8K // 8 bytes to spare
+    #define ROM_8K // 272 bytes to spare
 #endif
 
 #ifndef ROM_8K
@@ -101,8 +101,7 @@ program R6502
 
         Utilities.WaitForEnter();
         
-        // clear U0..U3 to make zero page transfer faster
-        
+        // clear U0..U3 to make zero page transfer faster (optional)
 #ifdef CPU_65C02S 
         STZ ZP.U0    
         STZ ZP.U1    
@@ -218,7 +217,7 @@ program R6502
                 RTS
             } // loop
         }
-        Serial.EmptyTheBuffer(); // discard input after the error
+        Serial.EmptyTheBuffer(); // discard input after the error, munts A
         LDA # '!'                // failure terminator
     }
     
@@ -227,15 +226,16 @@ program R6502
         Utilities.WaitForEnter();     // consume <enter>
         
         // ignore CRC for now
-        Serial.WaitForChar();
-        Serial.WaitForChar();
-        Serial.WaitForChar();
-        Serial.WaitForChar();
-        Serial.WaitForChar(); // <enter>
-        
-        LDA #0
-        STA IDYH
-        STA IDYL
+        LDY # 5 // 4 hex characters and <enter>
+        loop
+        {
+            Serial.WaitForChar();
+            DEY
+            if (Z) { break; }
+        }
+        // Y is zero now
+        STY IDYH
+        STY IDYL
         loop
         {
             loadRecord();
@@ -264,9 +264,13 @@ program R6502
             
             hopperInit();                // good defaults for HopperVM
 
+#ifdef CPU_65C02S
+            SMB0 ZP.FLAGS                // program is loaded
+#else
             LDA ZP.FLAGS
             ORA # 0b00000001             // program is loaded
             STA ZP.FLAGS
+#endif
       
             LDA # Enter
             Serial.WriteChar();
@@ -297,10 +301,13 @@ program R6502
         }
         else
         {
+#ifdef CPU_65C02S
+            RMB0 ZP.FLAGS                // failed to load program
+#else            
             LDA ZP.FLAGS
             AND # 0b11111110
             STA ZP.FLAGS
-            
+#endif            
             LDA #0
             STA ZP.PROGSIZE
         }
@@ -314,7 +321,7 @@ program R6502
         Memory.InitializeHeapSize(); // sets HEAPSTART and HEAPSIZE based on size of program loaded
         Stacks.Init();
         
-#ifdef CPU_65C02S        
+#ifdef CPU_65C02S
         STZ ZP.CNP
         
         // hopperInitPC -> 0x0000
@@ -345,18 +352,20 @@ program R6502
         ADC (HopperData+5)
         STA ZP.CODESTARTH
         
-        LDA #0
-        STA ZP.CNP
-        STA ZP.PCL
-        STA ZP.PCH
-        
-#ifdef CPU_65C02S
+#ifdef CPU_65C02S 
+        STZ ZP.CNP
+        STZ ZP.PCL
+        STZ ZP.PCH
         STZ ZP.FLAGS
   #ifdef CHECKED
         SMB2 ZP.FLAGS // this is a checked build
   #endif        
-        SMB3 ZP.FLAGS // 8 bit SP and BP
-#else
+        SMB3 ZP.FLAGS // 8 bit SP and BP        
+#else        
+        LDA #0
+        STA ZP.CNP
+        STA ZP.PCL
+        STA ZP.PCH
   #ifdef CHECKED
         ORA # 0b00000100  // this is a checked build
   #endif
@@ -393,8 +402,8 @@ program R6502
         LDX # 1
         Utilities.ClearPages(); // clear the serial buffer
         
-        Serial.Initialize();
-        hopperInit();        
+        Serial.Initialize(); // munts A
+        hopperInit();
     }
     
     runCommand()
@@ -409,8 +418,12 @@ program R6502
             LDA ZP.SerialBreakFlag
             if (NZ) 
             { 
+#ifdef CPU_65C02S
+                STZ ZP.SerialBreakFlag
+#else                
                 LDA #0
                 STA ZP.SerialBreakFlag
+#endif
                 break; 
             }
             LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
@@ -652,40 +665,39 @@ program R6502
                     {
                         Utilities.WaitForEnter();    // consume <enter>
                         warmRestart();
+                        continue;
                     }
                     case 'X':
                     {
                         // <ctrl><F5>
                         Utilities.WaitForEnter();    // consume <enter>
                         runCommand();
-                        checkRestart();
-                        Utilities.SendSlash();   // confirm handing back control
                     }
                     case 'D':
                     {
                         // <F5>
                         Utilities.WaitForEnter();    // consume <enter>
                         debugCommand();
-                        checkRestart();
-                        Utilities.SendSlash();   // confirm handing back control
                     }
                     case 'O':
                     {
                         // <F10>
                         Utilities.WaitForEnter();    // consume <enter>
                         stepoverCommand();
-                        checkRestart();
-                        Utilities.SendSlash();   // confirm handing back control
                     }
                     case 'I':
                     {
                         // <F11>
                         Utilities.WaitForEnter();    // consume <enter>
                         stepintoCommand();
-                        checkRestart();
-                        Utilities.SendSlash();   // confirm handing back control
+                    }
+                    default:
+                    {
+                        continue;
                     }
                 }
+                checkRestart();
+                Utilities.SendSlash();   // confirm handing back control
             }
         } // loop
     }

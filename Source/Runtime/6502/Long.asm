@@ -11,11 +11,18 @@ unit Long
         // http://www.6502.org/source/integers/32muldiv.htm
         
         // Initialize remainder to 0
+#ifdef CPU_65C02S
+        STZ LRESULT0
+        STZ LRESULT1
+        STZ LRESULT2
+        STZ LRESULT3
+#else        
         LDA # 0
         STA LRESULT0
         STA LRESULT1
         STA LRESULT2
         STA LRESULT3
+#endif
         LDX #32       // there are 16 bits in N
 
         loop

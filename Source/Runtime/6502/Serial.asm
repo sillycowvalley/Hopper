@@ -22,8 +22,6 @@ unit Serial
     // initialize or reset the serial ACIA firmware
     Initialize()
     {
-        PHA
-        
         // reset buffer so at least start and end are the same
         SEI                    // disable interrupts
         LDA #0
@@ -33,8 +31,6 @@ unit Serial
         CLI                    // enable interrupts
         
         SerialDevice.initialize(); // device-specific initialization
-                        
-        PLA
     }
     
     ISR()
@@ -46,21 +42,19 @@ unit Serial
     
     EmptyTheBuffer()
     {
-        PHA
         loop
         {
             IsAvailable();
             if (Z) { break; }
             WaitForChar();
         }
-        PLA
     }
     
     // returns Z flag clear if there is a character available in the buffer, Z set if not (disables and enables interrupts)
     IsAvailable()
     {
 #ifndef HAS_SERIAL_ISR
-        SerialDevice.pollRead();        
+        SerialDevice.pollRead(); // munts 
 #endif        
         SEI
         LDA BreakFlag
@@ -113,7 +107,7 @@ unit Serial
     WriteChar()
     {
 #ifndef HAS_SERIAL_ISR
-        SerialDevice.pollRead();        
+        SerialDevice.pollRead();  // munts 
 #endif                
         SerialDevice.writeChar();
     }

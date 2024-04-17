@@ -290,7 +290,6 @@ unit String
         LDA IDXH
         STA TOPH
         LDA # Types.String
-        STA TOPT
         Stacks.PushTop();
     }
     newFromConstant0()
@@ -344,7 +343,6 @@ unit String
         LDA IDXH
         STA TOPH
         LDA # Types.String
-        STA TOPT
         Stacks.PushTop();
     }
     newFromConstant1()
@@ -403,7 +401,6 @@ unit String
         LDA IDXH
         STA TOPH
         LDA # Types.String
-        STA TOPT
         Stacks.PushTop();
     }
     NewFromConstant()
@@ -437,10 +434,9 @@ unit String
         LDA [IDX], Y
         STA NEXTH
         
-        LDA # Types.UInt
-        STA NEXTT
-        
         GC.Release();
+        
+        LDA # Types.UInt
         Stacks.PushNext();
     }
     GetChar()
@@ -478,10 +474,10 @@ unit String
         STA TOPL
         LDA # 0
         STA TOPH
-        LDA # Types.Char
-        STA TOPT
         
         GC.Release(); // this
+        
+        LDA # Types.Char
         Stacks.PushTop();
     }
     build0()

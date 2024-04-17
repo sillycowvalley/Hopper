@@ -65,9 +65,14 @@ unit Time
         STA LTOP0
         LDA # 0x03
         STA LTOP1
+#ifdef CPU_65C02S
+        STZ LTOP2
+        STZ LTOP3
+#else        
         LDA #0
         STA LTOP2
         STA LTOP3
+#endif
         
         Long.DivMod(); // Seconds = Millis / 1000
         
@@ -76,7 +81,6 @@ unit Time
         LDA LNEXT1
         STA TOPH
         LDA # Types.UInt
-        STA ZP.TOPT
         Stacks.PushTop();
     }
 }

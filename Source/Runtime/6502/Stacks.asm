@@ -68,15 +68,14 @@ unit Stacks
         LDA Address.TypeStackLSB, X
         STA ZP.TOPT
     }
-    PushTop()
+    PushTop() // type is in A
     {
         LDY ZP.SP
+        STA Address.TypeStackLSB, Y
         LDA ZP.TOPL
         STA Address.ValueStackLSB, Y
         LDA ZP.TOPH
         STA Address.ValueStackMSB, Y
-        LDA ZP.TOPT
-        STA Address.TypeStackLSB, Y
         INC ZP.SP
     }
     PopNext()
@@ -95,15 +94,14 @@ unit Stacks
         Stacks.PopTop();
         Stacks.PopNext();
     }
-    PushNext()
+    PushNext() // type is in A
     {
         LDY ZP.SP
+        STA Address.TypeStackLSB, Y
         LDA ZP.NEXTL
         STA Address.ValueStackLSB, Y
         LDA ZP.NEXTH
         STA Address.ValueStackMSB, Y
-        LDA ZP.NEXTT
-        STA Address.TypeStackLSB, Y
         INC ZP.SP
     }
     PushACC()
