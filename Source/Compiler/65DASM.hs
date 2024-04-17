@@ -283,6 +283,7 @@ program DASM
                 uint index = constantSize;
                 if (constantSize > 0)
                 {
+                    string ascii;
                     hasmFile.Append("// constant data" + Char.EOL);
                     uint i;
                     loop
@@ -298,10 +299,32 @@ program DASM
                         {
                             hasmFile.Append(" ");
                         }
-                        hasmFile.Append(" 0x" + b.ToHexString(2));       
+                        hasmFile.Append(" 0x" + b.ToHexString(2));   
+                        if ((b > 32) && (b < 128))
+                        {
+                            ascii += char(b);
+                        }
+                        else
+                        {
+                            ascii += '.';
+                        }
+                        if (i % 16 == 15)
+                        {
+                            hasmFile.Append("  // " + ascii);
+                            ascii = "";
+                        }
                         i++;
                     }
-                    hasmFile.Append("" + Char.EOL);
+                    if ((i % 16) <= 8)
+                    {
+                        hasmFile.Append(" ");
+                    }
+                    while (i % 16 != 0)
+                    {
+                        hasmFile.Append("     ");
+                        i++;    
+                    }
+                    hasmFile.Append("  // " + ascii + Char.EOL);
                 }
                               
                 <uint, uint> methodSizes = Code.GetMethodSizes();

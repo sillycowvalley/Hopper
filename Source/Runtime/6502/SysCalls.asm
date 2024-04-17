@@ -38,7 +38,6 @@ unit SysCall
         ByteToHex             = 0x18,
         IntGetByte            = 0x19,
         IntFromBytes          = 0x1A,
-        
     }
     
     missing()

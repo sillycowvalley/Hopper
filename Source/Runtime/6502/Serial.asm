@@ -1,5 +1,8 @@
 unit Serial
 {
+    uses "ZeroPage"
+    uses "MemoryMap"
+    
     // Zero Page locations used by Serial:
     const byte InWritePointer        = ZP.SerialInWritePointer;
     const byte InReadPointer         = ZP.SerialInReadPointer;
@@ -14,6 +17,7 @@ unit Serial
     
     uses "Devices/ACIA6850"
     //uses "Devices/PIA6821"
+    //uses "Devices/AppleI"
     
     // initialize or reset the serial ACIA firmware
     Initialize()

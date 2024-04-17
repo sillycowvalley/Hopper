@@ -1,6 +1,6 @@
 program R6502
 {
-    //#define CHECKED              // 111 bytes
+    #define CHECKED              // 111 bytes
     #define PACKED_INSTRUCTIONS    // 984 bytes
     #define JIX_INSTRUCTIONS       // 317 bytes
     #define FASTINTS               // 407 bytes
@@ -12,7 +12,7 @@ program R6502
 #if defined(CPU_65C02S) && !defined(FASTINTS) && !defined(CHECKED)
     #define ROM_8K
 #endif
-#if !defined(PACKED_INSTRUCTIONS)
+#if !defined(PACKED_INSTRUCTIONS) && !defined(ROM_8K)
     #define ROM_8K
 #endif
 

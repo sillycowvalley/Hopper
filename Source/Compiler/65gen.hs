@@ -355,6 +355,8 @@ program Generate
                 {
                     Architecture = CPUArchitecture.W65C02;
                 }
+                
+                romSize = 0x8000;
                 if (DefineExists("ROM_32K"))
                 {
                     romSize = 0x8000;
