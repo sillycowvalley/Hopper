@@ -43,8 +43,8 @@ unit Allocate
         STA IDYH
 
         // size += 2 (space for 'size')
-        IncACC();
-        IncACC();
+        Utilities.IncACC();
+        Utilities.IncACC();
 
         LDA # 0
         STA maBESTL
@@ -360,7 +360,7 @@ unit Allocate
             LDA maBESTSIZEH
             STA [maBEST], Y
     
-            LDA #0
+            LDA # 0
             CMP maBESTPREVL
             if (Z)
             {
@@ -375,7 +375,7 @@ unit Allocate
                     LDA maBESTNEXTH
                     STA FREELISTH
             
-                    LDA #0
+                    LDA # 0
                     CMP maBESTNEXTL
                     if (Z)
                     {
@@ -387,8 +387,8 @@ unit Allocate
                     }
             
                     // WriteWord(freeList+4, 0)// // start of list now so no previous
-                    LDA #0
-                    LDY #4
+                    LDA # 0
+                    LDY # 4
                     STA [FREELIST], Y
                     INY
                     STA [FREELIST], Y
@@ -399,14 +399,14 @@ unit Allocate
             // 0 != bestPrev
     
             // WriteWord(bestPrev+2, bestNext);
-            LDY #2
+            LDY # 2
             LDA maBESTNEXTL
             STA [maBESTPREV], Y
             INY
             LDA maBESTNEXTH
             STA [maBESTPREV], Y
     
-            LDA #0
+            LDA # 0
             CMP maBESTNEXTL
             if (Z)
             {
@@ -466,8 +466,8 @@ unit Allocate
             DEC maSCRATCHL
     
             // clear
-            LDA #0
-            LDY # 0
+            LDA # 0
+            TAY // 0 -> Y
             STA [maSCRATCH], Y
         }
     }

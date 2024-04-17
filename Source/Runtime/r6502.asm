@@ -1,16 +1,16 @@
 program R6502
 {
     //#define CHECKED              // 111/109 bytes
-    #define PACKED_INSTRUCTIONS    // 984/960 bytes
+    //#define PACKED_INSTRUCTIONS  // 984/960 bytes
     #define JIX_INSTRUCTIONS       // 301/311 bytes
     #define FASTINTS               // 411/403 bytes
     
-    #define CPU_65C02S  // Rockwell and WDC
-    //#define CPU_6502      // MOS
+    //#define CPU_65C02S  // Rockwell and WDC
+    #define CPU_6502      // MOS
 
         
 #if defined(CPU_65C02S) && !defined(PACKED_INSTRUCTIONS) && !defined(CHECKED)
-    #define ROM_8K // 311 bytes to spare (765 bytes required for PACKED)
+    #define ROM_8K // 377 bytes to spare (697 bytes required for PACKED)
 #endif
 #if defined(CPU_6502)   && !defined(PACKED_INSTRUCTIONS) && !defined(CHECKED)
     #define ROM_8K // 8 bytes to spare
@@ -185,7 +185,11 @@ program R6502
                             Serial.HexIn(); // A contains data byte
                             STA [ZP.IDX], Y
                             
-                            Utilities.IncIDY();
+                            INC ZP.IDYL
+                            if (Z)
+                            {
+                                INC ZP.IDYH
+                            }
                             
                             INY
                             DEX
@@ -479,7 +483,7 @@ program R6502
                 CPX # 0
                 if (Z)
                 {
-                    Breakpoints.ClearX();
+                    Breakpoints.ClearX(); // munts A
                 }
                 break;
             }

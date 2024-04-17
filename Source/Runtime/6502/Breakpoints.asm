@@ -70,7 +70,6 @@ unit Breakpoints
     // clear the breakpoint in X
     ClearX() // munts X
     {
-        PHA
 #ifdef CPU_65C02S        
         STZ ZP.BRKH, X
         STZ ZP.BRKL, X
@@ -81,8 +80,6 @@ unit Breakpoints
 #endif   
         // check if any breakpoint is set
         check();
-
-        PLA
     }
     
     // is current hopper PC at a a breakpoint?

@@ -1322,8 +1322,12 @@ unit Instruction
         STA IDXH
         
         // offset = code[index]
+#ifdef CPU_65C02S
+        LDA [IDX]
+#else        
         LDY # 0
         LDA [IDX], Y
+#endif
         STA IDYL
         
         // zero offset?
@@ -1363,9 +1367,13 @@ unit Instruction
     {
         // default: simply add PC to tableSize
         // tableSize = (maxRange + 1 - minRange)
-        CLC
         LDA TOPH
+#ifdef CPU_65C02S        
+        INC
+#else
+        CLC
         ADC # 1
+#endif
         SEC
         SBC TOPL
         
@@ -1395,9 +1403,13 @@ unit Instruction
     {
         // default: simply add PC to tableSize
         // tableSize = (maxRange + 1 - minRange)
-        CLC
         LDA TOPH
+#ifdef CPU_65C02S        
+        INC
+#else
+        CLC
         ADC # 1
+#endif
         SEC
         SBC TOPL
         // tableSize is in A

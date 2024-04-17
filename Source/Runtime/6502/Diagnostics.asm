@@ -5,14 +5,17 @@ unit Diagnostics
         Stacks.PopA(); BRK // user error from Hopper in A
     }
     
-    
     // used by 'F' command
     PageMemory()
     {
         // page # : A -> IDX
         STA ZP.IDXH
+#ifdef CPU_65C02S        
+        STZ ZP.IDXL
+#else
         LDA # 0
         STA ZP.IDXL
+#endif
         
         // find the first non-zero from the back
         
@@ -49,7 +52,7 @@ unit Diagnostics
                     Serial.HexOut();
                 }
                 INY
-                CPY #0x00 // after 0xFF
+                //CPY #0x00 // after 0xFF
                 if (Z) { break; }
             }
             return;
@@ -73,7 +76,7 @@ unit Diagnostics
             
             LDA [ZP.IDX], Y
             if (NZ) { break; } // [ZP.IDX], Y is first non-zero from the end
-            CPY #0
+            CPY # 0
             if (Z) 
             { 
                 // entire page is zeroes
@@ -84,7 +87,7 @@ unit Diagnostics
         }
         
         TYA 
-        LDY #0
+        LDY # 0
         TAX // Y -> X
         loop
         {
@@ -124,30 +127,4 @@ unit Diagnostics
             DEX
         }
     }
-    /*
-    PageMemory()
-    {
-        // page # is in A
-        STA ZP.IDXH
-        STZ ZP.IDXL
-        
-        LDY #0
-        loop
-        {
-            LDA [ZP.IDX], Y
-            if (Z)
-            {
-                LDA # '.'
-                Serial.WriteChar();
-            }
-            else
-            {
-                Serial.HexOut();
-            }
-            INY
-            CPY #0x00 // ; after $FF
-            if (Z) { break; }
-        }
-    }
-    */
 }

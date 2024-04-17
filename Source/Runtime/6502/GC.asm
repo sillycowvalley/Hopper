@@ -36,7 +36,6 @@ unit GC
         // size is in FSIZE
         // return address in IDX
         
-        //phx
         TAX
         
         LDA IDYL
@@ -82,7 +81,6 @@ unit GC
         PLA
         STA IDYL
         
-        //plx
     }
     
     AddReference()
@@ -231,12 +229,16 @@ unit GC
         PHA
         */
         // get the memory block size  
+        
+        // IDX = IDY - 2
+        SEC
         LDA IDYL
-        STA IDXL      
+        SBC # 2
+        STA IDXL
         LDA IDYH
+        SBC # 0
         STA IDXH
-        DecIDX();
-        DecIDX();
+        
         LDY # 0 
         LDA [IDX], Y
         STA ACCL
@@ -284,12 +286,18 @@ unit GC
             
             IncDESTINATIONADDRESS();
             IncSOURCEADDRESS();
-            DecLENGTH();
+            
+            LDA FLENGTHL
+            if (Z)
+            {
+                DEC FLENGTHH
+            }
+            DEC FLENGTHL
         }
         
         // exact clone : make sure reference count is only one
-        LDY # 1
-        LDA # 1
+        INY 
+        TYA // 1 -> A
         STA [IDX], Y
         
         /*

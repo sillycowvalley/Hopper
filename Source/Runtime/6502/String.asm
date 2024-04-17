@@ -164,7 +164,13 @@ unit String
             STA [FDESTINATIONADDRESS], Y
             IncDESTINATIONADDRESS();
             IncSOURCEADDRESS();
-            DecCOUNT();
+            
+            LDA LCOUNTL
+            if (Z)
+            {
+                DEC LCOUNTH
+            }
+            DEC LCOUNTL
         } // loop
     }
     
@@ -658,7 +664,7 @@ unit String
         STA FSOURCEADDRESSH
         STA FDESTINATIONADDRESSH
         
-        DecSOURCEADDRESS();        // by one..
+        DecSOURCEADDRESS();        // by one.. (munts A)
         
         LDA FLENGTHL
         STA FSIZEL
@@ -681,9 +687,21 @@ unit String
             LDA [FSOURCEADDRESS], Y
             STA [FDESTINATIONADDRESS] , Y
             
-            DecSOURCEADDRESS();
-            DecDESTINATIONADDRESS();
-            DecSIZE();
+            DecSOURCEADDRESS();      // munts A
+            
+            LDA FDESTINATIONADDRESSL
+            if (Z)
+            {
+                DEC FDESTINATIONADDRESSH
+            }
+            DEC FDESTINATIONADDRESSL
+            
+            LDA FSIZEL
+            if (Z)
+            {
+                DEC FSIZEH
+            }
+            DEC FSIZEL
         }
 
         // build[0] = insertChar

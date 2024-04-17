@@ -79,13 +79,16 @@ unit Free
         loop
         {
             // mfSIZE  = ReadWord(IDX - 2)
+            
+            // IDY = IDX - 2
+            SEC
             LDA IDXL
+            SBC # 2
             STA IDYL
             LDA IDXH
+            SBC # 0
             STA IDYH
-
-            DecIDY();
-            DecIDY();
+            
             LDY #0
             LDA [IDY], Y
             STA mfSIZEL

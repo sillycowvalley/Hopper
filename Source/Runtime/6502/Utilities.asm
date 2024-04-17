@@ -9,18 +9,18 @@ unit Utilities
     MakeNibble()
     {
         // only touches A
-        CMP #'9'+1
+        CMP # ('9'+1)
         if (C)
         {
-            SBC #7+1
+            SBC # (7+1)
         }
-        SBC     #'0'-1
-        AND     #0x0F
+        SBC     # ('0'-1)
+        AND     # 0x0F
     }
     
     SendSlash()
     {
-        LDA #Slash // "\"
+        LDA # Slash // "\"
         Serial.WriteChar();
     }
     WaitForEnter()
@@ -42,7 +42,7 @@ unit Utilities
         LDA #0
         loop
         {
-            LDY #0
+            TAY // 0 -> Y
             loop
             {
                 STA [IDX], Y
@@ -62,14 +62,6 @@ unit Utilities
         if (Z)
         {
             INC ZP.IDXH
-        }
-    }
-    IncIDY()
-    {
-        INC ZP.IDYL
-        if (Z)
-        {
-            INC ZP.IDYH
         }
     }
     IncPC()
@@ -98,50 +90,6 @@ unit Utilities
         LDA ACCH
         SBC # 0
         STA ACCH
-        PLA
-    }
-    DecIDY()
-    {
-        PHA
-        LDA IDYL
-        if (Z)
-        {
-            DEC IDYH
-        }
-        DEC IDYL
-        PLA
-    }
-    DecIDX()
-    {
-        PHA
-        LDA IDXL
-        if (Z)
-        {
-            DEC IDXH
-        }
-        DEC IDXL
-        PLA
-    }
-    DecLENGTH()
-    {
-        PHA
-        LDA FLENGTHL
-        if (Z)
-        {
-            DEC FLENGTHH
-        }
-        DEC FLENGTHL
-        PLA
-    }
-    DecCOUNT()
-    {
-        PHA
-        LDA LCOUNTL
-        if (Z)
-        {
-            DEC LCOUNTH
-        }
-        DEC LCOUNTL
         PLA
     }
     IncSOURCEADDRESS()
@@ -176,39 +124,13 @@ unit Utilities
             INC ZP.FSIZEH
         }
     }
-    DecSIZE()
-    {
-        PHA
-        LDA FSIZEL
-        if (Z)
-        {
-            DEC FSIZEH
-        }
-        DEC FSIZEL
-        PLA
-    }
     DecSOURCEADDRESS()
     {
-        PHA
         LDA FSOURCEADDRESSL
         if (Z)
         {
             DEC FSOURCEADDRESSH
         }
         DEC FSOURCEADDRESSL
-        PLA
     }
-    DecDESTINATIONADDRESS()
-    {
-        PHA
-        LDA FDESTINATIONADDRESSL
-        if (Z)
-        {
-            DEC FDESTINATIONADDRESSH
-        }
-        DEC FDESTINATIONADDRESSL
-        PLA
-    }
-    
-    
 }
