@@ -10,7 +10,7 @@ program Runtime
 //#define MEMORYLEAKS
 
 //#define LOCALDEBUGGER  // for debugging portable runtime locally
-//#define CPU_Z80
+#define CPU_Z80
 
 // Minimal Runtime is the value-type only, minimal SysCalls version that we translate to Z80
 #ifdef CPU_Z80

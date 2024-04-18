@@ -4,21 +4,6 @@ program Assemble
     #define SHORT_CALLS  // use CALLB to save space
     #define ASSEMBLER
     
-    
-// ############## Hopper VM RAM map ##############
-//
-// 256-byte zero page               0x0000..0x00FF
-// 256-byte 6502 stack              0x0100..0x01FF
-// 256-byte keyboard buffer:        0x0200..0x02FF
-// 256-byte serial buffer:          0x0300..0x03FF
-//                    
-// 256-byte callstack (128 slots):  0x0400..0x04FF
-// 256-byte type stack (256 slots): 0x0500..0x05FF
-// 512-byte value stack(256 slots): 0x0600..0x06FF or 0x07FF (8 or 16 bit stack pointer)
-//
-// Hopper programs are loaded at 0x0700 or 0x0800 depending on size of value stack
-//    
-    
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     uses "/Source/System/Screen"
@@ -53,8 +38,8 @@ program Assemble
     
     badArguments()
     {
-        PrintLn("Invalid arguments for ASSEMBLE:");
-        PrintLn("  ASSEMBLE <object json>");
+        PrintLn("Invalid arguments for 65ASM:");
+        PrintLn("  65ASM <object json>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
         PrintLn("    -x         : use experimental features");
     }
@@ -552,9 +537,6 @@ program Assemble
                 Asm6502.AppendCode(GetBInstruction(conditionString));
                 Asm6502.AppendCode(+3);
             }
-            
-            
-            
             
             // if false jump past
             uint jumpPast = Asm6502.NextAddress;
@@ -1735,35 +1717,32 @@ program Assemble
                 iHopper = mOverloads[0];
                 Symbols.AddFunctionCall(iHopper); // yup, main is called at least once
                 
-                if ((Architecture & CPUArchitecture.M6502) == CPUArchitecture.M6502)
+                uint iIndex;
+                uint nIndex;
+                
+                if (Symbols.GetFunctionIndex("IRQ", ref iIndex))
                 {
-                    uint iIndex;
-                    uint nIndex;
-                    
-                    if (Symbols.GetFunctionIndex("IRQ", ref iIndex))
+                    mOverloads = Symbols.GetFunctionOverloads(iIndex);
+                    if (mOverloads.Count != 1)
                     {
-                        mOverloads = Symbols.GetFunctionOverloads(iIndex);
-                        if (mOverloads.Count != 1)
-                        {
-                            Parser.Error("'IRQ' has overloads?");
-                            break;
-                        }
-                        iIRQ = mOverloads[0];
-                        Symbols.OverloadToCompile(iIRQ);
-                        Symbols.AddFunctionCall(iIRQ);
+                        Parser.Error("'IRQ' has overloads?");
+                        break;
                     }
-                    if (Symbols.GetFunctionIndex("NMI", ref nIndex))
+                    iIRQ = mOverloads[0];
+                    Symbols.OverloadToCompile(iIRQ);
+                    Symbols.AddFunctionCall(iIRQ);
+                }
+                if (Symbols.GetFunctionIndex("NMI", ref nIndex))
+                {
+                    mOverloads = Symbols.GetFunctionOverloads(nIndex);
+                    if (mOverloads.Count != 1)
                     {
-                        mOverloads = Symbols.GetFunctionOverloads(nIndex);
-                        if (mOverloads.Count != 1)
-                        {
-                            Parser.Error("'NMI' has overloads?");
-                            break;
-                        }
-                        iNMI = mOverloads[0];
-                        Symbols.OverloadToCompile(iNMI);
-                        Symbols.AddFunctionCall(iNMI);
+                        Parser.Error("'NMI' has overloads?");
+                        break;
                     }
+                    iNMI = mOverloads[0];
+                    Symbols.OverloadToCompile(iNMI);
+                    Symbols.AddFunctionCall(iNMI);
                 }
 
                 // start with iHopper

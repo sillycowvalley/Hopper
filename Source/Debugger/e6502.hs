@@ -21,8 +21,11 @@ program E6502
     uses "6502/Shared"
     
     bool emulateAppleI;
-    bool ogMode;
     bool EmulateAppleI { get { return emulateAppleI; } }
+    bool terminal6850;
+    bool Terminal6850  { get { return terminal6850; } }
+    
+    bool ogMode;
     bool OGMode { get { return ogMode; } }
     
     bool haveKey;
@@ -96,7 +99,7 @@ program E6502
             if (BreakCheck()) { break; }
             uint pc = W65C02.PC;
             if (pc == InvalidAddress) { break; }
-            StepInto();
+            StepInto(true);
         }
     }
     Debug()
@@ -113,7 +116,7 @@ program E6502
                 ClearIfZeroBreakPoint(pc);
                 break;
             }
-            StepInto();
+            StepInto(false);
             first = false;
         }
     }
@@ -130,10 +133,10 @@ program E6502
         }
         else
         {
-            StepInto();
+            StepInto(false);
         }
     }
-    StepInto()
+    StepInto(bool ignoreBreakPoints)
     {
         if (EmulateAppleI)
         {
@@ -151,7 +154,7 @@ program E6502
         }
         addressHits[pc] = addressHits[pc] + 1;
 #endif
-        W65C02.Execute();
+        W65C02.Execute(ignoreBreakPoints);
     }
     ClearIfZeroBreakPoint(uint address)
     {
@@ -523,8 +526,13 @@ program E6502
     BadArguments()
     {
         PrintLn("Invalid arguments for E6502:");
+        if (terminal6850 && emulateAppleI)
+        {
+            PrintLn("  -t and -1 are mutually exclusive options");
+        }
         PrintLn("  E6502 <.asm filepath>");
         PrintLn("    -1         : emulate Apple I DSP and KBD");
+        PrintLn("    -t         : emulate 6850 in terminal mode (not COM0)");
         PrintLn("    -og        : traditional syntax to keep the OG's happy");
     }
     
@@ -547,6 +555,10 @@ program E6502
                   case "-1":
                   {
                       emulateAppleI = true;
+                  }
+                  case "-t":
+                  {
+                      terminal6850 = true;
                   }
                   case "-og":
                   {
@@ -571,6 +583,10 @@ program E6502
         else if (args.Count == 1)
         {
             filePath = args[0];
+        }
+        if (terminal6850 && emulateAppleI)
+        {
+            showHelp = true;
         }
         
         if (filePath.Length == 0)
@@ -882,7 +898,7 @@ program E6502
                     }
                     else if (currentCommand == 'I') // Step (single / into / F11)
                     {
-                        StepInto();
+                        StepInto(false);
                         uint pc = W65C02.PC;
                         if (pc != InvalidAddress)
                         {

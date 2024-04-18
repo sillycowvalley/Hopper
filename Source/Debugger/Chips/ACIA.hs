@@ -55,7 +55,10 @@ unit ACIA
         {
             // 4242 is a magic number that means "0, but as server (not client)"
             // "COM0" is our fake interprocess COM port on Windows (named pipe)
-            Serial.Connect(4242); 
+            if (!Terminal6850)
+            {
+                Serial.Connect(4242); 
+            }
             initialized = true;
         }
     }
@@ -63,7 +66,10 @@ unit ACIA
     {
         if (initialized)
         {
-            Serial.Close();
+            if (!Terminal6850)
+            {
+                Serial.Close();
+            }
             initialized = false;
         }
     }
@@ -74,11 +80,33 @@ unit ACIA
     {
         if (initialized)
         {
-            if (!readWaiting && Serial.IsAvailable)
+            if (!readWaiting)
             {
-                readChar = Serial.ReadChar();
-                readWaiting = true;
-                return true; // request IRQ
+                if (Terminal6850)
+                {
+                    if (KeyAvailable())
+                    {
+                        Key key = PeekKey();
+                        if (key != Key.ControlC)
+                        {
+                            _ = GetKey(); // consume it
+                            char maker;
+                            readChar = ToSerial(key, ref maker);
+                            if (readChar == char(0x0D))
+                            {
+                                readChar = Char.EOL;
+                            }
+                            readWaiting = true;
+                            return true; // request IRQ
+                        }
+                    }
+                }
+                else if (Serial.IsAvailable)
+                {
+                    readChar = Serial.ReadChar();
+                    readWaiting = true;
+                    return true; // request IRQ
+                }
             }
         }
         return false;
@@ -97,14 +125,28 @@ unit ACIA
             }
             if (address == dataRegister)
             {
-                Serial.WriteChar(char(value));
-                if (value > 32)
+                if (Terminal6850)
                 {
-                    Print(char(value), Colour.MatrixRed, Colour.Black);
+                    if (value >= 32)
+                    {
+                        Print(char(value), Colour.Ocean, Colour.Black);
+                    }
+                    else if (value == 0x0A)
+                    {
+                        PrintLn();
+                    }
                 }
                 else
                 {
-                    Print(" " +value.ToHexString(2) + " ", Colour.MatrixRed, Colour.Black);
+                    Serial.WriteChar(char(value));
+                    if (value > 32)
+                    {
+                        Print(char(value), Colour.MatrixRed, Colour.Black);
+                    }
+                    else
+                    {
+                        Print(" " +value.ToHexString(2) + " ", Colour.MatrixRed, Colour.Black);
+                    }
                 }
                 written = true;
             }

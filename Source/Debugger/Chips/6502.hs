@@ -253,7 +253,7 @@ unit W65C02
         pcRegister = Pop() + (Pop() << 8);
     }
     
-    Execute()
+    Execute(bool ignoreBreakPoints)
     {
         if (pcRegister == InvalidAddress) { return; }
         
@@ -262,13 +262,26 @@ unit W65C02
         {
             nmiWaiting--;
             doNMI();
+            if (!ignoreBreakPoints)
+            {
+                if (IsBreakPoint(pcRegister))
+                {
+                    return;
+                }
+            }
         }
         else if ((irqWaiting > 0) && !iFlag)
         {
             irqWaiting--;
-            doIRQ();   
+            doIRQ();  
+            if (!ignoreBreakPoints)
+            {
+                if (IsBreakPoint(pcRegister))
+                {
+                    return;
+                }
+            } 
         }
-        
         
         OpCode instruction             = OpCode(memory[pcRegister]);
         uint length                    = Asm6502.GetInstructionLength(instruction);

@@ -30,8 +30,8 @@ program Generate
     
     badArguments()
     {
-        PrintLn("Invalid arguments for ASMGEN:");
-        PrintLn("  ASMGEN <code file>");
+        PrintLn("Invalid arguments for 65GEN:");
+        PrintLn("  65GEN <code file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
     }
     
