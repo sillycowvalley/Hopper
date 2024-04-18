@@ -10,7 +10,7 @@ program R6502
 
         
 #if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS)
-    #define ROM_8K // 60 bytes remaining without FASTINTS
+    #define ROM_8K // 22 bytes remaining without FASTINTS
 #endif
     
 #if defined(CPU_6502)   && !defined(JIX_INSTRUCTIONS) && !defined(CHECKED) && !defined(FASTINTS)

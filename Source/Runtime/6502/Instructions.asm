@@ -61,7 +61,7 @@ unit Instruction
         
         PUSHD      = 0x60,
         
-        //JIX      = 0x69,
+        JIX        = 0x69,
         
         ADD        = 0x80,
         ADDI       = 0x81,
@@ -140,7 +140,7 @@ unit Instruction
         SYSCALL01    = 0xAC,
         SYSCALL10    = 0xAD,
         
-        JIXB         = 0x68,
+        //JIXB       = 0x68,
         
         
         PUSHI0       = 0x44,
@@ -289,7 +289,7 @@ unit Instruction
             case Instructions.JZ:
             case Instructions.JNZ:
             case Instructions.JW:
-            //case Instructions.JIX:
+            case Instructions.JIX:
             
             case Instructions.PUSHI:
             case Instructions.PUSHD:
@@ -314,7 +314,7 @@ unit Instruction
             case Instructions.PUSHIBB:
             case Instructions.PUSHILT:
             case Instructions.PUSHILEI:
-            case Instructions.JIXB:
+            //case Instructions.JIXB:
             {
                 return3();
             }
@@ -1345,7 +1345,7 @@ unit Instruction
             INC PCH
         }
     }
-    /*
+    
     jixDefault()
     {
         // default: simply add PC to tableSize
@@ -1382,7 +1382,7 @@ unit Instruction
         }
         jCommon(); // PC += offset - 3
     }
-    */
+    /*
     jixbDefault()
     {
         // default: simply add PC to tableSize
@@ -1408,7 +1408,7 @@ unit Instruction
         }
         jCommon(); // PC += offset - 3
     }
-    /*
+    */
     jix()
     {
 #ifdef JIX_INSTRUCTIONS
@@ -1436,7 +1436,7 @@ unit Instruction
         LDA 0x0A BRK // no JIX instructions
 #endif
     }
-    */
+    /*
     jixb()
     {
 #ifdef JIX_INSTRUCTIONS
@@ -1464,6 +1464,7 @@ unit Instruction
         LDA 0x0A BRK // no JIX instructions
 #endif
     }
+    */
     
     jw()
     {
@@ -2601,12 +2602,10 @@ unit Instruction
             {
                 jnz();
             }
-            /*
             case Instructions.JIX:
             {
                 jix();
             }
-            */
             
             case Instructions.CALL:
             {
@@ -2874,6 +2873,7 @@ unit Instruction
                 missing();
 #endif
             }
+            /*
             case Instructions.JIXB:
             {
 #ifdef PACKED_INSTRUCTIONS
@@ -2882,6 +2882,7 @@ unit Instruction
                 missing();
 #endif
             }
+            */
             case Instructions.ENTERB:
             {
 #ifdef PACKED_INSTRUCTIONS

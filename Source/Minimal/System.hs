@@ -1,7 +1,7 @@
 unit System
 {
     #define MINIMAL_RUNTIME
-    #define NO_JIXW_INSTRUCTIONS
+    //#define NO_JIX_INSTRUCTIONS
     //#define NO_PACKED_INSTRUCTIONS
     
     uses "Char"

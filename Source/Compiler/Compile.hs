@@ -1076,18 +1076,13 @@ program Compile
                 // expression has already been parsed, result is on the stack
                 uint operand = byte(minByte) + (byte(maxByte) << 8);
                 
-                bool useJIXB = (maxOffset <= 255) && !NoPackedInstructions;
+                bool useJIXB = (maxOffset <= 255) && !NoPackedInstructions && !TargetMinimal;
                 if (useJIXB)
                 {
                     CodeStream.AddInstruction(Instruction.JIXB, operand);
                 }
                 else
                 {
-                    if (NoJIXWInstructions)
-                    {
-                        Parser.Error("maximum offset is " + maxOffset.ToString() + " and only JIXB is supported by this platform");
-                        break;
-                    }
                     CodeStream.AddInstruction(Instruction.JIX, operand);
                 }
                 

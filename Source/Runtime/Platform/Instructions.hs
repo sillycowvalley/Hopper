@@ -91,7 +91,7 @@ unit Instructions
         WriteToJumpTable(OpCode.POPCOPYLOCALB01, Instructions.PopCopyLocalB01);
         WriteToJumpTable(OpCode.ENTER, Instructions.Enter);
         WriteToJumpTable(OpCode.ENTERB, Instructions.EnterB);
-#ifndef NO_JIX_INSTRUCTIONS        
+#ifndef NO_JIX_INSTRUCTIONS
         WriteToJumpTable(OpCode.JIXB, Instructions.JIXB);
 #endif
         WriteToJumpTable(OpCode.PUSHILE, Instructions.PushILE);
@@ -138,7 +138,7 @@ unit Instructions
         WriteToJumpTable(OpCode.CAST, Instructions.Cast);
         WriteToJumpTable(OpCode.BITXOR, Instructions.BitXor);
         WriteToJumpTable(OpCode.JREL, Instructions.JREL);
-#if defined(NO_JIX_INSTRUCTIONS) || defined(NO_JIXW_INSTRUCTIONS)
+#ifndef NO_JIX_INSTRUCTIONS
         WriteToJumpTable(OpCode.JIX, Instructions.JIX);
 #endif
         WriteToJumpTable(OpCode.CALL, Instructions.Call);
