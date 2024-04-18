@@ -49,6 +49,58 @@ byte getTicks(uint16_t address)
     return pTicks[address];
 }
 
+////////////////////////////////////////////////////////////////////
+// BOARD DEFINITIONS
+////////////////////////////////////////////////////////////////////
+
+#include "memorymap.h"      // Memory Map (ROM, RAM, PERIPHERALS)
+#include "portmap.h"        // Pin mapping to cpu
+#include "setuphold.h"      // Delays required to meet setup/hold
+
+unsigned long clock_cycle_count;
+unsigned long clock_cycle_last;
+
+word          uP_ADDR;
+byte          uP_DATA;
+
+void uP_assert_reset()
+{
+    // Drive RESET conditions
+    digitalWriteFast(uP_RESET_N,  LOW);
+    digitalWriteFast(uP_IRQ_N,    HIGH);
+    digitalWriteFast(uP_NMI_N,    HIGH);
+    digitalWriteFast(uP_RDY,      HIGH);
+    digitalWriteFast(uP_SO_N,     HIGH);
+}
+
+void uP_release_reset()
+{
+    // Drive RESET conditions
+    digitalWriteFast(uP_RESET_N,  HIGH);
+}
+
+void uP_init()
+{
+    // Set directions for ADDR & DATA Bus.
+    configure_PINMODE_ADDR();
+    configure_PINMODE_DATA();
+
+    pinMode(uP_RESET_N, OUTPUT);
+    pinMode(uP_RW_N,    INPUT_PULLUP);
+    pinMode(uP_RDY,     OUTPUT);
+    pinMode(uP_SO_N,    OUTPUT);
+    pinMode(uP_IRQ_N,   OUTPUT);
+    pinMode(uP_NMI_N,   OUTPUT);
+    pinMode(uP_CLK_E,   OUTPUT);
+    pinMode(uP_GPIO,    INPUT_PULLUP);
+      
+    digitalWriteFast(uP_CLK_E, LOW); 
+    uP_assert_reset();
+
+    clock_cycle_count = 0;
+
+}
+
 
 ////////////////////////////////////////////////////////////////////
 // Motorolla 6850 ACIA
@@ -62,7 +114,6 @@ byte aciaControl;
 byte aciaRxData;
 byte aciaTxData;
 byte aciaStatus;
-byte aciaIRQTicks;
 
 const byte ACIA_TDRE = 0b00000010;
 const byte ACIA_RDRF = 0b00000001;
@@ -74,7 +125,6 @@ void init6850ACIA()
     aciaRxData   = 0;
     aciaTxData   = 0;
     aciaStatus   = ACIA_TDRE;  // bit 1 set means TDRE is empty and ready - we should always be ready to send data
-    aciaIRQTicks = 0;
 }
 
 
@@ -95,10 +145,12 @@ void tx6850ACIA(unsigned int address, byte data)
         Serial.print(str);
     }
 }
+
 inline __attribute__((always_inline))
 byte rx6850ACIA(unsigned int address) 
 {
     byte data;
+    digitalWrite(uP_IRQ_N, HIGH);
     if (address == ACIA_STATUS)
     {
         data = aciaStatus;
@@ -128,66 +180,15 @@ void service6850ACIA()
                 aciaRxData   = ch & 0xFF;                             // byte from int?          
                 aciaStatus   = aciaStatus | (ACIA_INTR | ACIA_RDRF);  // interrupt and RDRF bits set to indicate that data is ready
 
-                //digitalWrite(uP_IRQ_N, LOW);
-                //aciaIRQTicks = 2;
+                // signal an interrupt:
+                digitalWrite(uP_IRQ_N, LOW);
             }
             sei();
         }
     }
 }
 
-////////////////////////////////////////////////////////////////////
-// BOARD DEFINITIONS
-////////////////////////////////////////////////////////////////////
 
-#include "memorymap.h"      // Memory Map (ROM, RAM, PERIPHERALS)
-#include "portmap.h"        // Pin mapping to cpu
-#include "setuphold.h"      // Delays required to meet setup/hold
-
-unsigned long clock_cycle_count;
-unsigned long clock_cycle_last;
-
-word          uP_ADDR;
-byte          uP_DATA;
-
-void uP_assert_reset()
-{
-  // Drive RESET conditions
-  digitalWriteFast(uP_RESET_N,  LOW);
-  digitalWriteFast(uP_IRQ_N,    HIGH);
-  digitalWriteFast(uP_NMI_N,    HIGH);
-  digitalWriteFast(uP_RDY,      HIGH);
-  digitalWriteFast(uP_SO_N,     HIGH);
-}
-
-void uP_release_reset()
-{
-  // Drive RESET conditions
-  digitalWriteFast(uP_RESET_N,  HIGH);
-}
-
-void uP_init()
-{
-  // Set directions for ADDR & DATA Bus.
- 
-  configure_PINMODE_ADDR();
-  configure_PINMODE_DATA();
-
-  pinMode(uP_RESET_N, OUTPUT);
-  pinMode(uP_RW_N,    INPUT_PULLUP);
-  pinMode(uP_RDY,     OUTPUT);
-  pinMode(uP_SO_N,    OUTPUT);
-  pinMode(uP_IRQ_N,   OUTPUT);
-  pinMode(uP_NMI_N,   OUTPUT);
-  pinMode(uP_CLK_E,   OUTPUT);
-  pinMode(uP_GPIO,    INPUT_PULLUP);
-    
-  digitalWriteFast(uP_CLK_E, LOW); 
-  uP_assert_reset();
-
-  clock_cycle_count = 0;
-
-}
 
 
 ////////////////////////////////////////////////////////////////////
@@ -283,30 +284,30 @@ void cpu_tick()
 ////////////////////////////////////////////////////////////////////
 void setup() 
 {
-  Serial.begin(0);
-  while (!Serial);
+    Serial.begin(0);
+    while (!Serial);
 
-  /*
-  Serial.println("Configuration:");
-  Serial.println("==============");
-  print_teensy_version();
-  Serial.print("Debug:      "); Serial.println(outputDEBUG, HEX);
-  Serial.print("SRAM Size:  "); Serial.print(RAM_END - RAM_START + 1, DEC); Serial.println(" Bytes");
-  Serial.print("SRAM_START: 0x"); Serial.println(RAM_START, HEX); 
-  Serial.print("SRAM_END:   0x"); Serial.println(RAM_END, HEX); 
-  Serial.println("");
-  */
+    /*
+    Serial.println("Configuration:");
+    Serial.println("==============");
+    print_teensy_version();
+    Serial.print("Debug:      "); Serial.println(outputDEBUG, HEX);
+    Serial.print("SRAM Size:  "); Serial.print(RAM_END - RAM_START + 1, DEC); Serial.println(" Bytes");
+    Serial.print("SRAM_START: 0x"); Serial.println(RAM_START, HEX); 
+    Serial.print("SRAM_END:   0x"); Serial.println(RAM_END, HEX); 
+    Serial.println("");
+    */
 
-  // Initialize processor GPIO's
-  uP_init();
-  init6850ACIA();
+    // Initialize processor GPIO's
+    uP_init();
+    init6850ACIA();
 
-  // Reset processor for 25 cycles
-  uP_assert_reset();
-  for (int i=0; i<25; i++) cpu_tick();
-  uP_release_reset();
+    // Reset processor for 25 cycles
+    uP_assert_reset();
+    for (int i=0; i<25; i++) cpu_tick();
+    uP_release_reset();
 
-  //Serial.write((uint8_t)0x5C);
+    //Serial.write((uint8_t)0x5C);
 }
 
 
@@ -319,6 +320,9 @@ void loop()
 {
     cpu_tick();
     i++;
-    if (i == 0) service6850ACIA();
-    if (i == 0) Serial.flush();
+    if (i == 0) // every 256 laps ..
+    {
+        service6850ACIA();
+        Serial.flush();
+    }
 }

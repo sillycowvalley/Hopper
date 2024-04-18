@@ -1,7 +1,7 @@
 unit SerialDevice
 {
     // Motorola 6850
-    //#define HAS_SERIAL_ISR
+    #define HAS_SERIAL_ISR
     
     // On the 6850 the control and status registers are at the same
     // address and are selected based on R or W.
@@ -54,7 +54,7 @@ unit SerialDevice
             if (BBS0, StatusRegister) // RDRF : receive data register full
             {
                 PHA
-                LDA DataRegister // read serial byte
+                LDA DataRegister        // read serial byte
                 CMP #0x03               // is it break? (<ctrl><C>)
                 if (Z)
                 {
