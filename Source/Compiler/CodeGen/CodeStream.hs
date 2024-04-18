@@ -21,6 +21,7 @@ unit CodeStream
     bool isExperimental;
     bool noPackedInstructions;
     bool noJixInstructions;
+    bool noJixWInstructions;
     bool peepHole;
     bool isCDecl;
     
@@ -31,7 +32,8 @@ unit CodeStream
     }
     
     bool NoPackedInstructions { get { return noPackedInstructions; } }
-    bool NoJIXInstructions { get { return noJixInstructions; } }
+    bool NoJIXInstructions  { get { return noJixInstructions; } }
+    bool NoJIXWInstructions { get { return noJixWInstructions; } }
     bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
     bool IsShortCalls   { get { return shortCallsDefined; } }
     bool Target6502     { get { return h6502Defined; } }
@@ -44,6 +46,7 @@ unit CodeStream
     {
         noPackedInstructions = Symbols.DefineExists("NO_PACKED_INSTRUCTIONS");
         noJixInstructions    = Symbols.DefineExists("NO_JIX_INSTRUCTIONS");
+        noJixWInstructions   = Symbols.DefineExists("NO_JIXW_INSTRUCTIONS");
         isExperimental       = Symbols.DefineExists("EXPERIMENTAL");
                 
         shortCallsDefined = Symbols.DefineExists("SHORT_CALLS");

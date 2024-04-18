@@ -61,7 +61,7 @@ unit Instruction
         
         PUSHD      = 0x60,
         
-        JIX        = 0x69,
+        //JIX      = 0x69,
         
         ADD        = 0x80,
         ADDI       = 0x81,
@@ -289,7 +289,7 @@ unit Instruction
             case Instructions.JZ:
             case Instructions.JNZ:
             case Instructions.JW:
-            case Instructions.JIX:
+            //case Instructions.JIX:
             
             case Instructions.PUSHI:
             case Instructions.PUSHD:
@@ -549,7 +549,7 @@ unit Instruction
         EOR # 0x01
         STA ZP.TOPL
         
-        LDA #Types.UInt
+        LDA #Types.Bool
         Stacks.PushTop();
     }
     boolOr()
@@ -561,7 +561,7 @@ unit Instruction
         ORA ZP.TOPL
         STA ZP.NEXTL
         
-        LDA #Types.UInt
+        LDA #Types.Bool
         Stacks.PushNext();
     }
     boolAnd()
@@ -573,7 +573,7 @@ unit Instruction
         AND ZP.TOPL
         STA ZP.NEXTL
         
-        LDA #Types.UInt
+        LDA #Types.Bool
         Stacks.PushNext();
     }
     bitAnd()
@@ -595,7 +595,7 @@ unit Instruction
     {
         Stacks.PopTop();
         // [top] &  0xFF -> [top]
-        LDA #0
+        LDA # 0
         STA ZP.TOPH
         LDA #Types.UInt
         Stacks.PushTop();
@@ -737,7 +737,7 @@ unit Instruction
                 LDX # 1
             }
         }
-        Stacks.PushBool(); // X
+        Stacks.PushX(); // X
     }      
     eq()
     {
@@ -770,7 +770,7 @@ unit Instruction
                 LDX # 0
             }
         }
-        Stacks.PushBool(); // X
+        Stacks.PushX(); // X
     }
     
     // http://6502.org/tutorials/compare_instructions.html
@@ -790,7 +790,7 @@ unit Instruction
         {
             LDX #0 // NEXT >= TOP
         }
-        Stacks.PushBool(); // X
+        Stacks.PushX(); // X
     }
     lt()
     {
@@ -826,7 +826,7 @@ unit Instruction
                 LDX #0  // NEXT > TOP
             }
         }
-        Stacks.PushBool(); // X 
+        Stacks.PushX(); // as Type.Bool
     }
     le()
     {
@@ -860,7 +860,7 @@ unit Instruction
         {
             LDX #1   
         }
-        Stacks.PushBool(); // X   
+        Stacks.PushX(); // as Type.Bool  
     }
     gt()
     {
@@ -880,7 +880,7 @@ unit Instruction
                 LDX #1   // NEXT > TOP
             }
         }
-        Stacks.PushBool(); // X   
+        Stacks.PushX(); // as Type.Bool  
     }
     lti()
     {
@@ -911,7 +911,7 @@ unit Instruction
             LDX #1
             break;
         }
-        Stacks.PushBool(); // X 
+        Stacks.PushX(); // as Type.Bool
     }
     leiShared()
     {
@@ -935,7 +935,7 @@ unit Instruction
             // 0 or positive
             LDX #1
         }
-        Stacks.PushBool(); // X 
+        Stacks.PushX(); // as Type.Bool
     }
     lei()
     {
@@ -984,7 +984,7 @@ unit Instruction
             LDX #1
             break;
         }
-        Stacks.PushBool(); // X 
+        Stacks.PushX(); // as Type.Bool
     }
     gei()
     {
@@ -1008,7 +1008,7 @@ unit Instruction
             // 0 or positive
             LDX #1
         }
-        Stacks.PushBool(); // X 
+        Stacks.PushX(); // as Type.Bool
     }
     cast()
     {
@@ -1345,6 +1345,7 @@ unit Instruction
             INC PCH
         }
     }
+    /*
     jixDefault()
     {
         // default: simply add PC to tableSize
@@ -1381,6 +1382,7 @@ unit Instruction
         }
         jCommon(); // PC += offset - 3
     }
+    */
     jixbDefault()
     {
         // default: simply add PC to tableSize
@@ -1406,6 +1408,7 @@ unit Instruction
         }
         jCommon(); // PC += offset - 3
     }
+    /*
     jix()
     {
 #ifdef JIX_INSTRUCTIONS
@@ -1433,6 +1436,7 @@ unit Instruction
         LDA 0x0A BRK // no JIX instructions
 #endif
     }
+    */
     jixb()
     {
 #ifdef JIX_INSTRUCTIONS
@@ -2048,27 +2052,31 @@ unit Instruction
         LDA ZP.TOPT
         Stacks.PushTop(); 
     }
+    commonInc()
+    {
+        INC Address.ValueStackLSB, X
+        if (Z)
+        {
+            INC Address.ValueStackMSB, X
+            LDA # Types.UInt          // just in case it was Types.Byte
+            STA Address.TypeStackLSB, X
+        }
+    }
     incLocalB()
     {
         ConsumeOperandA();
         CLC
         ADC ZP.BP
-        TAY
-        
-        // slot to INC is in Y
-        CLC
-        LDA Address.ValueStackLSB, Y
-        ADC # 1
-        STA Address.ValueStackLSB, Y
-        LDA Address.ValueStackMSB, Y
-        ADC # 0
-        STA Address.ValueStackMSB, Y
-        if (NZ)
-        {
-            LDA # Types.UInt          // just in case it was Types.Byte
-            STA Address.TypeStackLSB, Y
-        }
+        TAX // slot to INC is in X
+        commonInc();
     }
+    incGlobalB()
+    {
+        ConsumeOperandB();
+        LDX ZP.IDXL // slot to INC is in X
+        commonInc();
+    }
+    
     decLocalB()
     {
         ConsumeOperandA();
@@ -2235,25 +2243,6 @@ unit Instruction
         pushShared(); // slot to push is in Y
     }
     
-    incGlobalB()
-    {
-        ConsumeOperandB();
-        LDY ZP.IDXL
-        
-        // slot to INC is in Y
-        CLC
-        LDA Address.ValueStackLSB, Y
-        ADC # 1
-        STA Address.ValueStackLSB, Y
-        LDA Address.ValueStackMSB, Y
-        ADC # 0
-        STA Address.ValueStackMSB, Y
-        if (NZ)
-        {
-            LDA # Types.UInt          // just in case it was Types.Byte
-            STA Address.TypeStackLSB, Y
-        }
-    }
     decGlobalB()
     {
         ConsumeOperandB();
@@ -2612,11 +2601,12 @@ unit Instruction
             {
                 jnz();
             }
+            /*
             case Instructions.JIX:
             {
                 jix();
             }
-            
+            */
             
             case Instructions.CALL:
             {

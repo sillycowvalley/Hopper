@@ -391,8 +391,10 @@ unit IntMath
         STA ZP.NEXTH
     }
     
-    doSigns() // munts X
+    popTopNextandDoSigns() // munts X
     {   
+        Stacks.PopTopNext();
+        
         LDX #0 
         LDA ZP.NEXTH
         ASL // sign bit into carry
@@ -420,12 +422,11 @@ unit IntMath
     }
     MulI()
     {
-        Stacks.PopTopNext();
-        doSigns(); // munts X
+        popTopNextandDoSigns(); // munts X
         mulShared();
         LDA ZP.FSIGN     // load the sign count
         CMP #1
-        if (Z)           // 0 or 2negatives
+        if (Z)           // 1 negative (not 0 or 2)
         {
             negateTop(); // TOP = -TOP
         }
@@ -451,13 +452,12 @@ unit IntMath
     }
     DivI()
     {
-        Stacks.PopTopNext();
-        doSigns(); // munts X
+        popTopNextandDoSigns(); // munts X
         utilityDiv();
         
         LDA ZP.FSIGN     // load the sign count
         CMP #1
-        if (Z)            // 0 or 2negatives
+        if (Z)           // 1 negative (not 0 or 2)
         {
             negateNext(); // NEXT = -NEXT
         }
@@ -474,8 +474,7 @@ unit IntMath
         //   -10 /  3 = q -3, r -1
         //    10 / -3 = q -3, r -11 ?!
         
-        Stacks.PopTopNext();
-        doSigns();
+        popTopNextandDoSigns(); // munts X
         divmod();
     
         // always leave remainder ACC as positive

@@ -72,8 +72,12 @@ unit SysCall
         ADC # '0' // 48
         
         STA ZP.TOPL
+#ifdef CPU_65C02S
+        STZ ZP.TOPH
+#else
         LDA # 0
         STA ZP.TOPH
+#endif
         LDA # Types.Char
         Stacks.PushTop();
     }
@@ -223,7 +227,7 @@ unit SysCall
     {
         ConsumeOperandA(); // iSysCall  -> A (uses ACC)
         PHA
-        Stacks.PopACC();   // iOverload -> ACC
+        Stacks.PopACC();   // iOverload -> ACCL, only care about ACCL (not ACCT or ACCH)
         
         // load iSyscCall into X (because JMP [nnnn,X] is then possible)
 #ifdef CPU_65C02S

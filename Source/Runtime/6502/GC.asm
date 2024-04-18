@@ -130,11 +130,15 @@ unit GC
         STA [IDX], Y
         
         // if zero, free
-        CMP #0
+        //CMP #0
         if (Z)
         {       
+#ifdef CPU_65C02S
+            LDA [IDX] // type
+#else            
             LDY # 0
             LDA [IDX], Y // type
+#endif
             switch (A)
             {
                 case Types.String:

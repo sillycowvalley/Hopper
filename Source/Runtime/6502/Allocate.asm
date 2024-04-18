@@ -37,15 +37,25 @@ unit Allocate
     {
         // size is in ACC
         // return address in IDX
-        LDA FREELISTL
-        STA IDYL
-        LDA FREELISTH
-        STA IDYH
+        LDA ZP.FREELISTL
+        STA ZP.IDYL
+        LDA ZP.FREELISTH
+        STA ZP.IDYH
 
         // size += 2 (space for 'size')
         Utilities.IncACC();
         Utilities.IncACC();
 
+#ifdef CPU_65C02S
+        STZ maBESTL
+        STZ maBESTH
+        STZ maBESTSIZEL
+        STZ maBESTSIZEH
+        STZ maBESTNEXTL
+        STZ maBESTNEXTH
+        STZ maBESTPREVL
+        STZ maBESTPREVH
+#else
         LDA # 0
         STA maBESTL
         STA maBESTH
@@ -55,27 +65,26 @@ unit Allocate
         STA maBESTNEXTH
         STA maBESTPREVL
         STA maBESTPREVH
-
-        CMP ACCH
+#endif
+        LDA ACCH
         if (Z) // < 256
         {
             LDA #6
-            CMP ACCL
+            CMP ZP.ACCL
             if (C) // size < 6?
             {
                 // minimum size for participation in free list
-                STA ACCL
+                STA ZP.ACCL
             }
         }
 
         loop
         {
             // available block search loop    
-            LDA #0
-            CMP IDYL
+            LDA IDYL
             if (Z)
             {
-                CMP IDYH
+                LDA IDYH
                 if (Z)
                 {
                     break;
@@ -100,11 +109,10 @@ unit Allocate
                 // [IDY] >= ACC
         
                 // (0 == maBESTSIZE) ? 
-                LDA #0
-                CMP maBESTSIZEL
+                LDA maBESTSIZEL
                 if (NZ)
                 {
-                    CMP maBESTSIZEH
+                    LDA maBESTSIZEH
                     if (NZ)
                     { 
                         // [IDY] < maBESTSIZE ?
@@ -247,11 +255,10 @@ unit Allocate
                 LDA maNEWHOLESIZEH
                 STA [maNEWHOLE], Y
     
-                LDA #0
-                CMP maBESTPREVL
+                LDA maBESTPREVL
                 if (Z)
                 {
-                    CMP maBESTPREVH
+                    LDA maBESTPREVH
                     if (Z)
                     {
                         // 0 == bestPrev
@@ -271,10 +278,10 @@ unit Allocate
                         INY
                         STA [maNEWHOLE], Y
             
-                        CMP maBESTNEXTL
+                        LDA maBESTNEXTL
                         if (Z)
                         {
-                            CMP maBESTNEXTH
+                            LDA maBESTNEXTH
                             if (Z)
                             {
                                 break; // memoryAllocateExit
@@ -309,11 +316,11 @@ unit Allocate
                 INY
                 LDA maNEWHOLEH
                 STA [maBESTPREV], Y
-                LDA #0
-                CMP maBESTNEXTL
+                
+                LDA maBESTNEXTL
                 if (Z)
                 {
-                    CMP maBESTNEXTH
+                    LDA maBESTNEXTH
                     if (Z)
                     {
                         break; // memoryAllocateExit
@@ -360,11 +367,10 @@ unit Allocate
             LDA maBESTSIZEH
             STA [maBEST], Y
     
-            LDA # 0
-            CMP maBESTPREVL
+            LDA maBESTPREVL
             if (Z)
             {
-                CMP maBESTPREVH
+                LDA maBESTPREVH
                 if (Z)
                 {
                     // 0 == bestPrev
@@ -375,11 +381,10 @@ unit Allocate
                     LDA maBESTNEXTH
                     STA FREELISTH
             
-                    LDA # 0
-                    CMP maBESTNEXTL
+                    LDA maBESTNEXTL
                     if (Z)
                     {
-                        CMP maBESTNEXTH
+                        LDA maBESTNEXTH
                         if (Z)
                         {
                             break; // memoryAllocateExit
@@ -406,11 +411,10 @@ unit Allocate
             LDA maBESTNEXTH
             STA [maBESTPREV], Y
     
-            LDA # 0
-            CMP maBESTNEXTL
+            LDA maBESTNEXTL
             if (Z)
             {
-                CMP maBESTNEXTH
+                LDA maBESTNEXTH
                 if (Z)
                 {
                     break; // memoryAllocateExit
@@ -467,8 +471,12 @@ unit Allocate
     
             // clear
             LDA # 0
+#ifdef CPU_65C02S
+            STA [maSCRATCH]
+#else            
             TAY // 0 -> Y
             STA [maSCRATCH], Y
+#endif
         }
     }
 }

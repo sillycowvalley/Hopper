@@ -115,7 +115,7 @@ unit Stacks
         STA Address.TypeStackLSB, Y
         INC ZP.SP
     }
-    PushBool()
+    PushX()
     {
         // value is in X: 0 or 1
         STX ZP.NEXTL
@@ -129,19 +129,7 @@ unit Stacks
         STA ZP.NEXTT
         PushNext();
     }
-    PushA()
-    {
-        STA ZP.NEXTL
-#ifdef CPU_65C02S
-        STZ ZP.NEXTH
-#else
-        LDA # 0
-        STA ZP.NEXTH
-#endif
-        LDA #Types.Byte
-        STA ZP.NEXTT
-        PushNext();
-    }
+    
     PopACC()
     {
         DEC ZP.SP
@@ -150,8 +138,9 @@ unit Stacks
         STA ZP.ACCL
         LDA Address.ValueStackMSB, Y
         STA ZP.ACCH
-        LDA Address.TypeStackLSB, Y
-        STA ZP.ACCT
+        // Type is never used / checked
+        //LDA Address.TypeStackLSB, Y
+        //STA ZP.ACCT
     }
     PopIDX()
     {

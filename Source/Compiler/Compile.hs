@@ -1083,6 +1083,11 @@ program Compile
                 }
                 else
                 {
+                    if (NoJIXWInstructions)
+                    {
+                        Parser.Error("maximum offset is " + maxOffset.ToString() + " and only JIXB is supported by this platform");
+                        break;
+                    }
                     CodeStream.AddInstruction(Instruction.JIX, operand);
                 }
                 

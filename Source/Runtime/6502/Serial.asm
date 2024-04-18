@@ -24,10 +24,16 @@ unit Serial
     {
         // reset buffer so at least start and end are the same
         SEI                    // disable interrupts
+#ifdef CPU_65C02S
+        STZ Serial.InWritePointer
+        STZ Serial.InReadPointer
+        STZ Serial.BreakFlag
+#else
         LDA #0
         STA Serial.InWritePointer
         STA Serial.InReadPointer
         STA Serial.BreakFlag
+#endif
         CLI                    // enable interrupts
         
         SerialDevice.initialize(); // device-specific initialization

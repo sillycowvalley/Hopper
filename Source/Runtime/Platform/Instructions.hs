@@ -138,7 +138,7 @@ unit Instructions
         WriteToJumpTable(OpCode.CAST, Instructions.Cast);
         WriteToJumpTable(OpCode.BITXOR, Instructions.BitXor);
         WriteToJumpTable(OpCode.JREL, Instructions.JREL);
-#ifndef NO_JIX_INSTRUCTIONS                
+#if defined(NO_JIX_INSTRUCTIONS) || defined(NO_JIXW_INSTRUCTIONS)
         WriteToJumpTable(OpCode.JIX, Instructions.JIX);
 #endif
         WriteToJumpTable(OpCode.CALL, Instructions.Call);

@@ -1406,6 +1406,10 @@ unit AsmPoints
                             iCodes  [iIndex]   = OpCode.STZ_nnX;
                             modified = true;
                         }
+                        else if ((opCode0 == OpCode.STA_iz) || (opCode0 == OpCode.STA_izX) || (opCode0 == OpCode.STA_izY))
+                        {
+                            // no STZ version
+                        }
                         else
                         {
                             // TODO

@@ -64,11 +64,10 @@ unit Free
         // uses mfCURRENT
 
 #ifdef CHECKED
-        LDA #0
-        CMP IDXL
+        LDA IDXL
         if (Z)
         {
-            CMP IDXH
+            LDA IDXH
             if (Z)
             {
                 // this is a bug (to try to free nullptr)
@@ -89,7 +88,7 @@ unit Free
             SBC # 0
             STA IDYH
             
-            LDY #0
+            LDY # 0
             LDA [IDY], Y
             STA mfSIZEL
             INY
@@ -102,17 +101,21 @@ unit Free
             LDA FREELISTH
             STA mfCURRENTH
 
-            LDA #0
+#ifdef CPU_65C02S
+            STZ mfPREVIOUSL  
+            STZ mfPREVIOUSH
+#else
+            LDA # 0
             STA mfPREVIOUSL  
             STA mfPREVIOUSH
+#endif
 
             loop 
             {
-                LDA #0
-                CMP mfCURRENTL
+                LDA mfCURRENTL
                 if (Z)
                 {
-                    CMP mfCURRENTH
+                    LDA mfCURRENTH
                     if (Z) { break; } // 0 == current
                 }
         
@@ -141,7 +144,7 @@ unit Free
                 STA mfPREVIOUSH
 
                 // currentNext = ReadWord(mfCURRENT + 2);
-                LDY #2
+                LDY # 2
                 LDA [mfCURRENT], Y
                 STA mfCURRENTNEXTL
                 INY
@@ -159,19 +162,24 @@ unit Free
             STA mfCURRENTPREVL
             LDA mfPREVIOUSH
             STA mfCURRENTPREVH
+#ifdef CPU_65C02S
+            STZ mfCURRENTSIZEL
+            STZ mfCURRENTSIZEH
+            STZ mfCURRENTNEXTL
+            STZ mfCURRENTNEXTH
+#else            
             LDA #0
             STA mfCURRENTSIZEL
             STA mfCURRENTSIZEH
             STA mfCURRENTNEXTL
             STA mfCURRENTNEXTH
-
+#endif
             loop
             {
-                LDA #0
-                CMP mfCURRENTL
+                LDA mfCURRENTL
                 if (Z)
                 {
-                    CMP mfCURRENTH
+                    LDA mfCURRENTH
                     if (Z)
                     {
                         break; // 0 == current
@@ -179,7 +187,7 @@ unit Free
                 }
                 // 0 != current
                 // currentSize = ReadWord[mfCURRENT]
-                LDY #0
+                LDY # 0
                 LDA [mfCURRENT], Y
                 STA mfCURRENTSIZEL
                 INY
@@ -204,18 +212,16 @@ unit Free
 
             SEC
             LDA mfFREESLOTL
-            SBC #2
+            SBC # 2
             STA mfFREESLOTL
             LDA mfFREESLOTH
-            SBC #0
+            SBC # 0
             STA mfFREESLOTH
 
-
-            LDA #0
-            CMP mfCURRENTPREVL
+            LDA mfCURRENTPREVL
             if (Z)
             {
-                CMP mfCURRENTPREVH
+                LDA mfCURRENTPREVH
                 if (Z)
                 {
                     //////////////////////////////
@@ -231,7 +237,7 @@ unit Free
                     LDA mfCURRENTH
                     STA [mfFREESLOT], Y
                     // WriteWord(freeSlot+4, 0);
-                    LDY #4
+                    INY
                     LDA #0
                     STA [mfFREESLOT], Y
                     INY
@@ -260,11 +266,10 @@ unit Free
                     SBC mfGAPFRONTH
                     STA mfGAPFRONTH
 
-                    LDA #0
-                    CMP mfGAPFRONTL
+                    LDA mfGAPFRONTL
                     if (Z)
                     {
-                        CMP mfGAPFRONTH
+                        LDA mfGAPFRONTH
                         if (Z)
                         {
 
@@ -312,11 +317,10 @@ unit Free
                             
                             loop
                             {
-                                LDA #0
-                                CMP mfNEXTNEXTL
+                                LDA mfNEXTNEXTL
                                 if (Z)
                                 {
-                                    CMP mfNEXTNEXTH
+                                    LDA mfNEXTNEXTH
                                     if (Z) { break; }
                                 }
 
@@ -342,20 +346,16 @@ unit Free
                     break; // memoryFreeExit
                 }
             }
-    
 
-
-            LDA #0
-            CMP mfCURRENTL
+            LDA mfCURRENTL
             if (Z)
             {
-                CMP mfCURRENTH
+                LDA mfCURRENTH
                 if (Z)
                 {
                     //////////////////////////////
                     // 0 == current
                     //////////////////////////////
-
 
                     // currentPrev != 0 means we are at the end of the FreeList
                     // append to end of freelist (after currentPrev)
@@ -369,7 +369,7 @@ unit Free
                     STA [mfCURRENTPREV], Y
 
                     // WriteWord(freeSlot   +4, currentPrev);
-                    LDY #4
+                    INY
                     LDA mfCURRENTPREVL
                     STA [mfFREESLOT], Y
                     INY
@@ -408,11 +408,16 @@ unit Free
                     SBC mfGAPBACKH
                     STA mfGAPBACKH
 
-                    LDA #0
-                    CMP mfGAPBACKL
-                    if (NZ) { break; }
-                    CMP mfGAPBACKH
-                    if (NZ) { break; }
+                    LDA mfGAPBACKL
+                    if (NZ) 
+                    {
+                        break; // memoryFreeExit
+                    }
+                    LDA mfGAPBACKH
+                    if (NZ) 
+                    { 
+                        break; // memoryFreeExit
+                    }
                     
                     // GAPBACK == 0
 
@@ -456,7 +461,7 @@ unit Free
             STA [mfCURRENTPREV], Y
 
             // WriteWord(freeSlot   +4, currentPrev);
-            LDY #4
+            INY
             LDA mfCURRENTPREVL
             STA [mfFREESLOT], Y
             INY
@@ -472,7 +477,7 @@ unit Free
             STA [mfFREESLOT], Y
 
             // WriteWord(mfCURRENT    +4, freeSlot);
-            LDY #4
+            INY
             LDA mfFREESLOTL
             STA [mfCURRENT], Y
             INY
@@ -531,7 +536,7 @@ unit Free
                     STA [mfCURRENTPREV], Y
 
                     // WriteWord(currentPrev+2, mfCURRENT);
-                    LDY #2
+                    INY
                     LDA mfCURRENTL
                     STA [mfCURRENTPREV], Y
                     INY
@@ -539,7 +544,7 @@ unit Free
                     STA [mfCURRENTPREV], Y
 
                     // WriteWord(mfCURRENT+4, currentPrev);
-                    LDY #4
+                    INY
                     LDA mfCURRENTPREVL
                     STA [mfCURRENT], Y
                     INY
@@ -569,10 +574,9 @@ unit Free
             SBC mfGAPNEXTH
             STA mfGAPNEXTH
 
-            LDA #0
-            CMP mfGAPNEXTL
+            LDA mfGAPNEXTL
             if (NZ) { break; }
-            CMP mfGAPNEXTH
+            LDA mfGAPNEXTH
             if (NZ) { break; }
             
             // 0 == gapNext
@@ -587,6 +591,7 @@ unit Free
             LDA mfSIZEH
             ADC mfCURRENTSIZEH
             STA mfSIZEH
+            
             LDY #0
             LDA mfSIZEL
             STA [mfFREESLOT], Y
@@ -602,11 +607,10 @@ unit Free
             LDA mfCURRENTNEXTH
             STA [mfFREESLOT], Y
 
-            LDA #0
-            CMP mfCURRENTNEXTL
+            LDA mfCURRENTNEXTL
             if (Z)
             {
-                CMP mfCURRENTNEXTH
+                LDA mfCURRENTNEXTH
                 if (Z)
                 {
                     break; // currentNext == 0

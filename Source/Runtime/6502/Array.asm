@@ -21,7 +21,7 @@ unit Array
     new()
     {
         // element type in FTYPE, number of elements in FSIZE
-        //    returns array at IDX and length in bytes in FLENGTH
+        //    returns array at IDX and length in bytes in LCOUNT
         LDA FTYPE
         switch (A)
         {
@@ -66,9 +66,9 @@ unit Array
         }
         // keep the size in bytes for zero initialization later
         LDA FSIZEL
-        STA FLENGTHL
+        STA LCOUNTL
         LDA FSIZEH
-        STA FLENGTHH
+        STA LCOUNTH
         
         // add 2 bytes for number of elements field and 1 byte for type of element field
         CLC
@@ -111,7 +111,7 @@ unit Array
         STA FTYPE
         
         // element type in FTYPE, number of elements in FSIZE
-        //    returns array at IDX and length in bytes in FLENGTH
+        //    returns array at IDX and length in bytes in LCOUNT
         new();
         
         LDA IDXL
@@ -123,10 +123,10 @@ unit Array
         LDY  # aiElements
         loop
         {
-            LDA FLENGTHL
+            LDA LCOUNTL
             if (Z)
             {
-                LDA FLENGTHH
+                LDA LCOUNTH
                 if (Z)
                 {
                     break;
@@ -137,12 +137,12 @@ unit Array
             STA [IDX], Y
             IncIDX();
             
-            LDA FLENGTHL
+            LDA LCOUNTL
             if (Z)
             {
-                DEC FLENGTHH
+                DEC LCOUNTH
             }
-            DEC FLENGTHL
+            DEC LCOUNTL
         }
         
         LDA # Types.Array
@@ -152,15 +152,15 @@ unit Array
     NewFromConstant()
     {
         Stacks.PopTopNext();  // element type, number of elements
-        Stacks.PopACC();      // location
+        Stacks.PopACC();      // location, only care about ACCL and ACCH (not ACCT)
         
-        LDA NEXTL
-        STA FSIZEL
-        LDA NEXTH
-        STA FSIZEH
+        LDA ZP.NEXTL
+        STA ZP.FSIZEL
+        LDA ZP.NEXTH
+        STA ZP.FSIZEH
         
-        LDA TOPL 
-        STA FTYPE
+        LDA ZP.TOPL 
+        STA ZP.FTYPE
         CMP # Types.Byte
         if (NZ)
         {
@@ -180,49 +180,31 @@ unit Array
         
         // += location
         CLC
-        LDA ACCL
-        ADC FSOURCEADDRESSL
-        STA FSOURCEADDRESSL
-        LDA ACCH
-        ADC FSOURCEADDRESSH
-        STA FSOURCEADDRESSH
+        LDA ZP.ACCL
+        ADC ZP.FSOURCEADDRESSL
+        STA ZP.FSOURCEADDRESSL
+        LDA ZP.ACCH
+        ADC ZP.FSOURCEADDRESSH
+        STA ZP.FSOURCEADDRESSH
         
         // element type in FTYPE, number of elements in FSIZE
-        //    returns array at IDX and length in bytes in FLENGTH
+        //    returns array at IDX and length in bytes in LCOUNT
         new();
         
-        LDA IDXL
-        STA TOPL
-        LDA IDXH
-        STA TOPH
+        CLC
+        LDA ZP.IDXL
+        STA ZP.TOPL
+        ADC # aiElements
+        STA FDESTINATIONADDRESSL
+        LDA ZP.IDXH
+        STA ZP.TOPH
+        ADC # 0
+        STA FDESTINATIONADDRESSH
         
         // initialize from constant data
-        LDY # aiElements
-        LDX # 0
-        loop
-        {
-            LDA FLENGTHL
-            if (Z)
-            {
-                LDA FLENGTHH
-                if (Z)
-                {
-                    break;
-                }
-            }
-            
-            LDA [FSOURCEADDRESS], X
-            STA [IDX], Y
-            IncIDX();
-            IncSOURCEADDRESS();
-            
-            LDA FLENGTHL
-            if (Z)
-            {
-                DEC FLENGTHH
-            }
-            DEC FLENGTHL
-        }
+        
+        // copy LCOUNT chars from FSOURCEADDRESS to FDESTINATIONADDRESS
+        Utilities.CopyBytes();   // munts LCOUNT, FSOURCEADDRESS, FDESTINATIONADDRESS, A, Y
         
         LDA # Types.Array
         Stacks.PushTop();
@@ -233,10 +215,10 @@ unit Array
         
         LDY # aiCount
         LDA [IDX], Y
-        STA NEXTL
+        STA ZP.NEXTL
         INY
         LDA [IDX], Y
-        STA NEXTH
+        STA ZP.NEXTH
         
         GC.Release();
         

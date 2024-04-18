@@ -23,28 +23,28 @@ unit Memory
         
         // Zero initialize
         LDA #0
+        PHA PHA
         STA IDXL
         LDA HEAPSTART
         STA IDXH
         LDX HEAPSIZE // number of 256 byte pages is same as MSB of size
-        Utilities.ClearPages();
+        Utilities.ClearPages(); // munts A, X, Y
         
         // FreeList = Hopper heap start
         LDA ZP.HEAPSTART
         STA ZP.FREELISTH
-        LDA # 0
+        PLA // 0 -> A
+        TAY // 0 -> Y
         STA ZP.FREELISTL
         
         // all memory is in this single free list record
-        LDA #0
-        TAY
         STA [ZP.FREELIST], Y
         LDA ZP.HEAPSIZE
         INY
         STA [ZP.FREELIST], Y
         
         // next = null
-        LDA #0
+        PLA // 0 -> A
         INY
         STA [ZP.FREELIST], Y
         INY
@@ -58,7 +58,7 @@ unit Memory
     }
     Allocate()
     {
-        Stacks.PopACC();
+        Stacks.PopACC();      // only care about ACCL and ACCH (not ACCT)
         Allocate.allocate();
         
         // Push IDX:
@@ -67,7 +67,7 @@ unit Memory
         STA Address.ValueStackLSB, Y
         LDA ZP.IDXH
         STA Address.ValueStackMSB, Y
-        LDA #Types.UInt
+        LDA # Types.UInt
         STA Address.TypeStackLSB, Y
         INC ZP.SP
     }
@@ -79,17 +79,24 @@ unit Memory
     ReadByte()
     {
         Stacks.PopIDX();
+        
 #ifdef CPU_65C02S
+        STZ ZP.NEXTH
         LDA [IDX]
 #else
         LDY # 0
+        STY ZP.NEXTH
         LDA [IDX], Y
 #endif
-        Stacks.PushA();
+        STA ZP.NEXTL
+        
+        LDA # Types.Byte
+        STA ZP.NEXTT
+        PushNext();
     }
     WriteByte()
     {
-        Stacks.PopACC();
+        Stacks.PopACC(); // only care about ACCL (not ACCT or ACCH)
         Stacks.PopIDX();
         
         LDA ACCL

@@ -133,4 +133,35 @@ unit Utilities
         }
         DEC FSOURCEADDRESSL
     }
+    
+    // copy LCOUNT bytes from FSOURCEADDRESS to FDESTINATIONADDRESS
+    //     munts LCOUNT, FSOURCEADDRESS, FDESTINATIONADDRESS, A, Y
+    CopyBytes()
+    {
+        LDY # 0
+        loop
+        {
+            LDA LCOUNTL
+            if (Z)
+            {
+                LDA LCOUNTH
+                if (Z)
+                {
+                    return;
+                }
+            }
+            LDA [FSOURCEADDRESS], Y
+            STA [FDESTINATIONADDRESS], Y
+            IncDESTINATIONADDRESS();
+            IncSOURCEADDRESS();
+            
+            LDA LCOUNTL
+            if (Z)
+            {
+                DEC LCOUNTH
+            }
+            DEC LCOUNTL
+        } // loop
+    }
+    
 }

@@ -136,43 +136,7 @@ unit String
     
     
         
-    // copy LCOUNT chars from FSOURCEADDRESS to FDESTINATIONADDRESS
-    copyChars()
-    {
-        LDA LCOUNTH
-        PHA
-        LDA LCOUNTL
-        PHA
-        loop
-        {
-            LDY # 0
-            CPY LCOUNTL
-            if (Z)
-            {
-                CPY LCOUNTH
-                if (Z)
-                {
-                    PLA
-                    STA LCOUNTL
-                    PLA
-                    STA LCOUNTH
-                    return;
-                }
-            }
-            
-            LDA [FSOURCEADDRESS], Y
-            STA [FDESTINATIONADDRESS], Y
-            IncDESTINATIONADDRESS();
-            IncSOURCEADDRESS();
-            
-            LDA LCOUNTL
-            if (Z)
-            {
-                DEC LCOUNTH
-            }
-            DEC LCOUNTL
-        } // loop
-    }
+    
     
     // string in IDX, required new length in FSIZE - new string returned in IDX (stack references updated)
     //    munts FSIZE, FDESTINATIONADDRESS, FTYPE
@@ -231,9 +195,9 @@ unit String
         LDA FSIZEH
         STA LCOUNTH
         
-        // NOTES: in places we're using CopyChars to clone the string header too (type, reference count and length : 4 bytes more than length)
+        // NOTES: in places we're using CopyBytes to clone the string header too (type, reference count and length : 4 bytes more than length)
         // copy LCOUNT chars from FSOURCEADDRESS to FDESTINATIONADDRESS
-        copyChars();
+        Utilities.CopyBytes(); // munts LCOUNT, FSOURCEADDRESS, FDESTINATIONADDRESS, A, Y
         
         // IDY -> IDX
         LDA # Types.String
@@ -336,7 +300,7 @@ unit String
         loadDestFromIDX();
         
         // copy LCOUNT chars from FSOURCEADDRESS to FDESTINATIONADDRESS
-        copyChars();
+        Utilities.CopyBytes(); // munts LCOUNT, FSOURCEADDRESS, FDESTINATIONADDRESS, A, Y
                
         LDA IDXL
         STA TOPL
@@ -383,7 +347,7 @@ unit String
         ADC # 0
         STA FDESTINATIONADDRESSH
               
-        // FSOURCEADDRESS -> DESTINATIONADDRESS
+        // SOURCEADDRESS -> DESTINATIONADDRESS
         LDY # 0
         LDA TOPL
         STA [FDESTINATIONADDRESS], Y
@@ -544,7 +508,8 @@ unit String
         ADC FLENGTHH
         STA FDESTINATIONADDRESSH
         
-        copyChars();   // copy LCOUNT chars from FSOURCEADDRESS to FDESTINATIONADDRESS
+        // copy LCOUNT chars from FSOURCEADDRESS to FDESTINATIONADDRESS
+        Utilities.CopyBytes();   // munts LCOUNT, FSOURCEADDRESS, FDESTINATIONADDRESS, A, Y
         
         LDA FVALUEL
         STA FLENGTHL
@@ -751,4 +716,4 @@ unit String
             }
         }
     }
-    }
+}

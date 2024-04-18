@@ -1,19 +1,20 @@
 program R6502
 {
     //#define CHECKED              // 111/109 bytes
-    #define PACKED_INSTRUCTIONS  // 984/960 bytes
-    #define JIX_INSTRUCTIONS       // 301/311 bytes
-    #define FASTINTS               // 411/403 bytes
+    #define PACKED_INSTRUCTIONS
+    #define JIX_INSTRUCTIONS
+    #define FASTINTS
     
-    #define CPU_65C02S  // Rockwell and WDC
-    //#define CPU_6502      // MOS
+    //#define CPU_65C02S  // Rockwell and WDC
+    #define CPU_6502      // MOS
 
         
-#if defined(CPU_65C02S) && !defined(PACKED_INSTRUCTIONS) && !defined(CHECKED)
-    #define ROM_8K // 418 bytes to spare (578 more bytes required for PACKED)
+#if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS)
+    #define ROM_8K // 60 bytes remaining without FASTINTS
 #endif
-#if defined(CPU_6502)   && !defined(PACKED_INSTRUCTIONS) && !defined(CHECKED)
-    #define ROM_8K // 272 bytes to spare
+    
+#if defined(CPU_6502)   && !defined(JIX_INSTRUCTIONS) && !defined(CHECKED) && !defined(FASTINTS)
+    #define ROM_8K // 31 bytes remaining without JIX_INSTRUCTIONS or FASTINTS
 #endif
 
 #ifndef ROM_8K
