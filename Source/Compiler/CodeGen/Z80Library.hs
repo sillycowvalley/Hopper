@@ -778,7 +778,7 @@ unit Z80Library
     // https://github.com/Zeda/Z80-Optimized-Routines/blob/master/math/subtraction/A_Minus_HL.z80
     negateBC()
     {
-        Emit(OpCode.XOR_A);
+        Emit(OpCode.XOR_A_A);
         Emit(OpCode.SUB_A_C);
         Emit(OpCode.LD_C_A);
         Emit(OpCode.SBC_A_A);
@@ -788,7 +788,7 @@ unit Z80Library
     }
     negateDE()
     {
-        Emit(OpCode.XOR_A);
+        Emit(OpCode.XOR_A_A);
         Emit(OpCode.SUB_A_E);
         Emit(OpCode.LD_E_A);
         Emit(OpCode.SBC_A_A);
@@ -798,7 +798,7 @@ unit Z80Library
     }
     negateHL()
     {
-        Emit(OpCode.XOR_A);
+        Emit(OpCode.XOR_A_A);
         Emit(OpCode.SUB_A_L);
         Emit(OpCode.LD_L_A);
         Emit(OpCode.SBC_A_A);

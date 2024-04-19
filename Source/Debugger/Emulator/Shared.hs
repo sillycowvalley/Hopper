@@ -1,7 +1,5 @@
 unit Shared
 {
-    uses "ZeroPage"
-    
     uses "/Source/Compiler/Types"
     uses "/Source/Runtime/6502/ZeroPage.asm"
     
@@ -225,8 +223,6 @@ unit Shared
         }
         return content;
     }
- 
-    
      
     ShowHopperHeap(GetRAMByteDelegate currentGetRAMByte)
     {

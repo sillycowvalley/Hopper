@@ -7,12 +7,35 @@ unit AsmZ80
     const uint SPBPSwapper       = 0xFE00; // 2 bytes
     const uint LastError         = 0xFE02; // 1 bytes
     const uint Sign              = 0xFE03; // 1 bytes
+    
+    const uint InvalidAddress = 0xFFFF;
+    
+    // TODO : location for timer
+    const uint ZT0 = 0xE000;
+    const uint ZT1 = 0xE001;
+    const uint ZT2 = 0xE002;
+    const uint ZT3 = 0xE003;
+    
+    // TODO : remove 'H' command
+    const byte ZHEAPSTART = 0x0;
+    const byte ZHEAPSIZE = 0x0;
+    const byte ZFREELISTL = 0x0;
+    const byte ZFREELISTH = 0x0;
+    
+    const uint ZSP = 0x0;
+    const uint ZBP = 0x0;
         
     enum OpCode
     {
         NOP         = 0x00,
         
         CLP         = 0x2F,
+        
+        DI          = 0xF3,
+        EI          = 0xFB,
+        
+        LD_I_A      = 0xED47,
+        LD_R_A      = 0xED4F,
         
         RST_Reset         = 0xC7, // 0x00
         RST_PopAbsolute   = 0xCF, // 0x08
@@ -311,9 +334,6 @@ unit AsmZ80
         LD_A_L = 0x7D,
         LD_A_A = 0x7F,
         
-        
-        
-        
         LD_A_iHL = 0x7E,
         LD_B_iHL = 0x46,
         LD_C_iHL = 0x4E,
@@ -537,13 +557,6 @@ unit AsmZ80
         ADC_A_iIY_d = 0xFD8E,
         
         
-        XOR_A = 0xAF,
-        XOR_B = 0xA8,
-        XOR_C = 0xA9,
-        XOR_D = 0xAA,
-        XOR_E = 0xAB,
-        XOR_H = 0xAC,
-        XOR_L = 0xAD,
         
         CP_A_n = 0xFE,
         
@@ -633,6 +646,7 @@ unit AsmZ80
         
         
         JP_HL    = 0xE9,
+        
         JR_NZ_e  = 0x20,
         JR_Z_e   = 0x28,
         JR_NC_e  = 0x30,
@@ -840,6 +854,10 @@ unit AsmZ80
         }
         return name;
     }
+    string Disassemble(uint address, OpCode instruction, uint operand)
+    {
+        return Disassemble(address, instruction, operand, false);
+    }
     string Disassemble(uint address, OpCode instruction, uint operand, bool bare)
     {
         OperandType operandType;
@@ -933,8 +951,21 @@ unit AsmZ80
 
     Initialize()
     {
+        if (initialized) { return; }
         z80InstructionName[OpCode.NOP] = "NOP";                           // 0x0000
         z80OperandType    [OpCode.NOP] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.DI] = "DI";
+        z80OperandType    [OpCode.DI] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.EI] = "EI";
+        z80OperandType    [OpCode.EI] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.LD_I_A] = "LD I, A";
+        z80OperandType    [OpCode.LD_I_A] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.LD_R_A] = "LD R, A";
+        z80OperandType    [OpCode.LD_R_A] = OperandType.Implied;
         
         z80InstructionName[OpCode.OUT_n_A] = "OUT (n), A";                // 0x001F
         z80OperandType    [OpCode.OUT_n_A] = OperandType.Immediate8;
@@ -2156,26 +2187,26 @@ unit AsmZ80
         z80InstructionName[OpCode.AND_A_iIY_d] = "AND A, (IY+d)";         // 0xFDA6
         z80OperandType    [OpCode.AND_A_iIY_d] = OperandType.IndexedRelative;
 
-        z80InstructionName[OpCode.XOR_B] = "XOR B";                       // 0x00A8
-        z80OperandType    [OpCode.XOR_B] = OperandType.Implied;
+        z80InstructionName[OpCode.XOR_A_B] = "XOR A, B";                       // 0x00A8
+        z80OperandType    [OpCode.XOR_A_B] = OperandType.Implied;
 
-        z80InstructionName[OpCode.XOR_C] = "XOR C";                       // 0x00A9
-        z80OperandType    [OpCode.XOR_C] = OperandType.Implied;
+        z80InstructionName[OpCode.XOR_A_C] = "XOR A, C";                       // 0x00A9
+        z80OperandType    [OpCode.XOR_A_C] = OperandType.Implied;
 
-        z80InstructionName[OpCode.XOR_D] = "XOR D";                       // 0x00AA
-        z80OperandType    [OpCode.XOR_D] = OperandType.Implied;
+        z80InstructionName[OpCode.XOR_A_D] = "XOR A, D";                       // 0x00AA
+        z80OperandType    [OpCode.XOR_A_D] = OperandType.Implied;
 
-        z80InstructionName[OpCode.XOR_E] = "XOR E";                       // 0x00AB
-        z80OperandType    [OpCode.XOR_E] = OperandType.Implied;
+        z80InstructionName[OpCode.XOR_A_E] = "XOR A, E";                       // 0x00AB
+        z80OperandType    [OpCode.XOR_A_E] = OperandType.Implied;
 
-        z80InstructionName[OpCode.XOR_H] = "XOR H";                       // 0x00AC
-        z80OperandType    [OpCode.XOR_H] = OperandType.Implied;
+        z80InstructionName[OpCode.XOR_A_H] = "XOR A, H";                       // 0x00AC
+        z80OperandType    [OpCode.XOR_A_H] = OperandType.Implied;
 
-        z80InstructionName[OpCode.XOR_L] = "XOR L";                       // 0x00AD
-        z80OperandType    [OpCode.XOR_L] = OperandType.Implied;
+        z80InstructionName[OpCode.XOR_A_L] = "XOR A, L";                       // 0x00AD
+        z80OperandType    [OpCode.XOR_A_L] = OperandType.Implied;
 
-        z80InstructionName[OpCode.XOR_A] = "XOR A";                       // 0x00AF
-        z80OperandType    [OpCode.XOR_A] = OperandType.Implied;
+        z80InstructionName[OpCode.XOR_A_A] = "XOR A, A";                       // 0x00AF
+        z80OperandType    [OpCode.XOR_A_A] = OperandType.Implied;
 
         z80InstructionName[OpCode.XOR_A_iHL] = "XOR A, (HL)";             // 0x00AE
         z80OperandType    [OpCode.XOR_A_iHL] = OperandType.Implied;

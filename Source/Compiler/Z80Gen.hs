@@ -47,22 +47,22 @@ program Z80Gen
     reset()
     {
         // exited    = false; - TODO : uses 0xFFFF as invalid address?
-        // interruptsEnabled = true; - TODO
+        
         
         // DataMemoryReset(); - TODO
         // External.TimerInitialize(); - TODO
-        //
-        //      sp = 0;
         
-        //      bp = 0;
+        // switch to Mode 1 for IRQ and NMI
+        EmitByte(OpCode.LD_A_n, 0);
+        Emit    (OpCode.LD_I_A);
+        Emit    (OpCode.LD_R_A);
         
                
         //      Error = 0;
         Emit(OpCode.XOR_A_A);
         EmitWord(OpCode.LD_inn_A, LastError);
         
-        //      cnp = false;
-        
+        Emit(OpCode.EI);   
     }
     
     /*
@@ -179,8 +179,8 @@ program Z80Gen
                 patchByte(patchAddress+1, byte(targetAddress >> 8));
             }
         }
-        patchByte(4, byte(methods[entryIndex] & 0xFF));
-        patchByte(5, byte(methods[entryIndex] >> 8));
+        patchByte(5, byte(methods[entryIndex] & 0xFF));
+        patchByte(6, byte(methods[entryIndex] >> 8));
     }
     
     emit(OpCode opCode)
@@ -418,7 +418,7 @@ program Z80Gen
         
         // HL -= StackAddress
         EmitWord(OpCode.LD_DE_nn, StackAddress);
-        Emit    (OpCode.XOR_A);
+        Emit    (OpCode.XOR_A_A);
         Emit    (OpCode.SBC_HL_DE);
 
         // HL /= 2
@@ -448,7 +448,7 @@ program Z80Gen
         else if (1 + operand < 2) // Never?
         {
             EmitWord(OpCode.LD_DE_nn, 1 + operand);
-            Emit    (OpCode.XOR_A);
+            Emit    (OpCode.XOR_A_A);
             Emit    (OpCode.SBC_HL_DE);        
             Emit    (OpCode.INC_HL);
             Emit    (OpCode.INC_HL);
@@ -456,7 +456,7 @@ program Z80Gen
         else // (1 + operand > 2)
         {
             EmitWord(OpCode.LD_DE_nn, 1 + operand - 2);
-            Emit    (OpCode.XOR_A);
+            Emit    (OpCode.XOR_A_A);
             Emit    (OpCode.SBC_HL_DE);        
         }
         
@@ -464,7 +464,7 @@ program Z80Gen
         Emit    (OpCode.LD_E_L);
         Emit    (OpCode.LD_D_H);
         EmitWord(OpCode.LD_HL_nn, 0);
-        Emit    (OpCode.XOR_A);
+        Emit    (OpCode.XOR_A_A);
         Emit    (OpCode.SBC_HL_DE);
         
         Emit(OpCode.PUSH_HL);
@@ -473,7 +473,7 @@ program Z80Gen
     pushRelB(uint operand)
     {
         byte offset = offsetOperandToByte(operand);
-        Emit    (OpCode.XOR_A);
+        Emit    (OpCode.XOR_A_A);
         EmitByte(OpCode.SUB_A_iIY_d, offset); // invert the sign since the Z80 stack grows downward
         
         EmitByte(OpCode.SUB_A_n, 2);          // skip:
@@ -494,7 +494,7 @@ program Z80Gen
     popRelB(uint operand)
     {
         byte offset = offsetOperandToByte(operand);
-        Emit    (OpCode.XOR_A);
+        Emit    (OpCode.XOR_A_A);
         EmitByte(OpCode.SUB_A_iIY_d, offset); // invert the sign since the Z80 stack grows downward
         
         EmitByte(OpCode.SUB_A_n, 2);          // skip:
@@ -1592,6 +1592,7 @@ program Z80Gen
                 
                 // stack needs to exist before our first CALL
                 // start pointing one byte beyond since it grows downward
+                Emit(OpCode.DI);
                 EmitWord(OpCode.LD_SP_nn, StackAddress + StackSize); 
                 EmitWord(OpCode.CALL_nn, 0);
                 Emit(OpCode.HALT);

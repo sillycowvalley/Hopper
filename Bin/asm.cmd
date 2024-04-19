@@ -6,6 +6,7 @@ preprocess /source/compiler/Z80Gen
 preprocess /source/compiler/Z80Opt
 preprocess /source/compiler/Z80DASM
 preprocess /source/debugger/e6502
+preprocess /source/debugger/eZ80
 
 compile 65asm -o
 compile 65gen -o
@@ -15,6 +16,7 @@ compile Z80Gen -o
 compile Z80Opt -o
 compile Z80DASM -o
 compile e6502 -o
+compile eZ80 -o
 
 optimize 65asm
 optimize 65gen
@@ -24,6 +26,7 @@ optimize Z80Gen
 optimize Z80Opt
 optimize Z80DASM
 optimize e6502
+optimize eZ80
 
 codegen 65asm
 codegen 65gen
@@ -33,6 +36,7 @@ codegen Z80Gen
 codegen Z80Opt
 codegen Z80DASM
 codegen e6502
+codegen eZ80
 
 dasm 65asm
 dasm 65gen
@@ -42,6 +46,7 @@ dasm Z80Gen
 dasm Z80Opt
 dasm Z80DASM
 dasm e6502
+dasm eZ80
 
 preprocess /source/runtime/r6502.asm -a
 65asm r6502

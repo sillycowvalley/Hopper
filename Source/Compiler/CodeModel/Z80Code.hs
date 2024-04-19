@@ -213,7 +213,7 @@ unit Z80Code
         file hexFile = File.Open(codePath);
         readIHex(hexFile, ref org); // -> code[]
         
-        uint entryAddress = code[4] + code[5] << 8;
+        uint entryAddress = code[5] + code[6] << 8;
         
         <uint, uint> methodSizes = Code.GetMethodSizes();
         uint indexMax = 0;

@@ -377,7 +377,7 @@ unit CodePoints
                 // Ignore:
                 case OpCode.OUT_n_A:
                 case OpCode.NOP:
-                case OpCode.XOR_A:
+                case OpCode.XOR_A_A:
                 case OpCode.CPL:
                 case OpCode.RLA:
                 case OpCode.AND_A:
@@ -1914,7 +1914,7 @@ unit CodePoints
                 }
                 if ((opCode2 == OpCode.PUSH_HL) && (opCode0 == OpCode.POP_HL))
                 {
-                    if ((opCode1 == OpCode.XOR_A) || (opCode1 == OpCode.LD_DE_inn) || (opCode1 == OpCode.LD_DE_nn) || (opCode1 == OpCode.LD_BC_nn))
+                    if ((opCode1 == OpCode.XOR_A_A) || (opCode1 == OpCode.LD_DE_inn) || (opCode1 == OpCode.LD_DE_nn) || (opCode1 == OpCode.LD_BC_nn))
                     {
                         iCodes  [iIndex-2] = OpCode.NOP;
                         iCodes  [iIndex-0] = OpCode.NOP;
@@ -2002,11 +2002,11 @@ unit CodePoints
             if (iIndex == iCodes.Count) { break; }
             OpCode opCode1 = iCodes[iIndex-1];
             OpCode opCode0 = iCodes[iIndex-0];
-            if ((opCode1 == OpCode.PUSH_DE) && (opCode0 == OpCode.XOR_A))
+            if ((opCode1 == OpCode.PUSH_DE) && (opCode0 == OpCode.XOR_A_A))
             {
                 if (Flags.Target != iFlags[iIndex-0] & Flags.Target)
                 {
-                    iCodes[iIndex-1] = OpCode.XOR_A;
+                    iCodes[iIndex-1] = OpCode.XOR_A_A;
                     iCodes[iIndex-0] = OpCode.PUSH_DE;
                     modified = true;
                 }
@@ -2359,7 +2359,7 @@ unit CodePoints
                         OpCode opCode3  = iCodes[iIndex-3];
                         OpCode opCode2  = iCodes[iIndex-2];
                         OpCode opCode1  = iCodes[iIndex-1];
-                        if ((opCode6 == OpCode.LD_A_C) && (opCode5 == OpCode.CP_A_L) && (opCode3 == OpCode.LD_E_n) && (opCode2 == OpCode.XOR_A) && (opCode1 == OpCode.CP_A_E))
+                        if ((opCode6 == OpCode.LD_A_C) && (opCode5 == OpCode.CP_A_L) && (opCode3 == OpCode.LD_E_n) && (opCode2 == OpCode.XOR_A_A) && (opCode1 == OpCode.CP_A_E))
                         {
                             if (    (Flags.Target != iFlags[iIndex-10] & Flags.Target)
                                  && (Flags.Target != iFlags[iIndex-9] & Flags.Target)

@@ -14,7 +14,7 @@ program HopperMonitor
     uses "6502/Pages"
     uses "6502/Monitor"
     
-    uses "6502/Shared"
+    uses "Emulator/Shared"
     
     uses "/Source/Compiler/JSON/JSON"
     

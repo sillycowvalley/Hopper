@@ -1,4 +1,4 @@
-unit W65C02
+unit CPU // 6502
 {
     uses "/Source/Compiler/CODEGEN/Asm6502"
     uses "/Source/Debugger/6502/ZeroPage"
@@ -10,7 +10,7 @@ unit W65C02
     uint vectorIRQ;
     uint vectorNMI;
     
-    uint Reset { get { return vectorReset; } set { vectorReset = value; } }
+    uint Entry { get { return vectorReset; } set { vectorReset = value; } }
     uint IRQ   { get { return vectorIRQ;   } set { vectorIRQ = value;   } }
     uint NMI   { get { return vectorNMI;   } set { vectorNMI = value;   } }
     uint PC    { get { return pcRegister;  } set { pcRegister = value;  } }
@@ -253,6 +253,11 @@ unit W65C02
         pcRegister = Pop() + (Pop() << 8);
     }
     
+    OpCode GetInstruction(uint address)
+    {
+        return OpCode(GetMemory(address));
+    }
+    
     Execute(bool ignoreBreakPoints)
     {
         if (pcRegister == InvalidAddress) { return; }
@@ -264,7 +269,7 @@ unit W65C02
             doNMI();
             if (!ignoreBreakPoints)
             {
-                if (IsBreakPoint(pcRegister))
+                if (Emulator.IsBreakPoint(pcRegister))
                 {
                     return;
                 }
@@ -276,7 +281,7 @@ unit W65C02
             doIRQ();  
             if (!ignoreBreakPoints)
             {
-                if (IsBreakPoint(pcRegister))
+                if (Emulator.IsBreakPoint(pcRegister))
                 {
                     return;
                 }
@@ -375,7 +380,7 @@ unit W65C02
             switch (instruction)
             {
                 // 'break' here means don't increment the pcRegister by instruction length
-                case OpCode.NOP:      { break; } 
+                case OpCode.NOP:      {  } 
                 case OpCode.JSR_nn:   { JSR(operand); break; } 
                 case OpCode.RTS:      { RTS();        break; }
                 case OpCode.RTI:      { RTI();        break; }
@@ -775,28 +780,7 @@ unit W65C02
         return registers;
     }
     
-    bool haveAppleKey = false;
-    char appleKey;
-    ServiceAppleIO()
-    {
-        if (!haveAppleKey && KeyAvailable())
-        {
-            Key key = PeekKey();
-            if (key != Key.ControlC)
-            {
-                _ = GetKey(); // consume it
-                char maker;
-                appleKey = ToSerial(key, ref maker);
-                appleKey = appleKey.ToUpper(); // Apple I was uppercase only
-                if (appleKey == char(0x0D))
-                {
-                    appleKey = Char.EOL;
-                }
-                //Print(" " + (byte(appleKey)).ToHexString(2), Colour.Red, Colour.Black);
-                haveAppleKey = true;
-            }
-        }
-    }
+    
     
     long ms;
     byte GetMemory(uint address)
@@ -816,16 +800,7 @@ unit W65C02
         {
             if (EmulateAppleI && (address >= 0xD010) && (address <= 0xD013))
             {
-                if (address == 0xD010) // KBD
-                {
-                    value = byte(appleKey)  | 0x80;
-                    //Print(" " + value.ToHexString(2), Colour.Blue, Colour.Black);
-                    haveAppleKey = false;
-                }
-                else if (address == 0xD011) // KBDCR
-                {
-                    value = haveAppleKey ? 0b10000000 : 0; // set bit 7 if there is a key available
-                }
+                value = Emulator.GetAppleKBD(address);
             }
             else if (address >= 0xFFFA)
             {
@@ -852,27 +827,7 @@ unit W65C02
         {
             if (EmulateAppleI && (address >= 0xD010) && (address <= 0xD013))
             {
-                if (address == 0xD012) // DSP
-                {
-                    char ch = char(value & 0x7F);
-                    //Print(" " + value.ToHexString(2) +":", Colour.Ocean, Colour.Black);
-                    if (ch == Char.Escape)
-                    {
-                        // don't echo escape .. what else?
-                    }
-                    else if (ch == Char.EOL)
-                    {
-                        PrintLn();
-                    }
-                    else
-                    {
-                        Print(ch, Colour.Ocean, Colour.Black);
-                    }
-                }
-                else if (address == 0xD013) // DSPCR
-                {
-                    value = 0; // display is always ready
-                }
+                Emulator.SetAppleDSP(address, value);
             }
             else
             {

@@ -84,12 +84,12 @@ unit ACIA
             {
                 if (Terminal6850)
                 {
-                    if (KeyAvailable())
+                    if (Emulator.KeyAvailable())
                     {
-                        Key key = PeekKey();
+                        Key key = Emulator.PeekKey();
                         if (key != Key.ControlC)
                         {
-                            _ = GetKey(); // consume it
+                            _ = Emulator.GetKey(); // consume it
                             char maker;
                             readChar = ToSerial(key, ref maker);
                             if (readChar == char(0x0D))

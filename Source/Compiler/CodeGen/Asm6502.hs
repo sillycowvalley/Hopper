@@ -620,9 +620,9 @@ unit Asm6502
         return addressingModes;
     }
     
-    uint GetInstructionLength(OpCode instruction)
+    byte GetInstructionLength(OpCode instruction)
     {
-        uint length;
+        byte length;
         switch (GetAddressingMode(instruction))
         {
             case AddressingModes.Implied:           { length = 1; }
