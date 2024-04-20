@@ -39,6 +39,7 @@ program Z80Gen
     <string,bool> missingOpCodes;
     
     uint entryIndex;
+    uint romSize = 0x8000;
     
     bool NoPackedInstructions { get { return false; } }
     
@@ -46,38 +47,42 @@ program Z80Gen
     
     reset()
     {
-        // exited    = false; - TODO : uses 0xFFFF as invalid address?
-        
-        
-        // DataMemoryReset(); - TODO
-        // External.TimerInitialize(); - TODO
-        
         // switch to Mode 1 for IRQ and NMI
-        Emit    (OpCode.IM_1);
+        Emit     (OpCode.IM_1);
                
         //      Error = 0;
-        Emit(OpCode.XOR_A_A);
-        EmitWord(OpCode.LD_inn_A, LastError);
+        Emit     (OpCode.XOR_A_A);
+        EmitWord (OpCode.LD_inn_A, LastError);
+        
+        byte romPages  = byte(romSize >> 8);
+        byte heapStart = romPages;
+        byte heapSize  = 0xFC - heapStart; // 0xFC..0xFF used by stack and system
+        
+        EmitByte (OpCode.LD_A_n,   heapStart);
+        EmitWord (OpCode.LD_inn_A, HeapStart);
+        EmitWord (OpCode.LD_inn_A, FreeList+1);
+        Emit     (OpCode.XOR_A_A);
+        EmitWord (OpCode.LD_inn_A, FreeList+0);
+        EmitByte (OpCode.LD_A_n,   heapSize);
+        EmitWord (OpCode.LD_inn_A, HeapSize);
+        
+        uint heapStartAddress = (heapStart << 8);
+        
+        // all memory is in this single free list record
+        EmitWord (OpCode.LD_inn_A, heapStartAddress + 1);
+        Emit     (OpCode.XOR_A_A);
+        EmitWord (OpCode.LD_inn_A, heapStartAddress + 0);
+        
+        // next = null
+        EmitWord (OpCode.LD_inn_A, heapStartAddress + 2);
+        EmitWord (OpCode.LD_inn_A, heapStartAddress + 3);
+        
+        // prev = null
+        EmitWord (OpCode.LD_inn_A, heapStartAddress + 4);
+        EmitWord (OpCode.LD_inn_A, heapStartAddress + 5);
         
         Emit(OpCode.EI);   
     }
-    
-    /*
-    patchRSTJump(uint rst, uint targetAddress)
-    {
-        uint offset = targetAddress - rst - 2;
-        if (offset < 127)
-        {
-            output.SetItem(rst+0, byte(OpCode.J R_e));
-            output.SetItem(rst+1, byte(offset));
-        }
-        else
-        {
-            output.SetItem(rst+1, byte(targetAddress & 0xFF));
-            output.SetItem(rst+2, byte(targetAddress >> 8));
-        }
-    }
-    */
     
     PatchByte(uint address, byte value)
     {
@@ -682,13 +687,15 @@ program Z80Gen
                     {
                         Die(0x0A);
                     }
-                    Emit(OpCode.EX_iSP_HL);
-                    Emit(OpCode.PUSH_HL);   
+                    Emit(OpCode.POP_HL);
+                    Emit(OpCode.PUSH_HL);
+                    Emit(OpCode.PUSH_HL);
                 }
                 case Instruction.DUP0:
                 {
-                    Emit(OpCode.EX_iSP_HL);
-                    Emit(OpCode.PUSH_HL);   
+                    Emit(OpCode.POP_HL);
+                    Emit(OpCode.PUSH_HL);
+                    Emit(OpCode.PUSH_HL);
                 }
                 case Instruction.DECSP:
                 {
@@ -942,14 +949,14 @@ program Z80Gen
                     Emit(OpCode.EX_iSP_HL);
                     Emit(OpCode.LD_L_H);                   
                     EmitByte(OpCode.LD_H_n, 0);
-                    Emit(OpCode.EX_iSP_HL);    
+                    Emit(OpCode.EX_iSP_HL);
                 }
                 case Instruction.BITANDFF:
                 {
                     // top = top & 0x00FF
                     Emit(OpCode.EX_iSP_HL);
                     EmitByte(OpCode.LD_H_n, 0);                   
-                    Emit(OpCode.EX_iSP_HL);    
+                    Emit(OpCode.EX_iSP_HL);
                 }
                 
                 case Instruction.PUSHIBLE:
@@ -1087,10 +1094,9 @@ program Z80Gen
                 
                 case Instruction.JZB:
                 {
-                    Emit(OpCode.XOR_A_A);
                     Emit(OpCode.POP_HL);
-                    Emit(OpCode.CP_A_L);
-                    
+                    Emit(OpCode.LD_A_L);
+                    Emit(OpCode.OR_A_H);
                     EmitWord(OpCode.JP_Z_nn, uint(0));
                     int offset = byte(operand);
                     if (offset > 127)
@@ -1106,10 +1112,9 @@ program Z80Gen
                 }
                 case Instruction.JNZB:
                 {
-                    Emit(OpCode.XOR_A_A);
                     Emit(OpCode.POP_HL);
-                    Emit(OpCode.CP_A_L);
-                    
+                    Emit(OpCode.LD_A_L);
+                    Emit(OpCode.OR_A_H);
                     EmitWord(OpCode.JP_NZ_nn, uint(0));
                     int offset = byte(operand);
                     if (offset > 127)
@@ -1141,10 +1146,9 @@ program Z80Gen
                 
                 case Instruction.JZ:
                 {
-                    Emit(OpCode.XOR_A_A);
                     Emit(OpCode.POP_HL);
-                    Emit(OpCode.CP_A_L);
-                    
+                    Emit(OpCode.LD_A_L);
+                    Emit(OpCode.OR_A_H);
                     EmitWord(OpCode.JP_Z_nn, uint(0));
                     int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
@@ -1156,10 +1160,9 @@ program Z80Gen
                 }
                 case Instruction.JNZ:
                 {
-                    Emit(OpCode.XOR_A_A);
                     Emit(OpCode.POP_HL);
-                    Emit(OpCode.CP_A_L);
-                    
+                    Emit(OpCode.LD_A_L);
+                    Emit(OpCode.OR_A_H);
                     EmitWord(OpCode.JP_NZ_nn, uint(0));
                     int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
@@ -1570,6 +1573,26 @@ program Z80Gen
                     if (Symbols.Import(symbolsPath, false))
                     {
                         CodeStream.InitializeSymbolShortcuts();
+                    }
+                    if (DefineExists("ROM_32K"))
+                    {
+                        romSize = 0x8000;
+                    }
+                    if (DefineExists("ROM_16K"))
+                    {
+                        romSize = 0x4000;
+                    }
+                    if (DefineExists("ROM_8K"))
+                    {
+                        romSize = 0x2000;
+                    }
+                    if (DefineExists("ROM_4K"))
+                    {
+                        romSize = 0x1000;
+                    }
+                    if (DefineExists("ROM_1K"))
+                    {
+                        romSize = 0x0400;
                     }
                 }
                 

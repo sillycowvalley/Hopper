@@ -484,11 +484,9 @@ unit Emulator
                 }
                 else if (currentCommand == 'H') // show Hopper heap
                 {
-#ifndef Z80                    
                     GetRAMByteDelegate getRAMByte = GetMemory;
                     ShowHopperHeap(getRAMByte);
                     refresh = true;
-#endif
                 }
                 else if (currentCommand == 'V') // show Hopper heap
                 {
@@ -651,7 +649,7 @@ unit Emulator
                     {
                         // first character must be command key
 #ifdef Z80
-                        if (String.Contains("?BDIMOQRSUVWXZ", ch))
+                        if (String.Contains("?BDHIMOQRSUVWXZ", ch))
                         {
                             currentCommand = ch;
                         }

@@ -233,10 +233,15 @@ unit Shared
         {
             hexPrefix = "";
         }
-        
+#ifdef Z80
+        uint heapStart = getRAMByte(HeapStart) << 8;
+        uint heapSize  = getRAMByte(HeapSize)  << 8;
+        uint freeList  = getRAMByte(FreeList) + getRAMByte(FreeList+1) << 8;
+#else        
         uint heapStart = getRAMByte(ZHEAPSTART) << 8;
         uint heapSize  = getRAMByte(ZHEAPSIZE)  << 8;
         uint freeList  = getRAMByte(ZFREELISTL) + getRAMByte(ZFREELISTH) << 8;
+#endif
         
         // walk the free list
         <uint> freeBlocks;

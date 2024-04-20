@@ -59,15 +59,10 @@ program rZ80
     
     Hopper()
     {
-        //uint result = Fibo(10);
-        //WriteUInt(result);
-        loop
-        {
-            if (Serial.IsAvailable)
-            {
-                char ch = Serial.ReadChar();
-                Serial.WriteChar(ch);
-            }
-        }
+        WriteChar('M'); WriteChar(':'); WriteHex(Memory.Maximum());   WriteChar(Char.EOL);
+        WriteChar('A'); WriteChar(':'); WriteHex(Memory.Available()); WriteChar(Char.EOL);
+        uint address = Memory.Allocate(42);
+        WriteChar('P'); WriteChar(':'); WriteHex(address); WriteChar(Char.EOL);
+        Memory.Free(address);
     }
 }

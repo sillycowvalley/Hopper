@@ -14,7 +14,11 @@ unit AsmZ80
     const uint InReadPointer     = 0xFF05; // 1 byte
     const uint BreakFlag         = 0xFF06; // 1 byte
     
-    const uint InvalidAddress = 0xFFFF;
+    const uint HeapStart         = 0xFF07; // 1 byte
+    const uint HeapSize          = 0xFF08; // 1 byte
+    const uint FreeList          = 0xFF09; // 2 bytes
+    
+    const uint InvalidAddress    = 0xFFFF;
     
     // port address same as 6502 zero page indices for simplicity
     const uint ZT0 = 0x28;
@@ -25,15 +29,6 @@ unit AsmZ80
     const byte ControlRegister    = 0x1E;
     const byte StatusRegister     = 0x1E;
     const byte DataRegister       = 0x1F;
-    
-    // TODO : 'H' command
-    /*
-    const byte ZHEAPSTART = 0x0;
-    const byte ZHEAPSIZE = 0x0;
-    const byte ZFREELISTL = 0x0;
-    const byte ZFREELISTH = 0x0;
-    
-    */
         
     enum OpCode
     {
@@ -518,6 +513,9 @@ unit AsmZ80
         AND_A_iIY_d = 0xFDA6,
         
         CPL_A_A = 0x2F,
+        
+        XOR_A_n = 0xEE,
+        
         XOR_A_B = 0xA8,
         XOR_A_C = 0xA9,
         XOR_A_D = 0xAA,
@@ -2185,6 +2183,9 @@ unit AsmZ80
 
         z80InstructionName[OpCode.AND_A_n] = "AND A, n";                  // 0x00E6
         z80OperandType    [OpCode.AND_A_n] = OperandType.Immediate8;
+        
+        z80InstructionName[OpCode.XOR_A_n] = "XOR A, n";
+        z80OperandType    [OpCode.XOR_A_n] = OperandType.Immediate8;
 
         z80InstructionName[OpCode.OR_A_n] = "OR A, n";                    // 0x00F6
         z80OperandType    [OpCode.OR_A_n] = OperandType.Immediate8;

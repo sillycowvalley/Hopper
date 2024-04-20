@@ -375,7 +375,7 @@ unit CodePoints
                                 
                                 
                 // Ignore:
-                case OpCode.OUT_n_A:
+                case OpCode.OUT_in_A:
                 case OpCode.NOP:
                 case OpCode.XOR_A_A:
                 case OpCode.CPL:
@@ -386,6 +386,8 @@ unit CodePoints
                 case OpCode.AND_A_n:
                 case OpCode.OR_A_n:
                 case OpCode.LD_A_n:
+                case OpCode.IN_A_in:
+                case OpCode.OUT_in_A:
                 case OpCode.CP_A_iIX_d:
                 case OpCode.CP_A_iIY_d:
                 case OpCode.LD_IX_nn:
@@ -410,6 +412,14 @@ unit CodePoints
                 case OpCode.LD_inn_A:
                 case OpCode.LD_IY_inn:
                 case OpCode.LD_SP_IY:
+                case OpCode.BIT_0_A:
+                case OpCode.BIT_1_A:
+                case OpCode.BIT_2_A:
+                case OpCode.BIT_3_A:
+                case OpCode.BIT_4_A:
+                case OpCode.BIT_5_A:
+                case OpCode.BIT_6_A:
+                case OpCode.BIT_7_A:
                 {
                 }
                 
@@ -2455,7 +2465,7 @@ unit CodePoints
                      && (Flags.Target != iFlags[iIndex-0] & Flags.Target)
                    )
                 {
-                    if ((opCode2 == OpCode.LD_A_L) && (opCode1 == OpCode.OUT_n_A))
+                    if ((opCode2 == OpCode.LD_A_L) && (opCode1 == OpCode.OUT_in_A))
                     {
                         iCodes  [iIndex-4] = OpCode.NOP;
                         iLengths[iIndex-4] = 1;
