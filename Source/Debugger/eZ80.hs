@@ -134,7 +134,6 @@ program EZ80
                 PrintLn("Failed to load '" + ihexPath + "'");
                 break;
             }
-            PrintLn("orgROM=" + orgROM.ToHexString(4));
             
             // Assume Mode 1 for now
             CPU.NMI   = 0x0038;

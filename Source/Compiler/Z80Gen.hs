@@ -53,10 +53,7 @@ program Z80Gen
         // External.TimerInitialize(); - TODO
         
         // switch to Mode 1 for IRQ and NMI
-        EmitByte(OpCode.LD_A_n, 0);
-        Emit    (OpCode.LD_I_A);
-        Emit    (OpCode.LD_R_A);
-        
+        Emit    (OpCode.IM_1);
                
         //      Error = 0;
         Emit(OpCode.XOR_A_A);
@@ -290,7 +287,11 @@ program Z80Gen
     {
         while (output.Count < 256)
         {
-            if (output.Count == 0x0040) // after the RSTx slots
+            if (output.Count == 0x0038)
+            {
+                Z80Library.ISR();
+            }
+            if (output.Count >= 0x0040) // after the RSTx slots
             {
                 Z80Library.Generate();
                 break;

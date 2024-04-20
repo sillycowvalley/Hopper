@@ -1,5 +1,7 @@
 unit Z80Library
 {
+    uses "CODEGEN/AsmZ80"
+    
     <string, uint> libraryAddresses;
     
     uint GetAddress(string name)
@@ -160,6 +162,21 @@ unit Z80Library
         Peephole.Reset();
         EmitIntGetByte();
         libraryAddresses["IntGetByte"] = address;
+
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitSerialIsAvailable();
+        libraryAddresses["SerialIsAvailable"] = address;
+                
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitSerialWriteChar();
+        libraryAddresses["SerialWriteChar"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitSerialReadChar();
+        libraryAddresses["SerialReadChar"] = address;
     }
     
     EmitIntGetByte()
@@ -171,114 +188,6 @@ unit Z80Library
         Emit(OpCode.LD_H_D);             // use zero D to clear MSB
         Emit(OpCode.RET);
     }
-    
-    bool firstSysNotImplemented = true;
-    bool SysCall(byte iSysCall, byte iOverload)
-    {
-        // iOverload is in A if it is needed
-        switch (SysCalls(iSysCall))
-        {
-            // EXAMPLE of CALL: (for longer syscalls in future)
-            case SysCalls.IntGetByte:
-            {
-                Emit(OpCode.POP_DE);             // pop index: 0 for LSB and 1 for MSB
-                Emit(OpCode.EX_iSP_HL);          // get 'int'
-                Emit(OpCode.PUSH_DE);            // restore index (caller clears in CDecl)
-                EmitWord(OpCode.CALL_nn, GetAddress("IntGetByte")); // 
-                // return it in R0 (HL)
-            }
-            case SysCalls.IntFromBytes:
-            {
-                Emit(OpCode.POP_DE);             // pop MSB
-                Emit(OpCode.EX_iSP_HL);          // get LSB
-                Emit(OpCode.PUSH_DE);            // restore MSB (caller clears in CDecl)
-                Emit(OpCode.LD_H_E);             // set MSB and return it in R0 (HL)
-            }
-            case SysCalls.UIntToInt:
-            {
-#ifdef CHECKED
-                // TODO : validate that it is <= 32767 and Die(0x0D) if not
-#endif                
-            }
-            case SysCalls.TimeDelay:
-            {
-                Emit(OpCode.EX_iSP_HL);          // load delay in ms into HL
-                Emit(OpCode.NOP); // TODO
-            }
-            
-            case SysCalls.SerialWriteChar:
-            {
-                Emit(OpCode.EX_iSP_HL); // character to emit is in [top] (HL)
-                Emit(OpCode.LD_A_L);
-                EmitByte(OpCode.OUT_n_A, 0x1F);
-            }
-            case SysCalls.SerialReadChar:
-            {
-                // ...
-                EmitWord(OpCode.LD_HL_nn, 0x0000); // load zero into R0 empty character return for now
-            }
-            case SysCalls.SerialIsAvailableGet:
-            {
-                // ...
-                EmitWord(OpCode.LD_HL_nn, 0x0000); // load zero into R0 false for now
-            }
-            
-            case SysCalls.DiagnosticsDie:
-            {
-                Emit(OpCode.EX_iSP_HL); // error code is in [top] (HL)
-                Emit(OpCode.LD_A_L);
-                EmitWord(OpCode.LD_inn_A, LastError);
-                Emit(OpCode.HALT);
-            }
-            case SysCalls.DiagnosticsSetError:
-            {
-                Emit(OpCode.EX_iSP_HL); // error code is in [top] (HL)
-                EmitWord(OpCode.LD_inn_HL, LastError);
-            }
-            
-            case SysCalls.MemoryReadByte:
-            {
-                Emit(OpCode.EX_iSP_IX);          // get the address from the stack
-                EmitByte(OpCode.LD_L_iIX_d, +0); // read  the LSB
-                EmitByte(OpCode.LD_H_n, 0);      // clear the MSB and return it in R0 (HL)
-            }
-            case SysCalls.MemoryReadWord:
-            {
-                Emit(OpCode.EX_iSP_IX);          // get the address from the stack
-                EmitByte(OpCode.LD_L_iIX_d, +0); // read the LSB
-                EmitByte(OpCode.LD_H_iIX_d, +1); // read the MSB and  return it in R0 (HL)
-            }
-            case SysCalls.MemoryWriteByte:
-            {
-                Emit(OpCode.POP_HL);                      // pop the value
-                Emit(OpCode.POP_IX);                      // pop the address
-                Emit(OpCode.PUSH_HL);                     // restore value (caller clears in CDecl)
-                EmitByte(OpCode.LD_iIX_d_L,       +0);    // write the LSB
-            }
-            case SysCalls.MemoryWriteWord:
-            {
-                Emit(OpCode.POP_HL);              // pop the value
-                Emit(OpCode.POP_IX);              // pop the address
-                Emit(OpCode.PUSH_HL);             // restore value (caller clears in CDecl)
-                EmitByte(OpCode.LD_iIX_d_L, +0);  // write the LSB
-                EmitByte(OpCode.LD_iIX_d_H, +1);  // write the MSB
-            }
-                        
-            default:
-            {
-                if (firstSysNotImplemented)
-                {
-                    PrintLn("iSysCall=0x" + (byte(iSysCall)).ToHexString(2) + " not implemented");
-                }
-                firstSysNotImplemented = false;
-                Emit(OpCode.NOP);
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    
     
     utilityDivide() // BC = BC / DE, remainder in HL
     {
@@ -853,6 +762,233 @@ unit Z80Library
         EmitWord(OpCode.CALL_nn, doSignsLocation);
         EmitWord(OpCode.CALL_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
         Emit(OpCode.RET);
+    }
+    ISR()
+    {
+        Emit      (OpCode.PUSH_AF);
+        Emit      (OpCode.PUSH_HL);
+        
+        EmitByte  (OpCode.IN_A_in, StatusRegister);
+        
+        // bit 7 is  interrupt request by 6850 
+        Emit      (OpCode.BIT_7_A);        
+        EmitOffset(OpCode.JR_Z_e, +30); // not 6850 ->Exit
+        
+        // bit 0 is  RDRF : receive data register full        
+        Emit      (OpCode.BIT_0_A);        
+        EmitOffset(OpCode.JR_Z_e, +26); // not full ->Exit
+        
+        EmitByte  (OpCode.IN_A_in, DataRegister); // reads the byte from serial (which clears the flags in StatusRegister)
+        EmitByte  (OpCode.CP_A_n, 0x03);                   
+        EmitOffset(OpCode.JR_NZ_e, +6); // not <ctrl><C>
+        
+// <ctrl><C>:
+        EmitWord  (OpCode.LD_HL_nn, BreakFlag);
+        Emit      (OpCode.INC_iHL);
+        EmitOffset(OpCode.JR_e, +14); // Exit
+        
+// not <ctrl><C>:
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, InBuffer);
+        EmitWord  (OpCode.LD_HL_nn, InWritePointer);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_iHL_A);
+        EmitWord  (OpCode.LD_HL_nn, InWritePointer);
+        Emit      (OpCode.INC_iHL);
+        Emit      (OpCode.POP_DE); 
+// Exit
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.POP_AF);
+        Emit      (OpCode.RETI);
+    }
+    EmitSerialWriteChar()
+    {
+        EmitByte  (OpCode.IN_A_in,  StatusRegister);
+        Emit      (OpCode.BIT_1_A);     // Bit 1 - Transmit Data Register Empty (TDRE)
+        EmitOffset(OpCode.JR_Z_e, -6);  // loop if not ready (bit set means TDRE is empty and ready)
+        Emit      (OpCode.LD_A_L);
+        EmitByte  (OpCode.OUT_in_A, DataRegister);
+        Emit(OpCode.RET);
+    }
+    EmitSerialIsAvailable()
+    {
+        Emit      (OpCode.DI);
+        Emit      (OpCode.XOR_A_A);
+        EmitWord  (OpCode.LD_HL_nn, BreakFlag);
+        Emit      (OpCode.CP_A_iHL);
+        EmitOffset(OpCode.JR_NZ_e, +15); // <ctrl><C> -> True Exit
+        
+        EmitWord  (OpCode.LD_HL_nn, InWritePointer);
+        Emit      (OpCode.LD_A_iHL);
+        EmitWord  (OpCode.LD_HL_nn, InReadPointer);
+        Emit      (OpCode.CP_A_iHL);
+        EmitOffset(OpCode.JR_NZ_e, +5); // -> True Exit
+
+// False Exit:        
+        EmitWord  (OpCode.LD_HL_nn, 0x0000);
+        EmitOffset(OpCode.JR_e, +3); // -> Exit
+        
+// True Exit:        
+        EmitWord  (OpCode.LD_HL_nn, 0x0001);
+// Exit:        
+        Emit      (OpCode.EI);
+        Emit      (OpCode.RET);
+        // 0 or 1 returned in HL (R0)
+    }
+    EmitSerialReadChar()
+    {
+        EmitWord  (OpCode.CALL_nn, GetAddress("SerialIsAvailable"));
+        Emit      (OpCode.XOR_A_A);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_Z_e, -7); // loop until available       
+        
+        EmitWord  (OpCode.LD_HL_nn, BreakFlag);
+        Emit      (OpCode.CP_A_iHL);
+        EmitOffset(OpCode.JR_Z_e, +7); // not break
+        
+        Emit      (OpCode.DI);
+        Emit      (OpCode.DEC_iHL);        
+        Emit      (OpCode.EI);
+        EmitByte  (OpCode.LD_A_n, 0x03); // <ctrl><C>
+        
+        EmitOffset(OpCode.JR_e, +15); // -> Exit
+        
+// not break        
+        
+        EmitWord  (OpCode.LD_DE_nn, InBuffer);
+        EmitWord  (OpCode.LD_HL_nn, InReadPointer);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_A_iHL);
+        
+        EmitWord  (OpCode.LD_HL_nn, InReadPointer);
+        Emit      (OpCode.INC_iHL);
+        
+        Emit      (OpCode.LD_L_A);
+        EmitByte  (OpCode.LD_H_n, 0);
+        
+// Exit        
+        Emit(OpCode.RET);
+        // character returned in HL (R0)
+    }
+    
+    bool firstSysNotImplemented = true;
+    bool SysCall(byte iSysCall, byte iOverload)
+    {
+        // iOverload is in A if it is needed
+        switch (SysCalls(iSysCall))
+        {
+            case SysCalls.DiagnosticsDie:
+            {
+                Emit(OpCode.EX_iSP_HL); // error code is in [top] (HL)
+                Emit(OpCode.LD_A_L);
+                EmitWord(OpCode.LD_inn_A, LastError);
+                Emit(OpCode.HALT);
+            }
+            case SysCalls.DiagnosticsSetError:
+            {
+                Emit(OpCode.EX_iSP_HL); // error code is in [top] (HL)
+                EmitWord(OpCode.LD_inn_HL, LastError);
+            }
+            
+            case SysCalls.MemoryReadByte:
+            {
+                Emit(OpCode.EX_iSP_IX);          // get the address from the stack
+                EmitByte(OpCode.LD_L_iIX_d, +0); // read  the LSB
+                EmitByte(OpCode.LD_H_n, 0);      // clear the MSB and return it in R0 (HL)
+            }
+            case SysCalls.MemoryReadWord:
+            {
+                Emit(OpCode.EX_iSP_IX);          // get the address from the stack
+                EmitByte(OpCode.LD_L_iIX_d, +0); // read the LSB
+                EmitByte(OpCode.LD_H_iIX_d, +1); // read the MSB and  return it in R0 (HL)
+            }
+            case SysCalls.MemoryWriteByte:
+            {
+                Emit(OpCode.POP_HL);                      // pop the value
+                Emit(OpCode.POP_IX);                      // pop the address
+                Emit(OpCode.PUSH_HL);                     // restore value (caller clears in CDecl)
+                EmitByte(OpCode.LD_iIX_d_L,       +0);    // write the LSB
+            }
+            case SysCalls.MemoryWriteWord:
+            {
+                Emit(OpCode.POP_HL);              // pop the value
+                Emit(OpCode.POP_IX);              // pop the address
+                Emit(OpCode.PUSH_HL);             // restore value (caller clears in CDecl)
+                EmitByte(OpCode.LD_iIX_d_L, +0);  // write the LSB
+                EmitByte(OpCode.LD_iIX_d_H, +1);  // write the MSB
+            }
+            
+            // EXAMPLE of CALL: (for longer syscalls in future)
+            case SysCalls.IntGetByte:
+            {
+                Emit(OpCode.POP_DE);             // pop index: 0 for LSB and 1 for MSB
+                Emit(OpCode.EX_iSP_HL);          // get 'int'
+                Emit(OpCode.PUSH_DE);            // restore index (caller clears in CDecl)
+                EmitWord(OpCode.CALL_nn, GetAddress("IntGetByte")); // 
+                // return it in R0 (HL)
+            }
+            case SysCalls.IntFromBytes:
+            {
+                Emit(OpCode.POP_DE);             // pop MSB
+                Emit(OpCode.EX_iSP_HL);          // get LSB
+                Emit(OpCode.PUSH_DE);            // restore MSB (caller clears in CDecl)
+                Emit(OpCode.LD_H_E);             // set MSB and return it in R0 (HL)
+            }
+            case SysCalls.UIntToInt:
+            {
+#ifdef CHECKED
+                // TODO: validate that it is <= 32767 and Die(0x0D) if not
+#endif                
+            }
+            
+            case SysCalls.TimeDelay:
+            {
+                Emit(OpCode.EX_iSP_HL);          // load delay in ms into HL
+                // TODO
+                Emit(OpCode.NOP); 
+            }
+            case SysCalls.TimeSeconds:
+            {
+                // TODO: ZT0..ZT3
+                if (firstSysNotImplemented)
+                {
+                    PrintLn("iSysCall=0x" + (byte(iSysCall)).ToHexString(2) + " not implemented");
+                }
+                firstSysNotImplemented = false;
+                Emit(OpCode.NOP);
+                return false;
+            }
+            case SysCalls.SerialIsAvailableGet:
+            {
+                EmitWord(OpCode.CALL_nn, GetAddress("SerialIsAvailable"));
+            }
+            case SysCalls.SerialReadChar:
+            {
+                EmitWord(OpCode.LD_HL_nn, 0x0000); 
+                EmitWord(OpCode.CALL_nn, GetAddress("SerialReadChar"));
+            }
+            case SysCalls.SerialWriteChar:
+            {
+                Emit      (OpCode.EX_iSP_HL);   // character to emit is in [top] (HL)
+                EmitWord  (OpCode.CALL_nn, GetAddress("SerialWriteChar")); 
+            }
+                                                         
+            default:
+            {
+                if (firstSysNotImplemented)
+                {
+                    PrintLn("iSysCall=0x" + (byte(iSysCall)).ToHexString(2) + " not implemented");
+                }
+                firstSysNotImplemented = false;
+                Emit(OpCode.NOP);
+                return false;
+            }
+        }
+        return true;
     }
 
 }

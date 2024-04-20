@@ -1,6 +1,7 @@
 program rZ80
 {
     #define CPU_Z80
+    #define ROM_8K
     #define CDECL
     
     uses "/Source/Minimal/System"
@@ -58,8 +59,15 @@ program rZ80
     
     Hopper()
     {
-        uint result = Fibo(10);
-        WriteUInt(result);
-        byte b = ReadByte(100);
+        //uint result = Fibo(10);
+        //WriteUInt(result);
+        loop
+        {
+            if (Serial.IsAvailable)
+            {
+                char ch = Serial.ReadChar();
+                Serial.WriteChar(ch);
+            }
+        }
     }
 }

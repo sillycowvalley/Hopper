@@ -3,14 +3,19 @@ unit Display
     <uint,uint> methodSizes;     // <index, length>
     <uint,uint> methodAddresses; // <address,index>
     
+    <uint,string> sourceMap;     // Z80: <address,sourceLine>
+    
     string pathLoaded;
     <string> sourceLines;
     
   
     Initialize()
     {
-        Screen.Clear();
+        //Screen.Clear();
         
+#ifdef Z80        
+        sourceMap = MapZSource();
+#else        
         // find the method address ranges for disassembly
         methodSizes = Code.GetMethodSizes();
         uint indexMax = 0;
@@ -29,6 +34,7 @@ unit Display
             methodAddresses[methodAddress] = index;
             methodAddress += methodSize;
         }
+#endif        
     } 
     
     string getSourceLine(string path, string lnum)
@@ -128,7 +134,15 @@ unit Display
         {
             commentPrefix = "; ";
         }
-        PrintLn();
+        if (address != InvalidAddress)
+        {
+            PrintLn();
+        }
+        
+        string src;
+        string srcName;
+        
+#ifndef Z80        
         //<uint,uint> methodSizes;     // <index, length>
         //<uint,uint> methodAddresses; // <address,index>
         uint methodIndex;
@@ -138,7 +152,6 @@ unit Display
         foreach (var kv in methodAddresses)
         {
             methodStart = kv.key + CPU.Entry;
-            //PrintLn(methodStart.ToHexString(4));
             if (address >= methodStart)
             {
                 methodIndex = kv.value;
@@ -152,8 +165,6 @@ unit Display
         }
         <string,variant> methodSymbols;
         <string,string> debugInfo;
-        string src;
-        string srcName;
         if (found)
         {
             methodSymbols = Code.GetMethodSymbols(methodIndex);
@@ -166,17 +177,20 @@ unit Display
                 debugInfo = methodSymbols["debug"];
             }
         }
+#endif        
         
         bool firstLine = true;
         loop
         {
             if (instructions == 0) { break; }
+            if (address == InvalidAddress) { break; }
+#ifndef Z80
             if (address > methodStart + methodLength-1) { break; }
-            
+#endif            
             string operandString;
             uint operand;
-            
-
+            string comment;
+            string debugLine;
 #ifdef Z80
             OpCode instruction = GetInstruction(address);
             byte opCodeLength  = GetOpCodeLength(instruction);
@@ -190,6 +204,16 @@ unit Display
             {
                 operand = GetMemory(address+opCodeLength) + (GetMemory(address+opCodeLength+1) << 8); 
             }
+            
+            //<uint,string> sourceMap;     // Z80: <address,sourceLine>
+            if (sourceMap.Contains(address))
+            {
+                string sourceLine = sourceMap[address];
+                <string> parts = sourceLine.Split(':');
+                src = parts[0];
+                srcName = Path.GetFileName(src);
+                debugLine = parts[1];
+            }
 #else
             OpCode instruction = OpCode(GetMemory(address));
             byte length        = GetInstructionLength(instruction);
@@ -201,15 +225,14 @@ unit Display
             {
                 operand = GetMemory(address+1) + (GetMemory(address+2) << 8); 
             }
-#endif
-            
-            
             string debugAddress = (address - methodStart).ToString();
-            //PrintLn("debugAddress=" + debugAddress);
-            string comment;
             if (debugInfo.Contains(debugAddress))
             {
-                string debugLine = debugInfo[debugAddress];
+                debugLine = debugInfo[debugAddress];
+            }
+#endif
+            if (debugLine.Length != 0)
+            {
                 string sourceLine = getSourceLine(src, debugLine);
                 if (sourceLine.Length != 0)
                 {
@@ -225,7 +248,6 @@ unit Display
                     comment = src + ":" + debugLine;  
                 }
             }
-            
             uint colour = Colour.MatrixBlue;
             if (firstLine)
             {
@@ -275,7 +297,16 @@ unit Display
         string names = GetRegisterNames();
         string registers = GetRegisters();
         PrintLn(names);
-        Print(registers, Colour.LightestGray, Colour.Black);
+        if (CPU.PC == 0xFFFF)
+        {
+            registers = registers.Substring(4);
+            Print("FFFF",    Colour.MatrixRed, Colour.Black);
+            Print(registers, Colour.LightestGray, Colour.Black);
+        }
+        else
+        {
+            Print(registers, Colour.LightestGray, Colour.Black);
+        }
         if (showStringVariables)
         {
             GetRAMByteDelegate getRAMByte = GetMemory;

@@ -1,5 +1,6 @@
 unit String
 {
+#ifndef CPU_Z80    
     uint Length { get system; }
     
     char GetChar(string this, uint index) system; // syntax shortcut would be :  ch = this[index]
@@ -8,6 +9,7 @@ unit String
     Build(ref string build, char append) system;
     Build(ref string build) system;
     BuildFront(ref string build, char insert) system;
+#endif
     
     bool IsEmpty { get { return this.Length == 0; } }
     

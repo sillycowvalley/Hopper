@@ -304,6 +304,56 @@ unit Shared
             if (current >= heapStart + heapSize) { break; }
         }
     }
+    ShowHopperZ80Stack(GetRAMByteDelegate currentGetRAMByte)
+    {
+        getRAMByte = currentGetRAMByte;           
+        uint sp = CPU.SP;
+        uint bp = CPU.BP;
+        uint stackBase = StackAddress + StackSize; // 0xFC00 - 512 bytes: const uint StackSize     = 0x0200;
+        
+        string hexPrefix = "0x";
+        if (OGMode)
+        {
+            hexPrefix = "";
+        }
+        
+        PrintLn();
+        uint spi = sp;
+        
+        Print("SP -> ", Colour.MatrixRed, Colour.Black);
+        PrintLn(hexPrefix + sp.ToHexString(4), Colour.LightestGray, Colour.Black);
+        uint entries = 0;
+        loop
+        {
+            uint value = getRAMByte(spi) + (getRAMByte(spi+1) << 8);
+            string leftText = "      ";
+            if (spi == bp)
+            {
+                leftText = "BP -> ";
+            }
+            
+            Print(leftText, Colour.MatrixRed, Colour.Black);
+            if (spi == bp)
+            {
+                Print(hexPrefix + spi.ToHexString(4), Colour.LightestGray, Colour.Black);
+            }
+            else
+            {
+                Print(hexPrefix + spi.ToHexString(4));
+            }
+            Print(" " + hexPrefix + value.ToHexString(4), Colour.LightestGray, Colour.Black); 
+            PrintLn();
+            entries++;
+            if (entries == 16) 
+            { 
+               PrintLn("      ...");
+               break; 
+            }
+            if (spi == stackBase) { break; }
+            spi += 2;
+        }
+        
+    }
     ShowHopperValueStack(GetRAMByteDelegate currentGetRAMByte)
     {
         getRAMByte = currentGetRAMByte;           

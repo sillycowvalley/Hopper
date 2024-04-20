@@ -125,7 +125,11 @@ unit Emulator
         ihexPath = Path.Combine("/bin", ihexPath);
         
         symbolsPath = Path.GetFileName(filePath);
+#ifdef Z80        
         symbolsPath = symbolsPath.Replace(extension, ".zcode");
+#else
+        symbolsPath = symbolsPath.Replace(extension, ".code");
+#endif
         symbolsPath = Path.GetFileName(symbolsPath);
         symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
         if (!File.Exists(ihexPath))
@@ -473,19 +477,27 @@ unit Emulator
                 }
                 else if (currentCommand == 'C') // show call stack
                 {
+#ifndef Z80                    
                     ShowCallStack();
                     refresh = true;
+#endif
                 }
                 else if (currentCommand == 'H') // show Hopper heap
                 {
+#ifndef Z80                    
                     GetRAMByteDelegate getRAMByte = GetMemory;
                     ShowHopperHeap(getRAMByte);
                     refresh = true;
+#endif
                 }
                 else if (currentCommand == 'V') // show Hopper heap
                 {
                     GetRAMByteDelegate getRAMByte = GetMemory;
+#ifdef Z80                    
+                    ShowHopperZ80Stack(getRAMByte);
+#else
                     ShowHopperValueStack(getRAMByte);
+#endif                    
                     refresh = true;
                 }
                 else if (currentCommand == 'M') // memory dump
@@ -638,6 +650,16 @@ unit Emulator
                     if (clength == 0)
                     {
                         // first character must be command key
+#ifdef Z80
+                        if (String.Contains("?BDIMOQRSUVWXZ", ch))
+                        {
+                            currentCommand = ch;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+#else                        
                         if (String.Contains("?BCDHIMOQRSUVWXZ", ch))
                         {
                             currentCommand = ch;
@@ -646,6 +668,7 @@ unit Emulator
                         {
                             continue;
                         }
+#endif
                     } // clength == 0
                     else if (clength == 1)
                     {

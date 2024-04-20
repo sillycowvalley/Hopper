@@ -205,7 +205,7 @@ program DASM
                 file hexFile = File.Open(codePath);
                 <byte> code = readIHex(hexFile, ref org);
                 
-                uint entryAddress = code[4] + (code[5] << 8);
+                uint entryAddress = code[5] + (code[6] << 8);
                 
                 <uint, uint> methodSizes = Code.GetMethodSizes();
                 uint indexMax = 0;
@@ -261,9 +261,8 @@ program DASM
                                 }
                                 methodFirstAddresses[codeAddress] = index;
                                 methodLastAddresses[prevIndex] = codeAddress-1;
-                                
                                 /*
-                                if (index < 10)
+                                if (index < 100)
                                 {
                                     string name = methodSymbols["name"];
                                     PrintLn(index.ToHexString(4) + ": 0x" + codeAddress.ToHexString(4) + " " + name);
@@ -288,6 +287,7 @@ program DASM
                     }
                 }
                 */
+                
                 
                 uint doffset = 0;
                 string src;

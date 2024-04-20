@@ -430,10 +430,47 @@ unit Code
             Runtime.SetStatement(address);
         }    
     }
+    <uint,string> MapZSource()
+    {
+        <uint,string> sourceMap;
+        uint count;
+        foreach (var kv in debugSymbols)
+        {
+            if (kv.key == "globals")
+            {
+                continue;
+            }
+            
+            string hex = kv.key;
+            uint index;
+            if (!UInt.TryParse(hex, ref index))
+            {
+                Diagnostics.Die(0x03);
+            }
+            <string,variant> methodSymbols = kv.value;
+            string path = methodSymbols["source"];
+            string lpath = path.ToLower();
+            
+            <string,string> smap = methodSymbols["debug"];
+            foreach (var kv2 in smap)
+            {
+                uint address;
+                uint ln;
+                if (UInt.TryParse(kv2.key, ref address))
+                {
+                }
+                if (UInt.TryParse(kv2.value, ref ln))
+                {
+                }
+                sourceMap[address] = path + ":" + kv2.value;
+            }
+        }
+        return sourceMap;
+    }
     
     MapSource()
     {
-        //uint count = 0;
+        //uint count;
         foreach (var kv in debugSymbols)
         {
             if (kv.key == "globals")
@@ -470,11 +507,13 @@ unit Code
                 uint address = start + offset;
                 map[ln] = address;
                 codeMap[address] = path + ":" + kv2.value;
-                //if (count < 20)
-                //{
-                //    PrintLn(index.ToHexString(4) + " " + start.ToHexString(4) + " " + address.ToHexString(4) + ":" + codeMap[address]);
-                //    count++;
-                //}
+                /*
+                if (count < 20)
+                {
+                    PrintLn(index.ToHexString(4) + " " + start.ToHexString(4) + " " + address.ToHexString(4) + ":" + codeMap[address]);
+                    count++;
+                }
+                */
             }
             lineMap[lpath] = map;
         }
@@ -1215,6 +1254,7 @@ unit Code
                 }
                 <string,string> previousToken = PreviousToken;
                 string methodIndex = previousToken["lexeme"];
+                
                 Parser.Consume(HopperToken.Colon);
                 if (Parser.HadError)
                 {
@@ -1347,6 +1387,7 @@ unit Code
                     {
                         break;
                     }
+                    
                     if (methodIndex == "const")
                     {
                         if (keepCode)

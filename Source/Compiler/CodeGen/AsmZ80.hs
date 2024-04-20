@@ -3,48 +3,62 @@ unit AsmZ80
     const uint StackAddress  = 0xFC00; // 512 bytes
     const uint StackSize     = 0x0200;
     
+    const uint InBuffer      = 0xFE00; // 256 byte serial input buffer
+    
     // global addresses
-    const uint SPBPSwapper       = 0xFE00; // 2 bytes
-    const uint LastError         = 0xFE02; // 1 bytes
-    const uint Sign              = 0xFE03; // 1 bytes
+    const uint SPBPSwapper       = 0xFF00; // 2 bytes
+    const uint LastError         = 0xFF02; // 1 byte
+    const uint Sign              = 0xFF03; // 1 byte
+    
+    const uint InWritePointer    = 0xFF04; // 1 byte
+    const uint InReadPointer     = 0xFF05; // 1 byte
+    const uint BreakFlag         = 0xFF06; // 1 byte
     
     const uint InvalidAddress = 0xFFFF;
     
-    // TODO : location for timer
-    const uint ZT0 = 0xE000;
-    const uint ZT1 = 0xE001;
-    const uint ZT2 = 0xE002;
-    const uint ZT3 = 0xE003;
+    // port address same as 6502 zero page indices for simplicity
+    const uint ZT0 = 0x28;
+    const uint ZT1 = 0x29;
+    const uint ZT2 = 0x2A;
+    const uint ZT3 = 0x2B;
     
-    // TODO : remove 'H' command
+    const byte ControlRegister    = 0x1E;
+    const byte StatusRegister     = 0x1E;
+    const byte DataRegister       = 0x1F;
+    
+    // TODO : 'H' command
+    /*
     const byte ZHEAPSTART = 0x0;
     const byte ZHEAPSIZE = 0x0;
     const byte ZFREELISTL = 0x0;
     const byte ZFREELISTH = 0x0;
     
-    const uint ZSP = 0x0;
-    const uint ZBP = 0x0;
+    */
         
     enum OpCode
     {
-        NOP         = 0x00,
+        NOP      = 0x00,
         
-        CLP         = 0x2F,
+        CLP      = 0x2F,
         
-        DI          = 0xF3,
-        EI          = 0xFB,
+        DI       = 0xF3,
+        EI       = 0xFB,
         
-        LD_I_A      = 0xED47,
-        LD_R_A      = 0xED4F,
+        LD_I_A   = 0xED47,
+        LD_R_A   = 0xED4F,
         
-        RST_Reset         = 0xC7, // 0x00
-        RST_PopAbsolute   = 0xCF, // 0x08
-        RST_PushAbsolute  = 0xD7, // 0x10
-        RST_PushImmediate = 0xDF, // 0x18
-        RST_PushOffset    = 0xE7, // 0x20
-        RST_PopOffset     = 0xEF, // 0x28
-        RST_SysCall0      = 0xF7, // 0x30
-        RST_Instruction   = 0xFF, // 0x38
+        IM_0     = 0xED46,
+        IM_1     = 0xED56,
+        IM_2     = 0xED5E,
+        
+        RST_00   = 0xC7,
+        RST_08   = 0xCF,
+        RST_10   = 0xD7,
+        RST_18   = 0xDF,
+        RST_20   = 0xE7,
+        RST_28   = 0xEF,
+        RST_30   = 0xF7,
+        RST_38   = 0xFF,
         
         BIT_0_A = 0xCB47,
         BIT_0_B = 0xCB40,
@@ -402,6 +416,7 @@ unit AsmZ80
         
         LD_SP_HL = 0xF9,
         LD_SP_IY = 0xFDF9,
+        LD_SP_IX = 0xDDF9,
         
         EX_DE_HL  = 0xEB,
         EX_iSP_HL = 0xE3,
@@ -612,7 +627,8 @@ unit AsmZ80
         
         CPL = 0x2F,
         
-        OUT_n_A = 0xD3,
+        OUT_in_A = 0xD3,
+        IN_A_in  = 0xDB,
         
         CCF = 0x3F,
         SCF = 0x37,
@@ -636,11 +652,11 @@ unit AsmZ80
         
         JP_nn    = 0xC3,
         JP_M_nn  = 0xFA,
-        JP_Z_nn = 0xCA,
+        JP_Z_nn  = 0xCA,
         JP_NZ_nn = 0xC2,
-        JP_C_nn = 0xDA,
+        JP_C_nn  = 0xDA,
         JP_NC_nn = 0xD2,
-        JP_P_nn = 0xF2,
+        JP_P_nn  = 0xF2,
         JP_PE_nn = 0xEA,
         JP_PO_nn = 0xE2,
         
@@ -657,15 +673,17 @@ unit AsmZ80
         
         CALL_nn = 0xCD,
         RET     = 0xC9,
+        RETI    = 0xED4D,
+        RETN    = 0xED45,
         
         RET_NZ = 0xC0,
-        RET_Z = 0xC8,
+        RET_Z  = 0xC8,
         RET_NC = 0xD0,
-        RET_C = 0xD8,
+        RET_C  = 0xD8,
         RET_PO = 0xE0,
         RET_PE = 0xE8,
-        RET_P = 0xF0,
-        RET_M = 0xF8,
+        RET_P  = 0xF0,
+        RET_M  = 0xF8,
         
         
         HALT    = 0x76,
@@ -967,35 +985,47 @@ unit AsmZ80
         z80InstructionName[OpCode.LD_R_A] = "LD R, A";
         z80OperandType    [OpCode.LD_R_A] = OperandType.Implied;
         
-        z80InstructionName[OpCode.OUT_n_A] = "OUT (n), A";                // 0x001F
-        z80OperandType    [OpCode.OUT_n_A] = OperandType.Immediate8;
+        z80InstructionName[OpCode.IM_0] = "IM 0";
+        z80OperandType    [OpCode.IM_0] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.IM_1] = "IM 1";
+        z80OperandType    [OpCode.IM_1] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.IM_2] = "IM 2";
+        z80OperandType    [OpCode.IM_2] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.OUT_in_A] = "OUT (n), A";                // 0x001F
+        z80OperandType    [OpCode.OUT_in_A] = OperandType.Immediate8;
 
+        z80InstructionName[OpCode.IN_A_in] = "IN A, (n)";
+        z80OperandType    [OpCode.IN_A_in] = OperandType.Immediate8;
+        
         z80InstructionName[OpCode.CPL_A_A] = "CPL A, A";                  // 0x002F
         z80OperandType    [OpCode.CPL_A_A] = OperandType.Implied;
 
-        z80InstructionName[OpCode.RST_Reset] = "RST Reset";               // 0x00C7
-        z80OperandType    [OpCode.RST_Reset] = OperandType.Implied;
+        z80InstructionName[OpCode.RST_00] = "RST 00";
+        z80OperandType    [OpCode.RST_00] = OperandType.Implied;
 
-        z80InstructionName[OpCode.RST_PopAbsolute] = "RST PopAbsolute";   // 0x00CF
-        z80OperandType    [OpCode.RST_PopAbsolute] = OperandType.Implied;
+        z80InstructionName[OpCode.RST_08] = "RST 08";
+        z80OperandType    [OpCode.RST_08] = OperandType.Implied;
 
-        z80InstructionName[OpCode.RST_PushAbsolute] = "RST PushAbsolute"; // 0x00D7
-        z80OperandType    [OpCode.RST_PushAbsolute] = OperandType.Implied;
+        z80InstructionName[OpCode.RST_10] = "RST 10";
+        z80OperandType    [OpCode.RST_10] = OperandType.Implied;
 
-        z80InstructionName[OpCode.RST_PushImmediate] = "RST PushImmediate";// 0x00DF
-        z80OperandType    [OpCode.RST_PushImmediate] = OperandType.Implied;
+        z80InstructionName[OpCode.RST_18] = "RST 18";
+        z80OperandType    [OpCode.RST_18] = OperandType.Implied;
 
-        z80InstructionName[OpCode.RST_PushOffset] = "RST PushOffset";     // 0x00E7
-        z80OperandType    [OpCode.RST_PushOffset] = OperandType.Implied;
+        z80InstructionName[OpCode.RST_20] = "RST 20";
+        z80OperandType    [OpCode.RST_20] = OperandType.Implied;
 
-        z80InstructionName[OpCode.RST_PopOffset] = "RST PopOffset";       // 0x00EF
-        z80OperandType    [OpCode.RST_PopOffset] = OperandType.Implied;
+        z80InstructionName[OpCode.RST_28] = "RST 28";
+        z80OperandType    [OpCode.RST_28] = OperandType.Implied;
 
-        z80InstructionName[OpCode.RST_SysCall0] = "RST SysCall0";         // 0x00F7
-        z80OperandType    [OpCode.RST_SysCall0] = OperandType.Implied;
+        z80InstructionName[OpCode.RST_30] = "RST 30";
+        z80OperandType    [OpCode.RST_30] = OperandType.Implied;
 
-        z80InstructionName[OpCode.RST_Instruction] = "RST Instruction";   // 0x00FF
-        z80OperandType    [OpCode.RST_Instruction] = OperandType.Implied;
+        z80InstructionName[OpCode.RST_38] = "RST 38";
+        z80OperandType    [OpCode.RST_38] = OperandType.Implied;
 
         z80InstructionName[OpCode.BIT_0_A] = "BIT 0, A";                  // 0xCB47
         z80OperandType    [OpCode.BIT_0_A] = OperandType.Implied;
@@ -1927,6 +1957,8 @@ unit AsmZ80
         z80InstructionName[OpCode.LD_SP_IY] = "LD SP, IY";                // 0xFDF9
         z80OperandType    [OpCode.LD_SP_IY] = OperandType.Implied;
         
+        z80InstructionName[OpCode.LD_SP_IX] = "LD SP, IX";
+        z80OperandType    [OpCode.LD_SP_IX] = OperandType.Implied;
         
         z80InstructionName[OpCode.EX_DE_HL] = "EX DE, HL";                // 0x00EB
         z80OperandType    [OpCode.EX_DE_HL] = OperandType.Implied;
@@ -2550,6 +2582,12 @@ unit AsmZ80
         z80InstructionName[OpCode.RET] = "RET";                           // 0x00C9
         z80OperandType    [OpCode.RET] = OperandType.Implied;
 
+        z80InstructionName[OpCode.RETI] = "RETI";                           
+        z80OperandType    [OpCode.RETI] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.RETN] = "RETN";                           
+        z80OperandType    [OpCode.RETN] = OperandType.Implied;
+        
         z80InstructionName[OpCode.RET_NZ] = "RET NZ";                     // 0x00C0
         z80OperandType    [OpCode.RET_NZ] = OperandType.Implied;
 
