@@ -96,7 +96,7 @@ unit Source
     }
     <string, <string> > GetLocals(uint methodIndex, ref uint startAddress)
     {
-        <string, <string> > localCandidates = Code.GetLocals(code, methodIndex, ref startAddress);
+        <string, <string> > localCandidates = Code.GetLocals(methodIndex, ref startAddress);
         return localCandidates;
     }
     <uint, <string> > GetGlobals(uint methodIndex, uint pc)

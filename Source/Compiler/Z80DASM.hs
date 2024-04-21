@@ -205,89 +205,9 @@ program DASM
                 file hexFile = File.Open(codePath);
                 <byte> code = readIHex(hexFile, ref org);
                 
-                uint entryAddress = code[5] + (code[6] << 8);
-                
-                <uint, uint> methodSizes = Code.GetMethodSizes();
-                uint indexMax = 0;
-                foreach (var sz in methodSizes)
-                {
-                    if (sz.key > indexMax)
-                    {
-                        indexMax = sz.key;
-                    }
-                }
-                <string,string> debugInfo;
                 <uint,uint> methodFirstAddresses; // <address,index>
-                <uint,uint> methodLastAddresses; // <address,index>
-                
-                uint prevIndex;
-                for (uint index = 0; index <= indexMax; index++)
-                {
-                    <string,variant> methodSymbols = Code.GetMethodSymbols(index);
-                    if (methodSymbols.Count != 0)
-                    {
-                        debugInfo = methodSymbols["debug"];
-                        foreach (var kv in debugInfo)
-                        {
-                            uint codeAddress;
-                            if (UInt.TryParse(kv.key, ref codeAddress))
-                            {
-                                if (index == 0)
-                                {
-                                    codeAddress = entryAddress;
-                                }
-                                else
-                                {
-                                    // -10 'ENTER'   preamble
-                                    // -18 'ENTERB'  preamble (optimized only)
-                                    // -14 'ENTERB' 1 ?
-                                    // - 0'RETFAST'  preamble (optimized only)
-                                    uint seek = codeAddress;
-                                    loop
-                                    {
-                                        OpCode opCode2 = GetOpCode(code, seek-6);  
-                                        OpCode opCode1 = GetOpCode(code, seek-4);  
-                                        OpCode opCode0 = GetOpCode(code, seek);
-                                            
-                                        if ((opCode2 == OpCode.PUSH_IY)  && (opCode1 == OpCode.LD_inn_SP) && (opCode0 == OpCode.LD_IY_inn)) 
-                                        {
-                                            // "PUSH BP, BP = SP" stack frame setup
-                                            //Print(AsmZ80.GetName(opCode2) + "   " + AsmZ80.GetName(opCode1) + "   " + AsmZ80.GetName(opCode0) + ",   ");
-                                            codeAddress = seek - 6;
-                                        }
-                                        seek--;
-                                        if (codeAddress - seek > 25) { break; }
-                                    }
-                                }
-                                methodFirstAddresses[codeAddress] = index;
-                                methodLastAddresses[prevIndex] = codeAddress-1;
-                                /*
-                                if (index < 100)
-                                {
-                                    string name = methodSymbols["name"];
-                                    PrintLn(index.ToHexString(4) + ": 0x" + codeAddress.ToHexString(4) + " " + name);
-                                }
-                                */
-                                prevIndex = index;
-                                break;
-                            }
-                        }
-                    }
-                }
-                methodLastAddresses[prevIndex] = code.Count-1;
-                
-                /*
-                foreach (var kv in methodFirstAddresses)
-                {
-                    uint index = kv.value;
-                    uint startAddress = kv.key;
-                    if (index < 10)
-                    {
-                        PrintLn(index.ToHexString(4) + ": 0x" + startAddress.ToHexString(4) + "-0x" + (methodLastAddresses[index]).ToHexString(4));
-                    }
-                }
-                */
-                
+                <uint,uint> methodLastAddresses;  // <index,address>
+                uint entryAddress = GetMethodAddresses(code, ref methodFirstAddresses, ref methodLastAddresses);
                 
                 uint doffset = 0;
                 string src;
@@ -298,6 +218,7 @@ program DASM
                 uint instructionAddress;
                 
                 uint progressCount;
+                <string,string> debugInfo;
                 loop
                 {
                     if (index == code.Count) { break; }

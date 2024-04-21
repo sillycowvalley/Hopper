@@ -39,6 +39,7 @@ unit Memory
     uint Maximum()
     {
         uint available;
+        uint size;
         uint current = FreeList;
         loop
         {
@@ -46,7 +47,7 @@ unit Memory
             {
                 break;
             }
-            uint size = ReadWord(current + 0);
+            size = ReadWord(current + 0);
             if (size > available)
             {
                 available = size;
@@ -63,6 +64,17 @@ unit Memory
     uint Allocate(uint size)
     {
         uint address;
+        uint best;
+        uint bestSize;
+        uint bestNext; 
+        uint bestPrev;
+        uint current;
+        uint currentSize;
+        uint currentNext;
+        uint currentPrev;
+        uint newHole; 
+        uint newHoleSize;
+        
         loop
         {
             if (0 == size)
@@ -70,11 +82,7 @@ unit Memory
                 Die(0x0C);
                 break;
             }
-            uint best;
-            uint bestSize;
-            uint bestNext; 
-            uint bestPrev;
-            uint current = FreeList;
+            current = FreeList;
             size++; size++; // +2 space for the size field
             if (size < 6)
             {   
@@ -87,9 +95,9 @@ unit Memory
                     break;
                 }
                 // read current freeList
-                uint currentSize = ReadWord(current);
-                uint currentNext = ReadWord(current + 2);
-                uint currentPrev = ReadWord(current + 4);
+                currentSize = ReadWord(current);
+                currentNext = ReadWord(current + 2);
+                currentPrev = ReadWord(current + 4);
                 if ((currentSize >= size) && 
                     ((0 == bestSize) || // first available block
                     (currentSize < bestSize)) // better than what we've seen so far in terms of fit
@@ -114,8 +122,8 @@ unit Memory
                 WriteWord(best, size); 
                 
                 // enough extra to make a new freelist record from the balance
-                uint newHole = best + size;
-                uint newHoleSize = bestSize - size;
+                newHole = best + size;
+                newHoleSize = bestSize - size;
                 WriteWord(newHole, newHoleSize);
                 
                 if (0 == bestPrev)
@@ -181,16 +189,30 @@ unit Memory
     {
         loop
         {
+            uint blockAddress;
+            uint size;
+            uint current;
+            uint previous;
+            uint currentPrev;
+            uint currentSize;
+            uint currentNext;
+            uint freeSlot;
+            uint gapFront;
+            uint nextSize;
+            uint nextNext;
+            uint prevSize;
+            uint gapBack;
+            uint gapNext;
+                
             if (0x0000 == address)
             {
                 Die(0x0B);
                 break;
             }
-            uint blockAddress = address - 2;
-            uint size  = ReadWord(blockAddress);
+            blockAddress = address - 2;
+            size  = ReadWord(blockAddress);
             
-            uint current  = FreeList;
-            uint previous = 0;
+            current  = FreeList;
             loop
             {
                 if (0 == current)
@@ -203,12 +225,11 @@ unit Memory
                     break;
                 }
                 previous = current;
-                uint currentNext = ReadWord(current + 2);
-                current = currentNext;
+                current = ReadWord(current + 2);
             }
-            uint currentPrev = previous;
-            uint currentSize = 0;
-            uint currentNext = 0;
+            currentPrev = previous;
+            currentSize = 0;
+            currentNext = 0;
             if (0 != current)
             {
                 currentSize = ReadWord(current);
@@ -216,18 +237,18 @@ unit Memory
                 //currentPrev = ReadWord(current + 4); // already set above
             }
             
-            uint freeSlot = address-2;
+            freeSlot = address-2;
             if (0 == currentPrev)
             {
                 // current is front of freelist, insert in front of it
                 WriteWord(freeSlot+2, current);
                 WriteWord(freeSlot+4, 0);
                 WriteWord(current+ 4, freeSlot);
-                uint gapFront = FreeList - (freeSlot+size);
+                gapFront = FreeList - (freeSlot+size);
                 if (0 == gapFront)
                 {
-                    uint nextSize = ReadWord(FreeList);
-                    uint nextNext = ReadWord(FreeList+2);
+                    nextSize = ReadWord(FreeList);
+                    nextNext = ReadWord(FreeList+2);
                     // no gap between freeSlot and freeList so absorb it into freeSlot block
                     WriteWord(freeSlot, size+nextSize);
                     WriteWord(freeSlot+2, nextNext);
@@ -245,8 +266,8 @@ unit Memory
                 WriteWord(currentPrev+2, freeSlot);
                 WriteWord(freeSlot   +4, currentPrev);
                 WriteWord(freeSlot   +2, 0);
-                uint prevSize = ReadWord(currentPrev);
-                uint gapBack = freeSlot - (currentPrev+prevSize);
+                prevSize = ReadWord(currentPrev);
+                gapBack = freeSlot - (currentPrev+prevSize);
                 if (0 == gapBack)
                 {
                     // no gap between freeSlot and previous so absorb it into previous block
@@ -261,8 +282,8 @@ unit Memory
                 WriteWord(freeSlot   +4, currentPrev);
                 WriteWord(freeSlot   +2, current);
                 WriteWord(current    +4, freeSlot);
-                uint prevSize = ReadWord(currentPrev);
-                uint gapBack = freeSlot - (currentPrev+prevSize);
+                prevSize = ReadWord(currentPrev);
+                gapBack = freeSlot - (currentPrev+prevSize);
                 if (0 == gapBack)
                 {
                     // no gap between freeSlot and previous so absorb it into previous block
@@ -272,7 +293,7 @@ unit Memory
                     freeSlot = currentPrev;
                     size = prevSize+size;
                 }
-                uint gapNext = current - (freeSlot+size);
+                gapNext = current - (freeSlot+size);
                 if (0 == gapNext)
                 {
                     // no gap between freeSlot and current so absorb it into freeSlot block

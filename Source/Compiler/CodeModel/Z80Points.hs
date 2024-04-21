@@ -332,6 +332,7 @@ unit CodePoints
                 case OpCode.LD_iIX_d_L:
                 case OpCode.CP_A_L:
                 case OpCode.LD_A_L:
+                case OpCode.OR_A_L:
                 {
                     walkStats |= WalkStats.ReadL;
                 }
@@ -339,6 +340,7 @@ unit CodePoints
                 case OpCode.LD_iIX_d_H:
                 case OpCode.LD_A_H:
                 case OpCode.CP_A_H:
+                case OpCode.OR_A_H:
                 {
                     walkStats |= WalkStats.ReadH;
                 }
@@ -2515,61 +2517,5 @@ unit CodePoints
         }
         return modified;
     }
-    bool OptimizeJumpTable()
-    {
-        bool modified = false;
-        if (iCodes.Count < 3) { return modified; }
-        uint iIndex = 2;
-        
-        loop
-        {
-            if (iIndex == iCodes.Count) { break; }
-        
-            OpCode opCode2  = iCodes[iIndex-2];
-            OpCode opCode1  = iCodes[iIndex-1];
-            OpCode opCode0  = iCodes[iIndex-0];
-            
-            if ((opCode2 == OpCode.POP_DE) && (opCode1 == OpCode.LD_DE_nn) && (opCode0 == OpCode.PUSH_DE))
-            {
-                if (    (Flags.Target != iFlags[iIndex-1] & Flags.Target)
-                     && (Flags.Target != iFlags[iIndex-0] & Flags.Target)
-                   )
-                {
-                    if (WalkAhead(iIndex+1, WalkStats.WriteDE | WalkStats.Exit, WalkStats.ReadDE, 20))
-                    {
-                        if (WalkAhead(iIndex+1, WalkStats.WriteHL | WalkStats.Exit, WalkStats.ReadHL, 20))
-                        {
-                            iCodes  [iIndex-2] = OpCode.NOP;
-                            iLengths[iIndex-2] = 1;
-                            
-                            iCodes  [iIndex-1] = OpCode.LD_HL_nn;
-                            iCodes  [iIndex-0] = OpCode.EX_iSP_HL;
-                            
-                            modified = true;
-                        }
-                    }
-                }
-            }
-            iIndex++;
-        }
-        return modified;
-    }
     
-    bool OptimizeUseBC()
-    {
-        bool modified = false;
-        if (iCodes.Count < 0) { return modified; }
-        uint iIndex = 0;
-        
-        /*
-        //if (WalkAhead(iIndex+1, WalkStats.None, WalkStats.ReadBC | WalkStats.WriteBC, 100))
-        //{
-            PrintLn();
-            Print(currentMethod.ToHexString(4) + ": " + (iCodes.Count).ToString() + " ");
-            WalkVerbose(iIndex, WalkStats.None, WalkStats.ReadBC | WalkStats.WriteBC, 100);
-        //}
-        */
-        
-        return modified;
-    }
 }

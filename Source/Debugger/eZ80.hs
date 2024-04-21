@@ -16,7 +16,6 @@ program EZ80
     uses "/Source/Compiler/CODEGEN/AsmZ80"
     uses "Chips/Z80"
     
-    
     <byte> readIHex(file hexFile, ref uint loadAddress)
     {
         <byte> code;
@@ -117,6 +116,7 @@ program EZ80
                 break;
             }
             // load the ihex and symbols
+            PrintLn(symbolsPath);
             if (!ParseCode(symbolsPath, false, true))
             {
                 PrintLn("Failed to load '" + symbolsPath + "'");
@@ -147,6 +147,7 @@ program EZ80
             {
                 SetMemory(orgROM+i, code[i]);
             }
+            Display.FindMethods(code);
             
             Emulator.DoReset();
             CommandLoop();

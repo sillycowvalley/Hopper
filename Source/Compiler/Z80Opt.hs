@@ -154,17 +154,6 @@ program Z80Opt
             {
                 methodModified = true;
             }
-            if (OptimizeJumpTable())
-            {
-                methodModified = true;
-            }
-                
-            if (OptimizeUseBC())
-            {
-                methodModified = true;
-            }
-            
-            
             
             // mark unreachable code
             if (CodePoints.OptimizeUnreachableToNOP())

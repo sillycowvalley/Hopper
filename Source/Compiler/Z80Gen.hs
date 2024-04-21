@@ -387,8 +387,8 @@ program Z80Gen
         EmitByte(OpCode.LD_L_iIY_d, offset1);
         EmitByte(OpCode.LD_H_iIY_d, offset1 + 1);
         Emit(OpCode.ADD_HL_DE);
-        EmitByte(OpCode.LD_iIY_d_H, offset0);
-        EmitByte(OpCode.LD_iIY_d_L, offset0 + 1);
+        EmitByte(OpCode.LD_iIY_d_L, offset0);
+        EmitByte(OpCode.LD_iIY_d_H, offset0 + 1);
         
     }
     

@@ -7,7 +7,109 @@ unit Display
     
     string pathLoaded;
     <string> sourceLines;
+
+#ifdef Z80        
     
+    FindMethods(<byte> code)
+    {
+        <uint,uint> methodLastAddresses;  // <index,address>
+        _ = GetMethodAddresses(code, ref methodAddresses, ref methodLastAddresses);
+        foreach (var sf in methodAddresses)
+        {
+            uint index = sf.value;
+            uint methodAddress = sf.key;
+            uint methodLastAddress = methodLastAddresses[index];
+            uint methodSize = methodLastAddress - methodAddress + 1;
+            methodSizes[index] = methodSize;
+        }
+    }
+    uint GetZ80MethodIndex(uint address)
+    {
+        foreach (var sf in methodAddresses)
+        {
+            uint methodAddress = sf.key;
+            uint index = sf.value;
+            if (address >= methodAddress)
+            {
+                uint lastAddress = methodAddress + methodSizes[index];
+                if (address < methodAddress + methodSizes[index])
+                {
+                    return index;
+                }
+            }         
+        }
+        return 0xFFFF;
+    }
+    string GetZ80ArgumentInfo(uint methodIndex, int offset, ref string typeName, ref string refName)
+    {
+        string name;
+        typeName = "";
+        refName = "";
+        <string, <string> > argumentInfo= Code.GetArguments(methodIndex);
+        string soffset = offset.ToString();
+        if (argumentInfo.Contains(soffset))
+        {
+            <string> info = argumentInfo[soffset]; // <ref, type, name>
+            name = info[2];
+            typeName = info[1];
+            if (info[0] == "")
+            {
+                refName = "ref ";
+            }
+        }
+        return name;
+    }
+    string GetZ80LocalName(uint address, uint methodIndex, int offset, ref string typeName)
+    {
+        string name;
+        typeName = "";
+        //uint methodStartAddress;
+        bool found;
+        foreach (var sf in methodAddresses)
+        {
+            uint methodAddress = sf.key;
+            uint index = sf.value;
+            if (index == methodIndex)
+            {
+                //methodStartAddress = methodAddress;
+                //Print(" " + methodStartAddress.ToHexString(4));
+                found = true;
+                break;
+            }
+        }
+        if (found)
+        {
+            string soffset = offset.ToString();
+            <string, <string> > locals = Code.GetLocals(methodIndex);
+            foreach (var kv in locals)
+            {
+                //string range = kv.key;
+                <string> info = kv.value; // <name, type, offset>
+                if (info[2] == soffset)
+                {
+                    /*
+                    <string> parts = range.Split('-');
+                    uint startRange;
+                    uint endRange;
+                    _ = UInt.TryParse(parts[0], ref startRange);
+                    _ = UInt.TryParse(parts[1], ref endRange);
+                    startRange += methodStartAddress;
+                    endRange += methodStartAddress;
+                    
+                    if ((address >= startRange) && (address <= endRange))
+                    {
+                        Print(" " + startRange.ToHexString(4) + "-" + endRange.ToHexString(4));
+                    */
+                        typeName = info[1];
+                        name     = info[0];
+                        break;
+                    //}
+                }
+            }
+        }
+        return name;
+    }
+#endif
   
     Initialize()
     {
@@ -142,7 +244,7 @@ unit Display
         string src;
         string srcName;
         
-#ifndef Z80        
+//#ifndef Z80        
         //<uint,uint> methodSizes;     // <index, length>
         //<uint,uint> methodAddresses; // <address,index>
         uint methodIndex;
@@ -177,20 +279,21 @@ unit Display
                 debugInfo = methodSymbols["debug"];
             }
         }
-#endif        
+//#endif        
         
         bool firstLine = true;
         loop
         {
             if (instructions == 0) { break; }
             if (address == InvalidAddress) { break; }
-#ifndef Z80
+//#ifndef Z80
             if (address > methodStart + methodLength-1) { break; }
-#endif            
+//#endif            
             string operandString;
             uint operand;
             string comment;
             string debugLine;
+            
 #ifdef Z80
             OpCode instruction = GetInstruction(address);
             byte opCodeLength  = GetOpCodeLength(instruction);
@@ -215,6 +318,7 @@ unit Display
                 debugLine = parts[1];
             }
 #else
+
             OpCode instruction = OpCode(GetMemory(address));
             byte length        = GetInstructionLength(instruction);
             if (length == 2)

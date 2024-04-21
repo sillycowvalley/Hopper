@@ -162,7 +162,7 @@ unit Code
     {
         debugSymbols = newDebugSymbols;
     }
-    <string, <string> > GetLocals(<byte> code, uint methodIndex, ref uint startAddress)
+    <string, <string> > GetLocals(uint methodIndex, ref uint startAddress)
     {
         string index = "0x" + methodIndex.ToHexString(4);
         <string, <string> > localsList;
@@ -178,7 +178,7 @@ unit Code
         return localsList;
     }
     
-    <string, <string> > GetLocals(<byte> code, uint methodIndex)
+    <string, <string> > GetLocals(uint methodIndex)
     {
         string index = "0x" + methodIndex.ToHexString(4);
         <string, <string> > localsList;
@@ -191,6 +191,20 @@ unit Code
             }
         }
         return localsList;
+    }
+    <string, <string> > GetArguments(uint methodIndex)
+    {
+        string index = "0x" + methodIndex.ToHexString(4);
+        <string, <string> > argumentsList;
+        if (debugSymbols.Contains(index))
+        {
+            <string,variant> methodSymbols = debugSymbols[index];
+            if (methodSymbols.Contains("arguments"))
+            {
+                argumentsList = methodSymbols["arguments"];
+            }
+        }
+        return argumentsList;
     }
     
     <uint, string> GetGlobalTypes()

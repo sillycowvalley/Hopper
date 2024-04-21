@@ -324,10 +324,15 @@ unit Shared
         
         PrintLn();
         uint spi = sp;
+        uint pc  = CPU.PC;
+        
+        uint currentMethod  = Display.GetZ80MethodIndex(pc);
         
         Print("SP -> ", Colour.MatrixRed, Colour.Black);
         PrintLn(hexPrefix + sp.ToHexString(4), Colour.LightestGray, Colour.Black);
         uint entries = 0;
+        bool nextIsReturnAddress;
+        uint nextBP = bp;
         loop
         {
             uint value = getRAMByte(spi) + (getRAMByte(spi+1) << 8);
@@ -347,9 +352,53 @@ unit Shared
                 Print(hexPrefix + spi.ToHexString(4));
             }
             Print(" " + hexPrefix + value.ToHexString(4), Colour.LightestGray, Colour.Black); 
+            long offset = (long(bp) - long(spi));
+            if (offset > 0)
+            {
+                long hoffset = offset/2 - 1; // locals
+                string typeName;
+                string varName = Display.GetZ80LocalName(pc, currentMethod, int(hoffset), ref typeName);
+                varName = varName.Pad(' ', 16);
+                offset = -offset;
+                string offsetRange = "IY" + (offset+0).ToString() + ",IY" + (offset+1).ToString();
+                Print(" " + typeName + " " + varName + "  (+" + hoffset.ToString() + ":" + offsetRange + ")", Colour.MatrixGreen, Colour.Black);
+            }
+            else if (offset < -2)
+            {
+                long hoffset = offset/2 + 1; // arguments
+                string typeName;
+                string refName;
+                string varName = Display.GetZ80ArgumentInfo(currentMethod, int(hoffset), ref typeName, ref refName);
+                if (varName != "")
+                {
+                    varName = varName.Pad(' ', 16);
+                    offset = -offset;
+                    string offsetRange = "IY+" + (offset+1).ToString() + ",IY+" + (offset+0).ToString();
+                    Print(" " + refName + typeName + " " + varName +"  (" + hoffset.ToString() + ":" + offsetRange + ") ", Colour.MatrixGreen, Colour.Black);
+                }
+            }
+            if (nextIsReturnAddress)
+            {
+                nextIsReturnAddress = false;
+                uint returnMethod  = Display.GetZ80MethodIndex(value);
+                if (returnMethod != 0xFFFF)
+                {
+                    string name = Code.GetMethodName(returnMethod);
+                    Print(" <- return address to " + name + "(..)", Colour.MatrixGreen, Colour.Black);
+                }
+                else
+                {
+                    Print(" <- return address to exit (HALT)", Colour.MatrixGreen, Colour.Black);
+                }
+            }
+            if (spi == nextBP)
+            {
+                nextIsReturnAddress = true;
+                nextBP = value;
+            }
             PrintLn();
             entries++;
-            if (entries == 16) 
+            if (entries == 20) 
             { 
                PrintLn("      ...");
                break; 

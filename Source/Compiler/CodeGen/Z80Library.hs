@@ -910,6 +910,7 @@ unit Z80Library
             {
                 Emit(OpCode.POP_HL);                      // pop the value
                 Emit(OpCode.POP_IX);                      // pop the address
+                Emit(OpCode.PUSH_IX);                     // restore value (caller clears in CDecl)
                 Emit(OpCode.PUSH_HL);                     // restore value (caller clears in CDecl)
                 EmitByte(OpCode.LD_iIX_d_L,       +0);    // write the LSB
             }
@@ -917,6 +918,7 @@ unit Z80Library
             {
                 Emit(OpCode.POP_HL);              // pop the value
                 Emit(OpCode.POP_IX);              // pop the address
+                Emit(OpCode.PUSH_IX);             // restore value (caller clears in CDecl)
                 Emit(OpCode.PUSH_HL);             // restore value (caller clears in CDecl)
                 EmitByte(OpCode.LD_iIX_d_L, +0);  // write the LSB
                 EmitByte(OpCode.LD_iIX_d_H, +1);  // write the MSB
