@@ -1,12 +1,17 @@
 program rZ80
 {
     #define CPU_Z80
-    #define ROM_8K
+    #define ROM_16K
     #define CDECL
     
-    uses "/Source/Minimal/System"
+    //#define GENERATING
     
+    uses "/Source/Minimal/System"
+
     uses "/Source/Minimal/Memory"
+#ifdef GENERATING
+    uses "/Source/Minimal/GC"
+#endif    
     
     writeDigit(uint uthis)
     {
@@ -154,13 +159,52 @@ program rZ80
         }
     }
     
+    //string testGlobal;
+    //byte [10] arr3;
+    
     Hopper()
     {
+        byte [10] arr;
+        string test;
+        
+        uint c = arr.Count;
+        loop
+        {
+            byte [12] arr2;
+            byte [13] arr3;
+            
+            c *= 2;
+        
+            break;
+        }
+        
+        Serial.WriteChar(Char.EOL); WriteUInt(c);
+        Serial.WriteChar(Char.EOL); WriteUInt(test.Length);
+        
+        //Serial.WriteChar(Char.EOL); WriteUInt(testGlobal.Length);
+        //Serial.WriteChar(Char.EOL); WriteUInt(arr3.Count);
+        
+        //testGlobal = test;
+        //arr[1] = 10;
+        //WriteUInt(arr[1]);
+        
         //uint result = Fibo(10);
         //WriteUInt(result);
         
-        HeapAllocation();
+        //HeapAllocation();
         
-        Serial.WriteChar(Char.EOL); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
+#ifdef GENERATING        
+        HeapAllocation();
+        uint str = String.New();
+        str = String.NewFromConstant(0, 0);
+        uint str2 = GC.Clone(str);
+        GC.Release(str);
+        
+        uint length = String.GetLength(str);
+        uint arr2 = Array.New(10, Type.UInt);
+        arr2 = Array.NewFromConstant(0, 10, Type.UInt);
+        uint count = Array.GetCount(arr2);
+#endif        
+        //Serial.WriteChar(Char.EOL); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
     }
 }

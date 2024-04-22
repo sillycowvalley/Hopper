@@ -431,6 +431,7 @@ unit AsmZ80
         INC_DE  = 0x03,
         INC_BC  = 0x13,
         INC_HL  = 0x23,
+        INC_SP  = 0x33,
         INC_IX  = 0xDD23,
         INC_IY  = 0xFD23,
         
@@ -459,7 +460,9 @@ unit AsmZ80
         DEC_iIY_d = 0xFD35,
         
         DEC_BC  = 0x0B,
+        DEC_DE  = 0x1B,
         DEC_HL  = 0x2B,
+        DEC_SP  = 0x3B,
         DEC_IX  = 0xDD2B,
         DEC_IY  = 0xFD2B,
         
@@ -2004,6 +2007,9 @@ unit AsmZ80
         z80InstructionName[OpCode.INC_HL] = "INC HL";                     // 0x0023
         z80OperandType    [OpCode.INC_HL] = OperandType.Implied;
 
+        z80InstructionName[OpCode.INC_SP] = "INC SP";
+        z80OperandType    [OpCode.INC_SP] = OperandType.Implied;
+        
         z80InstructionName[OpCode.INC_IX] = "INC IX";                     // 0xDD23
         z80OperandType    [OpCode.INC_IX] = OperandType.Implied;
 
@@ -2070,8 +2076,14 @@ unit AsmZ80
         z80InstructionName[OpCode.DEC_iIY_d] = "DEC (IY+d)";              // 0xFD35
         z80OperandType    [OpCode.DEC_iIY_d] = OperandType.IndexedRelative;
 
-        z80InstructionName[OpCode.DEC_BC] = "DEC BC";                     // 0x000B
+        z80InstructionName[OpCode.DEC_BC] = "DEC BC";                     
         z80OperandType    [OpCode.DEC_BC] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.DEC_DE] = "DEC DE";           
+        z80OperandType    [OpCode.DEC_DE] = OperandType.Implied;
+        
+        z80InstructionName[OpCode.DEC_SP] = "DEC SP";                     // 0x000B
+        z80OperandType    [OpCode.DEC_SP] = OperandType.Implied;
 
         z80InstructionName[OpCode.DEC_HL] = "DEC HL";                     // 0x002B
         z80OperandType    [OpCode.DEC_HL] = OperandType.Implied;

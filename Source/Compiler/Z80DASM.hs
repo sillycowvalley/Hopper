@@ -209,6 +209,32 @@ program DASM
                 <uint,uint> methodLastAddresses;  // <index,address>
                 uint entryAddress = GetMethodAddresses(code, ref methodFirstAddresses, ref methodLastAddresses);
                 
+                <string> exportMethods;
+                exportMethods.Append("Memory.Available");
+                exportMethods.Append("Memory.Maximum");
+                exportMethods.Append("Memory.Allocate");
+                exportMethods.Append("Memory.Free");
+                
+                exportMethods.Append("GC.Create");
+                exportMethods.Append("GC.Release");
+                exportMethods.Append("GC.Clone");
+                
+                exportMethods.Append("String.New");
+                exportMethods.Append("String.NewFromConstant");
+                exportMethods.Append("String.GetLength");
+                exportMethods.Append("String.BuildChar");
+                exportMethods.Append("String.BuildString");
+                exportMethods.Append("String.BuildClear");
+                exportMethods.Append("String.BuildFront");
+                
+                exportMethods.Append("Array.New");
+                exportMethods.Append("Array.NewFromConstant");
+                exportMethods.Append("Array.GetCount");
+                exportMethods.Append("Array.GetItem");
+                exportMethods.Append("Array.SetItem");
+                
+                file codeGen;
+                
                 uint doffset = 0;
                 string src;
                 string srcName;
@@ -216,6 +242,10 @@ program DASM
                 uint index;
                 uint currentMethodIndex = 0;
                 uint instructionAddress;
+                
+                bool isExporting = false;
+                bool isExportingCurrent = false;
+                <string,uint>   jumpPatches;
                 
                 uint progressCount;
                 <string,string> debugInfo;
@@ -306,6 +336,28 @@ program DASM
                                 Parser.ProgressTick("d");
                             }
                             progressCount++;
+                            
+                            if (isExportingCurrent)
+                            {
+                                codeGen.Append("        Peephole.Disabled = false;" + Char.EOL);
+                                codeGen.Append("    }" + Char.EOL);
+                                isExportingCurrent = false;
+                            }
+                            if (exportMethods.Contains(nm))
+                            {
+                                if (!isExporting)
+                                {
+                                    codeGen = File.Create("/Source/Compiler/CODEGEN/Z80LibraryGenerated.hs");
+                                    isExporting = true;
+                                    codeGen.Append("unit Z80LibraryGenerated" + Char.EOL);
+                                    codeGen.Append("{" + Char.EOL);
+                                }
+                                codeGen.Append("    Emit" + nm.Replace(".", "") + "()" + Char.EOL);
+                                codeGen.Append("    {" + Char.EOL);
+                                codeGen.Append("        Peephole.Disabled = true;" + Char.EOL);
+                                    
+                                isExportingCurrent = true;
+                            }
                         }
                         currentMethodIndex = methodIndex;
                     }
@@ -352,9 +404,131 @@ program DASM
                             lastwasNOP = false;
                         }
                     }
+                    else if (comment == "")
+                    {
+                        hasmFile.Append(disassembly + Char.EOL);
+                    }
                     else
                     {                  
                         hasmFile.Append(disassembly.Pad(' ', 48) + comment + Char.EOL);
+                    }
+                    if (isExportingCurrent)
+                    {
+                        foreach (var kvp in jumpPatches)
+                        {
+                            uint target = kvp.value; 
+                            if (target == instructionAddress)
+                            {
+                                string jumpName = kvp.key;       
+                                codeGen.Append("        PatchByte(" + jumpName + "+0, byte(CurrentAddress & 0xFF));" + Char.EOL);    
+                                codeGen.Append("        PatchByte(" + jumpName + "+1, byte(CurrentAddress >> 8));" + Char.EOL);    
+                            }
+                        }
+                        string operandStr;
+                        switch (instruction)
+                        {
+                            case OpCode.CALL_nn:
+                            {
+                                if (operand > entryAddress)
+                                {
+                                    uint callMethodIndex = methodFirstAddresses[operand];
+                                    string callname = Code.GetMethodName(callMethodIndex);
+                                    if (!exportMethods.Contains(callname))
+                                    {
+                                        PrintLn();
+                                        Print("Bad method call: " + instructionAddress.ToHexString(4) + ": CALL 0x" + operand.ToHexString(4) + " " + callname);
+                                    }
+                                    operandStr = "GetAddress(\"" + callname.Replace(".", "") + "\")";
+                                }
+                            }
+                            case OpCode.JP_nn:
+                            case OpCode.JP_Z_nn:
+                            case OpCode.JP_NZ_nn:
+                            case OpCode.JP_C_nn:
+                            case OpCode.JP_NC_nn:
+                            {
+                                string jumpName   = "jumpAddress" + instructionAddress.ToHexString(4);
+                                if (operand < instructionAddress)
+                                {
+                                    uint delta = instructionAddress - operand - 2;
+                                    string jumpToLine = "        uint " + jumpName + " = CurrentAddress - " + delta.ToString() + ";";
+                                    operandStr = jumpName;
+                                    codeGen.Append(jumpToLine + Char.EOL);
+                                }
+                                else
+                                {
+                                    string jumpToLine = "        uint " + jumpName + " = CurrentAddress + 1;";
+                                    codeGen.Append(jumpToLine + Char.EOL);
+                                    jumpPatches[jumpName] = operand;
+                                }
+                                
+                            }
+                        }
+                        string codeLine = "        ";
+                        string emit = "Emit";
+                        
+                        string argument;
+                        // signed
+                        // operand
+                        name = name.Replace(" ", "_");
+                        name = name.Replace(",", "_");
+                        name = name.Replace("+", "_");
+                        name = name.Replace("__", "_");
+                        name = name.Replace("(", "i");
+                        name = name.Replace(")", "");
+                        
+                        switch (operandType)
+                        {
+                            case OperandType.Implied:
+                            case OperandType.Indexed:            // (ss)
+                            {
+                            }
+                            case OperandType.Immediate8:         //  n
+                            {
+                                emit = "EmitByte";
+                                argument = ", 0x" + operand.ToHexString(2);
+                            }
+                            case OperandType.Immediate16:        // aa | nn
+                            case OperandType.ImmediateIndirect:  // (aa)
+                            case OperandType.ImmediateIndexed:   // (nn)
+                            {
+                                emit = "EmitWord";
+                                if (operandStr != "")
+                                {
+                                    argument = ", " + operandStr;
+                                }
+                                else
+                                {
+                                    argument = ", 0x" + operand.ToHexString(4);
+                                }
+                            }
+                            case OperandType.Relative:           // d
+                            case OperandType.IndexedRelative:    // (XY+d)
+                            {
+                                emit = "EmitOffset";
+                                int ioperand = int(operand);
+                                if (ioperand > 127)
+                                {
+                                    ioperand = ioperand - 256;
+                                }
+                                argument = ", int(" + ioperand.ToString() + ")";
+                            }
+                            case OperandType.RelativeImmediate8: // (XY+d), n
+                            {
+                                Die(0x0A);
+                            }
+                        }
+                        emit = emit.Pad(' ', 10);
+                        codeLine = codeLine + emit+"(OpCode." + name + argument + ");";
+                        
+                        if (comment != "")
+                        {
+                            codeGen.Append(codeLine.Pad(' ', 60) + " " + comment + Char.EOL);
+                        }
+                        else
+                        {
+                            codeGen.Append(codeLine + Char.EOL);
+                        }
                     }
                     if (tableSize > 0)
                     {
@@ -381,7 +555,17 @@ program DASM
                     }
                     //hasmFile.Flush(); // TODO REMOVE
                 } // loop
-                              
+                if (isExporting)
+                {
+                    if (isExportingCurrent)
+                    {
+                        codeGen.Append("        Peephole.Disabled = false;" + Char.EOL);
+                        codeGen.Append("    }" + Char.EOL);
+                    }
+                    codeGen.Append("}" + Char.EOL);
+                    codeGen.Flush();
+                }
+                            
                 Parser.ProgressTick("d");
                 hasmFile.Flush();
                 if (!Parser.IsInteractive())

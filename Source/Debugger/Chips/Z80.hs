@@ -292,6 +292,48 @@ unit CPU // Z80
                                            CheckSZByte(value); nFlag = false; 
                                            hlRegister = value + (hlRegister & 0xFF00); cFlag = cNew;
                                          }
+                                         
+                case OpCode.RL_A:        { bool cNew = ((aRegister & 0b10000000) != 0);          
+                                           aRegister = byte((aRegister << 1) & 0xFF) + (cFlag ? 0b00000001 : 0); 
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = cNew;
+                                         }
+                                    
+                case OpCode.RL_B:        { byte value = byte(bcRegister >> 8);
+                                           bool cNew = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF) + (cFlag ? 0b00000001 : 0); 
+                                           CheckSZByte(value); nFlag = false; 
+                                           bcRegister = (value << 8) + (bcRegister & 0xFF); cFlag = cNew;
+                                         }
+                case OpCode.RL_C:        { byte value = byte(bcRegister & 0xFF);
+                                           bool cNew = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF) + (cFlag ? 0b00000001 : 0);  
+                                           CheckSZByte(value); nFlag = false; 
+                                           bcRegister = value + (bcRegister & 0xFF00); cFlag = cNew;
+                                         }
+                case OpCode.RL_D:        { byte value = byte(deRegister >> 8);
+                                           bool cNew = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF) + (cFlag ? 0b00000001 : 0); 
+                                           CheckSZByte(value); nFlag = false; 
+                                           deRegister = (value << 8) + (deRegister & 0xFF); cFlag = cNew;
+                                         }
+                case OpCode.RL_E:        { byte value = byte(deRegister & 0xFF);
+                                           bool cNew = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF) + (cFlag ? 0b00000001 : 0);  
+                                           CheckSZByte(value); nFlag = false; 
+                                           deRegister = value + (deRegister & 0xFF00); cFlag = cNew;
+                                         }
+                case OpCode.RL_H:        { byte value = byte(hlRegister >> 8);
+                                           bool cNew = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF) + (cFlag ? 0b00000001 : 0); 
+                                           CheckSZByte(value); nFlag = false; 
+                                           hlRegister = (value << 8) + (hlRegister & 0xFF); cFlag = cNew;
+                                         }
+                case OpCode.RL_L:        { byte value = byte(hlRegister & 0xFF);
+                                           bool cNew = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF) + (cFlag ? 0b00000001 : 0);  
+                                           CheckSZByte(value); nFlag = false; 
+                                           hlRegister = value + (hlRegister & 0xFF00); cFlag = cNew;
+                                         }
                 default: 
                 { 
                     PrintLn(pcRegister.ToHexString(4) + ": Instruction: " + (uint(instruction)).ToHexString(4) + ", OperandType: " + (byte(operandType)).ToHexString(2) + " " + GetName(instruction)); Die(0x0A); 
@@ -361,8 +403,8 @@ unit CPU // Z80
                 case OpCode.LD_IX_inn:   { ixRegister = GetMemory(operand) + (GetMemory(operand+1) << 8);                             }
                 case OpCode.LD_IY_inn:   { iyRegister = GetMemory(operand) + (GetMemory(operand+1) << 8);                             }
                 
-                case OpCode.EX_iSP_IX:   { uint temp = ixRegister; ixRegister = GetMemory(spRegister) + (GetMemory(spRegister+1) << 8); SetMemory(spRegister, byte(temp & 0xFF)); SetMemory(spRegister, byte(temp >> 8)); }
-                case OpCode.EX_iSP_IY:   { uint temp = iyRegister; iyRegister = GetMemory(spRegister) + (GetMemory(spRegister+1) << 8); SetMemory(spRegister, byte(temp & 0xFF)); SetMemory(spRegister, byte(temp >> 8)); }
+                case OpCode.EX_iSP_IX:   { uint temp = ixRegister; ixRegister = GetMemory(spRegister) + (GetMemory(spRegister+1) << 8); SetMemory(spRegister, byte(temp & 0xFF)); SetMemory(spRegister+1, byte(temp >> 8)); }
+                case OpCode.EX_iSP_IY:   { uint temp = iyRegister; iyRegister = GetMemory(spRegister) + (GetMemory(spRegister+1) << 8); SetMemory(spRegister, byte(temp & 0xFF)); SetMemory(spRegister+1, byte(temp >> 8)); }
                 
                 case OpCode.LD_inn_SP:   { SetMemory(operand, byte(spRegister & 0xFF)); SetMemory(operand+1, byte(spRegister >> 8));  } 
                 case OpCode.LD_inn_BC:   { SetMemory(operand, byte(bcRegister & 0xFF)); SetMemory(operand+1, byte(bcRegister >> 8));  } 
@@ -569,7 +611,7 @@ unit CPU // Z80
                 case OpCode.LD_SP_HL:    { spRegister = hlRegister; }
                 
                 case OpCode.EX_DE_HL:    { uint temp = hlRegister; hlRegister = deRegister; deRegister = temp;                        }
-                case OpCode.EX_iSP_HL:   { uint temp = hlRegister; hlRegister = GetMemory(spRegister) + (GetMemory(spRegister+1) << 8); SetMemory(spRegister, byte(temp & 0xFF)); SetMemory(spRegister, byte(temp >> 8)); }
+                case OpCode.EX_iSP_HL:   { uint temp = hlRegister; hlRegister = GetMemory(spRegister) + (GetMemory(spRegister+1) << 8); SetMemory(spRegister, byte(temp & 0xFF)); SetMemory(spRegister+1, byte(temp >> 8)); }
                                     
                 case OpCode.XOR_A_n:     { aRegister  = aRegister ^ byte(operand);           CheckSZByte(aRegister); nFlag = false; cFlag = false; }
                 case OpCode.XOR_A_A:     { aRegister  = aRegister ^ aRegister;               CheckSZByte(aRegister); nFlag = false; cFlag = false; }
@@ -598,6 +640,44 @@ unit CPU // Z80
                 case OpCode.AND_A_H:     { aRegister  = aRegister & byte(hlRegister >> 8);   CheckSZByte(aRegister); nFlag = false; cFlag = false; }
                 case OpCode.AND_A_L:     { aRegister  = aRegister & byte(hlRegister & 0xFF); CheckSZByte(aRegister); nFlag = false; cFlag = false; }
                 
+                case OpCode.DEC_A:       { aRegister  = (aRegister == 0 ? 0xFF : aRegister-1); CheckSZByte(aRegister);              nFlag = false; }
+                case OpCode.DEC_B:       { 
+                                           byte value = byte(bcRegister >> 8);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           bcRegister = (bcRegister & 0x00FF) + (value << 8);
+                                           CheckSZByte(value); nFlag = false;
+                                         }
+                case OpCode.DEC_C:       { 
+                                           byte value = byte(bcRegister & 0xFF);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           bcRegister = (bcRegister & 0xFF00) + value;
+                                           CheckSZByte(value); nFlag = false;
+                                         }
+                case OpCode.DEC_D:       { 
+                                           byte value = byte(deRegister >> 8);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           deRegister = (deRegister & 0x00FF) + (value << 8);
+                                           CheckSZByte(value); nFlag = false;
+                                         }
+                case OpCode.DEC_E:       { 
+                                           byte value = byte(deRegister & 0xFF);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           deRegister = (deRegister & 0xFF00) + value;
+                                           CheckSZByte(value); nFlag = false;
+                                         }
+                case OpCode.DEC_H:       { 
+                                           byte value = byte(hlRegister >> 8);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           hlRegister = (hlRegister & 0x00FF) + (value << 8);
+                                           CheckSZByte(value); nFlag = false;
+                                         }
+                case OpCode.DEC_L:       { 
+                                           byte value = byte(hlRegister & 0xFF);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           hlRegister = (hlRegister & 0xFF00) + value;
+                                           CheckSZByte(value); nFlag = false;
+                                         }
+                
                 case OpCode.RLA:         { bool cNew = ((aRegister & 0x80) != 0); aRegister = byte( (((aRegister << 1) & 0xFF) + (cFlag ? 1 : 0)) & 0xFF ); nFlag = false; cFlag = cNew; }
                 case OpCode.CLP:         { aRegister = byte(~aRegister & 0xFF); nFlag = true; }
                 
@@ -622,6 +702,16 @@ unit CPU // Z80
                                            hlRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
                                            nFlag = false; 
                                          }
+                
+                case OpCode.INC_HL:      {  if (hlRegister == 0xFFFF) { hlRegister = 0; } else { hlRegister++; } }
+                case OpCode.INC_BC:      {  if (bcRegister == 0xFFFF) { bcRegister = 0; } else { bcRegister++; } }
+                case OpCode.INC_DE:      {  if (deRegister == 0xFFFF) { deRegister = 0; } else { deRegister++; } }
+                case OpCode.INC_SP:      {  if (spRegister == 0xFFFF) { spRegister = 0; } else { spRegister++; } }
+                
+                case OpCode.DEC_HL:      {  if (hlRegister == 0) { hlRegister = 0xFFFF; } else { hlRegister--; } }
+                case OpCode.DEC_BC:      {  if (bcRegister == 0) { bcRegister = 0xFFFF; } else { bcRegister--; } }
+                case OpCode.DEC_DE:      {  if (deRegister == 0) { deRegister = 0xFFFF; } else { deRegister--; } }
+                case OpCode.DEC_SP:      {  if (spRegister == 0) { spRegister = 0xFFFF; } else { spRegister--; } }
                                                             
                 case OpCode.INC_iHL:     { 
                                            byte value = GetMemory(hlRegister);

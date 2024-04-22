@@ -11,20 +11,23 @@ unit Memory
     uint Maximum() system;
 #else    
     uint ReadWord(uint address) system;
-    WriteWord(uint address, uint value) system;    
+    WriteWord(uint address, uint value) system;   
     
+
+#ifndef GENERATING       
+    uint Allocate(uint size) system;
+    Free(uint address) system;
+    uint Available() system;
+    uint Maximum() system;
+#else    
     const uint cHeapStart         = 0xFF07; // 1 byte
     const uint cHeapSize          = 0xFF08; // 1 byte
     const uint cFreeList          = 0xFF09; // 2 bytes
     
-    uint FreeList  { get { return ReadWord(cFreeList); } set { WriteWord(cFreeList, value); } }
-    uint HeapStart { get { return ReadByte(cHeapStart) << 8; } }
-    uint HeapSize  { get { return ReadByte(cHeapSize) << 8; } }
-    
     uint Available()
     {
         uint available;
-        uint current = FreeList;
+        uint current = ReadWord(cFreeList);
         loop
         {
             if (0 == current)
@@ -36,11 +39,12 @@ unit Memory
         }
         return available;
     }
+    
     uint Maximum()
     {
         uint available;
         uint size;
-        uint current = FreeList;
+        uint current = ReadWord(cFreeList);
         loop
         {
             if (0 == current)
@@ -82,7 +86,7 @@ unit Memory
                 Die(0x0C);
                 break;
             }
-            current = FreeList;
+            current = ReadWord(cFreeList);
             size++; size++; // +2 space for the size field
             if (size < 6)
             {   
@@ -128,7 +132,7 @@ unit Memory
                 
                 if (0 == bestPrev)
                 {
-                    FreeList = newHole;
+                    WriteWord(cFreeList, newHole);
                     WriteWord(newHole+2,  bestNext); 
                     WriteWord(newHole+4,  0); // start of list now
                     if (0 != bestNext)
@@ -160,10 +164,10 @@ unit Memory
                 if (0 == bestPrev)
                 {
                     // best was the old freeList
-                    FreeList = bestNext;
+                    WriteWord(cFreeList, bestNext);
                     if (0 != bestNext)
                     {
-                        WriteWord(FreeList+4, 0); // start of list now so no previous
+                        WriteWord(ReadWord(cFreeList)+4, 0); // start of list now so no previous
                     }
                 }
                 else
@@ -184,7 +188,6 @@ unit Memory
         }
         return address;
     }
-    
     Free(uint address)
     {
         loop
@@ -212,7 +215,7 @@ unit Memory
             blockAddress = address - 2;
             size  = ReadWord(blockAddress);
             
-            current  = FreeList;
+            current  = ReadWord(cFreeList);
             loop
             {
                 if (0 == current)
@@ -244,11 +247,11 @@ unit Memory
                 WriteWord(freeSlot+2, current);
                 WriteWord(freeSlot+4, 0);
                 WriteWord(current+ 4, freeSlot);
-                gapFront = FreeList - (freeSlot+size);
+                gapFront = ReadWord(cFreeList) - (freeSlot+size);
                 if (0 == gapFront)
                 {
-                    nextSize = ReadWord(FreeList);
-                    nextNext = ReadWord(FreeList+2);
+                    nextSize = ReadWord(ReadWord(cFreeList));
+                    nextNext = ReadWord(ReadWord(cFreeList)+2);
                     // no gap between freeSlot and freeList so absorb it into freeSlot block
                     WriteWord(freeSlot, size+nextSize);
                     WriteWord(freeSlot+2, nextNext);
@@ -257,7 +260,7 @@ unit Memory
                         WriteWord(nextNext+4, freeSlot);
                     }
                 }
-                FreeList = freeSlot;
+                WriteWord(cFreeList, freeSlot);
             }
             else if (0 == current)
             {
@@ -308,7 +311,8 @@ unit Memory
             break;
         }
     }
-    
+#endif    
+ 
     
 #endif
 }

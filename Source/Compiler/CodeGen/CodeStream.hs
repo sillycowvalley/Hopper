@@ -270,8 +270,50 @@ unit CodeStream
     }
     CDeclPostSysCall(byte iSysCall, byte iSysOverload)
     {
-        uint iOverload = Symbols.GetSysCallMethodIndex(iSysCall, iSysOverload);
-        CDeclPostCALL(iOverload); // CDeclPostSysCall
+        
+        uint iOverload;
+        byte slotsToPop;
+        if (TryGetSysCallMethodIndex(iSysCall, iSysOverload, ref iOverload))
+        {
+            < < string > > arguments = Symbols.GetOverloadArguments(iOverload);
+            slotsToPop = byte(arguments.Count);
+        }
+        else
+        {
+            // syscalls that don't have signature in system source
+            switch (iSysCall)
+            {
+                case 0x00: // String.NewFromConstant
+                {
+                    slotsToPop = 2; // location and length
+                }
+                case 0x02: // String.New
+                {
+                    slotsToPop = 0; // no arguments
+                }
+                case 0x04: // Array.NewFromConstant
+                {
+                    slotsToPop = 3; // location, length and element type
+                }
+                case 0x0B: // Array.New
+                {
+                    slotsToPop = 2; // type and count
+                }
+                default:
+                {
+                    Die(0x0A); // what did I miss?
+                }
+            }
+        }
+        string returnType = Symbols.GetOverloadReturnType(iOverload);
+        if (slotsToPop != 0)
+        {
+            CodeStream.AddInstruction(Instruction.DECSP, slotsToPop);
+        }
+        if (returnType != "void")
+        {
+            CodeStream.AddInstruction(Instruction.PUSHR0);
+        }        
     }
     CDeclPostCALL(uint iOverload)
     {

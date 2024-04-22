@@ -13,6 +13,8 @@ unit Block
     //   - 'continue' jumps to patch
     
     < <string,variant> > blockList;
+    //bool definingLocals;
+    //bool DefiningLocals { get { return definingLocals; } }
     
     uint BlockDepth() { return blockList.Count; }
     
@@ -60,6 +62,7 @@ unit Block
     
     ReplaceTop(<string,variant> blockContext)
     {
+        //definingLocals = true;
         uint iLast = blockList.Count;
         iLast--;
         blockList.SetItem(iLast, blockContext);
@@ -117,6 +120,7 @@ unit Block
     
     PushBlock(bool isLoopBlock)
     {
+        //definingLocals = false;
         <string,variant> blockContext;
         if (isLoopBlock)
         {

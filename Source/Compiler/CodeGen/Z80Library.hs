@@ -1,6 +1,7 @@
 unit Z80Library
 {
     uses "CODEGEN/AsmZ80"
+    uses "CODEGEN/Z80LibraryGenerated"
     
     <string, uint> libraryAddresses;
     
@@ -177,6 +178,61 @@ unit Z80Library
         Peephole.Reset();
         EmitSerialReadChar();
         libraryAddresses["SerialReadChar"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitMemoryAvailable();
+        libraryAddresses["MemoryAvailable"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitMemoryMaximum();
+        libraryAddresses["MemoryMaximum"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitMemoryAllocate();
+        libraryAddresses["MemoryAllocate"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitMemoryFree();
+        libraryAddresses["MemoryFree"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitGCCreate();
+        libraryAddresses["GCCreate"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitGCClone();
+        libraryAddresses["GCClone"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitGCRelease();
+        libraryAddresses["GCRelease"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitStringNew();
+        libraryAddresses["StringNew"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitStringGetLength();
+        libraryAddresses["StringGetLength"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitArrayNew();
+        libraryAddresses["ArrayNew"] = address;
+        
+        address = CurrentAddress;
+        Peephole.Reset();
+        EmitArrayGetCount();
+        libraryAddresses["ArrayGetCount"] = address;
     }
     
     EmitIntGetByte()
@@ -876,7 +932,7 @@ unit Z80Library
     }
     
     bool firstSysNotImplemented = true;
-    bool SysCall(byte iSysCall, byte iOverload)
+    bool SysCall(byte iSysCall, byte iOverload, ref bool referenceR0)
     {
         // iOverload is in A if it is needed
         switch (SysCalls(iSysCall))
@@ -899,12 +955,14 @@ unit Z80Library
                 Emit(OpCode.EX_iSP_IX);          // get the address from the stack
                 EmitByte(OpCode.LD_L_iIX_d, +0); // read  the LSB
                 EmitByte(OpCode.LD_H_n, 0);      // clear the MSB and return it in R0 (HL)
+                referenceR0 = false;
             }
             case SysCalls.MemoryReadWord:
             {
                 Emit(OpCode.EX_iSP_IX);          // get the address from the stack
                 EmitByte(OpCode.LD_L_iIX_d, +0); // read the LSB
                 EmitByte(OpCode.LD_H_iIX_d, +1); // read the MSB and  return it in R0 (HL)
+                referenceR0 = false;
             }
             case SysCalls.MemoryWriteByte:
             {
@@ -923,8 +981,27 @@ unit Z80Library
                 EmitByte(OpCode.LD_iIX_d_L, +0);  // write the LSB
                 EmitByte(OpCode.LD_iIX_d_H, +1);  // write the MSB
             }
+            case SysCalls.MemoryAvailable:
+            {
+                EmitWord(OpCode.CALL_nn, GetAddress("MemoryAvailable"));
+                referenceR0 = false;
+            }
+            case SysCalls.MemoryMaximum:
+            {
+                EmitWord(OpCode.CALL_nn, GetAddress("MemoryMaximum"));
+                referenceR0 = false;
+            }
+            case SysCalls.MemoryAllocate:
+            {
+                EmitWord(OpCode.CALL_nn, GetAddress("MemoryAllocate"));
+                referenceR0 = false;
+            }
+            case SysCalls.MemoryFree:
+            {
+                EmitWord(OpCode.CALL_nn, GetAddress("MemoryFree"));
+            }
             
-            // EXAMPLE of CALL: (for longer syscalls in future)
+            
             case SysCalls.IntGetByte:
             {
                 Emit(OpCode.POP_DE);             // pop index: 0 for LSB and 1 for MSB
@@ -932,6 +1009,7 @@ unit Z80Library
                 Emit(OpCode.PUSH_DE);            // restore index (caller clears in CDecl)
                 EmitWord(OpCode.CALL_nn, GetAddress("IntGetByte")); // 
                 // return it in R0 (HL)
+                referenceR0 = false;
             }
             case SysCalls.IntFromBytes:
             {
@@ -939,12 +1017,16 @@ unit Z80Library
                 Emit(OpCode.EX_iSP_HL);          // get LSB
                 Emit(OpCode.PUSH_DE);            // restore MSB (caller clears in CDecl)
                 Emit(OpCode.LD_H_E);             // set MSB and return it in R0 (HL)
+                referenceR0 = false;
             }
             case SysCalls.UIntToInt:
             {
 #ifdef CHECKED
                 // TODO: validate that it is <= 32767 and Die(0x0D) if not
-#endif                
+#endif       
+                Emit(OpCode.POP_HL);
+                Emit(OpCode.PUSH_HL);            // return it in R0 (HL)       
+                referenceR0 = false;
             }
             
             case SysCalls.TimeDelay:
@@ -962,21 +1044,44 @@ unit Z80Library
                 }
                 firstSysNotImplemented = false;
                 Emit(OpCode.NOP);
+                referenceR0 = false;
                 return false;
             }
             case SysCalls.SerialIsAvailableGet:
             {
                 EmitWord(OpCode.CALL_nn, GetAddress("SerialIsAvailable"));
+                referenceR0 = false;
             }
             case SysCalls.SerialReadChar:
             {
-                EmitWord(OpCode.LD_HL_nn, 0x0000); 
                 EmitWord(OpCode.CALL_nn, GetAddress("SerialReadChar"));
+                referenceR0 = false;
             }
             case SysCalls.SerialWriteChar:
             {
                 Emit      (OpCode.EX_iSP_HL);   // character to emit is in [top] (HL)
                 EmitWord  (OpCode.CALL_nn, GetAddress("SerialWriteChar")); 
+            }
+            
+            case SysCalls.ArrayNew:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("ArrayNew")); 
+                referenceR0 = true;
+            }
+            case SysCalls.ArrayCountGet:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("ArrayGetCount")); 
+                referenceR0 = false;
+            }
+            case SysCalls.StringNew:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("StringNew")); 
+                referenceR0 = true;
+            }
+            case SysCalls.StringLengthGet:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("StringGetLength")); 
+                referenceR0 = false;
             }
                                                          
             default:
@@ -992,5 +1097,5 @@ unit Z80Library
         }
         return true;
     }
-
+    
 }
