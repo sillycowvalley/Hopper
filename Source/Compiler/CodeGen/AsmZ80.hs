@@ -673,6 +673,8 @@ unit AsmZ80
         DJNZ_e  = 0x10,
         
         CALL_nn = 0xCD,
+        CALL_P_nn = 0xF4,
+        
         RET     = 0xC9,
         RETI    = 0xED4D,
         RETN    = 0xED45,
@@ -2592,6 +2594,9 @@ unit AsmZ80
         z80InstructionName[OpCode.CALL_nn] = "CALL nn";                   // 0x00CD
         z80OperandType    [OpCode.CALL_nn] = OperandType.Immediate16;
 
+        z80InstructionName[OpCode.CALL_P_nn] = "CALL P nn";
+        z80OperandType    [OpCode.CALL_P_nn] = OperandType.Immediate16;
+        
         z80InstructionName[OpCode.RET] = "RET";                           // 0x00C9
         z80OperandType    [OpCode.RET] = OperandType.Implied;
 

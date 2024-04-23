@@ -1239,6 +1239,10 @@ unit CodePoints
                  || (opCode == Instruction.CALL)
                  || (opCode == Instruction.CALLB)
                  || (opCode == Instruction.CALLREL)
+                 || (opCode == Instruction.PUSHRELB)
+                 || (opCode == Instruction.POPRELB)
+                 || (opCode == Instruction.PUSHREL)
+                 || (opCode == Instruction.POPREL)
                )
             {
                 notSuitable = true;

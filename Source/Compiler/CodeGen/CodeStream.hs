@@ -295,12 +295,26 @@ unit CodeStream
                 {
                     slotsToPop = 3; // location, length and element type
                 }
+                case 0x0A: // String.GetChar
+                {
+                    slotsToPop = 1; // this
+                }
                 case 0x0B: // Array.New
                 {
                     slotsToPop = 2; // type and count
                 }
+                case 0x0D: // Array.GetItem
+                {
+                    slotsToPop = 2; // this and index
+                }
+                case 0x0E: // Array.SetItem
+                {
+                    slotsToPop = 3; // this, index, value
+                }
                 default:
                 {
+                    PrintLn();
+                    Print("iSysCall=0x" + iSysCall.ToHexString(2) + ":" + iSysOverload.ToString());
                     Die(0x0A); // what did I miss?
                 }
             }

@@ -160,28 +160,36 @@ program rZ80
     }
     
     //string testGlobal;
-    //byte [10] arr3;
+    byte [10] arrg;
+    
+    
+    
+    Method(ref byte[10] arg)
+    {
+        arg = arrg;
+    }
+    Method2(byte[10] arg)
+    {
+        Method(ref arg);
+    }
     
     Hopper()
     {
         byte [10] arr;
-        string test;
+        //string test;
         
-        uint c = arr.Count;
-        loop
-        {
-            byte [12] arr2;
-            byte [13] arr3;
+        arrg = arr;
+        
+        //arr = arrg;
+        
+        //Method(ref arr);
+        
             
-            c *= 2;
+        //Serial.WriteChar(Char.EOL); WriteUInt(c);
+        //Serial.WriteChar(Char.EOL); WriteUInt(test.Length);
         
-            break;
-        }
-        
-        Serial.WriteChar(Char.EOL); WriteUInt(c);
-        Serial.WriteChar(Char.EOL); WriteUInt(test.Length);
-        
-        //Serial.WriteChar(Char.EOL); WriteUInt(testGlobal.Length);
+        //uint i = testGlobal.Length;
+        //Serial.WriteChar(Char.EOL); WriteUInt(i);
         //Serial.WriteChar(Char.EOL); WriteUInt(arr3.Count);
         
         //testGlobal = test;

@@ -50,187 +50,151 @@ unit Z80Library
     
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitMUL();
         libraryAddresses["MUL"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitMULI();
         libraryAddresses["MULI"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitDIVMOD();
         libraryAddresses["DIVMOD"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitDIVI();
         libraryAddresses["DIVI"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitMODI();
         libraryAddresses["MODI"] = address;
         
         /*
         address = CurrentAddress;
-        Peephole.Reset();
         EmitEQ();
         libraryAddresses["EQ"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitNE();
         libraryAddresses["NE"] = address;
         
         */
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitLE();
         libraryAddresses["LE"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitLEI();
         libraryAddresses["LEI"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitLT();
         libraryAddresses["LT"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitLTI();
         libraryAddresses["LTI"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitGT();
         libraryAddresses["GT"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitGTI();
         libraryAddresses["GTI"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitGE();
         libraryAddresses["GE"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitGEI();
         libraryAddresses["GEI"] = address;
         
         /*
         address = CurrentAddress;
-        Peephole.Reset();
         EmitBITAND();
         libraryAddresses["BITAND"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitBITOR();
         libraryAddresses["BITOR"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitBITXOR();
         libraryAddresses["BITXOR"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitBITNOT();
         libraryAddresses["BITNOT"] = address;
         */
         address = CurrentAddress;
-        Peephole.Reset();
         EmitBITSHL();
         libraryAddresses["BITSHL"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitBITSHR();
         libraryAddresses["BITSHR"] = address;
         
         // SysCalls
         address = CurrentAddress;
-        Peephole.Reset();
         EmitIntGetByte();
         libraryAddresses["IntGetByte"] = address;
 
         address = CurrentAddress;
-        Peephole.Reset();
         EmitSerialIsAvailable();
         libraryAddresses["SerialIsAvailable"] = address;
                 
         address = CurrentAddress;
-        Peephole.Reset();
         EmitSerialWriteChar();
         libraryAddresses["SerialWriteChar"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitSerialReadChar();
         libraryAddresses["SerialReadChar"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitMemoryAvailable();
         libraryAddresses["MemoryAvailable"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitMemoryMaximum();
         libraryAddresses["MemoryMaximum"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitMemoryAllocate();
         libraryAddresses["MemoryAllocate"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitMemoryFree();
         libraryAddresses["MemoryFree"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitGCCreate();
         libraryAddresses["GCCreate"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitGCClone();
         libraryAddresses["GCClone"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitGCRelease();
         libraryAddresses["GCRelease"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitStringNew();
         libraryAddresses["StringNew"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitStringGetLength();
         libraryAddresses["StringGetLength"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitArrayNew();
         libraryAddresses["ArrayNew"] = address;
         
         address = CurrentAddress;
-        Peephole.Reset();
         EmitArrayGetCount();
         libraryAddresses["ArrayGetCount"] = address;
     }
@@ -248,7 +212,6 @@ unit Z80Library
     utilityDivide() // BC = BC / DE, remainder in HL
     {
         // https://map.grauw.nl/articles/mult_div_shifts.php
-        Peephole.Disabled = true;
         Emit(OpCode.AND_A);
 
         EmitWord(OpCode.LD_HL_nn, 0);
@@ -286,13 +249,10 @@ unit Z80Library
         
         Emit(OpCode.RET);
         
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     utilityMultiply() // DEHL=BC*DE
     {
-        Peephole.Disabled = true;
         // https://tutorials.eeems.ca/Z80ASM/part4.htm
         EmitWord(OpCode.LD_HL_nn, 0);                          
         EmitByte(OpCode.LD_A_n, 16);
@@ -308,13 +268,10 @@ unit Z80Library
         Emit(OpCode.DEC_A);
         EmitOffset(OpCode.JR_NZ_e, -14); // //Mul16Loop:
         Emit(OpCode.RET);
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     EmitLE()
     {
-        Peephole.Disabled = true;
         // next -> HL, top -> BC
         // LE: next = HL <= BC ? 1 : 0   
         
@@ -331,13 +288,10 @@ unit Z80Library
         EmitByte(OpCode.LD_E_n, 0);       // LSB: result = false
 // Exit:       
         Emit(OpCode.RET);
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     EmitLT()
     {
-        Peephole.Disabled = true;
         // next -> HL, top -> BC
         // LE: next = HL < BC ? 1 : 0   
         
@@ -353,13 +307,10 @@ unit Z80Library
         EmitByte(OpCode.LD_E_n, 1);       // LSB: result = true
 // Exit:       
         Emit(OpCode.RET); 
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     EmitGT()
     {
-        Peephole.Disabled = true;
         // next -> HL, top -> BC
         // LE: next = HL > BC ? 1 : 0   
         
@@ -376,13 +327,10 @@ unit Z80Library
         EmitByte(OpCode.LD_E_n, 1);       // LSB: result = true
 // Exit:       
         Emit(OpCode.RET); 
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     EmitEQ()
     {
-        Peephole.Disabled = true;
         // top -> BC, next -> HL 
         
         EmitWord(OpCode.LD_DE_nn, 0);    // LSB: result = false
@@ -398,12 +346,9 @@ unit Z80Library
         EmitByte(OpCode.LD_E_n, 1);      // LSB: result = true
 // Exit:        
         //Emit(OpCode.RET);
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     EmitNE()
     {
-        Peephole.Disabled = true;
         // top -> BC, next -> HL 
         
         EmitWord(OpCode.LD_DE_nn, 1);     // LSB: result = true
@@ -419,13 +364,10 @@ unit Z80Library
         EmitByte(OpCode.LD_E_n, 0);       // LSB: result = false
 // Exit:        
         //Emit(OpCode.RET);
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     EmitGE()
     {
-        Peephole.Disabled = true;
         // next -> HL, top -> BC
         // GE: next = HL >= BC ? 1 : 0   
         
@@ -441,8 +383,6 @@ unit Z80Library
         EmitByte(OpCode.LD_E_n, 1);       // LSB: result = true
 // Exit:       
         Emit(OpCode.RET); 
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     EmitBITSHL()
@@ -452,14 +392,11 @@ unit Z80Library
         
         Emit(OpCode.LD_B_C); // (assuming the shift is < 256)
         
-        Peephole.Disabled = true;
         Emit(OpCode.AND_A);
         Emit(OpCode.SLA_L);
         Emit(OpCode.RL_H);
         EmitOffset(OpCode.DJNZ_e, -7);
         Emit(OpCode.RET);
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     EmitBITSHR()
     {
@@ -468,14 +405,11 @@ unit Z80Library
         
         Emit(OpCode.LD_B_C); // (assuming the shift is < 256)
         
-        Peephole.Disabled = true;
         Emit(OpCode.AND_A);
         Emit(OpCode.SRL_H);
         Emit(OpCode.RR_L);
         EmitOffset(OpCode.DJNZ_e, -7);
         Emit(OpCode.RET);
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     
@@ -562,26 +496,8 @@ unit Z80Library
         Emit(OpCode.CP_A_C);
         Emit(OpCode.RET);                // -->
     }
-     /*  
     EmitLTI()
     {
-        Peephole.Disabled = true;
-        
-        EmitWord(OpCode.LD_DE_nn, 0);     // LSB: result = false
-        
-        // sets the C flag if HL < BC and the Z flag is HL == BC
-        EmitWord(OpCode.CALL_nn, compareSignedLocation);
-        //EmitOffset(OpCode.JR_NZ_e, +4);
-        EmitOffset(OpCode.JR_NC_e, +2);
-        EmitByte(OpCode.LD_E_n, 1);       // LSB: result = true
-        Emit(OpCode.RET);
-        Peephole.Disabled = false;
-        Peephole.Reset();
-    }    
-    */
-    EmitLTI()
-    {
-        Peephole.Disabled = true;
         // next -> HL, top -> BC
         // LE: next = HL < BC ? 1 : 0   
         
@@ -609,15 +525,11 @@ unit Z80Library
         
         PatchByte(jumpAddress+0, byte (jumpToAddress & 0xFF));
         PatchByte(jumpAddress+1, byte (jumpToAddress >> 8));
-        
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }   
     
     // https://www.msx.org/forum/development/msx-development/how-compare-16bits-registers-z80
     EmitGEI()
     {
-        Peephole.Disabled = true;
         // next -> HL, top -> BC
         // LE: next = HL >= BC ? 1 : 0   
         
@@ -648,13 +560,10 @@ unit Z80Library
         PatchByte(jumpAddress+0, byte (jumpToAddress & 0xFF));
         PatchByte(jumpAddress+1, byte (jumpToAddress >> 8));
         
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }  
     
     EmitLEI()
     { 
-        Peephole.Disabled = true;
         // next -> HL, top -> BC
         // LE: next = HL <= BC ? 1 : 0   
         
@@ -684,14 +593,11 @@ unit Z80Library
         PatchByte(jumpAddress+0, byte (jumpToAddress & 0xFF));
         PatchByte(jumpAddress+1, byte (jumpToAddress >> 8));
         
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     
     EmitGTI()
     { 
-        Peephole.Disabled = true;
         // next -> HL, top -> BC
         // LE: next = HL > BC ? 1 : 0   
         
@@ -721,8 +627,6 @@ unit Z80Library
         PatchByte(jumpAddress+0, byte (jumpToAddress & 0xFF));
         PatchByte(jumpAddress+1, byte (jumpToAddress >> 8));
         
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     
     EmitMUL()

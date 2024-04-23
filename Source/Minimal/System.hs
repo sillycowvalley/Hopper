@@ -1,7 +1,9 @@
 unit System
 {
     #define MINIMAL_RUNTIME
-    //#define NO_JIX_INSTRUCTIONS
+#ifdef CPU_Z80
+    #define NO_JIX_INSTRUCTIONS
+#endif
     //#define NO_PACKED_INSTRUCTIONS
     
     uses "Char"

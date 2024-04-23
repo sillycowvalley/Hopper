@@ -2142,9 +2142,11 @@ program Compile
                 Parser.ErrorAtCurrent("';' or '=' expected");
                 break;
             }
-            /*
             if (IsCDecl && !DefiningLocals)
             {
+                Parser.ErrorAtCurrent("block local declarations not allowed for CDECL");
+                break;
+                /*    
                 if (Types.IsArray(variableType))
                 {
                     Parser.ErrorAtCurrent("ambiguous stack slot for array type, declare earlier in method");
@@ -2155,8 +2157,9 @@ program Compile
                     Parser.ErrorAtCurrent("ambiguous stack slot for string type, declare earlier in method");
                     break;
                 }
+                */
             }
-            */
+            
             // to reserve slot
             InitializeVariable(variableType, false); // local
             if (HadError)

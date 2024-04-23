@@ -24,7 +24,6 @@ program Z80Gen
     
     uses "CODEGEN/AsmZ80"
     uses "CODEGEN/Z80Library"
-    uses "CODEGEN/Z80Peephole"
     
     uses "Tokens/Token"
     uses "Tokens/Scanner"
@@ -188,7 +187,6 @@ program Z80Gen
     
     emit(OpCode opCode)
     {
-        Peephole.AddInstruction(output.Count);
         uint ui = uint(opCode);
         if ((ui & 0xFF00) != 0)
         {
@@ -199,22 +197,11 @@ program Z80Gen
     Emit(OpCode opCode)
     {
         emit(opCode);
-        Peephole.Optimize(output);
-        switch (opCode)
-        {
-            case OpCode.JP_HL:
-            case OpCode.RET:
-            case OpCode.HALT:
-            {
-                Peephole.Reset();
-            }
-        }
     }
     EmitByte(OpCode opCode, byte lsb)
     {
         emit(opCode);
         emitByte(lsb);
-        Peephole.Optimize(output);
     }
     
     EmitOffset(OpCode opCode, int offset)
@@ -226,19 +213,6 @@ program Z80Gen
         byte lsb = byte(offset);
         emit(opCode);
         emitByte(lsb);
-        
-        switch (opCode)
-        {
-            case OpCode.JR_NZ_e:
-            case OpCode.JR_Z_e:
-            case OpCode.JR_NC_e:
-            case OpCode.JR_C_e:
-            case OpCode.JR_e:
-            {
-                Peephole.Reset();
-            }
-        }
-        Peephole.Optimize(output);
     }
     
     EmitOffsetByte(OpCode opCode, int offset, byte msb)
@@ -251,19 +225,6 @@ program Z80Gen
         emit(opCode);
         emitByte(lsb);
         emitByte(msb);
-        
-        switch (opCode)
-        {
-            case OpCode.JR_NZ_e:
-            case OpCode.JR_Z_e:
-            case OpCode.JR_NC_e:
-            case OpCode.JR_C_e:
-            case OpCode.JR_e:
-            {
-                Die(0x0B); // Peephole.Reset();
-            }
-        }
-        Peephole.Optimize(output);
     }
 
     EmitWord(OpCode opCode, uint operand)
@@ -271,18 +232,6 @@ program Z80Gen
         emit(opCode);
         emitByte(byte(operand & 0xFF));
         emitByte(byte(operand >> 8));
-        
-        switch (opCode)
-        {
-            case OpCode.JP_nn:
-            case OpCode.JP_Z_nn:
-            case OpCode.JP_NZ_nn:
-            {
-                Peephole.Reset();
-            }
-        }
-        
-        Peephole.Optimize(output);
     }
     emitByte(byte lsb)
     {
@@ -373,7 +322,6 @@ program Z80Gen
             if (referenceSlots.Contains(slot))
             {
                 // reference type: array or string
-                Peephole.Disabled = true;
                 Emit      (OpCode.EX_iSP_IX);
                 Emit      (OpCode.PUSH_IX);
                 
@@ -387,7 +335,6 @@ program Z80Gen
                 
                 Emit      (OpCode.POP_IX);
                 Emit      (OpCode.EX_iSP_IX);
-                Peephole.Disabled = false;
             }
         }
     }
@@ -438,127 +385,113 @@ program Z80Gen
     incLocalB(uint operand)
     {
         byte offset = offsetOperandToByte(operand);
-        Peephole.Disabled = true;
         EmitByte  (OpCode.INC_iIY_d, offset);
         EmitOffset(OpCode.JR_NZ_e,    +3);    // did it overflow from 0xFF back around to 0x00?
         EmitByte  (OpCode.INC_iIY_d, offset+1);
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     decLocalB(uint operand)
     {
         byte offset = offsetOperandToByte(operand);
-        Peephole.Disabled = true;
         EmitByte  (OpCode.DEC_iIY_d,  offset);
         EmitByte  (OpCode.LD_A_n,       0xFF);
         EmitByte  (OpCode.CP_A_iIY_d, offset); // wrapped around from 0x00 to 0xFF?
         EmitOffset(OpCode.JR_NZ_e,        +3);
         EmitByte  (OpCode.DEC_iIY_d,  offset+1);
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
-    pushStackAddrB(uint operand)
+    pushStackAddrB(byte operand)
     {
         // address = BP + operand
         
-        // HL = IY
+        // HL = IY (BP)
         Emit(OpCode.PUSH_IY);
         Emit(OpCode.POP_HL);
         
-        // HL -= StackAddress
-        EmitWord(OpCode.LD_DE_nn, StackAddress);
-        Emit    (OpCode.XOR_A_A);
-        Emit    (OpCode.SBC_HL_DE);
-
-        // HL /= 2
-        Emit    (OpCode.SRL_H);
-        Emit    (OpCode.RR_L);
+        // two scenarios:
+        // - operand >= 0
+        // - operand < 0
         
-        // HL -= 1  to skip BP itself
-        // HL -= operand 
-        // HL += 2 start return address and initial BP
-        
-        if (1 + operand == 2)
+        if (operand <= 127)
         {
-            // -2 +2 = NOP
-            
-        }
-        else if (1 + operand == 1)
-        {
-            // -1 +2 = +1
-            Emit    (OpCode.INC_HL);
-        }
-        else if (1 + operand == 0)
-        {
-            // -0 +2 = +2
-            Emit    (OpCode.INC_HL);
-            Emit    (OpCode.INC_HL);
-        }
-        else if (1 + operand < 2) // Never?
-        {
-            EmitWord(OpCode.LD_DE_nn, 1 + operand);
+            uint offset = uint(operand) << 1;
+            offset += 2; // BP itself
+            EmitWord(OpCode.LD_DE_nn, offset);
             Emit    (OpCode.XOR_A_A);
-            Emit    (OpCode.SBC_HL_DE);        
-            Emit    (OpCode.INC_HL);
-            Emit    (OpCode.INC_HL);
+            Emit    (OpCode.SBC_HL_DE);
         }
-        else // (1 + operand > 2)
+        else
         {
-            EmitWord(OpCode.LD_DE_nn, 1 + operand - 2);
-            Emit    (OpCode.XOR_A_A);
-            Emit    (OpCode.SBC_HL_DE);        
+            // operand > 127
+            int offset = int(operand) - 256; // FF -> -1
+            offset = offset * 2;
+            offset -= 2; // return address
+            uint ui = uint(-offset);
+            EmitWord(OpCode.LD_DE_nn, ui);
+            Emit    (OpCode.ADD_HL_DE);
         }
-        
-        // IX = 0 - IX
-        Emit    (OpCode.LD_E_L);
-        Emit    (OpCode.LD_D_H);
-        EmitWord(OpCode.LD_HL_nn, 0);
-        Emit    (OpCode.XOR_A_A);
-        Emit    (OpCode.SBC_HL_DE);
-        
+             
         Emit(OpCode.PUSH_HL);
     }
     
     pushRelB(uint operand, <byte> localReferenceSlots)
     {
-        byte offset = offsetOperandToByte(operand);
-        Emit    (OpCode.XOR_A_A);
-        EmitByte(OpCode.SUB_A_iIY_d, offset); // invert the sign since the Z80 stack grows downward
+        byte offset = operand.GetByte(0);
+        if ((offset & 0b10000000) == 0)
+        {
+            Die(0x0B); // pushRelB for something other than ref argument?
+        }
         
-        EmitByte(OpCode.SUB_A_n, 2);          // skip:
-                                              // - the return address from startup
-                                              // - the first slot itself
-                                              
-        EmitWord(OpCode.LD_IX_nn, StackAddress + StackSize); 
-        Emit    (OpCode.LD_E_A);              
-        EmitByte(OpCode.LD_D_n, 0xFF);
-        Emit    (OpCode.ADD_IX_DE);           // double it to convert from stack slots to bytes
+        int ioffset = offset - 256; // 0xFF -> -1
+        ioffset -= 1; // return address
+        ioffset *= 2;
+        
+        uint uoffset = uint(-ioffset);
+        
+        Emit    (OpCode.PUSH_IY);
+        Emit    (OpCode.POP_IX);
+        EmitWord(OpCode.LD_DE_nn, uoffset);
         Emit    (OpCode.ADD_IX_DE);
         
+        // load the address of the stack slot
+        EmitByte(OpCode.LD_E_iIX_d, +0);
+        EmitByte(OpCode.LD_D_iIX_d, +1);
+        Emit    (OpCode.PUSH_DE);
+        Emit    (OpCode.POP_IX);
+        
+        // load the value from that stack slot and push it
         EmitByte(OpCode.LD_E_iIX_d, +0);
         EmitByte(OpCode.LD_D_iIX_d, +1);
         Emit    (OpCode.PUSH_DE);
         
-        checkIncReferenceTop(offset, localReferenceSlots); // TODO : figure this out
+        checkIncReferenceTop(offset, localReferenceSlots);
     }
     popRelB(uint operand, <byte> localReferenceSlots)
     {
-        byte offset = offsetOperandToByte(operand);
-        Emit    (OpCode.XOR_A_A);
-        EmitByte(OpCode.SUB_A_iIY_d, offset); // invert the sign since the Z80 stack grows downward
+        byte offset = operand.GetByte(0);
+        if ((offset & 0b10000000) == 0)
+        {
+            Die(0x0B); // pushRelB for something other than ref argument?
+        }
         
-        EmitByte(OpCode.SUB_A_n, 2);          // skip:
-                                              // - the return address from startup
-                                              // - the first slot itself
-                                              
-        EmitWord(OpCode.LD_IX_nn, StackAddress + StackSize); 
-        Emit    (OpCode.LD_E_A);
-        EmitByte(OpCode.LD_D_n, 0xFF);
-        Emit    (OpCode.ADD_IX_DE);           // double it to convert from stack slots to bytes
+        int ioffset = offset - 256; // 0xFF -> -1
+        ioffset -= 1; // return address
+        ioffset *= 2;
+        
+        uint uoffset = uint(-ioffset);
+        
+        Emit    (OpCode.PUSH_IY);
+        Emit    (OpCode.POP_IX);
+        EmitWord(OpCode.LD_DE_nn, uoffset);
         Emit    (OpCode.ADD_IX_DE);
+        
+        // load the address of the stack slot
+        EmitByte(OpCode.LD_E_iIX_d, +0);
+        EmitByte(OpCode.LD_D_iIX_d, +1);
+        Emit    (OpCode.PUSH_DE);
+        Emit    (OpCode.POP_IX);
         
         checkDecReferenceTop(offset, localReferenceSlots); // TODO : figure this out
         
+        // pop and store the value at that stack slot
         Emit(OpCode.POP_DE);    
         EmitByte(OpCode.LD_iIX_d_E, +0);
         EmitByte(OpCode.LD_iIX_d_D, +1);
@@ -568,7 +501,6 @@ program Z80Gen
     incGlobalB(uint operand, string typeName)
     {
         uint address = addressOperandToByte(operand);
-        Peephole.Disabled = true;
         if (typeName == "byte")
         {
             EmitWord(OpCode.LD_HL_nn,    address);
@@ -581,14 +513,10 @@ program Z80Gen
             EmitOffset(OpCode.JR_NZ_e,   +3);    // did it overflow from 0xFF back around to 0x00?
             EmitByte  (OpCode.INC_iIX_d, +1);
         }
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     decGlobalB(uint operand, string typeName)
     {
         uint address = addressOperandToByte(operand);
-        Peephole.Disabled = true;
-        
         if (typeName == "byte")
         {
             EmitWord(OpCode.LD_HL_nn,    address);
@@ -603,16 +531,12 @@ program Z80Gen
             EmitOffset(OpCode.JR_NZ_e,    +3);
             EmitByte  (OpCode.DEC_iIX_d,  +1);
         }
-        
-        Peephole.Disabled = false;
-        Peephole.Reset();
     }
     pushGlobalB(uint operand, <byte> globalReferenceSlots)
     {
         uint address = addressOperandToByte(operand);
         EmitWord(OpCode.LD_DE_inn, address);
         Emit    (OpCode.PUSH_DE);
-        
         checkIncReferenceTop(byte(operand & 0xFF), globalReferenceSlots);
     }
     pushGlobalBB(uint operand0, uint operand1, <byte> globalReferenceSlots)
@@ -625,6 +549,87 @@ program Z80Gen
         EmitWord(OpCode.LD_DE_inn, address1);
         Emit    (OpCode.PUSH_DE);
         checkIncReferenceTop(byte(operand1 & 0xFF), globalReferenceSlots);
+    }
+    
+    popCopyLocalB(uint operand, <byte> localReferenceSlots)
+    {    
+        byte offset = offsetOperandToByte(operand);
+    
+        // this is the slot we are about to overwrite: decrease reference count    
+        EmitByte(OpCode.LD_E_iIY_d, offset);
+        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitByte  (OpCode.DEC_iIX_d,  +1);
+        
+        // oldvalue == newvalue?
+        Emit      (OpCode.LD_A_D);
+        EmitOffset(OpCode.CP_A_iIY_d, +0);
+        EmitOffset(OpCode.JR_NZ_e, +6); // Different
+        Emit      (OpCode.LD_A_E);
+        EmitOffset(OpCode.CP_A_iIY_d, +1);
+        EmitOffset(OpCode.JR_Z_e, +30);  // Exit:
+// Different: 
+        // clone self (top) 
+        EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GCClone"));
+        
+        // release the original
+        checkDecReferenceTop(byte(operand & 0xFF), localReferenceSlots);
+        
+        // cleanup stack    
+        Emit    (OpCode.POP_DE); 
+        
+        // write clone to slot
+        EmitByte(OpCode.LD_E_iIY_d, offset);
+        EmitByte(OpCode.LD_D_iIY_d, offset + 1);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_iIX_d_L,  +0);
+        EmitOffset(OpCode.LD_iIX_d_H,  +1);
+// Exit:        
+        // overwriting self - no more to do        
+    }
+        
+          
+    
+    popCopyGlobalB(uint operand, <byte> globalReferenceSlots)
+    {    
+        uint address = addressOperandToByte(operand);
+        
+        // this is the slot we are about to overwrite: decrease reference count
+        EmitWord  (OpCode.LD_IX_nn,    address);
+        EmitOffset(OpCode.LD_L_iIX_d,  +0);
+        EmitOffset(OpCode.LD_H_iIX_d,  +1);
+        Emit      (OpCode.PUSH_HL);
+        checkDecReferenceTop(byte(operand & 0xFF), globalReferenceSlots);
+        
+        // oldvalue == newvalue?
+        Emit      (OpCode.POP_DE);  // oldvalue
+        Emit      (OpCode.POP_HL); 
+        Emit      (OpCode.PUSH_HL); // top / newvalue
+        Emit      (OpCode.LD_A_D);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, +4); // Different
+        Emit      (OpCode.LD_A_E);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_Z_e, +30);  // Exit:
+// Different:    
+        // clone self (top) 
+        EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("GCClone"));
+        
+        // release the original
+        checkDecReferenceTop(byte(operand & 0xFF), globalReferenceSlots);
+        
+        // cleanup stack    
+        Emit    (OpCode.POP_DE); 
+        
+        // write clone to slot
+        EmitWord  (OpCode.LD_IX_nn,    address);
+        EmitOffset(OpCode.LD_iIX_d_L,  +0);
+        EmitOffset(OpCode.LD_iIX_d_H,  +1);
+        
+// Exit:        
+        // overwriting self - no more to do
     }
     popGlobalB(uint operand, <byte> globalReferenceSlots)
     {    
@@ -688,7 +693,7 @@ program Z80Gen
             foreach (var kv in localArguments)
             {
                 <string> info = kv.value;
-                if (Types.IsArray(info[1]) || (info[1] == "string"))
+                if (Types.IsArray(info[1]) || (info[1] == "string") || (info[1] == "array"))
                 {
                     int offset;
                     _ = Int.TryParse(kv.key, ref offset);
@@ -719,19 +724,13 @@ program Z80Gen
         <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
         <uint,uint> jumpPatchLocations;   // <hopperAddress,patchAddress>
         
-        uint peepholeSinbin;
         uint index;
         int currentLocalSP = 0; // SP - BP
         bool referenceR0;
+        bool wasPushGP;
         loop
         {
             if (index == code.Count) { success = true; break; }
-            
-            if (peepholeSinbin > 0)
-            {
-                peepholeSinbin--;
-                Peephole.Reset();
-            }
             
             uint hopperAddress = index;
             instructionAddresses[hopperAddress] = output.Count;
@@ -751,7 +750,6 @@ program Z80Gen
             {
                 case Instruction.ENTER:
                 {
-                    Peephole.Reset();
                     // PUSH BP
                     Emit(OpCode.PUSH_IY); 
                     
@@ -761,7 +759,6 @@ program Z80Gen
                 }
                 case Instruction.ENTERB:
                 {
-                    Peephole.Reset();
                     // PUSH BP
                     Emit(OpCode.PUSH_IY); 
                     
@@ -786,7 +783,6 @@ program Z80Gen
                     else
                     {
                         EmitByte(OpCode.LD_B_n, byte(operand));
-                        Peephole.Reset();
                         Emit(OpCode.PUSH_DE);
                         EmitOffset(OpCode.DJNZ_e, -3);
                     }
@@ -872,7 +868,6 @@ program Z80Gen
                 }
                 case Instruction.RETB:
                 {
-                    Peephole.Disabled = true;
                     if (methodIndex == 0)
                     {
                         // release all globals:
@@ -886,7 +881,6 @@ program Z80Gen
                         }
                     }
                     
-                    Peephole.Disabled = false;
                     loop
                     {
                         if (localReferenceSlots.Contains(byte(currentLocalSP-1)))
@@ -916,7 +910,32 @@ program Z80Gen
                     Emit(OpCode.RET);
                 }
                 
+                
                 case Instruction.ADD:
+                {
+                    if (wasPushGP)
+                    {
+                        // pushing global as ref argument
+                        Emit(OpCode.POP_HL);    // GP
+                        Emit(OpCode.POP_DE);    // offset
+                        Emit(OpCode.XOR_A_A);
+                        Emit(OpCode.SBC_HL_DE); // *2
+                        Emit(OpCode.SBC_HL_DE);
+                        EmitWord(OpCode.LD_DE_nn, 4);
+                        Emit(OpCode.SBC_HL_DE);
+                        Emit(OpCode.PUSH_HL);     
+                        wasPushGP = false;
+                    }
+                    else
+                    {
+                        Emit(OpCode.POP_DE);    
+                        Emit(OpCode.POP_HL);    
+                        Emit(OpCode.ADD_HL_DE);
+                        Emit(OpCode.PUSH_HL);  
+                    }
+                    
+                    currentLocalSP--;
+                }
                 case Instruction.ADDI:
                 {
                     Emit(OpCode.POP_DE);    
@@ -1053,7 +1072,9 @@ program Z80Gen
                     Emit(OpCode.POP_HL);    
                     //EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("BITAND"));
                     EmitBITAND();
-                    Emit(OpCode.PUSH_HL);  
+                    Emit(OpCode.PUSH_HL);
+                    
+                    currentLocalSP--;
                 }
                 case Instruction.BOOLOR:
                 case Instruction.BITOR:
@@ -1091,11 +1112,11 @@ program Z80Gen
                 case Instruction.BOOLNOT:
                 {
                     // assumes [top] is 0 or 1
-                    Emit(OpCode.EX_iSP_HL);
-                    Emit(OpCode.LD_A_L);   
-                    Emit(OpCode.XOR_A_A);  
-                    Emit(OpCode.LD_L_A);  
-                    Emit(OpCode.EX_iSP_HL);
+                    Emit    (OpCode.EX_iSP_HL);
+                    Emit    (OpCode.LD_A_L);   
+                    EmitByte(OpCode.XOR_A_n, 1);  
+                    Emit    (OpCode.LD_L_A);  
+                    Emit    (OpCode.EX_iSP_HL);
                 }
                 
                 case Instruction.BITSHL8:
@@ -1271,6 +1292,8 @@ program Z80Gen
                     //EmitWord(OpCode.CALL_nn, Z80Library.GetAddress("NE"));
                     EmitNE();
                     Emit(OpCode.PUSH_DE);
+                    
+                    currentLocalSP--;
                 }
                 
                 case Instruction.JZB:
@@ -1286,10 +1309,6 @@ program Z80Gen
                     }
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = offset;
-                    if (offset > 0)
-                    {
-                        peepholeSinbin = uint(offset);
-                    }
                     
                     currentLocalSP--;
                 }
@@ -1306,10 +1325,6 @@ program Z80Gen
                     }
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = offset;
-                    if (offset > 0)
-                    {
-                        peepholeSinbin = uint(offset);
-                    }
                     
                     currentLocalSP--;
                 }
@@ -1323,10 +1338,6 @@ program Z80Gen
                     }
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = offset;
-                    if (offset > 0)
-                    {
-                        peepholeSinbin = uint(offset);
-                    }
                 }
                 
                 case Instruction.JZ:
@@ -1338,10 +1349,6 @@ program Z80Gen
                     int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = ioffset;
-                    if (ioffset > 0)
-                    {
-                        peepholeSinbin = uint(ioffset);
-                    }
                     
                     currentLocalSP--;
                 }
@@ -1354,10 +1361,6 @@ program Z80Gen
                     int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
                     jumpPatches[hopperAddress]        = ioffset;
-                    if (ioffset > 0)
-                    {
-                        peepholeSinbin = uint(ioffset);
-                    }
                     
                     currentLocalSP--;
                 }
@@ -1367,14 +1370,13 @@ program Z80Gen
                     EmitWord(OpCode.JP_nn, uint(0));
                     int ioffset = Int.FromBytes(byte(operand & 0xFF), byte(operand >> 8));                        
                     jumpPatchLocations[hopperAddress] = output.Count - 2;
-                    jumpPatches[hopperAddress]        = ioffset;
-                    if (ioffset > 0)
-                    {
-                        peepholeSinbin = uint(ioffset);
-                    }
+                    jumpPatches       [hopperAddress] = ioffset;
                 }
                                 
                 case Instruction.CAST:
+                {
+                    // NOP
+                }
                 case Instruction.NOP:
                 {
                     // NOP
@@ -1413,9 +1415,9 @@ program Z80Gen
                 }
                 case Instruction.PUSHGP:
                 {
-                    EmitWord(OpCode.LD_DE_nn, 0); // always zero for now
+                    EmitWord(OpCode.LD_DE_nn, StackAddress + StackSize);
                     Emit(OpCode.PUSH_DE);
-                    
+                    wasPushGP = true;
                     currentLocalSP++;
                 }
                 
@@ -1423,21 +1425,27 @@ program Z80Gen
                 
                 case Instruction.PUSHSTACKADDRB:
                 {
-                    pushStackAddrB(operand);
+                    pushStackAddrB(byte(operand & 0xFF));
                     
                     currentLocalSP++;
                 }
                 case Instruction.PUSHRELB:
                 {
                     pushRelB(operand, localReferenceSlots);
-                    
-                    currentLocalSP++; // TODO
+                    currentLocalSP++;
+                    if (localReferenceSlots.Contains(byte(operand)))
+                    {
+                        localReferenceSlots.Append(byte(currentLocalSP-1));
+                    }
                 }
                 case Instruction.POPRELB:
                 {
                     popRelB(operand, localReferenceSlots);
-                    
-                    currentLocalSP--; // TODO
+                    if (localReferenceSlots.Contains(byte(operand)))
+                    {
+                        localReferenceSlots = DeleteSlot(localReferenceSlots, byte(operand));
+                    }
+                    currentLocalSP--;
                 }
                                 
                 case Instruction.PUSHLOCALB:
@@ -1507,6 +1515,36 @@ program Z80Gen
                     }
                     currentLocalSP--;
                 }
+                case Instruction.POPCOPYLOCALB:
+                {
+                    if (localReferenceSlots.Contains(byte(currentLocalSP-1)))
+                    {
+                        Die(0x0B); // instruction implies reference type
+                    }
+                    popCopyLocalB(operand, localReferenceSlots);
+                    localReferenceSlots = DeleteSlot(localReferenceSlots, byte(currentLocalSP-1));
+                    currentLocalSP--;
+                }
+                case Instruction.POPCOPYLOCALB00:
+                {
+                    if (localReferenceSlots.Contains(byte(currentLocalSP-1)))
+                    {
+                        Die(0x0B); // instruction implies reference type
+                    }
+                    popCopyLocalB(0, localReferenceSlots);
+                    localReferenceSlots = DeleteSlot(localReferenceSlots, byte(currentLocalSP-1));
+                    currentLocalSP--;
+                }
+                case Instruction.POPCOPYLOCALB01:
+                {
+                    if (localReferenceSlots.Contains(byte(currentLocalSP-1)))
+                    {
+                        Die(0x0B); // instruction implies reference type
+                    }
+                    popCopyLocalB(1, localReferenceSlots);
+                    localReferenceSlots = DeleteSlot(localReferenceSlots, byte(currentLocalSP-1));
+                    currentLocalSP--;
+                }
                 
                 case Instruction.POPLOCALB:
                 {
@@ -1557,7 +1595,7 @@ program Z80Gen
                     currentLocalSP++;
                     if (globalReferenceSlots.Contains(byte(operand)))
                     {
-                        localReferenceSlots = DeleteSlot(localReferenceSlots, byte(currentLocalSP-1));
+                        globalReferenceSlots.Append(byte(currentLocalSP-1));
                     }
                 }
                 case Instruction.PUSHGLOBALBB:
@@ -1566,20 +1604,30 @@ program Z80Gen
                     currentLocalSP++;
                     if (globalReferenceSlots.Contains(byte(operand & 0xFF)))
                     {
-                        localReferenceSlots = DeleteSlot(localReferenceSlots, byte(currentLocalSP-1));
+                        globalReferenceSlots.Append(byte(currentLocalSP-1));
                     }
                     currentLocalSP++;
                     if (globalReferenceSlots.Contains(byte(operand >> 8)))
                     {
-                        localReferenceSlots = DeleteSlot(localReferenceSlots, byte(currentLocalSP-1));
+                        globalReferenceSlots.Append(byte(currentLocalSP-1));
                     }
+                }
+                case Instruction.POPCOPYGLOBALB:
+                {
+                    if (globalReferenceSlots.Contains(byte(currentLocalSP-1)))
+                    {
+                        Die(0x0B); // instruction implies reference type
+                    }
+                    popCopyGlobalB(operand, globalReferenceSlots);
+                    globalReferenceSlots = DeleteSlot(globalReferenceSlots, byte(currentLocalSP-1));
+                    currentLocalSP--;
                 }
                 case Instruction.POPGLOBALB:
                 {
                     popGlobalB(operand, globalReferenceSlots);
-                    if (localReferenceSlots.Contains(byte(currentLocalSP-1)))
+                    if (globalReferenceSlots.Contains(byte(currentLocalSP-1)))
                     {
-                        localReferenceSlots = DeleteSlot(localReferenceSlots, byte(currentLocalSP-1));
+                        globalReferenceSlots = DeleteSlot(globalReferenceSlots, byte(currentLocalSP-1));
                     }
                     currentLocalSP--;
                 }
@@ -1635,10 +1683,13 @@ program Z80Gen
                 }
             } // switch
             
-            if (methodIndex == 0)
+            if (methodIndex == 0xFFFF)
             {
-                PrintLn();
-                Print("   " + Instructions.ToString(instruction) + " " + currentLocalSP.ToString());
+                //if ((instruction == Instruction.RETFAST) || (instruction == Instruction.RETB) || (instruction == Instruction.RET0))
+                //{
+                    PrintLn();
+                    Print("   " + Instructions.ToString(instruction) + " " + operand.ToHexString(4) + " " + currentLocalSP.ToString());
+                //}
             }
         } // loop
         
@@ -1646,6 +1697,7 @@ program Z80Gen
         {
             PrintLn();
             Print(methodIndex.ToHexString(4) + ": Stack mismatch: " + currentLocalSP.ToString());
+            PrintLn();
         }
         
         // <uint,uint> instructionAddresses; // <hopperAddress,z80Address>
@@ -1988,11 +2040,8 @@ program Z80Gen
                 if (!Parser.IsInteractive())
                 {
                     PrintLn();
-                    string laxReport = (LaxSavings == 0) ? "" : ", " + (LaxSavings).ToString() + " 'unsafe' Lax savings)";
-                    Print("Success, " + codeSize.ToString() + " bytes of code (" +
-                                        (StrictSavings).ToString() + " bytes of peephole savings" +
-                                        laxReport +
-                                        "), ", Colour.ProgressText, Colour.ProgressFace);
+                    
+                    Print("Success, " + codeSize.ToString() + " bytes of code, ", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
                     PrintLn("  " + seconds.ToString() +"s", Colour.ProgressHighlight, Colour.ProgressFace);

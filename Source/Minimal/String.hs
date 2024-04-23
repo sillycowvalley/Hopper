@@ -260,14 +260,17 @@ unit String
     
     bool IndexOf(string this, string pattern, uint startIndex, ref uint index)
     {
+        uint i;
+        uint j;
+        bool found;
         if ((pattern.Length == 0) || (startIndex >= this.Length))
         {
             return false;
         }
-        for (uint i = startIndex; i <= this.Length - pattern.Length; i++)
+        for (i = startIndex; i <= this.Length - pattern.Length; i++)
         {
-            bool found = true;
-            for (uint j = 0; j < pattern.Length; j++)
+            found = true;
+            for (j = 0; j < pattern.Length; j++)
             {
                 if (this[i + j] != pattern[j])
                 {

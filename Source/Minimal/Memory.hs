@@ -190,23 +190,23 @@ unit Memory
     }
     Free(uint address)
     {
+        uint blockAddress;
+        uint size;
+        uint current;
+        uint previous;
+        uint currentPrev;
+        uint currentSize;
+        uint currentNext;
+        uint freeSlot;
+        uint gapFront;
+        uint nextSize;
+        uint nextNext;
+        uint prevSize;
+        uint gapBack;
+        uint gapNext;
+        
         loop
         {
-            uint blockAddress;
-            uint size;
-            uint current;
-            uint previous;
-            uint currentPrev;
-            uint currentSize;
-            uint currentNext;
-            uint freeSlot;
-            uint gapFront;
-            uint nextSize;
-            uint nextNext;
-            uint prevSize;
-            uint gapBack;
-            uint gapNext;
-                
             if (0x0000 == address)
             {
                 Die(0x0B);

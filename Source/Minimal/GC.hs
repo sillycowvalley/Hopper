@@ -38,10 +38,9 @@ unit GC
     uint Clone(uint source)
     {
         uint i;
-        uint size = ReadWord(source-2);
-        uint copy = Memory.Allocate(size+2);
-        size-=2;
-        for (i = source; i < size; i++)
+        uint size = ReadWord(source-2) - 2; // Allocate size is -2 from object size
+        uint copy = Memory.Allocate(size);
+        for (i = 0; i < size; i++)
         {
             WriteByte(copy+i, ReadByte(source+i));
         }

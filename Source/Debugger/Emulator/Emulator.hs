@@ -230,6 +230,13 @@ unit Emulator
                 Emulator.ClearIfZeroBreakPoint(pc);
                 break;
             }
+#ifdef Z80
+            OpCode instruction = GetInstruction(pc);
+            if (instruction == OpCode.HALT)
+            {
+                break;
+            }
+#endif            
             StepInto(false);
             first = false;
         }

@@ -339,7 +339,6 @@ program DASM
                             
                             if (isExportingCurrent)
                             {
-                                codeGen.Append("        Peephole.Disabled = false;" + Char.EOL);
                                 codeGen.Append("    }" + Char.EOL);
                                 isExportingCurrent = false;
                             }
@@ -354,7 +353,6 @@ program DASM
                                 }
                                 codeGen.Append("    Emit" + nm.Replace(".", "") + "()" + Char.EOL);
                                 codeGen.Append("    {" + Char.EOL);
-                                codeGen.Append("        Peephole.Disabled = true;" + Char.EOL);
                                     
                                 isExportingCurrent = true;
                             }
@@ -446,11 +444,13 @@ program DASM
                             case OpCode.JP_NZ_nn:
                             case OpCode.JP_C_nn:
                             case OpCode.JP_NC_nn:
+                            case OpCode.JP_P_nn:
+                            case OpCode.JP_M_nn:
                             {
                                 string jumpName   = "jumpAddress" + instructionAddress.ToHexString(4);
                                 if (operand < instructionAddress)
                                 {
-                                    uint delta = instructionAddress - operand - 2;
+                                    uint delta = instructionAddress - operand;
                                     string jumpToLine = "        uint " + jumpName + " = CurrentAddress - " + delta.ToString() + ";";
                                     operandStr = jumpName;
                                     codeGen.Append(jumpToLine + Char.EOL);
@@ -461,7 +461,7 @@ program DASM
                                     codeGen.Append(jumpToLine + Char.EOL);
                                     jumpPatches[jumpName] = operand;
                                 }
-                                
+                                operand = 0xAA55;   
                             }
                         }
                         string codeLine = "        ";
@@ -559,7 +559,6 @@ program DASM
                 {
                     if (isExportingCurrent)
                     {
-                        codeGen.Append("        Peephole.Disabled = false;" + Char.EOL);
                         codeGen.Append("    }" + Char.EOL);
                     }
                     codeGen.Append("}" + Char.EOL);

@@ -2,7 +2,6 @@ unit Z80LibraryGenerated
 {
     EmitMemoryAvailable()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -15,15 +14,13 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_L_iIX_d, int(0));
         EmitOffset(OpCode.LD_H_iIX_d, int(1));
         Emit      (OpCode.POP_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_E, int(-4));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-3));
-        Emit      (OpCode.PUSH_DE);                          // if (0 == current)              memory.hs:33
-        Emit      (OpCode.POP_HL);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // if (0 == current)              memory.hs:33
+        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_Z_e, int(67));
+        EmitOffset(OpCode.JR_Z_e, int(65));
         EmitOffset(OpCode.LD_E_iIY_d, int(-2));              // break;                         memory.hs:35
         EmitOffset(OpCode.LD_D_iIY_d, int(-1));
         Emit      (OpCode.PUSH_DE);
@@ -50,22 +47,18 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_L_iIX_d, int(0));
         EmitOffset(OpCode.LD_H_iIX_d, int(1));
         Emit      (OpCode.POP_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_E, int(-4));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-3));
-        EmitOffset(OpCode.JR_e, int(-73));                   // }                              memory.hs:39
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitOffset(OpCode.JR_e, int(-75));                   // }                              memory.hs:39
         EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return available;              memory.hs:40
         EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitMemoryMaximum()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -83,8 +76,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_E, int(-6));
         EmitOffset(OpCode.LD_iIY_d_D, int(-5));
-        Emit      (OpCode.PUSH_DE);                          // if (0 == current)              memory.hs:50
-        Emit      (OpCode.POP_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // if (0 == current)              memory.hs:50
+        EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_Z_e, int(87));
@@ -128,7 +121,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_E, int(-6));
         EmitOffset(OpCode.LD_iIY_d_D, int(-5));
-        EmitOffset(OpCode.JR_e, int(-93));                   // }                              memory.hs:60
+        EmitOffset(OpCode.JR_e, int(-97));                   // }                              memory.hs:60
         EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // if (available > 0)             memory.hs:61
         EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.LD_A_L);
@@ -151,11 +144,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitMemoryAllocate()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -204,8 +195,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-11));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress182F = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_Z_nn, 0x193A);
+        uint jumpAddress185B = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_E_iIY_d, int(-12));             // break;                         memory.hs:99
         EmitOffset(OpCode.LD_D_iIY_d, int(-11));
         Emit      (OpCode.PUSH_DE);
@@ -336,10 +327,10 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_D_iIY_d, int(-15));
         EmitOffset(OpCode.LD_iIY_d_E, int(-12));
         EmitOffset(OpCode.LD_iIY_d_D, int(-11));
-        uint jumpAddress1937 = CurrentAddress - 270;
-        EmitWord  (OpCode.JP_nn, jumpAddress1937);           // }                              memory.hs:120
-        PatchByte(jumpAddress182F+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress182F+1, byte(CurrentAddress >> 8));
+        uint jumpAddress1963 = CurrentAddress - 272;
+        EmitWord  (OpCode.JP_nn, jumpAddress1963);           // }                              memory.hs:120
+        PatchByte(jumpAddress185B+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress185B+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // address = best + 2;            memory.hs:121
         EmitOffset(OpCode.LD_H_iIY_d, int(-3));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -361,8 +352,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1965 = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_Z_nn, 0x1AD4);
+        uint jumpAddress1991 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // WriteWord(best, size);         memory.hs:126
         EmitOffset(OpCode.LD_D_iIY_d, int(-3));
         Emit      (OpCode.PUSH_DE);
@@ -453,8 +444,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1A2A = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_Z_nn, 0x1AD1);
+        uint jumpAddress1A56 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // WriteWord(bestNext+4, newHole);
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         EmitWord  (OpCode.LD_DE_nn, 0x0004);
@@ -469,8 +460,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        uint jumpAddress1A4B = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_nn, 0x1AD1);                    // }                              memory.hs:142
+        uint jumpAddress1A77 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:142
         EmitOffset(OpCode.LD_L_iIY_d, int(-20));             // WriteWord(newHole+2,  bestNext);
         EmitOffset(OpCode.LD_H_iIY_d, int(-19));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -517,8 +508,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1AB0 = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_Z_nn, 0x1BA7);
+        uint jumpAddress1ADC = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // WriteWord(bestNext+4, newHole);
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         EmitWord  (OpCode.LD_DE_nn, 0x0004);
@@ -533,14 +524,14 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress1A2A+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1A2A+1, byte(CurrentAddress >> 8));
-        PatchByte(jumpAddress1A4B+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1A4B+1, byte(CurrentAddress >> 8));
-        uint jumpAddress1AD1 = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_nn, 0x1BA7);                    // }                              memory.hs:154
-        PatchByte(jumpAddress1965+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1965+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1A56+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1A56+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1A77+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1A77+1, byte(CurrentAddress >> 8));
+        uint jumpAddress1AFD = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:154
+        PatchByte(jumpAddress1991+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1991+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // else if (bestSize >= size)     memory.hs:155
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
@@ -552,8 +543,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1AE9 = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_Z_nn, 0x1B9D);
+        uint jumpAddress1B15 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // WriteWord(best, bestSize);     memory.hs:162
         EmitOffset(OpCode.LD_D_iIY_d, int(-3));
         Emit      (OpCode.PUSH_DE);
@@ -639,18 +630,18 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.JR_e, int(10));                    // }                              memory.hs:181
-        PatchByte(jumpAddress1AE9+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1AE9+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1B15+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1B15+1, byte(CurrentAddress >> 8));
         EmitWord  (OpCode.LD_DE_nn, 0x000C);                 // Die(0x0C);                     memory.hs:184
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_HL);
         Emit      (OpCode.LD_A_L);
         EmitWord  (OpCode.LD_inn_A, 0xFF02);
         Emit      (OpCode.HALT);
-        PatchByte(jumpAddress1AB0+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1AB0+1, byte(CurrentAddress >> 8));
-        PatchByte(jumpAddress1AD1+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1AD1+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1ADC+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1ADC+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1AFD+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1AFD+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // break;                         memory.hs:187
         EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.POP_DE);
@@ -666,11 +657,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitMemoryFree()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -678,7 +667,7 @@ unit Z80LibraryGenerated
         EmitByte  (OpCode.LD_B_n, 0x0E);
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.DJNZ_e, int(-3));
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // uint blockAddress;             memory.hs:195
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // uint blockAddress;             memory.hs:193
         EmitOffset(OpCode.LD_H_iIY_d, int(5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
@@ -713,15 +702,13 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_L_iIX_d, int(0));
         EmitOffset(OpCode.LD_H_iIX_d, int(1));
         Emit      (OpCode.POP_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_E, int(-6));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-5));
-        Emit      (OpCode.PUSH_DE);                          // if (0 == current)              memory.hs:221
-        Emit      (OpCode.POP_HL);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // if (0 == current)              memory.hs:221
+        EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_Z_e, int(65));
+        EmitOffset(OpCode.JR_Z_e, int(63));
         EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // break;                         memory.hs:223
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
@@ -733,7 +720,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(42));
+        EmitOffset(OpCode.JR_NZ_e, int(40));
         EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // break;                         memory.hs:228
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         EmitOffset(OpCode.LD_iIY_d_E, int(-8));
@@ -747,11 +734,9 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_L_iIX_d, int(0));
         EmitOffset(OpCode.LD_H_iIX_d, int(1));
         Emit      (OpCode.POP_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_E, int(-6));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-5));
-        EmitOffset(OpCode.JR_e, int(-71));                   // }                              memory.hs:232
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        EmitOffset(OpCode.JR_e, int(-73));                   // }                              memory.hs:232
         EmitOffset(OpCode.LD_E_iIY_d, int(-8));              // currentPrev = previous;        memory.hs:233
         EmitOffset(OpCode.LD_D_iIY_d, int(-7));
         EmitOffset(OpCode.LD_iIY_d_E, int(-10));
@@ -802,8 +787,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1CD9 = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_NZ_nn, 0x1E30);
+        uint jumpAddress1D05 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-16));             // WriteWord(freeSlot+2, current);
         EmitOffset(OpCode.LD_H_iIY_d, int(-15));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -868,8 +853,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIY_d_H, int(-17));
         Emit      (OpCode.LD_A_L);                           // if (0 == gapFront)             memory.hs:251
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1D5E = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_NZ_nn, 0x1E08);
+        uint jumpAddress1D8A = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // nextSize = ReadWord(ReadWord(cFreeList));
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_IX);
@@ -948,8 +933,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress1D5E+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1D5E+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1D8A+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1D8A+1, byte(CurrentAddress >> 8));
         EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // WriteWord(cFreeList, freeSlot);
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_L_iIY_d, int(-16));
@@ -977,14 +962,14 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        PatchByte(jumpAddress1CD9+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1CD9+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1D05+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1D05+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // }                              memory.hs:264
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1E38 = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_NZ_nn, 0x1F1D);
+        uint jumpAddress1E64 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // WriteWord(currentPrev+2, freeSlot);
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -1101,8 +1086,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        PatchByte(jumpAddress1E38+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1E38+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1E64+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1E64+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // WriteWord(currentPrev+2, freeSlot);
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -1183,16 +1168,12 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.AND_A);
         Emit      (OpCode.SBC_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_E, int(-26));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-25));
-        Emit      (OpCode.PUSH_DE);                          // if (0 == gapBack)              memory.hs:290
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.LD_A_L);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-26));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-25));
+        Emit      (OpCode.LD_A_L);                           // if (0 == gapBack)              memory.hs:290
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1FD3 = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_NZ_nn, 0x2054);
+        uint jumpAddress1FFB = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitOffset(OpCode.LD_E_iIY_d, int(-10));             // WriteWord(currentPrev, prevSize+size);
         EmitOffset(OpCode.LD_D_iIY_d, int(-9));
         Emit      (OpCode.PUSH_DE);
@@ -1249,8 +1230,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.ADD_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-4));
         EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        PatchByte(jumpAddress1FD3+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1FD3+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1FFB+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1FFB+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // gapNext = current - (freeSlot+size);
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
@@ -1270,7 +1251,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIY_d_H, int(-27));
         Emit      (OpCode.LD_A_L);                           // if (0 == gapNext)              memory.hs:300
         Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(105));
+        EmitOffset(OpCode.JR_NZ_e, int(122));
         EmitOffset(OpCode.LD_E_iIY_d, int(-16));             // WriteWord(freeSlot, size+currentSize);
         EmitOffset(OpCode.LD_D_iIY_d, int(-15));
         Emit      (OpCode.PUSH_DE);
@@ -1306,7 +1287,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-13));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_Z_e, int(30));
+        EmitOffset(OpCode.JR_Z_e, int(47));
         EmitOffset(OpCode.LD_L_iIY_d, int(-14));             // WriteWord(currentNext+4, freeSlot);
         EmitOffset(OpCode.LD_H_iIY_d, int(-13));
         EmitWord  (OpCode.LD_DE_nn, 0x0004);
@@ -1321,6 +1302,22 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
         Emit      (OpCode.POP_DE);                           // break;                         memory.hs:311
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
@@ -1337,11 +1334,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitGCCreate()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -1361,13 +1356,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.PUSH_HL);
         EmitWord  (OpCode.CALL_nn, GetAddress("MemoryAllocate"));
         Emit      (OpCode.POP_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_E, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-1));
-        Emit      (OpCode.PUSH_DE);                          // WriteByte(this+iType,      byte(objectType));
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.POP_HL);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // WriteByte(this+iType,      byte(objectType));
         Emit      (OpCode.ADD_HL_DE);
         Emit      (OpCode.PUSH_HL);
         EmitOffset(OpCode.LD_L_iIY_d, int(6));
@@ -1388,10 +1379,10 @@ unit Z80LibraryGenerated
         EmitWord  (OpCode.LD_HL_nn, 0x0001);                 // for (i= iReference+1; i < size; i++)
         EmitWord  (OpCode.LD_DE_nn, 0x0001);
         Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_E, int(-4));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-3));
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_C_iIY_d, int(4));
         EmitOffset(OpCode.LD_B_iIY_d, int(5));
@@ -1418,18 +1409,16 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.INC_iIY_d, int(-4));               // }                              gc.hs:22
         EmitOffset(OpCode.JR_NZ_e, int(3));
         EmitOffset(OpCode.INC_iIY_d, int(-3));
-        EmitOffset(OpCode.JR_e, int(-54));
+        EmitOffset(OpCode.JR_e, int(-60));
         EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return this;                   gc.hs:23
         EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitGCRelease()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -1476,11 +1465,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitGCClone()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -1499,33 +1486,25 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_L_iIX_d, int(0));
         EmitOffset(OpCode.LD_H_iIX_d, int(1));
         Emit      (OpCode.POP_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.AND_A);
+        Emit      (OpCode.SBC_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-4));
         EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint copy = Memory.Allocate(size+2);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint copy = Memory.Allocate(size);
         Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-4));
-        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
-        EmitWord  (OpCode.LD_DE_nn, 0x0002);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.PUSH_DE);
         EmitWord  (OpCode.CALL_nn, GetAddress("MemoryAllocate"));
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-6));
         EmitOffset(OpCode.LD_iIY_d_H, int(-5));
-        EmitOffset(OpCode.DEC_iIY_d, int(-4));               // size-=2;                       gc.hs:43
-        EmitByte  (OpCode.LD_A_n, 0xFF);
-        EmitOffset(OpCode.CP_A_iIY_d, int(-4));
-        EmitOffset(OpCode.JR_NZ_e, int(3));
-        EmitOffset(OpCode.DEC_iIY_d, int(-3));
-        EmitOffset(OpCode.DEC_iIY_d, int(-4));
-        EmitByte  (OpCode.LD_A_n, 0xFF);
-        EmitOffset(OpCode.CP_A_iIY_d, int(-4));
-        EmitOffset(OpCode.JR_NZ_e, int(3));
-        EmitOffset(OpCode.DEC_iIY_d, int(-3));
-        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // for (i = source; i < size; i++)
-        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // for (i = 0; i < size; i++)     gc.hs:43
         EmitOffset(OpCode.LD_iIY_d_E, int(-2));
         EmitOffset(OpCode.LD_iIY_d_D, int(-1));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-1));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_C_iIY_d, int(-4));
         EmitOffset(OpCode.LD_B_iIY_d, int(-3));
@@ -1557,11 +1536,11 @@ unit Z80LibraryGenerated
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.INC_iIY_d, int(-2));               // }                              gc.hs:47
+        EmitOffset(OpCode.INC_iIY_d, int(-2));               // }                              gc.hs:46
         EmitOffset(OpCode.JR_NZ_e, int(3));
         EmitOffset(OpCode.INC_iIY_d, int(-1));
-        EmitOffset(OpCode.JR_e, int(-69));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // WriteByte(copy+iReference, 1); gc.hs:48
+        EmitOffset(OpCode.JR_e, int(-75));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // WriteByte(copy+iReference, 1); gc.hs:47
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         EmitWord  (OpCode.LD_DE_nn, 0x0001);
         Emit      (OpCode.ADD_HL_DE);
@@ -1571,18 +1550,16 @@ unit Z80LibraryGenerated
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // return copy;                   gc.hs:49
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // return copy;                   gc.hs:48
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitStringNew()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -1595,20 +1572,14 @@ unit Z80LibraryGenerated
         EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_E, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-1));
-        Emit      (OpCode.PUSH_DE);                          // return this;                   string.hs:31
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        Emit      (OpCode.POP_DE);                           // return this;                   string.hs:31
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitStringNewFromConstant()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -1624,11 +1595,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitStringGetLength()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -1643,11 +1612,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitArrayGetCount()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -1662,11 +1629,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitArrayNew()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -1760,13 +1725,9 @@ unit Z80LibraryGenerated
         EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_E, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-1));
-        Emit      (OpCode.PUSH_DE);                          // WriteWord(this+aiType, byte(elementType));
-        EmitWord  (OpCode.LD_DE_nn, 0x0004);
-        Emit      (OpCode.POP_HL);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);                 // WriteWord(this+aiType, byte(elementType));
         Emit      (OpCode.ADD_HL_DE);
         Emit      (OpCode.PUSH_HL);
         EmitOffset(OpCode.LD_L_iIY_d, int(4));
@@ -1798,11 +1759,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
     EmitArrayNewFromConstant()
     {
-        Peephole.Disabled = true;
         Emit      (OpCode.PUSH_IY);
         EmitWord  (OpCode.LD_inn_SP, 0xFF00);
         EmitWord  (OpCode.LD_IY_inn, 0xFF00);
@@ -1818,6 +1777,5 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Peephole.Disabled = false;
     }
 }

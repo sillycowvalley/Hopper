@@ -409,12 +409,10 @@ unit CPU // Z80
                 case OpCode.LD_inn_SP:   { SetMemory(operand, byte(spRegister & 0xFF)); SetMemory(operand+1, byte(spRegister >> 8));  } 
                 case OpCode.LD_inn_BC:   { SetMemory(operand, byte(bcRegister & 0xFF)); SetMemory(operand+1, byte(bcRegister >> 8));  } 
                 case OpCode.LD_inn_DE:   { SetMemory(operand, byte(deRegister & 0xFF)); SetMemory(operand+1, byte(deRegister >> 8));  } 
-                case OpCode.LD_inn_HL:   { SetMemory(operand, byte(hlRegister & 0xFF)); SetMemory(operand+1, byte(hlRegister >> 8));  } 
                 
                 case OpCode.LD_SP_inn:   { spRegister = GetMemory(operand) + (GetMemory(operand+1) << 8);                             }
                 case OpCode.LD_BC_inn:   { bcRegister = GetMemory(operand) + (GetMemory(operand+1) << 8);                             }
                 case OpCode.LD_DE_inn:   { deRegister = GetMemory(operand) + (GetMemory(operand+1) << 8);                             }
-                case OpCode.LD_HL_inn:   { hlRegister = GetMemory(operand) + (GetMemory(operand+1) << 8);                             }
                 
                 case OpCode.ADC_HL_BC:   { long result = long(hlRegister) + long(bcRegister) + (cFlag ? 1 : 0); 
                                            cFlag = (result > 0xFFFF);
@@ -436,6 +434,27 @@ unit CPU // Z80
                                            hlRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
                                            CheckSZWord(hlRegister); nFlag = false; 
                                          }
+                case OpCode.ADD_IX_DE:   { long result = long(ixRegister) + long(deRegister) + (cFlag ? 1 : 0); 
+                                           cFlag = (result > 0xFFFF);
+                                           ixRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
+                                           nFlag = false; 
+                                         }
+                case OpCode.ADD_IY_DE:   { long result = long(iyRegister) + long(deRegister) + (cFlag ? 1 : 0); 
+                                           cFlag = (result > 0xFFFF);
+                                           iyRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
+                                           nFlag = false; 
+                                         }
+                case OpCode.ADD_IX_BC:   { long result = long(ixRegister) + long(bcRegister) + (cFlag ? 1 : 0); 
+                                           cFlag = (result > 0xFFFF);
+                                           ixRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
+                                           nFlag = false; 
+                                         }
+                case OpCode.ADD_IY_BC:   { long result = long(iyRegister) + long(bcRegister) + (cFlag ? 1 : 0); 
+                                           cFlag = (result > 0xFFFF);
+                                           iyRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
+                                           nFlag = false; 
+                                         }
+                
                 case OpCode.SBC_HL_BC:   { long result = long(hlRegister) - long(bcRegister) - (cFlag ? 1 : 0);
                                            cFlag = ((bcRegister+(cFlag ? 1 : 0)) > hlRegister);
                                            hlRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
@@ -494,6 +513,27 @@ unit CPU // Z80
                                            int value = int(aRegister) - GetMemory(address);
                                            CheckSZWord(value); nFlag = false; cFlag = (value < 0); 
                                          } 
+                                         
+                case OpCode.SUB_A_iIX_d: { uint address = uint(long(ixRegister) + offset);
+                                           int value = int(aRegister) - GetMemory(address);
+                                           aRegister = value.GetByte(0);
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = (value < 0); 
+                                         }
+                case OpCode.SUB_A_iIY_d: { uint address = uint(long(iyRegister) + offset);
+                                           int value = int(aRegister) - GetMemory(address);
+                                           aRegister = value.GetByte(0);
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = (value < 0); 
+                                         }
+                case OpCode.ADD_A_iIX_d: { uint address = uint(long(ixRegister) + offset);
+                                           uint value = aRegister + GetMemory(address);
+                                           aRegister = value.GetByte(0);
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = (value > 255); 
+                                         }
+                case OpCode.ADD_A_iIY_d: { uint address = uint(long(iyRegister) + offset);
+                                           uint value = aRegister + GetMemory(address);
+                                           aRegister = value.GetByte(0);
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = (value > 255); 
+                                         }
             
                 default: 
                 { 
@@ -530,6 +570,10 @@ unit CPU // Z80
                 case OpCode.LD_BC_nn:    { bcRegister = operand;       }
                 case OpCode.LD_DE_nn:    { deRegister = operand;       }
                 case OpCode.LD_HL_nn:    { hlRegister = operand;       }
+                
+                case OpCode.LD_inn_HL:   { SetMemory(operand, byte(hlRegister & 0xFF)); SetMemory(operand+1, byte(hlRegister >> 8));  } 
+                case OpCode.LD_HL_inn:   { hlRegister = GetMemory(operand) + (GetMemory(operand+1) << 8);                             }
+                
                 
                 case OpCode.LD_A_A:      {                                       }
                 case OpCode.LD_A_B:      { aRegister  = byte(bcRegister >> 8);   }
@@ -603,7 +647,10 @@ unit CPU // Z80
                 case OpCode.LD_iHL_H:    { SetMemory(hlRegister, byte(hlRegister >> 8));                        }
                 case OpCode.LD_iHL_L:    { SetMemory(hlRegister, byte(hlRegister & 0xFF));                      }
                 
-                case OpCode.LD_inn_A:    { SetMemory(operand, aRegister); } 
+                case OpCode.LD_iHL_n:    { SetMemory(hlRegister, byte(operand & 0xFF));                         }
+                
+                case OpCode.LD_inn_A:    { SetMemory(operand, aRegister);  } 
+                case OpCode.LD_A_inn:    { aRegister = GetMemory(operand); } 
                 
                 case OpCode.OUT_in_A:    { SetPort(byte(operand), aRegister);   }
                 case OpCode.IN_A_in:     { aRegister = GetPort(byte(operand));  }
@@ -639,6 +686,106 @@ unit CPU // Z80
                 case OpCode.AND_A_E:     { aRegister  = aRegister & byte(deRegister & 0xFF); CheckSZByte(aRegister); nFlag = false; cFlag = false; }
                 case OpCode.AND_A_H:     { aRegister  = aRegister & byte(hlRegister >> 8);   CheckSZByte(aRegister); nFlag = false; cFlag = false; }
                 case OpCode.AND_A_L:     { aRegister  = aRegister & byte(hlRegister & 0xFF); CheckSZByte(aRegister); nFlag = false; cFlag = false; }
+                
+                case OpCode.ADD_A_n:     { uint value  = uint(aRegister) + byte(operand);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = value > 255; 
+                                         }
+                                         
+                case OpCode.ADD_A_A:     { uint value  = uint(aRegister) + aRegister;      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = value > 255; 
+                                         }
+                case OpCode.ADD_A_B:     { uint value  = uint(aRegister) + byte(bcRegister >> 8);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = value > 255; 
+                                         }
+                case OpCode.ADD_A_C:     { uint value  = uint(aRegister) + byte(bcRegister & 0xFF);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = value > 255; 
+                                         }
+                case OpCode.ADD_A_D:     { uint value  = uint(aRegister) + byte(deRegister >> 8);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = value > 255; 
+                                         }
+                case OpCode.ADD_A_E:     { uint value  = uint(aRegister) + byte(deRegister & 0xFF);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = value > 255; 
+                                         }
+                case OpCode.ADD_A_H:     { uint value  = uint(aRegister) + byte(hlRegister >> 8);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = value > 255; 
+                                         }
+                case OpCode.ADD_A_L:     { uint value  = uint(aRegister) + byte(hlRegister & 0xFF);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = false; cFlag = value > 255; 
+                                         }
+                                         
+                case OpCode.SUB_A_n:     { int value  = int(aRegister) - byte(operand);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SUB_A_A:     { int value  = int(aRegister) - aRegister;      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SUB_A_B:     { int value  = int(aRegister) - byte(bcRegister >> 8);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SUB_A_C:     { int value  = int(aRegister) - byte(bcRegister & 0xFF);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SUB_A_D:     { int value  = int(aRegister) - byte(deRegister >> 8);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SUB_A_E:     { int value  = int(aRegister) - byte(deRegister & 0xFF);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SUB_A_H:     { int value  = int(aRegister) - byte(hlRegister >> 8);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SUB_A_L:     { int value  = int(aRegister) - byte(hlRegister & 0xFF);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                                         
+                case OpCode.SBC_A_n:     { int value  = int(aRegister) - byte(operand) - (cFlag ? 1 : 0);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SBC_A_A:     { int value  = int(aRegister) - aRegister- (cFlag ? 1 : 0);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SBC_A_B:     { int value  = int(aRegister) - byte(bcRegister >> 8)- (cFlag ? 1 : 0);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SBC_A_C:     { int value  = int(aRegister) - byte(bcRegister & 0xFF)- (cFlag ? 1 : 0);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SBC_A_D:     { int value  = int(aRegister) - byte(deRegister >> 8)- (cFlag ? 1 : 0);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SBC_A_E:     { int value  = int(aRegister) - byte(deRegister & 0xFF)- (cFlag ? 1 : 0);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SBC_A_H:     { int value  = int(aRegister) - byte(hlRegister >> 8)- (cFlag ? 1 : 0);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }
+                case OpCode.SBC_A_L:     { int value  = int(aRegister) - byte(hlRegister & 0xFF)- (cFlag ? 1 : 0);      
+                                           aRegister = value.GetByte(0);     
+                                           CheckSZByte(aRegister); nFlag = true; cFlag = value < 0; 
+                                         }           
                 
                 case OpCode.DEC_A:       { aRegister  = (aRegister == 0 ? 0xFF : aRegister-1); CheckSZByte(aRegister);              nFlag = false; }
                 case OpCode.DEC_B:       { 
@@ -678,7 +825,8 @@ unit CPU // Z80
                                            CheckSZByte(value); nFlag = false;
                                          }
                 
-                case OpCode.RLA:         { bool cNew = ((aRegister & 0x80) != 0); aRegister = byte( (((aRegister << 1) & 0xFF) + (cFlag ? 1 : 0)) & 0xFF ); nFlag = false; cFlag = cNew; }
+                case OpCode.RLA:         { bool cNew = ((aRegister & 0x80) != 0); aRegister = byte( (((aRegister << 1) & 0xFF) + (cFlag ? 1    : 0)) & 0xFF ); nFlag = false; cFlag = cNew; }
+                case OpCode.RRA:         { bool cNew = ((aRegister & 0x01) != 0); aRegister = byte( (((aRegister >> 1) & 0xFF) + (cFlag ? 0x80 : 0)) & 0xFF ); nFlag = false; cFlag = cNew; }
                 case OpCode.CLP:         { aRegister = byte(~aRegister & 0xFF); nFlag = true; }
                 
                 
@@ -737,8 +885,14 @@ unit CPU // Z80
                 
                 
                 case OpCode.CALL_nn:     { Push(pcRegister + length); pcRegister = operand; break; }
-                case OpCode.RET:         { pcRegister = Pop();                              break; }
                 case OpCode.HALT:        { pcRegister = InvalidAddress;                     break; }
+                case OpCode.RET:         { pcRegister = Pop();                              break; }
+                case OpCode.RET_C:       { if (cFlag)  { pcRegister = Pop();              break; } }
+                case OpCode.RET_NC:      { if (!cFlag) { pcRegister = Pop();              break; } }
+                case OpCode.RET_Z:       { if (zFlag)  { pcRegister = Pop();              break; } }
+                case OpCode.RET_NZ:      { if (!zFlag) { pcRegister = Pop();              break; } }
+                case OpCode.RET_P:       { if (!sFlag) { pcRegister = Pop();              break; } }
+                case OpCode.RET_M:       { if (sFlag)  { pcRegister = Pop();              break; } }
                 
                 case OpCode.JP_nn:       { pcRegister = operand;                            break; }
                 
@@ -746,6 +900,8 @@ unit CPU // Z80
                 case OpCode.JP_NZ_nn:    { if (!zFlag) { pcRegister = operand;            break; } }
                 case OpCode.JP_C_nn:     { if (cFlag)  { pcRegister = operand;            break; } }
                 case OpCode.JP_NC_nn:    { if (!cFlag) { pcRegister = operand;            break; } }
+                case OpCode.JP_P_nn:     { if (!sFlag) { pcRegister = operand;            break; } }
+                case OpCode.JP_M_nn:     { if (sFlag)  { pcRegister = operand;            break; } }
                 
                 case OpCode.JR_e :       { pcRegister = uint(long(pcRegister + length) + offset);                 break; }
                 
