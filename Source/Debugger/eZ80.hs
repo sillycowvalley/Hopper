@@ -142,11 +142,7 @@ program EZ80
             // Initialize the vectors    
             uint length = code.Count;
             CPU.Entry = 0;
-            uint vectorUse = 6;
-            for (uint i = 0; i < length; i++)
-            {
-                SetMemory(orgROM+i, code[i]);
-            }
+            SetROMMemory(orgROM, code, length);
             Display.FindMethods(code);
             
             Emulator.DoReset();

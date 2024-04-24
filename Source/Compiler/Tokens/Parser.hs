@@ -46,6 +46,17 @@ unit Parser
         return interactive; 
     }
     
+    InteractiveError(string errorMessage)
+    {
+        if (!IsInteractive())
+        {
+            Die(0x0B);
+        }
+        string eol = "" + Char.EOL;
+        errorFile.Append(errorMessage + eol);
+        errorFile.Flush();
+    }
+    
     emitError(string errorMessage)
     {
         if (IsInteractive())

@@ -253,6 +253,10 @@ unit BuildCommand
                     break;
                 }
             }
+            if (isZ80)
+            {
+                arguments.Append("-z");
+            }
             
             error = runtimeExecute(binaryPath, arguments);
             if (error != 0)

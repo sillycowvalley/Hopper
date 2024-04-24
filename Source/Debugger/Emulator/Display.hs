@@ -375,8 +375,13 @@ unit Display
                 comment = comment.Replace("//", "  ");
                 Print(commentPrefix + comment, Colour.MatrixGreen, Colour.Black); // comment
             }
-            PrintLn();
-            
+            PrintLn();   
+#ifdef Z80
+            if ((instruction == OpCode.HALT) || (instruction == OpCode.RET) || (instruction == OpCode.RETI))
+            {
+                break;
+            }
+#endif                     
             address += length;
             instructions--;
             firstLine = false;

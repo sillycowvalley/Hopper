@@ -11,6 +11,8 @@ program DASM
     uses "JSON/JSON"
     uses "JSON/Code"
     
+    uses "Symbols"
+    
     uses "CodeGen/Instructions"
     uses "CODEGEN/AsmZ80"
     
@@ -188,15 +190,45 @@ program DASM
                 }
                 
                 SysCalls.New();
-                string symbolsPath  = codePath.Replace(extension, ".zcode");
+                string symbolsPath  = codePath.Replace(extension, ".sym");
                 symbolsPath = Path.GetFileName(symbolsPath);
                 symbolsPath = Path.Combine("/Debug/Obj", symbolsPath);
+                string zcodePath = symbolsPath.Replace(".sym", ".zcode");
                 
-                if (File.Exists(symbolsPath))
+                if (File.Exists(zcodePath))
                 {
-                    if (!ParseCode(symbolsPath, false, true))
+                    if (!Code.ParseCode(zcodePath, false, true))
                     {
                         break;
+                    }
+                }
+                uint romSize = 0x8000;
+                Symbols.New();
+                if (File.Exists(symbolsPath))
+                {
+                    if (Symbols.Import(symbolsPath, false))
+                    {
+                        CodeStream.InitializeSymbolShortcuts();
+                    }
+                    if (DefineExists("ROM_32K"))
+                    {
+                        romSize = 0x8000;
+                    }
+                    if (DefineExists("ROM_16K"))
+                    {
+                        romSize = 0x4000;
+                    }
+                    if (DefineExists("ROM_8K"))
+                    {
+                        romSize = 0x2000;
+                    }
+                    if (DefineExists("ROM_4K"))
+                    {
+                        romSize = 0x1000;
+                    }
+                    if (DefineExists("ROM_1K"))
+                    {
+                        romSize = 0x0400;
                     }
                 }
                 uint org;
@@ -220,8 +252,10 @@ program DASM
                 exportMethods.Append("GC.Clone");
                 
                 exportMethods.Append("String.New");
-                exportMethods.Append("String.NewFromConstant");
+                exportMethods.Append("String.NewFromConstant0");
+                exportMethods.Append("String.NewFromConstant1");
                 exportMethods.Append("String.GetLength");
+                exportMethods.Append("String.GetChar");
                 exportMethods.Append("String.BuildChar");
                 exportMethods.Append("String.BuildString");
                 exportMethods.Append("String.BuildClear");
@@ -252,6 +286,62 @@ program DASM
                 loop
                 {
                     if (index == code.Count) { break; }
+                    if (index == ConstantAddress)
+                    {
+                        uint constantSize  = code[index] + (code[index+1] << 8);
+                        index += 2; // size of constant block
+                        
+                        hasmFile.Append("" + Char.EOL);
+                        hasmFile.Append("// constant data" + Char.EOL);
+                        hasmFile.Append("0x" + (ConstantAddress).ToHexString(4) + " 0x" + constantSize.ToHexString(4) + " // " + constantSize.ToString() + " bytes" + Char.EOL);
+                        
+                        uint i;
+                        string ascii;
+                        for (i = 0; i < constantSize; i++)
+                        {
+                            byte d = code[index];
+                            if ( i % 16 == 0)
+                            {
+                                hasmFile.Append("0x" + index.ToHexString(4) + "  ");
+                            }
+                            if ((d < 33) || (d > 127))
+                            {
+                                ascii += ".";
+                            }
+                            else
+                            {
+                                ascii += char(d);
+                            }
+                            hasmFile.Append(" 0x" + d.ToHexString(2));
+                            if ( i % 16 == 7)
+                            {
+                                hasmFile.Append(" ");
+                            }
+                            if ( i % 16 == 15)
+                            {
+                                hasmFile.Append(" //" + ascii + Char.EOL);
+                                ascii = "";
+                            }
+                            index++;
+                        }
+                        
+                        if (ascii != "")
+                        {
+                            uint rem = i % 16;
+                            if (rem <= 7)
+                            {
+                                hasmFile.Append("_");
+                            }
+                            while (rem != 16)
+                            {
+                                hasmFile.Append("_____");
+                                rem++;
+                            }
+                            hasmFile.Append(" //" + ascii + Char.EOL);
+                        }
+                        hasmFile.Append("" + Char.EOL);
+                        continue;
+                    }
                     instructionAddress = index;
                     
                     byte opCodeLength = GetOpCodeLength(code[index]);
@@ -553,7 +643,6 @@ program DASM
                         }    
                         hasmFile.Append("" + Char.EOL);
                     }
-                    //hasmFile.Flush(); // TODO REMOVE
                 } // loop
                 if (isExporting)
                 {
@@ -567,10 +656,19 @@ program DASM
                             
                 Parser.ProgressTick("d");
                 hasmFile.Flush();
+                uint kSize = romSize / 1024;
+                uint extra = codeSize - romSize;
+                success = codeSize <= romSize;
+                
                 if (!Parser.IsInteractive())
                 {
                     PrintLn();
-                    Print("Success, " + codeSize.ToString() + " bytes of code, ", Colour.ProgressText, Colour.ProgressFace);
+                    Print("Success, " + codeSize.ToString() + " bytes of code", Colour.ProgressText, Colour.ProgressFace);
+                    if (codeSize > romSize)
+                    {
+                        Print(" (" + kSize.ToString() + "K ROM exceeded by " + extra.ToString() + " bytes)", Colour.MatrixRed, Colour.ProgressFace);   
+                    }
+                    Print(", ", Colour.ProgressText, Colour.ProgressFace);
                     long elapsedTime = Millis - startTime;
                     float seconds = elapsedTime / 1000.0;
                     PrintLn("  " + seconds.ToString() +"s", Colour.ProgressHighlight, Colour.ProgressFace);
@@ -579,8 +677,12 @@ program DASM
                 else
                 {
                     Parser.ProgressDone();
+                    if (codeSize > romSize)
+                    {
+                        InteractiveError(kSize.ToString() + "K ROM exceeded by " + extra.ToString() + " bytes");
+                    }
                 }
-                success = true;
+                
                 break;
             }
             break;

@@ -1,11 +1,9 @@
 program MRVT
 {
-    //#define REFTYPES
+    #define REFTYPES
     
     #define CPU_Z80
     #define ROM_32K
-    
-    #define CDECL
     
     uses "/Source/Minimal/IO"
     
@@ -296,9 +294,10 @@ program MRVT
         string prompt = "system 'string'";
         WriteLn(prompt); // string methods written in Hopper (some specific to HOPPER_6502)
         
+        int result;
         if (String.Compare("bbb", "aaa") != 1)
         {
-            int result = String.Compare("bbb", "aaa");
+            result = String.Compare("bbb", "aaa");
             WriteLn(result.ToString());
             PrintFailed(prompt, 7);
         }
@@ -506,72 +505,72 @@ program MRVT
         }
         
         string build;
-        Build (ref build, "");
+        String.Build (ref build, "");
         if (build != "")
         {
             PrintFailed(prompt, 1);
         }
-        Build (ref build, "abc");
+        String.Build (ref build, "abc");
         if (build != "abc")
         {
             PrintFailed(prompt, 2);
         }
-        Build (ref build, "def");
+        String.Build (ref build, "def");
         if (build != "abcdef")
         {
             PrintFailed(prompt, 3);
         }
         
-        Build (ref build, "012345678901234567890123456789");
+        String.Build (ref build, "012345678901234567890123456789");
         if (build != "abcdef012345678901234567890123456789")
         {
             PrintFailed(prompt, 4);
         }
-        Build (ref build);
+        String.Build (ref build);
         if (build != "")
         {
             PrintFailed(prompt, 5);
         }
         
-        Build (ref build);
+        String.Build (ref build);
         if (build != "")
         {
             PrintFailed(prompt, 6);
         }
-        Build (ref build, 'a');
+        String.Build (ref build, 'a');
         if (build != "a")
         {
             PrintFailed(prompt, 7);
         }
-        Build (ref build, 'b');
+        String.Build (ref build, 'b');
         if (build != "ab")
         {
             PrintFailed(prompt, 8);
         }
         build = "012345678901234567890123456789";
-        Build (ref build, 'a');
+        String.Build (ref build, 'a');
         if (build != "012345678901234567890123456789a")
         {
             PrintFailed(prompt, 9);
         }
         
-        Build (ref build);
+        String.Build (ref build);
         if (build != "")
         {
             PrintFailed(prompt, 10);
         }
-        BuildFront (ref build, 'a');
+        String.BuildFront (ref build, 'a');
         if (build != "a")
         {
             PrintFailed(prompt, 11);
         }
-        BuildFront (ref build, 'b');
+        String.BuildFront (ref build, 'b');
         if (build != "ba")
         {
             PrintFailed(prompt, 12);
         }
         build = "012345678901234567890123456789";
-        BuildFront (ref build, 'a');
+        String.BuildFront (ref build, 'a');
         if (build != "a012345678901234567890123456789")
         {
             PrintFailed(prompt, 13);
@@ -1081,22 +1080,21 @@ program MRVT
         
         int count = 0;
         char check = 'A';
-        int inc;
         switch (check)
         {
             case 'A':
             {
-                inc = 1;
+                int inc = 1;
                 count = count + inc;
             }
             case 'B':
             {
-                inc = 2;
+                int inc = 2;
                 count = count + inc;
             }
             default:
             {
-                inc = 4;
+                int inc = 4;
                 count = count + inc;
             }
         }
@@ -1106,22 +1104,21 @@ program MRVT
         }
         count = 0;
         check = 'B';
-        inc = 0;
         switch (check)
         {
             case 'A':
             {
-                inc = 1;
+                int inc = 1;
                 count = count + inc;
             }
             case 'B':
             {
-                inc = 2;
+                int inc = 2;
                 count = count + inc;
             }
             default:
             {
-                inc = 4;
+                int inc = 4;
                 count = count + inc;
             }
         }
@@ -1131,22 +1128,21 @@ program MRVT
         }
         count = 0;
         check = 'C';
-        inc = 0;
         switch (check)
         {
             case 'A':
             {
-                inc = 1;
+                int inc = 1;
                 count = count + inc;
             }
             case 'B':
             {
-                inc = 2;
+                int inc = 2;
                 count = count + inc;
             }
             default:
             {
-                inc = 4;
+                int inc = 4;
                 count = count + inc;
             }
         }
@@ -1158,23 +1154,22 @@ program MRVT
         {
             count = 0;
             check = 'B';
-            inc = 0;
             switch (check)
             {
                 case 'A':
                 {
-                    inc = 1;
+                    int inc = 1;
                     count = count + inc;
                 }
                 case 'B':
                 {
-                    inc = 2;
+                    int inc = 2;
                     break;
                     count = count + inc;
                 }
                 default:
                 {
-                    inc = 4;
+                    int inc = 4;
                     count = count + inc;
                 }
             }
@@ -2511,6 +2506,7 @@ program MRVT
     
     Hopper()
     {
+        
 #ifdef REFTYPES        
         WriteLn();
         WriteLn("Minimal Runtime Validation Tests:");
@@ -2544,7 +2540,8 @@ program MRVT
 #ifdef REFTYPES        
         WriteLn("  Passed");
 #else
-        Serial.WriteChar(Char.EOL); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
+        //Serial.WriteChar(Char.EOL); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
 #endif        
+        
     }
 }

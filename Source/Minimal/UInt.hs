@@ -2,14 +2,16 @@ unit UInt
 {
     byte GetByte(uint this, byte index)
     {
+        byte result;
         if (index == 1)
         {
-            return byte(this >> 8);
+            result = byte(this >> 8);
         }
         else
         {
-            return byte(this & 0xFF);
+            result = byte(this & 0xFF);
         }
+        return result;
     }
     uint FromBytes(byte b0, byte b1)
     {

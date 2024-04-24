@@ -8,9 +8,11 @@ unit IO
     }
     Write(string s)
     {
-        foreach (var c in s)
+        uint length = s.Length;
+        uint i;
+        for (i=0; i < length; i++)
         {
-            Serial.WriteChar(c);
+            Serial.WriteChar(s[i]);
         }
     }
     WriteLn()

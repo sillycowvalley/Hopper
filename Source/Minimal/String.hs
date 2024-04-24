@@ -1,7 +1,6 @@
 unit String
 {
     uint Length { get system; }
-#ifndef CPU_Z80    
     
     char GetChar(string this, uint index) system; // syntax shortcut would be :  ch = this[index]
     
@@ -9,38 +8,6 @@ unit String
     Build(ref string build, char append) system;
     Build(ref string build) system;
     BuildFront(ref string build, char insert) system;
-#endif
-
-#ifdef GENERATING
-
-    // String memory map:
-    //   0000 heap allocator size
-    //   0F   type = tString
-    //   00   GC reference count
-    //   0000 string length n
-    //   00   first char in string
-    //   ..
-    //   <n>  last char in string
-    
-    const int siLength = 2;
-    const int siChars  = 4;
-    
-    uint New()
-    {
-        uint this = GC.Create(Type.String, 14); // default size is 16 (less block size)
-        return this;
-    }
-    uint NewFromConstant(uint location, uint length)
-    {
-        uint a = 0;
-        a = a + 10;
-        return 0;
-    }
-    uint GetLength(uint this)
-    {
-        return ReadWord(this+siLength);
-    }
-#endif
     
     bool IsEmpty { get { return this.Length == 0; } }
     
@@ -73,8 +40,6 @@ unit String
             return result;
         }
     }
-    
-    
     
     bool IndexOf(string this, char pattern, ref uint index)
     {

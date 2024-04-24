@@ -1,5 +1,1941 @@
 unit Z80LibraryGenerated
 {
+    EmitStringNew()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x000F);                 // uint this = GC.Create(Type.String, 12); // default size is 16 less header size (blocksize, ref and type)
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x000C);
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        Emit      (OpCode.POP_DE);                           // return this;                   string.hs:18
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitStringNewFromConstant0()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // uint this;                     string.hs:22
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x000F);                 // size = (size + 15) & 0xFFF0;           // round up to nearest 16 byte boundary
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_A_L);
+        EmitByte  (OpCode.AND_A_n, 0xF0);
+        Emit      (OpCode.LD_L_A);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x000F);                 // this = GC.Create(Type.String, size-4); // -4 (header added by Create and Allocate)
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.AND_A);
+        Emit      (OpCode.SBC_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);                 // destination = this + siChars;  string.hs:30
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-10));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-9));
+        EmitWord  (OpCode.LD_DE_nn, 0x000A);                 // source      = ConstantStart + location;
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(7));
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-8));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // for (i=0; i < length; i++)     string.hs:32
+        EmitOffset(OpCode.LD_iIY_d_E, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-5));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-5));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(4));
+        EmitOffset(OpCode.LD_B_iIY_d, int(5));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x0134);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(56));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-10));             // WriteByte(destination, ReadByte(source));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-9));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-8));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-7));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.INC_iIY_d, int(-10));              // destination++;                 string.hs:35
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-9));
+        EmitOffset(OpCode.INC_iIY_d, int(-8));               // source++;                      string.hs:36
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-7));
+        EmitOffset(OpCode.INC_iIY_d, int(-6));               // }                              string.hs:37
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-5));
+        EmitOffset(OpCode.JR_e, int(-79));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // WriteWord(this + siLength, length);
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        EmitOffset(OpCode.LD_iIX_d_H, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return this;                   string.hs:39
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitStringNewFromConstant1()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // byte lch = byte(chch & 0xFF);  string.hs:43
+        EmitByte  (OpCode.LD_D_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_E, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // byte mch = byte(chch >> 8);    string.hs:44
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        Emit      (OpCode.LD_E_D);
+        EmitByte  (OpCode.LD_D_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_E, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint this;                     string.hs:45
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x000F);                 // this = GC.Create(Type.String, 12); // 16-4 (header added by Create and Allocate)
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x000C);
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);                 // WriteByte(this + siChars, lch);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // if (mch != 0)                  string.hs:48
+        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(26));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // WriteByte(this + siChars + 1, mch);
+        EmitOffset(OpCode.LD_H_iIY_d, int(-5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // WriteWord(this + siLength, (mch != 0) ? 2 : 1);
+        EmitOffset(OpCode.LD_H_iIY_d, int(-5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(6));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.JR_e, int(4));
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        EmitOffset(OpCode.LD_iIX_d_H, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // return this;                   string.hs:53
+        EmitOffset(OpCode.LD_H_iIY_d, int(-5));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitStringGetLength()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // return ReadWord(this+siLength);
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitStringGetChar()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // uint value;                    string.hs:61
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // if (index >= length)           string.hs:63
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-3));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x017E);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(10));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);                 // Die(0x05); // string index out of range
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_HL);
+        Emit      (OpCode.LD_A_L);
+        EmitWord  (OpCode.LD_inn_A, 0xFF02);
+        Emit      (OpCode.HALT);
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // value = ReadByte(this + siChars + index);
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        Emit      (OpCode.POP_DE);                           // return value;                  string.hs:68
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitStringBuildChar()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_IY);                          // uint capacity = ReadWord(str-2) - 4;
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.AND_A);
+        Emit      (OpCode.SBC_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.AND_A);
+        Emit      (OpCode.SBC_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint length = ReadWord(str+siLength);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_IY);
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint strExpanded;              string.hs:75
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);                          // uint i;                        string.hs:76
+        Emit      (OpCode.PUSH_DE);                          // uint source;                   string.hs:77
+        Emit      (OpCode.PUSH_DE);                          // uint destination;              string.hs:78
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // if (length >= capacity)        string.hs:79
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-1));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x017E);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        uint jumpAddress214B = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_Z_nn, 0xAA55);
+        EmitWord  (OpCode.LD_DE_nn, 0x000F);                 // strExpanded = GC.Create(Type.String, capacity + 16);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0010);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        Emit      (OpCode.PUSH_IY);                          // source      = str + siChars;   string.hs:83
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-10));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-9));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // destination = strExpanded + siChars;
+        EmitOffset(OpCode.LD_H_iIY_d, int(-5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-12));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-11));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // for (i=0; i < length; i++)     string.hs:85
+        EmitOffset(OpCode.LD_iIY_d_E, int(-8));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-7));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-8));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-7));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-3));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x0134);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(56));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-12));             // WriteByte(destination, ReadByte(source));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-11));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-10));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-9));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.INC_iIY_d, int(-12));              // destination++;                 string.hs:88
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-11));
+        EmitOffset(OpCode.INC_iIY_d, int(-10));              // source++;                      string.hs:89
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-9));
+        EmitOffset(OpCode.INC_iIY_d, int(-8));               // }                              string.hs:90
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-7));
+        EmitOffset(OpCode.JR_e, int(-79));
+        Emit      (OpCode.PUSH_IY);                          // GC.Release(str);               string.hs:91
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCRelease"));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // str = strExpanded;             string.hs:92
+        EmitOffset(OpCode.LD_D_iIY_d, int(-5));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_IY);
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIX_d_E, int(0));
+        EmitOffset(OpCode.LD_iIX_d_D, int(1));
+        PatchByte(jumpAddress214B+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress214B+1, byte(CurrentAddress >> 8));
+        Emit      (OpCode.PUSH_IY);                          // WriteByte(str  + siChars + length, byte(append));
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.PUSH_IY);                          // WriteWord(str + siLength,          length+1);
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        EmitOffset(OpCode.LD_iIX_d_H, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitStringBuildString()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_IY);                          // uint capacity = ReadWord(str-2) - 4;
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.AND_A);
+        Emit      (OpCode.SBC_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.AND_A);
+        Emit      (OpCode.SBC_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint length  = ReadWord(str+siLength);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_IY);
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint length2 = ReadWord(append+siLength);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint strExpanded;              string.hs:102
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);                          // uint size;                     string.hs:103
+        Emit      (OpCode.PUSH_DE);                          // uint i;                        string.hs:104
+        Emit      (OpCode.PUSH_DE);                          // uint source;                   string.hs:105
+        Emit      (OpCode.PUSH_DE);                          // uint destination;              string.hs:106
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // if (length+length2 >= capacity)
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-5));
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-1));
+        EmitWord  (OpCode.CALL_nn, 0x017E);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        uint jumpAddress235C = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_Z_nn, 0xAA55);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // size = length + length2 + 4;                  // +4 for blocksize, ref and type,
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-5));
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-10));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-9));
+        EmitWord  (OpCode.LD_DE_nn, 0x000F);                 // size = (size + 15) & 0xFFF0;                  // round up to nearest 16 byte boundary
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_A_L);
+        EmitByte  (OpCode.AND_A_n, 0xF0);
+        Emit      (OpCode.LD_L_A);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-10));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-9));
+        EmitWord  (OpCode.LD_DE_nn, 0x000F);                 // strExpanded = GC.Create(Type.String, size-4); // -4 (header added by Create and Allocate)
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-10));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-9));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.AND_A);
+        Emit      (OpCode.SBC_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-8));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-7));
+        Emit      (OpCode.PUSH_IY);                          // source      = str + siChars;   string.hs:113
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-14));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-13));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // destination = strExpanded + siChars;
+        EmitOffset(OpCode.LD_H_iIY_d, int(-7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-16));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-15));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // for (i=0; i < length; i++)     string.hs:115
+        EmitOffset(OpCode.LD_iIY_d_E, int(-12));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-11));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-12));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-11));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-3));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x0134);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(56));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-16));             // WriteByte(destination, ReadByte(source));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-15));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-14));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-13));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.INC_iIY_d, int(-16));              // destination++;                 string.hs:118
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-15));
+        EmitOffset(OpCode.INC_iIY_d, int(-14));              // source++;                      string.hs:119
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-13));
+        EmitOffset(OpCode.INC_iIY_d, int(-12));              // }                              string.hs:120
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-11));
+        EmitOffset(OpCode.JR_e, int(-79));
+        Emit      (OpCode.PUSH_IY);                          // GC.Release(str);               string.hs:121
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCRelease"));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-8));              // str = strExpanded;             string.hs:122
+        EmitOffset(OpCode.LD_D_iIY_d, int(-7));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_IY);
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIX_d_E, int(0));
+        EmitOffset(OpCode.LD_iIX_d_D, int(1));
+        PatchByte(jumpAddress235C+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress235C+1, byte(CurrentAddress >> 8));
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // source      = append + siChars;
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-14));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-13));
+        Emit      (OpCode.PUSH_IY);                          // destination = str + siChars + length;
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-16));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-15));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // for (i=0; i < length2; i++)    string.hs:126
+        EmitOffset(OpCode.LD_iIY_d_E, int(-12));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-11));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-12));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-11));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-5));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x0134);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(56));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-16));             // WriteByte(destination, ReadByte(source));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-15));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-14));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-13));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.INC_iIY_d, int(-16));              // destination++;                 string.hs:129
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-15));
+        EmitOffset(OpCode.INC_iIY_d, int(-14));              // source++;                      string.hs:130
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-13));
+        EmitOffset(OpCode.INC_iIY_d, int(-12));              // }                              string.hs:131
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-11));
+        EmitOffset(OpCode.JR_e, int(-79));
+        Emit      (OpCode.PUSH_IY);                          // WriteWord(str + siLength, length+length2);
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-5));
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        EmitOffset(OpCode.LD_iIX_d_H, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitStringBuildFront()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_IY);                          // uint capacity = ReadWord(str-2) - 4;
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.AND_A);
+        Emit      (OpCode.SBC_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.AND_A);
+        Emit      (OpCode.SBC_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint length = ReadWord(str+siLength);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_IY);
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint strExpanded;              string.hs:138
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);                          // uint i;                        string.hs:139
+        Emit      (OpCode.PUSH_DE);                          // uint source;                   string.hs:140
+        Emit      (OpCode.PUSH_DE);                          // uint destination;              string.hs:141
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // if (length >= capacity)        string.hs:142
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-1));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x017E);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        uint jumpAddress25D8 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_Z_nn, 0xAA55);
+        EmitWord  (OpCode.LD_DE_nn, 0x000F);                 // strExpanded = GC.Create(Type.String, capacity + 16);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0010);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        Emit      (OpCode.PUSH_IY);                          // source      = str + siChars;   string.hs:146
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-10));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-9));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // destination = strExpanded + siChars;
+        EmitOffset(OpCode.LD_H_iIY_d, int(-5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-12));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-11));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // for (i=0; i < length; i++)     string.hs:148
+        EmitOffset(OpCode.LD_iIY_d_E, int(-8));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-7));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-8));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-7));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-3));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x0134);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(56));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-12));             // WriteByte(destination, ReadByte(source));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-11));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-10));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-9));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.INC_iIY_d, int(-12));              // destination++;                 string.hs:151
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-11));
+        EmitOffset(OpCode.INC_iIY_d, int(-10));              // source++;                      string.hs:152
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-9));
+        EmitOffset(OpCode.INC_iIY_d, int(-8));               // }                              string.hs:153
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-7));
+        EmitOffset(OpCode.JR_e, int(-79));
+        Emit      (OpCode.PUSH_IY);                          // GC.Release(str);               string.hs:154
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCRelease"));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // str = strExpanded;             string.hs:155
+        EmitOffset(OpCode.LD_D_iIY_d, int(-5));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_IY);
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIX_d_E, int(0));
+        EmitOffset(OpCode.LD_iIX_d_D, int(1));
+        PatchByte(jumpAddress25D8+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress25D8+1, byte(CurrentAddress >> 8));
+        Emit      (OpCode.PUSH_IY);                          // source      = str + siChars;   string.hs:157
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-10));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-9));
+        Emit      (OpCode.PUSH_IY);                          // destination = str + siChars + 1;
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-12));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-11));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // for (i=0; i < length; i++)     string.hs:159
+        EmitOffset(OpCode.LD_iIY_d_E, int(-8));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-7));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-8));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-7));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-3));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x0134);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(40));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-12));             // WriteByte(destination, ReadByte(source));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-11));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-10));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-9));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.INC_iIY_d, int(-8));               // }                              string.hs:162
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-7));
+        EmitOffset(OpCode.JR_e, int(-63));
+        Emit      (OpCode.PUSH_IY);                          // WriteByte(str + siChars,  byte(append));
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.PUSH_IY);                          // WriteWord(str + siLength, length+1);
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0006);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        EmitOffset(OpCode.LD_iIX_d_H, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitStringBuildClear()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        Emit      (OpCode.PUSH_IY);                          // WriteWord(str + siLength, 0);  string.hs:168
+        Emit      (OpCode.POP_IX);
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_IX_DE);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_IX);
+        EmitOffset(OpCode.LD_E_iIX_d, int(0));
+        EmitOffset(OpCode.LD_D_iIX_d, int(1));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitWord  (OpCode.LD_HL_nn, 0x0000);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        EmitOffset(OpCode.LD_iIX_d_H, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitArrayGetCount()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // return ReadWord(this+aiCount); array.hs:25
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitArrayGetItem()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // uint value;                    array.hs:29
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-8));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-7));
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // if (index >= count)            array.hs:33
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-8));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-7));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x017E);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(10));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);                 // Die(0x02); // array index out of range
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_HL);
+        Emit      (OpCode.LD_A_L);
+        EmitWord  (OpCode.LD_inn_A, 0xFF02);
+        Emit      (OpCode.HALT);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // Type etype = Type(ReadByte(this+aiType));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-10));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-9));
+        EmitWord  (OpCode.LD_BC_nn, 0x0004);                 // if ((etype == Type.UInt) || (etype == Type.Int))
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(32));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-10));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-9));
+        EmitWord  (OpCode.LD_BC_nn, 0x0002);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_BC);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_C);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.OR_A_B);
+        Emit      (OpCode.LD_H_A);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(44));
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // value = ReadWord(this + aiElements + (index << 1));
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0001);
+        EmitWord  (OpCode.CALL_nn, 0x01A1);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        uint jumpAddress28E3 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              array.hs:42
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // value = ReadByte(this + aiElements + index);
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // if (etype == Type.Bool)        array.hs:46
+        EmitOffset(OpCode.LD_H_iIY_d, int(-9));
+        EmitWord  (OpCode.LD_BC_nn, 0x0006);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(116));
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // bit = index & 0x07;            array.hs:48
+        Emit      (OpCode.LD_A_L);
+        EmitByte  (OpCode.AND_A_n, 0x07);
+        Emit      (OpCode.LD_L_A);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // mask = bitMasks[bit];          array.hs:49
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0008);
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0003);
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.CALL_nn, 0x18E6);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.INC_iIX_d, int(1));
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.CALL_nn, 0x1A0A);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.PUSH_IX);
+        EmitWord  (OpCode.CALL_nn, 0x0DE0);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.EX_iSP_IX);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-2));              // value = (value & mask != 0) ? 1 : 0;
+        EmitOffset(OpCode.LD_D_iIY_d, int(-1));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-5));
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.AND_A_C);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.AND_A_B);
+        Emit      (OpCode.LD_H_A);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(6));
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.JR_e, int(4));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_E, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-1));
+        PatchByte(jumpAddress28E3+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress28E3+1, byte(CurrentAddress >> 8));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return value;                  array.hs:53
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitArraySetItem()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(8));               // uint bit;                      array.hs:57
+        EmitOffset(OpCode.LD_H_iIY_d, int(9));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        EmitOffset(OpCode.LD_E_iIY_d, int(6));               // if (index >= count)            array.hs:60
+        EmitOffset(OpCode.LD_D_iIY_d, int(7));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-5));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x017E);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(10));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);                 // Die(0x02); // array index out of range
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_HL);
+        Emit      (OpCode.LD_A_L);
+        EmitWord  (OpCode.LD_inn_A, 0xFF02);
+        Emit      (OpCode.HALT);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // Type etype = Type(ReadByte(this+aiType));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(8));
+        EmitOffset(OpCode.LD_H_iIY_d, int(9));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-8));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-7));
+        EmitWord  (OpCode.LD_BC_nn, 0x0004);                 // if ((etype == Type.UInt) || (etype == Type.Int))
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(32));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-8));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-7));
+        EmitWord  (OpCode.LD_BC_nn, 0x0002);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_BC);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_C);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.OR_A_B);
+        Emit      (OpCode.LD_H_A);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(52));
+        EmitOffset(OpCode.LD_L_iIY_d, int(8));               // WriteWord(this + aiElements + (index << 1), value);
+        EmitOffset(OpCode.LD_H_iIY_d, int(9));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_BC_nn, 0x0001);
+        EmitWord  (OpCode.CALL_nn, 0x01A1);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        EmitOffset(OpCode.LD_iIX_d_H, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // }                              array.hs:68
+        EmitOffset(OpCode.LD_H_iIY_d, int(-7));
+        EmitWord  (OpCode.LD_BC_nn, 0x0006);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        uint jumpAddress2A8A = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_Z_nn, 0xAA55);
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // bit = index & 0x07;            array.hs:73
+        Emit      (OpCode.LD_A_L);
+        EmitByte  (OpCode.AND_A_n, 0x07);
+        Emit      (OpCode.LD_L_A);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // mask = bitMasks[bit];          array.hs:74
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0008);
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0003);
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.CALL_nn, 0x18E6);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.INC_iIX_d, int(1));
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-1));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.INC_iIX_d, int(1));
+        Emit      (OpCode.EX_iSP_IX);
+        EmitWord  (OpCode.CALL_nn, 0x1A0A);
+        Emit      (OpCode.EX_iSP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.PUSH_IX);
+        EmitWord  (OpCode.CALL_nn, 0x0DE0);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.EX_iSP_IX);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.PUSH_IX);
+        EmitWord  (OpCode.CALL_nn, 0x0DE0);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.EX_iSP_IX);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // if (value == 0)                array.hs:75
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(56));
+        EmitOffset(OpCode.LD_L_iIY_d, int(8));               // value = ReadByte(this + aiElements + index) & ~mask;
+        EmitOffset(OpCode.LD_H_iIY_d, int(9));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(7));
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.CPL);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.CPL);
+        Emit      (OpCode.LD_H_A);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.POP_BC);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.AND_A_C);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.AND_A_B);
+        Emit      (OpCode.LD_H_A);
+        EmitOffset(OpCode.LD_iIY_d_L, int(4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(5));
+        EmitOffset(OpCode.JR_e, int(38));                    // }                              array.hs:78
+        EmitOffset(OpCode.LD_L_iIY_d, int(8));               // value = ReadByte(this + aiElements + index) | mask;
+        EmitOffset(OpCode.LD_H_iIY_d, int(9));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(7));
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-3));
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_C);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.OR_A_B);
+        Emit      (OpCode.LD_H_A);
+        EmitOffset(OpCode.LD_iIY_d_L, int(4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(5));
+        PatchByte(jumpAddress2A8A+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress2A8A+1, byte(CurrentAddress >> 8));
+        EmitOffset(OpCode.LD_L_iIY_d, int(8));               // WriteByte(this + aiElements + index, byte(value & 0xFF));
+        EmitOffset(OpCode.LD_H_iIY_d, int(9));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(7));
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitArrayNew()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(6));               // uint size = count;             array.hs:89
+        EmitOffset(OpCode.LD_D_iIY_d, int(7));
+        EmitOffset(OpCode.LD_iIY_d_E, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-1));
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // if ((elementType == Type.UInt) || (elementType == Type.Int))
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0004);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(32));
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0002);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_BC);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_C);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.OR_A_B);
+        Emit      (OpCode.LD_H_A);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(20));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // size = size << 2;              array.hs:92
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        EmitWord  (OpCode.LD_BC_nn, 0x0002);
+        EmitWord  (OpCode.CALL_nn, 0x01A1);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitOffset(OpCode.JR_e, int(73));                    // }                              array.hs:93
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // else if (elementType == Type.Bool)
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0006);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(45));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // size = (size >> 3) + ((size & 0x0007 != 0) ? 1 : 0);
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        EmitWord  (OpCode.LD_BC_nn, 0x0003);
+        EmitWord  (OpCode.CALL_nn, 0x01AA);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));
+        Emit      (OpCode.LD_A_L);
+        EmitByte  (OpCode.AND_A_n, 0x07);
+        Emit      (OpCode.LD_L_A);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(6));
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.JR_e, int(4));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // }                              array.hs:97
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x0012);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0003);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);                 // WriteWord(this+aiType, byte(elementType));
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        EmitOffset(OpCode.LD_iIX_d_H, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // WriteWord(this+aiCount, count);
+        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        EmitOffset(OpCode.LD_iIX_d_H, int(1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // return this;                   array.hs:101
+        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitArrayNewFromConstant()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // if ((elementType != Type.Byte) && (elementType != Type.Char))
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0003);
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x00);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(32));
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0001);
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x00);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_BC);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.AND_A_C);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.AND_A_B);
+        Emit      (OpCode.LD_H_A);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(10));
+        EmitWord  (OpCode.LD_DE_nn, 0x000A);                 // Die(0x0A);                     array.hs:107
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_HL);
+        Emit      (OpCode.LD_A_L);
+        EmitWord  (OpCode.LD_inn_A, 0xFF02);
+        Emit      (OpCode.HALT);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint this = Array.New(length, elementType);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(7));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.CALL_nn, GetAddress("ArrayNew"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint destination = this + aiElements;
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint source      = ConstantStart + location;
+        Emit      (OpCode.PUSH_DE);
+        EmitWord  (OpCode.LD_DE_nn, 0x000A);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(8));
+        EmitOffset(OpCode.LD_D_iIY_d, int(9));
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // uint i;                        array.hs:112
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_iIY_d_E, int(-8));              // for (i=0; i < length; i++)     array.hs:113
+        EmitOffset(OpCode.LD_iIY_d_D, int(-7));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-8));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-7));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(6));
+        EmitOffset(OpCode.LD_B_iIY_d, int(7));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, 0x0134);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(56));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // WriteByte(destination, ReadByte(source));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-3));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_D_iIY_d, int(-5));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IX);
+        Emit      (OpCode.PUSH_IX);
+        EmitOffset(OpCode.LD_iIX_d_L, int(0));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.INC_iIY_d, int(-4));               // destination++;                 array.hs:116
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-3));
+        EmitOffset(OpCode.INC_iIY_d, int(-6));               // source++;                      array.hs:117
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-5));
+        EmitOffset(OpCode.INC_iIY_d, int(-8));               // }                              array.hs:118
+        EmitOffset(OpCode.JR_NZ_e, int(3));
+        EmitOffset(OpCode.INC_iIY_d, int(-7));
+        EmitOffset(OpCode.JR_e, int(-79));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return this;                   array.hs:119
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
     EmitMemoryAvailable()
     {
         Emit      (OpCode.PUSH_IY);
@@ -8,7 +1944,7 @@ unit Z80LibraryGenerated
         EmitWord  (OpCode.LD_DE_nn, 0x0000);
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.PUSH_DE);
-        EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // uint available;                memory.hs:29
+        EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // uint available;                memory.hs:14
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_IX);
         EmitOffset(OpCode.LD_L_iIX_d, int(0));
@@ -16,12 +1952,12 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-4));
         EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // if (0 == current)              memory.hs:33
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // if (0 == current)              memory.hs:18
         EmitOffset(OpCode.LD_H_iIY_d, int(-3));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_Z_e, int(65));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-2));              // break;                         memory.hs:35
+        EmitOffset(OpCode.LD_E_iIY_d, int(-2));              // break;                         memory.hs:20
         EmitOffset(OpCode.LD_D_iIY_d, int(-1));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_E_iIY_d, int(-4));
@@ -49,8 +1985,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-4));
         EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        EmitOffset(OpCode.JR_e, int(-75));                   // }                              memory.hs:39
-        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return available;              memory.hs:40
+        EmitOffset(OpCode.JR_e, int(-75));                   // }                              memory.hs:24
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return available;              memory.hs:25
         EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
@@ -66,7 +2002,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.PUSH_DE);
-        EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // uint available;                memory.hs:45
+        EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // uint available;                memory.hs:30
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_IX);
         EmitOffset(OpCode.LD_L_iIX_d, int(0));
@@ -76,12 +2012,12 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_E, int(-6));
         EmitOffset(OpCode.LD_iIY_d_D, int(-5));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // if (0 == current)              memory.hs:50
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // if (0 == current)              memory.hs:35
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_Z_e, int(87));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // break;                         memory.hs:52
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // break;                         memory.hs:37
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         EmitWord  (OpCode.LD_DE_nn, 0x0000);
         Emit      (OpCode.ADD_HL_DE);
@@ -94,7 +2030,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_E, int(-4));
         EmitOffset(OpCode.LD_iIY_d_D, int(-3));
-        Emit      (OpCode.PUSH_DE);                          // if (size > available)          memory.hs:55
+        Emit      (OpCode.PUSH_DE);                          // if (size > available)          memory.hs:40
         EmitOffset(OpCode.LD_C_iIY_d, int(-2));
         EmitOffset(OpCode.LD_B_iIY_d, int(-1));
         Emit      (OpCode.POP_HL);
@@ -104,7 +2040,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_Z_e, int(12));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // available = size;              memory.hs:57
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // available = size;              memory.hs:42
         EmitOffset(OpCode.LD_D_iIY_d, int(-3));
         EmitOffset(OpCode.LD_iIY_d_E, int(-2));
         EmitOffset(OpCode.LD_iIY_d_D, int(-1));
@@ -121,13 +2057,13 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_E, int(-6));
         EmitOffset(OpCode.LD_iIY_d_D, int(-5));
-        EmitOffset(OpCode.JR_e, int(-97));                   // }                              memory.hs:60
-        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // if (available > 0)             memory.hs:61
+        EmitOffset(OpCode.JR_e, int(-97));                   // }                              memory.hs:45
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // if (available > 0)             memory.hs:46
         EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_Z_e, int(26));
-        EmitOffset(OpCode.DEC_iIY_d, int(-2));               // available--; available--;      memory.hs:63
+        EmitOffset(OpCode.DEC_iIY_d, int(-2));               // available--; available--;      memory.hs:48
         EmitByte  (OpCode.LD_A_n, 0xFF);
         EmitOffset(OpCode.CP_A_iIY_d, int(-2));
         EmitOffset(OpCode.JR_NZ_e, int(3));
@@ -137,7 +2073,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.CP_A_iIY_d, int(-2));
         EmitOffset(OpCode.JR_NZ_e, int(3));
         EmitOffset(OpCode.DEC_iIY_d, int(-1));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return available;              memory.hs:65
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return available;              memory.hs:50
         EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
@@ -154,18 +2090,18 @@ unit Z80LibraryGenerated
         EmitByte  (OpCode.LD_B_n, 0x0B);
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.DJNZ_e, int(-3));
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // uint address;                  memory.hs:70
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // uint address;                  memory.hs:55
         EmitOffset(OpCode.LD_H_iIY_d, int(5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_NZ_e, int(10));
-        EmitWord  (OpCode.LD_DE_nn, 0x000C);                 // Die(0x0C);                     memory.hs:86
+        EmitWord  (OpCode.LD_DE_nn, 0x000C);                 // Die(0x0C);                     memory.hs:71
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_HL);
         Emit      (OpCode.LD_A_L);
         EmitWord  (OpCode.LD_inn_A, 0xFF02);
         Emit      (OpCode.HALT);
-        EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // current = ReadWord(cFreeList); memory.hs:89
+        EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // current = ReadWord(cFreeList); memory.hs:74
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_IX);
         EmitOffset(OpCode.LD_L_iIX_d, int(0));
@@ -179,7 +2115,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.INC_iIY_d, int(4));
         EmitOffset(OpCode.JR_NZ_e, int(3));
         EmitOffset(OpCode.INC_iIY_d, int(5));
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // if (size < 6)                  memory.hs:91
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // if (size < 6)                  memory.hs:76
         EmitOffset(OpCode.LD_H_iIY_d, int(5));
         EmitWord  (OpCode.LD_BC_nn, 0x0006);
         EmitWord  (OpCode.CALL_nn, 0x0134);
@@ -191,13 +2127,13 @@ unit Z80LibraryGenerated
         EmitWord  (OpCode.LD_DE_nn, 0x0006);                 // size = 6; // minimum size for participation in free list
         EmitOffset(OpCode.LD_iIY_d_E, int(4));
         EmitOffset(OpCode.LD_iIY_d_D, int(5));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-12));             // if (0 == current)              memory.hs:97
+        EmitOffset(OpCode.LD_L_iIY_d, int(-12));             // if (0 == current)              memory.hs:82
         EmitOffset(OpCode.LD_H_iIY_d, int(-11));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress185B = CurrentAddress + 1;
+        uint jumpAddress2F32 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
-        EmitOffset(OpCode.LD_E_iIY_d, int(-12));             // break;                         memory.hs:99
+        EmitOffset(OpCode.LD_E_iIY_d, int(-12));             // break;                         memory.hs:84
         EmitOffset(OpCode.LD_D_iIY_d, int(-11));
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_IX);
@@ -228,7 +2164,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-18));
         EmitOffset(OpCode.LD_iIY_d_H, int(-17));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-14));             // if ((currentSize >= size) &&   memory.hs:105
+        EmitOffset(OpCode.LD_E_iIY_d, int(-14));             // if ((currentSize >= size) &&   memory.hs:90
         EmitOffset(OpCode.LD_D_iIY_d, int(-13));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_C_iIY_d, int(4));
@@ -288,23 +2224,23 @@ unit Z80LibraryGenerated
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_Z_e, int(48));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-12));             // best = current;                memory.hs:110
+        EmitOffset(OpCode.LD_E_iIY_d, int(-12));             // best = current;                memory.hs:95
         EmitOffset(OpCode.LD_D_iIY_d, int(-11));
         EmitOffset(OpCode.LD_iIY_d_E, int(-4));
         EmitOffset(OpCode.LD_iIY_d_D, int(-3));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-14));             // bestSize = currentSize;        memory.hs:111
+        EmitOffset(OpCode.LD_E_iIY_d, int(-14));             // bestSize = currentSize;        memory.hs:96
         EmitOffset(OpCode.LD_D_iIY_d, int(-13));
         EmitOffset(OpCode.LD_iIY_d_E, int(-6));
         EmitOffset(OpCode.LD_iIY_d_D, int(-5));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-16));             // bestNext = currentNext;        memory.hs:112
+        EmitOffset(OpCode.LD_E_iIY_d, int(-16));             // bestNext = currentNext;        memory.hs:97
         EmitOffset(OpCode.LD_D_iIY_d, int(-15));
         EmitOffset(OpCode.LD_iIY_d_E, int(-8));
         EmitOffset(OpCode.LD_iIY_d_D, int(-7));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-18));             // bestPrev = currentPrev;        memory.hs:113
+        EmitOffset(OpCode.LD_E_iIY_d, int(-18));             // bestPrev = currentPrev;        memory.hs:98
         EmitOffset(OpCode.LD_D_iIY_d, int(-17));
         EmitOffset(OpCode.LD_iIY_d_E, int(-10));
         EmitOffset(OpCode.LD_iIY_d_D, int(-9));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // if (bestSize == size)          memory.hs:115
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // if (bestSize == size)          memory.hs:100
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_C_iIY_d, int(4));
@@ -327,17 +2263,17 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_D_iIY_d, int(-15));
         EmitOffset(OpCode.LD_iIY_d_E, int(-12));
         EmitOffset(OpCode.LD_iIY_d_D, int(-11));
-        uint jumpAddress1963 = CurrentAddress - 272;
-        EmitWord  (OpCode.JP_nn, jumpAddress1963);           // }                              memory.hs:120
-        PatchByte(jumpAddress185B+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress185B+1, byte(CurrentAddress >> 8));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // address = best + 2;            memory.hs:121
+        uint jumpAddress303A = CurrentAddress - 272;
+        EmitWord  (OpCode.JP_nn, jumpAddress303A);           // }                              memory.hs:105
+        PatchByte(jumpAddress2F32+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress2F32+1, byte(CurrentAddress >> 8));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // address = best + 2;            memory.hs:106
         EmitOffset(OpCode.LD_H_iIY_d, int(-3));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
         Emit      (OpCode.ADD_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-2));
         EmitOffset(OpCode.LD_iIY_d_H, int(-1));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // if (bestSize >= size + 6)      memory.hs:122
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // if (bestSize >= size + 6)      memory.hs:107
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_L_iIY_d, int(4));
@@ -352,9 +2288,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1991 = CurrentAddress + 1;
+        uint jumpAddress3068 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
-        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // WriteWord(best, size);         memory.hs:126
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // WriteWord(best, size);         memory.hs:111
         EmitOffset(OpCode.LD_D_iIY_d, int(-3));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_L_iIY_d, int(4));
@@ -366,7 +2302,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // newHole = best + size;         memory.hs:129
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // newHole = best + size;         memory.hs:114
         EmitOffset(OpCode.LD_D_iIY_d, int(-3));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_E_iIY_d, int(4));
@@ -375,7 +2311,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.ADD_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-20));
         EmitOffset(OpCode.LD_iIY_d_H, int(-19));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // newHoleSize = bestSize - size; memory.hs:130
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // newHoleSize = bestSize - size; memory.hs:115
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_E_iIY_d, int(4));
@@ -397,12 +2333,12 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // if (0 == bestPrev)             memory.hs:133
+        EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // if (0 == bestPrev)             memory.hs:118
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_NZ_e, int(124));
-        EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // WriteWord(cFreeList, newHole); memory.hs:135
+        EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // WriteWord(cFreeList, newHole); memory.hs:120
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_L_iIY_d, int(-20));
         EmitOffset(OpCode.LD_H_iIY_d, int(-19));
@@ -440,11 +2376,11 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // if (0 != bestNext)             memory.hs:138
+        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // if (0 != bestNext)             memory.hs:123
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1A56 = CurrentAddress + 1;
+        uint jumpAddress312D = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // WriteWord(bestNext+4, newHole);
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
@@ -460,8 +2396,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        uint jumpAddress1A77 = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:142
+        uint jumpAddress314E = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:127
         EmitOffset(OpCode.LD_L_iIY_d, int(-20));             // WriteWord(newHole+2,  bestNext);
         EmitOffset(OpCode.LD_H_iIY_d, int(-19));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -504,11 +2440,11 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // if (0 != bestNext)             memory.hs:149
+        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // if (0 != bestNext)             memory.hs:134
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1ADC = CurrentAddress + 1;
+        uint jumpAddress31B3 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // WriteWord(bestNext+4, newHole);
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
@@ -524,15 +2460,15 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress1A56+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1A56+1, byte(CurrentAddress >> 8));
-        PatchByte(jumpAddress1A77+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1A77+1, byte(CurrentAddress >> 8));
-        uint jumpAddress1AFD = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:154
-        PatchByte(jumpAddress1991+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1991+1, byte(CurrentAddress >> 8));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // else if (bestSize >= size)     memory.hs:155
+        PatchByte(jumpAddress312D+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress312D+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress314E+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress314E+1, byte(CurrentAddress >> 8));
+        uint jumpAddress31D4 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:139
+        PatchByte(jumpAddress3068+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress3068+1, byte(CurrentAddress >> 8));
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // else if (bestSize >= size)     memory.hs:140
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_C_iIY_d, int(4));
@@ -543,9 +2479,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1B15 = CurrentAddress + 1;
+        uint jumpAddress31EC = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
-        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // WriteWord(best, bestSize);     memory.hs:162
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // WriteWord(best, bestSize);     memory.hs:147
         EmitOffset(OpCode.LD_D_iIY_d, int(-3));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_L_iIY_d, int(-6));
@@ -557,7 +2493,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // if (0 == bestPrev)             memory.hs:164
+        EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // if (0 == bestPrev)             memory.hs:149
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
@@ -573,7 +2509,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // if (0 != bestNext)             memory.hs:168
+        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // if (0 != bestNext)             memory.hs:153
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
@@ -595,7 +2531,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.JR_e, int(82));                    // }                              memory.hs:172
+        EmitOffset(OpCode.JR_e, int(82));                    // }                              memory.hs:157
         EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // WriteWord(bestPrev+2, bestNext);
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -610,7 +2546,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // if (0 != bestNext)             memory.hs:176
+        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // if (0 != bestNext)             memory.hs:161
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
@@ -629,20 +2565,20 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.JR_e, int(10));                    // }                              memory.hs:181
-        PatchByte(jumpAddress1B15+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1B15+1, byte(CurrentAddress >> 8));
-        EmitWord  (OpCode.LD_DE_nn, 0x000C);                 // Die(0x0C);                     memory.hs:184
+        EmitOffset(OpCode.JR_e, int(10));                    // }                              memory.hs:166
+        PatchByte(jumpAddress31EC+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress31EC+1, byte(CurrentAddress >> 8));
+        EmitWord  (OpCode.LD_DE_nn, 0x000C);                 // Die(0x0C);                     memory.hs:169
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_HL);
         Emit      (OpCode.LD_A_L);
         EmitWord  (OpCode.LD_inn_A, 0xFF02);
         Emit      (OpCode.HALT);
-        PatchByte(jumpAddress1ADC+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1ADC+1, byte(CurrentAddress >> 8));
-        PatchByte(jumpAddress1AFD+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1AFD+1, byte(CurrentAddress >> 8));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // break;                         memory.hs:187
+        PatchByte(jumpAddress31B3+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress31B3+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress31D4+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress31D4+1, byte(CurrentAddress >> 8));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // break;                         memory.hs:172
         EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
@@ -667,18 +2603,18 @@ unit Z80LibraryGenerated
         EmitByte  (OpCode.LD_B_n, 0x0E);
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.DJNZ_e, int(-3));
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // uint blockAddress;             memory.hs:193
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // uint blockAddress;             memory.hs:178
         EmitOffset(OpCode.LD_H_iIY_d, int(5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_NZ_e, int(10));
-        EmitWord  (OpCode.LD_DE_nn, 0x000B);                 // Die(0x0B);                     memory.hs:212
+        EmitWord  (OpCode.LD_DE_nn, 0x000B);                 // Die(0x0B);                     memory.hs:197
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_HL);
         Emit      (OpCode.LD_A_L);
         EmitWord  (OpCode.LD_inn_A, 0xFF02);
         Emit      (OpCode.HALT);
-        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // break;                         memory.hs:213
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // break;                         memory.hs:198
         EmitOffset(OpCode.LD_D_iIY_d, int(5));
         Emit      (OpCode.PUSH_DE);
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -704,12 +2640,12 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-6));
         EmitOffset(OpCode.LD_iIY_d_H, int(-5));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // if (0 == current)              memory.hs:221
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // if (0 == current)              memory.hs:206
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_Z_e, int(63));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // break;                         memory.hs:223
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // break;                         memory.hs:208
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_C_iIY_d, int(4));
@@ -721,7 +2657,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_NZ_e, int(40));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // break;                         memory.hs:228
+        EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // break;                         memory.hs:213
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         EmitOffset(OpCode.LD_iIY_d_E, int(-8));
         EmitOffset(OpCode.LD_iIY_d_D, int(-7));
@@ -736,18 +2672,18 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-6));
         EmitOffset(OpCode.LD_iIY_d_H, int(-5));
-        EmitOffset(OpCode.JR_e, int(-73));                   // }                              memory.hs:232
-        EmitOffset(OpCode.LD_E_iIY_d, int(-8));              // currentPrev = previous;        memory.hs:233
+        EmitOffset(OpCode.JR_e, int(-73));                   // }                              memory.hs:217
+        EmitOffset(OpCode.LD_E_iIY_d, int(-8));              // currentPrev = previous;        memory.hs:218
         EmitOffset(OpCode.LD_D_iIY_d, int(-7));
         EmitOffset(OpCode.LD_iIY_d_E, int(-10));
         EmitOffset(OpCode.LD_iIY_d_D, int(-9));
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // currentSize = 0;               memory.hs:234
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // currentSize = 0;               memory.hs:219
         EmitOffset(OpCode.LD_iIY_d_E, int(-12));
         EmitOffset(OpCode.LD_iIY_d_D, int(-11));
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // currentNext = 0;               memory.hs:235
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // currentNext = 0;               memory.hs:220
         EmitOffset(OpCode.LD_iIY_d_E, int(-14));
         EmitOffset(OpCode.LD_iIY_d_D, int(-13));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // if (0 != current)              memory.hs:236
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // if (0 != current)              memory.hs:221
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
@@ -772,7 +2708,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-14));
         EmitOffset(OpCode.LD_iIY_d_H, int(-13));
-        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // freeSlot = address-2;          memory.hs:243
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // freeSlot = address-2;          memory.hs:228
         EmitOffset(OpCode.LD_D_iIY_d, int(5));
         Emit      (OpCode.PUSH_DE);
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -783,11 +2719,11 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.LD_iIY_d_E, int(-16));
         EmitOffset(OpCode.LD_iIY_d_D, int(-15));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // if (0 == currentPrev)          memory.hs:244
+        EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // if (0 == currentPrev)          memory.hs:229
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1D05 = CurrentAddress + 1;
+        uint jumpAddress33DC = CurrentAddress + 1;
         EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-16));             // WriteWord(freeSlot+2, current);
         EmitOffset(OpCode.LD_H_iIY_d, int(-15));
@@ -803,7 +2739,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-16));             // WriteWord(freeSlot+4, 0);      memory.hs:248
+        EmitOffset(OpCode.LD_L_iIY_d, int(-16));             // WriteWord(freeSlot+4, 0);      memory.hs:233
         EmitOffset(OpCode.LD_H_iIY_d, int(-15));
         EmitWord  (OpCode.LD_DE_nn, 0x0004);
         Emit      (OpCode.ADD_HL_DE);
@@ -851,9 +2787,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.SBC_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-18));
         EmitOffset(OpCode.LD_iIY_d_H, int(-17));
-        Emit      (OpCode.LD_A_L);                           // if (0 == gapFront)             memory.hs:251
+        Emit      (OpCode.LD_A_L);                           // if (0 == gapFront)             memory.hs:236
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1D8A = CurrentAddress + 1;
+        uint jumpAddress3461 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // nextSize = ReadWord(ReadWord(cFreeList));
         Emit      (OpCode.PUSH_DE);
@@ -914,7 +2850,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-22));             // if (0 != nextNext)             memory.hs:258
+        EmitOffset(OpCode.LD_L_iIY_d, int(-22));             // if (0 != nextNext)             memory.hs:243
         EmitOffset(OpCode.LD_H_iIY_d, int(-21));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
@@ -933,8 +2869,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress1D8A+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1D8A+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress3461+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress3461+1, byte(CurrentAddress >> 8));
         EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // WriteWord(cFreeList, freeSlot);
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_L_iIY_d, int(-16));
@@ -962,13 +2898,13 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        PatchByte(jumpAddress1D05+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1D05+1, byte(CurrentAddress >> 8));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // }                              memory.hs:264
+        PatchByte(jumpAddress33DC+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress33DC+1, byte(CurrentAddress >> 8));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // }                              memory.hs:249
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1E64 = CurrentAddress + 1;
+        uint jumpAddress353B = CurrentAddress + 1;
         EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // WriteWord(currentPrev+2, freeSlot);
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
@@ -998,7 +2934,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-16));             // WriteWord(freeSlot   +2, 0);   memory.hs:271
+        EmitOffset(OpCode.LD_L_iIY_d, int(-16));             // WriteWord(freeSlot   +2, 0);   memory.hs:256
         EmitOffset(OpCode.LD_H_iIY_d, int(-15));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
         Emit      (OpCode.ADD_HL_DE);
@@ -1037,7 +2973,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.SBC_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-26));
         EmitOffset(OpCode.LD_iIY_d_H, int(-25));
-        Emit      (OpCode.LD_A_L);                           // if (0 == gapBack)              memory.hs:274
+        Emit      (OpCode.LD_A_L);                           // if (0 == gapBack)              memory.hs:259
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_NZ_e, int(62));
         EmitOffset(OpCode.LD_E_iIY_d, int(-10));             // WriteWord(currentPrev, prevSize+size);
@@ -1070,7 +3006,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);                           // }                              memory.hs:280
+        Emit      (OpCode.POP_DE);                           // }                              memory.hs:265
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
@@ -1086,8 +3022,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        PatchByte(jumpAddress1E64+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1E64+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress353B+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress353B+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // WriteWord(currentPrev+2, freeSlot);
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -1170,9 +3106,9 @@ unit Z80LibraryGenerated
         Emit      (OpCode.SBC_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-26));
         EmitOffset(OpCode.LD_iIY_d_H, int(-25));
-        Emit      (OpCode.LD_A_L);                           // if (0 == gapBack)              memory.hs:290
+        Emit      (OpCode.LD_A_L);                           // if (0 == gapBack)              memory.hs:275
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1FFB = CurrentAddress + 1;
+        uint jumpAddress36D2 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitOffset(OpCode.LD_E_iIY_d, int(-10));             // WriteWord(currentPrev, prevSize+size);
         EmitOffset(OpCode.LD_D_iIY_d, int(-9));
@@ -1219,19 +3155,19 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_E_iIY_d, int(-10));             // freeSlot = currentPrev;        memory.hs:296
+        EmitOffset(OpCode.LD_E_iIY_d, int(-10));             // freeSlot = currentPrev;        memory.hs:281
         EmitOffset(OpCode.LD_D_iIY_d, int(-9));
         EmitOffset(OpCode.LD_iIY_d_E, int(-16));
         EmitOffset(OpCode.LD_iIY_d_D, int(-15));
-        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // size = prevSize+size;          memory.hs:297
+        EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // size = prevSize+size;          memory.hs:282
         EmitOffset(OpCode.LD_D_iIY_d, int(-3));
         EmitOffset(OpCode.LD_L_iIY_d, int(-24));
         EmitOffset(OpCode.LD_H_iIY_d, int(-23));
         Emit      (OpCode.ADD_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-4));
         EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        PatchByte(jumpAddress1FFB+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1FFB+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress36D2+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress36D2+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // gapNext = current - (freeSlot+size);
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
@@ -1249,7 +3185,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.SBC_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-28));
         EmitOffset(OpCode.LD_iIY_d_H, int(-27));
-        Emit      (OpCode.LD_A_L);                           // if (0 == gapNext)              memory.hs:300
+        Emit      (OpCode.LD_A_L);                           // if (0 == gapNext)              memory.hs:285
         Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_NZ_e, int(122));
         EmitOffset(OpCode.LD_E_iIY_d, int(-16));             // WriteWord(freeSlot, size+currentSize);
@@ -1283,7 +3219,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-14));             // if (0 != currentNext)          memory.hs:305
+        EmitOffset(OpCode.LD_L_iIY_d, int(-14));             // if (0 != currentNext)          memory.hs:290
         EmitOffset(OpCode.LD_H_iIY_d, int(-13));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
@@ -1318,7 +3254,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);
-        Emit      (OpCode.POP_DE);                           // break;                         memory.hs:311
+        Emit      (OpCode.POP_DE);                           // break;                         memory.hs:296
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
@@ -1554,226 +3490,6 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_IY);
-        Emit      (OpCode.RET);
-    }
-    EmitStringNew()
-    {
-        Emit      (OpCode.PUSH_IY);
-        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
-        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.PUSH_DE);
-        EmitWord  (OpCode.LD_DE_nn, 0x000F);                 // uint this = GC.Create(Type.String, 14); // default size is 16 (less block size)
-        Emit      (OpCode.PUSH_DE);
-        EmitWord  (OpCode.LD_DE_nn, 0x000E);
-        Emit      (OpCode.PUSH_DE);
-        EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
-        Emit      (OpCode.POP_DE);                           // return this;                   string.hs:31
-        Emit      (OpCode.POP_IY);
-        Emit      (OpCode.RET);
-    }
-    EmitStringNewFromConstant()
-    {
-        Emit      (OpCode.PUSH_IY);
-        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
-        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // uint a = 0;                    string.hs:35
-        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
-        EmitWord  (OpCode.LD_DE_nn, 0x000A);
-        Emit      (OpCode.ADD_HL_DE);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
-        EmitWord  (OpCode.LD_HL_nn, 0x0000);                 // return 0;                      string.hs:37
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_IY);
-        Emit      (OpCode.RET);
-    }
-    EmitStringGetLength()
-    {
-        Emit      (OpCode.PUSH_IY);
-        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
-        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // return ReadWord(this+siLength);
-        EmitOffset(OpCode.LD_H_iIY_d, int(5));
-        EmitWord  (OpCode.LD_DE_nn, 0x0002);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.EX_iSP_IX);
-        EmitOffset(OpCode.LD_L_iIX_d, int(0));
-        EmitOffset(OpCode.LD_H_iIX_d, int(1));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_IY);
-        Emit      (OpCode.RET);
-    }
-    EmitArrayGetCount()
-    {
-        Emit      (OpCode.PUSH_IY);
-        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
-        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // return ReadWord(this+aiCount); array.hs:28
-        EmitOffset(OpCode.LD_H_iIY_d, int(5));
-        EmitWord  (OpCode.LD_DE_nn, 0x0002);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.EX_iSP_IX);
-        EmitOffset(OpCode.LD_L_iIX_d, int(0));
-        EmitOffset(OpCode.LD_H_iIX_d, int(1));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_IY);
-        Emit      (OpCode.RET);
-    }
-    EmitArrayNew()
-    {
-        Emit      (OpCode.PUSH_IY);
-        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
-        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_E_iIY_d, int(6));               // uint this;                     array.hs:33
-        EmitOffset(OpCode.LD_D_iIY_d, int(7));
-        EmitOffset(OpCode.LD_iIY_d_E, int(-4));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-3));
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // if ((elementType ==Type.UInt) || (elementType ==Type.Int))
-        EmitOffset(OpCode.LD_H_iIY_d, int(5));
-        EmitWord  (OpCode.LD_BC_nn, 0x0004);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.LD_A_B);
-        Emit      (OpCode.CP_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(6));
-        Emit      (OpCode.LD_A_C);
-        Emit      (OpCode.CP_A_L);
-        EmitOffset(OpCode.JR_NZ_e, int(2));
-        EmitByte  (OpCode.LD_E_n, 0x01);
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(32));
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));
-        EmitOffset(OpCode.LD_H_iIY_d, int(5));
-        EmitWord  (OpCode.LD_BC_nn, 0x0002);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.LD_A_B);
-        Emit      (OpCode.CP_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(6));
-        Emit      (OpCode.LD_A_C);
-        Emit      (OpCode.CP_A_L);
-        EmitOffset(OpCode.JR_NZ_e, int(2));
-        EmitByte  (OpCode.LD_E_n, 0x01);
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.POP_BC);
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.OR_A_C);
-        Emit      (OpCode.LD_L_A);
-        Emit      (OpCode.LD_A_H);
-        Emit      (OpCode.OR_A_B);
-        Emit      (OpCode.LD_H_A);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_Z_e, int(20));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // size = size << 2;              array.hs:37
-        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
-        EmitWord  (OpCode.LD_BC_nn, 0x0002);
-        EmitWord  (OpCode.CALL_nn, 0x01A1);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        EmitOffset(OpCode.JR_e, int(50));                    // }                              array.hs:38
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // else if (elementType == Type.Bool)
-        EmitOffset(OpCode.LD_H_iIY_d, int(5));
-        EmitWord  (OpCode.LD_BC_nn, 0x0006);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.LD_A_B);
-        Emit      (OpCode.CP_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(6));
-        Emit      (OpCode.LD_A_C);
-        Emit      (OpCode.CP_A_L);
-        EmitOffset(OpCode.JR_NZ_e, int(2));
-        EmitByte  (OpCode.LD_E_n, 0x01);
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_Z_e, int(22));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // size = (size + 7) >> 3;        array.hs:41
-        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
-        EmitWord  (OpCode.LD_DE_nn, 0x0007);
-        Emit      (OpCode.ADD_HL_DE);
-        EmitWord  (OpCode.LD_BC_nn, 0x0003);
-        EmitWord  (OpCode.CALL_nn, 0x01AA);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        EmitWord  (OpCode.LD_DE_nn, 0x0012);                 // }                              array.hs:42
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-4));
-        EmitOffset(OpCode.LD_H_iIY_d, int(-3));
-        EmitWord  (OpCode.LD_DE_nn, 0x0003);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        EmitWord  (OpCode.CALL_nn, GetAddress("GCCreate"));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
-        EmitWord  (OpCode.LD_DE_nn, 0x0004);                 // WriteWord(this+aiType, byte(elementType));
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));
-        EmitOffset(OpCode.LD_H_iIY_d, int(5));
-        Emit      (OpCode.POP_IX);
-        Emit      (OpCode.PUSH_IX);
-        Emit      (OpCode.PUSH_HL);
-        EmitOffset(OpCode.LD_iIX_d_L, int(0));
-        EmitOffset(OpCode.LD_iIX_d_H, int(1));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // WriteWord(this+aiCount, count);
-        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
-        EmitWord  (OpCode.LD_DE_nn, 0x0002);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        EmitOffset(OpCode.LD_L_iIY_d, int(6));
-        EmitOffset(OpCode.LD_H_iIY_d, int(7));
-        Emit      (OpCode.POP_IX);
-        Emit      (OpCode.PUSH_IX);
-        Emit      (OpCode.PUSH_HL);
-        EmitOffset(OpCode.LD_iIX_d_L, int(0));
-        EmitOffset(OpCode.LD_iIX_d_H, int(1));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return this;                   array.hs:46
-        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_IY);
-        Emit      (OpCode.RET);
-    }
-    EmitArrayNewFromConstant()
-    {
-        Emit      (OpCode.PUSH_IY);
-        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
-        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // uint a = 0;                    array.hs:50
-        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
-        EmitWord  (OpCode.LD_DE_nn, 0x000A);
-        Emit      (OpCode.ADD_HL_DE);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
-        EmitWord  (OpCode.LD_HL_nn, 0x0000);                 // return 0;                      array.hs:52
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_IY);
         Emit      (OpCode.RET);

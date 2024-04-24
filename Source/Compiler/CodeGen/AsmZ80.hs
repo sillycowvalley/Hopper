@@ -5,6 +5,9 @@ unit AsmZ80
     
     const uint InBuffer      = 0xFE00; // 256 byte serial input buffer
     
+    const uint EntryJumpAddress  = 0x0005;
+    const uint ConstantAddress   = 0x0008;
+    
     // global addresses
     const uint SPBPSwapper       = 0xFF00; // 2 bytes
     const uint LastError         = 0xFF02; // 1 byte
@@ -2673,7 +2676,7 @@ unit AsmZ80
     uint GetMethodAddresses(<byte> code, ref <uint,uint> methodFirstAddresses, // <address,index>
                                          ref <uint,uint> methodLastAddresses)  // <index,address>
     {
-        uint entryAddress = code[5] + (code[6] << 8);
+        uint entryAddress = code[EntryJumpAddress] + (code[EntryJumpAddress+1] << 8);
                 
         <uint, uint> methodSizes = Code.GetMethodSizes();
         uint indexMax = 0;

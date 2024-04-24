@@ -228,6 +228,18 @@ program Compile
                     CodeStream.AddInstruction(Instruction.RET, slotsToPop);
                 }
             }
+            
+            if (IsZ80)
+            {
+                <string, string> peekToken = Scanner.Peek();
+                HopperToken tokenType = Token.GetType(peekToken);   
+                if ((BlockDepth() > 2) || (tokenType != HopperToken.RBrace))
+                {
+                    Parser.Error("single point of exit required for Z80 compiler: " + ToString(tokenType) + ", " + (BlockDepth()).ToString());
+                    break;
+                }
+            }
+            
             success = true;
             break;
         }
@@ -2142,9 +2154,9 @@ program Compile
                 Parser.ErrorAtCurrent("';' or '=' expected");
                 break;
             }
-            if (IsCDecl && !DefiningLocals)
+            if (IsZ80 && !DefiningLocals)
             {
-                Parser.ErrorAtCurrent("block local declarations not allowed for CDECL");
+                Parser.ErrorAtCurrent("Z80 compiler does not support block local declarations");
                 break;
                 /*    
                 if (Types.IsArray(variableType))
@@ -2237,8 +2249,15 @@ program Compile
                 }
                 else if (tokenString == "foreach")
                 {
-                    success = compileForEach();
-                    noSemiColon = true;
+                    if (IsZ80)
+                    {
+                        Parser.ErrorAtCurrent("Z80 compiler does not support 'foreach'");
+                    }
+                    else
+                    {
+                        success = compileForEach();
+                        noSemiColon = true;
+                    }
                 }
                 else if (tokenString == "switch")
                 {
@@ -2622,6 +2641,7 @@ program Compile
 
     bool compile()
     {
+        
         <byte> globalCode = initializeGlobals();
         
         bool success = false;
@@ -2639,6 +2659,11 @@ program Compile
             Parser.Reset();
             Directives.New();
             CodeStream.New();
+            if (isMain && IsZ80)
+            {
+                string value = Symbols.GetConstantValue("Array.bitMasks");
+                _ = CodeStream.CreateStringConstant(value);
+            }
             
             if (globalCode.Count != 0)
             {

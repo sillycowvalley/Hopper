@@ -23,6 +23,7 @@ unit CodeStream
     bool noJixInstructions;
     bool peepHole;
     bool isCDecl;
+    bool isZ80;
     
     bool CheckedBuild 
     { 
@@ -39,6 +40,7 @@ unit CodeStream
     bool TargetMCU      { get { return mcuDefined; } }
     bool PeepHole       { get { return peepHole; } }
     bool IsCDecl        { get { return isCDecl; } }
+    bool IsZ80          { get { return isZ80; } }
     
     InitializeSymbolShortcuts()
     {
@@ -52,6 +54,7 @@ unit CodeStream
         mcuDefined        = Symbols.DefineExists("MCU");
         peepHole          = Symbols.DefineExists("PEEPHOLEOPT");
         isCDecl           = Symbols.DefineExists("CDECL") || Symbols.DefineExists("CPU_Z80");
+        isZ80             = Symbols.DefineExists("CPU_Z80");
     }
     bool InUse { get { return currentStream.Count != 0; } } 
     
@@ -273,10 +276,13 @@ unit CodeStream
         
         uint iOverload;
         byte slotsToPop;
+        bool pushR0;
         if (TryGetSysCallMethodIndex(iSysCall, iSysOverload, ref iOverload))
         {
             < < string > > arguments = Symbols.GetOverloadArguments(iOverload);
             slotsToPop = byte(arguments.Count);
+            string returnType = Symbols.GetOverloadReturnType(iOverload);
+            pushR0 = returnType != "void";
         }
         else
         {
@@ -285,27 +291,40 @@ unit CodeStream
             {
                 case 0x00: // String.NewFromConstant
                 {
-                    slotsToPop = 2; // location and length
+                    if (iSysOverload == 0)
+                    {
+                        slotsToPop = 2; // location and length
+                    }
+                    else
+                    {
+                        slotsToPop = 1; // chch   
+                    }
+                    pushR0 = true;
                 }
                 case 0x02: // String.New
                 {
                     slotsToPop = 0; // no arguments
+                    pushR0 = true;
                 }
                 case 0x04: // Array.NewFromConstant
                 {
                     slotsToPop = 3; // location, length and element type
+                    pushR0 = true;
                 }
                 case 0x0A: // String.GetChar
                 {
-                    slotsToPop = 1; // this
+                    slotsToPop = 2; // this, index
+                    pushR0 = true;
                 }
                 case 0x0B: // Array.New
                 {
-                    slotsToPop = 2; // type and count
+                    slotsToPop = 2; // type, count
+                    pushR0 = true;
                 }
                 case 0x0D: // Array.GetItem
                 {
-                    slotsToPop = 2; // this and index
+                    slotsToPop = 2; // this, index
+                    pushR0 = true;
                 }
                 case 0x0E: // Array.SetItem
                 {
@@ -319,12 +338,12 @@ unit CodeStream
                 }
             }
         }
-        string returnType = Symbols.GetOverloadReturnType(iOverload);
+        
         if (slotsToPop != 0)
         {
             CodeStream.AddInstruction(Instruction.DECSP, slotsToPop);
         }
-        if (returnType != "void")
+        if (pushR0)
         {
             CodeStream.AddInstruction(Instruction.PUSHR0);
         }        

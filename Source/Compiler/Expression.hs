@@ -95,10 +95,6 @@ unit Expression
         if (name.Length != 0)
         {
             CodeStream.AddInstructionSysCall0(name, "New");
-            if (IsCDecl)
-            {
-                CodeStream.AddInstruction(Instruction.PUSHR0); // create stack slot
-            }
             if (!lazy && (recordName.Length != 0))
             {
                 Record.InitializeMembers(recordName);

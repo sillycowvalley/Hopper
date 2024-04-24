@@ -171,32 +171,75 @@ unit Z80Library
         libraryAddresses["MemoryFree"] = address;
         
         address = CurrentAddress;
-        EmitGCCreate();
         libraryAddresses["GCCreate"] = address;
+        EmitGCCreate();
         
         address = CurrentAddress;
-        EmitGCClone();
         libraryAddresses["GCClone"] = address;
+        EmitGCClone();
         
         address = CurrentAddress;
-        EmitGCRelease();
         libraryAddresses["GCRelease"] = address;
+        EmitGCRelease();
+        
         
         address = CurrentAddress;
-        EmitStringNew();
         libraryAddresses["StringNew"] = address;
+        EmitStringNew();
         
         address = CurrentAddress;
-        EmitStringGetLength();
+        libraryAddresses["StringNewFromConstant0"] = address;
+        EmitStringNewFromConstant0();
+        
+        address = CurrentAddress;
+        libraryAddresses["StringNewFromConstant1"] = address;
+        EmitStringNewFromConstant1();
+        
+        address = CurrentAddress;
         libraryAddresses["StringGetLength"] = address;
+        EmitStringGetLength();
         
         address = CurrentAddress;
-        EmitArrayNew();
+        libraryAddresses["StringGetChar"] = address;
+        EmitStringGetChar();
+        
+        address = CurrentAddress;
+        libraryAddresses["StringBuildChar"] = address;
+        EmitStringBuildChar();
+        
+        address = CurrentAddress;
+        libraryAddresses["StringBuildString"] = address;
+        EmitStringBuildString();
+        
+        address = CurrentAddress;
+        libraryAddresses["StringBuildClear"] = address;
+        EmitStringBuildClear();
+        
+        address = CurrentAddress;
+        libraryAddresses["StringBuildFront"] = address;
+        EmitStringBuildFront();
+        
+        address = CurrentAddress;
         libraryAddresses["ArrayNew"] = address;
+        EmitArrayNew();
         
         address = CurrentAddress;
-        EmitArrayGetCount();
+        libraryAddresses["ArrayNewFromConstant"] = address;
+        EmitArrayNewFromConstant();
+        
+        
+        address = CurrentAddress;
         libraryAddresses["ArrayGetCount"] = address;
+        EmitArrayGetCount();
+        
+        address = CurrentAddress;
+        libraryAddresses["ArrayGetItem"] = address;
+        EmitArrayGetItem();
+        
+        address = CurrentAddress;
+        libraryAddresses["ArraySetItem"] = address;
+        EmitArraySetItem();
+        
     }
     
     EmitIntGetByte()
@@ -972,19 +1015,50 @@ unit Z80Library
                 EmitWord  (OpCode.CALL_nn, GetAddress("ArrayNew")); 
                 referenceR0 = true;
             }
+            case SysCalls.ArrayNewFromConstant:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("ArrayNewFromConstant")); 
+                referenceR0 = true;
+            }
             case SysCalls.ArrayCountGet:
             {
                 EmitWord  (OpCode.CALL_nn, GetAddress("ArrayGetCount")); 
                 referenceR0 = false;
+            }
+            case SysCalls.ArrayGetItem:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("ArrayGetItem")); 
+                referenceR0 = false;
+            }
+            case SysCalls.ArraySetItem:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("ArraySetItem")); 
             }
             case SysCalls.StringNew:
             {
                 EmitWord  (OpCode.CALL_nn, GetAddress("StringNew")); 
                 referenceR0 = true;
             }
+            case SysCalls.StringNewFromConstant:
+            {
+                if (iOverload == 0)
+                {
+                    EmitWord  (OpCode.CALL_nn, GetAddress("StringNewFromConstant0")); 
+                }
+                else
+                {
+                    EmitWord  (OpCode.CALL_nn, GetAddress("StringNewFromConstant1")); 
+                }
+                referenceR0 = true;
+            }
             case SysCalls.StringLengthGet:
             {
                 EmitWord  (OpCode.CALL_nn, GetAddress("StringGetLength")); 
+                referenceR0 = false;
+            }
+            case SysCalls.StringGetChar:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("StringGetChar")); 
                 referenceR0 = false;
             }
                                                          

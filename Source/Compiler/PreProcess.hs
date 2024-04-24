@@ -19,6 +19,8 @@ program PreProcess
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
     
+    bool isZ80;
+    bool IsZ80      { get { return isZ80; }      set { isZ80 = value; } }
     bool isAssembly;
     bool IsAssembly { get { return isAssembly; } set { isAssembly = value; } }
     
@@ -1411,9 +1413,9 @@ program PreProcess
 
         foreach (var symbol in cliSymbols)
         {
-          Symbols.AddDefine(symbol, "true");
+            Symbols.AddDefine(symbol, "true");
         }
-                        
+        
         bool firstUnit = true;
         loop
         {
@@ -1539,7 +1541,25 @@ program PreProcess
           {
               break;
           }
-        } 
+        } // loop
+        
+        if (IsZ80)
+        {
+            if (!Symbols.GlobalExists("Array.bitMasks"))
+            {
+                string bitMask;
+                bitMask += char(0x01);
+                bitMask += char(0x02);
+                bitMask += char(0x04);
+                bitMask += char(0x08);
+                bitMask += char(0x10);
+                bitMask += char(0x20);
+                bitMask += char(0x40);
+                bitMask += char(0x80);
+                Symbols.AddConstant("Array.bitMasks", "byte[8]", bitMask); 
+            }
+        }
+        
         if (success)
         {
             success = Constant.ResolveUnresolveds();
@@ -1555,6 +1575,7 @@ program PreProcess
         PrintLn("    -x          : use experimental features");
         PrintLn("    -d <symbol> : define conditional compilation symbols");
         PrintLn("    -a          : preprocess assembly");
+        PrintLn("    -z          : for Z80 compiler");
     }
     {  
         bool success = false;
@@ -1598,6 +1619,10 @@ program PreProcess
                       case "-a":
                       {
                           isAssembly = true;   
+                      }
+                      case "-z":
+                      {
+                          isZ80 = true;   
                       }
                       default:
                       {
