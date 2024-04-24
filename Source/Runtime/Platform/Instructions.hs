@@ -77,6 +77,7 @@ unit Instructions
         WriteToJumpTable(OpCode.PUSHLOCALB01, Instructions.PushLocalB01);
         WriteToJumpTable(OpCode.SYSCALL0, Instructions.SysCall0);
         WriteToJumpTable(OpCode.SYSCALL1, Instructions.SysCall1);
+        WriteToJumpTable(OpCode.SYSCALL2, Instructions.SysCall2);
         WriteToJumpTable(OpCode.SYSCALL00, Instructions.SysCall00);
         WriteToJumpTable(OpCode.SYSCALL01, Instructions.SysCall01);
         WriteToJumpTable(OpCode.SYSCALL10, Instructions.SysCall10);
@@ -1741,6 +1742,11 @@ unit Instructions
     {
         byte iSysCall = ReadByteOperand();  
         return ExecuteSysCall(iSysCall, 1);
+    }
+    bool SysCall2()
+    {
+        byte iSysCall = ReadByteOperand();  
+        return ExecuteSysCall(iSysCall, 2);
     }
     bool SysCall00()
     {

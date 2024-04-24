@@ -1,6 +1,7 @@
 program TestSuite
 {
 #define MCU
+
     uses "/Source/System/System"
     
 #ifndef HOPPER_6502

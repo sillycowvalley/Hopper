@@ -645,10 +645,6 @@ program Z80Gen
     bool writeMethod(uint methodIndex, <byte> code)
     {
         bool success;
-        if (entryIndex == methodIndex)
-        {
-            writeSystem();
-        }        
         uint methodAddress   = output.Count;
         methods[methodIndex] = methodAddress;
         if (entryIndex == methodIndex)
@@ -1427,6 +1423,13 @@ program Z80Gen
                     
                     currentLocalSP++;
                 }
+                case Instruction.PUSHIM1:
+                {
+                    EmitWord(OpCode.LD_DE_nn, 0xFFFF);    
+                    Emit(OpCode.PUSH_DE);
+                    
+                    currentLocalSP++;
+                }
                 case Instruction.PUSHIBB:
                 {
                     EmitWord(OpCode.LD_DE_nn, operand & 0xFF);    
@@ -1733,7 +1736,6 @@ program Z80Gen
                 {
                     decGlobalB(operand, globalTypes[operand]);
                 }
-                
                 case Instruction.SYSCALL0:
                 {
                     if (!Z80Library.SysCall(byte(operand & 0xFF), 0, ref referenceR0)) { break; }
@@ -1756,6 +1758,10 @@ program Z80Gen
                 case Instruction.SYSCALL1:
                 {
                     if (!Z80Library.SysCall(byte(operand & 0xFF), 1, ref referenceR0)) { break; }
+                }
+                case Instruction.SYSCALL2:
+                {
+                    if (!Z80Library.SysCall(byte(operand & 0xFF), 2, ref referenceR0)) { break; }
                 }
                 case Instruction.SYSCALLB0:
                 {
@@ -1822,7 +1828,10 @@ program Z80Gen
             PrintLn();
         }
 #ifdef CHECKED
-        PrintLn();
+        if (methodIndex == 0x0000)
+        {
+            PrintLn();
+        }
 #endif
         // <uint,uint> instructionAddresses; // <hopperAddress,z80Address>
         // <uint,int>  jumpPatches;          // <hopperAddress,jumpOffset>
@@ -2089,12 +2098,22 @@ program Z80Gen
                 EmitWord(OpCode.CALL_nn, 0);
                 Emit(OpCode.HALT);
                 
+                EmitData(0);
+                EmitData(0);
+                
+                writeSystem();
+                
+                patchByte(ConstantAddress+0, byte(output.Count & 0xFF));
+                patchByte(ConstantAddress+1, byte(output.Count >> 8));
+                    
                 EmitData(byte(constantData.Count & 0xFF));
                 EmitData(byte(constantData.Count >> 8));
                 foreach (var c in constantData)
                 {
                     EmitData(c);
                 }
+                
+                
                 
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 bool failed = !writeMethod(entryIndex, methodCode);

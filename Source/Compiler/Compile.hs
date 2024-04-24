@@ -1606,6 +1606,10 @@ program Compile
                 {
                     CodeStream.AddInstruction(Instruction.SYSCALL1, iSysCall);
                 }
+                else if (!NoPackedInstructions && (iSysOverload == 2))
+                {
+                    CodeStream.AddInstruction(Instruction.SYSCALL2, iSysCall);
+                }
                 else
                 {
                     CodeStream.AddInstructionPUSHI(iSysOverload);

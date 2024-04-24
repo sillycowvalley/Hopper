@@ -40,6 +40,8 @@ namespace HopperNET
         LIBCALL0 = 0x09,
         LIBCALL1 = 0x0A,
 
+        SYSCALL2 = 0x0B, // syscall <byte operand>, overload 2
+
         PUSHIB = 0x1A,       // operand is byte
         POPLOCALB,    // operand is the location to pop to: BP + offset
         PUSHLOCALB,   // operand is the location to push from: BP + offset
@@ -1878,11 +1880,18 @@ namespace HopperNET
                             SystemCall(currentContext, (SysCall)operand, 1);
                         }
                         break;
-                    case Instruction.SYSCALL:
+                    case Instruction.SYSCALL2:
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             SystemCall(currentContext, (SysCall)operand, 2);
+                        }
+                        break;
+                    case Instruction.SYSCALL:
+                        {
+                            operand = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            SystemCall(currentContext, (SysCall)operand, 3); // "3" means Pop()
                         }
                         break;
 
@@ -4317,7 +4326,7 @@ namespace HopperNET
         {
             bool hasResult = false;
             ushort spBefore = sp;
-            if (iOverload == 2)
+            if (iOverload == 3)
             {
                 iOverload = (byte)Pop();
             }

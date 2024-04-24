@@ -14,7 +14,7 @@ unit Array
     const uint aiType     = 4;
     const uint aiElements = 5;
     
-    const uint ConstantStart = 0x000A; // location of first byte of constant data in ROM
+    const uint ConstantStart = 0x0008; // location of first byte of constant data in ROM
     
     // This constant always exists for Z80 as first constant: (see Preprocess.hs to modify)
     //const byte[] bitMasks  = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
@@ -108,7 +108,8 @@ unit Array
         }
         uint this = Array.New(length, elementType);
         uint destination = this + aiElements;
-        uint source      = ConstantStart + location;
+        uint constantLocation = ReadWord(ConstantStart) + 2;
+        uint source      = constantLocation + location;
         uint i;
         for (i=0; i < length; i++)
         {

@@ -18,6 +18,8 @@ unit Instructions
         LIBCALL  = 0x08,
         LIBCALL0 = 0x09,
         LIBCALL1 = 0x0A,
+        
+        SYSCALL2 = 0x0B, // syscall <byte operand>, overload 2
     
         PUSHIB = 0x1A,  // operand is byte
         POPLOCALB,      // operand is the location to pop to: BP + offset
@@ -306,6 +308,7 @@ unit Instructions
             case Instruction.SYSCALL:
             case Instruction.SYSCALL0:
             case Instruction.SYSCALL1:
+            case Instruction.SYSCALL2:
             case Instruction.LIBCALL:
             case Instruction.LIBCALL0:
             case Instruction.LIBCALL1:
@@ -427,6 +430,7 @@ unit Instructions
             case Instruction.SYSCALL:
             case Instruction.SYSCALL0:
             case Instruction.SYSCALL1:
+            case Instruction.SYSCALL2:
             case Instruction.LIBCALL:
             case Instruction.LIBCALL0:
             case Instruction.LIBCALL1:
@@ -615,6 +619,10 @@ unit Instructions
             case Instruction.SYSCALL1:
             {
                 result = "SYSCALL1";
+            }
+            case Instruction.SYSCALL2:
+            {
+                result = "SYSCALL2";
             }
             case Instruction.LIBCALL:
             {
@@ -1442,6 +1450,7 @@ unit Instructions
             case Instruction.SYSCALL:
             case Instruction.SYSCALL0:
             case Instruction.SYSCALL1:
+            case Instruction.SYSCALL2:
             {
                 byte iSysCall = byte(op & 0xFF);
                 string syscallName = SysCalls.GetSysCallName(iSysCall);

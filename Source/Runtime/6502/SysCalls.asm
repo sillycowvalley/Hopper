@@ -270,6 +270,19 @@ unit SysCall
         // iOverload in ACCL
         // iSysCall  in X
         SysCallShared();
+    
+    SysCall2()
+    {
+        ConsumeOperandA(); // iSysCall  -> A (uses ACC)
+        TAX                // load iSysCall into X (because JMP [nnnn,X] is then possible)
+        
+        // iOverload -> ACCL
+        LDA # 2
+        STA ACCL
+        
+        // iOverload in ACCL
+        // iSysCall  in X
+        SysCallShared();
     }
 #endif
 }

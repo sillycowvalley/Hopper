@@ -7,7 +7,6 @@
 
 
 
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -1931,6 +1930,7 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(OpCode::ePUSHLOCALB01, &Instructions_PushLocalB01);
     External_WriteToJumpTable(OpCode::eSYSCALL0, &Instructions_SysCall0);
     External_WriteToJumpTable(OpCode::eSYSCALL1, &Instructions_SysCall1);
+    External_WriteToJumpTable(OpCode::eSYSCALL2, &Instructions_SysCall2);
     External_WriteToJumpTable(OpCode::eSYSCALL00, &Instructions_SysCall00);
     External_WriteToJumpTable(OpCode::eSYSCALL01, &Instructions_SysCall01);
     External_WriteToJumpTable(OpCode::eSYSCALL10, &Instructions_SysCall10);
@@ -2740,6 +2740,12 @@ Bool Instructions_SysCall1()
 {
     Byte iSysCall = HopperVM_ReadByteOperand();
     return HopperVM_ExecuteSysCall(iSysCall, 0x01);
+}
+
+Bool Instructions_SysCall2()
+{
+    Byte iSysCall = HopperVM_ReadByteOperand();
+    return HopperVM_ExecuteSysCall(iSysCall, 0x02);
 }
 
 Bool Instructions_SysCall00()

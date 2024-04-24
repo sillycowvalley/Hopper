@@ -5,10 +5,7 @@ unit Z80Library
     
     <string, uint> libraryAddresses;
     
-    uint GetAddress(string name)
-    {
-        return libraryAddresses[name];
-    }
+    
     uint compareSignedLocation;
     uint utilityMultiplyLocation;
     uint utilityDivideLocation;
@@ -48,7 +45,6 @@ unit Z80Library
         doSigns();
         doSignsLocation = address;
     
-        
         address = CurrentAddress;
         EmitMUL();
         libraryAddresses["MUL"] = address;
@@ -68,17 +64,6 @@ unit Z80Library
         address = CurrentAddress;
         EmitMODI();
         libraryAddresses["MODI"] = address;
-        
-        /*
-        address = CurrentAddress;
-        EmitEQ();
-        libraryAddresses["EQ"] = address;
-        
-        address = CurrentAddress;
-        EmitNE();
-        libraryAddresses["NE"] = address;
-        
-        */
         
         address = CurrentAddress;
         EmitLE();
@@ -112,23 +97,6 @@ unit Z80Library
         EmitGEI();
         libraryAddresses["GEI"] = address;
         
-        /*
-        address = CurrentAddress;
-        EmitBITAND();
-        libraryAddresses["BITAND"] = address;
-        
-        address = CurrentAddress;
-        EmitBITOR();
-        libraryAddresses["BITOR"] = address;
-        
-        address = CurrentAddress;
-        EmitBITXOR();
-        libraryAddresses["BITXOR"] = address;
-        
-        address = CurrentAddress;
-        EmitBITNOT();
-        libraryAddresses["BITNOT"] = address;
-        */
         address = CurrentAddress;
         EmitBITSHL();
         libraryAddresses["BITSHL"] = address;
@@ -137,31 +105,9 @@ unit Z80Library
         EmitBITSHR();
         libraryAddresses["BITSHR"] = address;
         
-        // SysCalls
-        address = CurrentAddress;
-        EmitIntGetByte();
-        libraryAddresses["IntGetByte"] = address;
-
-        address = CurrentAddress;
-        EmitSerialIsAvailable();
-        libraryAddresses["SerialIsAvailable"] = address;
                 
-        address = CurrentAddress;
-        EmitSerialWriteChar();
-        libraryAddresses["SerialWriteChar"] = address;
         
-        address = CurrentAddress;
-        EmitSerialReadChar();
-        libraryAddresses["SerialReadChar"] = address;
-        
-        address = CurrentAddress;
-        EmitMemoryAvailable();
-        libraryAddresses["MemoryAvailable"] = address;
-        
-        address = CurrentAddress;
-        EmitMemoryMaximum();
-        libraryAddresses["MemoryMaximum"] = address;
-        
+        // Used by other syscalls:
         address = CurrentAddress;
         EmitMemoryAllocate();
         libraryAddresses["MemoryAllocate"] = address;
@@ -181,7 +127,32 @@ unit Z80Library
         address = CurrentAddress;
         libraryAddresses["GCRelease"] = address;
         EmitGCRelease();
+
+
+        // On demand syscalls:
+        address = CurrentAddress;
+        EmitIntGetByte();
+        libraryAddresses["IntGetByte"] = address;
         
+        address = CurrentAddress;
+        EmitSerialIsAvailable();
+        libraryAddresses["SerialIsAvailable"] = address;
+                
+        address = CurrentAddress;
+        EmitSerialWriteChar();
+        libraryAddresses["SerialWriteChar"] = address;
+        
+        address = CurrentAddress;
+        EmitSerialReadChar();
+        libraryAddresses["SerialReadChar"] = address;
+        
+        address = CurrentAddress;
+        EmitMemoryAvailable();
+        libraryAddresses["MemoryAvailable"] = address;
+        
+        address = CurrentAddress;
+        EmitMemoryMaximum();
+        libraryAddresses["MemoryMaximum"] = address;
         
         address = CurrentAddress;
         libraryAddresses["StringNew"] = address;
@@ -218,7 +189,7 @@ unit Z80Library
         address = CurrentAddress;
         libraryAddresses["StringBuildFront"] = address;
         EmitStringBuildFront();
-        
+    
         address = CurrentAddress;
         libraryAddresses["ArrayNew"] = address;
         EmitArrayNew();
@@ -226,7 +197,6 @@ unit Z80Library
         address = CurrentAddress;
         libraryAddresses["ArrayNewFromConstant"] = address;
         EmitArrayNewFromConstant();
-        
         
         address = CurrentAddress;
         libraryAddresses["ArrayGetCount"] = address;
@@ -238,8 +208,11 @@ unit Z80Library
         
         address = CurrentAddress;
         libraryAddresses["ArraySetItem"] = address;
-        EmitArraySetItem();
-        
+        EmitArraySetItem();     
+    }   
+    uint GetAddress(string name)
+    {
+        return libraryAddresses[name];
     }
     
     EmitIntGetByte()
@@ -1051,6 +1024,28 @@ unit Z80Library
                 }
                 referenceR0 = true;
             }
+            case SysCalls.StringBuild:
+            {
+                if (iOverload == 0)
+                {
+                    EmitWord  (OpCode.CALL_nn, GetAddress("StringBuildString")); 
+                }
+                else if (iOverload == 1)
+                {
+                    EmitWord  (OpCode.CALL_nn, GetAddress("StringBuildChar")); 
+                }
+                else
+                {
+                    EmitWord  (OpCode.CALL_nn, GetAddress("StringBuildClear")); 
+                }
+                referenceR0 = false;
+            }
+            case SysCalls.StringBuildFront:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("StringBuildFront")); 
+                referenceR0 = false;
+            }
+            
             case SysCalls.StringLengthGet:
             {
                 EmitWord  (OpCode.CALL_nn, GetAddress("StringGetLength")); 
@@ -1066,7 +1061,7 @@ unit Z80Library
             {
                 if (firstSysNotImplemented)
                 {
-                    PrintLn("iSysCall=0x" + (byte(iSysCall)).ToHexString(2) + " not implemented");
+                    PrintLn("iSysCall=0x" + (byte(iSysCall)).ToHexString(2) + ", iOverload=0x" + iOverload.ToString() + " not implemented", Colour.MatrixRed, Colour.Black);
                 }
                 firstSysNotImplemented = false;
                 Emit(OpCode.NOP);

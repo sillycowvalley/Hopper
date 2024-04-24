@@ -24,11 +24,13 @@ unit String
         uint i;
         uint source;
         uint destination;
+        uint constantLocation;
         size = length + 4;                     // +4 for blocksize, ref and type, 
         size = (size + 15) & 0xFFF0;           // round up to nearest 16 byte boundary
         this = GC.Create(Type.String, size-4); // -4 (header added by Create and Allocate)
         destination = this + siChars;
-        source      = ConstantStart + location;
+        constantLocation = ReadWord(ConstantStart) + 2;
+        source      = constantLocation + location;
         for (i=0; i < length; i++)
         {
             WriteByte(destination, ReadByte(source));

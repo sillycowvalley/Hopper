@@ -115,6 +115,7 @@ unit Instruction
         
         SYSCALL0     = 0x24,
         SYSCALL1     = 0x25,
+        SYSCALL2     = 0x0B,
         RETB         = 0x2A,
         RETRESB      = 0x2B,
         JZB          = 0x2E,
@@ -261,6 +262,7 @@ unit Instruction
             case Instructions.INCLOCALIB:
             case Instructions.SYSCALL0:
             case Instructions.SYSCALL1:
+            case Instructions.SYSCALL2:
             case Instructions.RETB:
             case Instructions.RETRESB:
             case Instructions.JZB:
@@ -2829,6 +2831,14 @@ unit Instruction
             {
 #ifdef PACKED_INSTRUCTIONS
                 SysCall1();
+#else
+                missing();
+#endif
+            }
+            case Instructions.SYSCALL2:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                SysCall2();
 #else
                 missing();
 #endif

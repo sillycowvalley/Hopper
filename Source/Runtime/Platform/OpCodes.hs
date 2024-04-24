@@ -127,6 +127,7 @@ unit OpCodes
         
         SYSCALL0 = 0x24,
         SYSCALL1 = 0x25,
+        SYSCALL2 = 0x0B,
         
         PUSHGLOBALBB = 0x52,
         

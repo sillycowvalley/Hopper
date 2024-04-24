@@ -22,7 +22,7 @@ unit Char
     {
         if (this >= 'a' && this <= 'z')
         {
-            return char(byte(this) - (byte('a') - byte('A')));
+            this = (char(byte(this) - (byte('a') - byte('A'))));
         }
         return this;
     }
@@ -41,7 +41,7 @@ unit Char
     {
         if ((this >= 'A') && (this <= 'Z'))
         {
-            return char(byte(this) + (byte('a') - byte('A')));
+            this = (char(byte(this) + (byte('a') - byte('A'))));
         }
         return this;
     }

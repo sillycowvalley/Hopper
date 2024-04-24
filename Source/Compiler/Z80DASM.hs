@@ -281,6 +281,7 @@ program DASM
                 bool isExportingCurrent = false;
                 <string,uint>   jumpPatches;
                 
+                uint constantLocation = 0xFFFF;
                 uint progressCount;
                 <string,string> debugInfo;
                 loop
@@ -288,12 +289,24 @@ program DASM
                     if (index == code.Count) { break; }
                     if (index == ConstantAddress)
                     {
+                        // location of constants
+                        constantLocation = code[index] + (code[index+1] << 8);
+                        hasmFile.Append("" + Char.EOL);
+                        hasmFile.Append("// constant location" + Char.EOL);
+                        hasmFile.Append("0x" + (index).ToHexString(4) + " -> 0x" + constantLocation.ToHexString(4) + Char.EOL);
+                        hasmFile.Append("" + Char.EOL);
+                        index += 2;
+                        continue;
+                    }
+                    if (index == constantLocation)
+                    {
                         uint constantSize  = code[index] + (code[index+1] << 8);
-                        index += 2; // size of constant block
                         
                         hasmFile.Append("" + Char.EOL);
                         hasmFile.Append("// constant data" + Char.EOL);
-                        hasmFile.Append("0x" + (ConstantAddress).ToHexString(4) + " 0x" + constantSize.ToHexString(4) + " // " + constantSize.ToString() + " bytes" + Char.EOL);
+                        hasmFile.Append("0x" + (index).ToHexString(4) + " 0x" + constantSize.ToHexString(4) + " // " + constantSize.ToString() + " bytes" + Char.EOL);
+                        
+                        index += 2; // size of constant block
                         
                         uint i;
                         string ascii;
@@ -330,11 +343,11 @@ program DASM
                             uint rem = i % 16;
                             if (rem <= 7)
                             {
-                                hasmFile.Append("_");
+                                hasmFile.Append(" ");
                             }
                             while (rem != 16)
                             {
-                                hasmFile.Append("_____");
+                                hasmFile.Append("     ");
                                 rem++;
                             }
                             hasmFile.Append(" //" + ascii + Char.EOL);

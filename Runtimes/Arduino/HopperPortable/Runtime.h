@@ -112,6 +112,7 @@ enum OpCode {
     ePUSHLOCALB01 = 0x004F,
     eSYSCALL0 = 0x0024,
     eSYSCALL1 = 0x0025,
+    eSYSCALL2 = 0x000B,
     ePUSHGLOBALBB = 0x0052,
     eINCLOCALB = 0x0022,
     eINCLOCALIB = 0x00A4,
@@ -757,6 +758,7 @@ Bool Instructions_PushLocalB00();
 Bool Instructions_PushLocalB01();
 Bool Instructions_SysCall0();
 Bool Instructions_SysCall1();
+Bool Instructions_SysCall2();
 Bool Instructions_SysCall00();
 Bool Instructions_SysCall01();
 Bool Instructions_SysCall10();

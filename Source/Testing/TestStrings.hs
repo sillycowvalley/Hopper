@@ -1,6 +1,7 @@
 program TestStrings
 {
-//#define MCU
+#define MCU
+
     uses "/Source/System/System"
     
     uses "/Source/System/String"

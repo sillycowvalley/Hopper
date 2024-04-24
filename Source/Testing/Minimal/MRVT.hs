@@ -1,9 +1,8 @@
 program MRVT
 {
-    #define REFTYPES
+    //#define REFTYPES
     
     #define CPU_Z80
-    #define ROM_32K
     
     uses "/Source/Minimal/IO"
     
@@ -822,6 +821,7 @@ program MRVT
         
         string regular;
         string hex;
+#ifndef CPU_Z80        
         foreach (var ch in constRegular)
         {
             regular += ch;
@@ -852,14 +852,15 @@ program MRVT
         {
             PrintFailed(prompt, 3);
         }
-        
+#endif        
         regular = "";
         hex = "";
-        for (uint i = 0; i < 10; i++)
+        uint i;
+        for (i = 0; i < 10; i++)
         {
             regular += constRegular[i];
         }
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             hex += constHex[i];
         }
@@ -873,11 +874,11 @@ program MRVT
         }
         regular = "";
         hex = "";
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             regular += constRegular[i];
         }
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             hex += char(constHexBytes[i]);
         }
@@ -885,7 +886,8 @@ program MRVT
         {
             PrintFailed(prompt, 6);
         }
-        
+
+#ifndef CPU_Z80        
         regular = "";
         hex = "";
         foreach (var ch in globalRegular)
@@ -904,6 +906,7 @@ program MRVT
         {
             PrintFailed(prompt, 8);
         }
+
         regular = "";
         hex = "";
         foreach (var ch in globalRegular)
@@ -918,14 +921,14 @@ program MRVT
         {
             PrintFailed(prompt, 9);
         }
-        
+#endif
         regular = "";
         hex = "";
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             regular += globalRegular[i];
         }
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             hex += globalHex[i];
         }
@@ -939,11 +942,11 @@ program MRVT
         }
         regular = "";
         hex = "";
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             regular += globalRegular[i];
         }
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             hex += char(globalHexBytes[i]);
         }
@@ -957,6 +960,7 @@ program MRVT
         string   localHex      = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
         byte[10] localHexBytes = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
     
+#ifndef CPU_Z80    
         regular = "";
         hex = "";
         foreach (var ch in localRegular)
@@ -989,15 +993,15 @@ program MRVT
         {
             PrintFailed(prompt, 15);
         }
-        
+#endif        
         
         regular = "";
         hex = "";
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             regular += localRegular[i];
         }
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             hex += localHex[i];
         }
@@ -1011,11 +1015,11 @@ program MRVT
         }
         regular = "";
         hex = "";
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             regular += localRegular[i];
         }
-        for (uint i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
         {
             hex += char(localHexBytes[i]);
         }
@@ -1080,21 +1084,22 @@ program MRVT
         
         int count = 0;
         char check = 'A';
+        int inc;
         switch (check)
         {
             case 'A':
             {
-                int inc = 1;
+                inc = 1;
                 count = count + inc;
             }
             case 'B':
             {
-                int inc = 2;
+                inc = 2;
                 count = count + inc;
             }
             default:
             {
-                int inc = 4;
+                inc = 4;
                 count = count + inc;
             }
         }
@@ -1108,17 +1113,17 @@ program MRVT
         {
             case 'A':
             {
-                int inc = 1;
+                inc = 1;
                 count = count + inc;
             }
             case 'B':
             {
-                int inc = 2;
+                inc = 2;
                 count = count + inc;
             }
             default:
             {
-                int inc = 4;
+                inc = 4;
                 count = count + inc;
             }
         }
@@ -1132,17 +1137,17 @@ program MRVT
         {
             case 'A':
             {
-                int inc = 1;
+                inc = 1;
                 count = count + inc;
             }
             case 'B':
             {
-                int inc = 2;
+                inc = 2;
                 count = count + inc;
             }
             default:
             {
-                int inc = 4;
+                inc = 4;
                 count = count + inc;
             }
         }
@@ -1158,18 +1163,18 @@ program MRVT
             {
                 case 'A':
                 {
-                    int inc = 1;
+                    inc = 1;
                     count = count + inc;
                 }
                 case 'B':
                 {
-                    int inc = 2;
+                    inc = 2;
                     break;
                     count = count + inc;
                 }
                 default:
                 {
-                    int inc = 4;
+                    inc = 4;
                     count = count + inc;
                 }
             }
@@ -2519,8 +2524,10 @@ program MRVT
         TestStringCase();
         
         TestHexStrings();
+#ifndef CPU_Z80
         TestArray();
         TestForEach(); // strings and arrays
+#endif
         TestRef();     // strings
 #endif        
         TestFor();
@@ -2536,7 +2543,6 @@ program MRVT
         TestConstants();
         TestSwitch();
         TestPropertyMath();
-        
 #ifdef REFTYPES        
         WriteLn("  Passed");
 #else

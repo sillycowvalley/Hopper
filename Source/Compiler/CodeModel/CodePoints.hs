@@ -2356,13 +2356,25 @@ unit CodePoints
                             iOperands.SetItem(iIndex-3, operand3);
                             iLengths.SetItem(iIndex-3, 2);
                         }
-                        iCodes.SetItem(iIndex-1, Instruction.PUSHIB);
-                        iOperands.SetItem(iIndex-1, 2);
-                        iLengths.SetItem(iIndex-1, 2);
-                        
-                        iCodes.SetItem(iIndex, Instruction.SYSCALL);
-                        iOperands.SetItem(iIndex, iSysCall);
-                        iLengths.SetItem(iIndex, 2);
+                        if (false)
+                        {
+                            iCodes.SetItem(iIndex-1, Instruction.NOP);
+                            iLengths.SetItem(iIndex-1, 1);
+                            
+                            iCodes.SetItem(iIndex, Instruction.SYSCALL2);
+                            iOperands.SetItem(iIndex, iSysCall);
+                            iLengths.SetItem(iIndex, 2);
+                        }
+                        else
+                        {
+                            iCodes.SetItem(iIndex-1, Instruction.PUSHIB);
+                            iOperands.SetItem(iIndex-1, 2);
+                            iLengths.SetItem(iIndex-1, 2);
+                            
+                            iCodes.SetItem(iIndex, Instruction.SYSCALL);
+                            iOperands.SetItem(iIndex, iSysCall);
+                            iLengths.SetItem(iIndex, 2);
+                        }
                         modified = true;
                     }
                  }

@@ -26,52 +26,61 @@ unit String
     
     string InsertChar(string this, uint index, char append)
     {
+        string result;
         if (index >= this.Length)
         {
-            string result = this;
+            result = this;
             Build(ref result, append); // Append the character at the end
-            return result;
+            
         }
         else
         {
-            string result = this.Substring(0, index); // Get the substring before the insert position
+            result = this.Substring(0, index); // Get the substring before the insert position
             Build(ref result, append); // Append the character at the insert position
             Build(ref result, this.Substring(index)); // Append the rest of the original string
-            return result;
         }
+        return result;
     }
     
     bool IndexOf(string this, char pattern, ref uint index)
     {
+        bool result;
         uint i = 0;
         while (i < this.Length)
         {
             if (this[i] == pattern)
             {
                 index = i;
-                return true;
+                result = true;
+                break;
             }
             i++;
         }
-        return false;
+        return result;
     }
     bool IndexOf(string this, char pattern, uint searchIndex, ref uint index)
     {
-        if (searchIndex >= this.Length || (this.Length == 0))
+        bool result;
+        uint i;
+        if ((searchIndex >= this.Length) || (this.Length == 0))
         {
-            return false;
+            
         }
-       uint i = searchIndex;
-        while (i < this.Length)
+        else
         {
-            if (this[i] == pattern)
+            i = searchIndex;
+            while (i < this.Length)
             {
-                index = i;
-                return true;
+                if (this[i] == pattern)
+                {
+                    index = i;
+                    result = true;
+                    break;
+                }
+                i++;
             }
-            i++;
         }
-       return false;
+        return result;
     }
     
     bool Contains(string this, char needle)
@@ -87,49 +96,55 @@ unit String
     }
     bool StartsWith(string this, char pattern)
     {
-        if (this.Length == 0)
+        bool result;
+        if (this.Length != 0)
         {
-            return false;
+            result = this[0] == pattern;
         }
-
-        return this[0] == pattern;
+        return result;
     }
     string Replace(string original, string pattern, string replace)
     {
+        string result;
+        uint index;
+        uint patternIndex;
+            
         // Handle the case where the pattern is empty
         if (pattern.Length == 0)
         {
-            return original; // Return a copy of the original string
+            result = original; // Return a copy of the original string
         }
-        
-        string result;
-        uint index;
-        loop
+        else
         {
-            uint patternIndex;
-            if (!original.IndexOf(pattern, index, ref patternIndex))
+            loop
             {
-                // Pattern not found, append the remaining original string and break
-                Build(ref result, original.Substring(index));
-                break;
+                if (!original.IndexOf(pattern, index, ref patternIndex))
+                {
+                    // Pattern not found, append the remaining original string and break
+                    Build(ref result, original.Substring(index));
+                    break;
+                }
+    
+                // Append the substring before the pattern
+                Build(ref result, original.Substring(index, patternIndex - index));
+                
+                // Append the replacement string
+                Build(ref result, replace);
+    
+                // Move the index past the pattern
+                index = patternIndex + pattern.Length;
             }
-
-            // Append the substring before the pattern
-            Build(ref result, original.Substring(index, patternIndex - index));
-            
-            // Append the replacement string
-            Build(ref result, replace);
-
-            // Move the index past the pattern
-            index = patternIndex + pattern.Length;
         }
-       return result;
+        return result;
     }
     string Replace(string original, char pattern, char replace)
     {
         string result;
-       foreach (var c in original)
+        uint i;
+        char c;
+        for (i=0; i < original.Length; i++)
         {
+            c = original[i];
             if (c == pattern)
             {
                 Build(ref result, replace);
@@ -143,58 +158,71 @@ unit String
     }
     bool EndsWith(string original, char pattern)
     {
-        if (original.Length == 0)
+        bool result;
+        if (original.Length != 0)
         {
-            return false;
+            result = original[original.Length - 1] == pattern;
         }
-       return original[original.Length - 1] == pattern;
+        return result;
     }
     bool EndsWith(string original, string pattern)
     {
-        if (original.Length < pattern.Length)
+        bool result;
+        if (original.Length >= pattern.Length)
         {
-            return false;
+            result = original.Substring(original.Length - pattern.Length) == pattern;
         }
-        return original.Substring(original.Length - pattern.Length) == pattern;
+        return result;
     }
     bool Contains(string this, string needle)
     {
+        bool result;
         if (needle.Length == 0)
         {
-            return true; // An empty string is always contained in any string
+            result = true; // An empty string is always contained in any string
         }
-        for (uint i = 0; i <= this.Length - needle.Length; i++)
+        else
         {
-            bool found = true;
-            for (uint j = 0; j < needle.Length; j++)
+            for (uint i = 0; i <= this.Length - needle.Length; i++)
             {
-                if (this[i + j] != needle[j])
+                bool found = true;
+                for (uint j = 0; j < needle.Length; j++)
                 {
-                    found = false;
+                    if (this[i + j] != needle[j])
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    result = true;
                     break;
                 }
             }
-            if (found)
-            {
-                return true;
-            }
         }
-       return false;
+        return result;
     }
     bool StartsWith(string this, string pattern)
     {
+        uint i;
+        bool result = true;
         if (pattern.Length > this.Length)
         {
-            return false;
+            result = false;
         }
-        for (uint i = 0; i < pattern.Length; i++)
+        else
         {
-            if (this[i] != pattern[i])
+            for (i = 0; i < pattern.Length; i++)
             {
-                return false;
+                if (this[i] != pattern[i])
+                {
+                    result = false;
+                    break;
+                }
             }
         }
-        return true;
+        return result;
     }
     
     bool IndexOf(string this, string pattern, ref uint index)
@@ -228,28 +256,33 @@ unit String
         uint i;
         uint j;
         bool found;
+        bool result;
         if ((pattern.Length == 0) || (startIndex >= this.Length))
         {
-            return false;
+            
         }
-        for (i = startIndex; i <= this.Length - pattern.Length; i++)
+        else
         {
-            found = true;
-            for (j = 0; j < pattern.Length; j++)
+            for (i = startIndex; i <= this.Length - pattern.Length; i++)
             {
-                if (this[i + j] != pattern[j])
+                found = true;
+                for (j = 0; j < pattern.Length; j++)
                 {
-                    found = false;
+                    if (this[i + j] != pattern[j])
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    index = i;
+                    result = true;
                     break;
                 }
             }
-            if (found)
-            {
-                index = i;
-                return true;
-            }
         }
-       return false;
+        return result;
     }
     bool LastIndexOf(string this, char pattern, ref uint index)
     {
@@ -352,8 +385,9 @@ unit String
     
     string Substring(string this, uint start) 
     {
+        uint i;
         string result;
-        for (uint i = start; i < this.Length; i++)
+        for (i = start; i < this.Length; i++)
         {
             Build(ref result, this[i]);
         }
@@ -361,8 +395,9 @@ unit String
     }
     string Substring(string this, uint start, uint length) 
     {
+        uint i;
         string result;
-        for (uint i = start; i < start + length && i < this.Length; i++)
+        for (i = start; i < start + length && i < this.Length; i++)
         {
             Build(ref result, this[i]);
         }
@@ -410,26 +445,31 @@ unit String
     int Compare(string left, string right) 
     {
         uint minLength = UInt.Min(left.Length, right.Length);
-        for (uint i = 0; i < minLength; i++)
+        uint i;
+        int result;
+        for (i = 0; i < minLength; i++)
         {
             if (left[i] < right[i])
             {
-                return -1;
+                result = -1;
             }
             else if (left[i] > right[i])
             {
-                return 1;
+                result = 1;
             }
         }
-       if (left.Length < right.Length)
+        if (result == 0)
         {
-            return -1;
+            if (left.Length < right.Length)
+            {
+                result = -1;
+            }
+            else if (left.Length > right.Length)
+            {
+                result = 1;
+            }
         }
-        else if (left.Length > right.Length)
-        {
-            return 1;
-        }
-       return 0;
+        return result;
     }
         
     Substring(ref string build, uint start)
@@ -450,18 +490,24 @@ unit String
     }
     string ToUpper(string this)
     {
+        char ch;
+        uint i;
         string result;
-        foreach (var ch in this)
+        for (i=0; i < this.Length; i++)
         {
+            ch = this[i];
             String.Build(ref result, ch.ToUpper());
         }
         return result;
     }
     string ToLower(string this)
     {
+        char ch;
+        uint i;
         string result;
-        foreach (var ch in this)
+        for (i=0; i < this.Length; i++)
         {
+            ch = this[i];
             String.Build(ref result, ch.ToLower());
         }
         return result;

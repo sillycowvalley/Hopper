@@ -213,6 +213,11 @@ program CODEGEN
                     byte iSysCall = byte(operand & 0xFF);
                     instrumentSysCall(iSysCall, 1, location);
                 }
+                case Instruction.SYSCALL2:
+                {
+                    byte iSysCall = byte(operand & 0xFF);
+                    instrumentSysCall(iSysCall, 2, location);
+                }
                 case Instruction.SYSCALL00:
                 {
                     byte iSysCall = byte(operand & 0xFF);

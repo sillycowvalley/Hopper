@@ -25,11 +25,11 @@ unit UInt
         byte b;
         if (content.StartsWith("0x"))
         {
-            return tryParseHex(content, ref returnValue);
+            success = tryParseHex(content, ref returnValue);
         }
         else if (content.StartsWith("0b"))
         {
-            return tryParseBinary(content, ref returnValue);
+            success = tryParseBinary(content, ref returnValue);
         }
         else 
         {
@@ -85,6 +85,8 @@ unit UInt
     {
         bool success;
         uint length;
+        uint i;
+        char c;
         loop
         {
             returnValue = 0;
@@ -98,10 +100,10 @@ unit UInt
                 break;
             }
             success = true;
-            for (uint i=0; i < length-2; i++)
+            for (i=0; i < length-2; i++)
             {
                 returnValue = returnValue * 16;
-                char c = content.GetChar(i+2);
+                c = content.GetChar(i+2);
                 if (c.IsDigit())
                 {
                     returnValue = returnValue + (byte(c) - 48); // 48 is ASCII for '0'
@@ -125,26 +127,41 @@ unit UInt
         char c;
         uint length;
         uint i;
+        bool success = true;
         returnValue = 0;
         if (!content.StartsWith("0b"))
         {
-            return false;
+            success = false;
         }
-        length = content.Length;
-        if (length < 3)
+        else
         {
-            return false;
-        }
-        for ( ; i < length-2; i++)
-        {
-            returnValue = returnValue * 2;
-            c = content.GetChar(i+2);
-            if (c == '1')
+            length = content.Length;
+            if (length < 3)
             {
-                returnValue = returnValue + 1;
+                success = false;
+            }
+            else
+            {
+                for ( ; i < length-2; i++)
+                {
+                    returnValue = returnValue * 2;
+                    c = content.GetChar(i+2);
+                    if (c == '1')
+                    {
+                        returnValue = returnValue + 1;
+                    }
+                    else if (c == '0')
+                    {
+                    }
+                    else
+                    {
+                        success = false;
+                        break;
+                    }
+                }
             }
         }
-        return true;
+        return success;
     }
     string ToString(uint this)
     {
