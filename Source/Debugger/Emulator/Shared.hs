@@ -326,6 +326,9 @@ unit Shared
         uint spi = sp;
         uint pc  = CPU.PC;
         
+        <uint, <string> > globals = Code.GetGlobals();
+        uint globalIndex = globals.Count;
+        
         uint currentMethod  = Display.GetZ80MethodIndex(pc);
         
         Print("SP -> ", Colour.MatrixRed, Colour.Black);
@@ -379,16 +382,30 @@ unit Shared
             }
             if (nextIsReturnAddress)
             {
-                nextIsReturnAddress = false;
                 uint returnMethod  = Display.GetZ80MethodIndex(value);
                 if (returnMethod != 0xFFFF)
                 {
                     string name = Code.GetMethodName(returnMethod);
                     Print(" <- return address to " + name + "(..)", Colour.MatrixGreen, Colour.Black);
+                    nextIsReturnAddress = false;
                 }
                 else
-                {
-                    Print(" <- return address to exit (HALT)", Colour.MatrixGreen, Colour.Black);
+                {  
+                    if (globalIndex != 0)
+                    {
+                        globalIndex--;
+                        <string> globalList = globals[globalIndex];
+                        string typeName   = globalList[0];
+                        string globalName = globalList[1];
+                        string varName = typeName + " " + globalName;
+                        varName = varName.Pad(' ', 16);
+                        Print(" " + varName + "  (" + globalIndex.ToString() + ")", Colour.MatrixGreen, Colour.Black);
+                    }
+                    else
+                    {
+                        Print(" <- return address to exit (HALT)", Colour.MatrixGreen, Colour.Black);
+                        nextIsReturnAddress = false;
+                    }
                 }
             }
             if (spi == nextBP)

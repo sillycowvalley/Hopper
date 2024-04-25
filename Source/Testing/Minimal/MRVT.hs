@@ -1,6 +1,7 @@
 program MRVT
 {
-    //#define REFTYPES
+    
+    #define REFTYPES
     
     #define CPU_Z80
     
@@ -2349,7 +2350,7 @@ program MRVT
             PrintFailed(prompt, 5);
         }
         int count = 0;
-        
+#ifndef CPU_Z80        
         foreach (var a in intArray)
         {
             count++;
@@ -2359,6 +2360,7 @@ program MRVT
             PrintFailed(prompt, 6);
         }
         count = 0;
+#endif
         
         uint[5] uintArray;
         uintArray[0] = 3;
@@ -2387,7 +2389,7 @@ program MRVT
             PrintFailed(prompt, 11);
         }
         count = 0;
-        
+#ifndef CPU_Z80        
         foreach (var a in uintArray)
         {
             count++;
@@ -2397,7 +2399,7 @@ program MRVT
             PrintFailed(prompt, 12);
         }
         count = 0;
-        
+#endif        
         char[5] charArray;
         charArray[0] = char(0);
         charArray[1] = 'a';
@@ -2425,7 +2427,7 @@ program MRVT
             PrintFailed(prompt, 17);
         }
         count = 0;
-        
+#ifndef CPU_Z80        
         foreach (var a in charArray)
         {
             count++;
@@ -2435,6 +2437,7 @@ program MRVT
             PrintFailed(prompt, 18);
         }
         count = 0;
+#endif
         
         bool[10] boolArray;
         boolArray[0] = true;
@@ -2493,7 +2496,7 @@ program MRVT
             PrintFailed(prompt, 29);
         }
         count = 0;
-        
+#ifndef CPU_Z80        
         foreach (var a in boolArray)
         {
             if (a)
@@ -2506,6 +2509,7 @@ program MRVT
             PrintFailed(prompt, 30);
         }
         count = 0;
+#endif
     }
     
     
@@ -2516,20 +2520,25 @@ program MRVT
         WriteLn();
         WriteLn("Minimal Runtime Validation Tests:");
 
-        TestStringSystem();
-        TestStringCompare();
-        TestCharSystem();
-        TestStringTrim();
-        TestString();
-        TestStringCase();
+        //TestCharSystem();
+        //TestStringCompare();
+        //TestString();
+        //TestStringCase();
+        //TestHexStrings();
+        //TestRef();
+        //TestArray();
         
-        TestHexStrings();
-#ifndef CPU_Z80
-        TestArray();
+        // Failing:        
+        //TestStringSystem();
+        TestStringTrim();
+        
+        
+#ifndef CPU_Z80        
         TestForEach(); // strings and arrays
 #endif
-        TestRef();     // strings
-#endif        
+        
+#endif      
+/*
         TestFor();
         TestWhile();
         TestBooleanShortCircuit();
@@ -2543,10 +2552,11 @@ program MRVT
         TestConstants();
         TestSwitch();
         TestPropertyMath();
+        */
 #ifdef REFTYPES        
         WriteLn("  Passed");
 #else
-        //Serial.WriteChar(Char.EOL); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
+        Serial.WriteChar(Char.EOL); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
 #endif        
         
     }

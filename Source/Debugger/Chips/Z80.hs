@@ -208,6 +208,47 @@ unit CPU // Z80
                 case OpCode.BIT_7_H:     { zFlag = ((hlRegister & 0b1000000000000000) == 0); nFlag = false; }
                 case OpCode.BIT_7_L:     { zFlag = ((hlRegister & 0b0000000010000000) == 0); nFlag = false; }
                 
+                case OpCode.SLA_A:       { cFlag = ((aRegister & 0b10000000) != 0);          
+                                           aRegister = byte((aRegister << 1) & 0xFF); 
+                                           CheckSZByte(aRegister); nFlag = false; 
+                                         }
+                case OpCode.SLA_B:       { byte value = byte(bcRegister >> 8);
+                                           cFlag = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF); 
+                                           CheckSZByte(value); nFlag = false; 
+                                           bcRegister = (value << 8) + (bcRegister & 0xFF);
+                                         }
+                case OpCode.SLA_C:       { byte value = byte(bcRegister & 0xFF);
+                                           cFlag = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF);
+                                           CheckSZByte(value); nFlag = false; 
+                                           bcRegister = value + (bcRegister & 0xFF00);
+                                         } 
+                case OpCode.SLA_D:       { byte value = byte(deRegister >> 8);
+                                           cFlag = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF); 
+                                           CheckSZByte(value); nFlag = false; 
+                                           deRegister = (value << 8) + (deRegister & 0xFF);
+                                         }
+                case OpCode.SLA_E:       { byte value = byte(deRegister & 0xFF);
+                                           cFlag = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF);
+                                           CheckSZByte(value); nFlag = false; 
+                                           deRegister = value + (deRegister & 0xFF00);
+                                         } 
+                case OpCode.SLA_H:       { byte value = byte(hlRegister >> 8);
+                                           cFlag = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF); 
+                                           CheckSZByte(value); nFlag = false; 
+                                           hlRegister = (value << 8) + (hlRegister & 0xFF);
+                                         }
+                case OpCode.SLA_L:       { byte value = byte(hlRegister & 0xFF);
+                                           cFlag = ((value & 0b10000000) != 0); 
+                                           value = byte((value << 1) & 0xFF);
+                                           CheckSZByte(value); nFlag = false; 
+                                           hlRegister = value + (hlRegister & 0xFF00);
+                                         }                        
+                                         
                 case OpCode.SRL_A:       { cFlag = ((aRegister & 0b00000001) != 0);          
                                            aRegister = aRegister >> 1; 
                                            CheckSZByte(aRegister); nFlag = false; 
@@ -433,22 +474,22 @@ unit CPU // Z80
                                            hlRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
                                            CheckSZWord(hlRegister); nFlag = false; 
                                          }
-                case OpCode.ADD_IX_DE:   { long result = long(ixRegister) + long(deRegister) + (cFlag ? 1 : 0); 
+                case OpCode.ADD_IX_DE:   { long result = long(ixRegister) + long(deRegister); 
                                            cFlag = (result > 0xFFFF);
                                            ixRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
                                            nFlag = false; 
                                          }
-                case OpCode.ADD_IY_DE:   { long result = long(iyRegister) + long(deRegister) + (cFlag ? 1 : 0); 
+                case OpCode.ADD_IY_DE:   { long result = long(iyRegister) + long(deRegister); 
                                            cFlag = (result > 0xFFFF);
                                            iyRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
                                            nFlag = false; 
                                          }
-                case OpCode.ADD_IX_BC:   { long result = long(ixRegister) + long(bcRegister) + (cFlag ? 1 : 0); 
+                case OpCode.ADD_IX_BC:   { long result = long(ixRegister) + long(bcRegister); 
                                            cFlag = (result > 0xFFFF);
                                            ixRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
                                            nFlag = false; 
                                          }
-                case OpCode.ADD_IY_BC:   { long result = long(iyRegister) + long(bcRegister) + (cFlag ? 1 : 0); 
+                case OpCode.ADD_IY_BC:   { long result = long(iyRegister) + long(bcRegister); 
                                            cFlag = (result > 0xFFFF);
                                            iyRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
                                            nFlag = false; 
@@ -1172,7 +1213,7 @@ unit CPU // Z80
         if (address < 0x0400)
         {
             PrintLn();
-            Print("ROM Write: " + address.ToHexString(4));
+            Print("ROM Write: " + address.ToHexString(4), Colour.MatrixRed, Colour.Black);
             
             GetRAMByteDelegate getRAMByte = GetMemory;
             

@@ -292,7 +292,7 @@ program Optimize
                         methodModified = true;
                     }
                     if (verbose) { showElapsed("b"); } 
-                    if (CodePoints.OptimizeFrameRemoval())
+                    if (!IsCDecl && CodePoints.OptimizeFrameRemoval())
                     {
                         methodModified = true;
     #ifdef DIAGNOSTICS

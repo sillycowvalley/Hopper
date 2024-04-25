@@ -7,10 +7,10 @@ program rZ80Gen
     uses "/Source/Minimal/Diagnostics"
     
     uses "Z80/String"
-    uses "Z80/Array"
     uses "Z80/Memory"
     uses "Z80/GC"
-       
+    uses "Z80/Array"
+           
     Hopper()
     {
         uint str = String.New();

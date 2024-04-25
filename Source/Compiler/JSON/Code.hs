@@ -35,6 +35,8 @@ unit Code
     string sourcePathLoaded;
     <string> sourceLines;
     
+    <string,uint> runtimeMap; // Z80 runtime addresses
+    
     Clear()
     {
         methodCode.Clear();
@@ -44,6 +46,7 @@ unit Code
         debugSymbols.Clear();
         lineMap.Clear();
         codeMap.Clear();
+        runtimeMap.Clear();
         sourcePathLoaded = "";
         sourceLines.Clear();
     }
@@ -206,6 +209,20 @@ unit Code
         }
         return argumentsList;
     }
+    string GetReturnType(uint methodIndex)
+    {
+        string returnType = "void";
+        string index = "0x" + methodIndex.ToHexString(4);
+        if (debugSymbols.Contains(index))
+        {
+            <string,variant> methodSymbols = debugSymbols[index];
+            if (methodSymbols.Contains("returntype"))
+            {
+                returnType = methodSymbols["returntype"];
+            }
+        }
+        return returnType;
+    }
     
     <uint, string> GetGlobalTypes()
     {
@@ -224,6 +241,22 @@ unit Code
             }
         }
         return globalTypes;
+    }
+    <uint, <string> > GetGlobals()
+    {
+        <uint, <string> > globals;
+        if (debugSymbols.Contains("globals"))
+        {
+            <string, variant > globalLists = debugSymbols["globals"];
+            foreach (var kv in globalLists)
+            {
+                uint index;
+                _ = UInt.TryParse(kv.key, ref index);
+                <string> globalList = kv.value;
+                globals[index] = globalList;
+            }
+        }
+        return globals;
     }
     <uint, <string> > GetGlobals(<byte> code, uint methodIndex, uint pc, uint distance)
     {
@@ -1279,8 +1312,57 @@ unit Code
                 {
                     break;
                 }
-                
-                if (methodIndex == "globals")
+                if (methodIndex == "runtime")
+                {
+                    bool fc = true;
+                    runtimeMap.Clear();
+                    loop
+                    {
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        if (Parser.Check(HopperToken.RBrace))
+                            {
+                                Parser.Advance(); // }
+                                break;
+                            }
+                        if (!fc)
+                        {
+                            Parser.Consume(HopperToken.Comma);
+                            if (Parser.HadError)
+                            {
+                                break;
+                            }
+                        }
+                        Parser.Consume(HopperToken.StringConstant, "runtime name expected");
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        previousToken = PreviousToken;
+                        string name = previousToken["lexeme"];
+                        
+                        Parser.Consume(HopperToken.Colon);
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        
+                        Parser.Consume(HopperToken.StringConstant, "runtime address expected");
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        uint uiaddress;
+                        previousToken = PreviousToken;
+                        string address = previousToken["lexeme"];
+                        _ = UInt.TryParse(address, ref uiaddress);
+                        runtimeMap[name] = uiaddress;
+                        fc = false;
+                    } // loop
+                }
+                else if (methodIndex == "globals")
                 {
                     <string, variant > globalLists;
                     bool fc = true;
@@ -1455,6 +1537,20 @@ unit Code
     {
         return ExportCode(codePath, true);
     }
+    AddRuntime(<string,uint> addresses)
+    {
+        runtimeMap = addresses;
+    }
+    <uint,string> GetRuntimeMap()
+    {
+        <uint,string> map;
+        foreach (var kv in runtimeMap)
+        {
+            map[kv.value] = kv.key;
+        }
+        return map;
+    }
+    
     bool ExportCode(string codePath, bool saveCode)
     {
         bool success = true;
@@ -1465,6 +1561,15 @@ unit Code
             <string, variant> cdict;
             cdict["data"] = constantData;
             dict["const"] = cdict;
+        }
+        if (runtimeMap.Count != 0)
+        {
+            <string,string> rdict;
+            foreach (var kv in runtimeMap)
+            {
+                rdict[kv.key] = (kv.value).ToString();
+            }
+            dict["runtime"] = rdict;
         }
         
         foreach (var kv in debugSymbols)

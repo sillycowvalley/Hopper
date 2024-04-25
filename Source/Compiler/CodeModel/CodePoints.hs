@@ -1906,7 +1906,7 @@ unit CodePoints
                         }
                     } // IsUnconditionalJumpInstruction
                     
-                    else if (IsUnconditionalJumpInstruction(opCode) && IsMethodExitInstruction(opCodeTarget))
+                    else if (!IsCDecl && IsUnconditionalJumpInstruction(opCode) && IsMethodExitInstruction(opCodeTarget))
                     {
                         // JB or J -> RETx  becomes RETx
                         uint jumpOperandWidth   = iLengths[iIndex] - 1;

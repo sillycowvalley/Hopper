@@ -6,209 +6,420 @@ unit Z80Library
     <string, uint> libraryAddresses;
     
     
-    uint compareSignedLocation;
-    uint utilityMultiplyLocation;
-    uint utilityDivideLocation;
+    <SysCalls, <byte> > usedSysCalls;
+    <Instruction,bool>  usedInstruction;
     
-    uint negateBCLocation;
-    uint negateDELocation;
-    uint negateHLLocation;
-    uint doSignsLocation;
+    addSysCall(byte iSysCall, byte iOverload)
+    {
+        SysCalls sysCall = SysCalls(iSysCall);
+        <byte> overloads;
+        if (usedSysCalls.Contains(sysCall))
+        {
+            overloads = usedSysCalls[sysCall];
+        } 
+        if (!overloads.Contains(iOverload))
+        {
+            overloads.Append(iOverload);
+            usedSysCalls[sysCall] = overloads;
+        }
+    }
+    FindSysCalls(<byte> code)
+    {
+        uint index;
+        loop
+        {
+            if (index == code.Count) { break; }
+            
+            uint operand;
+            Instruction instruction = Instructions.GetOperandAndNextAddress(code, ref index, ref operand);
+            usedInstruction[instruction] = true;
+            switch (instruction)
+            {
+                case Instruction.SYSCALL:
+                {
+                    Die(0x0A);
+                }
+                case Instruction.SYSCALL0:
+                {
+                    addSysCall(byte(operand & 0xFF), 0);
+                }
+                case Instruction.SYSCALL1:
+                {
+                    addSysCall(byte(operand & 0xFF), 1);
+                }
+                case Instruction.SYSCALL2:
+                {
+                    addSysCall(byte(operand & 0xFF), 2);
+                }
+                case Instruction.SYSCALL00:
+                {
+                    addSysCall(byte(operand & 0xFF), 0);
+                    addSysCall(byte(operand >> 8), 0);
+                }
+                case Instruction.SYSCALL01:
+                {
+                    addSysCall(byte(operand & 0xFF), 0);
+                    addSysCall(byte(operand >> 8), 1);
+                }
+                case Instruction.SYSCALL10:
+                {
+                    addSysCall(byte(operand & 0xFF), 1);
+                    addSysCall(byte(operand >> 8), 0);
+                }
+                case Instruction.SYSCALLB0:
+                {
+                    addSysCall(byte(operand >> 8), 0);
+                }
+                case Instruction.SYSCALLB1:
+                {
+                    addSysCall(byte(operand >> 8), 1);
+                }
+            }
+        }
+    }
+    
+    bool IsSysCallUsed(SysCalls sysCall, byte iSysCallOverload)
+    {
+        if (usedSysCalls.Contains(sysCall))
+        {
+            <byte> overloads = usedSysCalls[sysCall];
+            return overloads.Contains(iSysCallOverload);
+        }
+        return false;
+    }
     
     Generate()
     {
-        uint address = CurrentAddress;
-        compareSigned();
-        compareSignedLocation = address;
+        uint address;
         
-        address = CurrentAddress;
-        utilityMultiply();
-        utilityMultiplyLocation = address;
         
-        address = CurrentAddress;
-        utilityDivide();
-        utilityDivideLocation = address;
         
-        address = CurrentAddress;
-        negateBC();
-        negateBCLocation = address;
+        bool gcCreateWasUsed;
+        if (
+            IsSysCallUsed(SysCalls.StringNew, 0)   || IsSysCallUsed(SysCalls.StringNewFromConstant, 0) || IsSysCallUsed(SysCalls.StringNewFromConstant, 1)
+         || IsSysCallUsed(SysCalls.StringBuild, 0) || IsSysCallUsed(SysCalls.StringBuild, 1)           || IsSysCallUsed(SysCalls.StringBuildFront, 0)
+         || IsSysCallUsed(SysCalls.ArrayNew, 0)    || IsSysCallUsed(SysCalls.ArrayNewFromConstant, 0)
+         )
+        {
+            gcCreateWasUsed = true;
+        }
         
-        address = CurrentAddress;
-        negateDE();
-        negateDELocation = address;
+        bool ltWasUsed = gcCreateWasUsed;
+        if (IsSysCallUsed(SysCalls.MemoryAllocate, 0))
+        {
+            ltWasUsed = true;
+        }
+        bool geWasUsed = gcCreateWasUsed;
+        if (IsSysCallUsed(SysCalls.StringGetChar, 0)
+         || IsSysCallUsed(SysCalls.MemoryAllocate, 0) || IsSysCallUsed(SysCalls.MemoryFree, 0)
+         || IsSysCallUsed(SysCalls.ArrayGetItem, 0) || IsSysCallUsed(SysCalls.ArraySetItem, 0) 
+           )
+        {
+            geWasUsed = true;
+        }
+        bool gtWasUsed = gcCreateWasUsed;
+        if (IsSysCallUsed(SysCalls.MemoryMaximum, 0) || IsSysCallUsed(SysCalls.MemoryFree, 0))
+        {
+            gtWasUsed = true;
+        }
         
-        address = CurrentAddress;
-        negateHL();
-        negateHLLocation = address;
+        if (usedInstruction.Contains(Instruction.MUL)
+         || usedInstruction.Contains(Instruction.MULI)
+        )
+        {
+            address = CurrentAddress;
+            utilityMultiply();
+            libraryAddresses["utilityMultiply"] = address;
+        }
         
-        address = CurrentAddress;
-        doSigns();
-        doSignsLocation = address;
+        if (usedInstruction.Contains(Instruction.DIV)
+         || usedInstruction.Contains(Instruction.MOD)
+         || usedInstruction.Contains(Instruction.DIVI)
+         || usedInstruction.Contains(Instruction.MODI)
+        )
+        {
+            address = CurrentAddress;
+            utilityDivide();
+            libraryAddresses["utilityDivide"] = address;
+        }
+        
+        if (usedInstruction.Contains(Instruction.DIVI)
+         || usedInstruction.Contains(Instruction.MULI)
+         || usedInstruction.Contains(Instruction.MODI)
+        )
+        {
+            address = CurrentAddress;
+            negateBC();
+            libraryAddresses["negateBC"] = address;
+            
+            address = CurrentAddress;
+            negateDE();
+            libraryAddresses["negateDE"] = address;
+            
+            address = CurrentAddress;
+            negateHL();
+            libraryAddresses["negateHL"] = address;
+        
+            address = CurrentAddress;
+            doSigns();
+            libraryAddresses["doSigns"] = address;
+        }
     
-        address = CurrentAddress;
-        EmitMUL();
-        libraryAddresses["MUL"] = address;
+        if (usedInstruction.Contains(Instruction.MUL))
+        {
+            address = CurrentAddress;
+            EmitMUL();
+            libraryAddresses["MUL"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.MULI))
+        {
+            address = CurrentAddress;
+            EmitMULI();
+            libraryAddresses["MULI"] = address;
+        }
         
-        address = CurrentAddress;
-        EmitMULI();
-        libraryAddresses["MULI"] = address;
-        
-        address = CurrentAddress;
-        EmitDIVMOD();
-        libraryAddresses["DIVMOD"] = address;
-        
-        address = CurrentAddress;
-        EmitDIVI();
-        libraryAddresses["DIVI"] = address;
-        
-        address = CurrentAddress;
-        EmitMODI();
-        libraryAddresses["MODI"] = address;
-        
-        address = CurrentAddress;
-        EmitLE();
-        libraryAddresses["LE"] = address;
-        
-        address = CurrentAddress;
-        EmitLEI();
-        libraryAddresses["LEI"] = address;
-        
-        address = CurrentAddress;
-        EmitLT();
-        libraryAddresses["LT"] = address;
-        
-        address = CurrentAddress;
-        EmitLTI();
-        libraryAddresses["LTI"] = address;
-        
-        address = CurrentAddress;
-        EmitGT();
-        libraryAddresses["GT"] = address;
-        
-        address = CurrentAddress;
-        EmitGTI();
-        libraryAddresses["GTI"] = address;
-        
-        address = CurrentAddress;
-        EmitGE();
-        libraryAddresses["GE"] = address;
-        
-        address = CurrentAddress;
-        EmitGEI();
-        libraryAddresses["GEI"] = address;
-        
-        address = CurrentAddress;
-        EmitBITSHL();
-        libraryAddresses["BITSHL"] = address;
-        
-        address = CurrentAddress;
-        EmitBITSHR();
-        libraryAddresses["BITSHR"] = address;
+        if (usedInstruction.Contains(Instruction.DIV)
+         || usedInstruction.Contains(Instruction.MOD)
+        )
+        {
+            address = CurrentAddress;
+            EmitDIVMOD();
+            libraryAddresses["DIVMOD"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.DIVI))
+        {
+            address = CurrentAddress;
+            EmitDIVI();
+            libraryAddresses["DIVI"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.MODI))
+        {
+            address = CurrentAddress;
+            EmitMODI();
+            libraryAddresses["MODI"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.LE)
+         || usedInstruction.Contains(Instruction.PUSHIBLE)
+           )
+        {
+            address = CurrentAddress;
+            EmitLE();
+            libraryAddresses["LE"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.LEI)
+         || usedInstruction.Contains(Instruction.PUSHILEI)
+           )
+        {
+            address = CurrentAddress;
+            EmitLEI();
+            libraryAddresses["LEI"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.LT)
+         || usedInstruction.Contains(Instruction.PUSHILT)
+         || ltWasUsed
+           )
+        {
+            address = CurrentAddress;
+            EmitLT();
+            libraryAddresses["LT"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.LTI))
+        {
+            address = CurrentAddress;
+            EmitLTI();
+            libraryAddresses["LTI"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.GT) || gtWasUsed)
+        {
+            address = CurrentAddress;
+            EmitGT();
+            libraryAddresses["GT"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.GTI))
+        {
+            address = CurrentAddress;
+            EmitGTI();
+            libraryAddresses["GTI"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.GE) || geWasUsed)
+        {
+            address = CurrentAddress;
+            EmitGE();
+            libraryAddresses["GE"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.GEI))
+        {
+            address = CurrentAddress;
+            EmitGEI();
+            libraryAddresses["GEI"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.BITSHL) || IsSysCallUsed(SysCalls.ArrayNew, 0) || IsSysCallUsed(SysCalls.ArrayGetItem, 0) || IsSysCallUsed(SysCalls.ArraySetItem, 0))
+        {
+            address = CurrentAddress;
+            EmitBITSHL();
+            libraryAddresses["BITSHL"] = address;
+        }
+        if (usedInstruction.Contains(Instruction.BITSHR) || IsSysCallUsed(SysCalls.ArrayNew, 0))
+        {
+            address = CurrentAddress;
+            EmitBITSHR();
+            libraryAddresses["BITSHR"] = address;
+        }
         
                 
         
         // Used by other syscalls:
-        address = CurrentAddress;
-        EmitMemoryAllocate();
-        libraryAddresses["MemoryAllocate"] = address;
+        if (IsSysCallUsed(SysCalls.MemoryAllocate, 0) || gcCreateWasUsed)
+        { 
+            address = CurrentAddress;
+            EmitMemoryAllocate();
+            libraryAddresses["MemoryAllocate"] = address;
+        }
         
-        address = CurrentAddress;
-        EmitMemoryFree();
-        libraryAddresses["MemoryFree"] = address;
+        if (IsSysCallUsed(SysCalls.MemoryFree, 0) || gcCreateWasUsed)
+        {
+            address = CurrentAddress;
+            EmitMemoryFree();
+            libraryAddresses["MemoryFree"] = address;
+        }
+        if (gcCreateWasUsed)
+        {
+            address = CurrentAddress;
+            libraryAddresses["GCCreate"] = address;
+            EmitGCCreate();
         
-        address = CurrentAddress;
-        libraryAddresses["GCCreate"] = address;
-        EmitGCCreate();
+            address = CurrentAddress;
+            libraryAddresses["GCClone"] = address;
+            EmitGCClone();
         
-        address = CurrentAddress;
-        libraryAddresses["GCClone"] = address;
-        EmitGCClone();
-        
-        address = CurrentAddress;
-        libraryAddresses["GCRelease"] = address;
-        EmitGCRelease();
-
+            address = CurrentAddress;
+            libraryAddresses["GCRelease"] = address;
+            EmitGCRelease();
+        }
 
         // On demand syscalls:
-        address = CurrentAddress;
-        EmitIntGetByte();
-        libraryAddresses["IntGetByte"] = address;
+        if (IsSysCallUsed(SysCalls.IntGetByte, 0))
+        {        
+            address = CurrentAddress;
+            EmitIntGetByte();
+            libraryAddresses["IntGetByte"] = address;
+        }
         
-        address = CurrentAddress;
-        EmitSerialIsAvailable();
-        libraryAddresses["SerialIsAvailable"] = address;
-                
-        address = CurrentAddress;
-        EmitSerialWriteChar();
-        libraryAddresses["SerialWriteChar"] = address;
-        
-        address = CurrentAddress;
-        EmitSerialReadChar();
-        libraryAddresses["SerialReadChar"] = address;
-        
-        address = CurrentAddress;
-        EmitMemoryAvailable();
-        libraryAddresses["MemoryAvailable"] = address;
-        
-        address = CurrentAddress;
-        EmitMemoryMaximum();
-        libraryAddresses["MemoryMaximum"] = address;
-        
-        address = CurrentAddress;
-        libraryAddresses["StringNew"] = address;
-        EmitStringNew();
-        
-        address = CurrentAddress;
-        libraryAddresses["StringNewFromConstant0"] = address;
-        EmitStringNewFromConstant0();
-        
-        address = CurrentAddress;
-        libraryAddresses["StringNewFromConstant1"] = address;
-        EmitStringNewFromConstant1();
-        
-        address = CurrentAddress;
-        libraryAddresses["StringGetLength"] = address;
-        EmitStringGetLength();
-        
-        address = CurrentAddress;
-        libraryAddresses["StringGetChar"] = address;
-        EmitStringGetChar();
-        
-        address = CurrentAddress;
-        libraryAddresses["StringBuildChar"] = address;
-        EmitStringBuildChar();
-        
-        address = CurrentAddress;
-        libraryAddresses["StringBuildString"] = address;
-        EmitStringBuildString();
-        
-        address = CurrentAddress;
-        libraryAddresses["StringBuildClear"] = address;
-        EmitStringBuildClear();
-        
-        address = CurrentAddress;
-        libraryAddresses["StringBuildFront"] = address;
-        EmitStringBuildFront();
-    
-        address = CurrentAddress;
-        libraryAddresses["ArrayNew"] = address;
-        EmitArrayNew();
-        
-        address = CurrentAddress;
-        libraryAddresses["ArrayNewFromConstant"] = address;
-        EmitArrayNewFromConstant();
-        
-        address = CurrentAddress;
-        libraryAddresses["ArrayGetCount"] = address;
-        EmitArrayGetCount();
-        
-        address = CurrentAddress;
-        libraryAddresses["ArrayGetItem"] = address;
-        EmitArrayGetItem();
-        
-        address = CurrentAddress;
-        libraryAddresses["ArraySetItem"] = address;
-        EmitArraySetItem();     
+        if (IsSysCallUsed(SysCalls.SerialIsAvailableGet, 0) || IsSysCallUsed(SysCalls.SerialReadChar, 0))
+        { 
+            address = CurrentAddress;
+            EmitSerialIsAvailable();
+            libraryAddresses["SerialIsAvailable"] = address;
+        }
+        if (IsSysCallUsed(SysCalls.SerialWriteChar, 0))
+        {
+            address = CurrentAddress;
+            EmitSerialWriteChar();
+            libraryAddresses["SerialWriteChar"] = address;
+        }
+        if (IsSysCallUsed(SysCalls.SerialReadChar, 0))
+        {
+            address = CurrentAddress;
+            EmitSerialReadChar();
+            libraryAddresses["SerialReadChar"] = address;
+        }
+        if (IsSysCallUsed(SysCalls.MemoryAvailable, 0))
+        {
+            address = CurrentAddress;
+            EmitMemoryAvailable();
+            libraryAddresses["MemoryAvailable"] = address;
+        }
+        if (IsSysCallUsed(SysCalls.MemoryMaximum, 0))
+        {
+            address = CurrentAddress;
+            EmitMemoryMaximum();
+            libraryAddresses["MemoryMaximum"] = address;
+        }
+        if (IsSysCallUsed(SysCalls.StringNew, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["StringNew"] = address;
+            EmitStringNew();
+        }
+        if (IsSysCallUsed(SysCalls.StringNewFromConstant, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["StringNewFromConstant0"] = address;
+            EmitStringNewFromConstant0();
+        }
+        if (IsSysCallUsed(SysCalls.StringNewFromConstant, 1))
+        {
+            address = CurrentAddress;
+            libraryAddresses["StringNewFromConstant1"] = address;
+            EmitStringNewFromConstant1();
+        }
+        if (IsSysCallUsed(SysCalls.StringLengthGet, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["StringGetLength"] = address;
+            EmitStringGetLength();
+        }
+        if (IsSysCallUsed(SysCalls.StringGetChar, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["StringGetChar"] = address;
+            EmitStringGetChar();
+        }
+        if (IsSysCallUsed(SysCalls.StringBuild, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["StringBuildString"] = address;
+            EmitStringBuildString();
+        }
+        if (IsSysCallUsed(SysCalls.StringBuild, 1))
+        {
+            address = CurrentAddress;
+            libraryAddresses["StringBuildChar"] = address;
+            EmitStringBuildChar();
+        }
+        if (IsSysCallUsed(SysCalls.StringBuild, 2))
+        {
+            address = CurrentAddress;
+            libraryAddresses["StringBuildClear"] = address;
+            EmitStringBuildClear();
+        }
+        if (IsSysCallUsed(SysCalls.StringBuildFront, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["StringBuildFront"] = address;
+            EmitStringBuildFront();
+        }
+        if (IsSysCallUsed(SysCalls.ArrayNew, 0) || IsSysCallUsed(SysCalls.ArrayNewFromConstant, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["ArrayNew"] = address;
+            EmitArrayNew();
+        }
+        if (IsSysCallUsed(SysCalls.ArrayNewFromConstant, 0) || IsSysCallUsed(SysCalls.ArraySetItem, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["ArrayNewFromConstant"] = address;
+            EmitArrayNewFromConstant();
+        }
+        if (IsSysCallUsed(SysCalls.ArrayCountGet, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["ArrayGetCount"] = address;
+            EmitArrayGetCount();
+        }
+        if (IsSysCallUsed(SysCalls.ArrayGetItem, 0) || IsSysCallUsed(SysCalls.ArraySetItem, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["ArrayGetItem"] = address;
+            EmitArrayGetItem();
+        }
+        if (IsSysCallUsed(SysCalls.ArraySetItem, 0))
+        {
+            address = CurrentAddress;
+            libraryAddresses["ArraySetItem"] = address;
+            EmitArraySetItem();     
+        }
+        Code.AddRuntime(libraryAddresses);
     }   
     uint GetAddress(string name)
     {
@@ -485,6 +696,7 @@ unit Z80Library
         //Emit(OpCode.RET);
     }
     
+    /*
     compareSigned()
     {
         // From Rodnay Zaks' book:
@@ -512,6 +724,7 @@ unit Z80Library
         Emit(OpCode.CP_A_C);
         Emit(OpCode.RET);                // -->
     }
+    */
     EmitLTI()
     {
         // next -> HL, top -> BC
@@ -649,7 +862,7 @@ unit Z80Library
     {
         // top -> BC, next -> DE
         // HL = next * top
-        EmitWord(OpCode.JP_nn, utilityMultiplyLocation); // DEHL=BC*DE
+        EmitWord(OpCode.JP_nn, GetAddress("utilityMultiply")); // DEHL=BC*DE
     }
     EmitDIVMOD()
     {
@@ -657,7 +870,7 @@ unit Z80Library
         // BC = next / top
         // HL = next % top
         
-        EmitWord(OpCode.JP_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
+        EmitWord(OpCode.JP_nn, GetAddress("utilityDivide")); // BC = BC / DE, remainder in HL
     }
     
     // https://github.com/Zeda/Z80-Optimized-Routines/blob/master/math/subtraction/A_Minus_HL.z80
@@ -701,46 +914,48 @@ unit Z80Library
         EmitOffset(OpCode.JR_Z_e, +4);  // -> check DE
 // BC is -ve        
         Emit(OpCode.INC_iHL);
-        EmitWord(OpCode.CALL_nn, negateBCLocation);
+        EmitWord(OpCode.CALL_nn, GetAddress("negateBC"));
 // check DE
         Emit(OpCode.BIT_7_D);
         EmitOffset(OpCode.JR_Z_e, +4);
 // DE is -ve        
         Emit(OpCode.INC_iHL);
-        EmitWord(OpCode.CALL_nn, negateDELocation);
+        EmitWord(OpCode.CALL_nn, GetAddress("negateDE"));
 // exit 
         Emit(OpCode.RET);   
     }
     EmitMULI()
     {
-        EmitWord(OpCode.CALL_nn, doSignsLocation);
-        EmitWord(OpCode.CALL_nn, utilityMultiplyLocation); // DEHL=BC*DE
+        EmitWord(OpCode.CALL_nn, GetAddress("doSigns"));
+        EmitWord(OpCode.CALL_nn, GetAddress("utilityMultiply")); // DEHL=BC*DE
      
         EmitWord(OpCode.LD_A_inn, Sign);   
         Emit(OpCode.RRA);    // bit 0 -> C
         Emit(OpCode.RET_NC); // even
-        EmitWord(OpCode.CALL_nn, negateHLLocation);
+        EmitWord(OpCode.CALL_nn, GetAddress("negateHL"));
         Emit(OpCode.RET);
     }
     EmitDIVI()
     {
-        EmitWord(OpCode.CALL_nn, doSignsLocation);
-        EmitWord(OpCode.CALL_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
+        EmitWord(OpCode.CALL_nn, GetAddress("doSigns"));
+        EmitWord(OpCode.CALL_nn, GetAddress("utilityDivide")); // BC = BC / DE, remainder in HL
         
         EmitWord(OpCode.LD_A_inn, Sign);   
         Emit(OpCode.RRA);    // bit 0 -> C
         Emit(OpCode.RET_NC); // even
-        EmitWord(OpCode.CALL_nn, negateBCLocation);
+        EmitWord(OpCode.CALL_nn, GetAddress("negateBC"));
         Emit(OpCode.RET);
     }
     EmitMODI()
     {
-        EmitWord(OpCode.CALL_nn, doSignsLocation);
-        EmitWord(OpCode.CALL_nn, utilityDivideLocation); // BC = BC / DE, remainder in HL
+        EmitWord(OpCode.CALL_nn, GetAddress("doSigns"));
+        EmitWord(OpCode.CALL_nn, GetAddress("utilityDivide")); // BC = BC / DE, remainder in HL
         Emit(OpCode.RET);
     }
     ISR()
     {
+        libraryAddresses["ISR"] = CurrentAddress;
+        
         Emit      (OpCode.PUSH_AF);
         Emit      (OpCode.PUSH_HL);
         

@@ -270,7 +270,7 @@ unit SysCall
         // iOverload in ACCL
         // iSysCall  in X
         SysCallShared();
-    
+    }
     SysCall2()
     {
         ConsumeOperandA(); // iSysCall  -> A (uses ACC)

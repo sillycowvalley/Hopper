@@ -444,9 +444,9 @@ unit String
     
     int Compare(string left, string right) 
     {
-        uint minLength = UInt.Min(left.Length, right.Length);
         uint i;
-        int result;
+        int  result;
+        uint minLength = UInt.Min(left.Length, right.Length);
         for (i = 0; i < minLength; i++)
         {
             if (left[i] < right[i])

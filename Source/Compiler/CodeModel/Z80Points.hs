@@ -857,48 +857,61 @@ unit CodePoints
         
         return method.Count; // size in bytes after
     }
-       
+    
     walkInstructions(uint iIndex)
     {
+        <uint> moreWalks;
         loop
         {
-            if (iIndex == iCodes.Count) { break; }
-            if (Flags.Unreached != iFlags[iIndex])
+            loop
             {
-                return; // already been here
-            }
-            iFlags[iIndex] = Flags.Walked;
-            OpCode opCode0 = iCodes[iIndex];
-            switch (opCode0)
+                if (iIndex == iCodes.Count) { break; }
+                if (Flags.Unreached != iFlags[iIndex])
+                {
+                    break; // already been here
+                }
+                iFlags[iIndex] = Flags.Walked;
+                OpCode opCode0 = iCodes[iIndex];
+                switch (opCode0)
+                {
+                    case OpCode.RET:
+                    case OpCode.HALT:
+                    {
+                        break; // end of the line
+                    }
+                    case OpCode.JP_nn:
+                    case OpCode.JR_e:
+                    {
+                        iIndex = iOperands[iIndex]; // unconditional branch
+                        continue;
+                    }
+                    case OpCode.JP_nn:
+                    case OpCode.JP_Z_nn:
+                    case OpCode.JP_NZ_nn:
+                    case OpCode.DJNZ_e:
+                    {
+                        uint iTarget = iOperands[iIndex];
+                        moreWalks.Append(iTarget); // second potential path
+                        //walkInstructions(iTarget); // second potential path
+                    }
+                    case OpCode.JR_e: 
+                    case OpCode.JR_NZ_e: 
+                    case OpCode.JR_Z_e: 
+                    {
+                        Die(0x0B); // should not exist in Z80Points
+                    }
+                }
+                iIndex++;
+            } // loop
+            if (moreWalks.Count != 0)
             {
-                case OpCode.RET:
-                case OpCode.HALT:
-                {
-                    return; // end of the line
-                }
-                case OpCode.JP_nn:
-                case OpCode.JR_e:
-                {
-                    iIndex = iOperands[iIndex]; // unconditional branch
-                    continue;
-                }
-                case OpCode.JP_nn:
-                case OpCode.JP_Z_nn:
-                case OpCode.JP_NZ_nn:
-                case OpCode.DJNZ_e:
-                {
-                    uint iTarget = iOperands[iIndex];
-                    walkInstructions(iTarget); // second potential path
-                }
-                case OpCode.JR_e: 
-                case OpCode.JR_NZ_e: 
-                case OpCode.JR_Z_e: 
-                {
-                    Die(0x0B); // should not exist in Z80Points
-                }
+                iIndex = moreWalks[0];
+                moreWalks.Remove(0);
+                continue;
             }
-            iIndex++;
-        }
+            
+            break;
+        } // loop
     }
     MarkInstructions()
     {

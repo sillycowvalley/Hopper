@@ -12,11 +12,13 @@ unit GC
     {
         uint this;
         uint i;
-        size += 2;
-        this = Memory.Allocate(size+2);
+        size += 2; // type and ref
+        this = Memory.Allocate(size);
         WriteByte(this+iType,      byte(objectType));
         WriteByte(this+iReference, 0); // it will get its first reference when pushed to the stack via R0/HL
-        for (i= iReference+1; i < size; i++)
+        
+        // zero initialize:
+        for (i = iReference+1; i < size; i++)
         {
             WriteByte(this+i, 0);
         }

@@ -72,7 +72,7 @@ unit Memory
                 break;
             }
             current = ReadWord(cFreeList);
-            size++; size++; // +2 space for the size field
+            size += 2; // +2 space for the size field
             if (size < 6)
             {   
                 size = 6; // minimum size for participation in free list

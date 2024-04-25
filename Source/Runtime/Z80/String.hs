@@ -26,7 +26,10 @@ unit String
         uint destination;
         uint constantLocation;
         size = length + 4;                     // +4 for blocksize, ref and type, 
-        size = (size + 15) & 0xFFF0;           // round up to nearest 16 byte boundary
+        if ((size & 0x000F) != 0)
+        {
+            size = (size + 15) & 0xFFF0;       // round up to nearest 16 byte boundary
+        }
         this = GC.Create(Type.String, size-4); // -4 (header added by Create and Allocate)
         destination = this + siChars;
         constantLocation = ReadWord(ConstantStart) + 2;
@@ -99,8 +102,8 @@ unit String
     BuildString(ref uint str, uint append)
     {
         uint capacity = ReadWord(str-2) - 4;
-        uint length  = ReadWord(str+siLength);
-        uint length2 = ReadWord(append+siLength);
+        uint length   = ReadWord(str+siLength);
+        uint length2  = ReadWord(append+siLength);
         uint strExpanded;
         uint size;
         uint i;
@@ -110,7 +113,10 @@ unit String
         {
             // expand 
             size = length + length2 + 4;                  // +4 for blocksize, ref and type, 
-            size = (size + 15) & 0xFFF0;                  // round up to nearest 16 byte boundary
+            if ((size & 0x000F) != 0)
+            {
+                size = (size + 15) & 0xFFF0;              // round up to nearest 16 byte boundary
+            }
             strExpanded = GC.Create(Type.String, size-4); // -4 (header added by Create and Allocate)
             source      = str + siChars;
             destination = strExpanded + siChars;

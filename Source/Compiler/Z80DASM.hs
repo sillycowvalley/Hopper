@@ -267,6 +267,9 @@ program DASM
                 exportMethods.Append("Array.GetItem");
                 exportMethods.Append("Array.SetItem");
                 
+                
+                <uint,string> runtimeMap = Code.GetRuntimeMap();
+                
                 file codeGen;
                 
                 uint doffset = 0;
@@ -403,6 +406,15 @@ program DASM
                         codeSize += 1;
                     }
                     
+                    if (runtimeMap.Contains(instructionAddress))
+                    {
+                        string runtimeName = runtimeMap[instructionAddress];
+                        hasmFile.Append("" + Char.EOL);   
+                        hasmFile.Append("// ####  " + runtimeName + "()  ####" + Char.EOL);
+                        hasmFile.Append("" + Char.EOL);   
+                    }
+                    
+                    
                     // switch to next methods debugInfo:
                     uint switchAddress = 0;
                     if (entryAddress == instructionAddress)
@@ -413,6 +425,7 @@ program DASM
                     {
                         switchAddress = instructionAddress;
                     }
+                    
                     
                     if (methodFirstAddresses.Contains(switchAddress))
                     {
@@ -482,12 +495,42 @@ program DASM
                             comment = "// " + src + ":" + debugLine;  
                         }
                     }
+                    if (comment == "")
+                    {
+                        if (instruction == OpCode.CALL_nn)
+                        {
+                            if ((operand >= entryAddress) && methodFirstAddresses.Contains(operand))
+                            {
+                                uint mi = methodFirstAddresses[operand];
+                                comment = "// " + Code.GetMethodName(mi);
+                            }
+                            else if (runtimeMap.Contains(operand))
+                            {
+                                comment = "// " + runtimeMap[operand];
+                            }
+                            else
+                            {
+                                comment = "// ???";
+                                PrintLn();
+                                Print("Undefined runtime method: " + instructionAddress.ToHexString(4) + ": CALL 0x" + operand.ToHexString(4), Colour.MatrixRed, Colour.Black);
+                            }
+                        }
+                        else if (instruction == OpCode.JP_nn)
+                        {
+                            if (runtimeMap.Contains(operand))
+                            {
+                                comment = "// " + runtimeMap[operand];
+                            }
+                        }
+                    }
                     
                     string disassembly = AsmZ80.Disassemble(instructionAddress, instruction, operand, bare);
+                    disassembly = disassembly.Replace("NOP", "    NOP");
                     if (tableSize != 0)
                     {
                         disassembly = disassembly.Replace("JP HL", "JP HL              // " + tableSize.ToString() + " table entries follow:");
                     }
+                    
                     if (bare)
                     {
                         disassembly = disassembly.Substring(29);
@@ -530,7 +573,7 @@ program DASM
                         {
                             case OpCode.CALL_nn:
                             {
-                                if (operand > entryAddress)
+                                if (methodFirstAddresses.Contains(operand))
                                 {
                                     uint callMethodIndex = methodFirstAddresses[operand];
                                     string callname = Code.GetMethodName(callMethodIndex);
@@ -540,6 +583,19 @@ program DASM
                                         Print("Bad method call: " + instructionAddress.ToHexString(4) + ": CALL 0x" + operand.ToHexString(4) + " " + callname);
                                     }
                                     operandStr = "GetAddress(\"" + callname.Replace(".", "") + "\")";
+                                    comment = "";
+                                }
+                                else if (runtimeMap.Contains(operand))
+                                {
+                                    string runtimeName = runtimeMap[operand];
+                                    operandStr = "GetAddress(\"" + runtimeName.Replace(".", "") + "\")";
+                                    comment = "";
+                                }
+                                else
+                                {
+                                    comment = "// -> ???";
+                                    PrintLn();
+                                    Print("Undefined runtime method: " + instructionAddress.ToHexString(4) + ": CALL 0x" + operand.ToHexString(4), Colour.MatrixRed, Colour.Black);
                                 }
                             }
                             case OpCode.JP_nn:
