@@ -211,10 +211,6 @@ program Compile
             }
             else
             {
-                //if (IsCDecl)
-                //{
-                //    PrintLn("compileReturn: returnBytes=" + returnBytes.ToString() + " slotsToPop=" + slotsToPop.ToString());
-                //}
                 if (IsCDecl && (returnBytes > 0))
                 {
                     CodeStream.AddInstruction(Instruction.POPR0);
@@ -235,8 +231,12 @@ program Compile
                 HopperToken tokenType = Token.GetType(peekToken);   
                 if ((BlockDepth() > 2) || (tokenType != HopperToken.RBrace))
                 {
-                    Parser.Error("single point of exit required for Z80 compiler: " + ToString(tokenType) + ", " + (BlockDepth()).ToString());
-                    break;
+                    uint localsToPop = Block.GetLocalsToPop(false, false);
+                    if (localsToPop > 0)
+                    {
+                        Parser.Error("Z80 compiler requires single point of exit locals defined");
+                        break;
+                    }
                 }
             }
             
@@ -249,32 +249,46 @@ program Compile
     bool compileBreak()
     {
         bool success = true;
-        
-        Parser.Advance(); // break;
-        
-        // - pop all locals till inner loop
-        uint slotsToPop = Block.GetBytesToPop(true, false);
-        if (slotsToPop > 0)
+        loop
         {
-            while (slotsToPop > 255)
+            Parser.Advance(); // break;
+        
+            if (IsZ80)
             {
-                CodeStream.AddInstruction(Instruction.DECSP, 0xFE); // even numbered stack slots (254, not 255)
-                slotsToPop = slotsToPop - 254; 
+                uint localsToPop = Block.GetBytesToPop(true, false);
+                if (localsToPop > 0)
+                {
+                    Parser.Error("Z80 compiler does not allow 'break' when locals are popped");
+                    success = false;
+                    break;
+                }
             }
+            
+            // - pop all locals till inner loop
+            uint slotsToPop = Block.GetBytesToPop(true, false);
             if (slotsToPop > 0)
             {
-                CodeStream.AddInstruction(Instruction.DECSP, byte(slotsToPop));
+                while (slotsToPop > 255)
+                {
+                    CodeStream.AddInstruction(Instruction.DECSP, 0xFE); // even numbered stack slots (254, not 255)
+                    slotsToPop = slotsToPop - 254; 
+                }
+                if (slotsToPop > 0)
+                {
+                    CodeStream.AddInstruction(Instruction.DECSP, byte(slotsToPop));
+                }
             }
-        }
-               
-        // - jump to current inner loop 'exit'
-        uint breakJump = CodeStream.NextAddress;
-        CodeStream.AddInstructionJump(Instruction.J);
-        if (!Block.AddBreakPatch(breakJump))
-        {
-            Parser.ErrorAtCurrent("'break' must be inside loop block");
-            success = false;
-        }
+                   
+            // - jump to current inner loop 'exit'
+            uint breakJump = CodeStream.NextAddress;
+            CodeStream.AddInstructionJump(Instruction.J);
+            if (!Block.AddBreakPatch(breakJump))
+            {
+                Parser.ErrorAtCurrent("'break' must be inside loop block");
+                success = false;
+            }
+            break;
+        } // loop
         
         return success;
     }
@@ -282,26 +296,40 @@ program Compile
     bool compileContinue()
     {
         bool success = true;
-        
-        Parser.Advance(); // continue;
-        
-        // - pop all locals till inner loop
-        uint slotsToPop = Block.GetBytesToPop(true, true);
-        if (slotsToPop > 0)
+        loop
         {
-            if (slotsToPop > 255)
+            Parser.Advance(); // continue;
+            
+            if (IsZ80)
             {
-                Die(0x0B); // limit
+                uint localsToPop = Block.GetBytesToPop(true, true);
+                if (localsToPop > 0)
+                {
+                    Parser.Error("Z80 compiler does not allow 'continue' when locals are popped");
+                    success = false;
+                    break;
+                }
             }
-            CodeStream.AddInstruction(Instruction.DECSP, byte(slotsToPop));
-        }
-        // - jump to current inner loop 'next'
-        uint continueJump = CodeStream.NextAddress;
-        CodeStream.AddInstructionJump(Instruction.J);
-        if (!Block.AddContinuePatch(continueJump))
-        {
-            Parser.ErrorAtCurrent("'continue' must be inside loop block");
-            success = false;
+            
+            // - pop all locals till inner loop
+            uint slotsToPop = Block.GetBytesToPop(true, true);
+            if (slotsToPop > 0)
+            {
+                if (slotsToPop > 255)
+                {
+                    Die(0x0B); // limit
+                }
+                CodeStream.AddInstruction(Instruction.DECSP, byte(slotsToPop));
+            }
+            // - jump to current inner loop 'next'
+            uint continueJump = CodeStream.NextAddress;
+            CodeStream.AddInstructionJump(Instruction.J);
+            if (!Block.AddContinuePatch(continueJump))
+            {
+                Parser.ErrorAtCurrent("'continue' must be inside loop block");
+                success = false;
+            }
+            break;
         }
         
         return success;
@@ -2158,7 +2186,7 @@ program Compile
                 Parser.ErrorAtCurrent("';' or '=' expected");
                 break;
             }
-            if (IsZ80 && !DefiningLocals)
+            if (false && IsZ80 && !DefiningLocals)
             {
                 Parser.ErrorAtCurrent("Z80 compiler does not support block local declarations");
                 break;
@@ -2253,15 +2281,8 @@ program Compile
                 }
                 else if (tokenString == "foreach")
                 {
-                    if (IsZ80)
-                    {
-                        Parser.ErrorAtCurrent("Z80 compiler does not support 'foreach'");
-                    }
-                    else
-                    {
-                        success = compileForEach();
-                        noSemiColon = true;
-                    }
+                    success = compileForEach();
+                    noSemiColon = true;
                 }
                 else if (tokenString == "switch")
                 {
@@ -2663,11 +2684,6 @@ program Compile
             Parser.Reset();
             Directives.New();
             CodeStream.New();
-            if (isMain && IsZ80)
-            {
-                string value = Symbols.GetConstantValue("Array.bitMasks");
-                _ = CodeStream.CreateStringConstant(value);
-            }
             
             if (globalCode.Count != 0)
             {

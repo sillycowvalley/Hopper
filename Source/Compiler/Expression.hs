@@ -3153,6 +3153,11 @@ unit Expression
             }
             if (Parser.Check(HopperToken.Question)) // ?
             {
+                if (IsZ80) // TODO: ternary
+                {
+                    Parser.ErrorAtCurrent("ternary expression not supported by Z80 compiler");
+                    break;
+                }
                 if (actualType != "bool")
                 {
                     Parser.ErrorAtCurrent("ternary test expression must be boolean");

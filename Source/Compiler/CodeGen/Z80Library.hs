@@ -112,7 +112,7 @@ unit Z80Library
         bool geWasUsed = gcCreateWasUsed;
         if (IsSysCallUsed(SysCalls.StringGetChar, 0)
          || IsSysCallUsed(SysCalls.MemoryAllocate, 0) || IsSysCallUsed(SysCalls.MemoryFree, 0)
-         || IsSysCallUsed(SysCalls.ArrayGetItem, 0) || IsSysCallUsed(SysCalls.ArraySetItem, 0) 
+         || IsSysCallUsed(SysCalls.ArrayGetItem, 0)   || IsSysCallUsed(SysCalls.ArraySetItem, 0) 
            )
         {
             geWasUsed = true;
@@ -395,7 +395,7 @@ unit Z80Library
             libraryAddresses["ArrayNew"] = address;
             EmitArrayNew();
         }
-        if (IsSysCallUsed(SysCalls.ArrayNewFromConstant, 0) || IsSysCallUsed(SysCalls.ArraySetItem, 0))
+        if (IsSysCallUsed(SysCalls.ArrayNewFromConstant, 0))
         {
             address = CurrentAddress;
             libraryAddresses["ArrayNewFromConstant"] = address;
@@ -407,7 +407,7 @@ unit Z80Library
             libraryAddresses["ArrayGetCount"] = address;
             EmitArrayGetCount();
         }
-        if (IsSysCallUsed(SysCalls.ArrayGetItem, 0) || IsSysCallUsed(SysCalls.ArraySetItem, 0))
+        if (IsSysCallUsed(SysCalls.ArrayGetItem, 0))
         {
             address = CurrentAddress;
             libraryAddresses["ArrayGetItem"] = address;
@@ -617,12 +617,15 @@ unit Z80Library
         // next -> HL, top -> BC 
         // HL = next << top
         
-        Emit(OpCode.LD_B_C); // (assuming the shift is < 256)
+        Emit(OpCode.XOR_A_A);
+        Emit(OpCode.CP_A_C);
+        EmitOffset(OpCode.JR_Z_e, +7);
         
-        Emit(OpCode.AND_A);
+        Emit(OpCode.LD_B_C); // (assuming the shift is < 256 and not 0)
+        
         Emit(OpCode.SLA_L);
         Emit(OpCode.RL_H);
-        EmitOffset(OpCode.DJNZ_e, -7);
+        EmitOffset(OpCode.DJNZ_e, -6);
         Emit(OpCode.RET);
     }
     EmitBITSHR()
@@ -630,12 +633,15 @@ unit Z80Library
         // next -> HL, top -> BC
         // HL = next >> top
         
-        Emit(OpCode.LD_B_C); // (assuming the shift is < 256)
+        Emit(OpCode.XOR_A_A);
+        Emit(OpCode.CP_A_C);
+        EmitOffset(OpCode.JR_Z_e, +7);
         
-        Emit(OpCode.AND_A);
+        Emit(OpCode.LD_B_C); // (assuming the shift is < 256 and not 0)
+        
         Emit(OpCode.SRL_H);
         Emit(OpCode.RR_L);
-        EmitOffset(OpCode.DJNZ_e, -7);
+        EmitOffset(OpCode.DJNZ_e, -6);
         Emit(OpCode.RET);
     }
     

@@ -319,6 +319,7 @@ unit CodePoints
                 }
                 case OpCode.LD_iIY_d_D:
                 case OpCode.LD_iIX_d_D:
+                case OpCode.CP_A_D:
                 {
                     walkStats |= WalkStats.ReadD;
                 }
@@ -355,6 +356,7 @@ unit CodePoints
                 case OpCode.OR_A_C:
                 case OpCode.XOR_A_C:
                 case OpCode.LD_A_C:
+                case OpCode.CP_A_C:
                 {
                     walkStats |= WalkStats.ReadC;
                 }

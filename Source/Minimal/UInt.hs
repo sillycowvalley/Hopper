@@ -200,9 +200,8 @@ unit UInt
     {
         uint digit;
         char c;
-        uint i;
         string result;
-        for (i = 16; i > 0; i--)
+        for (uint i = 16; i > 0; i--)
         {
             digit = this % 2;
             c = Byte.ToHex(byte(digit));
@@ -211,7 +210,21 @@ unit UInt
         }
         return result;
     }
-    uint Min(uint a, uint b) { return (a < b) ? a : b; }
-    uint Max(uint a, uint b) { return (a > b) ? a : b; }
+    uint Min(uint a, uint b)
+    { 
+       if (a < b)
+       {
+           return a;
+       }
+       return b;
+    }
+    uint Max(uint a, uint b) 
+    { 
+        if (a > b)
+        {
+            return a;
+        }
+        return b; 
+    }
     Swap(ref uint a, ref uint b) { uint t = a; a = b; b = t; }
 }

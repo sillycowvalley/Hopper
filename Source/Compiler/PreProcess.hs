@@ -1543,23 +1543,6 @@ program PreProcess
           }
         } // loop
         
-        if (IsZ80)
-        {
-            if (!Symbols.GlobalExists("Array.bitMasks"))
-            {
-                string bitMask;
-                bitMask += char(0x01);
-                bitMask += char(0x02);
-                bitMask += char(0x04);
-                bitMask += char(0x08);
-                bitMask += char(0x10);
-                bitMask += char(0x20);
-                bitMask += char(0x40);
-                bitMask += char(0x80);
-                Symbols.AddConstant("Array.bitMasks", "byte[8]", bitMask); 
-            }
-        }
-        
         if (success)
         {
             success = Constant.ResolveUnresolveds();

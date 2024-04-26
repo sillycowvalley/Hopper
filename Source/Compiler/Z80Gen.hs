@@ -6,7 +6,7 @@ program Z80Gen
     //#define INLINE_STACK_OPERATIONS
     //#define INLINE_OTHER_INSTRUCTIONS
     
-    #define CHECKED
+//    #define CHECKED
 //  #define PATCHCHECKED
     
     uses "/Source/System/System"
@@ -1907,7 +1907,7 @@ program Z80Gen
                 Emit(OpCode.NOP);
                 Emit(OpCode.NOP);
             }
-            if ((methodIndex == 0x0000) /*|| (methodIndex == 0x0001)*/)
+            if ((methodIndex == 0x0002) /*|| (methodIndex == 0x0001)*/)
             {
                 if (instruction == Instruction.RETB)
                 {

@@ -25,7 +25,7 @@ unit String
         uint source;
         uint destination;
         uint constantLocation;
-        size = length + 4;                     // +4 for blocksize, ref and type, 
+        size = length + 6;                     // +6 for blocksize, ref, type, length 
         if ((size & 0x000F) != 0)
         {
             size = (size + 15) & 0xFFF0;       // round up to nearest 16 byte boundary
@@ -54,7 +54,12 @@ unit String
         {
             WriteByte(this + siChars + 1, mch);
         }
-        WriteWord(this + siLength, (mch != 0) ? 2 : 1);
+        uint length = 2;
+        if (mch == 0)
+        {
+            length = 1;
+        }
+        WriteWord(this + siLength, length);
         return this;
     }
     uint GetLength(uint this)
@@ -75,16 +80,18 @@ unit String
     
     BuildChar(ref uint str, char append)
     {
-        uint capacity = ReadWord(str-2) - 4;
+        uint capacity = ReadWord(str-2) - 6; // -6 for blocksize, ref, type, length
         uint length = ReadWord(str+siLength);
         uint strExpanded;
         uint i;
         uint source;
         uint destination;
+        byte references;
         if (length >= capacity)
         {
             // expand 
-            strExpanded = GC.Create(Type.String, capacity + 16);   
+            references  = ReadByte(str + 1);                     // GC reference count
+            strExpanded = GC.Create(Type.String, capacity + 18); // capacity + 6 + 16 - 4 (-4 for header added by Create and Allocate)  
             source      = str + siChars;
             destination = strExpanded + siChars;
             for (i=0; i < length; i++)
@@ -95,13 +102,14 @@ unit String
             }
             GC.Release(str);
             str = strExpanded;
+            WriteByte(str + 1, references);
         }    
-        WriteByte(str  + siChars + length, byte(append));
+        WriteByte(str + siChars + length, byte(append));
         WriteWord(str + siLength,          length+1);
     }
     BuildString(ref uint str, uint append)
     {
-        uint capacity = ReadWord(str-2) - 4;
+        uint capacity = ReadWord(str-2) - 6; // -6 for blocksize, ref, type, length
         uint length   = ReadWord(str+siLength);
         uint length2  = ReadWord(append+siLength);
         uint strExpanded;
@@ -109,10 +117,12 @@ unit String
         uint i;
         uint source;
         uint destination;
+        byte references;
         if (length+length2 >= capacity)
         {
             // expand 
-            size = length + length2 + 4;                  // +4 for blocksize, ref and type, 
+            references  = ReadByte(str + 1);              // GC reference count
+            size = length + length2 + 6;                  // +6 for blocksize, ref, type, length 
             if ((size & 0x000F) != 0)
             {
                 size = (size + 15) & 0xFFF0;              // round up to nearest 16 byte boundary
@@ -128,6 +138,7 @@ unit String
             }
             GC.Release(str);
             str = strExpanded;
+            WriteByte(str + 1, references);
         }    
         source      = append + siChars;
         destination = str + siChars + length;
@@ -141,16 +152,18 @@ unit String
     }
     BuildFront(ref uint str, char append)
     {
-        uint capacity = ReadWord(str-2) - 4;
+        uint capacity = ReadWord(str-2) - 6; // -6 for blocksize, ref, type, length
         uint length = ReadWord(str+siLength);
         uint strExpanded;
         uint i;
         uint source;
         uint destination;
+        byte references;
         if (length >= capacity)
         {
             // expand 
-            strExpanded = GC.Create(Type.String, capacity + 16);   
+            references  = ReadByte(str + 1);                     // GC reference count
+            strExpanded = GC.Create(Type.String, capacity + 18); // capacity + 6 + 16 - 4 (-4 for header added by Create and Allocate)     
             source      = str + siChars;
             destination = strExpanded + siChars;
             for (i=0; i < length; i++)
@@ -161,12 +174,15 @@ unit String
             }
             GC.Release(str);
             str = strExpanded;
+            WriteByte(str + 1, references);
         }    
-        source      = str + siChars;
-        destination = str + siChars + 1;
+        source      = str + siChars + length - 1; // last character
+        destination = source + 1;
         for (i=0; i < length; i++)
         {
             WriteByte(destination, ReadByte(source));
+            destination--;
+            source--;
         }
         WriteByte(str + siChars,  byte(append));
         WriteWord(str + siLength, length+1);

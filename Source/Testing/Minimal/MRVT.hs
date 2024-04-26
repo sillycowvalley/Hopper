@@ -1,41 +1,15 @@
 program MRVT
 {
     
-    #define REFTYPES
-    
     #define CPU_Z80
     
     uses "/Source/Minimal/IO"
     
-#ifdef REFTYPES
     PrintFailed(string message, uint instance)
     {
-        WriteLn("  " + message);
+        WriteLn("  Failed: " + message + " " + instance.ToString());
         Diagnostics.Die(0x0B); // system failure / internal error
     }
-#else
-    writeDigit(uint uthis)
-    {
-        char c;
-        byte digit = byte(uthis % 10);
-        c = digit.ToDigit();
-        uthis = uthis / 10;
-        if (uthis != 0)
-        {
-            writeDigit(uthis);
-        }
-        Serial.WriteChar(c);
-    }
-    WriteUInt(uint this)
-    {
-        writeDigit(this);
-    }
-    PrintFailed(char message, uint instance)
-    {
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(message); WriteUInt(instance); Serial.WriteChar(' '); Serial.WriteChar('!');Serial.WriteChar('!');Serial.WriteChar('!');
-        Diagnostics.Die(0x0B); // system failure / internal error
-    }
-#endif    
     
     TestStringTrim()
     {
@@ -293,6 +267,7 @@ program MRVT
     {
         string prompt = "system 'string'";
         WriteLn(prompt); // string methods written in Hopper (some specific to HOPPER_6502)
+        string build;
         
         int result;
         if (String.Compare("bbb", "aaa") != 1)
@@ -504,7 +479,6 @@ program MRVT
             PrintFailed(prompt, 12);
         }
         
-        string build;
         String.Build (ref build, "");
         if (build != "")
         {
@@ -569,6 +543,7 @@ program MRVT
         {
             PrintFailed(prompt, 12);
         }
+        
         build = "012345678901234567890123456789";
         String.BuildFront (ref build, 'a');
         if (build != "a012345678901234567890123456789")
@@ -800,7 +775,6 @@ program MRVT
         }
     }
 
-#ifdef REFTYPES        
     const string constRegular  = "0123456789";
     const string constHex      = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
     const byte[] constHexBytes = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
@@ -808,17 +782,11 @@ program MRVT
     string globalRegular       = "0123456789";
     string globalHex           = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
     byte[10] globalHexBytes    = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
-#endif
 
     TestHexStrings()
     {
-#ifdef REFTYPES
         string prompt = "'hex' strings";
         WriteLn(prompt);
-#else
-        char prompt = 'h';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif
         
         string regular;
         string hex;
@@ -1033,13 +1001,8 @@ program MRVT
     uint gindex = 0;
     TestRef()
     {
-#ifdef REFTYPES
         string prompt = "'ref'";
         WriteLn(prompt);
-#else
-        char prompt = 'r';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif
         
         string test = "Test String";
         
@@ -1075,13 +1038,8 @@ program MRVT
     
     TestSwitch()
     {
-#ifdef REFTYPES
         string prompt = "'switch'";
         WriteLn(prompt);
-#else
-        char prompt = 's';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt); Serial.WriteChar('w');
-#endif
         
         int count = 0;
         char check = 'A';
@@ -1170,8 +1128,10 @@ program MRVT
                 case 'B':
                 {
                     inc = 2;
+#ifndef CPU_Z80                    
                     break;
                     count = count + inc;
+#endif                    
                 }
                 default:
                 {
@@ -1179,6 +1139,7 @@ program MRVT
                     count = count + inc;
                 }
             }
+            break;
         }
         if (count != 0)
         {
@@ -1199,13 +1160,8 @@ program MRVT
     
     TestBooleanShortCircuit()
     {
-#ifdef REFTYPES
         string prompt = "'short circuit'";
         WriteLn(prompt);
-#else
-        char prompt = 's';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt); Serial.WriteChar('s');
-#endif                
         
         
         int trueCount = 0;
@@ -1374,14 +1330,8 @@ program MRVT
     
     TestWhile()
     {
-#ifdef REFTYPES
         string prompt = "'while'";
         WriteLn(prompt);
-#else
-        char prompt = 'w';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif                
-
         
         int trueCount = 0;
         int falseCount = 0;
@@ -1424,13 +1374,9 @@ program MRVT
     
     TestFor()
     {
-#ifdef REFTYPES
         string prompt = "'for'";
         WriteLn(prompt);
-#else
-        char prompt = 'f';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif                
+
         uint count = 0;
         uint i = 0;
         for (i = 0; i < 10; i++)
@@ -1484,14 +1430,8 @@ program MRVT
     }
     TestForEach()
     {
-#ifdef REFTYPES
         string prompt = "'foreach'";
         WriteLn(prompt);
-#else
-        char prompt = 'f';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt); Serial.WriteChar('e'); 
-#endif                
-
         
         uint count = 0;
         string ss = "abcde";
@@ -1502,15 +1442,24 @@ program MRVT
                 continue;
             }
             count++;
+#ifndef CPU_Z80            
             if (s == 'd')
             {
                 break;
             }
+#endif
         }
+#ifndef CPU_Z80
         if (count != 3)
         {
             PrintFailed(prompt, 1);
         }
+#else
+        if (count != 4)
+        {
+            PrintFailed(prompt, 1);
+        }
+#endif
         
         count = 0;
         char[5] arr;
@@ -1527,28 +1476,31 @@ program MRVT
                 continue;
             }
             count++;
+#ifndef CPU_Z80            
             if (s == 'd')
             {
                 break;
             }
+#endif
         }
+#ifndef CPU_Z80
         if (count != 3)
         {
-            PrintFailed(prompt, 2);
+            PrintFailed(prompt, 1);
         }
-
+#else
+        if (count != 4)
+        {
+            PrintFailed(prompt, 1);
+        }
+#endif
     } //TestForEach()
     
     
     TestEquals()
     { 
-#ifdef REFTYPES
         string prompt = "'=='";
         WriteLn(prompt);
-#else
-        char prompt = '=';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt); Serial.WriteChar('=');
-#endif                
 
         // contants
         if (1 == 0)
@@ -1662,13 +1614,8 @@ program MRVT
     
     TestConstants()
     {
-#ifdef REFTYPES
         string prompt = "'c'";
         WriteLn(prompt);
-#else
-        char prompt = 'c';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif                
     
         int    localInt   = 10000;
         if (globalInt != localInt)
@@ -1684,13 +1631,8 @@ program MRVT
     
     TestLessThan()
     {
-#ifdef REFTYPES
         string prompt = "'<'";
         WriteLn(prompt);
-#else
-        char prompt = '<';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif                
 
         int    localInt   = 10001;
         
@@ -1763,13 +1705,8 @@ program MRVT
     }
     TestLessThanOrEqual()
     {
-#ifdef REFTYPES
         string prompt = "'<='";
         WriteLn(prompt);
-#else
-        char prompt = '<';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt); Serial.WriteChar('=');
-#endif                
 
         int    localInt   = 10001;
         int localNegInt1  = -10000;
@@ -1821,13 +1758,8 @@ program MRVT
     
     TestGreaterThan()
     {
-#ifdef REFTYPES
         string prompt = "'>'";
         WriteLn(prompt);
-#else
-        char prompt = '>';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif                
     
         int    localInt   = 10001;
         
@@ -1847,13 +1779,8 @@ program MRVT
     
     TestGreaterThanOrEqual()
     {
-#ifdef REFTYPES
         string prompt = "'>='";
         WriteLn(prompt);
-#else
-        char prompt = '>';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt); Serial.WriteChar('=');
-#endif                
     
         int    localInt   = 10001;
         if (globalInt >= localInt)
@@ -1889,14 +1816,8 @@ program MRVT
     
     TestPropertyMath()
     {
-#ifdef REFTYPES
         string prompt = "'properties'";
         WriteLn(prompt);
-#else
-        char prompt = 'p';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif                
-    
         
         Prop = 42;
         Prop += 1;
@@ -1962,13 +1883,8 @@ program MRVT
 
     TestUIntMath()
     {
-#ifdef REFTYPES
         string prompt = "'uint'";
         WriteLn(prompt);
-#else
-        char prompt = 'u';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif                
     
         // globalUInt   = 10000;
         // globalUInt2  = 20000;
@@ -2051,14 +1967,8 @@ program MRVT
     
     TestIntMath()
     {
-#ifdef REFTYPES
         string prompt = "'int'";
         WriteLn(prompt);
-#else
-        char prompt = 'i';
-        Serial.WriteChar(Char.EOL); Serial.WriteChar(prompt);
-#endif                
-
         
         // globalInt   = 10000;
         // globalInt2  = 10001;
@@ -2449,16 +2359,15 @@ program MRVT
         boolArray[7] = false;
         boolArray[8] = true;
         boolArray[9] = true;
+        
         if (boolArray.Count != 10)
         {
             PrintFailed(prompt, 19);
         }
-        
         if (boolArray[2] != true)
         {
             PrintFailed(prompt, 20);
         }
-        
         if (boolArray[0] != true)
         {
             PrintFailed(prompt, 21);
@@ -2495,6 +2404,7 @@ program MRVT
         {
             PrintFailed(prompt, 29);
         }
+        
         count = 0;
 #ifndef CPU_Z80        
         foreach (var a in boolArray)
@@ -2516,29 +2426,23 @@ program MRVT
     Hopper()
     {
         
-#ifdef REFTYPES        
         WriteLn();
         WriteLn("Minimal Runtime Validation Tests:");
 
-        //TestCharSystem();
-        //TestStringCompare();
-        //TestString();
-        //TestStringCase();
-        //TestHexStrings();
-        //TestRef();
-        //TestArray();
-        
-        // Failing:        
-        //TestStringSystem();
+        /*
+        TestCharSystem();
+        TestStringCompare();
+        TestString();
+        TestStringCase();
+        TestHexStrings();
+        TestRef();
         TestStringTrim();
+        TestStringSystem();
+        */
         
-        
-#ifndef CPU_Z80        
-        TestForEach(); // strings and arrays
-#endif
-        
-#endif      
-/*
+        TestArray();
+
+        TestForEach();
         TestFor();
         TestWhile();
         TestBooleanShortCircuit();
@@ -2550,14 +2454,9 @@ program MRVT
         TestUIntMath();
         TestIntMath();
         TestConstants();
-        TestSwitch();
         TestPropertyMath();
-        */
-#ifdef REFTYPES        
-        WriteLn("  Passed");
-#else
-        Serial.WriteChar(Char.EOL); Serial.WriteChar('O'); Serial.WriteChar('K');Serial.WriteChar('!');
-#endif        
+        TestSwitch();
         
+        WriteLn("  Passed");
     }
 }

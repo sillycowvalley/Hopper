@@ -16,10 +16,6 @@ unit Array
     
     const uint ConstantStart = 0x0008; // location of first byte of constant data in ROM
     
-    // This constant always exists for Z80 as first constant: (see Preprocess.hs to modify)
-    //const byte[] bitMasks  = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
-    //                           0b00010000, 0b00100000, 0b01000000, 0b10000000 };
-    
     uint GetCount(uint this)
     {
         return ReadWord(this+aiCount);
@@ -33,7 +29,11 @@ unit Array
         }
         else if (elementType == Type.Bool)
         {
-            size = (size >> 3) + ((size & 0x0007 != 0) ? 1 : 0);
+            size = (size >> 3);
+            if ((count & 0x0007) != 0)
+            {
+                size++;
+            }
         }
         uint this = GC.Create(Type.Array, size+3);
         WriteWord(this+aiCount, count);
@@ -69,7 +69,6 @@ unit Array
         {
             Die(0x02); // array index out of range
         }
-        
         Type etype = Type(ReadByte(this+aiType));
         if ((etype == Type.UInt) || (etype == Type.Int))
         {
@@ -77,10 +76,13 @@ unit Array
         }
         else if (etype == Type.Bool)
         {
-            bit = index & 0x07;
-            value = ReadByte(this + aiElements + (index >> 3));
-            mask = bitMasks[bit];
-            value = (value & mask != 0) ? 1 : 0;
+            bit = (index & 0x07); // 0..7
+            mask = (0b00000001 << bit);
+            value = ReadByte(this + aiElements + (index >> 3)) & mask;
+            if (value != 0)
+            {
+                value = 1;
+            }
         }
         else
         {
@@ -104,9 +106,9 @@ unit Array
         }
         else if (etype == Type.Bool)
         {
-            bit = index & 0x07;
+            bit = (index & 0x07); // 0..7
             index = this + aiElements + (index >> 3);
-            mask = bitMasks[bit];
+            mask = (0b00000001 << bit);
             if (value == 0)
             {
                 value = ReadByte(index) & ~mask;
