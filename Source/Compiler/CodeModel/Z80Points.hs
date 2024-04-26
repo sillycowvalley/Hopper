@@ -85,7 +85,7 @@ unit CodePoints
             }
             case "doSigns":
             {
-                walkStats = WalkStats.ReadHL | GetRuntimeStats("negateBC") | GetRuntimeStats("negateDE");
+                walkStats = WalkStats.ReadB | WalkStats.ReadD | WalkStats.WriteHL | GetRuntimeStats("negateBC") | GetRuntimeStats("negateDE");
             }
             
             case "MUL":
@@ -164,6 +164,17 @@ unit CodePoints
             {
                 walkStats = WalkStats.WriteBC | WalkStats.WriteDE | WalkStats.WriteHL | GetRuntimeStats("MemoryAllocate") | GetRuntimeStats("LT");
             }
+            
+            case "StringGetLength":
+            {
+                walkStats = WalkStats.WriteDE | WalkStats.WriteHL;
+            }
+            case "StringGetChar":
+            {
+                walkStats = WalkStats.WriteBC | WalkStats.WriteDE | WalkStats.WriteHL;
+            }
+            
+            
             default:
             {
                 Print(" " + runtimeMethod, Colour.MatrixRed, Colour.Black);
