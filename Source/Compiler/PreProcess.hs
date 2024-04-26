@@ -1128,6 +1128,10 @@ program PreProcess
             {
                 Parser.Error("no delegates in assembly");
             }
+            else if (IsZ80) // TODO: ternary
+            {
+                Parser.ErrorAtCurrent("delegates not supported by Z80 compiler");
+            }
             else
             {
                 isDelegate = true;

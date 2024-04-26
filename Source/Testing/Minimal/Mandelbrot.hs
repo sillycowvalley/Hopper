@@ -1,5 +1,6 @@
 program Mandelbrot
 {
+    #define CPU_Z80
     uses "/Source/Minimal/IO"
         
     {
@@ -9,11 +10,15 @@ program Mandelbrot
         // https://www.dos4ever.com/SCMP/NIBL.html
         
         IO.WriteLn(" Mandelbrot - ported from Gordon's TinyBasic - Integers");
+#ifdef CPU_Z80        
+        IO.WriteLn("    Ported to Hopper, compiled for Z80 with the Hopper Z80 Compiler");
+#else
         IO.WriteLn("    Ported to Hopper, running on a VM/Runtime built with the Hopper 6502 Assembler");
+#endif        
         IO.WriteLn();
         IO.Write(' ');
         
-        uint start = Time.Seconds;
+        //uint start = Time.Seconds;
         string palette = ".,'~=+:;*%&$OXB#@ ";
         int a; int b; int c; int d;
         int q; int p; int t; int s; byte i;
@@ -47,7 +52,7 @@ program Mandelbrot
             } // next x
             IO.WriteLn(); IO.Write(' ');
         } // next y
-        uint elapsed = (Seconds - start); 
-        IO.WriteLn(elapsed.ToString() + " " + " seconds");
+        //uint elapsed = (Seconds - start); 
+        //IO.WriteLn(elapsed.ToString() + " " + " seconds");
     }
 }

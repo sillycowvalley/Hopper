@@ -63,7 +63,116 @@ unit CodePoints
     uint total;
     bool firstInMethod; 
     
-    <uint, <OpCode> > sysCallStreams;
+    
+    <uint,string> runtimeMap;
+    
+    WalkStats GetRuntimeStats(string runtimeMethod)
+    {
+        WalkStats walkStats;
+        switch (runtimeMethod)
+        {
+            case "negateBC":
+            {
+                walkStats = WalkStats.ReadBC | WalkStats.WriteBC;
+            }
+            case "negateDE":
+            {
+                walkStats = WalkStats.ReadDE | WalkStats.WriteDE;
+            }
+            case "negateHL":
+            {
+                walkStats = WalkStats.ReadHL | WalkStats.WriteHL;
+            }
+            case "doSigns":
+            {
+                walkStats = WalkStats.ReadHL | GetRuntimeStats("negateBC") | GetRuntimeStats("negateDE");
+            }
+            
+            case "MUL":
+            case "utilityMultiply":
+            {
+                walkStats = WalkStats.WriteHL | WalkStats.ReadDE | WalkStats.WriteDE | WalkStats.ReadBC;
+            }
+            case "DIVMOD":
+            case "utilityDivide":
+            {
+                walkStats = WalkStats.WriteHL | WalkStats.ReadBC | WalkStats.WriteBC | WalkStats.ReadDE;
+            }
+            
+            case "MULI":
+            {
+                walkStats = GetRuntimeStats("doSigns") | GetRuntimeStats("utilityMultiply") | GetRuntimeStats("negateHL");
+            }
+            case "DIVI":
+            {
+                walkStats = GetRuntimeStats("doSigns") | GetRuntimeStats("utilityDivide") | GetRuntimeStats("negateBC");
+            }
+            case "MODI":
+            {
+                walkStats = GetRuntimeStats("doSigns") | GetRuntimeStats("utilityDivide");
+            }
+            
+            case "LE":
+            case "LT":
+            case "GE":
+            case "GT":
+            case "EQ":
+            case "NE":
+            {
+                walkStats = WalkStats.ReadHL | WalkStats.ReadBC | WalkStats.WriteDE;
+            }
+            case "LEI":
+            case "LTI":
+            case "GEI":
+            case "GTI":
+            {
+                walkStats = WalkStats.ReadHL | WalkStats.WriteHL | WalkStats.ReadBC | WalkStats.WriteDE;
+            }
+            
+            case "BITSHL":
+            case "BITSHR":
+            {
+                walkStats = WalkStats.ReadHL | WalkStats.WriteHL | WalkStats.ReadC | WalkStats.WriteB;
+            }
+            case "BITAND":
+            case "BITOR":
+            case "BITXOR":
+            {
+                walkStats = WalkStats.ReadHL | WalkStats.WriteHL | WalkStats.ReadBC;
+            }
+            case "BITNOT":
+            {
+                walkStats = WalkStats.ReadHL | WalkStats.WriteHL;
+            }
+            case "MemoryAllocate":
+            {
+                walkStats = WalkStats.WriteBC | WalkStats.WriteDE | WalkStats.WriteHL | GetRuntimeStats("LT") | GetRuntimeStats("GE");
+            }
+            case "MemoryFree":
+            {
+                walkStats = WalkStats.WriteBC | WalkStats.WriteDE | WalkStats.WriteHL | GetRuntimeStats("GT");
+            }
+            case "GCRelease":
+            {
+                walkStats = WalkStats.WriteDE | WalkStats.WriteHL | GetRuntimeStats("MemoryFree");
+            }
+            case "GCCreate":
+            {
+                walkStats = WalkStats.WriteBC | WalkStats.WriteDE | WalkStats.WriteHL | GetRuntimeStats("MemoryAllocate") | GetRuntimeStats("LT");
+            }
+            case "GCClone":
+            {
+                walkStats = WalkStats.WriteBC | WalkStats.WriteDE | WalkStats.WriteHL | GetRuntimeStats("MemoryAllocate") | GetRuntimeStats("LT");
+            }
+            default:
+            {
+                Print(" " + runtimeMethod, Colour.MatrixRed, Colour.Black);
+                walkStats = (WalkStats.ReadBC | WalkStats.ReadDE | WalkStats.ReadHL); // assume we read everything
+            }
+        }
+        return walkStats;
+    }
+    
     bool walkVerbose;   
     WalkVerbose(uint iIndex, WalkStats searchFor, WalkStats searchAgainst, uint pointLimit)
     {
@@ -79,7 +188,11 @@ unit CodePoints
     {
         bool success = false;
         WalkStats walkStats;
-        <OpCode> sysCallStream;
+        
+        if (runtimeMap.Count == 0)
+        {
+            runtimeMap = Code.GetRuntimeMap();
+        }
         
         loop
         {
@@ -94,16 +207,8 @@ unit CodePoints
             
             OpCode opCode0;
             bool skipIncrement;
-            if (sysCallStream.Count != 0)
-            {
-                opCode0 = sysCallStream[0];
-                sysCallStream.Remove(0);
-                skipIncrement = true;
-            }
-            else
-            {
-                opCode0 = iCodes[iIndex];
-            }
+            opCode0 = iCodes[iIndex];
+            
             if (walkVerbose)
             {
                 if(skipIncrement)
@@ -135,14 +240,13 @@ unit CodePoints
                         // system methods
                         uint callAddress = iOperands[iIndex];
                         if (walkVerbose) { Print(" (sys:"+ callAddress.ToHexString(4) +")"); }
-                        if (sysCallStreams.Contains(callAddress))
+                        if (runtimeMap.Contains(callAddress))
                         {
-                            sysCallStream = sysCallStreams[callAddress];
+                            walkStats |= GetRuntimeStats(runtimeMap[callAddress]);
                         }
-                        else 
+                        else
                         {
-                            sysCallStream = Z80Code.GetCallStream(callAddress);
-                            sysCallStreams[callAddress] = sysCallStream;
+                            walkStats |= (WalkStats.ReadBC | WalkStats.ReadDE | WalkStats.ReadHL); // assume we read everything
                         }
                     }
                 }
@@ -2153,10 +2257,14 @@ unit CodePoints
                 // do we ever read this value from D?
                 if (WalkAhead(iIndex+1, WalkStats.WriteD | WalkStats.Exit, WalkStats.ReadD, 10))
                 {
-                    
+                    PrintLn();
+                    Print("A: ");
+                    /*   
                     iCodes  [iIndex-0] = OpCode.NOP;
                     iLengths[iIndex-0] = 1;
                     modified = true;
+                    */
+                    WalkVerbose(iIndex+1, WalkStats.WriteD | WalkStats.Exit, WalkStats.ReadD, 10);
                 }
             }
             else if ((opCode0 == OpCode.LD_E_iIY_d) || (opCode0 == OpCode.LD_E_iIX_d))
@@ -2164,9 +2272,14 @@ unit CodePoints
                 // do we ever read this value from E?
                 if ( WalkAhead(iIndex+1, WalkStats.WriteE | WalkStats.Exit, WalkStats.ReadE, 10))
                 {
+                    PrintLn();
+                    Print("B: ");
+                    /*
                     iCodes  [iIndex-0] = OpCode.NOP;
                     iLengths[iIndex-0] = 1;
                     modified = true;
+                    */
+                    WalkVerbose(iIndex+1, WalkStats.WriteE | WalkStats.Exit, WalkStats.ReadE, 10);
                 }
             }
             else if ((opCode0 == OpCode.LD_H_iIY_d) || (opCode0 == OpCode.LD_H_iIX_d))
@@ -2176,18 +2289,24 @@ unit CodePoints
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteH, WalkStats.ReadH | WalkStats.Exit, 10)) // HL is the return value so Exit DQ's
                     {
+                        Print(" C");
+                        /*
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
                         modified = true;
+                        */
                     }
                 }
                 else
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteH | WalkStats.Exit, WalkStats.ReadH, 10)) // void method so Exit is +ve
                     {
+                        Print(" D");
+                        /*
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
                         modified = true;
+                        */
                     }
                 }
             }
@@ -2198,18 +2317,24 @@ unit CodePoints
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteL, WalkStats.ReadL | WalkStats.Exit, 10)) // HL is the return value so Exit DQ's
                     {
+                        Print(" E");
+                        /*
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
                         modified = true;
+                        */
                     }
                 }
                 else
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteL | WalkStats.Exit, WalkStats.ReadL, 10)) // void method so Exit is +ve
                     {
+                        Print(" F");
+                        /*
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
                         modified = true;
+                        */
                     }
                 }
             }

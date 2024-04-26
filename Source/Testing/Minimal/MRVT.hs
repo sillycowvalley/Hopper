@@ -2225,6 +2225,12 @@ program MRVT
         {
             PrintFailed(prompt, 139);
         }
+        localIntNeg = -20;
+        localInt = 50;
+        if (localIntNeg / localInt != 0)
+        {
+            PrintFailed(prompt, 140);
+        }
         
     } // TestIntMath
     
@@ -2429,7 +2435,8 @@ program MRVT
         WriteLn();
         WriteLn("Minimal Runtime Validation Tests:");
 
-        /*
+        TestArray();        
+/*
         TestCharSystem();
         TestStringCompare();
         TestString();
@@ -2438,9 +2445,6 @@ program MRVT
         TestRef();
         TestStringTrim();
         TestStringSystem();
-        */
-        
-        TestArray();
 
         TestForEach();
         TestFor();
@@ -2451,12 +2455,12 @@ program MRVT
         TestGreaterThan();
         TestGreaterThanOrEqual();
         TestLessThanOrEqual();
-        TestUIntMath();
-        TestIntMath();
         TestConstants();
         TestPropertyMath();
         TestSwitch();
-        
+        TestUIntMath();
+        TestIntMath();
+  */      
         WriteLn("  Passed");
     }
 }

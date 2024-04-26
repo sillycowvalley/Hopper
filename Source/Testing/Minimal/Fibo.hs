@@ -1,6 +1,5 @@
 program Fibo
 {
-    //#define CPU_Z80
     //#define MCU
 
     uses "/Source/Minimal/IO"

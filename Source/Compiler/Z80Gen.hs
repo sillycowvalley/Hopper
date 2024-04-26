@@ -971,7 +971,7 @@ program Z80Gen
                         refAction = "ref returned in R0";
                     }
 #endif                    
-               }
+                }
                 case Instruction.RETB:
                 {
                     if (methodIndex == 0)
