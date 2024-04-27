@@ -5,12 +5,13 @@
 // MEMORY LAYOUT
 ////////////////////////////////////////////////////////////////////
 
-// 32K MEMORY
-#define RAM_START   0x0000
-#define RAM_END     0x7FFF
+# include "romImage.h"
+
+#define RAM_START   ROM_END + 1
+#define RAM_END     0xFFFF
 byte    RAM[RAM_END-RAM_START+1];
 
-# include "romImage.h"
+
 
 #define ROM         rom_bin
 

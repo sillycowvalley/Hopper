@@ -479,6 +479,17 @@ unit CPU // Z80
                                            ixRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
                                            nFlag = false; 
                                          }
+                case OpCode.ADD_IX_IX:   { long result = long(ixRegister) + long(ixRegister); 
+                                           cFlag = (result > 0xFFFF);
+                                           ixRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
+                                           nFlag = false; 
+                                         }
+                case OpCode.ADD_IY_IY:   { long result = long(iyRegister) + long(iyRegister); 
+                                           cFlag = (result > 0xFFFF);
+                                           iyRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
+                                           nFlag = false; 
+                                         }
+                
                 case OpCode.ADD_IY_DE:   { long result = long(iyRegister) + long(deRegister); 
                                            cFlag = (result > 0xFFFF);
                                            iyRegister = UInt.FromBytes(result.GetByte(0), result.GetByte(1));
@@ -574,6 +585,36 @@ unit CPU // Z80
                                            aRegister = value.GetByte(0);
                                            CheckSZByte(aRegister); nFlag = false; cFlag = (value > 255); 
                                          }
+                                         
+                case OpCode.LD_IYH_n:      { iyRegister = (iyRegister & 0x00FF) + (byte(operand) << 8); }
+                case OpCode.LD_IYL_n:      { iyRegister = (iyRegister & 0xFF00) + byte(operand);        }
+                case OpCode.LD_IXH_n:      { ixRegister = (ixRegister & 0x00FF) + (byte(operand) << 8); }
+                case OpCode.LD_IXL_n:      { ixRegister = (ixRegister & 0xFF00) + byte(operand);        }
+                 
+                case OpCode.DEC_IXH:     { 
+                                           byte value = byte(ixRegister >> 8);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           ixRegister = (ixRegister & 0x00FF) + (value << 8);
+                                           CheckSZByte(value); nFlag = true;
+                                         }
+                case OpCode.DEC_IXL:     { 
+                                           byte value = byte(ixRegister & 0xFF);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           ixRegister = (ixRegister & 0xFF00) + value;
+                                           CheckSZByte(value); nFlag = true;
+                                         }   
+                case OpCode.DEC_IYH:     { 
+                                           byte value = byte(iyRegister >> 8);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           iyRegister = (iyRegister & 0x00FF) + (value << 8);
+                                           CheckSZByte(value); nFlag = true;
+                                         }
+                case OpCode.DEC_IYL:     { 
+                                           byte value = byte(iyRegister & 0xFF);
+                                           value = ((value == 0) ? 0xFF : (value-1)); 
+                                           iyRegister = (iyRegister & 0xFF00) + value;
+                                           CheckSZByte(value); nFlag = true;
+                                         }   
             
                 default: 
                 { 
@@ -597,6 +638,9 @@ unit CPU // Z80
                 case OpCode.NOP:         {  } 
                 case OpCode.DI:          { iFF = false; }
                 case OpCode.EI:          { iFF = true;  }
+                
+                case OpCode.SCF:         { nFlag = false; cFlag = true;   }
+                case OpCode.CCF:         { nFlag = false; cFlag = !cFlag; }
                 
                 case OpCode.LD_A_n:      { aRegister  = byte(operand);                                }
                 case OpCode.LD_B_n:      { bcRegister = (bcRegister & 0x00FF) + (byte(operand) << 8); }
@@ -1195,6 +1239,11 @@ unit CPU // Z80
             if ((address >= ZT0) && (address <= ZT3))
             {
                 byte index = byte(address-ZT0);
+                if (index == 0)
+                {
+                    ms = Time.Millis;
+                    //Print(" " + ms.ToHexString(8), Colour.Orange, Colour.Black);
+                }
                 value = ms.GetByte(index);
             }
         }

@@ -44,7 +44,6 @@
 #include "memorymap.h"      // Memory Map (ROM, RAM, PERIPHERALS)
 #include "portmap.h"        // Pin mapping to cpu
 #include "setuphold.h"      // Delays required to meet setup/hold
-#include "8251.h"           // 8251 Emulation
 
 unsigned long clock_cycle_count;
 
@@ -86,6 +85,125 @@ void uP_release_reset()
   digitalWriteFast(uP_RESET_N, HIGH);
 }
 
+////////////////////////////////////////////////////////////////////
+// Time APIs
+////////////////////////////////////////////////////////////////////
+
+#define TICKS_START   0x0028
+#define TICKS_END     0x002B
+
+uint32_t ticks;
+
+inline __attribute__((always_inline))
+byte getTicks(uint16_t address)
+{
+    address -= 0x0028; // 0..3
+    if (address == 0)
+    {
+        ticks = millis();
+    }
+    byte * pTicks = (byte *)&ticks;
+    return pTicks[address];
+}
+
+////////////////////////////////////////////////////////////////////
+// Motorolla 6850 ACIA
+////////////////////////////////////////////////////////////////////
+
+#define ACIA_CONTROL 0x001E
+#define ACIA_STATUS  0x001E
+#define ACIA_DATA    0x001F
+
+byte aciaControl;
+byte aciaRxData;
+byte aciaTxData;
+byte aciaStatus;
+
+const byte ACIA_TDRE = 0b00000010;
+const byte ACIA_RDRF = 0b00000001;
+const byte ACIA_INTR = 0b10000000;
+
+void init6850ACIA()
+{
+    aciaControl  = 0;
+    aciaRxData   = 0;
+    aciaTxData   = 0;
+    aciaStatus   = ACIA_TDRE;  // bit 1 set means TDRE is empty and ready - we should always be ready to send data
+}
+
+
+
+inline __attribute__((always_inline))
+void tx6850ACIA(unsigned int address, byte data) 
+{
+    if (address == ACIA_CONTROL)
+    {
+        aciaControl = data; // we never use this
+    }
+    else if (address == ACIA_DATA)
+    {
+        aciaTxData = data; // we just transmit it immediately, TDRF remains set
+        char str[2];
+        str[0] = aciaTxData;
+        str[1] = 0;
+        Serial.print(str);
+    }
+}
+
+inline __attribute__((always_inline))
+byte rx6850ACIA(unsigned int address) 
+{
+    byte data = 0;
+    digitalWriteFast(uP_INT_N, HIGH);
+    if (address == ACIA_STATUS)
+    {
+        data = aciaStatus;
+        aciaStatus = aciaStatus & 0b01111111; // reading the status register clears the interrupt flag
+    }
+    else if (address == ACIA_DATA)
+    {
+        data = aciaRxData;  
+        // reading the data register clears the RDRF bit
+        aciaStatus = aciaStatus & 0b11111110;
+    }
+    return data;
+}
+
+
+inline __attribute__((always_inline))
+void service6850ACIA() 
+{
+    const byte TRANSMIT_DELAY = 10;             // tx_delay to handle fast incoming chars
+    static byte txDelay = TRANSMIT_DELAY;
+    
+    if (txDelay > 0)
+    {
+        txDelay--;
+    }
+    else if (digitalReadFast(uP_INT_N) == LOW)
+    {
+        // If interrupt is already asserted
+        // wait for it go high...
+        return;
+    } else if (Serial.available())
+    {
+        if ((aciaStatus & ACIA_INTR) == 0)               // read serial byte only if 6850 interrupt is clear 
+        {
+            if ((aciaStatus & ACIA_RDRF) == 0)           // and receive data register (RDRF) is not full
+            {
+                int ch = Serial.read();
+                aciaRxData   = ch & 0xFF;                             // byte from int?          
+                aciaStatus   = aciaStatus | (ACIA_INTR | ACIA_RDRF);  // interrupt and RDRF bits set to indicate that data is ready
+
+                // signal an interrupt:
+                digitalWriteFast(uP_INT_N, LOW);
+
+                txDelay = TRANSMIT_DELAY;
+            }
+        }
+    }
+    return;
+}
 
 ////////////////////////////////////////////////////////////////////
 // Processor Control Loop
@@ -102,9 +220,7 @@ void uP_release_reset()
 byte prevIORQ = 0;
 byte prevMREQ = 0;
 byte prevDATA = 0;
-
-byte DATA_OUT;
-byte DATA_IN;
+byte data     = 0;
 
 inline __attribute__((always_inline))
 void cpu_tick()
@@ -130,38 +246,51 @@ void cpu_tick()
       
       // ROM?
       if ( (ROM_START <= uP_ADDR) && (uP_ADDR <= ROM_END) )
-        DATA_OUT = ROM[ (uP_ADDR - ROM_START) ];
+      {
+          data = ROM[ (uP_ADDR - ROM_START) ];
+      }
       else
       // RAM?
       if ( (uP_ADDR <= RAM_END) && (RAM_START <= uP_ADDR) )
-        DATA_OUT = RAM[uP_ADDR - RAM_START];
+      {
+          data = RAM[uP_ADDR - RAM_START];
+      }
       else
-        DATA_OUT = 0xFF;
+      {
+          data = 0xFF;
+      }
       
       // Start driving the databus out
-      SET_DATA_OUT( DATA_OUT );
+      SET_DATA_OUT( data );
 
 #if outputDEBUG
-      char tmp[40];
-      sprintf(tmp, "-- A=%0.4X D=%0.2X\n", uP_ADDR, DATA_OUT);
-      Serial.write(tmp);
+      if (uP_ADDR != 0x0008)
+      {
+          char tmp[40];
+          sprintf(tmp, "-- A=%04X D=%02X\n", uP_ADDR, data);
+          Serial.write(tmp);
+          delay(1);
+      }
 #endif
 
     } else
     // Write?
     if (!STATE_WR_N)
     {
-      xDATA_DIR_IN();
-      DATA_IN = xDATA_IN();
-      
-      // Memory Write
-      if ( (RAM_START <= uP_ADDR) && (uP_ADDR <= RAM_END) )
-        RAM[uP_ADDR - RAM_START] = DATA_IN;
+        xDATA_DIR_IN();
+        data = xDATA_IN();
+        
+        // Memory Write
+        if ( (RAM_START <= uP_ADDR) && (uP_ADDR <= RAM_END) )
+        {
+          RAM[uP_ADDR - RAM_START] = data;
+        }
 
 #if outputDEBUG
-      char tmp[40];
-      sprintf(tmp, "WR A=%0.4X D=%0.2X\n", uP_ADDR, DATA_IN);
-      Serial.write(tmp);
+        char tmp[40];
+        sprintf(tmp, "WR A=%04X D=%02X\n", uP_ADDR, data);
+        Serial.write(tmp);
+        delay(1);
 #endif
     }
 
@@ -178,32 +307,17 @@ void cpu_tick()
       xDATA_DIR_OUT();
       byte ADDR_L = ADDR() & 0xFF;
 
-      // 8251 access
-
-      if (ADDR_L == ADDR_8251_DATA)
+      if ( (ACIA_STATUS == ADDR_L) || (ACIA_DATA == ADDR_L) ) // 6850 ?
       {
-        // DATA register access
-        prevDATA = reg8251_DATA = toupper( Serial.read() );
-        // clear RxRDY bit in 8251
-        reg8251_STATUS = reg8251_STATUS & (~STAT_8251_RxRDY);
-        // Serial.write("8251 serial read\n");
-        
-        digitalWriteFast(uP_INT_N, HIGH);
+          prevDATA = rx6850ACIA(ADDR_L);
       }
-      else
-
-      if ( ADDR_L == ADDR_8251_MODCMD )
+      else if ( (ADDR_L <= TICKS_END) && (TICKS_START <= ADDR_L) ) // Time on Zero Page
       {
-        // Mode/Command Register access
-        if (reg8251_STATE == STATE_8251_RESET)
-          prevDATA = reg8251_MODE;
-        else
-          prevDATA = reg8251_STATUS;
+          prevDATA = getTicks(ADDR_L);
       }
-      
       // output data at this cycle too
-      DATA_OUT = prevDATA;
-      SET_DATA_OUT( DATA_OUT );
+      data = prevDATA;
+      SET_DATA_OUT( data );
       
     }
     else
@@ -214,8 +328,8 @@ void cpu_tick()
       // change DATA port to output to uP:
       xDATA_DIR_OUT();
 
-      DATA_OUT = prevDATA;
-      SET_DATA_OUT( DATA_OUT );
+      data = prevDATA;
+      SET_DATA_OUT( data );
     }
     else
 
@@ -223,36 +337,15 @@ void cpu_tick()
     if (!STATE_WR_N && prevIORQ)      // perform write on falling edge
     {
       xDATA_DIR_IN();
-      DATA_IN = xDATA_IN();
+      data = xDATA_IN();
 
       byte ADDR_L = ADDR() & 0xFF;
 
-      // 8251 access
-      if (ADDR_L == ADDR_8251_DATA)
+      if ( (ACIA_CONTROL == ADDR_L) || (ACIA_DATA == ADDR_L)  )   // 6850 ?
       {
-        // write to DATA register
-        reg8251_DATA = DATA_IN;
-        // TODO: Spit byte out to serial
-        Serial.write(reg8251_DATA);        
-      }
-      else
-      if ( ADDR_L == ADDR_8251_MODCMD )
-      {
-        // write to Mode/Command Register
-        if (reg8251_STATE == STATE_8251_RESET)
-        {
-          // 8251 changes from MODE to COMMAND
-          reg8251_STATE = STATE_8251_INITIALIZED;
-          // we ignore the mode command for now.
-          // reg8251_MODE = DATA_IN
-          // Serial.write("8251 reset\n");
-          
-        } else {
-          // Write to 8251 command register
-          reg8251_COMMAND = DATA_IN;
-          // TODO: process command sent
-        }
-      }
+          tx6850ACIA(ADDR_L, data);
+      } 
+
     } else
   //////////////////////////////////////////////////////////////////////
     // if (STATE_RD_N && STATE_WR_N)        // 1 && 1
@@ -265,15 +358,16 @@ void cpu_tick()
       xDATA_DIR_OUT();
 
       // default to vector 0
-      DATA_OUT = 0;
-      SET_DATA_OUT( DATA_OUT );
+      data = 0;
+      SET_DATA_OUT( data );
     }
 
 #if (outputDEBUG)
     {
-      char tmp[40];
-      sprintf(tmp, "IORQ RW=%0.1X A=%0.4X D=%0.2X\n", STATE_WR_N, uP_ADDR, DATA_OUT);
-      Serial.write(tmp);
+        char tmp[40];
+        sprintf(tmp, "IORQ RW=%01X (%s) A=%04X D=%02X\n", STATE_WR_N, (STATE_WR_N == 1 ? "read" : "write"), uP_ADDR, data);
+        Serial.write(tmp);
+        delay(1);
     }
 #endif
   }
@@ -303,35 +397,23 @@ void setup()
   Serial.begin(0);
   while (!Serial);
   
-  Serial.write(27);       // ESC command
-  Serial.print("[2J");    // clear screen command
-  Serial.write(27);
-  Serial.print("[H");
-  Serial.println("\n");
   Serial.println("Configuration:");
   Serial.println("==============");
   print_teensy_version();
   Serial.print("Debug:      "); Serial.println(outputDEBUG, HEX);
-  Serial.print("SRAM Size:  "); Serial.print(RAM_END - RAM_START + 1, DEC); Serial.println(" Bytes");
-  Serial.print("SRAM_START: 0x"); Serial.println(RAM_START, HEX); 
-  Serial.print("SRAM_END:   0x"); Serial.println(RAM_END, HEX); 
-  Serial.println("");
-  Serial.println("=======================================================");
-  Serial.println("> Z80 SBC By Grant Searle");
-  Serial.println("> Z80 BASIC Ver 4.7b Copyright (C) 1978 by Microsoft");
-  Serial.println("> Modified by Grant Searle");
-  Serial.println("> http://searle.hostei.com/grant/index.html");
-  Serial.println("=======================================================");
-  Serial.println("Try running:");
-  Serial.println("");
-  Serial.println("10 FOR A=0 TO 6.2 STEP 0.2");
-  Serial.println("20 PRINT TAB(40+SIN(A)*20);\"*\"");
-  Serial.println("30 NEXT A");
-  Serial.println("40 END");
+
+  Serial.print("ROM Size:  ");   Serial.print(ROM_END - ROM_START + 1, DEC); Serial.println(" Bytes");
+  Serial.print("ROM_START: 0x"); Serial.println(ROM_START, HEX); 
+  Serial.print("ROM_END:   0x"); Serial.println(ROM_END, HEX); 
+
+  Serial.print("RAM Size:  "); Serial.print(RAM_END - RAM_START + 1, DEC); Serial.println(" Bytes");
+  Serial.print("RAM_START: 0x"); Serial.println(RAM_START, HEX); 
+  Serial.print("RAM_END:   0x"); Serial.println(RAM_END, HEX); 
   
   // Initialize processor GPIO's
   uP_init();
-  intel8251_init();
+  //intel8251_init();
+  init6850ACIA();
 
   // Reset processor
   //
@@ -340,8 +422,6 @@ void setup()
   
   // Go, go, go
   uP_release_reset();
-
-  Serial.println("\n");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -361,7 +441,7 @@ void loop()
     // Check serial events but not every cycle.
     // Watch out for clock mismatch (cpu tick vs serialEvent counters are /128)
     i++;
-    if (i == 0) serialEvent8251();
+    //if (i == 0) service6850ACIA();
     if (i == 0)  Serial.flush();
   }
 }

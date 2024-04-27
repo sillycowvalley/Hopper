@@ -68,6 +68,44 @@ program DASM
         return sourceLine;
     }
     
+    writeSrc(file srcFile, <byte> output, uint romSize)
+    {
+        uint romAddress = 0x0000;
+        
+        srcFile.Append("#define ROM_START   0x" + romAddress.ToHexString(4) + Char.EOL);
+        srcFile.Append("#define ROM_END     0x" + (romSize-1).ToHexString(4) + Char.EOL);
+        srcFile.Append("" + Char.EOL);
+        
+        srcFile.Append("PROGMEM const unsigned char rom_bin[] = {");
+        uint address = romAddress;
+        uint length  = output.Count;
+        uint index   = 0;
+        loop
+        {
+            byte b = 0;
+            if (index < length)
+            {
+                b = output[index];
+            }
+            string prefix;
+            if (index % 16 == 0)
+            {
+                prefix = Char.EOL + "    ";
+            }
+            if (index % 16 == 8)
+            {
+                prefix = "  ";
+            }
+            srcFile.Append(prefix + "0x" + b.ToHexString(2) + ", ");    
+            if (address == 0xFFFF) { break; } 
+            address++;
+            index++;
+        }
+        
+        srcFile.Append("};" + Char.EOL);
+        srcFile.Flush();
+    }
+    
     <byte> readIHex(file hexFile, ref uint org)
     {
         bool first = true;
@@ -266,6 +304,9 @@ program DASM
                 exportMethods.Append("Array.GetCount");
                 exportMethods.Append("Array.GetItem");
                 exportMethods.Append("Array.SetItem");
+                
+                exportMethods.Append("Time.Seconds");
+                exportMethods.Append("Time.Delay");
                 
                 
                 <uint,string> runtimeMap = Code.GetRuntimeMap();
@@ -728,6 +769,18 @@ program DASM
                 uint kSize = romSize / 1024;
                 uint extra = codeSize - romSize;
                 success = codeSize <= romSize;
+                
+                if (success)
+                {
+                    string srcPath = codePath.Replace(".hex", ".c");
+                    file srcFile = File.Create(srcPath);
+                    if (!srcFile.IsValid())
+                    {
+                        PrintLn("Failed to create '" + srcPath + "'");
+                        break;
+                    }
+                    writeSrc(srcFile, code, romSize);
+                }
                 
                 if (!Parser.IsInteractive())
                 {

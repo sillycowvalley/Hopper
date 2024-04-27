@@ -170,11 +170,13 @@ unit Z80LibraryGenerated
         EmitWord  (OpCode.LD_DE_nn, 0x0000);
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_E_iIY_d, int(4));               // byte lch = byte(chch & 0xFF);  string.hs:48
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
         EmitByte  (OpCode.LD_D_n, 0x00);
         EmitOffset(OpCode.LD_iIY_d_E, int(-2));
         EmitOffset(OpCode.LD_iIY_d_D, int(-1));
         EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // byte mch = byte(chch >> 8);    string.hs:49
         Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));
         EmitOffset(OpCode.LD_D_iIY_d, int(5));
         Emit      (OpCode.LD_E_D);
         EmitByte  (OpCode.LD_D_n, 0x00);
@@ -195,6 +197,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.ADD_HL_DE);
         Emit      (OpCode.PUSH_HL);
         EmitOffset(OpCode.LD_L_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.POP_IX);
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
@@ -395,7 +398,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress0515 = CurrentAddress + 1;
+        uint jumpAddress0521 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         Emit      (OpCode.PUSH_IY);                          // references  = ReadByte(str + 1);                     // GC reference count
         Emit      (OpCode.POP_IX);
@@ -536,8 +539,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress0515+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress0515+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress0521+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress0521+1, byte(CurrentAddress >> 8));
         Emit      (OpCode.PUSH_IY);                          // WriteByte(str + siChars + length, byte(append));
         Emit      (OpCode.POP_IX);
         EmitWord  (OpCode.LD_DE_nn, 0x0006);
@@ -687,7 +690,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress077C = CurrentAddress + 1;
+        uint jumpAddress0788 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         Emit      (OpCode.PUSH_IY);                          // references  = ReadByte(str + 1);              // GC reference count
         Emit      (OpCode.POP_IX);
@@ -862,12 +865,13 @@ unit Z80LibraryGenerated
         Emit      (OpCode.ADD_HL_DE);
         Emit      (OpCode.PUSH_HL);
         EmitOffset(OpCode.LD_L_iIY_d, int(-18));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-17));
         Emit      (OpCode.POP_IX);
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress077C+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress077C+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress0788+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress0788+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(4));               // source      = append + siChars;
         EmitOffset(OpCode.LD_H_iIY_d, int(5));
         EmitWord  (OpCode.LD_DE_nn, 0x0004);
@@ -1045,7 +1049,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress0A64 = CurrentAddress + 1;
+        uint jumpAddress0A73 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         Emit      (OpCode.PUSH_IY);                          // references  = ReadByte(str + 1);                     // GC reference count
         Emit      (OpCode.POP_IX);
@@ -1186,8 +1190,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress0A64+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress0A64+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress0A73+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress0A73+1, byte(CurrentAddress >> 8));
         Emit      (OpCode.PUSH_IY);                          // source      = str + siChars + length - 1; // last character
         Emit      (OpCode.POP_IX);
         EmitWord  (OpCode.LD_DE_nn, 0x0006);
@@ -1540,7 +1544,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-11));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress0E7E = CurrentAddress + 1;
+        uint jumpAddress0E8D = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_E_iIY_d, int(-12));             // break;                         memory.hs:84
         EmitOffset(OpCode.LD_D_iIY_d, int(-11));
@@ -1672,10 +1676,10 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_D_iIY_d, int(-15));
         EmitOffset(OpCode.LD_iIY_d_E, int(-12));
         EmitOffset(OpCode.LD_iIY_d_D, int(-11));
-        uint jumpAddress0F86 = CurrentAddress - 272;
-        EmitWord  (OpCode.JP_nn, jumpAddress0F86);           // }                              memory.hs:105
-        PatchByte(jumpAddress0E7E+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress0E7E+1, byte(CurrentAddress >> 8));
+        uint jumpAddress0F95 = CurrentAddress - 272;
+        EmitWord  (OpCode.JP_nn, jumpAddress0F95);           // }                              memory.hs:105
+        PatchByte(jumpAddress0E8D+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress0E8D+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(-4));              // address = best + 2;            memory.hs:106
         EmitOffset(OpCode.LD_H_iIY_d, int(-3));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -1697,7 +1701,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress0FB4 = CurrentAddress + 1;
+        uint jumpAddress0FC3 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // WriteWord(best, size);         memory.hs:111
         EmitOffset(OpCode.LD_D_iIY_d, int(-3));
@@ -1789,7 +1793,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1079 = CurrentAddress + 1;
+        uint jumpAddress1088 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // WriteWord(bestNext+4, newHole);
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
@@ -1805,7 +1809,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        uint jumpAddress109A = CurrentAddress + 1;
+        uint jumpAddress10A9 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:127
         EmitOffset(OpCode.LD_L_iIY_d, int(-20));             // WriteWord(newHole+2,  bestNext);
         EmitOffset(OpCode.LD_H_iIY_d, int(-19));
@@ -1853,7 +1857,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress10FF = CurrentAddress + 1;
+        uint jumpAddress110E = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // WriteWord(bestNext+4, newHole);
         EmitOffset(OpCode.LD_H_iIY_d, int(-7));
@@ -1869,14 +1873,14 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress1079+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1079+1, byte(CurrentAddress >> 8));
-        PatchByte(jumpAddress109A+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress109A+1, byte(CurrentAddress >> 8));
-        uint jumpAddress1120 = CurrentAddress + 1;
+        PatchByte(jumpAddress1088+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1088+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress10A9+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress10A9+1, byte(CurrentAddress >> 8));
+        uint jumpAddress112F = CurrentAddress + 1;
         EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:139
-        PatchByte(jumpAddress0FB4+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress0FB4+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress0FC3+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress0FC3+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // else if (bestSize >= size)     memory.hs:140
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
@@ -1888,7 +1892,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1138 = CurrentAddress + 1;
+        uint jumpAddress1147 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
         EmitOffset(OpCode.LD_E_iIY_d, int(-4));              // WriteWord(best, bestSize);     memory.hs:147
         EmitOffset(OpCode.LD_D_iIY_d, int(-3));
@@ -1975,18 +1979,18 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
         EmitOffset(OpCode.JR_e, int(10));                    // }                              memory.hs:166
-        PatchByte(jumpAddress1138+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1138+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1147+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1147+1, byte(CurrentAddress >> 8));
         EmitWord  (OpCode.LD_DE_nn, 0x000C);                 // Die(0x0C);                     memory.hs:169
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.EX_iSP_HL);
         Emit      (OpCode.LD_A_L);
         EmitWord  (OpCode.LD_inn_A, 0xFF02);
         Emit      (OpCode.HALT);
-        PatchByte(jumpAddress10FF+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress10FF+1, byte(CurrentAddress >> 8));
-        PatchByte(jumpAddress1120+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1120+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress110E+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress110E+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress112F+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress112F+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // break;                         memory.hs:172
         EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.POP_DE);
@@ -2132,7 +2136,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1328 = CurrentAddress + 1;
+        uint jumpAddress1337 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-16));             // WriteWord(freeSlot+2, current);
         EmitOffset(OpCode.LD_H_iIY_d, int(-15));
@@ -2198,7 +2202,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIY_d_H, int(-17));
         Emit      (OpCode.LD_A_L);                           // if (0 == gapFront)             memory.hs:236
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress13AD = CurrentAddress + 1;
+        uint jumpAddress13BC = CurrentAddress + 1;
         EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // nextSize = ReadWord(ReadWord(cFreeList));
         Emit      (OpCode.PUSH_DE);
@@ -2278,8 +2282,8 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress13AD+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress13AD+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress13BC+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress13BC+1, byte(CurrentAddress >> 8));
         EmitWord  (OpCode.LD_DE_nn, 0xFF09);                 // WriteWord(cFreeList, freeSlot);
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_L_iIY_d, int(-16));
@@ -2291,15 +2295,15 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        uint jumpAddress146E = CurrentAddress + 1;
+        uint jumpAddress147D = CurrentAddress + 1;
         EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:249
-        PatchByte(jumpAddress1328+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1328+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1337+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1337+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // else if (0 == current)         memory.hs:250
         EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1479 = CurrentAddress + 1;
+        uint jumpAddress1488 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // WriteWord(currentPrev+2, freeSlot);
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
@@ -2401,10 +2405,10 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        uint jumpAddress154D = CurrentAddress + 1;
+        uint jumpAddress155C = CurrentAddress + 1;
         EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              memory.hs:265
-        PatchByte(jumpAddress1479+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1479+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1488+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1488+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // WriteWord(currentPrev+2, freeSlot);
         EmitOffset(OpCode.LD_H_iIY_d, int(-9));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -2489,7 +2493,7 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIY_d_H, int(-25));
         Emit      (OpCode.LD_A_L);                           // if (0 == gapBack)              memory.hs:275
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1602 = CurrentAddress + 1;
+        uint jumpAddress1611 = CurrentAddress + 1;
         EmitWord  (OpCode.JP_NZ_nn, 0xAA55);
         EmitOffset(OpCode.LD_E_iIY_d, int(-10));             // WriteWord(currentPrev, prevSize+size);
         EmitOffset(OpCode.LD_D_iIY_d, int(-9));
@@ -2547,8 +2551,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.ADD_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(-4));
         EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        PatchByte(jumpAddress1602+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1602+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress1611+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1611+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_E_iIY_d, int(-6));              // gapNext = current - (freeSlot+size);
         EmitOffset(OpCode.LD_D_iIY_d, int(-5));
         Emit      (OpCode.PUSH_DE);
@@ -2619,10 +2623,10 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress146E+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress146E+1, byte(CurrentAddress >> 8));
-        PatchByte(jumpAddress154D+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress154D+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress147D+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress147D+1, byte(CurrentAddress >> 8));
+        PatchByte(jumpAddress155C+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress155C+1, byte(CurrentAddress >> 8));
         Emit      (OpCode.POP_DE);                           // break;                         memory.hs:296
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
@@ -2665,6 +2669,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.ADD_HL_DE);
         Emit      (OpCode.PUSH_HL);
         EmitOffset(OpCode.LD_L_iIY_d, int(6));
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
         Emit      (OpCode.POP_IX);
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
@@ -2752,13 +2757,14 @@ unit Z80LibraryGenerated
         Emit      (OpCode.PUSH_DE);
         EmitWord  (OpCode.CALL_nn, GetAddress("MemoryFree"));
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.JR_e, int(22));                    // }                              gc.hs:34
+        EmitOffset(OpCode.JR_e, int(25));                    // }                              gc.hs:34
         EmitOffset(OpCode.LD_L_iIY_d, int(4));               // WriteByte(this+iReference, count);
         EmitOffset(OpCode.LD_H_iIY_d, int(5));
         EmitWord  (OpCode.LD_DE_nn, 0x0001);
         Emit      (OpCode.ADD_HL_DE);
         Emit      (OpCode.PUSH_HL);
         EmitOffset(OpCode.LD_L_iIY_d, int(-2));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
         Emit      (OpCode.POP_IX);
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
@@ -3009,6 +3015,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.ADD_HL_DE);
         Emit      (OpCode.PUSH_HL);
         EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
         Emit      (OpCode.POP_IX);
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
@@ -3177,6 +3184,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.PUSH_DE);
         Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_L_iIY_d, int(6));               // uint value;                    array.hs:64
         EmitOffset(OpCode.LD_H_iIY_d, int(7));
         EmitWord  (OpCode.LD_DE_nn, 0x0002);
@@ -3186,205 +3194,13 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_L_iIX_d, int(0));
         EmitOffset(OpCode.LD_H_iIX_d, int(1));
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-8));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-7));
-        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // if (index >= count)            array.hs:68
-        EmitOffset(OpCode.LD_D_iIY_d, int(5));
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_C_iIY_d, int(-8));
-        EmitOffset(OpCode.LD_B_iIY_d, int(-7));
-        Emit      (OpCode.POP_HL);
-        EmitWord  (OpCode.CALL_nn, GetAddress("GE"));
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_Z_e, int(10));
-        EmitWord  (OpCode.LD_DE_nn, 0x0002);                 // Die(0x02); // array index out of range
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.EX_iSP_HL);
-        Emit      (OpCode.LD_A_L);
-        EmitWord  (OpCode.LD_inn_A, 0xFF02);
-        Emit      (OpCode.HALT);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // Type etype = Type(ReadByte(this+aiType));
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(6));
-        EmitOffset(OpCode.LD_H_iIY_d, int(7));
-        EmitWord  (OpCode.LD_DE_nn, 0x0004);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.LD_L_iHL);
-        EmitByte  (OpCode.LD_H_n, 0x00);
         EmitOffset(OpCode.LD_iIY_d_L, int(-10));
         EmitOffset(OpCode.LD_iIY_d_H, int(-9));
-        EmitWord  (OpCode.LD_BC_nn, 0x0004);                 // if ((etype == Type.UInt) || (etype == Type.Int))
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.LD_A_B);
-        Emit      (OpCode.CP_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(6));
-        Emit      (OpCode.LD_A_C);
-        Emit      (OpCode.CP_A_L);
-        EmitOffset(OpCode.JR_NZ_e, int(2));
-        EmitByte  (OpCode.LD_E_n, 0x01);
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(32));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-10));
-        EmitOffset(OpCode.LD_H_iIY_d, int(-9));
-        EmitWord  (OpCode.LD_BC_nn, 0x0002);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.LD_A_B);
-        Emit      (OpCode.CP_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(6));
-        Emit      (OpCode.LD_A_C);
-        Emit      (OpCode.CP_A_L);
-        EmitOffset(OpCode.JR_NZ_e, int(2));
-        EmitByte  (OpCode.LD_E_n, 0x01);
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.POP_BC);
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.OR_A_C);
-        Emit      (OpCode.LD_L_A);
-        Emit      (OpCode.LD_A_H);
-        Emit      (OpCode.OR_A_B);
-        Emit      (OpCode.LD_H_A);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_Z_e, int(44));
-        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // value = ReadWord(this + aiElements + (index << 1));
-        EmitOffset(OpCode.LD_H_iIY_d, int(7));
-        EmitWord  (OpCode.LD_DE_nn, 0x0005);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));
-        EmitOffset(OpCode.LD_H_iIY_d, int(5));
-        EmitWord  (OpCode.LD_BC_nn, 0x0001);
-        EmitWord  (OpCode.CALL_nn, GetAddress("BITSHL"));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.EX_iSP_IX);
-        EmitOffset(OpCode.LD_L_iIX_d, int(0));
-        EmitOffset(OpCode.LD_H_iIX_d, int(1));
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
-        uint jumpAddress1C0B = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              array.hs:76
-        EmitOffset(OpCode.LD_L_iIY_d, int(-10));             // else if (etype == Type.Bool)   array.hs:77
-        EmitOffset(OpCode.LD_H_iIY_d, int(-9));
-        EmitWord  (OpCode.LD_BC_nn, 0x0006);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
-        Emit      (OpCode.LD_A_B);
-        Emit      (OpCode.CP_A_H);
-        EmitOffset(OpCode.JR_NZ_e, int(6));
-        Emit      (OpCode.LD_A_C);
-        Emit      (OpCode.CP_A_L);
-        EmitOffset(OpCode.JR_NZ_e, int(2));
-        EmitByte  (OpCode.LD_E_n, 0x01);
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.POP_HL);
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_Z_e, int(96));
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // bit = (index & 0x07); // 0..7  array.hs:79
-        Emit      (OpCode.LD_A_L);
-        EmitByte  (OpCode.AND_A_n, 0x07);
-        Emit      (OpCode.LD_L_A);
-        EmitByte  (OpCode.LD_H_n, 0x00);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        EmitWord  (OpCode.LD_DE_nn, 0x0001);                 // mask = (0b00000001 << bit);    array.hs:80
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_C_iIY_d, int(-4));
-        EmitOffset(OpCode.LD_B_iIY_d, int(-3));
-        Emit      (OpCode.POP_HL);
-        EmitWord  (OpCode.CALL_nn, GetAddress("BITSHL"));
-        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
-        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // value = ReadByte(this + aiElements + (index >> 3)) & mask;
-        EmitOffset(OpCode.LD_H_iIY_d, int(7));
-        EmitWord  (OpCode.LD_DE_nn, 0x0005);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));
-        EmitOffset(OpCode.LD_H_iIY_d, int(5));
-        EmitWord  (OpCode.LD_BC_nn, 0x0003);
-        EmitWord  (OpCode.CALL_nn, GetAddress("BITSHR"));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.LD_L_iHL);
-        EmitByte  (OpCode.LD_H_n, 0x00);
-        EmitOffset(OpCode.LD_C_iIY_d, int(-6));
-        EmitOffset(OpCode.LD_B_iIY_d, int(-5));
-        Emit      (OpCode.LD_A_L);
-        Emit      (OpCode.AND_A_C);
-        Emit      (OpCode.LD_L_A);
-        Emit      (OpCode.LD_A_H);
-        Emit      (OpCode.AND_A_B);
-        Emit      (OpCode.LD_H_A);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
-        Emit      (OpCode.LD_A_L);                           // if (value != 0)                array.hs:82
-        Emit      (OpCode.OR_A_H);
-        EmitOffset(OpCode.JR_Z_e, int(37));
-        EmitWord  (OpCode.LD_DE_nn, 0x0001);                 // value = 1;                     array.hs:84
-        EmitOffset(OpCode.LD_iIY_d_E, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_D, int(-1));
-        EmitOffset(OpCode.JR_e, int(26));                    // }                              array.hs:86
-        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // value = ReadByte(this + aiElements + index);
-        EmitOffset(OpCode.LD_H_iIY_d, int(7));
-        EmitWord  (OpCode.LD_DE_nn, 0x0005);
-        Emit      (OpCode.ADD_HL_DE);
-        EmitOffset(OpCode.LD_E_iIY_d, int(4));
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));               // if (index >= count)            array.hs:69
         EmitOffset(OpCode.LD_D_iIY_d, int(5));
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.LD_L_iHL);
-        EmitByte  (OpCode.LD_H_n, 0x00);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
-        PatchByte(jumpAddress1C0B+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1C0B+1, byte(CurrentAddress >> 8));
-        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return value;                  array.hs:91
-        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_DE);
-        Emit      (OpCode.POP_IY);
-        Emit      (OpCode.RET);
-    }
-    EmitArraySetItem()
-    {
-        Emit      (OpCode.PUSH_IY);
-        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
-        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);
         Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.PUSH_DE);
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(8));               // uint bit;                      array.hs:95
-        EmitOffset(OpCode.LD_H_iIY_d, int(9));
-        EmitWord  (OpCode.LD_DE_nn, 0x0002);
-        Emit      (OpCode.ADD_HL_DE);
-        Emit      (OpCode.PUSH_HL);
-        Emit      (OpCode.EX_iSP_IX);
-        EmitOffset(OpCode.LD_L_iIX_d, int(0));
-        EmitOffset(OpCode.LD_H_iIX_d, int(1));
-        Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
-        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
-        EmitOffset(OpCode.LD_E_iIY_d, int(6));               // if (index >= count)            array.hs:98
-        EmitOffset(OpCode.LD_D_iIY_d, int(7));
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_C_iIY_d, int(-6));
-        EmitOffset(OpCode.LD_B_iIY_d, int(-5));
+        EmitOffset(OpCode.LD_C_iIY_d, int(-10));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-9));
         Emit      (OpCode.POP_HL);
         EmitWord  (OpCode.CALL_nn, GetAddress("GE"));
         Emit      (OpCode.PUSH_DE);
@@ -3398,10 +3214,8 @@ unit Z80LibraryGenerated
         Emit      (OpCode.LD_A_L);
         EmitWord  (OpCode.LD_inn_A, 0xFF02);
         Emit      (OpCode.HALT);
-        EmitWord  (OpCode.LD_DE_nn, 0x0000);                 // Type etype = Type(ReadByte(this+aiType));
-        Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(8));
-        EmitOffset(OpCode.LD_H_iIY_d, int(9));
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // etype = Type(ReadByte(this+aiType));
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
         EmitWord  (OpCode.LD_DE_nn, 0x0004);
         Emit      (OpCode.ADD_HL_DE);
         Emit      (OpCode.LD_L_iHL);
@@ -3447,6 +3261,198 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(44));
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // value = ReadWord(this + aiElements + (index << 1));
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0001);
+        EmitWord  (OpCode.CALL_nn, GetAddress("BITSHL"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        uint jumpAddress1C20 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              array.hs:77
+        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // else if (etype == Type.Bool)   array.hs:78
+        EmitOffset(OpCode.LD_H_iIY_d, int(-7));
+        EmitWord  (OpCode.LD_BC_nn, 0x0006);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(99));
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // bit = (index & 0x07); // 0..7  array.hs:80
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        Emit      (OpCode.LD_A_L);
+        EmitByte  (OpCode.AND_A_n, 0x07);
+        Emit      (OpCode.LD_L_A);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-4));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-3));
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);                 // mask = (0b00000001 << bit);    array.hs:81
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-4));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-3));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, GetAddress("BITSHL"));
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // value = ReadByte(this + aiElements + (index >> 3)) & mask;
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_H_iIY_d, int(5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0003);
+        EmitWord  (OpCode.CALL_nn, GetAddress("BITSHR"));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-5));
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.AND_A_C);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.AND_A_B);
+        Emit      (OpCode.LD_H_A);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        Emit      (OpCode.LD_A_L);                           // if (value != 0)                array.hs:83
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(37));
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);                 // value = 1;                     array.hs:85
+        EmitOffset(OpCode.LD_iIY_d_E, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_D, int(-1));
+        EmitOffset(OpCode.JR_e, int(26));                    // }                              array.hs:87
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // value = ReadByte(this + aiElements + index);
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
+        EmitWord  (OpCode.LD_DE_nn, 0x0005);
+        Emit      (OpCode.ADD_HL_DE);
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-2));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-1));
+        PatchByte(jumpAddress1C20+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1C20+1, byte(CurrentAddress >> 8));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-2));              // return value;                  array.hs:92
+        EmitOffset(OpCode.LD_H_iIY_d, int(-1));
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_DE);
+        Emit      (OpCode.POP_IY);
+        Emit      (OpCode.RET);
+    }
+    EmitArraySetItem()
+    {
+        Emit      (OpCode.PUSH_IY);
+        EmitWord  (OpCode.LD_inn_SP, 0xFF00);
+        EmitWord  (OpCode.LD_IY_inn, 0xFF00);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_L_iIY_d, int(8));               // uint bit;                      array.hs:96
+        EmitOffset(OpCode.LD_H_iIY_d, int(9));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.EX_iSP_IX);
+        EmitOffset(OpCode.LD_L_iIX_d, int(0));
+        EmitOffset(OpCode.LD_H_iIX_d, int(1));
+        Emit      (OpCode.POP_DE);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-8));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-7));
+        EmitOffset(OpCode.LD_E_iIY_d, int(6));               // if (index >= count)            array.hs:100
+        EmitOffset(OpCode.LD_D_iIY_d, int(7));
+        Emit      (OpCode.PUSH_DE);
+        EmitOffset(OpCode.LD_C_iIY_d, int(-8));
+        EmitOffset(OpCode.LD_B_iIY_d, int(-7));
+        Emit      (OpCode.POP_HL);
+        EmitWord  (OpCode.CALL_nn, GetAddress("GE"));
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_Z_e, int(10));
+        EmitWord  (OpCode.LD_DE_nn, 0x0002);                 // Die(0x02); // array index out of range
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.EX_iSP_HL);
+        Emit      (OpCode.LD_A_L);
+        EmitWord  (OpCode.LD_inn_A, 0xFF02);
+        Emit      (OpCode.HALT);
+        EmitOffset(OpCode.LD_L_iIY_d, int(8));               // etype = Type(ReadByte(this+aiType));
+        EmitOffset(OpCode.LD_H_iIY_d, int(9));
+        EmitWord  (OpCode.LD_DE_nn, 0x0004);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.LD_L_iHL);
+        EmitByte  (OpCode.LD_H_n, 0x00);
+        EmitOffset(OpCode.LD_iIY_d_L, int(-6));
+        EmitOffset(OpCode.LD_iIY_d_H, int(-5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0004);                 // if ((etype == Type.UInt) || (etype == Type.Int))
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(32));
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));
+        EmitOffset(OpCode.LD_H_iIY_d, int(-5));
+        EmitWord  (OpCode.LD_BC_nn, 0x0002);
+        EmitWord  (OpCode.LD_DE_nn, 0x0000);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_NZ_e, int(6));
+        Emit      (OpCode.LD_A_C);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_NZ_e, int(2));
+        EmitByte  (OpCode.LD_E_n, 0x01);
+        Emit      (OpCode.PUSH_DE);
+        Emit      (OpCode.POP_BC);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_C);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_H);
+        Emit      (OpCode.OR_A_B);
+        Emit      (OpCode.LD_H_A);
+        Emit      (OpCode.PUSH_HL);
+        Emit      (OpCode.POP_HL);
+        Emit      (OpCode.LD_A_L);
+        Emit      (OpCode.OR_A_H);
         EmitOffset(OpCode.JR_Z_e, int(48));
         EmitOffset(OpCode.LD_L_iIY_d, int(8));               // WriteWord(this + aiElements + (index << 1), value);
         EmitOffset(OpCode.LD_H_iIY_d, int(9));
@@ -3469,10 +3475,10 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_iIX_d_H, int(1));
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
-        uint jumpAddress1D7D = CurrentAddress + 1;
-        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              array.hs:106
-        EmitOffset(OpCode.LD_L_iIY_d, int(-8));              // else if (etype == Type.Bool)   array.hs:107
-        EmitOffset(OpCode.LD_H_iIY_d, int(-7));
+        uint jumpAddress1D92 = CurrentAddress + 1;
+        EmitWord  (OpCode.JP_nn, 0xAA55);                    // }                              array.hs:108
+        EmitOffset(OpCode.LD_L_iIY_d, int(-6));              // else if (etype == Type.Bool)   array.hs:109
+        EmitOffset(OpCode.LD_H_iIY_d, int(-5));
         EmitWord  (OpCode.LD_BC_nn, 0x0006);
         EmitWord  (OpCode.LD_DE_nn, 0x0000);
         Emit      (OpCode.LD_A_B);
@@ -3486,9 +3492,10 @@ unit Z80LibraryGenerated
         Emit      (OpCode.POP_HL);
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
-        uint jumpAddress1D9A = CurrentAddress + 1;
+        uint jumpAddress1DAF = CurrentAddress + 1;
         EmitWord  (OpCode.JP_Z_nn, 0xAA55);
-        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // bit = (index & 0x07); // 0..7  array.hs:109
+        EmitOffset(OpCode.LD_L_iIY_d, int(6));               // bit = (index & 0x07); // 0..7  array.hs:111
+        EmitOffset(OpCode.LD_H_iIY_d, int(7));
         Emit      (OpCode.LD_A_L);
         EmitByte  (OpCode.AND_A_n, 0x07);
         Emit      (OpCode.LD_L_A);
@@ -3508,7 +3515,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.ADD_HL_DE);
         EmitOffset(OpCode.LD_iIY_d_L, int(6));
         EmitOffset(OpCode.LD_iIY_d_H, int(7));
-        EmitWord  (OpCode.LD_DE_nn, 0x0001);                 // mask = (0b00000001 << bit);    array.hs:111
+        EmitWord  (OpCode.LD_DE_nn, 0x0001);                 // mask = (0b00000001 << bit);    array.hs:113
         Emit      (OpCode.PUSH_DE);
         EmitOffset(OpCode.LD_C_iIY_d, int(-2));
         EmitOffset(OpCode.LD_B_iIY_d, int(-1));
@@ -3516,7 +3523,7 @@ unit Z80LibraryGenerated
         EmitWord  (OpCode.CALL_nn, GetAddress("BITSHL"));
         EmitOffset(OpCode.LD_iIY_d_L, int(-4));
         EmitOffset(OpCode.LD_iIY_d_H, int(-3));
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // if (value == 0)                array.hs:112
+        EmitOffset(OpCode.LD_L_iIY_d, int(4));               // if (value == 0)                array.hs:114
         EmitOffset(OpCode.LD_H_iIY_d, int(5));
         Emit      (OpCode.LD_A_L);
         Emit      (OpCode.OR_A_H);
@@ -3548,7 +3555,7 @@ unit Z80LibraryGenerated
         Emit      (OpCode.LD_H_A);
         EmitOffset(OpCode.LD_iIY_d_L, int(4));
         EmitOffset(OpCode.LD_iIY_d_H, int(5));
-        EmitOffset(OpCode.JR_e, int(33));                    // }                              array.hs:115
+        EmitOffset(OpCode.JR_e, int(33));                    // }                              array.hs:117
         EmitOffset(OpCode.LD_E_iIY_d, int(6));               // value = ReadByte(index) | mask;
         EmitOffset(OpCode.LD_D_iIY_d, int(7));
         Emit      (OpCode.PUSH_DE);
@@ -3569,15 +3576,17 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_E_iIY_d, int(6));               // WriteByte(index, byte(value & 0xFF));
         EmitOffset(OpCode.LD_D_iIY_d, int(7));
         Emit      (OpCode.PUSH_DE);
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        Emit      (OpCode.LD_L_E);
         EmitByte  (OpCode.LD_H_n, 0x00);
         Emit      (OpCode.POP_IX);
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
         Emit      (OpCode.POP_DE);
-        EmitOffset(OpCode.JR_e, int(31));                    // }                              array.hs:121
-        PatchByte(jumpAddress1D9A+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1D9A+1, byte(CurrentAddress >> 8));
+        EmitOffset(OpCode.JR_e, int(35));                    // }                              array.hs:123
+        PatchByte(jumpAddress1DAF+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1DAF+1, byte(CurrentAddress >> 8));
         EmitOffset(OpCode.LD_L_iIY_d, int(8));               // WriteByte(this + aiElements + index, byte(value & 0xFF));
         EmitOffset(OpCode.LD_H_iIY_d, int(9));
         EmitWord  (OpCode.LD_DE_nn, 0x0005);
@@ -3586,15 +3595,17 @@ unit Z80LibraryGenerated
         EmitOffset(OpCode.LD_D_iIY_d, int(7));
         Emit      (OpCode.ADD_HL_DE);
         Emit      (OpCode.PUSH_HL);
-        EmitOffset(OpCode.LD_L_iIY_d, int(4));
+        EmitOffset(OpCode.LD_E_iIY_d, int(4));
+        EmitOffset(OpCode.LD_D_iIY_d, int(5));
+        Emit      (OpCode.LD_L_E);
         EmitByte  (OpCode.LD_H_n, 0x00);
         Emit      (OpCode.POP_IX);
         Emit      (OpCode.PUSH_IX);
         EmitOffset(OpCode.LD_iIX_d_L, int(0));
         Emit      (OpCode.POP_DE);
-        PatchByte(jumpAddress1D7D+0, byte(CurrentAddress & 0xFF));
-        PatchByte(jumpAddress1D7D+1, byte(CurrentAddress >> 8));
-        Emit      (OpCode.POP_DE);                           // }                              array.hs:126
+        PatchByte(jumpAddress1D92+0, byte(CurrentAddress & 0xFF));
+        PatchByte(jumpAddress1D92+1, byte(CurrentAddress >> 8));
+        Emit      (OpCode.POP_DE);                           // }                              array.hs:128
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);
         Emit      (OpCode.POP_DE);

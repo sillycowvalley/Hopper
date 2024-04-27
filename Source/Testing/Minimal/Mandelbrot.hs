@@ -1,6 +1,7 @@
 program Mandelbrot
 {
     #define CPU_Z80
+    #define ROM_8K
     uses "/Source/Minimal/IO"
         
     {
@@ -18,7 +19,7 @@ program Mandelbrot
         IO.WriteLn();
         IO.Write(' ');
         
-        //uint start = Time.Seconds;
+        uint start = Time.Seconds;
         string palette = ".,'~=+:;*%&$OXB#@ ";
         int a; int b; int c; int d;
         int q; int p; int t; int s; byte i;
@@ -52,7 +53,7 @@ program Mandelbrot
             } // next x
             IO.WriteLn(); IO.Write(' ');
         } // next y
-        //uint elapsed = (Seconds - start); 
-        //IO.WriteLn(elapsed.ToString() + " " + " seconds");
+        uint elapsed = (Seconds - start); 
+        IO.WriteLn(elapsed.ToString() + " " + " seconds");
     }
 }

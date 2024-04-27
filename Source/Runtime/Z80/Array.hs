@@ -64,12 +64,13 @@ unit Array
         uint value;
         uint bit;
         byte mask;
+        Type etype;
         uint count = ReadWord(this+aiCount);
         if (index >= count)
         {
             Die(0x02); // array index out of range
         }
-        Type etype = Type(ReadByte(this+aiType));
+        etype = Type(ReadByte(this+aiType));
         if ((etype == Type.UInt) || (etype == Type.Int))
         {
             value = ReadWord(this + aiElements + (index << 1));
@@ -94,12 +95,13 @@ unit Array
     {
         uint bit;
         byte mask;
+        Type etype;
         uint count = ReadWord(this+aiCount);
         if (index >= count)
         {
             Die(0x02); // array index out of range
         }
-        Type etype = Type(ReadByte(this+aiType));
+        etype = Type(ReadByte(this+aiType));
         if ((etype == Type.UInt) || (etype == Type.Int))
         {
             WriteWord(this + aiElements + (index << 1), value);

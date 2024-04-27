@@ -173,7 +173,6 @@ void service6850ACIA()
     {
         if ((aciaStatus & ACIA_INTR) == 0)               // read serial byte only if 6850 interrupt is clear 
         {
-            cli();
             if ((aciaStatus & ACIA_RDRF) == 0)           // and receive data register (RDRF) is not full
             {
                 int ch = Serial.read();
@@ -183,7 +182,6 @@ void service6850ACIA()
                 // signal an interrupt:
                 digitalWrite(uP_IRQ_N, LOW);
             }
-            sei();
         }
     }
 }

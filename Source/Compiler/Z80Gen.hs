@@ -6,7 +6,7 @@ program Z80Gen
     //#define INLINE_STACK_OPERATIONS
     //#define INLINE_OTHER_INSTRUCTIONS
     
-//    #define CHECKED
+//  #define CHECKED
 //  #define PATCHCHECKED
     
     uses "/Source/System/System"
@@ -250,7 +250,11 @@ program Z80Gen
             {
                 Z80Library.ISR();
             }
-            if (output.Count >= 0x0040) // after the RSTx slots
+            if (output.Count == 0x0066)
+            {
+                Z80Library.NMI();
+            }
+            if (output.Count >= 0x0068) // after the NMI slots
             {
                 Z80Library.Generate();
                 break;
@@ -1204,6 +1208,8 @@ program Z80Gen
                     Emit(OpCode.POP_HL);
                     EmitBITXOR();
                     Emit(OpCode.PUSH_HL);    
+                    
+                    currentLocalSP--;
                 }
                 case Instruction.BITNOT:
                 {
@@ -1211,8 +1217,6 @@ program Z80Gen
                     Emit(OpCode.POP_HL);
                     EmitBITNOT();
                     Emit(OpCode.PUSH_HL);  
-                    
-                    currentLocalSP--;  
                 }
                 case Instruction.BOOLNOT:
                 {
@@ -1907,7 +1911,7 @@ program Z80Gen
                 Emit(OpCode.NOP);
                 Emit(OpCode.NOP);
             }
-            if ((methodIndex == 0x0002) /*|| (methodIndex == 0x0001)*/)
+            if ((methodIndex == 0x001C) /*|| (methodIndex == 0x0001)*/)
             {
                 if (instruction == Instruction.RETB)
                 {
@@ -1944,7 +1948,7 @@ program Z80Gen
             PrintLn();
         }
 #ifdef CHECKED
-        if (methodIndex == 0x0000)
+        if (methodIndex == 0x001C)
         {
             PrintLn();
         }

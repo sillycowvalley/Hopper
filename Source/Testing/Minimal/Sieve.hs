@@ -1,12 +1,14 @@
 program Sieve
 {
-    //#define CPU_Z80
+    #define CPU_Z80
+    #define ROM_16K
+    
     //#define MCU
 
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
     
-    const uint size = 200; // 8191;  // 200 -> 78
+    const uint size = 8191;  // 200 -> 78
     const uint iterations = 1;
     
     bool[size] flagsGlobal;

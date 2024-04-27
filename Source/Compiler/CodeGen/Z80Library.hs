@@ -419,12 +419,124 @@ unit Z80Library
             libraryAddresses["ArraySetItem"] = address;
             EmitArraySetItem();     
         }
+        if (IsSysCallUsed(SysCalls.TimeSeconds, 0))
+        {
+            address = CurrentAddress;
+            EmitTimeSeconds();
+            libraryAddresses["TimeSeconds"] = address;
+        }
+        if (IsSysCallUsed(SysCalls.TimeDelay, 0))
+        {
+            address = CurrentAddress;
+            EmitTimeDelay();
+            libraryAddresses["TimeDelay"] = address;
+        }
+        
         Code.AddRuntime(libraryAddresses);
     }   
     uint GetAddress(string name)
     {
         return libraryAddresses[name];
     }
+    
+    EmitTimeDelay()
+    {
+        // time in HL
+        // load HLBC with current millis + HL
+        EmitByte  (OpCode.IN_A_in, ZT0);
+        Emit      (OpCode.LD_C_A);
+        EmitByte  (OpCode.IN_A_in, ZT1);
+        Emit      (OpCode.LD_B_A);
+        Emit      (OpCode.ADD_HL_BC);
+        Emit      (OpCode.LD_C_L);
+        Emit      (OpCode.LD_B_H);
+        
+        EmitByte  (OpCode.IN_A_in, ZT2);
+        Emit      (OpCode.LD_E_A);
+        EmitByte  (OpCode.IN_A_in, ZT3);
+        Emit      (OpCode.LD_D_A);
+        
+        EmitWord  (OpCode.LD_HL_nn, 0);
+        Emit      (OpCode.ADD_HL_DE);
+        
+// try again:
+        EmitByte  (OpCode.IN_A_in, ZT0); // read ZT0 first
+        Emit      (OpCode.LD_D_A);       // stash it in D
+        
+        EmitByte  (OpCode.IN_A_in, ZT3);
+        Emit      (OpCode.CP_A_H);
+        EmitOffset(OpCode.JR_Z_e,  +3); // if equal, check next 'digit'
+        EmitOffset(OpCode.JR_NC_e, -10); // C clear implies  A < H
+        // A > H means done
+        Emit(OpCode.RET);
+        
+        EmitByte  (OpCode.IN_A_in, ZT2);
+        Emit      (OpCode.CP_A_L);
+        EmitOffset(OpCode.JR_Z_e,  +3); // if equal, check next 'digit'
+        EmitOffset(OpCode.JR_C_e, -18); // C implies  A < L
+        // A > L means done
+        Emit(OpCode.RET);
+        
+        
+        EmitByte  (OpCode.IN_A_in, ZT1);
+        Emit      (OpCode.CP_A_B);
+        EmitOffset(OpCode.JR_Z_e,  +3); // if equal, check next 'digit'
+        EmitOffset(OpCode.JR_C_e, -26); // C implies  A < B
+        // A > B means done
+        Emit(OpCode.RET);
+        
+        Emit      (OpCode.LD_A_D);
+        Emit      (OpCode.CP_A_C);
+        EmitOffset(OpCode.JR_C_e, -31); // C implies  A < C
+        // >= C means done
+        Emit(OpCode.RET);
+    }
+    EmitTimeSeconds()
+    {
+        // return seconds in HL
+        
+        // load ms -> HLBC
+        EmitByte  (OpCode.IN_A_in, ZT0);
+        Emit      (OpCode.LD_C_A);
+        EmitByte  (OpCode.IN_A_in, ZT1);
+        Emit      (OpCode.LD_B_A);
+        EmitByte  (OpCode.IN_A_in, ZT2);
+        Emit      (OpCode.LD_L_A);
+        EmitByte  (OpCode.IN_A_in, ZT3);
+        Emit      (OpCode.LD_H_A);
+        
+        EmitWord  (OpCode.LD_DE_nn, 1000); // seconds = millis / 1000
+        
+        // https://www.smspower.org/Development/DivMod&num=3#Unsigned32161616Bit
+        // Integer divides HLBC by DE, returns result in HL
+        // Clobbers A, F, IXH
+    
+        EmitByte  (OpCode.LD_IXH_n, 16);
+// loop-
+        Emit      (OpCode.RL_C);
+        Emit      (OpCode.RL_B);
+        Emit      (OpCode.ADC_HL_HL);
+        Emit      (OpCode.SBC_A_A);
+        Emit      (OpCode.OR_A_A);
+        Emit      (OpCode.SBC_HL_DE);
+        EmitByte  (OpCode.SBC_A_n, 0);
+        EmitOffset(OpCode.JR_NC_e, +2);
+        Emit      (OpCode.ADD_HL_DE);
+        Emit      (OpCode.SCF);
+// skip    
+        Emit      (OpCode.DEC_IXH);
+        EmitOffset(OpCode.JR_NZ_e, -20);
+        Emit      (OpCode.RL_C);
+        Emit      (OpCode.RL_B);
+        Emit      (OpCode.LD_A_C);    
+        Emit      (OpCode.CPL);
+        Emit      (OpCode.LD_L_A);
+        Emit      (OpCode.LD_A_B);
+        Emit      (OpCode.CPL);
+        Emit      (OpCode.LD_H_A);
+        Emit      (OpCode.RET);
+    }
+    
     
     EmitIntGetByte()
     {
@@ -958,6 +1070,11 @@ unit Z80Library
         EmitWord(OpCode.CALL_nn, GetAddress("utilityDivide")); // BC = BC / DE, remainder in HL
         Emit(OpCode.RET);
     }
+    NMI()
+    {
+        libraryAddresses["NMI"] = CurrentAddress;
+        Emit      (OpCode.RETN);
+    }
     ISR()
     {
         libraryAddresses["ISR"] = CurrentAddress;
@@ -969,11 +1086,11 @@ unit Z80Library
         
         // bit 7 is  interrupt request by 6850 
         Emit      (OpCode.BIT_7_A);        
-        EmitOffset(OpCode.JR_Z_e, +30); // not 6850 ->Exit
+        EmitOffset(OpCode.JR_Z_e, +33); // not 6850 ->Exit
         
         // bit 0 is  RDRF : receive data register full        
         Emit      (OpCode.BIT_0_A);        
-        EmitOffset(OpCode.JR_Z_e, +26); // not full ->Exit
+        EmitOffset(OpCode.JR_Z_e, +29); // not full ->Exit
         
         EmitByte  (OpCode.IN_A_in, DataRegister); // reads the byte from serial (which clears the flags in StatusRegister)
         EmitByte  (OpCode.CP_A_n, 0x03);                   
@@ -982,7 +1099,7 @@ unit Z80Library
 // <ctrl><C>:
         EmitWord  (OpCode.LD_HL_nn, BreakFlag);
         Emit      (OpCode.INC_iHL);
-        EmitOffset(OpCode.JR_e, +14); // Exit
+        EmitOffset(OpCode.JR_e, +17); // Exit
         
 // not <ctrl><C>:
         Emit      (OpCode.PUSH_DE);
@@ -1170,24 +1287,6 @@ unit Z80Library
                 referenceR0 = false;
             }
             
-            case SysCalls.TimeDelay:
-            {
-                Emit(OpCode.EX_iSP_HL);          // load delay in ms into HL
-                // TODO
-                Emit(OpCode.NOP); 
-            }
-            case SysCalls.TimeSeconds:
-            {
-                // TODO: ZT0..ZT3
-                if (firstSysNotImplemented)
-                {
-                    PrintLn("iSysCall=0x" + (byte(iSysCall)).ToHexString(2) + " not implemented");
-                }
-                firstSysNotImplemented = false;
-                Emit(OpCode.NOP);
-                referenceR0 = false;
-                return false;
-            }
             case SysCalls.SerialIsAvailableGet:
             {
                 EmitWord(OpCode.CALL_nn, GetAddress("SerialIsAvailable"));
@@ -1276,6 +1375,17 @@ unit Z80Library
             {
                 EmitWord  (OpCode.CALL_nn, GetAddress("StringGetChar")); 
                 referenceR0 = false;
+            }
+            
+            case SysCalls.TimeSeconds:
+            {
+                EmitWord  (OpCode.CALL_nn, GetAddress("TimeSeconds")); 
+                referenceR0 = false;
+            }
+            case SysCalls.TimeDelay:
+            {
+                Emit      (OpCode.EX_iSP_HL);   // delay uint is in [top] (HL)
+                EmitWord  (OpCode.CALL_nn, GetAddress("TimeDelay")); 
             }
                                                          
             default:

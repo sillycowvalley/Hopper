@@ -173,11 +173,14 @@ unit CodePoints
             {
                 walkStats = WalkStats.WriteBC | WalkStats.WriteDE | WalkStats.WriteHL;
             }
-            
+            case "StringNew":
+            {
+                walkStats = WalkStats.WriteDE | GetRuntimeStats("GCCreate");
+            }
             
             default:
             {
-                Print(" " + runtimeMethod, Colour.MatrixRed, Colour.Black);
+                Print(" " + runtimeMethod, Colour.MatrixRed, Colour.Black + "(missing in GetRuntimeStats)");
                 walkStats = (WalkStats.ReadBC | WalkStats.ReadDE | WalkStats.ReadHL); // assume we read everything
             }
         }
@@ -2098,7 +2101,7 @@ unit CodePoints
                         }
                         else
                         {
-                           Print("   W:" + name2 + "-" + name1);
+                           //Print("   W:" + name2 + "-" + name1);
                         }
                     }
                     if ((opCode3 == OpCode.PUSH_HL) && (opCode0 == OpCode.POP_HL))
@@ -2123,7 +2126,7 @@ unit CodePoints
                         }
                         else
                         {
-                            Print("   Y:" + name2 + "-" + name1);
+                            //Print("   Y:" + name2 + "-" + name1);
                         }
                     }
                 }
@@ -2268,14 +2271,14 @@ unit CodePoints
                 // do we ever read this value from D?
                 if (WalkAhead(iIndex+1, WalkStats.WriteD | WalkStats.Exit, WalkStats.ReadD, 10))
                 {
-                    PrintLn();
-                    Print("A: ");
+                    //PrintLn();
+                    //Print("A: ");
                     /*   
                     iCodes  [iIndex-0] = OpCode.NOP;
                     iLengths[iIndex-0] = 1;
                     modified = true;
                     */
-                    WalkVerbose(iIndex+1, WalkStats.WriteD | WalkStats.Exit, WalkStats.ReadD, 10);
+                    //WalkVerbose(iIndex+1, WalkStats.WriteD | WalkStats.Exit, WalkStats.ReadD, 10);
                 }
             }
             else if ((opCode0 == OpCode.LD_E_iIY_d) || (opCode0 == OpCode.LD_E_iIX_d))
@@ -2283,14 +2286,14 @@ unit CodePoints
                 // do we ever read this value from E?
                 if ( WalkAhead(iIndex+1, WalkStats.WriteE | WalkStats.Exit, WalkStats.ReadE, 10))
                 {
-                    PrintLn();
-                    Print("B: ");
+                    //PrintLn();
+                    //Print("B: ");
                     /*
                     iCodes  [iIndex-0] = OpCode.NOP;
                     iLengths[iIndex-0] = 1;
                     modified = true;
                     */
-                    WalkVerbose(iIndex+1, WalkStats.WriteE | WalkStats.Exit, WalkStats.ReadE, 10);
+                    //WalkVerbose(iIndex+1, WalkStats.WriteE | WalkStats.Exit, WalkStats.ReadE, 10);
                 }
             }
             else if ((opCode0 == OpCode.LD_H_iIY_d) || (opCode0 == OpCode.LD_H_iIX_d))
@@ -2300,7 +2303,7 @@ unit CodePoints
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteH, WalkStats.ReadH | WalkStats.Exit, 10)) // HL is the return value so Exit DQ's
                     {
-                        Print(" C");
+                        //Print(" C");
                         /*
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
@@ -2312,7 +2315,7 @@ unit CodePoints
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteH | WalkStats.Exit, WalkStats.ReadH, 10)) // void method so Exit is +ve
                     {
-                        Print(" D");
+                        //Print(" D");
                         /*
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
@@ -2328,7 +2331,7 @@ unit CodePoints
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteL, WalkStats.ReadL | WalkStats.Exit, 10)) // HL is the return value so Exit DQ's
                     {
-                        Print(" E");
+                        //Print(" E");
                         /*
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
@@ -2340,7 +2343,7 @@ unit CodePoints
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteL | WalkStats.Exit, WalkStats.ReadL, 10)) // void method so Exit is +ve
                     {
-                        Print(" F");
+                        //Print(" F");
                         /*
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
