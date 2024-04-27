@@ -2566,6 +2566,303 @@ unit CodePoints
         }
         return modified;   
     }
+    bool OptimizePOPDEx5()
+    {
+        bool modified = false;
+        if (iCodes.Count < 6) { return modified; }
+        uint iIndex = 5;
+        
+        loop
+        {
+            if (iIndex == iCodes.Count) { break; }
+            
+            OpCode opCode1  = iCodes[iIndex-1];
+            OpCode opCode0  = iCodes[iIndex-0];
+            
+            if ((opCode1 == OpCode.DJNZ_e) && (opCode0 == OpCode.POP_DE) && 
+                (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+            {
+                OpCode opCode3  = iCodes[iIndex-3];
+                OpCode opCode2  = iCodes[iIndex-2];
+                if ((opCode3 == OpCode.LD_B_n) && (opCode2 == OpCode.POP_DE))
+                {
+                    iOperands[iIndex-3] = iOperands[iIndex-3] + 1;
+                    iCodes   [iIndex-0] = OpCode.NOP;
+                    iLengths [iIndex-0] = 1;       
+                    modified = true;
+                }
+            }
+            
+            if ((opCode1 == OpCode.POP_DE) && (opCode0 == OpCode.POP_DE) && 
+                (Flags.Target != iFlags[iIndex-1] & Flags.Target) && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+            {
+                OpCode opCode3  = iCodes[iIndex-3];
+                OpCode opCode2  = iCodes[iIndex-2];
+                if ((opCode3 == OpCode.POP_DE) && (opCode2 == OpCode.POP_DE) && 
+                    (Flags.Target != iFlags[iIndex-3] & Flags.Target) && (Flags.Target != iFlags[iIndex-2] & Flags.Target))
+                {
+                    OpCode opCode4  = iCodes[iIndex-4];
+                    if (opCode4 == OpCode.POP_DE)
+                    {
+                        if (WalkAhead(iIndex+1, WalkStats.WriteDE | WalkStats.Exit, WalkStats.ReadDE, 20))
+                        {
+                            if (WalkAhead(iIndex+1, WalkStats.WriteB | WalkStats.Exit, WalkStats.ReadB, 20))
+                            {
+                                iCodes   [iIndex-4] = OpCode.LD_B_n;
+                                iLengths [iIndex-4] = 2;
+                                iOperands[iIndex-4] = 5;
+                                
+                                iCodes   [iIndex-3] = OpCode.POP_DE;
+                                iLengths [iIndex-3] = 1;
+                                iFlags   [iIndex-3] = iFlags[iIndex-3] | Flags.Target;
+                                
+                                iCodes   [iIndex-2] = OpCode.DJNZ_e;
+                                iLengths [iIndex-2] = 2;
+                                iOperands[iIndex-2] = iIndex-3;
+                                
+                                iCodes   [iIndex-1] = OpCode.NOP;
+                                iLengths [iIndex-1] = 1;
+                                iCodes   [iIndex-0] = OpCode.NOP;
+                                iLengths [iIndex-0] = 1;
+                                
+                                modified = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if ((opCode1 == OpCode.POP_DE) && (opCode0 == OpCode.DJNZ_e) && 
+                (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+            {
+                OpCode opCode5  = iCodes[iIndex-5];
+                OpCode opCode4  = iCodes[iIndex-4];
+                OpCode opCode3  = iCodes[iIndex-3];
+                OpCode opCode2  = iCodes[iIndex-2];
+                if ((opCode5 == OpCode.LD_B_n) && (opCode4 == OpCode.POP_DE) && (opCode3 == OpCode.DJNZ_e) && (opCode2 == OpCode.LD_B_n) && 
+                    (Flags.Target != iFlags[iIndex-3] & Flags.Target) && (Flags.Target != iFlags[iIndex-2] & Flags.Target)
+                   )
+                {
+                    // LD B, 0x05
+                    // POP DE
+                    // DJNZ -3
+                    // LD B, 0x05
+                    // POP DE
+                    // DJNZ -3
+                    
+                    // LD B, 0x0A
+                    // POP DE
+                    // DJNZ -3
+                    
+                    
+                    iOperands[iIndex-5] = iOperands[iIndex-5] + iOperands[iIndex-2];
+                    
+                    iCodes   [iIndex-2] = OpCode.NOP;
+                    iLengths [iIndex-2] = 1;
+                    iCodes   [iIndex-1] = OpCode.NOP;
+                    iLengths [iIndex-1] = 1;
+                    iFlags   [iIndex-1] = Flags.Walked; // no longer a target
+                    iCodes   [iIndex-0] = OpCode.NOP;
+                    iLengths [iIndex-0] = 1;
+                    modified = true;
+                }
+            }
+            iIndex++;
+        }
+        return modified;
+    }
+    bool OptimizeHLINC()
+    {
+        bool modified = false;
+        if (iCodes.Count < 4) { return modified; }
+        uint iIndex = 3;
+        loop
+        {
+            if (iIndex == iCodes.Count) { break; }
+            
+            OpCode opCode3  = iCodes[iIndex-3];
+            OpCode opCode2  = iCodes[iIndex-2];
+            OpCode opCode1  = iCodes[iIndex-1];
+            OpCode opCode0  = iCodes[iIndex-0];
+            if ((opCode2 == OpCode.LD_DE_nn) && (opCode1 == OpCode.ADD_HL_DE) && (opCode0 == OpCode.PUSH_HL) && 
+               (Flags.Target != iFlags[iIndex-1] & Flags.Target) && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+            {
+                uint inc = iOperands[iIndex-2];
+                if ((inc == 1) || (inc == 2) || (inc == 0))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.WriteDE | WalkStats.Exit, WalkStats.ReadDE, 30))
+                    {
+                        if (inc == 0)
+                        {
+                            iCodes   [iIndex-2] = OpCode.NOP;
+                            iLengths [iIndex-2] = 1;
+                            iCodes   [iIndex-1] = OpCode.NOP;
+                            iLengths [iIndex-1] = 1;
+                            modified = true;
+                        }
+                        else if (inc == 1)
+                        {
+                            iCodes   [iIndex-2] = OpCode.NOP;
+                            iLengths [iIndex-2] = 1;
+                            iCodes   [iIndex-1] = OpCode.INC_HL;
+                            iLengths [iIndex-1] = 1;
+                            modified = true;
+                        }
+                        else if (inc == 2)
+                        {
+                            iCodes   [iIndex-2] = OpCode.INC_HL;
+                            iLengths [iIndex-2] = 1;
+                            iCodes   [iIndex-1] = OpCode.INC_HL;
+                            iLengths [iIndex-1] = 1;
+                            modified = true;
+                        }
+                    }
+                }
+            }  
+            if ((opCode3 == OpCode.LD_DE_nn) && (opCode2 == OpCode.POP_HL) && (opCode1 == OpCode.ADD_HL_DE) && (opCode0 == OpCode.PUSH_HL) && 
+               (Flags.Target != iFlags[iIndex-2] & Flags.Target) && (Flags.Target != iFlags[iIndex-1] & Flags.Target) && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+            {
+                uint inc = iOperands[iIndex-3];
+                if ((inc == 1) || (inc == 2))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.WriteDE | WalkStats.Exit, WalkStats.ReadDE, 30))
+                    {
+                        if (inc == 1)
+                        {
+                            iCodes   [iIndex-3] = OpCode.NOP;
+                            iLengths [iIndex-3] = 1;
+                            iCodes   [iIndex-1] = OpCode.INC_HL;
+                            iLengths [iIndex-1] = 1;
+                            modified = true;
+                        }
+                        else if (inc == 2)
+                        {
+                            iCodes   [iIndex-3] = OpCode.POP_HL;
+                            iLengths [iIndex-3] = 1;
+                            iCodes   [iIndex-2] = OpCode.INC_HL;
+                            iLengths [iIndex-2] = 1;
+                            iCodes   [iIndex-1] = OpCode.INC_HL;
+                            iLengths [iIndex-1] = 1;
+                            modified = true;
+                        }
+                    }
+                }
+            } 
+            iIndex++;    
+        }
+        return modified;
+    }
+    bool OptimizeDeclare()
+    {
+        bool modified = false;
+        if (iCodes.Count < 3) { return modified; }
+        uint iIndex = 2;
+        
+        loop
+        {
+            if (iIndex == iCodes.Count) { break; }
+            
+            OpCode opCode2  = iCodes[iIndex-2];
+            OpCode opCode1  = iCodes[iIndex-1];
+            OpCode opCode0  = iCodes[iIndex-0];
+            if ((opCode2 == OpCode.LD_DE_nn) && (opCode1 == OpCode.LD_iIY_d_E) && (opCode0 == OpCode.LD_iIY_d_D) && 
+                (Flags.Target != iFlags[iIndex-1] & Flags.Target) && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+            {
+                
+                if (WalkAhead(iIndex+1, WalkStats.WriteDE | WalkStats.Exit, WalkStats.ReadDE, 20))
+                {
+                    iCodes   [iIndex-2] = OpCode.NOP;
+                    iLengths [iIndex-2] = 1;
+                    iCodes   [iIndex-1] = OpCode.LD_iIY_d_n;
+                    iLengths [iIndex-1] = 4;
+                    iOperands[iIndex-1] = ((iOperands[iIndex-2] & 0xFF) << 8) + iOperands[iIndex-1];
+                    iCodes   [iIndex-0] = OpCode.LD_iIY_d_n;
+                    iLengths [iIndex-0] = 4;
+                    iOperands[iIndex-0] = (iOperands[iIndex-2] & 0xFF00) + iOperands[iIndex-0];
+                    modified = true;    
+                }
+            }
+        
+            iIndex++;
+        }
+        return modified;
+    }
+    bool OptimizeWriteWord()
+    {
+        bool modified = false;
+        if (iCodes.Count < 6) { return modified; }
+        uint iIndex = 5;
+        
+        loop
+        {
+            if (iIndex == iCodes.Count) { break; }
+            
+            OpCode opCode1  = iCodes[iIndex-1];
+            OpCode opCode0  = iCodes[iIndex-0];
+            
+            if ((opCode1 == OpCode.PUSH_DE) && (opCode0 == OpCode.POP_HL) && 
+                (Flags.Target != iFlags[iIndex-1] & Flags.Target) && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+            {
+                OpCode opCode3  = iCodes[iIndex-3];
+                OpCode opCode2  = iCodes[iIndex-2];
+                if ((opCode3 == OpCode.LD_E_iIX_d) && (opCode2 == OpCode.LD_D_iIX_d) && 
+                    (Flags.Target != iFlags[iIndex-2] & Flags.Target))
+                {   
+                    if (WalkAhead(iIndex+1, WalkStats.WriteDE | WalkStats.Exit, WalkStats.ReadDE, 20))
+                    {
+                        iCodes  [iIndex-3] = OpCode.LD_L_iIX_d;
+                        iCodes  [iIndex-2] = OpCode.LD_H_iIX_d;
+                        iCodes  [iIndex-1] = OpCode.NOP;
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        modified = true;
+                    }
+                }
+            }
+            
+            if ((opCode1 == OpCode.POP_DE) && (opCode0 == OpCode.POP_DE) && 
+                (Flags.Target != iFlags[iIndex-1] & Flags.Target) && (Flags.Target != iFlags[iIndex-0] & Flags.Target))
+            {
+                OpCode opCode5  = iCodes[iIndex-5];
+                OpCode opCode4  = iCodes[iIndex-4];
+                if ((opCode5 == OpCode.PUSH_IX) && (opCode4 == OpCode.PUSH_HL) && 
+                    (Flags.Target != iFlags[iIndex-4] & Flags.Target))
+                {   
+                    OpCode opCode3  = iCodes[iIndex-3];
+                    OpCode opCode2  = iCodes[iIndex-2];
+                    if ((opCode3 == OpCode.LD_iIX_d_L) && (opCode2 == OpCode.LD_iIX_d_H) && 
+                        (Flags.Target != iFlags[iIndex-3] & Flags.Target) && (Flags.Target != iFlags[iIndex-2] & Flags.Target))
+                    {
+                        if (WalkAhead(iIndex+1, WalkStats.WriteDE | WalkStats.Exit, WalkStats.ReadDE, 20))
+                        {
+                            // PUSH IX
+                            // PUSH HL
+                            // LD (IX+0), L
+                            // LD (IX+1), H
+                            // POP DE
+                            // POP DE
+                            //
+                            // ->
+                            //
+                            // LD (IX+0), L
+                            // LD (IX+1), H
+                            
+                            iCodes  [iIndex-5] = OpCode.NOP;
+                            iLengths[iIndex-5] = 1;
+                            iCodes  [iIndex-4] = OpCode.NOP;
+                            iLengths[iIndex-4] = 1;
+                            
+                            iCodes  [iIndex-1] = OpCode.NOP;
+                            iLengths[iIndex-1] = 1;
+                            iCodes  [iIndex-0] = OpCode.NOP;
+                            iLengths[iIndex-0] = 1;
+                            modified = true;
+                        }
+                    }
+                }
+            }
+            iIndex++;
+        }
+        return modified;
+    }
     bool OptimizeOUT()
     {
         bool modified = false;

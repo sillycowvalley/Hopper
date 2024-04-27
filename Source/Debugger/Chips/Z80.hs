@@ -418,6 +418,9 @@ unit CPU // Z80
                 case OpCode.LD_iIY_d_H:  { SetMemory(uint(long(iyRegister) + offset), byte(hlRegister >> 8));   }
                 case OpCode.LD_iIY_d_L:  { SetMemory(uint(long(iyRegister) + offset), byte(hlRegister & 0xFF)); }
                 
+                case OpCode.LD_iIY_d_n:  { SetMemory(uint(long(iyRegister) + offset), byte(operand));           }
+                case OpCode.LD_iIX_d_n:  { SetMemory(uint(long(ixRegister) + offset), byte(operand));           }
+                
                 case OpCode.LD_A_iIX_d:  { aRegister  = GetMemory(uint(long(ixRegister) + offset));                                }
                 case OpCode.LD_B_iIX_d:  { bcRegister = (bcRegister & 0x00FF) + (GetMemory(uint(long(ixRegister) + offset)) << 8); }
                 case OpCode.LD_C_iIX_d:  { bcRegister = (bcRegister & 0xFF00) + GetMemory(uint(long(ixRegister) + offset));        }
@@ -1162,6 +1165,19 @@ unit CPU // Z80
                     {
                         offset = Int.FromBytes(byte(operand & 0xFF), 0xFF);
                     }
+                }
+                case OperandType.RelativeImmediate8:
+                {
+                    operand = memory[pcRegister + opCodeLength];
+                    if (operand & 0x80 == 0)
+                    {
+                        offset = Int.FromBytes(byte(operand & 0xFF), 0);
+                    }
+                    else
+                    {
+                        offset = Int.FromBytes(byte(operand & 0xFF), 0xFF);
+                    }
+                    operand = memory[pcRegister + opCodeLength + 1];
                 }
                 default:
                 {

@@ -154,6 +154,22 @@ program Z80Opt
             {
                 methodModified = true;
             }
+            if (OptimizeWriteWord())
+            {
+                methodModified = true;
+            }
+            if (OptimizePOPDEx5())
+            {
+                methodModified = true;
+            }
+            if (OptimizeHLINC())
+            {
+                methodModified = true;
+            }
+            if (OptimizeDeclare())
+            {
+                methodModified = true;
+            }
             
             // mark unreachable code
             if (CodePoints.OptimizeUnreachableToNOP())

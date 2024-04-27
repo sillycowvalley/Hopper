@@ -9,8 +9,7 @@ unit IO
     Write(string s)
     {
         uint length = s.Length;
-        uint i;
-        for (i=0; i < length; i++)
+        for (uint i=0; i < length; i++)
         {
             Serial.WriteChar(s[i]);
         }

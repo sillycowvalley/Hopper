@@ -24,7 +24,6 @@ program DASM
     
     bool extendedCodeSegment;
     
-    uint codeSize = 0;
     uint instructionCount = 0;
     
     string pathLoaded;
@@ -70,16 +69,13 @@ program DASM
     
     writeSrc(file srcFile, <byte> output, uint romSize)
     {
-        uint romAddress = 0x0000;
-        
-        srcFile.Append("#define ROM_START   0x" + romAddress.ToHexString(4) + Char.EOL);
+        srcFile.Append("#define ROM_START   0x0000" + Char.EOL);
         srcFile.Append("#define ROM_END     0x" + (romSize-1).ToHexString(4) + Char.EOL);
         srcFile.Append("" + Char.EOL);
         
         srcFile.Append("PROGMEM const unsigned char rom_bin[] = {");
-        uint address = romAddress;
         uint length  = output.Count;
-        uint index   = 0;
+        uint index   = 0x0000;
         loop
         {
             byte b = 0;
@@ -97,9 +93,11 @@ program DASM
                 prefix = "  ";
             }
             srcFile.Append(prefix + "0x" + b.ToHexString(2) + ", ");    
-            if (address == 0xFFFF) { break; } 
-            address++;
             index++;
+            if (index == romSize) 
+            { 
+                break; 
+            } 
         }
         
         srcFile.Append("};" + Char.EOL);
@@ -437,14 +435,12 @@ program DASM
                          operand = code[index] + (code[index+1] << 8);
                          index += 2;
                     }
-                    codeSize += (opCodeLength + operandLength);
                     instructionCount++;
                     
                     if (instruction == OpCode.JP_HL)
                     {
                         tableSize = code[index];
                         index += 1;
-                        codeSize += 1;
                     }
                     
                     if (runtimeMap.Contains(instructionAddress))
@@ -715,7 +711,14 @@ program DASM
                             }
                             case OperandType.RelativeImmediate8: // (XY+d), n
                             {
-                                Die(0x0A);
+                                emit = "EmitOffsetByte"; // (OpCode opCode, int offset, byte msb)
+                                int ioperand = int(operand & 0xFF);
+                                if (ioperand > 127)
+                                {
+                                    ioperand = ioperand - 256;
+                                }
+                                operand = operand >> 8;
+                                argument = ", int(" + ioperand.ToString() + "), byte(" + operand.ToString() + ")";
                             }
                         }
                         emit = emit.Pad(' ', 10);
@@ -747,7 +750,6 @@ program DASM
                             }
                             hasmFile.Append("0x" + entry.ToHexString(4) + " ");
                             index += 2;
-                            codeSize += 2;
                             tableSize--;
                             count++;
                         }    
@@ -763,7 +765,9 @@ program DASM
                     codeGen.Append("}" + Char.EOL);
                     codeGen.Flush();
                 }
-                            
+                    
+                uint codeSize = code.Count;
+                        
                 Parser.ProgressTick("d");
                 hasmFile.Flush();
                 uint kSize = romSize / 1024;

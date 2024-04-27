@@ -50,8 +50,7 @@ unit Array
         uint destination = this + aiElements;
         uint constantLocation = ReadWord(ConstantStart) + 2;
         uint source      = constantLocation + location;
-        uint i;
-        for (i=0; i < length; i++)
+        for (uint i=0; i < length; i++)
         {
             WriteByte(destination, ReadByte(source));
             destination++;

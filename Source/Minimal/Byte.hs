@@ -10,9 +10,8 @@ unit Byte
     {
         int digit;
         char c;
-        int i;
         string result;
-        for (i = digits; i > 0; i--)
+        for (int i = digits; i > 0; i--)
         {
             digit = this % 16;
             c = Byte.ToHex(byte(digit));
@@ -25,9 +24,8 @@ unit Byte
     {
         int digit;
         char c;
-        int i;
         string result;
-        for (i = 8; i > 0; i--)
+        for (int i = 8; i > 0; i--)
         {
             digit = this % 2;
             c = Byte.ToHex(byte(digit));

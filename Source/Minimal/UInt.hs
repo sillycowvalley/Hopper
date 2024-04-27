@@ -21,8 +21,8 @@ unit UInt
     {
         bool success;
         uint length;
-        uint i;
         byte b;
+        uint i;
         if (content.StartsWith("0x"))
         {
             success = tryParseHex(content, ref returnValue);
@@ -53,7 +53,7 @@ unit UInt
                 {
                     returnValue = 0;
                     success = true;
-                    for (i=0; i < length; i++)
+                    for ( ; i < length; i++)
                     {
                         b = byte(content[i]);
                         returnValue = returnValue * 10;
@@ -100,7 +100,7 @@ unit UInt
                 break;
             }
             success = true;
-            for (i=0; i < length-2; i++)
+            for ( ; i < length-2; i++)
             {
                 returnValue = returnValue * 16;
                 c = content.GetChar(i+2);
@@ -126,8 +126,8 @@ unit UInt
     {
         char c;
         uint length;
-        uint i;
         bool success = true;
+        uint i;
         returnValue = 0;
         if (!content.StartsWith("0b"))
         {

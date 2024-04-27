@@ -11,14 +11,13 @@ unit GC
     uint Create(Type objectType, uint size)
     {
         uint this;
-        uint i;
         size += 2; // type and ref
         this = Memory.Allocate(size);
         WriteByte(this+iType,      byte(objectType));
         WriteByte(this+iReference, 0); // it will get its first reference when pushed to the stack via R0/HL
         
         // zero initialize:
-        for (i = iReference+1; i < size; i++)
+        for (uint i = iReference+1; i < size; i++)
         {
             WriteByte(this+i, 0);
         }
@@ -39,10 +38,9 @@ unit GC
     }
     uint Clone(uint source)
     {
-        uint i;
         uint size = ReadWord(source-2) - 2; // Allocate size is -2 from object size
         uint copy = Memory.Allocate(size);
-        for (i = 0; i < size; i++)
+        for (uint i = 0; i < size; i++)
         {
             WriteByte(copy+i, ReadByte(source+i));
         }

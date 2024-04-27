@@ -107,9 +107,8 @@ unit Int
     {
         int digit;
         char c;
-        int i;
         string result;
-        for (i = digits; i > 0; i--)
+        for (int i = digits; i > 0; i--)
         {
             digit = this % 16;
             c = Byte.ToHex(byte(digit));

@@ -21,7 +21,6 @@ unit String
     {
         uint this;
         uint size;
-        uint i;
         uint source;
         uint destination;
         uint constantLocation;
@@ -34,7 +33,7 @@ unit String
         destination = this + siChars;
         constantLocation = ReadWord(ConstantStart) + 2;
         source      = constantLocation + location;
-        for (i=0; i < length; i++)
+        for (uint i=0; i < length; i++)
         {
             WriteByte(destination, ReadByte(source));
             destination++;
@@ -83,7 +82,6 @@ unit String
         uint capacity = ReadWord(str-2) - 6; // -6 for blocksize, ref, type, length
         uint length = ReadWord(str+siLength);
         uint strExpanded;
-        uint i;
         uint source;
         uint destination;
         byte references;
@@ -94,7 +92,7 @@ unit String
             strExpanded = GC.Create(Type.String, capacity + 18); // capacity + 6 + 16 - 4 (-4 for header added by Create and Allocate)  
             source      = str + siChars;
             destination = strExpanded + siChars;
-            for (i=0; i < length; i++)
+            for (uint i=0; i < length; i++)
             {
                 WriteByte(destination, ReadByte(source));
                 destination++;
@@ -114,7 +112,6 @@ unit String
         uint length2  = ReadWord(append+siLength);
         uint strExpanded;
         uint size;
-        uint i;
         uint source;
         uint destination;
         byte references;
@@ -130,7 +127,7 @@ unit String
             strExpanded = GC.Create(Type.String, size-4); // -4 (header added by Create and Allocate)
             source      = str + siChars;
             destination = strExpanded + siChars;
-            for (i=0; i < length; i++)
+            for (uint i=0; i < length; i++)
             {
                 WriteByte(destination, ReadByte(source));
                 destination++;
@@ -142,7 +139,7 @@ unit String
         }    
         source      = append + siChars;
         destination = str + siChars + length;
-        for (i=0; i < length2; i++)
+        for (uint i=0; i < length2; i++)
         {
             WriteByte(destination, ReadByte(source));
             destination++;
@@ -155,7 +152,6 @@ unit String
         uint capacity = ReadWord(str-2) - 6; // -6 for blocksize, ref, type, length
         uint length = ReadWord(str+siLength);
         uint strExpanded;
-        uint i;
         uint source;
         uint destination;
         byte references;
@@ -166,7 +162,7 @@ unit String
             strExpanded = GC.Create(Type.String, capacity + 18); // capacity + 6 + 16 - 4 (-4 for header added by Create and Allocate)     
             source      = str + siChars;
             destination = strExpanded + siChars;
-            for (i=0; i < length; i++)
+            for (uint i=0; i < length; i++)
             {
                 WriteByte(destination, ReadByte(source));
                 destination++;
@@ -178,7 +174,7 @@ unit String
         }    
         source      = str + siChars + length - 1; // last character
         destination = source + 1;
-        for (i=0; i < length; i++)
+        for (uint i=0; i < length; i++)
         {
             WriteByte(destination, ReadByte(source));
             destination--;
