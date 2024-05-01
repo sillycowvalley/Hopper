@@ -284,6 +284,12 @@ program Optimize
             {
                 modified = true;
             }
+            if (!modified)
+            {
+                // remove NOPs even if there were no other optimizations
+                modified = AsmPoints.OptimizeNOPExists();
+            }
+            
             
             
             // TODO:

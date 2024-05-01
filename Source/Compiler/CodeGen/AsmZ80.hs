@@ -29,9 +29,23 @@ unit AsmZ80
     const uint ZT2 = 0x2A;
     const uint ZT3 = 0x2B;
     
-    const byte ControlRegister    = 0x1E;
-    const byte StatusRegister     = 0x1E;
-    const byte DataRegister       = 0x1F;
+    // Motorola 6850 ACIA
+    const byte ControlRegister    = 0xEC; //0x1E;
+    const byte StatusRegister     = 0xEC; //0x1E;
+    const byte DataRegister       = 0xED; //0x1F;
+    
+     // WDC 65C22 VIA
+    const byte VIAPORTB             = 0xF0;
+    const byte VIAPORTA             = 0xF1;
+    const byte VIADDRB              = 0xF2;
+    const byte VIADDRA              = 0xF3;
+    const byte VIAT1CL              = 0xF4; // Timer 1 counter low
+    const byte VIAT1CH              = 0xF5; // Timer 1 counter high
+
+    const byte VIAACR               = 0xFB; // Auxiliary Control Register
+    const byte VIAPCR               = 0xFC; // Peripheral Control Register
+    const byte VIAIFR               = 0xFD; // Interrupt Flag Register
+    const byte VIAIER               = 0xFE; // Interrupt Enable Register
         
     enum OpCode
     {

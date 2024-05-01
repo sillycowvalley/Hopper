@@ -1,7 +1,7 @@
 program Mandelbrot
 {
-    #define CPU_Z80
-    #define ROM_8K
+    //#define CPU_Z80
+    //#define ROM_8K
     uses "/Source/Minimal/IO"
         
     {

@@ -5,8 +5,11 @@ program R6502
     #define JIX_INSTRUCTIONS
     #define FASTINTS
     
-    //#define CPU_65C02S  // Rockwell and WDC
-    #define CPU_6502      // MOS
+    #define W65C22_VIA
+    #define CPU_8MHZ
+    
+    #define CPU_65C02S  // Rockwell and WDC
+    //#define CPU_6502      // MOS
 
         
 #if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS)
@@ -55,6 +58,9 @@ program R6502
     IRQ()
     {
         Serial.ISR();
+#ifdef W65C22_VIA
+        W65C22.ISR();
+#endif        
     }
     NMI()
     {
@@ -404,6 +410,9 @@ program R6502
         Utilities.ClearPages(); // clear the serial buffer
         
         Serial.Initialize(); // munts A
+#ifdef W65C22_VIA
+       W65C22.Initialize();
+#endif                
         hopperInit();
     }
     

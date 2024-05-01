@@ -381,6 +381,7 @@ namespace HopperNET
             else
             {
                 // stop adding Bluetooth ports to the list of COM ports (because the timeout on failing to connect is >= 1 minute)
+                /*
                 ManagementObjectSearcher serialSearcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_SerialPort");
                 var query = from ManagementObject s in serialSearcher.Get() select new { Name = s["Name"], DeviceID = s["DeviceID"], PNPDeviceID = s["PNPDeviceID"] };
                 foreach (var port in query)
@@ -394,6 +395,28 @@ namespace HopperNET
                     else
                     {
                         btPorts.Add(port.DeviceID as String); // cache the results since this is a slow process
+                    }
+                }
+                */
+
+                // find the missing FTDI virtual COM ports: (is it enough to do this or do I still need the code above for 'real' COM ports?)
+                string selector = "SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%(COM%)'";
+                using (var searcher = new ManagementObjectSearcher(selector))
+                {
+                    foreach (ManagementObject queryObj in searcher.Get())
+                    {
+                        string caption = queryObj["Caption"].ToString();
+                        // Typically, the COM port is included at the end of the Caption string in the format (COMX)
+                        if (caption.Contains("(COM"))
+                        {
+                            int startIndex = caption.IndexOf("(COM") + 1;
+                            int endIndex = caption.IndexOf(')', startIndex);
+                            string comPort = caption.Substring(startIndex, endIndex - startIndex);
+                            if (!list.Contains(comPort))
+                            {
+                                list.Add(comPort);
+                            }
+                        }
                     }
                 }
             }
@@ -475,7 +498,8 @@ namespace HopperNET
 
             serialPort = new SerialPort();
             serialPort.PortName = portName;
-            serialPort.BaudRate = 57600; //  57600 for my 6502 machine, 115200 for Arduino MEGA2560 apps from 8bitforce;
+            //serialPort.BaudRate = 57600; //  57600 for my 6502 machine, 115200 for Arduino MEGA2560 apps from 8bitforce;
+            serialPort.BaudRate = 28800; //  28800  for my new 6502 machine (at 28K)
             serialPort.Parity = Parity.None;
             serialPort.DataBits = 8;
             serialPort.StopBits = StopBits.One;

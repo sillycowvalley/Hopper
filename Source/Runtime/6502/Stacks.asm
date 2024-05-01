@@ -1,5 +1,7 @@
 unit Stacks
 {
+    uses "/Source/Runtime/6502/Utilities"
+    
     Init()
     {
 #ifdef CPU_65C02S        

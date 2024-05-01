@@ -206,7 +206,7 @@ void cpu_tick()
     
     uP_ADDR = ADDR();
     
-    byte data = (uP_ADDR % 2 == 0) ? 0xAA : 0x55; // good test pattern to know when we are reading from dead space
+    byte data = 0; //(uP_ADDR % 2 == 0) ? 0xAA : 0x55; // good test pattern to know when we are reading from dead space
     
     if (STATE_RW_N)	   // HIGH = READ
     {
@@ -313,14 +313,17 @@ void setup()
 // Loop()
 ////////////////////////////////////////////////////////////////////
 
-byte i = 0;
 void loop()
 {
-    cpu_tick();
-    i++;
-    if (i == 0) // every 256 laps ..
+    byte i = 0;
+    while (1)
     {
-        service6850ACIA();
-        Serial.flush();
+        cpu_tick();
+        i++;
+        if (i == 0) // every 256 laps ..
+        {
+            service6850ACIA();
+            Serial.flush();
+        }
     }
 }

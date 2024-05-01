@@ -1541,6 +1541,31 @@ unit AsmPoints
         } // loop
         return modified;
     }
+    bool OptimizeNOPExists()
+    {
+        if (iCodes.Count < 1)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode0 = iCodes[iIndex];
+            if (opCode0 == OpCode.NOP)
+            {
+                modified = true;
+                break;
+            }
+            iIndex++;
+        }
+        return modified;
+    }
     
     // 2. CMP #0 after LDA, LDX, LDY, INC, INX, INY, DEC, DEX, DEY, INA, DEA, AND, ORA, EOR, ASL, LSR, ROL, 
     //              ROR, PLA, PLX, PLY, SBC, ADC, TAX, TXA, TAY, TYA, and TSX

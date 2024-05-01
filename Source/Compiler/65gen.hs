@@ -241,6 +241,10 @@ program Generate
     {
         srcFile.Append("#define ROM_START   0x" + romAddress.ToHexString(4) + Char.EOL);
         srcFile.Append("#define ROM_END     0xFFFF" + Char.EOL);
+        if (Architecture == CPUArchitecture.W65C02)
+        {
+            srcFile.Append("#define CPU_65C02S" + Char.EOL);
+        }
         srcFile.Append("" + Char.EOL);
         
         srcFile.Append("PROGMEM const unsigned char rom_bin[] = {");

@@ -1,12 +1,19 @@
 unit Time
 {
     uses "6502/ZeroPage"
+#ifdef W65C22_VIA
+    uses "6502/Devices/W65C22"
+    uses "6502/Long"
+    uses "6502/Type"
+#endif    
     
-    const byte Ticks   = ZP.T0;
-    const byte Target  = ZP.T4;
     
+    // TimerDelay         : value in [top] in milliseconds, returns after delay
     Delay()
     {
+#ifndef W65C22_VIA
+        TXA BRK // VIA not included?
+#else        
         PopTop();
         
         PHA
@@ -14,54 +21,60 @@ unit Time
         // add ArgumentWord to Ticks0..3 and store in Target0..3
         CLC
         LDA ZP.TOPL
-        ADC Ticks +0  // reading Ticks +0 makes a snapshot of all 4 registers
-        STA Target+0
+        ADC ZP.TICK0     // reading TICK0 makes a snapshot of all 4 registers on the emulator
+        STA ZP.TARGET0
         LDA ZP.TOPH
-        ADC Ticks +1
-        STA Target+1
-        LDA Ticks +2
+        ADC ZP.TICK1
+        STA ZP.TARGET1
+        LDA ZP.TICK2
         ADC #0 // to collect the carry
-        STA Target+2
-        LDA Ticks +3
+        STA ZP.TARGET2
+        LDA ZP.TICK3
         ADC #0 // to collect the carry
-        STA Target+3
+        STA ZP.TARGET3
         
-        // while Ticks0..3 < Target0..3, loop here
         loop
         {
-            LDA Ticks +0          // reading Ticks +0 makes a snapshot of all 4 registers
+            // while Ticks0..3 < Target0..3, loop here
+            LDA ZP.TICK0 // reading TICK0 makes a snapshot of all 4 registers on the emulator
             STA ZP.ACCL
             
-            LDA Ticks +3
-            CMP Target+3
-            if (NC) { continue; } // Ticks+3 < Target+3
-            LDA Ticks +2
-            CMP Target+2
-            if (NC) { continue; } // Ticks+2 < Target+2
-            LDA Ticks +1
-            CMP Target+1
-            if (NC) { continue; } // Ticks+1 < Target+1
+            LDA ZP.TICK3         
+            CMP ZP.TARGET3
+            if (NC) { continue; }
+            LDA ZP.TICK2
+            CMP ZP.TARGET2
+            if (NC) { continue; }
+            LDA ZP.TICK1
+            CMP ZP.TARGET1
+            if (NC) { continue; }
             LDA ZP.ACCL
-            CMP Target+0
-            if (NC) { continue; } // Ticks+0 < Target+0
+            CMP ZP.TARGET0
+            if (NC) { continue; }
             
             break; // Target >= Ticks : match ->
         }
-        PLA        
+        
+        PLA
+#endif
     }
+    
     Seconds()
     {
+#ifndef W65C22_VIA
+        TXA BRK // VIA not included?
+#else
         // LNEXT = LNEXT / LTOP + LRESULT
-        LDA Ticks +0
+        LDA ZP.TICK0 // reading TICK0 makes a snapshot of all 4 registers on the emulator
         STA LNEXT0
-        LDA Ticks +1
+        LDA ZP.TICK1
         STA LNEXT1
-        LDA Ticks +2
+        LDA ZP.TICK2
         STA LNEXT2
-        LDA Ticks +3
+        LDA ZP.TICK3
         STA LNEXT3
         
-        LDA # 0xE8 // 1000 = 0x3E8
+        LDA # 0xE8 // 1000 = 0x03E8
         STA LTOP0
         LDA # 0x03
         STA LTOP1
@@ -82,5 +95,6 @@ unit Time
         STA TOPH
         LDA # Types.UInt
         Stacks.PushTop();
+#endif
     }
 }

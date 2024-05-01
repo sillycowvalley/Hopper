@@ -57,10 +57,6 @@ unit ZP
     
     const byte PROGSIZE             = 0x1D;
     
-    const byte ACIACONTROL          = 0x1E;
-    const byte ACIASTATUS           = 0x1E;
-    const byte ACIADATA             = 0x1F;
-    
     // used by firmware for 'W'orkspace
     // (for example, Serial also uses these, especially on 6502 where PLX, PLY, PHX and PHY are missing)
     const byte W0                   = 0x20;
@@ -68,14 +64,14 @@ unit ZP
     const byte W2                   = 0x22; // used by packed syscalls
     
     // used by 'T'ime APIs Millis and Delay
-    const byte T0                   = 0x28;
-    const byte T1                   = 0x29;
-    const byte T2                   = 0x2A;
-    const byte T3                   = 0x2B;
-    const byte T4                   = 0x2C;
-    const byte T5                   = 0x2D;
-    const byte T6                   = 0x2E;
-    const byte T7                   = 0x2F;
+    const byte TICK0                = 0x28;
+    const byte TICK1                = 0x29;
+    const byte TICK2                = 0x2A;
+    const byte TICK3                = 0x2B;
+    const byte TARGET0              = 0x2C;
+    const byte TARGET1              = 0x2D;
+    const byte TARGET2              = 0x2E;
+    const byte TARGET3              = 0x2F;
     
     const byte BRKL                 = 0x30; // .. 0x3F
     const byte BRKH                 = 0x40; // .. 0x4F
@@ -125,6 +121,27 @@ unit ZP
     const byte U5                   = 0x85;
     const byte U6                   = 0x86;
     const byte U7                   = 0x87;
+    
+    
+    // Motorola 6850 ACIA
+    const byte ACIACONTROL          = 0xEC; //0x1E;
+    const byte ACIASTATUS           = 0xEC; //0x1E;
+    const byte ACIADATA             = 0xED; //0x1F;
+    
+    // W65C22 VIA
+    const byte PORTB                = 0xF0;
+    const byte PORTA                = 0xF1;
+    const byte DDRB                 = 0xF2;
+    const byte DDRA                 = 0xF3;
+    const byte T1CL                 = 0xF4; // Timer 1 counter low
+    const byte T1CH                 = 0xF5; // Timer 1 counter high
+
+    const byte ACR                  = 0xFB; // Auxiliary Control Register
+    const byte PCR                  = 0xFC; // Peripheral Control Register
+    const byte IFR                  = 0xFD; // Interrupt Flag Register
+    const byte IER                  = 0xFE; // Interrupt Enable Register
+
+    
     
     // used for UInt library
     const byte UWIDE0               = U0;
