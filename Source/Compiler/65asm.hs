@@ -420,9 +420,18 @@ program Assemble
                 uint tableAddress = Asm6502.NextAddress;
                 Asm6502.PatchJump(jumpToTable, tableAddress);
                 
-                EmitInstruction((registerName == 'X') ? "CPX" : "CPY", byte(iLastNonDefault));
-                EmitInstruction("BEQ", int(+5));
-                EmitInstruction("BCC", int(+3));
+                if (iLastNonDefault < 0xFF)
+                {
+                    iLastNonDefault++;
+                    EmitInstruction((registerName == 'X') ? "CPX" : "CPY", byte(iLastNonDefault));    
+                    EmitInstruction("BCC", int(+3));
+                }
+                else
+                {
+                    EmitInstruction((registerName == 'X') ? "CPX" : "CPY", byte(iLastNonDefault));    
+                    EmitInstruction("BEQ", int(+5));
+                    EmitInstruction("BCC", int(+3));
+                }
                 
                 EmitInstructionAbsolute("iJMP", defaultIndex, AddressingModes.Absolute);
                 

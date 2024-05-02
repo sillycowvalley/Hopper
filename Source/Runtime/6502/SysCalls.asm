@@ -43,7 +43,8 @@ unit SysCall
     missing()
     {
 #ifdef CHECKED
-        TXA BRK // SysCall not Implemented!
+        TXA // SysCall not Implemented!
+        Diagnostics.Die();
 #endif
     }
     serialConnect()

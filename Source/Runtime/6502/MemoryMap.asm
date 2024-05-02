@@ -15,5 +15,4 @@ unit Address
     const uint RamSize              = 0xC000;  // we assume RAM always starts at 0x0000 and that we have 48K, for now
     //const uint RamSize            = 0x1800; // 6K on the Mega2560
     
-    const uint InvalidAddress       = 0xFFFF;  // used to signify that program run has completed
 }

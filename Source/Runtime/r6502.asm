@@ -4,6 +4,7 @@ program R6502
     #define PACKED_INSTRUCTIONS
     #define JIX_INSTRUCTIONS
     #define FASTINTS
+    #define INLINE_EXPANSIONS // speed vs size
     
     #define W65C22_VIA
     #define CPU_8MHZ
@@ -334,6 +335,8 @@ program R6502
         // hopperInitPC -> 0x0000
         STZ ZP.PCL
         STZ ZP.PCH
+        
+        RMB6 ZP.FLAGS // reset ProgramExited
 #else
         LDA #0
         STA ZP.CNP
@@ -341,6 +344,10 @@ program R6502
         // hopperInitPC -> 0x0000
         STA ZP.PCL
         STA ZP.PCH
+        
+        LDA ZP.FLAGS
+        AND # 0b10111111
+        STA ZP.FLAGS
 #endif
     }
     
@@ -363,7 +370,7 @@ program R6502
         STZ ZP.CNP
         STZ ZP.PCL
         STZ ZP.PCH
-        STZ ZP.FLAGS
+        STZ ZP.FLAGS  // resets ProgramExited
   #ifdef CHECKED
         SMB2 ZP.FLAGS // this is a checked build
   #endif        
@@ -377,7 +384,7 @@ program R6502
         ORA # 0b00000100  // this is a checked build
   #endif
         ORA # 0b00001000  // 8 bit SP and BP
-        STA ZP.FLAGS
+        STA ZP.FLAGS      // resets ProgramExited
 #endif                                
     }
    
@@ -436,17 +443,19 @@ program R6502
 #endif
                 break; 
             }
-            LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
-            CMP PCH
-            if (Z)
+#ifdef CPU_65C02S
+            if (BBS6, ZP.FLAGS) // is ProgramExited set?
             {
-                CMP PCL
-                if (Z)
-                {
-                    break; // end of program run
-                }
+                break;
             }
-            stepintoCommand();
+#else
+            BIT ZP.FLAGS
+            if (V) // is ProgramExited set?
+            {
+                break;
+            }
+#endif
+            Instruction.Execute();
         }
         
         // Bit 1 clear - run until breakpoint
@@ -485,18 +494,18 @@ program R6502
 #endif
                 break; 
             }
-            
-            LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
-            CMP PCH
-            if (Z)
+#ifdef CPU_65C02S
+            if (BBS6, ZP.FLAGS) // is ProgramExited set?
             {
-                CMP PCL
-                if (Z)
-                {
-                    break; // end of program run
-                }
+                break;
             }
-            
+#else
+            BIT ZP.FLAGS
+            if (V) // is ProgramExited set?
+            {
+                break;
+            }
+#endif
             // munts A and X, 
             //   if hit, Z set and breakpoint in X
             Breakpoints.IsPCBreakpoint(); 
@@ -518,16 +527,18 @@ program R6502
     }
     stepoverCommand()
     {
-        LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
-        CMP PCH
-        if (Z)
+#ifdef CPU_65C02S
+        if (BBS6, ZP.FLAGS) // is ProgramExited set?
         {
-            CMP PCL
-            if (Z)
-            {
-                return; // end of program run
-            }
+            return;
         }
+#else
+        BIT ZP.FLAGS
+        if (V) // is ProgramExited set?
+        {
+            return;
+        }
+#endif
         
         // is the instruction about to be executed a CALL/JSR?
         Instruction.IsCurrentCALL(); // munts X
@@ -569,16 +580,18 @@ program R6502
     }
     checkRestart()
     {
-        LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
-        CMP PCH
-        if (Z)
+#ifdef CPU_65C02S
+        if (BBS6, ZP.FLAGS) // is ProgramExited set?
         {
-            CMP PCL
-            if (Z)
-            {
-                warmRestart();
-            }
+            warmRestart();
         }
+#else
+        BIT ZP.FLAGS
+        if (V) // is ProgramExited set?
+        {
+            warmRestart();
+        }
+#endif
     }
     
     Hopper()

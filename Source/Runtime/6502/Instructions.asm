@@ -176,7 +176,8 @@ unit Instruction
 #ifdef CHECKED    
     lengthMissing()
     {
-        TXA BRK // operand length not implemented!
+        TXA  // operand length not implemented!
+        Diagnostics.Die();
     }
 #endif
         
@@ -1096,11 +1097,13 @@ unit Instruction
         LDA ZP.CSP
         if (Z)
         {
-            // PC = Address.InvalidAddress; // exit program
-            LDA #(Address.InvalidAddress & 0xFF)
-            STA ZP.PCL
-            LDA #(Address.InvalidAddress >> 8)
-            STA ZP.PCH
+#ifdef CPU_65C02S
+            SMB6 ZP.FLAGS // set ProgramExited
+#else
+            LDA ZP.FLAGS
+            ORA # 0b01000000
+            STA ZP.FLAGS
+#endif
         }
         else
         {
@@ -1155,11 +1158,13 @@ unit Instruction
         LDA ZP.CSP
         if (Z)
         {
-            // PC = Address.InvalidAddress; // exit program
-            LDA #(Address.InvalidAddress & 0xFF)
-            STA ZP.PCL
-            LDA #(Address.InvalidAddress >> 8)
-            STA ZP.PCH
+#ifdef CPU_65C02S
+            SMB6 ZP.FLAGS // set ProgramExited
+#else
+            LDA ZP.FLAGS
+            ORA # 0b01000000
+            STA ZP.FLAGS
+#endif
         }
         else
         {
@@ -1435,7 +1440,8 @@ unit Instruction
         // default: simply add PC to tableSize
         jixDefault();
 #else
-        LDA 0x0A BRK // no JIX instructions
+        LDA 0x0A // no JIX instructions
+        Diagnostics.Die();
 #endif
     }
     /*
@@ -1463,7 +1469,8 @@ unit Instruction
         // default: simply add PC to tableSize
         jixbDefault();
 #else
-        LDA 0x0A BRK // no JIX instructions
+        LDA 0x0A // no JIX instructions
+        Diagnostics.Die();
 #endif
     }
     */
@@ -2362,25 +2369,37 @@ unit Instruction
     missing()
     {
 #ifdef CHECKED        
-        TXA BRK // OpCode not Implemented!
+        TXA // OpCode not Implemented!
+        Diagnostics.Die();
 #endif
     }
       
     Execute() // munts X
     {
-        LDA # (InvalidAddress & 0xFF) // assume that MSB and LSB of InvalidAddress are the same
-        CMP PCH
-        if (Z)
+#ifdef CPU_65C02S        
+        if (BBS6, ZP.FLAGS) // is ProgramExited set?
         {
-            CMP PCL
-            if (Z)
-            {
-                return; // end of program run
-            }
+            return;
         }
-        
+#else
+        BIT ZP.FLAGS
+        if (V) // is ProgramExited set?
+        {
+            return;
+        }
+#endif
         // ACC = PC + CODESTART
+#ifdef INLINE_EXPANSIONS
+        CLC
+        LDA ZP.PCL
+        ADC ZP.CODESTARTL
+        STA ZP.ACCL
+        LDA ZP.PCH
+        ADC ZP.CODESTARTH
+        STA ZP.ACCH
+#else
         GetCurrentAddress();
+#endif
         
         // load current instruction into X
 #ifdef CPU_65C02S
@@ -2389,9 +2408,16 @@ unit Instruction
         LDY #0
         LDA [ZP.ACC], Y
 #endif                
-        
+
+#ifdef INLINE_EXPANSIONS
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#else                
         Utilities.IncPC();
-        
+#endif
         TAX
         switch (X)
         {

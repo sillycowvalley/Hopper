@@ -2,7 +2,9 @@ unit Diagnostics
 {
     Die()
     {
-        Stacks.PopA(); BRK // user error from Hopper in A
+        Stacks.PopA();         // user error from Hopper in A
+        INC ZP.SerialBreakFlag // hardware <ctrl><C>
+        BRK
     }
     
     // used by 'F' command

@@ -1,0 +1,473 @@
+{
+  "uuid": "c077d0c83980dc83b353ca7c5df95fd6",
+  "path": "Offline/6502%20Machine",
+  "name": "6502 Machine",
+  "content": "",
+  "created_at": "2023-07-13 16:31:25",
+  "updated_at": "2023-07-24 20:47:01",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "2e740803214541eebe531220d1aa531c",
+      "title": "Sheet_1",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "52f821cb1bdd4144b4d2f80ff4c91571": 1,
+        "8999e35426a34646945447c487094ae6": 9,
+        "e0eda5a6fe6e4b2dae2199fde06f2de7": 1,
+        "824de69e3eed407a9c56b2253197040f": 1,
+        "5ed06a9efba64c45984d8acc9df3edc7": 2,
+        "fa3802571d824a3395f47e20c9769243": 2,
+        "f990d7b9f26746cc8aef5dc000c0285a": 1,
+        "4032710470ce43bb96be0a566d698655": 1,
+        "ae4c7da250ca41c3b2eb47a2e5b1d853": 1,
+        "4d58b8e306154362860aeed9d5c6d7c9": 2,
+        "0e415b33eb03452e9eb5c7c648e3f609": 1,
+        "874da0fb5521411782a5e890b40a3d13": 1,
+        "45a645356fe84250a8e288be7b8cf5f0": 1,
+        "779d3d54566c4e788c17a280815f63cf": 1,
+        "23ed5bf5711c4f99a84b9dc6244a5b49": 5,
+        "d318f2cb53f8489a9c20136d67932e46": 1,
+        "6e398bfd34334ded82be30f5d83f0a22": 1,
+        "01d1a2bcd2e64d158f162a0dee96b1af": 1,
+        "ab7030af1c3f4bcf9f352a47ccaddeff": 1,
+        "05627b298b6a48bf8486efc1d14d7f91": 1,
+        "0bcd58abdb9c49ac8d07b75d3e5c2a29": 2
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "4.7uF",
+          1,
+          "ELECTROLYTIC CAPACITOR",
+          "C3",
+          {
+            "BOM_Manufacturer Part": "C2 4.7uF 25V",
+            "puuid": "39eb669bccfd4ddfb0edb646afd5c798",
+            "uuid": "fa3802571d824a3395f47e20c9769243"
+          }
+        ],
+        [
+          "30pF",
+          1,
+          "CAPACITOR 10.1UF",
+          "C9",
+          {
+            "BOM_Supplier": "",
+            "BOM_Manufacturer": "ReliaPro",
+            "BOM_Manufacturer Part": "250V 0.1UF 5% CBBCapacitor",
+            "BOM_Supplier Part": "C46804",
+            "puuid": "88ffdc08887b43a992722fb6b838365e",
+            "uuid": "23ed5bf5711c4f99a84b9dc6244a5b49"
+          }
+        ],
+        [
+          "1uF",
+          4,
+          "CAPACITOR 10.1UF",
+          "C10,C11,C13,C14",
+          {
+            "BOM_Supplier": "",
+            "BOM_Manufacturer": "ReliaPro",
+            "BOM_Manufacturer Part": "250V 0.1UF 5% CBBCapacitor",
+            "BOM_Supplier Part": "C46804",
+            "puuid": "88ffdc08887b43a992722fb6b838365e",
+            "uuid": "23ed5bf5711c4f99a84b9dc6244a5b49"
+          }
+        ],
+        [
+          "10uF",
+          1,
+          "ELECTROLYTIC CAPACITOR",
+          "C15",
+          {
+            "BOM_Manufacturer Part": "C2 4.7uF 25V",
+            "puuid": "39eb669bccfd4ddfb0edb646afd5c798",
+            "uuid": "fa3802571d824a3395f47e20c9769243"
+          }
+        ],
+        [
+          "1N4148",
+          1,
+          "1N4148_1N4148W",
+          "D1",
+          {
+            "BOM_Supplier Part": "",
+            "BOM_Supplier": "",
+            "BOM_Manufacturer Part": "",
+            "puuid": "bb766797572a49d2aad37278d2839cdb",
+            "uuid": "05627b298b6a48bf8486efc1d14d7f91"
+          }
+        ],
+        [
+          "1N5817",
+          2,
+          "DIODE SCHOTTKY",
+          "DS1,DS2",
+          {
+            "BOM_Manufacturer Part": "",
+            "puuid": "c59a551aa7c6472eaa9aaaae66c08546",
+            "uuid": "4d58b8e306154362860aeed9d5c6d7c9"
+          }
+        ],
+        [
+          "1K",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R1",
+          {
+            "BOM_Supplier": "LCSC",
+            "BOM_Supplier Part": "C9900002916",
+            "BOM_Manufacturer": "null",
+            "BOM_Manufacturer Part": "RES1/4W33R",
+            "BOM_JLCPCB Part Class": "Extended Part",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "3.3K",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R2",
+          {
+            "BOM_Supplier": "LCSC",
+            "BOM_Supplier Part": "C9900002916",
+            "BOM_Manufacturer": "null",
+            "BOM_Manufacturer Part": "RES1/4W33R",
+            "BOM_JLCPCB Part Class": "Extended Part",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "5.6K",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R3,R10",
+          {
+            "BOM_Supplier": "LCSC",
+            "BOM_Supplier Part": "C9900002916",
+            "BOM_Manufacturer": "null",
+            "BOM_Manufacturer Part": "RES1/4W33R",
+            "BOM_JLCPCB Part Class": "Extended Part",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "27K",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R4,R5",
+          {
+            "BOM_Supplier": "LCSC",
+            "BOM_Supplier Part": "C9900002916",
+            "BOM_Manufacturer": "null",
+            "BOM_Manufacturer Part": "RES1/4W33R",
+            "BOM_JLCPCB Part Class": "Extended Part",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "1M",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R6",
+          {
+            "BOM_Supplier": "LCSC",
+            "BOM_Supplier Part": "C9900002916",
+            "BOM_Manufacturer": "null",
+            "BOM_Manufacturer Part": "RES1/4W33R",
+            "BOM_JLCPCB Part Class": "Extended Part",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "10K",
+          1,
+          "RES-ADJ_3362W",
+          "R7",
+          {
+            "BOM_Manufacturer Part": "",
+            "puuid": "898545317e224619b41839a6fb5a2b28",
+            "uuid": "01d1a2bcd2e64d158f162a0dee96b1af"
+          }
+        ],
+        [
+          "10K",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R8,R9",
+          {
+            "BOM_Supplier": "LCSC",
+            "BOM_Supplier Part": "C9900002916",
+            "BOM_Manufacturer": "null",
+            "BOM_Manufacturer Part": "RES1/4W33R",
+            "BOM_JLCPCB Part Class": "Extended Part",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "Reset",
+          1,
+          "PUSHBUTTON",
+          "SW1",
+          {
+            "BOM_Manufacturer": "",
+            "BOM_Manufacturer Part": "",
+            "BOM_Supplier Part": "",
+            "BOM_Supplier": "",
+            "puuid": "e7211c706af94d1596c59792917bb194",
+            "uuid": "f990d7b9f26746cc8aef5dc000c0285a"
+          }
+        ],
+        [
+          "W65C02S",
+          1,
+          "W65C02S",
+          "U1",
+          {
+            "BOM_Manufacturer": "",
+            "BOM_Manufacturer Part": "",
+            "BOM_Supplier Part": "",
+            "BOM_Supplier": "",
+            "puuid": "f76faff62eda4429b993af9646117e6d",
+            "uuid": "52f821cb1bdd4144b4d2f80ff4c91571"
+          }
+        ],
+        [
+          "ATF22V10C",
+          1,
+          "-24P3",
+          "U2",
+          {
+            "BOM_Manufacturer Part": "",
+            "puuid": "83e5bfbf80d642e7882926aacd2dc8c6",
+            "uuid": "824de69e3eed407a9c56b2253197040f"
+          }
+        ],
+        [
+          "74HC14",
+          2,
+          "74HC14_DIP14_V2",
+          "U3,U11",
+          {
+            "BOM_Manufacturer Part": "New SchematicLib",
+            "puuid": "de3a89cd6d154549a0bcfb20c5a53ab5",
+            "uuid": "5ed06a9efba64c45984d8acc9df3edc7"
+          }
+        ],
+        [
+          "W65C22",
+          1,
+          "PDIP40",
+          "U4",
+          {
+            "BOM_Manufacturer": "Western Design Center",
+            "BOM_Manufacturer Part": "W65C22S6TPG-14",
+            "BOM_Supplier": "Jameco",
+            "BOM_Supplier Part": "2143591",
+            "puuid": "d3973d63479d4f1aa72ca0afb4f0d987",
+            "uuid": "4032710470ce43bb96be0a566d698655"
+          }
+        ],
+        [
+          "W65C51",
+          1,
+          "DIP-28_2.54",
+          "U5",
+          {
+            "BOM_Manufacturer Part": "WDC",
+            "BOM_Supplier Part": "",
+            "BOM_Supplier": "",
+            "puuid": "9e401fe5d36641c5b77947ef30982cd7",
+            "uuid": "ae4c7da250ca41c3b2eb47a2e5b1d853"
+          }
+        ],
+        [
+          "62256",
+          1,
+          "28PIN-DIP-0.6",
+          "U6",
+          {
+            "BOM_Manufacturer": "",
+            "BOM_Manufacturer Part": "",
+            "BOM_Supplier Part": "",
+            "BOM_Supplier": "",
+            "puuid": "c03729065b584f0f9494232571eefef3",
+            "uuid": "874da0fb5521411782a5e890b40a3d13"
+          }
+        ],
+        [
+          "28C256",
+          1,
+          "DIP28",
+          "U7",
+          {
+            "BOM_Manufacturer": "",
+            "BOM_Manufacturer Part": "",
+            "BOM_Supplier Part": "",
+            "BOM_Supplier": "",
+            "puuid": "f0a083c2de14499eaf4714c9b42c7457",
+            "uuid": "0e415b33eb03452e9eb5c7c648e3f609"
+          }
+        ],
+        [
+          "IC MAX232",
+          1,
+          "TH DIP-16 IC",
+          "U8",
+          {
+            "BOM_Supplier": "LCSC",
+            "BOM_Manufacturer": "MAXIM",
+            "BOM_Manufacturer Part": "MAX232EPE",
+            "BOM_Supplier Part": "C13695",
+            "puuid": "3f68572264194f27b1650a09303396ab",
+            "uuid": "45a645356fe84250a8e288be7b8cf5f0"
+          }
+        ],
+        [
+          "RS232",
+          1,
+          "DB9-TH_HARTING_09681635812",
+          "U9",
+          {
+            "BOM_Supplier": "LCSC",
+            "BOM_Supplier Part": "C5336400",
+            "BOM_Manufacturer": "Harting(浩亭)",
+            "BOM_Manufacturer Part": "09681635812",
+            "puuid": "6ff6e1fefc2e4c7492f4459b59670e55",
+            "uuid": "d318f2cb53f8489a9c20136d67932e46"
+          }
+        ],
+        [
+          "PS/2",
+          1,
+          "PS/2 KEYBOARD-MOUSE SOCKET",
+          "U10",
+          {
+            "BOM_Manufacturer": "",
+            "BOM_Manufacturer Part": "",
+            "BOM_Supplier Part": "",
+            "BOM_Supplier": "",
+            "puuid": "b6a387def1184502a55858962aaff995",
+            "uuid": "ab7030af1c3f4bcf9f352a47ccaddeff"
+          }
+        ],
+        [
+          "74HC595",
+          2,
+          "74HC595",
+          "U12,U13",
+          {
+            "BOM_Supplier Part": "C110383",
+            "BOM_Supplier": "LCSC",
+            "BOM_Manufacturer": "FM",
+            "BOM_Manufacturer Part": "74HC595A",
+            "puuid": "4a78035bc7794942a6fabd5d714ae2c7",
+            "uuid": "0bcd58abdb9c49ac8d07b75d3e5c2a29"
+          }
+        ],
+        [
+          "4MHz",
+          1,
+          "OSCILLATOR_DIP-8",
+          "X1",
+          {
+            "BOM_Manufacturer Part": "",
+            "puuid": "6720ed93b8fd4c0dbae83d1a094c2c45",
+            "uuid": "e0eda5a6fe6e4b2dae2199fde06f2de7"
+          }
+        ],
+        [
+          "1.8432MHz",
+          1,
+          "HC-49US_L11.0-W4.6-P4.88",
+          "X2",
+          {
+            "BOM_Supplier": "LCSC",
+            "BOM_Supplier Part": "C1669758",
+            "BOM_Manufacturer": "RALTRON(美国纬创电子)",
+            "BOM_Manufacturer Part": "A-1.8432-18",
+            "BOM_JLCPCB Part Class": "Extended Part",
+            "puuid": "11ecf094a4db4c18b3c1811c94437918",
+            "uuid": "779d3d54566c4e788c17a280815f63cf"
+          }
+        ],
+        [
+          "HD44780LCD",
+          1,
+          "LCD1602",
+          "X3",
+          {
+            "BOM_Manufacturer Part": "",
+            "puuid": "3dcff99128ca4b34bf28e3afe8042da2",
+            "uuid": "6e398bfd34334ded82be30f5d83f0a22"
+          }
+        ]
+      ],
+      "updateTime": 1690188421,
+      "createTime": 1689222686,
+      "histories": [],
+      "created_at": "2023-07-13 16:31:26",
+      "updated_at": "2023-07-24 20:47:01"
+    },
+    {
+      "uuid": "cff76b9de530cb2103c5dcb60fb314e9",
+      "puuid": "c077d0c83980dc83b353ca7c5df95fd6",
+      "title": "PCB_6502 Machine",
+      "filename": "PCB_6502 Machine.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "39eb669bccfd4ddfb0edb646afd5c798": 2,
+        "88ffdc08887b43a992722fb6b838365e": 5,
+        "bb766797572a49d2aad37278d2839cdb": 1,
+        "c59a551aa7c6472eaa9aaaae66c08546": 2,
+        "7a544e2a32564ae99e7504d53d7d8a4f": 9,
+        "898545317e224619b41839a6fb5a2b28": 1,
+        "e7211c706af94d1596c59792917bb194": 1,
+        "f76faff62eda4429b993af9646117e6d": 1,
+        "83e5bfbf80d642e7882926aacd2dc8c6": 1,
+        "de3a89cd6d154549a0bcfb20c5a53ab5": 2,
+        "d3973d63479d4f1aa72ca0afb4f0d987": 1,
+        "9e401fe5d36641c5b77947ef30982cd7": 1,
+        "c03729065b584f0f9494232571eefef3": 1,
+        "f0a083c2de14499eaf4714c9b42c7457": 1,
+        "3f68572264194f27b1650a09303396ab": 1,
+        "6ff6e1fefc2e4c7492f4459b59670e55": 1,
+        "b6a387def1184502a55858962aaff995": 1,
+        "4a78035bc7794942a6fabd5d714ae2c7": 2,
+        "6720ed93b8fd4c0dbae83d1a094c2c45": 1,
+        "11ecf094a4db4c18b3c1811c94437918": 1,
+        "3dcff99128ca4b34bf28e3afe8042da2": 1
+      },
+      "BOM": [],
+      "updateTime": 1689381421,
+      "createTime": 1689378966,
+      "histories": [],
+      "created_at": "2023-07-15 11:56:06",
+      "updated_at": "2023-07-15 12:37:01"
+    }
+  ],
+  "sort": [],
+  "title": "6502 Machine",
+  "foldername": "6502 Machine",
+  "schfilename": "6502 Machine.json",
+  "schfilemtime": 1690188421594
+}

@@ -5,7 +5,11 @@ unit ZP
     const byte PCH                  = 0x01;
     
     const byte FLAGS                = 0x02;
+    
+    // Bit 7 - MCU platform
+    // Bit 6 - Program exited (ended well or badly via Die)
     // Bit 5 - breakpoint/s exist
+    // Bit 4 - 
     // Bit 3 - 8 bit SP and BP
     // Bit 2 - checked build
     // Bit 1 - running at Warp (no checks for <ctrl><C>)

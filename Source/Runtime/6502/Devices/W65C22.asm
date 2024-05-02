@@ -64,6 +64,7 @@ unit W65C22
     
     ISR()
     {
+#ifdef CPU_65C02S
         if (BBS7, ZP.IFR) // IRQ by VIA
         {
             if (BBS6, ZP.IFR) // Timer 1 IRQ
@@ -84,5 +85,28 @@ unit W65C22
                 }
             }
         }
+#else
+        BIT ZP.IFR
+        if (MI) // IRQ by VIA
+        {
+            if (V) // Timer 1 IRQ
+            {
+                BIT  ZP.T1CL   // clear the interrupt by reading T1 Counter L
+                INC  ZP.TICK0
+                if (Z)
+                {
+                    INC  ZP.TICK1
+                    if (Z)
+                    {
+                        INC  ZP.TICK2
+                        if (Z)
+                        {
+                            INC  ZP.TICK3
+                        }
+                    }
+                }
+            }
+        }
+#endif        
     }
 }
