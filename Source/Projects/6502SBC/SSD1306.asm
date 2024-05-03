@@ -1,5 +1,7 @@
 unit SSD1306
 {    
+    uses "I2C.asm"
+    
     #define SSD1306
     
     const byte[] ssd1306InitTable = {
@@ -23,12 +25,13 @@ unit SSD1306
                                 0x11,   // VCC state 11
                                 0xA4,   // Display all on resume
                                 0xAF,   // Display on
+                                0xA5,   // Entire display ON  A5 Enable / A4 Disable 
                                 0xB0, 0x10, 0x00, // Page 0, column 0.
                                 0xFF // Stop byte
                               };
     Initialize()
     {
-        CLC
+        CLC            // Write flag
         I2C.Start();
         LDY # 0
 
@@ -47,15 +50,15 @@ unit SSD1306
     cmd()
     {
         // Takes command in A
-        PHA // Save command
-        LDA #0x3C // SSD1306 address
+        PHA            // Store command
+        LDA #0x3C      // SSD1306 address
         STA ZP.I2CADDR
-        CLC       // Write flag
+        CLC            // Write flag
         I2C.Start();
-        // A is 0 == Co = 0, D/C# = 0
-        STA ZP.OUTB
+        LDA 0x00       // 0x00 for commands or 0x40 for data
+        STA ZP.OUTB  
         I2C.ByteOut();
-        PLA // Fetch command
+        PLA            // Restore command
         STA ZP.OUTB
         I2C.ByteOut();
     }
@@ -76,7 +79,7 @@ unit SSD1306
         I2C.ByteOut();
         I2C.Stop();
     }
-   SetLine()
+    SetLine()
     {
         // Takes line(page) in A
         PHA // Save line
@@ -93,26 +96,26 @@ unit SSD1306
     
     Clear()
     {
+        LDA ZP.OUTB
+        PHA
+        
         LDA #0
         STA ZP.CURSOR
         STA ZP.TFLAGS // Reset scroll
         SetLine();
         LDA # 0
         SetColumn();
-        CLC // Write
+        CLC            // Write flag
         I2C.Start();
-        LDA #0x40 // Co bit 0, D/C# 1
+        LDA #0x40      // 0x00 for commands or 0x40 for data
         STA ZP.OUTB
         I2C.ByteOut();
 
-        // OUTB is already 0
+        PLA
+        STA ZP.OUTB
         LDY # 0
         loop
         {
-            // test pattern other than blank
-            LDA # 0xAA
-            STA ZP.OUTB     
-            
             I2C.ByteOut();
             I2C.ByteOut();
             I2C.ByteOut();
@@ -122,7 +125,7 @@ unit SSD1306
         }
         I2C.Stop();
         
-        LDA #0xd3 // Clear scroll
+        LDA #0xD3 // Clear scroll
         cmd();
         LDA #0
         STA ZP.SCROLL
