@@ -327,7 +327,7 @@ program R6502
     warmRestart()
     {
         Memory.InitializeHeapSize(); // sets HEAPSTART and HEAPSIZE based on size of program loaded
-        Stacks.Init();
+        Stacks.Initialize();
         
 #ifdef CPU_65C02S
         STZ ZP.CNP
@@ -355,7 +355,7 @@ program R6502
     hopperInit()
     {
         Memory.InitializeHeapSize(); // sets HEAPSTART and HEAPSIZE based on size of program loaded
-        Stacks.Init();
+        Stacks.Initialize();
         
         // CODESTART = EntryPoint + HopperData
         LDA #(HopperData & 0xFF)

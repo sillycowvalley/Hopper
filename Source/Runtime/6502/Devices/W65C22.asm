@@ -1,6 +1,14 @@
 unit W65C22
 {
-    uses "6502/ZeroPage"
+    
+#if !defined(W65C22_VIA)
+    #define W65C22_VIA
+#endif    
+#if !defined(CPU_8MHZ) && !defined(CPU_4MHZ) && !defined(CPU_2MHZ) && !defined(CPU_1MHZ)
+    #define CPU_8MHZ
+#endif
+
+    uses "/Source/Runtime/6502/ZeroPage"
     
     Initialize()
     {
@@ -71,6 +79,7 @@ unit W65C22
             {
                 BIT  ZP.T1CL   // clear the interrupt by reading T1 Counter L
                 INC  ZP.TICK0
+                
                 if (Z)
                 {
                     INC  ZP.TICK1

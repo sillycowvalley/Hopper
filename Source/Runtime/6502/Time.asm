@@ -1,10 +1,12 @@
 unit Time
 {
-    uses "6502/ZeroPage"
+    uses "/Source/Runtime/6502/ZeroPage"
+    uses "/Source/Runtime/6502/Stacks"
+    
 #ifdef W65C22_VIA
-    uses "6502/Devices/W65C22"
-    uses "6502/Long"
-    uses "6502/Type"
+    uses "/Source/Runtime/6502/Devices/W65C22"
+    uses "/Source/Runtime/6502/Long"
+    uses "/Source/Runtime/6502/Type"
 #endif    
     
     

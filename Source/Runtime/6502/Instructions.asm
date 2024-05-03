@@ -438,7 +438,15 @@ unit Instruction
     // load the operand into IDX, increment the PC by 2
     ConsumeOperand()
     {
+#ifdef INLINE_EXPANSIONS
+        INC ZP.ACCL
+        if (Z)
+        {
+            INC ZP.ACCH
+        }
+#else
         Utilities.IncACC();
+#endif
         
         LDY #0
         LDA [ZP.ACC], Y
@@ -446,14 +454,34 @@ unit Instruction
         INY
         LDA [ZP.ACC], Y
         STA ZP.IDXH
-        
+#ifdef INLINE_EXPANSIONS
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#else        
         Utilities.IncPC();
         Utilities.IncPC();
+#endif
     }
     // load the operand into IDX, increment the PC by 1
     ConsumeOperandB()
     {
+#ifdef INLINE_EXPANSIONS
+        INC ZP.ACCL
+        if (Z)
+        {
+            INC ZP.ACCH
+        }
+#else
         Utilities.IncACC();
+#endif
         
 #ifdef CPU_65C02S
         STZ ZP.IDXH
@@ -465,13 +493,29 @@ unit Instruction
         LDA [ZP.ACC], Y
         STA ZP.IDXL
 #endif
-        
+
+#ifdef INLINE_EXPANSIONS        
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#else
         Utilities.IncPC();
+#endif
     }
     // load the operand into IDX, increment the PC by 1
     ConsumeOperandSB()
     {
+#ifdef INLINE_EXPANSIONS
+        INC ZP.ACCL
+        if (Z)
+        {
+            INC ZP.ACCH
+        }
+#else
         Utilities.IncACC();
+#endif
         
 #ifdef CPU_65C02S
         STZ ZP.IDXH
@@ -490,19 +534,43 @@ unit Instruction
             STA ZP.IDXH  
         }
         
+#ifdef INLINE_EXPANSIONS        
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#else
         Utilities.IncPC();
+#endif
     }
     // increment the PC by 1, load the operand into A
     ConsumeOperandA()
     {
+#ifdef INLINE_EXPANSIONS
+        INC ZP.ACCL
+        if (Z)
+        {
+            INC ZP.ACCH
+        }
+#else
         Utilities.IncACC();
+#endif
 #ifdef CPU_65C02S        
         LDA [ZP.ACC]
 #else
         LDY # 0
         LDA [ZP.ACC], Y
 #endif
+#ifdef INLINE_EXPANSIONS        
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#else
         Utilities.IncPC();
+#endif
     }
     
        
@@ -1696,9 +1764,14 @@ unit Instruction
     
     pushI0()
     {
+#ifdef CPU_65C02S
+        STZ ZP.TOPL
+        STZ ZP.TOPH
+#else        
         LDA # 0
         STA ZP.TOPL
         STA ZP.TOPH
+#endif
         LDA #Types.Byte
         Stacks.PushTop();
     }
@@ -1706,8 +1779,12 @@ unit Instruction
     {
         LDA # 1
         STA ZP.TOPL
+#ifdef CPU_65C02S
+        STZ ZP.TOPH
+#else
         LDA # 0
         STA ZP.TOPH
+#endif
         LDA #Types.Byte
         Stacks.PushTop();
     }

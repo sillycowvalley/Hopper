@@ -2,22 +2,6 @@ unit IntMath
 {
     // FASTINTS
     
-    swapNEXTandTOP()
-    {
-        LDA NEXTL
-        PHA
-        LDA TOPL
-        STA NEXTL
-        PLA
-        STA TOPL
-        
-        LDA NEXTH
-        PHA
-        LDA TOPH
-        STA NEXTH
-        PLA
-        STA TOPH
-    }
     mulShared()
     {
         // TOP = NEXT * TOP
@@ -29,32 +13,41 @@ unit IntMath
         LDA TOPH
         if (Z)
         {
-            loop
+            LDA TOPL
+            if (Z)
             {
-                LDA TOPL
-                if (Z)
-                {
-                    return;
-                }
-                CMP #1
-                if (NZ)
-                {
-                    CMP #2
-                    if (NZ)
-                    {
-                        CMP #4
-                        if (NZ)
-                        {
-                            CMP #8
-                            if (NZ)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                }
-                swapNEXTandTOP();
-                break;
+                // TOP is zero
+                return;
+            }
+            CMP #8
+            if (Z)
+            {
+                ASL NEXTL
+                ROL NEXTH
+                LSR
+            }
+            CMP #4
+            if (Z)
+            {
+                ASL NEXTL
+                ROL NEXTH
+                LSR
+            }
+            CMP #2
+            if (Z)
+            {
+                ASL NEXTL
+                ROL NEXTH
+                LSR
+            }
+            CMP #1
+            if (Z)
+            {
+                LDA NEXTL
+                STA TOPL
+                LDA NEXTH
+                STA TOPH
+                return; // return TOP
             }
         }
         LDA NEXTH
@@ -63,6 +56,7 @@ unit IntMath
             LDA NEXTL
             if (Z)
             {
+                // NEXT is zero
 #ifdef CPU_65C02S
                 STZ TOPL
                 STZ TOPH
@@ -73,39 +67,33 @@ unit IntMath
 #endif
                 return;
             }
-            CMP #1
-            if (Z)
-            {
-                return; // just return TOP
-            }
-            CMP #2
+            CMP #8
             if (Z)
             {
                 ASL TOPL
                 ROL TOPH
-                return;
+                LSR
             }
             CMP #4
             if (Z)
             {
                 ASL TOPL
                 ROL TOPH
-                ASL TOPL
-                ROL TOPH
-                return;
+                LSR
             }
-            CMP #8
+            CMP #2
             if (Z)
             {
                 ASL TOPL
                 ROL TOPH
-                ASL TOPL
-                ROL TOPH
-                ASL TOPL
-                ROL TOPH
-                return;
+                LSR
             }
-        
+            CMP #1
+            if (Z)
+            {
+                return; // just return TOP
+            }
+                    
             LDA TOPH // 8x8 since TOPH and NEXTH are zero
             if (Z)
             {

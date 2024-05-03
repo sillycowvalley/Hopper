@@ -2,7 +2,7 @@ unit Stacks
 {
     uses "/Source/Runtime/6502/Utilities"
     
-    Init()
+    Initialize()
     {
 #ifdef CPU_65C02S        
         STZ ZP.SP
@@ -93,8 +93,28 @@ unit Stacks
     }
     PopTopNext()
     {
+#ifdef INLINE_EXPANSIONS  
+        DEC ZP.SP
+        LDX ZP.SP
+        LDA Address.ValueStackLSB, X
+        STA ZP.TOPL
+        LDA Address.ValueStackMSB, X
+        STA ZP.TOPH
+        LDA Address.TypeStackLSB, X
+        STA ZP.TOPT 
+        
+        DEC ZP.SP
+        DEX
+        LDA Address.ValueStackLSB, X
+        STA ZP.NEXTL
+        LDA Address.ValueStackMSB, X
+        STA ZP.NEXTH
+        LDA Address.TypeStackLSB, X
+        STA ZP.NEXTT     
+#else
         Stacks.PopTop();
         Stacks.PopNext();
+#endif
     }
     PushNext() // type is in A
     {
