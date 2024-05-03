@@ -788,7 +788,7 @@ unit CPU // 6502
         byte value;
         if (!EmulateAppleI && ((address >= ZT0) && (address <= ZT3)))
         {
-            if (address == ZT0)
+            if (address == ZT3)
             {
                 ms = Time.Millis; // update all 4 at the same time
             }

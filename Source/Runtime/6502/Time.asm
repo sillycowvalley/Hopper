@@ -1,7 +1,6 @@
 unit Time
 {
     uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Stacks"
     
 #ifdef W65C22_VIA
     uses "/Source/Runtime/6502/Devices/W65C22"
@@ -16,7 +15,9 @@ unit Time
 #ifndef W65C22_VIA
         TXA BRK // VIA not included?
 #else        
+#ifdef HOPPER_STACK
         PopTop();
+#endif
         
         PHA
         
@@ -38,10 +39,8 @@ unit Time
         loop
         {
             // while Ticks0..3 < Target0..3, loop here
-            LDA ZP.TICK0 // reading TICK0 makes a snapshot of all 4 registers on the emulator
-            STA ZP.ACCL
             
-            LDA ZP.TICK3         
+            LDA ZP.TICK3   // reading TICK3 makes a snapshot of all 4 registers on the emulator      
             CMP ZP.TARGET3
             if (NC) { continue; }
             LDA ZP.TICK2
@@ -50,7 +49,8 @@ unit Time
             LDA ZP.TICK1
             CMP ZP.TARGET1
             if (NC) { continue; }
-            LDA ZP.ACCL
+            //LDA ZP.ACCL
+            LDA ZP.TICK0
             CMP ZP.TARGET0
             if (NC) { continue; }
             
@@ -67,14 +67,15 @@ unit Time
         TXA BRK // VIA not included?
 #else
         // LNEXT = LNEXT / LTOP + LRESULT
-        LDA ZP.TICK0 // reading TICK0 makes a snapshot of all 4 registers on the emulator
-        STA LNEXT0
-        LDA ZP.TICK1
-        STA LNEXT1
+        
+        LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
+        STA LNEXT3
         LDA ZP.TICK2
         STA LNEXT2
-        LDA ZP.TICK3
-        STA LNEXT3
+        LDA ZP.TICK1
+        STA LNEXT1
+        LDA ZP.TICK0 
+        STA LNEXT0
         
         LDA # 0xE8 // 1000 = 0x03E8
         STA LTOP0
@@ -95,8 +96,10 @@ unit Time
         STA TOPL
         LDA LNEXT1
         STA TOPH
+#ifdef HOPPER_STACK
         LDA # Types.UInt
         Stacks.PushTop();
+#endif
 #endif
     }
 }

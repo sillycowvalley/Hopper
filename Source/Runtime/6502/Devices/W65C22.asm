@@ -78,8 +78,8 @@ unit W65C22
             if (BBS6, ZP.IFR) // Timer 1 IRQ
             {
                 BIT  ZP.T1CL   // clear the interrupt by reading T1 Counter L
-                INC  ZP.TICK0
                 
+                INC  ZP.TICK0
                 if (Z)
                 {
                     INC  ZP.TICK1

@@ -391,6 +391,8 @@ unit Token
             
             instructionKeywords["PHA"] = true;
             instructionKeywords["PLA"] = true;
+            instructionKeywords["PHP"] = true;
+            instructionKeywords["PLP"] = true;
             
             instructionKeywords["INC"] = true;
             instructionKeywords["DEC"] = true;

@@ -1,5 +1,7 @@
 unit Stacks
 {
+    #define HOPPER_STACK
+    
     uses "/Source/Runtime/6502/Utilities"
     
     Initialize()
