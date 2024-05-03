@@ -1,6 +1,6 @@
 unit Address
 {
-    const uint SerialInBuffer       = 0x0200;  // 256-byte buffer 0x0300-0x03FF
+    const uint SerialInBuffer       = 0x0200;  // 256-byte buffer 0x0200-0x02FF
     
     const uint CallStackLSB         = 0x0300;  // LSBs of 256 call stack slots
     const uint CallStackMSB         = 0x0400;  // MSBs of 256 call stack slots

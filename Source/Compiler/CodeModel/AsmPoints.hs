@@ -255,9 +255,11 @@ unit AsmPoints
                 case OpCode.SMB7_z:
                 
                 case OpCode.INC_z:
+                case OpCode.DEC_z:
                 case OpCode.LSR_z:
                 case OpCode.NOP:
                 case OpCode.ROR_z:
+                case OpCode.ASL_z:
                 
                 case OpCode.CLC:
                 case OpCode.SEC:

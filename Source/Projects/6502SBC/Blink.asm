@@ -1,8 +1,7 @@
 program Blink
 {
     #define CPU_8MHZ
-    //#define CPU_65C02S
-    #define CPU_6502
+    #define CPU_65C02S
     
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/Devices/W65C22"
@@ -16,7 +15,6 @@ program Blink
     NMI()
     {
         // clear the timer tick
-#ifdef CPU_65C02S        
         STZ ZP.TICK0
         STZ ZP.TICK1
         STZ ZP.TICK2
@@ -27,7 +25,6 @@ program Blink
         STZ ZP.TARGET1
         STZ ZP.TARGET2
         STZ ZP.TARGET3
-#endif
     }
     Hopper()
     {
@@ -40,7 +37,7 @@ program Blink
         loop
         {
             // blink an LED on the VIA PB7
-#ifdef CPU_65C02S
+            
             if (BBS7, ZP.PORTB)
             {
                 RMB7 ZP.PORTB
@@ -49,22 +46,6 @@ program Blink
             {
                 SMB7 ZP.PORTB
             }
-#else
-            PHP
-            PHA
-            LDA ZP.PORTB
-            if (MI)
-            {
-                AND # 0b01111111
-            }
-            else
-            {
-                ORA # 0b10000000
-            }
-            STA ZP.PORTB
-            PLA
-            PLP
-#endif
             
             // use the Hopper runtime Time.Delay() (VIA timer)
             LDA # (500 % 256)
