@@ -7,21 +7,8 @@ program ABNielsen
     uses "/Source/Runtime/6502/Devices/W65C22"
     uses "/Source/Runtime/6502/Time"
     
-    runtimeInit()
-    {
-        Stacks.Initialize(); // we need the runtime stacks to work to use runtime APIs like Time.Delay()
-        Serial.Initialize(); // since the 6850 is powered up, we'd better initialize it
-        W65C22.Initialize(); // sets all pins to input, initializes timer
-    }
-    delay500()
-    {
-        LDA # (500 % 256)
-        STA ZP.TOPL
-        LDA # (500 / 256)
-        STA ZP.TOPH
-        PushTop();
-        Time.Delay();
-    }
+    uses "I2C.asm"
+    uses "SSD1306.asm"
     
     IRQ()
     {
@@ -30,33 +17,36 @@ program ABNielsen
     }
     NMI()
     {
-        // do nothing if NMI button is pressed
+        // clear the timer tick
+        STZ ZP.TICK0
+        STZ ZP.TICK1
+        STZ ZP.TICK2
+        STZ ZP.TICK3
+        
+        // don't hang if we are currently inside Time.Delay(), rather just exit:
+        STZ ZP.TARGET0
+        STZ ZP.TARGET1
+        STZ ZP.TARGET2
+        STZ ZP.TARGET3
     }
     Hopper()
     {
-        runtimeInit();
+        Serial.Initialize(); // since the 6850 is powered up, we'd better initialize it
+        W65C22.Initialize(); // sets all pins to input, initializes timer
         
-        LDA # 0b10000000  // bit 7 as output for the LED
-        STA ZP.DDRB
-        
-        LDA # 0b00000001  // bit 1 as output for testing
-        STA ZP.DDRA
-        STZ ZP.PORTA
-        
-        loop
-        {
-            LDA ZP.PORTB
-            if (MI)
-            {
-                AND # 0b01111111
-            }    
-            else
-            {
-                ORA # 0b10000000
-            }
-            STA ZP.PORTB
+        LDA 0x3C      // Address of the device (78 on the back of the module is 3C << 1)
+        STA I2CADDR
+        SSD1306.Initialize();
             
-            delay500(); // use the Hopper runtime delay (VIA timer)
-        }
+        // use the Hopper runtime Time.Delay() (VIA timer)
+        //LDA # (2000 % 256)
+        LDA # 250
+        STA ZP.TOPL
+        //LDA # (2000 / 256)
+        LDA # 0
+        STA ZP.TOPH
+        Time.Delay();
+        
+        SSD1306.Clear();               
     }
 }
