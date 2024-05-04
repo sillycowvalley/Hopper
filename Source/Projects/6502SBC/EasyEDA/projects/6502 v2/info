@@ -1,0 +1,2219 @@
+{
+  "uuid": "3939621b48be74c8eebc5948164284b4",
+  "path": "Offline/6502 v2",
+  "name": "6502 v2",
+  "content": "",
+  "created_at": "2024-05-01 16:43:44",
+  "updated_at": "2024-05-04 16:12:12",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "3c506664b47db881983ed9add9ffbbc5",
+      "title": "Hopper 6502 SBC",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "e608f58ee8d34c41bd8af943a6575740": 1,
+        "05c0bcfc0dd4404887cd670548f09101": 5,
+        "5091b1b418a44194b54181bdaa0ee763": 1,
+        "dd2823528a9c4535bb827a45571975d3": 2,
+        "a967d10f526d478ca44effb616081327": 1,
+        "91b7589d6b9c4698adc483318b61f92f": 1,
+        "8999e35426a34646945447c487094ae6": 5,
+        "7a5e2f03edca4a199209369f7e0d10db": 1,
+        "fa3802571d824a3395f47e20c9769243": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "0K",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "65C02S,M6502",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "Reset",
+          1,
+          "PUSHBUTTON_00",
+          "B1",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "NMI",
+          1,
+          "PUSHBUTTON_00",
+          "B2",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "0.1uF",
+          5,
+          "CAP-TH_L7.0-W3.3-P5.00-D0.4",
+          "C1,C3,C4,C5,C8",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900014677",
+            "Manufacturer": "null",
+            "Manufacturer Part": "0.1UF/100V",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "0.1UF/100V_C9900014677",
+            "puuid": "45070e8d7a01463899b9a5a94ed792b3",
+            "uuid": "05c0bcfc0dd4404887cd670548f09101"
+          }
+        ],
+        [
+          "10uF",
+          1,
+          "ELECTROLYTIC CAPACITOR",
+          "C2",
+          {
+            "Manufacturer Part": "C2 4.7uF 25V",
+            "Contributor": "Haidyn",
+            "spiceSymbolName": "C2 4.7uF 25V",
+            "puuid": "39eb669bccfd4ddfb0edb646afd5c798",
+            "uuid": "fa3802571d824a3395f47e20c9769243"
+          }
+        ],
+        [
+          "3.3k",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R1,R3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R6",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "DS1813-15+",
+          1,
+          "TO-92-3_L4.9-W3.7-P1.27-L",
+          "U3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C1354287",
+            "Manufacturer": "MAXIM(美信)",
+            "Manufacturer Part": "DS1813-15+",
+            "Contributor": "LukasJele",
+            "spiceSymbolName": "DS1813-15+",
+            "puuid": "6924b36489de4921bb29ca14bf27c33f",
+            "uuid": "a967d10f526d478ca44effb616081327"
+          }
+        ],
+        [
+          "ATF22V10C",
+          1,
+          "-24P3",
+          "U6",
+          {
+            "description": "ATF22V10C 5.0V Industry Standard SPLD, 24-lead PDIP, Speed Grade 15, Commercial Grade",
+            "Supplier Part": "",
+            "Supplier": "",
+            "Contributor": "schorcht",
+            "spiceSymbolName": "ATF22V10C-15PC",
+            "Manufacturer Part": "",
+            "puuid": "673cf5237d404912b5d2247eb6be1e20",
+            "uuid": "91b7589d6b9c4698adc483318b61f92f"
+          }
+        ],
+        [
+          "W65C02SP",
+          1,
+          "DIP-40",
+          "U7",
+          {
+            "spiceSymbolName": "W65C02SP",
+            "Manufacturer Part": "",
+            "puuid": "63825e02ab894e2fbe4dfa95e86ae419",
+            "uuid": "e608f58ee8d34c41bd8af943a6575740"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U11",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "8MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X1",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D2",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "I2C",
+          1,
+          "FEMALE HEADER 1X4P 2.54MM",
+          "H1",
+          {
+            "Manufacturer": "XKB Connectivity",
+            "Manufacturer Part": "X6511FV-04-C85D32",
+            "Supplier Part": "C718241",
+            "Supplier": "LCSC",
+            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
+            "Contributor": "Janosch_89",
+            "spiceSymbolName": "Female Header 1x4P 2.54mm",
+            "puuid": "b93b6ab9c4654010a01119e269fd972b",
+            "uuid": "4a7cc174d54448319ac8877ce96630ad"
+          }
+        ],
+        [
+          "1x16",
+          1,
+          "1X16 PIN HEADER",
+          "H4",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "cmacarthur",
+            "spiceSymbolName": "1x16",
+            "puuid": "b6a62b5ec68844a8997d87a93aab0f6b",
+            "uuid": "6c85d782f30c4bd1847bc9dca138bc50"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R2",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "4K7",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R4,R5",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "W65C22",
+          1,
+          "DIP-40-6522_MDG",
+          "U5",
+          {
+            "Manufacturer": "Western Design Center",
+            "Manufacturer Part": "W65C22S6TPG-14",
+            "Supplier": "Mouser",
+            "Supplier Part": "55-W65C22S6TPG-14",
+            "link": "https://www.mouser.com/datasheet/2/436/w65c22-1197.pdf",
+            "Contributor": "Mark Goepel",
+            "spiceSymbolName": "W65C22S6TPG-14_MDG",
+            "puuid": "4d0db8e669794d37aac1ab66aad5e78e",
+            "uuid": "8ad23c74633b46318568c5ab12718dd2"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U8",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "24AA1026",
+          1,
+          "DIP-8_L9.7-W6.4-P2.54-LS7.6-BL",
+          "U9",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613619",
+            "Manufacturer": "MICROCHIP(美国微芯)",
+            "Manufacturer Part": "24AA1026-I/P",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "24AA1026-I/P",
+            "puuid": "26ddc6f916344af197d04f4724b10b8a",
+            "uuid": "b781d34dc0d34519aa5c543ba8cd8524"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D1",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "velleman",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H2",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "waveshare",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H3",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "MC6850 GT",
+          1,
+          "DIP-24-600-ELL",
+          "U1",
+          {
+            "timeStamp": "1464889048",
+            "sourceId": "EiO60izRL",
+            "spiceSymbolName": "MC6850 GT",
+            "Manufacturer Part": "",
+            "puuid": "c85f46dc39f94586bb14e7bf2f9c93c8",
+            "uuid": "6e02f4debb074a8191ef922cdc797e2c"
+          }
+        ],
+        [
+          "1.8432MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X2",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "AT28C256 EEPROM",
+          1,
+          "DIP-28_L37.4-W13.5-P2.54-LS15.4-BL",
+          "U2",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613502",
+            "Manufacturer": "null",
+            "Manufacturer Part": "AT28C256-15PU",
+            "spiceSymbolName": "AT28C256-15PU_C613502",
+            "puuid": "d949d00cbaff4b12835512936c04fa5d",
+            "uuid": "ba66741aeb354d0eb2e88bf8f339c918"
+          }
+        ],
+        [
+          "62256 SRAM",
+          1,
+          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
+          "U4",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C1350400",
+            "Manufacturer": "Alliance Memory",
+            "Manufacturer Part": "U62256ADK07LLG1",
+            "spiceSymbolName": "U62256ADK07LLG1",
+            "puuid": "cf2846522daf4845a6d8d8b8b2e17553",
+            "uuid": "8fd0b80fa2c24630a06182aa7ad770b5"
+          }
+        ]
+      ],
+      "updateTime": 1714793310,
+      "createTime": 1714545824,
+      "histories": [],
+      "created_at": "2024-05-01 16:43:44",
+      "updated_at": "2024-05-04 13:28:30"
+    },
+    {
+      "uuid": "7b24172fffecf2a472b8fb102b1d4600",
+      "title": "VIA",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "8999e35426a34646945447c487094ae6": 3,
+        "4a7cc174d54448319ac8877ce96630ad": 1,
+        "6c85d782f30c4bd1847bc9dca138bc50": 1,
+        "254a7341d6c2477aa3247060815cfbdb": 1,
+        "8ad23c74633b46318568c5ab12718dd2": 1,
+        "7a5e2f03edca4a199209369f7e0d10db": 1,
+        "b781d34dc0d34519aa5c543ba8cd8524": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "Reset",
+          1,
+          "PUSHBUTTON_00",
+          "B1",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "NMI",
+          1,
+          "PUSHBUTTON_00",
+          "B2",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "0.1uF",
+          5,
+          "CAP-TH_L7.0-W3.3-P5.00-D0.4",
+          "C1,C3,C4,C5,C8",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900014677",
+            "Manufacturer": "null",
+            "Manufacturer Part": "0.1UF/100V",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "0.1UF/100V_C9900014677",
+            "puuid": "45070e8d7a01463899b9a5a94ed792b3",
+            "uuid": "05c0bcfc0dd4404887cd670548f09101"
+          }
+        ],
+        [
+          "10uF",
+          1,
+          "ELECTROLYTIC CAPACITOR",
+          "C2",
+          {
+            "Manufacturer Part": "C2 4.7uF 25V",
+            "Contributor": "Haidyn",
+            "spiceSymbolName": "C2 4.7uF 25V",
+            "puuid": "39eb669bccfd4ddfb0edb646afd5c798",
+            "uuid": "fa3802571d824a3395f47e20c9769243"
+          }
+        ],
+        [
+          "3.3k",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R1,R3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R6",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "DS1813-15+",
+          1,
+          "TO-92-3_L4.9-W3.7-P1.27-L",
+          "U3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C1354287",
+            "Manufacturer": "MAXIM(美信)",
+            "Manufacturer Part": "DS1813-15+",
+            "Contributor": "LukasJele",
+            "spiceSymbolName": "DS1813-15+",
+            "puuid": "6924b36489de4921bb29ca14bf27c33f",
+            "uuid": "a967d10f526d478ca44effb616081327"
+          }
+        ],
+        [
+          "ATF22V10C",
+          1,
+          "-24P3",
+          "U6",
+          {
+            "description": "ATF22V10C 5.0V Industry Standard SPLD, 24-lead PDIP, Speed Grade 15, Commercial Grade",
+            "Supplier Part": "",
+            "Supplier": "",
+            "Contributor": "schorcht",
+            "spiceSymbolName": "ATF22V10C-15PC",
+            "Manufacturer Part": "",
+            "puuid": "673cf5237d404912b5d2247eb6be1e20",
+            "uuid": "91b7589d6b9c4698adc483318b61f92f"
+          }
+        ],
+        [
+          "W65C02SP",
+          1,
+          "DIP-40",
+          "U7",
+          {
+            "spiceSymbolName": "W65C02SP",
+            "Manufacturer Part": "",
+            "puuid": "63825e02ab894e2fbe4dfa95e86ae419",
+            "uuid": "e608f58ee8d34c41bd8af943a6575740"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U11",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "8MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X1",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D2",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "I2C",
+          1,
+          "FEMALE HEADER 1X4P 2.54MM",
+          "H1",
+          {
+            "Manufacturer": "XKB Connectivity",
+            "Manufacturer Part": "X6511FV-04-C85D32",
+            "Supplier Part": "C718241",
+            "Supplier": "LCSC",
+            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
+            "Contributor": "Janosch_89",
+            "spiceSymbolName": "Female Header 1x4P 2.54mm",
+            "puuid": "b93b6ab9c4654010a01119e269fd972b",
+            "uuid": "4a7cc174d54448319ac8877ce96630ad"
+          }
+        ],
+        [
+          "1x16",
+          1,
+          "1X16 PIN HEADER",
+          "H4",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "cmacarthur",
+            "spiceSymbolName": "1x16",
+            "puuid": "b6a62b5ec68844a8997d87a93aab0f6b",
+            "uuid": "6c85d782f30c4bd1847bc9dca138bc50"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R2",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "4K7",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R4,R5",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "W65C22",
+          1,
+          "DIP-40-6522_MDG",
+          "U5",
+          {
+            "Manufacturer": "Western Design Center",
+            "Manufacturer Part": "W65C22S6TPG-14",
+            "Supplier": "Mouser",
+            "Supplier Part": "55-W65C22S6TPG-14",
+            "link": "https://www.mouser.com/datasheet/2/436/w65c22-1197.pdf",
+            "Contributor": "Mark Goepel",
+            "spiceSymbolName": "W65C22S6TPG-14_MDG",
+            "puuid": "4d0db8e669794d37aac1ab66aad5e78e",
+            "uuid": "8ad23c74633b46318568c5ab12718dd2"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U8",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "24AA1026",
+          1,
+          "DIP-8_L9.7-W6.4-P2.54-LS7.6-BL",
+          "U9",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613619",
+            "Manufacturer": "MICROCHIP(美国微芯)",
+            "Manufacturer Part": "24AA1026-I/P",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "24AA1026-I/P",
+            "puuid": "26ddc6f916344af197d04f4724b10b8a",
+            "uuid": "b781d34dc0d34519aa5c543ba8cd8524"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D1",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "velleman",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H2",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "waveshare",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H3",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "MC6850 GT",
+          1,
+          "DIP-24-600-ELL",
+          "U1",
+          {
+            "timeStamp": "1464889048",
+            "sourceId": "EiO60izRL",
+            "spiceSymbolName": "MC6850 GT",
+            "Manufacturer Part": "",
+            "puuid": "c85f46dc39f94586bb14e7bf2f9c93c8",
+            "uuid": "6e02f4debb074a8191ef922cdc797e2c"
+          }
+        ],
+        [
+          "1.8432MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X2",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "AT28C256 EEPROM",
+          1,
+          "DIP-28_L37.4-W13.5-P2.54-LS15.4-BL",
+          "U2",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613502",
+            "Manufacturer": "null",
+            "Manufacturer Part": "AT28C256-15PU",
+            "spiceSymbolName": "AT28C256-15PU_C613502",
+            "puuid": "d949d00cbaff4b12835512936c04fa5d",
+            "uuid": "ba66741aeb354d0eb2e88bf8f339c918"
+          }
+        ],
+        [
+          "62256 SRAM",
+          1,
+          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
+          "U4",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C1350400",
+            "Manufacturer": "Alliance Memory",
+            "Manufacturer Part": "U62256ADK07LLG1",
+            "spiceSymbolName": "U62256ADK07LLG1",
+            "puuid": "cf2846522daf4845a6d8d8b8b2e17553",
+            "uuid": "8fd0b80fa2c24630a06182aa7ad770b5"
+          }
+        ]
+      ],
+      "updateTime": 1714793014,
+      "createTime": 1714567704,
+      "histories": [],
+      "created_at": "2024-05-01 22:48:24",
+      "updated_at": "2024-05-04 13:23:34"
+    },
+    {
+      "uuid": "d82cf5c4af1edf2f4f1d8d478c8d63af",
+      "title": "ACIA",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "254a7341d6c2477aa3247060815cfbdb": 1,
+        "99d669b90efa40c78e5feaeaeaba4ae9": 2,
+        "5091b1b418a44194b54181bdaa0ee763": 1,
+        "6e02f4debb074a8191ef922cdc797e2c": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "Reset",
+          1,
+          "PUSHBUTTON_00",
+          "B1",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "NMI",
+          1,
+          "PUSHBUTTON_00",
+          "B2",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "0.1uF",
+          5,
+          "CAP-TH_L7.0-W3.3-P5.00-D0.4",
+          "C1,C3,C4,C5,C8",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900014677",
+            "Manufacturer": "null",
+            "Manufacturer Part": "0.1UF/100V",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "0.1UF/100V_C9900014677",
+            "puuid": "45070e8d7a01463899b9a5a94ed792b3",
+            "uuid": "05c0bcfc0dd4404887cd670548f09101"
+          }
+        ],
+        [
+          "10uF",
+          1,
+          "ELECTROLYTIC CAPACITOR",
+          "C2",
+          {
+            "Manufacturer Part": "C2 4.7uF 25V",
+            "Contributor": "Haidyn",
+            "spiceSymbolName": "C2 4.7uF 25V",
+            "puuid": "39eb669bccfd4ddfb0edb646afd5c798",
+            "uuid": "fa3802571d824a3395f47e20c9769243"
+          }
+        ],
+        [
+          "3.3k",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R1,R3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R6",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "DS1813-15+",
+          1,
+          "TO-92-3_L4.9-W3.7-P1.27-L",
+          "U3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C1354287",
+            "Manufacturer": "MAXIM(美信)",
+            "Manufacturer Part": "DS1813-15+",
+            "Contributor": "LukasJele",
+            "spiceSymbolName": "DS1813-15+",
+            "puuid": "6924b36489de4921bb29ca14bf27c33f",
+            "uuid": "a967d10f526d478ca44effb616081327"
+          }
+        ],
+        [
+          "ATF22V10C",
+          1,
+          "-24P3",
+          "U6",
+          {
+            "description": "ATF22V10C 5.0V Industry Standard SPLD, 24-lead PDIP, Speed Grade 15, Commercial Grade",
+            "Supplier Part": "",
+            "Supplier": "",
+            "Contributor": "schorcht",
+            "spiceSymbolName": "ATF22V10C-15PC",
+            "Manufacturer Part": "",
+            "puuid": "673cf5237d404912b5d2247eb6be1e20",
+            "uuid": "91b7589d6b9c4698adc483318b61f92f"
+          }
+        ],
+        [
+          "W65C02SP",
+          1,
+          "DIP-40",
+          "U7",
+          {
+            "spiceSymbolName": "W65C02SP",
+            "Manufacturer Part": "",
+            "puuid": "63825e02ab894e2fbe4dfa95e86ae419",
+            "uuid": "e608f58ee8d34c41bd8af943a6575740"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U11",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "8MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X1",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D2",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "I2C",
+          1,
+          "FEMALE HEADER 1X4P 2.54MM",
+          "H1",
+          {
+            "Manufacturer": "XKB Connectivity",
+            "Manufacturer Part": "X6511FV-04-C85D32",
+            "Supplier Part": "C718241",
+            "Supplier": "LCSC",
+            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
+            "Contributor": "Janosch_89",
+            "spiceSymbolName": "Female Header 1x4P 2.54mm",
+            "puuid": "b93b6ab9c4654010a01119e269fd972b",
+            "uuid": "4a7cc174d54448319ac8877ce96630ad"
+          }
+        ],
+        [
+          "1x16",
+          1,
+          "1X16 PIN HEADER",
+          "H4",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "cmacarthur",
+            "spiceSymbolName": "1x16",
+            "puuid": "b6a62b5ec68844a8997d87a93aab0f6b",
+            "uuid": "6c85d782f30c4bd1847bc9dca138bc50"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R2",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "W65C22",
+          1,
+          "DIP-40-6522_MDG",
+          "U5",
+          {
+            "Manufacturer": "Western Design Center",
+            "Manufacturer Part": "W65C22S6TPG-14",
+            "Supplier": "Mouser",
+            "Supplier Part": "55-W65C22S6TPG-14",
+            "link": "https://www.mouser.com/datasheet/2/436/w65c22-1197.pdf",
+            "Contributor": "Mark Goepel",
+            "spiceSymbolName": "W65C22S6TPG-14_MDG",
+            "puuid": "4d0db8e669794d37aac1ab66aad5e78e",
+            "uuid": "8ad23c74633b46318568c5ab12718dd2"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U8",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D1",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "velleman",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H2",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "waveshare",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H3",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "MC6850 GT",
+          1,
+          "DIP-24-600-ELL",
+          "U1",
+          {
+            "timeStamp": "1464889048",
+            "sourceId": "EiO60izRL",
+            "spiceSymbolName": "MC6850 GT",
+            "Manufacturer Part": "",
+            "puuid": "c85f46dc39f94586bb14e7bf2f9c93c8",
+            "uuid": "6e02f4debb074a8191ef922cdc797e2c"
+          }
+        ],
+        [
+          "1.8432MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X2",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "AT28C256 EEPROM",
+          1,
+          "DIP-28_L37.4-W13.5-P2.54-LS15.4-BL",
+          "U2",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613502",
+            "Manufacturer": "null",
+            "Manufacturer Part": "AT28C256-15PU",
+            "spiceSymbolName": "AT28C256-15PU_C613502",
+            "puuid": "d949d00cbaff4b12835512936c04fa5d",
+            "uuid": "ba66741aeb354d0eb2e88bf8f339c918"
+          }
+        ],
+        [
+          "62256 SRAM",
+          1,
+          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
+          "U4",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C1350400",
+            "Manufacturer": "Alliance Memory",
+            "Manufacturer Part": "U62256ADK07LLG1",
+            "spiceSymbolName": "U62256ADK07LLG1",
+            "puuid": "cf2846522daf4845a6d8d8b8b2e17553",
+            "uuid": "8fd0b80fa2c24630a06182aa7ad770b5"
+          }
+        ]
+      ],
+      "updateTime": 1714573449,
+      "createTime": 1714569406,
+      "histories": [],
+      "created_at": "2024-05-01 23:16:46",
+      "updated_at": "2024-05-02 00:24:09"
+    },
+    {
+      "uuid": "42e556a53494413b55538589e52e54c8",
+      "title": "Memory",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "8fd0b80fa2c24630a06182aa7ad770b5": 1,
+        "ba66741aeb354d0eb2e88bf8f339c918": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "Reset",
+          1,
+          "PUSHBUTTON_00",
+          "B1",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "NMI",
+          1,
+          "PUSHBUTTON_00",
+          "B2",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "0.1uF",
+          7,
+          "CAP-TH_L7.0-W3.3-P5.00-D0.4",
+          "C1,C3,C4,C5,C6,C7,C8",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900014677",
+            "Manufacturer": "null",
+            "Manufacturer Part": "0.1UF/100V",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "0.1UF/100V_C9900014677",
+            "puuid": "45070e8d7a01463899b9a5a94ed792b3",
+            "uuid": "05c0bcfc0dd4404887cd670548f09101"
+          }
+        ],
+        [
+          "10uF",
+          1,
+          "ELECTROLYTIC CAPACITOR",
+          "C2",
+          {
+            "Manufacturer Part": "C2 4.7uF 25V",
+            "Contributor": "Haidyn",
+            "spiceSymbolName": "C2 4.7uF 25V",
+            "puuid": "39eb669bccfd4ddfb0edb646afd5c798",
+            "uuid": "fa3802571d824a3395f47e20c9769243"
+          }
+        ],
+        [
+          "3.3k",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R1,R3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R6",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "DS1813-15+",
+          1,
+          "TO-92-3_L4.9-W3.7-P1.27-L",
+          "U3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C1354287",
+            "Manufacturer": "MAXIM(美信)",
+            "Manufacturer Part": "DS1813-15+",
+            "Contributor": "LukasJele",
+            "spiceSymbolName": "DS1813-15+",
+            "puuid": "6924b36489de4921bb29ca14bf27c33f",
+            "uuid": "a967d10f526d478ca44effb616081327"
+          }
+        ],
+        [
+          "ATF22V10C",
+          1,
+          "-24P3",
+          "U6",
+          {
+            "description": "ATF22V10C 5.0V Industry Standard SPLD, 24-lead PDIP, Speed Grade 15, Commercial Grade",
+            "Supplier Part": "",
+            "Supplier": "",
+            "Contributor": "schorcht",
+            "spiceSymbolName": "ATF22V10C-15PC",
+            "Manufacturer Part": "",
+            "puuid": "673cf5237d404912b5d2247eb6be1e20",
+            "uuid": "91b7589d6b9c4698adc483318b61f92f"
+          }
+        ],
+        [
+          "W65C02SP",
+          1,
+          "DIP-40",
+          "U7",
+          {
+            "spiceSymbolName": "W65C02SP",
+            "Manufacturer Part": "",
+            "puuid": "63825e02ab894e2fbe4dfa95e86ae419",
+            "uuid": "e608f58ee8d34c41bd8af943a6575740"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U11",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "8MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X1",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D2",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "I2C",
+          1,
+          "FEMALE HEADER 1X4P 2.54MM",
+          "H1",
+          {
+            "Manufacturer": "XKB Connectivity",
+            "Manufacturer Part": "X6511FV-04-C85D32",
+            "Supplier Part": "C718241",
+            "Supplier": "LCSC",
+            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
+            "Contributor": "Janosch_89",
+            "spiceSymbolName": "Female Header 1x4P 2.54mm",
+            "puuid": "b93b6ab9c4654010a01119e269fd972b",
+            "uuid": "4a7cc174d54448319ac8877ce96630ad"
+          }
+        ],
+        [
+          "1x16",
+          1,
+          "1X16 PIN HEADER",
+          "H4",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "cmacarthur",
+            "spiceSymbolName": "1x16",
+            "puuid": "b6a62b5ec68844a8997d87a93aab0f6b",
+            "uuid": "6c85d782f30c4bd1847bc9dca138bc50"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R2",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "W65C22",
+          1,
+          "DIP-40-6522_MDG",
+          "U5",
+          {
+            "Manufacturer": "Western Design Center",
+            "Manufacturer Part": "W65C22S6TPG-14",
+            "Supplier": "Mouser",
+            "Supplier Part": "55-W65C22S6TPG-14",
+            "link": "https://www.mouser.com/datasheet/2/436/w65c22-1197.pdf",
+            "Contributor": "Mark Goepel",
+            "spiceSymbolName": "W65C22S6TPG-14_MDG",
+            "puuid": "4d0db8e669794d37aac1ab66aad5e78e",
+            "uuid": "8ad23c74633b46318568c5ab12718dd2"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U8",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D1",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "velleman",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H2",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "waveshare",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H3",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "MC6850 GT",
+          1,
+          "DIP-24-600-ELL",
+          "U1",
+          {
+            "timeStamp": "1464889048",
+            "sourceId": "EiO60izRL",
+            "spiceSymbolName": "MC6850 GT",
+            "Manufacturer Part": "",
+            "puuid": "c85f46dc39f94586bb14e7bf2f9c93c8",
+            "uuid": "6e02f4debb074a8191ef922cdc797e2c"
+          }
+        ],
+        [
+          "1.8432MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X2",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "AT28C256 EEPROM",
+          1,
+          "DIP-28_L37.4-W13.5-P2.54-LS15.4-BL",
+          "U2",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613502",
+            "Manufacturer": "null",
+            "Manufacturer Part": "AT28C256-15PU",
+            "spiceSymbolName": "AT28C256-15PU_C613502",
+            "puuid": "d949d00cbaff4b12835512936c04fa5d",
+            "uuid": "ba66741aeb354d0eb2e88bf8f339c918"
+          }
+        ],
+        [
+          "62256 SRAM",
+          1,
+          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
+          "U4",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C1350400",
+            "Manufacturer": "Alliance Memory",
+            "Manufacturer Part": "U62256ADK07LLG1",
+            "spiceSymbolName": "U62256ADK07LLG1",
+            "puuid": "cf2846522daf4845a6d8d8b8b2e17553",
+            "uuid": "8fd0b80fa2c24630a06182aa7ad770b5"
+          }
+        ]
+      ],
+      "updateTime": 1714571269,
+      "createTime": 1714569532,
+      "histories": [],
+      "created_at": "2024-05-01 23:18:52",
+      "updated_at": "2024-05-01 23:47:49"
+    },
+    {
+      "uuid": "c0318a914f00600031f6f841063351a7",
+      "puuid": "3939621b48be74c8eebc5948164284b4",
+      "title": "PCB_6502 v2.1",
+      "filename": "PCB_6502 v2.1.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "7a544e2a32564ae99e7504d53d7d8a4f": 8,
+        "26ddc6f916344af197d04f4724b10b8a": 1,
+        "c85f46dc39f94586bb14e7bf2f9c93c8": 1,
+        "63825e02ab894e2fbe4dfa95e86ae419": 1,
+        "8243aa09a34348d2b802d56845cc773c": 2,
+        "bee3e285685a416c945be1ba25b90c43": 2,
+        "45070e8d7a01463899b9a5a94ed792b3": 5,
+        "39eb669bccfd4ddfb0edb646afd5c798": 1,
+        "8b804afe47cb4dbc9715dc5fe5f0a630": 2,
+        "b93b6ab9c4654010a01119e269fd972b": 1,
+        "4ec76347addd4aba8024500873cfb294": 2,
+        "b6a62b5ec68844a8997d87a93aab0f6b": 1,
+        "d949d00cbaff4b12835512936c04fa5d": 1,
+        "6924b36489de4921bb29ca14bf27c33f": 1,
+        "cf2846522daf4845a6d8d8b8b2e17553": 1,
+        "4d0db8e669794d37aac1ab66aad5e78e": 1,
+        "673cf5237d404912b5d2247eb6be1e20": 1,
+        "afd07e0bf2a9480ea7001bfa6f6c06ea": 2
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "0K",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "65C02S,M6502",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "Reset",
+          1,
+          "PUSHBUTTON_00",
+          "B1",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "NMI",
+          1,
+          "PUSHBUTTON_00",
+          "B2",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
+          "0.1uF",
+          5,
+          "CAP-TH_L7.0-W3.3-P5.00-D0.4",
+          "C1,C3,C4,C5,C8",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900014677",
+            "Manufacturer": "null",
+            "Manufacturer Part": "0.1UF/100V",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "0.1UF/100V_C9900014677",
+            "puuid": "45070e8d7a01463899b9a5a94ed792b3",
+            "uuid": "05c0bcfc0dd4404887cd670548f09101"
+          }
+        ],
+        [
+          "10uF",
+          1,
+          "ELECTROLYTIC CAPACITOR",
+          "C2",
+          {
+            "Manufacturer Part": "C2 4.7uF 25V",
+            "Contributor": "Haidyn",
+            "spiceSymbolName": "C2 4.7uF 25V",
+            "puuid": "39eb669bccfd4ddfb0edb646afd5c798",
+            "uuid": "fa3802571d824a3395f47e20c9769243"
+          }
+        ],
+        [
+          "3.3k",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R1,R3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R6",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "DS1813-15+",
+          1,
+          "TO-92-3_L4.9-W3.7-P1.27-L",
+          "U3",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C1354287",
+            "Manufacturer": "MAXIM(美信)",
+            "Manufacturer Part": "DS1813-15+",
+            "Contributor": "LukasJele",
+            "spiceSymbolName": "DS1813-15+",
+            "puuid": "6924b36489de4921bb29ca14bf27c33f",
+            "uuid": "a967d10f526d478ca44effb616081327"
+          }
+        ],
+        [
+          "ATF22V10C",
+          1,
+          "-24P3",
+          "U6",
+          {
+            "description": "ATF22V10C 5.0V Industry Standard SPLD, 24-lead PDIP, Speed Grade 15, Commercial Grade",
+            "Supplier Part": "",
+            "Supplier": "",
+            "Contributor": "schorcht",
+            "spiceSymbolName": "ATF22V10C-15PC",
+            "Manufacturer Part": "",
+            "puuid": "673cf5237d404912b5d2247eb6be1e20",
+            "uuid": "91b7589d6b9c4698adc483318b61f92f"
+          }
+        ],
+        [
+          "W65C02SP",
+          1,
+          "DIP-40",
+          "U7",
+          {
+            "spiceSymbolName": "W65C02SP",
+            "Manufacturer Part": "",
+            "puuid": "63825e02ab894e2fbe4dfa95e86ae419",
+            "uuid": "e608f58ee8d34c41bd8af943a6575740"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U11",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "8MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X1",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D2",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "I2C",
+          1,
+          "FEMALE HEADER 1X4P 2.54MM",
+          "H1",
+          {
+            "Manufacturer": "XKB Connectivity",
+            "Manufacturer Part": "X6511FV-04-C85D32",
+            "Supplier Part": "C718241",
+            "Supplier": "LCSC",
+            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
+            "Contributor": "Janosch_89",
+            "spiceSymbolName": "Female Header 1x4P 2.54mm",
+            "puuid": "b93b6ab9c4654010a01119e269fd972b",
+            "uuid": "4a7cc174d54448319ac8877ce96630ad"
+          }
+        ],
+        [
+          "1x16",
+          1,
+          "1X16 PIN HEADER",
+          "H4",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "cmacarthur",
+            "spiceSymbolName": "1x16",
+            "puuid": "b6a62b5ec68844a8997d87a93aab0f6b",
+            "uuid": "6c85d782f30c4bd1847bc9dca138bc50"
+          }
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R2",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "4K7",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R4,R5",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
+          "W65C22",
+          1,
+          "DIP-40-6522_MDG",
+          "U5",
+          {
+            "Manufacturer": "Western Design Center",
+            "Manufacturer Part": "W65C22S6TPG-14",
+            "Supplier": "Mouser",
+            "Supplier Part": "55-W65C22S6TPG-14",
+            "link": "https://www.mouser.com/datasheet/2/436/w65c22-1197.pdf",
+            "Contributor": "Mark Goepel",
+            "spiceSymbolName": "W65C22S6TPG-14_MDG",
+            "puuid": "4d0db8e669794d37aac1ab66aad5e78e",
+            "uuid": "8ad23c74633b46318568c5ab12718dd2"
+          }
+        ],
+        [
+          "1x2 female header",
+          1,
+          "1X2 FEMALE HEADER",
+          "U8",
+          {
+            "Manufacturer": "buddhika",
+            "Manufacturer Part": "YDXX-1X",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header",
+            "link": "",
+            "Contributor": "buddhikakgsl",
+            "spiceSymbolName": "1x2 female header",
+            "puuid": "8243aa09a34348d2b802d56845cc773c",
+            "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "24AA1026",
+          1,
+          "DIP-8_L9.7-W6.4-P2.54-LS7.6-BL",
+          "U9",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613619",
+            "Manufacturer": "MICROCHIP(美国微芯)",
+            "Manufacturer Part": "24AA1026-I/P",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "24AA1026-I/P",
+            "puuid": "26ddc6f916344af197d04f4724b10b8a",
+            "uuid": "b781d34dc0d34519aa5c543ba8cd8524"
+          }
+        ],
+        [
+          "1N5817",
+          1,
+          "1N5817 SCHOTTKY DIODE",
+          "D1",
+          {
+            "Supplier Part": "",
+            "Supplier": "",
+            "Manufacturer Part": "",
+            "Contributor": "PernelSned",
+            "spiceSymbolName": "SCHOTTKY DIODE",
+            "puuid": "8b804afe47cb4dbc9715dc5fe5f0a630",
+            "uuid": "254a7341d6c2477aa3247060815cfbdb"
+          }
+        ],
+        [
+          "velleman",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H2",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "waveshare",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H3",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
+          "MC6850 GT",
+          1,
+          "DIP-24-600-ELL",
+          "U1",
+          {
+            "timeStamp": "1464889048",
+            "sourceId": "EiO60izRL",
+            "spiceSymbolName": "MC6850 GT",
+            "Manufacturer Part": "",
+            "puuid": "c85f46dc39f94586bb14e7bf2f9c93c8",
+            "uuid": "6e02f4debb074a8191ef922cdc797e2c"
+          }
+        ],
+        [
+          "1.8432MHz",
+          1,
+          "OSCILLATORE DIP14 DUALE",
+          "X2",
+          {
+            "Contributor": "KiCAD",
+            "spiceSymbolName": "OSCILLATORE IBRIDO",
+            "Manufacturer Part": "",
+            "puuid": "afd07e0bf2a9480ea7001bfa6f6c06ea",
+            "uuid": "5091b1b418a44194b54181bdaa0ee763"
+          }
+        ],
+        [
+          "AT28C256 EEPROM",
+          1,
+          "DIP-28_L37.4-W13.5-P2.54-LS15.4-BL",
+          "U2",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613502",
+            "Manufacturer": "null",
+            "Manufacturer Part": "AT28C256-15PU",
+            "spiceSymbolName": "AT28C256-15PU_C613502",
+            "puuid": "d949d00cbaff4b12835512936c04fa5d",
+            "uuid": "ba66741aeb354d0eb2e88bf8f339c918"
+          }
+        ],
+        [
+          "62256 SRAM",
+          1,
+          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
+          "U4",
+          {
+            "Contributor": "lcsc",
+            "Supplier": "LCSC",
+            "Supplier Part": "C1350400",
+            "Manufacturer": "Alliance Memory",
+            "Manufacturer Part": "U62256ADK07LLG1",
+            "spiceSymbolName": "U62256ADK07LLG1",
+            "puuid": "cf2846522daf4845a6d8d8b8b2e17553",
+            "uuid": "8fd0b80fa2c24630a06182aa7ad770b5"
+          }
+        ]
+      ],
+      "updateTime": 1714803039,
+      "createTime": 1714803039,
+      "histories": [],
+      "created_at": "2024-05-04 16:10:39",
+      "updated_at": "2024-05-04 16:10:39"
+    }
+  ],
+  "sort": [
+    "3c506664b47db881983ed9add9ffbbc5",
+    "7b24172fffecf2a472b8fb102b1d4600",
+    "d82cf5c4af1edf2f4f1d8d478c8d63af",
+    "42e556a53494413b55538589e52e54c8"
+  ],
+  "title": "6502 v2",
+  "foldername": "6502 v2",
+  "schfilename": "6502 v2.json",
+  "schfilemtime": 1714793311023
+}
