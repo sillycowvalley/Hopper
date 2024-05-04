@@ -31,29 +31,34 @@ program Blink
         Serial.Initialize(); // since the 6850 is powered up, we'd better initialize it
         W65C22.Initialize(); // sets all pins to input, initializes timer
         
-        LDA # 0b10000000     // bit 7 as output for the LED
-        STA ZP.DDRB
+        RMB0 ZP.DDRB   // PB0 as input
+        RMB1 ZP.DDRB   // PB1 as input
+        RMB0 ZP.PORTB  // PB0 set LOW
+        RMB1 ZP.PORTB  // PB1 set LOW
         
         loop
         {
-            // blink an LED on the VIA PB7
-            
-            if (BBS7, ZP.PORTB)
-            {
-                RMB7 ZP.PORTB
-            }    
-            else
-            {
-                SMB7 ZP.PORTB
-            }
+            RMB0 ZP.DDRB // PB0 as input
+            SMB1 ZP.DDRB // PB1 as output (should be LOW)
             
             // use the Hopper runtime Time.Delay() (VIA timer)
-            LDA # (500 % 256)
+            LDA # (2000 % 256)
             STA ZP.TOPL
-            LDA # (500 / 256)
+            LDA # (2000 / 256)
             STA ZP.TOPH
             Time.Delay();
-                       
+            
+            SMB0 ZP.DDRB // PB0 as output (should be LOW)
+            RMB1 ZP.DDRB // PB1 as input
+            
+            // use the Hopper runtime Time.Delay() (VIA timer)
+            LDA # (2000 % 256)
+            STA ZP.TOPL
+            LDA # (2000 / 256)
+            STA ZP.TOPH
+            Time.Delay();
+                 
+            /*      
             // use the Hopper runtime Time.Seconds() (VIA timer) 
             Time.Seconds();
             
@@ -64,6 +69,7 @@ program Blink
             Serial.HexOut();
             LDA # 0x0A
             Serial.WriteChar();       
+            */
         }
     }
 }

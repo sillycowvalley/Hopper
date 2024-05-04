@@ -1,7 +1,8 @@
 unit I2C
 {
-    const byte SDA = 16;
-    const byte SCL = 17;
+    const byte SCL = 16;
+    const byte SDA = 17;
+    
     
     byte address;
     byte Address { get { return address; } set { address = value; } }
@@ -28,7 +29,7 @@ unit I2C
     sclHigh()
     {
         PinMode(I2C.SCL, PinModeOption.Input);
-        DigitalWrite(I2C.SCL, false); // do we need this?!
+        //DigitalWrite(I2C.SCL, false); // do we need this?!
     }
     bool sdaRead()
     {
@@ -53,7 +54,7 @@ unit I2C
     
     Start(bool isWrite)
     {
-        Write('[');
+        //Write('[');
         
         sdaHigh();
         delay();
@@ -69,7 +70,7 @@ unit I2C
     }
     bool ByteOut(byte value)
     {   
-        Write(" " + value.ToHexString(2));
+        //Write(" " + value.ToHexString(2));
         
         for (byte bit = 0; bit < 8; bit++)
         {
@@ -101,6 +102,6 @@ unit I2C
         sdaHigh();
         delay();
         
-        WriteLn("]");
+        //WriteLn("]");
     }
 }
