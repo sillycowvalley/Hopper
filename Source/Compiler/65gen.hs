@@ -351,6 +351,9 @@ program Generate
                 {
                     break;
                 }
+                
+                romSize = 0x8000;
+                
                 if (DefineExists("CPU_6502"))
                 {
                     Architecture = CPUArchitecture.M6502;
@@ -359,8 +362,11 @@ program Generate
                 {
                     Architecture = CPUArchitecture.W65C02;
                 }
-                
-                romSize = 0x8000;
+                if (DefineExists("CPU_65UINO"))
+                {
+                    Architecture = CPUArchitecture.M6502;
+                    romSize = 0x1000;
+                }
                 if (DefineExists("ROM_32K"))
                 {
                     romSize = 0x8000;
@@ -466,6 +472,8 @@ program Generate
                 
                 writeIHex(ihexFile, romAddress, output, vectors);
                 
+                // Export for RetroShield:
+                /*
                 string srcPath = ihexPath.Replace(".hex", ".c");
                 file srcFile = File.Create(srcPath);
                 if (!srcFile.IsValid())
@@ -474,7 +482,7 @@ program Generate
                     break;
                 }
                 writeSrc(srcFile, romAddress, output, vectors);
-                
+                */
                 
                 
                 if (!Parser.IsInteractive())

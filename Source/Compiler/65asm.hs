@@ -31,6 +31,9 @@ program Assemble
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; } }
     
+    bool is65uino;
+    bool Is65uino { get { return is65uino; } }
+    
     uint iCurrentOverload;
     uint iHopper;
     uint iNMI;
@@ -1685,7 +1688,12 @@ program Assemble
                 {
                     Architecture = CPUArchitecture.W65C02;
                 }
-                if (Symbols.DefineExists("ROM_16K"))
+                if (Symbols.DefineExists("CPU_65UINO"))
+                {
+                    is65uino = true;
+                    Asm6502.SetOrg(0xF000);
+                }
+                else if (Symbols.DefineExists("ROM_16K"))
                 {
                     Asm6502.SetOrg(0xC000);
                 }
@@ -1695,7 +1703,7 @@ program Assemble
                 }
                 else if (Symbols.DefineExists("ROM_4K"))
                 {
-                    Asm6502.SetOrg(0xFC00);
+                    Asm6502.SetOrg(0xF000);
                 }
                 else if (Symbols.DefineExists("ROM_1K"))
                 {

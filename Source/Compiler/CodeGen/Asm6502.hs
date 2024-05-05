@@ -1,5 +1,8 @@
 unit Asm6502
 {
+    // Undocumented: 
+    // https://www.nesdev.org/undocumented_opcodes.txt
+    
     <string,string> debugInfo;
     <string,string> labelInfo;
     <string,bool> debugInfoLineUsed;
@@ -99,6 +102,8 @@ unit Asm6502
         CMP_izY  = 0xD1,
         SBC_izX  = 0xE1,
         SBC_izY  = 0xF1,
+        
+        HLT      = 0x02, // undocumented: stop program counter (processor lock up).
         
         ORA_iz   = 0x12,
         
@@ -491,6 +496,7 @@ unit Asm6502
             case "SED":
             case "SEI":
             case "STP":
+            case "HLT":
             case "TAX":
             case "TAY":
             case "TSX":
@@ -790,6 +796,7 @@ unit Asm6502
             case OpCode.PLX:
             case OpCode.WAI:
             case OpCode.STP:
+            case OpCode.HLT:
             case OpCode.BRK:
             case OpCode.RTI:
             case OpCode.RTS:
@@ -1035,6 +1042,7 @@ unit Asm6502
             case OpCode.PLX:     { name = "PLX"; }
             case OpCode.WAI:     { name = "WAI"; }
             case OpCode.STP:     { name = "STP"; }
+            case OpCode.HLT:     { name = "HLT"; }
             case OpCode.TSB_nn:  { name = "TSB"; }
             case OpCode.TRB_nn:  { name = "TRB"; }
             case OpCode.BIT_nn:  { name = "BIT"; }
@@ -1529,7 +1537,14 @@ unit Asm6502
     
     OpCode GetHALTInstruction()
     {
-        return OpCode.STP; // STP (stop)
+        if (Is65uino)
+        {
+            return OpCode.HLT; // HLT (undocumented lock up)
+        }
+        else
+        {
+            return OpCode.STP; // STP (stop)
+        }
     }
     
     OpCode GetJMPInstruction()
@@ -1591,10 +1606,11 @@ unit Asm6502
     {
         switch (opCode)
         {
-            case OpCode.RTI: // RTI
-            case OpCode.RTS: // RTS
-            case OpCode.STP: // STP
-            case OpCode.iJMP_nn: // iJMP
+            case OpCode.RTI:
+            case OpCode.RTS:
+            case OpCode.STP:
+            case OpCode.HLT:
+            case OpCode.iJMP_nn:
             case OpCode.sJMP_inn:
             {
                 return true;
@@ -1790,9 +1806,27 @@ unit Asm6502
     AddInstructionRESET()
     {
         // program entry code
-        Asm6502.EmitInstruction("CLD");
-        Asm6502.EmitInstruction("LDX", 0xFF);
-        Asm6502.EmitInstruction("TXS");
+        if (Is65uino)
+        {
+            Asm6502.EmitInstruction("CLD");       // Clear decimal mode flag
+            Asm6502.EmitInstruction("SEI");       // Disable interrupts (may not be necessary with 6507)
+            
+            // Set stack pointer and clear zero page RAM
+            Asm6502.EmitInstruction("LDX", 0x7F); // Load X register with 127 (stack starts from top of memory)
+            Asm6502.EmitInstruction("TXS");       // Transfer X to stack pointer
+            
+            // Clear zero page RAM from $007F to $0000
+            Asm6502.EmitInstruction("LDA", 0);
+            Asm6502.EmitInstructionZeroPage("STA", 0, AddressingModes.ZeroPageX);
+            Asm6502.EmitInstruction("DEX");
+            Asm6502.EmitInstruction("BNE", int(-5));
+        }
+        else
+        {
+            Asm6502.EmitInstruction("CLD");
+            Asm6502.EmitInstruction("LDX", 0xFF);
+            Asm6502.EmitInstruction("TXS");
+        }
     }
     AddInstructionENTER()
     {

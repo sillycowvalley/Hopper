@@ -87,6 +87,7 @@ unit AsmPoints
                 // Exit
                 case OpCode.RTI:
                 case OpCode.STP:
+                case OpCode.HLT:
                 case OpCode.BRK:
                 {
                     walkStats |= WalkStats.Exit;
@@ -959,9 +960,6 @@ unit AsmPoints
                 break;
             }
             OpCode opCode = iCodes[iIndex];
-            
-            AddressingModes addressingMode;
-            bool isConditional;
             
             if ((opCode != OpCode.NOP) && (iFlags[iIndex] == Flags.Unreached))
             {

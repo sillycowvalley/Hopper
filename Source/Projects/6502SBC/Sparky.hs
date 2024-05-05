@@ -10,25 +10,25 @@ program Sparky
         DigitalWrite(GP4, false); // reset ..
         
         uint resetCycles = 25;
-        uint delay = 1;
+        uint delay = 50;
         loop
         {
             NeoPixel.SetColor(0, 0, 255, 0);
             NeoPixel.Show();
             DigitalWrite(GP2, true);
-            Delay(delay);
+            //Delay(delay);
             
             NeoPixel.SetColor(0, 0, 0, 255);
             NeoPixel.Show();
             DigitalWrite(GP2, false);
-            Delay(delay);
+            //Delay(delay);
             if (resetCycles != 0)
             {
                 resetCycles--;
                 if (resetCycles == 0)
                 {
                     DigitalWrite(GP4, true);
-                    delay = 5;
+                    delay = 100;
                 }
             }
         }

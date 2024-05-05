@@ -51,6 +51,8 @@ unit Editor
     
     bool   isHopperSource;
     bool   isAssemblerSource;
+    bool   isAssemblerListing;
+    
     CPUArchitecture cpuArchitecture;
     
     string youngestSourcePath;
@@ -1634,7 +1636,10 @@ unit Editor
         // render the text buffer
         uint lineCount = TextBuffer.GetLineCount();
         
-        if (isHopperSource || isAssemblerSource)
+        bool isAssembly     = isAssemblerSource || isAssemblerListing;
+        bool isHighlighting = isAssembly || isHopperSource;
+        
+        if (isHighlighting)
         {
             selectedWord = GetSelectedWord();
             if (bufferTopLeftY > 0)
@@ -1647,7 +1652,7 @@ unit Editor
                         string ln = TextBuffer.GetLine(i);
                         if (ln.Contains("/*") || ln.Contains("*/"))
                         {
-                            colours = Highlighter.HopperSource(ln, selectedWord, background, isAssemblerSource, ref blockCommentNesting);
+                            colours = Highlighter.HopperSource(ln, selectedWord, background, isAssembly, ref blockCommentNesting);
                         }
                     }
                 }
@@ -1756,9 +1761,9 @@ unit Editor
             c = 0;
             if (lineIndex < lineCount)
             {
-                if (isHopperSource || isAssemblerSource)
+                if (isHighlighting)
                 {
-                    colours = Highlighter.HopperSource(ln, selectedWord, background, isAssemblerSource, ref blockCommentNesting);
+                    colours = Highlighter.HopperSource(ln, selectedWord, background, isAssembly, ref blockCommentNesting);
                 }
                 uint colourOffset = 0;
                 
@@ -1780,7 +1785,7 @@ unit Editor
                         bColor = Colour.Gray;
                     }
                     uint textColor = Colour.Black;
-                    if (isHopperSource || isAssemblerSource)
+                    if (isHighlighting)
                     {
                         textColor = colours[colourOffset + c] & 0x0FFF;
                         if (!isSelected && (0 != (colours[colourOffset + c] & Colour.Selected)))
@@ -1904,7 +1909,7 @@ unit Editor
                     {
                         if (isAssemblerSource)
                         {
-                            if (parts[1] == "CPU_6502")
+                            if ((parts[1] == "CPU_6502") || (parts[1] == "CPU_65UINO"))
                             {
                                 cpuArchitecture = CPUArchitecture.M6502;
                                 break;
@@ -1928,7 +1933,7 @@ unit Editor
                 currentLine++;
             }
         }
-        if (isAssemblerSource)
+        if (isAssemblerSource || isAssemblerListing)
         {
             Token.InitializeAssembler(cpuArchitecture);
         }
@@ -2027,8 +2032,9 @@ unit Editor
 
         string extension = Path.GetExtension(CurrentPath);
         extension = extension.ToLower();
-        isHopperSource    = (extension == ".hs");
-        isAssemblerSource = (extension == ".asm");
+        isHopperSource     = (extension == ".hs");
+        isAssemblerSource  = (extension == ".asm");
+        isAssemblerListing = (extension == ".lst");
         
         string localProject = ProjectPath;
         if (localProject.Length == 0) // first load

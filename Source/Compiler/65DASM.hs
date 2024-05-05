@@ -219,6 +219,11 @@ program DASM
                     {
                         description = " for 65C02S";
                     }
+                    if (DefineExists("CPU_65UINO"))
+                    {
+                        description = " for 65uino";
+                        romSize = 0x1000;
+                    }
                     if (DefineExists("ROM_32K"))
                     {
                         description += " (32K ROM)";

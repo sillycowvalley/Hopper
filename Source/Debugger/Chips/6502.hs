@@ -685,7 +685,8 @@ unit CPU // 6502
                 case OpCode.CPY_nn:                                                      // CPY nnnn
                 case OpCode.CPY_z: { Compare(yRegister, GetMemory(operand));          } // CPY nn
                 
-                case OpCode.STP: { pcRegister = InvalidAddress; break;              } // STP
+                case OpCode.HLT:
+                case OpCode.STP:   { pcRegister = InvalidAddress; break;              } // STP
                 
                 case OpCode.BBR0_z_e:
                 case OpCode.BBR1_z_e:

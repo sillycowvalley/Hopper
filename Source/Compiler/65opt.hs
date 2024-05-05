@@ -70,6 +70,11 @@ program Optimize
                 {
                     Architecture = CPUArchitecture.W65C02;
                 }
+                if (pdValues.Contains("CPU_65UINO"))
+                {
+                    Architecture = CPUArchitecture.M6502;
+                    romSize = 0x1000;
+                }
                 if (pdValues.Contains("ROM_32K"))
                 {
                     romSize = 0x8000;
@@ -358,6 +363,12 @@ program Optimize
         }
         methodsCalled.Clear(); // just to be sure 
         
+        if ((pass == 0) && !modified)
+        {
+            // no optimizations were done on pass 0 which means we need at least a 2nd pass for
+            // removing unreachable code
+            modified = true; 
+        }
         return modified;
     }
     

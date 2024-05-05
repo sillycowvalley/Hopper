@@ -4,15 +4,15 @@ unit I2C
     
     uses "/Source/Runtime/6502/ZeroPage"
     
-    const byte SCL     = 0b00000001; // DRB0 bitmask
-    const byte SCL_INV = 0b11111110; //   inverted for easy clear bit
+    //const byte SCL     = 0b00000001; // DRB0 bitmask
+    //const byte SCL_INV = 0b11111110; //   inverted for easy clear bit
     const byte SDA     = 0b00000010; // DRB1 bitmask
-    const byte SDA_INV = 0b11111101; //   inverted for easy clear bit
+    //const byte SDA_INV = 0b11111101; //   inverted for easy clear bit
     
     delay()
     {
         PHX
-        LDX # 0x01
+        LDX # 1
         loop
         {
             DEX
@@ -48,8 +48,8 @@ unit I2C
     {
         sclHigh();
         delay();
-        sdaRead();
-        sclLow();
+        sdaRead(); // -> Z
+        sclLow();  // 65C02S bit instructions don't affect flags
     }
     
     Initialize()
@@ -59,7 +59,6 @@ unit I2C
     }
     Start()
     {
-        
         LDA I2CADDR
         ROL            // shift in carry: set means read, clear means write
         STA ZP.OUTB    // Save addr + r/w bit
@@ -73,8 +72,8 @@ unit I2C
         sclLow();
         delay();
         
-        LDA # '['
-        Serial.WriteChar();
+        //LDA # '['
+        //Serial.WriteChar();
         
         // send address + RW bit
         ByteOut();
@@ -85,11 +84,11 @@ unit I2C
         LDA ZP.OUTB
         PHA
         
-        LDA # ' '
-        Serial.WriteChar();
-        PLA
-        PHA
-        Serial.HexOut();
+        //LDA # ' '
+        //Serial.WriteChar();
+        //PLA
+        //PHA
+        //Serial.HexOut();
         
         loop
         {
@@ -113,7 +112,7 @@ unit I2C
             if (Z) { break; }
         }
         
-        checkAck();
+        checkAck();  // -> Z
         
         PLA
         STA ZP.OUTB
@@ -127,10 +126,10 @@ unit I2C
         sdaHigh();
         delay();
         
-        LDA # ']'
-        Serial.WriteChar();
-        LDA # 0x0A
-        Serial.WriteChar();
+        //LDA # ']'
+        //Serial.WriteChar();
+        //LDA # 0x0A
+        //Serial.WriteChar();
         
     }
 }

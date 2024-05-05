@@ -1,5 +1,9 @@
 program ABNielsen
 {
+    // https://wilsonminesco.com/6502primer/GENRLI2C.ASM
+    
+    // https://github.com/hauerdie/6502_i2c/blob/master/i2c.s
+    
     #define CPU_8MHZ
     #define CPU_65C02S
     
@@ -46,6 +50,7 @@ program ABNielsen
         STA I2CADDR
         SSD1306.Initialize();
         
+        /*
         // use the Hopper runtime Time.Delay() (VIA timer)
         LDA # 250
         STA ZP.TOPL
@@ -76,5 +81,6 @@ program ABNielsen
         LDA # 0x00
         STA ZP.OUTB
         SSD1306.Clear(); 
+        */
     }
 }
