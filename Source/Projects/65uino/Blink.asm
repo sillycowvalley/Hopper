@@ -23,18 +23,18 @@ program Blink
         LDA # 0b10000000 // PB7 is output (GREEN LED)
         STA RIOT.DDRB
         
-        LDA 0b00000000  // GREEN LED on to start
+        LDA # 0b00000000  // GREEN LED on to start
         STA RIOT.DRB
         loop
         {
             BIT RIOT.DRB // read BTN
             if (NV)
             {
-                LDA 0b00000000  // set GREEN LED on
+                LDA # 0b00000000  // set GREEN LED on
                 STA RIOT.DRB
                 Delay500();
             }
-            LDA 0b10000000  // set GREEN LED off
+            LDA # 0b10000000  // set GREEN LED off
             STA RIOT.DRB
             Delay500();
         }
