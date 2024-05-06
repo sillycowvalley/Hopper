@@ -8,6 +8,8 @@ unit MCU
     const byte DDRA                 = 0xF3;
     
     uses "/Source/Minimal/Memory"
+    uses "/Source/Minimal/Wire"
+    uses "/Source/Minimal/IO"
     
     const byte GP0 = 0;
     const byte GP1 = 1;
@@ -40,6 +42,11 @@ unit MCU
         Low = 0,
         High = 1,
     }
+#ifdef MCU
+    PinMode(byte pin, PinModeOption pinMode) library;
+    bool DigitalRead(byte pin) library;
+    DigitalWrite(byte pin, bool value) library;
+#else    
     
     PinMode(byte pin, PinModeOption pinMode)
     {
@@ -82,5 +89,5 @@ unit MCU
         }
         Memory.WriteByte(port, currentValue);
     }
-    
+#endif
 }

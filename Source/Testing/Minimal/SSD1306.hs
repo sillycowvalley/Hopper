@@ -1,6 +1,8 @@
 program SSD1306Demo
 {   
-    uses "/Source/Library/Boards/PiPico"
+    //#define MCU
+    uses "/Source/Minimal/System"
+    
     uses "/Source/Library/Displays/OLEDSSD1306"    
     uses "/Source/Library/Fonts/Hitachi5x7"
     
@@ -94,8 +96,10 @@ program SSD1306Demo
         //DisplayDriver.I2CSCLPin = Board.I2CSCL1;
         
 #ifdef BITBANG_I2C
-        DisplayDriver.I2CSDAPin = 17;
-        DisplayDriver.I2CSCLPin = 16;
+        //DisplayDriver.I2CSDAPin = 17;
+        //DisplayDriver.I2CSCLPin = 16;
+        DisplayDriver.I2CSDAPin = 8;
+        DisplayDriver.I2CSCLPin = 9;
 #endif        
         
         //IsPortrait = true;
@@ -107,9 +111,9 @@ program SSD1306Demo
         }
         
         
-        long start;
-        long elapsed;
-        long laps;
+        uint start;
+        uint elapsed;
+        uint laps;
         
         Screen.Clear();
         loop
@@ -120,9 +124,9 @@ program SSD1306Demo
             Display.Resume();
             laps++;
             
-            start = Millis;
+            start = Seconds;
             Display.Clear(Colour.Black);
-            elapsed = Millis - start;
+            elapsed = Seconds - start;
             Display.Suspend();
             WriteLn("Clear: ");
             WriteLn(elapsed.ToString());
@@ -131,9 +135,9 @@ program SSD1306Demo
             
             SetCursor(0,0);
             
-            start = Millis;
+            start = Seconds;
             TestDrawRect();
-            elapsed = Millis - start;
+            elapsed = Seconds - start;
             Display.Suspend();
             EchoToLCD = true;
             WriteLn("TestDrawRect: ");
@@ -142,9 +146,9 @@ program SSD1306Demo
             Display.Resume();
             Delay(500);
             
-            start = Millis;
+            start = Seconds;
             TestFillRect();   
-            elapsed = Millis - start;
+            elapsed = Seconds - start;
             Display.Suspend();
             EchoToLCD = true;
             WriteLn("TestFillRect: ");
@@ -153,9 +157,9 @@ program SSD1306Demo
             Display.Resume();
             Delay(500);
             
-            start = Millis;
+            start = Seconds;
             TestDrawLines();
-            elapsed = Millis - start;
+            elapsed = Seconds - start;
             Display.Suspend();
             EchoToLCD = true;
             WriteLn("TestDrawLines: ");

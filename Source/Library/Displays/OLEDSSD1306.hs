@@ -4,7 +4,11 @@ unit DisplayDriver
     #define SSD1306_OLED_128x64
     #define DISPLAY_IS_MONO
     
+#ifdef MINIMAL_RUNTIME
+    uses "/Source/Minimal/MCU"
+#else    
     uses "/Source/Library/MCU"
+#endif    
     uses "/Source/Library/Display"
     
     friend Display, Screen;
@@ -213,6 +217,7 @@ unit DisplayDriver
             Wire.Write(DisplayDriver.I2CController, SSD1306_NORMALDISPLAY);
             Wire.Write(DisplayDriver.I2CController, SSD1306_DEACTIVATESCROLL);
             Wire.Write(DisplayDriver.I2CController, SSD1306_DISPLAYON);
+            //Wire.Write(DisplayDriver.I2CController, SSD1306_DISPLAYALLON);
             result = Wire.EndTx(DisplayDriver.I2CController);
             if (result != 0)
             {

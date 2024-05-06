@@ -12,15 +12,22 @@ unit I2C
     const byte SDA     = 0b00000010;    // DRB1 bitmask
     const byte SDA_INV = 0b11111101;    //   inverted for easy clear bit
       
-    Start()
+    BeginTx()
     {
-        LDA # 0x0A
-        Serial.WriteChar();
-        LDA # '['
-        Serial.WriteChar();
+        SEI
         
-        LDA ZP.I2CADDR
-        ROL                // Shift in carry
+        //LDA # 0x0A
+        //Serial.WriteChar();
+        //LDA # '['
+        //Serial.WriteChar();
+        
+        PopTop();          // I2C address
+        LDA ZP.TOPL
+        
+        
+        //ROL              // Shift in carry : carry set means 'read', carry clear means 'write'
+        ASL                // assume always 'write' for now (API needs another argument or method)
+        
         STA ZP.OutB        // Save addr + r/w bit
 
         LDA # SCL_INV
@@ -39,15 +46,56 @@ unit I2C
         STA ZP.PORTB
         INC ZP.DDRB      // Set to output by incrementing the direction register == OUT, LOW
         
-        ByteOut();
+        byteOut();
     } 
-    ByteOut() // clears ZP.OutB
+    
+    EndTx()
     {
-        LDA # ' '
-        Serial.WriteChar();
-        LDA ZP.OutB
-        Serial.HexOut();
+        LDA ZP.DDRB // SDA low
+        ORA # SDA
+        STA ZP.DDRB
+        DEC ZP.DDRB // SCL HIGH
+        LDA ZP.DDRB // Set SDA high after SCL == Stop condition
+        AND # SDA_INV
+        STA ZP.DDRB
         
+        //LDA # ']'
+        //Serial.WriteChar();
+        
+        CLI
+        
+         /*
+        0: success
+        1: busy timeout upon entering endTransmission()
+        2: START bit generation timeout
+        3: end of address transmission timeout
+        4: data byte transfer timeout
+        5: data byte transfer succeeded, busy timeout immediately after
+        6: timeout waiting for peripheral to clear stop bit
+        */
+        LDA # 0
+        STA ZP.TOPL
+        STA ZP.TOPH
+        LDA # Types.Bool
+        PushTop();
+    }
+    
+    Write() 
+    {
+        PopTop();          // byte to send
+        LDA ZP.TOPL
+        STA ZP.OutB
+        byteOut();
+    }
+     
+    byteOut()
+    {
+        //LDA # ' '
+        //Serial.WriteChar();
+        //LDA ZP.OutB
+        //Serial.HexOut();
+        
+        // clears ZP.OutB   
         LDA # SDA_INV // In case this is a data byte we set SDA LOW
         AND ZP.PORTB
         STA ZP.PORTB
@@ -91,6 +139,7 @@ first:
         }
         INC ZP.DDRB // SCL low
     } 
+    /*
     ByteIn()
     {
         // Assume SCL is low from address byte
@@ -122,17 +171,6 @@ first:
         DEC ZP.DDRB     // SCL HIGH
         INC ZP.DDRB     // SCL LOW
     }
-    Stop()
-    {
-        LDA ZP.DDRB // SDA low
-        ORA # SDA
-        STA ZP.DDRB
-        DEC ZP.DDRB // SCL HIGH
-        LDA ZP.DDRB // Set SDA high after SCL == Stop condition
-        AND # SDA_INV
-        STA ZP.DDRB
-        
-        LDA # ']'
-        Serial.WriteChar();
-    }
+    */
+    
 }

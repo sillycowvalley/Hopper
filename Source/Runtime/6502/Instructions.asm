@@ -1,6 +1,7 @@
 unit Instruction
 {
     uses "SysCalls"
+    uses "LibCalls"
     uses "6502/GC"
     
     uses "6502/IntMath"
@@ -16,7 +17,9 @@ unit Instruction
         BITSHL8  = 0x04,
         BITSHR8  = 0x05,
         BITANDFF = 0x06,
-
+        
+        LIBCALL  = 0x08,
+        
         ENTER      = 0x49,
         
         CALL       = 0x34,
@@ -111,11 +114,17 @@ unit Instruction
         DECLOCALB    = 0x23,
         INCLOCALIB   = 0xA4,
         INCGLOBALB   = 0x53,
+        INCGLOBALIB  = 0xA5,
         DECGLOBALB   = 0x54,
+        DECGLOBALIB  = 0xA7,
         
         SYSCALL0     = 0x24,
         SYSCALL1     = 0x25,
         SYSCALL2     = 0x0B,
+        
+        LIBCALL0     = 0x09,
+        LIBCALL1     = 0x0A,
+        
         RETB         = 0x2A,
         RETRESB      = 0x2B,
         JZB          = 0x2E,
@@ -247,6 +256,7 @@ unit Instruction
                 return1();
             }
             case Instructions.SYSCALL:
+            case Instructions.LIBCALL:
             case Instructions.CAST:
             case Instructions.DECSP:
             
@@ -259,11 +269,15 @@ unit Instruction
             case Instructions.INCLOCALB:
             case Instructions.DECLOCALB:
             case Instructions.DECGLOBALB:
+            case Instructions.DECGLOBALIB:
             case Instructions.INCGLOBALB:
+            case Instructions.INCGLOBALIB:
             case Instructions.INCLOCALIB:
             case Instructions.SYSCALL0:
             case Instructions.SYSCALL1:
             case Instructions.SYSCALL2:
+            case Instructions.LIBCALL0:
+            case Instructions.LIBCALL1:
             case Instructions.RETB:
             case Instructions.RETRESB:
             case Instructions.JZB:
@@ -2164,6 +2178,7 @@ unit Instruction
         commonInc();
     }
     
+    
     decLocalB()
     {
         ConsumeOperandA();
@@ -2179,6 +2194,26 @@ unit Instruction
         LDA Address.ValueStackMSB, Y
         SBC # 0
         STA Address.ValueStackMSB, Y
+    }
+    
+    incGlobalIB()
+    {
+        ConsumeOperandB();
+        LDX ZP.IDXL 
+        
+        // slot to INC is in X
+        CLC
+        LDA Address.ValueStackLSB, X
+        ADC # 1
+        STA Address.ValueStackLSB, X
+        LDA Address.ValueStackMSB, X
+        ADC # 0
+        STA Address.ValueStackMSB, X
+        if (NZ)
+        {
+            LDA # Types.Int          // just in case it was Types.Byte
+            STA Address.TypeStackLSB, X
+        }
     }
     incLocalIB()
     {
@@ -2343,6 +2378,23 @@ unit Instruction
         LDA Address.ValueStackMSB, Y
         SBC # 0
         STA Address.ValueStackMSB, Y
+    }
+    decGlobalIB()
+    {
+        ConsumeOperandB();
+        LDY ZP.IDXL
+        
+        // slot to DEC is in Y
+        SEC
+        LDA Address.ValueStackLSB, Y
+        SBC # 1
+        STA Address.ValueStackLSB, Y
+        LDA Address.ValueStackMSB, Y
+        SBC # 0
+        STA Address.ValueStackMSB, Y
+        
+        LDA # Types.Int
+        STA Address.TypeStackLSB, Y // just in case type was byte
     }
     
     
@@ -2728,6 +2780,10 @@ unit Instruction
             {
                 SysCall();
             }
+            case Instructions.LIBCALL:
+            {
+                LibCall();
+            }
             case Instructions.RET:
             {
                 ret();
@@ -2914,10 +2970,26 @@ unit Instruction
                 missing();
 #endif
             }
+            case Instructions.DECGLOBALIB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                decGlobalIB();
+#else
+                missing();
+#endif
+            }
             case Instructions.INCLOCALIB:
             {
 #ifdef PACKED_INSTRUCTIONS
                 incLocalIB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.INCGLOBALIB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                incGlobalIB();
 #else
                 missing();
 #endif
@@ -2950,6 +3022,22 @@ unit Instruction
             {
 #ifdef PACKED_INSTRUCTIONS
                 retB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.LIBCALL0:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                LibCall0();
+#else
+                missing();
+#endif
+            }
+            case Instructions.LIBCALL1:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                LibCall1();
 #else
                 missing();
 #endif

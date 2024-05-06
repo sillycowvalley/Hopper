@@ -1,6 +1,6 @@
 program R6502
 {
-    //#define CHECKED              // 111/109 bytes
+    #define CHECKED              // 111/109 bytes
     #define PACKED_INSTRUCTIONS
     #define JIX_INSTRUCTIONS
     #define FASTINTS
@@ -53,6 +53,7 @@ program R6502
     uses "6502/Serial"
     uses "6502/Diagnostics"
     
+    uses "6502/LibCalls"
     uses "6502/SysCalls"
     uses "6502/Instructions"
     

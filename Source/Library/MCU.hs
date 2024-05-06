@@ -19,8 +19,12 @@ unit MCU
     
     uses "GPIO"
     uses "SPI"
-#if defined(BOARD_HAS_I2C)
+#ifdef BITBANG_I2C
+    uses "/Source/Minimal/I2C"
+#else  
+  #if defined(BOARD_HAS_I2C)
     uses "Wire"
+  #endif
 #endif
     uses "SD"
     uses "Timer"

@@ -265,6 +265,9 @@ unit AsmPoints
                 case OpCode.CLC:
                 case OpCode.SEC:
                 
+                case OpCode.CLI:
+                case OpCode.SEI:
+                
                 case OpCode.STZ_z:
                 case OpCode.STZ_zX:
                 case OpCode.STZ_nn:

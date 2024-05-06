@@ -12,13 +12,16 @@ program BitBang
         
         I2C.Initialize();
         
-        Delay(250);
-        SSD1306.Initialize();
-        Delay(250);
-        SSD1306.Clear(0xFF);
-        Delay(250);
-        SSD1306.Clear(0xAA);
-        Delay(250);
-        SSD1306.Clear(0x00);
+        loop
+        {
+            Delay(250);
+            SSD1306.Initialize();
+            Delay(250);
+            SSD1306.Clear(0xFF);
+            Delay(250);
+            SSD1306.Clear(0xAA);
+            Delay(250);
+            SSD1306.Clear(0x00);
+        }
     }
 }

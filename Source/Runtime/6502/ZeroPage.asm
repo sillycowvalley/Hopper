@@ -127,17 +127,17 @@ unit ZP
     const byte U6                   = 0x86;
     const byte U7                   = 0x87;
     
-#ifdef I2C
+
     // used by I2C
-    const byte I2CADDR              = 0xE0;
-    const byte OUTB                 = 0xE1;
-    const byte INB                  = 0xE2;
-#endif
-#ifdef SSD1306
-    const byte CURSOR               = 0xE3;
-    const byte TFLAGS               = 0xE4;
-    const byte SCROLL               = 0xE5;
-#endif
+    const byte I2CADDR              = F0;
+    const byte OutB                 = F1;
+    const byte InB                  = F2;
+
+    // used by SSD1306
+    const byte Cursor               = F2;
+    const byte TFlags               = F4;
+    const byte Scroll               = F5;
+
     
     // Motorola 6850 ACIA
     const byte ACIACONTROL          = 0xEC; //0x1E;

@@ -2,6 +2,9 @@ unit IO
 {
     uses "/Source/Minimal/System"
     
+    bool echoToLCD;
+    bool EchoToLCD     { set { echoToLCD = value; } get { return echoToLCD; } }
+    
     Write(char c)
     {
         Serial.WriteChar(c);
