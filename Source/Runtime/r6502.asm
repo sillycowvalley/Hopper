@@ -1,10 +1,13 @@
 program R6502
 {
-    #define CHECKED              // 111/109 bytes
+    //#define CHECKED              // 111/109 bytes
+    
     #define PACKED_INSTRUCTIONS
     #define JIX_INSTRUCTIONS
+    
+    // Speed vs Size:
     #define FASTINTS
-    #define INLINE_EXPANSIONS // speed vs size
+    #define INLINE_EXPANSIONS 
     
     #define W65C22_VIA
     #define CPU_8MHZ
@@ -13,11 +16,11 @@ program R6502
     //#define CPU_6502      // MOS
 
         
-#if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS)
-    #define ROM_8K // 22 bytes remaining without FASTINTS
+#if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS)
+    #define ROM_8K // 240 bytes overrun with I2C but without FASTINTS
 #endif
     
-#if defined(CPU_6502)   && !defined(JIX_INSTRUCTIONS) && !defined(CHECKED) && !defined(FASTINTS)
+#if defined(CPU_6502)   && !defined(JIX_INSTRUCTIONS) && !defined(CHECKED) && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS)
     #define ROM_8K // 31 bytes remaining without JIX_INSTRUCTIONS or FASTINTS
 #endif
 
