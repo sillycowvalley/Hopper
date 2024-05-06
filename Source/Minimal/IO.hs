@@ -8,18 +8,35 @@ unit IO
     Write(char c)
     {
         Serial.WriteChar(c);
+#ifdef DISPLAY_DRIVER        
+        if (echoToLCD)
+        {
+            if (Char.EOL == c)
+            {
+                Screen.PrintLn();
+            }
+            else if (Char.Formfeed == c)
+            {
+                Screen.Clear();
+            }
+            else
+            {
+                Screen.Print(c);
+            }
+        }
+#endif        
     }
     Write(string s)
     {
         uint length = s.Length;
         for (uint i=0; i < length; i++)
         {
-            Serial.WriteChar(s[i]);
+            Write(s[i]);
         }
     }
     WriteLn()
     {
-        Serial.WriteChar(Char.EOL);
+        Write(Char.EOL);
     }
     WriteLn(string s)
     {

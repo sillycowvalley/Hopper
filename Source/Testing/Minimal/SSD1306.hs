@@ -4,7 +4,7 @@ program SSD1306Demo
     uses "/Source/Minimal/System"
     
     uses "/Source/Library/Displays/OLEDSSD1306"    
-    uses "/Source/Library/Fonts/Hitachi5x7"
+    uses "/Source/Library/Fonts/Verdana5x8"
     
     TestDrawRect()
     {

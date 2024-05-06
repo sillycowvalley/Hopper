@@ -112,6 +112,7 @@ unit Instruction
         PUSHSTACKADDRB = 0x21,
         INCLOCALB    = 0x22,
         DECLOCALB    = 0x23,
+        DECLOCALIB   = 0xA6,
         INCLOCALIB   = 0xA4,
         INCGLOBALB   = 0x53,
         INCGLOBALIB  = 0xA5,
@@ -142,6 +143,7 @@ unit Instruction
         
         INCLOCALBB   = 0x3F,
         INCLOCALIBB  = 0xA3,
+        PUSHGLOBALBB = 0x52,
         PUSHLOCALBB  = 0x56,
         SYSCALLB0    = 0xA8,
         SYSCALL00    = 0xA9,
@@ -268,6 +270,7 @@ unit Instruction
             case Instructions.PUSHGLOBALB:
             case Instructions.INCLOCALB:
             case Instructions.DECLOCALB:
+            case Instructions.DECLOCALIB:
             case Instructions.DECGLOBALB:
             case Instructions.DECGLOBALIB:
             case Instructions.INCGLOBALB:
@@ -323,6 +326,7 @@ unit Instruction
             case Instructions.INCLOCALBB:
             case Instructions.INCLOCALIBB:
             case Instructions.PUSHLOCALBB:
+            case Instructions.PUSHGLOBALBB:
             case Instructions.SYSCALLB0:
             case Instructions.SYSCALLB1:
             case Instructions.SYSCALL00:
@@ -2396,6 +2400,25 @@ unit Instruction
         LDA # Types.Int
         STA Address.TypeStackLSB, Y // just in case type was byte
     }
+    decLocalIB()
+    {
+        ConsumeOperandA();
+        CLC
+        ADC ZP.BP
+        TAY
+        
+        // slot to DEC is in Y
+        SEC
+        LDA Address.ValueStackLSB, Y
+        SBC # 1
+        STA Address.ValueStackLSB, Y
+        LDA Address.ValueStackMSB, Y
+        SBC # 0
+        STA Address.ValueStackMSB, Y
+        
+        LDA # Types.Int
+        STA Address.TypeStackLSB, Y // just in case type was byte
+    }
     
     
     pushGlobal()
@@ -2411,6 +2434,19 @@ unit Instruction
         LDY ZP.IDXL
         
         pushShared(); // slot to push is in Y
+    }
+    
+    
+    pushGlobalBB()
+    {
+        ConsumeOperand(); // -> IDX
+        LDA IDXH
+        STA ACCL
+        LDY ZP.IDXL
+        pushShared(); // slot to push is in Y, munts IDX, A
+        
+        LDY ACCL
+        pushShared(); // slot to push is in Y, munts IDX, A
     }
     
     pushRel()
@@ -2978,6 +3014,14 @@ unit Instruction
                 missing();
 #endif
             }
+            case Instructions.DECLOCALIB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                decLocalIB();
+#else
+                missing();
+#endif
+            }
             case Instructions.INCLOCALIB:
             {
 #ifdef PACKED_INSTRUCTIONS
@@ -3161,6 +3205,14 @@ unit Instruction
             {
 #ifdef PACKED_INSTRUCTIONS
                 pushLocalBB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.PUSHGLOBALBB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushGlobalBB();
 #else
                 missing();
 #endif
