@@ -38,6 +38,8 @@ unit SysCall
         ByteToHex             = 0x18,
         IntGetByte            = 0x19,
         IntFromBytes          = 0x1A,
+        
+        ArrayItemTypeGet      = 0x1C,
     }
     
     missing()
@@ -55,6 +57,33 @@ unit SysCall
     {
         Stacks.PopA();
         Serial.WriteChar();
+    }
+    
+    serialIsAvailable()
+    {
+        Serial.IsAvailable();
+        if (Z)
+        {
+            LDX # 0
+        }
+        else
+        {
+            LDX # 1
+        }
+        Stacks.PushX();
+    }
+    serialReadChar()
+    {
+        Serial.WaitForChar();
+        STA ZP.TOPL
+#ifdef CPU_65C02S
+        STZ ZP.TOPH
+#else
+        LDA # 0
+        STA ZP.TOPH
+#endif        
+        LDA # Types.Char
+        Stacks.PushTop(); // type is in A
     }
     
     byteToHex()
@@ -125,6 +154,14 @@ unit SysCall
             {
                 serialWriteChar();
             }
+            case SysCalls.SerialReadChar:
+            {
+                serialReadChar();
+            }
+            case SysCalls.SerialIsAvailable:
+            {
+                serialIsAvailable();
+            }
             
             case SysCalls.TimeDelay:
             {
@@ -180,6 +217,10 @@ unit SysCall
             case SysCalls.ArrayCountGet:
             {
                 Array.CountGet();
+            }
+            case SysCalls.ArrayItemTypeGet:
+            {
+                Array.ItemTypeGet();
             }
             case SysCalls.ArrayGetItem:
             {

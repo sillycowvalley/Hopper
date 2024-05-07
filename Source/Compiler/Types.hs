@@ -622,6 +622,15 @@ unit Types
                         || Types.IsEnum(typeToken["lexeme"]) 
                         || Types.IsFlags(typeToken["lexeme"])
                         || Types.IsDelegate(typeToken["lexeme"]);
+                if (!isSimple && (typeToken["lexeme"] == "V"))
+                {
+                    <string, string> nextToken = Scanner.Peek();
+                    HopperToken nextTokenType = Token.GetType(nextToken);
+                    if (nextTokenType == HopperToken.LBracket)
+                    {
+                        isSimple = true;
+                    }
+                }
             }
             if (isSimple)
             {
@@ -631,7 +640,7 @@ unit Types
                 if (Parser.Check(HopperToken.LBracket))
                 {
                     // like bool[8000]
-                    if (!IsValueType(typeString))
+                    if (!IsValueType(typeString) && (typeString != "V"))
                     {
                         Parser.ErrorAtCurrent("arrays can only contain value types");
                         success = false;

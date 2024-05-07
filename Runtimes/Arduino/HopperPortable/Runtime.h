@@ -177,6 +177,8 @@ enum SysCalls {
     eByteToHex = 0x0018,
     eIntGetByte = 0x0019,
     eIntFromBytes = 0x001A,
+    eArraySlice = 0x001B,
+    eArrayItemTypeGet = 0x001C,
     ePairNew = 0x0020,
     eStringAppend = 0x0021,
     ePairKey = 0x0022,
@@ -473,6 +475,7 @@ enum HopperFlags {
     eCheckedBuild = 0x0004,
     eSP8Bit = 0x0008,
     eBreakpointsSet = 0x0020,
+    eProgramExited = 0x0040,
     eMCUPlatform = 0x0080,
 };
 
@@ -927,11 +930,12 @@ Type HRList_GetValueType(UInt _this);
 UInt HRList_createItem(UInt itemData, Type etype, Type itype);
 UInt HRArray_Clone(UInt original);
 UInt HRArray_New(Type htype, UInt count);
-UInt HRArray_NewFromConstant(UInt location, Type htype, UInt length);
-UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype);
-void HRArray_SetItem(UInt _this, UInt index, UInt value);
 UInt HRArray_GetCount(UInt _this);
 Type HRArray_GetValueType(UInt _this);
+UInt HRArray_GetItem_R(UInt _this, UInt index, Type & etype);
+void HRArray_SetItem(UInt _this, UInt index, UInt value);
+UInt HRArray_NewFromConstant(UInt location, Type htype, UInt length);
+UInt HRArray_GetItemType(UInt _this);
 UInt HRDictionary_Clone(UInt original);
 Bool HRDictionary_Next_R(UInt _this, UInt & iterator, UInt & hrpair);
 Type HRDictionary_GetKeyType(UInt _this);
@@ -1010,7 +1014,6 @@ UInt HRInt_ToLong(UInt ichunk);
 UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
-
 
 
 #endif // HOPPERRUNTIME_H

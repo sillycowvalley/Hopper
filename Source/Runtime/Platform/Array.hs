@@ -146,6 +146,10 @@ unit HRArray
     {
         return ReadWord(this+aiCount);
     }
+    uint GetItemType(uint this)
+    {
+        return ReadByte(this+aiType);
+    }
     
     uint GetItem(uint this, uint index, ref Type etype)
     {

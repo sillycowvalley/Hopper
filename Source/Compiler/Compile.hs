@@ -1749,7 +1749,7 @@ program Compile
             }
             else
             {
-                // uses Blocks, respects namespaces, Parser.Error on failure
+                // uses Blocks, respects namespaces, Parser.Error on failure  
                 variableType = Types.GetTypeString(variableName, false, ref qualifiedName);
             }
             if (Parser.HadError)
@@ -1975,6 +1975,20 @@ program Compile
 //PrintLn();
 //Print("compileAssignment TODO D: resolve 'V': " + variableType + " " + variableName + " <- " + expressionType);
                         }
+                        else if (expressionType == "V[]")
+                        {
+                            if (!variableType.EndsWith("[]"))
+                            {
+                                Parser.ErrorAt(leftToken, "type mismatch in assignment, dynamic array expected");       
+                                break;
+                            }
+                            string valueType = variableType.Replace("[]", "");
+                            if (!Types.IsValueType(valueType))
+                            {
+                                Parser.ErrorAt(leftToken, "arrays can only contain value types");       
+                                break;
+                            }
+                        }
                         else if (expressionType == "K")
                         {
                             // TODO : resolve "K" to type
@@ -2183,6 +2197,7 @@ program Compile
                  && !Parser.Check(HopperToken.SemiColon)
                )
             {
+                Print("variableType=" + variableType + " identifier=" + identifier);
                 Parser.ErrorAtCurrent("';' or '=' expected");
                 break;
             }
@@ -2321,6 +2336,10 @@ program Compile
                     else if (nextTokenType == HopperToken.Identifier)
                     {
                         success = compileLocalDeclaration();
+                    }
+                    else if ((tokenString == "V") && (nextTokenType == HopperToken.LBracket))
+                    {
+                        success = compileLocalDeclaration(); // V[] result in Slice
                     }
                     else
                     {

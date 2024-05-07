@@ -43,4 +43,45 @@ unit IO
         Write(s);
         WriteLn();
     }
+    bool ReadLn(ref string str)
+    {
+        char ch;
+        bool result;
+        String.Build(ref str);
+        loop
+        {
+            ch = Serial.ReadChar();
+            if (ch == Char.EOL) 
+            { 
+                WriteLn();
+                result = true; // good
+                break; 
+            }
+            else if (ch == Char.Escape) 
+            {
+                while (str.Length > 0)
+                {
+                    Write(Char.Backspace);
+                    Write(' ');
+                    Write(Char.Backspace);
+                    str = str.Substring(0, str.Length-1);   
+                }
+                continue;
+            }
+            else if (ch == Char.Backspace)
+            {
+                if (str.Length > 0)
+                {
+                    Write(Char.Backspace);
+                    Write(' ');
+                    Write(Char.Backspace);
+                    str = str.Substring(0, str.Length-1);   
+                }
+                continue;
+            }
+            String.Build(ref str, ch);
+            Write(ch);    
+        }
+        return result;
+    }
 }

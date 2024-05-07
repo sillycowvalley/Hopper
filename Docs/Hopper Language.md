@@ -117,6 +117,21 @@ switch (variable)
 Unlike C and its derivatives, Hopper **does not allow** the use of `break` statements after each case.
 The code execution will **never** fall through to the next case. `break` is reserved for loop constructs.
 
+#### Streamlined Control Flow for Loop and Switch Integration
+
+In Hopper, `break` and `continue` are dedicated solely to managing loop control and are not used within switch cases. This clear delineation enhances control flow management within nested structures and provides several key advantages:
+
+1. **Clear Intent**: Using `break` or `continue` within a switch case that is nested inside a loop makes it unequivocally clear that the intention is to control the loop, not to exit a switch case. This clarity helps in maintaining the readability and straightforwardness of the code.
+
+2. **Simplified Logic**: Developers are not required to implement additional mechanisms like boolean flags or complex conditional structures to exit loops from within switch cases. This straightforward approach avoids extra code overhead and potential errors from more complex control flow manipulations.
+
+3. **Enhanced Maintainability**: Code that exhibits straightforward and predictable behavior is easier to maintain and debug. A `break` or `continue` statement in a loop behaves consistently, whether it's inside a switch statement or not, simplifying the troubleshooting and modification processes.
+
+4. **Consistent Behavior Across Contexts**: By ensuring that `break` and `continue` have uniform functionality across all usage contexts, Hopper provides a consistent developer experience when writing and reading code, even in complex applications with nested loops and switch cases.
+
+This design not only prevents common errors but also enhances the usability of control statements, making them effective tools for managing the program's flow, particularly in complex scenarios.
+
+
 #### Supported Variable Types
 In Hopper, switch cases can be of various types including bool, char, byte, uint, int, and string. 
 
@@ -221,7 +236,47 @@ support for various variable types in cases, stacking case labels, and integer r
 features can help you write more expressive and concise code in Hopper.
 
 
+## Using Delegates in Hopper
 
+Delegates in Hopper are typed function pointers that allow you to assign and pass references to functions within your program. This feature is particularly useful for implementing callbacks and handling events, such as user interactions or timer expirations.
+
+### Definition and Usage
+
+A delegate in Hopper is defined by specifying the function signature it supports. Once defined, you can assign any function that matches this signature to a delegate variable and call the function through the delegate.
+
+### Example: Setting Up a Button Event Handler
+
+```hopper
+// Define a delegate type for a button event handler
+delegate void ButtonEventHandler(byte pin, PinStatus status);
+
+// Define a function that matches the delegate signature
+void ButtonPressedHandler(byte pin, PinStatus status)
+{
+    if (status == PinStatus.Pressed)
+    {
+        IO.WriteLn("Button on pin " + pin.ToString() + " was pressed.");
+    }
+}
+
+Hopper()
+{
+    ButtonEventHandler buttonHandler = ButtonPressedHandler; // Assigning function to delegate
+
+    // Setup button event with the delegate
+    SetupButtonEvent(1, buttonHandler); // Assume SetupButtonEvent sets up the hardware event
+
+    // Continue with other tasks or enter a sleep mode
+}
+```
+
+### Benefits of Using Delegates
+
+- **Type Safety**: Delegates provide type safety, ensuring that only functions with the correct signature can be assigned to a delegate type, reducing runtime errors.
+
+- **Modularity**: Delegates enhance modularity and reusability by allowing functions to be passed as parameters or stored as variables, making your code more flexible and easier to manage.
+
+- **Event Handling**: Delegates are ideal for handling events in a controlled and efficient manner, especially in embedded systems where resources are limited and reliability is critical.
 
 
 ## Language Comparison

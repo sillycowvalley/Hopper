@@ -250,11 +250,12 @@ namespace HopperNET
         MemoryFree = 0x17,
         ByteToHex = 0x18,
 
-        IntGetByte = 0x19,
+        IntGetByte   = 0x19,
         IntFromBytes = 0x1A,
-        //DictionarySet2 = 0x1B,
-        //DictionaryContains2 = 0x1C,
-        //DictionaryGet2 = 0x1D,
+        ArraySlice   = 0x1B,
+        ArrayItemTypeGet = 0x1C,
+
+        //DictionaryContains2 = 
         //DictionaryNext2 = 0x1E,
         //DictionaryClear2 = 0x1F,
         PairNew = 0x20,
@@ -5147,6 +5148,41 @@ namespace HopperNET
                         hasResult = true;
                         break;
                     }
+                case SysCall.ArraySlice:
+                    {
+                        ushort length = 0;
+                        ushort start = 0;
+                        HopperArray _this_ = null;
+                        switch (iOverload)
+                        {
+                            case 0:
+                                {
+                                    start = (ushort)Pop();
+                                    _this_ = (HopperArray)PopVariant(HopperType.tArray);
+                                    ushort sLength = (ushort)_this_.Value.Length;
+                                    if (sLength > start)
+                                    {
+                                        length = (ushort)(sLength - start);
+                                    }
+                                }
+                                break;
+                            case 1:
+                                {
+                                    length = (ushort)Pop();
+                                    start = (ushort)Pop();
+                                    _this_ = (HopperArray)PopVariant(HopperType.tArray);
+                                }
+                                break;
+                        }
+                        HopperArray arr = new HopperArray(_this_.VType, length);
+                        for (ushort i = 0; i < length; i++)
+                        {
+                            arr.Value[i] = _this_.Value[start + i];
+                        }
+                        Push(arr);
+                        hasResult = true;
+                    }
+                    break;
 
                 case SysCall.ArraySetItem:
                     {
@@ -5214,6 +5250,13 @@ namespace HopperNET
                         }
                         stack[sp2 - 2].type = _this_.VType;
 #endif
+                    }
+                    break;
+                case SysCall.ArrayItemTypeGet:
+                    {
+                        HopperArray _this_ = (HopperArray)PopVariant(HopperType.tArray);
+                        Push((ushort)_this_.VType, HopperType.tType);
+                        hasResult = true;
                     }
                     break;
                 case SysCall.ArrayCountGet:

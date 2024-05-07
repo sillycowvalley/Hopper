@@ -34,6 +34,9 @@ unit SysCalls
         IntGetByte            = 0x19,
         IntFromBytes          = 0x1A,
         
+        ArraySlice            = 0x1B,
+        ArrayItemTypeGet      = 0x1C,
+        
         PairNew            = 0x20,
         StringAppend       = 0x21,
         PairKey            = 0x22,

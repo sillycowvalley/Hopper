@@ -42,8 +42,9 @@ unit SysCalls
         addEntry("Int.GetByte");
         addEntry("Int.FromBytes");
         
-        addEntry("_Dictionary.Set2");
-        addEntry("_Dictionary.Contains2");
+        addEntry("Array.Slice");
+        addEntry("Array.ItemType_Get");
+        
         addEntry("_Dictionary.Get2");
         addEntry("_Dictionary.Next2");
         addEntry("_Dictionary.Clear2");

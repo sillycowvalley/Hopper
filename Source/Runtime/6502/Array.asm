@@ -225,6 +225,21 @@ unit Array
         LDA # Types.UInt
         Stacks.PushNext();
     }
+    ItemTypeGet()
+    {
+        Stacks.PopIDX(); // this
+        
+        LDY # aiType
+        LDA [IDX], Y
+        STA ZP.NEXTL
+        LDA # 0
+        STA ZP.NEXTH
+        
+        GC.Release();
+        
+        LDA # Types.Type
+        Stacks.PushNext();
+    }
     
     getIndexAndMask()
     {

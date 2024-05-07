@@ -78,6 +78,22 @@ program TestSuite
     }
 #endif
     
+    assertArrayEquals(int[] a, int[] b, string message)
+    {
+        if (a.Count != b.Count)
+        {
+            PrintFailed(message + " - Failed: Arrays differ in length.");
+            return;
+        }
+        for (uint i = 0; i < a.Count; i++)
+        {
+            if (a[i] != b[i])
+            {
+                PrintFailed(message + " - Failed: Elements at index " + i.ToString() + " do not match.");
+                return;
+            }
+        }
+    }
     TestArray()
     {
         WriteLn("Array");
@@ -266,6 +282,38 @@ program TestSuite
             PrintFailed("Array Bool: foreach failed");
         }
         count = 0;
+        
+        // Test cases for Array.Slice
+        // Test 1: Slice from a specific start index to the end of the array
+        int[5] originalArray;
+        originalArray[0] = 1;
+        originalArray[1] = 2;
+        originalArray[2] = 3;
+        originalArray[3] = 4;
+        originalArray[4] = 5;
+        int[3] expectedSlice;
+        expectedSlice[0] = 3;
+        expectedSlice[1] = 4;
+        expectedSlice[2] = 5;
+        int[] slicedToEnd = originalArray.Slice(2); // Expected to contain {3, 4, 5}
+        assertArrayEquals(slicedToEnd, expectedSlice, "Slice from index 2 to end");
+    
+        // Test 2: Slice with specific start and length
+        expectedSlice[0] = 2;
+        expectedSlice[1] = 3;
+        expectedSlice[2] = 4;
+        
+        int[] slicedWithLength = originalArray.Slice(1, 3); // Expected to contain {2, 3, 4}
+        assertArrayEquals(slicedWithLength, expectedSlice, "Slice from index 1 with length 3");
+    
+        // Test 3: Slice with start index equal to array length (should return empty array)
+        int[] emptySlice = originalArray.Slice(5); // Expected to be empty
+        int[0] expectedEmpty;
+        assertArrayEquals(emptySlice, expectedEmpty, "Slice with start index equal to array length");
+    
+        // Test 4: Slice with length zero (should return empty array regardless of start)
+        int[] zeroLengthSlice = originalArray.Slice(3, 0); // Expected to be empty
+        assertArrayEquals(zeroLengthSlice, expectedEmpty, "Slice with zero length");
     }
     
     TestDictionary()

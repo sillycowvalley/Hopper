@@ -59,6 +59,7 @@ unit Int
             }
             else
             {
+#ifndef MINIMAL_RUNTIME                
                 long rv;
                 if (Long.TryParse(content, ref rv))
                 {
@@ -68,6 +69,7 @@ unit Int
                         success = true;
                     }
                 }
+#endif
             }
             break;
         }

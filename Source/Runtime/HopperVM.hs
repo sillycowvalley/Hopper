@@ -611,6 +611,48 @@ unit HopperVM
                 Push(this, Type.Array);
             }
             
+            case SysCalls.ArraySlice:
+            {
+                uint length = 0;
+                uint start = 0;
+                uint this;
+                switch (iOverload)
+                {
+                    case 0:
+                        {
+                            // V[] Slice(V[] this, uint start) system;
+                            start = Pop();
+                            this  = Pop();
+                            uint sLength = HRArray.GetCount(this);
+                            if (sLength > start)
+                            {
+                                length = sLength - start;
+                            }
+                        }
+                    case 1:
+                        {
+                            // V[] Slice(V[] this, uint start, uint length) system;
+                            length = Pop();
+                            start  = Pop();
+                            this   = Pop();
+                            uint sLength = HRArray.GetCount(this);
+                            // Ensure the slice does not exceed the array bounds
+                            if (start + length > sLength)
+                            {
+                                length = sLength - start;
+                            }
+                        }
+                }
+                Type etype = HRArray.GetValueType(this);
+                uint result = HRArray.New(etype, length);
+                for (uint i = 0; i < length; i++)
+                {
+                    HRArray.SetItem(result, i, HRArray.GetItem(this, start+i, ref etype));
+                }
+                GC.Release(this);
+                Push(result, Type.Array);
+            }
+            
             case SysCalls.ArrayGetItem:
             {
                 index = Pop();
@@ -633,6 +675,13 @@ unit HopperVM
                 length = HRArray.GetCount(this);
                 GC.Release(this);
                 Push(length, Type.UInt);
+            }
+            case SysCalls.ArrayItemTypeGet:
+            {
+                this = Pop();
+                length = HRArray.GetItemType(this);
+                GC.Release(this);
+                Push(length, Type.Type);
             }
             
             case SysCalls.StringNewFromConstant:
@@ -2460,6 +2509,47 @@ unit HopperVM
                 uint address = HRArray.New(htype, count);
                 Push(address, Type.Array);
             }
+            case SysCalls.ArraySlice:
+            {
+                uint length = 0;
+                uint start = 0;
+                uint this;
+                switch (iOverload)
+                {
+                    case 0:
+                        {
+                            // V[] Slice(V[] this, uint start) system;
+                            start = Pop();
+                            this  = Pop();
+                            uint sLength = HRArray.GetCount(this);
+                            if (sLength > start)
+                            {
+                                length = sLength - start;
+                            }
+                        }
+                    case 1:
+                        {
+                            // V[] Slice(V[] this, uint start, uint length) system;
+                            length = Pop();
+                            start  = Pop();
+                            this   = Pop();
+                            uint sLength = HRArray.GetCount(this);
+                            // Ensure the slice does not exceed the array bounds
+                            if (start + length > sLength)
+                            {
+                                length = sLength - start;
+                            }
+                        }
+                }
+                Type etype = HRArray.GetValueType(this);
+                uint result = HRArray.New(etype, length);
+                for (uint i = 0; i < length; i++)
+                {
+                    HRArray.SetItem(result, i, HRArray.GetItem(this, start+i, ref etype));
+                }
+                GC.Release(this);
+                Push(result, Type.Array);
+            }
             case SysCalls.ArrayNewFromConstant:
             {   
                 Type stype;
@@ -2534,6 +2624,21 @@ unit HopperVM
                 uint length = HRArray.GetCount(this);
                 GC.Release(this);
                 Push(length, Type.UInt);
+            }
+            case SysCalls.ArrayItemTypeGet:
+            {
+                Type ttype;
+                uint this = Pop(ref ttype);
+#ifdef CHECKED
+                if (ttype != Type.Array)
+                {
+                    ErrorDump(53);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif    
+                uint tp = HRArray.GetItemType(this);
+                GC.Release(this);
+                Push(tp, Type.Type);
             }
           
             

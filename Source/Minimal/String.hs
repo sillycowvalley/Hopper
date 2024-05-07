@@ -181,6 +181,10 @@ unit String
         {
             result = true; // An empty string is always contained in any string
         }
+        else if (this.Length < needle.Length)
+        {
+            // never true
+        }
         else
         {
             for (uint i = 0; i <= this.Length - needle.Length; i++)

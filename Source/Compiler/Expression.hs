@@ -43,9 +43,9 @@ unit Expression
             CodeStream.AddInstructionPUSHI(sz);               
             
             // push value type
-            string valueType = Types.GetValueFromCollection(variableType);
+            string valueType = (variableType == "V[]") ? "uint" // arbitrary choice since it is about to be assigned to in Slice
+                                                       : Types.GetValueFromCollection(variableType);
             PushTypeFromString(valueType);
-
             name = "Array";            
         }
         else if (Types.IsRecord(variableType))
