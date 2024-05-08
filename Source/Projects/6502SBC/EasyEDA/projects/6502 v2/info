@@ -4,7 +4,7 @@
   "name": "6502 v2",
   "content": "",
   "created_at": "2024-05-01 16:43:44",
-  "updated_at": "2024-05-04 16:12:12",
+  "updated_at": "2024-05-09 08:44:23",
   "stick": "",
   "documents": [
     {
@@ -148,7 +148,7 @@
           }
         ],
         [
-          "DS1813-15+",
+          "DS1813",
           1,
           "TO-92-3_L4.9-W3.7-P1.27-L",
           "U3",
@@ -164,7 +164,7 @@
           }
         ],
         [
-          "ATF22V10C",
+          "ATF22V10C / GAL20V8",
           1,
           "-24P3",
           "U6",
@@ -180,7 +180,7 @@
           }
         ],
         [
-          "W65C02SP",
+          "6502 / 65C02S",
           1,
           "DIP-40",
           "U7",
@@ -192,7 +192,7 @@
           }
         ],
         [
-          "1x2 female header",
+          "PWR",
           1,
           "1X2 FEMALE HEADER",
           "U11",
@@ -209,7 +209,7 @@
           }
         ],
         [
-          "8MHz",
+          "1-8 MHz",
           1,
           "OSCILLATORE DIP14 DUALE",
           "X1",
@@ -225,7 +225,7 @@
           "1N5817",
           1,
           "1N5817 SCHOTTKY DIODE",
-          "D2",
+          "D3",
           {
             "Supplier Part": "",
             "Supplier": "",
@@ -237,27 +237,10 @@
           }
         ],
         [
-          "I2C",
-          1,
-          "FEMALE HEADER 1X4P 2.54MM",
-          "H1",
-          {
-            "Manufacturer": "XKB Connectivity",
-            "Manufacturer Part": "X6511FV-04-C85D32",
-            "Supplier Part": "C718241",
-            "Supplier": "LCSC",
-            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
-            "Contributor": "Janosch_89",
-            "spiceSymbolName": "Female Header 1x4P 2.54mm",
-            "puuid": "b93b6ab9c4654010a01119e269fd972b",
-            "uuid": "4a7cc174d54448319ac8877ce96630ad"
-          }
-        ],
-        [
           "1x16",
           1,
           "1X16 PIN HEADER",
-          "H4",
+          "H5",
           {
             "Manufacturer": "",
             "Manufacturer Part": "",
@@ -271,10 +254,40 @@
           }
         ],
         [
+          "I2C",
+          1,
+          "FEMALE HEADER 1X4P 2.54MM",
+          "H6",
+          {
+            "Manufacturer": "XKB Connectivity",
+            "Manufacturer Part": "X6511FV-04-C85D32",
+            "Supplier Part": "C718241",
+            "Supplier": "LCSC",
+            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
+            "Contributor": "Janosch_89",
+            "spiceSymbolName": "Female Header 1x4P 2.54mm",
+            "puuid": "b93b6ab9c4654010a01119e269fd972b",
+            "uuid": "4a7cc174d54448319ac8877ce96630ad"
+          }
+        ],
+        [
+          "PWR",
+          1,
+          "HEADER1X2",
+          "J1",
+          {
+            "Contributor": "Nathan Milligan",
+            "spiceSymbolName": "HEADER1X2",
+            "Manufacturer Part": "",
+            "puuid": "40f958f805cc416c8b0697f92f4b015a",
+            "uuid": "b8892ee67ac945a181257e6483a50562"
+          }
+        ],
+        [
           "470",
           1,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R2",
+          "R7",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -292,7 +305,7 @@
           "4K7",
           2,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R4,R5",
+          "R8,R9",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -307,27 +320,27 @@
           }
         ],
         [
-          "W65C22",
+          "65C22",
           1,
-          "DIP-40-6522_MDG",
-          "U5",
+          "65C22",
+          "U10",
           {
             "Manufacturer": "Western Design Center",
             "Manufacturer Part": "W65C22S6TPG-14",
-            "Supplier": "Mouser",
-            "Supplier Part": "55-W65C22S6TPG-14",
-            "link": "https://www.mouser.com/datasheet/2/436/w65c22-1197.pdf",
-            "Contributor": "Mark Goepel",
-            "spiceSymbolName": "W65C22S6TPG-14_MDG",
-            "puuid": "4d0db8e669794d37aac1ab66aad5e78e",
-            "uuid": "8ad23c74633b46318568c5ab12718dd2"
+            "Supplier": "Jameco Electronics",
+            "Supplier Part": "2143591",
+            "link": "",
+            "Contributor": "abduladam",
+            "spiceSymbolName": "65C22",
+            "puuid": "97570765706d46c6a791549f6269fc82",
+            "uuid": "c771aedc508d4609aa655ddd7a4e2600"
           }
         ],
         [
-          "1x2 female header",
+          "LED",
           1,
           "1X2 FEMALE HEADER",
-          "U8",
+          "U12",
           {
             "Manufacturer": "buddhika",
             "Manufacturer Part": "YDXX-1X",
@@ -344,7 +357,7 @@
           "24AA1026",
           1,
           "DIP-8_L9.7-W6.4-P2.54-LS7.6-BL",
-          "U9",
+          "U13",
           {
             "Contributor": "LCSC",
             "Supplier": "LCSC",
@@ -355,6 +368,24 @@
             "spiceSymbolName": "24AA1026-I/P",
             "puuid": "26ddc6f916344af197d04f4724b10b8a",
             "uuid": "b781d34dc0d34519aa5c543ba8cd8524"
+          }
+        ],
+        [
+          "0K",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "CLK",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
           }
         ],
         [
@@ -407,7 +438,7 @@
           }
         ],
         [
-          "MC6850 GT",
+          "MC6850",
           1,
           "DIP-24-600-ELL",
           "U1",
@@ -421,7 +452,7 @@
           }
         ],
         [
-          "1.8432MHz",
+          "1.8432 / 3.6864 MHz",
           1,
           "OSCILLATORE DIP14 DUALE",
           "X2",
@@ -466,11 +497,11 @@
           }
         ]
       ],
-      "updateTime": 1714793310,
+      "updateTime": 1715207825,
       "createTime": 1714545824,
       "histories": [],
       "created_at": "2024-05-01 16:43:44",
-      "updated_at": "2024-05-04 13:28:30"
+      "updated_at": "2024-05-09 08:37:05"
     },
     {
       "uuid": "7b24172fffecf2a472b8fb102b1d4600",
@@ -480,13 +511,14 @@
       "master": "",
       "thumb": "/images/thumb-default.png",
       "components": {
+        "c771aedc508d4609aa655ddd7a4e2600": 1,
+        "254a7341d6c2477aa3247060815cfbdb": 1,
+        "6c85d782f30c4bd1847bc9dca138bc50": 1,
+        "7a5e2f03edca4a199209369f7e0d10db": 1,
         "8999e35426a34646945447c487094ae6": 3,
         "4a7cc174d54448319ac8877ce96630ad": 1,
-        "6c85d782f30c4bd1847bc9dca138bc50": 1,
-        "254a7341d6c2477aa3247060815cfbdb": 1,
-        "8ad23c74633b46318568c5ab12718dd2": 1,
-        "7a5e2f03edca4a199209369f7e0d10db": 1,
-        "b781d34dc0d34519aa5c543ba8cd8524": 1
+        "b781d34dc0d34519aa5c543ba8cd8524": 1,
+        "b8892ee67ac945a181257e6483a50562": 1
       },
       "BOM": [
         [
@@ -495,6 +527,24 @@
           "Package",
           "Components",
           "CustomPara"
+        ],
+        [
+          "0K",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "65C02S,M6502",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
         ],
         [
           "Reset",
@@ -593,7 +643,7 @@
           }
         ],
         [
-          "DS1813-15+",
+          "DS1813",
           1,
           "TO-92-3_L4.9-W3.7-P1.27-L",
           "U3",
@@ -609,7 +659,7 @@
           }
         ],
         [
-          "ATF22V10C",
+          "ATF22V10C / GAL20V8",
           1,
           "-24P3",
           "U6",
@@ -625,7 +675,7 @@
           }
         ],
         [
-          "W65C02SP",
+          "6502 / 65C02S",
           1,
           "DIP-40",
           "U7",
@@ -637,7 +687,7 @@
           }
         ],
         [
-          "1x2 female header",
+          "PWR",
           1,
           "1X2 FEMALE HEADER",
           "U11",
@@ -654,7 +704,7 @@
           }
         ],
         [
-          "8MHz",
+          "1-8 MHz",
           1,
           "OSCILLATORE DIP14 DUALE",
           "X1",
@@ -670,7 +720,7 @@
           "1N5817",
           1,
           "1N5817 SCHOTTKY DIODE",
-          "D2",
+          "D3",
           {
             "Supplier Part": "",
             "Supplier": "",
@@ -682,27 +732,10 @@
           }
         ],
         [
-          "I2C",
-          1,
-          "FEMALE HEADER 1X4P 2.54MM",
-          "H1",
-          {
-            "Manufacturer": "XKB Connectivity",
-            "Manufacturer Part": "X6511FV-04-C85D32",
-            "Supplier Part": "C718241",
-            "Supplier": "LCSC",
-            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
-            "Contributor": "Janosch_89",
-            "spiceSymbolName": "Female Header 1x4P 2.54mm",
-            "puuid": "b93b6ab9c4654010a01119e269fd972b",
-            "uuid": "4a7cc174d54448319ac8877ce96630ad"
-          }
-        ],
-        [
           "1x16",
           1,
           "1X16 PIN HEADER",
-          "H4",
+          "H5",
           {
             "Manufacturer": "",
             "Manufacturer Part": "",
@@ -716,10 +749,40 @@
           }
         ],
         [
+          "I2C",
+          1,
+          "FEMALE HEADER 1X4P 2.54MM",
+          "H6",
+          {
+            "Manufacturer": "XKB Connectivity",
+            "Manufacturer Part": "X6511FV-04-C85D32",
+            "Supplier Part": "C718241",
+            "Supplier": "LCSC",
+            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
+            "Contributor": "Janosch_89",
+            "spiceSymbolName": "Female Header 1x4P 2.54mm",
+            "puuid": "b93b6ab9c4654010a01119e269fd972b",
+            "uuid": "4a7cc174d54448319ac8877ce96630ad"
+          }
+        ],
+        [
+          "PWR",
+          1,
+          "HEADER1X2",
+          "J1",
+          {
+            "Contributor": "Nathan Milligan",
+            "spiceSymbolName": "HEADER1X2",
+            "Manufacturer Part": "",
+            "puuid": "40f958f805cc416c8b0697f92f4b015a",
+            "uuid": "b8892ee67ac945a181257e6483a50562"
+          }
+        ],
+        [
           "470",
           1,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R2",
+          "R7",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -737,7 +800,7 @@
           "4K7",
           2,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R4,R5",
+          "R8,R9",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -752,27 +815,27 @@
           }
         ],
         [
-          "W65C22",
+          "65C22",
           1,
-          "DIP-40-6522_MDG",
-          "U5",
+          "65C22",
+          "U10",
           {
             "Manufacturer": "Western Design Center",
             "Manufacturer Part": "W65C22S6TPG-14",
-            "Supplier": "Mouser",
-            "Supplier Part": "55-W65C22S6TPG-14",
-            "link": "https://www.mouser.com/datasheet/2/436/w65c22-1197.pdf",
-            "Contributor": "Mark Goepel",
-            "spiceSymbolName": "W65C22S6TPG-14_MDG",
-            "puuid": "4d0db8e669794d37aac1ab66aad5e78e",
-            "uuid": "8ad23c74633b46318568c5ab12718dd2"
+            "Supplier": "Jameco Electronics",
+            "Supplier Part": "2143591",
+            "link": "",
+            "Contributor": "abduladam",
+            "spiceSymbolName": "65C22",
+            "puuid": "97570765706d46c6a791549f6269fc82",
+            "uuid": "c771aedc508d4609aa655ddd7a4e2600"
           }
         ],
         [
-          "1x2 female header",
+          "LED",
           1,
           "1X2 FEMALE HEADER",
-          "U8",
+          "U12",
           {
             "Manufacturer": "buddhika",
             "Manufacturer Part": "YDXX-1X",
@@ -789,7 +852,7 @@
           "24AA1026",
           1,
           "DIP-8_L9.7-W6.4-P2.54-LS7.6-BL",
-          "U9",
+          "U13",
           {
             "Contributor": "LCSC",
             "Supplier": "LCSC",
@@ -800,6 +863,24 @@
             "spiceSymbolName": "24AA1026-I/P",
             "puuid": "26ddc6f916344af197d04f4724b10b8a",
             "uuid": "b781d34dc0d34519aa5c543ba8cd8524"
+          }
+        ],
+        [
+          "0K",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "CLK",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
           }
         ],
         [
@@ -852,7 +933,7 @@
           }
         ],
         [
-          "MC6850 GT",
+          "MC6850",
           1,
           "DIP-24-600-ELL",
           "U1",
@@ -866,7 +947,7 @@
           }
         ],
         [
-          "1.8432MHz",
+          "1.8432 / 3.6864 MHz",
           1,
           "OSCILLATORE DIP14 DUALE",
           "X2",
@@ -911,11 +992,11 @@
           }
         ]
       ],
-      "updateTime": 1714793014,
+      "updateTime": 1715207826,
       "createTime": 1714567704,
       "histories": [],
       "created_at": "2024-05-01 22:48:24",
-      "updated_at": "2024-05-04 13:23:34"
+      "updated_at": "2024-05-09 08:37:06"
     },
     {
       "uuid": "d82cf5c4af1edf2f4f1d8d478c8d63af",
@@ -928,7 +1009,8 @@
         "254a7341d6c2477aa3247060815cfbdb": 1,
         "99d669b90efa40c78e5feaeaeaba4ae9": 2,
         "5091b1b418a44194b54181bdaa0ee763": 1,
-        "6e02f4debb074a8191ef922cdc797e2c": 1
+        "6e02f4debb074a8191ef922cdc797e2c": 1,
+        "8999e35426a34646945447c487094ae6": 1
       },
       "BOM": [
         [
@@ -937,6 +1019,24 @@
           "Package",
           "Components",
           "CustomPara"
+        ],
+        [
+          "0K",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "65C02S,M6502",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
         ],
         [
           "Reset",
@@ -1035,7 +1135,7 @@
           }
         ],
         [
-          "DS1813-15+",
+          "DS1813",
           1,
           "TO-92-3_L4.9-W3.7-P1.27-L",
           "U3",
@@ -1051,7 +1151,7 @@
           }
         ],
         [
-          "ATF22V10C",
+          "ATF22V10C / GAL20V8",
           1,
           "-24P3",
           "U6",
@@ -1067,7 +1167,7 @@
           }
         ],
         [
-          "W65C02SP",
+          "6502 / 65C02S",
           1,
           "DIP-40",
           "U7",
@@ -1079,7 +1179,7 @@
           }
         ],
         [
-          "1x2 female header",
+          "PWR",
           1,
           "1X2 FEMALE HEADER",
           "U11",
@@ -1096,7 +1196,7 @@
           }
         ],
         [
-          "8MHz",
+          "1-8 MHz",
           1,
           "OSCILLATORE DIP14 DUALE",
           "X1",
@@ -1112,7 +1212,7 @@
           "1N5817",
           1,
           "1N5817 SCHOTTKY DIODE",
-          "D2",
+          "D3",
           {
             "Supplier Part": "",
             "Supplier": "",
@@ -1124,27 +1224,10 @@
           }
         ],
         [
-          "I2C",
-          1,
-          "FEMALE HEADER 1X4P 2.54MM",
-          "H1",
-          {
-            "Manufacturer": "XKB Connectivity",
-            "Manufacturer Part": "X6511FV-04-C85D32",
-            "Supplier Part": "C718241",
-            "Supplier": "LCSC",
-            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
-            "Contributor": "Janosch_89",
-            "spiceSymbolName": "Female Header 1x4P 2.54mm",
-            "puuid": "b93b6ab9c4654010a01119e269fd972b",
-            "uuid": "4a7cc174d54448319ac8877ce96630ad"
-          }
-        ],
-        [
           "1x16",
           1,
           "1X16 PIN HEADER",
-          "H4",
+          "H5",
           {
             "Manufacturer": "",
             "Manufacturer Part": "",
@@ -1158,10 +1241,40 @@
           }
         ],
         [
+          "I2C",
+          1,
+          "FEMALE HEADER 1X4P 2.54MM",
+          "H6",
+          {
+            "Manufacturer": "XKB Connectivity",
+            "Manufacturer Part": "X6511FV-04-C85D32",
+            "Supplier Part": "C718241",
+            "Supplier": "LCSC",
+            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
+            "Contributor": "Janosch_89",
+            "spiceSymbolName": "Female Header 1x4P 2.54mm",
+            "puuid": "b93b6ab9c4654010a01119e269fd972b",
+            "uuid": "4a7cc174d54448319ac8877ce96630ad"
+          }
+        ],
+        [
+          "PWR",
+          1,
+          "HEADER1X2",
+          "J1",
+          {
+            "Contributor": "Nathan Milligan",
+            "spiceSymbolName": "HEADER1X2",
+            "Manufacturer Part": "",
+            "puuid": "40f958f805cc416c8b0697f92f4b015a",
+            "uuid": "b8892ee67ac945a181257e6483a50562"
+          }
+        ],
+        [
           "470",
           1,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R2",
+          "R7",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -1176,27 +1289,45 @@
           }
         ],
         [
-          "W65C22",
-          1,
-          "DIP-40-6522_MDG",
-          "U5",
+          "4K7",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R8,R9",
           {
-            "Manufacturer": "Western Design Center",
-            "Manufacturer Part": "W65C22S6TPG-14",
-            "Supplier": "Mouser",
-            "Supplier Part": "55-W65C22S6TPG-14",
-            "link": "https://www.mouser.com/datasheet/2/436/w65c22-1197.pdf",
-            "Contributor": "Mark Goepel",
-            "spiceSymbolName": "W65C22S6TPG-14_MDG",
-            "puuid": "4d0db8e669794d37aac1ab66aad5e78e",
-            "uuid": "8ad23c74633b46318568c5ab12718dd2"
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
           }
         ],
         [
-          "1x2 female header",
+          "65C22",
+          1,
+          "65C22",
+          "U10",
+          {
+            "Manufacturer": "Western Design Center",
+            "Manufacturer Part": "W65C22S6TPG-14",
+            "Supplier": "Jameco Electronics",
+            "Supplier Part": "2143591",
+            "link": "",
+            "Contributor": "abduladam",
+            "spiceSymbolName": "65C22",
+            "puuid": "97570765706d46c6a791549f6269fc82",
+            "uuid": "c771aedc508d4609aa655ddd7a4e2600"
+          }
+        ],
+        [
+          "LED",
           1,
           "1X2 FEMALE HEADER",
-          "U8",
+          "U12",
           {
             "Manufacturer": "buddhika",
             "Manufacturer Part": "YDXX-1X",
@@ -1207,6 +1338,41 @@
             "spiceSymbolName": "1x2 female header",
             "puuid": "8243aa09a34348d2b802d56845cc773c",
             "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "24AA1026",
+          1,
+          "DIP-8_L9.7-W6.4-P2.54-LS7.6-BL",
+          "U13",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613619",
+            "Manufacturer": "MICROCHIP(美国微芯)",
+            "Manufacturer Part": "24AA1026-I/P",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "24AA1026-I/P",
+            "puuid": "26ddc6f916344af197d04f4724b10b8a",
+            "uuid": "b781d34dc0d34519aa5c543ba8cd8524"
+          }
+        ],
+        [
+          "One Clk",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "CLK",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
           }
         ],
         [
@@ -1259,7 +1425,7 @@
           }
         ],
         [
-          "MC6850 GT",
+          "MC6850",
           1,
           "DIP-24-600-ELL",
           "U1",
@@ -1273,7 +1439,7 @@
           }
         ],
         [
-          "1.8432MHz",
+          "1.8432 / 3.6864 MHz",
           1,
           "OSCILLATORE DIP14 DUALE",
           "X2",
@@ -1318,11 +1484,11 @@
           }
         ]
       ],
-      "updateTime": 1714573449,
+      "updateTime": 1715207904,
       "createTime": 1714569406,
       "histories": [],
       "created_at": "2024-05-01 23:16:46",
-      "updated_at": "2024-05-02 00:24:09"
+      "updated_at": "2024-05-09 08:38:24"
     },
     {
       "uuid": "42e556a53494413b55538589e52e54c8",
@@ -1344,6 +1510,24 @@
           "CustomPara"
         ],
         [
+          "0K",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "65C02S,M6502",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
+          }
+        ],
+        [
           "Reset",
           1,
           "PUSHBUTTON_00",
@@ -1375,9 +1559,9 @@
         ],
         [
           "0.1uF",
-          7,
+          5,
           "CAP-TH_L7.0-W3.3-P5.00-D0.4",
-          "C1,C3,C4,C5,C6,C7,C8",
+          "C1,C3,C4,C5,C8",
           {
             "Contributor": "lcsc",
             "Supplier": "LCSC",
@@ -1440,7 +1624,7 @@
           }
         ],
         [
-          "DS1813-15+",
+          "DS1813",
           1,
           "TO-92-3_L4.9-W3.7-P1.27-L",
           "U3",
@@ -1456,7 +1640,7 @@
           }
         ],
         [
-          "ATF22V10C",
+          "ATF22V10C / GAL20V8",
           1,
           "-24P3",
           "U6",
@@ -1472,7 +1656,7 @@
           }
         ],
         [
-          "W65C02SP",
+          "6502 / 65C02S",
           1,
           "DIP-40",
           "U7",
@@ -1484,7 +1668,7 @@
           }
         ],
         [
-          "1x2 female header",
+          "PWR",
           1,
           "1X2 FEMALE HEADER",
           "U11",
@@ -1501,7 +1685,7 @@
           }
         ],
         [
-          "8MHz",
+          "1-8 MHz",
           1,
           "OSCILLATORE DIP14 DUALE",
           "X1",
@@ -1517,7 +1701,7 @@
           "1N5817",
           1,
           "1N5817 SCHOTTKY DIODE",
-          "D2",
+          "D3",
           {
             "Supplier Part": "",
             "Supplier": "",
@@ -1529,27 +1713,10 @@
           }
         ],
         [
-          "I2C",
-          1,
-          "FEMALE HEADER 1X4P 2.54MM",
-          "H1",
-          {
-            "Manufacturer": "XKB Connectivity",
-            "Manufacturer Part": "X6511FV-04-C85D32",
-            "Supplier Part": "C718241",
-            "Supplier": "LCSC",
-            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
-            "Contributor": "Janosch_89",
-            "spiceSymbolName": "Female Header 1x4P 2.54mm",
-            "puuid": "b93b6ab9c4654010a01119e269fd972b",
-            "uuid": "4a7cc174d54448319ac8877ce96630ad"
-          }
-        ],
-        [
           "1x16",
           1,
           "1X16 PIN HEADER",
-          "H4",
+          "H5",
           {
             "Manufacturer": "",
             "Manufacturer Part": "",
@@ -1563,10 +1730,40 @@
           }
         ],
         [
+          "I2C",
+          1,
+          "FEMALE HEADER 1X4P 2.54MM",
+          "H6",
+          {
+            "Manufacturer": "XKB Connectivity",
+            "Manufacturer Part": "X6511FV-04-C85D32",
+            "Supplier Part": "C718241",
+            "Supplier": "LCSC",
+            "link": "https://jlcpcb.com/parts/componentSearch?searchTxt=X6511FV-04-C85D32",
+            "Contributor": "Janosch_89",
+            "spiceSymbolName": "Female Header 1x4P 2.54mm",
+            "puuid": "b93b6ab9c4654010a01119e269fd972b",
+            "uuid": "4a7cc174d54448319ac8877ce96630ad"
+          }
+        ],
+        [
+          "PWR",
+          1,
+          "HEADER1X2",
+          "J1",
+          {
+            "Contributor": "Nathan Milligan",
+            "spiceSymbolName": "HEADER1X2",
+            "Manufacturer Part": "",
+            "puuid": "40f958f805cc416c8b0697f92f4b015a",
+            "uuid": "b8892ee67ac945a181257e6483a50562"
+          }
+        ],
+        [
           "470",
           1,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R2",
+          "R7",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -1581,27 +1778,45 @@
           }
         ],
         [
-          "W65C22",
-          1,
-          "DIP-40-6522_MDG",
-          "U5",
+          "4K7",
+          2,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R8,R9",
           {
-            "Manufacturer": "Western Design Center",
-            "Manufacturer Part": "W65C22S6TPG-14",
-            "Supplier": "Mouser",
-            "Supplier Part": "55-W65C22S6TPG-14",
-            "link": "https://www.mouser.com/datasheet/2/436/w65c22-1197.pdf",
-            "Contributor": "Mark Goepel",
-            "spiceSymbolName": "W65C22S6TPG-14_MDG",
-            "puuid": "4d0db8e669794d37aac1ab66aad5e78e",
-            "uuid": "8ad23c74633b46318568c5ab12718dd2"
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
           }
         ],
         [
-          "1x2 female header",
+          "65C22",
+          1,
+          "65C22",
+          "U10",
+          {
+            "Manufacturer": "Western Design Center",
+            "Manufacturer Part": "W65C22S6TPG-14",
+            "Supplier": "Jameco Electronics",
+            "Supplier Part": "2143591",
+            "link": "",
+            "Contributor": "abduladam",
+            "spiceSymbolName": "65C22",
+            "puuid": "97570765706d46c6a791549f6269fc82",
+            "uuid": "c771aedc508d4609aa655ddd7a4e2600"
+          }
+        ],
+        [
+          "LED",
           1,
           "1X2 FEMALE HEADER",
-          "U8",
+          "U12",
           {
             "Manufacturer": "buddhika",
             "Manufacturer Part": "YDXX-1X",
@@ -1612,6 +1827,41 @@
             "spiceSymbolName": "1x2 female header",
             "puuid": "8243aa09a34348d2b802d56845cc773c",
             "uuid": "7a5e2f03edca4a199209369f7e0d10db"
+          }
+        ],
+        [
+          "24AA1026",
+          1,
+          "DIP-8_L9.7-W6.4-P2.54-LS7.6-BL",
+          "U13",
+          {
+            "Contributor": "LCSC",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613619",
+            "Manufacturer": "MICROCHIP(美国微芯)",
+            "Manufacturer Part": "24AA1026-I/P",
+            "JLCPCB Part Class": "Extended Part",
+            "spiceSymbolName": "24AA1026-I/P",
+            "puuid": "26ddc6f916344af197d04f4724b10b8a",
+            "uuid": "b781d34dc0d34519aa5c543ba8cd8524"
+          }
+        ],
+        [
+          "0K",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "CLK",
+          {
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916",
+            "Manufacturer": "null",
+            "Manufacturer Part": "RES1/4W33R",
+            "JLCPCB Part Class": "Extended Part",
+            "link": "https://cn.bing.com/search?q=datasheet%3A+%20RES1/4W33R",
+            "Contributor": "LCSC",
+            "spiceSymbolName": "RES1/4W33R",
+            "puuid": "7a544e2a32564ae99e7504d53d7d8a4f",
+            "uuid": "8999e35426a34646945447c487094ae6"
           }
         ],
         [
@@ -1664,7 +1914,7 @@
           }
         ],
         [
-          "MC6850 GT",
+          "MC6850",
           1,
           "DIP-24-600-ELL",
           "U1",
@@ -1678,7 +1928,7 @@
           }
         ],
         [
-          "1.8432MHz",
+          "1.8432 / 3.6864 MHz",
           1,
           "OSCILLATORE DIP14 DUALE",
           "X2",
@@ -1723,11 +1973,11 @@
           }
         ]
       ],
-      "updateTime": 1714571269,
+      "updateTime": 1715207826,
       "createTime": 1714569532,
       "histories": [],
       "created_at": "2024-05-01 23:18:52",
-      "updated_at": "2024-05-01 23:47:49"
+      "updated_at": "2024-05-09 08:37:06"
     },
     {
       "uuid": "c0318a914f00600031f6f841063351a7",
@@ -2199,11 +2449,48 @@
           }
         ]
       ],
-      "updateTime": 1714803039,
+      "updateTime": 1715166502,
       "createTime": 1714803039,
       "histories": [],
       "created_at": "2024-05-04 16:10:39",
-      "updated_at": "2024-05-04 16:10:39"
+      "updated_at": "2024-05-08 21:08:22"
+    },
+    {
+      "uuid": "eb99a42399b21d4f36edb3bd6e4c3a14",
+      "puuid": "3939621b48be74c8eebc5948164284b4",
+      "title": "PCB_6502 v3",
+      "filename": "PCB_6502 v3.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "7a544e2a32564ae99e7504d53d7d8a4f": 9,
+        "40f958f805cc416c8b0697f92f4b015a": 1,
+        "26ddc6f916344af197d04f4724b10b8a": 1,
+        "c85f46dc39f94586bb14e7bf2f9c93c8": 1,
+        "6924b36489de4921bb29ca14bf27c33f": 1,
+        "673cf5237d404912b5d2247eb6be1e20": 1,
+        "63825e02ab894e2fbe4dfa95e86ae419": 1,
+        "8243aa09a34348d2b802d56845cc773c": 2,
+        "afd07e0bf2a9480ea7001bfa6f6c06ea": 2,
+        "bee3e285685a416c945be1ba25b90c43": 2,
+        "45070e8d7a01463899b9a5a94ed792b3": 5,
+        "39eb669bccfd4ddfb0edb646afd5c798": 1,
+        "8b804afe47cb4dbc9715dc5fe5f0a630": 2,
+        "4ec76347addd4aba8024500873cfb294": 2,
+        "b6a62b5ec68844a8997d87a93aab0f6b": 1,
+        "b93b6ab9c4654010a01119e269fd972b": 1,
+        "d949d00cbaff4b12835512936c04fa5d": 1,
+        "cf2846522daf4845a6d8d8b8b2e17553": 1,
+        "97570765706d46c6a791549f6269fc82": 1
+      },
+      "BOM": [],
+      "updateTime": 1715208263,
+      "createTime": 1715172527,
+      "histories": [],
+      "created_at": "2024-05-08 22:48:47",
+      "updated_at": "2024-05-09 08:44:23"
     }
   ],
   "sort": [
@@ -2215,5 +2502,5 @@
   "title": "6502 v2",
   "foldername": "6502 v2",
   "schfilename": "6502 v2.json",
-  "schfilemtime": 1714793311023
+  "schfilemtime": 1715207904310
 }
