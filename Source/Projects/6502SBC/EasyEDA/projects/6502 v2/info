@@ -1,10 +1,10 @@
 {
   "uuid": "3939621b48be74c8eebc5948164284b4",
-  "path": "Offline/6502 v2",
+  "path": "Offline/6502%20v2",
   "name": "6502 v2",
   "content": "",
   "created_at": "2024-05-01 16:43:44",
-  "updated_at": "2024-05-09 08:44:23",
+  "updated_at": "2024-05-09 12:23:20",
   "stick": "",
   "documents": [
     {
@@ -371,7 +371,7 @@
           }
         ],
         [
-          "0K",
+          "One Clk",
           1,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
           "CLK",
@@ -481,27 +481,27 @@
           }
         ],
         [
-          "62256 SRAM",
+          "AS6C1008-55PCN",
           1,
-          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
-          "U4",
+          "PDIP-32_L42.0-W13.7-P2.54-LS15.6-BL",
+          "U5",
           {
-            "Contributor": "lcsc",
+            "Contributor": "LCSC",
             "Supplier": "LCSC",
-            "Supplier Part": "C1350400",
+            "Supplier Part": "C1523885",
             "Manufacturer": "Alliance Memory",
-            "Manufacturer Part": "U62256ADK07LLG1",
-            "spiceSymbolName": "U62256ADK07LLG1",
-            "puuid": "cf2846522daf4845a6d8d8b8b2e17553",
-            "uuid": "8fd0b80fa2c24630a06182aa7ad770b5"
+            "Manufacturer Part": "AS6C1008-55PCN",
+            "spiceSymbolName": "AS6C1008-55PCN",
+            "puuid": "d9818d2e837643a489d86254713c0929",
+            "uuid": "2905814fdc4b4ca198240907c82ca27b"
           }
         ]
       ],
-      "updateTime": 1715207825,
+      "updateTime": 1715220374,
       "createTime": 1714545824,
       "histories": [],
       "created_at": "2024-05-01 16:43:44",
-      "updated_at": "2024-05-09 08:37:05"
+      "updated_at": "2024-05-09 12:06:14"
     },
     {
       "uuid": "7b24172fffecf2a472b8fb102b1d4600",
@@ -1498,8 +1498,8 @@
       "master": "",
       "thumb": "/images/thumb-default.png",
       "components": {
-        "8fd0b80fa2c24630a06182aa7ad770b5": 1,
-        "ba66741aeb354d0eb2e88bf8f339c918": 1
+        "ba66741aeb354d0eb2e88bf8f339c918": 1,
+        "2905814fdc4b4ca198240907c82ca27b": 1
       },
       "BOM": [
         [
@@ -1847,7 +1847,7 @@
           }
         ],
         [
-          "0K",
+          "One Clk",
           1,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
           "CLK",
@@ -1957,27 +1957,27 @@
           }
         ],
         [
-          "62256 SRAM",
+          "6C1008 / 62256 SRAM",
           1,
-          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
-          "U4",
+          "PDIP-32_L42.0-W13.7-P2.54-LS15.6-BL",
+          "U5",
           {
-            "Contributor": "lcsc",
+            "Contributor": "LCSC",
             "Supplier": "LCSC",
-            "Supplier Part": "C1350400",
+            "Supplier Part": "C1523885",
             "Manufacturer": "Alliance Memory",
-            "Manufacturer Part": "U62256ADK07LLG1",
-            "spiceSymbolName": "U62256ADK07LLG1",
-            "puuid": "cf2846522daf4845a6d8d8b8b2e17553",
-            "uuid": "8fd0b80fa2c24630a06182aa7ad770b5"
+            "Manufacturer Part": "AS6C1008-55PCN",
+            "spiceSymbolName": "AS6C1008-55PCN",
+            "puuid": "d9818d2e837643a489d86254713c0929",
+            "uuid": "2905814fdc4b4ca198240907c82ca27b"
           }
         ]
       ],
-      "updateTime": 1715207826,
+      "updateTime": 1715220910,
       "createTime": 1714569532,
       "histories": [],
       "created_at": "2024-05-01 23:18:52",
-      "updated_at": "2024-05-09 08:37:06"
+      "updated_at": "2024-05-09 12:15:10"
     },
     {
       "uuid": "c0318a914f00600031f6f841063351a7",
@@ -2465,6 +2465,7 @@
       "master": "",
       "thumb": "/images/thumb-default.png",
       "components": {
+        "d9818d2e837643a489d86254713c0929": 1,
         "7a544e2a32564ae99e7504d53d7d8a4f": 9,
         "40f958f805cc416c8b0697f92f4b015a": 1,
         "26ddc6f916344af197d04f4724b10b8a": 1,
@@ -2482,15 +2483,14 @@
         "b6a62b5ec68844a8997d87a93aab0f6b": 1,
         "b93b6ab9c4654010a01119e269fd972b": 1,
         "d949d00cbaff4b12835512936c04fa5d": 1,
-        "cf2846522daf4845a6d8d8b8b2e17553": 1,
         "97570765706d46c6a791549f6269fc82": 1
       },
       "BOM": [],
-      "updateTime": 1715208263,
+      "updateTime": 1715221400,
       "createTime": 1715172527,
       "histories": [],
       "created_at": "2024-05-08 22:48:47",
-      "updated_at": "2024-05-09 08:44:23"
+      "updated_at": "2024-05-09 12:23:20"
     }
   ],
   "sort": [
@@ -2502,5 +2502,5 @@
   "title": "6502 v2",
   "foldername": "6502 v2",
   "schfilename": "6502 v2.json",
-  "schfilemtime": 1715207904310
+  "schfilemtime": 1715220910689
 }

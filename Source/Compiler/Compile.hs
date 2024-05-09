@@ -2197,7 +2197,6 @@ program Compile
                  && !Parser.Check(HopperToken.SemiColon)
                )
             {
-                Print("variableType=" + variableType + " identifier=" + identifier);
                 Parser.ErrorAtCurrent("';' or '=' expected");
                 break;
             }

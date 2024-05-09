@@ -86,6 +86,8 @@ unit Wire
     BeginTx(byte address)  library;
     byte EndTx()  library;
     Write(byte data) library;
+    byte RequestFrom(byte address, byte bytes) library;
+    byte Read() library;
     
     // These APIs support more than one I2C controller:
     bool Begin(byte i2cController)  library;

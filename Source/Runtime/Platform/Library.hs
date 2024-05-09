@@ -29,24 +29,17 @@ unit Library
         {
             case LibCall.WireBegin:
             {
-                switch (iOverload)
+               uint controller;
+               if (iOverload == 1)
                 {
-                    case 0:
-                    {
-                        bool result = HRWire.Begin(0);
-                        Push(result ? 1 : 0, Type.Bool);
-                    }
-                    case 1:
-                    {
-                        Type ctype;
-                        uint controller = Pop(ref ctype);
+                    Type ctype;
+                    controller = Pop(ref ctype);
 #ifdef CHECKED             
-                        AssertByte(ctype, controller);
+                    AssertByte(ctype, controller);
 #endif   
-                        bool result = HRWire.Begin(byte(controller));
-                        Push(result ? 1 : 0, Type.Bool);
-                    }
                 }
+                bool result = HRWire.Begin(byte(controller));
+                Push(result ? 1 : 0, Type.Bool);
             }
             case LibCall.WireBeginTx:
             {
@@ -55,22 +48,16 @@ unit Library
 #ifdef CHECKED             
                 AssertByte(atype, address);
 #endif   
-                switch (iOverload)
+                uint controller;
+                if (iOverload == 1)
                 {
-                    case 0:
-                    {
-                        HRWire.BeginTx(0, byte(address));
-                    }
-                    case 1:
-                    {
-                        Type ctype;
-                        uint controller = Pop(ref ctype);
+                    Type ctype;
+                    controller = Pop(ref ctype);
 #ifdef CHECKED             
-                        AssertByte(ctype, controller);
+                    AssertByte(ctype, controller);
 #endif   
-                        HRWire.BeginTx(byte(controller), byte(address));
-                    }
                 }
+                HRWire.BeginTx(byte(controller), byte(address));
             }
             case LibCall.WireWrite:
             {
@@ -130,7 +117,7 @@ unit Library
                     Type freqtype;
                     freqkHz = Pop(ref freqtype);
 #ifdef CHECKED
-                     AssertUInt(freqtype,  freqkHz);
+                    AssertUInt(freqtype,  freqkHz);
 #endif   
                 }
                 Type cltype;
@@ -152,46 +139,50 @@ unit Library
                 uint bytes = Pop(ref btype);
                 Type atype;
                 uint address = Pop(ref atype);
-                Type ctype;
-                uint controller = Pop(ref ctype);          
 #ifdef CHECKED             
-                AssertByte(ctype,  controller);
                 AssertByte(atype, address);
                 AssertByte(btype, bytes);
 #endif                
+                uint controller;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    controller = Pop(ref ctype);          
+#ifdef CHECKED             
+                    AssertByte(ctype,  controller);
+#endif                
+                }
                 bytes = HRWire.RequestFrom(byte(controller), byte(address), byte(bytes));
                 Push(bytes, Type.UInt);
             }
             case LibCall.WireRead:
             {
-                Type ctype;
-                uint controller = Pop(ref ctype);          
+                uint controller;
+                if (iOverload == 1)
+                {
+                    Type ctype;
+                    controller = Pop(ref ctype);          
 #ifdef CHECKED             
-                AssertByte(ctype,  controller);
+                    AssertByte(ctype,  controller);
 #endif                
+                }
                 byte data = HRWire.Read(byte(controller));
                 Push(data, Type.Byte);
             }
             case LibCall.WireEndTx:
             {
-                switch (iOverload)
+                uint controller;
+                if (iOverload == 1)
                 {
-                    case 0:
-                    {
-                        byte result = HRWire.EndTx(0);
-                        Push(result, Type.Byte);
-                    }
-                    case 1:
-                    {
-                        Type ctype;
-                        uint controller = Pop(ref ctype);
+                    Type ctype;
+                    controller = Pop(ref ctype);
 #ifdef CHECKED             
-                        AssertByte(ctype, controller);
+                    AssertByte(ctype, controller);
 #endif   
-                        byte result = HRWire.EndTx(byte(controller));
-                        Push(result, Type.Byte);
-                    }
+                    
                 }
+                byte result = HRWire.EndTx(byte(controller));
+                Push(result, Type.Byte);
             }
             
             case LibCall.MCUPinMode:

@@ -29,7 +29,7 @@ unit Wire
     BeginTx(byte i2cAddress)
     {
         address = i2cAddress;
-        start(true);
+        start(true); // true means we are writing
     }
     byte EndTx()
     {
@@ -40,10 +40,55 @@ unit Wire
     {
         _ = byteOut(data);
     }
+    string buffer;
+    uint bufferIndex;
+    byte RequestFrom(byte i2cAddress, byte bytes)
+    {
+        buffer = "";
+        bufferIndex = 0;
+        if (bytes == 0)
+        {
+            return 0;
+        }
+        
+        address = i2cAddress;
+        start(false); // false means we are reading
+        
+        loop
+        {
+            byte data = byteIn();
+            buffer += char(data); // Hopper strings are not null terminated so any char value, 0..255, is not a problem
+            bytes--;
+            // Acknowledge the byte unless it's the last one to read
+            if (bytes == 0)
+            {
+                sendNack();
+                break;
+            }
+            sendAck();
+        } // loop
+        
+        stop();
+        
+        return byte(buffer.Length); // can never be more than 255 since 'bytes' argument is a byte
+    }
+    byte Read()
+    {
+        byte data; // Default return value if no data is available
+        if (bufferIndex < buffer.Length)
+        {
+            data = byte(buffer[bufferIndex]);
+            bufferIndex++;
+        }
+        return data;
+    }
+    
 #else
     BeginTx(byte i2cAddress) library;
     byte EndTx() library;
     Write(byte data) library;
+    byte RequestFrom(byte i2cAddress, byte bytes) library;
+    byte Read() library;
 #endif    
     
     BeginTx(byte controller, byte i2cAddress)
@@ -69,11 +114,20 @@ unit Wire
             length--;
         }
     }
-       
+    
+    
+    byte RequestFrom(byte i2cController, byte i2cAddress, byte bytes)
+    {
+        return RequestFrom(i2cAddress, bytes);
+    }
+    byte Read(byte i2cController)
+    {
+        return Read();
+    }
     
     delay()
     {
-        //uint i = 1; // 'NOP' that optimizer doesn't remove
+        uint i = 0; // so the optimizer doesn't remove 'delay'
     }
     sdaLow()
     {
@@ -102,15 +156,33 @@ unit Wire
     {
         sclHigh();
         delay();
-        bool ack = sdaRead();
+        bool ack = !sdaRead();
         sclLow();
-        //Write(ack ? '+' : '-');
+        //IO.Write(ack ? '+' : '-');
         return ack;
+    }
+    
+    sendAck()
+    {
+        sdaLow(); // Pull SDA low to indicate ACK
+        sclHigh();
+        delay();
+        sclLow();
+        delay();
+    }
+    
+    sendNack()
+    {
+        sdaHigh(); // Leave SDA high to indicate NACK
+        sclHigh();
+        delay();
+        sclLow();
+        delay();
     }
     
     start(bool isWrite)
     {
-        //Write('[');
+        //IO.Write('[');
         
         sdaHigh();
         delay();
@@ -126,7 +198,7 @@ unit Wire
     }
     bool byteOut(byte value)
     {   
-        //Write(" " + value.ToHexString(2));
+        //IO.Write(" " + value.ToHexString(2));
         
         for (byte bit = 0; bit < 8; bit++)
         {
@@ -149,6 +221,23 @@ unit Wire
         // clock in the ack bit
         return checkAck();
     }
+    byte byteIn()
+    {
+        byte data = 0;
+        for (int bit = 0; bit < 8; bit++)
+        {
+            data = data << 1;
+            sclHigh();
+            delay();
+            if (sdaRead())
+            {
+                data = data | 1;
+            }
+            sclLow();
+            delay();
+        }
+        return data;
+    }
     stop()
     {
         sdaLow();
@@ -158,6 +247,6 @@ unit Wire
         sdaHigh();
         delay();
         
-        //WriteLn("]");
+        //IO.WriteLn("]");
     }
 }

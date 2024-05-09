@@ -4,9 +4,12 @@ unit LibCall
     
     enum LibCalls
     {
-        WireBeginTx = 0x05,
-        WireEndTx   = 0x06,
-        WireWrite   = 0x07,
+        WireBeginTx     = 0x05,
+        WireEndTx       = 0x06,
+        WireWrite       = 0x07,
+        
+        WireRead        = 0x09,
+        WireRequestFrom = 0x0A,
     }
     missing()
     {

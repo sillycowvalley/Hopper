@@ -1,7 +1,10 @@
 program Test
 {
+    #define MCU
     
     uses "/Source/Minimal/System"
+    
+    uses "/Source/Minimal/Wire" // just for fast navigation for now
     
     uses "/Source/Library/Displays/OLEDSSD1306"    
     uses "/Source/Library/Fonts/Verdana5x8"
@@ -21,10 +24,14 @@ program Test
             return;
         }
         
+        Display.Suspend();
+        Display.Clear(Colour.Black);
+        Display.Resume();
+        
+        
         uint start = Seconds;
         
         Display.Suspend();
-        Display.Clear(Colour.Black);
         Display.FilledRoundedRectangle(0,0, Display.PixelWidth-1, Display.PixelHeight-1, 12, Colour.White);
         
         Display.FilledRoundedRectangle(17,  10, 75, 18, 8, Colour.Black);

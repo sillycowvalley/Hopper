@@ -6,6 +6,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -6753,44 +6754,27 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
     case LibCall::eWireBegin:
     {
-        switch (iOverload)
-        {
-        case 0x00:
-        {
-            Bool result = HRWire_Begin(0x00);
-            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
-            break;
-        }
-        case 0x01:
+        UInt controller = 0;
+        if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
-            UInt controller = HopperVM_Pop_R(ctype);
-            Bool result = HRWire_Begin(Byte(controller));
-            HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
-            break;
+            controller = HopperVM_Pop_R(ctype);
         }
-        } // switch
+        Bool result = HRWire_Begin(Byte(controller));
+        HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
         break;
     }
     case LibCall::eWireBeginTx:
     {
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        switch (iOverload)
-        {
-        case 0x00:
-        {
-            HRWire_BeginTx(0x00, Byte(address));
-            break;
-        }
-        case 0x01:
+        UInt controller = 0;
+        if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
-            UInt controller = HopperVM_Pop_R(ctype);
-            HRWire_BeginTx(Byte(controller), Byte(address));
-            break;
+            controller = HopperVM_Pop_R(ctype);
         }
-        } // switch
+        HRWire_BeginTx(Byte(controller), Byte(address));
         break;
     }
     case LibCall::eWireWrite:
@@ -6853,39 +6837,38 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt bytes = HopperVM_Pop_R(btype);
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        Type ctype = (Type)0;
-        UInt controller = HopperVM_Pop_R(ctype);
+        UInt controller = 0;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            controller = HopperVM_Pop_R(ctype);
+        }
         bytes = HRWire_RequestFrom(Byte(controller), Byte(address), Byte(bytes));
         HopperVM_Push(bytes, Type::eUInt);
         break;
     }
     case LibCall::eWireRead:
     {
-        Type ctype = (Type)0;
-        UInt controller = HopperVM_Pop_R(ctype);
+        UInt controller = 0;
+        if (iOverload == 0x01)
+        {
+            Type ctype = (Type)0;
+            controller = HopperVM_Pop_R(ctype);
+        }
         Byte data = HRWire_Read(Byte(controller));
         HopperVM_Push(data, Type::eByte);
         break;
     }
     case LibCall::eWireEndTx:
     {
-        switch (iOverload)
-        {
-        case 0x00:
-        {
-            Byte result = HRWire_EndTx(0x00);
-            HopperVM_Push(result, Type::eByte);
-            break;
-        }
-        case 0x01:
+        UInt controller = 0;
+        if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
-            UInt controller = HopperVM_Pop_R(ctype);
-            Byte result = HRWire_EndTx(Byte(controller));
-            HopperVM_Push(result, Type::eByte);
-            break;
+            controller = HopperVM_Pop_R(ctype);
         }
-        } // switch
+        Byte result = HRWire_EndTx(Byte(controller));
+        HopperVM_Push(result, Type::eByte);
         break;
     }
     case LibCall::eMCUPinMode:
