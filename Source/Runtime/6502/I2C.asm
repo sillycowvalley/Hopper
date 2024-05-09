@@ -196,6 +196,7 @@ unit I2C
                 AND # SDA_INV
                 STA ZP.DDRB
                 
+                CLC
                 LDA # 0
                 STA ZP.InB
                 LDX # 8
