@@ -10,9 +10,9 @@ unit Address
     const uint ValueStackLSB        = 0x0600;  // LSBs of 256 value stack slots
     const uint ValueStackMSB        = 0x0700;  // MSBs of 256 value stack slots
     
-    const uint HopperData           = 0x0800;  // start of Hopper RAM (program, then heap)
-       
-    const uint RamSize              = 0xC000;  // we assume RAM always starts at 0x0000 and that we have 48K, for now
-    //const uint RamSize            = 0x1800; // 6K on the Mega2560
+    const uint I2CInBuffer          = 0x0800;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
     
+    const uint HopperData           = 0x0900;  // start of Hopper RAM (program, then heap)
+       
+    const uint RamSize              = 0x8000;  // we assume RAM always starts at 0x0000 and that we have 32K, for now
 }

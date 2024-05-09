@@ -38,6 +38,14 @@ unit LibCall
             {
                 I2C.Write();
             }
+            case LibCalls.WireRead:
+            {
+                I2C.Read();
+            }
+            case LibCalls.WireRequestFrom:
+            {
+                I2C.RequestFrom();
+            }
         default:
             {
                 missing();

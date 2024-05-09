@@ -422,8 +422,16 @@ program R6502
         
         Serial.Initialize(); // munts A
 #ifdef W65C22_VIA
-       W65C22.Initialize();
-#endif                
+        W65C22.Initialize();
+#endif             
+
+        LDA #0
+        STA IDXL
+        LDA # (I2CInBuffer >> 8)
+        STA IDXH
+        LDX # 1
+        Utilities.ClearPages(); // clear the I2C buffer
+           
         hopperInit();
     }
     

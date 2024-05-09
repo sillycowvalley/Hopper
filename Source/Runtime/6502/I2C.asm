@@ -1,10 +1,11 @@
 unit I2C
 {
-    // Original written by Anders Nielsen, 2023-2024
+    // Based on work by Anders Nielsen, 2023-2024
     // License: https://creativecommons.org/licenses/by-nc/4.0/legalcode
     
     // https://github.com/AndersBNielsen/65uino/blob/main/i2c.s
     
+    uses "6502/MemoryMap"
     uses "/Source/Runtime/6502/ZeroPage"
     
     const byte SCL     = 0b00000001;    // DRB0 bitmask
@@ -14,21 +15,32 @@ unit I2C
       
     BeginTx()
     {
-        //SEI
-        
-        //LDA # 0x0A
-        //Serial.WriteChar();
-        //LDA # '['
-        //Serial.WriteChar();
-        
         PopTop();          // I2C address
         LDA ZP.TOPL
-        
-        //ROL              // Shift in carry : carry set means 'read', carry clear means 'write'
-        ASL                // assume always 'write' for now (API needs another argument or method)
-        
+        ASL                // always 'write'
         STA ZP.OutB        // Save addr + r/w bit
-
+        start();
+    }
+    BeginRx()
+    {
+        PopTop();          // I2C address
+        LDA ZP.TOPL
+        ASL                // always 'read'
+        ORA # 0b00000001
+        STA ZP.OutB        // Save addr + r/w bit
+        start();
+    }
+    EndTx()
+    {
+        stop();
+        LDA # 0
+        STA ZP.TOPL
+        STA ZP.TOPH
+        LDA # Types.Bool
+        PushTop();
+    }
+    start()
+    {
 #ifdef CPU_65C02S
         RMB0 ZP.DDRB     // Start with SCL as input HIGH - that way we can inc/dec from here
         SMB1 ZP.DDRB     // Ensure SDA is output low before SCL is LOW
@@ -56,9 +68,9 @@ unit I2C
         byteOut();
     } 
     
-    EndTx()
+    stop()
     {
-#ifdef CPU_65C02S        
+#ifdef CPU_65C02S
         SMB1 ZP.DDRB // SDA low
         RMB0 ZP.DDRB // SCL high
         RMB1 ZP.DDRB // SDA high after SCL == Stop condition
@@ -71,34 +83,200 @@ unit I2C
         AND # SDA_INV
         STA ZP.DDRB
 #endif
-        
-        //LDA # ']'
-        //Serial.WriteChar();
-        
-        //CLI
-        
-        /*
-        0: success
-        1: busy timeout upon entering endTransmission()
-        2: START bit generation timeout
-        3: end of address transmission timeout
-        4: data byte transfer timeout
-        5: data byte transfer succeeded, busy timeout immediately after
-        6: timeout waiting for peripheral to clear stop bit
-        */
-        LDA # 0
-        STA ZP.TOPL
-        STA ZP.TOPH
-        LDA # Types.Bool
-        PushTop();
     }
-    
+        
     Write() 
     {
         PopTop();          // byte to send
         LDA ZP.TOPL
         STA ZP.OutB
         byteOut();
+    }
+    
+    RequestFrom()
+    {
+        PopTop();           // bytes to read (0..255)
+        
+        PopNext();          // I2C address
+        LDA ZP.NEXTL
+        ASL                // always 'read'
+        ORA # 0b00000001
+        STA ZP.OutB        // Save addr + r/w bit
+        start();
+        // after start() SCL is low, DDRB is all output
+        // (SDA is bit 1, SCL is bit 0)
+         
+        // initialize the I2C buffer
+#ifdef CPU_65C02S
+        STZ ZP.I2CInWritePtr
+        STZ ZP.I2CInReadPtr
+        LDX ZP.TOPL
+        if (NZ) // bytes to read != 0?
+        {
+            STZ ZP.TOPL
+            loop
+            {
+                PHX
+                
+                RMB1 ZP.DDRB   // SDA input
+                
+                STZ ZP.InB
+                LDX # 8
+                loop
+                {
+                    RMB0 ZP.DDRB   // SCL high
+                    
+                    // Let's read after SCL goes high
+                    if (BBS1, ZP.PORTB)
+                    {
+                        SEC       // 1 -> C
+                    }
+                    ROL  ZP.InB   // Shift bit into the input byte
+                    SMB0 ZP.DDRB  // SCL low again for the next bit
+                    DEX
+                    if (Z) { break; }
+                }
+                
+                LDA ZP.InB
+                
+                LDX ZP.I2CInWritePtr    // push it into serial input buffer
+                STA Address.I2CInBuffer, X
+                INC ZP.I2CInWritePtr
+                
+                INC ZP.TOPL // count bytes actually read
+                
+                PLX
+                DEX
+                
+                RMB1 ZP.PORTB // make sure SDA is indeed low
+                if (Z)
+                {
+                    // last byte: code to send a NACK (SDA high, SCL high then low)
+                    RMB1 ZP.DDRB // SDA high
+                    RMB0 ZP.DDRB // SCL high
+                    SMB0 ZP.DDRB // SCL low
+                    break;
+                }
+                // code to send an ACK (SDA low, SCL high then low):
+                SMB1 ZP.DDRB // SDA low
+                RMB0 ZP.DDRB // SCL high
+                SMB0 ZP.DDRB // SCL low
+            } // loop  
+        }      
+          
+        stop();
+        
+        // bytes read in TOPL
+        STZ ZP.TOPH
+#else
+        LDA # 0
+        STA ZP.I2CInWritePtr
+        STA ZP.I2CInReadPtr
+        LDX ZP.TOPL
+        if (NZ) // bytes to read != 0?
+        {
+            LDA # 0
+            STA ZP.TOPL
+            loop
+            {
+                TXA PHA
+                
+                LDA ZP.DDRB // SDA input
+                AND # SDA_INV
+                STA ZP.DDRB
+                
+                LDA # 0
+                STA ZP.InB
+                LDX # 8
+                loop
+                {
+                    
+                    LDA ZP.DDRB // SCL high
+                    AND # SCL_INV
+                    STA ZP.DDRB
+                    
+                    LDA  ZP.PORTB  // Let's read after SCL goes high
+                    AND # SDA
+                    if (NZ)
+                    {
+                        SEC       // 1 -> C
+                    }
+                    ROL  ZP.InB   // Shift bit into the input byte
+                    
+                    LDA ZP.DDRB // SCL low again for the next bit
+                    ORA # SCL
+                    STA ZP.DDRB
+                    
+                    DEX
+                    if (Z) { break; }
+                }
+                
+                LDA ZP.InB
+                
+                LDX ZP.I2CInWritePtr    // push it into serial input buffer
+                STA Address.I2CInBuffer, X
+                INC ZP.I2CInWritePtr
+                
+                INC ZP.TOPL // count bytes actually read
+                
+                PLA TAX
+                
+                
+                LDA ZP.PORTB   // make sure SDA is indeed low
+                AND # SDA_INV
+                STA ZP.PORTB
+                
+                DEX
+                if (Z)
+                {
+                    // last byte: code to send a NACK (SDA high, SCL high then low)
+                    LDA ZP.DDRB   // SDA high
+                    AND # SDA_INV
+                    STA ZP.DDRB
+                    AND # SCL_INV // SCL high
+                    STA ZP.DDRB
+                    ORA # SCL     // SCL low
+                    STA ZP.DDRB
+                    break;
+                }
+                // code to send an ACK (SDA low, SCL high then low):
+                LDA ZP.DDRB   // SDA low
+                ORA # SDA
+                STA ZP.DDRB
+                AND # SCL_INV // SCL high
+                STA ZP.DDRB
+                ORA # SCL     // SCL low
+                STA ZP.DDRB
+            } // loop  
+        }      
+          
+        stop();
+        
+        // bytes read in TOPL
+        LDA # 0
+        STA ZP.TOPH
+#endif
+        LDA # Types.Byte
+        PushTop();
+    }
+    Read()
+    {
+        // return zero if we read past end of buffer
+        LDA # 0
+        STA ZP.TOPL
+        STA ZP.TOPH
+        
+        LDA ZP.I2CInReadPtr
+        CMP ZP.I2CInWritePtr
+        if (NZ) // ReadPtr != WritePtr means we have more data available in the I2CInBuffer
+        {
+            LDX ZP.I2CInReadPtr
+            LDA Address.I2CInBuffer, X
+            STA ZP.TOPL
+            INC ZP.I2CInReadPtr
+        }
+        LDA # Types.Byte
+        PushTop();
     }
      
     byteOut() // clears ZP.OutB   
@@ -114,7 +292,7 @@ unit I2C
         LDX # 8
         loop
         {
-            SMB0 ZP.DDRB // SCL out, clock low
+            SMB0 ZP.DDRB   // SCL out, clock low
             ASL ZP.OutB    // MSB to carry
             if (C)
             {
@@ -186,38 +364,4 @@ first:
 #endif        
         
     } 
-    /*
-    ByteIn()
-    {
-        // Assume SCL is low from address byte
-        LDA ZP.DDRB     // SDA, input
-        AND # SDA_INV
-        STA ZP.DDRB
-        LDA # 0
-        STA ZP.InB
-        LDX # 8
-        loop
-        {
-            CLC
-            DEC ZP.DDRB // SCL HIGH
-            LDA ZP.PORTB  // Let's read after SCL goes high
-            AND # SDA
-            if (NZ)
-            {
-                SEC
-            }
-            ROL ZP.InB    // Shift bit into the input byte
-            INC ZP.DDRB // SCL LOW
-            DEX
-            if (Z) { break; }
-        }
-        
-        LDA ZP.DDRB     // Send NACK == SDA high (only single bytes for now)
-        AND # SDA_INV
-        STA ZP.DDRB
-        DEC ZP.DDRB     // SCL HIGH
-        INC ZP.DDRB     // SCL LOW
-    }
-    */
-    
 }

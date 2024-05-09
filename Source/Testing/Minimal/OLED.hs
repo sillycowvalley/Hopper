@@ -1,6 +1,6 @@
 program Test
 {
-    #define MCU
+    //#define MCU
     
     uses "/Source/Minimal/System"
     
@@ -24,12 +24,15 @@ program Test
             return;
         }
         
+        uint start = Seconds;
         Display.Suspend();
         Display.Clear(Colour.Black);
         Display.Resume();
+        uint elapsed = Seconds - start;
+        WriteLn();
+        WriteLn("Clear Time:   " + elapsed.ToString() + " seconds");
         
-        
-        uint start = Seconds;
+        start = Seconds;
         
         Display.Suspend();
         Display.FilledRoundedRectangle(0,0, Display.PixelWidth-1, Display.PixelHeight-1, 12, Colour.White);
@@ -40,11 +43,10 @@ program Test
         
         Screen.DrawText(20, 15, " Verdana x1 ", Colour.White, Colour.Black, 1);
         Screen.DrawText(4,  38, "Verdana x2", Colour.Black, Colour.White, 2);
-        uint elapsed = Seconds - start;
+        elapsed = Seconds - start;
         start = Seconds;
         Display.Resume();
         uint elapsed2 = Seconds - start;
-        WriteLn();
         WriteLn("Draw Time:   " + elapsed.ToString() + " seconds");
         WriteLn("Update Time: " + elapsed2.ToString() + " seconds");
     }

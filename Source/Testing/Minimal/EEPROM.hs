@@ -1,6 +1,6 @@
 program EEPROM
 {
-    #define MCU
+    //#define MCU
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/MCU"
     
@@ -33,11 +33,12 @@ program EEPROM
         Wire.Write(byte(startAddress >> 8)); 
         Wire.Write(byte(startAddress & 0xFF));
         _ = Wire.EndTx();
-        _ = Wire.RequestFrom(i2cEEPROMaddress, byte(writeStr.Length));
+        uint bytes = Wire.RequestFrom(i2cEEPROMaddress, byte(writeStr.Length));
         for (uint i = 0; i < writeStr.Length; i++)
         {
             readStr += char(Wire.Read());
         }
         IO.WriteLn(readStr + "'");
+        WriteLn("Bytes: " + bytes.ToString());
     }
 }

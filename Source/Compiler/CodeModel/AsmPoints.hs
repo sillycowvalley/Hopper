@@ -176,6 +176,7 @@ unit AsmPoints
                 case OpCode.SBC_iz:
                 case OpCode.ROR:
                 case OpCode.AND_n:
+                case OpCode.ORA_n:
                 {
                     walkStats |= WalkStats.ReadA;
                     walkStats |= WalkStats.WriteA;

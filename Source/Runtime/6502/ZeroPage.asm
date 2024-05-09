@@ -61,6 +61,9 @@ unit ZP
     
     const byte PROGSIZE             = 0x1D;
     
+    const byte I2CInWritePtr        = 0x1E;
+    const byte I2CInReadPtr         = 0x1F;
+    
     // used by firmware for 'W'orkspace
     // (for example, Serial also uses these, especially on 6502 where PLX, PLY, PHX and PHY are missing)
     const byte W0                   = 0x20;
