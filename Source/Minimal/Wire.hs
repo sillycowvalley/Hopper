@@ -26,24 +26,28 @@ unit Wire
         return true;
     }
 #ifdef MCU    
+    bool lastAck;
+    string buffer;
+    uint bufferIndex;
+    
     BeginTx(byte i2cAddress)
     {
+        lastAck = false;
         address = i2cAddress;
         start(true); // true means we are writing
     }
     byte EndTx()
     {
         stop();
-        return 0;
+        return lastAck ? 0 : 1;
     }
     Write(byte data)
     {
-        _ = byteOut(data);
+        byteOut(data);
     }
-    string buffer;
-    uint bufferIndex;
     byte RequestFrom(byte i2cAddress, byte bytes)
     {
+        lastAck = false;
         buffer = "";
         bufferIndex = 0;
         if (bytes == 0)
@@ -154,9 +158,13 @@ unit Wire
     }
     bool checkAck()
     {
+        // Ensure SDA is set as input to receive ACK
+        PinMode(sda, PinModeOption.Input);
+        
+        // Pulse SCL to read ACK
         sclHigh();
-        delay();
-        bool ack = !sdaRead();
+        Time.Delay(10);
+        bool ack = !DigitalRead(sda); // Read ACK; true if pulled low
         sclLow();
         //IO.Write(ack ? '+' : '-');
         return ack;
@@ -194,9 +202,9 @@ unit Wire
         delay();
         
         byte value = (address << 1) + (isWrite ? 0 : 1);
-        _ = byteOut(value);
+        byteOut(value);
     }
-    bool byteOut(byte value)
+    byteOut(byte value)
     {   
         //IO.Write(" " + value.ToHexString(2));
         
@@ -219,8 +227,9 @@ unit Wire
         }
         
         // clock in the ack bit
-        return checkAck();
+        lastAck = checkAck();
     }
+    
     byte byteIn()
     {
         byte data = 0;
@@ -238,6 +247,7 @@ unit Wire
         }
         return data;
     }
+    
     stop()
     {
         sdaLow();

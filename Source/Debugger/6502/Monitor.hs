@@ -734,7 +734,18 @@ unit Monitor
         {
             info = info + ", program loaded";
         }
-        
+        if (ZeroPageContains("PLUGNPLAY"))
+        {
+            uint plugNPlay = GetZeroPage("PLUGNPLAY");
+            if (0 != plugNPlay & 0b00000001)
+            {
+                info = info + ", SSD1306 OLED";
+            }
+            if (0 != plugNPlay & 0b00000010)
+            {
+                info = info + ", Serial EEPROM";
+            }
+        }
         return info;
     }     
     

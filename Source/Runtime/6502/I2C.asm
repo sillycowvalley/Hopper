@@ -13,6 +13,15 @@ unit I2C
     const byte SDA     = 0b00000010;    // DRB1 bitmask
     const byte SDA_INV = 0b11111101;    //   inverted for easy clear bit
       
+    Scan()
+    {
+        // I2C address in A
+        ASL                // always 'write'
+        STA ZP.OutB        // Save addr + r/w bit
+        start();
+        stop();
+        LDA ZP.LastAck // LastAck in A, Z set if found
+    }
     BeginTx()
     {
         PopTop();          // I2C address
@@ -25,16 +34,17 @@ unit I2C
     {
         PopTop();          // I2C address
         LDA ZP.TOPL
-        ASL                // always 'read'
-        ORA # 0b00000001
+        ASL                
+        ORA # 0b00000001   // always 'read'
         STA ZP.OutB        // Save addr + r/w bit
         start();
     }
     EndTx()
     {
         stop();
-        LDA # 0
+        LDA ZP.LastAck
         STA ZP.TOPL
+        LDA # 0
         STA ZP.TOPH
         LDA # Types.Bool
         PushTop();
@@ -120,6 +130,7 @@ unit I2C
                 
                 RMB1 ZP.DDRB   // SDA input
                 
+                CLC
                 STZ ZP.InB
                 LDX # 8
                 loop
@@ -311,10 +322,13 @@ unit I2C
         RMB1 ZP.DDRB  // Set SDA to INPUT (HIGH)
         RMB0 ZP.DDRB  // Clock high
         
-        SEC
         if (BBR1, ZP.PORTB)
         {
-            CLC       // clear carry on ACK
+            STZ ZP.LastAck // ACK
+        }
+        else
+        {
+            SMB0 ZP.LastAck // NACK
         }
         SMB0 ZP.DDRB    // clock low
         
@@ -353,15 +367,17 @@ first:
         DEC ZP.DDRB   // Clock high
         
         LDA ZP.PORTB  // Check ACK bit
-        SEC
         AND # SDA
         if (Z)
         {
-            CLC       // Clear carry on ACK
+            LDA # 0 // ACK
         }
+        else
+        {
+            LDA # 1 // NACK
+        }
+        STZ ZP.LastAck 
         INC ZP.DDRB   // Clock low
-        
 #endif        
-        
     } 
 }

@@ -7,10 +7,21 @@ program EEPROM
     const byte i2cEEPROMaddress = 0x50;
     Hopper()
     {
+        _ = Wire.Initialize();
+        for (byte i2cAddress = 8; i2cAddress < 120; i2cAddress++)
+        {
+            Wire.BeginTx(i2cAddress);
+            if (0 == Wire.EndTx())
+            {
+                WriteLn(i2cAddress.ToHexString(2) + " exists");
+            }
+        }
+        
+        
         uint now = Time.Seconds;  // time stamp to be sure our write is working
         string writeStr = "Hello Serial EEPROM! (at " + now.ToString() + "s)";
         uint startAddress = 4242; // arbitrary address on the EEPROM
-        _ = Wire.Initialize();
+        
         IO.WriteLn("Now: " + now.ToString() + "s");
         IO.Write("Writing: '");
         for (uint i = 0; i < writeStr.Length; i++)

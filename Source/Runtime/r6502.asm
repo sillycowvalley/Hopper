@@ -431,6 +431,46 @@ program R6502
         STA IDXH
         LDX # 1
         Utilities.ClearPages(); // clear the I2C buffer
+        
+        // scan for I2C devices
+#ifdef CPU_65C02S        
+        STZ ZP.PLUGNPLAY
+        
+        LDA # 0x3C // SSD1306 OLED
+        I2C.Scan();
+        if (Z)
+        {
+            SMB0 ZP.PLUGNPLAY
+        }
+        
+        LDA # 0x50 // EEPROM?
+        I2C.Scan();
+        if (Z)
+        {
+            SMB1 ZP.PLUGNPLAY
+        }
+#else
+        LDA # 0
+        STA ZP.PLUGNPLAY
+        
+        LDA # 0x3C // SSD1306 OLED
+        I2C.Scan();
+        if (Z)
+        {
+            LDA ZP.PLUGNPLAY
+            ORA # 0b00000001
+            STA ZP.PLUGNPLAY
+        }
+        
+        LDA # 0x50 // EEPROM?
+        I2C.Scan();
+        if (Z)
+        {
+            LDA ZP.PLUGNPLAY
+            ORA # 0b00000010
+            STA ZP.PLUGNPLAY
+        }
+#endif        
            
         hopperInit();
     }

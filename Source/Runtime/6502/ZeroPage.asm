@@ -70,6 +70,9 @@ unit ZP
     const byte W1                   = 0x21;
     const byte W2                   = 0x22; // used by packed syscalls
 
+    const byte PLUGNPLAY            = 0x27; // devices on this machine
+    // Bit 1 - I2C 0x50 EEPROM exists
+    // Bit 0 - I2C 0x3C OLED exists
     
     // used by 'T'ime APIs Millis and Delay
     const byte TICK0                = 0x28;
@@ -120,6 +123,9 @@ unit ZP
     const byte F14                  = 0x6E;
     const byte F15                  = 0x6F;
     
+    // dictionary types (safely unused)
+    const byte D0                   = 0x70;
+    
     // used my 'U'Int functions
     const byte U0                   = 0x80;
     const byte U1                   = 0x81;
@@ -135,11 +141,12 @@ unit ZP
     const byte I2CADDR              = F0;
     const byte OutB                 = F1;
     const byte InB                  = F2;
-
+    const byte LastAck              = D0; // could get stomped so use dictionary types for now: LackAck == 0 means ACK, 1 means NACK
+    
     // used by SSD1306
-    const byte Cursor               = F2;
-    const byte TFlags               = F4;
-    const byte Scroll               = F5;
+    const byte Cursor               = F4;
+    const byte TFlags               = F5;
+    const byte Scroll               = F6;
 
     
     // Motorola 6850 ACIA

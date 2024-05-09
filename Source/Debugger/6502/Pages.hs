@@ -160,7 +160,8 @@ unit Pages
             
             HopperFlags hf = HopperFlags(Pages.GetPageByte(ZP.ZFLAGS));
             
-            zeroPage["FLAGS"]     = uint(hf);
+            zeroPage["FLAGS"]         = uint(hf);
+            zeroPage["PLUGNPLAY"]     = Pages.GetPageByte(ZP.ZPLUGNPLAY);
             
             zeroPage["FREELIST"]  = Pages.GetPageWord(ZP.ZFREELIST);
             zeroPage["HEAPSTART"] = Pages.GetPageByte(ZP.ZHEAPSTART) << 8;
