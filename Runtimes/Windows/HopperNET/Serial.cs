@@ -49,7 +49,7 @@ namespace HopperNET
                     break;
                 }
                 count++;
-                if (count == 100)
+                if (count == 10)
                 {
                     break;
                 }
