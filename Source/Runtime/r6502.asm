@@ -206,7 +206,7 @@ program R6502
                             DEX
                         }
                         
-                                     // ignore data checksum and EOL for now
+                        // ignore data checksum and EOL for now
                         Serial.WaitForChar();
                         Serial.WaitForChar();
                         Serial.WaitForChar();
@@ -237,14 +237,38 @@ program R6502
     {
         Utilities.WaitForEnter();     // consume <enter>
         
-        // ignore CRC for now
-        LDY # 5 // 4 hex characters and <enter>
-        loop
+        if (BBS1, ZP.PLUGNPLAY) // EEPROM?
         {
-            Serial.WaitForChar();
-            DEY
-            if (Z) { break; }
+            // BeginTx
+            LDA # (0x50 << 1)
+            STA ZP.OutB
+            I2C.Start();
+            STZ ZP.OutB
+            I2C.ByteOut(); // EEPROM address MSB (0)
+            STZ ZP.OutB
+            I2C.ByteOut(); // EEPROM address LSB (0)
+            
+            // byte upfront reserved for 'size in pages' (zero means failure)
+            STZ ZP.OutB
+            I2C.ByteOutDelay();
         }
+        
+        // CRC: 4 hex characters and <enter>
+        Serial.HexIn();
+        if (BBS1, ZP.PLUGNPLAY) // EEPROM?
+        {
+            STA ZP.OutB
+            I2C.ByteOutDelay(); // CRC byte
+        }
+        Serial.HexIn();
+        if (BBS1, ZP.PLUGNPLAY) // EEPROM?
+        {
+            STA ZP.OutB
+            I2C.ByteOutDelay(); // CRC byte
+            I2C.Stop();         // header loaded
+        }
+        Serial.WaitForChar(); // <enter>
+        
         // Y is zero now
         STY IDYH
         STY IDYL
@@ -323,9 +347,110 @@ program R6502
             LDA #0
             STA ZP.PROGSIZE
         }
+        
         PLA // restore terminator   
         Serial.WriteChar();         // success or failure ('*' or '!')?
         Utilities.SendSlash();      // confirm the data
+        
+        if (BBS1, ZP.PLUGNPLAY) // EEPROM?
+        {
+            
+            // BeginTx
+            LDA # (0x50 << 1)
+            STA ZP.OutB
+            I2C.Start();
+            STZ ZP.OutB
+            I2C.ByteOut(); // EEPROM address MSB (0)
+            STZ ZP.OutB
+            I2C.ByteOut(); // EEPROM address LSB (0)
+            
+            LDA ZP.PROGSIZE  // zero size means failed to load
+            STA ZP.OutB
+            I2C.ByteOutDelay();
+            I2C.Stop();
+            
+            // delay 10ms after Stop() for EEPROM
+            LDA # 10
+            STA ZP.TOPL
+            STZ ZP.TOPH
+            Time.DelayTOP();
+            
+            if (BBS0, ZP.FLAGS) // program is loaded
+            {
+                LDA #(HopperData & 0xFF)
+                STA ZP.IDXL
+                LDA #(HopperData >> 8)
+                STA ZP.IDXH
+                // IDX contains the source address
+                
+                LDA # 0x80 // 128
+                STA ZP.IDYL
+                LDA # 0
+                STA ZP.IDYH
+                // IDY contains the destination address (in EEPROM)
+                
+                LDX ZP.PROGSIZE // size of program in 256 byte pages
+                loop
+                {
+                    copyPageToEEPROM();
+                    DEX
+                    if (Z) { break; }
+                }
+            }
+            
+        }
+    }
+    copyPageToEEPROM()
+    {
+        PHX
+        PHY
+        PHA
+        LDX # 8 // 8 x 32 = 256 = 1 page
+        loop
+        {
+            // BeginTx
+            LDA # (0x50 << 1)
+            STA ZP.OutB
+            I2C.Start();
+            LDA ZP.IDYH
+            STA ZP.OutB
+            I2C.ByteOut(); // EEPROM address MSB (0)
+            LDA ZP.IDYL
+            STA ZP.OutB
+            I2C.ByteOut(); // EEPROM address LSB (0)
+            
+            LDY # 32
+            loop
+            {
+                LDA [IDX]
+                STA ZP.OutB
+                //I2C.ByteOutDelay(); // zeros ZP.OutB
+                I2C.ByteOut(); // zeros ZP.OutB
+                
+                IncIDX();
+                INC ZP.IDYL
+                if (Z)
+                {
+                    INC ZP.IDYH
+                }
+                
+                DEY
+                if (Z) { break; }
+            }
+            I2C.Stop();
+            
+            // delay 10ms after Stop() for EEPROM
+            LDA # 10
+            STA ZP.TOPL
+            STZ ZP.TOPH
+            Time.DelayTOP();
+            
+            DEX
+            if (Z) { break; }
+        }
+        PLA
+        PLY
+        PLX
     }
     
     warmRestart()

@@ -18,8 +18,8 @@ unit I2C
         // I2C address in A
         ASL                // always 'write'
         STA ZP.OutB        // Save addr + r/w bit
-        start();
-        stop();
+        Start();
+        Stop();
         LDA ZP.LastAck // LastAck in A, Z set if found
     }
     BeginTx()
@@ -28,7 +28,7 @@ unit I2C
         LDA ZP.TOPL
         ASL                // always 'write'
         STA ZP.OutB        // Save addr + r/w bit
-        start();
+        Start();
     }
     BeginRx()
     {
@@ -37,11 +37,11 @@ unit I2C
         ASL                
         ORA # 0b00000001   // always 'read'
         STA ZP.OutB        // Save addr + r/w bit
-        start();
+        Start();
     }
     EndTx()
     {
-        stop();
+        Stop();
         LDA ZP.LastAck
         STA ZP.TOPL
         LDA # 0
@@ -49,7 +49,7 @@ unit I2C
         LDA # Types.Bool
         PushTop();
     }
-    start()
+    Start()
     {
 #ifdef CPU_65C02S
         RMB0 ZP.DDRB     // Start with SCL as input HIGH - that way we can inc/dec from here
@@ -75,16 +75,17 @@ unit I2C
         INC ZP.DDRB      // Set to output by incrementing the direction register == OUT, LOW
 #endif
         
-        byteOut();
+        ByteOut();
     } 
     
-    stop()
+    Stop()
     {
 #ifdef CPU_65C02S
         SMB1 ZP.DDRB // SDA low
         RMB0 ZP.DDRB // SCL high
         RMB1 ZP.DDRB // SDA high after SCL == Stop condition
 #else
+        PHA // preserve A (called from loadCommand)
         LDA ZP.DDRB // SDA low
         ORA # SDA
         STA ZP.DDRB
@@ -92,6 +93,7 @@ unit I2C
         LDA ZP.DDRB // SDA high after SCL == Stop condition
         AND # SDA_INV
         STA ZP.DDRB
+        PLA
 #endif
     }
         
@@ -100,7 +102,7 @@ unit I2C
         PopTop();          // byte to send
         LDA ZP.TOPL
         STA ZP.OutB
-        byteOut();
+        ByteOut();
     }
     
     RequestFrom()
@@ -112,7 +114,7 @@ unit I2C
         ASL                // always 'read'
         ORA # 0b00000001
         STA ZP.OutB        // Save addr + r/w bit
-        start();
+        Start();
         // after start() SCL is low, DDRB is all output
         // (SDA is bit 1, SCL is bit 0)
          
@@ -175,7 +177,7 @@ unit I2C
             } // loop  
         }      
           
-        stop();
+        Stop();
         
         // bytes read in TOPL
         STZ ZP.TOPH
@@ -262,7 +264,7 @@ unit I2C
             } // loop  
         }      
           
-        stop();
+        Stop();
         
         // bytes read in TOPL
         LDA # 0
@@ -290,16 +292,29 @@ unit I2C
         LDA # Types.Byte
         PushTop();
     }
+    ByteOutDelay()
+    {
+        ByteOut();
+        
+        // delay 5ms for EEPROM write
+        PHA
+        LDA # 5
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        Time.DelayTOP(); // munts A
+        PLA
+    }
      
-    byteOut() // clears ZP.OutB   
+    ByteOut() // clears ZP.OutB 
     {
         //LDA # ' '
         //Serial.WriteChar();
         //LDA ZP.OutB
         //Serial.HexOut();
-        
+        PHA        
 #ifdef CPU_65C02S
-
+        PHX
+        
         RMB1 ZP.PORTB // in case this is a data byte we set SDA low
         LDX # 8
         loop
@@ -333,8 +348,9 @@ unit I2C
         }
         SMB0 ZP.DDRB    // clock low
         
+        PLX
 #else             
-                                
+        TXA PHA                     
         LDA # SDA_INV // in case this is a data byte we set SDA low
         AND ZP.PORTB
         STA ZP.PORTB
@@ -379,6 +395,8 @@ first:
         }
         STZ ZP.LastAck 
         INC ZP.DDRB   // Clock low
+        PLA TAX
 #endif        
+        PLA
     } 
 }

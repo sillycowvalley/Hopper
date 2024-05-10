@@ -18,7 +18,14 @@ unit Time
 #ifdef HOPPER_STACK
         PopTop();
 #endif
-        
+        DelayTOP();
+#endif
+    }
+    DelayTOP()
+    {
+#ifndef W65C22_VIA
+        TXA BRK // VIA not included?
+#else        
         PHA
         
         // add ArgumentWord to Ticks0..3 and store in Target0..3
