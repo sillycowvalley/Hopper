@@ -74,7 +74,6 @@ unit I2C
         STA ZP.PORTB
         INC ZP.DDRB      // Set to output by incrementing the direction register == OUT, LOW
 #endif
-        
         ByteOut();
     } 
     
@@ -108,8 +107,18 @@ unit I2C
     RequestFrom()
     {
         PopTop();           // bytes to read (0..255)
-        
         PopNext();          // I2C address
+        RequestFromTOPNEXT();
+        // bytes read in TOPL
+        LDA # 0
+        STA ZP.TOPH
+        LDA # Types.Byte
+        PushTop();
+    }
+    // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
+    //    munts A, X
+    RequestFromTOPNEXT() 
+    {
         LDA ZP.NEXTL
         ASL                // always 'read'
         ORA # 0b00000001
@@ -178,9 +187,6 @@ unit I2C
         }      
           
         Stop();
-        
-        // bytes read in TOPL
-        STZ ZP.TOPH
 #else
         LDA # 0
         STA ZP.I2CInWritePtr
@@ -267,11 +273,7 @@ unit I2C
         Stop();
         
         // bytes read in TOPL
-        LDA # 0
-        STA ZP.TOPH
 #endif
-        LDA # Types.Byte
-        PushTop();
     }
     Read()
     {
@@ -292,6 +294,7 @@ unit I2C
         LDA # Types.Byte
         PushTop();
     }
+    /*
     ByteOutDelay()
     {
         ByteOut();
@@ -304,6 +307,7 @@ unit I2C
         Time.DelayTOP(); // munts A
         PLA
     }
+    */
      
     ByteOut() // clears ZP.OutB 
     {
