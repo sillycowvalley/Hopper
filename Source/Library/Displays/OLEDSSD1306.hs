@@ -297,107 +297,6 @@ unit DisplayDriver
         }
     }
     
-    DirectPixel(int vx, int vy, uint colour)
-    {
-        if (FlipX)
-        {
-            vx = w1 - vx;
-        }
-        if (FlipY)
-        {
-            vy = h1 - vy;
-        }
-        if (IsPortrait)
-        {
-            Int.Swap(ref vx, ref vy);
-        }
-        
-        uint ux = uint(vx);
-        uint uy = uint(vy);
-        
-        byte page = byte(uy / 8);
-        byte bitMask = byte(1 << (uy % 8));
-        byte[3] data;
-    
-        // command to set the page and column
-        data[0] = 0xB0 + page;                     // set page address
-        data[1] = byte(((ux & 0xF0) >> 4) | 0x10); // set column high nibble
-        data[2] = byte(ux & 0x0F);                 // set column low nibble
-    
-        byte pixelData = (colour == Colour.White) ? bitMask : 0;
-        
-        // send command
-        writeCommands(data);
-    
-        // write pixel
-        writeData(pixelData);
-    }
-    
-    DirectPixel2x2(int vx, int vy, uint colour)
-    {
-        if (FlipX)
-        {
-            vx = w1 - vx;
-        }
-        if (FlipY)
-        {
-            vy = h1 - vy;
-        }
-        if (IsPortrait)
-        {
-            Int.Swap(ref vx, ref vy);
-        }
-    
-        // Adjust vx and vy to handle 2x2 pixel blocks
-        vx *= 2;
-        vy *= 2;
-    
-        // Set the two vertical pixels within the same byte
-        for (int dx = 0; dx < 2; dx++)  // Only iterate over x since y pixels are within the same byte
-        {
-            int ux = vx + dx;          // Calculate the x coordinate for each sub-pixel
-            int uy = vy;               // y coordinate remains the same for two vertical pixels
-            byte page = byte(uy / 8);
-            byte bitMask1 = byte(1 << (uy % 8));           // Bit mask for the first pixel
-            byte bitMask2 = byte(1 << ((uy + 1) % 8));     // Bit mask for the pixel right below it
-    
-            byte[3] commandData;
-    
-            // Command to set the page and column
-            commandData[0] = 0xB0 + page;                       // Set page address
-            commandData[1] = byte(((ux & 0xF0) >> 4) | 0x10);    // Set column high nibble
-            commandData[2] = byte(ux & 0x0F);                    // Set column low nibble
-    
-            // Combine bit masks for two vertical pixels
-            byte pixelData = (colour == Colour.White) ? (bitMask1 | bitMask2) : 0;
-    
-            // Send command
-            writeCommands(commandData);
-    
-            // Write pixel data for two vertical pixels simultaneously
-            writeData(pixelData);
-        }
-    }
-       
-    
-    writeCommands(byte[] commands)
-    {
-        Wire.BeginTx(I2CController, I2CAddress); // Start transmission, SSD1306's address needs to be defined
-        for (uint i = 0; i < commands.Count; i++)
-        {
-            Wire.Write(I2CController, commands[i]); // Send each command byte
-        }
-        _ = Wire.EndTx(I2CController); // End transmission
-    }
-    
-    writeData(byte data)
-    {
-        Wire.BeginTx(I2CController, I2CAddress); // Start transmission, SSD1306's address
-        Wire.Write(I2CController, 0x40); // Data byte prefix for SSD1306
-        Wire.Write(I2CController, data); // Send the data byte
-        _ = Wire.EndTx(I2CController); // End transmission
-    }
-    
     setPixel(int vx, int vy, uint colour)
     {
         if (FlipX)
@@ -580,4 +479,5 @@ unit DisplayDriver
             }
         }
     }
+    
 }
