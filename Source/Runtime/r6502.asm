@@ -974,14 +974,14 @@ program R6502
     Hopper()
     {
         resetVector();
-#ifdef CPU_65C02S      
+#ifdef CPU_65C02S
         if (BBS1, ZP.PLUGNPLAY) // EEPROM?
         {
             loadAuto();
         }
 #else
         LDA ZP.PLUGNPLAY
-        AND 0b00000010
+        AND # 0b00000010
         if (NZ) // EEPROM?
         {
             loadAuto();
