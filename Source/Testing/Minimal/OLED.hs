@@ -1,6 +1,6 @@
 program Test
 {
-    //#define MCU
+    #define MCU
     
     uses "/Source/Minimal/System"
     

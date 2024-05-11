@@ -1,6 +1,6 @@
 program SSD1306Demo
 {   
-    //#define MCU
+    #define MCU
     uses "/Source/Minimal/System"
     
     uses "/Source/Library/Displays/OLEDSSD1306"    

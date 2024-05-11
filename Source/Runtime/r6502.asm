@@ -142,7 +142,7 @@ program R6502
             if (BBS1, ZP.PLUGNPLAY) // EEPROM?
             {
                 // BeginTx
-                LDA # (0x50 << 1)
+                LDA # (I2C.SerialEEPROMAddress << 1)
                 STA ZP.OutB
                 I2C.Start();
                 LDA #0
@@ -157,7 +157,7 @@ program R6502
                 // read first 3 bytes from EEPROM:
                 LDA # 3
                 STA ZP.TOPL
-                LDA # 0x50
+                LDA # I2C.SerialEEPROMAddress
                 STA NEXTL
                 RequestFromTOPNEXT(); // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
                 // assume success
@@ -283,16 +283,19 @@ program R6502
         if (BBS1, ZP.PLUGNPLAY) // EEPROM?
         {
             // BeginTx
-            LDA # (0x50 << 1)
+            LDA # (I2C.SerialEEPROMAddress << 1)
             STA ZP.OutB
             I2C.Start();
-            STZ ZP.OutB
+            LDA # 0
+            STA ZP.OutB
             I2C.ByteOut(); // EEPROM address MSB (0)
-            STZ ZP.OutB
+            LDA # 0
+            STA ZP.OutB
             I2C.ByteOut(); // EEPROM address LSB (0)
             
             // byte upfront reserved for 'size in pages' (zero means failure)
-            STZ ZP.OutB
+            LDA # 0
+            STA ZP.OutB
             I2C.ByteOut();
         }
         
@@ -313,7 +316,8 @@ program R6502
             // delay 5ms after Stop() for EEPROM
             LDA # 5
             STA ZP.TOPL
-            STZ ZP.TOPH
+            LDA # 0
+            STA ZP.TOPH
             Time.DelayTOP();
         }
         Serial.WaitForChar(); // <enter>
@@ -405,12 +409,14 @@ program R6502
         {
             
             // BeginTx
-            LDA # (0x50 << 1)
+            LDA # (I2C.SerialEEPROMAddress << 1)
             STA ZP.OutB
             I2C.Start();
-            STZ ZP.OutB
+            LDA # 0
+            STA ZP.OutB
             I2C.ByteOut(); // EEPROM address MSB (0)
-            STZ ZP.OutB
+            LDA # 0
+            STA ZP.OutB
             I2C.ByteOut(); // EEPROM address LSB (0)
             
             LDA ZP.PROGSIZE  // zero size means failed to load
@@ -422,7 +428,8 @@ program R6502
             // delay 10ms after Stop() for EEPROM
             LDA # 10
             STA ZP.TOPL
-            STZ ZP.TOPH
+            LDA # 0
+            STA ZP.TOPH
             Time.DelayTOP();
             
             if (BBS0, ZP.FLAGS) // program is loaded
@@ -470,7 +477,7 @@ program R6502
 #endif
         
         // BeginTx
-        LDA # (0x50 << 1)
+        LDA # (I2C.SerialEEPROMAddress << 1)
         STA ZP.OutB
         I2C.Start();
         LDA ZP.IDYH
@@ -612,14 +619,14 @@ program R6502
 #ifdef CPU_65C02S        
         STZ ZP.PLUGNPLAY
         
-        LDA # 0x3C // SSD1306 OLED
+        LDA # I2C.SSD1306Address // SSD1306 OLED
         I2C.Scan();
         if (Z)
         {
             SMB0 ZP.PLUGNPLAY
         }
         
-        LDA # 0x50 // EEPROM?
+        LDA # I2C.SerialEEPROMAddress // EEPROM?
         I2C.Scan();
         if (Z)
         {
@@ -629,7 +636,7 @@ program R6502
         LDA # 0
         STA ZP.PLUGNPLAY
         
-        LDA # 0x3C // SSD1306 OLED
+        LDA # I2C.SSD1306Address // SSD1306 OLED
         I2C.Scan();
         if (Z)
         {
@@ -638,7 +645,7 @@ program R6502
             STA ZP.PLUGNPLAY
         }
         
-        LDA # 0x50 // EEPROM?
+        LDA # I2C.SerialEEPROMAddress // EEPROM?
         I2C.Scan();
         if (Z)
         {
@@ -825,7 +832,7 @@ program R6502
     copyProgramPage()
     {
         // BeginTx
-        LDA # (0x50 << 1)
+        LDA # (I2C.SerialEEPROMAddress << 1)
         STA ZP.OutB
         I2C.Start();
         LDA ZP.IDYH
@@ -840,13 +847,14 @@ program R6502
         // delay 5ms after Stop() for EEPROM
         LDA # 5
         STA ZP.TOPL
-        STZ ZP.TOPH
+        LDA # 0
+        STA ZP.TOPH
         Time.DelayTOP();
         
         // read 128 bytes from EEPROM:
         LDA # 128
         STA ZP.TOPL
-        LDA # 0x50
+        LDA # I2C.SerialEEPROMAddress
         STA NEXTL
         RequestFromTOPNEXT(); // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
         // assume success
@@ -886,46 +894,65 @@ program R6502
             if (Z) { break; }
         }
     }
+    loadAuto()
+    {
+        // BeginTx
+        LDA # (I2C.SerialEEPROMAddress << 1)
+        STA ZP.OutB
+        I2C.Start();
+        LDA #0
+        STA ZP.OutB
+        I2C.ByteOut(); // EEPROM address MSB (0)
+        LDA #0
+        STA ZP.OutB
+        I2C.ByteOut(); // EEPROM address LSB (0)
+        // EndTx
+        I2C.Stop();
+        
+        // read first 3 bytes from EEPROM:
+        LDA # 3
+        STA ZP.TOPL
+        LDA # I2C.SerialEEPROMAddress
+        STA NEXTL
+        RequestFromTOPNEXT(); // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
+        // assume success
+        LDX ZP.I2CInReadPtr
+        LDA Address.I2CInBuffer, X
+        if (NZ)
+        {
+            STA ZP.PROGSIZE // in 256 byte pages
+            loadFromEEPROM();
+            hopperInit(); // initialized heap based on program loaded, initializes stacks, sets up the entrypoint ready to run
+            
+#ifdef CPU_65C02S
+            SMB0 ZP.FLAGS                // program is loaded
+#else
+            LDA ZP.FLAGS
+            ORA # 0b00000001             // program is loaded
+            STA ZP.FLAGS
+#endif            
+            
+            runCommand();
+            checkRestart();
+        }
+    }
     
     Hopper()
     {
         resetVector();
-        
+#ifdef CPU_65C02S      
         if (BBS1, ZP.PLUGNPLAY) // EEPROM?
         {
-            // BeginTx
-            LDA # (0x50 << 1)
-            STA ZP.OutB
-            I2C.Start();
-            LDA #0
-            STA ZP.OutB
-            I2C.ByteOut(); // EEPROM address MSB (0)
-            LDA #0
-            STA ZP.OutB
-            I2C.ByteOut(); // EEPROM address LSB (0)
-            // EndTx
-            I2C.Stop();
-            
-            // read first 3 bytes from EEPROM:
-            LDA # 3
-            STA ZP.TOPL
-            LDA # 0x50
-            STA NEXTL
-            RequestFromTOPNEXT(); // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
-            // assume success
-            LDX ZP.I2CInReadPtr
-            LDA Address.I2CInBuffer, X
-            if (NZ)
-            {
-                STA ZP.PROGSIZE // in 256 byte pages
-                loadFromEEPROM();
-                hopperInit(); // initialized heap based on program loaded, initializes stacks, sets up the entrypoint ready to run
-                SMB0 ZP.FLAGS // program is loaded
-                runCommand();
-                checkRestart();
-            }
+            loadAuto();
         }
-        
+#else
+        LDA ZP.PLUGNPLAY
+        AND 0b00000010
+        if (NZ) // EEPROM?
+        {
+            loadAuto();
+        }
+#endif        
         Utilities.SendSlash(); // ready
         
         loop

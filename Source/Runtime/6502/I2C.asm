@@ -8,6 +8,9 @@ unit I2C
     uses "6502/MemoryMap"
     uses "/Source/Runtime/6502/ZeroPage"
     
+    const byte SSD1306Address      = 0x3C;
+    const byte SerialEEPROMAddress = 0x50;
+    
     const byte SCL     = 0b00000001;    // DRB0 bitmask
     const byte SCL_INV = 0b11111110;    //   inverted for easy clear bit
     const byte SDA     = 0b00000010;    // DRB1 bitmask
@@ -397,7 +400,7 @@ first:
         {
             LDA # 1 // NACK
         }
-        STZ ZP.LastAck 
+        STA ZP.LastAck 
         INC ZP.DDRB   // Clock low
         PLA TAX
 #endif        
