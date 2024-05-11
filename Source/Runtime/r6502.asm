@@ -139,7 +139,9 @@ program R6502
         
         loop
         {
-            if (BBS1, ZP.PLUGNPLAY) // EEPROM?
+            LDA ZP.PLUGNPLAY
+            AND 0b00000010
+            if (NZ) // EEPROM?
             {
                 // BeginTx
                 LDA # (I2C.SerialEEPROMAddress << 1)
@@ -280,7 +282,9 @@ program R6502
     {
         Utilities.WaitForEnter();     // consume <enter>
         
-        if (BBS1, ZP.PLUGNPLAY) // EEPROM?
+        LDA ZP.PLUGNPLAY
+        AND 0b00000010
+        if (NZ) // EEPROM?
         {
             // BeginTx
             LDA # (I2C.SerialEEPROMAddress << 1)
@@ -301,15 +305,20 @@ program R6502
         
         // CRC: 4 hex characters and <enter>
         Serial.HexIn();
-        if (BBS1, ZP.PLUGNPLAY) // EEPROM?
+        STA ZP.OutB
+        LDA ZP.PLUGNPLAY
+        AND # 0b00000010
+        if (NZ) // EEPROM?
         {
-            STA ZP.OutB
             I2C.ByteOut(); // CRC byte
         }
         Serial.HexIn();
-        if (BBS1, ZP.PLUGNPLAY) // EEPROM?
+        STA ZP.OutB
+        STA ZP.OutB
+        LDA ZP.PLUGNPLAY
+        AND # 0b00000010
+        if (NZ) // EEPROM?
         {
-            STA ZP.OutB
             I2C.ByteOut(); // CRC byte
             I2C.Stop();         // header loaded
             
@@ -405,8 +414,16 @@ program R6502
         Serial.WriteChar();         // success or failure ('*' or '!')?
         Utilities.SendSlash();      // confirm the data
         
-        if (BBS1, ZP.PLUGNPLAY) // EEPROM?
+        LDA ZP.PLUGNPLAY
+        AND # 0b00000010
+        if (NZ) // EEPROM?
         {
+            // delay 10ms after Stop() for EEPROM
+            LDA # 10
+            STA ZP.TOPL
+            LDA # 0
+            STA ZP.TOPH
+            Time.DelayTOP();
             
             // BeginTx
             LDA # (I2C.SerialEEPROMAddress << 1)
@@ -421,7 +438,6 @@ program R6502
             
             LDA ZP.PROGSIZE  // zero size means failed to load
             STA ZP.OutB
-            //I2C.ByteOutDelay();
             I2C.ByteOut();
             I2C.Stop();
             
@@ -432,8 +448,10 @@ program R6502
             STA ZP.TOPH
             Time.DelayTOP();
             
-            if (BBS0, ZP.FLAGS) // program is loaded
+            LDA ZP.PROGSIZE  // zero size means failed to load
+            if (NZ)
             {
+                // program was successfully loaded
                 LDA #(HopperData & 0xFF)
                 STA ZP.IDXL
                 LDA #(HopperData >> 8)
@@ -461,8 +479,10 @@ program R6502
     {
         PHA
 #ifdef CPU_65C02S        
+        PHX
         PHY
 #else
+        TXA PHA
         TYA PHA
 #endif     
 
@@ -487,15 +507,16 @@ program R6502
         STA ZP.OutB
         I2C.ByteOut(); // EEPROM address LSB
         
-        LDY # 128 // EEPROM page size
+        LDX # 128 // EEPROM page size
         loop
         {
-            LDA [IDX]
+            LDY # 0
+            LDA [IDX], Y
             STA ZP.OutB
             I2C.ByteOut(); // zeros ZP.OutB
             IncIDX();
             IncIDY();
-            DEY
+            DEX
             if (Z) { break; }
         }
         I2C.Stop();
@@ -503,10 +524,12 @@ program R6502
         // delay 5ms after Stop() for EEPROM (TOP is already initialized with 0x0005)
         Time.DelayTOP();
               
-#ifdef CPU_65C02S                
+#ifdef CPU_65C02S   
         PLY
+        PLX
 #else
         PLA TAY
+        PLA TAX
 #endif
         PLA
     }
@@ -831,6 +854,11 @@ program R6502
     
     copyProgramPage()
     {
+#ifdef CPU_65C02S
+        PHY
+#else
+        TYA PHA
+#endif
         // BeginTx
         LDA # (I2C.SerialEEPROMAddress << 1)
         STA ZP.OutB
@@ -863,13 +891,19 @@ program R6502
         loop
         {
             LDA Address.I2CInBuffer, X
-            STA [IDX]
+            LDY # 0
+            STA [IDX], Y
             IncIDY();
             IncIDX();
             INX
             CPX # 128
             if (Z) { break; }
         } 
+#ifdef CPU_65C02S
+        PLY
+#else
+        PLA TAY
+#endif
     }
     loadFromEEPROM()
     {

@@ -327,7 +327,7 @@ unit I2C
         loop
         {
             SMB0 ZP.DDRB   // SCL out, clock low
-            ASL ZP.OutB    // MSB to carry
+            ASL  ZP.OutB   // MSB to carry
             if (C)
             {
                 RMB1 ZP.DDRB  // set SDA low
