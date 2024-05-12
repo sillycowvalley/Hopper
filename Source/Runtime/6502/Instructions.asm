@@ -1473,7 +1473,6 @@ unit Instruction
         {
             INC PCH
         }
-        jCommon(); // PC += offset - 3
     }
     /*
     jixbDefault()
@@ -1523,6 +1522,7 @@ unit Instruction
                 return;
             }
         }
+        
         // default: simply add PC to tableSize
         jixDefault();
 #else

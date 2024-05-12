@@ -5,8 +5,8 @@ unit Sprites
     // |ssss|yyyy|zz|s|xxxxx|
     // 
     // ssss:  sprite index
-    // yyyy:  y location (0..16)
-    // xxxxx: x location (0..32)
+    // yyyy:  y location (0..15)
+    // xxxxx: x location (0..31)
     // zz:    z order    (0 means 'invisible')
     // s:     user bit   (1 means 'solid')
 
@@ -57,12 +57,10 @@ unit Sprites
     {
         switch (spriteIndex)
         {
-            case 0:  { return blank; }
             case 1:  { return block; }
             case 2:  { return circle; }
             case 3:  { return diamond; }
             case 4:  { return box; }
-            default: { return blank; }
         }
         return blank;
     }
@@ -72,7 +70,7 @@ unit Sprites
         // - with z > 0 (visible)
         // - with the greatest z value if there is more than one visible sprite at this location
         bool found;
-        foundIndex = 0;
+        foundIndex = 0; // blank
         byte bestZ;
         for (byte i = 0; i < numberOfSprites; i++)
         {
@@ -140,12 +138,11 @@ unit Sprites
         for (byte i = 0; i < numberOfSprites; i++)
         {
             uint sprite = sprites[i];
-            byte z     = byte((sprite >> 6) & 0b11);    // Get z order (visibility check)
-            if (z != 0)  // Check if sprite is visible
+            byte z     = byte((sprite >> 6) & 0b11);    
+            if (z != 0)  // check if sprite is visible
             {
-                byte index = byte((sprite >> 12) & 0xF);    // Get sprite index
-                byte cellX = byte(sprite & 0b11111);        // Get x coordinate
-                byte cellY = byte((sprite >> 8) & 0b1111);  // Get y coordinate
+                byte cellX = byte(sprite & 0b11111);
+                byte cellY = byte((sprite >> 8) & 0b1111);
                 RenderCell(cellX, cellY);
             }
         }

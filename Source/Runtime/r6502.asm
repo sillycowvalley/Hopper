@@ -1,6 +1,6 @@
 program R6502
 {
-    #define CHECKED              // 111/109 bytes
+    //#define CHECKED              // 111/109 bytes
     
     #define PACKED_INSTRUCTIONS
     #define JIX_INSTRUCTIONS
