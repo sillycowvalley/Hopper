@@ -24,7 +24,7 @@ unit Sprites
     //     2 x numberOfSprites bytes
     uint[numberOfSprites] sprites;    
     
-    Initialize()
+    Initialize() // demo code
     {   
         byte solids;
         for (byte i = 0; i < numberOfSprites; i++)
@@ -53,44 +53,8 @@ unit Sprites
             }
         }
     }
-    byte[4] GetSprite(byte spriteIndex)
-    {
-        switch (spriteIndex)
-        {
-            case 1:  { return block; }
-            case 2:  { return circle; }
-            case 3:  { return diamond; }
-            case 4:  { return box; }
-        }
-        return blank;
-    }
-    bool SpritePresent(byte cellX, byte cellY, ref byte foundIndex)
-    {
-        // if there is a sprite at cellX, cellY:
-        // - with z > 0 (visible)
-        // - with the greatest z value if there is more than one visible sprite at this location
-        bool found;
-        foundIndex = 0; // blank
-        byte bestZ;
-        for (byte i = 0; i < numberOfSprites; i++)
-        {
-            uint sprite = sprites[i];
-            byte x     = byte(sprite & 0b11111);
-            byte y     = byte((sprite >> 8) & 0b1111);
-            if ((cellX == x) && (cellY == y))
-            {
-                found = true;
-                byte z     = byte((sprite >> 6) & 0b11);
-                if (z > bestZ)
-                {
-                    bestZ = z;
-                    foundIndex = byte((sprite >> 12) & 0xF);
-                }
-            }         
-        }
-        return found;
-    }
-    Move()
+    
+    Move() // demo code
     {
         for (byte i = 0; i < numberOfSprites; i++)
         {
@@ -133,6 +97,43 @@ unit Sprites
             }
         }
     }
+    
+    byte[4] GetSpritePattern(byte spriteIndex)
+    {
+        switch (spriteIndex)
+        {
+            case 1:  { return block; }
+            case 2:  { return circle; }
+            case 3:  { return diamond; }
+            case 4:  { return box; }
+        }
+        return blank;
+    }
+    byte GetVisibleSpriteIndex(byte cellX, byte cellY)
+    {
+        // if there is a sprite at cellX, cellY:
+        // - with z > 0 (visible)
+        // - with the greatest z value if there is more than one visible sprite at this location
+        // - or, failing that, zero to indicate the 'blank' sprite
+        byte foundIndex; // 0 -> blank
+        byte bestZ;
+        for (byte i = 0; i < numberOfSprites; i++)
+        {
+            uint sprite = sprites[i];
+            byte x     = byte(sprite & 0b11111);
+            byte y     = byte((sprite >> 8) & 0b1111);
+            if ((cellX == x) && (cellY == y))
+            {
+                byte z     = byte((sprite >> 6) & 0b11);
+                if (z > bestZ)
+                {
+                    bestZ = z;
+                    foundIndex = byte((sprite >> 12) & 0xF);
+                }
+            }         
+        }
+        return foundIndex;
+    }
     Render()
     {
         for (byte i = 0; i < numberOfSprites; i++)
@@ -150,17 +151,26 @@ unit Sprites
     RenderCell(byte cellX, byte cellY)
     {
         // cell: 4x4 square of pixels:
-        cellY = cellY & 0xE; // top cell (could be the one above the one we need to render)
         byte topSpriteIndex;   
         byte bottomSpriteIndex;
-        bool topSlot    = SpritePresent(cellX, cellY,   ref topSpriteIndex);
-        bool bottomSlot = SpritePresent(cellX, cellY+1, ref bottomSpriteIndex);
-        if (topSlot || bottomSlot)
+        if (cellY & 1 == 0)
         {
-            byte[] topSpriteData    = GetSprite(topSpriteIndex);
-            byte[] bottomSpriteData = GetSprite(bottomSpriteIndex);
-            RenderSlot(cellX*4, cellY*4, topSpriteData, bottomSpriteData);
+            // our sprite is in the top slot
+            topSpriteIndex    = GetVisibleSpriteIndex(cellX, cellY);
+            // potential adjacent sprint is below our sprite
+            bottomSpriteIndex = GetVisibleSpriteIndex(cellX, cellY+1);
         }
+        else
+        {
+            // our sprite is in the bottom slot
+            bottomSpriteIndex = GetVisibleSpriteIndex(cellX, cellY);
+            // potential adjacent sprint is above our sprite
+            topSpriteIndex    = GetVisibleSpriteIndex(cellX, cellY-1);
+            
+        }
+        byte[] topSpriteData    = GetSpritePattern(topSpriteIndex);
+        byte[] bottomSpriteData = GetSpritePattern(bottomSpriteIndex);
+        RenderSlot(cellX*4, cellY*4, topSpriteData, bottomSpriteData);
     }
     RenderSlot(byte startX, byte startY, byte[] topSpriteData, byte[] bottomSpriteData)
     {
