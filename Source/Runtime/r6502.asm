@@ -1,6 +1,6 @@
 program R6502
 {
-    //#define CHECKED              // 111/109 bytes
+    #define CHECKED              // 111/109 bytes
     
     #define PACKED_INSTRUCTIONS
     #define JIX_INSTRUCTIONS
@@ -741,6 +741,14 @@ program R6502
         
         loop
         {
+            /*
+            LDA # ' '
+            Serial.WriteChar();
+            LDA ZP.PCH
+            Serial.HexOut();
+            LDA ZP.PCL
+            Serial.HexOut();
+            */
             LDA ZP.SerialBreakFlag
             if (NZ) 
             { 

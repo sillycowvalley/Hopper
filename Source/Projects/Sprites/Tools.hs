@@ -21,8 +21,11 @@ unit Tools
     byte tableIndex = 0;
     Seed()
     {
-        
+#ifdef MCU        
+        tableIndex = byte((Time.Millis).GetByte(0) & 0xFF);
+#else
         tableIndex = byte(Time.Seconds & 0xFF);
+#endif
         WriteLn("Seed: " + tableIndex.ToString());
     }
     byte Random()
