@@ -71,10 +71,19 @@ unit Display
         I2C.Stop();
     }
     
-    GotoXY()
+    GotoXY() // munts A, CellX and CellY
     {
-        // Y 0..7
-        // X 0..127
+        // CellY : 0..15
+        // CellX : 0..31
+        LDA CellY
+        LSR        // /= 2
+        STA CellY
+        LDA CellX
+        ASL ASL    // *= 4
+        STA CellX
+        
+        // Page:   0..7
+        // Column: 0..127
         
         LDA # 0x3C // SSD1306 address
         STA ZP.I2CADDR
@@ -84,20 +93,39 @@ unit Display
         STA ZP.OutB
         I2C.ByteOut();
         
-        TYA
+        LDA CellY
         ORA # 0xB0     // set the page address
         STA ZP.OutB
         I2C.ByteOut();
         
-        TXA LSR LSR LSR LSR
+        LDA CellX
+        LSR LSR LSR LSR
         ORA # 0x10     // set column high nibble
         STA ZP.OutB
         I2C.ByteOut();
         
-        TXA
+        LDA CellX
         AND # 0x0F     // set column low nibble
         STA ZP.OutB
         I2C.ByteOut();
+        I2C.Stop();
+    }
+    WriteCol() // A contains a column of bits
+    {
+        PHA
+        
+        LDA # 0x3C // SSD1306 address
+        STA ZP.I2CADDR
+        CLC // write flag
+        I2C.Start();
+        LDA # 0x40     // 0x00 for commands or 0x40 for data
+        STA ZP.OutB
+        I2C.ByteOut();
+        
+        PLA
+        STA ZP.OutB
+        I2C.ByteOut();
+        
         I2C.Stop();
     }
     
@@ -108,8 +136,12 @@ unit Display
         {
             DEY
             
-            LDX # 0
-            GotoXY(); // Y : 7..0, X: 0
+            LDA # 0
+            STA CellX
+            TYA
+            ASL
+            STA CellY
+            GotoXY(); // Y : 14..0, X: 0
             
             LDA # 0x3C // SSD1306 address
             STA ZP.I2CADDR

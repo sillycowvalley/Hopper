@@ -164,6 +164,12 @@ unit AsmPoints
                     walkStats |= WalkStats.ReadY;
                     walkStats |= WalkStats.WriteA;
                 }
+                case OpCode.LDA_izX:
+                case OpCode.LDA_zX:
+                {
+                    walkStats |= WalkStats.ReadX;
+                    walkStats |= WalkStats.WriteA;
+                }
                 
                 // Read and Write
                 case OpCode.ADC_n:

@@ -100,7 +100,7 @@ first:
 #ifdef CPU_65C02S
         PLX
 #else
-        PLA TXA
+        PLA TAX
 #endif
     } 
     ByteIn()
