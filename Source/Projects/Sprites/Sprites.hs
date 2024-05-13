@@ -11,18 +11,19 @@ unit Sprites
     // s:     user bit   (1 means 'solid')
 
     // Sample sprites designs:    
-    const byte[] blank  =  { 0b0000, 0b0000, 0b0000, 0b0000 };
-    const byte[] block  =  { 0b1111, 0b1111, 0b1111, 0b1111 };
-    const byte[] circle =  { 0b0110, 0b1111, 0b1111, 0b0110 };
-    const byte[] diamond = { 0b0110, 0b1001, 0b1001, 0b0110 };
-    const byte[] box  =    { 0b1111, 0b1001, 0b1001, 0b1111 };
+    const byte[] blank  = { 0b0000, 0b0000, 0b0000, 0b0000 };
+    const byte[] block  = { 0b1111, 0b1111, 0b1111, 0b1111 };
+    const byte[] disc   = { 0b0110, 0b1111, 0b1111, 0b0110 };
+    const byte[] circle = { 0b0110, 0b1001, 0b1001, 0b0110 };
+    const byte[] square = { 0b1111, 0b1001, 0b1001, 0b1111 };
+    const byte[] pill   = { 0b0000, 0b0110, 0b0110, 0b0000 };
     
     const byte numberOfSprites = 16;
     const byte maxSolids       = 6;
     
     // memory required to maintain and render scene:
     //     2 x numberOfSprites bytes
-    uint[numberOfSprites] sprites;    
+    uint[numberOfSprites] sprites;
     
     Initialize() // demo code
     {   
@@ -44,21 +45,69 @@ unit Sprites
                     solids++;
                 }
                 sprites[i] = (index << 12) | (y << 8) | (z << 6) | (s << 5) | x;
-                
+                /*
                 IO.WriteLn("Sprite: " + (sprites[i]).ToBinaryString() + " "
                                       + i.ToString() + " Index: " + index.ToString() 
                                       + " X: " +  x.ToString() + " Y: " + y.ToString() + " Z: " + z.ToString()
                                       );
+                */
                 break;
             }
         }
     }
     
-    Move() // demo code
+    New(byte iSprite, byte spriteIndex, byte cellX, byte cellY, byte z, bool moving)
     {
-        for (byte i = 0; i < numberOfSprites; i++)
+        sprites[iSprite] = (spriteIndex << 12) | (cellY << 8) | (z << 6) | ((moving ? 1 : 0) << 5) | cellX;
+    }
+    DeleteSprite(byte iSprite)
+    {
+        uint sprite = sprites[iSprite];
+        byte cellX = byte(sprite & 0b11111);
+        byte cellY = byte((sprite >> 8) & 0b1111);
+        sprites[iSprite] = 0;
+        RenderCell(cellX, cellY);
+    }
+    MoveTo(byte iSprite, byte cellX, byte cellY)
+    {
+        uint sprite = sprites[iSprite];
+        byte spriteIndex = byte((sprite >> 12) & 0xF);
+        byte s = byte(sprite & 0b100000) >> 5;
+        byte z     = byte((sprite >> 6) & 0b11);
+        if (z != 0) // was visible?
         {
-            uint sprite = sprites[i];
+            byte previousCellX = byte(sprite & 0b11111);
+            byte previousCellY = byte((sprite >> 8) & 0b1111);
+                
+            // hide it
+            sprite &= 0b1111111100111111; // z == 0
+            sprites[iSprite] = sprite;
+            RenderCell(previousCellX, previousCellY);
+        }
+        // show it
+        sprites[iSprite] = (spriteIndex << 12) | (cellY << 8) | (z << 6) | (s << 5) | cellX;
+        RenderCell(cellX, cellY);
+    }
+    bool IsSpriteAvailable(ref byte iSprite)
+    {
+        for (byte i = 1; i < numberOfSprites; i++)
+        {
+            uint sprite      = sprites[i];
+            byte spriteIndex = byte((sprite >> 12) & 0xF);
+            if (spriteIndex == 0) // available
+            {
+                iSprite = i;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    Move()
+    {
+        for (byte iSprite =0; iSprite < numberOfSprites; iSprite++)
+        {
+            uint sprite = sprites[iSprite];
             byte s = byte(sprite & 0b100000) >> 5;
             if (s != 0) // only move the 'solids'
             {
@@ -69,30 +118,24 @@ unit Sprites
                     byte cellX = byte(sprite & 0b11111);
                     byte cellY = byte((sprite >> 8) & 0b1111);
                     
+                    
                     // hide it
                     sprite &= 0b1111111100111111; // z == 0
-                    sprites[i] = sprite;
+                    sprites[iSprite] = sprite;
                     RenderCell(cellX, cellY);
-                    
-                    // move it randomly
-                    int ix = int(cellX) + (Random() % 3) - 1;
-                    
-                    // bounce off the left and right edges
-                    if (ix == -1)  { ix = 1;  }
-                    if (ix > 31)   { ix = 30; }
-                    
-                    int iy = int(cellY) + (Random() % 3) - 1;
-                    
-                    // bounce off the top and bottom edges
-                    if (iy == -1) { iy = 1; }
-                    if (iy > 15)   { iy = 14; }
-                    
-                    cellX = ix.GetByte(0);
-                    cellY = iy.GetByte(0);
-                    
-                    // show it
-                    sprites[i] = (index << 12) | (cellY << 8) | (z << 6) | (s << 5) | cellX;
-                    RenderCell(cellX, cellY);
+                    if (cellX > 0)
+                    {
+                        cellX = cellX - 1;
+                        
+                        // show it
+                        sprites[iSprite] = (index << 12) | (cellY << 8) | (z << 6) | (s << 5) | cellX;
+                        RenderCell(cellX, cellY);
+                    }
+                    else
+                    {
+                        // destroy sprite
+                        sprites[iSprite] = 0;
+                    }
                 }
             }
         }
@@ -102,24 +145,58 @@ unit Sprites
     {
         switch (spriteIndex)
         {
-            case 1:  { return block; }
-            case 2:  { return circle; }
-            case 3:  { return diamond; }
-            case 4:  { return box; }
+            case 1:  { return block;  }
+            case 2:  { return disc;   }
+            case 3:  { return circle; }
+            case 4:  { return square; }
+            case 5:  { return pill;   }
         }
         return blank;
     }
+    bool Collision(byte collisionCellX, byte collisionCellY, ref byte spriteType)
+    {
+        spriteType = 0;
+        for (byte i = 0; i < numberOfSprites; i++)
+        {
+            uint sprite = sprites[i];
+            byte s = byte(sprite & 0b100000) >> 5;
+            if (s != 0) // collision 'solids'
+            {
+                byte cellX = byte(sprite & 0b11111);
+                byte cellY = byte((sprite >> 8) & 0b1111);
+                if ((collisionCellX == cellX) && (collisionCellY == cellY))
+                {
+                    spriteType = byte((sprite >> 12) & 0xF);
+                    sprites[i] = 0; // destroy the thing that collided so we don't get multiple collisions
+                    RenderCell(collisionCellX, collisionCellY); // re-render the thing it collided with
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     byte GetVisibleSpriteIndex(byte cellX, byte cellY)
+    {
+        byte foundIndex; // 0 -> blank
+        byte iSprite;
+        if (GetVisibleSprite(cellX, cellY, ref iSprite))
+        {
+            uint sprite = sprites[iSprite];
+            foundIndex = byte((sprite >> 12) & 0xF);
+        }
+        return foundIndex;
+    }
+    bool GetVisibleSprite(byte cellX, byte cellY, ref byte foundIndex)
     {
         // if there is a sprite at cellX, cellY:
         // - with z > 0 (visible)
         // - with the greatest z value if there is more than one visible sprite at this location
         // - or, failing that, zero to indicate the 'blank' sprite
-        byte foundIndex; // 0 -> blank
+        bool found;
         byte bestZ;
-        for (byte i = 0; i < numberOfSprites; i++)
+        for (byte iSprite = 0; iSprite < numberOfSprites; iSprite++)
         {
-            uint sprite = sprites[i];
+            uint sprite = sprites[iSprite];
             byte x     = byte(sprite & 0b11111);
             byte y     = byte((sprite >> 8) & 0b1111);
             if ((cellX == x) && (cellY == y))
@@ -128,11 +205,12 @@ unit Sprites
                 if (z > bestZ)
                 {
                     bestZ = z;
-                    foundIndex = byte((sprite >> 12) & 0xF);
+                    foundIndex = iSprite;
+                    found = true;
                 }
             }         
         }
-        return foundIndex;
+        return found;
     }
     Render()
     {
@@ -151,23 +229,10 @@ unit Sprites
     RenderCell(byte cellX, byte cellY)
     {
         // cell: 4x4 square of pixels:
-        byte topSpriteIndex;   
-        byte bottomSpriteIndex;
-        if (cellY & 1 == 0)
-        {
-            // our sprite is in the top slot
-            topSpriteIndex    = GetVisibleSpriteIndex(cellX, cellY);
-            // potential adjacent sprint is below our sprite
-            bottomSpriteIndex = GetVisibleSpriteIndex(cellX, cellY+1);
-        }
-        else
-        {
-            // our sprite is in the bottom slot
-            bottomSpriteIndex = GetVisibleSpriteIndex(cellX, cellY);
-            // potential adjacent sprint is above our sprite
-            topSpriteIndex    = GetVisibleSpriteIndex(cellX, cellY-1);
-            
-        }
+        
+        cellY = cellY & 0xE;      // round down to the top cell in the slot
+        byte topSpriteIndex     = GetVisibleSpriteIndex(cellX, cellY);
+        byte bottomSpriteIndex  = GetVisibleSpriteIndex(cellX, cellY+1); 
         byte[] topSpriteData    = GetSpritePattern(topSpriteIndex);
         byte[] bottomSpriteData = GetSpritePattern(bottomSpriteIndex);
         RenderSlot(cellX*4, cellY*4, topSpriteData, bottomSpriteData);

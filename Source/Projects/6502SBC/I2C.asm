@@ -14,10 +14,10 @@ unit I2C
       
     Start()
     {
-        LDA # 0x0A
-        Serial.WriteChar();
-        LDA # '['
-        Serial.WriteChar();
+        //LDA # 0x0A
+        //Serial.WriteChar();
+        //LDA # '['
+        //Serial.WriteChar();
         
         LDA ZP.I2CADDR
         ROL                // Shift in carry
@@ -43,10 +43,16 @@ unit I2C
     } 
     ByteOut() // clears ZP.OutB
     {
-        LDA # ' '
-        Serial.WriteChar();
-        LDA ZP.OutB
-        Serial.HexOut();
+        //LDA # ' '
+        //Serial.WriteChar();
+        //LDA ZP.OutB
+        //Serial.HexOut();
+        
+#ifdef CPU_65C02S
+        PHX
+#else
+        TXA PHA
+#endif
         
         LDA # SDA_INV // In case this is a data byte we set SDA LOW
         AND ZP.PORTB
@@ -90,6 +96,12 @@ first:
             CLC       // Clear carry on ACK
         }
         INC ZP.DDRB // SCL low
+        
+#ifdef CPU_65C02S
+        PLX
+#else
+        PLA TXA
+#endif
     } 
     ByteIn()
     {
@@ -132,7 +144,7 @@ first:
         AND # SDA_INV
         STA ZP.DDRB
         
-        LDA # ']'
-        Serial.WriteChar();
+        //LDA # ']'
+        //Serial.WriteChar();
     }
 }
