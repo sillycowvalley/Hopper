@@ -1,8 +1,8 @@
 unit Sprites
 {    
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "I2C.asm"
-    
+    uses "Zero"
+    uses "RIOT"
+    uses "I2C"
     
     // |ssss|yyyy|zz|s|xxxxx|
     // 
@@ -24,11 +24,8 @@ unit Sprites
                              0b0000, 0b0110, 0b0110, 0b0000 }; // 12: pill
     const byte numberOfSprites = 16;
     
-#ifdef CPU_65UINO
-    const byte userLand = 0x10;
-#else
-    const byte userLand = 0x90;
-#endif    
+    const byte userLand  = 0x0E;
+
     // RAM storage locations:
     //   Global variables:
     const byte Sprites         = userLand;      // 32 bytes from 0x90..0xAF
@@ -50,7 +47,8 @@ unit Sprites
         // returns A : 1..15
         loop
         {
-            LDA ZP.TICK0
+            // TODO
+            // LDA ZP.TICK0
             AND # 0xF
             if (NZ) { break; }
         }

@@ -1,48 +1,15 @@
 program Game
 {
     
-    #define CPU_1MHZ
+    #define CPU_65UINO
     
-    //#define CPU_65UINO
-    #define CPU_65C02S
-    //#define CPU_6502
+    uses "RIOT"
+    uses "Utilities"
+    uses "I2C"
     
-    uses "/Source/Runtime/6502/Serial"
-    uses "/Source/Runtime/6502/Devices/W65C22"
-    uses "/Source/Runtime/6502/Time"
-    
-    uses "I2C.asm"
     uses "Display.asm"
     uses "Buttons.asm"
     uses "Sprites.asm"
-    
-    DumpSprites()
-    {
-        LDA # 0x0A
-        Serial.WriteChar();
-            
-        LDX # 0
-        LDY # 16
-        loop
-        {
-            LDA # ' '
-            Serial.WriteChar();
-            
-            LDA Sprites.Sprites, X
-            Serial.HexOut();
-            INX       
-            LDA Sprites.Sprites, X
-            Serial.HexOut();
-            INX
-               
-            DEY
-            if (Z) { break; }
-        }
-        LDA # ' '
-        Serial.WriteChar();
-        LDA Lives
-        Serial.HexOut();
-    }
     
     AddLife()
     {
@@ -99,10 +66,6 @@ program Game
         AddLife();
         
         Sprites.Render();
-        
-        LDA # 0x0A
-        Serial.WriteChar();
-        DumpSprites();
     }
     CheckCollisions()
     {
@@ -183,58 +146,27 @@ program Game
             STA CellY
             RenderCell();
             
-            //DumpSprites();
+            
         }
     }
     
-    IRQ()
-    {
-        Serial.ISR();
-        W65C22.ISR();
-    }
-    NMI()
-    {
-    }
     Hopper()
     {
-        Serial.Initialize(); // since the 6850 is powered up, we'd better initialize it
-        W65C22.Initialize(); // sets all pins to input, initializes timer
+        LDA # 0b00000000 // PA all input
+        STA RIOT.DDRA
         
-        LDA # 250
-        STA ZP.TOPL
-        LDA # 0
-        STA ZP.TOPH
-        Time.Delay();
+        LDA # 0b10000000 // PB7 is output (GREEN LED)
+        STA RIOT.DDRB
         
         LDA # 0x3C      // Address of the device (0x78 on the back of the module is 0x3C << 1)
         STA ZP.I2CADDR
         Display.Initialize(); // initialize display
         Buttons.Initialize();
         
-        // use the Hopper runtime Time.Delay() (VIA timer)
-        LDA # 250
-        STA ZP.TOPL
-        LDA # 0
-        STA ZP.TOPH
-        Time.Delay();
-        
-        LDA # 0x00
-        STA ZP.TOPL
-        LDA # 0
-        STA ZP.TOPH
         Display.Clear();               
         
         Restart(); // initialize game
  
-        // LEDs       
-#ifdef CPU_65C02S
-        SMB0 ZP.DDRA
-        SMB1 ZP.DDRA
-#else
-        LDA ZP.DDRA
-        ORA # 0b00000011
-        STA ZP.DDRA
-#endif        
         loop
         {
             CheckCollisions();
@@ -349,18 +281,10 @@ program Game
             }
             
             // LED:
-            LDA ZP.PORTA
-            EOR # 0b00000001
-            STA ZP.PORTA
+            //LDA RIOT.DRB
+            //EOR # 0b10000000
+            //STA RIOT.DRB
             
-            // use the Hopper runtime Time.Delay() (VIA timer)
-            /*
-            LDA # 25
-            STA ZP.TOPL
-            LDA # 0
-            STA ZP.TOPH
-            Time.Delay();
-            */
             INC GameLoops    
         }
     }
