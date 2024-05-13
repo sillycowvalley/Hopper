@@ -5,6 +5,7 @@ program Game
     // https://github.com/hauerdie/6502_i2c/blob/master/i2c.s
     
     #define CPU_8MHZ
+    
     #define CPU_65C02S
     //#define CPU_6502
     
@@ -14,6 +15,7 @@ program Game
     
     uses "I2C.asm"
     uses "Display.asm"
+    uses "Buttons.asm"
     uses "Sprites.asm"
     
     DumpSprites()
@@ -39,6 +41,7 @@ program Game
             if (Z) { break; }
         }
     }
+    
     AddLife()
     {
         Sprites.GetAvailable();
@@ -48,7 +51,6 @@ program Game
             TAX     // next available sprite x 2
             
             // Initialize life sprite:
-            /// Initialize user sprite:
             //   LSB:
             //     ssss:  sprite index : 8
             //     yyyy:  y location   : 0 is top row
@@ -94,6 +96,7 @@ program Game
         AddLife();
         AddLife();
         
+        Sprites.Render();
         DumpSprites();
     }
     
@@ -119,6 +122,7 @@ program Game
         LDA # 0x3C      // Address of the device (0x78 on the back of the module is 0x3C << 1)
         STA ZP.I2CADDR
         Display.Initialize(); // initialize display
+        Buttons.Initialize();
         
         // use the Hopper runtime Time.Delay() (VIA timer)
         LDA # 250
@@ -127,14 +131,15 @@ program Game
         STA ZP.TOPH
         Time.Delay();
         
-        Restart(); // initialize game
-        
         LDA # 0x00
         STA ZP.TOPL
         LDA # 0
         STA ZP.TOPH
         Display.Clear();               
         
+        Restart(); // initialize game
+ 
+        // LEDs       
 #ifdef CPU_65C02S
         SMB0 ZP.DDRA
         SMB1 ZP.DDRA
@@ -142,40 +147,100 @@ program Game
         LDA ZP.DDRA
         ORA # 0b00000011
         STA ZP.DDRA
-#endif
+#endif        
+        
+        
         loop
         {
-#ifdef CPU_65C02S            
-            SMB1 ZP.PORTA
-            RMB0 ZP.PORTA
-#else
-            LDA ZP.PORTA
-            AND # 0b11111110
-            ORA # 0b00000010
-            STA ZP.PORTA
-#endif
-            // use the Hopper runtime Time.Delay() (VIA timer)
-            LDA # (500 % 256)
-            STA ZP.TOPL
-            LDA # (500 / 256)
-            STA ZP.TOPH
-            Time.Delay();
-
-#ifdef CPU_65C02S                        
-            SMB0 ZP.PORTA
-            RMB1 ZP.PORTA
-#else
-            LDA ZP.PORTA
-            AND # 0b11111101
-            ORA # 0b00000001
-            STA ZP.PORTA
-#endif            
-            // use the Hopper runtime Time.Delay() (VIA timer)
-            LDA # (500 % 256)
-            STA ZP.TOPL
-            LDA # (500 / 256)
-            STA ZP.TOPH
-            Time.Delay();
+            LDA Lives
+            if (Z) { break; } // game over
+            
+            ButtonOneDown();
+            if (Z)
+            {
+                LDA # 1
+                CMP YPos
+                if (NZ)
+                {
+                    DEC YPos
+                    LDA YPos
+                    STA CellY
+                    LDA # 0
+                    STA CellX
+                    LDA # 0
+                    Sprites.MoveTo();
+                }
+            }
+            ButtonTwoDown();
+            if (Z)
+            {
+                LDA # 15
+                CMP YPos
+                if (NZ)
+                {
+                    INC YPos
+                    LDA YPos
+                    STA CellY
+                    LDA # 0
+                    STA CellX
+                    LDA # 0
+                    Sprites.MoveTo();
+                }
+            }
+                       
+            LDA GameLoops
+            AND 0b00011111
+            if (Z) // gameLoop % 32 == 0
+            {
+                Sprites.GetAvailable();
+                if (NZ)
+                {
+                    // spawn block sprite
+                    // TODO
+                    /*
+                    byte yStart = (Random() % 15) + 1;
+                    Sprites.New(iSprite, 1, 31, yStart, 3, true);
+                    */
+                }
+            }
+            
+            CLC
+            LDA GameLoops
+            ADC # 16
+            AND 0b00111111
+            if (Z) // (gameLoop+16) % 64 == 0
+            {
+                Sprites.GetAvailable();
+                if (NZ)
+                {
+                    // spawn pill sprite
+                    // TODO
+                    /*
+                    byte yStart = (Random() % 15) + 1;
+                    Sprites.New(iSprite, 5, 31, yStart, 1, true);
+                    */
+                    // LED:
+                    LDA ZP.PORTA
+                    EOR # 0b00000001
+                    STA ZP.PORTA
+                    // use the Hopper runtime Time.Delay() (VIA timer)
+                    LDA # (250 % 256)
+                    STA ZP.TOPL
+                    LDA # (250 / 256)
+                    STA ZP.TOPH
+                    Time.Delay();
+                    
+                }
+            }
+            
+            LDA GameLoops
+            AND 0b00000011
+            if (Z) // gameLoop % 4 == 0
+            {
+                Move();
+            }
+            
+            INC GameLoops    
         }
     }
 }
