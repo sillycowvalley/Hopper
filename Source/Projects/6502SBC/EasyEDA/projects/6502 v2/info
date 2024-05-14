@@ -4,7 +4,7 @@
   "name": "6502 v2",
   "content": "",
   "created_at": "2024-05-01 16:43:44",
-  "updated_at": "2024-05-10 17:51:54",
+  "updated_at": "2024-05-15 06:41:32",
   "stick": "",
   "documents": [
     {
@@ -515,10 +515,11 @@
         "254a7341d6c2477aa3247060815cfbdb": 1,
         "6c85d782f30c4bd1847bc9dca138bc50": 1,
         "7a5e2f03edca4a199209369f7e0d10db": 1,
-        "8999e35426a34646945447c487094ae6": 3,
+        "8999e35426a34646945447c487094ae6": 4,
         "4a7cc174d54448319ac8877ce96630ad": 1,
         "b781d34dc0d34519aa5c543ba8cd8524": 1,
-        "b8892ee67ac945a181257e6483a50562": 1
+        "b8892ee67ac945a181257e6483a50562": 1,
+        "dd2823528a9c4535bb827a45571975d3": 1
       },
       "BOM": [
         [
@@ -717,6 +718,21 @@
           }
         ],
         [
+          "Reset",
+          1,
+          "PUSHBUTTON_00",
+          "B3",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
           "1N5817",
           1,
           "1N5817 SCHOTTKY DIODE",
@@ -779,10 +795,10 @@
           }
         ],
         [
-          "470",
-          1,
+          "4K7",
+          3,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R7",
+          "R2,R8,R9",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -797,10 +813,10 @@
           }
         ],
         [
-          "4K7",
-          2,
+          "470",
+          1,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R8,R9",
+          "R7",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -866,7 +882,7 @@
           }
         ],
         [
-          "0K",
+          "One Clk",
           1,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
           "CLK",
@@ -976,27 +992,27 @@
           }
         ],
         [
-          "62256 SRAM",
+          "6C1008 / 62256 SRAM",
           1,
-          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
-          "U4",
+          "PDIP-32_L42.0-W13.7-P2.54-LS15.6-BL",
+          "U5",
           {
-            "Contributor": "lcsc",
+            "Contributor": "LCSC",
             "Supplier": "LCSC",
-            "Supplier Part": "C1350400",
+            "Supplier Part": "C1523885",
             "Manufacturer": "Alliance Memory",
-            "Manufacturer Part": "U62256ADK07LLG1",
-            "spiceSymbolName": "U62256ADK07LLG1",
-            "puuid": "cf2846522daf4845a6d8d8b8b2e17553",
-            "uuid": "8fd0b80fa2c24630a06182aa7ad770b5"
+            "Manufacturer Part": "AS6C1008-55PCN",
+            "spiceSymbolName": "AS6C1008-55PCN",
+            "puuid": "d9818d2e837643a489d86254713c0929",
+            "uuid": "2905814fdc4b4ca198240907c82ca27b"
           }
         ]
       ],
-      "updateTime": 1715207826,
+      "updateTime": 1715717017,
       "createTime": 1714567704,
       "histories": [],
       "created_at": "2024-05-01 22:48:24",
-      "updated_at": "2024-05-09 08:37:06"
+      "updated_at": "2024-05-15 06:03:37"
     },
     {
       "uuid": "d82cf5c4af1edf2f4f1d8d478c8d63af",
@@ -1007,7 +1023,7 @@
       "thumb": "/images/thumb-default.png",
       "components": {
         "254a7341d6c2477aa3247060815cfbdb": 1,
-        "99d669b90efa40c78e5feaeaeaba4ae9": 2,
+        "99d669b90efa40c78e5feaeaeaba4ae9": 3,
         "5091b1b418a44194b54181bdaa0ee763": 1,
         "6e02f4debb074a8191ef922cdc797e2c": 1,
         "8999e35426a34646945447c487094ae6": 1
@@ -1209,6 +1225,21 @@
           }
         ],
         [
+          "Reset",
+          1,
+          "PUSHBUTTON_00",
+          "B3",
+          {
+            "Manufacturer Part": "New SchematicLib",
+            "Contributor": "Radu_matei",
+            "Supplier Part": "",
+            "Supplier": "",
+            "spiceSymbolName": "PushButton",
+            "puuid": "bee3e285685a416c945be1ba25b90c43",
+            "uuid": "dd2823528a9c4535bb827a45571975d3"
+          }
+        ],
+        [
           "1N5817",
           1,
           "1N5817 SCHOTTKY DIODE",
@@ -1271,10 +1302,10 @@
           }
         ],
         [
-          "470",
-          1,
+          "4K7",
+          3,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R7",
+          "R2,R8,R9",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -1289,10 +1320,10 @@
           }
         ],
         [
-          "4K7",
-          2,
+          "470",
+          1,
           "RES-TH_BD2.3-L6.5-P6.9-D0.5",
-          "R8,R9",
+          "R7",
           {
             "Supplier": "LCSC",
             "Supplier Part": "C9900002916",
@@ -1391,6 +1422,23 @@
           }
         ],
         [
+          "FTDI",
+          1,
+          "FEMALE HEADER 1X6P 2.54MM",
+          "H1",
+          {
+            "Manufacturer": "",
+            "Manufacturer Part": "",
+            "Supplier Part": "",
+            "Supplier": "",
+            "link": "",
+            "Contributor": "mike2_pcb",
+            "spiceSymbolName": "Female Header 1*6P 2.54mm",
+            "puuid": "4ec76347addd4aba8024500873cfb294",
+            "uuid": "99d669b90efa40c78e5feaeaeaba4ae9"
+          }
+        ],
+        [
           "velleman",
           1,
           "FEMALE HEADER 1X6P 2.54MM",
@@ -1468,27 +1516,27 @@
           }
         ],
         [
-          "62256 SRAM",
+          "6C1008 / 62256 SRAM",
           1,
-          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
-          "U4",
+          "PDIP-32_L42.0-W13.7-P2.54-LS15.6-BL",
+          "U5",
           {
-            "Contributor": "lcsc",
+            "Contributor": "LCSC",
             "Supplier": "LCSC",
-            "Supplier Part": "C1350400",
+            "Supplier Part": "C1523885",
             "Manufacturer": "Alliance Memory",
-            "Manufacturer Part": "U62256ADK07LLG1",
-            "spiceSymbolName": "U62256ADK07LLG1",
-            "puuid": "cf2846522daf4845a6d8d8b8b2e17553",
-            "uuid": "8fd0b80fa2c24630a06182aa7ad770b5"
+            "Manufacturer Part": "AS6C1008-55PCN",
+            "spiceSymbolName": "AS6C1008-55PCN",
+            "puuid": "d9818d2e837643a489d86254713c0929",
+            "uuid": "2905814fdc4b4ca198240907c82ca27b"
           }
         ]
       ],
-      "updateTime": 1715207904,
+      "updateTime": 1715718523,
       "createTime": 1714569406,
       "histories": [],
       "created_at": "2024-05-01 23:16:46",
-      "updated_at": "2024-05-09 08:38:24"
+      "updated_at": "2024-05-15 06:28:43"
     },
     {
       "uuid": "42e556a53494413b55538589e52e54c8",
@@ -2491,6 +2539,43 @@
       "histories": [],
       "created_at": "2024-05-08 22:48:47",
       "updated_at": "2024-05-10 17:51:54"
+    },
+    {
+      "uuid": "12efc521997e8658b65100420f21183e",
+      "puuid": "3939621b48be74c8eebc5948164284b4",
+      "title": "PCB_6502 v4",
+      "filename": "PCB_6502 v4.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "4ec76347addd4aba8024500873cfb294": 3,
+        "bee3e285685a416c945be1ba25b90c43": 3,
+        "7a544e2a32564ae99e7504d53d7d8a4f": 10,
+        "45070e8d7a01463899b9a5a94ed792b3": 5,
+        "39eb669bccfd4ddfb0edb646afd5c798": 1,
+        "8b804afe47cb4dbc9715dc5fe5f0a630": 2,
+        "b6a62b5ec68844a8997d87a93aab0f6b": 1,
+        "b93b6ab9c4654010a01119e269fd972b": 1,
+        "40f958f805cc416c8b0697f92f4b015a": 1,
+        "c85f46dc39f94586bb14e7bf2f9c93c8": 1,
+        "d949d00cbaff4b12835512936c04fa5d": 1,
+        "6924b36489de4921bb29ca14bf27c33f": 1,
+        "d9818d2e837643a489d86254713c0929": 1,
+        "673cf5237d404912b5d2247eb6be1e20": 1,
+        "63825e02ab894e2fbe4dfa95e86ae419": 1,
+        "97570765706d46c6a791549f6269fc82": 1,
+        "8243aa09a34348d2b802d56845cc773c": 2,
+        "26ddc6f916344af197d04f4724b10b8a": 1,
+        "afd07e0bf2a9480ea7001bfa6f6c06ea": 2
+      },
+      "BOM": [],
+      "updateTime": 1715719292,
+      "createTime": 1715691077,
+      "histories": [],
+      "created_at": "2024-05-14 22:51:17",
+      "updated_at": "2024-05-15 06:41:32"
     }
   ],
   "sort": [
@@ -2502,5 +2587,5 @@
   "title": "6502 v2",
   "foldername": "6502 v2",
   "schfilename": "6502 v2.json",
-  "schfilemtime": 1715220910689
+  "schfilemtime": 1715718523214
 }

@@ -11,9 +11,10 @@ program R6502
     
     #define W65C22_VIA
     #define CPU_8MHZ
+    //#define CPU_1MHZ
     
-    #define CPU_65C02S  // Rockwell and WDC
-    //#define CPU_6502      // MOS
+    //#define CPU_65C02S  // Rockwell and WDC
+    #define CPU_6502      // MOS
 
         
 #if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS)
@@ -25,7 +26,7 @@ program R6502
 #endif
 
 #ifndef ROM_8K
-    #define ROM_16K
+    //#define ROM_16K
 #endif
 
     // HopperMon commands to support:
@@ -59,6 +60,8 @@ program R6502
     uses "6502/LibCalls"
     uses "6502/SysCalls"
     uses "6502/Instructions"
+    
+    uses "6502/Devices/SerialEEPROM"
     
     IRQ()
     {
@@ -452,88 +455,11 @@ program R6502
             if (NZ)
             {
                 // program was successfully loaded
-                LDA #(HopperData & 0xFF)
-                STA ZP.IDXL
-                LDA #(HopperData >> 8)
-                STA ZP.IDXH
-                // IDX contains the source address
-                
-                LDA # 0x80 // 128
-                STA ZP.IDYL
-                LDA # 0
-                STA ZP.IDYH
-                // IDY contains the destination address (in EEPROM)
-                
-                LDX ZP.PROGSIZE // size of program in 256 byte pages
-                loop
-                {
-                    copyPageToEEPROM(); // 128 bytes
-                    copyPageToEEPROM(); // 128 bytes
-                    DEX
-                    if (Z) { break; }
-                }
+                SaveToEEPROM();
             }
         }
     }
-    copyPageToEEPROM()
-    {
-        PHA
-#ifdef CPU_65C02S        
-        PHX
-        PHY
-#else
-        TXA PHA
-        TYA PHA
-#endif     
-
-        // initialize the delay in ms for Time.DelayTOP()
-        LDA # 5
-        STA ZP.TOPL
-#ifdef CPU_65C02S
-        STZ ZP.TOPH
-#else
-        LDA # 0
-        STA ZP.TOPH
-#endif
-        
-        // BeginTx
-        LDA # (I2C.SerialEEPROMAddress << 1)
-        STA ZP.OutB
-        I2C.Start();
-        LDA ZP.IDYH
-        STA ZP.OutB
-        I2C.ByteOut(); // EEPROM address MSB
-        LDA ZP.IDYL
-        STA ZP.OutB
-        I2C.ByteOut(); // EEPROM address LSB
-        
-        LDX # 128 // EEPROM page size
-        loop
-        {
-            LDY # 0
-            LDA [IDX], Y
-            STA ZP.OutB
-            I2C.ByteOut(); // zeros ZP.OutB
-            IncIDX();
-            IncIDY();
-            DEX
-            if (Z) { break; }
-        }
-        I2C.Stop();
-        
-        // delay 5ms after Stop() for EEPROM (TOP is already initialized with 0x0005)
-        Time.DelayTOP();
-              
-#ifdef CPU_65C02S   
-        PLY
-        PLX
-#else
-        PLA TAY
-        PLA TAX
-#endif
-        PLA
-    }
-    
+       
     warmRestart()
     {
         Memory.InitializeHeapSize(); // sets HEAPSTART and HEAPSIZE based on size of program loaded
@@ -860,84 +786,25 @@ program R6502
 #endif
     }
     
-    copyProgramPage()
-    {
-#ifdef CPU_65C02S
-        PHY
-#else
-        TYA PHA
-#endif
-        // BeginTx
-        LDA # (I2C.SerialEEPROMAddress << 1)
-        STA ZP.OutB
-        I2C.Start();
-        LDA ZP.IDYH
-        STA ZP.OutB
-        I2C.ByteOut(); // EEPROM address MSB (0)
-        LDA ZP.IDYL
-        STA ZP.OutB
-        I2C.ByteOut(); // EEPROM address LSB (0)
-        // EndTx
-        I2C.Stop();
-        
-        // delay 5ms after Stop() for EEPROM
-        LDA # 5
-        STA ZP.TOPL
-        LDA # 0
-        STA ZP.TOPH
-        Time.DelayTOP();
-        
-        // read 128 bytes from EEPROM:
-        LDA # 128
-        STA ZP.TOPL
-        LDA # I2C.SerialEEPROMAddress
-        STA NEXTL
-        RequestFromTOPNEXT(); // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
-        // assume success
-        
-        LDX # 0
-        loop
-        {
-            LDA Address.I2CInBuffer, X
-            LDY # 0
-            STA [IDX], Y
-            IncIDY();
-            IncIDX();
-            INX
-            CPX # 128
-            if (Z) { break; }
-        } 
-#ifdef CPU_65C02S
-        PLY
-#else
-        PLA TAY
-#endif
-    }
-    loadFromEEPROM()
-    {
-        LDA # 0x80 // 128
-        STA ZP.IDYL
-        LDA # 0
-        STA ZP.IDYH
-        // IDY contains the source address (in EEPROM)
-        
-        LDA #(HopperData & 0xFF)
-        STA ZP.IDXL
-        LDA #(HopperData >> 8)
-        STA ZP.IDXH
-        // IDX contains the destination address
-        
-        LDY ZP.PROGSIZE
-        loop
-        {
-            copyProgramPage(); // 128 bytes
-            copyProgramPage(); // 128 bytes
-            DEY
-            if (Z) { break; }
-        }
-    }
+    
     loadAuto()
     {
+#ifdef W65C22_VIA        
+        // is the User button held low?
+  #ifdef CPU_65C02S
+       if (BBR1, ZP.PORTA)
+       {
+           return;
+       }
+  #else
+       LDA ZP.PORTA
+       AND # 0b00000010
+       if (Z)
+       {
+           return;
+       }
+  #endif        
+#endif
         // BeginTx
         LDA # (I2C.SerialEEPROMAddress << 1)
         STA ZP.OutB
@@ -963,7 +830,7 @@ program R6502
         if (NZ)
         {
             STA ZP.PROGSIZE // in 256 byte pages
-            loadFromEEPROM();
+            LoadFromEEPROM();
             hopperInit(); // initialized heap based on program loaded, initializes stacks, sets up the entrypoint ready to run
             
 #ifdef CPU_65C02S
