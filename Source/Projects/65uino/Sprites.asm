@@ -21,27 +21,24 @@ unit Sprites
                              0b1111, 0b1111, 0b1111, 0b1111,   // 4 : block
                              0b0110, 0b1001, 0b1001, 0b0110,   // 8 : circle
                              0b0000, 0b0110, 0b0110, 0b0000 }; // 12: pill
-    const byte numberOfSprites = 7;
+    const byte numberOfSprites = 12;
     
-    const byte userLand  = 0x0E;
+    const byte userLand  = 24;
 
     // RAM storage locations:
     //   Global variables:
-    
-    const byte Sprites         = userLand;      // 32 bytes from 0x90..0xAF
-    const byte YPos            = userLand + 32; // y position of user: 1..15
-    const byte Lives           = userLand + 33; // number of lives remaining
-    const byte GameLoops       = userLand + 34; // game loop counter
+    const byte Sprites         = 0x00;          // sprites start at 0x00
+    const byte YPos            = userLand + 1;  // y position of user: 1..15
+    const byte Lives           = userLand + 2;  // number of lives remaining
+    const byte GameLoops       = userLand + 3;  // game loop counter
     //   Local working variables:
-    const byte CellX           = userLand + 35; // cellX: 0..31
-    const byte CellY           = userLand + 36; // cellY: 0..15
-    const byte BestZ           = userLand + 37; // 0, 64, 128, 92 (z == 00, 01, 10, 11)
-    const byte Result          = userLand + 38; // used in GetVisibleSprite (rendering)
-    const byte Current         = userLand + 49; // used in GetVisibleSprite (rendering)
-    const byte Index           = userLand + 50; // index of the sprite from GetVisibleSprite
-    
-    const byte I2CADDR   = userLand + 51;        // Reserve 1 byte for I2CADDR
-    const byte OutB      = userLand + 52; // Reserve 1 byte for OutB - used for I2C
+    const byte CellX           = userLand + 4;  // cellX: 0..31
+    const byte CellY           = userLand + 5;  // cellY: 0..15
+    const byte BestZ           = userLand + 6;  // 0, 64, 128, 92 (z == 00, 01, 10, 11)
+    const byte Result          = userLand + 7;  // used in GetVisibleSprite (rendering)
+    const byte Current         = userLand + 8;  // used in GetVisibleSprite (rendering)
+    const byte Index           = userLand + 9;  // index of the sprite from GetVisibleSprite
+    const byte OutB            = userLand + 10; // used for I2C
     
     // ######################## Sprites code ##########################
     
@@ -192,11 +189,7 @@ unit Sprites
                         LSR A // sprite to move in A
                         // destination in (CellX, CellY)
                         MoveTo();
-#ifdef CPU_65C02S
-                        PLX
-#else
                         PLA TAX
-#endif
                     }
                 }
             }
@@ -265,11 +258,7 @@ unit Sprites
     
     GetVisibleSprite()
     {
-#ifdef CPU_65C02S
-        PHX
-#else
         TXA PHA
-#endif
         
         LDA # 0
         STA Result // start with 'blank' sprite in case we get no hits
@@ -329,11 +318,7 @@ unit Sprites
                 break;
             }
         }
-#ifdef CPU_65C02S
-        PLX
-#else
         PLA TAX
-#endif
         LDA Result
     }
     
@@ -370,13 +355,9 @@ unit Sprites
     RenderCell() // (CellX, CellY)
     {
         // cell: 4x4 square of pixels:
-#ifdef CPU_65C02S
-        PHX
-        PHY
-#else
         TXA PHA
         TYA PHA
-#endif
+        
         // round up to the bottom/odd cell in the slot
         LDA Sprites.CellY
         ORA # 0b00000001
@@ -389,13 +370,8 @@ unit Sprites
         TAX
         
         RenderSlot();
-#ifdef CPU_65C02S
-        PLY
-        PLX
-#else
         PLA TAY
         PLA TAX
-#endif
     }
     RenderSlot() 
     {
@@ -403,27 +379,6 @@ unit Sprites
         // CellX, CellY
         // X - top sprite index
         // Y - bottom sprite index
-        
-        /*
-        LDA # 0x0A
-        Serial.WriteChar();
-        LDA CellX
-        Serial.HexOut();
-        LDA # ','
-        Serial.WriteChar();
-        LDA CellY
-        Serial.HexOut();
-        LDA # '['
-        Serial.WriteChar();
-        TXA
-        Serial.HexOut();
-        LDA # ':'
-        Serial.WriteChar();
-        TYA
-        Serial.HexOut();
-        LDA # ']'
-        Serial.WriteChar();
-        */
         
         // CellY 0..15
         // CellX 0..31

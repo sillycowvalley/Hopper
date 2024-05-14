@@ -14,9 +14,9 @@ unit I2C
       
     Start()
     {
-        LDA Sprites.I2CADDR
-        ROL                // Shift in carry
-        STA Sprites.OutB        // Save addr + r/w bit
+        LDA # 0x3C         // I2C address of SSD1306
+        ASL                // Shift in a zero (always write for SSD1306)
+        STA Sprites.OutB   // Save addr + r/w bit
 
         LDA # SCL_INV
         AND RIOT.DDRB

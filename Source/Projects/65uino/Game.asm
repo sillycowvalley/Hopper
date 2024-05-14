@@ -158,10 +158,8 @@ program Game
         LDA # 0b10000000 // PB7 is output (GREEN LED)
         STA RIOT.DDRB
         
-        LDA # 0x3C      // Address of the device (0x78 on the back of the module is 0x3C << 1)
-        STA Sprites.I2CADDR
         Display.Initialize(); // initialize display
-        //Buttons.Initialize();
+        Buttons.Initialize();
         
         Display.Clear();               
         

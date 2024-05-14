@@ -86,9 +86,6 @@ unit Display
         // Page:   0..7
         // Column: 0..127
         
-        LDA # 0x3C // SSD1306 address
-        STA Sprites.I2CADDR
-        CLC // write flag
         I2C.Start();
         LDA # 0x00     // 0x00 for commands or 0x40 for data
         STA Sprites.OutB
@@ -115,9 +112,6 @@ unit Display
     {
         PHA
         
-        LDA # 0x3C // SSD1306 address
-        STA Sprites.I2CADDR
-        CLC // write flag
         I2C.Start();
         LDA # 0x40     // 0x00 for commands or 0x40 for data
         STA Sprites.OutB
@@ -144,9 +138,6 @@ unit Display
             STA CellY
             GotoXY(); // Y : 14..0, X: 0
             
-            LDA # 0x3C // SSD1306 address
-            STA Sprites.I2CADDR
-            CLC // write flag
             I2C.Start();
             LDA # 0x40     // 0x00 for commands or 0x40 for data
             STA Sprites.OutB
