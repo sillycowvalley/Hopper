@@ -1,6 +1,5 @@
 unit Sprites
 {    
-    uses "Zero"
     uses "RIOT"
     uses "I2C"
     
@@ -22,12 +21,13 @@ unit Sprites
                              0b1111, 0b1111, 0b1111, 0b1111,   // 4 : block
                              0b0110, 0b1001, 0b1001, 0b0110,   // 8 : circle
                              0b0000, 0b0110, 0b0110, 0b0000 }; // 12: pill
-    const byte numberOfSprites = 16;
+    const byte numberOfSprites = 7;
     
     const byte userLand  = 0x0E;
 
     // RAM storage locations:
     //   Global variables:
+    
     const byte Sprites         = userLand;      // 32 bytes from 0x90..0xAF
     const byte YPos            = userLand + 32; // y position of user: 1..15
     const byte Lives           = userLand + 33; // number of lives remaining
@@ -39,6 +39,9 @@ unit Sprites
     const byte Result          = userLand + 38; // used in GetVisibleSprite (rendering)
     const byte Current         = userLand + 49; // used in GetVisibleSprite (rendering)
     const byte Index           = userLand + 50; // index of the sprite from GetVisibleSprite
+    
+    const byte I2CADDR   = userLand + 51;        // Reserve 1 byte for I2CADDR
+    const byte OutB      = userLand + 52; // Reserve 1 byte for OutB - used for I2C
     
     // ######################## Sprites code ##########################
     

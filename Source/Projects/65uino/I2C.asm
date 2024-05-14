@@ -5,7 +5,6 @@ unit I2C
     
     // https://github.com/AndersBNielsen/65uino/blob/main/i2c.s
     
-    uses "Zero"
     uses "RIOT"
     
     const byte SCL     = 0b00000001;    // DRB0 bitmask
@@ -15,9 +14,9 @@ unit I2C
       
     Start()
     {
-        LDA ZP.I2CADDR
+        LDA Sprites.I2CADDR
         ROL                // Shift in carry
-        STA ZP.OutB        // Save addr + r/w bit
+        STA Sprites.OutB        // Save addr + r/w bit
 
         LDA # SCL_INV
         AND RIOT.DDRB
@@ -39,6 +38,8 @@ unit I2C
     } 
     ByteOut() // clears ZP.OutB
     {
+        TXA PHA
+        
         LDA # SDA_INV // In case this is a data byte we set SDA LOW
         AND DRB
         STA DRB
@@ -48,7 +49,7 @@ unit I2C
         {
             INC RIOT.DDRB  // SCL out, low
 first:
-            ASL ZP.OutB    // MSB to carry
+            ASL Sprites.OutB    // MSB to carry
             if (C)
             {
                 LDA RIOT.DDRB
@@ -81,6 +82,8 @@ first:
             CLC       // Clear carry on ACK
         }
         INC RIOT.DDRB // SCL low
+        
+        PLA TAX
     } 
     ByteIn()
     {

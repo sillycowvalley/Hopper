@@ -159,9 +159,9 @@ program Game
         STA RIOT.DDRB
         
         LDA # 0x3C      // Address of the device (0x78 on the back of the module is 0x3C << 1)
-        STA ZP.I2CADDR
+        STA Sprites.I2CADDR
         Display.Initialize(); // initialize display
-        Buttons.Initialize();
+        //Buttons.Initialize();
         
         Display.Clear();               
         
@@ -169,6 +169,7 @@ program Game
  
         loop
         {
+            
             CheckCollisions();
             LDA Lives
             if (Z) { break; } // game over

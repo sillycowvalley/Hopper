@@ -1,6 +1,5 @@
 unit Display
 {    
-    uses "Zero"
     uses "RIOT"
     uses "I2C"
  
@@ -66,7 +65,7 @@ unit Display
             LDA ssd1306InitTable, Y
             CMP # 0xFF                // stop byte
             if (Z) { break; }
-            STA ZP.OutB
+            STA Sprites.OutB
             I2C.ByteOut();
             INY
         }
@@ -88,27 +87,27 @@ unit Display
         // Column: 0..127
         
         LDA # 0x3C // SSD1306 address
-        STA ZP.I2CADDR
+        STA Sprites.I2CADDR
         CLC // write flag
         I2C.Start();
         LDA # 0x00     // 0x00 for commands or 0x40 for data
-        STA ZP.OutB
+        STA Sprites.OutB
         I2C.ByteOut();
         
         LDA CellY
         ORA # 0xB0     // set the page address
-        STA ZP.OutB
+        STA Sprites.OutB
         I2C.ByteOut();
         
         LDA CellX
         LSR LSR LSR LSR
         ORA # 0x10     // set column high nibble
-        STA ZP.OutB
+        STA Sprites.OutB
         I2C.ByteOut();
         
         LDA CellX
         AND # 0x0F     // set column low nibble
-        STA ZP.OutB
+        STA Sprites.OutB
         I2C.ByteOut();
         I2C.Stop();
     }
@@ -117,15 +116,15 @@ unit Display
         PHA
         
         LDA # 0x3C // SSD1306 address
-        STA ZP.I2CADDR
+        STA Sprites.I2CADDR
         CLC // write flag
         I2C.Start();
         LDA # 0x40     // 0x00 for commands or 0x40 for data
-        STA ZP.OutB
+        STA Sprites.OutB
         I2C.ByteOut();
         
         PLA
-        STA ZP.OutB
+        STA Sprites.OutB
         I2C.ByteOut();
         
         I2C.Stop();
@@ -146,34 +145,26 @@ unit Display
             GotoXY(); // Y : 14..0, X: 0
             
             LDA # 0x3C // SSD1306 address
-            STA ZP.I2CADDR
+            STA Sprites.I2CADDR
             CLC // write flag
             I2C.Start();
             LDA # 0x40     // 0x00 for commands or 0x40 for data
-            STA ZP.OutB
+            STA Sprites.OutB
             I2C.ByteOut();
             
-#ifdef CPU_65C02S
-            PHY
-#else
             TYA PHA
-#endif
             
             LDY 128
             loop
             {
                 LDA # 0
-                STA ZP.OutB
+                STA Sprites.OutB
                 I2C.ByteOut();
                 
                 DEY
                 if (Z) { break; }
             }
-#ifdef CPU_65C02S            
-            PLY
-#else
             PLA TAY
-#endif
             if (Z) { break; }
         }
         I2C.Stop();
