@@ -13,12 +13,9 @@ program Game
     
     AddLife()
     {
-        Sprites.GetAvailable();
+        Sprites.GetAvailablex2(); // next available sprite x 2 -> X
         if (NZ)
         {
-            ASL     // x2
-            TAX     // next available sprite x 2
-            
             // Initialize life sprite:
             //   LSB: |ssss|yyyy|
             //     ssss:  sprite index : 8
@@ -73,14 +70,12 @@ program Game
         STA CellX
         LDA YPos
         STA CellY
+        
+        
         Sprites.Collision();
         CMP # 4 // block
         if (Z)
         {
-            //LDA # 0x0A
-            //Serial.WriteChar();
-            //DumpSprites();
-            
             // remove block sprite
             LDA Index
             ASL
@@ -119,16 +114,11 @@ program Game
             LDA YPos
             STA CellY
             RenderCell();
-            
-            //DumpSprites();
+            return;
         }
         CMP # 12 // pill
         if (Z)
         {
-            //LDA # 0x0A
-            //Serial.WriteChar();
-            //DumpSprites();
-            
             // remove it
             LDA Index
             ASL
@@ -145,9 +135,8 @@ program Game
             LDA # 0
             STA CellY
             RenderCell();
-            
-            
         }
+
     }
     
     Hopper()
@@ -158,6 +147,8 @@ program Game
         LDA # 0b10000000 // PB7 is output (GREEN LED)
         STA RIOT.DDRB
         
+        LEDOff();
+        
         Display.Initialize(); // initialize display
         Buttons.Initialize();
         
@@ -167,11 +158,13 @@ program Game
  
         loop
         {
-            
             CheckCollisions();
             LDA Lives
-            if (Z) { break; } // game over
-            
+            if (Z) 
+            { 
+                break;  // game over
+            }
+                     
             ButtonOneDown();
             if (Z)
             {
@@ -202,6 +195,8 @@ program Game
                     STA CellX
                     LDA # 0
                     Sprites.MoveTo();
+                    
+                    
                 }
             }
                        
@@ -209,19 +204,16 @@ program Game
             AND # 0b00011111
             if (Z) // gameLoop % 32 == 0
             {
-                Sprites.GetAvailable();
+                Sprites.GetAvailablex2(); // next available sprite x 2 -> X
                 if (NZ)
                 {
                     // spawn block sprite
-                    
-                    ASL     // x2
-                    TAX     // next available sprite x 2
                     
                     // Initialize block sprite:
                     //   LSB: |ssss|yyyy|
                     //     ssss:  sprite index : 4
                     //     yyyy:  y location   : 0 is top row
-                    Sprites.RandomY();
+                    Sprites.RandomY(); // munts Y
                     STA CellY
                     ORA # (4 << 4)
                     STA Sprites.Sprites, X
@@ -234,8 +226,10 @@ program Game
                     STA Sprites.Sprites, X
                     LDA # 31
                     STA CellX
+                    
                     Sprites.RenderCell();
                 }
+                
             }
             
             CLC
@@ -244,18 +238,16 @@ program Game
             AND # 0b00111111
             if (Z) // (gameLoop+16) % 64 == 0
             {
-                Sprites.GetAvailable();
+                Sprites.GetAvailablex2(); // next available sprite x 2 -> X
                 if (NZ)
                 {
                     // spawn pill sprite
-                    ASL     // x2
-                    TAX     // next available sprite x 2
                     
                     // Initialize block sprite:
                     //   LSB: |ssss|yyyy|
                     //     ssss:  sprite index : 12
                     //     yyyy:  y location   : 0 is top row
-                    Sprites.RandomY();
+                    Sprites.RandomY(); // munts Y
                     STA CellY
                     ORA # (12 << 4)
                     STA Sprites.Sprites, X
@@ -270,20 +262,19 @@ program Game
                     STA CellX
                     Sprites.RenderCell();
                 }
+                else
+                {
+                    LEDOn();
+                    break; // game over -> won
+                }
             }
             
             LDA GameLoops
             AND # 0b00000011
             if (Z) // gameLoop % 4 == 0
             {
-                Move();
+                Sprites.Move();
             }
-            
-            // LED:
-            //LDA RIOT.DRB
-            //EOR # 0b10000000
-            //STA RIOT.DRB
-            
             INC GameLoops    
         }
     }

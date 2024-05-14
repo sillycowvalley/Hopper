@@ -85,37 +85,6 @@ first:
         
         PLA TAX
     } 
-    ByteIn()
-    {
-        // Assume SCL is low from address byte
-        LDA RIOT.DDRB     // SDA, input
-        AND # SDA_INV
-        STA RIOT.DDRB
-        LDA # 0
-        STA ZP.InB
-        LDX # 8
-        loop
-        {
-            CLC
-            DEC RIOT.DDRB // SCL HIGH
-            LDA RIOT.DRB  // Let's read after SCL goes high
-            AND # SDA
-            if (NZ)
-            {
-                SEC
-            }
-            ROL ZP.InB    // Shift bit into the input byte
-            INC RIOT.DDRB // SCL LOW
-            DEX
-            if (Z) { break; }
-        }
-        
-        LDA RIOT.DDRB     // Send NACK == SDA high (only single bytes for now)
-        AND # SDA_INV
-        STA RIOT.DDRB
-        DEC RIOT.DDRB     // SCL HIGH
-        INC RIOT.DDRB     // SCL LOW
-    }
     Stop()
     {
         LDA RIOT.DDRB // SDA low

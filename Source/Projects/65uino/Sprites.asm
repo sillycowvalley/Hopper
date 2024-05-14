@@ -21,16 +21,16 @@ unit Sprites
                              0b1111, 0b1111, 0b1111, 0b1111,   // 4 : block
                              0b0110, 0b1001, 0b1001, 0b0110,   // 8 : circle
                              0b0000, 0b0110, 0b0110, 0b0000 }; // 12: pill
-    const byte numberOfSprites = 12;
+    const byte numberOfSprites = 16;
     
-    const byte userLand  = 24;
-
     // RAM storage locations:
     //   Global variables:
     const byte Sprites         = 0x00;          // sprites start at 0x00
-    const byte YPos            = userLand + 1;  // y position of user: 1..15
-    const byte Lives           = userLand + 2;  // number of lives remaining
-    const byte GameLoops       = userLand + 3;  // game loop counter
+    const byte userLand        = Sprites + numberOfSprites * 2;
+    const byte YPos            = userLand + 0;  // y position of user: 1..15
+    const byte Lives           = userLand + 1;  // number of lives remaining
+    const byte GameLoops       = userLand + 2;  // game loop counter
+    const byte RandomIndex     = userLand + 3;  // part of pseudo random stuff
     //   Local working variables:
     const byte CellX           = userLand + 4;  // cellX: 0..31
     const byte CellY           = userLand + 5;  // cellY: 0..15
@@ -40,18 +40,58 @@ unit Sprites
     const byte Index           = userLand + 9;  // index of the sprite from GetVisibleSprite
     const byte OutB            = userLand + 10; // used for I2C
     
+    
     // ######################## Sprites code ##########################
     
+    const byte[] randoms = {
+                                0x03, 0x0C, 0x07, 0x01, 0x0F, 0x0A, 0x05, 0x0E,
+                                0x09, 0x0B, 0x04, 0x0D, 0x02, 0x06, 0x08, 0x0F,
+                                0x0C, 0x01, 0x05, 0x0A, 0x0E, 0x09, 0x0B, 0x04,
+                                0x0D, 0x02, 0x06, 0x08, 0x0F, 0x0C, 0x03, 0x07,
+                                0x0A, 0x05, 0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02,
+                                0x06, 0x08, 0x0F, 0x0C, 0x03, 0x07, 0x01, 0x0F,
+                                0x0A, 0x05, 0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02,
+                                0x06, 0x08, 0x0F, 0x0C, 0x03, 0x07, 0x01, 0x0A,
+                                0x05, 0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02, 0x06,
+                                0x08, 0x0F, 0x0C, 0x03, 0x07, 0x01, 0x0A, 0x05,
+                                0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02, 0x06, 0x08,
+                                0x0F, 0x0C, 0x03, 0x07, 0x01, 0x0A, 0x05, 0x0E,
+                                0x09, 0x0B, 0x04, 0x0D, 0x02, 0x06, 0x08, 0x0F,
+                                0x0C, 0x03, 0x07, 0x01, 0x0A, 0x05, 0x0E, 0x09,
+                                0x0B, 0x04, 0x0D, 0x02, 0x06, 0x08, 0x0F, 0x0C,
+                                0x03, 0x07, 0x01, 0x0A, 0x05, 0x0E, 0x09, 0x0B,
+                                0x04, 0x0D, 0x02, 0x06, 0x08, 0x0F, 0x0C, 0x03,
+                                0x07, 0x01, 0x0A, 0x05, 0x0E, 0x09, 0x0B, 0x04,
+                                0x0D, 0x02, 0x06, 0x08, 0x0F, 0x0C, 0x03, 0x07,
+                                0x01, 0x0A, 0x05, 0x0E, 0x09, 0x0B, 0x04, 0x0D,
+                                0x02, 0x06, 0x08, 0x0F, 0x0C, 0x03, 0x07, 0x01,
+                                0x0A, 0x05, 0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02,
+                                0x06, 0x08, 0x0F, 0x0C, 0x03, 0x07, 0x01, 0x0A,
+                                0x05, 0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02, 0x06,
+                                0x08, 0x0F, 0x0C, 0x03, 0x07, 0x01, 0x0A, 0x05,
+                                0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02, 0x06, 0x08,
+                                0x0F, 0x0C, 0x03, 0x07, 0x01, 0x0A, 0x05, 0x0E,
+                                0x09, 0x0B, 0x04, 0x0D, 0x02, 0x06, 0x08, 0x0F,
+                                0x0C, 0x03, 0x07, 0x01, 0x0A, 0x05, 0x0E, 0x09,
+                                0x0B, 0x04, 0x0D, 0x02, 0x06, 0x08, 0x0F, 0x0C,
+                                0x03, 0x07, 0x01, 0x0A, 0x05, 0x0E, 0x09, 0x0B,
+                                0x04, 0x0D, 0x02, 0x06, 0x08, 0x0F, 0x0C, 0x03,
+                                0x07, 0x01, 0x0A, 0x05, 0x0E, 0x09, 0x0B, 0x04,
+                                0x0D, 0x02, 0x06, 0x08, 0x0F, 0x0C, 0x03, 0x07,
+                                0x01, 0x0A, 0x05, 0x0E, 0x09, 0x0B, 0x04, 0x0D,
+                                0x02, 0x06, 0x08, 0x0F, 0x0C, 0x03, 0x07, 0x01,
+                                0x0A, 0x05, 0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02,
+                                0x06, 0x08, 0x0F, 0x0C, 0x03, 0x07, 0x01, 0x0A,
+                                0x05, 0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02, 0x06,
+                                0x08, 0x0F, 0x0C, 0x03, 0x07, 0x01, 0x0A, 0x05,
+                                0x0E, 0x09, 0x0B, 0x04, 0x0D, 0x02, 0x06, 0x08
+                            };
     RandomY()
     {
         // returns A : 1..15
-        loop
-        {
-            // TODO
-            // LDA ZP.TICK0
-            AND # 0xF
-            if (NZ) { break; }
-        }
+        LDY RandomIndex
+        LDA randoms, Y
+        INC RandomIndex
     }
     Reset()
     {
@@ -69,7 +109,7 @@ unit Sprites
             if (Z) { break; }
         }   
     }
-    GetAvailable()
+    GetAvailablex2() // next available sprite x 2 -> X, munts A
     {
         // returns next available sprite (currently 'blank')
         //     - A : 1..15
@@ -82,8 +122,6 @@ unit Sprites
             if (Z)
             {
                 // found a slot that is the "blank" index
-                TXA
-                LSR
                 break; 
             }
             DEX
@@ -91,10 +129,11 @@ unit Sprites
             if (Z)
             {
                 // none available
-                LDA # 0
+                LDX # 0
                 break;
             }
         } // loop
+        CPX #0
     }
     
     MoveTo()
@@ -184,7 +223,7 @@ unit Sprites
                         AND # 0b00001111
                         STA CellY
                         TXA
-                        PHA                   
+                        PHA // X              
                         
                         LSR A // sprite to move in A
                         // destination in (CellX, CellY)
@@ -205,7 +244,7 @@ unit Sprites
         LDX # (numberOfSprites * 2) // 32
         loop
         {
-            CPX #0
+            CPX # 0
             if (Z)
             {
                 break;
@@ -312,7 +351,7 @@ unit Sprites
                     DEX
                 }
             }
-            CPX #0
+            CPX # 0
             if (Z)
             {
                 break;

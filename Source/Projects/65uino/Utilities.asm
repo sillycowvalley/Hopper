@@ -26,4 +26,17 @@ unit Utilities
         }
     }
     
+    LEDOff()
+    {
+        LDA RIOT.DRB
+        ORA # 0b10000000  // set GREEN LED off
+        STA RIOT.DRB
+    }
+    LEDOn()
+    {
+        LDA RIOT.DRB
+        AND # 0b01111111  // set GREEN LED on
+        STA RIOT.DRB
+    }
+    
 }
