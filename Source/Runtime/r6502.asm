@@ -142,7 +142,7 @@ program R6502
         loop
         {
             LDA ZP.PLUGNPLAY
-            AND 0b00000010
+            AND # 0b00000010
             if (NZ) // EEPROM?
             {
                 // BeginTx
@@ -285,7 +285,7 @@ program R6502
         Utilities.WaitForEnter();     // consume <enter>
         
         LDA ZP.PLUGNPLAY
-        AND 0b00000010
+        AND # 0b00000010
         if (NZ) // EEPROM?
         {
             // BeginTx
@@ -315,7 +315,6 @@ program R6502
             I2C.ByteOut(); // CRC byte
         }
         Serial.HexIn();
-        STA ZP.OutB
         STA ZP.OutB
         LDA ZP.PLUGNPLAY
         AND # 0b00000010
