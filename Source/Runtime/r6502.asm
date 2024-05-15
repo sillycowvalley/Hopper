@@ -10,8 +10,7 @@ program R6502
     #define INLINE_EXPANSIONS 
     
     #define W65C22_VIA
-    #define CPU_8MHZ
-    //#define CPU_1MHZ
+    #define CPU_2MHZ
     
     //#define CPU_65C02S  // Rockwell and WDC
     #define CPU_6502      // MOS

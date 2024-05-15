@@ -40,7 +40,7 @@ program EEPROM
         }
         return;
         */        
-        for (uint j = 0; j < 24 /*40*/; j++)
+        for (uint j = 0; j < 8 /*40*/; j++)
         {
             uint address = j * 32;
             Wire.BeginTx(i2cEEPROMaddress);
