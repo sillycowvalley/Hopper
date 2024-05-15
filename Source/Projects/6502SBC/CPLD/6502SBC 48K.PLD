@@ -1,0 +1,55 @@
+Name     6502SBC48K ;
+PartNo   00 ;
+Date     4/07/2023 ;
+Revision 01 ;
+Designer Michael Cartwright ;
+Company  None ;
+Assembly None ;
+Location  ;
+Device   G20V8 ; 
+
+/* G20V8 G22V10 */
+
+/* Inputs:  All are signals from the 6502 */
+
+Pin 1  =  CLK;
+Pin 2  =  A15;
+Pin 3  =  A14;
+Pin 4  =  A13;
+Pin 5  =  A12;
+Pin 6  =  A11;
+Pin 7  =  A10;
+Pin 8  =  A9;
+Pin 9  =  A8;
+Pin 10 =  A7;
+Pin 11 =  A6;
+/* Pin 12 is GND */
+Pin 13 =  A5;
+Pin 14 =  A4;
+/* WinCUPL doesn't seem to like 15 as an input */
+Pin 16 =  A3;
+Pin 17 =  A2;
+Pin 23 =  A1;
+
+
+/* Outputs:  define outputs - all are simple combinatorial */
+
+Pin 22 = CSRAM;  /* active low */
+Pin 21 = CSROM;  /* active low */
+Pin 20 = CSVIA;  /* active low */
+Pin 19 = CSACIA; /* active low */
+Pin 18 = OERAM;  /* active low */
+
+
+ ZEROPAGE  = !A15 & !A14 & !A13 & !A12 & !A11 & !A10 & !A9 & !A8;
+ SRAMANDIO = !A15 # (A15 & !A14);
+
+ CSACIA = !(ZEROPAGE  & A7 & A6 & A5 & !A4 & A3 & A2);
+ CSVIA  = !(ZEROPAGE  & A7 & A6 & A5 &  A4);
+ CSRAM  = !((SRAMANDIO & CSVIA & CSACIA) & CLK);
+ OERAM  = !(SRAMANDIO & CSVIA & CSACIA);
+ CSROM  =  SRAMANDIO;
+
+
+
+
