@@ -1,3 +1,5 @@
+**Note: this is very early testing of the cross-platform functionality of Terminal.Gui with .NET Core.**
+
 # Running Hopper Runtime Console Application on macOS
 
 Follow these steps to run the Hopper Runtime Console application on your macOS machine:
