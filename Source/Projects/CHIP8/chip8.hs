@@ -12,7 +12,7 @@ program CHIP8
     const uint C = 74;      // Increment
     const uint M = 65535;   // Modulus (2^16 - 1)
     uint seed;
-    uint lastTime; // Last recorded time in seconds
+    long lastTime; // Last recorded time in millis / 17
     
     const byte[] fontSet = {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -48,19 +48,50 @@ program CHIP8
     bool running;
  
     bool extendedScreenMode; // Flag for extended screen mode
-    bool[128 * 64] display; // Each element is either false (off) or true (on)    
+    bool[128 * 64] display; // Each element is either false (off) or true (on) 
+    byte pWidth;
+    byte pHeight;   
     uint xOffset;
     uint yOffset;
     
     bool[16] keyState;
     
+    disableExtendedScreen()
+    {
+        extendedScreenMode = false;
+        // Additional code to handle switching back to standard screen mode
+        // For example, clearing the screen or adjusting the display array
+        CHIP8.Clear();
+        xOffset = 32;
+        yOffset = 16;
+        pWidth  = 64;
+        pHeight = 32;
+    }
+    enableExtendedScreen()
+    {
+        extendedScreenMode = true;
+        // Additional code to handle switching to extended screen mode
+        // For example, clearing the screen or adjusting the display array
+        CHIP8.Clear();
+        xOffset = 0;
+        yOffset = 0;
+        pWidth  = 128;
+        pHeight = 64;
+    }
+    
     bool GetPixel(byte x, byte y)
     {
+        x = x % pWidth;
+        y = y % pHeight;
+        
         uint index = x + y * 128;
         return display[index];
     }
     SetPixel(byte x, byte y, bool value)
     {
+        x = x % pWidth;
+        y = y % pHeight;
+    
         uint index = x + y * 128;
         display[index] = value;
         //Display.SetPixel(int(xOffset + x), int(yOffset + y), value ? Colour.White : Colour.Black);
@@ -74,31 +105,51 @@ program CHIP8
         Display.SetPixel(x+1, y+1, value ? Colour.White : Colour.Black);
         
     }
+    
     Clear()
     {
         for (uint j = 0; j < 128 * 64; j++) { display[j] = false; }        
         Display.Clear();
     }
     
+    // CHIP-8 Keypad Layout:
+    //
+    // Keypad              Indices
+    //
+    // 1 2 3 C             1 2 3 C
+    // 4 5 6 D             4 5 6 D
+    // 7 8 9 E             7 8 9 E
+    // A 0 B F             A 0 B F
+    //
+    
+    
     UpdateKeyStates()
     {
-        /*
-        while (Keyboard.IsAvailable)
-        {
-            char key = ToChar(Keyboard.ReadKey());
-            key = key.ToUpper();
-            for (byte i = 0; i < 16; i++)
-            {
-                if (key == chip8KeyMap[i])
-                {
-                    keyState[i] = true;
-                }
-            }
-        }*/
-        keyState[12] = Button0;
-        keyState[13] = Button1;
-        keyState[14] = Button2;
-        keyState[15] = Button3;
+        //keyState[0x4] = Button0;
+        //keyState[0x5] = Button1;
+        //keyState[0x6] = Button2;
+        //keyState[0xD] = Button3;
+        
+        // Invaders:
+        keyState[0x4] = Button0; // <--
+        keyState[0x5] = Button1; // shoot
+        keyState[0x5] = Button2; // shoot
+        keyState[0x6] = Button3; // -->
+        
+        // bottom row
+        //keyState[0xA] = Button0;
+        //keyState[0x0] = Button1;
+        //keyState[0xB] = Button2;
+        //keyState[0xF] = Button3;
+        
+        // for quirks test:
+        //keyState[0xA] = Button0; // select
+        //keyState[0xF] = Button2; // down
+        //keyState[0xE] = Button3; // up
+        
+        //keyState[0x1] = Button0; // 1
+        //keyState[0x2] = Button2; // 2
+        //keyState[0x3] = Button3; // 3
     }
     
     ResetKeyStates()
@@ -110,24 +161,7 @@ program CHIP8
     }
     
     
-    disableExtendedScreen()
-    {
-        extendedScreenMode = false;
-        // Additional code to handle switching back to standard screen mode
-        // For example, clearing the screen or adjusting the display array
-        CHIP8.Clear();
-        xOffset = 32;
-        yOffset = 16;
-    }
-    enableExtendedScreen()
-    {
-        extendedScreenMode = true;
-        // Additional code to handle switching to extended screen mode
-        // For example, clearing the screen or adjusting the display array
-        CHIP8.Clear();
-        xOffset = 0;
-        yOffset = 0;
-    }
+    
     
     Initialize()
     {
@@ -281,7 +315,7 @@ program CHIP8
                     }
                     default:
                     {
-                        // More 0x0000 opcodes...
+                        Die(0x0A); // not implemented?
                     }
                 }
             }
@@ -360,6 +394,7 @@ program CHIP8
                 uint x = (opcode & 0x0F00) >> 8;
                 uint y = (opcode & 0x00F0) >> 4;
                 uint opCodeLSN = byte(opcode & 0x000F);
+                byte flag;
                 switch (opCodeLSN)
                 {
                     case 0x0:
@@ -372,18 +407,21 @@ program CHIP8
                     {
                         // 8XY1: Set VX to VX OR VY
                         v[x] = v[x] | v[y];
+                        v[0xF] = 0;
                         pc += 2;
                     }
                     case 0x2:
                     {
                         // 8XY2: Set VX to VX AND VY
                         v[x] = v[x] & v[y];
+                        v[0xF] = 0;
                         pc += 2;
                     }
                     case 0x3:
                     {
                         // 8XY3: Set VX to VX XOR VY
                         v[x] = v[x] ^ v[y];
+                        v[0xF] = 0;
                         pc += 2;
                     }
                     case 0x4:
@@ -391,13 +429,14 @@ program CHIP8
                         // 8XY4: Add VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't
                         if (v[y] > (0xFF - v[x]))
                         {
-                            v[0xF] = 1; // Carry
+                            flag = 1; // Carry
                         }
                         else
                         {
-                            v[0xF] = 0;
+                            flag = 0;
                         }
                         v[x] = v[x] + v[y];
+                        v[0xF] = flag;
                         pc += 2;
                     }
                     case 0x5:
@@ -405,20 +444,22 @@ program CHIP8
                         // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't
                         if (v[x] >= v[y])
                         {
-                            v[0xF] = 1;
+                            flag = 1;
                         }
                         else
                         {
-                            v[0xF] = 0;
+                            flag = 0;
                         }
                         v[x] = v[x] - v[y];
+                        v[0xF] = flag;
                         pc += 2;
                     }
                     case 0x6:
                     {
                         // 8XY6: Store the least significant bit of VX in VF and then shifts VX to the right by 1
-                        v[0xF] = v[x] & 0x1;
+                        flag = v[x] & 0x1;
                         v[x] = v[x] >> 1;
+                        v[0xF] = flag;
                         pc += 2;
                     }
                     case 0x7:
@@ -426,21 +467,27 @@ program CHIP8
                         // 8XY7: Set VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't
                         if (v[y] >= v[x])
                         {
-                            v[0xF] = 1;
+                            flag = 1;
                         }
                         else
                         {
-                            v[0xF] = 0;
+                            flag = 0;
                         }
                         v[x] = v[y] - v[x];
+                        v[0xF] = flag;
                         pc += 2;
                     }
                     case 0xE:
                     {
                         // 8XYE: Store the most significant bit of VX in VF and then shifts VX to the left by 1
-                        v[0xF] = (v[x] >> 7) & 0x1;
+                        flag = (v[x] >> 7) & 0x1;
                         v[x] = v[x] << 1;
+                        v[0xF] = flag;
                         pc += 2;
+                    }
+                    default:
+                    {
+                        Die(0x0A); // not implemented?
                     }
                 }
             }
@@ -497,8 +544,8 @@ program CHIP8
                     {
                         if ((pixel & (0x80 >> xline)) != 0)
                         {
-                            byte xCoord = v[x] + xline;
-                            byte yCoord = v[y] + yline;
+                            byte xCoord = (v[x] + xline);
+                            byte yCoord = (v[y] + yline);
                             bool currentPixel = CHIP8.GetPixel(xCoord, yCoord);
                             if (currentPixel)
                             {
@@ -541,6 +588,10 @@ program CHIP8
                             pc += 2;
                         }
                     }
+                    default:
+                    {
+                        Die(0x0A); // not implemented?
+                    }
                 }
             }
             case 0xF:
@@ -548,13 +599,6 @@ program CHIP8
                 uint opCodeLSB = byte(opcode & 0x00FF);
                 switch (opCodeLSB)
                 {
-                    case 0x18:
-                    {
-                        // FX18: Set sound timer = VX
-                        uint x = (opcode & 0x0F00) >> 8;
-                        soundTimer = v[x];
-                        pc += 2;
-                    }
                     case 0x07:
                     {
                         // FX07: Set VX to the value of the delay timer
@@ -567,7 +611,7 @@ program CHIP8
                         // FX0A: A key press is awaited, and then stored in VX (blocking operation, all instruction halted until next key event)
                         uint x = (opcode & 0x0F00) >> 8;
                         bool keyPress = false;
-                        while (!keyPress)
+                        loop
                         {
                             // Continuously check for key presses until one is detected
                             UpdateKeyStates();
@@ -580,7 +624,22 @@ program CHIP8
                                     break;
                                 }
                             }
+                            if (keyPress) { break; }
                         }
+                        pc += 2;
+                    }
+                    case 0x15:
+                    {
+                        // FX15: Set delay timer = VX
+                        uint x = (opcode & 0x0F00) >> 8;
+                        delayTimer = v[x];
+                        pc += 2;
+                    }
+                    case 0x18:
+                    {
+                        // FX18: Set sound timer = VX
+                        uint x = (opcode & 0x0F00) >> 8;
+                        soundTimer = v[x];
                         pc += 2;
                     }
                     case 0x1E:
@@ -621,6 +680,7 @@ program CHIP8
                         {
                             memory[i + idx] = v[idx];
                         }
+                        i = i + x + 1; // Increment I
                         pc += 2;
                     }
                     case 0x65:
@@ -631,6 +691,7 @@ program CHIP8
                         {
                             v[idx] = memory[i + idx];
                         }
+                        i = i + x + 1; // Increment I
                         pc += 2;
                     }
                     case 0x75:
@@ -653,51 +714,67 @@ program CHIP8
                         }
                         pc += 2;
                     }
+                    default:
+                    {
+                        Die(0x0A); // not implemented?
+                    }
                 }
+            }
+            default:
+            {
+                Die(0x0A); // not implemented?
             }
         }
     }
     
     UpdateTimers()
     {
-        uint currentTime = Time.Seconds;
+        long currentTime = Time.Millis / 17;
         if (currentTime > lastTime)
         {
-            uint elapsed = currentTime - lastTime;
-            if (delayTimer > 0)
+            long elapsedTicks = currentTime - lastTime;
+            if (elapsedTicks > 0)
             {
-                if (delayTimer > elapsed)
+                if (delayTimer > 0)
                 {
-                    delayTimer -= elapsed;
+                    if (delayTimer > uint(elapsedTicks))
+                    {
+                        delayTimer -= uint(elapsedTicks);
+                    }
+                    else
+                    {
+                        delayTimer = 0;
+                    }
                 }
-                else
+                if (soundTimer > 0)
                 {
-                    delayTimer = 0;
+                    if (soundTimer > uint(elapsedTicks))
+                    {
+                        soundTimer -= uint(elapsedTicks);
+                    }
+                    else
+                    {
+                        soundTimer = 0;
+                        // TODO: stop the sound here
+                    }
                 }
+                lastTime = currentTime;
             }
-            if (soundTimer > 0)
-            {
-                if (soundTimer > elapsed)
-                {
-                    soundTimer -= elapsed;
-                }
-                else
-                {
-                    soundTimer = 0;
-                    // TODO: stop the sound here
-                }
-            }
-            lastTime = currentTime;
         }
     }
-    
+        
     bool LoadGame()
     {
         bool success;
         loop
         {
+            // https://github.com/Timendus/chip8-test-suite/blob/main/README.md
+            // https://github.com/loktar00/chip8/tree/master
+            // https://github.com/kripod/chip8-roms/tree/master/games
             
-            string filePath = "/Tests/4.ch8";
+            //string filePath = "/Tests/5.ch8";
+            //string filePath = "/Games/invaders.ch8";
+            string filePath = "/Games/blinky.ch8";
         
         
             // Ensure the file exists
@@ -733,7 +810,8 @@ program CHIP8
         return success;
     }
     
-    long cycles;
+    
+    
     Hopper()
     {
         if (!DeviceDriver.Begin())
@@ -745,6 +823,9 @@ program CHIP8
         Initialize();
         if (LoadGame())
         {
+            long cycles;
+            long start = Millis;
+            
             running = true;
             // Main emulation loop
             while (running)
@@ -754,10 +835,19 @@ program CHIP8
             
                 EmulateCycle();
                 cycles++;
+                
                 UpdateTimers(); // Update the delay and sound timers
                 if (soundTimer > 0)
                 {
                     // TODO : start sound here
+                }
+                Time.Delay(1);
+                if (cycles % 1000 == 0)
+                {
+                    long elapsed = Millis - start;
+                    float seconds = elapsed / 1000.0;
+                    float speed = 1.0 * cycles / seconds;
+                    WriteLn(cycles.ToString() + " cycles, " + seconds.ToString() + " s, " + speed.ToString() + " cycles/s");
                 }
             }
         }
