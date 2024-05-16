@@ -4,7 +4,7 @@ Follow these steps to run the Hopper Runtime Console application on your macOS m
 
 ## Prerequisites
 
-- Ensure you have received the zipped file containing the published application.
+- Ensure you have received the zipped file containing the published application (currently in the same folder on GitHub as these instructions).
 
 ## Installation and Execution Steps
 
@@ -28,13 +28,13 @@ Follow these steps to run the Hopper Runtime Console application on your macOS m
 4. **Make the Executable Executable**
    - Ensure the main executable file has execute permissions. Run the following command, replacing `HopperRuntimeConsole` with the actual name of the executable if it's different:
      ```sh
-     chmod +x HopperRuntimeConsole
+     chmod +x Hopper
      ```
 
 5. **Run the Application**
    - Run the executable from the Terminal:
      ```sh
-     ./HopperRuntimeConsole
+     ./Hopper
      ```
 
 ## Troubleshooting
