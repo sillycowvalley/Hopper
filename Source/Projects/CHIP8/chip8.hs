@@ -1,13 +1,16 @@
 program CHIP8
 {
-    uses "/Source/System/System"
-    uses "/Source/System/Screen"
+    uses "/Source/Library/Devices/WSPicoLCD144"
+    uses "/Source/Library/Fonts/Hitachi5x7"
+    
+    //uses "/Source/System/System"
+    //uses "/Source/System/Screen"
+    //uses "/Source/System/Keyboard"
     
     // Constants for the LCG
     const uint A = 75;      // Multiplier
     const uint C = 74;      // Increment
     const uint M = 65535;   // Modulus (2^16 - 1)
-
     uint seed;
     uint lastTime; // Last recorded time in seconds
     
@@ -29,7 +32,7 @@ program CHIP8
         0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F
     };
-
+    
     // Memory and registers
     byte[4096] memory;
     byte[16] v;
@@ -40,7 +43,6 @@ program CHIP8
     uint delayTimer;
     uint soundTimer;
     
-    byte[16] keypad;
     byte[8] rplFlags; // Define RPL user flags
     
     bool running;
@@ -50,23 +52,64 @@ program CHIP8
     uint xOffset;
     uint yOffset;
     
+    bool[16] keyState;
+    
     bool GetPixel(byte x, byte y)
     {
         uint index = x + y * 128;
         return display[index];
     }
-
     SetPixel(byte x, byte y, bool value)
     {
         uint index = x + y * 128;
         display[index] = value;
-        Screen.DrawChar(xOffset + x, yOffset + y, ' ', value ? Colour.White : Colour.Black, value ? Colour.Black : Colour.White);
+        //Display.SetPixel(int(xOffset + x), int(yOffset + y), value ? Colour.White : Colour.Black);
+        
+        x *= 2;
+        y *= 2;
+        
+        Display.SetPixel(x,   y,   value ? Colour.White : Colour.Black);
+        Display.SetPixel(x+1, y,   value ? Colour.White : Colour.Black);
+        Display.SetPixel(x,   y+1, value ? Colour.White : Colour.Black);
+        Display.SetPixel(x+1, y+1, value ? Colour.White : Colour.Black);
+        
     }
     Clear()
     {
         for (uint j = 0; j < 128 * 64; j++) { display[j] = false; }        
-        Screen.Clear();
+        Display.Clear();
     }
+    
+    UpdateKeyStates()
+    {
+        /*
+        while (Keyboard.IsAvailable)
+        {
+            char key = ToChar(Keyboard.ReadKey());
+            key = key.ToUpper();
+            for (byte i = 0; i < 16; i++)
+            {
+                if (key == chip8KeyMap[i])
+                {
+                    keyState[i] = true;
+                }
+            }
+        }*/
+        keyState[12] = Button0;
+        keyState[13] = Button1;
+        keyState[14] = Button2;
+        keyState[15] = Button3;
+    }
+    
+    ResetKeyStates()
+    {
+        for (byte i = 0; i < 16; i++)
+        {
+            keyState[i] = false;
+        }
+    }
+    
+    
     disableExtendedScreen()
     {
         extendedScreenMode = false;
@@ -93,20 +136,17 @@ program CHIP8
         i = 0;
         sp = 0;
         
-
         uint j;
         // Clear display, stack, registers, memory
         for (j = 0; j < 4096; j++) { memory[j] = 0; }
         for (j = 0; j < 16; j++) { v[j] = 0; }
         for (j = 0; j < 16; j++) { stack[j] = 0; }
         
-        for (j = 0; j < 16; j++) { keypad[j] = 0; }
         for (j = 0; j < 7; j++)  { rplFlags[j] = 0; }
         
         long now = Time.Millis;
         seed = UInt.FromBytes(now.GetByte(0), now.GetByte(1));
         lastTime = Time.Seconds; // Initialize lastTime
-
         // Load font set into memory
         j = 0;
         foreach (var f in fontSet)
@@ -137,7 +177,6 @@ program CHIP8
             }
         }
     }
-
     scrollLeft()
     {
         for (uint y = 0; y < 64; y++)
@@ -152,7 +191,6 @@ program CHIP8
             }
         }
     }
-
     scrollDown(byte n)
     {
         for (uint y = 63; y >= n; y--)
@@ -170,7 +208,6 @@ program CHIP8
             }
         }
     }
-
     exitProgram()
     {
         // In a real environment, you might set a flag or call an exit function
@@ -178,7 +215,6 @@ program CHIP8
         // For this example, let's assume we set a running flag to false
         running = false;
     }
-
         
     EmulateCycle()
     {
@@ -321,46 +357,38 @@ program CHIP8
             }
             case 0x8:
             {
+                uint x = (opcode & 0x0F00) >> 8;
+                uint y = (opcode & 0x00F0) >> 4;
                 uint opCodeLSN = byte(opcode & 0x000F);
                 switch (opCodeLSN)
                 {
                     case 0x0:
                     {
                         // 8XY0: Set VX to the value of VY
-                        uint x = (opcode & 0x0F00) >> 8;
-                        uint y = (opcode & 0x00F0) >> 4;
                         v[x] = v[y];
                         pc += 2;
                     }
                     case 0x1:
                     {
                         // 8XY1: Set VX to VX OR VY
-                        uint x = (opcode & 0x0F00) >> 8;
-                        uint y = (opcode & 0x00F0) >> 4;
                         v[x] = v[x] | v[y];
                         pc += 2;
                     }
                     case 0x2:
                     {
                         // 8XY2: Set VX to VX AND VY
-                        uint x = (opcode & 0x0F00) >> 8;
-                        uint y = (opcode & 0x00F0) >> 4;
                         v[x] = v[x] & v[y];
                         pc += 2;
                     }
                     case 0x3:
                     {
                         // 8XY3: Set VX to VX XOR VY
-                        uint x = (opcode & 0x0F00) >> 8;
-                        uint y = (opcode & 0x00F0) >> 4;
                         v[x] = v[x] ^ v[y];
                         pc += 2;
                     }
                     case 0x4:
                     {
                         // 8XY4: Add VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't
-                        uint x = (opcode & 0x0F00) >> 8;
-                        uint y = (opcode & 0x00F0) >> 4;
                         if (v[y] > (0xFF - v[x]))
                         {
                             v[0xF] = 1; // Carry
@@ -375,15 +403,13 @@ program CHIP8
                     case 0x5:
                     {
                         // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't
-                        uint x = (opcode & 0x0F00) >> 8;
-                        uint y = (opcode & 0x00F0) >> 4;
-                        if (v[y] > v[x])
+                        if (v[x] >= v[y])
                         {
-                            v[0xF] = 0; // Borrow
+                            v[0xF] = 1;
                         }
                         else
                         {
-                            v[0xF] = 1;
+                            v[0xF] = 0;
                         }
                         v[x] = v[x] - v[y];
                         pc += 2;
@@ -391,7 +417,6 @@ program CHIP8
                     case 0x6:
                     {
                         // 8XY6: Store the least significant bit of VX in VF and then shifts VX to the right by 1
-                        uint x = (opcode & 0x0F00) >> 8;
                         v[0xF] = v[x] & 0x1;
                         v[x] = v[x] >> 1;
                         pc += 2;
@@ -399,15 +424,13 @@ program CHIP8
                     case 0x7:
                     {
                         // 8XY7: Set VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't
-                        uint x = (opcode & 0x0F00) >> 8;
-                        uint y = (opcode & 0x00F0) >> 4;
-                        if (v[x] > v[y])
+                        if (v[y] >= v[x])
                         {
-                            v[0xF] = 0; // Borrow
+                            v[0xF] = 1;
                         }
                         else
                         {
-                            v[0xF] = 1;
+                            v[0xF] = 0;
                         }
                         v[x] = v[y] - v[x];
                         pc += 2;
@@ -415,7 +438,6 @@ program CHIP8
                     case 0xE:
                     {
                         // 8XYE: Store the most significant bit of VX in VF and then shifts VX to the left by 1
-                        uint x = (opcode & 0x0F00) >> 8;
                         v[0xF] = (v[x] >> 7) & 0x1;
                         v[x] = v[x] << 1;
                         pc += 2;
@@ -497,7 +519,7 @@ program CHIP8
                     {
                         // EX9E: Skips the next instruction if the key stored in VX is pressed
                         uint x = (opcode & 0x0F00) >> 8;
-                        if (keypad[v[x]] != 0)
+                        if (keyState[v[x]])
                         {
                             pc += 4;
                         }
@@ -510,7 +532,7 @@ program CHIP8
                     {
                         // EXA1: Skips the next instruction if the key stored in VX is not pressed
                         uint x = (opcode & 0x0F00) >> 8;
-                        if (keypad[v[x]] == 0)
+                        if (!keyState[v[x]])
                         {
                             pc += 4;
                         }
@@ -545,16 +567,20 @@ program CHIP8
                         // FX0A: A key press is awaited, and then stored in VX (blocking operation, all instruction halted until next key event)
                         uint x = (opcode & 0x0F00) >> 8;
                         bool keyPress = false;
-                        for (byte i = 0; i < 16; i++)
+                        while (!keyPress)
                         {
-                            if (keypad[i] != 0)
+                            // Continuously check for key presses until one is detected
+                            UpdateKeyStates();
+                            for (byte i = 0; i < 16; i++)
                             {
-                                v[x] = i;
-                                keyPress = true;
+                                if (keyState[i])
+                                {
+                                    v[x] = i;
+                                    keyPress = true;
+                                    break;
+                                }
                             }
                         }
-                        // If no key is pressed, return and keep waiting.
-                        if (!keyPress) { return; }
                         pc += 2;
                     }
                     case 0x1E:
@@ -664,22 +690,76 @@ program CHIP8
             lastTime = currentTime;
         }
     }
-
     
+    bool LoadGame()
+    {
+        bool success;
+        loop
+        {
+            
+            string filePath = "/Tests/4.ch8";
+        
+        
+            // Ensure the file exists
+            if (!File.Exists(filePath))
+            {
+                // Handle the error, for example:
+                WriteLn("File not found: " + filePath);
+                break;
+            }
+        
+            // Open the file
+            file gameFile = File.Open(filePath);
+            if (!gameFile.IsValid())
+            {
+                // Handle the error, for example:
+                WriteLn("Failed to open file: " + filePath);
+                break;
+            }
+        
+            // Load the game into memory starting at address 0x200
+            uint loadAddress = 0x200;
+            loop
+            {
+                byte data = gameFile.Read();
+                if (!gameFile.IsValid()) { break; }
+        
+                memory[loadAddress] = data;
+                loadAddress++;
+            }
+            success = true;
+            break;
+        }
+        return success;
+    }
+    
+    long cycles;
     Hopper()
     {
-        Initialize();
-        running = true;
-        // Main emulation loop
-        while (running)
+        if (!DeviceDriver.Begin())
         {
-            EmulateCycle();
-            UpdateTimers(); // Update the delay and sound timers
-            if (soundTimer > 0)
+            IO.WriteLn("Failed to initialize Waveshare Pico-LCD-1.44");
+            return;
+        }
+        
+        Initialize();
+        if (LoadGame())
+        {
+            running = true;
+            // Main emulation loop
+            while (running)
             {
-                // TODO : start sound here
+                ResetKeyStates();  // Reset key states for the new frame
+                UpdateKeyStates(); // Update the key states
+            
+                EmulateCycle();
+                cycles++;
+                UpdateTimers(); // Update the delay and sound timers
+                if (soundTimer > 0)
+                {
+                    // TODO : start sound here
+                }
             }
-            // Add delay and input handling here
         }
     }
 }
