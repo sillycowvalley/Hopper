@@ -26,7 +26,7 @@ Follow these steps to run the Hopper Runtime Console application on your macOS m
      ```
 
 4. **Make the Executable Executable**
-   - Ensure the main executable file has execute permissions. Run the following command, replacing `HopperRuntimeConsole` with the actual name of the executable if it's different:
+   - Ensure the main executable file has execute permissions. Run the following command, replacing `Hopper` with the actual name of the executable if it's different:
      ```sh
      chmod +x Hopper
      ```
@@ -45,4 +45,10 @@ Follow these steps to run the Hopper Runtime Console application on your macOS m
 
 - For any other issues, please provide the error message so we can assist further.
 
+## Additional Notes
 
+- **No Additional Installations Required**: This application is self-contained, meaning all necessary libraries and dependencies are included. You do not need to install .NET Core or any other runtime separately.
+
+---
+
+Feel free to reach out if you need any additional help or encounter any issues. Happy testing!
