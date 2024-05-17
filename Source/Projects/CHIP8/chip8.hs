@@ -1,5 +1,13 @@
 program CHIP8
 {
+    // https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Technical-Reference
+    
+    // Quirks:
+    // https://chip-8.github.io/database/#options
+    
+    // https://johnearnest.github.io/chip8Archive/
+    // https://github.com/JohnEarnest/chip8Archive
+    
     uses "/Source/Library/Devices/WSPicoLCD144"
     uses "/Source/Library/Fonts/Hitachi5x7"
     
