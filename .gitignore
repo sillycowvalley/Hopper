@@ -27,3 +27,6 @@ Temp/testpath.json
 Runtimes/Windows/Restart/.vs/Restart/v17/DocumentLayout.json
 
 Source/Projects/6502SBC/EasyEDA/offline_projects_backup
+Runtimes/Universal/Hopper/bin
+Runtimes/Universal/Hopper/.vs
+Runtimes/Universal/Hopper/Publish
