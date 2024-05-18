@@ -40,6 +40,9 @@ Hopper has several notable differences from other C-like languages such as C, C+
 10. **Garbage Collection:**
     - Hopper uses a garbage collector that relies on the stack to determine live objects, with a strict copy-on-write policy for reference types.
 
+11. **Boolean Expressions:**
+    - Hopper requires boolean expressions for conditionals and does not allow using integers as substitutes for boolean expressions (unlike in C).
+
 ## Programs and Units
 
 ### Program Structure
