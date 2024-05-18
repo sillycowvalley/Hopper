@@ -21,6 +21,8 @@ unit LibCalls
         MCUAnalogRead,
         MCUAnalogWrite,
         MCUAnalogWriteResolution,
+        MCUTone,
+        MCUNoTone,
         MCUAttachToPin,
         MCUInterruptsEnabledGet,
         MCUInterruptsEnabledSet,

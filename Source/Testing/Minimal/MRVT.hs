@@ -1,6 +1,5 @@
 program MRVT
 {
-    #define EXPERIMENTAL
     
     //#define CPU_Z80
     

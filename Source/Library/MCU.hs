@@ -64,6 +64,13 @@ unit MCU
     AnalogWrite(byte pin, uint value) library;
     AnalogWriteResolution(byte bits) library;
     
+    Tone(byte pin, uint frequency, uint duration) library;
+    Tone(byte pin, uint frequency)
+    {
+        Tone(pin, frequency, 0);
+    }
+    NoTone(byte pin) library;
+    
     bool AttachToPin(byte pin, PinISRDelegate gpioISR, PinStatus status) library;
     
     bool InterruptsEnabled { get library; set library; }

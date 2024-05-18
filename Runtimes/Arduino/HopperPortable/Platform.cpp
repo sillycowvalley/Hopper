@@ -396,8 +396,14 @@ void External_PinMode(Byte pin, Byte value)
     pinMode(pin, value);
 }
 
-
-
+void External_Tone(Byte pin, UInt frequency, UInt duration)
+{
+    tone(pin, frequency, duration);
+}
+void External_NoTone(Byte pin)
+{
+    noTone(pin);
+}
 void External_DigitalWrite(Byte pin, Byte value)
 {
     digitalWrite(pin, value);

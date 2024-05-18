@@ -94,6 +94,10 @@ Byte External_DigitalRead(Byte pin);
 UInt External_AnalogRead(Byte pin);
 void External_AnalogWrite(Byte pin, UInt value);
 void External_AnalogWriteResolution(Byte bits);
+
+void External_Tone(Byte pin, UInt frequency, UInt duration);
+void External_NoTone(Byte pin);
+
 Bool External_AttachToPin(Byte value, PinISRDelegate gpioISRDelegate, Byte status);
 Bool External_MCUInterruptsEnabledGet();
 void External_MCUInterruptsEnabledSet(Bool value);

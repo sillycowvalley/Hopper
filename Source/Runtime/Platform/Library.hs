@@ -220,6 +220,19 @@ unit Library
                 byte value = byte(Pop());
                 External.AnalogWriteResolution(value);
             }
+            case LibCall.MCUTone:
+            {
+                uint duration = Pop();
+                uint frequency = Pop();
+                byte pin   = byte(Pop());
+                External.Tone(pin, frequency, duration);
+            }
+            case LibCall.MCUNoTone:
+            {
+                byte pin   = byte(Pop());
+                External.NoTone(pin);
+            }
+            
             case LibCall.MCUAttachToPin:
             {
                 byte state = byte(Pop());

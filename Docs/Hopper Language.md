@@ -1,5 +1,97 @@
 **Note:**  - this is a work in progress between ChatGPT and me. It will improve as ChatGPT's knowledge of the language improves.
 
+Sure, I'll adjust the section with your provided sample for the `program` and use examples from the `MCU` unit for the `unit` section.
+
+---
+
+## Programs and Units in Hopper
+
+Hopper organizes code into two primary constructs: `program` and `unit`. These constructs help structure the code, making it modular and maintainable, similar to how Turbo Pascal separates program logic from reusable modules.
+
+### Program
+- **Purpose**: The `program` block is the main entry point of a Hopper application. It contains the core logic, including setup and loop functions.
+- **Structure**: A `program` in Hopper is enclosed in a `program` block and typically includes an initialization method (`Setup`) and an entry point method (`Hopper`) which contains the main loop.
+- **Example**:
+  ```hopper
+  program Blink
+  {
+      uses "/Source/Library/Boards/CytronMakerPiRP2040"
+      
+      // Initialize the built-in LED pin
+      Setup()
+      {
+          MCU.PinMode(Board.BuiltInLED, MCU.PinModeOption.Output);
+      }
+
+      // Entry point
+      Hopper()
+      {
+          Blink.Setup();
+          loop
+          {
+              // Turn the LED on
+              MCU.DigitalWrite(Board.BuiltInLED, true);
+              Time.Delay(1000); // Delay for 1000 milliseconds (1 second)
+              
+              // Turn the LED off
+              MCU.DigitalWrite(Board.BuiltInLED, false);
+              Time.Delay(1000); // Delay for 1000 milliseconds (1 second)
+          }
+      }
+  }
+  ```
+
+### Unit
+- **Purpose**: A `unit` in Hopper defines reusable components or libraries. Units can include functions, constants, and other definitions that can be imported into programs or other units.
+- **Structure**: A `unit` block is enclosed in a `unit` block and contains definitions and implementations pertinent to specific functionalities.
+- **Example**:
+  ```hopper
+  unit MCU
+  {
+      uses "/Source/System/System"
+      uses "/Source/System/Runtime"
+      uses "/Source/System/IO"
+
+      flags PinModeOption
+      {
+          Input         = 0x00,
+          Output        = 0x01,
+          InputPullup   = 0x02,
+          InputPulldown = 0x03,
+      }
+
+      enum PinStatus
+      {
+          Low = 0,
+          High = 1,
+          Change = 2,
+          Falling = 3,
+          Rising = 4,
+      }
+      
+      delegate PinISRDelegate(byte pin, PinStatus status);
+
+      PinMode(byte pin, PinModeOption pinMode) library;
+      bool DigitalRead(byte pin) library;
+      DigitalWrite(byte pin, bool value) library;
+      uint AnalogRead(byte pin) library;
+      AnalogWrite(byte pin, uint value) library;
+      AnalogWriteResolution(byte bits) library;
+
+      bool AttachToPin(byte pin, PinISRDelegate gpioISR, PinStatus status) library;
+
+      bool InterruptsEnabled { get library; set library; }
+  }
+  ```
+
+### Comparison to Turbo Pascal
+- **Separation**: Both Hopper and Turbo Pascal use the concept of `program` and `unit` to modularize code, but Hopper enforces a stricter separation by requiring them to be in separate files.
+- **Structure**: Hopper has a more rigid structure, especially with the use of curly braces `{}` for blocks and requiring all code to be within well-defined sections.
+- **Entry Point**: In both languages, the `program` block serves as the entry point, but Hopper uses `Hopper()` as the main entry method, while Turbo Pascal uses the `begin...end.` block.
+
+This structure encourages modularity and reusability in Hopper, making it easier to manage and maintain complex applications.
+
+
 ## Loops in Hopper
 
 Here's a summary of the loop constructs in Hopper, including the use of `break` and `continue`:

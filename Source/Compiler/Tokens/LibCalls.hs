@@ -30,6 +30,8 @@ unit LibCalls
         addEntry("MCU.AnalogRead");
         addEntry("MCU.AnalogWrite");
         addEntry("MCU.AnalogWriteResolution");
+        addEntry("MCU.Tone");
+        addEntry("MCU.NoTone");
         addEntry("MCU.AttachToPin");
         addEntry("MCU.InterruptsEnabled_Get");
         addEntry("MCU.InterruptsEnabled_Set");

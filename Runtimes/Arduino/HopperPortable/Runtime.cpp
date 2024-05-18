@@ -7,6 +7,7 @@
 
 
 
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -6910,6 +6911,20 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Byte value = Byte(HopperVM_Pop());
         External_AnalogWriteResolution(value);
+        break;
+    }
+    case LibCall::eMCUTone:
+    {
+        UInt duration = HopperVM_Pop();
+        UInt frequency = HopperVM_Pop();
+        Byte pin = Byte(HopperVM_Pop());
+        External_Tone(pin, frequency, duration);
+        break;
+    }
+    case LibCall::eMCUNoTone:
+    {
+        Byte pin = Byte(HopperVM_Pop());
+        External_NoTone(pin);
         break;
     }
     case LibCall::eMCUAttachToPin:

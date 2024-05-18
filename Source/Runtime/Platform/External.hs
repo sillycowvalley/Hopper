@@ -503,7 +503,15 @@ unit External
     {
         ErrorDump(169); Error = 0x0A; 
     }
-    
+    Tone(byte pin, uint frequency, uint duration)
+    {
+        ErrorDump(169); Error = 0x0A; 
+    }
+    NoTone(byte pin)
+    {
+        ErrorDump(169); Error = 0x0A; 
+    }
+     
     bool AttachToPin(byte pin, PinISRDelegate isrDelegate, HopperPinStatus state)
     {
         ErrorDump(170); Error = 0x0A; 
