@@ -18,10 +18,17 @@ The AT28C256 EEPROM offers 32KB of non-volatile memory storage. It is used to st
 The ATF22V10C PLD is utilized for custom logic implementation, providing flexibility in interfacing and control logic for the SBC. With a propagation delay of 7.5 ns, it significantly contributes to the system's speed and efficiency.
 
 ### 65C22 Versatile Interface Adapter (VIA)
-The 65C22 VIA provides parallel I/O ports, timers, and interrupt capabilities, making it an essential component for interfacing with external peripherals and handling time-critical tasks.
+The 65C22 VIA provides parallel I/O ports, timers, and interrupt capabilities. In the Hopper SBC, it provides:
+- **16 General Use GPIO Pins**: Two 8-bit parallel I/O ports (Port A and Port B) for interfacing with external devices.
+- **Built-in LED**: Connected to PA0 (Port A bit 0) for user indications.
+- **I2C Interface**: Hopper implements SCL on PB0 and SDA on PB1, with built-in 4k7 pull-up resistors.
+- **Timer**: One timer is used to support the `Time.Seconds` and `Time.Delay` APIs in Hopper.
 
 ### MC6850 ACIA
-The MC6850 Asynchronous Communications Interface Adapter facilitates serial communication, enabling data exchange with other systems or devices through serial ports.
+The MC6850 Asynchronous Communications Interface Adapter facilitates serial communication, enabling data exchange with other systems or devices through serial ports. In the Hopper SBC, it provides:
+- **Program Uploading**: Facilitates the uploading of Hopper programs from a host computer.
+- **Hopper Monitor**: Supports the Hopper Monitor interface for Hopper VM system-level debugging.
+- **Hopper Debugger**: Provides the interface for the Hopper Debugger, enabling development and source-level debugging of Hopper applications.
 
 ### 24AA1026 EEPROM (I2C)
 This serial EEPROM provides additional non-volatile memory with an I2C interface, an easy and reliable way to persist the last Hopper program uploaded. The Hopper Minimal Runtime will load and run this program on reboot unless the User button is held down.
