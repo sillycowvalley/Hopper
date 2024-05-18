@@ -498,8 +498,8 @@ namespace HopperNET
 
             serialPort = new SerialPort();
             serialPort.PortName = portName;
-            serialPort.BaudRate = 57600; //  57600 for 6502 machine (with 3.6MHz oscillator), 115200 for Arduino MEGA2560 apps from 8bitforce;
-            //serialPort.BaudRate = 28800; //  28800  for 6502 machine (at 28K with 1.8Mhz oscillator)
+            //serialPort.BaudRate = 57600; //  57600 for 6502 machine (with 3.6MHz oscillator), 115200 for Arduino MEGA2560 apps from 8bitforce;
+            serialPort.BaudRate = 28800; //  28800  for 6502 machine (at 28K with 1.8Mhz oscillator)
             serialPort.Parity = Parity.None;
             serialPort.DataBits = 8;
             serialPort.StopBits = StopBits.One;

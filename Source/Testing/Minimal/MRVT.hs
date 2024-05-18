@@ -2486,15 +2486,15 @@ program MRVT
 
         TestArray();        
 
-        //TestCharSystem();
-        //TestStringCompare();
-        //TestString();
-        //TestStringCase();
-        //TestHexStrings();
-        //TestRef();
-        //TestStringTrim();
-        //TestStringSystem();
-/*
+        TestCharSystem();
+        TestStringCompare();
+        TestString();
+        TestStringCase();
+        TestHexStrings();
+        TestRef();
+        TestStringTrim();
+        TestStringSystem();
+
         TestForEach();
         TestFor();
         TestWhile();
@@ -2507,9 +2507,9 @@ program MRVT
         TestConstants();
         TestPropertyMath();
         TestSwitch();
-        */
-        //TestUIntMath();
-        //TestIntMath();
+
+        TestUIntMath();
+        TestIntMath();
   
         WriteLn("  Passed");
     }
