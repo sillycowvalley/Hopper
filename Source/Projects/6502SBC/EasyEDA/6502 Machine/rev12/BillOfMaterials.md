@@ -1,17 +1,24 @@
-# Bill of Materials for Hopper 65C02S SBC
+# Bill of Materials for the Hopper 6502 Single Board Computer
 
-## General Components
+## ICs
 
-| Quantity | Part Number      | Description                                |
-|----------|------------------|--------------------------------------------|
-| 1        | 65C02S           | Microprocessor                             |
-| 1        | DS1813           | Reset IC                                   |
-| 1        | ATF22V10C        | Programmable Logic                         |
-| 1        | 65C22            | VIA (Versatile Interface Adapter)          |
-| 1        | 24AA1026         | EEPROM (I2C)                               |
-| 1        | MC6850           | ACIA (Asynchronous Communications Interface Adapter) |
-| 1        | AT28C256         | EEPROM (Parallel)                          |
-| 1        | 6C1008 / 62256   | SRAM (Static RAM)                          |
+| Quantity | Part Number         | Description                                |
+|----------|---------------------|--------------------------------------------|
+| 1        | WD65C02S / 6502     | Microprocessor                             |
+| 1        | DS1813+5            | Supervisor / Reset IC                      |
+| 1        | GAL20V8 / ATF22V10C | Programmable Logic                         |
+| 1        | 65C22               | VIA (Versatile Interface Adapter)          |
+| 1        | 24AA1026            | EEPROM (I2C)                               |
+| 1        | MC6850              | ACIA (Asynchronous Communications Interface Adapter) |
+| 1        | AT28C256            | EEPROM (Parallel)                          |
+| 1        | 6C1008 / 62256      | SRAM (Static RAM)                          |
+
+## Can Oscillators (DIP-4 or DIP-14)
+
+| Quantity | Description                    |
+|----------|--------------------------------|
+| 1        | Crystal, 1-8 MHz               |
+| 1        | Crystal, 1.8432 / 3.6864 MHz   |
 
 ## Passive Components
 
@@ -23,12 +30,6 @@
 | 3        | Resistor, 4.7kΩ      |
 | 2        | Resistor, 470Ω       |
 
-## Crystals and Oscillators
-
-| Quantity | Description                    |
-|----------|--------------------------------|
-| 1        | Crystal, 1-8 MHz               |
-| 1        | Crystal, 1.8432 / 3.6864 MHz   |
 
 ## Connectors and Headers
 
