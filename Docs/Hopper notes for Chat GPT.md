@@ -43,6 +43,15 @@ Hopper has several notable differences from other C-like languages such as C, C+
 11. **Boolean Expressions:**
     - Hopper requires boolean expressions for conditionals and does not allow using integers as substitutes for boolean expressions (unlike in C).
 
+12. **Array Initialization Limitations:**
+    - Hopper only allows direct initialization of arrays for types like `byte` or `char`. Arrays of `bool`, `uint`, `int`, `float`, or `long` cannot be directly initialized.
+
+13. **No Objects:**
+    - Hopper does not have objects, so the syntax `byte[] shape = new byte[PieceSize * PieceSize];` is incorrect. It should be `byte[PieceSize * PieceSize] shape;`.
+
+14. **Time and Random Numbers:**
+    - There is no `System.TickCount`. Use `Time.Millis` instead. Since it returns a signed long and only the LSB is needed, use `return ((Time.Millis).GetByte(0) % ShapeCount);`.
+
 ## Programs and Units
 
 ### Program Structure
@@ -319,6 +328,8 @@ program Melody
 
     PlayMelody(<string> notes, const byte[] durations)
     {
+
+
         uint tuneSize = notes.Count;
         <string,uint> toneFrequencies = Pitches.GetTones();
 
