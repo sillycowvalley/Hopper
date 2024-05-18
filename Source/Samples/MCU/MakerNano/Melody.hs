@@ -1,4 +1,4 @@
-program ImperialMarch
+program Melody
 {
     uses "/Source/Library/Boards/CytronMakerPiRP2040"
     uses "Pitches"
