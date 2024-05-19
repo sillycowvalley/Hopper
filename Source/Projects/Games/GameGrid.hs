@@ -1,10 +1,16 @@
 unit GameGrid
 {
-    uses "/Source/System/Screen"
-
+    uses "DisplayHelper"
+    
+#ifdef MCU
+    const byte Width = 10;
+    const byte Height = 18;
+#else    
     const byte Width = 10;
     const byte Height = 20;
-    bool[Width * Height] grid;
+#endif
+    
+    uint[Width * Height] colors;
 
     Initialize()
     {
@@ -17,20 +23,25 @@ unit GameGrid
         {
             for (byte col = 0; col < Width; col++)
             {
-                grid[col + row * Width] = false;
+                colors[col + row * Width] = Colour.Black;
             }
         }
     }
 
-    SetCell(byte x, byte y, bool filled)
+    SetCell(byte x, byte y, uint color)
     {
-        grid[x + y * Width] = filled;
-        Screen.DrawChar(x, y, ' ', Colour.White, filled ? Colour.White : Colour.Black);
+        uint index = x + y * Width;
+        colors[index] = color;
     }
 
     bool GetCell(byte x, byte y)
     {
-        return grid[x + y * Width];
+        return colors[x + y * Width] != Colour.Black;
+    }
+
+    uint GetColor(byte x, byte y)
+    {
+        return colors[x + y * Width];
     }
 
     Render()
@@ -39,7 +50,8 @@ unit GameGrid
         {
             for (byte col = 0; col < Width; col++)
             {
-                Screen.DrawChar(col, row, ' ', Colour.White, grid[col + row * Width] ? Colour.White : Colour.Black);
+                uint index = col + row * Width;
+                DrawCell(col, row);
             }
         }
     }
@@ -48,7 +60,7 @@ unit GameGrid
     {
         for (byte col = 0; col < Width; col++)
         {
-            if (!grid[col + row * Width])
+            if (!GetCell(col, row))
             {
                 return false;
             }
@@ -62,13 +74,18 @@ unit GameGrid
         {
             for (byte col = 0; col < Width; col++)
             {
-                grid[col + y * Width] = grid[col + (y - 1) * Width];
+                colors[col + y * Width] = colors[col + (y - 1) * Width];
             }
         }
         for (byte col = 0; col < Width; col++)
         {
-            grid[col] = false;
+            colors[col] = Colour.Black;
         }
+    }
+
+    DrawCell(byte x, byte y)
+    {
+        DisplayHelper.DrawCell(x, y, colors[x + y * Width]);
     }
 }
 

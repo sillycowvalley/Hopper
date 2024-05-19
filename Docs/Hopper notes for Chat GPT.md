@@ -11,6 +11,7 @@ Hopper has several notable differences from other C-like languages such as C, C+
 1. **Switch Statements:**
    - Hopper switch cases never fall through, so a `break` statement is not required.
    - Each case block is terminated automatically.
+   - Always use curly braces `{}` even for single statements within a switch case.
 
 2. **Loop Keyword:**
    - Hopper uses the `loop` keyword as a shorthand for `while(true)` or `for(;;)`, creating an infinite loop.
