@@ -3,12 +3,7 @@ unit Pieces
     const byte ShapeCount = 7;
     const byte RotationCount = 4;
     const byte PieceSize = 4;
-
-    byte currentShape;
-    byte currentRotation;
-    byte currentX;
-    byte currentY;
-
+    
     // Define the shapes and their rotations (4x4 grids stored in flat arrays)
     byte[ShapeCount * RotationCount * PieceSize * PieceSize] shapes = {
         // I piece
@@ -132,9 +127,13 @@ unit Pieces
         0, 0, 0, 0
     };
 
+    byte currentShape;
+    byte currentRotation;
+    byte currentX;
+    byte currentY;
+
     Initialize()
     {
-        IO.WriteLn("Initializing piece");
         currentShape = RandomShape();
         currentRotation = 0;
         currentX = GameGrid.Width / 2 - 2;
@@ -144,7 +143,6 @@ unit Pieces
     Rotate()
     {
         currentRotation = (currentRotation + 1) % RotationCount;
-        IO.WriteLn("Rotating piece to rotation " + currentRotation.ToString());
     }
 
     byte[PieceSize * PieceSize] GetCurrentShape()
@@ -180,11 +178,10 @@ unit Pieces
         return true;
     }
 
-    PlaceCurrentShape()
+    UpdateCurrentShape(bool place)
     {
-        IO.WriteLn("Placing current shape");
         byte[PieceSize * PieceSize] shape = GetCurrentShape();
-        uint color = DisplayHelper.GetColorForShape(currentShape);
+        uint color = place ? DisplayHelper.GetColorForShape(currentShape) : Colour.Black;
         for (byte i = 0; i < PieceSize; i++)
         {
             for (byte j = 0; j < PieceSize; j++)
@@ -197,11 +194,24 @@ unit Pieces
         }
     }
 
+    PlaceCurrentShape()
+    {
+        UpdateCurrentShape(true);
+    }
+
+    ClearCurrentShape()
+    {
+        UpdateCurrentShape(false);
+    }
+
+    DrawCurrentShape()
+    {
+        UpdateCurrentShape(true);
+    }
+
     byte RandomShape()
     {
-        byte shape = ((Time.Millis).GetByte(0) % ShapeCount);
-        IO.WriteLn("Random shape generated: " + shape.ToString());
-        return shape;
+        return ((Time.Millis).GetByte(0) % ShapeCount);
     }
 }
 

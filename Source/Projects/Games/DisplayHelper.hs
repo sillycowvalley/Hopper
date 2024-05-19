@@ -1,6 +1,7 @@
 unit DisplayHelper
 {
-    
+    const bool DebugEnabled = false;
+
     uint Cyan    { get { return 0x0FF; } }  // Cyan
     uint Blue    { get { return 0x00F; } }  // Blue
     uint Orange  { get { return 0xFA0; } }  // Orange
@@ -35,7 +36,16 @@ unit DisplayHelper
     {
         for (byte i = 0; i < text.Length; i++)
         {
+            DrawCell(startX + i, startY, bgColor);
             Screen.DrawChar(startX + i, startY, text[i], fgColor, bgColor);
+        }
+    }
+
+    DebugLog(string message)
+    {
+        if (DebugEnabled)
+        {
+            IO.WriteLn(message);
         }
     }
 }

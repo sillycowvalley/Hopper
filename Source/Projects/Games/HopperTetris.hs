@@ -18,9 +18,10 @@ program HopperTetris
     Hopper()
     {
 #ifdef MCU
-        if (!DeviceDriver.Begin())
+        PinISRDelegate buttonDelegate = ButtonISR;
+        if (!DeviceDriver.Begin(buttonDelegate))
         {
-            IO.WriteLn("Failed to initialize Waveshare Pico-LCD-1.44");
+            DisplayHelper.DebugLog("Failed to initialize Waveshare Pico-LCD-1.44");
             return;
         }
 #endif          
@@ -32,80 +33,73 @@ program HopperTetris
             Input.Update();
 
             // Clear the current piece from the grid
-            IO.WriteLn("Clearing current piece");
-            byte[Pieces.PieceSize * Pieces.PieceSize] shape = Pieces.GetCurrentShape();
-            for (byte i = 0; i < Pieces.PieceSize; i++)
-            {
-                for (byte j = 0; j < Pieces.PieceSize; j++)
-                {
-                    if (shape[i + j * Pieces.PieceSize] != 0)
-                    {
-                        GameGrid.SetCell(Pieces.currentX + i, Pieces.currentY + j, Colour.Black);
-                    }
-                }
-            }
+            DisplayHelper.DebugLog("Clearing current piece");
+            Pieces.ClearCurrentShape();
 
             // Handle input
-            if (Input.Left && Pieces.IsValidPosition(Pieces.currentX - 1, Pieces.currentY, shape))
+            if (Input.Left && Pieces.IsValidPosition(Pieces.currentX - 1, Pieces.currentY, Pieces.GetCurrentShape()))
             {
                 Pieces.currentX--;
-                IO.WriteLn("Moving piece left");
+                DisplayHelper.DebugLog("Moving piece left");
             }
-            if (Input.Right && Pieces.IsValidPosition(Pieces.currentX + 1, Pieces.currentY, shape))
+            if (Input.Right && Pieces.IsValidPosition(Pieces.currentX + 1, Pieces.currentY, Pieces.GetCurrentShape()))
             {
                 Pieces.currentX++;
-                IO.WriteLn("Moving piece right");
-            }
-            if (Input.Down && Pieces.IsValidPosition(Pieces.currentX, Pieces.currentY + 1, shape))
-            {
-                Pieces.currentY++;
-                IO.WriteLn("Moving piece down");
+                DisplayHelper.DebugLog("Moving piece right");
             }
             if (Input.Space)
             {
                 Pieces.Rotate();
-                shape = Pieces.GetCurrentShape();
-                if (!Pieces.IsValidPosition(Pieces.currentX, Pieces.currentY, shape))
+                if (!Pieces.IsValidPosition(Pieces.currentX, Pieces.currentY, Pieces.GetCurrentShape()))
                 {
                     // Revert rotation if it's not valid
                     Pieces.Rotate();
                     Pieces.Rotate();
                     Pieces.Rotate();
-                    shape = Pieces.GetCurrentShape();
-                    IO.WriteLn("Rotation invalid, reverting");
+                    DisplayHelper.DebugLog("Rotation invalid, reverting");
                 }
                 else
                 {
-                    IO.WriteLn("Piece rotated");
+                    DisplayHelper.DebugLog("Piece rotated");
                 }
+            }
+            if (Input.Down)
+            {
+                DisplayHelper.DebugLog("Dropping piece");
+                while (Pieces.IsValidPosition(Pieces.currentX, Pieces.currentY + 1, Pieces.GetCurrentShape()))
+                {
+                    Pieces.ClearCurrentShape();
+                    Pieces.currentY++;
+                }
+                Pieces.DrawCurrentShape();
+                DisplayHelper.DebugLog("Piece dropped");
             }
             if (Input.Exit)
             {
-                IO.WriteLn("Exiting game");
+                DisplayHelper.DebugLog("Exiting game");
                 break;
             }
 
             // Move piece down
-            if (Pieces.IsValidPosition(Pieces.currentX, Pieces.currentY + 1, shape))
+            if (Pieces.IsValidPosition(Pieces.currentX, Pieces.currentY + 1, Pieces.GetCurrentShape()))
             {
                 Pieces.currentY++;
-                IO.WriteLn("Piece moved down");
+                DisplayHelper.DebugLog("Piece moved down");
             }
             else
             {
                 // Place the piece and generate a new one
                 Pieces.PlaceCurrentShape();
-                IO.WriteLn("Piece placed, generating new piece");
+                DisplayHelper.DebugLog("Piece placed, generating new piece");
                 Input.Clear();  // Clear the input buffer when spawning a new piece
 
                 // Check for game over
                 Pieces.Initialize();
-                shape = Pieces.GetCurrentShape();
                 if (!Pieces.IsValidPosition(Pieces.currentX, Pieces.currentY, Pieces.GetCurrentShape()))
                 {
                     GameGrid.Render();
                     DisplayHelper.DrawText(GameGrid.Width + 2, 5, "Game Over", Colour.White, Colour.Black);
-                    IO.WriteLn("Game Over");
+                    DisplayHelper.DebugLog("Game Over");
 #ifdef MCU
                     loop
                     {
@@ -120,24 +114,14 @@ program HopperTetris
                     if (GameGrid.IsRowFull(row))
                     {
                         GameGrid.ClearRow(row);
-                        IO.WriteLn("Clearing full row: " + row.ToString());
+                        DisplayHelper.DebugLog("Clearing full row: " + row.ToString());
                     }
                 }
             }
 
             // Render the current piece on the grid
-            uint currentColor = DisplayHelper.GetColorForShape(Pieces.currentShape);
-            IO.WriteLn("Rendering current piece");
-            for (byte i = 0; i < Pieces.PieceSize; i++)
-            {
-                for (byte j = 0; j < Pieces.PieceSize; j++)
-                {
-                    if (shape[i + j * Pieces.PieceSize] != 0)
-                    {
-                        GameGrid.SetCell(Pieces.currentX + i, Pieces.currentY + j, currentColor);
-                    }
-                }
-            }
+            DisplayHelper.DebugLog("Rendering current piece");
+            Pieces.DrawCurrentShape();
 
             // Render the entire grid
             GameGrid.Render();

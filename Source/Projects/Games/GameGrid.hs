@@ -19,7 +19,7 @@ unit GameGrid
 
     Clear()
     {
-        IO.WriteLn("Clearing grid");
+        DebugLog("Clearing grid");
         for (byte row = 0; row < Height; row++)
         {
             for (byte col = 0; col < Width; col++)
@@ -31,7 +31,7 @@ unit GameGrid
 
     SetCell(byte x, byte y, uint color)
     {
-        IO.WriteLn("Setting cell: (" + x.ToString() + ", " + y.ToString() + ") to color " + color.ToString());
+        //DebugLog("Setting cell: (" + x.ToString() + ", " + y.ToString() + ") to color " + color.ToString());
         uint index = x + y * Width;
         colors[index] = color;
     }
@@ -48,7 +48,7 @@ unit GameGrid
 
     Render()
     {
-        IO.WriteLn("Rendering grid");
+        DebugLog("Rendering grid");
         for (byte row = 0; row < Height; row++)
         {
             for (byte col = 0; col < Width; col++)
@@ -73,7 +73,7 @@ unit GameGrid
 
     ClearRow(byte row)
     {
-        IO.WriteLn("Clearing row: " + row.ToString());
+        DebugLog("Clearing row: " + row.ToString());
         for (byte y = row; y > 0; y--)
         {
             for (byte col = 0; col < Width; col++)
