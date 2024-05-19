@@ -1,5 +1,8 @@
 unit Long
 {
+    byte GetByte(long this, byte index) system;
+    long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
+    
     long Add(long a, long b)
     {
         // Extract bytes from both longs
@@ -124,16 +127,16 @@ unit Long
 
         return finalResult;
     }
-    
+
     long divMod(long dividend, long divisor, ref long remainder)
     {
         long zero = FromBytes(0, 0, 0, 0);
-        
-        if (equal(divisor, zero))
+
+        if (Equal(divisor, zero))
         {
             Die(0x04); // division by zero attempted
         }
-        
+
         long one = FromBytes(1, 0, 0, 0);
         long quotient = zero;
         remainder = zero;
@@ -233,7 +236,7 @@ unit Long
             GetByte(left, 3) & GetByte(right, 3)
         );
     }
-    
+
     bool Equal(long left, long right)
     {
         for (byte i = 0; i < 4; i++)
@@ -298,7 +301,7 @@ unit Long
     {
         return !Equal(left, right);
     }
-    
+
     long Abs(long value)
     {
         long zero = FromBytes(0, 0, 0, 0); // 0 as a long
@@ -310,16 +313,52 @@ unit Long
         long zero = FromBytes(0, 0, 0, 0); // 0 as a long
         return Subtract(zero, value);
     }
-    
+
     long Max(long a, long b)
     {
         return GreaterThan(a, b) ? a : b;
     }
+
     long Min(long a, long b)
     {
         return LessThan(a, b) ? a : b;
     }
     
+    string ToString(long value)
+    {
+        long zero = FromBytes(0, 0, 0, 0); // 0 as a long
+        long ten = FromBytes(10, 0, 0, 0); // 10 as a long
+        string result = "";
+
+        if (Equal(value, zero))
+        {
+            String.BuildFront(ref result, '0');
+            return result;
+        }
+
+        bool isNegative = false;
+        if (LessThan(value, zero))
+        {
+            isNegative = true;
+            value = Negate(value);
+        }
+
+        while (!Equal(value, zero))
+        {
+            long remainder = 0;
+            value = divMod(value, ten, ref remainder);
+            char c = (char)(GetByte(remainder, 0) + '0');
+            String.BuildFront(ref result, c);
+        }
+
+        if (isNegative)
+        {
+            String.BuildFront(ref result, '-');
+        }
+
+        return result;
+    }
+
     string ToBinaryString(long this, byte digits)
     {
         char c;
@@ -333,7 +372,7 @@ unit Long
         }
         return result;
     }
-    
+
     string ToHexString(long this, byte digits)
     {
         char c;
@@ -346,7 +385,7 @@ unit Long
         }
         return result;
     }
-    
+
     int ToInt(long l)
     {
         long intMax = FromBytes(0xFF, 0xFF, 0x7F, 0x00); // Max value for int (32767)
@@ -372,5 +411,83 @@ unit Long
 
         return (uint)((GetByte(l, 0) << 8) | GetByte(l, 1));
     }
-
+    
+    bool TryParse(string content, ref long returnValue)
+    {
+        long result;
+        bool makeNegative;
+        if (content.Length < 1)
+        {
+            return false;
+        }
+        if (content.StartsWith("0x"))
+        {
+            return tryParseHex(content, ref returnValue);
+        }
+        if (content.StartsWith('+'))
+        {
+            String.Substring(ref content, 1);
+        }
+        else if (content.StartsWith('-'))
+        {
+            String.Substring(ref content, 1);
+            makeNegative = true;
+        }
+        foreach (var c in content)
+        {
+            result = result * 10;
+            if (!c.IsDigit())
+            {
+                return false;
+            }
+            result = result + (byte(c) - 48); // 48 is ASCII for '0'
+        }
+        if (makeNegative)
+        {
+            result = -result;
+        }
+        returnValue = result;
+        return true;
+    }
+    bool tryParseHex(string content, ref long returnValue)
+    {
+        bool success;
+        uint length;
+        uint i;
+        char c;
+        loop
+        {
+            returnValue = 0;
+            if (!content.StartsWith("0x"))
+            {
+                break;
+            }
+            length = content.Length;
+            if (length < 3)
+            {
+                break;
+            }
+            success = true;
+            for (i=0; i < length-2; i++)
+            {
+                returnValue = returnValue * 16;
+                c = content.GetChar(i+2);
+                if (c.IsDigit())
+                {
+                    returnValue = returnValue + (byte(c) - 48); // 48 is ASCII for '0'
+                }
+                else if (c.IsHexDigit())
+                {
+                    returnValue = returnValue + (byte(c.ToLower()) - 87); // 97 is ASCII for 'a', -97+10 = -87
+                }
+                else
+                {
+                    success = false;
+                    break;
+                }
+            }
+            break;
+        }
+        return success;
+    }
 }
