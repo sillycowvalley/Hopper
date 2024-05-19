@@ -134,6 +134,7 @@ unit Pieces
 
     Initialize()
     {
+        IO.WriteLn("Initializing piece");
         currentShape = RandomShape();
         currentRotation = 0;
         currentX = GameGrid.Width / 2 - 2;
@@ -143,6 +144,7 @@ unit Pieces
     Rotate()
     {
         currentRotation = (currentRotation + 1) % RotationCount;
+        IO.WriteLn("Rotating piece to rotation " + currentRotation.ToString());
     }
 
     byte[PieceSize * PieceSize] GetCurrentShape()
@@ -180,6 +182,7 @@ unit Pieces
 
     PlaceCurrentShape()
     {
+        IO.WriteLn("Placing current shape");
         byte[PieceSize * PieceSize] shape = GetCurrentShape();
         uint color = DisplayHelper.GetColorForShape(currentShape);
         for (byte i = 0; i < PieceSize; i++)
@@ -196,7 +199,9 @@ unit Pieces
 
     byte RandomShape()
     {
-        return ((Time.Millis).GetByte(0) % ShapeCount);
+        byte shape = ((Time.Millis).GetByte(0) % ShapeCount);
+        IO.WriteLn("Random shape generated: " + shape.ToString());
+        return shape;
     }
 }
 
