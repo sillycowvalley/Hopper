@@ -53,6 +53,15 @@ Hopper has several notable differences from other C-like languages such as C, C+
 14. **Time and Random Numbers:**
     - There is no `System.TickCount`. Use `Time.Millis` instead. Since it returns a signed long and only the LSB is needed, use `return ((Time.Millis).GetByte(0) % ShapeCount);`.
 
+15. **Debug Logging:**
+    - Use a centralized method for debug logging to easily enable or disable debug output. For example, `DisplayHelper.DebugLog(message)`.
+
+16. **Input Handling on MCUs:**
+    - Implement input handling using interrupts for buttons to ensure single event generation per button press. The `Input` unit can queue key events and handle them consistently across platforms.
+
+17. **Piece Manipulation in Tetris:**
+    - Centralize shape drawing, clearing, and placing logic in helper methods to ensure consistency and simplify updates.
+
 ## Programs and Units
 
 ### Program Structure
@@ -329,8 +338,6 @@ program Melody
 
     PlayMelody(<string> notes, const byte[] durations)
     {
-
-
         uint tuneSize = notes.Count;
         <string,uint> toneFrequencies = Pitches.GetTones();
 
@@ -360,9 +367,7 @@ program Melody
 
     Hopper()
     {
-        <string> notes = (melody).
-
-Split(',');
+        <string> notes = (melody).Split(',');
         PlayMelody(notes, rhythm);
     }
 }
@@ -543,8 +548,6 @@ program NeoPixelDemo
                 string colorName = kv.key;
                 <byte> color = kv.value;
                 NeoPixel.Fill(0, numPixels, color[0], color[1], color[2]);
-
-
                 NeoPixel.Show();
                 Time.Delay(1000);
             }
