@@ -16,6 +16,9 @@ unit System
     uses "Array"
     uses "Type"
     
+    uses "Long"
+    uses "Float"
+    
     uses "Serial"
     uses "Diagnostics"
 }

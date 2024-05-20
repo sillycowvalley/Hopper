@@ -1,7 +1,5 @@
 unit Token
 {
-    uses "/Source/System/Diagnostics"
-    
     enum HopperToken
     {
         Undefined,

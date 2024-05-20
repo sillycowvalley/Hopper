@@ -242,4 +242,13 @@ unit UInt
 
         return Float.combineComponents(0, exponent, mantissa);
     }
+    /*
+    <byte> ToBytes(uint this)
+    {
+        <byte> bytes;
+        bytes.Append(this.GetByte(0));
+        bytes.Append(this.GetByte(1));
+        return bytes
+    }
+    */
 }

@@ -1,5 +1,9 @@
 unit Long
 {
+    uses "Float"
+    
+    friend Float;
+    
     byte GetByte(long this, byte index) system;
     long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     
@@ -10,36 +14,37 @@ unit Long
         byte a1 = GetByte(a, 1);
         byte a2 = GetByte(a, 2);
         byte a3 = GetByte(a, 3);
-
+    
         byte b0 = GetByte(b, 0);
         byte b1 = GetByte(b, 1);
         byte b2 = GetByte(b, 2);
         byte b3 = GetByte(b, 3);
-
+    
         // Combine bytes into 16-bit ints
         int lowA = Int.FromBytes(a0, a1);
         int highA = Int.FromBytes(a2, a3);
-
+    
         int lowB = Int.FromBytes(b0, b1);
         int highB = Int.FromBytes(b2, b3);
-
+    
         // Add low parts and handle carry
         int lowResult = lowA + lowB;
-        int carry = (lowResult > 0xFFFF) ? 1 : 0; // Check for carry
+        int carry = (uint(lowResult) > uint(0xFFFF)) ? 1 : 0; // Check for carry
         lowResult = lowResult & 0xFFFF; // Keep only the lower 16 bits
-
+    
         // Add high parts with carry
         int highResult = highA + highB + carry;
-
+    
         // Extract bytes from the result
         byte result0 = Int.GetByte(lowResult, 0);
         byte result1 = Int.GetByte(lowResult, 1);
         byte result2 = Int.GetByte(highResult, 0);
         byte result3 = Int.GetByte(highResult, 1);
-
+    
         // Create new long from result bytes
         return FromBytes(result0, result1, result2, result3);
     }
+    
 
     long Subtract(long a, long b)
     {
@@ -169,72 +174,6 @@ unit Long
         long remainder = 0;
         divMod(dividend, divisor, ref remainder);
         return remainder;
-    }
-
-    long shiftLeft(long value, int bits)
-    {
-        // Shifts the long value left by the specified number of bits
-        long result = value;
-        for (int i = 0; i < bits; i++)
-        {
-            result = result.shiftLeftOne();
-        }
-        return result;
-    }
-
-    long shiftLeftOne(long value)
-    {
-        // Shift the value left by 1 bit
-        long result = FromBytes(
-            (GetByte(value, 1) << 1) | (GetByte(value, 0) >> 7),
-            (GetByte(value, 2) << 1) | (GetByte(value, 1) >> 7),
-            (GetByte(value, 3) << 1) | (GetByte(value, 2) >> 7),
-            (GetByte(value, 3) >> 7)
-        );
-        return result;
-    }
-
-    long shiftRight(long value, int bits)
-    {
-        // Shifts the long value right by the specified number of bits
-        long result = value;
-        for (int i = 0; i < bits; i++)
-        {
-            result = result.shiftRightOne();
-        }
-        return result;
-    }
-
-    long shiftRightOne(long value)
-    {
-        // Shift the value right by 1 bit
-        long result = FromBytes(
-            (GetByte(value, 0) >> 1),
-            (GetByte(value, 1) >> 1) | ((GetByte(value, 0) & 1) << 7),
-            (GetByte(value, 2) >> 1) | ((GetByte(value, 1) & 1) << 7),
-            (GetByte(value, 3) >> 1) | ((GetByte(value, 2) & 1) << 7)
-        );
-        return result;
-    }
-
-    long or(long left, long right)
-    {
-        return FromBytes(
-            GetByte(left, 0) | GetByte(right, 0),
-            GetByte(left, 1) | GetByte(right, 1),
-            GetByte(left, 2) | GetByte(right, 2),
-            GetByte(left, 3) | GetByte(right, 3)
-        );
-    }
-
-    long and(long left, long right)
-    {
-        return FromBytes(
-            GetByte(left, 0) & GetByte(right, 0),
-            GetByte(left, 1) & GetByte(right, 1),
-            GetByte(left, 2) & GetByte(right, 2),
-            GetByte(left, 3) & GetByte(right, 3)
-        );
     }
 
     bool Equal(long left, long right)
@@ -495,7 +434,7 @@ unit Long
     {
         if (l == 0)
         {
-            return FromBytes(0, 0, 0, 0);
+            return Float.FromBytes(0, 0, 0, 0);
         }
 
         byte sign = (l < 0) ? 1 : 0;
@@ -505,10 +444,122 @@ unit Long
         }
 
         byte exponent = 127 + 23;
-        long mantissa = l << 8;
+        long mantissa = shiftLeft(l, 8);
 
         Float.normalize(ref mantissa, ref exponent);
 
         return Float.combineComponents(sign, exponent, mantissa);
     }
+    
+    long shiftLeft(long value, int bits)
+    {
+        // Shifts the long value left by the specified number of bits
+        long result = value;
+        for (int i = 0; i < bits; i++)
+        {
+            result = result.shiftLeftOne();
+        }
+        return result;
+    }
+
+    long shiftLeftOne(long value)
+    {
+        // Shift the value left by 1 bit
+        long result = FromBytes(
+            (GetByte(value, 1) << 1) | (GetByte(value, 0) >> 7),
+            (GetByte(value, 2) << 1) | (GetByte(value, 1) >> 7),
+            (GetByte(value, 3) << 1) | (GetByte(value, 2) >> 7),
+            (GetByte(value, 3) >> 7)
+        );
+        return result;
+    }
+
+    long shiftRight(long value, int bits)
+    {
+        // Shifts the long value right by the specified number of bits
+        long result = value;
+        for (int i = 0; i < bits; i++)
+        {
+            result = result.shiftRightOne();
+        }
+        return result;
+    }
+
+    long shiftRightOne(long value)
+    {
+        // Shift the value right by 1 bit
+        long result = FromBytes(
+            (GetByte(value, 0) >> 1),
+            (GetByte(value, 1) >> 1) | ((GetByte(value, 0) & 1) << 7),
+            (GetByte(value, 2) >> 1) | ((GetByte(value, 1) & 1) << 7),
+            (GetByte(value, 3) >> 1) | ((GetByte(value, 2) & 1) << 7)
+        );
+        return result;
+    }
+
+    long or(long left, long right)
+    {
+        return FromBytes(
+            GetByte(left, 0) | GetByte(right, 0),
+            GetByte(left, 1) | GetByte(right, 1),
+            GetByte(left, 2) | GetByte(right, 2),
+            GetByte(left, 3) | GetByte(right, 3)
+        );
+    }
+
+    long and(long left, long right)
+    {
+        return FromBytes(
+            GetByte(left, 0) & GetByte(right, 0),
+            GetByte(left, 1) & GetByte(right, 1),
+            GetByte(left, 2) & GetByte(right, 2),
+            GetByte(left, 3) & GetByte(right, 3)
+        );
+    }
+
+    long xor(long a, long b)
+    {
+        byte a0 = GetByte(a, 0);
+        byte a1 = GetByte(a, 1);
+        byte a2 = GetByte(a, 2);
+        byte a3 = GetByte(a, 3);
+
+        byte b0 = GetByte(b, 0);
+        byte b1 = GetByte(b, 1);
+        byte b2 = GetByte(b, 2);
+        byte b3 = GetByte(b, 3);
+
+        byte result0 = a0 ^ b0;
+        byte result1 = a1 ^ b1;
+        byte result2 = a2 ^ b2;
+        byte result3 = a3 ^ b3;
+
+        return FromBytes(result0, result1, result2, result3);
+    }
+
+    long not(long a)
+    {
+        byte a0 = GetByte(a, 0);
+        byte a1 = GetByte(a, 1);
+        byte a2 = GetByte(a, 2);
+        byte a3 = GetByte(a, 3);
+
+        byte result0 = ~a0;
+        byte result1 = ~a1;
+        byte result2 = ~a2;
+        byte result3 = ~a3;
+
+        return FromBytes(result0, result1, result2, result3);
+    }
+    /*
+    <byte> ToBytes(long this)
+    {
+        <byte> bytes;
+        bytes.Append(this.GetByte(0));
+        bytes.Append(this.GetByte(1));
+        bytes.Append(this.GetByte(2));
+        bytes.Append(this.GetByte(3));
+        return bytes
+    }
+    */
 }

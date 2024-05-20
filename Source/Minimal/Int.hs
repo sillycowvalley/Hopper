@@ -145,4 +145,13 @@ unit Int
 
         return Float.combineComponents(sign, exponent, mantissa);
     }
+    /*
+    <byte> ToBytes(int this)
+    {
+        <byte> bytes;
+        bytes.Append(this.GetByte(0));
+        bytes.Append(this.GetByte(1));
+        return bytes
+    }
+    */
 }
