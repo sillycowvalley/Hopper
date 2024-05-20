@@ -125,11 +125,24 @@ unit Int
     int Max(int a, int b) { return (a > b) ? a : b; }
     Swap(ref int a, ref int b) { int t = a; a = b; b = t; }
     
+    long ToLong(int value)
+    {
+        // Extract bytes from the int
+        byte lowByte = GetByte(value, 0);
+        byte highByte = GetByte(value, 1);
+
+        // Sign-extend the int to 32-bit long
+        byte highHighByte = (value < 0) ? 0xFF : 0x00;
+
+        // Create new long from int bytes
+        return Long.FromBytes(lowByte, highByte, highHighByte, highHighByte);
+    }
+    
     float ToFloat(int i)
     {
         if (i == 0)
         {
-            return FromBytes(0, 0, 0, 0);
+            return Float.FromBytes(0, 0, 0, 0);
         }
 
         byte sign = (i < 0) ? 1 : 0;
@@ -138,12 +151,12 @@ unit Int
             i = -i;
         }
 
-        byte exponent = 127 + 23;
-        long mantissa = long(i) << 8;
+        int exponent = 127 + 23;
+        long mantissa = i.ToLong(); // Convert int to long
+        mantissa = Long.shiftLeft(mantissa, 8); // Perform left shift using helper
 
         Float.normalize(ref mantissa, ref exponent);
-
-        return Float.combineComponents(sign, exponent, mantissa);
+        return Float.combineComponents(sign, byte(exponent), mantissa);
     }
     /*
     <byte> ToBytes(int this)

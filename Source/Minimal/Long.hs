@@ -2,11 +2,11 @@ unit Long
 {
     uses "Float"
     
-    friend Float;
+    friend Float, Int;
     
     byte GetByte(long this, byte index) system;
     long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
-    
+        
     long Add(long a, long b)
     {
         // Extract bytes from both longs
@@ -20,124 +20,140 @@ unit Long
         byte b2 = GetByte(b, 2);
         byte b3 = GetByte(b, 3);
     
-        // Combine bytes into 16-bit ints
-        int lowA = Int.FromBytes(a0, a1);
-        int highA = Int.FromBytes(a2, a3);
+        // Perform addition byte-by-byte with carry
+        byte result0;
+        byte result1;
+        byte result2;
+        byte result3;
     
-        int lowB = Int.FromBytes(b0, b1);
-        int highB = Int.FromBytes(b2, b3);
+        uint carry = 0;
     
-        // Add low parts and handle carry
-        int lowResult = lowA + lowB;
-        int carry = (uint(lowResult) > uint(0xFFFF)) ? 1 : 0; // Check for carry
-        lowResult = lowResult & 0xFFFF; // Keep only the lower 16 bits
+        // Add the lowest byte with carry
+        uint temp = uint(a0) + uint(b0) + carry;
+        result0 = byte(temp & 0xFF);
+        carry = (temp > 0xFF) ? 1 : 0;
     
-        // Add high parts with carry
-        int highResult = highA + highB + carry;
+        // Add the second byte with carry
+        temp = uint(a1) + uint(b1) + carry;
+        result1 = byte(temp & 0xFF);
+        carry = (temp > 0xFF) ? 1 : 0;
     
-        // Extract bytes from the result
-        byte result0 = Int.GetByte(lowResult, 0);
-        byte result1 = Int.GetByte(lowResult, 1);
-        byte result2 = Int.GetByte(highResult, 0);
-        byte result3 = Int.GetByte(highResult, 1);
+        // Add the third byte with carry
+        temp = uint(a2) + uint(b2) + carry;
+        result2 = byte(temp & 0xFF);
+        carry = (temp > 0xFF) ? 1 : 0;
+    
+        // Add the highest byte with carry
+        temp = uint(a3) + uint(b3) + carry;
+        result3 = byte(temp & 0xFF);
+        carry = (temp > 0xFF) ? 1 : 0;
     
         // Create new long from result bytes
         return FromBytes(result0, result1, result2, result3);
     }
-    
-
-    long Subtract(long a, long b)
+        
+        
+    long Sub(long a, long b)
     {
         // Extract bytes from both longs
         byte a0 = GetByte(a, 0);
         byte a1 = GetByte(a, 1);
         byte a2 = GetByte(a, 2);
         byte a3 = GetByte(a, 3);
-
+    
         byte b0 = GetByte(b, 0);
         byte b1 = GetByte(b, 1);
         byte b2 = GetByte(b, 2);
         byte b3 = GetByte(b, 3);
-
-        // Combine bytes into 16-bit ints
-        int lowA = Int.FromBytes(a0, a1);
-        int highA = Int.FromBytes(a2, a3);
-
-        int lowB = Int.FromBytes(b0, b1);
-        int highB = Int.FromBytes(b2, b3);
-
-        // Subtract low parts and handle borrow
-        int lowResult = lowA - lowB;
-        int borrow = (lowResult < 0) ? 1 : 0; // Check for borrow
-        lowResult = lowResult & 0xFFFF; // Keep only the lower 16 bits
-
-        // Subtract high parts with borrow
-        int highResult = highA - highB - borrow;
-
-        // Extract bytes from the result
-        byte result0 = Int.GetByte(lowResult, 0);
-        byte result1 = Int.GetByte(lowResult, 1);
-        byte result2 = Int.GetByte(highResult, 0);
-        byte result3 = Int.GetByte(highResult, 1);
-
+    
+        // Perform subtraction byte-by-byte with borrow
+        byte result0;
+        byte result1;
+        byte result2;
+        byte result3;
+    
+        uint borrow = 0;
+    
+        // Subtract the lowest byte with borrow
+        uint temp = uint(a0) - uint(b0) - borrow;
+        result0 = byte(temp & 0xFF);
+        borrow = (temp > 0xFF) ? 1 : 0;
+    
+        // Subtract the second byte with borrow
+        temp = uint(a1) - uint(b1) - borrow;
+        result1 = byte(temp & 0xFF);
+        borrow = (temp > 0xFF) ? 1 : 0;
+    
+        // Subtract the third byte with borrow
+        temp = uint(a2) - uint(b2) - borrow;
+        result2 = byte(temp & 0xFF);
+        borrow = (temp > 0xFF) ? 1 : 0;
+    
+        // Subtract the highest byte with borrow
+        temp = uint(a3) - uint(b3) - borrow;
+        result3 = byte(temp & 0xFF);
+        borrow = (temp > 0xFF) ? 1 : 0;
+    
         // Create new long from result bytes
         return FromBytes(result0, result1, result2, result3);
     }
-
-    long Multiply(long a, long b)
+        
+     
+    long Mul(long a, long b)
     {
         // Extract bytes from both longs
         byte a0 = GetByte(a, 0);
         byte a1 = GetByte(a, 1);
         byte a2 = GetByte(a, 2);
         byte a3 = GetByte(a, 3);
-
+        
         byte b0 = GetByte(b, 0);
         byte b1 = GetByte(b, 1);
         byte b2 = GetByte(b, 2);
         byte b3 = GetByte(b, 3);
-
-        // Combine bytes into 16-bit ints
-        int lowA = Int.FromBytes(a0, a1);
-        int highA = Int.FromBytes(a2, a3);
-
-        int lowB = Int.FromBytes(b0, b1);
-        int highB = Int.FromBytes(b2, b3);
-
-        // Multiply parts
-        int lowResult = lowA * lowB;
-        int middleResult1 = lowA * highB;
-        int middleResult2 = highA * lowB;
-        int highResult = highA * highB;
-
-        // Combine results to form a 32-bit long result
-        // Here we shift and add the intermediate results appropriately
-        long combinedLow = FromBytes(
-            Int.GetByte(lowResult, 0),
-            Int.GetByte(lowResult, 1),
-            Int.GetByte(middleResult1, 0),
-            Int.GetByte(middleResult1, 1)
-        );
-
-        long combinedHigh = FromBytes(
-            Int.GetByte(middleResult2, 0),
-            Int.GetByte(middleResult2, 1),
-            Int.GetByte(highResult, 0),
-            Int.GetByte(highResult, 1)
-        );
-
-        // Sum the combined low and high results to form the final long result
-        // Note: This simplified approach assumes that there will be no overflow, which may need to be handled separately.
-        long finalResult = Add(combinedLow, combinedHigh);
-
-        return finalResult;
+        
+        // Perform multiplication byte-by-byte with carry
+        uint carry = 0;
+        
+        // Multiply the lowest bytes
+        uint result0 = uint(a0) * uint(b0);
+        
+        // Multiply the second bytes and add carry from previous result
+        uint result1 = uint(a0) * uint(b1) + uint(a1) * uint(b0) + (result0 >> 8);
+        
+        // Multiply the third bytes and add carry from previous result
+        uint result2 = uint(a0) * uint(b2) + uint(a1) * uint(b1) + uint(a2) * uint(b0) + (result1 >> 8);
+        
+        // Multiply the highest bytes and add carry from previous result
+        uint result3 = uint(a0) * uint(b3) + uint(a1) * uint(b2) + uint(a2) * uint(b1) + uint(a3) * uint(b0) + (result2 >> 8);
+        
+        // Handle carry for the highest part
+        uint result4 = uint(a1) * uint(b3) + uint(a2) * uint(b2) + uint(a3) * uint(b1) + (result3 >> 8);
+        uint result5 = uint(a2) * uint(b3) + uint(a3) * uint(b2) + (result4 >> 8);
+        uint result6 = uint(a3) * uint(b3) + (result5 >> 8);
+        
+        // Extract final result bytes
+        byte finalResult0 = byte(result0 & 0xFF);
+        byte finalResult1 = byte(result1 & 0xFF);
+        byte finalResult2 = byte(result2 & 0xFF);
+        byte finalResult3 = byte(result3 & 0xFF);
+        byte finalResult4 = byte(result4 & 0xFF);
+        byte finalResult5 = byte(result5 & 0xFF);
+        byte finalResult6 = byte(result6 & 0xFF);
+        
+        // Create the final 32-bit result long
+        long finalResultLow = FromBytes(finalResult0, finalResult1, finalResult2, finalResult3);
+        long finalResultHigh = FromBytes(finalResult4, finalResult5, finalResult6, 0);
+    
+        // Combine low and high parts to get the final result
+        return Add(finalResultLow, finalResultHigh);
     }
-
+    
     long divMod(long dividend, long divisor, ref long remainder)
     {
         long zero = FromBytes(0, 0, 0, 0);
 
-        if (Equal(divisor, zero))
+        if (EQ(divisor, zero))
         {
             Die(0x04); // division by zero attempted
         }
@@ -153,9 +169,9 @@ unit Long
             remainder = remainder.or((dividend.shiftRight(i)).and(one));
 
             // If the remainder is greater than or equal to the divisor
-            if (greaterThanOrEqual(remainder, divisor))
+            if (GE(remainder, divisor))
             {
-                remainder = remainder.Subtract(divisor);
+                remainder = remainder.Sub(divisor);
                 quotient = quotient.or(one.shiftLeft(i));
             }
         }
@@ -163,20 +179,20 @@ unit Long
         return quotient;
     }
 
-    long Divide(long dividend, long divisor)
+    long Div(long dividend, long divisor)
     {
         long remainder = 0;
         return divMod(dividend, divisor, ref remainder);
     }
 
-    long Modulo(long dividend, long divisor)
+    long Mod(long dividend, long divisor)
     {
         long remainder = 0;
-        divMod(dividend, divisor, ref remainder);
+        _ = divMod(dividend, divisor, ref remainder);
         return remainder;
     }
 
-    bool Equal(long left, long right)
+    bool EQ(long left, long right)
     {
         for (byte i = 0; i < 4; i++)
         {
@@ -188,7 +204,7 @@ unit Long
         return true;
     }
 
-    bool GreaterThan(long left, long right)
+    bool GT(long left, long right)
     {
         byte leftSignByte = GetByte(left, 3);
         byte rightSignByte = GetByte(right, 3);
@@ -204,10 +220,10 @@ unit Long
         }
 
         // If sign bytes are equal, compare the rest
-        for (byte i = 2; i >= 0; i--)
+        for (int i = 2; i >= 0; i--)
         {
-            byte leftByte = GetByte(left, i);
-            byte rightByte = GetByte(right, i);
+            byte leftByte = GetByte(left, byte(i));
+            byte rightByte = GetByte(right, byte(i));
 
             if (leftByte > rightByte)
             {
@@ -221,24 +237,19 @@ unit Long
         return false; // They are equal
     }
 
-    bool LessThan(long left, long right)
+    bool LT(long left, long right)
     {
-        return !GreaterThanOrEqual(left, right);
+        return !GE(left, right);
     }
 
-    bool GreaterThanOrEqual(long left, long right)
+    bool GE(long left, long right)
     {
-        return GreaterThan(left, right) || Equal(left, right);
+        return GT(left, right) || EQ(left, right);
     }
 
-    bool LessThanOrEqual(long left, long right)
+    bool LE(long left, long right)
     {
-        return LessThan(left, right) || Equal(left, right);
-    }
-
-    bool NotEqual(long left, long right)
-    {
-        return !Equal(left, right);
+        return LT(left, right) || EQ(left, right);
     }
 
     long Abs(long value)
@@ -250,17 +261,17 @@ unit Long
     long Negate(long value)
     {
         long zero = FromBytes(0, 0, 0, 0); // 0 as a long
-        return Subtract(zero, value);
+        return Sub(zero, value);
     }
 
     long Max(long a, long b)
     {
-        return GreaterThan(a, b) ? a : b;
+        return GT(a, b) ? a : b;
     }
 
     long Min(long a, long b)
     {
-        return LessThan(a, b) ? a : b;
+        return LT(a, b) ? a : b;
     }
     
     string ToString(long value)
@@ -269,20 +280,20 @@ unit Long
         long ten = FromBytes(10, 0, 0, 0); // 10 as a long
         string result = "";
 
-        if (Equal(value, zero))
+        if (EQ(value, zero))
         {
             String.BuildFront(ref result, '0');
             return result;
         }
 
         bool isNegative = false;
-        if (LessThan(value, zero))
+        if (LT(value, zero))
         {
             isNegative = true;
             value = Negate(value);
         }
 
-        while (!Equal(value, zero))
+        while (!EQ(value, zero))
         {
             long remainder = 0;
             value = divMod(value, ten, ref remainder);

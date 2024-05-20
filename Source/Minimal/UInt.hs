@@ -232,7 +232,7 @@ unit UInt
     {
         if (i == 0)
         {
-            return FromBytes(0, 0, 0, 0);
+            return Float.FromBytes(0, 0, 0, 0);
         }
 
         byte exponent = 127 + 23;

@@ -3,19 +3,25 @@ program TestNumbers
 #define MCU
 //#define CDECL
 //#define NO_PACKED_INSTRUCTIONS
-#define EXPERIMENTAL
-    uses "/Source/System/System"
+//#define EXPERIMENTAL
+
     
-#ifndef HOPPER_6502
-#define TESTFLOATS
-#endif
+    uses "/Source/Minimal/System"
+    uses "/Source/Minimal/IO"
+    #define NOLISTS
+    #define TESTFLOATS
     
-    uses "/Source/System/IO"
-    uses "/Source/System/Diagnostics"
+    //uses "/Source/System/System"
+    //uses "/Source/System/IO"
+    //uses "/Source/System/Diagnostics"
+    
+    
     uses "/Source/System/Keyboard"
-    uses "/Source/Compiler/Tokens/Token"
+    
+
 
 #ifdef TEXTBUFFER
+    uses "/Source/Compiler/Tokens/Token"
     uses "/Source/Editor/TextBuffer"
 #endif
     PrintFailed(string message)
@@ -1025,13 +1031,14 @@ program TestNumbers
         {
             PrintFailed("'uint' 14");
         }
-        
+#ifndef NOLISTS
         <byte> bytes = test.ToBytes();
         testAfter = UInt.FromBytes(bytes[0], bytes[1]);
         if (test != testAfter)
         {
             PrintFailed("'uint' 15");
         }
+#endif        
     } // TestUIntMath
     
     TestIntMath()
@@ -1043,7 +1050,7 @@ program TestNumbers
         int localInt  = 10000;
         int localInt2 = 10001;
         int localIntNeg = 0 - localInt;
-        
+#ifndef NOLISTS
         <byte> lb = localInt.ToBytes();
         if (lb.Count != 2)
         {
@@ -1057,6 +1064,7 @@ program TestNumbers
         {
             PrintFailed("'int' ToBytes 3  failed");        
         }
+#endif
         // +
         if (localInt + localInt != 20000)
         {
@@ -1322,14 +1330,14 @@ program TestNumbers
         {
             PrintFailed("'int' 17");
         }
-        
+#ifndef NOLISTS
         <byte> bytes = test.ToBytes();
         testAfter = Int.FromBytes(bytes[0], bytes[1]);
         if (test != testAfter)
         {
             PrintFailed("'int' 18");
         }
-        
+#endif
     } // TestIntMath
 	
 	
@@ -1495,13 +1503,14 @@ program TestNumbers
         {
             PrintFailed("'long' 28");
         }
-        
-        <byte> bytes = test.ToBytes();
+#ifndef NOLISTS
+       <byte> bytes = test.ToBytes();
         testAfter = Long.FromBytes(bytes[0], bytes[1], bytes[2], bytes[3]);
         if (test != testAfter)
         {
             PrintFailed("'long' 29");
         }
+#endif        
         
         longRef = 42;
         longRef++;
@@ -1550,13 +1559,14 @@ program TestNumbers
         {
             PrintFailed("'float' 28");
         }
-        
+#ifndef NOLISTS        
         <byte> bytes = test.ToBytes();
         testAfter = Float.FromBytes(bytes[0], bytes[1], bytes[2], bytes[3]);
         if (test != testAfter)
         {
             PrintFailed("'float' 29");
         }
+#endif
         
         // globalFloat3  = 10000.0;
         // globalFloat4  = 10000.1;

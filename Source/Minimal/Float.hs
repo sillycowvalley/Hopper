@@ -16,17 +16,17 @@ unit Float
     float Add(float a, float b)
     {
         byte signA = getSign(a);
-        byte exponentA = getExponent(a);
+        int exponentA = getExponent(a);  // Change to int for processing
         long mantissaA = getMantissa(a);
-
+    
         byte signB = getSign(b);
-        byte exponentB = getExponent(b);
+        int exponentB = getExponent(b);  // Change to int for processing
         long mantissaB = getMantissa(b);
-
+    
         // Add the implicit leading bit
         mantissaA = Long.or(mantissaA, 0x00800000);
         mantissaB = Long.or(mantissaB, 0x00800000);
-
+    
         // Align exponents
         if (exponentA > exponentB)
         {
@@ -40,7 +40,7 @@ unit Float
             mantissaA = Long.shiftRight(mantissaA, shift);
             exponentA = exponentB;
         }
-
+    
         long resultMantissa;
         if (signA == signB)
         {
@@ -48,31 +48,32 @@ unit Float
         }
         else
         {
-            if (Long.GreaterThanOrEqual(mantissaA, mantissaB))
+            if (Long.GE(mantissaA, mantissaB))
             {
-                resultMantissa = Long.Subtract(mantissaA, mantissaB); // Different signs: subtraction
+                resultMantissa = Long.Sub(mantissaA, mantissaB); // Different signs: subtraction
             }
             else
             {
-                resultMantissa = Long.Subtract(mantissaB, mantissaA);
+                resultMantissa = Long.Sub(mantissaB, mantissaA);
                 signA = signB;
             }
         }
-
-        if (Long.GreaterThanOrEqual(resultMantissa, 0x01000000))
+    
+        if (Long.GE(resultMantissa, 0x01000000))
         {
             resultMantissa = Long.shiftRight(resultMantissa, 1);
             exponentA++;
         }
         else
         {
-            normalize(ref resultMantissa, ref exponentA);
+            normalize(ref resultMantissa, ref exponentA); // Pass exponent as int for normalization
         }
-
-        return combineComponents(signA, exponentA, resultMantissa);
+    
+        return combineComponents(signA, byte(exponentA), resultMantissa); // Convert exponent back to byte for combining
     }
+    
 
-    float Subtract(float a, float b)
+    float Sub(float a, float b)
     {
         byte signB = getSign(b);
         signB = signB ^ 1; // Flip the sign of b
@@ -81,7 +82,7 @@ unit Float
         return Add(a, negativeB);
     }
 
-    float Multiply(float a, float b)
+    float Mul(float a, float b)
     {
         byte signA = getSign(a);
         byte exponentA = getExponent(a);
@@ -95,11 +96,11 @@ unit Float
         mantissaA = Long.or(mantissaA, 0x00800000);
         mantissaB = Long.or(mantissaB, 0x00800000);
 
-        long resultMantissa = Long.shiftRight(Long.Multiply(mantissaA, mantissaB), 23); // Multiply mantissas
-        int resultExponent = (int)exponentA + (int)exponentB - 127; // Add exponents
+        long resultMantissa = Long.shiftRight(Long.Mul(mantissaA, mantissaB), 23); // Multiply mantissas
+        int resultExponent = int(exponentA) + int(exponentB) - 127; // Add exponents
         byte resultSign = signA ^ signB; // Determine the sign
 
-        if (Long.GreaterThanOrEqual(resultMantissa, 0x01000000))
+        if (Long.GE(resultMantissa, 0x01000000))
         {
             resultMantissa = Long.shiftRight(resultMantissa, 1);
             resultExponent++;
@@ -109,10 +110,10 @@ unit Float
             normalize(ref resultMantissa, ref resultExponent);
         }
 
-        return combineComponents(resultSign, (byte)resultExponent, resultMantissa);
+        return combineComponents(resultSign, byte(resultExponent), resultMantissa);
     }
 
-    float Divide(float a, float b)
+    float Div(float a, float b)
     {
         byte signA = getSign(a);
         byte exponentA = getExponent(a);
@@ -126,16 +127,17 @@ unit Float
         mantissaA = Long.or(mantissaA, 0x00800000);
         mantissaB = Long.or(mantissaB, 0x00800000);
 
-        if (Long.Equal(mantissaB, 0))
+        long zero = Long.FromBytes(0, 0, 0, 0);
+        if (Long.EQ(mantissaB, zero))
         {
             Die(0x04); // Division by zero
         }
 
-        long resultMantissa = Long.shiftRight(Long.Divide(Long.shiftLeft(mantissaA, 23), mantissaB), 0); // Divide mantissas
-        int resultExponent = (int)exponentA - (int)exponentB + 127; // Subtract exponents
+        long resultMantissa = Long.shiftRight(Long.Div(Long.shiftLeft(mantissaA, 23), mantissaB), 0); // Divide mantissas
+        int resultExponent = int(exponentA) - int(exponentB) + 127; // Subtract exponents
         byte resultSign = signA ^ signB; // Determine the sign
 
-        if (Long.GreaterThanOrEqual(resultMantissa, 0x01000000))
+        if (Long.GE(resultMantissa, 0x01000000))
         {
             resultMantissa = Long.shiftRight(resultMantissa, 1);
             resultExponent++;
@@ -145,10 +147,10 @@ unit Float
             normalize(ref resultMantissa, ref resultExponent);
         }
 
-        return combineComponents(resultSign, (byte)resultExponent, resultMantissa);
+        return combineComponents(resultSign, byte(resultExponent), resultMantissa);
     }
 
-    bool Equal(float a, float b)
+    bool EQ(float a, float b)
     {
         return (GetByte(a, 0) == GetByte(b, 0)) &&
                (GetByte(a, 1) == GetByte(b, 1)) &&
@@ -156,12 +158,7 @@ unit Float
                (GetByte(a, 3) == GetByte(b, 3));
     }
 
-    bool NotEqual(float a, float b)
-    {
-        return !Equal(a, b);
-    }
-
-    bool LessThan(float a, float b)
+    bool LT(float a, float b)
     {
         byte signA = getSign(a);
         byte signB = getSign(b);
@@ -185,24 +182,25 @@ unit Float
         return (signA == 0) ? (mantissaA < mantissaB) : (mantissaA > mantissaB);
     }
 
-    bool GreaterThan(float a, float b)
+    bool GT(float a, float b)
     {
-        return !LessThanOrEqual(a, b);
+        return !LE(a, b);
     }
 
-    bool LessThanOrEqual(float a, float b)
+    bool LE(float a, float b)
     {
-        return LessThan(a, b) || Equal(a, b);
+        return LT(a, b) || EQ(a, b);
     }
 
-    bool GreaterThanOrEqual(float a, float b)
+    bool GE(float a, float b)
     {
-        return GreaterThan(a, b) || Equal(a, b);
+        return GT(a, b) || EQ(a, b);
     }
 
     string ToString(float value)
     {
-        if (Equal(value, FromBytes(0, 0, 0, 0)))
+        float zero = Float.FromBytes(0, 0, 0, 0);
+        if (Float.EQ(value, zero))
         {
             return "0";
         }
@@ -210,13 +208,13 @@ unit Float
         bool isNegative = getSign(value) == 1;
         if (isNegative)
         {
-            value = Negate(value);
+            value = negate(value);
         }
 
         int integerPart = value.ToInt();
-        float fractionalPart = Subtract(value, integerPart.ToFloat());
+        float fractionalPart = Float.Sub(value, integerPart.ToFloat());
 
-        string integerPartStr = IntToString(integerPart);
+        string integerPartStr = integerPart.ToString();
         string fractionalPartStr = fractionToString(fractionalPart);
 
         string result = integerPartStr + "." + fractionalPartStr;
@@ -366,7 +364,7 @@ unit Float
         return result;
     }
 
-    float Negate(float value)
+    float negate(float value)
     {
         byte sign = getSign(value) ^ 1;
         byte exponent = getExponent(value);
