@@ -490,4 +490,25 @@ unit Long
         }
         return success;
     }
+    
+    float ToFloat(long l)
+    {
+        if (l == 0)
+        {
+            return FromBytes(0, 0, 0, 0);
+        }
+
+        byte sign = (l < 0) ? 1 : 0;
+        if (sign == 1)
+        {
+            l = -l;
+        }
+
+        byte exponent = 127 + 23;
+        long mantissa = l << 8;
+
+        Float.normalize(ref mantissa, ref exponent);
+
+        return Float.combineComponents(sign, exponent, mantissa);
+    }
 }

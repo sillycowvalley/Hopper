@@ -227,4 +227,19 @@ unit UInt
         return b; 
     }
     Swap(ref uint a, ref uint b) { uint t = a; a = b; b = t; }
+    
+    float ToFloat(uint i)
+    {
+        if (i == 0)
+        {
+            return FromBytes(0, 0, 0, 0);
+        }
+
+        byte exponent = 127 + 23;
+        long mantissa = long(i) << 8;
+
+        Float.normalize(ref mantissa, ref exponent);
+
+        return Float.combineComponents(0, exponent, mantissa);
+    }
 }

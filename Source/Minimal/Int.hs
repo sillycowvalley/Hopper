@@ -124,4 +124,25 @@ unit Int
     int Min(int a, int b) { return (a < b) ? a : b; }
     int Max(int a, int b) { return (a > b) ? a : b; }
     Swap(ref int a, ref int b) { int t = a; a = b; b = t; }
+    
+    float ToFloat(int i)
+    {
+        if (i == 0)
+        {
+            return FromBytes(0, 0, 0, 0);
+        }
+
+        byte sign = (i < 0) ? 1 : 0;
+        if (sign == 1)
+        {
+            i = -i;
+        }
+
+        byte exponent = 127 + 23;
+        long mantissa = long(i) << 8;
+
+        Float.normalize(ref mantissa, ref exponent);
+
+        return Float.combineComponents(sign, exponent, mantissa);
+    }
 }
