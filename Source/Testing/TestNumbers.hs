@@ -45,6 +45,10 @@ program TestNumbers
         }
         
 #ifdef TESTFLOATS
+        if (!(1.0 == 1))
+        {
+            PrintFailed("!(1.0 == 1) failed 1");
+        }
         if (1.0 == 0)
         {
             PrintFailed("1.0 == 0 failed 1");
@@ -56,10 +60,6 @@ program TestNumbers
         if (!(1.0 == 1.0))
         {
             PrintFailed("!(1.0 == 1.0) failed");
-        }
-        if (!(1.0 == 1))
-        {
-            PrintFailed("!(1.0 == 1) failed 1");
         }
         if (!(1 == 1.0))
         {
@@ -1769,10 +1769,6 @@ program TestNumbers
     {
         //EchoToLCD = true;
         //Screen.Clear();
-
-#ifdef TESTFLOATS
-        TestFloatMath();
-#endif
         
         TestEquals();
         TestGreaterThan();
@@ -1786,6 +1782,10 @@ program TestNumbers
         TestUIntMath();
         TestIntMath();
         TestShifts();
+        
+#ifdef TESTFLOATS
+        TestFloatMath();
+#endif
         
         TestPropertyMath();
         

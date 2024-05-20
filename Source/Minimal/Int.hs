@@ -153,7 +153,7 @@ unit Int
 
         int exponent = 127 + 23;
         long mantissa = i.ToLong(); // Convert int to long
-        mantissa = Long.shiftLeft(mantissa, 8); // Perform left shift using helper
+        //mantissa = Long.shiftLeft(mantissa, 8); // Perform left shift using helper
 
         Float.normalize(ref mantissa, ref exponent);
         return Float.combineComponents(sign, byte(exponent), mantissa);

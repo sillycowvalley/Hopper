@@ -2,7 +2,7 @@ unit Long
 {
     uses "Float"
     
-    friend Float, Int;
+    friend Float, Int, UInt;
     
     byte GetByte(long this, byte index) system;
     long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
@@ -338,28 +338,46 @@ unit Long
 
     int ToInt(long l)
     {
-        long intMax = FromBytes(0xFF, 0xFF, 0x7F, 0x00); // Max value for int (32767)
-        long intMin = FromBytes(0x00, 0x00, 0x80, 0xFF); // Min value for int (-32768)
-
-        if (GreaterThan(l, intMax) || LessThan(l, intMin))
+        long intMax = Long.FromBytes(0xFF, 0xFF, 0x7F, 0x00); // Max value for int (32767)
+        long intMin = Long.FromBytes(0x00, 0x00, 0x80, 0xFF); // Min value for int (-32768)
+        long zero   = Long.FromBytes(0x00, 0x00, 0x00, 0x00); // Zero for comparison
+        
+        if (Long.GT(l, intMax) || Long.LT(l, intMin))
         {
             Die(0x0D); // numeric type out of range / overflow
         }
-
-        return (int)((GetByte(l, 0) << 8) | GetByte(l, 1));
+    
+        int result;
+        if (Long.LT(l, zero)) // Check if the value is negative
+        {
+            l = Long.Sub(zero, l); // Get the positive equivalent
+            byte lowByte  = Long.GetByte(l, 0);
+            byte highByte = Long.GetByte(l, 1);
+            result = -Int.FromBytes(lowByte, highByte); // Negate the result
+        }
+        else
+        {
+            byte lowByte  = Long.GetByte(l, 0);
+            byte highByte = Long.GetByte(l, 1);
+            result = Int.FromBytes(lowByte, highByte); // Direct conversion for positive values
+        }
+        
+        return result;
     }
+    
+    
 
     uint ToUInt(long l)
     {
         long uintMax = FromBytes(0xFF, 0xFF, 0x00, 0x00); // Max value for uint (65535)
         long uintMin = FromBytes(0x00, 0x00, 0x00, 0x00); // Min value for uint (0)
 
-        if (GreaterThan(l, uintMax) || LessThan(l, uintMin))
+        if (Long.GT(l, uintMax) || Long.LT(l, uintMin))
         {
             Die(0x0D); // numeric type out of range / overflow
         }
 
-        return (uint)((GetByte(l, 0) << 8) | GetByte(l, 1));
+        return UInt.FromBytes(GetByte(l, 0), GetByte(l, 1));
     }
     
     bool TryParse(string content, ref long returnValue)
@@ -454,12 +472,13 @@ unit Long
             l = -l;
         }
 
-        byte exponent = 127 + 23;
-        long mantissa = shiftLeft(l, 8);
+        int exponent = 127 + 23;
+        long mantissa = l;
+        //mantissa = shiftLeft(l, 8);
 
         Float.normalize(ref mantissa, ref exponent);
 
-        return Float.combineComponents(sign, exponent, mantissa);
+        return Float.combineComponents(sign, byte(exponent), mantissa);
     }
     
     long shiftLeft(long value, int bits)
@@ -475,12 +494,11 @@ unit Long
 
     long shiftLeftOne(long value)
     {
-        // Shift the value left by 1 bit
         long result = FromBytes(
+            (GetByte(value, 0) << 1),
             (GetByte(value, 1) << 1) | (GetByte(value, 0) >> 7),
             (GetByte(value, 2) << 1) | (GetByte(value, 1) >> 7),
-            (GetByte(value, 3) << 1) | (GetByte(value, 2) >> 7),
-            (GetByte(value, 3) >> 7)
+            (GetByte(value, 3) << 1) | (GetByte(value, 2) >> 7)
         );
         return result;
     }
@@ -500,10 +518,10 @@ unit Long
     {
         // Shift the value right by 1 bit
         long result = FromBytes(
-            (GetByte(value, 0) >> 1),
-            (GetByte(value, 1) >> 1) | ((GetByte(value, 0) & 1) << 7),
-            (GetByte(value, 2) >> 1) | ((GetByte(value, 1) & 1) << 7),
-            (GetByte(value, 3) >> 1) | ((GetByte(value, 2) & 1) << 7)
+            (GetByte(value, 0) >> 1) | ((GetByte(value, 1) & 1) << 7),
+            (GetByte(value, 1) >> 1) | ((GetByte(value, 2) & 1) << 7),
+            (GetByte(value, 2) >> 1) | ((GetByte(value, 3) & 1) << 7),
+            (GetByte(value, 3) >> 1)
         );
         return result;
     }
@@ -518,14 +536,24 @@ unit Long
         );
     }
 
-    long and(long left, long right)
+    long and(long a, long b)
     {
-        return FromBytes(
-            GetByte(left, 0) & GetByte(right, 0),
-            GetByte(left, 1) & GetByte(right, 1),
-            GetByte(left, 2) & GetByte(right, 2),
-            GetByte(left, 3) & GetByte(right, 3)
-        );
+        byte a0 = GetByte(a, 0);
+        byte a1 = GetByte(a, 1);
+        byte a2 = GetByte(a, 2);
+        byte a3 = GetByte(a, 3);
+    
+        byte b0 = GetByte(b, 0);
+        byte b1 = GetByte(b, 1);
+        byte b2 = GetByte(b, 2);
+        byte b3 = GetByte(b, 3);
+    
+        byte result0 = a0 & b0;
+        byte result1 = a1 & b1;
+        byte result2 = a2 & b2;
+        byte result3 = a3 & b3;
+    
+        return FromBytes(result0, result1, result2, result3);
     }
 
     long xor(long a, long b)

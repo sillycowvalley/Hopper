@@ -234,14 +234,16 @@ unit UInt
         {
             return Float.FromBytes(0, 0, 0, 0);
         }
-
-        byte exponent = 127 + 23;
-        long mantissa = long(i) << 8;
-
+    
+        int exponent = 127 + 23;
+        long mantissa = long(i);
+        //mantissa = Long.shiftLeft(long(i), 8);
+    
         Float.normalize(ref mantissa, ref exponent);
-
-        return Float.combineComponents(0, exponent, mantissa);
+    
+        return Float.combineComponents(0, byte(exponent), mantissa);
     }
+    
     /*
     <byte> ToBytes(uint this)
     {
