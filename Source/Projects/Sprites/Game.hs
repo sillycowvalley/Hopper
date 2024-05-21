@@ -1,7 +1,7 @@
 program Game
 {
-    uses "/Source/Library/Boards/PiPico" // MCU
-    //uses "/Source/Minimal/System"      // 6502
+    //uses "/Source/Library/Boards/PiPico" // MCU
+    uses "/Source/Minimal/System"      // 6502
     
     uses "/Source/Library/Displays/OLEDSSD1306"
     
@@ -32,34 +32,14 @@ program Game
         Display.Resume();
         Sprites.Render();
     }
-    CheckCollisions()
-    {
-        byte spriteType;
-        if (Sprites.Collision(0, yPos, ref spriteType))
-        {
-            if (spriteType == 1) // block
-            {
-                byte iLostLife;
-                if (Sprites.GetVisibleSprite(lives, 0, ref iLostLife))
-                {
-                    DeleteSprite(iLostLife);
-                    lives--;
-                }
-            }
-            if (spriteType == 5) // pill
-            {
-                byte iSprite;
-                if (Sprites.IsSpriteAvailable(ref iSprite))
-                {
-                    AddLife(iSprite);
-                    Sprites.RenderCell(lives, 0);
-                }
-            }
-        }
-    }
     
     Hopper()
     {
+        byte gameLoop;
+        byte iSprite;
+        byte spriteType; 
+        byte iLostLife;
+               
         Seed();
         if (!Display.Begin())
         {
@@ -72,10 +52,29 @@ program Game
         Restart();
         
         
-        byte gameLoop;
         loop
         {
-            CheckCollisions();
+            // check for collisions
+            if (Sprites.Collision(0, yPos, ref spriteType))
+            {
+                if (spriteType == 1) // block
+                {
+                    if (Sprites.GetVisibleSprite(lives, 0, ref iLostLife))
+                    {
+                        DeleteSprite(iLostLife);
+                        lives--;
+                    }
+                }
+                if (spriteType == 5) // pill
+                {
+                    if (Sprites.IsSpriteAvailable(ref iSprite))
+                    {
+                        AddLife(iSprite);
+                        Sprites.RenderCell(lives, 0);
+                    }
+                }
+            }
+            
             if (lives == 0)
             {
                 break;
@@ -99,21 +98,17 @@ program Game
             if (gameLoop % 32 == 0)
             {
                 // spawn block sprite
-                byte iSprite;
                 if (IsSpriteAvailable(ref iSprite))
                 {
-                    byte yStart = (Random() % 15) + 1;
-                    Sprites.New(iSprite, 1, 31, yStart, 3, true);
+                    Sprites.New(iSprite, 1, 31, (Random() % 15) + 1, 3, true);
                 }
             }
             if ((gameLoop+16) % 64 == 0)
             {
                 // spawn pill sprite
-                byte iSprite;
                 if (IsSpriteAvailable(ref iSprite))
                 {
-                    byte yStart = (Random() % 15) + 1;
-                    Sprites.New(iSprite, 5, 31, yStart, 1, true);
+                    Sprites.New(iSprite, 5, 31, (Random() % 15) + 1, 1, true);
                 }
             }
             if (gameLoop % 4 == 0)

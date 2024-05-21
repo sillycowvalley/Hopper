@@ -70,14 +70,16 @@ unit Sprites
     }
     MoveTo(byte iSprite, byte cellX, byte cellY)
     {
-        uint sprite = sprites[iSprite];
+        byte previousCellX;
+        byte previousCellY;
+        uint sprite      = sprites[iSprite];
         byte spriteIndex = byte((sprite >> 12) & 0xF);
         byte s = byte(sprite & 0b100000) >> 5;
-        byte z     = byte((sprite >> 6) & 0b11);
+        byte z = byte((sprite >> 6) & 0b11);
         if (z != 0) // was visible?
         {
-            byte previousCellX = byte(sprite & 0b11111);
-            byte previousCellY = byte((sprite >> 8) & 0b1111);
+            previousCellX = byte(sprite & 0b11111);
+            previousCellY = byte((sprite >> 8) & 0b1111);
                 
             // hide it
             sprite &= 0b1111111100111111; // z == 0
@@ -90,10 +92,13 @@ unit Sprites
     }
     bool IsSpriteAvailable(ref byte iSprite)
     {
-        for (byte i = 1; i < numberOfSprites; i++)
+        byte i;
+        uint sprite;
+        byte spriteIndex;
+        for (i = 1; i < numberOfSprites; i++)
         {
-            uint sprite      = sprites[i];
-            byte spriteIndex = byte((sprite >> 12) & 0xF);
+            sprite      = sprites[i];
+            spriteIndex = byte((sprite >> 12) & 0xF);
             if (spriteIndex == 0) // available
             {
                 iSprite = i;
@@ -105,19 +110,26 @@ unit Sprites
     
     Move()
     {
-        for (byte iSprite =0; iSprite < numberOfSprites; iSprite++)
+        byte iSprite;
+        uint sprite;
+        byte s;
+        byte z;
+        byte index;
+        byte cellX;
+        byte cellY;
+        
+        for (iSprite = 0; iSprite < numberOfSprites; iSprite++)
         {
-            uint sprite = sprites[iSprite];
-            byte s = byte(sprite & 0b100000) >> 5;
+            sprite = sprites[iSprite];
+            s = byte(sprite & 0b100000) >> 5;
             if (s != 0) // only move the 'solids'
             {
-                byte index = byte((sprite >> 12) & 0xF);
-                byte z     = byte((sprite >> 6) & 0b11);
+                index = byte((sprite >> 12) & 0xF);
+                z     = byte((sprite >> 6) & 0b11);
                 if (z != 0)  // is sprite visible?
                 {
-                    byte cellX = byte(sprite & 0b11111);
-                    byte cellY = byte((sprite >> 8) & 0b1111);
-                    
+                    cellX = byte(sprite & 0b11111);
+                    cellY = byte((sprite >> 8) & 0b1111);
                     
                     // hide it
                     sprite &= 0b1111111100111111; // z == 0
@@ -155,15 +167,20 @@ unit Sprites
     }
     bool Collision(byte collisionCellX, byte collisionCellY, ref byte spriteType)
     {
+        uint sprite;
+        byte s;
+        byte cellX;
+        byte cellY;
+        
         spriteType = 0;
         for (byte i = 0; i < numberOfSprites; i++)
         {
-            uint sprite = sprites[i];
-            byte s = byte(sprite & 0b100000) >> 5;
+            sprite = sprites[i];
+            s = byte(sprite & 0b100000) >> 5;
             if (s != 0) // collision 'solids'
             {
-                byte cellX = byte(sprite & 0b11111);
-                byte cellY = byte((sprite >> 8) & 0b1111);
+                cellX = byte(sprite & 0b11111);
+                cellY = byte((sprite >> 8) & 0b1111);
                 if ((collisionCellX == cellX) && (collisionCellY == cellY))
                 {
                     spriteType = byte((sprite >> 12) & 0xF);
@@ -179,9 +196,10 @@ unit Sprites
     {
         byte foundIndex; // 0 -> blank
         byte iSprite;
+        uint sprite;
         if (GetVisibleSprite(cellX, cellY, ref iSprite))
         {
-            uint sprite = sprites[iSprite];
+            sprite = sprites[iSprite];
             foundIndex = byte((sprite >> 12) & 0xF);
         }
         return foundIndex;
@@ -194,14 +212,19 @@ unit Sprites
         // - or, failing that, zero to indicate the 'blank' sprite
         bool found;
         byte bestZ;
-        for (byte iSprite = 0; iSprite < numberOfSprites; iSprite++)
+        byte iSprite;
+        uint sprite;
+        byte x;
+        byte y;
+        byte z;
+        for (iSprite = 0; iSprite < numberOfSprites; iSprite++)
         {
-            uint sprite = sprites[iSprite];
-            byte x     = byte(sprite & 0b11111);
-            byte y     = byte((sprite >> 8) & 0b1111);
+            sprite = sprites[iSprite];
+            x      = byte(sprite & 0b11111);
+            y      = byte((sprite >> 8) & 0b1111);
             if ((cellX == x) && (cellY == y))
             {
-                byte z     = byte((sprite >> 6) & 0b11);
+                z = byte((sprite >> 6) & 0b11);
                 if (z > bestZ)
                 {
                     bestZ = z;
@@ -214,14 +237,20 @@ unit Sprites
     }
     Render()
     {
-        for (byte i = 0; i < numberOfSprites; i++)
+        byte i;
+        uint sprite;
+        byte z;
+        byte cellX;
+        byte cellY;
+        
+        for (i = 0; i < numberOfSprites; i++)
         {
-            uint sprite = sprites[i];
-            byte z     = byte((sprite >> 6) & 0b11);    
+            sprite = sprites[i];
+            z     = byte((sprite >> 6) & 0b11);    
             if (z != 0)  // check if sprite is visible
             {
-                byte cellX = byte(sprite & 0b11111);
-                byte cellY = byte((sprite >> 8) & 0b1111);
+                cellX = byte(sprite & 0b11111);
+                cellY = byte((sprite >> 8) & 0b1111);
                 RenderCell(cellX, cellY);
             }
         }

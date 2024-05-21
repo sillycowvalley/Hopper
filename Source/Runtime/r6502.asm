@@ -2,8 +2,8 @@ program R6502
 {
     #define CPU_8MHZ
     
-    //#define CPU_65C02S  // Rockwell and WDC
-    #define CPU_6502      // MOS
+    #define CPU_65C02S  // Rockwell and WDC
+    //#define CPU_6502      // MOS
     
     
     //#define CHECKED              // 111/109 bytes

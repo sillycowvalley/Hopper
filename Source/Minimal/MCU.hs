@@ -68,26 +68,21 @@ unit MCU
     bool DigitalRead(byte pin)
     {
         byte port = (pin <= 7) ? PORTA : PORTB;
-        pin = pin & 0x07;
-        pin = 1 << pin;
-        byte currentValue = Memory.ReadByte(port);
-        return ((currentValue & pin) != 0);
+        pin = 1 << (pin & 0x07);
+        return ((Memory.ReadByte(port) & pin) != 0);
     }
     DigitalWrite(byte pin, bool value)
     {
         byte port = (pin <= 7) ? PORTA : PORTB;
-        pin = pin & 0x07;
-        pin = 1 << pin;
-        byte currentValue = Memory.ReadByte(port);
+        pin = 1 << (pin & 0x07);
         if (value)
         {
-            currentValue = currentValue | pin;
+            Memory.WriteByte(port, Memory.ReadByte(port) | pin);
         }
         else
         {
-            currentValue = currentValue & ~pin;
+            Memory.WriteByte(port, Memory.ReadByte(port) & ~pin);
         }
-        Memory.WriteByte(port, currentValue);
     }
 #endif
 }
