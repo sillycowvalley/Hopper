@@ -100,20 +100,18 @@ unit Float
         long bLow = Long.and(mantissaB, Long.FromBytes(0xFF, 0x0F, 0x00, 0)); // Bottom 12 bits
     
         long highHigh = Long.Mul(aHigh, bHigh);
-        long highLow = Long.Mul(aHigh, bLow);
-        long lowHigh = Long.Mul(aLow, bHigh);
-        long lowLow = Long.Mul(aLow, bLow);
-    
-        long resultHigh = highHigh;
-        long resultLow1 = highLow;
-        long resultLow2 = lowHigh;
-        long resultLowLow = lowLow;
-    
-        long resultMantissa = Long.Add(resultHigh, Long.shiftRight(resultLow1, 12));
-        resultMantissa = Long.Add(resultMantissa, Long.shiftRight(resultLow2, 12));
+        long highLow  = Long.Mul(aHigh, bLow);
+        long lowHigh  = Long.Mul(aLow, bHigh);
+        long lowLow   = Long.Mul(aLow, bLow);
+        
+        // Combine results
+        long resultMantissa = highHigh;
+        resultMantissa = Long.Add(resultMantissa, Long.shiftRight(highLow, 12));
+        resultMantissa = Long.Add(resultMantissa, Long.shiftRight(lowHigh, 12));
+        resultMantissa = Long.Add(resultMantissa, Long.shiftRight(lowLow, 24));
     
         // Add exponents before normalization
-        int resultExponent = int(exponentA) + int(exponentB) - 127;
+        int resultExponent = exponentA + exponentB - 127;
         
         // Normalize the result
         if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0, 0x01))) // 0x01000000 in 32-bit
@@ -131,8 +129,6 @@ unit Float
         float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
         return result;
     }
-
-
     
     float Div(float a, float b)
     {
@@ -329,7 +325,6 @@ unit Float
                 exponent--;
             }
         }
-
         // No need to mask the mantissa as it is already normalized correctly
     }
     bool isZero(float this)

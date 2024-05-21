@@ -241,34 +241,42 @@ unit Long
     {
         byte leftSignByte = GetByte(left, 3);
         byte rightSignByte = GetByte(right, 3);
-
+    
         // Compare the sign bytes first
-        if (leftSignByte > rightSignByte)
+        if (((leftSignByte & 0x80) == 0) && ((rightSignByte & 0x80) != 0))
         {
+            // Left is positive and right is negative
             return true;
         }
-        else if (leftSignByte < rightSignByte)
+        else if (((leftSignByte & 0x80) != 0) && ((rightSignByte & 0x80) == 0))
         {
+            // Left is negative and right is positive
             return false;
         }
-
-        // If sign bytes are equal, compare the rest
-        for (int i = 2; i >= 0; i--)
+    
+        // If both are positive, or both are negative, we need to compare accordingly
+        bool bothNegative = ((leftSignByte & 0x80) != 0) && ((rightSignByte & 0x80) != 0);
+    
+        // Compare the rest of the bytes
+        for (int i = 3; i >= 0; i--)
         {
             byte leftByte = GetByte(left, byte(i));
             byte rightByte = GetByte(right, byte(i));
-
+            
             if (leftByte > rightByte)
             {
-                return true;
+                return bothNegative ? false : true;
             }
             else if (leftByte < rightByte)
             {
-                return false;
+                return bothNegative ? true : false;
             }
         }
-        return false; // They are equal
+    
+        // They are equal
+        return false;
     }
+       
 
     bool LT(long left, long right)
     {
@@ -288,7 +296,7 @@ unit Long
     long Abs(long value)
     {
         long zero = FromBytes(0, 0, 0, 0); // 0 as a long
-        return GreaterThanOrEqual(value, zero) ? value : Negate(value);
+        return GE(value, zero) ? value : Negate(value);
     }
 
     long Negate(long value)
