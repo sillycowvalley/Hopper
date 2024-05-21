@@ -1,7 +1,11 @@
 program Game
 {
-    //uses "/Source/Library/Boards/PiPico" // MCU
-    uses "/Source/Minimal/System"      // 6502
+    // MCU:
+    //uses "/Source/Library/Boards/PiPico" 
+    //uses "/Source/Library/Boards/SparkfunProMicroRP2040"
+    
+    // 6502:
+    uses "/Source/Minimal/System"      
     
     uses "/Source/Library/Displays/OLEDSSD1306"
     

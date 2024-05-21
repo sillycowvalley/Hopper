@@ -73,7 +73,7 @@ unit Sprites
         byte previousCellX;
         byte previousCellY;
         uint sprite      = sprites[iSprite];
-        byte spriteIndex = byte((sprite >> 12) & 0xF);
+        byte spriteIndex = byte((sprite >> 12) /* & 0xF */);
         byte s = byte(sprite & 0b100000) >> 5;
         byte z = byte((sprite >> 6) & 0b11);
         if (z != 0) // was visible?
@@ -98,7 +98,7 @@ unit Sprites
         for (i = 1; i < numberOfSprites; i++)
         {
             sprite      = sprites[i];
-            spriteIndex = byte((sprite >> 12) & 0xF);
+            spriteIndex = byte((sprite >> 12) /* & 0xF */);
             if (spriteIndex == 0) // available
             {
                 iSprite = i;
@@ -124,7 +124,7 @@ unit Sprites
             s = byte(sprite & 0b100000) >> 5;
             if (s != 0) // only move the 'solids'
             {
-                index = byte((sprite >> 12) & 0xF);
+                index = byte((sprite >> 12) /* & 0xF */);
                 z     = byte((sprite >> 6) & 0b11);
                 if (z != 0)  // is sprite visible?
                 {
@@ -183,7 +183,7 @@ unit Sprites
                 cellY = byte((sprite >> 8) & 0b1111);
                 if ((collisionCellX == cellX) && (collisionCellY == cellY))
                 {
-                    spriteType = byte((sprite >> 12) & 0xF);
+                    spriteType = byte((sprite >> 12) /* & 0xF */);
                     sprites[i] = 0; // destroy the thing that collided so we don't get multiple collisions
                     RenderCell(collisionCellX, collisionCellY); // re-render the thing it collided with
                     return true;
@@ -194,15 +194,15 @@ unit Sprites
     }
     byte GetVisibleSpriteIndex(byte cellX, byte cellY)
     {
-        byte foundIndex; // 0 -> blank
+        byte foundType; // 0 -> blank
         byte iSprite;
         uint sprite;
         if (GetVisibleSprite(cellX, cellY, ref iSprite))
         {
             sprite = sprites[iSprite];
-            foundIndex = byte((sprite >> 12) & 0xF);
+            foundType = byte((sprite >> 12) /* & 0xF */);
         }
-        return foundIndex;
+        return foundType;
     }
     bool GetVisibleSprite(byte cellX, byte cellY, ref byte foundIndex)
     {
@@ -214,24 +214,23 @@ unit Sprites
         byte bestZ;
         byte iSprite;
         uint sprite;
-        byte x;
-        byte y;
         byte z;
         for (iSprite = 0; iSprite < numberOfSprites; iSprite++)
         {
             sprite = sprites[iSprite];
-            x      = byte(sprite & 0b11111);
-            y      = byte((sprite >> 8) & 0b1111);
-            if ((cellX == x) && (cellY == y))
+            if (cellX == byte(sprite & 0b11111))
             {
-                z = byte((sprite >> 6) & 0b11);
-                if (z > bestZ)
+                if (cellY == byte((sprite >> 8) & 0b1111))
                 {
-                    bestZ = z;
-                    foundIndex = iSprite;
-                    found = true;
-                }
-            }         
+                    z = byte((sprite >> 6) & 0b11);
+                    if (z > bestZ)
+                    {
+                        bestZ = z;
+                        foundIndex = iSprite;
+                        found = true;
+                    }
+                }         
+            }
         }
         return found;
     }
