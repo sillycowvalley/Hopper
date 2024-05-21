@@ -1,5 +1,11 @@
 program R6502
 {
+    #define CPU_8MHZ
+    
+    //#define CPU_65C02S  // Rockwell and WDC
+    #define CPU_6502      // MOS
+    
+    
     //#define CHECKED              // 111/109 bytes
     
     #define PACKED_INSTRUCTIONS
@@ -10,12 +16,7 @@ program R6502
     #define INLINE_EXPANSIONS 
     
     #define W65C22_VIA
-    #define CPU_2MHZ
-    
-    //#define CPU_65C02S  // Rockwell and WDC
-    #define CPU_6502      // MOS
-
-        
+         
 #if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS)
     #define ROM_8K // 240 bytes overrun with I2C but without FASTINTS
 #endif
@@ -25,7 +26,7 @@ program R6502
 #endif
 
 #ifndef ROM_8K
-    //#define ROM_16K
+    #define ROM_16K
 #endif
 
     // HopperMon commands to support:
@@ -551,6 +552,7 @@ program R6502
         Utilities.ClearPages(); // clear the serial buffer
         
         Serial.Initialize(); // munts A
+        
 #ifdef W65C22_VIA
         W65C22.Initialize();
 #endif             
@@ -847,6 +849,7 @@ program R6502
     Hopper()
     {
         resetVector();
+        
 #ifdef CPU_65C02S
         if (BBS1, ZP.PLUGNPLAY) // EEPROM?
         {
