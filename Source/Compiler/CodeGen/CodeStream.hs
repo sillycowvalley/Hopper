@@ -168,12 +168,20 @@ unit CodeStream
     
     uint CreateFloatConstant(float value)
     {
-        <byte> bytes = value.ToBytes();
+        <byte> bytes;
+        bytes.Append(value.GetByte(0));
+        bytes.Append(value.GetByte(1));
+        bytes.Append(value.GetByte(2));
+        bytes.Append(value.GetByte(3));
         return AppendConstant(bytes);
     }
     uint CreateLongConstant(long value)
     {
-        <byte> bytes = value.ToBytes();
+        <byte> bytes;
+        bytes.Append(value.GetByte(0));
+        bytes.Append(value.GetByte(1));
+        bytes.Append(value.GetByte(2));
+        bytes.Append(value.GetByte(3));
         return AppendConstant(bytes);
     }
     uint CreateStringConstant(string value)

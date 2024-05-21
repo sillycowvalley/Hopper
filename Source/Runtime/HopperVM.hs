@@ -3414,32 +3414,6 @@ unit HopperVM
                 Error = 0x0A;
 #endif
             }
-            case SysCalls.IntToBytes:
-            {
-                Type htype;
-                uint ichunk = Pop(ref htype);
-#ifdef CHECKED
-                AssertInt(htype, ichunk);
-#endif
-                uint lst = HRInt.ToBytes(ichunk);
-                Push(lst, Type.List);
-            }
-            case SysCalls.LongToBytes:
-            {
-#ifdef INCLUDE_LONGS
-                Type htype;
-                uint this = Pop(ref htype);
-#ifdef CHECKED
-                AssertLong(htype);
-#endif
-                uint lst = HRLong.ToBytes(this);
-                Push(lst, Type.List);  
-                GC.Release(this);
-#else
-                Error = 0x0A;
-#endif
-            }
-            
             case SysCalls.FloatToLong:
             {
 #ifdef INCLUDE_FLOATS
@@ -3516,22 +3490,6 @@ unit HopperVM
                 
                 uint i = HRInt.FromBytes(b0, b1);
                 Push(i, Type.Int);  
-            }
-            
-            case SysCalls.FloatToBytes:
-            {
-#ifdef INCLUDE_FLOATS
-                Type htype;
-                uint this = Pop(ref htype);
-#ifdef CHECKED
-                AssertFloat(htype);
-#endif
-                uint lst = HRFloat.ToBytes(this);
-                Push(lst, Type.List); 
-                GC.Release(this);
-#else
-                Error = 0x0A;
-#endif
             }
             case SysCalls.FloatToString:
             {

@@ -336,8 +336,7 @@ unit Runtime
     
     SetVariable(byte variableIndex, int value)
     {
-        <byte> bytes = value.ToBytes();
-        uint w = bytes[0] + (bytes[1] << 8);
+        uint w = value.GetByte(0) + (value.GetByte(1) << 8);
         byte lpVariables = Variables;
         RAM.WriteWord(0x0600 + lpVariables + variableIndex*2, w);
     }

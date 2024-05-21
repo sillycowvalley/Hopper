@@ -142,13 +142,4 @@ unit Int
     {
         return Long.ToFloat(Int.ToLong(i));
     }
-    /*
-    <byte> ToBytes(int this)
-    {
-        <byte> bytes;
-        bytes.Append(this.GetByte(0));
-        bytes.Append(this.GetByte(1));
-        return bytes
-    }
-    */
 }

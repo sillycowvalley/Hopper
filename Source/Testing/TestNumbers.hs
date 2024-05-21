@@ -6,14 +6,14 @@ program TestNumbers
 //#define EXPERIMENTAL
 
     
-    uses "/Source/Minimal/System"
-    uses "/Source/Minimal/IO"
-    #define NOLISTS
+    //uses "/Source/Minimal/System"
+    //uses "/Source/Minimal/IO"
+    //#define NOLISTS
     #define TESTFLOATS
     
-    //uses "/Source/System/System"
-    //uses "/Source/System/IO"
-    //uses "/Source/System/Diagnostics"
+    uses "/Source/System/System"
+    uses "/Source/System/IO"
+    uses "/Source/System/Diagnostics"
     
     
     uses "/Source/System/Keyboard"
@@ -1031,14 +1031,6 @@ program TestNumbers
         {
             PrintFailed("'uint' 14");
         }
-#ifndef NOLISTS
-        <byte> bytes = test.ToBytes();
-        testAfter = UInt.FromBytes(bytes[0], bytes[1]);
-        if (test != testAfter)
-        {
-            PrintFailed("'uint' 15");
-        }
-#endif        
     } // TestUIntMath
     
     TestIntMath()
@@ -1050,21 +1042,15 @@ program TestNumbers
         int localInt  = 10000;
         int localInt2 = 10001;
         int localIntNeg = 0 - localInt;
-#ifndef NOLISTS
-        <byte> lb = localInt.ToBytes();
-        if (lb.Count != 2)
+        if (localInt.GetByte(0) != 0x10)
         {
-            PrintFailed("'int' ToBytes 1 failed");        
+            PrintFailed("'int' GetByte 2  failed");        
         }
-        if (lb[0] != 0x10)
+        if (localInt.GetByte(1) != 0x27)
         {
-            PrintFailed("'int' ToBytes 2  failed");        
+            PrintFailed("'int' GetByte 3  failed");        
         }
-        if (lb[1] != 0x27)
-        {
-            PrintFailed("'int' ToBytes 3  failed");        
-        }
-#endif
+
         // +
         if (localInt + localInt != 20000)
         {
@@ -1330,14 +1316,6 @@ program TestNumbers
         {
             PrintFailed("'int' 17");
         }
-#ifndef NOLISTS
-        <byte> bytes = test.ToBytes();
-        testAfter = Int.FromBytes(bytes[0], bytes[1]);
-        if (test != testAfter)
-        {
-            PrintFailed("'int' 18");
-        }
-#endif
     } // TestIntMath
 	
 	
@@ -1503,14 +1481,6 @@ program TestNumbers
         {
             PrintFailed("'long' 28");
         }
-#ifndef NOLISTS
-       <byte> bytes = test.ToBytes();
-        testAfter = Long.FromBytes(bytes[0], bytes[1], bytes[2], bytes[3]);
-        if (test != testAfter)
-        {
-            PrintFailed("'long' 29");
-        }
-#endif        
         
         longRef = 42;
         longRef++;
@@ -1559,15 +1529,6 @@ program TestNumbers
         {
             PrintFailed("'float' 28");
         }
-#ifndef NOLISTS        
-        <byte> bytes = test.ToBytes();
-        testAfter = Float.FromBytes(bytes[0], bytes[1], bytes[2], bytes[3]);
-        if (test != testAfter)
-        {
-            PrintFailed("'float' 29");
-        }
-#endif
-        
         // globalFloat3  = 10000.0;
         // globalFloat4  = 10000.1;
         float localFloat  = 10000.0;
@@ -1596,11 +1557,6 @@ program TestNumbers
         {
             PrintFailed("'float' 8");
         }
-        float left = 2.0;
-        float right = 10000.0;
-        float
-        r = Float.Add(-10000.0, 10000.0);
-        r = Float.Mul(left, right);
         
         // *
         if (20000.0 != 2 * localFloat)

@@ -63,7 +63,7 @@ unit SysCalls
         UIntToLong           = 0x36,
         UIntToInt            = 0x37,
         LongToString         = 0x38,
-        LongToBytes          = 0x39,
+        //LongToBytes          = 0x39,
         LongToFloat          = 0x3A,
         LongToInt            = 0x3B,
         LongToUInt           = 0x3C,
@@ -82,7 +82,7 @@ unit SysCalls
         LongNegate           = 0x49,
         
         FloatToString        = 0x4A,
-        FloatToBytes         = 0x4B,
+        //FloatToBytes         = 0x4B,
         FloatNew             = 0x4C,
         FloatNewFromConstant = 0x4D,
         FloatAdd             = 0x4E,
@@ -199,7 +199,7 @@ unit SysCalls
         StringIndexOf = 0xC3,
         
         FileGetTimeStamp = 0xCC,
-        IntToBytes       = 0xCD,
+        //IntToBytes       = 0xCD,
         
         FileGetTime = 0xCE,
         DirectoryGetTime = 0xCF,

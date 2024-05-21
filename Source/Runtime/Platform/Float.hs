@@ -54,16 +54,6 @@ unit HRFloat
         return address;    
     }
     
-    uint ToBytes(uint ichunk)
-    {
-        uint lst = HRList.New(Type.Byte);
-        for (byte i=0; i < 4; i++)
-        {
-            byte b = ReadByte(ichunk+2+i);
-            HRList.Append(lst, b, Type.Byte);
-        }
-        return lst;
-    }
     byte GetByte(uint ichunk, uint i)
     {
         return ReadByte(ichunk+2+i);    

@@ -204,13 +204,6 @@ unit UInt
         }
         return result;
     }
-    <byte> ToBytes(uint this)
-    {
-        <byte> lst;
-        lst.Append(byte(this & 0xFF));
-        lst.Append(byte(this >> 8));
-        return lst;
-    }
     byte GetByte(uint this, byte index)
     {
         switch (index)

@@ -129,8 +129,8 @@ unit Platform
         }
         loop // just to avoid zero
         {
-            <byte> bytes = (Time.Millis).ToBytes();
-            gRnd = UInt.FromBytes(bytes[0], bytes[1]);
+            long now = Time.Millis;
+            gRnd = UInt.FromBytes(now.GetByte(0), now.getByte(1));
             if (gRnd != 0) { break; }
         }
 #ifdef DYNAMICSTACK 

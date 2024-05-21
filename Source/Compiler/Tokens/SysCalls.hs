@@ -79,7 +79,7 @@ unit SysCalls
         addEntry("UInt.ToInt");
         
         addEntry("Long.ToString");
-        addEntry("Long.ToBytes");
+        addEntry("_Long.ToBytes");
         addEntry("Long.ToFloat");
         addEntry("Long.ToInt");
         addEntry("Long.ToUInt");
@@ -98,7 +98,7 @@ unit SysCalls
         addEntry("Long.Negate");
         
         addEntry("Float.ToString");
-        addEntry("Float.ToBytes");
+        addEntry("_Float.ToBytes");
         addEntry("Float.New");
         addEntry("Float.NewFromConstant");
         addEntry("Float.Add");
@@ -119,7 +119,7 @@ unit SysCalls
         addEntry("System.CurrentDirectory_Set");
         addEntry("System.Beep");
         addEntry("_Time.Seconds_Get2");
-        addEntry("System.RegisterObject"); // unused
+        addEntry("_System.RegisterObject"); // unused
         
         addEntry("File.Exists");
         addEntry("File.New");
@@ -265,7 +265,7 @@ unit SysCalls
         addEntry("Array.SetItemUInt");
         
         addEntry("File.GetTimeStamp");
-        addEntry("Int.ToBytes");
+        addEntry("_Int.ToBytes");
         
         addEntry("File.GetTime");
         addEntry("Directory.GetTime");

@@ -104,8 +104,6 @@ unit Float
     }
     string ToString(float this) system;
     
-    <byte> ToBytes(float this) system;
-    
     byte GetByte(float this, byte index) system;
     float FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     

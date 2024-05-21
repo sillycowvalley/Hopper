@@ -76,8 +76,7 @@ unit HopperCode
     {
         if (value < 0)
         {
-            <byte> bytes = value.ToBytes();
-            return uint(bytes[0]) + uint(bytes[1]) << 8;
+            return uint(value.GetByte(0)) + uint(value.GetByte(1)) << 8;
         }
         else
         {

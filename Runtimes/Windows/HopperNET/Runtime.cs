@@ -42,6 +42,11 @@ namespace HopperNET
 
         SYSCALL2 = 0x0B, // syscall <byte operand>, overload 2
 
+        BITSHLB  = 0x0C,
+        BITSHRB  = 0x0D,
+        BITANDB  = 0x0E,
+        BITORB   = 0x0F,
+
         PUSHIB = 0x1A,       // operand is byte
         POPLOCALB,    // operand is the location to pop to: BP + offset
         PUSHLOCALB,   // operand is the location to push from: BP + offset
@@ -283,7 +288,7 @@ namespace HopperNET
         UIntToLong = 0x36,
         UIntToInt = 0x37,
         LongToString = 0x38,
-        LongToBytes = 0x39,
+        //LongToBytes = 0x39,
         LongToFloat = 0x3A,
         LongToInt = 0x3B,
         LongToUInt = 0x3C,
@@ -301,7 +306,7 @@ namespace HopperNET
         LongGE = 0x48,
         LongNegate = 0x49,
         FloatToString = 0x4A,
-        FloatToBytes = 0x4B,
+        //FloatToBytes = 0x4B,
         FloatNew = 0x4C,
         FloatNewFromConstant = 0x4D,
         FloatAdd = 0x4E,
@@ -444,7 +449,7 @@ namespace HopperNET
         ArraySetItemUInt = 0xCB,
 
         FileGetTimeStamp = 0xCC,
-        IntToBytes = 0xCD,
+        //IntToBytes = 0xCD,
 
         FileGetTime = 0xCE,
         DirectoryGetTime = 0xCF,
@@ -1674,6 +1679,45 @@ namespace HopperNET
                             Push((ushort)lnext, HopperType.tUInt);
                         }
                         break;
+                    case Instruction.BITSHLB:
+                        {
+                            int next = (int)(code[pc + currentContext.CodeOffset]);
+                            pc++;
+                            uint top = Pop();
+
+                            int lnext = (int)top;
+                            lnext = lnext << next;
+                            Push((ushort)lnext, HopperType.tUInt);
+                        }
+                        break;
+                    case Instruction.BITSHRB:
+                        {
+                            int next = (int)(code[pc + currentContext.CodeOffset]);
+                            pc++;
+                            uint top = Pop();
+
+                            int lnext = (int)top;
+                            lnext = lnext >> next;
+                            Push((ushort)lnext, HopperType.tUInt);
+                        }
+                        break;
+                    case Instruction.BITANDB:
+                        {
+                            uint next = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            uint top = Pop();
+                            Push((ushort)(top & next), HopperType.tUInt);
+                        }
+                        break;
+                    case Instruction.BITORB:
+                        {
+                            uint next = code[pc + currentContext.CodeOffset];
+                            pc++;
+                            uint top = Pop();
+                            Push((ushort)(top | next), HopperType.tUInt);
+                        }
+                        break;
+
                     case Instruction.BITANDFF:
                         {
                             Push((ushort)(Pop() & 0xFF), HopperType.tUInt);
@@ -6625,20 +6669,7 @@ namespace HopperNET
                         hasResult = true;
                     }
                     break;
-                case SysCall.LongToBytes:
-                    {
-                        Int32 top = PopLong();
-                        byte[] bytes = BitConverter.GetBytes(top);
-                        HopperList list = new HopperList(HopperType.tByte);
-                        foreach (byte b in bytes)
-                        {
-                            list.Value.Add(new HopperValue(b, HopperType.tByte));
-                        }
-                        Push(list);
-                        hasResult = true;
-                    }
-                    break;
-
+                
                 case SysCall.LongGetByte:
                     {
                         uint index = Pop();
@@ -6708,19 +6739,6 @@ namespace HopperNET
                     }
                     break;
 
-                case SysCall.IntToBytes:
-                    {
-                        Int16 top = PopInt();
-                        byte[] bytes = BitConverter.GetBytes(top);
-                        HopperList list = new HopperList(HopperType.tByte);
-                        foreach (byte b in bytes)
-                        {
-                            list.Value.Add(new HopperValue(b, HopperType.tByte));
-                        }
-                        Push(list);
-                        hasResult = true;
-                    }
-                    break;
                 case SysCall.IntFromBytes:
                     {
                         byte[] bytes = new byte[2];
@@ -6849,19 +6867,6 @@ namespace HopperNET
                         float top = PopFloat();
                         float next = PopFloat();
                         PushBool(next >= top);
-                        hasResult = true;
-                    }
-                    break;
-                case SysCall.FloatToBytes:
-                    {
-                        float top = PopFloat();
-                        byte[] bytes = BitConverter.GetBytes(top);
-                        HopperList list = new HopperList(HopperType.tByte);
-                        foreach (byte b in bytes)
-                        {
-                            list.Value.Add(new HopperValue(b, HopperType.tByte));
-                        }
-                        Push(list);
                         hasResult = true;
                     }
                     break;

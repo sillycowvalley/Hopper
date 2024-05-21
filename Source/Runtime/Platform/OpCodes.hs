@@ -15,6 +15,11 @@ unit OpCodes
         LIBCALL0 = 0x09,       // <library method index>, iOverload = 0
         LIBCALL1 = 0x0A,       // <library method index>, iOverload = 1
         
+        BITSHLB  = 0x0C,
+        BITSHRB  = 0x0D,
+        BITANDB  = 0x0E,
+        BITORB   = 0x0F,
+        
         PUSHI         = 0x37, // <uint operand>
         PUSHD         = 0x60, // <uint operand> : identical to PUSHI except that optimizer knows it points to a delegate method (reachable code)
         PUSHLOCAL     = 0x39, // <int offset operand>

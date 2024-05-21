@@ -236,14 +236,4 @@ unit UInt
     {
         return Long.FromBytes(UInt.GetByte(i, 0), UInt.GetByte(i, 1), 0, 0);
     }
-    
-    /*
-    <byte> ToBytes(uint this)
-    {
-        <byte> bytes;
-        bytes.Append(this.GetByte(0));
-        bytes.Append(this.GetByte(1));
-        return bytes
-    }
-    */
 }

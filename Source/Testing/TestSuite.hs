@@ -974,7 +974,11 @@ program TestSuite
             PrintFailed("List : Insert failed 3");
         }
         long key = 0xAABBCCDD;
-        <byte> bytes = key.ToBytes();
+        <byte> bytes;
+        bytes.Append(key.GetByte(0));
+        bytes.Append(key.GetByte(1));
+        bytes.Append(key.GetByte(2));
+        bytes.Append(key.GetByte(3));
         string bstr;
         foreach (var b in bytes)
         {
@@ -983,7 +987,7 @@ program TestSuite
         }
         if (bstr != "DDCCBBAA")
         {
-            PrintFailed("List : long.ToBytes failed");
+            PrintFailed("List : long.GetByte failed");
         }
     }
   	 TestListOfDictionaries()

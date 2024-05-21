@@ -632,15 +632,4 @@ unit Long
 
         return FromBytes(result0, result1, result2, result3);
     }
-    /*
-    <byte> ToBytes(long this)
-    {
-        <byte> bytes;
-        bytes.Append(this.GetByte(0));
-        bytes.Append(this.GetByte(1));
-        bytes.Append(this.GetByte(2));
-        bytes.Append(this.GetByte(3));
-        return bytes
-    }
-    */
 }

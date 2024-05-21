@@ -12,6 +12,38 @@ unit Float
     float FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     const float Pi = 3.1415926535;
     
+    float Div(float a, float b)
+    {
+        if (isZero(b))
+        {
+            Die(0x04); // Division by zero
+        }
+        
+        byte signA = getSign(a);
+        byte exponentA = getExponent(a);
+        long mantissaA = getMantissa(a);
+        byte signB = getSign(b);
+        byte exponentB = getExponent(b);
+        long mantissaB = getMantissa(b);
+        // Add the implicit leading bit
+        mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
+        mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
+        
+        long resultMantissa = Long.Div(Long.shiftLeft(mantissaA, 23), mantissaB); // Divide mantissas
+        int resultExponent = int(exponentA) - int(exponentB) + 127; // Subtract exponents
+        byte resultSign = signA ^ signB; // Determine the sign
+        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0, 0x01))) // 0x01000000 in 32-bit
+        {
+            resultMantissa = Long.shiftRight(resultMantissa, 1);
+            resultExponent++;
+        }
+        else
+        {
+            normalize(ref resultMantissa, ref resultExponent);
+        }
+        return combineComponents(resultSign, byte(resultExponent), resultMantissa);
+    }
+    
     float Add(float a, float b)
     {
         byte signA     = getSign(a);
@@ -209,38 +241,7 @@ unit Float
         return result;
     }
     
-    float Div(float a, float b)
-    {
-        if (isZero(b))
-        {
-            Die(0x04); // Division by zero
-        }
-        
-        byte signA = getSign(a);
-        byte exponentA = getExponent(a);
-        long mantissaA = getMantissa(a);
-        byte signB = getSign(b);
-        byte exponentB = getExponent(b);
-        long mantissaB = getMantissa(b);
-        // Add the implicit leading bit
-        mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
-        mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
-        
-        long resultMantissa = Long.shiftRight(Long.Div(Long.shiftLeft(mantissaA, 23), mantissaB), 0); // Divide mantissas
-        int resultExponent = int(exponentA) - int(exponentB) + 127; // Subtract exponents
-        byte resultSign = signA ^ signB; // Determine the sign
-        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0, 0x01))) // 0x01000000 in 32-bit
-        {
-            resultMantissa = Long.shiftRight(resultMantissa, 1);
-            resultExponent++;
-        }
-        else
-        {
-            normalize(ref resultMantissa, ref resultExponent);
-        }
-        return combineComponents(resultSign, byte(resultExponent), resultMantissa);
-    }
-    
+       
     bool EQ(float a, float b)
     {
         if (isZero(a) && isZero(b))
@@ -434,17 +435,5 @@ unit Float
         long mantissa = getMantissa(value);
         return combineComponents(sign, exponent, mantissa);
     }
-    
-    /*
-    <byte> ToBytes(float this)
-    {
-        <byte> bytes;
-        bytes.Append(this.GetByte(0));
-        bytes.Append(this.GetByte(1));
-        bytes.Append(this.GetByte(2));
-        bytes.Append(this.GetByte(3));
-        return bytes;
-    }
-    */
 }
 

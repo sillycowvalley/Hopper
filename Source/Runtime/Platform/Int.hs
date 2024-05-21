@@ -14,17 +14,6 @@ unit HRInt
         }
         return this;
     }
-    uint ToBytes(uint ichunk)
-    {
-        byte lsb = byte(ichunk & 0xFF);
-        byte msb = byte(ichunk >> 8);
-        
-        uint lst = HRList.New(Type.Byte);
-        HRList.Append(lst, lsb, Type.Byte);
-        HRList.Append(lst, msb, Type.Byte);
-        return lst;
-    }
-    
     uint FromBytes(byte b0, byte b1)
     {
         return b0 + (b1 << 8);
