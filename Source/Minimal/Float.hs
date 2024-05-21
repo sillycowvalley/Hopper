@@ -80,53 +80,132 @@ unit Float
         return Add(a, negativeB);
     }
     
+    mantissaMultiply(long mantissaA, long mantissaB, ref long resultHigh, ref long resultLow)
+    {
+        // Extract the higher and lower parts of the mantissas
+        long aHigh = Long.shiftRight(mantissaA, 12);
+        long aLow = Long.and(mantissaA, Long.FromBytes(0xFF, 0x0F, 0x00, 0x00)); // Bottom 12 bits
+        long bHigh = Long.shiftRight(mantissaB, 12);
+        long bLow = Long.and(mantissaB, Long.FromBytes(0xFF, 0x0F, 0x00, 0x00)); // Bottom 12 bits
+    
+        // Perform the multiplications
+        long highHigh = Long.Mul(aHigh, bHigh);
+        long highLow = Long.Mul(aHigh, bLow);
+        long lowHigh = Long.Mul(aLow, bHigh);
+        long lowLow = Long.Mul(aLow, bLow);
+    
+        // Combine results to form the full 48-bit result
+        long highResult = highHigh;
+        long midResult1 = highLow;
+        long midResult2 = lowHigh;
+        long lowResult = Long.shiftRight(lowLow, 12);
+    
+        // Combine results into a final mantissa
+        resultHigh = highResult;
+        resultHigh = Long.Add(resultHigh, Long.shiftRight(midResult1, 12));
+        resultHigh = Long.Add(resultHigh, Long.shiftRight(midResult2, 12));
+    
+        resultLow = lowResult;
+    }
+    byte countLeadingZeros(long resultHigh, long resultLow)
+    {
+        byte count = 0;
+        long one = Long.FromBytes(1, 0, 0, 0); // 0x00000001 as a long
+    
+        // Check the higher 32 bits first
+        for (int i = 31; i >= 0; i--)
+        {
+            if (!Long.EQ(Long.and(resultHigh, Long.shiftLeft(one, i)), Long.FromBytes(0, 0, 0, 0)))
+            {
+                return count;
+            }
+            count++;
+        }
+    
+        // If resultHigh is zero, check the lower 32 bits
+        for (int i = 31; i >= 0; i--)
+        {
+            if (!Long.EQ(Long.and(resultLow, Long.shiftLeft(one, i)), Long.FromBytes(0, 0, 0, 0)))
+            {
+                return count;
+            }
+            count++;
+        }
+    
+        return count; // If both resultHigh and resultLow are zero, return 64
+    }
+    shiftRight64Bit(ref long resultHigh, ref long resultLow, byte shift)
+    {
+        if (shift >= 32)
+        {
+            resultLow = Long.shiftRight(resultHigh, shift - 32);
+            resultHigh = 0;
+        }
+        else
+        {
+            resultLow  = Long.shiftRight(resultLow, shift);
+            resultLow  = Long.or(resultLow, Long.shiftLeft(resultHigh, 32 - shift));
+            resultHigh = Long.shiftRight(resultHigh, shift);
+        }
+    }
     float Mul(float a, float b)
     {
+        if (isZero(a))
+        {
+            return a;
+        }
+        if (isZero(b))
+        {
+            return b;
+        }
         byte signA = getSign(a);
         int exponentA = getExponent(a);
         long mantissaA = getMantissa(a);
         byte signB = getSign(b);
-        int  exponentB = getExponent(b);
+        int exponentB = getExponent(b);
         long mantissaB = getMantissa(b);
     
+        
+    
         // Add the implicit leading bit
-        mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
-        mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
+        mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0));
+        mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0));
     
         // Perform the multiplication
-        long aHigh = Long.shiftRight(mantissaA, 12);
-        long aLow = Long.and(mantissaA, Long.FromBytes(0xFF, 0x0F, 0x00, 0)); // Bottom 12 bits
-        long bHigh = Long.shiftRight(mantissaB, 12);
-        long bLow = Long.and(mantissaB, Long.FromBytes(0xFF, 0x0F, 0x00, 0)); // Bottom 12 bits
-    
-        long highHigh = Long.Mul(aHigh, bHigh);
-        long highLow  = Long.Mul(aHigh, bLow);
-        long lowHigh  = Long.Mul(aLow, bHigh);
-        long lowLow   = Long.Mul(aLow, bLow);
+        long resultHigh;
+        long resultLow;
+        mantissaMultiply(mantissaA, mantissaB, ref resultHigh, ref resultLow);
         
-        // Combine results
-        long resultMantissa = highHigh;
-        resultMantissa = Long.Add(resultMantissa, Long.shiftRight(highLow, 12));
-        resultMantissa = Long.Add(resultMantissa, Long.shiftRight(lowHigh, 12));
-        resultMantissa = Long.Add(resultMantissa, Long.shiftRight(lowLow, 24));
-    
-        // Add exponents before normalization
-        int resultExponent = exponentA + exponentB - 127;
-        
-        // Normalize the result
-        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0, 0x01))) // 0x01000000 in 32-bit
+        byte leadingZeros = countLeadingZeros(resultHigh, resultLow);
+        if (leadingZeros < 40)
         {
-            resultMantissa = Long.shiftRight(resultMantissa, 1);
-            resultExponent++;
+            shiftRight64Bit(ref resultHigh, ref resultLow, 40 - leadingZeros);
         }
         else
         {
-            normalize(ref resultMantissa, ref resultExponent);
+            resultLow = Long.shiftLeft(resultLow, leadingZeros - 40);
         }
         
+        // Now the mantissa of interest is in lowResult
+        long resultMantissa = Long.and(resultLow, Long.FromBytes(0xFF, 0xFF, 0x7F, 0));  // remove the implicit leading 1
+        int resultExponent = exponentA + exponentB - 127;   
         byte resultSign = signA ^ signB;
         
-        float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
+        // Handle exponent overflow/underflow
+        if (resultExponent <= 0) 
+        {
+            // Underflow: result is too small to be represented
+            resultExponent = 0;
+            resultMantissa  = 0;
+        }
+        else if (resultExponent >= 255) 
+        {
+            // Overflow: result is too large to be represented
+            resultExponent = 255;
+            resultMantissa  = 0;
+        }
+    
+        float result = combineComponents(resultSign, byte(resultExponent), resultMantissa );
         return result;
     }
     
