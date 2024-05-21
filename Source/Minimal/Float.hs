@@ -58,7 +58,7 @@ unit Float
             }
         }
     
-        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0x01, 0))) // 0x01000000 in 32-bit
+        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0, 0x01))) // 0x01000000 in 32-bit
         {
             resultMantissa = Long.shiftRight(resultMantissa, 1);
             exponentA++;
@@ -68,7 +68,8 @@ unit Float
             normalize(ref resultMantissa, ref exponentA); // Pass exponent as int for normalization
         }
     
-        return combineComponents(signA, byte(exponentA), resultMantissa); // Convert exponent back to byte for combining
+        float result = combineComponents(signA, byte(exponentA), resultMantissa); // Convert exponent back to byte for combining
+        return result;
     }
     
     float Sub(float a, float b)
@@ -82,18 +83,40 @@ unit Float
     float Mul(float a, float b)
     {
         byte signA = getSign(a);
-        byte exponentA = getExponent(a);
+        int exponentA = getExponent(a);
         long mantissaA = getMantissa(a);
         byte signB = getSign(b);
-        byte exponentB = getExponent(b);
+        int  exponentB = getExponent(b);
         long mantissaB = getMantissa(b);
+    
         // Add the implicit leading bit
         mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
-        long resultMantissa = Long.shiftRight(Long.Mul(mantissaA, mantissaB), 23); // Multiply mantissas
-        int resultExponent = int(exponentA) + int(exponentB) - 127; // Add exponents
-        byte resultSign = signA ^ signB; // Determine the sign
-        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0x01, 0))) // 0x01000000 in 32-bit
+    
+        // Perform the multiplication
+        long aHigh = Long.shiftRight(mantissaA, 12);
+        long aLow = Long.and(mantissaA, Long.FromBytes(0xFF, 0x0F, 0x00, 0)); // Bottom 12 bits
+        long bHigh = Long.shiftRight(mantissaB, 12);
+        long bLow = Long.and(mantissaB, Long.FromBytes(0xFF, 0x0F, 0x00, 0)); // Bottom 12 bits
+    
+        long highHigh = Long.Mul(aHigh, bHigh);
+        long highLow = Long.Mul(aHigh, bLow);
+        long lowHigh = Long.Mul(aLow, bHigh);
+        long lowLow = Long.Mul(aLow, bLow);
+    
+        long resultHigh = highHigh;
+        long resultLow1 = highLow;
+        long resultLow2 = lowHigh;
+        long resultLowLow = lowLow;
+    
+        long resultMantissa = Long.Add(resultHigh, Long.shiftRight(resultLow1, 12));
+        resultMantissa = Long.Add(resultMantissa, Long.shiftRight(resultLow2, 12));
+    
+        // Add exponents before normalization
+        int resultExponent = int(exponentA) + int(exponentB) - 127;
+        
+        // Normalize the result
+        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0, 0x01))) // 0x01000000 in 32-bit
         {
             resultMantissa = Long.shiftRight(resultMantissa, 1);
             resultExponent++;
@@ -102,11 +125,22 @@ unit Float
         {
             normalize(ref resultMantissa, ref resultExponent);
         }
-        return combineComponents(resultSign, byte(resultExponent), resultMantissa);
+        
+        byte resultSign = signA ^ signB;
+        
+        float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
+        return result;
     }
+
+
     
     float Div(float a, float b)
     {
+        if (isZero(b))
+        {
+            Die(0x04); // Division by zero
+        }
+        
         byte signA = getSign(a);
         byte exponentA = getExponent(a);
         long mantissaA = getMantissa(a);
@@ -116,15 +150,11 @@ unit Float
         // Add the implicit leading bit
         mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
-        long zero = Long.FromBytes(0, 0, 0, 0);
-        if (Long.EQ(mantissaB, zero))
-        {
-            Die(0x04); // Division by zero
-        }
+        
         long resultMantissa = Long.shiftRight(Long.Div(Long.shiftLeft(mantissaA, 23), mantissaB), 0); // Divide mantissas
         int resultExponent = int(exponentA) - int(exponentB) + 127; // Subtract exponents
         byte resultSign = signA ^ signB; // Determine the sign
-        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0x01, 0))) // 0x01000000 in 32-bit
+        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0, 0x01))) // 0x01000000 in 32-bit
         {
             resultMantissa = Long.shiftRight(resultMantissa, 1);
             resultExponent++;
@@ -138,6 +168,10 @@ unit Float
     
     bool EQ(float a, float b)
     {
+        if (isZero(a) && isZero(b))
+        {
+            return true;
+        }
         return (GetByte(a, 0) == GetByte(b, 0)) &&
                (GetByte(a, 1) == GetByte(b, 1)) &&
                (GetByte(a, 2) == GetByte(b, 2)) &&
@@ -180,8 +214,7 @@ unit Float
     
     string ToString(float value)
     {
-        float zero = Float.FromBytes(0, 0, 0, 0);
-        if (Float.EQ(value, zero))
+        if (isZero(value))
         {
             return "0";
         }
@@ -190,40 +223,50 @@ unit Float
         {
             value = negate(value);
         }
-        int integerPart = value.ToInt();
-        float fractionalPart = Float.Sub(value, integerPart.ToFloat());
+        long integerPart = Float.ToLong(value);
+        float fractionalPart = Float.Sub(value, Long.ToFloat(integerPart));
         string integerPartStr = integerPart.ToString();
         string fractionalPartStr = fractionToString(fractionalPart);
         string result = integerPartStr + "." + fractionalPartStr;
         if (isNegative)
         {
-            result = "-" + result;
+            String.BuildFront(ref result, '-');
         }
         return result;
     }
     
-    int ToInt(float f)
+    long ToLong(float f)
     {
         byte sign = getSign(f);
         int exponent = getExponent(f) - 127; // Bias adjustment
         long mantissa = getMantissa(f);
         mantissa = Long.or(mantissa, Long.FromBytes(0, 0, 0x80, 0)); // Add the implicit leading bit
     
-        int result;
+        long result;
         if (exponent > 23)
         {
-            result = int(Long.shiftLeft(mantissa, exponent - 23));
+            result = Long.shiftLeft(mantissa, exponent - 23);
         }
         else if (exponent < 23)
         {
-            result = int(Long.shiftRight(mantissa, 23 - exponent));
+            result = Long.shiftRight(mantissa, 23 - exponent);
         }
         else
         {
-            result = int(mantissa);
+            result = mantissa;
         }
     
-        return sign == 1 ? -result : result;
+        return sign == 1 ? Long.Negate(result) : result;
+    }
+    
+    int ToInt(float f)
+    {
+        long longValue = f.ToLong();
+        if ((longValue < -32768) || (longValue > 32767))
+        {
+            Die(0x0D); // Overflow
+        }
+        return int(longValue);
     }
     
     uint ToUInt(float f)
@@ -236,23 +279,6 @@ unit Float
         return uint(intValue);
     }
     
-    long ToLong(float f)
-    {
-        byte sign = getSign(f);
-        byte exponent = getExponent(f);
-        long mantissa = getMantissa(f);
-        long result = Long.shiftRight(mantissa, 8);
-        int shift = exponent - 127 - 23;
-        if (shift > 0)
-        {
-            result = Long.shiftLeft(result, shift);
-        }
-        else if (shift < 0)
-        {
-            result = Long.shiftRight(result, -shift);
-        }
-        return sign == 1 ? -result : result;
-    }
     
     byte getSign(float f)
     {
@@ -290,41 +316,28 @@ unit Float
         long mask = Long.FromBytes(0xFF, 0xFF, 0x7F, 0x00); // 0x007FFFFF in 32-bit
         long zero = Long.FromBytes(0, 0, 0, 0);
     
-        while (Long.EQ(Long.and(mantissa, implicitLeadingBit), zero))
+        if (Long.EQ(mantissa, zero))
         {
-            mantissa = Long.shiftLeft(mantissa, 1);
-            exponent--;
+            // If mantissa is zero, set exponent to zero as well
+            exponent = 0;
         }
+        else
+        {
+            while (Long.EQ(Long.and(mantissa, implicitLeadingBit), zero))
+            {
+                mantissa = Long.shiftLeft(mantissa, 1);
+                exponent--;
+            }
+        }
+
         // No need to mask the mantissa as it is already normalized correctly
-        int wtf = 0;
+    }
+    bool isZero(float this)
+    {
+        return (GetByte(this, 0) == 0) && (GetByte(this, 1) == 0) && (GetByte(this, 2) == 0) &&
+               ((GetByte(this, 3) == 0) || (GetByte(this, 3) == 0x80));
     }
        
-    string IntToString(int value)
-    {
-        string result = "";
-        bool isNegative = false;
-        if (value == 0)
-        {
-            return "0";
-        }
-        if (value < 0)
-        {
-            isNegative = true;
-            value = -value;
-        }
-        while (value > 0)
-        {
-            int digit = value % 10;
-            result = (char)('0' + digit) + result;
-            value /= 10;
-        }
-        if (isNegative)
-        {
-            result = "-" + result;
-        }
-        return result;
-    }
-    
     string fractionToString(float fractionalPart)
     {
         string result = "";

@@ -1596,6 +1596,11 @@ program TestNumbers
         {
             PrintFailed("'float' 8");
         }
+        float left = 2.0;
+        float right = 10000.0;
+        float
+        r = Float.Add(-10000.0, 10000.0);
+        r = Float.Mul(left, right);
         
         // *
         if (20000.0 != 2 * localFloat)
@@ -1769,7 +1774,10 @@ program TestNumbers
     {
         //EchoToLCD = true;
         //Screen.Clear();
-        
+
+#ifdef TESTFLOATS
+        TestFloatMath();
+#endif                
         TestEquals();
         TestGreaterThan();
         TestGreaterThanOrEqual();
@@ -1783,9 +1791,6 @@ program TestNumbers
         TestIntMath();
         TestShifts();
         
-#ifdef TESTFLOATS
-        TestFloatMath();
-#endif
         
         TestPropertyMath();
         

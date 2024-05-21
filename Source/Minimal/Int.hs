@@ -140,23 +140,7 @@ unit Int
     
     float ToFloat(int i)
     {
-        if (i == 0)
-        {
-            return Float.FromBytes(0, 0, 0, 0);
-        }
-
-        byte sign = (i < 0) ? 1 : 0;
-        if (sign == 1)
-        {
-            i = -i;
-        }
-
-        int exponent = 127 + 23;
-        long mantissa = i.ToLong(); // Convert int to long
-        //mantissa = Long.shiftLeft(mantissa, 8); // Perform left shift using helper
-
-        Float.normalize(ref mantissa, ref exponent);
-        return Float.combineComponents(sign, byte(exponent), mantissa);
+        return Long.ToFloat(Int.ToLong(i));
     }
     /*
     <byte> ToBytes(int this)

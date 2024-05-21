@@ -101,53 +101,69 @@ unit Long
      
     long Mul(long a, long b)
     {
+        // Determine the signs of the operands
+        bool isNegativeA = (GetByte(a, 3) & 0x80) != 0;
+        bool isNegativeB = (GetByte(b, 3) & 0x80) != 0;
+    
+        // If the values are negative, convert them to positive equivalents
+        if (isNegativeA)
+        {
+            a = Negate(a);
+        }
+        if (isNegativeB)
+        {
+            b = Negate(b);
+        }
+        
         // Extract bytes from both longs
         byte a0 = GetByte(a, 0);
         byte a1 = GetByte(a, 1);
         byte a2 = GetByte(a, 2);
         byte a3 = GetByte(a, 3);
-        
+    
         byte b0 = GetByte(b, 0);
         byte b1 = GetByte(b, 1);
         byte b2 = GetByte(b, 2);
         byte b3 = GetByte(b, 3);
-        
-        // Perform multiplication byte-by-byte with carry
-        uint carry = 0;
-        
-        // Multiply the lowest bytes
-        uint result0 = uint(a0) * uint(b0);
-        
-        // Multiply the second bytes and add carry from previous result
-        uint result1 = uint(a0) * uint(b1) + uint(a1) * uint(b0) + (result0 >> 8);
-        
-        // Multiply the third bytes and add carry from previous result
-        uint result2 = uint(a0) * uint(b2) + uint(a1) * uint(b1) + uint(a2) * uint(b0) + (result1 >> 8);
-        
-        // Multiply the highest bytes and add carry from previous result
-        uint result3 = uint(a0) * uint(b3) + uint(a1) * uint(b2) + uint(a2) * uint(b1) + uint(a3) * uint(b0) + (result2 >> 8);
-        
-        // Handle carry for the highest part
-        uint result4 = uint(a1) * uint(b3) + uint(a2) * uint(b2) + uint(a3) * uint(b1) + (result3 >> 8);
-        uint result5 = uint(a2) * uint(b3) + uint(a3) * uint(b2) + (result4 >> 8);
-        uint result6 = uint(a3) * uint(b3) + (result5 >> 8);
-        
-        // Extract final result bytes
-        byte finalResult0 = byte(result0 & 0xFF);
-        byte finalResult1 = byte(result1 & 0xFF);
-        byte finalResult2 = byte(result2 & 0xFF);
-        byte finalResult3 = byte(result3 & 0xFF);
-        byte finalResult4 = byte(result4 & 0xFF);
-        byte finalResult5 = byte(result5 & 0xFF);
-        byte finalResult6 = byte(result6 & 0xFF);
-        
-        // Create the final 32-bit result long
-        long finalResultLow = FromBytes(finalResult0, finalResult1, finalResult2, finalResult3);
-        long finalResultHigh = FromBytes(finalResult4, finalResult5, finalResult6, 0);
     
-        // Combine low and high parts to get the final result
-        return Add(finalResultLow, finalResultHigh);
+        // Perform multiplication using 8-bit parts and cast results to long
+        long result0 = long(uint(a0) * uint(b0));
+        long result1 = long(uint(a0) * uint(b1)) + long(uint(a1) * uint(b0));
+        long result2 = long(uint(a0) * uint(b2)) + long(uint(a1) * uint(b1)) + long(uint(a2) * uint(b0));
+        long result3 = long(uint(a0) * uint(b3)) + long(uint(a1) * uint(b2)) + long(uint(a2) * uint(b1)) + long(uint(a3) * uint(b0));
+        long result4 = long(uint(a1) * uint(b3)) + long(uint(a2) * uint(b2)) + long(uint(a3) * uint(b1));
+        long result5 = long(uint(a2) * uint(b3)) + long(uint(a3) * uint(b2));
+        long result6 = long(uint(a3) * uint(b3));
+    
+        // Combine results carefully to form the final 32-bit result
+        long finalResult = Long.FromBytes(
+            result0.GetByte(0),
+            result1.GetByte(0) + result0.GetByte(1),
+            result2.GetByte(0) + result1.GetByte(1),
+            result3.GetByte(0) + result2.GetByte(1)
+        );
+    
+        finalResult = Long.Add(finalResult, Long.shiftLeft(Long.FromBytes(
+            result3.GetByte(2),
+            result4.GetByte(1) + result3.GetByte(3),
+            result5.GetByte(1) + result4.GetByte(2),
+            result5.GetByte(3)
+        ), 16));
+    
+        finalResult = Long.Add(finalResult, Long.shiftLeft(Long.FromBytes(
+            result6.GetByte(1),
+            result6.GetByte(2),
+            result6.GetByte(3),
+            0
+        ), 24));
+        
+        if ((isNegativeA || isNegativeB) && (isNegativeA != isNegativeB))
+        {
+            finalResult = Negate(finalResult);
+        }
+        return finalResult;
     }
+    
     
     long divMod(long dividend, long divisor, ref long remainder)
     {
@@ -156,6 +172,20 @@ unit Long
         if (EQ(divisor, zero))
         {
             Die(0x04); // division by zero attempted
+        }
+        
+        // Determine the signs of the operands
+        bool isNegativeA = (GetByte(dividend, 3) & 0x80) != 0;
+        bool isNegativeB = (GetByte(divisor, 3) & 0x80) != 0;
+    
+        // If the values are negative, convert them to positive equivalents
+        if (isNegativeA)
+        {
+            dividend = Negate(dividend);
+        }
+        if (isNegativeB)
+        {
+            divisor = Negate(divisor);
         }
 
         long one = FromBytes(1, 0, 0, 0);
@@ -175,7 +205,10 @@ unit Long
                 quotient = quotient.or(one.shiftLeft(i));
             }
         }
-
+        if ((isNegativeA || isNegativeB) && (isNegativeA != isNegativeB))
+        {
+            quotient = Negate(quotient);
+        }
         return quotient;
     }
 
@@ -297,7 +330,7 @@ unit Long
         {
             long remainder = 0;
             value = divMod(value, ten, ref remainder);
-            char c = (char)(GetByte(remainder, 0) + '0');
+            char c = char(GetByte(remainder, 0) + '0');
             String.BuildFront(ref result, c);
         }
 
@@ -327,10 +360,14 @@ unit Long
     {
         char c;
         string result = "";
-        for (int i = 0; i < digits; i++)
+        for (byte i = 0; i < digits; i++)
         {
-            byte currentByte = GetByte(this, i);
-            c = Byte.ToHex(currentByte);
+            byte currentByte = GetByte(this, (i >> 1));
+            if (i % 2 == 1)
+            {
+                currentByte = currentByte >> 4;
+            }
+            c = Byte.ToHex(currentByte & 0x0F); // Masking the lower nibble
             String.BuildFront(ref result, c);
         }
         return result;
@@ -465,22 +502,19 @@ unit Long
         {
             return Float.FromBytes(0, 0, 0, 0);
         }
-
         byte sign = (l < 0) ? 1 : 0;
         if (sign == 1)
         {
             l = -l;
         }
-
         int exponent = 127 + 23;
-        long mantissa = l;
-        //mantissa = shiftLeft(l, 8);
-
+        long mantissa = shiftLeft(l, 8); // Shift the mantissa left by 8 bits
+        exponent -= 8; // Adjust exponent for the left shift
         Float.normalize(ref mantissa, ref exponent);
-
-        return Float.combineComponents(sign, byte(exponent), mantissa);
+        float result = Float.combineComponents(sign, byte(exponent), mantissa);
+        return result;
     }
-    
+        
     long shiftLeft(long value, int bits)
     {
         // Shifts the long value left by the specified number of bits

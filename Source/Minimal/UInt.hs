@@ -230,18 +230,11 @@ unit UInt
     
     float ToFloat(uint i)
     {
-        if (i == 0)
-        {
-            return Float.FromBytes(0, 0, 0, 0);
-        }
-    
-        int exponent = 127 + 23;
-        long mantissa = long(i);
-        //mantissa = Long.shiftLeft(long(i), 8);
-    
-        Float.normalize(ref mantissa, ref exponent);
-    
-        return Float.combineComponents(0, byte(exponent), mantissa);
+        return Long.ToFloat(UInt.ToLong(i));
+    }
+    long ToLong(uint i)
+    {
+        return Long.FromBytes(UInt.GetByte(i, 0), UInt.GetByte(i, 1), 0, 0);
     }
     
     /*
