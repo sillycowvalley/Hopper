@@ -263,12 +263,12 @@ namespace HopperNET
         //DictionaryContains2 = 
         //DictionaryNext2 = 0x1E,
         //DictionaryClear2 = 0x1F,
-        PairNew = 0x20,
-        StringAppend = 0x21,
-        PairKey = 0x22,
-        StringInsertChar = 0x23,
-        PairValue = 0x24,
-        CharToString = 0x25,
+        //PairNew2 = 0x20,
+        //StringAppend2 = 0x21,
+        //PairKey2 = 0x22,
+        //StringInsertChar2 = 0x23,
+        //PairValue2 = 0x24,
+        //CharToString2 = 0x25,
         //VariantType = 0x26,
         VariantBox = 0x27,
         VariantUnBox = 0x28,
@@ -324,8 +324,10 @@ namespace HopperNET
         SystemCurrentDirectoryGet = 0x5A,
         SystemCurrentDirectorySet = 0x5B,
         SystemBeep = 0x5C,
-        
-        
+
+        PairNew = 0x5D,
+        StringAppend = 0x5E,
+
         FileExists = 0x5F,
         FileNew = 0x60,
         FileOpen = 0x61,
@@ -402,10 +404,18 @@ namespace HopperNET
         MemoryProgramOffsetSet = 0x9F,
 
         SerialWriteString = 0xA0,
+
+        PairKey = 0xA1,
+
         DictionaryNew = 0xA2,
         SerialClose = 0xA3,
         SerialIsValid = 0xA4,
-        
+
+        StringInsertChar = 0xA5,
+        PairValue = 0xA6,
+        CharToString = 0xA7,
+
+
         // 6502
         HardwareLEDSet = 0xA8,
         DictionaryCountGet = 0xA9,
@@ -4539,6 +4549,7 @@ namespace HopperNET
                         break;
                     }
                 case SysCall.CharToString:
+                //case SysCall.CharToString2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4557,6 +4568,7 @@ namespace HopperNET
                     hasResult = true;
                     break;
                 case SysCall.StringAppend:
+                //case SysCall.StringAppend2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4954,6 +4966,7 @@ namespace HopperNET
                     break;
 
                 case SysCall.StringInsertChar:
+                //case SysCall.StringInsertChar2:
                     {
                         char append = (char)Pop();
                         ushort index = (ushort)Pop();
@@ -5342,6 +5355,7 @@ namespace HopperNET
                     }
 
                 case SysCall.PairNew:
+                //case SysCall.PairNew2:
                     {
                         HopperType vType = (HopperType)Pop();
                         HopperType kType = (HopperType)Pop();
@@ -5351,6 +5365,7 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.PairKey:
+                //case SysCall.PairKey2:
                     {
                         HopperPair pair = (HopperPair)PopVariant(HopperType.tPair);
                         if (Type_IsValueType(pair.KType))
@@ -5367,6 +5382,7 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.PairValue:
+                //case SysCall.PairValue2:
                     {
                         HopperPair pair = (HopperPair)PopVariant(HopperType.tPair);
                         if (Type_IsValueType(pair.VType))

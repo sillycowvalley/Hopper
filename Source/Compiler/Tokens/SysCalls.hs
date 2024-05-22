@@ -49,12 +49,12 @@ unit SysCalls
         addEntry("_Dictionary.Next2");
         addEntry("_Dictionary.Clear2");
         
-        addEntry("Pair.New");
-        addEntry("String.Append");
-        addEntry("Pair.Key");
-        addEntry("String.InsertChar");
-        addEntry("Pair.Value");
-        addEntry("Char.ToString");
+        addEntry("_Pair.New");
+        addEntry("_String.Append");
+        addEntry("_Pair.Key");
+        addEntry("_String.InsertChar");
+        addEntry("_Pair.Value");
+        addEntry("_Char.ToString");
         
         addEntry("_Variant.Type"); // unused
         addEntry("Variant.Box");
@@ -118,8 +118,9 @@ unit SysCalls
         addEntry("System.CurrentDirectory_Get");
         addEntry("System.CurrentDirectory_Set");
         addEntry("System.Beep");
-        addEntry("_Time.Seconds_Get2");
-        addEntry("_System.RegisterObject"); // unused
+        
+        addEntry("Pair.New");
+        addEntry("String.Append");
         
         addEntry("File.Exists");
         addEntry("File.New");
@@ -206,14 +207,14 @@ unit SysCalls
         addEntry("Serial.WriteString"); // A0
         
         // placeholder:
-        addEntry("_Runtime.SetStatement");  // A1
+        addEntry("Pair.Key");  // A1
         
         addEntry("Dictionary.New");
         addEntry("Serial.Close");
         addEntry("Serial.IsValid");
-        addEntry("_Serial.IsAvailable_Get2");
-        addEntry("_Serial.ReadChar2");
-        addEntry("_Serial.WriteChar2");
+        addEntry("String.InsertChar"); // A5
+        addEntry("Pair.Value");        // A6
+        addEntry("Char.ToString");     // A7
         
         addEntry("Hardware.LED_Set");
         
