@@ -1253,7 +1253,7 @@ unit Instructions
                 {
                     arguments += ", ";
                 }
-                if (argumentList[0] == "ref")
+                if (argumentList[0] == "true")
                 {
                     arguments = arguments + "ref ";
                 }
