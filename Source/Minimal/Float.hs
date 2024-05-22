@@ -56,9 +56,6 @@ unit Float
         {
             Die(0x04); // Division by zero
         }
-        //IO.WriteLn();
-        //IO.WriteLn("Test case 'a=" + a.ToString() + " / " + b.ToString() + "' :");
-        
         byte signA = getSign(a);
         byte exponentA = getExponent(a);
         long mantissaA = getMantissa(a);
@@ -69,16 +66,10 @@ unit Float
         mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
     
-        //IO.WriteLn("mantissaA with implicit bit: " + Long.ToHexString(mantissaA, 8));
-        //IO.WriteLn("mantissaB with implicit bit: " + Long.ToHexString(mantissaB, 8));
-        
         long quotient;
         long remainder;
         mantissaDivide(mantissaA, mantissaB, ref quotient, ref remainder); // Divide mantissas
     
-        //IO.WriteLn("quotient: " + Long.ToHexString(quotient, 8));
-        //IO.WriteLn("remainder: " + Long.ToHexString(remainder, 8));
-        
         int resultExponent = int(exponentA) - int(exponentB) + 127; // Subtract exponents
         byte resultSign = signA ^ signB; // Determine the sign
     
@@ -99,9 +90,6 @@ unit Float
         // Now the mantissa of interest is in lowResult
         long resultMantissa = Long.and(resultMantissaLow, Long.FromBytes(0xFF, 0xFF, 0x7F, 0)); // remove the implicit leading 1
     
-        //IO.WriteLn("resultMantissa after normalization: " + Long.ToHexString(resultMantissa, 8));
-        //IO.WriteLn("resultExponent after normalization: " + Int.ToHexString(resultExponent, 2));
-        
         // Handle exponent overflow/underflow
         if (resultExponent <= 0) 
         {
@@ -117,8 +105,6 @@ unit Float
         }
     
         float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
-        //IO.WriteLn("result after combineComponents: " + Float.ToString(result));
-        //_ = Serial.ReadChar();
         return result;
     }
             
@@ -133,9 +119,6 @@ unit Float
             return a;
         }
     
-        //IO.WriteLn();
-        //IO.WriteLn("Test case 'a=" + Float.ToString(a) + " + " + Float.ToString(b) + "' :"); // DANGER : circular
-    
         byte signA     = getSign(a);
         int exponentA  = getExponent(a);  // Change to int for processing
         long mantissaA = getMantissa(a);
@@ -144,22 +127,10 @@ unit Float
         int exponentB  = getExponent(b);  // Change to int for processing
         long mantissaB = getMantissa(b);
         
-        //IO.WriteLn("Initial values:");
-        //IO.WriteLn("signA: " + Int.ToHexString(signA, 2));
-        //IO.WriteLn("exponentA: " + Int.ToHexString(exponentA, 4));
-        //IO.WriteLn("mantissaA: " + Long.ToHexString(mantissaA, 8));
-        //IO.WriteLn("signB: " + Int.ToHexString(signB, 2));
-        //IO.WriteLn("exponentB: " + Int.ToHexString(exponentB, 4));
-        //IO.WriteLn("mantissaB: " + Long.ToHexString(mantissaB, 8));
-    
         // Add the implicit leading bit
         mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
     
-        //IO.WriteLn("After adding implicit leading bit:");
-        //IO.WriteLn("mantissaA: " + Long.ToHexString(mantissaA, 8));
-        //IO.WriteLn("mantissaB: " + Long.ToHexString(mantissaB, 8));
-        
         // Align exponents
         if (exponentA > exponentB)
         {
@@ -173,11 +144,6 @@ unit Float
             mantissaA = Long.shiftRight(mantissaA, shift);
             exponentA = exponentB;
         }
-    
-        //IO.WriteLn("After aligning exponents:");
-        //IO.WriteLn("exponentA: " + Int.ToHexString(exponentA, 4));
-        //IO.WriteLn("mantissaA: " + Long.ToHexString(mantissaA, 8));
-        //IO.WriteLn("mantissaB: " + Long.ToHexString(mantissaB, 8));
     
         long resultMantissa;
         if (signA == signB)
@@ -195,10 +161,13 @@ unit Float
                 resultMantissa = Long.Sub(mantissaB, mantissaA);
                 signA = signB;
             }
+            
+            // Check for zero mantissa (cancellation)
+            if (Long.EQ(resultMantissa, Long.FromBytes(0, 0, 0, 0)))
+            {
+                return FromBytes(0, 0, 0, 0); // Return +0.0
+            }
         }
-    
-        //IO.WriteLn("After addition/subtraction:");
-        //IO.WriteLn("resultMantissa: " + Long.ToHexString(resultMantissa, 8));
         
         // Normalize the result
         byte leadingZeros = countLeadingZeros(resultMantissa);
@@ -212,11 +181,6 @@ unit Float
             resultMantissa = Long.shiftLeft(resultMantissa, leadingZeros - 8);
             exponentA -= (leadingZeros - 8);
         }
-    
-        //IO.WriteLn("After normalizing:");
-        //IO.WriteLn("leadingZeros: " + Int.ToString(leadingZeros));
-        //IO.WriteLn("resultMantissa: " + Long.ToHexString(resultMantissa, 8));
-        //IO.WriteLn("exponentA: " + Int.ToHexString(exponentA, 4));
         
         // Handle exponent overflow/underflow
         if (exponentA <= 0) 
@@ -235,13 +199,7 @@ unit Float
         // Remove the implicit leading bit
         resultMantissa = Long.and(resultMantissa, Long.FromBytes(0xFF, 0xFF, 0x7F, 0));
     
-        //IO.WriteLn("Final result values:");
-        //IO.WriteLn("resultMantissa: " + Long.ToHexString(resultMantissa, 8));
-        //IO.WriteLn("exponentA: " + Int.ToHexString(exponentA, 4));
-        //IO.WriteLn("signA: " + Int.ToHexString(signA, 2));
-    
         float result = combineComponents(signA, byte(exponentA), resultMantissa); // Convert exponent back to byte for combining
-        //IO.WriteLn("result after combineComponents: " + Float.ToString(result));
         return result;
     }
         
@@ -256,19 +214,11 @@ unit Float
     
     mantissaMultiply(long mantissaA, long mantissaB, ref long resultHigh, ref long resultLow)
     {
-        IO.WriteLn("mantissaA: " + Long.ToHexString(mantissaA, 8));
-        IO.WriteLn("mantissaB: " + Long.ToHexString(mantissaB, 8));
-    
         // Extract the higher and lower parts of the mantissas
         long aHigh = Long.shiftRight(mantissaA, 12);
         long aLow = Long.and(mantissaA, Long.FromBytes(0xFF, 0x0F, 0x00, 0x00)); // Bottom 12 bits
         long bHigh = Long.shiftRight(mantissaB, 12);
         long bLow = Long.and(mantissaB, Long.FromBytes(0xFF, 0x0F, 0x00, 0x00)); // Bottom 12 bits
-    
-        IO.WriteLn("aHigh: " + Long.ToHexString(aHigh, 8));
-        IO.WriteLn("aLow: " + Long.ToHexString(aLow, 8));
-        IO.WriteLn("bHigh: " + Long.ToHexString(bHigh, 8));
-        IO.WriteLn("bLow: " + Long.ToHexString(bLow, 8));
     
         // Perform the multiplications
         long highHigh = Long.Mul(aHigh, bHigh);  // Bits 24-47
@@ -276,14 +226,8 @@ unit Float
         long lowHigh  = Long.Mul(aLow, bHigh);   // Bits 12-35
         long lowLow   = Long.Mul(aLow, bLow);    // Bits 0-23
     
-        IO.WriteLn("highHigh: " + Long.ToHexString(highHigh, 8));
-        IO.WriteLn("highLow: " + Long.ToHexString(highLow, 8));
-        IO.WriteLn("lowHigh: " + Long.ToHexString(lowHigh, 8));
-        IO.WriteLn("lowLow: " + Long.ToHexString(lowLow, 8));
-    
         // Initialize lowerLong with the lower 16 bits of lowLow
         long lowerLong = Long.and(lowLow, Long.FromBytes(0xFF, 0xFF, 0, 0));
-        IO.WriteLn("initial lowerLong: " + Long.ToHexString(lowerLong, 8));
     
         // Add the overlapping bits from highLow and lowHigh
         long highLowOverlap = Long.and(highLow, Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 12..15 (0x0000000F)
@@ -292,15 +236,12 @@ unit Float
         // Shift these overlaps to the right position and add them to lowerLong
         lowerLong = Long.Add(lowerLong, Long.shiftLeft(highLowOverlap, 12));
         lowerLong = Long.Add(lowerLong, Long.shiftLeft(lowHighOverlap, 12));
-        IO.WriteLn("lowerLong after overlap: " + Long.ToHexString(lowerLong, 8));
     
         // Check for carry to middleLong
         long middleLong = Long.shiftRight(lowerLong, 16);
         
         // Mask lowerLong to 16 bits after adding
         lowerLong = Long.and(lowerLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
-        IO.WriteLn("final lowerLong: " + Long.ToHexString(lowerLong, 8));
-        IO.WriteLn("initial middleLong (carry from lowerLong): " + Long.ToHexString(middleLong, 8));
     
         // Accumulate the 16..31 bits
         middleLong = Long.Add(middleLong, Long.shiftRight(lowLow, 16)); // Add bits 16..31 of lowLow
@@ -313,15 +254,12 @@ unit Float
         middleLong = Long.Add(middleLong, Long.shiftRight(highLowOverlap, 4));  // Add bits 16..31 of highLow
         middleLong = Long.Add(middleLong, Long.shiftRight(lowHighOverlap, 4));  // Add bits 16..31 of lowHigh
         middleLong = Long.Add(middleLong, Long.shiftLeft (highHighOverlap, 8)); // Add bits 24..31 of highHigh
-        IO.WriteLn("middleLong after accumulation: " + Long.ToHexString(middleLong, 8));
     
         // Check for carry to upperLong
         long upperLong = Long.shiftRight(middleLong, 16);
     
         // Mask middleLong to 16 bits after adding
         middleLong = Long.and(middleLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
-        IO.WriteLn("final middleLong: " + Long.ToHexString(middleLong, 8));
-        IO.WriteLn("initial upperLong (carry from middleLong): " + Long.ToHexString(upperLong, 8));
     
         // Accumulate the 32..47 bits
         highLowOverlap = Long.and(Long.shiftRight(highLow, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 32..35 (0x0000000F)
@@ -331,20 +269,14 @@ unit Float
         upperLong = Long.Add(upperLong, highLowOverlap);  // Add bits 32..47 of highLow
         upperLong = Long.Add(upperLong, lowHighOverlap);  // Add bits 32..47 of lowHigh
         upperLong = Long.Add(upperLong, highHighOverlap); // Add bits 32..47 of highHigh
-        IO.WriteLn("upperLong after accumulation: " + Long.ToHexString(upperLong, 8));
     
         // Mask upperLong to 16 bits after adding
         upperLong = Long.and(upperLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
-        IO.WriteLn("final upperLong: " + Long.ToHexString(upperLong, 8));
     
         // Combine results into final mantissa
         resultLow = Long.or(lowerLong, Long.shiftLeft(middleLong, 16));
         resultHigh = upperLong;
-    
-        IO.WriteLn("resultLow: " + Long.ToHexString(resultLow, 8));
-        IO.WriteLn("resultHigh: " + Long.ToHexString(resultHigh, 8));
     }
-    
     
     byte countLeadingZeros(long result)
     {
@@ -387,99 +319,72 @@ unit Float
     }
     
     float Mul(float a, float b)
-{
-    if (isZero(a)) 
     {
-        return a;
-    }
-    if (isZero(b)) 
-    {
-        return b;
-    }
-    IO.WriteLn();
-    IO.WriteLn("Test case 'a=" + ToHexString(a) + " * " + ToHexString(b) + "' :");
+        if (isZero(a)) 
+        {
+            return a;
+        }
+        if (isZero(b)) 
+        {
+            return b;
+        }
+        
+        byte signA = getSign(a);
+        int exponentA = getExponent(a);
+        long mantissaA = getMantissa(a);
+        byte signB = getSign(b);
+        int exponentB = getExponent(b);
+        long mantissaB = getMantissa(b);
+        
+        // Add the implicit leading bit
+        mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
+        mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
+        
+        // Perform the multiplication
+        long resultHigh;
+        long resultLow;
+        mantissaMultiply(mantissaA, mantissaB, ref resultHigh, ref resultLow);
+        
+        // Normalize the result
+        byte leadingZeros = countLeadingZeros(resultHigh, resultLow);
+        if (leadingZeros < 40)
+        {
+            shiftRight64Bit(ref resultHigh, ref resultLow, 40 - leadingZeros);
+        }
+        else
+        {
+            resultLow = Long.shiftLeft(resultLow, leadingZeros - 40);
+        }
+        
+        // Now the mantissa of interest is in resultLow
+        long resultMantissa = Long.and(resultLow, Long.FromBytes(0xFF, 0xFF, 0x7F, 0));  // remove the implicit leading 1
+        
+        byte resultSign = signA ^ signB;
+        
+        int resultExponent = exponentA + exponentB - 127;
+        if (leadingZeros == 16)
+        {
+            resultExponent++;
+        }
     
-    if (ToHexString(a) == "3D23D70A")
-    {
-        int wtf = 0;
-    }
-    
-    byte signA = getSign(a);
-    int exponentA = getExponent(a);
-    long mantissaA = getMantissa(a);
-    byte signB = getSign(b);
-    int exponentB = getExponent(b);
-    long mantissaB = getMantissa(b);
-    
-    IO.WriteLn("Initial values:");
-    IO.WriteLn("signA: " + Int.ToHexString(signA, 2));
-    IO.WriteLn("exponentA: " + Int.ToHexString(exponentA, 2));
-    IO.WriteLn("mantissaA: " + Long.ToHexString(mantissaA, 8));
-    IO.WriteLn("signB: " + Int.ToHexString(signB, 2));
-    IO.WriteLn("exponentB: " + Int.ToHexString(exponentB, 2));
-    IO.WriteLn("mantissaB: " + Long.ToHexString(mantissaB, 8));
-    
-    // Add the implicit leading bit
-    mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
-    mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
-    IO.WriteLn("After adding implicit leading bit:");
-    IO.WriteLn("mantissaA with implicit bit: " + Long.ToHexString(mantissaA, 8));
-    IO.WriteLn("mantissaB with implicit bit: " + Long.ToHexString(mantissaB, 8));
-    
-    // Perform the multiplication
-    long resultHigh;
-    long resultLow;
-    mantissaMultiply(mantissaA, mantissaB, ref resultHigh, ref resultLow);
-    IO.WriteLn("resultHigh: " + Long.ToHexString(resultHigh, 8));
-    IO.WriteLn("resultLow: " + Long.ToHexString(resultLow, 8));
-    
-    // Normalize the result
-    byte leadingZeros = countLeadingZeros(resultHigh, resultLow);
-    IO.WriteLn("leadingZeros: " + Int.ToHexString(leadingZeros, 2));
-    if (leadingZeros < 40)
-    {
-        shiftRight64Bit(ref resultHigh, ref resultLow, 40 - leadingZeros);
-    }
-    else
-    {
-        resultLow = Long.shiftLeft(resultLow, leadingZeros - 40);
-    }
-    IO.WriteLn("resultHigh after shift: " + Long.ToHexString(resultHigh, 8));
-    IO.WriteLn("resultLow after shift: " + Long.ToHexString(resultLow, 8));
-    
-    // Now the mantissa of interest is in resultLow
-    long resultMantissa = Long.and(resultLow, Long.FromBytes(0xFF, 0xFF, 0x7F, 0));  // remove the implicit leading 1
-    int resultExponent = exponentA + exponentB - 127;   
-    byte resultSign = signA ^ signB;
-    
-    IO.WriteLn("resultMantissa before normalization: " + Long.ToHexString(resultMantissa, 8));
-    IO.WriteLn("resultExponent before normalization: " + Int.ToHexString(resultExponent, 2));
-
-    // Adjust the exponent based on the leading zeros found
-    //resultExponent -= leadingZeros - 24; // Adjust the exponent to account for the leading zero shift
-    //IO.WriteLn("resultExponent after adjustment: " + Int.ToHexString(resultExponent, 2));
-
-    // Handle exponent overflow/underflow
-    if (resultExponent <= 0) 
-    {
-        // Underflow: result is too small to be represented
-        resultExponent = 0;
-        resultMantissa = 0;
-    }
-    else if (resultExponent >= 255) 
-    {
-        // Overflow: result is too large to be represented
-        resultExponent = 255;
-        resultMantissa = 0;
+        // Handle exponent overflow/underflow
+        if (resultExponent <= 0) 
+        {
+            // Underflow: result is too small to be represented
+            resultExponent = 0;
+            resultMantissa = 0;
+        }
+        else if (resultExponent >= 255) 
+        {
+            // Overflow: result is too large to be represented
+            resultExponent = 255;
+            resultMantissa = 0;
+        }
+        
+        float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
+        return result;
     }
 
-    IO.WriteLn("resultMantissa after normalization: " + Long.ToHexString(resultMantissa, 8));
-    IO.WriteLn("resultExponent after normalization: " + Int.ToHexString(resultExponent, 2));
-    
-    float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
-    IO.WriteLn("result after combineComponents: " + ToHexString(result));
-    return result;
-}
 
        
     bool EQ(float a, float b)
@@ -543,10 +448,32 @@ unit Float
         float fractionalPart = Float.Sub(value, Long.ToFloat(integerPart));
         string integerPartStr = integerPart.ToString();
         string fractionalPartStr = fractionToString(fractionalPart);
+    
+        // Remove trailing zeros from the fractional part
+        while (fractionalPartStr.Length > 1 && fractionalPartStr.EndsWith("0"))
+        {
+            fractionalPartStr = String.Substring(fractionalPartStr, 0, fractionalPartStr.Length - 1);
+        }
+    
         string result = integerPartStr + "." + fractionalPartStr;
         if (isNegative)
         {
             String.BuildFront(ref result, '-');
+        }
+        return result;
+    }
+    
+    string fractionToString(float fractionalPart)
+    {
+        string result = "";
+        int precision = 6; // Number of digits after the decimal point
+        while (precision > 0)
+        {
+            fractionalPart = Mul(fractionalPart, Int.ToFloat(10));
+            int digit = int(fractionalPart.ToLong());
+            result += char(byte('0') + digit);
+            fractionalPart = Sub(fractionalPart, Int.ToFloat(digit));
+            precision--;
         }
         return result;
     }
@@ -630,21 +557,6 @@ unit Float
         return (GetByte(this, 0) == 0) && (GetByte(this, 1) == 0) && (GetByte(this, 2) == 0) &&
                ((GetByte(this, 3) == 0) || (GetByte(this, 3) == 0x80));
     }
-       
-    string fractionToString(float fractionalPart)
-    {
-        string result = "";
-        int precision = 6; // Number of digits after the decimal point
-        while (precision > 0)
-        {
-            fractionalPart = Mul(fractionalPart, Int.ToFloat(10));
-            int digit = fractionalPart.ToInt();
-            result += char(byte('0') + digit);
-            fractionalPart = Sub(fractionalPart, Int.ToFloat(digit));
-            precision--;
-        }
-        return result;
-    }
     
     float negate(float value)
     {
@@ -664,5 +576,113 @@ unit Float
         return result;
     }
     
+    bool TryParse(string content, ref float returnValue)
+    {
+        bool success;
+        uint iDot;
+        long longValue;
+        float floatValue;
+        string digits;
+        loop
+        {
+            if (content.Contains('E') || content.Contains('e'))
+            {
+                <string> parts;
+                if (content.Contains('E'))
+                {
+                    parts = content.Split('E');
+                }
+                else if (content.Contains('e'))
+                {
+                    parts = content.Split('e');
+                }
+                if (parts.Count == 2)
+                {
+                    int exponent;
+                    if (Float.TryParse(parts[0], ref returnValue) && Int.TryParse(parts[1], ref exponent))
+                    {
+                        // 4E+07
+                        if (exponent == 0)
+                        {
+                            // 3.141E+00
+                        }
+                        else if (exponent < 0)
+                        {
+                            exponent = -exponent;
+                            while (exponent != 0)
+                            {
+                                returnValue = returnValue / 10;
+                                exponent--;
+                            }    
+                        }
+                        else
+                        {
+                            while (exponent != 0)
+                            {
+                                returnValue = returnValue * 10;
+                                exponent--;
+                            }    
+                        }
+                        success = true;
+                        break;
+                    }
+                }    
+            }
+            if (content.IndexOf('.', ref iDot))
+            {
+                digits = content.Substring(0, iDot);
+                if (!Long.TryParse(digits, ref longValue))
+                {
+                    break;
+                }
+                bool negative = (longValue < 0);
+                floatValue = longValue.ToFloat();
+                digits = content.Substring(iDot+1);
+                uint length = digits.Length;
+                if (length > 0)
+                {
+                    if (!Long.TryParse(digits, ref longValue))
+                    {
+                        break;
+                    }
+                    float decimalValue = longValue.ToFloat();
+                    while (length > 0)
+                    {
+                        decimalValue = decimalValue / 10.0;
+                        length--;
+                    }
+                    if (negative)
+                    {
+                        floatValue = floatValue - decimalValue;
+                    }
+                    else
+                    {
+                        floatValue = floatValue + decimalValue;    
+                    }
+                }
+                success = true;
+            }
+            else
+            {
+                if (Long.TryParse(content, ref longValue))
+                {
+                    floatValue = longValue.ToFloat();
+                    success = true;
+                }
+            }
+            break;
+        }
+        if (success)
+        {
+            returnValue = floatValue;
+        }
+        return success;
+    }
+    float Radians(float angle) { return angle * Pi / 180.0; }
+    float Degrees(float angle) { return angle * 180.0 / Pi; }
+    
+    float Abs(float value) { return (value >= 0) ? value : -value; }
+    float Min(float a, float b) { return (a < b) ? a : b; }
+    float Max(float a, float b) { return (a > b) ? a : b; }
 }
 

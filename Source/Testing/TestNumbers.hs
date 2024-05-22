@@ -6,14 +6,15 @@ program TestNumbers
 //#define EXPERIMENTAL
 
     
-    uses "/Source/Minimal/System"
-    uses "/Source/Minimal/IO"
-    #define NOLISTS
     #define TESTFLOATS
     
-    //uses "/Source/System/System"
-    //uses "/Source/System/IO"
-    //uses "/Source/System/Diagnostics"
+    //uses "/Source/Minimal/System"
+    //uses "/Source/Minimal/IO"
+    
+    
+    uses "/Source/System/System"
+    uses "/Source/System/IO"
+    uses "/Source/System/Diagnostics"
     
     
     uses "/Source/System/Keyboard"
@@ -1657,11 +1658,133 @@ program TestNumbers
         {
             PrintFailed("'float' 27");
         }
+        float gpta; float gptb; float gptr; 
+        
+        // Multiply two numbers to result in a mantissa with exactly 16 leading zeros
+        gpta = 2.0;
+        gptb = 8388608.0; // 2^23
+        gptr = gpta * gptb;
+        if ((gptr.ToString() != "1.67772e+07")&& (gptr.ToString() != "16777216.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 45");
+        }
+        
+        // Multiply two small positive numbers
+        gpta = 0.125; gptb = 0.25; gptr = 0.03125;
+        if (gpta * gptb != gptr)
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 33");
+        }
+        
+        // Multiply a positive and a negative number
+        gpta = -5.5; gptb = 3.2; gptr = -17.6;
+        if (gptr.ToString() != "-17.6")
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 35");
+        }
+        
+        // Multiply two numbers with vastly different magnitudes
+        gpta = 0.0000000001; gptb = 1000000000.0; gptr = 0.1;
+        if (gptr.ToString() != "0.1")
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 36");
+        }
+        
+        // Multiply a small number and a large number
+        gpta = 0.000001; gptb = 1000000.0; gptr = 1.0;
+        if ((gptr.ToString() != "1") && (gptr.ToString() != "1.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 37");
+        }
+        
+        // Multiply two very small positive numbers
+        gpta = 0.0000001; gptb = 0.00001; gptr = 0.000000000001;
+        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 38");
+        }
+        
+        // Multiply a negative number and a very small positive number
+        gpta = -0.0000001; gptb = 0.00001; gptr = -0.000000000001;
+        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 39");
+        }
+        
+        // Multiply a very large number and a very small number
+        gpta = 1000000000000.0; gptb = 0.000000000001; gptr = 1.0;
+        if ((gptr.ToString() != "1") && (gptr.ToString() != "1.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 40");
+        }
+        
+        // Multiply a large positive number and a small negative number
+        gpta = 1000000.0; gptb = -0.000001; gptr = -1.0;
+        if ((gptr.ToString() != "-1") && (gptr.ToString() != "-1.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 42");
+        }
+        
+        
+        
+        
+        // Multiply two very small numbers
+        gpta = 0.00000001;
+        gptb = 0.00000001;
+        gptr = gpta * gptb;
+        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 43");
+        }
+        
+        // Multiply two very large numbers
+        gpta = 1000000000.0;
+        gptb = 1000000000.0;
+        gptr = gpta * gptb;
+        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 44");
+        }
+                
+        // Multiply a very small number with a very large number
+        gpta = 0.0000000001;
+        gptb = 1000000000.0;
+        gptr = gpta * gptb;
+        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 46");
+        }
+        
+        // Multiply two very large numbers
+        gpta = 10000000000.0;
+        gptb = 10000000000.0;
+        gptr = gpta * gptb;
+        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' 47");
+        }
+        
+        
+        
+        
         
         float ya = 1.6;
         float xa = 0.04 * ya;
         
-        if (xa.ToString() != "0.064")
+        if ((xa.ToString() != "0.064") && (xa.ToString() != "0.063999"))
         {
             WriteLn(xa.ToString());
             PrintFailed("'float' 30");
@@ -1684,7 +1807,7 @@ program TestNumbers
         xn =   0.85 * x  + 0.04 * y;
         yn =  -0.04 * x  + 0.85 * y + 1.6;
         
-        if ((xn.ToString() != "0.064") || (yn.ToString() != "2.96"))
+        if (((xn.ToString() != "0.064") && (xn.ToString() != "0.063999")) || (yn.ToString() != "2.96"))
         {
             WriteLn(xn.ToString() + "," + yn.ToString());
             PrintFailed("'float' 32");

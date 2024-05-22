@@ -117,10 +117,11 @@ unit Long
         {
             return a;
         }
+        
         // Determine the signs of the operands
         bool isNegativeA = (GetByte(a, 3) & 0x80) != 0;
         bool isNegativeB = (GetByte(b, 3) & 0x80) != 0;
-    
+        
         // If the values are negative, convert them to positive equivalents
         if (isNegativeA)
         {
@@ -151,28 +152,31 @@ unit Long
         long result5 = long(uint(a2) * uint(b3)) + long(uint(a3) * uint(b2));
         long result6 = long(uint(a3) * uint(b3));
     
-        // Combine results carefully to form the final 32-bit result
-        long finalResult = Long.FromBytes(
-            result0.GetByte(0),
-            result1.GetByte(0) + result0.GetByte(1),
-            result2.GetByte(0) + result1.GetByte(1),
-            result3.GetByte(0) + result2.GetByte(1)
-        );
+        // Split results into bytes and handle carries
+        uint r0 = result0.GetByte(0);
+        uint r1 = result1.GetByte(0);
+        uint r2 = result2.GetByte(0);
+        uint r3 = result3.GetByte(0);
+        uint r4 = result4.GetByte(0);
+        uint r5 = result5.GetByte(0);
+        uint r6 = result6.GetByte(0);
     
-        finalResult = Long.Add(finalResult, Long.shiftLeft(Long.FromBytes(
-            result3.GetByte(2),
-            result4.GetByte(1) + result3.GetByte(3),
-            result5.GetByte(1) + result4.GetByte(2),
-            result5.GetByte(3)
-        ), 16));
+        uint carry0 = (result0.GetByte(1) + r1) >> 8;
+        r1 += result0.GetByte(1);
+        uint carry1 = (result1.GetByte(1) + r2 + carry0) >> 8;
+        r2 += result1.GetByte(1) + carry0;
+        uint carry2 = (result2.GetByte(1) + r3 + carry1) >> 8;
+        r3 += result2.GetByte(1) + carry1;
+        uint carry3 = (result3.GetByte(1) + r4 + carry2) >> 8;
+        r4 += result3.GetByte(1) + carry2;
+        uint carry4 = (result4.GetByte(1) + r5 + carry3) >> 8;
+        r5 += result4.GetByte(1) + carry3;
+        uint carry5 = (result5.GetByte(1) + r6 + carry4) >> 8;
+        r6 += result5.GetByte(1) + carry4;
     
-        finalResult = Long.Add(finalResult, Long.shiftLeft(Long.FromBytes(
-            result6.GetByte(1),
-            result6.GetByte(2),
-            result6.GetByte(3),
-            0
-        ), 24));
-        
+        long finalResult = Long.FromBytes(byte(r0), byte(r1), byte(r2), byte(r3));
+        finalResult = Long.Add(finalResult, Long.shiftLeft(Long.FromBytes(byte(r4), byte(r5), byte(r6), byte(carry5)), 16));
+    
         if ((isNegativeA || isNegativeB) && (isNegativeA != isNegativeB))
         {
             finalResult = Negate(finalResult);
@@ -526,34 +530,51 @@ unit Long
         {
             return Float.FromBytes(0, 0, 0, 0);
         }
+    
         byte sign = (l < 0) ? 1 : 0;
         if (sign == 1)
         {
             l = -l;
         }
-        int exponent = 127 + 23;
-        long mantissa = Long.shiftLeft(l, 8); // Shift the mantissa left by 8 bits
-        exponent -= 8; // Adjust exponent for the left shift
+    
+        int exponent = 127 + 23; // Bias + initial shift for normalization
     
         // Normalize the mantissa using countLeadingZeros
-        byte leadingZeros = Float.countLeadingZeros(mantissa);
-        if (leadingZeros < 8)
+        byte leadingZeros = Float.countLeadingZeros(l);
+        long mantissa;
+    
+        if (leadingZeros <= 8) // if leadingZeros <= 8, we need to shift right
         {
-            mantissa = Long.shiftRight(mantissa, 8 - leadingZeros);
+            mantissa = Long.shiftRight(l, 8 - leadingZeros);
             exponent += (8 - leadingZeros);
         }
-        else
+        else // if leadingZeros > 8, we need to shift left
         {
-            mantissa = Long.shiftLeft(mantissa, leadingZeros - 8);
+            mantissa = Long.shiftLeft(l, leadingZeros - 8);
             exponent -= (leadingZeros - 8);
         }
     
-        // Remove the implicit leading bit
+        // Remove the implicit leading bit to the mantissa
         mantissa = Long.and(mantissa, Long.FromBytes(0xFF, 0xFF, 0x7F, 0));
+    
+        // Handle exponent overflow/underflow
+        if (exponent <= 0) 
+        {
+            // Underflow: result is too small to be represented
+            exponent = 0;
+            mantissa = 0;
+        }
+        else if (exponent >= 255) 
+        {
+            // Overflow: result is too large to be represented
+            exponent = 255;
+            mantissa = 0;
+        }
     
         float result = Float.combineComponents(sign, byte(exponent), mantissa);
         return result;
     }
+    
     
         
     long shiftLeft(long value, int bits)
