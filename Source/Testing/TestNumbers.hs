@@ -6,14 +6,14 @@ program TestNumbers
 //#define EXPERIMENTAL
 
     
-    //uses "/Source/Minimal/System"
-    //uses "/Source/Minimal/IO"
-    //#define NOLISTS
+    uses "/Source/Minimal/System"
+    uses "/Source/Minimal/IO"
+    #define NOLISTS
     #define TESTFLOATS
     
-    uses "/Source/System/System"
-    uses "/Source/System/IO"
-    uses "/Source/System/Diagnostics"
+    //uses "/Source/System/System"
+    //uses "/Source/System/IO"
+    //uses "/Source/System/Diagnostics"
     
     
     uses "/Source/System/Keyboard"
@@ -1730,7 +1730,7 @@ program TestNumbers
     {
         //EchoToLCD = true;
         //Screen.Clear();
-
+        
 #ifdef TESTFLOATS
         TestFloatMath();
 #endif                

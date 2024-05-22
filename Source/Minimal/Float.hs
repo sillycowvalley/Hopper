@@ -12,12 +12,52 @@ unit Float
     float FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     const float Pi = 3.1415926535;
     
+    mantissaDivide(long dividend, long divisor, ref long quotient, ref long remainder)
+    {
+        long zero = Long.FromBytes(0, 0, 0, 0); // 0x00000000 in 32-bit
+        long one  = Long.FromBytes(1, 0, 0, 0);  // 0x00000001 in 32-bit
+        
+        quotient  = zero;
+        remainder = zero;
+    
+        // Split the dividend into high and low parts for extended precision
+        long extendedDividendHigh = Long.shiftRight(dividend, 8); // upper 24 bits of dividend
+        long extendedDividendLow  = Long.shiftLeft(dividend, 24); // lower 8 bits of dividend
+    
+        for (int i = 47; i >= 0; i--)
+        {
+            // Shift remainder left by 1 and combine with the next bit from extendedDividendHigh or extendedDividendLow
+            remainder = Long.shiftLeft(remainder, 1);
+            if (i >= 24)
+            {
+                remainder = Long.or(remainder, Long.and(Long.shiftRight(extendedDividendHigh, i - 24), one));
+            }
+            else
+            {
+                remainder = Long.or(remainder, Long.and(Long.shiftRight(extendedDividendLow, i), one));
+            }
+    
+            // If the remainder is greater than or equal to the divisor, subtract the divisor from the remainder
+            if (Long.GE(remainder, divisor))
+            {
+                remainder = Long.Sub(remainder, divisor);
+                quotient = Long.or(quotient, Long.shiftLeft(one, i));
+            }
+        }
+    }
+       
     float Div(float a, float b)
     {
+        if (isZero(a))
+        {
+            return a;
+        }
         if (isZero(b))
         {
             Die(0x04); // Division by zero
         }
+        IO.WriteLn();
+        IO.WriteLn("Test case 'a=" + a.ToString() + " / " + b.ToString() + "' :");
         
         byte signA = getSign(a);
         byte exponentA = getExponent(a);
@@ -28,22 +68,60 @@ unit Float
         // Add the implicit leading bit
         mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
+    
+        //IO.WriteLn("mantissaA with implicit bit: " + Long.ToHexString(mantissaA, 8));
+        //IO.WriteLn("mantissaB with implicit bit: " + Long.ToHexString(mantissaB, 8));
         
-        long resultMantissa = Long.Div(Long.shiftLeft(mantissaA, 23), mantissaB); // Divide mantissas
+        long quotient;
+        long remainder;
+        mantissaDivide(mantissaA, mantissaB, ref quotient, ref remainder); // Divide mantissas
+    
+        //IO.WriteLn("quotient: " + Long.ToHexString(quotient, 8));
+        //IO.WriteLn("remainder: " + Long.ToHexString(remainder, 8));
+        
         int resultExponent = int(exponentA) - int(exponentB) + 127; // Subtract exponents
         byte resultSign = signA ^ signB; // Determine the sign
-        if (Long.GE(resultMantissa, Long.FromBytes(0, 0, 0, 0x01))) // 0x01000000 in 32-bit
+    
+        long resultMantissaHigh = Long.FromBytes(0, 0, 0, 0);
+        long resultMantissaLow = quotient;
+    
+        // Normalize the result
+        byte leadingZeros = countLeadingZeros(resultMantissaHigh, resultMantissaLow);
+        if (leadingZeros < 40)
         {
-            resultMantissa = Long.shiftRight(resultMantissa, 1);
-            resultExponent++;
+            shiftRight64Bit(ref resultMantissaHigh, ref resultMantissaLow, 40 - leadingZeros);
         }
         else
         {
-            normalize(ref resultMantissa, ref resultExponent);
+            resultMantissaLow = Long.shiftLeft(resultMantissaLow, leadingZeros - 40);
         }
-        return combineComponents(resultSign, byte(resultExponent), resultMantissa);
-    }
     
+        // Now the mantissa of interest is in lowResult
+        long resultMantissa = Long.and(resultMantissaLow, Long.FromBytes(0xFF, 0xFF, 0x7F, 0)); // remove the implicit leading 1
+    
+        //IO.WriteLn("resultMantissa after normalization: " + Long.ToHexString(resultMantissa, 8));
+        //IO.WriteLn("resultExponent after normalization: " + Int.ToHexString(resultExponent, 2));
+        
+        // Handle exponent overflow/underflow
+        if (resultExponent <= 0) 
+        {
+            // Underflow: result is too small to be represented
+            resultExponent = 0;
+            resultMantissa  = 0;
+        }
+        else if (resultExponent >= 255) 
+        {
+            // Overflow: result is too large to be represented
+            resultExponent = 255;
+            resultMantissa  = 0;
+        }
+    
+        float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
+        IO.WriteLn("result after combineComponents: " + Float.ToString(result));
+        //_ = Serial.ReadChar();
+        return result;
+    }
+            
     float Add(float a, float b)
     {
         byte signA     = getSign(a);
@@ -190,6 +268,10 @@ unit Float
         {
             return b;
         }
+    
+        IO.WriteLn();
+        IO.WriteLn("Test case 'a=" + a.ToString() + " * " + b.ToString() + "' :");
+    
         byte signA = getSign(a);
         int exponentA = getExponent(a);
         long mantissaA = getMantissa(a);
@@ -197,18 +279,31 @@ unit Float
         int exponentB = getExponent(b);
         long mantissaB = getMantissa(b);
     
+        IO.WriteLn("signA: " + Int.ToString(signA));
+        IO.WriteLn("exponentA: " + Int.ToHexString(exponentA, 2));
+        IO.WriteLn("mantissaA: " + Long.ToHexString(mantissaA, 8));
+        IO.WriteLn("signB: " + Int.ToString(signB));
+        IO.WriteLn("exponentB: " + Int.ToHexString(exponentB, 2));
+        IO.WriteLn("mantissaB: " + Long.ToHexString(mantissaB, 8));
         
-    
         // Add the implicit leading bit
         mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0));
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0));
-    
+        
+        IO.WriteLn("mantissaA with implicit bit: " + Long.ToHexString(mantissaA, 8));
+        IO.WriteLn("mantissaB with implicit bit: " + Long.ToHexString(mantissaB, 8));
+        
         // Perform the multiplication
         long resultHigh;
         long resultLow;
         mantissaMultiply(mantissaA, mantissaB, ref resultHigh, ref resultLow);
-        
+    
+        IO.WriteLn("resultHigh: " + Long.ToHexString(resultHigh, 8));
+        IO.WriteLn("resultLow: " + Long.ToHexString(resultLow, 8));
+    
         byte leadingZeros = countLeadingZeros(resultHigh, resultLow);
+        IO.WriteLn("leadingZeros: " + Int.ToString(leadingZeros));
+    
         if (leadingZeros < 40)
         {
             shiftRight64Bit(ref resultHigh, ref resultLow, 40 - leadingZeros);
@@ -218,10 +313,17 @@ unit Float
             resultLow = Long.shiftLeft(resultLow, leadingZeros - 40);
         }
         
+        IO.WriteLn("resultHigh after shift: " + Long.ToHexString(resultHigh, 8));
+        IO.WriteLn("resultLow after shift: " + Long.ToHexString(resultLow, 8));
+    
         // Now the mantissa of interest is in lowResult
         long resultMantissa = Long.and(resultLow, Long.FromBytes(0xFF, 0xFF, 0x7F, 0));  // remove the implicit leading 1
         int resultExponent = exponentA + exponentB - 127;   
         byte resultSign = signA ^ signB;
+    
+        IO.WriteLn("resultMantissa before normalization: " + Long.ToHexString(resultMantissa, 8));
+        IO.WriteLn("resultExponent before normalization: " + Int.ToHexString(resultExponent, 2));
+        IO.WriteLn("resultSign: " + Int.ToString(resultSign));
         
         // Handle exponent overflow/underflow
         if (resultExponent <= 0) 
@@ -237,9 +339,11 @@ unit Float
             resultMantissa  = 0;
         }
     
-        float result = combineComponents(resultSign, byte(resultExponent), resultMantissa );
+        float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
+        IO.WriteLn("result after combineComponents: " + Float.ToString(result));
         return result;
     }
+
     
        
     bool EQ(float a, float b)
