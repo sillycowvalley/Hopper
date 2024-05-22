@@ -33,3 +33,28 @@
 | **0xF** | F0   | F1   | F2   | F3   | F4   | F5   | F6   | F7   | F8   | F9   | FA   | FB   | FC   | FD   | FE   | FF   |
 |       | FloatSin | FloatCos | FloatATan2 | FloatSqrt | ListNew | ListCountGet | ListAppend | ListInsert | ListGetItem | ListGetItemAsVariant | ListSetItem | ListClear | ListRemove | ListContains | **unused** | **unused** |
 
+## Unused syscall slots:
+
+- 0x1D
+- 0x1E
+- 0x1F
+- 0x26
+- 0x39
+- 0x4B
+- 0x5D
+- 0x5E
+- 0xA1
+- 0xA5
+- 0xA6
+- 0xA7
+- 0xB5
+- 0xBE
+- 0xC6
+- 0xCD
+- 0xD9
+- 0xDA
+- 0xDB
+- 0xE1
+- 0xE4
+- 0xFE
+- 0xFF
