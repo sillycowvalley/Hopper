@@ -263,24 +263,61 @@ unit Float
         long bLow = Long.and(mantissaB, Long.FromBytes(0xFF, 0x0F, 0x00, 0x00)); // Bottom 12 bits
     
         // Perform the multiplications
-        long highHigh = Long.Mul(aHigh, bHigh);
-        long highLow = Long.Mul(aHigh, bLow);
-        long lowHigh = Long.Mul(aLow, bHigh);
-        long lowLow = Long.Mul(aLow, bLow);
-    
-        // Combine results to form the full 48-bit result
-        long highResult = highHigh;
-        long midResult1 = highLow;
-        long midResult2 = lowHigh;
-        long lowResult = Long.shiftRight(lowLow, 12);
-    
-        // Combine results into a final mantissa
-        resultHigh = highResult;
-        resultHigh = Long.Add(resultHigh, Long.shiftRight(midResult1, 12));
-        resultHigh = Long.Add(resultHigh, Long.shiftRight(midResult2, 12));
-    
-        resultLow = lowResult;
+        long highHigh = Long.Mul(aHigh, bHigh);  // Bits 24-47
+        long highLow  = Long.Mul(aHigh, bLow);   // Bits 12-35
+        long lowHigh  = Long.Mul(aLow, bHigh);   // Bits 12-35
+        long lowLow   = Long.Mul(aLow, bLow);    // Bits 0-23
+        
+        // Initialize lowerLong with the lower 16 bits of lowLow
+        long lowerLong = Long.and(lowLow, Long.FromBytes(0xFF, 0xFF, 0, 0));
+        
+        // Add the overlapping bits from highLow and lowHigh
+        long highLowOverlap = Long.and(highLow, Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 12..15(0x0000000F)
+        long lowHighOverlap = Long.and(lowHigh, Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 12..15(0x0000000F)
+        
+        // Shift these overlaps to the right position and add them to lowerLong
+        lowerLong = Long.Add(lowerLong, Long.shiftLeft(highLowOverlap, 12));
+        lowerLong = Long.Add(lowerLong, Long.shiftLeft(lowHighOverlap, 12));
+        
+        // Check for carry to middleLong
+        long middleLong = Long.shiftRight(lowerLong, 16);
+        
+        // Mask lowerLong to 16 bits after adding
+        lowerLong = Long.and(lowerLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
+        
+        // Accumulate the 16..31 bits
+        middleLong = Long.Add(middleLong, Long.shiftRight(lowLow, 16)); // Add bits 16..31 of lowLow
+        
+        // Add the overlapping bits from highLow and lowHigh
+        highLowOverlap       = Long.and(Long.shiftRight(highLow, 4), Long.FromBytes(0xFF, 0xFF, 0, 0)); // Extract bits 16..31(0x0000FFFF)
+        lowHighOverlap       = Long.and(Long.shiftRight(lowHigh, 4), Long.FromBytes(0xFF, 0xFF, 0, 0)); // Extract bits 16..31(0x0000FFFF)
+        long highHighOverlap = Long.and(Long.shiftLeft(highHigh, 8), Long.FromBytes(0x00, 0xFF, 0, 0)); // Extract bits 24..31(0x0000FF00)
+        
+        middleLong = Long.Add(middleLong, highLowOverlap);  // Add bits 16..31 of highLow
+        middleLong = Long.Add(middleLong, lowHighOverlap);  // Add bits 16..31 of lowHigh
+        middleLong = Long.Add(middleLong, highHighOverlap); // Add bits 24..31 of highHigh
+        
+        // Check for carry to upperLong
+        long upperLong = Long.shiftRight(middleLong, 16);
+        
+        // Accumulate the 32..47 bits
+        highLowOverlap = Long.and(Long.shiftRight(highLow, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 32..35(0xF)
+        lowHighOverlap = Long.and(Long.shiftRight(lowHigh, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 32..35(0xF)
+        highHighOverlap = Long.shiftRight(highHigh, 8);                                            // Extract bits 32..47
+        
+        upperLong = Long.Add(upperLong, highLowOverlap);  // Add bits 32..47 of highLow
+        upperLong = Long.Add(upperLong, lowHighOverlap);  // Add bits 32..47 of lowHigh
+        upperLong = Long.Add(upperLong, highHighOverlap); // Add bits 32..47 of highHigh
+        
+        // Mask upperLong to 16 bits after adding
+        upperLong = Long.and(upperLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
+        
+        // Combine results into final mantissa
+        resultLow = Long.or(lowerLong, Long.shiftLeft(middleLong, 16));
+        resultHigh = upperLong;
     }
+    
+    
     byte countLeadingZeros(long result)
     {
         byte count = 0;
@@ -320,18 +357,24 @@ unit Float
             resultHigh = Long.shiftRight(resultHigh, shift);
         }
     }
+    
     float Mul(float a, float b)
 {
-    if (isZero(a))
+    if (isZero(a)) 
     {
         return a;
     }
-    if (isZero(b))
+    if (isZero(b)) 
     {
         return b;
     }
     IO.WriteLn();
     IO.WriteLn("Test case 'a=" + ToHexString(a) + " * " + ToHexString(b) + "' :");
+    
+    if (ToHexString(a) == "3D23D70A")
+    {
+        int wtf = 0;
+    }
     
     byte signA = getSign(a);
     int exponentA = getExponent(a);
@@ -349,8 +392,8 @@ unit Float
     IO.WriteLn("mantissaB: " + Long.ToHexString(mantissaB, 8));
     
     // Add the implicit leading bit
-    mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0));
-    mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0));
+    mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
+    mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
     IO.WriteLn("After adding implicit leading bit:");
     IO.WriteLn("mantissaA with implicit bit: " + Long.ToHexString(mantissaA, 8));
     IO.WriteLn("mantissaB with implicit bit: " + Long.ToHexString(mantissaB, 8));
@@ -384,27 +427,32 @@ unit Float
     IO.WriteLn("resultMantissa before normalization: " + Long.ToHexString(resultMantissa, 8));
     IO.WriteLn("resultExponent before normalization: " + Int.ToHexString(resultExponent, 2));
 
+    // Adjust the exponent based on the leading zeros found
+    //resultExponent -= leadingZeros - 24; // Adjust the exponent to account for the leading zero shift
+    //IO.WriteLn("resultExponent after adjustment: " + Int.ToHexString(resultExponent, 2));
+
     // Handle exponent overflow/underflow
     if (resultExponent <= 0) 
     {
         // Underflow: result is too small to be represented
         resultExponent = 0;
-        resultMantissa  = 0;
+        resultMantissa = 0;
     }
     else if (resultExponent >= 255) 
     {
         // Overflow: result is too large to be represented
         resultExponent = 255;
-        resultMantissa  = 0;
+        resultMantissa = 0;
     }
 
+    IO.WriteLn("resultMantissa after normalization: " + Long.ToHexString(resultMantissa, 8));
+    IO.WriteLn("resultExponent after normalization: " + Int.ToHexString(resultExponent, 2));
+    
     float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
     IO.WriteLn("result after combineComponents: " + ToHexString(result));
     return result;
 }
 
-
- 
        
     bool EQ(float a, float b)
     {
@@ -580,7 +628,7 @@ unit Float
     
     string ToHexString(float f)
     {
-        string result = "0x";
+        string result;
         result += Byte.ToHexString(Float.GetByte(f, 3), 2);
         result += Byte.ToHexString(Float.GetByte(f, 2), 2);
         result += Byte.ToHexString(Float.GetByte(f, 1), 2);
