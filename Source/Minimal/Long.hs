@@ -101,6 +101,22 @@ unit Long
      
     long Mul(long a, long b)
     {
+        if (EQ(a, FromBytes(0,0,0,0)))
+        {
+            return a;
+        }
+        if (EQ(b, FromBytes(0,0,0,0)))
+        {
+            return b;
+        }
+        if (EQ(a, FromBytes(1,0,0,0)))
+        {
+            return b;
+        }
+        if (EQ(b, FromBytes(1,0,0,0)))
+        {
+            return a;
+        }
         // Determine the signs of the operands
         bool isNegativeA = (GetByte(a, 3) & 0x80) != 0;
         bool isNegativeB = (GetByte(b, 3) & 0x80) != 0;
@@ -363,7 +379,7 @@ unit Long
         }
         return result;
     }
-
+    
     string ToHexString(long this, byte digits)
     {
         char c;
@@ -516,12 +532,29 @@ unit Long
             l = -l;
         }
         int exponent = 127 + 23;
-        long mantissa = shiftLeft(l, 8); // Shift the mantissa left by 8 bits
+        long mantissa = Long.shiftLeft(l, 8); // Shift the mantissa left by 8 bits
         exponent -= 8; // Adjust exponent for the left shift
-        Float.normalize(ref mantissa, ref exponent);
+    
+        // Normalize the mantissa using countLeadingZeros
+        byte leadingZeros = Float.countLeadingZeros(mantissa);
+        if (leadingZeros < 8)
+        {
+            mantissa = Long.shiftRight(mantissa, 8 - leadingZeros);
+            exponent += (8 - leadingZeros);
+        }
+        else
+        {
+            mantissa = Long.shiftLeft(mantissa, leadingZeros - 8);
+            exponent -= (leadingZeros - 8);
+        }
+    
+        // Remove the implicit leading bit
+        mantissa = Long.and(mantissa, Long.FromBytes(0xFF, 0xFF, 0x7F, 0));
+    
         float result = Float.combineComponents(sign, byte(exponent), mantissa);
         return result;
     }
+    
         
     long shiftLeft(long value, int bits)
     {
