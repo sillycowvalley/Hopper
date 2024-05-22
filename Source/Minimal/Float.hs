@@ -256,65 +256,93 @@ unit Float
     
     mantissaMultiply(long mantissaA, long mantissaB, ref long resultHigh, ref long resultLow)
     {
+        IO.WriteLn("mantissaA: " + Long.ToHexString(mantissaA, 8));
+        IO.WriteLn("mantissaB: " + Long.ToHexString(mantissaB, 8));
+    
         // Extract the higher and lower parts of the mantissas
         long aHigh = Long.shiftRight(mantissaA, 12);
         long aLow = Long.and(mantissaA, Long.FromBytes(0xFF, 0x0F, 0x00, 0x00)); // Bottom 12 bits
         long bHigh = Long.shiftRight(mantissaB, 12);
         long bLow = Long.and(mantissaB, Long.FromBytes(0xFF, 0x0F, 0x00, 0x00)); // Bottom 12 bits
     
+        IO.WriteLn("aHigh: " + Long.ToHexString(aHigh, 8));
+        IO.WriteLn("aLow: " + Long.ToHexString(aLow, 8));
+        IO.WriteLn("bHigh: " + Long.ToHexString(bHigh, 8));
+        IO.WriteLn("bLow: " + Long.ToHexString(bLow, 8));
+    
         // Perform the multiplications
         long highHigh = Long.Mul(aHigh, bHigh);  // Bits 24-47
         long highLow  = Long.Mul(aHigh, bLow);   // Bits 12-35
         long lowHigh  = Long.Mul(aLow, bHigh);   // Bits 12-35
         long lowLow   = Long.Mul(aLow, bLow);    // Bits 0-23
-        
+    
+        IO.WriteLn("highHigh: " + Long.ToHexString(highHigh, 8));
+        IO.WriteLn("highLow: " + Long.ToHexString(highLow, 8));
+        IO.WriteLn("lowHigh: " + Long.ToHexString(lowHigh, 8));
+        IO.WriteLn("lowLow: " + Long.ToHexString(lowLow, 8));
+    
         // Initialize lowerLong with the lower 16 bits of lowLow
         long lowerLong = Long.and(lowLow, Long.FromBytes(0xFF, 0xFF, 0, 0));
-        
+        IO.WriteLn("initial lowerLong: " + Long.ToHexString(lowerLong, 8));
+    
         // Add the overlapping bits from highLow and lowHigh
-        long highLowOverlap = Long.and(highLow, Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 12..15(0x0000000F)
-        long lowHighOverlap = Long.and(lowHigh, Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 12..15(0x0000000F)
+        long highLowOverlap = Long.and(highLow, Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 12..15 (0x0000000F)
+        long lowHighOverlap = Long.and(lowHigh, Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 12..15 (0x0000000F)
         
         // Shift these overlaps to the right position and add them to lowerLong
         lowerLong = Long.Add(lowerLong, Long.shiftLeft(highLowOverlap, 12));
         lowerLong = Long.Add(lowerLong, Long.shiftLeft(lowHighOverlap, 12));
-        
+        IO.WriteLn("lowerLong after overlap: " + Long.ToHexString(lowerLong, 8));
+    
         // Check for carry to middleLong
         long middleLong = Long.shiftRight(lowerLong, 16);
         
         // Mask lowerLong to 16 bits after adding
         lowerLong = Long.and(lowerLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
-        
+        IO.WriteLn("final lowerLong: " + Long.ToHexString(lowerLong, 8));
+        IO.WriteLn("initial middleLong (carry from lowerLong): " + Long.ToHexString(middleLong, 8));
+    
         // Accumulate the 16..31 bits
         middleLong = Long.Add(middleLong, Long.shiftRight(lowLow, 16)); // Add bits 16..31 of lowLow
         
         // Add the overlapping bits from highLow and lowHigh
-        highLowOverlap       = Long.and(Long.shiftRight(highLow, 4), Long.FromBytes(0xFF, 0xFF, 0, 0)); // Extract bits 16..31(0x0000FFFF)
-        lowHighOverlap       = Long.and(Long.shiftRight(lowHigh, 4), Long.FromBytes(0xFF, 0xFF, 0, 0)); // Extract bits 16..31(0x0000FFFF)
-        long highHighOverlap = Long.and(Long.shiftLeft(highHigh, 8), Long.FromBytes(0x00, 0xFF, 0, 0)); // Extract bits 24..31(0x0000FF00)
-        
-        middleLong = Long.Add(middleLong, highLowOverlap);  // Add bits 16..31 of highLow
-        middleLong = Long.Add(middleLong, lowHighOverlap);  // Add bits 16..31 of lowHigh
-        middleLong = Long.Add(middleLong, highHighOverlap); // Add bits 24..31 of highHigh
-        
+        highLowOverlap  = Long.and(highLow, Long.FromBytes(0xF0, 0xFF, 0x0F, 0)); // Extract bits 16..31 from 12..35 (0x000FFFF0)
+        lowHighOverlap  = Long.and(lowHigh, Long.FromBytes(0xF0, 0xFF, 0x0F, 0)); // Extract bits 16..31 from 12..35 (0x000FFFF0)
+        long highHighOverlap = Long.and(highHigh, Long.FromBytes(0xFF, 0, 0, 0)); // Extract bits 24..31 from 24..47 (0x000000FF)
+    
+        middleLong = Long.Add(middleLong, Long.shiftRight(highLowOverlap, 4));  // Add bits 16..31 of highLow
+        middleLong = Long.Add(middleLong, Long.shiftRight(lowHighOverlap, 4));  // Add bits 16..31 of lowHigh
+        middleLong = Long.Add(middleLong, Long.shiftLeft (highHighOverlap, 8)); // Add bits 24..31 of highHigh
+        IO.WriteLn("middleLong after accumulation: " + Long.ToHexString(middleLong, 8));
+    
         // Check for carry to upperLong
-        long upperLong = Long.shiftRight(middleLong, 16);
-        
+        long upperLong = Long.shiftRight(middleLong, 16);
+    
+        // Mask middleLong to 16 bits after adding
+        middleLong = Long.and(middleLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
+        IO.WriteLn("final middleLong: " + Long.ToHexString(middleLong, 8));
+        IO.WriteLn("initial upperLong (carry from middleLong): " + Long.ToHexString(upperLong, 8));
+    
         // Accumulate the 32..47 bits
-        highLowOverlap = Long.and(Long.shiftRight(highLow, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 32..35(0xF)
-        lowHighOverlap = Long.and(Long.shiftRight(lowHigh, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 32..35(0xF)
+        highLowOverlap = Long.and(Long.shiftRight(highLow, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 32..35 (0x0000000F)
+        lowHighOverlap = Long.and(Long.shiftRight(lowHigh, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 32..35 (0x0000000F)
         highHighOverlap = Long.shiftRight(highHigh, 8);                                            // Extract bits 32..47
         
         upperLong = Long.Add(upperLong, highLowOverlap);  // Add bits 32..47 of highLow
         upperLong = Long.Add(upperLong, lowHighOverlap);  // Add bits 32..47 of lowHigh
         upperLong = Long.Add(upperLong, highHighOverlap); // Add bits 32..47 of highHigh
-        
+        IO.WriteLn("upperLong after accumulation: " + Long.ToHexString(upperLong, 8));
+    
         // Mask upperLong to 16 bits after adding
         upperLong = Long.and(upperLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
-        
+        IO.WriteLn("final upperLong: " + Long.ToHexString(upperLong, 8));
+    
         // Combine results into final mantissa
         resultLow = Long.or(lowerLong, Long.shiftLeft(middleLong, 16));
         resultHigh = upperLong;
+    
+        IO.WriteLn("resultLow: " + Long.ToHexString(resultLow, 8));
+        IO.WriteLn("resultHigh: " + Long.ToHexString(resultHigh, 8));
     }
     
     
