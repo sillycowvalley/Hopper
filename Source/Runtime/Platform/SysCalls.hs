@@ -37,12 +37,16 @@ unit SysCalls
         ArraySlice            = 0x1B,
         ArrayItemTypeGet      = 0x1C,
         
-        PairNew            = 0x20,
-        StringAppend       = 0x21,
-        PairKey            = 0x22,
-        StringInsertChar   = 0x23,
-        PairValue          = 0x24,
-        CharToString       = 0x25,
+        LongNew               = 0x1D,
+        LongNewFromConstant   = 0x1E,
+        LongFromBytes         = 0x1F,
+        LongGetByte           = 0x20,
+        FloatNew              = 0x21,
+        FloatNewFromConstant  = 0x22,
+        FloatFromBytes        = 0x23,
+        FloatGetByte          = 0x24,
+        
+      //CharToString       = 0x25, // unused
       //VariantType        = 0x26, // unused
         VariantBox         = 0x27,  
         VariantUnBox       = 0x28,      
@@ -67,8 +71,8 @@ unit SysCalls
         LongToFloat          = 0x3A,
         LongToInt            = 0x3B,
         LongToUInt           = 0x3C,
-        LongNew              = 0x3D,
-        LongNewFromConstant  = 0x3E,
+        //LongNew              = 0x3D,
+        //LongNewFromConstant  = 0x3E,
         LongAdd              = 0x3F,
         LongSub              = 0x40,
         LongDiv              = 0x41,
@@ -83,8 +87,8 @@ unit SysCalls
         
         FloatToString        = 0x4A,
         //FloatToBytes         = 0x4B,
-        FloatNew             = 0x4C,
-        FloatNewFromConstant = 0x4D,
+        //FloatNew             = 0x4C,
+        //FloatNewFromConstant = 0x4D,
         FloatAdd             = 0x4E,
         FloatSub             = 0x4F,
         FloatDiv             = 0x50,
@@ -100,6 +104,9 @@ unit SysCalls
         SystemArgumentsGet = 0x59,
         SystemCurrentDirectoryGet = 0x5A,
         SystemCurrentDirectorySet = 0x5B,
+        
+        PairNew      = 0x5D,
+        StringAppend = 0x5E,
         
         FileExists   = 0x5F,
         FileNew      = 0x60,
@@ -173,7 +180,13 @@ unit SysCalls
         
         SerialWriteString = 0xA0,
         
+        PairKey           = 0xA1,
+        
         DictionaryNew = 0xA2,
+        
+        StringInsertChar = 0xA5,
+        PairValue        = 0xA6,
+        CharToString     = 0xA7,
         
         DictionaryCountGet = 0xA9,
         DictionarySet = 0xAA,
@@ -219,10 +232,10 @@ unit SysCalls
         //MCUDigitalRead   = 0xDA,
         //MCUDigitalWrite  = 0xDB,
         
-        LongGetByte      = 0xE0,
-        FloatGetByte     = 0xE2,
-        LongFromBytes    = 0xE3,
-        FloatFromBytes   = 0xE5,
+        //LongGetByte      = 0xE0,
+        //FloatGetByte     = 0xE2,
+        //LongFromBytes    = 0xE3,
+        //FloatFromBytes   = 0xE5,
         UIntToFloat      = 0xE6,
         
         StringCompare   = 0xE8,

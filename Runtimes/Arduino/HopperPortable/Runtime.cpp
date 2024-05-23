@@ -6,8 +6,6 @@
 
 
 
-
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -6066,23 +6064,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         HopperVM_Push(f, Type::eFloat);
         break;
     }
-    case SysCalls::eIntToBytes:
-    {
-        Type htype = (Type)0;
-        UInt ichunk = HopperVM_Pop_R(htype);
-        UInt lst = HRInt_ToBytes(ichunk);
-        HopperVM_Push(lst, Type::eList);
-        break;
-    }
-    case SysCalls::eLongToBytes:
-    {
-        Type htype = (Type)0;
-        UInt _this = HopperVM_Pop_R(htype);
-        UInt lst = HRLong_ToBytes(_this);
-        HopperVM_Push(lst, Type::eList);
-        GC_Release(_this);
-        break;
-    }
     case SysCalls::eFloatToLong:
     {
         Type htype = (Type)0;
@@ -6136,15 +6117,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         Byte b0 = Byte(HopperVM_Pop());
         UInt i = HRInt_FromBytes(b0, b1);
         HopperVM_Push(i, Type::eInt);
-        break;
-    }
-    case SysCalls::eFloatToBytes:
-    {
-        Type htype = (Type)0;
-        UInt _this = HopperVM_Pop_R(htype);
-        UInt lst = HRFloat_ToBytes(_this);
-        HopperVM_Push(lst, Type::eList);
-        GC_Release(_this);
         break;
     }
     case SysCalls::eFloatToString:
@@ -7736,17 +7708,6 @@ UInt HRFloat_NewFromConstant(UInt location)
     Memory_WriteWord(address + 0x02, Memory_ReadCodeWord(location));
     Memory_WriteWord(address + 0x04, Memory_ReadCodeWord(location + 0x02));
     return address;
-}
-
-UInt HRFloat_ToBytes(UInt ichunk)
-{
-    UInt lst = HRList_New(Type::eByte);;
-    for (Byte i = 0x00; i < 0x04; i++)
-    {
-        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
-        HRList_Append(lst, b, Type::eByte);
-    }
-    return lst;
 }
 
 Byte HRFloat_GetByte(UInt ichunk, UInt i)
@@ -9423,17 +9384,6 @@ UInt HRLong_NewFromConstant(UInt location)
     return address;
 }
 
-UInt HRLong_ToBytes(UInt ichunk)
-{
-    UInt lst = HRList_New(Type::eByte);;
-    for (Byte i = 0x00; i < 0x04; i++)
-    {
-        Byte b = Memory_ReadByte(ichunk + 0x02 + i);
-        HRList_Append(lst, b, Type::eByte);
-    }
-    return lst;
-}
-
 UInt HRLong_ToUInt(UInt _this)
 {
     UInt value = Memory_ReadWord(_this + 0x04);
@@ -9556,16 +9506,6 @@ UInt HRInt_ToLong(UInt ichunk)
         Memory_WriteWord(_this + 0x04, 0x00);
     }
     return _this;
-}
-
-UInt HRInt_ToBytes(UInt ichunk)
-{
-    Byte lsb = Byte(ichunk & 0xFF);
-    Byte msb = Byte(ichunk >> 0x08);
-    UInt lst = HRList_New(Type::eByte);
-    HRList_Append(lst, lsb, Type::eByte);
-    HRList_Append(lst, msb, Type::eByte);
-    return lst;
 }
 
 Byte HRInt_GetByte(UInt ichunk, UInt i)

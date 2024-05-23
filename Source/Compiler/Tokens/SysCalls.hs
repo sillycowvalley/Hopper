@@ -45,18 +45,19 @@ unit SysCalls
         addEntry("Array.Slice");
         addEntry("Array.ItemType_Get");
         
-        addEntry("_Dictionary.Get2");
-        addEntry("_Dictionary.Next2");
-        addEntry("_Dictionary.Clear2");
+        addEntry("Long.New");
+        addEntry("Long.NewFromConstant");
+        addEntry("Long.FromBytes");
+        addEntry("Long.GetByte");
         
-        addEntry("_Pair.New");
-        addEntry("_String.Append");
-        addEntry("_Pair.Key");
-        addEntry("_String.InsertChar");
-        addEntry("_Pair.Value");
+        addEntry("Float.New");
+        addEntry("Float.NewFromConstant");
+        addEntry("Float.FromBytes");
+        addEntry("Float.GetByte");
+        
         addEntry("_Char.ToString");
+        addEntry("_Variant.Type");
         
-        addEntry("_Variant.Type"); // unused
         addEntry("Variant.Box");
         addEntry("Variant.UnBox");
         
@@ -83,8 +84,8 @@ unit SysCalls
         addEntry("Long.ToFloat");
         addEntry("Long.ToInt");
         addEntry("Long.ToUInt");
-        addEntry("Long.New");
-        addEntry("Long.NewFromConstant");
+        addEntry("_Long.New");
+        addEntry("_Long.NewFromConstant");
         addEntry("Long.Add");
         addEntry("Long.Sub");
         addEntry("Long.Div");
@@ -99,8 +100,8 @@ unit SysCalls
         
         addEntry("Float.ToString");
         addEntry("_Float.ToBytes");
-        addEntry("Float.New");
-        addEntry("Float.NewFromConstant");
+        addEntry("_Float.New");
+        addEntry("_Float.NewFromConstant");
         addEntry("Float.Add");
         addEntry("Float.Sub");
         addEntry("Float.Div");
@@ -292,12 +293,12 @@ unit SysCalls
         addEntry("Memory.ReadCodeWord");
         addEntry("Memory.WriteCodeWord");
         
-        addEntry("Long.GetByte");
+        addEntry("_Long.GetByte");
         addEntry("_Int.GetByte2");
-        addEntry("Float.GetByte");
-        addEntry("Long.FromBytes");
+        addEntry("_Float.GetByte");
+        addEntry("_Long.FromBytes");
         addEntry("_Int.FromBytes2");
-        addEntry("Float.FromBytes");
+        addEntry("_Float.FromBytes");
         addEntry("UInt.ToFloat");
         addEntry("Serial.Ports_Get");
         

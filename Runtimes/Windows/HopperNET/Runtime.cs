@@ -260,14 +260,14 @@ namespace HopperNET
         ArraySlice   = 0x1B,
         ArrayItemTypeGet = 0x1C,
 
-        //DictionaryContains2 = 
-        //DictionaryNext2 = 0x1E,
-        //DictionaryClear2 = 0x1F,
-        //PairNew2 = 0x20,
-        //StringAppend2 = 0x21,
-        //PairKey2 = 0x22,
-        //StringInsertChar2 = 0x23,
-        //PairValue2 = 0x24,
+        LongNew = 0x1D,
+        LongNewFromConstant = 0x1E,
+        LongFromBytes = 0x1F,
+        LongGetByte = 0x20,
+        FloatNew = 0x21,
+        FloatNewFromConstant = 0x22,
+        FloatFromBytes = 0x23,
+        FloatGetByte = 0x24,
         //CharToString2 = 0x25,
         //VariantType = 0x26,
         VariantBox = 0x27,
@@ -292,8 +292,8 @@ namespace HopperNET
         LongToFloat = 0x3A,
         LongToInt = 0x3B,
         LongToUInt = 0x3C,
-        LongNew = 0x3D,
-        LongNewFromConstant = 0x3E,
+        //LongNew2 = 0x3D,
+        //LongNewFromConstant2 = 0x3E,
         LongAdd = 0x3F,
         LongSub = 0x40,
         LongDiv = 0x41,
@@ -307,8 +307,8 @@ namespace HopperNET
         LongNegate = 0x49,
         FloatToString = 0x4A,
         //FloatToBytes = 0x4B,
-        FloatNew = 0x4C,
-        FloatNewFromConstant = 0x4D,
+        //FloatNew2 = 0x4C,
+        //FloatNewFromConstant2 = 0x4D,
         FloatAdd = 0x4E,
         FloatSub = 0x4F,
         FloatDiv = 0x50,
@@ -481,10 +481,10 @@ namespace HopperNET
         MemoryReadCodeWord = 0xDE,
         MemoryWriteCodeWord = 0xDF,
 
-        LongGetByte = 0xE0,
-        FloatGetByte = 0xE2,
-        LongFromBytes = 0xE3,
-        FloatFromBytes = 0xE5,
+        //LongGetByte2 = 0xE0,
+        //FloatGetByte2 = 0xE2,
+        //LongFromBytes2 = 0xE3,
+        //FloatFromBytes2 = 0xE5,
         UIntToFloat = 0xE6,
 
         SerialPortsGet = 0xE7,
@@ -4549,7 +4549,6 @@ namespace HopperNET
                         break;
                     }
                 case SysCall.CharToString:
-                //case SysCall.CharToString2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4568,7 +4567,6 @@ namespace HopperNET
                     hasResult = true;
                     break;
                 case SysCall.StringAppend:
-                //case SysCall.StringAppend2:
                     switch (iOverload)
                     {
                         case 0:
@@ -4966,7 +4964,6 @@ namespace HopperNET
                     break;
 
                 case SysCall.StringInsertChar:
-                //case SysCall.StringInsertChar2:
                     {
                         char append = (char)Pop();
                         ushort index = (ushort)Pop();
@@ -5355,7 +5352,6 @@ namespace HopperNET
                     }
 
                 case SysCall.PairNew:
-                //case SysCall.PairNew2:
                     {
                         HopperType vType = (HopperType)Pop();
                         HopperType kType = (HopperType)Pop();
@@ -5365,7 +5361,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.PairKey:
-                //case SysCall.PairKey2:
                     {
                         HopperPair pair = (HopperPair)PopVariant(HopperType.tPair);
                         if (Type_IsValueType(pair.KType))
@@ -5382,7 +5377,6 @@ namespace HopperNET
                     }
                     break;
                 case SysCall.PairValue:
-                //case SysCall.PairValue2:
                     {
                         HopperPair pair = (HopperPair)PopVariant(HopperType.tPair);
                         if (Type_IsValueType(pair.VType))

@@ -40,6 +40,16 @@ unit SysCall
         IntFromBytes          = 0x1A,
         
         ArrayItemTypeGet      = 0x1C,
+        
+        LongNew               = 0x1D,
+        LongNewFromConstant   = 0x1E,
+        LongFromBytes         = 0x1F,
+        LongGetByte           = 0x20,
+        
+        FloatNew              = 0x21,
+        FloatNewFromConstant  = 0x22,
+        FloatFromBytes        = 0x23,
+        FloatGetByte          = 0x24,
     }
     
     missing()

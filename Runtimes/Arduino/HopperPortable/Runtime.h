@@ -28,6 +28,10 @@ enum OpCode {
     eLIBCALL = 0x0008,
     eLIBCALL0 = 0x0009,
     eLIBCALL1 = 0x000A,
+    eBITSHLB = 0x000C,
+    eBITSHRB = 0x000D,
+    eBITANDB = 0x000E,
+    eBITORB = 0x000F,
     ePUSHI = 0x0037,
     ePUSHD = 0x0060,
     ePUSHLOCAL = 0x0039,
@@ -179,12 +183,14 @@ enum SysCalls {
     eIntFromBytes = 0x001A,
     eArraySlice = 0x001B,
     eArrayItemTypeGet = 0x001C,
-    ePairNew = 0x0020,
-    eStringAppend = 0x0021,
-    ePairKey = 0x0022,
-    eStringInsertChar = 0x0023,
-    ePairValue = 0x0024,
-    eCharToString = 0x0025,
+    eLongNew = 0x001D,
+    eLongNewFromConstant = 0x001E,
+    eLongFromBytes = 0x001F,
+    eLongGetByte = 0x0020,
+    eFloatNew = 0x0021,
+    eFloatNewFromConstant = 0x0022,
+    eFloatFromBytes = 0x0023,
+    eFloatGetByte = 0x0024,
     eVariantBox = 0x0027,
     eVariantUnBox = 0x0028,
     eScreenPrint = 0x0029,
@@ -203,12 +209,9 @@ enum SysCalls {
     eUIntToLong = 0x0036,
     eUIntToInt = 0x0037,
     eLongToString = 0x0038,
-    eLongToBytes = 0x0039,
     eLongToFloat = 0x003A,
     eLongToInt = 0x003B,
     eLongToUInt = 0x003C,
-    eLongNew = 0x003D,
-    eLongNewFromConstant = 0x003E,
     eLongAdd = 0x003F,
     eLongSub = 0x0040,
     eLongDiv = 0x0041,
@@ -221,9 +224,6 @@ enum SysCalls {
     eLongGE = 0x0048,
     eLongNegate = 0x0049,
     eFloatToString = 0x004A,
-    eFloatToBytes = 0x004B,
-    eFloatNew = 0x004C,
-    eFloatNewFromConstant = 0x004D,
     eFloatAdd = 0x004E,
     eFloatSub = 0x004F,
     eFloatDiv = 0x0050,
@@ -237,6 +237,8 @@ enum SysCalls {
     eSystemArgumentsGet = 0x0059,
     eSystemCurrentDirectoryGet = 0x005A,
     eSystemCurrentDirectorySet = 0x005B,
+    ePairNew = 0x005D,
+    eStringAppend = 0x005E,
     eFileExists = 0x005F,
     eFileNew = 0x0060,
     eFileOpen = 0x0061,
@@ -291,7 +293,11 @@ enum SysCalls {
     eFileGetDate = 0x009D,
     eDirectoryGetDate = 0x009E,
     eSerialWriteString = 0x00A0,
+    ePairKey = 0x00A1,
     eDictionaryNew = 0x00A2,
+    eStringInsertChar = 0x00A5,
+    ePairValue = 0x00A6,
+    eCharToString = 0x00A7,
     eDictionaryCountGet = 0x00A9,
     eDictionarySet = 0x00AA,
     eDictionaryContains = 0x00AB,
@@ -312,7 +318,6 @@ enum SysCalls {
     eStringContains = 0x00C2,
     eStringIndexOf = 0x00C3,
     eFileGetTimeStamp = 0x00CC,
-    eIntToBytes = 0x00CD,
     eFileGetTime = 0x00CE,
     eDirectoryGetTime = 0x00CF,
     eStringTrim = 0x00D0,
@@ -323,10 +328,6 @@ enum SysCalls {
     eStringToLower = 0x00D5,
     eMemoryReadWord = 0x00D7,
     eMemoryWriteWord = 0x00D8,
-    eLongGetByte = 0x00E0,
-    eFloatGetByte = 0x00E2,
-    eLongFromBytes = 0x00E3,
-    eFloatFromBytes = 0x00E5,
     eUIntToFloat = 0x00E6,
     eStringCompare = 0x00E8,
     eStringEndsWith = 0x00E9,
@@ -915,7 +916,6 @@ UInt HRFile_GetTime(UInt path);
 UInt HRFile_GetDate(UInt path);
 UInt HRFloat_Clone(UInt original);
 UInt HRFloat_NewFromConstant(UInt location);
-UInt HRFloat_ToBytes(UInt ichunk);
 Byte HRFloat_GetByte(UInt ichunk, UInt i);
 UInt HRFloat_FromBytes(Byte b0, Byte b1, Byte b2, Byte b3);
 UInt HRFloat_New();
@@ -997,7 +997,6 @@ void HRString_TrimRight_R(UInt & _this);
 void HRString_TrimLeft_R(UInt & _this);
 UInt HRString_TrimLeft(UInt _this);
 UInt HRLong_NewFromConstant(UInt location);
-UInt HRLong_ToBytes(UInt ichunk);
 UInt HRLong_ToUInt(UInt _this);
 UInt HRLong_LongNegate(UInt top);
 UInt HRLong_LongAddB(UInt next, UInt top);
@@ -1013,7 +1012,6 @@ Bool HRChar_IsHexDigit(Char _this);
 Char HRByte_ToDigit(Byte d);
 UInt HRUInt_ToLong(UInt ui);
 UInt HRInt_ToLong(UInt ichunk);
-UInt HRInt_ToBytes(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
 
