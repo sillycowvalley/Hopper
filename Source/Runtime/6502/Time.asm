@@ -67,7 +67,29 @@ unit Time
         PLA
 #endif
     }
-    
+
+#ifdef LONGS
+    Millis()
+    {
+#ifndef W65C22_VIA
+        TXA BRK // VIA not included?
+#else
+        // LNEXT = LNEXT / LTOP + LRESULT
+        
+        LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
+        STA LNEXT3
+        LDA ZP.TICK2
+        STA LNEXT2
+        LDA ZP.TICK1
+        STA LNEXT1
+        LDA ZP.TICK0 
+        STA LNEXT0
+        
+        LDA # Types.Long
+        Long.pushNewFromL();
+#endif
+    }
+#endif        
     Seconds()
     {
 #ifndef W65C22_VIA

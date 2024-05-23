@@ -46,7 +46,8 @@ unit SysCalls
         FloatFromBytes        = 0x23,
         FloatGetByte          = 0x24,
         
-      //CharToString       = 0x25, // unused
+        TimeMillis            = 0x25,
+        
       //VariantType        = 0x26, // unused
         VariantBox         = 0x27,  
         VariantUnBox       = 0x28,      
@@ -99,7 +100,7 @@ unit SysCalls
         FloatGT              = 0x55,
         FloatGE              = 0x56,
         
-        TimeMillis       = 0x57,
+        //TimeMillis       = 0x57,
         
         SystemArgumentsGet = 0x59,
         SystemCurrentDirectoryGet = 0x5A,

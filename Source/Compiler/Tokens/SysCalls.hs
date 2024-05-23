@@ -55,7 +55,8 @@ unit SysCalls
         addEntry("Float.FromBytes");
         addEntry("Float.GetByte");
         
-        addEntry("_Char.ToString");
+        addEntry("Time.Millis_Get");
+        
         addEntry("_Variant.Type");
         
         addEntry("Variant.Box");
@@ -112,7 +113,7 @@ unit SysCalls
         addEntry("Float.GT");
         addEntry("Float.GE");
         
-        addEntry("Time.Millis_Get");
+        addEntry("_Time.Millis_Get");
         addEntry("Screen.ShowCursor_Set");
         
         addEntry("System.Arguments_Get");

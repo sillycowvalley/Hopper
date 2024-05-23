@@ -338,6 +338,28 @@ unit CodeStream
                 {
                     slotsToPop = 3; // this, index, value
                 }
+                
+                case 0x1D: // Long.New
+                {
+                    slotsToPop = 0; // no arguments
+                    pushR0 = true;
+                }
+                case 0x1E: // Long.NewFromConstant
+                {
+                    slotsToPop = 1; // location
+                    pushR0 = true;
+                }
+                
+                case 0x21: // Float.New
+                {
+                    slotsToPop = 0; // no arguments
+                    pushR0 = true;
+                }
+                case 0x22: // Float.NewFromConstant
+                {
+                    slotsToPop = 1; // location
+                    pushR0 = true;
+                }
                 default:
                 {
                     PrintLn();

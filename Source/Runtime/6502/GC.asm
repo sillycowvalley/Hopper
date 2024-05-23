@@ -119,6 +119,8 @@ unit GC
             {
                 case Types.String:
                 case Types.Array:
+                case Types.Long:
+                case Types.Float:
                 {
                     Free.free();        
                 }
@@ -168,6 +170,8 @@ unit GC
         {
             case Types.String:
             case Types.Array:
+            case Types.Long:
+            case Types.Float:
             {
                 genericClone();
             }

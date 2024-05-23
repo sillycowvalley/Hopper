@@ -3,6 +3,7 @@ unit SysCall
     uses "6502/Array"
     uses "6502/String"
     uses "6502/Long"
+    uses "6502/Float"
     uses "6502/Time"
     
     enum SysCalls
@@ -50,6 +51,8 @@ unit SysCall
         FloatNewFromConstant  = 0x22,
         FloatFromBytes        = 0x23,
         FloatGetByte          = 0x24,
+        
+        TimeMillis            = 0x25,
     }
     
     missing()
@@ -181,6 +184,14 @@ unit SysCall
             {
                 Time.Seconds();
             }
+            case SysCalls.TimeMillis:
+            {
+#ifdef LONGS
+                Time.Millis();
+#else
+                missing();
+#endif
+            }            
             
             case SysCalls.ByteToHex:
             {
@@ -269,6 +280,73 @@ unit SysCall
             {
                 String.BuildFront();
             }
+            
+            case SysCalls.LongNew:
+            {
+#ifdef LONGS
+                Long.New();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongNewFromConstant:
+            {
+#ifdef LONGS
+                Long.NewFromConstant();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongFromBytes:
+            {
+#ifdef LONGS
+                Long.FromBytes();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongGetByte:
+            {
+#ifdef LONGS
+                Long.GetByte();
+#else
+                missing();
+#endif                
+            }
+            
+            case SysCalls.FloatNew:
+            {
+#ifdef FLOATS
+                Float.New();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.FloatNewFromConstant:
+            {
+#ifdef FLOATS
+                Float.NewFromConstant();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.FloatFromBytes:
+            {
+#ifdef FLOATS
+                Float.FromBytes();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.FloatGetByte:
+            {
+#ifdef FLOATS
+                Float.GetByte();
+#else
+                missing();
+#endif                
+            }
+            
             default:
             {
                 missing();

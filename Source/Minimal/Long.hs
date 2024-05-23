@@ -9,6 +9,13 @@ unit Long
         
     long Add(long a, long b)
     {
+        byte result0;
+        byte result1;
+        byte result2;
+        byte result3;
+    
+        uint carry;
+    
         // Extract bytes from both longs
         byte a0 = GetByte(a, 0);
         byte a1 = GetByte(a, 1);
@@ -21,12 +28,6 @@ unit Long
         byte b3 = GetByte(b, 3);
     
         // Perform addition byte-by-byte with carry
-        byte result0;
-        byte result1;
-        byte result2;
-        byte result3;
-    
-        uint carry = 0;
     
         // Add the lowest byte with carry
         uint temp = uint(a0) + uint(b0) + carry;
@@ -55,6 +56,13 @@ unit Long
         
     long Sub(long a, long b)
     {
+        byte result0;
+        byte result1;
+        byte result2;
+        byte result3;
+    
+        uint borrow;
+    
         // Extract bytes from both longs
         byte a0 = GetByte(a, 0);
         byte a1 = GetByte(a, 1);
@@ -67,12 +75,6 @@ unit Long
         byte b3 = GetByte(b, 3);
     
         // Perform subtraction byte-by-byte with borrow
-        byte result0;
-        byte result1;
-        byte result2;
-        byte result3;
-    
-        uint borrow = 0;
     
         // Subtract the lowest byte with borrow
         uint temp = uint(a0) - uint(b0) - borrow;
@@ -101,19 +103,19 @@ unit Long
      
     long Mul(long a, long b)
     {
-        if (EQ(a, FromBytes(0,0,0,0)))
+        if (EQ(a, long(0)))
         {
             return a;
         }
-        if (EQ(b, FromBytes(0,0,0,0)))
+        if (EQ(b, long(0)))
         {
             return b;
         }
-        if (EQ(a, FromBytes(1,0,0,0)))
+        if (EQ(a, long(1)))
         {
             return b;
         }
-        if (EQ(b, FromBytes(1,0,0,0)))
+        if (EQ(b, long(1)))
         {
             return a;
         }
@@ -187,9 +189,7 @@ unit Long
     
     long divMod(long dividend, long divisor, ref long remainder)
     {
-        long zero = FromBytes(0, 0, 0, 0);
-
-        if (EQ(divisor, zero))
+        if (EQ(divisor, long(0)))
         {
             Die(0x04); // division by zero attempted
         }
@@ -208,9 +208,9 @@ unit Long
             divisor = Negate(divisor);
         }
 
-        long one = FromBytes(1, 0, 0, 0);
-        long quotient = zero;
-        remainder = zero;
+        long one = 1;
+        long quotient;
+        remainder = 0;
 
         for (int i = 31; i >= 0; i--)
         {
@@ -240,7 +240,7 @@ unit Long
 
     long Mod(long dividend, long divisor)
     {
-        long remainder = 0;
+        long remainder;
         _ = divMod(dividend, divisor, ref remainder);
         return remainder;
     }
@@ -315,14 +315,12 @@ unit Long
 
     long Abs(long value)
     {
-        long zero = FromBytes(0, 0, 0, 0); // 0 as a long
-        return GE(value, zero) ? value : Negate(value);
+        return GE(value, long(0)) ? value : Negate(value);
     }
 
     long Negate(long value)
     {
-        long zero = FromBytes(0, 0, 0, 0); // 0 as a long
-        return Sub(zero, value);
+        return Sub(long(0), value);
     }
 
     long Max(long a, long b)
@@ -337,9 +335,9 @@ unit Long
     
     string ToString(long value)
     {
-        long zero = FromBytes(0, 0, 0, 0); // 0 as a long
-        long ten = FromBytes(10, 0, 0, 0); // 10 as a long
-        string result = "";
+        long zero;
+        long ten = 10;
+        string result;
 
         if (EQ(value, zero))
         {
@@ -356,7 +354,7 @@ unit Long
 
         while (!EQ(value, zero))
         {
-            long remainder = 0;
+            long remainder;
             value = divMod(value, ten, ref remainder);
             char c = char(GetByte(remainder, 0) + '0');
             String.BuildFront(ref result, c);
@@ -373,7 +371,7 @@ unit Long
     string ToBinaryString(long this, byte digits)
     {
         char c;
-        string result = "";
+        string result;
         for (int i = digits - 1; i >= 0; i--)
         {
             byte currentByte = GetByte(this, i / 8);
@@ -387,7 +385,7 @@ unit Long
     string ToHexString(long this, byte digits)
     {
         char c;
-        string result = "";
+        string result;
         for (byte i = 0; i < digits; i++)
         {
             byte currentByte = GetByte(this, (i >> 1));
@@ -403,9 +401,9 @@ unit Long
 
     int ToInt(long l)
     {
-        long intMax = Long.FromBytes(0xFF, 0xFF, 0x7F, 0x00); // Max value for int (32767)
-        long intMin = Long.FromBytes(0x00, 0x00, 0x80, 0xFF); // Min value for int (-32768)
-        long zero   = Long.FromBytes(0x00, 0x00, 0x00, 0x00); // Zero for comparison
+        long intMax =  32767; // Max value for int (32767)
+        long intMin = -32768; // Min value for int (-32768)
+        long zero;
         
         if (Long.GT(l, intMax) || Long.LT(l, intMin))
         {
@@ -434,8 +432,8 @@ unit Long
 
     uint ToUInt(long l)
     {
-        long uintMax = FromBytes(0xFF, 0xFF, 0x00, 0x00); // Max value for uint (65535)
-        long uintMin = FromBytes(0x00, 0x00, 0x00, 0x00); // Min value for uint (0)
+        long uintMax = 65535; // Max value for uint (65535)
+        long uintMin;         // Min value for uint (0)
 
         if (Long.GT(l, uintMax) || Long.LT(l, uintMin))
         {
@@ -574,8 +572,6 @@ unit Long
         float result = Float.combineComponents(sign, byte(exponent), mantissa);
         return result;
     }
-    
-    
         
     long shiftLeft(long value, int bits)
     {

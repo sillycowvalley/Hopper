@@ -14,8 +14,8 @@ unit Float
     
     mantissaDivide(long dividend, long divisor, ref long quotient, ref long remainder)
     {
-        long zero = Long.FromBytes(0, 0, 0, 0); // 0x00000000 in 32-bit
-        long one  = Long.FromBytes(1, 0, 0, 0);  // 0x00000001 in 32-bit
+        long zero;      // 0x00000000 in 32-bit
+        long one  = 1;  // 0x00000001 in 32-bit
         
         quotient  = zero;
         remainder = zero;
@@ -27,7 +27,7 @@ unit Float
         for (int i = 47; i >= 0; i--)
         {
             // Shift remainder left by 1 and combine with the next bit from extendedDividendHigh or extendedDividendLow
-            remainder = Long.shiftLeft(remainder, 1);
+            remainder = remainder.shiftLeftOne();
             if (i >= 24)
             {
                 remainder = Long.or(remainder, Long.and(Long.shiftRight(extendedDividendHigh, i - 24), one));
@@ -73,22 +73,20 @@ unit Float
         int resultExponent = int(exponentA) - int(exponentB) + 127; // Subtract exponents
         byte resultSign = signA ^ signB; // Determine the sign
     
-        long resultMantissaHigh = Long.FromBytes(0, 0, 0, 0);
-        long resultMantissaLow = quotient;
+        long resultMantissa = quotient;
     
         // Normalize the result
-        byte leadingZeros = countLeadingZeros(resultMantissaHigh, resultMantissaLow);
-        if (leadingZeros < 40)
+        byte leadingZeros = countLeadingZeros(resultMantissa);
+        if (leadingZeros < 8)
         {
-            shiftRight64Bit(ref resultMantissaHigh, ref resultMantissaLow, 40 - leadingZeros);
+            resultMantissa = Long.shiftRight(resultMantissa, 8 - leadingZeros);
         }
         else
         {
-            resultMantissaLow = Long.shiftLeft(resultMantissaLow, leadingZeros - 40);
+            resultMantissa = Long.shiftLeft(resultMantissa, leadingZeros - 8);
         }
-    
-        // Now the mantissa of interest is in lowResult
-        long resultMantissa = Long.and(resultMantissaLow, Long.FromBytes(0xFF, 0xFF, 0x7F, 0)); // remove the implicit leading 1
+        
+        resultMantissa = Long.and(resultMantissa, Long.FromBytes(0xFF, 0xFF, 0x7F, 0)); // remove the implicit leading 1
     
         // Handle exponent overflow/underflow
         if (resultExponent <= 0) 
@@ -465,7 +463,7 @@ unit Float
     
     string fractionToString(float fractionalPart)
     {
-        string result = "";
+        string result;
         int precision = 6; // Number of digits after the decimal point
         while (precision > 0)
         {

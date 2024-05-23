@@ -10,4 +10,5 @@ unit Time
         }
     }
     uint Seconds { get system; }
+    long Millis { get system; }
 }

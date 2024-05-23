@@ -352,7 +352,7 @@ unit String
         {
             return this;
         }
-        string padded = "";
+        string padded;
         uint paddingLength = width - this.Length;
         for (uint i = 0; i < paddingLength; i++)
         {
@@ -364,7 +364,7 @@ unit String
     <string> Split(string this, string delimiters)
     {
         <string> stringList;
-        string current = "";
+        string current;
         foreach (char c in this)
         {
             if (delimiters.Contains(c))

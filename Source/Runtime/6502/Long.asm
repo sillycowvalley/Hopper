@@ -2,7 +2,143 @@ unit Long
 {
     uses "/Source/Runtime/6502/ZeroPage"
     
+    friend Time, Float;
+    
+    const uint siData = 2;
        
+    pushNewFromL()
+    {
+        STA FTYPE
+        
+        // type in A
+        // size is in FSIZE
+        // return address in IDX
+        LDA #0
+        STA ZP.FSIZEH
+        LDA #4
+        STA ZP.FSIZEL
+        LDA FTYPE
+        GC.Create();   
+        
+        LDY # siData
+        LDA ZP.LNEXT0
+        STA [IDX], Y
+        INY 
+        LDA ZP.LNEXT1
+        STA [IDX], Y
+        INY 
+        LDA ZP.LNEXT2
+        STA [IDX], Y
+        INY 
+        LDA ZP.LNEXT3
+        STA [IDX], Y
+        
+        LDA IDXL
+        STA TOPL
+        LDA IDXH
+        STA TOPH
+        LDA FTYPE
+        Stacks.PushTop();
+    }
+    fromBytes()
+    {
+        STA FTYPE
+        PopTop(); // B3
+        LDA ZP.TOPL
+        STA ZP.LNEXT3
+        PopTop(); // B2
+        LDA ZP.TOPL
+        STA ZP.LNEXT2
+        PopTop(); // B1
+        LDA ZP.TOPL
+        STA ZP.LNEXT1
+        PopTop(); // B0
+        LDA ZP.TOPL
+        STA ZP.LNEXT0
+        LDA FTYPE
+        pushNewFromL();
+    }
+    newFromConstant()
+    {
+        STA FTYPE
+        PopNext(); // location
+        
+        // constant data address -> FSOURCEADDRESSL
+        LDY # 2
+        CLC
+        LDA Address.HopperData, Y
+        ADC # (Address.HopperData & 0xFF)
+        STA FSOURCEADDRESSL
+        INY
+        LDA Address.HopperData, Y
+        ADC # (Address.HopperData >> 8)
+        STA FSOURCEADDRESSH
+        
+        // += location
+        CLC
+        LDA NEXTL
+        ADC FSOURCEADDRESSL
+        STA FSOURCEADDRESSL
+        LDA NEXTH
+        ADC FSOURCEADDRESSH
+        STA FSOURCEADDRESSH
+        
+        LDY # siData
+        LDA [FSOURCEADDRESS], Y
+        STA ZP.LNEXT0
+        INY
+        LDA [FSOURCEADDRESS], Y
+        STA ZP.LNEXT1
+        INY
+        LDA [FSOURCEADDRESS], Y
+        STA ZP.LNEXT2
+        INY
+        LDA [FSOURCEADDRESS], Y
+        STA ZP.LNEXT3
+        
+        LDA FTYPE
+        pushNewFromL();
+    }
+    New()
+    {
+        LDA # 0
+        STA ZP.LNEXT0
+        STA ZP.LNEXT1
+        STA ZP.LNEXT2
+        STA ZP.LNEXT3
+        LDA # Types.Long
+        pushNewFromL();
+    }
+    NewFromConstant()
+    {
+        LDA # Types.Long
+        Long.newFromConstant();
+    }
+    FromBytes()
+    {
+        LDA # Types.Long
+        Long.fromBytes();
+    }
+    GetByte()
+    {
+        Stacks.PopIDY(); // index
+        Stacks.PopIDX(); // this
+        
+        CLC
+        LDA ZP.IDYL
+        ADC # siData
+        TAY 
+        LDA [IDX], Y
+        STA ZP.NEXTL
+        LDA # 0
+        STA ZP.NEXTH
+         
+        GC.Release();
+        
+        LDA # Types.Byte
+        Stacks.PushNext();
+    }
+    
     DivMod()
     {
         // LNEXT = LNEXT / LTOP + LRESULT
