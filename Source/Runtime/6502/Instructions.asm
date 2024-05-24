@@ -140,6 +140,10 @@ unit Instruction
         ADDB         = 0x6D,
         SUBB         = 0x6E,
         
+        BITSHLB      = 0x0C,
+        BITSHRB      = 0x0D,
+        BITANDB      = 0x0E,
+        BITORB       = 0x0F,
         
         INCLOCALBB   = 0x3F,
         INCLOCALIBB  = 0xA3,
@@ -291,6 +295,10 @@ unit Instruction
             case Instructions.PUSHIBEQ:
             case Instructions.ADDB:
             case Instructions.SUBB:
+            case Instructions.BITSHLB:
+            case Instructions.BITSHRB:
+            case Instructions.BITANDB:
+            case Instructions.BITORB:
             case Instructions.POPCOPYLOCALB:
             case Instructions.POPCOPYRELB:
             case Instructions.POPCOPYGLOBALB:
@@ -680,6 +688,25 @@ unit Instruction
         LDA #Types.UInt
         Stacks.PushNext();
     }
+    bitAndB()
+    {
+        Stacks.PopNext();
+        ConsumeOperandA();
+        STA TOPL
+        
+        // [next] &  [top] -> [top]
+        LDA ZP.NEXTL
+        AND ZP.TOPL
+        STA ZP.NEXTL
+        LDA ZP.NEXTH
+        AND # 0
+        STA ZP.NEXTH
+        
+        LDA #Types.Byte
+        Stacks.PushNext();
+    }
+        
+    
     bitAndFF()
     {
         Stacks.PopTop();
@@ -699,6 +726,23 @@ unit Instruction
         STA ZP.NEXTL
         LDA ZP.NEXTH
         ORA ZP.TOPH
+        STA ZP.NEXTH
+        
+        LDA #Types.UInt
+        Stacks.PushNext();
+    }
+    bitOrB()
+    {
+        Stacks.PopNext();
+        ConsumeOperandA();
+        STA TOPL
+        
+        // [next] | [top] -> [top]
+        LDA ZP.NEXTL
+        ORA ZP.TOPL
+        STA ZP.NEXTL
+        LDA ZP.NEXTH
+        ORA # 0
         STA ZP.NEXTH
         
         LDA #Types.UInt
@@ -1124,6 +1168,26 @@ unit Instruction
         LDA #Types.UInt
         Stacks.PushNext();
     }
+    bitShrB()
+    {
+        Stacks.PopNext();
+        ConsumeOperandA();
+        STA TOPL
+        
+        // next = next >> top
+        loop
+        {
+            LDA ZP.TOPL
+            if (Z) { break; }
+            
+            LSR ZP.NEXTH
+            ROR ZP.NEXTL
+            
+            DEC ZP.TOPL
+        }        
+        LDA #Types.UInt
+        Stacks.PushNext();
+    }
     bitShl()
     {
         Stacks.PopTopNext();
@@ -1138,6 +1202,26 @@ unit Instruction
             
             DEC ZP.TOPL
         }
+        LDA #Types.UInt
+        Stacks.PushNext();
+    }
+    bitShlB()
+    {
+        Stacks.PopNext();
+        ConsumeOperandA();
+        STA TOPL
+        
+        // next = next << top
+        loop
+        {
+            LDA ZP.TOPL
+            if (Z) { break; }
+            
+            ASL ZP.NEXTL
+            ROL ZP.NEXTH
+            
+            DEC ZP.TOPL
+        }        
         LDA #Types.UInt
         Stacks.PushNext();
     }
@@ -3185,6 +3269,39 @@ unit Instruction
                 missing();
 #endif
             }
+            case Instructions.BITSHLB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                bitShlB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.BITSHRB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                bitShrB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.BITANDB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                bitAndB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.BITORB:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                bitOrB();
+#else
+                missing();
+#endif
+            }            
+            
             case Instructions.INCLOCALBB:
             {
 #ifdef PACKED_INSTRUCTIONS

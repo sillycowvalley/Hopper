@@ -1,9 +1,10 @@
 program Sieve
 {
-    #define CPU_Z80
-    #define ROM_16K
+    //#define CPU_Z80
+    //#define ROM_8K
     
     //#define MCU
+    //#define EXPERIMENTAL
 
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
@@ -52,12 +53,13 @@ program Sieve
         IO.WriteLn();
         IO.WriteLn((uint(iterations)).ToString() + " iterations");
         
-        uint start = Time.Seconds;
+        long start  = Time.Millis;
         uint result = Sieve();
-        uint elapsed = Time.Seconds - start;
+        long elapsed = Time.Millis - start;
+        float seconds = elapsed / 1000.0;
         
         IO.WriteLn("Done.");
         IO.WriteLn(result.ToString() + " primes");
-        IO.WriteLn(elapsed.ToString() + " " + " seconds");
+        IO.WriteLn(seconds.ToString() + " " + " seconds");
     }
 }

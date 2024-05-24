@@ -20,6 +20,11 @@ unit Instructions
         LIBCALL1 = 0x0A,
         
         SYSCALL2 = 0x0B, // syscall <byte operand>, overload 2
+        
+        BITSHLB  = 0x0C,
+        BITSHRB  = 0x0D,
+        BITANDB  = 0x0E,
+        BITORB   = 0x0F,
     
         PUSHIB = 0x1A,  // operand is byte
         POPLOCALB,      // operand is the location to pop to: BP + offset
@@ -139,8 +144,6 @@ unit Instructions
         
         ADDB,
         SUBB,
-        
-        
         
         // pop 2 -> operation -> push 1: (bit 0 set means 'signed')
         ADD  = 0x80,
@@ -301,6 +304,12 @@ unit Instructions
             case Instruction.PUSHIB:
             case Instruction.ADDB:
             case Instruction.SUBB:
+            
+            case Instruction.BITSHLB:
+            case Instruction.BITSHRB:
+            case Instruction.BITANDB:
+            case Instruction.BITORB:
+            
             case Instruction.PUSHDB:
             case Instruction.POPGLOBALB:
             case Instruction.POPCOPYGLOBALB:
@@ -416,6 +425,12 @@ unit Instructions
             case Instruction.PUSHIB:
             case Instruction.ADDB:
             case Instruction.SUBB:
+            
+            case Instruction.BITSHLB:
+            case Instruction.BITSHRB:
+            case Instruction.BITANDB:
+            case Instruction.BITORB:
+            
             case Instruction.PUSHDB:
             case Instruction.POPGLOBALB:
             case Instruction.POPLOCALB:
@@ -663,6 +678,22 @@ unit Instructions
             case Instruction.SUBB:
             {
                 result = "SUBB";
+            }
+            case Instruction.BITSHLB:
+            {
+                result = "BITSHLB";
+            }
+            case Instruction.BITSHRB:
+            {
+                result = "BITSHRB";
+            }
+            case Instruction.BITANDB:
+            {
+                result = "BITANDB";
+            }
+            case Instruction.BITORB:
+            {
+                result = "BITORB";
             }
             case Instruction.PUSHI:
             {

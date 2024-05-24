@@ -3,18 +3,18 @@ program TestNumbers
 #define MCU
 //#define CDECL
 //#define NO_PACKED_INSTRUCTIONS
-//#define EXPERIMENTAL
+#define EXPERIMENTAL
 
     
     #define TESTFLOATS
     
-    //uses "/Source/Minimal/System"
-    //uses "/Source/Minimal/IO"
+    uses "/Source/Minimal/System"
+    uses "/Source/Minimal/IO"
     
     
-    uses "/Source/System/System"
-    uses "/Source/System/IO"
-    uses "/Source/System/Diagnostics"
+    //uses "/Source/System/System"
+    //uses "/Source/System/IO"
+    //uses "/Source/System/Diagnostics"
     
     
     uses "/Source/System/Keyboard"
@@ -1523,6 +1523,199 @@ program TestNumbers
     {
         WriteLn("'float' math");
         
+        float gpta; float gptb; float gptr; 
+        
+        // Test: Division of equal positive numbers
+        gpta = 2.0;
+        gptb = 2.0;
+        gptr = gpta / gptb;
+        if (gptr.ToString() != "1") 
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 1");
+        }
+        
+        // Test: Division of a positive number by a smaller positive number
+        gpta = 6.0;
+        gptb = 2.0;
+        gptr = gpta / gptb;
+        if (gptr.ToString() != "3") 
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 2");
+        }
+        
+        // Test: Division of a smaller positive number by a larger positive number
+        gpta = 3.0;
+        gptb = 6.0;
+        gptr = gpta / gptb;
+        if (gptr.ToString() != "0.5") 
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 3");
+        }
+        
+        // Test: Division by 1
+        gpta = 7.0;
+        gptb = 1.0;
+        gptr = gpta / gptb;
+        if ((gptr.ToString() != "7") && (gptr.ToString() != "6.999877"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 4");
+        }
+        
+        // Test: Division by a very small number
+        gpta = 7.0;
+        gptb = 0.1;
+        gptr = gpta / gptb;
+        if ((gptr.ToString() != "70") && (gptr.ToString() != "69.999023"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 5");
+        }
+        
+        // Test: Division of a positive number by itself
+        gpta = 9.0;
+        gptb = 9.0;
+        gptr = gpta / gptb;
+        if (gptr.ToString() != "1") 
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 7");
+        }
+                
+        // Test: Division of a very large number by a positive number
+        gpta = 1000000.0;  // using a large number directly
+        gptb = 1.0;
+        gptr = gpta / gptb;
+        if ((gptr.ToString() != "1e+06") && (gptr.ToString() != "1000000"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 14");
+        }
+        
+        // Test: Division of zero by a negative number
+        gpta = 0.0;
+        gptb = -3.0;
+        gptr = gpta / gptb;
+        if (gptr.ToString() != "-0")
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 12");
+        }
+        
+        // Test: Division of zero by a positive number
+        gpta = 0.0;
+        gptb = 3.0;
+        gptr = gpta / gptb;
+        if (gptr.ToString() != "0")
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 11");
+        }
+        
+        // Test: Division of a positive number by a very large number
+        gpta = 1.0;
+        gptb = 1000000.0;  // using a large number directly
+        gptr = gpta / gptb;
+        if ((gptr.ToString() != "1e-06") && (gptr.ToString() != "0.000001") && (gptr.ToString() != "0"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 13");
+        }
+        
+        // Test: Division of two negative numbers
+        gpta = -9.0;
+        gptb = -3.0;
+        gptr = gpta / gptb;
+        if (gptr.ToString() != "3") 
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 10");
+        }
+                
+        // Test: Division of a negative number by a positive number
+        gpta = -9.0;
+        gptb = 3.0;
+        gptr = gpta / gptb;
+        if (gptr.ToString() != "-3") 
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 9");
+        }
+        
+        // Test: Division by a negative number
+        gpta = 9.0;
+        gptb = -3.0;
+        gptr = gpta / gptb;
+        if (gptr.ToString() != "-3") 
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 8");
+        }
+        
+        // Test: Division resulting in a very small number
+        gpta = 0.1;
+        gptb = 7.0;
+        gptr = gpta / gptb;
+        if ((gptr.ToString() != "0.0142857") && (gptr.ToString() != "0.014285"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 6");
+        }
+        
+        
+        // divide by 1000.0
+        gpta = 80;
+        gptb = 1000;
+        gptr = gpta / gptb;
+        if ((gptr.ToString() != "0.08") && (gptr.ToString() != "0.079999"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 1");
+        }
+        
+        long gptl = 80;
+        gptr = gptl / 1000.0;
+        if ((gptr.ToString() != "0.08") && (gptr.ToString() != "0.079999"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 2");
+        }
+        
+        // globalFloat3  = 10000.0;
+        // globalFloat4  = 10000.1;
+        float localFloat  = 10000.0;
+        float localFloat2 = 10000.1;
+        float localFloatNeg = 0 - localFloat;
+        
+        // /
+        float result = localFloat / 2;
+        if (result != 5000.0)
+        {
+            WriteLn(result.ToString());
+            PrintFailed("'float' 13");
+        }
+        result = localFloat / 2500;
+        if (result != 4.0)
+        {
+            WriteLn(result.ToString());
+            PrintFailed("'float' 14");
+        }
+        result = localFloat / -2;
+        if (result != -5000.0)
+        {
+            WriteLn(result.ToString());
+            PrintFailed("'float' 15");
+        }
+        result = localFloatNeg / -2;
+        if (result != 5000.0)
+        {
+            WriteLn(result.ToString());
+            PrintFailed("'float' 16");
+        }
+        
         float test = 3.141;
         
         float testAfter = Float.FromBytes(test.GetByte(0), test.GetByte(1), test.GetByte(2), test.GetByte(3));
@@ -1530,11 +1723,6 @@ program TestNumbers
         {
             PrintFailed("'float' 28");
         }
-        // globalFloat3  = 10000.0;
-        // globalFloat4  = 10000.1;
-        float localFloat  = 10000.0;
-        float localFloat2 = 10000.1;
-        float localFloatNeg = 0 - localFloat;
         
         // +
         if (localFloat + localFloat != 20000.0)
@@ -1578,24 +1766,7 @@ program TestNumbers
             PrintFailed("'float' 12");
         }
         
-        // /
-        if (localFloat / 2 != 5000.0)
-        {
-            PrintFailed("'float' 13");
-        }
         
-        if (localFloat / 2500 != 4.0)
-        {
-            PrintFailed("'float' 14");
-        }
-        if (localFloat / -2 != -5000.0)
-        {
-            PrintFailed("'float' 15");
-        }
-        if (localFloatNeg / -2 != 5000.0)
-        {
-            PrintFailed("'float' 16");
-        }
         
         
         float floatRef = 10.0;
@@ -1658,13 +1829,12 @@ program TestNumbers
         {
             PrintFailed("'float' 27");
         }
-        float gpta; float gptb; float gptr; 
-        
+                
         // Multiply two numbers to result in a mantissa with exactly 16 leading zeros
         gpta = 2.0;
         gptb = 8388608.0; // 2^23
         gptr = gpta * gptb;
-        if ((gptr.ToString() != "1.67772e+07")&& (gptr.ToString() != "16777216.0"))
+        if ((gptr.ToString() != "1.67772e+07")&& (gptr.ToString() != "16777216"))
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 45");
@@ -1696,7 +1866,7 @@ program TestNumbers
         
         // Multiply a small number and a large number
         gpta = 0.000001; gptb = 1000000.0; gptr = 1.0;
-        if ((gptr.ToString() != "1") && (gptr.ToString() != "1.0"))
+        if (gptr.ToString() != "1")
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 37");
@@ -1704,7 +1874,7 @@ program TestNumbers
         
         // Multiply two very small positive numbers
         gpta = 0.0000001; gptb = 0.00001; gptr = 0.000000000001;
-        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        if (gptr.ToString() != "0")
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 38");
@@ -1712,7 +1882,7 @@ program TestNumbers
         
         // Multiply a negative number and a very small positive number
         gpta = -0.0000001; gptb = 0.00001; gptr = -0.000000000001;
-        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        if ((gptr.ToString() != "0") && (gptr.ToString() != "-0"))
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 39");
@@ -1720,7 +1890,7 @@ program TestNumbers
         
         // Multiply a very large number and a very small number
         gpta = 1000000000000.0; gptb = 0.000000000001; gptr = 1.0;
-        if ((gptr.ToString() != "1") && (gptr.ToString() != "1.0"))
+        if (gptr.ToString() != "1")
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 40");
@@ -1728,7 +1898,7 @@ program TestNumbers
         
         // Multiply a large positive number and a small negative number
         gpta = 1000000.0; gptb = -0.000001; gptr = -1.0;
-        if ((gptr.ToString() != "-1") && (gptr.ToString() != "-1.0"))
+        if (gptr.ToString() != "-1")
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 42");
@@ -1741,7 +1911,7 @@ program TestNumbers
         gpta = 0.00000001;
         gptb = 0.00000001;
         gptr = gpta * gptb;
-        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        if (gptr.ToString() != "0")
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 43");
@@ -1751,7 +1921,7 @@ program TestNumbers
         gpta = 1000000000.0;
         gptb = 1000000000.0;
         gptr = gpta * gptb;
-        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        if (gptr.ToString() != "0")
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 44");
@@ -1761,7 +1931,7 @@ program TestNumbers
         gpta = 0.0000000001;
         gptb = 1000000000.0;
         gptr = gpta * gptb;
-        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        if (gptr.ToString() != "0")
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 46");
@@ -1776,10 +1946,6 @@ program TestNumbers
             WriteLn(gptr.ToString());
             PrintFailed("'float' 47");
         }
-        
-        
-        
-        
         
         float ya = 1.6;
         float xa = 0.04 * ya;

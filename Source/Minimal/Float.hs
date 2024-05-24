@@ -48,9 +48,12 @@ unit Float
        
     float Div(float a, float b)
     {
+        byte signA = getSign(a);
+        byte signB = getSign(b);
+        byte resultSign = signA ^ signB;
         if (isZero(a))
         {
-            return a;
+            return Float.FromBytes(0,0,0, (resultSign << 7));
         }
         if (EQ(b, float(1)))
         {
@@ -61,10 +64,8 @@ unit Float
             Die(0x04); // Division by zero
         }
         
-        byte signA = getSign(a);
         byte exponentA = getExponent(a);
         long mantissaA = getMantissa(a);
-        byte signB = getSign(b);
         byte exponentB = getExponent(b);
         long mantissaB = getMantissa(b);
         // Add the implicit leading bit
@@ -76,7 +77,6 @@ unit Float
         mantissaDivide(mantissaA, mantissaB, ref quotient, ref remainder); // Divide mantissas
         
         int resultExponent = int(exponentA) - int(exponentB) + 127; // Subtract exponents
-        byte resultSign = signA ^ signB; // Determine the sign
         
         long resultMantissa = quotient;
         
@@ -332,19 +332,20 @@ unit Float
     
     float Mul(float a, float b)
     {
+        byte signA = getSign(a);
+        byte signB = getSign(b);
+        byte resultSign = signA ^ signB;
         if (isZero(a)) 
         {
-            return a;
+            return Float.FromBytes(0,0,0,(resultSign << 7));
         }
         if (isZero(b)) 
         {
-            return b;
+            return Float.FromBytes(0,0,0,(resultSign << 7));
         }
         
-        byte signA = getSign(a);
         int exponentA = getExponent(a);
         long mantissaA = getMantissa(a);
-        byte signB = getSign(b);
         int exponentB = getExponent(b);
         long mantissaB = getMantissa(b);
         
@@ -370,8 +371,6 @@ unit Float
         
         // Now the mantissa of interest is in resultLow
         long resultMantissa = Long.and(resultLow, Long.FromBytes(0xFF, 0xFF, 0x7F, 0));  // remove the implicit leading 1
-        
-        byte resultSign = signA ^ signB;
         
         int resultExponent = exponentA + exponentB - 127;
         if (leadingZeros == 16)
@@ -521,8 +520,7 @@ unit Float
     
     bool isZero(float this)
     {
-        return (GetByte(this, 0) == 0) && (GetByte(this, 1) == 0) && (GetByte(this, 2) == 0) &&
-               ((GetByte(this, 3) == 0) || (GetByte(this, 3) == 0x80));
+        return (GetByte(this, 0) == 0) && (GetByte(this, 1) == 0) && (GetByte(this, 2) == 0) && ((GetByte(this, 3) & 0x7F) == 0);
     }
     
     float negate(float value)

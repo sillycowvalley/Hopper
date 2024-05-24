@@ -1953,6 +1953,10 @@ void Instructions_PopulateJumpTable(UInt jumpTable)
     External_WriteToJumpTable(OpCode::ePUSHIBEQ, &Instructions_PushIBEQ);
     External_WriteToJumpTable(OpCode::eADDB, &Instructions_AddB);
     External_WriteToJumpTable(OpCode::eSUBB, &Instructions_SubB);
+    External_WriteToJumpTable(OpCode::eBITSHLB, &Instructions_BitShlB);
+    External_WriteToJumpTable(OpCode::eBITSHRB, &Instructions_BitShrB);
+    External_WriteToJumpTable(OpCode::eBITANDB, &Instructions_BitAndB);
+    External_WriteToJumpTable(OpCode::eBITORB, &Instructions_BitOrB);
     External_WriteToJumpTable(OpCode::eRETB, &Instructions_RetB);
     External_WriteToJumpTable(OpCode::eRETRESB, &Instructions_RetResB);
     External_WriteToJumpTable(OpCode::eRETFAST, &Instructions_RetFast);
@@ -3060,6 +3064,62 @@ Bool Instructions_SubB()
     return true;
 }
 
+Bool Instructions_BitShlB()
+{
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) << Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eUInt));
+    
+    HopperVM_pc++;
+    return true;
+}
+
+Bool Instructions_BitShrB()
+{
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) >> Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eUInt));
+    
+    HopperVM_pc++;
+    return true;
+}
+
+Bool Instructions_BitAndB()
+{
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) & Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eByte));
+    
+    HopperVM_pc++;
+    return true;
+}
+
+Bool Instructions_BitOrB()
+{
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) | Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eUInt));
+    
+    HopperVM_pc++;
+    return true;
+}
+
 Bool Instructions_RetB()
 {
     UInt popBytes = HopperVM_ReadByteOperand();
@@ -3447,7 +3507,7 @@ Bool Instructions_BitShr8()
     UInt msb = Memory_ReadByte(HopperVM_valueStackMSBPage + sp1);
     Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(msb));
     Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
-    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eByte));
     return true;
 }
 
@@ -3455,7 +3515,7 @@ Bool Instructions_BitAndFF()
 {
     UInt sp1 = HopperVM_sp - 0x01;
     Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
-    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eByte));
     return true;
 }
 

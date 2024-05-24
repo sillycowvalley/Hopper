@@ -1686,7 +1686,7 @@ namespace HopperNET
                             uint top = Pop();
                             int lnext = (int)top;
                             lnext = lnext >> 8;
-                            Push((ushort)lnext, HopperType.tUInt);
+                            Push((ushort)lnext, HopperType.tByte);
                         }
                         break;
                     case Instruction.BITSHLB:
@@ -1716,7 +1716,7 @@ namespace HopperNET
                             uint next = code[pc + currentContext.CodeOffset];
                             pc++;
                             uint top = Pop();
-                            Push((ushort)(top & next), HopperType.tUInt);
+                            Push((ushort)(top & next), HopperType.tByte);
                         }
                         break;
                     case Instruction.BITORB:
@@ -1730,7 +1730,7 @@ namespace HopperNET
 
                     case Instruction.BITANDFF:
                         {
-                            Push((ushort)(Pop() & 0xFF), HopperType.tUInt);
+                            Push((ushort)(Pop() & 0xFF), HopperType.tByte);
                         }
                         break;
 
