@@ -52,10 +52,15 @@ unit Float
         {
             return a;
         }
+        if (EQ(b, float(1)))
+        {
+            return a;
+        }
         if (isZero(b))
         {
             Die(0x04); // Division by zero
         }
+        
         byte signA = getSign(a);
         byte exponentA = getExponent(a);
         long mantissaA = getMantissa(a);
@@ -65,29 +70,35 @@ unit Float
         // Add the implicit leading bit
         mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
-    
+        
         long quotient;
         long remainder;
         mantissaDivide(mantissaA, mantissaB, ref quotient, ref remainder); // Divide mantissas
-    
+        
         int resultExponent = int(exponentA) - int(exponentB) + 127; // Subtract exponents
         byte resultSign = signA ^ signB; // Determine the sign
-    
+        
         long resultMantissa = quotient;
-    
+        
         // Normalize the result
         byte leadingZeros = countLeadingZeros(resultMantissa);
-        if (leadingZeros < 8)
-        {
-            resultMantissa = Long.shiftRight(resultMantissa, 8 - leadingZeros);
-        }
-        else
+        
+        if (leadingZeros > 8)
         {
             resultMantissa = Long.shiftLeft(resultMantissa, leadingZeros - 8);
         }
-        
+        else if (leadingZeros < 8)
+        {
+            resultMantissa = Long.shiftRight(resultMantissa, 8 - leadingZeros);
+        }
         resultMantissa = Long.and(resultMantissa, Long.FromBytes(0xFF, 0xFF, 0x7F, 0)); // remove the implicit leading 1
-    
+        
+        // Minimal adjustment for leadingZeros == 16
+        if (leadingZeros == 16)
+        {
+            resultExponent -= 1;
+        }
+        
         // Handle exponent overflow/underflow
         if (resultExponent <= 0) 
         {
@@ -101,10 +112,13 @@ unit Float
             resultExponent = 255;
             resultMantissa  = 0;
         }
-    
+        
         float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
         return result;
     }
+    
+
+
             
     float Add(float a, float b)
     {
@@ -116,7 +130,7 @@ unit Float
         {
             return a;
         }
-    
+        
         byte signA     = getSign(a);
         int exponentA  = getExponent(a);  // Change to int for processing
         long mantissaA = getMantissa(a);
@@ -431,51 +445,6 @@ unit Float
         return GT(a, b) || EQ(a, b);
     }
     
-    string ToString(float value)
-    {
-        if (isZero(value))
-        {
-            return "0";
-        }
-        bool isNegative = getSign(value) == 1;
-        if (isNegative)
-        {
-            value = negate(value);
-        }
-        long integerPart = Float.ToLong(value);
-        float fractionalPart = Float.Sub(value, Long.ToFloat(integerPart));
-        string integerPartStr = integerPart.ToString();
-        string fractionalPartStr = fractionToString(fractionalPart);
-    
-        // Remove trailing zeros from the fractional part
-        while (fractionalPartStr.Length > 1 && fractionalPartStr.EndsWith("0"))
-        {
-            fractionalPartStr = String.Substring(fractionalPartStr, 0, fractionalPartStr.Length - 1);
-        }
-    
-        string result = integerPartStr + "." + fractionalPartStr;
-        if (isNegative)
-        {
-            String.BuildFront(ref result, '-');
-        }
-        return result;
-    }
-    
-    string fractionToString(float fractionalPart)
-    {
-        string result;
-        int precision = 6; // Number of digits after the decimal point
-        while (precision > 0)
-        {
-            fractionalPart = Mul(fractionalPart, Int.ToFloat(10));
-            int digit = int(fractionalPart.ToLong());
-            result += char(byte('0') + digit);
-            fractionalPart = Sub(fractionalPart, Int.ToFloat(digit));
-            precision--;
-        }
-        return result;
-    }
-    
     long ToLong(float f)
     {
         byte sign = getSign(f);
@@ -676,6 +645,52 @@ unit Float
         }
         return success;
     }
+    
+    string ToString(float value)
+    {
+        if (isZero(value))
+        {
+            return "0";
+        }
+        bool isNegative = getSign(value) == 1;
+        if (isNegative)
+        {
+            value = negate(value);
+        }
+        long integerPart = Float.ToLong(value);
+        float fractionalPart = Float.Sub(value, Long.ToFloat(integerPart));
+        string integerPartStr = integerPart.ToString();
+        string fractionalPartStr = fractionToString(fractionalPart);
+    
+        // Remove trailing zeros from the fractional part
+        while (fractionalPartStr.Length > 1 && fractionalPartStr.EndsWith("0"))
+        {
+            fractionalPartStr = String.Substring(fractionalPartStr, 0, fractionalPartStr.Length - 1);
+        }
+    
+        string result = integerPartStr + "." + fractionalPartStr;
+        if (isNegative)
+        {
+            String.BuildFront(ref result, '-');
+        }
+        return result;
+    }
+    
+    string fractionToString(float fractionalPart)
+    {
+        string result;
+        int precision = 6; // Number of digits after the decimal point
+        while (precision > 0)
+        {
+            fractionalPart = Mul(fractionalPart, Int.ToFloat(10));
+            int digit = int(fractionalPart.ToLong());
+            result += char(byte('0') + digit);
+            fractionalPart = Sub(fractionalPart, Int.ToFloat(digit));
+            precision--;
+        }
+        return result;
+    }
+         
     float Radians(float angle) { return angle * Pi / 180.0; }
     float Degrees(float angle) { return angle * 180.0 / Pi; }
     
