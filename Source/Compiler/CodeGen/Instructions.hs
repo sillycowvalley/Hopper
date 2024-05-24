@@ -1266,6 +1266,7 @@ unit Instructions
         if (methodSymbols.Contains("returntype"))
         {
             returnType = methodSymbols["returntype"];
+            returnType += " ";
         }
         return returnType;
     }
@@ -1532,7 +1533,7 @@ unit Instructions
                 {
                     string name = methodSymbols["name"];
                     content = content.Pad(' ', 17);
-                    content = content + "// " + RenderReturnType(methodKey) + " " + name + "(" + RenderArguments(methodKey) + ") ";
+                    content = content + "// " + RenderReturnType(methodKey) + name + "(" + RenderArguments(methodKey) + ") ";
                 }
             }
         } // switch

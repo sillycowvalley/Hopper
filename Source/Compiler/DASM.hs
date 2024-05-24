@@ -99,7 +99,7 @@ program DASM
                     
                     string returnType = Instructions.RenderReturnType(methodIndex);
                     string arguments  = Instructions.RenderArguments(methodIndex);
-                    string mname = "// ####   '" + returnType + " " + nm + "(" + arguments + ")'   ####";
+                    string mname = "// ####   '" + returnType + nm + "(" + arguments + ")'   ####";
                     mname = mname.Pad(' ', 90);
                     mname = mname + methodIndex + Char.EOL;
                     hasmFile.Append(mname);  

@@ -208,6 +208,40 @@ unit Expression
                     }
                 }
             }
+            case "+int":
+            {
+                switch (castToType)
+                {
+                    case "char":
+                    case "byte":
+                    {
+                         Types.DynamicCastToByte();
+                    }
+                    case "uint":
+                    {
+                         // ok
+                    }
+                    case "float":
+                    {
+                         CodeStream.AddInstructionSysCall0("Int", "ToFloat");
+                    }
+                    case "long":
+                    {
+                         CodeStream.AddInstructionSysCall0("Int", "ToLong");
+                    }
+                    default:
+                    {
+                        if (Types.IsDelegate(castToType))
+                        {
+                            // ok - 16 bits wide for pointer type
+                        }
+                        else
+                        {
+                            Parser.ErrorAtCurrent("'" + sourceType + "' -> '" + castToType + "' not implemented");
+                        }
+                    }
+                }
+            }
             case "int":
             {
                 switch (castToType)

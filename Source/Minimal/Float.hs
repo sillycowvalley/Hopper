@@ -292,8 +292,8 @@ unit Float
     
     byte countLeadingZeros(long result)
     {
-        byte count = 0;
-        long one = Long.FromBytes(1, 0, 0, 0); // 0x00000001 as a long
+        byte count;
+        long one = 1; // 0x00000001 as a long
     
         for (int i = 31; i >= 0; i--)
         {

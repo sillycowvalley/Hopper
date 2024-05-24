@@ -3,8 +3,6 @@ program TestNumbers
 #define MCU
 //#define CDECL
 //#define NO_PACKED_INSTRUCTIONS
-#define EXPERIMENTAL
-
     
     #define TESTFLOATS
     

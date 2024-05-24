@@ -49,10 +49,6 @@ unit Path
                 // there is no slash (except for a possible trailing one) so the entire string is the tail
                 break;
             }
-            if (iLastSlash < 0)
-            {
-                break;
-            }
             resultPath = fullPath.Substring(0, iLastSlash+1);
             break;
         }
@@ -118,7 +114,7 @@ unit Path
         uint iFile;
         string dir;
         directory dr;
-        string name;
+        string lowerName;
         string correctCaseName;
         string fpath;
         dir = GetDirectoryName(path);
@@ -129,13 +125,13 @@ unit Path
         dr = Directory.Open(dir);
         if (dr.IsValid())
         {
-            name = Path.GetFileName(path);
+            lowerName = Path.GetFileName(path).ToLower();
             fCount = dr.GetFileCount();
             for (iFile = 0; iFile < fCount; iFile++)
             {
                 fpath = dr.GetFile(iFile);
                 correctCaseName = Path.GetFileName(fpath);
-                if (correctCaseName.ToLower() == name.ToLower())
+                if (correctCaseName.ToLower() == lowerName)
                 {
                     path = fpath;
                     break;
@@ -155,16 +151,16 @@ unit Path
         }
         if (File.Exists(path))
         {
-            <string> parts = path.Split('/');
             correctPath = "/";
-            for (byte i = 0; i < (parts.Count-1); i++)
+            <string> parts = path.Split('/');
+            foreach (var part in parts)
             {
                 directory dr = Directory.Open(correctPath);
                 uint dCount = dr.GetDirectoryCount();
                 for (uint iDirectory = 0; iDirectory < dCount; iDirectory++)
                 {
                     string dPath = dr.GetDirectory(iDirectory);
-                    if ((correctPath + parts[i] + '/').ToLower() == dPath.ToLower())
+                    if ((correctPath + part + '/').ToLower() == dPath.ToLower())
                     {
                         correctPath = dPath;
                         break;

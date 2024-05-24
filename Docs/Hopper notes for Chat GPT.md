@@ -62,6 +62,19 @@ Hopper has several notable differences from other C-like languages such as C, C+
 17. **Piece Manipulation in Tetris:**
     - Centralize shape drawing, clearing, and placing logic in helper methods to ensure consistency and simplify updates.
 
+18. **Zero Initialization:**
+    - Variables in Hopper are always zero initialized. Examples:
+      - `string myString;` initializes `myString` to an empty string `""`.
+      - `uint a;` initializes `a` to `0`.
+      - `float bob;` initializes `bob` to `0.0`.
+      - `bool ok;` initializes `ok` to `false`.
+
+19. **Local Constants**:
+    - Hopper does not support local constants.
+
+20. **Type Safety**:
+    - Hopper is type-safe: `char` and `byte` are not the same type, and `uint` and `byte` are not the same; casting is required.
+
 ## Programs and Units
 
 ### Program Structure

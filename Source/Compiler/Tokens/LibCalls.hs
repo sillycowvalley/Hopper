@@ -95,6 +95,11 @@ unit LibCalls
         addEntry("SD.Mount");
         addEntry("SD.Eject");
         
+        addEntry("StorageMedia.Initialize");
+        addEntry("StorageMedia.Mount");
+        addEntry("StorageMedia.Unmount");
+        addEntry("StorageMedia.ReadSector");
+        addEntry("StorageMedia.WriteSector");
         
     }
     
