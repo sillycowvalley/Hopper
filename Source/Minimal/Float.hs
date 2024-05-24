@@ -648,27 +648,28 @@ unit Float
     
     string ToString(float value)
     {
+        bool isNegative = getSign(value) == 1;
         if (isZero(value))
         {
-            return "0";
+            return isNegative ? "-0" : "0";
         }
-        bool isNegative = getSign(value) == 1;
         if (isNegative)
         {
             value = negate(value);
         }
-        long integerPart = Float.ToLong(value);
-        float fractionalPart = Float.Sub(value, Long.ToFloat(integerPart));
-        string integerPartStr = integerPart.ToString();
+        
+        long   integerPart = Float.ToLong(value);
+        string result      = integerPart.ToString();
+        
+        float  fractionalPart    = Float.Sub(value, Long.ToFloat(integerPart));
         string fractionalPartStr = fractionToString(fractionalPart);
-    
-        // Remove trailing zeros from the fractional part
-        while (fractionalPartStr.Length > 1 && fractionalPartStr.EndsWith("0"))
+        
+        // If the fractional part is not empty, append it
+        if (fractionalPartStr != "0")
         {
-            fractionalPartStr = String.Substring(fractionalPartStr, 0, fractionalPartStr.Length - 1);
+            result += "." + fractionalPartStr;
         }
-    
-        string result = integerPartStr + "." + fractionalPartStr;
+        
         if (isNegative)
         {
             String.BuildFront(ref result, '-');
@@ -682,11 +683,17 @@ unit Float
         int precision = 6; // Number of digits after the decimal point
         while (precision > 0)
         {
-            fractionalPart = Mul(fractionalPart, Int.ToFloat(10));
+            fractionalPart = Mul(fractionalPart, 10.0);
             int digit = int(fractionalPart.ToLong());
             result += char(byte('0') + digit);
             fractionalPart = Sub(fractionalPart, Int.ToFloat(digit));
             precision--;
+        }
+        
+        // Remove trailing zeros
+        while (result.Length > 1 && result.EndsWith("0"))
+        {
+            result = String.Substring(result, 0, result.Length - 1);
         }
         return result;
     }

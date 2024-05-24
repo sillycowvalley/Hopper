@@ -83,7 +83,7 @@ unit Long
         ADC FSOURCEADDRESSH
         STA FSOURCEADDRESSH
         
-        LDY # siData
+        LDY # 0
         LDA [FSOURCEADDRESS], Y
         STA ZP.LNEXT0
         INY
