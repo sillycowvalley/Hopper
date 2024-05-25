@@ -217,7 +217,7 @@ unit StorageMedia
     }
 
     // Writes a directory entry to a given sector index and entry index
-    bool writeDirectoryEntry(directory parentDir, uint entryIndex, string name, bool isDirectory)
+    bool writeDirectoryEntry(Directory parentDir, uint entryIndex, string name, bool isDirectory)
     {
         byte[SectorSize] buffer;
         uint index = 0; // parentDir.index TODO

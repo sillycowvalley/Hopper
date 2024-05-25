@@ -2,6 +2,18 @@ unit File
 {
     uses "/Source/Library/StorageMedia"
     
+    record File
+    {
+        // private members
+        bool isValid;
+        bool isReading;
+        bool isWriting;
+        string path;
+        uint pos;        // 64K file size limit
+        string buffer;   // string object as buffer of bytes
+        uint size;       // 64K file size limit
+    }
+    
     // Check if a file exists at the given path.
     bool Exists(string path)
     {
@@ -44,68 +56,70 @@ unit File
     }
     
     // Check if the file object is valid.
-    bool IsValid(file this)
+    bool IsValid(File this)
     {
         // Stub implementation
         return false;
     }
     
     // Open a file at the given path.
-    file Open(string fullpath)
+    File Open(string fullpath)
     {
         // Stub implementation
-        return null;
+        File fileInstance
+        return fileInstance;
     }
     
     // Read a line from the file.
-    string ReadLine(file this)
+    string ReadLine(File this)
     {
         // Stub implementation
         return "";
     }
     
     // Read a byte from the file.
-    byte Read(file this)
+    byte Read(File this)
     {
         // Stub implementation
         return 0;
     }
     
     // Read a byte from the file at the specified seek position.
-    byte Read(file this, long seekPosition)
+    byte Read(File this, uint seekPosition)
     {
         // Stub implementation
         return 0;
     }
     
     // Read data from the file into a byte array.
-    uint Read(file this, byte[] data, uint bufferSize)
+    uint Read(File this, byte[] data, uint bufferSize)
     {
         // Stub implementation
         return 0;
     }
     
     // Create a new file at the given path.
-    file Create(string fullpath)
+    File Create(string fullpath)
     {
         // Stub implementation
-        return null;
+        File fileInstance;
+        return fileInstance;
     }
     
     // Append a byte to the file.
-    Append(file this, byte content)
+    Append(File this, byte content)
     {
         // Stub implementation
     }
     
     // Append a string to the file.
-    Append(file this, string content)
+    Append(File this, string content)
     {
         // Stub implementation
     }
     
     // Flush the file buffer to the storage media.
-    Flush(file this)
+    Flush(File this)
     {
         // Stub implementation
     }

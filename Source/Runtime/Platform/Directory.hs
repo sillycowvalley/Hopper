@@ -2,7 +2,7 @@ unit HRDirectory
 {
     // Directory memory map:
     //   0000 heap allocator size
-    //   0F   type = tFile
+    //   10   type = tDirectory
     //   00   GC reference count
     //   00   bool:   isValid
     //   0000 string: path

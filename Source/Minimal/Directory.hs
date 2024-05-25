@@ -2,6 +2,13 @@ unit Directory
 {
     uses "/Source/Library/StorageMedia"
     
+    record Directory
+    {
+        // private members
+        bool   isValid;
+        string path;
+    }
+    
     bool Exists(string path)
     {
         byte[StorageMedia.SectorSize] buffer;
@@ -11,7 +18,7 @@ unit Directory
         string dirName = Path.GetFileName(path);
 
         // Open the parent directory
-        directory parentDir = Directory.Open(parentDirName);
+        Directory parentDir = Directory.Open(parentDirName);
         if (!Directory.IsValid(parentDir))
         {
             return false;
@@ -40,8 +47,8 @@ unit Directory
         string dirName = Path.GetFileName(path);
 
         // Open the parent directory
-        directory parentDir = Directory.Open(parentDirName);
-        if (!Directory.IsValid(parentDir))
+        Directory parentDir = Directory.Open(parentDirName);
+        if (!IsValid(parentDir))
         {
             return false;
         }
@@ -87,7 +94,7 @@ unit Directory
         return false;
     }
 
-    directory Open(string path)
+    Directory Open(string path)
     {
         byte[StorageMedia.SectorSize] buffer;
 
@@ -95,13 +102,13 @@ unit Directory
         string parentDirName = Path.GetDirectoryName(path);
         string dirName = Path.GetFileName(path);
         
-        directory notValid; // uninitialized directory object
+        Directory result;
 
         // Open the parent directory
-        directory parentDir = Directory.Open(parentDirName);
+        Directory parentDir = Directory.Open(parentDirName);
         if (!Directory.IsValid(parentDir))
         {
-            return notValid;
+            return result;
         }
 
         // Scan the parent directory entries
@@ -112,23 +119,22 @@ unit Directory
             string existingDirName = Directory.GetDirectory(parentDir, i);
             if (existingDirName == dirName)
             {
-                // Open the directory (for now, returning the index as a simple handle)
-                directory dir;
-                //dir.index = i; // TODO : some kind of structure for directory
-                return dir;
+                // Open the directory (for now, returning the path as a simple handle)
+                result.isValid = true;
+                result.path = dirName;
+                break;
             }
         }
-        return notValid;
+        return result;
     }
 
-    bool IsValid(directory this)
+    bool IsValid(Directory this)
     {
         // Check if the directory handle is valid
-        //return this.index >= 0; TODO
-        return false;
+        return this.isValid;
     }
 
-    uint GetFileCount(directory this)
+    uint GetFileCount(Directory this)
     {
         byte[StorageMedia.SectorSize] buffer;
 
@@ -157,13 +163,13 @@ unit Directory
         Diagnostics.Die(0x0A); // not implemented
     }
 
-    string GetDirectory(directory this, uint index)
+    string GetDirectory(Directory this, uint index)
     {
         Diagnostics.Die(0x0A); // not implemented
         return "";
     }
 
-    string GetFile(directory this, uint index)
+    string GetFile(Directory this, uint index)
     {
         Diagnostics.Die(0x0A); // not implemented
         return "";
@@ -181,13 +187,13 @@ unit Directory
         return "";
     }
 
-    uint GetDirectoryCount(directory this, ref uint skipped)
+    uint GetDirectoryCount(Directory this, ref uint skipped)
     {
         Diagnostics.Die(0x0A); // not implemented
         return 0;
     }
 
-    uint GetFileCount(directory this, ref uint skipped)
+    uint GetFileCount(Directory this, ref uint skipped)
     {
         Diagnostics.Die(0x0A); // not implemented
         return 0;
