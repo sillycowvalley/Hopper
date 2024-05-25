@@ -1,5 +1,7 @@
 unit StorageMedia
 {
+    friend File, Directory;
+
     // Constant size of each sector in bytes.
     const uint SectorSize = 512; // Standard size for FAT12
 
@@ -28,14 +30,14 @@ unit StorageMedia
     // - index: The zero-based index of the sector to read.
     // - data: A reference to a byte array that will be filled with the sector data.
     // Returns: true if the read operation is successful, otherwise false.
-    bool ReadSector(uint index, ref byte[] data) library;
+    bool ReadSector(uint index, ref byte[SectorSize] data) library;
 
     // Write data to the specified sector index from the provided byte array.
     // Parameters:
     // - index: The zero-based index of the sector to write.
     // - data: A byte array containing the data to be written to the sector.
     // Returns: true if the write operation is successful, otherwise false.
-    bool WriteSector(uint index, byte[] data) library;
+    bool WriteSector(uint index, byte[SectorSize] data) library;
 
     // Formats the storage media by setting up the necessary file system structures.
     // This includes initializing the FAT table and root directory.
@@ -202,6 +204,44 @@ unit StorageMedia
             {
                 return false;
             }
+        }
+
+        return true;
+    }
+
+    // Allocates a new sector on the storage media and returns its index
+    uint allocateSector()
+    {
+        Diagnostics.Die(0x0A); // not implemented
+        return 0;
+    }
+
+    // Writes a directory entry to a given sector index and entry index
+    bool writeDirectoryEntry(directory parentDir, uint entryIndex, string name, bool isDirectory)
+    {
+        byte[SectorSize] buffer;
+        uint index = 0; // parentDir.index TODO
+        if (!StorageMedia.ReadSector(index, ref buffer))
+        {
+            return false;
+        }
+
+        // Calculate the starting position of the directory entry
+        uint entryStart = entryIndex * 32;
+
+        // Write the name
+        for (uint i = 0; i < name.Length; i++)
+        {
+            buffer[entryStart + i] = byte(name[i]);
+        }
+
+        // Set the attribute byte (0x10 for directory, 0x00 for file)
+        buffer[entryStart + 11] = isDirectory ? 0x10 : 0x00;
+
+        // Write the updated sector back to storage
+        if (!StorageMedia.WriteSector(index, buffer))
+        {
+            return false;
         }
 
         return true;

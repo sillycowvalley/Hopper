@@ -69,11 +69,28 @@ Hopper has several notable differences from other C-like languages such as C, C+
       - `float bob;` initializes `bob` to `0.0`.
       - `bool ok;` initializes `ok` to `false`.
 
-19. **Local Constants**:
+19. **Local Constants:**
     - Hopper does not support local constants.
 
-20. **Type Safety**:
+20. **Type Safety:**
     - Hopper is type-safe: `char` and `byte` are not the same type, and `uint` and `byte` are not the same; casting is required.
+
+21. **Diagnostics.Die Method:**
+    - Hopper provides a `Diagnostics.Die(byte reason)` method to handle catastrophic failures. The reasons include:
+      - 0x01 - list index out of range
+      - 0x02 - array index out of range
+      - 0x03 - no entry for key in dictionary
+      - 0x04 - division by zero attempted
+      - 0x05 - string index out of range
+      - 0x06 - call stack overflow
+      - 0x07 - argument stack overflow
+      - 0x08 - failed dynamic cast
+      - 0x09 - invalid variant type
+      - 0x0A - feature not implemented
+      - 0x0B - system failure (internal error)
+      - 0x0C - memory allocation failure
+      - 0x0D - numeric type out of range / overflow
+      - 0x0E - error returned from a failing child exe
 
 ## Programs and Units
 
@@ -250,7 +267,7 @@ ages["Bob"] = 25;
 
 ### Error Handling
 
-Hopper does not support exceptions. Errors result in runtime failures.
+Hopper does not support exceptions. Errors result in runtime failures, which can be handled using `Diagnostics.Die(byte reason)`.
 
 ### Input/Output
 
