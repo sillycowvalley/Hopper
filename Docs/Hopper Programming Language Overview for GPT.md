@@ -1,3 +1,5 @@
+Here is an improved and more detailed version of the Hopper Programming Language overview, which should help avoid mistakes in the future:
+
 ### Hopper Programming Language Overview for GPT
 
 #### Introduction
@@ -102,9 +104,59 @@
 - **Method Definition**: Code block with no 'system' keyword.
 - **Variable Declaration**: Explicit type name, `var` for loop iterators.
 - **Loop Statements**: Curly braces required.
-- **Switch Statements****: No fall-through, no `break` needed.
+- **Switch Statements**: No fall-through, no `break` needed.
 - **Expression vs Statement**: Cannot use expressions where statements are expected.
 - **Scope Restrictions**: Methods, functions, enumerations, and constants can only be declared at the unit/program level.
+
+### Best Practices and Common Mistakes
+- **Constants**: Declare constants at the program or unit level, not within functions.
+  ```hopper
+  // Correct
+  program Blink
+  {
+      const byte ledPin = 13;
+
+      Hopper()
+      {
+          // use ledPin
+      }
+  }
+
+  // Incorrect
+  program Blink
+  {
+      Hopper()
+      {
+          const byte ledPin = 13; // This is not allowed
+      }
+  }
+  ```
+- **Namespace Qualification**: Ensure functions and properties are used correctly within their context. If a `uses` statement is provided, members can be accessed directly without prefixing.
+  ```hopper
+  // Correct
+  program Example
+  {
+      uses "/Source/Library/Boards/PiPico"
+
+      Hopper()
+      {
+          LED = true;
+          Delay(500);
+      }
+  }
+
+  // Unnecessary qualification
+  program Example
+  {
+      uses "/Source/Library/Boards/PiPico"
+
+      Hopper()
+      {
+          GPIO.LED = true; // Unnecessary qualification
+          Time.Delay(500); // Unnecessary qualification
+      }
+  }
+  ```
 
 ### Minimal Runtime API
 
@@ -212,9 +264,8 @@
     myList.Append(1);
     myList.Append(2);
     myList.Append(3);
-   
 
- foreach (var element in myList)
+    foreach (var element in myList)
     {
         Write(element.ToString() + " ");
     }
