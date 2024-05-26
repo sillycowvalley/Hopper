@@ -20,6 +20,7 @@
 - **Type Safety**: Strict type distinctions.
 - **Diagnostics.Die Method**: Handles critical failures with specific error codes.
 - **Scope Restrictions**: Methods, functions, enumerations, and constant declarations can only be made at the unit/program level. Function-local declarations of these are not supported.
+- **Curly Braces Requirement**: All control structures must use curly braces, even for single statement blocks.
 
 ### Programs and Units
 - **Program**: Main entry point `Hopper` method.
