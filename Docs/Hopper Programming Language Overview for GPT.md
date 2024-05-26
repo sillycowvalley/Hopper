@@ -19,24 +19,18 @@
 - **Zero Initialization**: Variables zero-initialized.
 - **Type Safety**: Strict type distinctions.
 - **Diagnostics.Die Method**: Handles critical failures with specific error codes.
+- **Scope Restrictions**: Methods, functions, enumerations, and constant declarations can only be made at the unit/program level. Function-local declarations of these are not supported.
 
 ### Programs and Units
-- **Program**: Main entry point with `Setup` and `Hopper` methods.
+- **Program**: Main entry point `Hopper` method.
   ```hopper
   program Blink
   {
-      uses "/Source/Library/Boards/CytronMakerPiRP2040"
-      Setup() { MCU.PinMode(Board.BuiltInLED, MCU.PinModeOption.Output); }
+      uses "/Source/Library/Boards/PiPico"
+      
       Hopper()
       {
-          Blink.Setup();
-          loop
-          {
-              MCU.DigitalWrite(Board.BuiltInLED, true);
-              Time.Delay(1000);
-              MCU.DigitalWrite(Board.BuiltInLED, false);
-              Time.Delay(1000);
-          }
+          // code
       }
   }
   ```
@@ -107,8 +101,9 @@
 - **Method Definition**: Code block with no 'system' keyword.
 - **Variable Declaration**: Explicit type name, `var` for loop iterators.
 - **Loop Statements**: Curly braces required.
-- **Switch Statements**: No fall-through, no `break` needed.
+- **Switch Statements****: No fall-through, no `break` needed.
 - **Expression vs Statement**: Cannot use expressions where statements are expected.
+- **Scope Restrictions**: Methods, functions, enumerations, and constants can only be declared at the unit/program level.
 
 ### Minimal Runtime API
 
@@ -195,15 +190,48 @@
 
 #### GPIO Unit
 - Handles general-purpose input/output operations for microcontrollers.
-  - **LED**: Boolean property to control the built-in LED.
-    - **Set**: Configures the pin mode and writes the value to the LED pin.
-    - **Get**: Returns the current state of the LED.
-  - **LEDR**, **LEDG**, **LEDB**: Similar properties for red, green, and blue LEDs if available.
-  - **AnalogRead**: Reads the value from an analog pin (A0, A1, A2, A3, A4, A5).
+  - **Properties**:
+    - **LED**: Controls the built-in LED.
+      - **Set**: Configures pin mode and writes the value.
+      - **Get**: Returns the current state.
+    - **LEDR**, **LEDG**, **LEDB**: Control red, green, and blue LEDs if available.
+    - **A0**, **A1**, **A2**, **A3**, **A4**, **A5**: Reads the value from analog pins.
+  - **Usage**:
     ```hopper
     GPIO.LED = true;  // Turns on the built-in LED
     GPIO.LED = false; // Turns off the built-in LED
     GPIO.LED = !GPIO.LED; // Toggles the LED state
+    ```
+
+### Lists and Dictionaries
+- **Lists**: Anonymous types that can store a collection of elements.
+  - Example of list declaration and usage:
+    ```hopper
+    <uint> myList;
+    myList.Append(1);
+    myList.Append(2);
+    myList.Append(3);
+   
+
+ foreach (var element in myList)
+    {
+        Write(element.ToString() + " ");
+    }
+    ```
+- **Dictionaries**: Anonymous types that map keys to values.
+  - Example of dictionary declaration and usage:
+    ```hopper
+    <string, bool> stringCases;
+    stringCases["example"] = true;
+    
+    <uint, string> nameIndices;
+    nameIndices[1] = "First";
+    nameIndices[2] = "Second";
+    
+    if (stringCases["example"] == true)
+    {
+        WriteLn(nameIndices[1]);  // Outputs "First"
+    }
     ```
 
 ### Typical Board Unit
