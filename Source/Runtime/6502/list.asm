@@ -328,50 +328,36 @@ unit List
     {
         // takes this in IDX, item to append in TOP
         
-        // Debug: Starting Append
-        LDA # 'A'
-        Serial.WriteChar();
-    
         // Get the type of items in the list
         LDY # lsType
         LDA [IDX], Y
         STA LTYPE
-    
+        
         // Save the list pointer
         LDA IDXL
         PHA
         LDA IDXH
         PHA
-    
+        
         // Call createItem to create the new item
         //   itemData in TOP, etype in LTYPE
         //   returns pointer to the new item in IDX
         createItem();
-    
-        // Debug: Created item
-        LDA # 'B'
-        Serial.WriteChar();
-    
+        
         // Store the new item pointer in FITEM
         LDA IDXL
         STA FITEML
-        Serial.HexOut();
         LDA IDXH
         STA FITEMH
-        Serial.HexOut();
-    
+        
         // Restore the list pointer
         PLA
         STA IDXH
         PLA
         STA IDXL
-    
+        
         loop
         {
-            // Debug: Entering loop
-            LDA # 'C'
-            Serial.WriteChar();
-    
             // Get the first item pointer
             LDY # lsFirst
             LDA [IDX], Y
@@ -379,7 +365,7 @@ unit List
             INY
             LDA [IDX], Y
             STA ACCH
-    
+            
             // Check if the list is empty (first item pointer is 0)
             LDA ACCL
             ORA ACCH
@@ -392,13 +378,9 @@ unit List
                 INY
                 LDA FITEMH
                 STA [IDX], Y
-    
-                // Debug: List was empty, added first item
-                LDA # 'D'
-                Serial.WriteChar();
                 break;
             }
-    
+            
             // List is not empty, find the last item
             LDA ACCL
             STA LCURRENTL
@@ -407,13 +389,8 @@ unit List
             LDA LCURRENTL
             ORA LCURRENTH
             if (Z) { break; }
-    
             loop
             {
-                // Debug: Finding last item
-                LDA # 'E'
-                Serial.WriteChar();
-    
                 // Get the next item pointer
                 LDY # liNext
                 LDA [LCURRENT], Y
@@ -421,19 +398,19 @@ unit List
                 INY
                 LDA [LCURRENT], Y
                 STA LNEXTH
-    
+                
                 // Check if the next item pointer is 0
                 LDA LNEXTL
                 ORA LNEXTH
                 if (Z) { break; }
-    
+                
                 // Move to the next item
                 LDA LNEXTL
                 STA LCURRENTL
                 LDA LNEXTH
                 STA LCURRENTH
             }
-    
+            
             // Add the new item after the last item
             LDY # liNext
             LDA FITEML
@@ -441,17 +418,9 @@ unit List
             INY
             LDA FITEMH
             STA [LCURRENT], Y
-    
-            // Debug: Added item after the last item
-            LDA # 'F'
-            Serial.WriteChar();
-            LDA FITEML
-            Serial.HexOut();
-            LDA FITEMH
-            Serial.HexOut();
             break;
         } // loop
-    
+        
         // Update the element count
         LDY # lsCount
         LDA [IDX], Y
@@ -480,30 +449,26 @@ unit List
         INY
         LDA LCOUNTH
         STA [IDX], Y
-    
-        // Debug: Updated list metadata
-        LDA # 'G'
-        Serial.WriteChar();
     }
     
     clearAllItems()
     {
-        // List pointer in IDX, etype in LTYPE
+        // List item pointer in IDY, etype in LTYPE
         // Clears all items in the list
-    
+        
         loop
         {
             // Check if we reached the end of the list
-            LDA IDXL
-            ORA IDXH
+            LDA IDYL
+            ORA IDYH
             if (Z) { break; }
     
             // Get the next item pointer
             LDY # liNext
-            LDA [IDX], Y
+            LDA [IDY], Y
             STA LNEXTL
             INY
-            LDA [IDX], Y
+            LDA [IDY], Y
             STA LNEXTH
     
             // Clear the current item
@@ -511,17 +476,28 @@ unit List
             IsReferenceType();
             if (C)
             {
-                // Reference type, release the reference
-                LDA IDXL
-                LDA IDXH
-                GC.Release();
+                // Reference type, release the reference (IDX)
+                LDY # liData
+                LDA [IDY], Y
+                STA IDXL
+                INY
+                LDA [IDY], Y
+                STA IDXH
+                GC.Release(); // IDX
             }
-    
+            
+            // free the item
+            LDA IDYL
+            STA IDXL
+            LDA IDYH
+            STA IDXH
+            Free.free(); // IDX
+            
             // Move to the next item
             LDA LNEXTL
-            STA IDXL
+            STA IDYL
             LDA LNEXTH
-            STA IDXH
+            STA IDYH
         }
     }
     
@@ -536,7 +512,7 @@ unit List
     {
         // this in IDX
         // Clears all items in the list
-    
+        
         // Get the type of items in the list
         LDY # lsType
         LDA [IDX], Y
@@ -554,6 +530,11 @@ unit List
         LDA LCURRENTL
         ORA LCURRENTH
         if (Z) { return; }
+        
+        LDA IDXL
+        PHA
+        LDA IDXH
+        PHA
     
         // Clear all items
         LDA LCURRENTL
@@ -574,6 +555,11 @@ unit List
         STA [IDX], Y
         INY
         STA [IDX], Y
+        
+        PLA
+        STA IDXH
+        PLA
+        STA IDXL
     }
         
     Insert()
@@ -587,12 +573,28 @@ unit List
         // Get the 'this' pointer and index from the stack
         Stacks.PopIDY(); // index in IDY
         Stacks.PopIDX(); // 'this' pointer in IDX
-        
+        // Debug: Starting GetItem
+        LDA # 0x0A // NewLine
+        Serial.WriteChar();
+        LDA # 'I'
+        Serial.WriteChar();
+        LDA IDXL
+        Serial.HexOut();
+        LDA IDXH
+        Serial.HexOut();
+        LDA IDYL
+        Serial.HexOut();
+        LDA IDYH
+        Serial.HexOut();
         // Get the item type
         LDY # lsType
         LDA [IDX], Y
         STA LTYPE
-        
+        // Debug: Item type
+        LDA # 'T'
+        Serial.WriteChar();
+        LDA LTYPE
+        Serial.HexOut();
         // Get the count of items in the list
         LDY # lsCount
         LDA [IDX], Y
@@ -600,7 +602,13 @@ unit List
         INY
         LDA [IDX], Y
         STA LCOUNTH
-        
+        // Debug: Count of items
+        LDA # 'C'
+        Serial.WriteChar();
+        LDA LCOUNTL
+        Serial.HexOut();
+        LDA LCOUNTH
+        Serial.HexOut();
         // Check if the index is out of range
         LDA IDYL
         CMP LCOUNTL
@@ -612,29 +620,34 @@ unit List
         if (C)
         {
             // Error: index out of range
+            LDA # 'E'
+            Serial.WriteChar();
             LDA # 0x01
             BRK
         }
-        
         // Initialize iteration variables
         LDY #0
         STY FITEML
         STY FITEMH
-        
         LDY # lsFirst
         LDA [IDX], Y
         STA LCURRENTL
         INY
         LDA [IDX], Y
         STA LCURRENTH
-        
+        // Debug: First item pointer
+        LDA # 'F'
+        Serial.WriteChar();
+        LDA LCURRENTL
+        Serial.HexOut();
+        LDA LCURRENTH
+        Serial.HexOut();
         LDY # lsRecent
         LDA [IDX], Y
         STA LPREVIOUSL
         INY
         LDA [IDX], Y
         STA LPREVIOUSH
-        
         // If pRecent is not 0, use it to start the search
         LDA LPREVIOUSL
         ORA LPREVIOUSH
@@ -657,7 +670,6 @@ unit List
                     INY
                     LDA [IDX], Y
                     STA FITEMH
-                    
                     LDY # lsRecent
                     LDA [IDX], Y
                     STA LCURRENTL
@@ -667,7 +679,6 @@ unit List
                 }
             }
         }
-        
         loop
         {
             LDA IDYL
@@ -678,22 +689,21 @@ unit List
                 CMP FITEMH
                 if (Z) { break; }
             }
-            
             // Move to the next item
             LDY # liNext
             LDA [LCURRENT], Y
-            STA LCURRENTL
+            PHA
             INY
             LDA [LCURRENT], Y
             STA LCURRENTH
-            
+            PLA
+            STA LCURRENTL
             INC FITEML
             if (Z)
             {
                INC FITEMH
             }
         }
-        
         // Get the item data pointer
         LDY # liData
         LDA [LCURRENT], Y
@@ -701,7 +711,6 @@ unit List
         INY
         LDA [LCURRENT], Y
         STA FITEMH
-        
         // Check if the item is a Variant and call Variant.getValue if necessary
         LDA LTYPE
         CMP # Types.Variant
@@ -711,13 +720,11 @@ unit List
             PHA
             LDA IDXH
             PHA
-            
             // pData in FITEM
             LDA FITEML
             STA TOPL
             LDA FITEMH
             STA TOPH
-            
             // Variant.getValue takes pData in TOP
             //    returns value in IDX and updates LITYPE
             Variant.getValue();
@@ -725,17 +732,14 @@ unit List
             STA FITEML
             LDA IDXH
             STA FITEMH
-            
             // Update the type to the type stored in the variant
             LDA LITYPE
             STA LTYPE
-            
             PLA
             STA IDXH
             PLA
             STA IDXL
         }
-        
         // Update recent pointers
         LDY # lsRecent
         LDA LCURRENTL
@@ -749,9 +753,10 @@ unit List
         INY
         LDA IDYH
         STA [IDX], Y
-        
+        // Debug: Updated recent pointers
+        LDA # 'U'
+        Serial.WriteChar();
         GC.Release(); // Release the 'this' pointer in IDX
-        
         // Return item data pointer
         LDA FITEML
         STA NEXTL
@@ -761,8 +766,6 @@ unit List
         STA NEXTT
         Stacks.PushNext();
     }
-    
-    
     
     GetItemAsVariant()
     {
