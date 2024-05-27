@@ -201,120 +201,6 @@ unit List
         Stacks.PushNext(); // Push the count value onto the stack
     }
     
-    createItem()
-    {
-        // itemData in TOP, etype in LTYPE
-        // returns pointer to the new item in IDX
-        
-        // Initialize pData with itemData
-        LDA TOPL
-        STA FITEML
-        LDA TOPH
-        STA FITEMH
-    
-        // Check if etype is a reference type
-        LDA LTYPE
-        IsReferenceType();
-        if (NC)
-        {
-            // etype is a value type
-            // proceed with itemData as is
-            // allocate item memory
-            LDA #4
-            STA ACCL
-            LDA #0
-            STA ACCH
-            Allocate.allocate(); // size is in ACC, return address in IDX
-    
-            // Write pData to liData
-            LDY #0
-            LDA FITEML
-            STA [IDX], Y
-            INY
-            LDA FITEMH
-            STA [IDX], Y
-            // Write 0 to liNext
-            INY
-            LDA #0
-            STA [IDX], Y
-            INY
-            STA [IDX], Y
-            return;
-        }
-        
-        // If etype is a reference type, check if itype is also a reference type
-        LDY # 0          // first byte of any reference type is its type
-        LDA [TOP], Y
-        IsReferenceType();
-        if (NC)
-        {
-            // etype is reference type and itype is value type, create a value variant
-            LDA TOPL
-            STA ACCL
-            LDA TOPH
-            STA ACCH
-            LDA LTYPE
-            
-            // value in TOP, vtype in LTYPE
-            // Returns address in IDX
-            CreateValueVariant();
-    
-            // move the new item pointer to IDY
-            LDA IDXL
-            STA IDYL
-            LDA IDXH
-            STA IDYH
-        }
-        else
-        {        
-            // Both are reference types, clone itemData
-            LDA TOPL
-            PHA
-            STA IDYL
-            
-            LDA TOPH
-            PHA
-            STA IDYH
-            
-            // type is in A
-            // reference type to clone is at IDY, resulting clone in IDX
-            GC.Clone();
-            
-            // move the new item pointer to IDY
-            LDA IDXL
-            STA IDYL
-            LDA IDXH
-            STA IDYH
-            
-            PLA
-            STA IDXH
-            PLA
-            STA IDXL
-            GC.Release(); // argument was reference type, needs Release
-        }
-        
-        // Allocate memory for the ListItem (4 bytes)
-        LDA #4
-        STA ACCL
-        LDA #0
-        STA ACCH
-        Allocate.allocate(); // size is in ACC, return address in IDX
-        
-        // Write pData to liData
-        LDY #0
-        LDA IDYL
-        STA [IDX], Y
-        INY
-        LDA IDYH
-        STA [IDX], Y
-        // Write 0 to liNext
-        INY
-        LDA #0
-        STA [IDX], Y
-        INY
-        STA [IDX], Y
-    }
-    
     Append()
     {
         // Pop item and list from the stack
@@ -324,132 +210,6 @@ unit List
         GC.Release(); // release list ptr IDX
     }
     
-    append()
-    {
-        // takes this in IDX, item to append in TOP
-        
-        // Get the type of items in the list
-        LDY # lsType
-        LDA [IDX], Y
-        STA LTYPE
-        
-        // Save the list pointer
-        LDA IDXL
-        PHA
-        LDA IDXH
-        PHA
-        
-        // Call createItem to create the new item
-        //   itemData in TOP, etype in LTYPE
-        //   returns pointer to the new item in IDX
-        createItem();
-        
-        // Store the new item pointer in FITEM
-        LDA IDXL
-        STA FITEML
-        LDA IDXH
-        STA FITEMH
-        
-        // Restore the list pointer
-        PLA
-        STA IDXH
-        PLA
-        STA IDXL
-        
-        loop
-        {
-            // Get the first item pointer
-            LDY # lsFirst
-            LDA [IDX], Y
-            STA ACCL
-            INY
-            LDA [IDX], Y
-            STA ACCH
-            
-            // Check if the list is empty (first item pointer is 0)
-            LDA ACCL
-            ORA ACCH
-            if (Z)
-            {
-                // List is empty, add the new item as the first item
-                LDY # lsFirst
-                LDA FITEML
-                STA [IDX], Y
-                INY
-                LDA FITEMH
-                STA [IDX], Y
-                break;
-            }
-            
-            // List is not empty, find the last item
-            LDA ACCL
-            STA LCURRENTL
-            LDA ACCH
-            STA LCURRENTH
-            LDA LCURRENTL
-            ORA LCURRENTH
-            if (Z) { break; }
-            loop
-            {
-                // Get the next item pointer
-                LDY # liNext
-                LDA [LCURRENT], Y
-                STA LNEXTL
-                INY
-                LDA [LCURRENT], Y
-                STA LNEXTH
-                
-                // Check if the next item pointer is 0
-                LDA LNEXTL
-                ORA LNEXTH
-                if (Z) { break; }
-                
-                // Move to the next item
-                LDA LNEXTL
-                STA LCURRENTL
-                LDA LNEXTH
-                STA LCURRENTH
-            }
-            
-            // Add the new item after the last item
-            LDY # liNext
-            LDA FITEML
-            STA [LCURRENT], Y
-            INY
-            LDA FITEMH
-            STA [LCURRENT], Y
-            break;
-        } // loop
-        
-        // Update the element count
-        LDY # lsCount
-        LDA [IDX], Y
-        STA LCOUNTL
-        CLC
-        ADC #1
-        STA [IDX], Y
-        INY
-        LDA [IDX], Y
-        STA LCOUNTH
-        ADC #0
-        STA [IDX], Y
-        
-        // Update pRecent to be the last item added
-        LDY # lsRecent
-        LDA FITEML
-        STA [IDX], Y
-        INY
-        LDA FITEMH
-        STA [IDX], Y
-        
-        // update iRecent to be current element count before it was incremented (count-1) 
-        INY
-        LDA LCOUNTL
-        STA [IDX], Y
-        INY
-        LDA LCOUNTH
-        STA [IDX], Y
-    }
     
     clearAllItems()
     {
@@ -542,6 +302,11 @@ unit List
         LDA LCURRENTH
         STA IDXH
         clearAllItems();
+        
+        PLA
+        STA IDXH
+        PLA
+        STA IDXL
     
         // Reset list metadata
         LDY # lsCount
@@ -555,11 +320,6 @@ unit List
         STA [IDX], Y
         INY
         STA [IDX], Y
-        
-        PLA
-        STA IDXH
-        PLA
-        STA IDXL
     }
         
     Insert()
@@ -754,5 +514,254 @@ unit List
         TXA // LibCall not Implemented!
         Diagnostics.Die();
     }
+    
+    append()
+    {
+        // takes this in IDX, item to append in TOP
+    
+        // Get the type of items in the list
+        LDY # lsType
+        LDA [IDX], Y
+        STA LTYPE
+        
+        // Save the list pointer
+        LDA IDXL
+        PHA
+        LDA IDXH
+        PHA
+        
+        // Call createItem to create the new item
+        //   itemData in TOP, etype in LTYPE
+        //   returns pointer to the new item in FITEM
+        createItem();
+        
+        // Restore the list pointer
+        PLA
+        STA IDXH
+        PLA
+        STA IDXL
+        
+        loop
+        {
+            // Get the first item pointer
+            LDY # lsFirst
+            LDA [IDX], Y
+            STA ACCL
+            INY
+            LDA [IDX], Y
+            STA ACCH
+            
+            // Check if the list is empty (first item pointer is 0)
+            LDA ACCL
+            ORA ACCH
+            if (Z)
+            {
+                // List is empty, add the new item as the first item
+                LDY # lsFirst
+                LDA FITEML
+                STA [IDX], Y
+                INY
+                LDA FITEMH
+                STA [IDX], Y
+                
+                break;
+            }
+            
+            // List is not empty, find the last item
+            LDA ACCL
+            STA LCURRENTL
+            LDA ACCH
+            STA LCURRENTH
+            LDA LCURRENTL
+            ORA LCURRENTH
+            if (Z) { break; }
+            loop
+            {
+                // Get the next item pointer
+                LDY # liNext
+                LDA [LCURRENT], Y
+                STA LNEXTL
+                INY
+                LDA [LCURRENT], Y
+                STA LNEXTH
+                
+                // Check if the next item pointer is 0
+                LDA LNEXTL
+                ORA LNEXTH
+                if (Z) { break; }
+                
+                // Move to the next item
+                LDA LNEXTL
+                STA LCURRENTL
+                LDA LNEXTH
+                STA LCURRENTH
+            }
+            
+            // Add the new item after the last item
+            LDY # liNext
+            LDA FITEML
+            STA [LCURRENT], Y
+            INY
+            LDA FITEMH
+            STA [LCURRENT], Y
+            
+            break;
+        } // loop
+        
+        // Update the element count
+        LDY # lsCount
+        LDA [IDX], Y
+        STA LCOUNTL
+        CLC
+        ADC #1
+        STA [IDX], Y
+        INY
+        LDA [IDX], Y
+        STA LCOUNTH
+        ADC #0
+        STA [IDX], Y
+        
+        // Update pRecent to be the last item added
+        LDY # lsRecent
+        LDA FITEML
+        STA [IDX], Y
+        INY
+        LDA FITEMH
+        STA [IDX], Y
+        
+        // update iRecent to be current element count before it was incremented (count-1) 
+        INY
+        LDA LCOUNTL
+        STA [IDX], Y
+        INY
+        LDA LCOUNTH
+        STA [IDX], Y
+        
+    }
+    
+    createItem()
+    {
+        // itemData in TOP, etype in LTYPE
+        // returns pointer to the new item in FITEM
+        
+           // Initialize pData with itemData
+        LDA TOPL
+        STA FITEML
+        LDA TOPH
+        STA FITEMH
+        
+        // Check if etype is a reference type
+        LDA LTYPE
+        IsReferenceType();
+        if (NC)
+        {
+            // etype is a value type
+            // proceed with itemData as is
+            // allocate item memory
+            LDA #4
+            STA ACCL
+            LDA #0
+            STA ACCH
+            Allocate.allocate(); // size is in ACC, return address in IDX
+        
+            // Write pData to liData
+            LDY #0
+            LDA FITEML
+            STA [IDX], Y
+            INY
+            LDA FITEMH
+            STA [IDX], Y
+            // Write 0 to liNext
+            INY
+            LDA #0
+            STA [IDX], Y
+            INY
+            STA [IDX], Y
+            
+            LDA IDXL
+            STA FITEML
+            LDA IDXH
+            STA FITEMH
+            return;
+        }
+        
+        // If etype is a reference type, check if itype is also a reference type
+        LDY # 0          // first byte of any reference type is its type
+        LDA [TOP], Y
+        IsReferenceType();
+        if (NC)
+        {
+            // etype is reference type and itype is value type, create a value variant
+            LDA TOPL
+            STA ACCL
+            LDA TOPH
+            STA ACCH
+            LDA LTYPE
+            
+            // value in TOP, vtype in LTYPE
+            // Returns address in IDX
+            CreateValueVariant();
+        
+            // move the new item pointer to FITEM
+            LDA IDXL
+            STA FITEML
+            LDA IDXH
+            STA FITEMH
+        }
+        else
+        {    
+            // Both are reference types, clone itemData
+            LDA TOPL
+            PHA
+            STA IDYL
+            
+            LDA TOPH
+            PHA
+            STA IDYH
+            
+            // type is in A
+            LDA [TOP], Y
+            // reference type to clone is at IDY, resulting clone in IDX
+            GC.Clone();
+            
+            // move the new item pointer to FITEM
+            LDA IDXL
+            STA FITEML
+            LDA IDXH
+            STA FITEMH
+            
+            PLA
+            STA IDXH
+            PLA
+            STA IDXL
+            GC.Release(); // argument was reference type, needs Release
+        }
+        
+        // Allocate memory for the ListItem (4 bytes)
+        LDA #4
+        STA ACCL
+        LDA #0
+        STA ACCH
+        Allocate.allocate(); // size is in ACC, return address in IDX, munts IDY
+        
+        // Write pData to liData
+        LDY # liData
+        LDA FITEML
+        STA [IDX], Y
+        INY
+        LDA FITEMH
+        STA [IDX], Y
+        
+        // Write 0 to liNext
+        LDY # liNext
+        LDA #0
+        STA [IDX], Y
+        INY
+        STA [IDX], Y
+        
+        LDA IDXL
+        STA FITEML
+        LDA IDXH
+        STA FITEMH
+    }
 }
-
