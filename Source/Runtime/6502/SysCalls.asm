@@ -2,8 +2,15 @@ unit SysCall
 {
     uses "6502/Array"
     uses "6502/String"
+#ifdef LISTS    
+    uses "6502/List"
+#endif
+#ifdef LONGS    
     uses "6502/Long"
+#endif
+#ifdef FLOATS
     uses "6502/Float"
+#endif
     uses "6502/Time"
     
     enum SysCalls
@@ -53,6 +60,17 @@ unit SysCall
         FloatGetByte          = 0x24,
         
         TimeMillis            = 0x25,
+        
+        ListNew               = 0xF4,
+        ListCountGet          = 0xF5,
+        ListAppend            = 0xF6,
+        ListInsert            = 0xF7,
+        ListGetItem           = 0xF8,
+        ListGetItemAsVariant  = 0xF9,
+        ListSetItem           = 0xFA,
+        ListClear             = 0xFB,
+        ListRemove            = 0xFC,
+        ListContains          = 0xFD,
     }
     
     missing()
@@ -346,6 +364,88 @@ unit SysCall
                 missing();
 #endif                
             }
+            
+            case SysCalls.ListNew:
+            {
+#ifdef LISTS
+                List.New();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.ListCountGet:
+            {
+#ifdef LISTS
+                List.CountGet();
+#else
+                missing();
+#endif                
+            } 
+            case SysCalls.ListAppend:
+            {
+#ifdef LISTS
+                List.Append();
+#else
+                missing();
+#endif                
+            }  
+            case SysCalls.ListInsert:
+            {
+#ifdef LISTS
+                List.Insert();
+#else
+                missing();
+#endif                
+            } 
+            case SysCalls.ListGetItem:
+            {
+#ifdef LISTS
+                List.GetItem();
+#else
+                missing();
+#endif                
+            } 
+            case SysCalls.ListGetItemAsVariant:
+            {
+#ifdef LISTS
+                List.GetItemAsVariant();
+#else
+                missing();
+#endif                
+            } 
+            case SysCalls.ListSetItem:
+            {
+#ifdef LISTS
+                List.SetItem();
+#else
+                missing();
+#endif                
+            }  
+            case SysCalls.ListClear:
+            {
+#ifdef LISTS
+                List.Clear();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.ListRemove:
+            {
+#ifdef LISTS
+                List.Remove();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.ListContains:
+            {
+#ifdef LISTS
+                List.Contains();
+#else
+                missing();
+#endif                
+            }
+            
             
             default:
             {

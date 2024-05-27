@@ -5,7 +5,7 @@ unit Time
 #ifdef W65C22_VIA
     uses "/Source/Runtime/6502/Devices/W65C22"
     uses "/Source/Runtime/6502/Long"
-    uses "/Source/Runtime/6502/Type"
+    uses "/Source/Runtime/6502/Types"
 #endif    
     
     

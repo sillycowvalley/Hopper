@@ -25,4 +25,21 @@ unit Type
         Directory  = 0x16,
         List       = 0x19,
     }
+    
+    IsReferenceType()
+    {
+        // Assumes type is in A
+        // Returns C=1 if type is a reference type, C=0 otherwise
+    
+        CMP # Types.ReferenceType
+        if (C)
+        {
+            // If type is >= ReferenceType, it's a reference type
+            SEC
+            return;
+        }
+    
+        CLC
+    }
+    
 }

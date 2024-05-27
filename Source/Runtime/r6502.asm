@@ -11,8 +11,9 @@ program R6502
     #define PACKED_INSTRUCTIONS
     #define JIX_INSTRUCTIONS
     
-    #define LONGS
-    #define FLOATS
+    //#define LONGS                // 236 bytes
+    //#define FLOATS               //  28 bytes (requires LONGS)
+    #define LISTS
     
     // Speed vs Size:
     #define FASTINTS

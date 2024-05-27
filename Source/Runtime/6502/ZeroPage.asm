@@ -227,7 +227,7 @@ unit ZP
     const byte LRESULT7 = U7;
     
     // used by lists:
-   const byte LTYPE    = F3;
+    const byte LTYPE    = F3;
 
     const byte LLENGTH  = F4;
     const byte LLENGTHL = F4;
@@ -254,6 +254,8 @@ unit ZP
     const byte LCOUNT  = F14;
     const byte LCOUNTL = F14;
     const byte LCOUNTH = F15;
+    
+    const byte LITYPE  = F14;
 
     // used by arrays
     const byte ACARRY   = F14;

@@ -2,7 +2,7 @@ unit Allocate
 {
     uses "ZeroPage"
     
-    friend Memory, GC;
+    friend Memory, GC, List;
     
 
     const byte maBEST  = M0;

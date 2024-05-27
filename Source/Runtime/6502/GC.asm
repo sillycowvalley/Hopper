@@ -2,8 +2,7 @@ unit GC
 {
     uses "ZeroPage"
     uses "Memory"
-    uses "Type"
-    
+    uses "Types"
     
     Create()
     {
@@ -56,7 +55,6 @@ unit GC
         STA IDYH
         PLA
         STA IDYL
-        
     }
     
     AddReference()
@@ -80,6 +78,7 @@ unit GC
         PLA TAY
 #endif
     }
+
     Release()
     {
 #ifdef CPU_65C02S
@@ -106,7 +105,6 @@ unit GC
         STA [IDX], Y
         
         // if zero, free
-        //CMP #0
         if (Z)
         {       
 #ifdef CPU_65C02S
@@ -124,6 +122,11 @@ unit GC
                 {
                     Free.free();        
                 }
+                case Types.List:
+                {
+                    // Call List.clear method
+                    List.clear();
+                }
                 default:
                 {
 #ifdef CHECKED
@@ -139,6 +142,7 @@ unit GC
         PLA TAY
 #endif
     }
+
     Clone()
     {
         // type is in A
@@ -150,8 +154,7 @@ unit GC
         TYA PHA
 #endif
         
-        // Clone.List and Clone.Dictionary can go recursive:       preserve lCURRENT, lNEXT, IDY
-        /*
+        // Preserve lCURRENT, lNEXT, IDY
         LDA LCURRENTL
         PHA
         LDA LCURRENTH
@@ -160,7 +163,6 @@ unit GC
         PHA
         LDA LNEXTH
         PHA
-        */
         LDA IDYL
         PHA
         LDA IDYH
@@ -175,6 +177,10 @@ unit GC
             {
                 genericClone();
             }
+            case Types.List:
+            {
+                List.clone();
+            }
             default:
             {
 #ifdef CHECKED
@@ -182,11 +188,11 @@ unit GC
 #endif
             }
         }
+
         PLA
         STA IDYH
         PLA
         STA IDYL
-        /*
         PLA
         STA LNEXTH
         PLA
@@ -195,24 +201,17 @@ unit GC
         STA LCURRENTH
         PLA
         STA LCURRENTL
-        */
 #ifdef CPU_65C02S
         PLY
 #else        
         PLA TAY
 #endif
     }
-    
+
     // IDY -> source, returns cloned object in IDX
     genericClone()
     {
-        /*
-        LDA FSOURCEADDRESSH
-        PHA
-        LDA FSOURCEADDRESSL
-        PHA
-        */
-        // get the memory block size  
+        // get the memory block size
         
         // IDX = IDY - 2
         SEC
@@ -283,12 +282,7 @@ unit GC
         INY 
         TYA // 1 -> A
         STA [IDX], Y
-        
-        /*
-        PLA
-        STA FSOURCEADDRESSL
-        PLA
-        STA FSOURCEADDRESSH
-        */
     }
+
 }
+
