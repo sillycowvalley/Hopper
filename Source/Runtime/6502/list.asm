@@ -573,28 +573,11 @@ unit List
         // Get the 'this' pointer and index from the stack
         Stacks.PopIDY(); // index in IDY
         Stacks.PopIDX(); // 'this' pointer in IDX
-        // Debug: Starting GetItem
-        LDA # 0x0A // NewLine
-        Serial.WriteChar();
-        LDA # 'I'
-        Serial.WriteChar();
-        LDA IDXL
-        Serial.HexOut();
-        LDA IDXH
-        Serial.HexOut();
-        LDA IDYL
-        Serial.HexOut();
-        LDA IDYH
-        Serial.HexOut();
+        
         // Get the item type
         LDY # lsType
         LDA [IDX], Y
         STA LTYPE
-        // Debug: Item type
-        LDA # 'T'
-        Serial.WriteChar();
-        LDA LTYPE
-        Serial.HexOut();
         // Get the count of items in the list
         LDY # lsCount
         LDA [IDX], Y
@@ -602,13 +585,6 @@ unit List
         INY
         LDA [IDX], Y
         STA LCOUNTH
-        // Debug: Count of items
-        LDA # 'C'
-        Serial.WriteChar();
-        LDA LCOUNTL
-        Serial.HexOut();
-        LDA LCOUNTH
-        Serial.HexOut();
         // Check if the index is out of range
         LDA IDYL
         CMP LCOUNTL
@@ -620,8 +596,6 @@ unit List
         if (C)
         {
             // Error: index out of range
-            LDA # 'E'
-            Serial.WriteChar();
             LDA # 0x01
             BRK
         }
@@ -635,13 +609,6 @@ unit List
         INY
         LDA [IDX], Y
         STA LCURRENTH
-        // Debug: First item pointer
-        LDA # 'F'
-        Serial.WriteChar();
-        LDA LCURRENTL
-        Serial.HexOut();
-        LDA LCURRENTH
-        Serial.HexOut();
         LDY # lsRecent
         LDA [IDX], Y
         STA LPREVIOUSL
@@ -753,9 +720,6 @@ unit List
         INY
         LDA IDYH
         STA [IDX], Y
-        // Debug: Updated recent pointers
-        LDA # 'U'
-        Serial.WriteChar();
         GC.Release(); // Release the 'this' pointer in IDX
         // Return item data pointer
         LDA FITEML
