@@ -71,7 +71,7 @@ unit Free
             if (Z)
             {
                 // this is a bug (to try to free nullptr)
-                LDA 0x0B BRK
+                LDA # 0x0B Diagnostics.die();
             }
         }
 #endif

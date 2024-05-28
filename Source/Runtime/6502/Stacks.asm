@@ -82,6 +82,16 @@ unit Stacks
         STA Address.ValueStackMSB, Y
         INC ZP.SP
     }
+    PushIDX() // type is in A
+    {
+        LDY ZP.SP
+        STA Address.TypeStackLSB, Y
+        LDA ZP.IDXL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.IDXH
+        STA Address.ValueStackMSB, Y
+        INC ZP.SP
+    }
     PopNext()
     {
         DEC ZP.SP

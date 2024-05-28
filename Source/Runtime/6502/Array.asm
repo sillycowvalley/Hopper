@@ -164,7 +164,8 @@ unit Array
         CMP # Types.Byte
         if (NZ)
         {
-            LDA 0x0A BRK // only Types.Byte supported for Array.NewFromConstant
+            LDA # 0x0A 
+            Diagnostics.die(); // only Types.Byte supported for Array.NewFromConstant
         }
         
         // constant data address -> FSOURCEADDRESSL

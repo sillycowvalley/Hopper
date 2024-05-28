@@ -1,10 +1,41 @@
 unit Diagnostics
 {
+    friend GC, Free, Variant, String, Array, List;
+    
+    die()
+    {
+#ifdef CHECKED
+        PHA
+        LDA # 0x0A
+        Serial.WriteChar();
+        LDA # 'D'
+        Serial.WriteChar();
+        LDA # 'I'
+        Serial.WriteChar();
+        LDA # 'E'
+        Serial.WriteChar();
+        LDA # ':'
+        Serial.WriteChar();
+        
+        LDA ZP.PCH
+        Serial.HexOut();
+        LDA ZP.PCL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        
+        PLA
+        Serial.HexOut();
+        loop { }
+#endif        
+        INC ZP.SerialBreakFlag // hardware <ctrl><C>
+        BRK
+    }
     Die()
     {
         Stacks.PopA();         // user error from Hopper in A
-        INC ZP.SerialBreakFlag // hardware <ctrl><C>
-        BRK
+        die();   
     }
     
     // used by 'F' command

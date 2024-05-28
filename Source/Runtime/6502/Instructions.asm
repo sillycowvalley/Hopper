@@ -1610,8 +1610,8 @@ unit Instruction
         // default: simply add PC to tableSize
         jixDefault();
 #else
-        LDA 0x0A // no JIX instructions
-        Diagnostics.Die();
+        LDA # 0x0A // no JIX instructions
+        Diagnostics.die();
 #endif
     }
     /*
@@ -1640,7 +1640,7 @@ unit Instruction
         jixbDefault();
 #else
         LDA 0x0A // no JIX instructions
-        Diagnostics.Die();
+        Diagnostics.die();
 #endif
     }
     */

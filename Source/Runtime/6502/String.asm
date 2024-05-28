@@ -385,7 +385,7 @@ unit String
                 return;
             }
         }
-        LDA 0x0B BRK
+        LDA # 0x0B Diagnostics.die();
     }
     LengthGet()
     {

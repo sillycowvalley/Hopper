@@ -94,7 +94,7 @@ unit GC
 #ifdef CHECKED
         if (Z)
         {
-            LDA 0x0B BRK // reference count already zero?
+            LDA # 0x0B Diagnostics.die(); // reference count already zero?
         }  
 #endif        
         SEC
@@ -116,18 +116,13 @@ unit GC
                 case Types.Array:
                 case Types.Long:
                 case Types.Float:
+                case Types.Variant:
                 {
                     // no reference members to clear
                 }
                 case Types.List:
                 {
                     List.clear();
-                }
-                case Types.Variant:
-                {
-#ifdef CHECKED                    
-                    Variant.clear();
-#endif
                 }
                 default:
                 {
