@@ -72,12 +72,11 @@ program R6502
         Serial.ISR();
 #ifdef W65C22_VIA
         W65C22.ISR();
-#endif        
+#endif  
     }
     NMI()
     {
         INC ZP.SerialBreakFlag // hardware <ctrl><C>
-        RTI
     }
     
     breakpointCommand()

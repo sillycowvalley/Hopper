@@ -22,18 +22,15 @@ unit GC
         PHA
         LDA ACCH
         PHA
-        
+
+        // add a byte for type and a byte for reference count        
         CLC
-        LDA FSIZEL  // LSB
-        ADC # 0x05    // 4 + 1, ok do that, but also round up to the nearest 4 byte boundary to reduce fragmentation
+        LDA FSIZEL
+        ADC # 2
         STA ACCL
-        LDA FSIZEH  // MSB
+        LDA FSIZEH
         ADC # 0
         STA ACCH
-        
-        LDA ACCL
-        AND # 0xFC
-        STA ACCL
         
         // size is in ACC
         // return address in IDX
@@ -120,12 +117,17 @@ unit GC
                 case Types.Long:
                 case Types.Float:
                 {
-                    Free.free();        
+                    // no reference members to clear
                 }
                 case Types.List:
                 {
-                    // Call List.clear method
                     List.clear();
+                }
+                case Types.Variant:
+                {
+#ifdef CHECKED                    
+                    Variant.clear();
+#endif
                 }
                 default:
                 {
@@ -134,6 +136,7 @@ unit GC
 #endif
                 }
             }
+            Free.free();
         }
 #ifdef CPU_65C02S
         PLX PLY
@@ -180,6 +183,10 @@ unit GC
             case Types.List:
             {
                 List.clone();
+            }
+            case Types.Variant:
+            {
+                Variant.clone();
             }
             default:
             {

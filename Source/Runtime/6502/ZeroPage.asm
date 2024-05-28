@@ -69,10 +69,21 @@ unit ZP
     const byte W0                   = 0x20;
     const byte W1                   = 0x21;
     const byte W2                   = 0x22; // used by packed syscalls
+    const byte W3                   = 0x23;
+    const byte W4                   = 0x24;
+    const byte W5                   = 0x25;
+    const byte W6                   = 0x26;
+    const byte W7                   = 0x27;
 
-    const byte PLUGNPLAY            = 0x27; // devices on this machine
+    const byte PLUGNPLAY            = W7; // devices on this machine
     // Bit 1 - I2C 0x50 EEPROM exists
     // Bit 0 - I2C 0x3C OLED exists
+    
+    // used by I2C
+    const byte I2CADDR              = W3;
+    const byte OutB                 = W4;
+    const byte InB                  = W5;
+    const byte LastAck              = W6; // LackAck == 0 means ACK, 1 means NACK
     
     // used by 'T'ime APIs Millis and Delay
     const byte TICK0                = 0x28;
@@ -125,6 +136,12 @@ unit ZP
     
     // dictionary types (safely unused)
     const byte D0                   = 0x70;
+    const byte D1                   = 0x71;
+    const byte D2                   = 0x72;
+    const byte D3                   = 0x73;
+    const byte D4                   = 0x74;
+    const byte D5                   = 0x75;
+    const byte D6                   = 0x76;
     
     // used my 'U'Int functions
     const byte U0                   = 0x80;
@@ -135,20 +152,8 @@ unit ZP
     const byte U5                   = 0x85;
     const byte U6                   = 0x86;
     const byte U7                   = 0x87;
-    
 
-    // used by I2C
-    const byte I2CADDR              = F0;
-    const byte OutB                 = F1;
-    const byte InB                  = F2;
-    const byte LastAck              = D0; // could get stomped so use dictionary types for now: LackAck == 0 means ACK, 1 means NACK
-    
-    // used by SSD1306
-    const byte Cursor               = F4;
-    const byte TFlags               = F5;
-    const byte Scroll               = F6;
-
-    
+     
     // Motorola 6850 ACIA
     const byte ACIACONTROL          = 0xEC; //0x1E;
     const byte ACIASTATUS           = 0xEC; //0x1E;

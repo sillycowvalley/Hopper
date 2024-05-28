@@ -15,7 +15,7 @@ unit List
     //   xxxx pRecent
     //   xxxx iRecent
     
-    const uint lsCount = 2;
+    const uint lsCount  = 2;
     const uint lsType   = 4;
     const uint lsFirst  = 5;
     const uint lsRecent = 7;
@@ -28,14 +28,25 @@ unit List
     const uint liData = 0;
     const uint liNext = 2;
     
+    
+    // Available zero page variables:
+    //
+    // F1-F2   FSIZE - used (call to gcCreate)
+    // F3      LTYPE
+    // F4-F5   LLENGTH
+    // F6-F7   LPREVIOUS
+    // F8-F9   LNEXT        preserved during recursive clone calls
+    // F10-F11 LCURRENT     preserved during recursive clone calls      F10-F11   FVALUE (only used in call to createValueVariant)
+    // F12-F13 FITEM
+    // F14-F15 LCOUNT
+    
     new()
     {
-        // element type in FTYPE
+        // element type in LTYPE
         // returns list at IDX
         
         // Add space for number of items, item type, pFirst, pRecent, and iRecent
         // total = 2 + 1 + 2 + 2 + 2 = 9 bytes for the list header
-        CLC
         LDA #9
         STA FSIZEL
         LDA #0
@@ -86,7 +97,7 @@ unit List
     
     New()
     {
-        // Extract the element type from the stack and store it in FTYPE
+        // Extract the element type from the stack and store it in LTYPE
         Stacks.PopTop();   // Get the element type
         LDA TOPL
         STA LTYPE
@@ -215,7 +226,6 @@ unit List
     {
         // List item pointer in IDY, etype in LTYPE
         // Clears all items in the list
-        
         loop
         {
             // Check if we reached the end of the list
@@ -298,9 +308,9 @@ unit List
     
         // Clear all items
         LDA LCURRENTL
-        STA IDXL
+        STA IDYL
         LDA LCURRENTH
-        STA IDXH
+        STA IDYH
         clearAllItems();
         
         PLA
@@ -308,16 +318,23 @@ unit List
         PLA
         STA IDXL
     
-        // Reset list metadata
+        // Reset list count
         LDY # lsCount
         LDA # 0
         STA [IDX], Y
         INY
         STA [IDX], Y
+        
+        LDY # lsFirst
+        STA [IDX], Y // pFirst
         INY
         STA [IDX], Y
         INY
+        STA [IDX], Y // pRecent
+        INY
         STA [IDX], Y
+        INY
+        STA [IDX], Y // iRecent
         INY
         STA [IDX], Y
     }
@@ -443,29 +460,29 @@ unit List
         CMP # Types.Variant
         if (Z)
         {
-            LDA IDXL
-            PHA
-            LDA IDXH
-            PHA
-            // pData in FITEM
-            LDA FITEML
-            STA TOPL
-            LDA FITEMH
-            STA TOPH
-            // Variant.getValue takes pData in TOP
-            //    returns value in IDX and updates LITYPE
-            Variant.getValue();
-            LDA IDXL
-            STA FITEML
-            LDA IDXH
-            STA FITEMH
-            // Update the type to the type stored in the variant
-            LDA LITYPE
+            // Get the type of the item in the variant
+            LDY # 2 // ivType
+            LDA [FITEM], Y
             STA LTYPE
+#ifdef CHECKED        
+            // Check if the value is a reference type
+            IsReferenceType();
+            if (C)
+            {
+                LDA # 0x0B // variant should never contain a reference type
+                BRK
+            }
+#endif            
+            
+            // Get the value from the variant
+            LDY # 3 // ivValue
+            LDA [FITEM], Y
+            PHA
+            INY
+            LDA [FITEM], Y
+            STA FITEMH
             PLA
-            STA IDXH
-            PLA
-            STA IDXL
+            STA FITEML
         }
         // Update recent pointers
         LDY # lsRecent
@@ -481,7 +498,7 @@ unit List
         LDA IDYH
         STA [IDX], Y
         GC.Release(); // Release the 'this' pointer in IDX
-        // Return item data pointer
+        // Return item data pointer or value
         LDA FITEML
         STA NEXTL
         LDA FITEMH
@@ -529,6 +546,18 @@ unit List
         PHA
         LDA IDXH
         PHA
+        
+        LDA # 'I'
+        Serial.WriteChar();
+        LDA TOPH
+        Serial.HexOut();
+        LDA TOPL
+        Serial.HexOut();
+        LDA # 'T'
+        Serial.WriteChar();
+        LDA LTYPE
+        Serial.HexOut();
+        //BRK
         
         // Call createItem to create the new item
         //   itemData in TOP, etype in LTYPE
@@ -636,7 +665,6 @@ unit List
         INY
         LDA LCOUNTH
         STA [IDX], Y
-        
     }
     
     createItem()
@@ -684,6 +712,8 @@ unit List
             STA FITEMH
             return;
         }
+        
+        // etype is a reference type:
         
         // If etype is a reference type, check if itype is also a reference type
         LDY # 0          // first byte of any reference type is its type

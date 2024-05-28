@@ -61,6 +61,8 @@ unit SysCall
         
         TimeMillis            = 0x25,
         
+        VariantBox            = 0x27,
+        
         ListNew               = 0xF4,
         ListCountGet          = 0xF5,
         ListAppend            = 0xF6,
@@ -363,6 +365,10 @@ unit SysCall
 #else
                 missing();
 #endif                
+            }
+            case SysCalls.VariantBox:
+            {
+                Variant.Box();
             }
             
             case SysCalls.ListNew:
