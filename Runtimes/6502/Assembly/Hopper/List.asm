@@ -191,7 +191,7 @@ listAppendNextItem:
   bne listAppendNextItem
   
   ; NEXT == 0 
-  ; CURRENT.pData = fITEM
+  ; CURRENT.pNext = fITEM
   ldy #listItempNextOffset
   lda fITEML
   sta (lCURRENT), Y

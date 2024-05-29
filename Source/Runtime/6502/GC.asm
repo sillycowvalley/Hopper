@@ -152,7 +152,7 @@ unit GC
         TYA PHA
 #endif
         
-        // Preserve lCURRENT, lNEXT, IDY
+        // Preserve LCURRENT, LNEXT, IDY
         LDA LCURRENTL
         PHA
         LDA LCURRENTH

@@ -2,6 +2,7 @@ unit List
 {
     uses "GC"
     uses "Variant"
+    uses "Diagnostics"
     
     friend GC;
     
@@ -122,6 +123,9 @@ unit List
         STA IDYL
         LDA IDXH
         STA IDYH
+        
+        LDY # 0
+        LDA [IDY], Y // type in A
         GC.Clone();
         LDA IDXL
         PHA
@@ -152,6 +156,7 @@ unit List
         
     appendItem()
     {
+        // list is IDY, item is FITEM
         LDA # 0
         STA LNEXTL
         STA LNEXTL
@@ -162,13 +167,6 @@ unit List
         
         // append it to the end of the list
         //  List.Append(list, variantItem);
-        
-        LDA # 0x0A
-        Serial.WriteChar();
-        LDA IDYH
-        Serial.HexOut();
-        LDA IDYL
-        Serial.HexOut();
         
         // pRecent
         LDY # lsRecent
@@ -188,11 +186,6 @@ unit List
             LDA [IDY], Y
             STA LNEXTH
         }
-        
-        LDA LNEXTH
-        Serial.HexOut();
-        LDA LNEXTL
-        Serial.HexOut();
         
         LDA LNEXTL
         ORA LNEXTH
@@ -235,15 +228,16 @@ unit List
                 LDA LNEXTH
                 if (Z) { break; }
             }
-            // NEXT == 0 
-            // CURRENT.pData = fITEM
-            LDY # liData
+            // NEXT == 0:
+            // CURRENT.pNext = FITEM
+            LDY # liNext
             LDA FITEML
             STA [LCURRENT], Y
             INY
             LDA FITEMH
             STA [LCURRENT], Y
             
+            /*            
             // PREVIOUS.pNext = CURRENT
             LDY # liNext
             LDA LCURRENTL
@@ -251,6 +245,7 @@ unit List
             INY
             LDA LCURRENTH
             STA [LPREVIOUS], Y
+            */
         }
         
         // pRecent = IDX  
@@ -339,6 +334,87 @@ unit List
         PLA
         STA IDYH
     }
+    releaseItemIDY()
+    {
+        // IDY -> listItem : frees the listItem (but not the contents of pData even if reference type)
+        //   used by Remove and Clear
+        
+        LDA IDXL
+        PHA
+        LDA IDXH
+        PHA
+        
+        LDA IDYL
+        STA IDXL
+        LDA IDYH
+        STA IDXH
+        Free.free();
+        
+        PLA
+        STA IDXH
+        PLA
+        STA IDXL
+    }
+    
+    releaseItemValue()
+    {
+        // preserves LCURRENT, LTYPE
+        // type in LTYPE, reference in IDY (works for listItem.pData)
+  
+        LDA LTYPE
+        IsReferenceType();
+        if (C)
+        {
+            LDA LCURRENTL
+            PHA
+            LDA LCURRENTH
+            PHA
+            
+            LDA IDYL
+            STA IDXL
+            LDA IDYH
+            STA IDXH
+            
+            GC.Release(); // address in IDX
+            
+            PLA
+            STA LCURRENTH
+            PLA
+            STA LCURRENTL
+        }
+    }
+    rangeCheckTOP()
+    {
+        // list -> IDY, index -> TOP
+        LDY # lsCount
+        LDA [IDY], Y
+        STA LLENGTHL
+        INY
+        LDA [IDY], Y
+        STA LLENGTHH
+        
+        // TOP <= lLENGTH?
+        LDA TOPH
+        CMP LLENGTHH
+        if (Z)
+        {
+            LDA TOPL
+            CMP LLENGTHL
+        }
+
+        // http://6502.org/tutorials/compare_instructions.html
+        if (NZ) // TOP != LLENGTH
+        {
+            if (C) // TOP > LLENGTH
+           {
+                // list index out of range
+                LDA # 0x01 
+                Diagnostics.die();
+            }
+        }
+        // TOP <= LLENGTH
+    }
+    
     createValueItem()
     {
         // type in A, value in FVALUEL, resulting item in listItem in FITEM
@@ -355,7 +431,7 @@ unit List
     }
     moveToItem()
     {
-        // IDX has list, IDY is index of interest, returns lCURRENT (and updates iRecent and pRecent)
+        // IDX has list, IDY is index of interest, returns LCURRENT (and updates iRecent and pRecent)
         //   used by Insert, Remove, GetItem, SetItem
         // IDX is reference of list
         // IDY is index of interest
@@ -431,7 +507,7 @@ unit List
             
             // iRecent <= index
             
-            LDY # lsiRecent
+            LDY # lsRecent
             LDA [IDX], Y
             STA LCURRENTL
             INY
@@ -466,7 +542,7 @@ unit List
                 CMP IDYH
                 if (Z)
                 {
-                    // lCOUNT == IDY
+                    // LCOUNT == IDY
                     break;
                 }
             }
@@ -523,15 +599,236 @@ unit List
     
     clear()
     {
-        LDA # 0x0A
-        Diagnostics.die();
+        // IDX -> list to clear : disposes items in list (but not list itself)
+        
+        // called from syscallListClear and gcRelease
+        LDA IDXL
+        PHA
+        LDA IDXH
+        PHA
+        LDA IDYL
+        PHA
+        LDA IDYH
+        PHA
+        LDA LNEXTL
+        PHA
+        LDA LNEXTH
+        PHA
+        
+        LDY # lsType
+        LDA [IDX], Y
+        STA LTYPE
+        
+        // pFirst
+        LDY # lsFirst
+        LDA [IDX], Y
+        STA LNEXTL
+        INY
+        LDA [IDX], Y
+        STA LNEXTH
+        
+        loop
+        {
+            LDA LNEXTL
+            ORA LNEXTH
+            if (Z) { break; }
+            
+            // IDY = LNEXT.pData
+            LDY # liData
+            LDA [LNEXT], Y
+            STA IDYL
+            INY
+            LDA [LNEXT], Y
+            INY
+            STA IDYH
+            
+            // release the data memory
+            releaseItemValue(); // release pData
+            
+            LDA LNEXTL  
+            STA IDYL
+            LDA LNEXTH
+            STA IDYH
+            
+            // LNEXT = LNEXT.pNext
+            LDY # liNext
+            LDA [LNEXT], Y
+            TAX
+            INY
+            LDA [LNEXT], Y
+            INY
+            STA LNEXTH
+            STX LNEXTL
+            
+            // release the listitem memory
+            releaseItemIDY(); // release IDY (previous pNext)
+            
+        } // loop        
+        
+        PLA
+        STA LNEXTH
+        PLA
+        STA LNEXTL
+        PLA
+        STA IDYH
+        PLA
+        STA IDYL
+        PLA
+        STA IDXH
+        PLA
+        STA IDXL
     }
     
     clone()
     {
-        LDA # 0x0A
-        Diagnostics.die();
-        return;
+        // IDY -> sourceList, returns cloned list in IDX (LCURRENT, LNEXT and IDY preserved in recursive calls)
+        //  called from GC.Clone()
+        
+        createList(); // IDX
+        
+        // preserve for return value
+        LDA IDXL
+        PHA
+        LDA IDXH
+        PHA
+        
+        // number of items
+        LDY # lsCount
+        LDA [IDY], Y
+        STA [IDX], Y
+        INY
+        LDA [IDY], Y
+        STA [IDX], Y
+        
+        // item type
+        LDY # lsType
+        LDA [IDY], Y
+        STA [IDX], Y
+        STA LTYPE
+        
+        // CURRENT : location to put the pointer to new list item (tList.pFirst)
+        CLC
+        LDA IDXL
+        ADC # lsFirst
+        STA LCURRENTL
+        LDA IDXH
+        ADC # 0
+        STA LCURRENTH
+        
+        // NEXT : list item to clone (tList.pFirst)
+        LDY # lsFirst
+        LDA [IDY], Y
+        STA LNEXTL
+        INY
+        LDA [IDY], Y
+        STA LNEXTH
+        
+        loop
+        {
+            LDA LNEXTL
+            if (Z)
+            {
+                LDA LNEXTH
+                if (Z)
+                {
+                    break;
+                }
+            }
+        
+            LDA # 4
+            STA ACCL
+            LDA # 0
+            STA ACCH
+            // size is in ACC
+            // return address in IDX
+            Allocate.allocate();
+            
+            LDY # 0
+            LDA IDXL
+            STA [LCURRENT], Y
+            INY
+            LDA IDXH
+            STA [LCURRENT], Y
+            
+            // CURRENT : location to put the pointer to new list item (tListItem.pNext)
+            CLC
+            LDA IDXL
+            ADC # liNext
+            STA LCURRENTL
+            LDA IDXH
+            ADC # 0
+            STA LCURRENTH
+            
+            // active listItem
+            LDA IDXL
+            PHA
+            LDA IDXH
+            PHA
+            
+            // pData from existing listItem
+            LDY # liData
+            LDA [LNEXT], Y
+            STA IDYL
+            INY
+            LDA [LNEXT], Y
+            STA IDYH
+            
+            LDA LTYPE
+            IsReferenceType();
+            if (NC)
+            {
+                // item is value type
+                LDY # liData
+                LDA IDYL
+                STA [IDX], Y
+                INY
+                LDA IDYH
+                STA [IDX], Y
+                
+                // active listItem
+                PLA
+                STA IDYH
+                PLA
+                STA IDYL
+            }
+            else
+            {
+                // item is reference type
+                LDY # 0
+                LDA [IDY], Y
+                // type is in A
+                // reference type to clone is at IDY
+                // (preserves LCURRENT, LNEXT and IDY for recursive calls)
+                GC.Clone();
+            
+                // active listItem
+                PLA
+                STA IDYH
+                PLA
+                STA IDYL
+                
+                // pData
+                LDY # liData
+                LDA IDXL
+                STA [IDY], Y
+                INY
+                LDA IDXH
+                STA [IDY], Y
+            }
+            
+            // NEXT : list item to clone
+            LDY # liNext
+            LDA [LNEXT], Y
+            TAX
+            INY
+            LDA [LNEXT], Y
+            STA LNEXTH
+            STX LNEXTL
+        } // loop
+        PLA
+        STA IDXH
+        PLA
+        STA IDXL
     }
     
     New()
@@ -570,13 +867,6 @@ unit List
         popValueToIDXandTYPE(); // value and type
         Stacks.PopIDY();        // list
         
-        // list for GC.Release
-        LDA IDYL
-        PHA
-        LDA IDYH
-        PHA
-        
-        
         //list item type
         LDY # lsType
         LDA [IDY], Y
@@ -600,11 +890,12 @@ unit List
             LDA [IDY], Y
             createValueItem();
         }
+        
         appendItem();
         
-        PLA
+        LDA IDYH
         STA IDXH
-        PLA
+        LDA IDYL
         STA IDXL
         
         GC.Release();
@@ -649,15 +940,15 @@ unit List
             if (Z)
             {
                 // variant which implies value type in variant
-                LDY # 3 // ivValue
+                LDY # Variant.ivValue
                 LDA [IDY], Y
                 STA TOPL
                 INY
                 LDA [IDY], Y
                 STA TOPH
-                LDY # 0
-                LDA [TOP], Y // type
-                STA TOPT
+                LDY # Variant.ivType
+                LDA [IDY], Y
+                STA LTYPE
             }
             else
             {
@@ -674,7 +965,7 @@ unit List
                 STA TOPH
                 LDY # 0
                 LDA [TOP], Y // type
-                STA TOPT
+                STA LTYPE
             }
         }
         else
@@ -684,7 +975,6 @@ unit List
             LDA IDYH
             STA TOPH
             LDA LTYPE
-            STA TOPT
         }
         
         PLA
@@ -694,38 +984,469 @@ unit List
         
         GC.Release(); // we popped 'this', decrease reference count
         
+        LDA LTYPE
         Stacks.PushTop();
     }
     
     Clear()
     {
-        LDA # 0x0A // LibCall not Implemented!
-        Diagnostics.die();
-        return;
+        // Clear(<V> this) system;
+        Stacks.PopIDX(); // this -> IDX
+        clear();
+        zeroFields();
+        GC.Release();
+    }
+    SetItem()
+    {
+        // SetItem(<V> this, uint index, V value) system;
+        
+        Stacks.PopTop();        // value -> TOP and LTYPE
+        LDA TOPT
+        STA LTYPE
+        Stacks.PopIDY();        // UInt index -> IDY
+        Stacks.PopIDX();        // this -> IDX
+                
+        
+        LDA LTYPE
+        STA NEXTL // type of value
+        
+        LDY # lsType
+        LDA [IDX], Y
+        STA NEXTH // type of list items
+        
+        // IDX is reference of list
+        // IDY is index of interest
+        moveToItem(); // -> LCURRENT
+        
+        LDA NEXTH // type of list items
+        IsReferenceType();
+        if (NC)
+        {
+            // value types - just reset in item, no need to release
+            LDY # liData
+            LDA TOPL
+            STA [LCURRENT], Y
+            INY
+            LDA TOPH
+            STA [LCURRENT], Y
+        }
+        else
+        {
+            LDA IDXL
+            PHA
+            LDA IDXH
+            PHA
+            
+            LDA LTYPE
+            PHA
+        
+            // LCURRENT.pData -> IDY
+            LDY # liData
+            LDA [LCURRENT], Y
+            STA IDYL
+            INY
+            LDA [LCURRENT], Y
+            STA IDYH
+            
+            LDY # 0
+            LDA [IDY], Y
+            STA LTYPE
+            
+            // type in LTYPE, reference in IDY
+            releaseItemValue(); // release pData
+            
+            // clone value and put it into LCURRENT/NEXT
+            LDA TOPL
+            STA IDYL
+            LDA TOPH
+            STA IDYH
+            
+            PLA // LTYPE
+            // type is in A
+            // reference type to clone is at IDY, resulting clone in IDX
+            GC.Clone(); // cloneIDY
+            
+            LDY #2
+            LDA IDXL
+            STA [NEXT], Y
+            INY
+            LDA IDXH
+            STA [NEXT], Y
+        
+            // IDX -> lCURRENT.pData
+            LDY # liData
+            LDA IDXL
+            STA [LCURRENT], Y
+            INY
+            LDA IDXH
+            LDA [LCURRENT], Y
+            
+            LDA TOPL
+            STA IDXL
+            LDA TOPH
+            STA IDXH
+            GC.Release(); // we consumed 'value', decrease reference count
+            
+            PLA
+            STA IDXH
+            PLA
+            STA IDXL
+        }
+        GC.Release(); // we popped 'this' (IDX), decrease reference count
+    }
+    
+    Remove()
+    {
+        // Remove(<V> this, uint index) system;
+        Stacks.PopIDY(); // pop uint argument -> IDY
+        Stacks.PopIDX(); // this -> IDX
+        
+        LDY # lsType
+        LDA [IDX], Y
+        STA LTYPE
+        
+        LDA IDXL
+        PHA
+        LDA IDXH
+        PHA
+        
+#ifdef CHECKED
+        LDY # lsCount
+        LDA [IDX], Y
+        STA LLENGTHL
+        INY
+        LDA [IDX], Y
+        STA LLENGTHH
+        
+        // IDY < LLENGTH?
+        LDA IDYH
+        CMP LLENGTHH
+        if (Z)
+        {
+            LDA IDYL
+            CMP LLENGTHL
+        }
+
+        // http://6502.org/tutorials/compare_instructions.html
+        if (C)
+        {
+            // IDY >= lLENGTH
+        
+            // list index out of range
+            LDA # 0x01 
+            Diagnostics.die();
+        }
+#endif
+        
+        // IDY < lLENGTH
+        
+        LDA IDYL
+        ORA IDYH
+        if (Z)
+        {
+            // IDY is zero
+            
+            // 'fake' LCURRENT so that listItem.pNext offset works below
+            CLC
+            LDA IDXL
+            ADC # (lsFirst-liNext)
+            STA LCURRENTL
+            LDA IDXH
+            ADC # 0
+            STA IDXH
+            STA LCURRENTH
+        }
+        else
+        {
+            DecIDY();
+            // IDX is reference of list
+            // IDY+1 is index of interest
+            
+            moveToItem(); // -> LCURRENT
+        }
+        
+        // LNEXT  = LCURRENT.pNext
+        LDY # liNext
+        LDA [LCURRENT], Y
+        STA LNEXTL
+        INY
+        LDA [LCURRENT], Y
+        STA LNEXTH
+        
+        // IDY  = LNEXT.pData
+        LDY # liData
+        LDA [LNEXT], Y
+        STA IDYL
+        INY
+        LDA [LNEXT], Y
+        STA IDYH
+        
+        // reference in IDY, type in LTYPE (works for tListItem.pData)
+        //    preserves LCURRENT, LTYPE
+        releaseItemValue(); // release pData
+        
+        // IDY  = LCURRENT.pNext
+        LDY # liNext
+        LDA [LCURRENT], Y
+        STA IDYL
+        INY
+        LDA [LCURRENT], Y
+        STA IDYH
+        
+        // LNEXT  = IDY.pNext
+        LDY # liNext
+        LDA [IDY], Y
+        STA LNEXTL
+        INY
+        LDA [IDY], Y
+        STA LNEXTH
+        
+        // LCURRENT.pNext = lNEXT
+        LDY # liNext
+        LDA LNEXTL
+        STA [LCURRENT], Y
+        INY
+        LDA LNEXTH
+        STA [LCURRENT], Y
+        
+        releaseItemIDY(); // release IDY (previous LCURRENT)
+        
+        PLA
+        STA IDXH
+        PLA
+        STA IDXL
+        
+        // count  
+        LDY # lsCount
+        SEC
+        LDA [IDX], Y
+        SBC # 1
+        STA [IDX], Y
+        INY
+        LDA [IDX], Y
+        SBC # 0
+        STA [IDX], Y
+        
+        // pRecent
+        LDY # lsRecent
+        LDA # 0
+        STA [IDX], Y
+        INY
+        STA [IDX], Y
+        
+        // iRecent
+        LDY # lsiRecent
+        LDA # 0
+        STA [IDX], Y
+        INY
+        STA [IDX], Y
+        INY
+        
+        GC.Release(); // we popped 'this', decrease reference count
     }
         
     Insert()
     {
-        LDA # 0x0A // LibCall not Implemented!
-        Diagnostics.die();
-        return;
+        // Insert(<V> this, uint index, V value) system;
+        popValueToIDXandTYPE(); // value to IDX, LTYPE
+        Stacks.PopTop();        // index in TOP
+        Stacks.PopIDY();        // 'this' list in IDY
+        
+        LDY # lsType
+        LDA [IDY], Y
+        STA LTYPE // type of list items
+        
+#ifdef CHECKED
+        rangeCheckTOP(); // list -> IDY, index -> TOP
+#endif
+        
+        LDA TOPL
+        ORA TOPH
+        if (Z)
+        {
+            // IDY is zero
+            
+            // 'fake' LCURRENT so that #4 offset works below
+            CLC
+            LDA IDYL
+            ADC # (lsFirst-liNext)
+            STA LCURRENTL
+            LDA IDYH
+            ADC # 0
+            STA LCURRENTH
+        }
+        else
+        {
+            LDA IDXH
+            PHA
+            LDA IDXL
+            PHA
+            LDA IDYH
+            STA IDXH
+            PHA
+            LDA IDYL
+            STA IDXL
+            PHA
+            LDA TOPH
+            STA IDYH
+            LDA TOPL
+            STA IDYL
+            DecIDY();
+            
+            // IDX is reference of list
+            // IDY is index of item before
+            moveToItem(); // LCURRENT
+            
+            PLA
+            STA IDYL
+            PLA
+            STA IDYH
+            PLA
+            STA IDXL
+            PLA
+            STA IDXH
+        }
+        
+        // save 'LCURRENT'
+        LDA LCURRENTH
+        PHA
+        LDA LCURRENTL
+        PHA
+        
+        LDA LTYPE
+        IsReferenceType();
+        if (NC)
+        {
+            // item is value type
+            
+            // save the value
+            LDA IDXH
+            STA FVALUEH
+            LDA IDXL
+            STA FVALUEL
+            
+            // get the list item type
+            LDA LTYPE
+            // type in A, value in FVALUEL, resulting item in tListItem in FITEM
+            createValueItem();
+        }
+        else
+        {
+            // item is reference type
+            
+            // value to IDX
+            // 'this' list in IDY
+            LDA IDYL
+            PHA
+            LDA IDYH
+            PHA
+            
+            // value: IDX -> IDY
+            LDA IDXL
+            STA IDYL
+            LDA IDXH
+            STA IDYH
+            
+            // clone value, and release original
+            
+            // type is in A
+            LDY # 0
+            LDA [IDY], Y
+            // reference type to clone is at IDY, resulting clone in IDX
+            //    (preserves LCURRENT, LNEXT and IDY for recursive calls)
+            GC.Clone();
+            
+            LDA IDYL
+            PHA
+            LDA IDYH
+            PHA
+                 
+            // pData value is in IDX
+            // returns new listItem in FITEM
+            itemCreate();
+            
+            PLA
+            STA IDXH
+            PLA
+            STA IDXL
+            
+            GC.Release(); // release original value item
+            
+            // restore 'this' list
+            PLA
+            STA IDYH
+            PLA
+            STA IDYL
+        }
+        
+        PLA
+        STA LCURRENTL
+        PLA
+        STA LCURRENTH
+        
+        LDY # liNext
+        LDA [LCURRENT], Y
+        STA LNEXTL
+        INY
+        LDA [LCURRENT], Y
+        STA LNEXTH
+        
+        LDY # liNext
+        LDA LNEXTL
+        STA [FITEM], Y // pNext LSB
+        INY
+        LDA LNEXTH
+        STA [FITEM], Y // pNext MSB
+        
+        
+        LDY # liNext
+        LDA FITEML
+        STA [LCURRENT], Y
+        INY
+        LDA FITEMH
+        STA [LCURRENT], Y
+        
+        // pRecent = 0  
+        LDY #7
+        LDA #0
+        STA [IDY], Y
+        INY
+        STA [IDY], Y
+        // iRecent
+        INY
+        STA [IDY], Y
+        INY
+        STA [IDY], Y
+        
+        // previous length
+        LDY # lsCount
+        LDA [IDY], Y
+        STA LLENGTHL
+        INY
+        LDA [IDY], Y
+        STA LLENGTHH
+        
+        // length: increment the item count in the list
+        LDY # lsCount
+        LDA LLENGTHL
+        INC
+        STA [IDY], Y
+        if (Z)
+        {
+            INY
+            LDA LLENGTHH
+            INC
+            STA [IDY], Y
+        }
+        
+        LDA IDYL
+        STA IDXL
+        LDA IDYH
+        STA IDXH
+        GC.Release(); // we popped 'this'
     }
     
     GetItemAsVariant()
-    {
-        LDA # 0x0A // LibCall not Implemented!
-        Diagnostics.die();
-        return;
-    }
-    
-    SetItem()
-    {
-        LDA # 0x0A // LibCall not Implemented!
-        Diagnostics.die();
-        return;
-    }
-    
-    Remove()
     {
         LDA # 0x0A // LibCall not Implemented!
         Diagnostics.die();

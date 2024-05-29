@@ -6,6 +6,9 @@ unit Diagnostics
     {
 #ifdef CHECKED
         PHA
+        
+        registers();
+        
         LDA # 0x0A
         Serial.WriteChar();
         LDA # 'D'
@@ -159,5 +162,99 @@ unit Diagnostics
             INY
             DEX
         }
+    }
+    
+    registers()
+    {
+        PHA
+        
+        LDA # 0x0A
+        Serial.WriteChar();
+        LDA # 'R'
+        Serial.WriteChar();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA PCH
+        Serial.HexOut();
+        LDA PCL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA SP
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # 'X'
+        Serial.WriteChar();
+        LDA IDXH
+        Serial.HexOut();
+        LDA IDXL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # 'Y'
+        Serial.WriteChar();
+        LDA IDYH
+        Serial.HexOut();
+        LDA IDYL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # 'P'
+        Serial.WriteChar();
+        LDA LPREVIOUSH
+        Serial.HexOut();
+        LDA LPREVIOUSL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # 'C'
+        Serial.WriteChar();
+        LDA LCURRENTH
+        Serial.HexOut();
+        LDA LCURRENTL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # 'N'
+        Serial.WriteChar();
+        LDA LNEXTH
+        Serial.HexOut();
+        LDA LNEXTL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # 'I'
+        Serial.WriteChar();
+        LDA FITEMH
+        Serial.HexOut();
+        LDA FITEML
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # 'C'
+        Serial.WriteChar();
+        LDA LCOUNTH
+        Serial.HexOut();
+        LDA LCOUNTL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # 'T'
+        Serial.WriteChar();
+        LDA LTYPE
+        Serial.HexOut();
+        
+        PLA
     }
 }

@@ -20,7 +20,7 @@ unit Variant
         Stacks.PopNext(); // NEXT = type 
         Stacks.PopTop();  // TOP = value
         
- #ifdef CHECKED
+#ifdef CHECKED
         // Check if vtype is a reference type
         LDA NEXTL
         IsReferenceType();
@@ -84,7 +84,6 @@ unit Variant
     
         PLA //  type
         LDY # ivType
-        LDA LTYPE
         STA [IDX], Y
     
         //variantItem = Variant_Box(type, value);
