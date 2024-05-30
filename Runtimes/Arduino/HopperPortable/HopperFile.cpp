@@ -52,6 +52,10 @@ void External_SDRxPinSet(Byte pin)
 
 #ifdef TEENSY
 
+// https://github.com/greiman/SdFat
+// https://github.com/greiman/SdFat/blob/master/examples/TeensySdioDemo/TeensySdioDemo.ino
+// https://github.com/greiman/SdFat/blob/master/examples/TeensyRtcTimestamp/TeensyRtcTimestamp.ino
+
 void FileSystem_Initialize()  // TEENSY TODO
 {
 }

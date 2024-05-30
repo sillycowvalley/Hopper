@@ -14,7 +14,7 @@ program R6502
     // Optional types:
     #define LONGS              //  236 bytes
     #define FLOATS             //   28 bytes (requires LONGS)
-    #define LISTS            // 2458 bytes (requires Variant)
+    #define LISTS              // 2458 bytes (requires Variant)
     
     // Speed vs Size:
     #define FASTINTS

@@ -5,6 +5,9 @@ extern Bool Library_isrExists;
 
 #ifdef USETIMERSTUBS
 
+// https://www.pjrc.com/teensy/td_libs_TimeAlarms.html
+// https://www.pjrc.com/teensy/td_timing_IntervalTimer.html
+
 void External_TimerInitialize() {}  // TEENSY TODO
 void External_TimerRelease()    {}  // TEENSY TODO
 
