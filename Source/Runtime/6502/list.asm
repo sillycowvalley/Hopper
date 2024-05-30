@@ -1487,11 +1487,6 @@ unit List
             ORA LCURRENTH
             if (Z) 
             { 
-                LDA # 0x0A
-                Serial.WriteChar();
-                LDA # 'F'
-                Serial.WriteChar();
-                
                 // End of list, item not found
                 LDX # 0
                 break; 
@@ -1516,11 +1511,6 @@ unit List
                 CPX # 1
                 if (Z)
                 {
-                    LDA # 0x0A
-                    Serial.WriteChar();
-                    LDA # 'R'
-                    Serial.WriteChar();
-                    
                     // Item found, return true           
                     break;
                 }
@@ -1536,11 +1526,6 @@ unit List
                     CMP IDYH
                     if (Z)
                     {
-                        LDA # 0x0A
-                        Serial.WriteChar();
-                        LDA # 'V'
-                        Serial.WriteChar();
-                        
                         LDX #1 // Item found, return true
                         break;
                     }
