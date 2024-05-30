@@ -1,8 +1,8 @@
-# GTPFORTH Interpreter Documentation
+# HopperFORTH Interpreter Documentation
 
 ## Introduction
 
-GTPFORTH is a FORTH interpreter implemented in Hopper. It supports various stack operations, arithmetic operations, logical operations, and memory operations. This document provides a detailed reference guide and a user guide with examples.
+HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various stack operations, arithmetic operations, logical operations, and memory operations. This document provides a detailed reference guide and a user guide with examples.
 
 ## Reference Guide
 
@@ -119,7 +119,7 @@ GTPFORTH is a FORTH interpreter implemented in Hopper. It supports various stack
 
 ### Starting the Interpreter
 
-To start the GTPFORTH interpreter, run the `GTPFORTH` program. You will see the prompt `>>>`.
+To start the HopperFORTH interpreter, run the `HopperFORTH` program. You will see the prompt `>>>`.
 
 ### Defining and Using Words
 
@@ -252,11 +252,11 @@ A
 
 #### Example: Exit
 
-To exit the GTPFORTH interpreter, use the `bye` word.
+To exit the HopperFORTH interpreter, use the `bye` word.
 
 ```forth
 >>> bye
-Exiting GTPFORTH interpreter.
+Exiting HopperFORTH interpreter.
 ```
 
 ### Putting It All Together
@@ -274,4 +274,4 @@ Defined word: square
 
 ## Conclusion
 
-This document provides a comprehensive reference and user guide for the GTPFORTH interpreter. With this guide, you should be able to effectively use GTPFORTH for various stack operations, arithmetic operations, logical operations, memory operations, and input/output operations. Happy coding!
+This document provides a comprehensive reference and user guide for the HopperFORTH interpreter. With this guide, you should be able to effectively use HopperFORTH for various stack operations, arithmetic operations, logical operations, memory operations, and input/output operations. Happy coding!

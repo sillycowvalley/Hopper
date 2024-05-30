@@ -1,11 +1,11 @@
-program GTPFORTH
+program HopperFORTH
 {
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     int[stackLimit] stack; // Stack array
-    uint sp = 0; // Initialize stack pointer
+    int sp = 0; // Initialize stack pointer
     bool running = true; // Control the main loop
     
     const uint memorySize = 1024; // Define the memory size
@@ -96,7 +96,7 @@ program GTPFORTH
                 case ".":
                 {
                     int top = pop();
-                    Write(top.ToString());
+                    Write(top.ToString() + " ");
                 }
                 // Addition ( n1 n2 -- n1+n2 )
                 case "+":
@@ -148,12 +148,6 @@ program GTPFORTH
                     {
                         push(next % top);
                     }
-                }
-                // Negate the top value on the stack ( n -- -n )
-                case "negate":
-                {
-                    int top = pop();
-                    push(-top);
                 }
                 // Absolute value of the top value on the stack ( n -- |n| )
                 case "abs":
@@ -306,6 +300,20 @@ program GTPFORTH
                         WriteLn("Stack Underflow");
                     }
                 }
+                // Fetch the nth item from the stack ( n -- n' )
+                case "pick":
+                {
+                    int n = pop();
+                    if (sp > n)
+                    {
+                        int value = stack[sp - n - 1];
+                        push(value);
+                    }
+                    else
+                    {
+                        WriteLn("Stack Underflow");
+                    }
+                }
                 // Store a value in memory ( n addr -- )
                 case "!":
                 {
@@ -380,6 +388,11 @@ program GTPFORTH
                     char ch = Serial.ReadChar();
                     push(int(ch));
                 }
+                // Has a key been pressed? ( -- n )
+                case "key?":
+                {
+                    push(Serial.IsAvailable ? -1 : int(0));
+                }
                 // Exit the interpreter ( -- )
                 case "bye":
                 {
@@ -416,29 +429,166 @@ program GTPFORTH
     {
         uint start = 0;
         bool isToken = false;
-    
+        bool inComment = false;
+
         for (uint i = 0; i <= input.Length; i++)
         {
-            if ((i == input.Length) || Char.IsWhitespace(input[i])) // Check for end of input or space
+            if (inComment)
             {
-                if (isToken) // End of a token
+                if ((i < input.Length) && (input[i] == ')'))
                 {
-                    string token = input.Substring(start, i - start);
-                    executeToken(token);
-                    isToken = false; // Reset token flag
+                    inComment = false; // End of comment
                 }
             }
-            else if (!isToken) // Start of a new token
+            else
             {
-                isToken = true;
-                start = i;
+                if ((i < input.Length) && (input[i] == '('))
+                {
+                    inComment = true; // Start of comment
+                    isToken = false; // Reset token flag
+                }
+                else if ((i == input.Length) || Char.IsWhitespace(input[i])) // Check for end of input or space
+                {
+                    if (isToken) // End of a token
+                    {
+                        string token = input.Substring(start, i - start);
+                        executeToken(token);
+                        isToken = false; // Reset token flag
+                    }
+                }
+                else if (!isToken) // Start of a new token
+                {
+                    isToken = true;
+                    start = i;
+                }
             }
         }
     }
     
+    // Define a word with a given name and definition
+    defineWord(string name, <string> definition)
+    {
+        Word newWord;
+        newWord.Name = name;
+        newWord.Definition = definition;
+        wordList.Append(newWord);
+    }
+
+    // Initialization method to define common FORTH words
+    initialize()
+    {
+        <string> definition;
+        
+        // Define `constant` ( n -- )
+        definition.Clear();
+        definition.Append("create");
+        definition.Append("does>");
+        definition.Append("@");
+        defineWord("constant", definition);
+    
+        // Define `nip` ( n1 n2 -- n2 )
+        definition.Clear();
+        definition.Append("swap");
+        definition.Append("drop");
+        defineWord("nip", definition);
+        
+        // Define `tuck` ( n1 n2 -- n2 n1 n2 )
+        definition.Clear();
+        definition.Append("dup");
+        definition.Append("-rot");
+        defineWord("tuck", definition);
+        
+        // Define `2dup` ( n1 n2 -- n1 n2 n1 n2 )
+        definition.Clear();
+        definition.Append("over");
+        definition.Append("over");
+        defineWord("2dup", definition);
+        
+        // Define `2drop` ( n1 n2 -- )
+        definition.Clear();
+        definition.Append("drop");
+        definition.Append("drop");
+        defineWord("2drop", definition);
+        
+        // Define `2swap` ( n1 n2 n3 n4 -- n3 n4 n1 n2 )
+        definition.Clear();
+        definition.Append("2");
+        definition.Append("pick");
+        definition.Append("2");
+        definition.Append("pick");
+        definition.Append("rot");
+        definition.Append("rot");
+        defineWord("2swap", definition);
+        
+        // Define `2over` ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 )
+        definition.Clear();
+        definition.Append("3");
+        definition.Append("pick");
+        definition.Append("3");
+        definition.Append("pick");
+        defineWord("2over", definition);
+    
+        // Define `0=` ( n -- flag )
+        definition.Clear();
+        definition.Append("0");
+        definition.Append("=");
+        defineWord("0=", definition);
+    
+        // Define `0<` ( n -- flag )
+        definition.Clear();
+        definition.Append("0");
+        definition.Append("<");
+        defineWord("0<", definition);
+    
+        // Define `0>` ( n -- flag )
+        definition.Clear();
+        definition.Append("0");
+        definition.Append(">");
+        defineWord("0>", definition);
+    
+        // Define `max` ( n1 n2 -- max )
+        definition.Clear();
+        definition.Append("2dup");
+        definition.Append("<");
+        definition.Append("if");
+        definition.Append("drop");
+        definition.Append("else");
+        definition.Append("nip");
+        definition.Append("then");
+        defineWord("max", definition);
+    
+        // Define `min` ( n1 n2 -- min )
+        definition.Clear();
+        definition.Append("2dup");
+        definition.Append(">");
+        definition.Append("if");
+        definition.Append("drop");
+        definition.Append("else");
+        definition.Append("nip");
+        definition.Append("then");
+        defineWord("min", definition);
+    
+        // Define `depth` ( -- n )
+        definition.Clear();
+        definition.Append("sp");
+        defineWord("depth", definition);
+        
+        // Define `negate` ( n -- -n )
+        definition.Clear();
+        definition.Append("0");
+        definition.Append("swap");
+        definition.Append("-");
+        defineWord("negate", definition);
+    }
+    
+    
+        
     // Main entry point ( -- )
     Hopper()
     {
+        // Initialize common FORTH words
+        initialize();
+        
         string inputLine;
         while (running) // Continue running while the flag is true
         {
@@ -448,7 +598,7 @@ program GTPFORTH
                 processInput(inputLine);
             }
         }
-        WriteLn("Exiting GTPFORTH interpreter."); // Message on exit
+        WriteLn("Exiting HopperFORTH interpreter."); // Message on exit
     }    
 }
 
