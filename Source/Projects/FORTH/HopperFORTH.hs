@@ -14,12 +14,15 @@ program HopperFORTH
     // Define a record to represent a FORTH word
     record Word
     {
-        string Name; // Word name
-        <string> Definition; // Word definition
+        string Name;             // Word name
+        <string> Definition;     // Word definition
+        int Address;             // Address for created words
+        bool HasCustomBehavior;  // Flag to indicate if 'does>' is used
     }
     
     <Word> wordList; // List to store user-defined words
     bool definingWord = false; // Flag to indicate if a word is being defined
+    bool settingCustomBehavior = false; // Flag to indicate custom behavior setting
     string currentWordName; // Current word being defined
     <string> currentWordDefinition; // Current word definition being built
     
@@ -65,7 +68,10 @@ program HopperFORTH
                 Word newWord;
                 newWord.Name = currentWordName;
                 newWord.Definition = currentWordDefinition;
+                newWord.HasCustomBehavior = settingCustomBehavior;
+                settingCustomBehavior = false;
                 wordList.Append(newWord);
+                
                 WriteLn("Defined word: " + currentWordName);
             }
             else if (currentWordName.Length == 0)
@@ -91,6 +97,18 @@ program HopperFORTH
                     definingWord = true;
                     currentWordDefinition.Clear();
                     currentWordName = ""; // Reset the word name
+                }
+                // Create a new word ( -- )
+                case "create":
+                {
+                    definingWord = true;
+                    currentWordDefinition.Clear();
+                    currentWordName = ""; // Reset the word name
+                }
+                // Specify custom behavior ( -- )
+                case "does>":
+                {
+                    settingCustomBehavior = true;
                 }
                 // Print the top value on the stack ( n -- )
                 case ".":
@@ -407,10 +425,16 @@ program HopperFORTH
                         if (word.Name == token)
                         {
                             found = true;
-                            <string> definition = word.Definition;
-                            foreach (var wordToken in definition)
+                            if (word.HasCustomBehavior)
                             {
-                                executeToken(wordToken);
+                                foreach (var wordToken in word.Definition)
+                                {
+                                    executeToken(wordToken);
+                                }
+                            }
+                            else
+                            {
+                                push(word.Address);
                             }
                             break;
                         }
@@ -430,7 +454,6 @@ program HopperFORTH
         uint start = 0;
         bool isToken = false;
         bool inComment = false;
-
         for (uint i = 0; i <= input.Length; i++)
         {
             if (inComment)
@@ -465,15 +488,13 @@ program HopperFORTH
         }
     }
     
-    // Define a word with a given name and definition
-    defineWord(string name, <string> definition)
+    executeDefinitions(<string> definition)
     {
-        Word newWord;
-        newWord.Name = name;
-        newWord.Definition = definition;
-        wordList.Append(newWord);
+        foreach (var token in definition)
+        {
+            executeToken(token);
+        }
     }
-
     // Initialization method to define common FORTH words
     initialize()
     {
@@ -481,73 +502,105 @@ program HopperFORTH
         
         // Define `constant` ( n -- )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("constant");
         definition.Append("create");
         definition.Append("does>");
         definition.Append("@");
-        defineWord("constant", definition);
+        definition.Append(";");
+        executeDefinitions(definition);
     
         // Define `nip` ( n1 n2 -- n2 )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("nip");
         definition.Append("swap");
         definition.Append("drop");
-        defineWord("nip", definition);
-        
+        definition.Append(";");
+        executeDefinitions(definition);
+    
         // Define `tuck` ( n1 n2 -- n2 n1 n2 )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("tuck");
         definition.Append("dup");
         definition.Append("-rot");
-        defineWord("tuck", definition);
-        
+        definition.Append(";");
+        executeDefinitions(definition);
+    
         // Define `2dup` ( n1 n2 -- n1 n2 n1 n2 )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("2dup");
         definition.Append("over");
         definition.Append("over");
-        defineWord("2dup", definition);
-        
+        definition.Append(";");
+        executeDefinitions(definition);
+    
         // Define `2drop` ( n1 n2 -- )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("2drop");
         definition.Append("drop");
         definition.Append("drop");
-        defineWord("2drop", definition);
-        
+        definition.Append(";");
+        executeDefinitions(definition);
+    
         // Define `2swap` ( n1 n2 n3 n4 -- n3 n4 n1 n2 )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("2swap");
         definition.Append("2");
         definition.Append("pick");
         definition.Append("2");
         definition.Append("pick");
         definition.Append("rot");
         definition.Append("rot");
-        defineWord("2swap", definition);
-        
+        definition.Append(";");
+        executeDefinitions(definition);
+    
         // Define `2over` ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("2over");
         definition.Append("3");
         definition.Append("pick");
         definition.Append("3");
         definition.Append("pick");
-        defineWord("2over", definition);
+        definition.Append(";");
+        executeDefinitions(definition);
     
         // Define `0=` ( n -- flag )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("0=");
         definition.Append("0");
         definition.Append("=");
-        defineWord("0=", definition);
+        definition.Append(";");
+        executeDefinitions(definition);
     
         // Define `0<` ( n -- flag )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("0<");
         definition.Append("0");
         definition.Append("<");
-        defineWord("0<", definition);
+        definition.Append(";");
+        executeDefinitions(definition);
     
         // Define `0>` ( n -- flag )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("0>");
         definition.Append("0");
         definition.Append(">");
-        defineWord("0>", definition);
+        definition.Append(";");
+        executeDefinitions(definition);
     
         // Define `max` ( n1 n2 -- max )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("max");
         definition.Append("2dup");
         definition.Append("<");
         definition.Append("if");
@@ -555,10 +608,13 @@ program HopperFORTH
         definition.Append("else");
         definition.Append("nip");
         definition.Append("then");
-        defineWord("max", definition);
+        definition.Append(";");
+        executeDefinitions(definition);
     
         // Define `min` ( n1 n2 -- min )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("min");
         definition.Append("2dup");
         definition.Append(">");
         definition.Append("if");
@@ -566,23 +622,28 @@ program HopperFORTH
         definition.Append("else");
         definition.Append("nip");
         definition.Append("then");
-        defineWord("min", definition);
+        definition.Append(";");
+        executeDefinitions(definition);
     
         // Define `depth` ( -- n )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("depth");
         definition.Append("sp");
-        defineWord("depth", definition);
-        
+        definition.Append(";");
+        executeDefinitions(definition);
+    
         // Define `negate` ( n -- -n )
         definition.Clear();
+        definition.Append(":");
+        definition.Append("negate");
         definition.Append("0");
         definition.Append("swap");
         definition.Append("-");
-        defineWord("negate", definition);
+        definition.Append(";");
+        executeDefinitions(definition);
     }
     
-    
-        
     // Main entry point ( -- )
     Hopper()
     {
