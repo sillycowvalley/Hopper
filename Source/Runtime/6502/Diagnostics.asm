@@ -1,5 +1,7 @@
 unit Diagnostics
 {
+    uses "6502/ZeroPage"
+    
     friend GC, Free, Variant, String, Array, List;
     
     die()
@@ -256,5 +258,215 @@ unit Diagnostics
         Serial.HexOut();
         
         PLA
+    }
+    HeapDump()
+    {
+        Diagnostics.registers();
+        
+        // HEAPSTART
+        // HEAPSIZE
+        
+        LDA # 0x0A
+        Serial.WriteChar();
+        LDA # 'F'
+        Serial.WriteChar();
+        LDA # 'r'
+        Serial.WriteChar();
+        LDA # 'e'
+        Serial.WriteChar();
+        LDA # 'e'
+        Serial.WriteChar();
+        LDA # ':'
+        Serial.WriteChar();
+        
+        // End of heap:
+        CLC
+        LDA HEAPSTART
+        ADC HEAPSIZE
+        STA FSIZEH
+        LDA # 0
+        STA FSIZEL
+        
+        LDY # 0
+        LDA FREELISTL
+        STA IDXL
+        INY
+        LDA FREELISTH
+        STA IDXH
+        
+        loop
+        {
+            LDA IDXH 
+            if (Z) 
+            { 
+                LDA IDXL
+                if (Z)
+                {
+                    // next pointer = 0
+                    break; 
+                }
+            }
+            
+            LDA # '>'
+            Serial.WriteChar();
+            // free address
+            LDA IDXH
+            Serial.HexOut();
+            LDA IDXL
+            Serial.HexOut();
+            LDA # '['
+            Serial.WriteChar();
+            // free size
+            LDY # 1
+            LDA [IDX], Y
+            Serial.HexOut();
+            DEY
+            LDA [IDX], Y
+            Serial.HexOut();
+            LDA # ']'
+            Serial.WriteChar();
+            
+            // load next pointer
+            LDY # 2
+            LDA [IDX], Y
+            TAX
+            INY
+            LDA [IDX], Y
+            STA IDXH
+            STX IDXL
+        }
+        
+        LDA # 0x0A
+        Serial.WriteChar();
+        LDA # 'B'
+        Serial.WriteChar();
+        LDA # 'l'
+        Serial.WriteChar();
+        LDA # 'k'
+        Serial.WriteChar();
+        LDA # 's'
+        Serial.WriteChar();
+        LDA # ':'
+        Serial.WriteChar();
+        
+        LDY # 0
+        LDA # 0
+        STA IDXL
+        INY
+        LDA HEAPSTART
+        STA IDXH
+        
+        loop
+        {
+            LDA IDXH 
+            CMP FSIZEH
+            if (Z) 
+            { 
+                LDA IDXL
+                CMP FSIZEL
+                if (Z)
+                {
+                    // end of heap
+                    break; 
+                }
+            }
+            isFreeBlock();
+            if (Z)
+            {
+                // not free block
+                LDA # '>'
+                Serial.WriteChar();
+                // free address
+                LDA IDXH
+                Serial.HexOut();
+                LDA IDXL
+                Serial.HexOut();
+                LDA # '['
+                Serial.WriteChar();
+                // free size
+                LDY # 1
+                LDA [IDX], Y
+                Serial.HexOut();
+                DEY
+                LDA [IDX], Y
+                Serial.HexOut();
+                LDA # ':'
+                Serial.WriteChar();
+                // type
+                LDY # 2
+                LDA [IDX], Y
+                Serial.HexOut();
+                LDA # ']'
+                Serial.WriteChar();
+            }
+            
+            LDY # 0
+            CLC
+            LDA IDXL
+            ADC [IDX], Y
+            TAX
+            INY
+            LDA IDXH
+            ADC [IDX], Y
+            STA IDXH
+            STX IDXL
+        }
+        
+        
+        LDA # 0x0A
+        Serial.WriteChar();
+    }
+    isFreeBlock()
+    {
+        // if IDX is on freelist, return NZ
+        //   otherwise return Z
+        // assume FSIZEL is heap end
+        
+        LDY # 0
+        LDA FREELISTL
+        STA IDYL
+        INY
+        LDA FREELISTH
+        STA IDYH
+        
+        loop
+        {
+            LDA IDYH 
+            CMP IDXH
+            if (Z) 
+            { 
+                LDA IDYL
+                CMP IDXL
+                if (Z)
+                {
+                    // on free list
+                    LDA # 1
+                    return;
+                }
+            }
+            
+            LDA IDYH 
+            if (Z) 
+            { 
+                LDA IDYL
+                if (Z)
+                {
+                    // next pointer = 0
+                    break; 
+                }
+            }
+            
+            // load next pointer
+            LDY # 2
+            LDA [IDY], Y
+            TAX
+            INY
+            LDA [IDY], Y
+            STA IDYH
+            STX IDYL
+        }
+        // not on free list
+        LDA # 0
+        return;
     }
 }

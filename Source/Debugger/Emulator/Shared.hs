@@ -287,33 +287,35 @@ unit Shared
                     case array:
                     {
                         uint count = getRAMByte(current+4) + getRAMByte(current+5) << 8;
-                        PrintLn(" (array: [" + count.ToString() + "])");
+                        Print(" (array: [" + count.ToString() + "])");
                         string content = TypeToString(current+2, "array", false, 100);
                         if (content.Length > 0)
                         {
-                            PrintLn("      " + content);
+                            Print("      " + content);
                         }
+                        PrintLn();
                     }
                     case string:
                     {
                         uint length = getRAMByte(current+4) + getRAMByte(current+5) << 8;
-                        PrintLn(" (string: [" + length.ToString() + "])");
+                        Print(" (string: [" + length.ToString() + "])");
                         string content = TypeToString(current+2, "string", false, 100);
                         if (content.Length > 0)
                         {
-                            PrintLn("      " + content);
+                            Print("      " + content);
                         }
+                        PrintLn();
                     }
                     case list:
                     {
                         uint length = getRAMByte(current+4) + getRAMByte(current+5) << 8;
                         type etype  = type(getRAMByte(current+6));
                         PrintLn(" (list: [" + etype.ToString() + ", " + length.ToString() + "])");
-                        string content = TypeToString(current+2, "list", false, 100);
-                        if (content.Length > 0)
-                        {
-                            PrintLn("      " + content);
-                        }
+                        //string content = TypeToString(current+2, "list", false, 100);
+                        //if (content.Length > 0)
+                        //{
+                        //    PrintLn("      " + content);
+                        //}
                     }
                     default:
                     {

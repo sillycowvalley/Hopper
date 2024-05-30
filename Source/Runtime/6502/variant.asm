@@ -98,6 +98,7 @@ unit Variant
     {
         // variant type to clone is at IDY, 
         //    resulting clone in IDX
+        //    uses FSIZE (F1..F2), FVALUE (F10..F11)
         LDY #4
         LDA [IDY], Y
         STA FVALUEH

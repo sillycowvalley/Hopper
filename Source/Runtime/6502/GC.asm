@@ -152,14 +152,18 @@ unit GC
         TYA PHA
 #endif
         
-        // Preserve LCURRENT, LNEXT, IDY
-        LDA LCURRENTL
+        // Preserve LCURRENT, LNEXT, FSOURCEADDRESS, IDY
+        LDA LCURRENTL       // F10
         PHA
-        LDA LCURRENTH
+        LDA LCURRENTH       // F11
         PHA
-        LDA LNEXTL
+        LDA LNEXTL          // F8
         PHA
-        LDA LNEXTH
+        LDA LNEXTH          // F9
+        PHA
+        LDA FSOURCEADDRESSL // F3
+        PHA
+        LDA FSOURCEADDRESSH // F4
         PHA
         LDA IDYL
         PHA
@@ -173,15 +177,15 @@ unit GC
             case Types.Long:
             case Types.Float:
             {
-                genericClone();
+                genericClone();  // uses ACC, FSOURCEADDRESS (F3..F4) , FDESTINATIONADDRESS (F5..F6), FLENGTH (F8..F9)
             }
             case Types.List:
             {
-                List.clone();
+                List.clone();    // uses ACC, FSIZE (F1..F2), LTYPE (F3), LNEXT (F8..F9), LCURRENT (F10..F11)
             }
             case Types.Variant:
             {
-                Variant.clone();
+                Variant.clone(); // uses FSIZE (F1..F2), FVALUE (F10..F11)
             }
             default:
             {
@@ -196,13 +200,17 @@ unit GC
         PLA
         STA IDYL
         PLA
-        STA LNEXTH
+        STA FSOURCEADDRESSH // F4
         PLA
-        STA LNEXTL
+        STA FSOURCEADDRESSL // F3
         PLA
-        STA LCURRENTH
+        STA LNEXTH          // F9
         PLA
-        STA LCURRENTL
+        STA LNEXTL         // F8
+        PLA
+        STA LCURRENTH      // F11
+        PLA
+        STA LCURRENTL      // F10
 #ifdef CPU_65C02S
         PLY
 #else        
@@ -210,9 +218,12 @@ unit GC
 #endif
     }
 
-    // IDY -> source, returns cloned object in IDX
     genericClone()
     {
+        // IDY -> source, returns cloned object in IDX
+        //    uses ACC, FSOURCEADDRESS (F3..F4) , FDESTINATIONADDRESS (F5..F6), FLENGTH (F8..F9)
+        //
+        
         // get the memory block size
         
         // IDX = IDY - 2

@@ -682,7 +682,8 @@ unit List
     clone()
     {
         // IDY -> sourceList, returns cloned list in IDX (LCURRENT, LNEXT and IDY preserved in recursive calls)
-        //  called from GC.Clone()
+        //   called from GC.Clone()
+        //   uses FSIZE (F1..F2), LTYPE (F3), LNEXT (F8..F9), LCURRENT (F10..F11)
         
         createList(); // IDX
         

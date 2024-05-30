@@ -11,8 +11,8 @@ program R6502
     #define PACKED_INSTRUCTIONS
     #define JIX_INSTRUCTIONS
     
-    //#define LONGS                // 236 bytes
-    //#define FLOATS               //  28 bytes (requires LONGS)
+    #define LONGS                // 236 bytes
+    #define FLOATS               //  28 bytes (requires LONGS)
     #define LISTS
     
     // Speed vs Size:
@@ -771,7 +771,7 @@ program R6502
     }
     stepintoCommand()
     {
-        Instruction.Execute();    
+        Instruction.Execute();   
     }
     checkRestart()
     {

@@ -240,11 +240,29 @@ program Lists
         value = lOS.GetItem(0);
         if (value != "one")
         {
-            PrintFailed("List : < < < string > > > GetItem failed");
+            PrintFailed("List : < < < string > > > GetItem(0) failed");
         }
         else
         {
-            WriteLn("List : < < < string > > > GetItem passed");
+            WriteLn("List : < < < string > > > GetItem(0) passed");
+        }
+        value = lOS.GetItem(1);
+        if (value != "two")
+        {
+            PrintFailed("List : < < < string > > > GetItem(1) failed");
+        }
+        else
+        {
+            WriteLn("List : < < < string > > > GetItem(1) passed");
+        }
+        value = lOS.GetItem(2);
+        if (value != "three")
+        {
+            PrintFailed("List : < < < string > > > GetItem(2) failed");
+        }
+        else
+        {
+            WriteLn("List : < < < string > > > GetItem(2) passed");
         }
                 
         listOfLists.Clear();
