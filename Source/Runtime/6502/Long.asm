@@ -2,9 +2,34 @@ unit Long
 {
     uses "/Source/Runtime/6502/ZeroPage"
     
-    friend Time, Float;
+    friend Time, Float, GC;
     
     const uint siData = 2;
+    
+    compareEqual()
+    {
+        // compare two objects in IDX and IDY
+        //    munts Y, sets X
+        LDY # siData
+        LDX # 4
+        loop
+        {
+            LDA [IDX], Y
+            CMP [IDY], Y
+            if (NZ)
+            {
+                LDX # 0 // different -> not equal
+                break;
+            }
+            INY
+            DEX
+            if (Z)
+            {
+                LDX # 1 // no differences -> equal
+                break;
+            }
+        }
+    }
        
     pushNewFromL()
     {

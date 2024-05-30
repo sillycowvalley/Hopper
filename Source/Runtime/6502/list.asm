@@ -1451,13 +1451,128 @@ unit List
     {
         LDA # 0x0A // LibCall not Implemented!
         Diagnostics.die();
-        return;
     }
     
     Contains()
     {
-        LDA # 0x0A // LibCall not Implemented!
-        Diagnostics.die();
-        return;
+        // Pop the value to search for (V) and list reference (this)
+        popValueToIDXandTYPE(); // value and type
+        Stacks.PopIDY();        // list reference -> IDY
+        
+        // Load the type of the list items
+        LDY # lsType
+        LDA [IDY], Y
+        STA LTYPE // type of list items
+    
+        // Get the first item in the list (pFirst)
+        LDY # lsFirst
+        LDA [IDY], Y
+        STA LCURRENTL
+        INY
+        LDA [IDY], Y
+        STA LCURRENTH
+        
+        LDA IDYL
+        PHA
+        LDA IDYH
+        PHA
+        
+        // value to search for is in IDX
+             
+        // Loop through the list items
+        loop
+        {
+            // Check if the current item pointer is zero (end of list)
+            LDA LCURRENTL
+            ORA LCURRENTH
+            if (Z) 
+            { 
+                LDA # 0x0A
+                Serial.WriteChar();
+                LDA # 'F'
+                Serial.WriteChar();
+                
+                // End of list, item not found
+                LDX # 0
+                break; 
+            } 
+    
+            // Get the current item's data (pData)
+            LDY # liData
+            LDA [LCURRENT], Y
+            STA IDYL
+            INY
+            LDA [LCURRENT], Y
+            STA IDYH
+    
+            // Compare the current item with the target value
+            LDA LTYPE
+            IsReferenceType();
+            if (C)
+            {
+                // compare the reference types in IDX and IDY for equality
+                //    return X=1 for equal, X=0 for not equal
+                GC.CompareEqual();
+                CPX # 1
+                if (Z)
+                {
+                    LDA # 0x0A
+                    Serial.WriteChar();
+                    LDA # 'R'
+                    Serial.WriteChar();
+                    
+                    // Item found, return true           
+                    break;
+                }
+            }
+            else
+            {
+                // If the item is a value type, compare the values
+                LDA IDXL
+                CMP IDYL
+                if (Z)
+                {
+                    LDA IDXH
+                    CMP IDYH
+                    if (Z)
+                    {
+                        LDA # 0x0A
+                        Serial.WriteChar();
+                        LDA # 'V'
+                        Serial.WriteChar();
+                        
+                        LDX #1 // Item found, return true
+                        break;
+                    }
+                }
+            }
+    
+            // Move to the next item (pNext)
+            LDY # liNext
+            LDA [LCURRENT], Y
+            TAX
+            INY
+            LDA [LCURRENT], Y
+            STA LCURRENTH
+            STX LCURRENTL
+        } // loop
+        
+        LDA LTYPE
+        IsReferenceType();
+        if (C)
+        {
+            GC.Release(); // 'value' in IDX, preserves X
+        }
+        
+        PLA
+        STA IDXH
+        PLA
+        STA IDXL
+        
+        GC.Release(); // 'this' in IDX, preserves X
+        
+        // bool result in X
+        Stacks.PushX();
     }
+    
 }

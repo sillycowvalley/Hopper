@@ -122,7 +122,9 @@ unit GC
                 }
                 case Types.List:
                 {
+#ifdef LISTS
                     List.clear();
+#endif
                 }
                 default:
                 {
@@ -181,11 +183,15 @@ unit GC
             }
             case Types.List:
             {
+#ifdef LISTS
                 List.clone();    // uses ACC, FSIZE (F1..F2), LTYPE (F3), LNEXT (F8..F9), LCURRENT (F10..F11)
+#endif
             }
             case Types.Variant:
             {
+#ifdef LISTS
                 Variant.clone(); // uses FSIZE (F1..F2), FVALUE (F10..F11)
+#endif
             }
             default:
             {
@@ -295,6 +301,84 @@ unit GC
         INY 
         TYA // 1 -> A
         STA [IDX], Y
+    }
+    
+    CompareEqual()
+    {
+        // called by List.Contains which uses LCURRENT (F10..F11)
+        //   uses:
+        //      String.compareEqual() : FSOURCEADDRESS (F3..F4), FDESTINATIONADDRESS (F5..F6), LCOUNT (F14..F15)
+        //      Long.compareEqual(), String.compareEqual() : munt Y
+        TAY PHA
+        loop
+        {
+            // compare the reference types in IDX and IDY for equality
+            //    return X=1 for equal, X=0 for not equal
+            LDA IDXL
+            CMP IDYL
+            if (Z)
+            {
+                LDA IDXH
+                CMP IDYH
+                if (Z)
+                {
+                    // trivial case: IDX and IDY are the same reference
+                    LDX # 1
+                    break;
+                }
+            }
+            LDY #0
+            LDA [IDX], Y
+            CMP [IDY], Y
+            if (NZ)
+            {
+                // types are not the same
+                LDX # 0
+                break;
+            }
+            
+            // types are the same
+            TAX
+            switch (X)
+            {
+                case Types.String:
+                {
+                    String.compareEqual(); // munts Y, sets X, uses FSOURCEADDRESS (F3..F4), FDESTINATIONADDRESS (F5..F6), LCOUNT (F14..F15)
+                }
+                case Types.Long:
+                case Types.Float:
+                {
+                    Long.compareEqual(); // munts Y, sets X
+                }
+                case Types.Array:
+                {
+                    LDA # 0x0A
+                    Diagnostics.die();    
+                }
+                case Types.List:
+                {
+    #ifdef LISTS
+                    LDA # 0x0A
+                    Diagnostics.die();
+    #endif
+                }
+                case Types.Variant:
+                {
+    #ifdef LISTS
+                    LDA # 0x0A
+                    Diagnostics.die();
+    #endif
+                }
+                default:
+                {
+                    LDA # 0x0B
+                    Diagnostics.die();
+                }
+            }
+            break;
+        } // loop
+        
+        PLA TAY
     }
 
 }

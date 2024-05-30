@@ -368,7 +368,11 @@ unit SysCall
             }
             case SysCalls.VariantBox:
             {
+#ifdef LISTS                
                 Variant.Box();
+#else
+                missing();
+#endif                
             }
             
             case SysCalls.ListNew:

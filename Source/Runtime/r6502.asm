@@ -6,14 +6,15 @@ program R6502
     //#define CPU_6502      // MOS
     
     
-    #define CHECKED              // 111/109 bytes
+    //#define CHECKED              // 111/109 bytes
     
     #define PACKED_INSTRUCTIONS
     #define JIX_INSTRUCTIONS
     
-    #define LONGS                // 236 bytes
-    #define FLOATS               //  28 bytes (requires LONGS)
-    #define LISTS
+    // Optional types:
+    #define LONGS              //  236 bytes
+    #define FLOATS             //   28 bytes (requires LONGS)
+    #define LISTS            // 2458 bytes (requires Variant)
     
     // Speed vs Size:
     #define FASTINTS

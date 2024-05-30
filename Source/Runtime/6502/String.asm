@@ -1,5 +1,7 @@
 unit String
 {
+    friend GC;
+    
     // String memory map:
     //   0000 heap allocator size
     //   0F   type = tString
@@ -11,7 +13,7 @@ unit String
     
     const uint siLength = 2;
     const uint siChars  = 4;
-
+    
     new()
     {
         // round up string allocations to 16 byte boundaries
@@ -93,6 +95,17 @@ unit String
         ADC #0
         STA FDESTINATIONADDRESSH
     }
+    loadDestFromIDY() 
+    {
+        CLC
+        LDA IDYL
+        ADC # siChars
+        STA FDESTINATIONADDRESSL
+        LDA IDYH
+        ADC #0
+        STA FDESTINATIONADDRESSH
+    }
+    
     loadSourceFromIDX() 
     {
         CLC
@@ -102,6 +115,75 @@ unit String
         LDA IDXH
         ADC #0
         STA FSOURCEADDRESSH
+    }
+    
+    compareEqual()
+    {
+        // compare two objects in IDX and IDY
+        //    munts Y, sets X
+        //    uses LCOUNT, FSOURCEADDRESS, FDESTINATIONADDRESS
+        
+        loadSourceFromIDX();
+        loadDestFromIDY();
+        
+        LDY # siLength
+        LDA [IDX], Y
+        STA LCOUNTL
+        INY
+        LDA [IDX], Y
+        STA LCOUNTH
+        
+        loop
+        {
+            // check that lengths are the same
+            LDA [IDY], Y
+            CMP LCOUNTH
+            if (NZ)
+            {
+                LDX # 0 // different -> not equal
+                break;
+            }
+            DEY
+            LDA [IDY], Y
+            CMP LCOUNTL
+            if (NZ)
+            {
+                LDX # 0 // different -> not equal
+                break;
+            }
+            
+            LDY # 0
+            loop
+            {
+                LDA LCOUNTL
+                if (Z)
+                {
+                    LDA LCOUNTH
+                    if (Z)
+                    {
+                        LDX # 1 // no different -> equal
+                        break;
+                    }
+                }
+                LDA [FSOURCEADDRESS], Y
+                CMP [FDESTINATIONADDRESS], Y
+                if (NZ)
+                {
+                    LDX # 0 // different -> not equal
+                    break;
+                }
+                IncDESTINATIONADDRESS();
+                IncSOURCEADDRESS();
+                
+                LDA LCOUNTL
+                if (Z)
+                {
+                    DEC LCOUNTH
+                }
+                DEC LCOUNTL 
+            } // loop
+            break;
+        } // loop
     }
     
     // replace all references 'IDY' of FTYPE with 'IDX'
@@ -385,7 +467,8 @@ unit String
                 return;
             }
         }
-        LDA # 0x0B Diagnostics.die();
+        LDA # 0x0B 
+        Diagnostics.die();
     }
     LengthGet()
     {

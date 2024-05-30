@@ -6,7 +6,6 @@ unit Diagnostics
     
     die()
     {
-#ifdef CHECKED
         PHA
         
         registers();
@@ -33,7 +32,6 @@ unit Diagnostics
         PLA
         Serial.HexOut();
         loop { }
-#endif        
         INC ZP.SerialBreakFlag // hardware <ctrl><C>
         BRK
     }
