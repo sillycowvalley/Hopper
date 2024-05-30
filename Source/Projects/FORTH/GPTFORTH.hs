@@ -3,26 +3,27 @@ program GTPFORTH
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
     
-    const uint stackLimit = 1024;
-    int[stackLimit] stack;
+    const uint stackLimit = 1024; // Define the maximum stack size
+    int[stackLimit] stack; // Stack array
     uint sp = 0; // Initialize stack pointer
     bool running = true; // Control the main loop
     
-    const uint memorySize = 1024;
-    int[memorySize] memory;
+    const uint memorySize = 1024; // Define the memory size
+    int[memorySize] memory; // Memory array
     
+    // Define a record to represent a FORTH word
     record Word
     {
-        string Name;
-        <string> Definition;
+        string Name; // Word name
+        <string> Definition; // Word definition
     }
     
-    <Word> wordList;
-    bool definingWord = false;
-    string currentWordName;
-    <string> currentWordDefinition;
+    <Word> wordList; // List to store user-defined words
+    bool definingWord = false; // Flag to indicate if a word is being defined
+    string currentWordName; // Current word being defined
+    <string> currentWordDefinition; // Current word definition being built
     
-    // Push a value onto the stack
+    // Push a value onto the stack ( n -- )
     push(int value)
     {
         if (sp < stackLimit)
@@ -36,7 +37,7 @@ program GTPFORTH
         }
     }
     
-    // Pop a value from the stack
+    // Pop a value from the stack ( -- n )
     int pop()
     {
         if (sp > 0)
@@ -84,35 +85,41 @@ program GTPFORTH
         {
             switch (token)
             {
+                // Start defining a new word ( -- )
                 case ":":
                 {
                     definingWord = true;
                     currentWordDefinition.Clear();
                     currentWordName = ""; // Reset the word name
                 }
+                // Print the top value on the stack ( n -- )
                 case ".":
                 {
                     int top = pop();
                     Write(top.ToString());
                 }
+                // Addition ( n1 n2 -- n1+n2 )
                 case "+":
                 {
                     int top = pop();
                     int next = pop();
                     push(next + top);
                 }
+                // Subtraction ( n1 n2 -- n1-n2 )
                 case "-":
                 {
                     int top = pop();
                     int next = pop();
                     push(next - top);
                 }
+                // Multiplication ( n1 n2 -- n1*n2 )
                 case "*":
                 {
                     int top = pop();
                     int next = pop();
                     push(next * top);
                 }
+                // Division ( n1 n2 -- n1/n2 )
                 case "/":
                 {
                     int top = pop();
@@ -127,6 +134,7 @@ program GTPFORTH
                         push(next / top);
                     }
                 }
+                // Modulo ( n1 n2 -- n1%n2 )
                 case "mod":
                 {
                     int top = pop();
@@ -141,17 +149,19 @@ program GTPFORTH
                         push(next % top);
                     }
                 }
+                // Negate the top value on the stack ( n -- -n )
                 case "negate":
                 {
                     int top = pop();
                     push(-top);
                 }
+                // Absolute value of the top value on the stack ( n -- |n| )
                 case "abs":
                 {
                     int top = pop();
                     push(top < 0 ? -top : top);
                 }
-                // logical operations
+                // Logical AND ( n1 n2 -- n1&n2 )
                 case "and":
                 {
                     int top = pop();
@@ -161,6 +171,7 @@ program GTPFORTH
                     byte b1 = top.GetByte(1) & next.GetByte(1);
                     push(Int.FromBytes(b0, b1));
                 }
+                // Logical OR ( n1 n2 -- n1|n2 )
                 case "or":
                 {
                     int top = pop();
@@ -170,6 +181,7 @@ program GTPFORTH
                     byte b1 = top.GetByte(1) | next.GetByte(1);
                     push(Int.FromBytes(b0, b1));
                 }
+                // Logical XOR ( n1 n2 -- n1^n2 )
                 case "xor":
                 {
                     int top = pop();
@@ -179,6 +191,7 @@ program GTPFORTH
                     byte b1 = top.GetByte(1) ^ next.GetByte(1);
                     push(Int.FromBytes(b0, b1));
                 }
+                // Bitwise NOT ( n -- ~n )
                 case "invert":
                 {
                     int top = pop();
@@ -187,8 +200,7 @@ program GTPFORTH
                     byte b1 = ~top.GetByte(1);
                     push(Int.FromBytes(b0, b1));
                 }
-                
-                // comparison operations
+                // Comparison operations ( n1 n2 -- flag )
                 case "=":
                 {
                     int top = pop();
@@ -207,8 +219,7 @@ program GTPFORTH
                     int next = pop();
                     push(next > top ? -1 : int(0));
                 }
-                
-                // stack operations
+                // Duplicate the top value on the stack ( n -- n n )
                 case "dup":
                 {
                     if (sp > 0)
@@ -221,6 +232,7 @@ program GTPFORTH
                         WriteLn("Stack Underflow");
                     }
                 }
+                // Drop the top value on the stack ( n -- )
                 case "drop":
                 {
                     if (sp > 0)
@@ -232,6 +244,7 @@ program GTPFORTH
                         WriteLn("Stack Underflow");
                     }
                 }
+                // Swap the top two values on the stack ( n1 n2 -- n2 n1 )
                 case "swap":
                 {
                     if (sp > 1)
@@ -246,6 +259,7 @@ program GTPFORTH
                         WriteLn("Stack Underflow");
                     }
                 }
+                // Copy the second value on the stack to the top ( n1 n2 -- n1 n2 n1 )
                 case "over":
                 {
                     if (sp > 1)
@@ -258,6 +272,7 @@ program GTPFORTH
                         WriteLn("Stack Underflow");
                     }
                 }
+                // Rotate the top three values on the stack ( n1 n2 n3 -- n2 n3 n1 )
                 case "rot":
                 {
                     if (sp > 2)
@@ -274,6 +289,7 @@ program GTPFORTH
                         WriteLn("Stack Underflow");
                     }
                 }
+                // Rotate the top three values on the stack in the opposite direction ( n1 n2 n3 -- n3 n1 n2 )
                 case "-rot":
                 {
                     if (sp > 2)
@@ -290,10 +306,7 @@ program GTPFORTH
                         WriteLn("Stack Underflow");
                     }
                 }
-                
-                
-                
-                // memory operations
+                // Store a value in memory ( n addr -- )
                 case "!":
                 {
                     int address = pop();
@@ -307,6 +320,7 @@ program GTPFORTH
                         WriteLn("Invalid memory address");
                     }
                 }
+                // Fetch a value from memory ( addr -- n )
                 case "@":
                 {
                     int address = pop();
@@ -320,6 +334,7 @@ program GTPFORTH
                         push(0); // Default error value
                     }
                 }
+                // Store a byte in memory ( byte addr -- )
                 case "c!":
                 {
                     int address = pop();
@@ -333,6 +348,7 @@ program GTPFORTH
                         WriteLn("Invalid memory address");
                     }
                 }
+                // Fetch a byte from memory ( addr -- byte )
                 case "c@":
                 {
                     int address = pop();
@@ -346,28 +362,30 @@ program GTPFORTH
                         push(0); // Default error value
                     }
                 }
-                
-                // input / output operations
+                // Output a character ( n -- )
                 case "emit":
                 {
                     int value = pop();
                     char ch = char(value.GetByte(0) & 0xFF);
                     Write(ch);
                 }
+                // Output a carriage return and line feed ( -- )
                 case "cr":
                 {
                     WriteLn("");
                 }
+                // Read a single character ( -- n )
                 case "key":
                 {
                     char ch = Serial.ReadChar();
                     push(int(ch));
                 }
-                
+                // Exit the interpreter ( -- )
                 case "bye":
                 {
                     running = false; // Set the flag to false to exit the loop
                 }
+                // Execute user-defined words or handle unknown tokens
                 default:
                 {
                     bool found = false;
@@ -393,7 +411,7 @@ program GTPFORTH
         }
     }
     
-    // Process input and split into tokens
+    // Process input and split into tokens ( input -- )
     processInput(string input)
     {
         uint start = 0;
@@ -418,7 +436,7 @@ program GTPFORTH
         }
     }
     
-    // Main entry point
+    // Main entry point ( -- )
     Hopper()
     {
         string inputLine;
