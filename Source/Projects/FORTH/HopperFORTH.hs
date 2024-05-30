@@ -16,17 +16,13 @@ program HopperFORTH
     {
         string Name;             // Word name
         <string> Definition;     // Word definition
-        int Address;             // Address for created words
-        bool HasCustomBehavior;  // Flag to indicate if 'does>' is used
     }
     
     <Word> wordList; // List to store user-defined words
-    bool definingWord = false; // Flag to indicate if a word is being defined
-    bool settingCustomBehavior = false; // Flag to indicate custom behavior setting
+    bool definingWord; // Flag to indicate if a word is being defined
     string currentWordName; // Current word being defined
     <string> currentWordDefinition; // Current word definition being built
-    int nextAddress; // Next available address for 'create'
-
+    
     // Push a value onto the stack ( n -- )
     push(int value)
     {
@@ -69,13 +65,20 @@ program HopperFORTH
                 Word newWord;
                 newWord.Name = currentWordName;
                 newWord.Definition = currentWordDefinition;
-                newWord.Address = nextAddress;
-                nextAddress++;
-                newWord.HasCustomBehavior = settingCustomBehavior;
-                settingCustomBehavior = false;
                 wordList.Append(newWord);
                 
-                WriteLn("Defined word: " + currentWordName);
+                Write("Defined word: " + currentWordName + " '");
+                bool first = true;
+                foreach (var token in currentWordDefinition)
+                {
+                    if (!first)
+                    {
+                        Write(" ");
+                    }
+                    Write(token);
+                    first = false;
+                }
+                WriteLn("'");
             }
             else if (currentWordName.Length == 0)
             {
@@ -100,18 +103,6 @@ program HopperFORTH
                     definingWord = true;
                     currentWordDefinition.Clear();
                     currentWordName = ""; // Reset the word name
-                }
-                // Create a new word ( -- )
-                case "create":
-                {
-                    definingWord = true;
-                    currentWordDefinition.Clear();
-                    currentWordName = ""; // Reset the word name
-                }
-                // Specify custom behavior ( -- )
-                case "does>":
-                {
-                    settingCustomBehavior = true;
                 }
                 // Print the top value on the stack ( n -- )
                 case ".":
@@ -428,16 +419,9 @@ program HopperFORTH
                         if (word.Name == token)
                         {
                             found = true;
-                            if (!word.HasCustomBehavior)
+                            foreach (var wordToken in word.Definition)
                             {
-                                foreach (var wordToken in word.Definition)
-                                {
-                                    executeToken(wordToken);
-                                }
-                            }
-                            else
-                            {
-                                push(word.Address);
+                                executeToken(wordToken);// For regular words
                             }
                             break;
                         }
@@ -503,16 +487,6 @@ program HopperFORTH
     {
         <string> definition;
         
-        // Define `constant` ( n -- )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("constant");
-        definition.Append("create");
-        definition.Append("does>");
-        definition.Append("@");
-        definition.Append(";");
-        executeDefinitions(definition);
-    
         // Define `nip` ( n1 n2 -- n2 )
         definition.Clear();
         definition.Append(":");
@@ -646,7 +620,7 @@ program HopperFORTH
         definition.Append(";");
         executeDefinitions(definition);
     }
-    
+        
     // Main entry point ( -- )
     Hopper()
     {
