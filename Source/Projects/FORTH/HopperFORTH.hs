@@ -25,7 +25,8 @@ program HopperFORTH
     bool settingCustomBehavior = false; // Flag to indicate custom behavior setting
     string currentWordName; // Current word being defined
     <string> currentWordDefinition; // Current word definition being built
-    
+    int nextAddress; // Next available address for 'create'
+
     // Push a value onto the stack ( n -- )
     push(int value)
     {
@@ -68,6 +69,8 @@ program HopperFORTH
                 Word newWord;
                 newWord.Name = currentWordName;
                 newWord.Definition = currentWordDefinition;
+                newWord.Address = nextAddress;
+                nextAddress++;
                 newWord.HasCustomBehavior = settingCustomBehavior;
                 settingCustomBehavior = false;
                 wordList.Append(newWord);
@@ -425,7 +428,7 @@ program HopperFORTH
                         if (word.Name == token)
                         {
                             found = true;
-                            if (word.HasCustomBehavior)
+                            if (!word.HasCustomBehavior)
                             {
                                 foreach (var wordToken in word.Definition)
                                 {
