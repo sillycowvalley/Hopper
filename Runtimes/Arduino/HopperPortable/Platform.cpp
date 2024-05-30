@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #include "Platform.h"
 #include "HopperScreen.h"
 #include "HopperTimer.h"
@@ -5,10 +7,9 @@
 #include <Wire.h>
 #include <SPI.h>
 
+#ifdef RP2040 // use ARDUINO_ARCH_RP2040?
 #include "pico/stdlib.h"
 
-
-#ifdef RP2040 // use ARDUINO_ARCH_RP2040?
 #include <Adafruit_NeoPixel.h>
 /*
 #define NEOPIN        16 // On Trinket or Gemma, suggest changing this to 1
@@ -64,8 +65,10 @@ UInt External_MCUClockSpeedGet()
 void External_MCUClockSpeedSet(UInt value)
 {
     clockSpeed = value;
+#ifdef RP2040
     uint32_t freq_khz = (uint32_t)clockSpeed * 1000;
     set_sys_clock_khz(freq_khz, true); // 158us
+#endif
 }
 
 
@@ -76,9 +79,10 @@ Bool External_AttachToPin(Byte pin, PinISRDelegate gpioISRDelegate, Byte status)
         // pin is not valid for interrupt
         return false;
     }
-    //pinMode(pin, INPUT_PULLUP); // should this be here? should it be an option?
+#ifdef RP2040
     uint param = gpioISRDelegate + (pin << 16) + (status << 24);
-    attachInterruptParam(digitalPinToInterrupt(pin), pinISR, (PinStatus)status, (void*)param);
+    attachInterruptParam(digitalPinToInterrupt(pin), pinISR, (PinStatus)status, (void*)param); // TEENSY TODO
+#endif
     interruptsEnabled = true; // just in case it wasn't
     return true;
 }
@@ -202,14 +206,14 @@ void Platform_Initialize()
     codeMemoryBlock = (unsigned char*)malloc((segmentPages << 8)); // calloc does not work on the Lolin D1 Mini
     if (nullptr != codeMemoryBlock)
     {
-        memset(codeMemoryBlock, (segmentPages << 8), 0);
+        memset(codeMemoryBlock, 0, (segmentPages << 8));
         codeStartAddress = codeMemoryBlock;
     }
     //Serial.println((unsigned int)codeMemoryBlock, HEX);
     dataMemoryBlock = (unsigned char*)malloc((segmentPages << 8));
     if (nullptr != dataMemoryBlock)
     {
-        memset(dataMemoryBlock, (segmentPages << 8), 0);
+        memset(dataMemoryBlock, 0, (segmentPages << 8));
     }
     //Serial.println((unsigned int)dataMemoryBlock, HEX);
     FileSystem_Initialize();
@@ -704,7 +708,7 @@ UInt External_LongToString(UInt hrlong)
     UInt hrstring = HRString_New();
     char buffer[20];
     long l = nativeLongFromHopperLong(hrlong);
-    sprintf(buffer, "%d", l);
+    sprintf(buffer, "%ld", l);
     UInt i = 0;
     while (buffer[i])
     {
@@ -965,6 +969,11 @@ bool HRWire_Begin(Byte controller)
             case 0:
                 if (controller0Configured)
                 {
+#ifdef TEENSY
+                    Wire.setSDA(sdaPin0);
+                    Wire.setSCL(sclPin0);
+#endif                  
+#ifdef RP2040                  
                     if (!Wire.setSDA(sdaPin0))
                     {
                         break;
@@ -973,6 +982,7 @@ bool HRWire_Begin(Byte controller)
                     {
                         break;
                     }
+#endif
                 }
 #ifdef RP2040
                 Wire.setClock(freqkHz0 * 1000);
@@ -1073,7 +1083,8 @@ bool External_FunctionCall(UInt jumpTable, Byte opCode)
     return instructionDelegate();
 }
 
- // Default speed set to 4MHz, SPI mode set to MODE 0 and Bit order set to MSB first.
+// Default speed set to 4MHz, SPI mode set to MODE 0 and Bit order set to MSB first.
+#ifdef SPI_INCLUDED
 uint32_t speedMaximum0 = 4000000;
 uint32_t speedMaximum1 = 4000000;
 BitOrder dataOrder0 = MSBFIRST;
@@ -1109,11 +1120,13 @@ SPIClass* screenSPI0 = nullptr;
 SPISettings screenSPISettings0;
 #endif
 
+#endif // SPI_INCLUDED
 
 // assigns SPI, creates SPISettings0, calls begin() (returns false if pins not set)    
 Bool HRSPI_Begin(Byte spiController)
 {
     bool success = false;
+#ifdef SPI_INCLUDED    
     switch (spiController)
     {
         case 0:
@@ -1204,11 +1217,13 @@ Bool HRSPI_Begin(Byte spiController)
             break;
 #endif
     }
+#endif    
     return success;
 }
 
 void HRSPI_BeginTransaction(Byte spiController)
 {
+#ifdef SPI_INCLUDED  
     switch (spiController)
     {
         case 0:
@@ -1220,10 +1235,12 @@ void HRSPI_BeginTransaction(Byte spiController)
             break;
 #endif
     }
+#endif    
 }
 
 void HRSPI_EndTransaction(Byte spiController)
 {
+#ifdef SPI_INCLUDED
     switch (spiController)
     {
         case 0:
@@ -1235,11 +1252,13 @@ void HRSPI_EndTransaction(Byte spiController)
             break;
 #endif
     }
+#endif
 }
 
 Byte HRSPI_ReadByte(Byte spiController)
 {
     Byte data = 0;
+#ifdef SPI_INCLUDED
     switch (spiController)
     {
         case 0:
@@ -1251,10 +1270,12 @@ Byte HRSPI_ReadByte(Byte spiController)
             break;
 #endif
     }
+#endif
     return data;
 }
 void HRSPI_WriteByte(Byte spiController, Byte data)
 {
+#ifdef SPI_INCLUDED
     switch (spiController)
     {
         case 0:
@@ -1274,10 +1295,12 @@ void HRSPI_WriteByte(Byte spiController, Byte data)
             break;
 #endif
     }
+#endif
 }
 
 void HRSPI_WriteBytes(Byte spiController, Byte data, UInt count)
 {
+#ifdef SPI_INCLUDED
     switch (spiController)
     {
         case 0:
@@ -1305,11 +1328,13 @@ void HRSPI_WriteBytes(Byte spiController, Byte data, UInt count)
             break;
 #endif
     }
+#endif
 }
 
 UInt HRSPI_ReadWord(Byte spiController)
 {
     UInt data = 0;
+#ifdef SPI_INCLUDED
     switch (spiController)
     {
         case 0:
@@ -1321,10 +1346,12 @@ UInt HRSPI_ReadWord(Byte spiController)
             break;
 #endif
     }
+#endif
     return data;
 }
 void HRSPI_WriteWord(Byte spiController, UInt data)
 {
+#ifdef SPI_INCLUDED
 switch (spiController)
     {
         case 0:
@@ -1336,10 +1363,12 @@ switch (spiController)
             break;
 #endif
     }
+#endif
 }
 void HRSPI_WriteWords(Byte spiController, UInt data, UInt count)
 {
-switch (spiController)
+#ifdef SPI_INCLUDED
+    switch (spiController)
     {
         case 0:
             while (count != 0)
@@ -1358,10 +1387,12 @@ switch (spiController)
             break;
 #endif
     }
+#endif
 }
 
 void HRSPI_WriteBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt length)
 {
+#ifdef SPI_INCLUDED
     Type etype = (Type)dataMemoryBlock[hrdata + 4];
     if (etype == Type::eUInt)
     {
@@ -1384,9 +1415,11 @@ void HRSPI_WriteBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt le
             break;
 #endif
     }
+#endif
 }
 void HRSPI_ReadBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt length)
 {
+#ifdef SPI_INCLUDED
     Byte * data = &dataMemoryBlock[hrdata + startIndex + 5];
     switch (spiController)
     {
@@ -1403,10 +1436,12 @@ void HRSPI_ReadBuffer(Byte spiController, UInt hrdata, UInt startIndex, UInt len
             break;
 #endif
     }
+#endif
 }
 
 void HRSPI_Settings(Byte spiController, UInt hrspeedMaximum, DataOrder dataOrder, DataMode dataMode)
 {
+#ifdef SPI_INCLUDED
     long speedMaximum = nativeLongFromHopperLong(hrspeedMaximum);
     switch (spiController)
     {
@@ -1425,10 +1460,12 @@ void HRSPI_Settings(Byte spiController, UInt hrspeedMaximum, DataOrder dataOrder
             break;
         }
     }
+#endif
 }
 
 void HRSPI_SetCSPin(Byte spiController, Byte pin)
 {
+#ifdef SPI_INCLUDED
     if (spiController == 0)
     {
         spiCSPin0 = pin;
@@ -1439,10 +1476,12 @@ void HRSPI_SetCSPin(Byte spiController, Byte pin)
         spiCSPin1 = pin;
         spiCSPin1Set = true;
     }
+#endif
 }
 
 void HRSPI_SetClkPin(Byte spiController, Byte pin)
 {
+#ifdef SPI_INCLUDED
     if (spiController == 0)
     {
         spiClkPin0 = pin;
@@ -1453,10 +1492,12 @@ void HRSPI_SetClkPin(Byte spiController, Byte pin)
         spiClkPin1 = pin;
         spiClkPin1Set = true;
     }
+#endif
 }
 
 void HRSPI_SetTxPin(Byte spiController, Byte pin)
 {
+#ifdef SPI_INCLUDED
     if (spiController == 0)
     {
         spiTxPin0 = pin;
@@ -1467,10 +1508,12 @@ void HRSPI_SetTxPin(Byte spiController, Byte pin)
         spiTxPin1 = pin;
         spiTxPin1Set = true;
     }
+#endif
 }
 
 void HRSPI_SetRxPin(Byte spiController, Byte pin)
 {
+#ifdef SPI_INCLUDED
     if (spiController == 0)
     {
         spiRxPin0 = pin;
@@ -1481,10 +1524,12 @@ void HRSPI_SetRxPin(Byte spiController, Byte pin)
         spiRxPin1 = pin;
         spiRxPin1Set = true;
     }
+#endif
 }
 
 Byte HRSPI_GetCSPin(Byte spiController)
 {
+#ifdef SPI_INCLUDED
     if (spiController == 0)
     {
         return spiCSPin0;
@@ -1493,6 +1538,7 @@ Byte HRSPI_GetCSPin(Byte spiController)
     {
         return spiCSPin1;
     }
+#endif
     return 0;
 }
 
@@ -1576,7 +1622,7 @@ void HRString_FromString(UInt & hrstr, const String & str)
     {
         hrstr = HRString_New();
     }
-    for (int i = 0; i < str.length(); i++)
+    for (int i = 0; i < (int)(str.length()); i++)
     {
         HRString_BuildChar_R(hrstr, str.charAt(i));
     }

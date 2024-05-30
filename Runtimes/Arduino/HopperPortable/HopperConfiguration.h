@@ -39,6 +39,12 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 #define ARDUINONANO_RP2040
 #endif
 
+
+#if defined(ARDUINO_TEENSY41)
+#define TEENSY
+#define USETIMERSTUBS
+#endif
+
 // Lolin Wemos D1 Mini, ESP 8266
 // - LittleFS for built-in Flash
 // - no ESP 8266 WiFi
@@ -63,6 +69,8 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // Just use 'ARDUINO_ARCH_RP2040' ?
 #if defined(RP2040PICO) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
 #define RP2040
+#define SPI_INCLUDED
+#define USETIMER
 #endif
 
 // Seems to be "ARDUINO_" + BOARD_NAME when using Pico board manager

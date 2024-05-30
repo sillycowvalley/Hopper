@@ -4,14 +4,18 @@ long nativeLongFromHopperLong(UInt hopperLong);
 extern Bool Library_isrExists;
 
 #ifdef USETIMERSTUBS
-void External_TimerInitialize() {}
-void External_TimerRelease()    {}
-UInt External_TimerStartMS(UInt msInterval, TimerISRDelegate timerISRDelegate) { return 0; }
-UInt External_TimerStartUS(UInt hrusInterval, TimerISRDelegate timerISRDelegate) { return 0; }
-void External_TimerStop(UInt timerID) {}
-UInt External_TimerAlarmMS(UInt msInterval, TimerISRDelegate timerISRDelegate) { return 0; }
-UInt External_TimerAlarmUS(UInt hrusInterval, TimerISRDelegate timerISRDelegate) { return 0; }
-void External_TimerCancel(UInt alarmID) {}
+
+void External_TimerInitialize() {}  // TEENSY TODO
+void External_TimerRelease()    {}  // TEENSY TODO
+
+UInt External_TimerStart(UInt msInterval, TimerISRDelegate timerISRDelegate)       { return 0; }  // TEENSY TODO
+UInt External_TimerStartLong(UInt hrmsInterval, TimerISRDelegate timerISRDelegate) { return 0; }  // TEENSY TODO
+void External_TimerStop(UInt timerID)                                              {  }  // TEENSY TODO
+
+UInt External_TimerAlarm(UInt msInterval, TimerISRDelegate timerISRDelegate)       { return 0; }  // TEENSY TODO
+UInt External_TimerAlarmLong(UInt hrmsInterval, TimerISRDelegate timerISRDelegate) { return 0; }  // TEENSY TODO
+void External_TimerCancel(UInt alarmID)                                            {  }  // TEENSY TODO
+
 #endif
 
 #ifdef USETIMER

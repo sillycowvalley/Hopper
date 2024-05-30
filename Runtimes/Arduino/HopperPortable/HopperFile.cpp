@@ -2,6 +2,160 @@
 
 long nativeLongFromHopperLong(UInt hopperLong);
 
+Byte sdController = 0;
+Byte sdCSPin;
+Byte sdClkPin;
+Byte sdTxPin;
+Byte sdRxPin;
+bool sdMounted = false;
+
+Byte External_SDSPIControllerGet()
+{
+    return sdController;
+}
+void External_SDSPIControllerSet(Byte iController)
+{
+    sdController = iController;
+}
+Byte External_SDCSPinGet()
+{
+    return sdCSPin;
+}
+void External_SDCSPinSet(Byte pin)
+{
+    sdCSPin = pin;
+}
+Byte External_SDClkPinGet()
+{
+    return sdClkPin;
+}
+void External_SDClkPinSet(Byte pin)
+{
+    sdClkPin = pin;
+}
+Byte External_SDTxPinGet()
+{
+    return sdTxPin;
+}
+void External_SDTxPinSet(Byte pin)
+{
+    sdTxPin = pin;
+}
+Byte External_SDRxPinGet()
+{
+    return sdRxPin;
+}
+void External_SDRxPinSet(Byte pin)
+{
+    sdRxPin = pin;
+}
+
+#ifdef TEENSY
+
+void FileSystem_Initialize()  // TEENSY TODO
+{
+}
+
+Bool External_FileExists(UInt hrpath)  // TEENSY TODO
+{
+    return false;
+}
+void External_SDEject()  // TEENSY TODO
+{
+}
+bool External_SDMount()  // TEENSY TODO
+{
+    return false;
+}
+
+
+void External_FileDelete(UInt hrpath)  // TEENSY TODO
+{
+}
+void External_FileWriteAllBytes(UInt hrpath, UInt hrcontent, bool append)  // TEENSY TODO
+{
+}
+
+void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength)  // TEENSY TODO
+{
+}
+UInt External_FileGetSize(UInt hrpath)  // TEENSY TODO
+{
+    return 0;
+}
+UInt External_FileGetTime(UInt hrpath)  // TEENSY TODO
+{
+    return 0;
+}
+UInt External_FileGetTimeStamp(UInt hrpath)  // TEENSY TODO
+{
+    return 0;
+}
+UInt External_FileGetDate(UInt hrpath)  // TEENSY TODO
+{
+    return 0;
+}
+
+
+void External_DirectoryDelete(UInt hrpath)  // TEENSY TODO
+{
+}
+Bool External_DirectoryExists(UInt hrpath)  // TEENSY TODO
+{
+    return false;
+}
+void External_DirectoryCreate(UInt hrpath)  // TEENSY TODO
+{
+}
+UInt External_DirectoryGetFileCount_R(UInt hrpath, UInt & skipped)  // TEENSY TODO
+{
+    return 0;
+}
+UInt External_DirectoryGetDirectoryCount_R(UInt hrpath, UInt & skipped)  // TEENSY TODO
+{
+    return 0;
+}
+UInt External_DirectoryGetFile(UInt hrpath, UInt index)  // TEENSY TODO
+{
+    return 0;
+}
+UInt External_DirectoryGetDirectory(UInt hrpath, UInt index)  // TEENSY TODO
+{
+    return 0;
+}
+UInt External_ReadLine(UInt _this)  // TEENSY TODO
+{
+    return 0;
+}
+
+UInt External_DirectoryGetTime(UInt hrpath)  // TEENSY TODO
+{
+    return 0;
+}
+UInt External_DirectoryGetDate(UInt hrpath)  // TEENSY TODO
+{
+    return 0;
+}
+
+
+Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLength)  // TEENSY TODO
+{
+    return false;
+}
+UInt External_TryFileReadBuffer(UInt hrpath, UInt hrseekpos, UInt hrbuffer, UInt bufferSize)  // TEENSY TODO
+{
+    return 0;
+}
+Bool External_TryFileReadByte_R(UInt hrpath, UInt hrseekpos, Byte & b)  // TEENSY TODO
+{
+    return false;
+}
+
+
+
+#else
+
+
 #include "LittleFS.h" // https://arduino-pico.readthedocs.io/en/latest/fs.html
 #include <FS.h>
 #include <SDFS.h>
@@ -38,13 +192,6 @@ void FileSystem_Initialize()
 #endif
 
 }
-
-Byte sdController = 0;
-Byte sdCSPin;
-Byte sdClkPin;
-Byte sdTxPin;
-Byte sdRxPin;
-bool sdMounted = false;
 
 bool isValidHopperPath(const char * path)
 {
@@ -696,46 +843,6 @@ UInt External_ReadLine(UInt _this)
     return str;
 }
 
-Byte External_SDSPIControllerGet()
-{
-    return sdController;
-}
-void External_SDSPIControllerSet(Byte iController)
-{
-    sdController = iController;
-}
-Byte External_SDCSPinGet()
-{
-    return sdCSPin;
-}
-void External_SDCSPinSet(Byte pin)
-{
-    sdCSPin = pin;
-}
-Byte External_SDClkPinGet()
-{
-    return sdClkPin;
-}
-void External_SDClkPinSet(Byte pin)
-{
-    sdClkPin = pin;
-}
-Byte External_SDTxPinGet()
-{
-    return sdTxPin;
-}
-void External_SDTxPinSet(Byte pin)
-{
-    sdTxPin = pin;
-}
-Byte External_SDRxPinGet()
-{
-    return sdRxPin;
-}
-void External_SDRxPinSet(Byte pin)
-{
-    sdRxPin = pin;
-}
 bool External_SDMount()
 {
     //pinMode(sdCSPin, OUTPUT);
@@ -932,3 +1039,5 @@ UInt External_FileGetTimeStamp(UInt hrpath)
     }
     return HRLong_New();
 }
+
+#endif // !TEENSY

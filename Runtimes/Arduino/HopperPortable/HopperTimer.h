@@ -5,12 +5,6 @@
 #include "Runtime.h"
 #include "Platform.h"
 
-#if defined(RP2040)
-#define USETIMER
-#else
-#define USETIMERSTUBS
-#endif
-
 void External_TimerInitialize();
 void External_TimerRelease();
 
