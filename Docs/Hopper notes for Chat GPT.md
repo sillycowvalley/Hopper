@@ -1,10 +1,10 @@
-# Hopper for GPT
+## Hopper for GPT
 
-## Introduction
+### Introduction
 
 Hopper is a modern programming language designed to run efficiently on small devices like microcontrollers and 8-bit microprocessors. It aims to provide a structured alternative to Python in the microcontroller domain, much like Turbo Pascal did for BASIC forty years ago. Hopper programs are single-threaded, run on a stack-based virtual machine, and have a garbage collector that collects objects not reachable from the stack.
 
-## Key Differences from Other C-Like Languages
+### Key Differences from Other C-Like Languages
 
 Hopper has several notable differences from other C-like languages such as C, C++, Java, and C#:
 
@@ -92,9 +92,9 @@ Hopper has several notable differences from other C-like languages such as C, C+
       - 0x0D - numeric type out of range / overflow
       - 0x0E - error returned from a failing child exe
 
-## Programs and Units
+### Programs and Units
 
-### Program Structure
+#### Program Structure
 
 In Hopper, a program is defined in a single file using the `program` keyword. The entry point for a Hopper program is named `Hopper`.
 
@@ -126,7 +126,7 @@ program Blink
 }
 ```
 
-### Units
+#### Units
 
 Units are similar to modules or classes in other languages and are defined using the `unit` keyword. Each unit typically corresponds to a single file.
 
@@ -151,9 +151,9 @@ unit MCU
 }
 ```
 
-## Basic Concepts
+### Basic Concepts
 
-### Statements and Expressions
+#### Statements and Expressions
 
 Hopper separates statements and expressions. Statements cannot return values, preventing common bugs such as unintentional assignments in conditions.
 
@@ -165,11 +165,11 @@ if (a == 10)
 }
 ```
 
-### Control Flow
+#### Control Flow
 
 Hopper provides standard control flow constructs: `if`, `switch`, `for`, `foreach`, `while`, and `loop`.
 
-#### Loop Constructs
+##### Loop Constructs
 
 ```hopper
 // Infinite loop
@@ -204,11 +204,11 @@ while (i < 10)
 }
 ```
 
-### Functions and Delegates
+#### Functions and Delegates
 
 Functions are defined with a code block and can be assigned to delegates for callback and event handling.
 
-#### Function Definition
+##### Function Definition
 
 ```hopper
 PrintHello()
@@ -217,7 +217,7 @@ PrintHello()
 }
 ```
 
-#### Delegate Usage
+##### Delegate Usage
 
 ```hopper
 delegate void SimpleDelegate();
@@ -226,13 +226,13 @@ SimpleDelegate myDelegate = PrintHello;
 myDelegate();
 ```
 
-## Hopper Language Features
+### Hopper Language Features
 
-### Types and Variables
+#### Types and Variables
 
 Hopper has value types like `int`, `uint`, `char`, and reference types like `string`, `list`, and `dictionary`.
 
-#### Variable Declaration
+##### Variable Declaration
 
 ```hopper
 uint a = 10;
@@ -283,7 +283,9 @@ IO.WriteLn("Hello, " + name);
 
 ## Hopper for Microcontrollers
 
-### Pin and Port Handling
+###
+
+ Pin and Port Handling
 
 Hopper provides `MCU` unit for controlling microcontroller pins.
 
@@ -603,6 +605,52 @@ program NeoPixelDemo
 }
 ```
 
+## Records in Hopper
+
+### Definition and Usage
+
+Records in Hopper are similar to Pascal records, allowing structured data to be grouped together. They are defined using the `record` keyword.
+
+#### Example
+
+```hopper
+program WordTest
+{
+    uses "/Source/Minimal/System"
+    uses "/Source/Minimal/IO"
+    
+    record Word
+    {
+        string Name;
+        <string> Definition;
+    }
+    <Word> words;
+    
+    Hopper()
+    {
+        Word newWord;
+        newWord.Name = "Bob";
+        <string> definition;
+        definition.Append("A");
+        definition.Append("B");
+        definition.Append("C");
+        newWord.Definition = definition;
+        
+        words.Append(newWord);
+        
+        foreach (var word in words
+
+)
+        {
+            string name = word.Name;
+            <string> definition = word.Definition;
+        }
+    }
+}
+```
+
+Records allow you to group related data fields together. In the example above, a `Word` record is defined with two fields: `Name` (a `string`) and `Definition` (a list of strings). Instances of the `Word` record can be created, modified, and stored in collections like lists.
+
 ## Conclusion
 
-This document, "Hopper for GPT," is designed to provide a comprehensive understanding of the Hopper programming language, its syntax, and best practices. It includes detailed explanations of loops, switch statements, delegates, dictionaries, lists, and examples of real-world usage. This guide aims to help future versions of ChatGPT quickly and efficiently become proficient in Hopper.
+This document, "Hopper for GPT," is designed to provide a comprehensive understanding of the Hopper programming language, its syntax, and best practices. It includes detailed explanations of loops, switch statements, delegates, dictionaries, lists, records, and examples of real-world usage. This guide aims to help future versions of ChatGPT quickly and efficiently become proficient in Hopper.
