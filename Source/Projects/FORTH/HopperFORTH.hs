@@ -11,6 +11,12 @@ program HopperFORTH
     const uint memorySize = 1024; // Define the memory size
     int[memorySize] memory; // Memory array
     
+    <uint> ifStack;
+    <uint> elseStack;
+    
+    <uint> loopStack; // Stack to track BEGIN positions
+
+    
     // Define a record to represent a FORTH word
     record Word
     {
@@ -53,10 +59,15 @@ program HopperFORTH
     }
     
     // Execute a single token
-    executeToken(string token)
+    executeToken(<string> currentDefinition, ref uint currentTokenIndex)
     {
-        int number;
-        token = token.ToLower(); // Convert token to lowercase for case-insensitive comparison
+        string token = currentDefinition[currentTokenIndex];
+        token = token.ToLower(); // Convert token to lowercase for case-insensitive comparison    
+        
+        int address;
+        int value;
+        bool currentTokenIndexModified;
+        
         if (definingWord)
         {
             if (token == ";")
@@ -86,12 +97,77 @@ program HopperFORTH
             }
             else
             {
-                currentWordDefinition.Append(token);
+                switch (token)
+                {
+                    case "if":
+                    {
+                        currentWordDefinition.Append(token);           // ELSE
+                        currentWordDefinition.Append("0");             // Placeholder
+                        ifStack.Append(currentWordDefinition.Count-1); // Placeholder index
+                    }
+                    case "else":
+                    {
+                        if (ifStack.Count > 0)
+                        {
+                            uint ifTop = ifStack.Count-1;
+                            uint ifPos = ifStack[ifTop]; ifStack.Remove(ifTop);
+                            currentWordDefinition[ifPos] = (currentWordDefinition.Count + 2).ToString(); // Address of ELSE
+                        }
+                        currentWordDefinition.Append(token);             // ELSE
+                        currentWordDefinition.Append("0");               // Placeholder
+                        elseStack.Append(currentWordDefinition.Count-1); // Placeholder index
+                    }
+                    case "then":
+                    {
+                        if (elseStack.Count > 0)
+                        {
+                            uint elseTop = elseStack.Count-1;
+                            uint elsePos = elseStack[elseTop]; elseStack.Remove(elseTop);
+                            currentWordDefinition[elsePos] = (currentWordDefinition.Count).ToString(); // Address of ELSE
+                        }
+                        else if (ifStack.Count > 0)
+                        {
+                            uint ifTop = ifStack.Count-1;
+                            uint ifPos = ifStack[ifTop]; ifStack.Remove(ifTop);
+                            currentWordDefinition[ifPos] = (currentWordDefinition.Count).ToString(); // Address of THEN
+                        }
+                        else
+                        {
+                            WriteLn("Error: unmatched THEN");
+                        }
+                        currentWordDefinition.Append(token); // THEN
+                    }
+                    case "begin":
+                    {
+                        loopStack.Append(currentWordDefinition.Count); // Record the position of BEGIN
+                        currentWordDefinition.Append(token);           // Append BEGIN token
+                    }
+                    case "until":
+                    {
+                        if (loopStack.Count > 0)
+                        {
+                            uint loopTop  = loopStack.Count-1;
+                            uint beginPos = loopStack[loopTop]; loopStack.Remove(loopTop);
+                            currentWordDefinition.Append("0branch");           // Append conditional branch
+                            currentWordDefinition.Append(beginPos.ToString()); // Append position to jump to (BEGIN)
+                        }
+                        else
+                        {
+                            WriteLn("Error: unmatched UNTIL");
+                        }
+                    }
+                    default:
+                    {
+                        currentWordDefinition.Append(token);
+                    }
+                }
             }
+            currentTokenIndex++;
         }
-        else if (Int.TryParse(token, ref number))
+        else if (Int.TryParse(token, ref value))
         {
-            push(number);
+            push(value);
+            currentTokenIndex++;
         }
         else
         {
@@ -110,6 +186,25 @@ program HopperFORTH
                     int top = pop();
                     Write(top.ToString() + " ");
                 }
+                case ".s":
+                {
+                    Write("Stack: ");
+                    for (int i = 0; i < sp; i++)
+                    {
+                        Write((stack[i]).ToString() + " ");
+                    }
+                    WriteLn("");
+                }
+                // List all defined words ( -- )
+                case "words":
+                {
+                    foreach (var word in wordList)
+                    {
+                        Write(word.Name + " ");
+                    }
+                    WriteLn(""); // Newline after listing words
+                }
+                
                 // Addition ( n1 n2 -- n1+n2 )
                 case "+":
                 {
@@ -318,7 +413,7 @@ program HopperFORTH
                     int n = pop();
                     if (sp > n)
                     {
-                        int value = stack[sp - n - 1];
+                        value = stack[sp - n - 1];
                         push(value);
                     }
                     else
@@ -329,9 +424,9 @@ program HopperFORTH
                 // Store a value in memory ( n addr -- )
                 case "!":
                 {
-                    int address = pop();
-                    int value = pop();
-                    if (address >= 0 && address < memorySize)
+                    address = pop();
+                    value = pop();
+                    if ((address >= 0) && (address < memorySize))
                     {
                         memory[address] = value;
                     }
@@ -343,8 +438,8 @@ program HopperFORTH
                 // Fetch a value from memory ( addr -- n )
                 case "@":
                 {
-                    int address = pop();
-                    if (address >= 0 && address < memorySize)
+                    address = pop();
+                    if ((address >= 0) && (address < memorySize))
                     {
                         push(memory[address]);
                     }
@@ -357,9 +452,9 @@ program HopperFORTH
                 // Store a byte in memory ( byte addr -- )
                 case "c!":
                 {
-                    int address = pop();
-                    int value = pop() & 0xFF;
-                    if (address >= 0 && address < memorySize)
+                    address = pop();
+                    value = pop() & 0xFF;
+                    if ((address >= 0) && (address < memorySize))
                     {
                         memory[address] = value;
                     }
@@ -371,8 +466,8 @@ program HopperFORTH
                 // Fetch a byte from memory ( addr -- byte )
                 case "c@":
                 {
-                    int address = pop();
-                    if (address >= 0 && address < memorySize)
+                    address = pop();
+                    if ((address >= 0) && (address < memorySize))
                     {
                         push(memory[address] & 0xFF);
                     }
@@ -385,7 +480,7 @@ program HopperFORTH
                 // Output a character ( n -- )
                 case "emit":
                 {
-                    int value = pop();
+                    value = pop();
                     char ch = char(value.GetByte(0) & 0xFF);
                     Write(ch);
                 }
@@ -410,6 +505,48 @@ program HopperFORTH
                 {
                     running = false; // Set the flag to false to exit the loop
                 }
+                
+                case "if":
+                {
+                    int condition = pop();
+                    currentTokenIndex++; // consume the address token
+                    if (condition == 0)
+                    {
+                        // Jump to the address after `if`
+                        string addressString = currentDefinition[currentTokenIndex];
+                        _ = UInt.TryParse(addressString, ref currentTokenIndex);
+                        currentTokenIndexModified = true;
+                    }
+                }
+                case "else":
+                {
+                    // Jump to the address after `else`
+                    currentTokenIndex++; // consume the address token
+                    string addressString = currentDefinition[currentTokenIndex];
+                    _ = UInt.TryParse(addressString, ref currentTokenIndex);
+                    currentTokenIndexModified = true;
+                }
+                case "then":
+                {
+                    // `THEN` is a no-op during execution
+                }
+                case "begin":
+                {
+                    // `BEGIN` is a no-op during execution
+                }
+                case "0branch":
+                {
+                    int condition = pop();
+                    currentTokenIndex++; // consume the address token
+                    if (condition == 0)
+                    {
+                        // Jump to the branch address
+                        string addressString = currentDefinition[currentTokenIndex];
+                        _ = UInt.TryParse(addressString, ref currentTokenIndex);
+                        currentTokenIndexModified = true;
+                    }
+                }
+                
                 // Execute user-defined words or handle unknown tokens
                 default:
                 {
@@ -419,10 +556,7 @@ program HopperFORTH
                         if (word.Name == token)
                         {
                             found = true;
-                            foreach (var wordToken in word.Definition)
-                            {
-                                executeToken(wordToken);// For regular words
-                            }
+                            executeDefinition(word.Definition);
                             break;
                         }
                     }
@@ -431,6 +565,10 @@ program HopperFORTH
                         WriteLn("Unknown token: " + token);
                     }
                 }
+            } // switch
+            if (!currentTokenIndexModified)
+            {
+                currentTokenIndex++;
             }
         }
     }
@@ -462,7 +600,10 @@ program HopperFORTH
                     if (isToken) // End of a token
                     {
                         string token = input.Substring(start, i - start);
-                        executeToken(token);
+                        uint currentTokenIndex;
+                        <string> definition;
+                        definition.Append(token);
+                        executeToken(definition, ref currentTokenIndex);
                         isToken = false; // Reset token flag
                     }
                 }
@@ -475,11 +616,11 @@ program HopperFORTH
         }
     }
     
-    executeDefinitions(<string> definition)
+    executeDefinition(<string> definition)
     {
-        foreach (var token in definition)
+        for (uint currentTokenIndex=0; currentTokenIndex < definition.Count; )
         {
-            executeToken(token);
+            executeToken(definition, ref currentTokenIndex);
         }
     }
     // Initialization method to define common FORTH words
@@ -494,7 +635,7 @@ program HopperFORTH
         definition.Append("swap");
         definition.Append("drop");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `tuck` ( n1 n2 -- n2 n1 n2 )
         definition.Clear();
@@ -503,7 +644,7 @@ program HopperFORTH
         definition.Append("dup");
         definition.Append("-rot");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `2dup` ( n1 n2 -- n1 n2 n1 n2 )
         definition.Clear();
@@ -512,7 +653,7 @@ program HopperFORTH
         definition.Append("over");
         definition.Append("over");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `2drop` ( n1 n2 -- )
         definition.Clear();
@@ -521,7 +662,7 @@ program HopperFORTH
         definition.Append("drop");
         definition.Append("drop");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `2swap` ( n1 n2 n3 n4 -- n3 n4 n1 n2 )
         definition.Clear();
@@ -534,7 +675,7 @@ program HopperFORTH
         definition.Append("rot");
         definition.Append("rot");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `2over` ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 )
         definition.Clear();
@@ -545,7 +686,7 @@ program HopperFORTH
         definition.Append("3");
         definition.Append("pick");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `0=` ( n -- flag )
         definition.Clear();
@@ -554,7 +695,7 @@ program HopperFORTH
         definition.Append("0");
         definition.Append("=");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `0<` ( n -- flag )
         definition.Clear();
@@ -563,7 +704,7 @@ program HopperFORTH
         definition.Append("0");
         definition.Append("<");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `0>` ( n -- flag )
         definition.Clear();
@@ -572,26 +713,12 @@ program HopperFORTH
         definition.Append("0");
         definition.Append(">");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `max` ( n1 n2 -- max )
         definition.Clear();
         definition.Append(":");
         definition.Append("max");
-        definition.Append("2dup");
-        definition.Append("<");
-        definition.Append("if");
-        definition.Append("drop");
-        definition.Append("else");
-        definition.Append("nip");
-        definition.Append("then");
-        definition.Append(";");
-        executeDefinitions(definition);
-    
-        // Define `min` ( n1 n2 -- min )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("min");
         definition.Append("2dup");
         definition.Append(">");
         definition.Append("if");
@@ -600,7 +727,21 @@ program HopperFORTH
         definition.Append("nip");
         definition.Append("then");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
+    
+        // Define `min` ( n1 n2 -- min )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("min");
+        definition.Append("2dup");
+        definition.Append("<");
+        definition.Append("if");
+        definition.Append("drop");
+        definition.Append("else");
+        definition.Append("nip");
+        definition.Append("then");
+        definition.Append(";");
+        executeDefinition(definition);
     
         // Define `depth` ( -- n )
         definition.Clear();
@@ -608,7 +749,7 @@ program HopperFORTH
         definition.Append("depth");
         definition.Append("sp");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     
         // Define `negate` ( n -- -n )
         definition.Clear();
@@ -618,7 +759,7 @@ program HopperFORTH
         definition.Append("swap");
         definition.Append("-");
         definition.Append(";");
-        executeDefinitions(definition);
+        executeDefinition(definition);
     }
         
     // Main entry point ( -- )
