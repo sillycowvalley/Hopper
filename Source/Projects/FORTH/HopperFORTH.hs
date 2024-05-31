@@ -250,6 +250,13 @@ program HopperFORTH
                         int top = pop();
                         Write(top.ToString() + " ");
                     }
+                    // Print string ( ." <string> " -- )
+                    case ".\"":
+                    {
+                        currentTokenIndex++;
+                        string str = currentDefinition[currentTokenIndex];
+                        Write(str);
+                    }
                     case ".s":
                     {
                         Write("Stack: ");
@@ -679,6 +686,35 @@ program HopperFORTH
                     inComment = true; // Start of comment
                     isToken = false; // Reset token flag
                 }
+                else if ((i + 1 < input.Length) && (input[i] == '.') && (input[i + 1] == '"'))
+                {
+                    i += 2; // Skip past the ."
+                    uint startString = i;
+                    while ((i < input.Length) && (input[i] != '"'))
+                    {
+                        i++;
+                    }
+                    if (i < input.Length)
+                    {
+                        string output = input.Substring(startString, i - startString);
+                        if (output.StartsWith(' '))
+                        {
+                            output = output.Substring(1); // trim the ' ' delimiter
+                        }
+                        
+                        uint currentTokenIndex;
+                        <string> definition;
+                        definition.Append(".\"");
+                        executeToken(definition, ref currentTokenIndex);
+                        
+                        currentTokenIndex = 0;
+                        definition.Clear();
+                        definition.Append(output);
+                        executeToken(definition, ref currentTokenIndex);
+                        
+                        isToken = false; // Reset token flag
+                    }
+                }
                 else if ((i == input.Length) || Char.IsWhitespace(input[i])) // Check for end of input or space
                 {
                     if (isToken) // End of a token
@@ -712,7 +748,7 @@ program HopperFORTH
     {
         <string> definition;
         
-        string builtIns = ": . .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin 0branch do loop i";
+        string builtIns = ": . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin 0branch do loop i";
 
         definition.Append(" "); // ' ' is a special character to indicate 'built in'
         <string> builtInsList = builtIns.Split(' ');
