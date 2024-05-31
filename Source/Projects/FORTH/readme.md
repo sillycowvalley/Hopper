@@ -26,6 +26,9 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 - **`-rot`** ( n1 n2 n3 -- n3 n1 n2 )
   - Rotate the top three values on the stack in the opposite direction.
 
+- **`pick`** ( n -- n' )
+  - Fetch the nth item from the stack.
+
 ### Arithmetic Operations
 
 - **`+`** ( n1 n2 -- n1+n2 )
@@ -48,6 +51,24 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 
 - **`abs`** ( n -- |n| )
   - Compute the absolute value of the top value on the stack.
+
+- **`1+`** ( n -- n+1 )
+  - Increment the top value on the stack by 1.
+
+- **`1-`** ( n -- n-1 )
+  - Decrement the top value on the stack by 1.
+
+- **`2+`** ( n -- n+2 )
+  - Increment the top value on the stack by 2.
+
+- **`2-`** ( n -- n-2 )
+  - Decrement the top value on the stack by 2.
+
+- **`2*`** ( n -- n*2 )
+  - Multiply the top value on the stack by 2.
+
+- **`2/`** ( n -- n/2 )
+  - Divide the top value on the stack by 2.
 
 ### Logical Operations
 
@@ -73,6 +94,9 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 
 - **`>`** ( n1 n2 -- flag )
   - Compare the second value with the top value. Push -1 if the second value is greater, 0 otherwise.
+
+- **`<>`** ( n1 n2 -- flag )
+  - Compare the top two values for inequality. Push -1 if not equal, 0 otherwise.
 
 ### Memory Operations
 
@@ -102,6 +126,9 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 - **`.`** ( n -- )
   - Print the top value on the stack.
 
+- **`."`** ( -- )
+  - Print a string defined within double quotes.
+
 ### Control Structures
 
 - **`:`** ( -- )
@@ -110,10 +137,74 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 - **`;`** ( -- )
   - End defining a new word.
 
+- **`if ... else ... then`** ( flag -- )
+  - Conditional branch with else.
+
+- **`begin ... until`** ( -- )
+  - Begin-Until loop.
+
+- **`begin ... again`** ( -- )
+  - Begin-Again loop.
+
 ### System Control
 
 - **`bye`** ( -- )
   - Exit the interpreter.
+
+### Arduino Specific Operations
+
+- **`seconds`** ( -- n )
+  - Fetch the current number of seconds since the program started.
+
+- **`delay`** ( n -- )
+  - Wait for n milliseconds.
+
+- **`pin`** ( pin mode -- )
+  - Set the mode of the given pin.
+
+- **`in`** ( pin -- n )
+  - Read the digital value from the given pin.
+
+- **`out`** ( n pin -- )
+  - Write the digital value to the given pin.
+
+### Additional Words
+
+- **`nip`** ( n1 n2 -- n2 )
+  - Drop the second item on the stack.
+
+- **`tuck`** ( n1 n2 -- n2 n1 n2 )
+  - Copy the second item to the top of the stack.
+
+- **`2dup`** ( n1 n2 -- n1 n2 n1 n2 )
+  - Duplicate the top two items on the stack.
+
+- **`2drop`** ( n1 n2 -- )
+  - Drop the top two items from the stack.
+
+- **`2swap`** ( n1 n2 n3 n4 -- n3 n4 n1 n2 )
+  - Swap the top two pairs of items on the stack.
+
+- **`2over`** ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 )
+  - Copy the second pair of items to the top of the stack.
+
+- **`0=`** ( n -- flag )
+  - Check if the top item is zero. Push -1 if zero, 0 otherwise.
+
+- **`0<`** ( n -- flag )
+  - Check if the top item is less than zero. Push -1 if true, 0 otherwise.
+
+- **`0>`** ( n -- flag )
+  - Check if the top item is greater than zero. Push -1 if true, 0 otherwise.
+
+- **`max`** ( n1 n2 -- max )
+  - Push the maximum value of the top two items on the stack.
+
+- **`min`** ( n1 n2 -- min )
+  - Push the minimum value of the top two items on the stack.
+
+- **`depth`** ( -- n )
+  - Push the current stack depth.
 
 ## User Guide
 
@@ -195,6 +286,12 @@ Compare stack values.
 >>> 5 3 > .
 -1
 >>> 3 5 > .
+
+
+0
+>>> 5 3 <> .
+-1
+>>> 5 5 <> .
 0
 ```
 
@@ -217,6 +314,8 @@ Manipulate stack values.
 2 3 1
 >>> 1 2 3 -rot .
 3 1 2
+>>> 1 2 3 1 pick .
+2
 ```
 
 ### Memory Operations
@@ -248,6 +347,50 @@ A
 65
 ```
 
+### Control Structures
+
+#### Example: Conditional Branches
+
+Use `if ... else ... then` for conditional branches.
+
+```forth
+>>> 5 3 < if ." Less" else ." Greater" then cr
+Less
+>>> 5 3 > if ." Less" else ." Greater" then cr
+Greater
+```
+
+#### Example: Loops
+
+Use `begin ... until` and `begin ... again` for loops.
+
+```forth
+>>> : countdown 10 begin dup . 1- dup 0= until drop ;
+>>> countdown
+10 9 8 7 6 5 4 3 2 1 0
+>>> : infinite 10 begin dup . 1- dup 0= if exit then again ;
+>>> infinite
+10 9 8 7 6 5 4 3 2 1 0
+```
+
+### Arduino Specific Operations
+
+#### Example: Arduino Specific Operations
+
+Use `seconds`, `delay`, `pin`, `in`, and `out` for Arduino-specific tasks.
+
+```forth
+>>> : blink
+    25 1 pin            # Set pin 25 as OUTPUT
+    begin
+        25 -1 out       # Set pin 25 to HIGH
+        1000 delay      # Wait for 1 second
+        25 0 out        # Set pin 25 to LOW
+        1000 delay      # Wait for 1 second
+    again ;
+>>> blink
+```
+
 ### Exiting the Interpreter
 
 #### Example: Exit
@@ -257,19 +400,6 @@ To exit the HopperFORTH interpreter, use the `bye` word.
 ```forth
 >>> bye
 Exiting HopperFORTH interpreter.
-```
-
-### Putting It All Together
-
-#### Example: Calculating the Square of a Number
-
-Define a word `square` and use it to calculate the square of a number.
-
-```forth
->>> : square dup * ;
-Defined word: square
->>> 9 square .
-81
 ```
 
 ## Conclusion

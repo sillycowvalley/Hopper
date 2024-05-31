@@ -1,7 +1,6 @@
 program HopperFORTH
 {
-    uses "/Source/Minimal/System"
-    uses "/Source/Minimal/IO"
+    uses "/Source/Library/Boards/PiPico"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     int[stackLimit] stack; // Stack array
@@ -166,6 +165,19 @@ program HopperFORTH
                         else
                         {
                             WriteLn("Error: unmatched UNTIL");
+                        }
+                    }
+                    case "again":
+                    {
+                        if (beginStack.Count > 0)
+                        {
+                            uint beginPos = uintListPop(beginStack);
+                            currentWordDefinition.Append("branch");            // Append unconditional branch
+                            currentWordDefinition.Append(beginPos.ToString()); // Append position to jump to (BEGIN)
+                        }
+                        else
+                        {
+                            WriteLn("Error: unmatched AGAIN");
                         }
                     }
                     case "do":
@@ -617,6 +629,15 @@ program HopperFORTH
                             currentTokenIndexModified = true;
                         }
                     }
+                    case "branch":
+                    {
+                        currentTokenIndex++; // consume the address token
+                        
+                        // Jump to the branch address
+                        string addressString = currentDefinition[currentTokenIndex];
+                        _ = UInt.TryParse(addressString, ref currentTokenIndex);
+                        currentTokenIndexModified = true;
+                    }
                     case "do":
                     {
                         int start = pop();
@@ -650,6 +671,35 @@ program HopperFORTH
                         push(currentIndex);
                     }
                     
+                    case "seconds":
+                    {
+                        uint s = Time.Seconds;
+                        int seconds = Int.FromBytes(s.GetByte(0), s.GetByte(1));
+                        push(seconds);
+                    }
+                    case "delay":
+                    {
+                        int duration = pop();
+                        Time.Delay(uint(duration));
+                    }
+                    case "pin":
+                    {
+                        int mode = pop();
+                        int pin = pop();
+                        MCU.PinMode(byte(pin), PinModeOption(mode));
+                    }
+                    case "in":
+                    {
+                        int pin = pop();
+                        push(MCU.DigitalRead(byte(pin)) ? -1 : int(0));
+                    }
+                    case "out":
+                    {
+                        value = pop();
+                        int pin = pop();
+                        MCU.DigitalWrite(byte(pin), value == -1);
+                    }
+                    
                     
                     default:
                     {
@@ -670,6 +720,7 @@ program HopperFORTH
         uint start = 0;
         bool isToken = false;
         bool inComment = false;
+        bool inEOLComment = false;
         for (uint i = 0; i <= input.Length; i++)
         {
             if (inComment)
@@ -679,11 +730,23 @@ program HopperFORTH
                     inComment = false; // End of comment
                 }
             }
+            else if (inEOLComment)
+            {
+                if ((i == input.Length) || (input[i] == Char.EOL))
+                {
+                    inEOLComment = false; // End of end-of-line comment
+                }
+            }
             else
             {
                 if ((i < input.Length) && (input[i] == '('))
                 {
                     inComment = true; // Start of comment
+                    isToken = false; // Reset token flag
+                }
+                else if ((i < input.Length) && (input[i] == '#'))
+                {
+                    inEOLComment = true; // Start of end-of-line comment
                     isToken = false; // Reset token flag
                 }
                 else if ((i + 1 < input.Length) && (input[i] == '.') && (input[i + 1] == '"'))
@@ -743,12 +806,15 @@ program HopperFORTH
             executeToken(definition, ref currentTokenIndex);
         }
     }
+    
     // Initialization method to define common FORTH words
     initialize()
     {
         <string> definition;
         
-        string builtIns = ": . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin 0branch do loop i";
+        string builtIns = ": . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i";
+        
+        builtIns += " seconds delay pin in out";
 
         definition.Append(" "); // ' ' is a special character to indicate 'built in'
         <string> builtInsList = builtIns.Split(' ');
@@ -892,6 +958,69 @@ program HopperFORTH
         definition.Append("-");
         definition.Append(";");
         executeDefinition(definition);
+        
+        // Define `1+` ( n -- n+1 )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("1+");
+        definition.Append("1");
+        definition.Append("+");
+        definition.Append(";");
+        executeDefinition(definition);
+                
+        // Define `1-` ( n -- n-1 )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("1-");
+        definition.Append("1");
+        definition.Append("-");
+        definition.Append(";");
+        executeDefinition(definition);
+        
+        // Define `2+` ( n -- n+2 )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("2+");
+        definition.Append("2");
+        definition.Append("+");
+        definition.Append(";");
+        executeDefinition(definition);
+        
+        // Define `2-` ( n -- n-2 )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("2-");
+        definition.Append("2");
+        definition.Append("-");
+        definition.Append(";");
+        executeDefinition(definition);
+        
+        // Define `2*` ( n -- n*2 )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("2*");
+        definition.Append("2");
+        definition.Append("*");
+        definition.Append(";");
+        executeDefinition(definition);
+        
+        // Define `2/` ( n -- n/2 )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("2/");
+        definition.Append("2");
+        definition.Append("/");
+        definition.Append(";");
+        executeDefinition(definition);
+                
+        // Define `<>` ( n1 n2 -- flag )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("<>");
+        definition.Append("=");    // Compare n1 and n2
+        definition.Append("0=");   // If they are equal, return false (0), otherwise true (-1)
+        definition.Append(";");
+        executeDefinition(definition);
     }
         
     // Main entry point ( -- )
@@ -912,4 +1041,3 @@ program HopperFORTH
         WriteLn("Exiting HopperFORTH interpreter."); // Message on exit
     }    
 }
-
