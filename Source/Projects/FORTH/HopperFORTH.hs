@@ -15,7 +15,6 @@ program HopperFORTH
     <uint> beginStack;  // Stack to track BEGIN positions
     <uint> doStack;     // Stack to track DO positions
     <int> doParameters; // Stack to hold DO loop parameters (start, end, current)
-
     
     // Define a record to represent a FORTH word
     record Word
@@ -77,7 +76,7 @@ program HopperFORTH
     executeToken(<string> currentDefinition, ref uint currentTokenIndex)
     {
         string token = currentDefinition[currentTokenIndex];
-        token = token.ToLower(); // Convert token to lowercase for case-insensitive comparison    
+        string lowerToken = token.ToLower(); // Convert token to lowercase for case-insensitive comparison    
         
         int address;
         int value;
@@ -112,7 +111,7 @@ program HopperFORTH
             }
             else
             {
-                switch (token)
+                switch (lowerToken)
                 {
                     case "if":
                     {
@@ -224,7 +223,8 @@ program HopperFORTH
             {
                 // most recently defined word first (so we can redefine existing words)
                 Word word = wordList[wordIndex];
-                if (word.Name == token)
+                string lowerName = (word.Name).ToLower();
+                if (lowerName == lowerToken)
                 {
                     found = true;
                     <string> wordDefinition = word.Definition;
@@ -247,7 +247,7 @@ program HopperFORTH
             }
             if (builtIn)
             {
-                switch (token)
+                switch (lowerToken)
                 {
                     // Start defining a new word ( -- )
                     case ":":
@@ -726,6 +726,8 @@ program HopperFORTH
         bool isToken = false;
         bool inComment = false;
         bool inEOLComment = false;
+        <string> tokenBuffer;
+        
         for (uint i = 0; i <= input.Length; i++)
         {
             if (inComment)
@@ -770,15 +772,8 @@ program HopperFORTH
                             output = output.Substring(1); // trim the ' ' delimiter
                         }
                         
-                        uint currentTokenIndex;
-                        <string> definition;
-                        definition.Append(".\"");
-                        executeToken(definition, ref currentTokenIndex);
-                        
-                        currentTokenIndex = 0;
-                        definition.Clear();
-                        definition.Append(output);
-                        executeToken(definition, ref currentTokenIndex);
+                        tokenBuffer.Append(".\"");
+                        tokenBuffer.Append(output);
                         
                         isToken = false; // Reset token flag
                     }
@@ -788,10 +783,7 @@ program HopperFORTH
                     if (isToken) // End of a token
                     {
                         string token = input.Substring(start, i - start);
-                        uint currentTokenIndex;
-                        <string> definition;
-                        definition.Append(token);
-                        executeToken(definition, ref currentTokenIndex);
+                        tokenBuffer.Append(token);
                         isToken = false; // Reset token flag
                     }
                 }
@@ -800,6 +792,56 @@ program HopperFORTH
                     isToken = true;
                     start = i;
                 }
+            }
+        }
+        if (tokenBuffer.Count != 0)
+        {
+            bool useREPLWord = false;
+            if (!definingWord) 
+            {
+                // we're not within a multiline definition:
+                
+                bool inDefinition;
+                foreach (var word in tokenBuffer)
+                {
+                    switch (word)
+                    {
+                        case ":":
+                        {
+                            inDefinition = true;
+                        }
+                        case ";":
+                        {
+                            inDefinition = false;
+                        }
+                        case "if":
+                        case "begin":
+                        {
+                            if (!inDefinition)
+                            {        
+                                useREPLWord = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (useREPLWord)
+            {
+                // append temporary '<repl>' word
+                tokenBuffer.Insert(0, "<repl>");
+                tokenBuffer.Insert(0, ":");
+                tokenBuffer.Append(";");
+                tokenBuffer.Append("<repl>");
+            }
+            
+            executeDefinition(tokenBuffer);
+            
+            if (useREPLWord)
+            {
+                // remove temporary '<repl>' word
+                wordList.Remove(wordList.Count-1); 
             }
         }
     }

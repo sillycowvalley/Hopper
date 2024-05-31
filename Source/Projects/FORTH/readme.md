@@ -358,8 +358,8 @@ Use `if ... else ... then` for conditional branches.
 
 ```forth
 >>> 5 3 < if ." Less" else ." Greater" then cr
-Less
->>> 5 3 > if ." Less" else ." Greater" then cr
+Greater
+>>> 5 3 > if ." Greater" else ." Less" then cr
 Greater
 ```
 
