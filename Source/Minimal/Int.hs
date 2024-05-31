@@ -3,12 +3,13 @@ unit Int
     byte GetByte(int this, byte index) system;
     int FromBytes(byte b0, byte b1) system;
     
-    bool TryParse(string content, ref int returnValue)
+    bool TryParse(string input, ref int returnValue)
     {
         bool success;
         uint length;
         byte b;
         bool makeNegative;
+        string content = input;
         loop
         {
             length = content.Length;

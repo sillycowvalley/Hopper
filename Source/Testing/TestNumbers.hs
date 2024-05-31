@@ -6,13 +6,13 @@ program TestNumbers
     
     #define TESTFLOATS
     
-    uses "/Source/Minimal/System"
-    uses "/Source/Minimal/IO"
+    //uses "/Source/Minimal/System"
+    //uses "/Source/Minimal/IO"
     
     
-    //uses "/Source/System/System"
-    //uses "/Source/System/IO"
-    //uses "/Source/System/Diagnostics"
+    uses "/Source/System/System"
+    uses "/Source/System/IO"
+    uses "/Source/System/Diagnostics"
     
     
     uses "/Source/System/Keyboard"

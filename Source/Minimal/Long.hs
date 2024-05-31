@@ -101,8 +101,10 @@ unit Long
     }
         
      
-    long Mul(long a, long b)
+    long Mul(long ai, long bi)
     {
+        long a = ai;
+        long b = bi;
         if (EQ(a, long(0)))
         {
             return a;
@@ -187,8 +189,10 @@ unit Long
     }
     
     
-    long divMod(long dividend, long divisor, ref long remainder)
+    long divMod(long dividendi, long divisori, ref long remainder)
     {
+        long dividend = dividendi;
+        long divisor  = divisori;
         if (EQ(divisor, long(0)))
         {
             Die(0x04); // division by zero attempted
@@ -333,10 +337,11 @@ unit Long
         return LT(a, b) ? a : b;
     }
     
-    string ToString(long value)
+    string ToString(long this)
     {
         long zero;
         long ten = 10;
+        long value = this;
         string result;
 
         if (EQ(value, zero))
@@ -399,8 +404,9 @@ unit Long
         return result;
     }
 
-    int ToInt(long l)
+    int ToInt(long this)
     {
+        long l = this;
         long intMax =  32767; // Max value for int (32767)
         long intMin = -32768; // Min value for int (-32768)
         long zero;
@@ -443,10 +449,11 @@ unit Long
         return UInt.FromBytes(GetByte(l, 0), GetByte(l, 1));
     }
     
-    bool TryParse(string content, ref long returnValue)
+    bool TryParse(string input, ref long returnValue)
     {
         long result;
         bool makeNegative;
+        string content = input;
         if (content.Length < 1)
         {
             return false;
@@ -522,8 +529,9 @@ unit Long
         return success;
     }
     
-    float ToFloat(long l)
+    float ToFloat(long this)
     {
+        long l = this;
         if (l == 0)
         {
             return Float.FromBytes(0, 0, 0, 0);

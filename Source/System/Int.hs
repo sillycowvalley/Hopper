@@ -1,12 +1,13 @@
 unit Int
 {
 
-    bool TryParse(string content, ref int returnValue)
+    bool TryParse(string input, ref int returnValue)
     {
         bool success;
         uint length;
         byte b;
         bool makeNegative;
+        string content = input;
         loop
         {
             length = content.Length;

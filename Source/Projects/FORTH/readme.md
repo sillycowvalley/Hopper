@@ -145,6 +145,9 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 
 - **`begin ... again`** ( -- )
   - Begin-Again loop.
+  
+- **`exit`** ( -- )
+  - Exit the current word prematurely.
 
 ### System Control
 

@@ -1,9 +1,10 @@
 unit Long
 {
-    bool TryParse(string content, ref long returnValue)
+    bool TryParse(string input, ref long returnValue)
     {
         long result;
         bool makeNegative;
+        string content = input;
         if (content.Length < 1)
         {
             return false;
@@ -89,22 +90,23 @@ unit Long
         char c;
         long digit;
         string result;
-        if (this < 0)
+        long value = this;
+        if (value < 0)
         {
             negative = true;
-            this = 0 - this;
+            value = 0 - value;
         }
-        else if (this == 0)
+        else if (value == 0)
         {
             String.Build(ref result, '0');
         }
-        while (this != 0)
+        while (value != 0)
         {
-            digit = this % 10;
+            digit = value % 10;
             udigit = uint(digit);
             c = Byte.ToDigit(byte(udigit));
             String.BuildFront(ref result, c);
-            this = this / 10;
+            value = value / 10;
         }
         if (negative)
         {
@@ -128,13 +130,14 @@ unit Long
         int i;
         long digit;
         string result;
+        long value = this;
         for (i = digits; i > 0; i--)
         {
-            digit = this % 16;
+            digit = value % 16;
             idigit = int(digit);
             c = Byte.ToHex(byte(idigit));
             String.BuildFront(ref result, c);
-            this = this / 16;
+            value = value / 16;
         }
         return result;
     }
@@ -144,16 +147,17 @@ unit Long
         int i;
         string result;
         long digit;
+        long value = this;
         for ( i = digits; i > 0; i--)
         {
-            digit = this % 2;
+            digit = value % 2;
             c = '0';
             if (1 == digit)
             {
                 c = '1';
             }
             String.BuildFront(ref result, c);
-            this = this / 2;
+            value = value / 2;
         }
         return result;
     }

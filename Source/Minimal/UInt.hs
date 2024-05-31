@@ -17,12 +17,13 @@ unit UInt
     {
         return b0 + b1 << 8;
     }
-    bool TryParse(string content, ref uint returnValue)
+    bool TryParse(string input, ref uint returnValue)
     {
         bool success;
         uint length;
         byte b;
         uint i;
+        string content = input;
         if (content.StartsWith("0x"))
         {
             success = tryParseHex(content, ref returnValue);
@@ -166,24 +167,26 @@ unit UInt
     string ToString(uint this)
     {
         string result;
-        if (this == 0)
+        uint value = this;
+        if (value == 0)
         {
             String.Build(ref result, '0');
         }
-        while (this != 0)
+        while (value != 0)
         {
-            String.BuildFront(ref result, char((this % 10) + 48));
-            this = this / 10;
+            String.BuildFront(ref result, char((value % 10) + 48));
+            value = value / 10;
         }
         return result;
     }
     string ToHexString(uint this, byte digits)
     {
         string result;
+        uint value = this;
         for (; digits > 0; digits--)
         {
-            String.BuildFront(ref result, Byte.ToHex(byte(this % 16)));
-            this = this / 16;
+            String.BuildFront(ref result, Byte.ToHex(byte(value % 16)));
+            value = value / 16;
         }
         return result;
     }
@@ -201,12 +204,13 @@ unit UInt
         uint digit;
         char c;
         string result;
+        uint value = this;
         for (uint i = 16; i > 0; i--)
         {
-            digit = this % 2;
+            digit = value % 2;
             c = Byte.ToHex(byte(digit));
             String.BuildFront(ref result, c);
-            this = this / 2;
+            value = value / 2;
         }
         return result;
     }

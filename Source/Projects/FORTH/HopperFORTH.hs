@@ -243,7 +243,7 @@ program HopperFORTH
             }
             if (!found)
             {
-                WriteLn("Unknown token: " + token);
+                WriteLn("Unknown token: '" + token + "'");
             }
             if (builtIn)
             {
@@ -670,6 +670,11 @@ program HopperFORTH
                         int currentIndex = doParameters[doParameters.Count-1];
                         push(currentIndex);
                     }
+                    case "exit":
+                    {
+                        currentTokenIndex = currentDefinition.Count; // Set the token index to the end to exit the current word
+                        currentTokenIndexModified = true;
+                    }
                     
                     case "seconds":
                     {
@@ -812,7 +817,7 @@ program HopperFORTH
     {
         <string> definition;
         
-        string builtIns = ": . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i";
+        string builtIns = ": . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit";
         
         builtIns += " seconds delay pin in out";
 

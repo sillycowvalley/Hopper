@@ -644,8 +644,9 @@ unit Float
         return success;
     }
     
-    string ToString(float value)
+    string ToString(float this)
     {
+        float value = this;
         bool isNegative = getSign(value) == 1;
         if (isZero(value))
         {
@@ -675,9 +676,10 @@ unit Float
         return result;
     }
     
-    string fractionToString(float fractionalPart)
+    string fractionToString(float input)
     {
         string result;
+        float fractionalPart = input;
         int precision = 6; // Number of digits after the decimal point
         while (precision > 0)
         {
