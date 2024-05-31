@@ -1,6 +1,6 @@
 unit String
 {
-    friend GC;
+    friend GC, Diagnostics;
     
     // String memory map:
     //   0000 heap allocator size
@@ -14,27 +14,56 @@ unit String
     const uint siLength = 2;
     const uint siChars  = 4;
     
+    dump()
+    {
+        PHA
+        PHY
+        
+        // String in IDX
+        LDA # ' '
+        Serial.WriteChar();
+        
+        // length
+        LDY # (siLength+2)
+        INY
+        LDA [IDX], Y
+        Serial.HexOut();
+        DEY
+        LDA [IDX], Y
+        TAX
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # '\''
+        Serial.WriteChar();
+        
+        LDY # (siChars+2)
+        loop
+        {
+            CPX #0
+            if (Z) { break; }
+            LDA [IDX], Y
+            Serial.WriteChar();
+            INY
+            DEX
+        }
+        LDA # '\''
+        Serial.WriteChar();
+        
+        PLY
+        PLA
+    }
+    
     new()
     {
         // round up string allocations to 16 byte boundaries
         CLC
         LDA FSIZEL
-        ADC # (6 + 16)
+        ADC # 2
         STA FSIZEL
         LDA FSIZEH
         ADC # 0
-        STA FSIZEH
-        
-        LDA FSIZEL
-        AND # 0xF0
-        STA FSIZEL
-        
-        SEC
-        LDA FSIZEL
-        SBC # 4
-        STA FSIZEL
-        LDA FSIZEH
-        SBC # 0
         STA FSIZEH
         
         // type in A
@@ -286,9 +315,9 @@ unit String
         STA FTYPE
         replaceStackReferences(); // munts Y
         
-        LDA IDXH
-        PHA
         LDA IDXL
+        PHA
+        LDA IDXH
         PHA
         
         LDA IDYL
@@ -298,9 +327,9 @@ unit String
         Free.free(); // free the original from under the nose of the GC
         
         PLA
-        STA IDXL
-        PLA
         STA IDXH
+        PLA
+        STA IDXL
         
         PLA
         STA FSOURCEADDRESSH
@@ -406,7 +435,7 @@ unit String
             LDA # 1
             STA FLENGTHL
         }
-        STA FSIZEH
+        STA FSIZEL
         
         LDA # 0
         STA FLENGTHH
@@ -504,8 +533,8 @@ unit String
         if (C) // index < siLength?
         {
             // index >= siLength
-            LDA # 0x02 // array index out of range
-            BRK
+            LDA # 0x05 // string index out of range
+            Diagnostics.die();
         }
 #endif
         CLC

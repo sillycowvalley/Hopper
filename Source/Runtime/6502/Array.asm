@@ -1,5 +1,7 @@
 unit Array
 {
+    friend GC, Diagnostics;
+    
     uses "6502/GC"
     
     // Array memory map:
@@ -18,6 +20,35 @@ unit Array
     
     const byte[] bitMasks = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
                               0b00010000, 0b00100000, 0b01000000, 0b10000000 };
+    dump()
+    {
+        PHA
+        PHY
+        
+        // Array in IDX
+        LDA # ' '
+        Serial.WriteChar();
+        
+        // count
+        LDY # (aiCount+2)
+        INY
+        LDA [IDX], Y
+        Serial.HexOut();
+        DEY
+        LDA [IDX], Y
+        Serial.HexOut();
+        
+        LDA # ':'
+        Serial.WriteChar();
+        
+        LDY # (aiType+2)
+        LDA [IDX], Y
+        Serial.HexOut();
+        
+        PLY
+        PLA
+    }
+    
     new()
     {
         // element type in FTYPE, number of elements in FSIZE
@@ -303,7 +334,7 @@ unit Array
         {
             // index >= aiCount
             LDA # 0x02 // array index out of range
-            BRK
+            Diagnostics.die();
         }
 #endif        
         LDY # aiType
@@ -376,7 +407,7 @@ unit Array
         {
             // index >= aiCount
             LDA # 0x02 // array index out of range
-            BRK
+            Diagnostics.die();
         }
 #endif                  
         

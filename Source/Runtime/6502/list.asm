@@ -4,7 +4,7 @@ unit List
     uses "Variant"
     uses "Diagnostics"
     
-    friend GC;
+    friend GC, Diagnostics;
     
     // List memory map:
     //   0000 heap allocator size
@@ -41,6 +41,98 @@ unit List
     // F10-F11 LCURRENT     preserved during recursive clone calls      F10-F11   FVALUE (only used in call to createValueVariant)
     // F12-F13 FITEM
     // F14-F15 LCOUNT
+    
+    dump()
+    {
+        PHA
+        PHY
+        
+        // List in IDX
+        LDA # ' '
+        Serial.WriteChar();
+        
+        // count
+        LDY # (lsCount+2)
+        INY
+        LDA [IDX], Y
+        Serial.HexOut();
+        DEY
+        LDA [IDX], Y
+        TAX
+        Serial.HexOut();
+        
+        LDA # ':'
+        Serial.WriteChar();
+        
+        LDY # (lsType+2)
+        LDA [IDX], Y
+        Serial.HexOut();
+        
+        LDA FITEML
+        PHA
+        LDA FITEMH
+        PHA
+        
+        LDY # (lsFirst+2)
+        LDA [IDX], Y
+        STA FITEML
+        INY
+        LDA [IDX], Y
+        STA FITEMH
+        
+        loop
+        {
+            CPX #0
+            if (Z) { break; }
+            PHX
+            
+            LDA # ' '
+            Serial.WriteChar();
+            
+            LDA FITEMH
+            Serial.HexOut();
+            LDA FITEML
+            Serial.HexOut();
+            
+            LDA IDXL
+            PHA
+            LDA IDXH
+            PHA
+            
+            SEC
+            LDA FITEML
+            SBC # 2
+            STA IDXL
+            LDA FITEMH
+            SBC # 0
+            STA IDXH
+            Diagnostics.validateHeapIDX();
+            
+            PLA
+            STA IDXH
+            PLA
+            STA IDXL
+            
+            LDY # liNext
+            LDA [FITEM], Y
+            TAX
+            INY
+            LDA [FITEM], Y
+            STA FITEMH
+            STX FITEML
+            
+            PLX
+            DEX
+        }
+        
+        PLA
+        STA FITEMH
+        PLA
+        LDA FITEML
+        
+        PLY
+        PLA
+    }
     
     popType()
     {
@@ -799,7 +891,7 @@ unit List
                 LDA [IDY], Y
                 // type is in A
                 // reference type to clone is at IDY
-                // (preserves LCURRENT, LNEXT and IDY for recursive calls)
+                //   (preserves LCURRENT, LNEXT and IDY for recursive calls)
                 GC.Clone();
             
                 // active listItem
@@ -807,7 +899,7 @@ unit List
                 STA IDYH
                 PLA
                 STA IDYL
-                
+                                
                 // pData
                 LDY # liData
                 LDA IDXL
@@ -1006,7 +1098,6 @@ unit List
         STA LTYPE
         Stacks.PopIDY();        // UInt index -> IDY
         Stacks.PopIDX();        // this -> IDX
-                
         
         LDA LTYPE
         STA NEXTL // type of value
@@ -1054,7 +1145,8 @@ unit List
             STA LTYPE
             
             // type in LTYPE, reference in IDY
-            releaseItemValue(); // release pData
+            //   munts IDX, IDY
+            releaseItemValue(); // release pData 
             
             // clone value and put it into LCURRENT/NEXT
             LDA TOPL
@@ -1067,20 +1159,23 @@ unit List
             // reference type to clone is at IDY, resulting clone in IDX
             GC.Clone(); // cloneIDY
             
-            LDY #2
+            /*
+            LDY # 2
             LDA IDXL
             STA [NEXT], Y
             INY
             LDA IDXH
             STA [NEXT], Y
+            */
+            
         
-            // IDX -> lCURRENT.pData
+            // IDX -> LCURRENT.pData
             LDY # liData
             LDA IDXL
             STA [LCURRENT], Y
             INY
             LDA IDXH
-            LDA [LCURRENT], Y
+            STA [LCURRENT], Y
             
             LDA TOPL
             STA IDXL
@@ -1093,6 +1188,7 @@ unit List
             PLA
             STA IDXL
         }
+        
         GC.Release(); // we popped 'this' (IDX), decrease reference count
     }
     

@@ -206,7 +206,7 @@ unit ZP
     const byte FLENGTHL = F8;
     const byte FLENGTHH = F9;
 
-    const byte FVALUE = F10;
+    const byte FVALUE  = F10;
     const byte FVALUEL = F10;
     const byte FVALUEH = F11;
     

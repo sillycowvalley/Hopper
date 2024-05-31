@@ -902,12 +902,12 @@ unit Output
                 break;
             }
             uint sCurrentLSB = 0x0600;
-            uint sCurrentMSB = 0x0600;
+            uint sCurrentMSB = 0x0700;
             uint tCurrent    = 0x0500;
             uint count = sp;
             loop
             {
-                uint v = Pages.GetPageWord(sCurrentLSB) + Pages.GetPageWord(sCurrentMSB) << 8;
+                uint v = Pages.GetPageByte(sCurrentLSB) + Pages.GetPageByte(sCurrentMSB) << 8;
                 stackValues.Append(v);
                 sCurrentLSB++;
                 sCurrentMSB++;

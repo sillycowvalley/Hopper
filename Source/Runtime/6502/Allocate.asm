@@ -45,6 +45,21 @@ unit Allocate
         // size += 2 (space for 'size')
         Utilities.IncACC();
         Utilities.IncACC();
+        
+        // round size up to the next 16 byte boundary
+        LDA ACCL       // Load the low byte
+        CLC            // Clear carry
+        ADC # 0x07     // Add 7
+        STA ACCL       // Store back the low byte
+        
+        LDA ACCH       // Load the high byte
+        ADC # 0        // Add the carry to the high byte
+        STA ACCH       // Store back the high byte
+
+        LDA ACCL       // Load the adjusted low byte
+        AND # 0xF8     // Mask out the lower 3 bits
+        STA ACCL       // Store the masked low byte back
+
 
 #ifdef CPU_65C02S
         STZ maBESTL
@@ -349,7 +364,8 @@ unit Allocate
             if (NC)
             {
                 // maBESTSIZE < ACC
-                LDA 0x0C BRK // Memory allocation failure
+                LDA 0x0C
+                Diagnostics.die(); // Memory allocation failure
             }
     
             // (bestSize >= size)

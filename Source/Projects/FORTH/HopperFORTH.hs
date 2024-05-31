@@ -1,6 +1,9 @@
 program HopperFORTH
 {
-    uses "/Source/Library/Boards/PiPico"
+    //uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/Hopper6502"
+    
+    // https://github.com/CCurl/c4
     
     const uint stackLimit = 1024; // Define the maximum stack size
     int[stackLimit] stack; // Stack array
@@ -22,7 +25,7 @@ program HopperFORTH
         string   Name;           // Word name
         <string> Definition;     // Word definition
     }
-    
+    string builtInWords = " : . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out ";
     <Word> wordList; // List to store user-defined words
     bool definingWord; // Flag to indicate if a word is being defined
     string currentWordName; // Current word being defined
@@ -92,18 +95,20 @@ program HopperFORTH
                 newWord.Definition = currentWordDefinition;
                 wordList.Append(newWord);
                 
-                Write("Defined word: " + currentWordName + " '");
+                /*
+                IO.Write("Defined word: " + currentWordName + " '");
                 bool first = true;
                 foreach (var token in currentWordDefinition)
                 {
                     if (!first)
                     {
-                        Write(" ");
+                        IO.Write(" ");
                     }
-                    Write(token);
+                    IO.Write(token);
                     first = false;
                 }
-                WriteLn("'");
+                IO.WriteLn("'");
+                */
             }
             else if (currentWordName.Length == 0)
             {
@@ -218,28 +223,29 @@ program HopperFORTH
         {
             bool found = false;
             bool builtIn = false;
-            uint wordIndex = wordList.Count-1;
-            loop
+            if (builtInWords.Contains(" " + lowerToken + " "))
             {
-                // most recently defined word first (so we can redefine existing words)
-                Word word = wordList[wordIndex];
-                string lowerName = (word.Name).ToLower();
-                if (lowerName == lowerToken)
+                found = true;
+                builtIn = true;
+            }
+            else
+            {
+                uint wordIndex = wordList.Count-1;
+                loop
                 {
-                    found = true;
-                    <string> wordDefinition = word.Definition;
-                    if ((wordDefinition.Count == 1) && (wordDefinition[0] == " "))
+                    // most recently defined word first (so we can redefine existing words)
+                    Word word = wordList[wordIndex];
+                    string lowerName = (word.Name).ToLower();
+                    if (lowerName == lowerToken)
                     {
-                        builtIn = true;
-                    }
-                    else
-                    {
+                        found = true;
+                        <string> wordDefinition = word.Definition;
                         executeDefinition(wordDefinition);
+                        break;
                     }
-                    break;
+                    if (wordIndex == 0) { break; }
+                    wordIndex--;
                 }
-                if (wordIndex == 0) { break; }
-                wordIndex--;
             }
             if (!found)
             {
@@ -260,32 +266,32 @@ program HopperFORTH
                     case ".":
                     {
                         int top = pop();
-                        Write(top.ToString() + " ");
+                        IO.Write(top.ToString() + " ");
                     }
                     // Print string ( ." <string> " -- )
                     case ".\"":
                     {
                         currentTokenIndex++;
                         string str = currentDefinition[currentTokenIndex];
-                        Write(str);
+                        IO.Write(str);
                     }
                     case ".s":
                     {
-                        Write("Stack: ");
+                        IO.Write("Stack: ");
                         for (int i = 0; i < sp; i++)
                         {
-                            Write((stack[i]).ToString() + " ");
+                            IO.Write((stack[i]).ToString() + " ");
                         }
-                        WriteLn("");
+                        IO.WriteLn("");
                     }
                     // List all defined words ( -- )
                     case "words":
                     {
                         foreach (var word in wordList)
                         {
-                            Write(word.Name + " ");
+                            IO.Write(word.Name + " ");
                         }
-                        WriteLn(""); // Newline after listing words
+                        IO.WriteLn(""); // Newline after listing words
                     }
                     
                     // Addition ( n1 n2 -- n1+n2 )
@@ -565,12 +571,12 @@ program HopperFORTH
                     {
                         value = pop();
                         char ch = char(value.GetByte(0) & 0xFF);
-                        Write(ch);
+                        IO.Write(ch);
                     }
                     // Output a carriage return and line feed ( -- )
                     case "cr":
                     {
-                        WriteLn("");
+                        IO.WriteLn("");
                     }
                     // Read a single character ( -- n )
                     case "key":
@@ -859,20 +865,6 @@ program HopperFORTH
     {
         <string> definition;
         
-        string builtIns = ": . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit";
-        
-        builtIns += " seconds delay pin in out";
-
-        definition.Append(" "); // ' ' is a special character to indicate 'built in'
-        <string> builtInsList = builtIns.Split(' ');
-        foreach (var builtIn in builtInsList)
-        {
-            Word word;
-            word.Name = builtIn;
-            word.Definition = definition;
-            wordList.Append(word);
-        }
-        
         // Define `nip` ( n1 n2 -- n2 )
         definition.Clear();
         definition.Append(":");
@@ -1079,12 +1071,12 @@ program HopperFORTH
         string inputLine;
         while (running) // Continue running while the flag is true
         {
-            Write(">>> ");
+            IO.Write(">>> ");
             if (ReadLn(ref inputLine))
             {
                 processInput(inputLine);
             }
         }
-        WriteLn("Exiting HopperFORTH interpreter."); // Message on exit
+        IO.WriteLn("Exiting HopperFORTH interpreter."); // Message on exit
     }    
 }

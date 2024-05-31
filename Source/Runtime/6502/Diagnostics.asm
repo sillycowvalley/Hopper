@@ -1,8 +1,11 @@
 unit Diagnostics
 {
     uses "6502/ZeroPage"
+    uses "6502/Array"
+    uses "6502/String"
+    uses "6502/List"
     
-    friend GC, Free, Variant, String, Array, List;
+    friend GC, Free, Allocate, Variant, String, Array, List;
     
     die()
     {
@@ -187,6 +190,24 @@ unit Diagnostics
         
         LDA # ' '
         Serial.WriteChar();
+        LDA # 'T'
+        Serial.WriteChar();
+        LDA TOPH
+        Serial.HexOut();
+        LDA TOPL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
+        LDA # 'N'
+        Serial.WriteChar();
+        LDA NEXTH
+        Serial.HexOut();
+        LDA NEXTL
+        Serial.HexOut();
+        
+        LDA # ' '
+        Serial.WriteChar();
         LDA # 'X'
         Serial.WriteChar();
         LDA IDXH
@@ -205,14 +226,17 @@ unit Diagnostics
         
         LDA # ' '
         Serial.WriteChar();
-        LDA # 'P'
+        LDA # 'L'
         Serial.WriteChar();
-        LDA LPREVIOUSH
+        LDA # 'P'
+        Serial.WriteChar();LDA LPREVIOUSH
         Serial.HexOut();
         LDA LPREVIOUSL
         Serial.HexOut();
         
         LDA # ' '
+        Serial.WriteChar();
+        LDA # 'L'
         Serial.WriteChar();
         LDA # 'C'
         Serial.WriteChar();
@@ -223,6 +247,8 @@ unit Diagnostics
         
         LDA # ' '
         Serial.WriteChar();
+        LDA # 'L'
+        Serial.WriteChar();
         LDA # 'N'
         Serial.WriteChar();
         LDA LNEXTH
@@ -231,6 +257,8 @@ unit Diagnostics
         Serial.HexOut();
         
         LDA # ' '
+        Serial.WriteChar();
+        LDA # 'F'
         Serial.WriteChar();
         LDA # 'I'
         Serial.WriteChar();
@@ -241,6 +269,8 @@ unit Diagnostics
         
         LDA # ' '
         Serial.WriteChar();
+        LDA # 'L'
+        Serial.WriteChar();
         LDA # 'C'
         Serial.WriteChar();
         LDA LCOUNTH
@@ -249,6 +279,8 @@ unit Diagnostics
         Serial.HexOut();
         
         LDA # ' '
+        Serial.WriteChar();
+        LDA # 'L'
         Serial.WriteChar();
         LDA # 'T'
         Serial.WriteChar();
@@ -259,6 +291,32 @@ unit Diagnostics
     }
     HeapDump()
     {
+        PHA
+        PHX
+        PHY
+        
+        LDA IDYL
+        PHA
+        LDA IDYH
+        PHA
+        
+        LDA IDXL
+        PHA
+        LDA IDXH
+        PHA
+        
+        LDA FSIZEL
+        PHA
+        LDA FSIZEH
+        PHA
+        
+        LDA FITEML
+        PHA
+        LDA FITEMH
+        PHA
+        
+        // uses FSIZE, IDX, IDY
+        
         Diagnostics.registers();
         
         // HEAPSTART
@@ -372,28 +430,118 @@ unit Diagnostics
             if (Z)
             {
                 // not free block
-                LDA # '>'
+                LDA # 0x0A
                 Serial.WriteChar();
                 // free address
                 LDA IDXH
-                Serial.HexOut();
+                STA ACCH
                 LDA IDXL
+                STA ACCL
+                IncACC();
+                IncACC();
+                
+                LDA ACCH
                 Serial.HexOut();
+                LDA ACCL
+                Serial.HexOut();
+                
                 LDA # '['
                 Serial.WriteChar();
-                // free size
+                // size
                 LDY # 1
                 LDA [IDX], Y
                 Serial.HexOut();
                 DEY
                 LDA [IDX], Y
                 Serial.HexOut();
+                
+                validateHeapIDX();
+                
                 LDA # ':'
                 Serial.WriteChar();
+                
                 // type
                 LDY # 2
                 LDA [IDX], Y
-                Serial.HexOut();
+                TAX
+                
+                switch (X)
+                {
+                    case Types.String:
+                    {
+                        Serial.HexOut(); // type
+                        String.dump();
+                    }
+                    case Types.List:
+                    {
+                        Serial.HexOut(); // type
+                        List.dump();    
+                    }
+                    case Types.Array:
+                    {
+                        Serial.HexOut(); // type
+                        Array.dump();    
+                    }
+                    default:
+                    {
+                        LDY # 1
+                        LDA [IDX], Y
+                        if (Z)
+                        {
+                            DEY
+                            LDA [IDX], Y
+                            CMP # 8
+                            if (Z)
+                            {
+                                LDA # ' '
+                                Serial.WriteChar();
+                                
+                                LDY # 3
+                                LDA [IDX], Y
+                                Serial.HexOut();
+                                DEY    
+                                LDA [IDX], Y
+                                Serial.HexOut();
+                                
+                                
+                                LDA IDXL
+                                PHA
+                                LDA IDXH
+                                PHA
+                                
+                                SEC
+                                LDA [IDX], Y
+                                SBC # 2
+                                TAX
+                                INY
+                                LDA [IDX], Y
+                                SBC # 0
+                                STA IDXH
+                                STX IDXL
+                                Diagnostics.validateHeapIDX();
+                                
+                                PLA
+                                STA IDXH
+                                PLA
+                                STA IDXL
+                                
+                                
+                                
+                                
+                                LDA # ' '
+                                Serial.WriteChar();
+                                
+                                LDY # 5
+                                LDA [IDX], Y
+                                Serial.HexOut();
+                                DEY    
+                                LDA [IDX], Y
+                                Serial.HexOut();
+                            }
+                        }
+                    }
+                }
+                
                 LDA # ']'
                 Serial.WriteChar();
             }
@@ -413,6 +561,103 @@ unit Diagnostics
         
         LDA # 0x0A
         Serial.WriteChar();
+        
+        
+        PLA
+        STA FITEMH
+        PLA
+        STA FITEML
+        
+        PLA
+        STA FSIZEH
+        PLA
+        STA FSIZEL
+        
+        PLA
+        STA IDXH
+        PLA
+        STA IDXL
+        
+        PLA
+        STA IDYH
+        PLA
+        STA IDYL
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    validateHeapIDX()
+    {
+        isHeapBlock();
+        if (Z)
+        {
+            LDX # 5
+            loop
+            {
+                LDA # '!'
+                Serial.WriteChar();
+                DEX
+                if (Z) { break; }
+            }
+        }
+    }
+    
+    isHeapBlock()
+    {
+        // if IDX is a heap block, return NZ
+        //   otherwise return Z
+        // assume FSIZEL is heap end
+        
+        LDY # 0
+        LDA # 0
+        STA IDYL
+        INY
+        LDA HEAPSTART
+        STA IDYH
+        
+        loop
+        {
+            LDA IDYH 
+            CMP FSIZEH
+            if (Z) 
+            { 
+                LDA IDYL
+                CMP FSIZEL
+                if (Z)
+                {
+                    // end of heap
+                    break; 
+                }
+            }
+            LDA IDYH
+            CMP IDXH
+            if (Z)
+            {
+                LDA IDYL
+                CMP IDXL
+                if (Z)
+                {
+                    isFreeBlock();
+                    EOR # 1
+                    return;
+                }
+            }
+            LDY # 0
+            CLC
+            LDA IDYL
+            ADC [IDY], Y
+            TAX
+            INY
+            LDA IDYH
+            ADC [IDY], Y
+            STA IDYH
+            STX IDYL
+        }
+        // not a heap block
+        LDA # 0
+        return;
     }
     isFreeBlock()
     {

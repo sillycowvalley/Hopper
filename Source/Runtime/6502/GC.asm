@@ -183,7 +183,7 @@ unit GC
             }
             case Types.List:
             {
-#ifdef LISTS
+#ifdef LISTS         
                 List.clone();    // uses ACC, FSIZE (F1..F2), LTYPE (F3), LNEXT (F8..F9), LCURRENT (F10..F11)
 #endif
             }
@@ -212,11 +212,12 @@ unit GC
         PLA
         STA LNEXTH          // F9
         PLA
-        STA LNEXTL         // F8
+        STA LNEXTL          // F8
         PLA
-        STA LCURRENTH      // F11
+        STA LCURRENTH       // F11
         PLA
-        STA LCURRENTL      // F10
+        STA LCURRENTL       // F10
+        
 #ifdef CPU_65C02S
         PLY
 #else        
