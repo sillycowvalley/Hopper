@@ -365,9 +365,34 @@ unit String
     {
         <string> stringList;
         string current;
-        foreach (char c in this)
+        foreach (var c in this)
         {
             if (delimiters.Contains(c))
+            {
+                if (!current.IsEmpty)
+                {
+                    stringList.Append(current);
+                    current = "";
+                }
+            }
+            else
+            {
+                current = current + c;
+            }
+        }
+        if (!current.IsEmpty)
+        {
+            stringList.Append(current);
+        }
+        return stringList;
+    }
+    <string> Split(string this, char delimiter)
+    {
+        <string> stringList;
+        string current;
+        foreach (var c in this)
+        {
+            if (delimiter == c)
             {
                 if (!current.IsEmpty)
                 {
