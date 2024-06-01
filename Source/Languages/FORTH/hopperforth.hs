@@ -1,7 +1,7 @@
 program HopperFORTH
 {
-    //uses "/Source/Library/Boards/PiPico"
-    uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/Library/Boards/PiPico"
+    //uses "/Source/Library/Boards/Hopper6502"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     const uint memorySize = 1024; // Define the memory size
@@ -14,9 +14,9 @@ program HopperFORTH
     
     <uint> ifStack;
     <uint> elseStack;
-    <uint> beginStack;  // Stack to track BEGIN positions
-    <uint> doStack;     // Stack to track DO positions
-    <int> doParameters; // Stack to hold DO loop parameters (start, end, current)
+    <uint> beginStack;   // Stack to track BEGIN positions
+    <uint> doStack;      // Stack to track DO positions
+    <int>  doParameters; // Stack to hold DO loop parameters (start, end, current)
     
     // Define a record to represent a FORTH word
     record Word
@@ -24,10 +24,10 @@ program HopperFORTH
         string   Name;           // Word name
         <string> Definition;     // Word definition
     }
-    string builtInWords = " : . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out ";
-    <Word> wordList; // List to store user-defined words
-    bool definingWord; // Flag to indicate if a word is being defined
-    string currentWordName; // Current word being defined
+    
+    <Word>   wordList;              // List to store user-defined words
+    bool     definingWord;          // Flag to indicate if a word is being defined
+    string   currentWordName;       // Current word being defined
     <string> currentWordDefinition; // Current word definition being built
     
     int intListPop(<int> stackList)
@@ -222,7 +222,6 @@ program HopperFORTH
         {
             bool found = false;
             bool builtIn = false;
-            
 
             // most recently defined word first (so we can redefine existing words)            
             uint wordIndex = wordList.Count;
@@ -237,23 +236,21 @@ program HopperFORTH
                 {
                     found = true;
                     <string> wordDefinition = word.Definition;
-                    executeDefinition(wordDefinition);
+                    if ((wordDefinition.Count == 1) && (wordDefinition[0] == " ")) // special token to imply 'built-in'
+                    {
+                        builtIn = true;    
+                    }
+                    else
+                    {
+                        executeDefinition(wordDefinition);
+                    }
                     break;
                 }
             }
         
             if (!found)
             {
-                // check for built-ins after user defined words so they can be redefined
-                if (builtInWords.Contains(" " + lowerToken + " "))
-                {
-                    found = true;
-                    builtIn = true;
-                }
-                else
-                {
-                    WriteLn("Unknown token: '" + token + "'");
-                }
+                WriteLn("Unknown token: '" + token + "'");
             }
             if (builtIn)
             {
@@ -291,7 +288,6 @@ program HopperFORTH
                     // List all defined words ( -- )
                     case "words":
                     {
-                        IO.Write(builtInWords.Trim());
                         foreach (var word in wordList)
                         {
                             IO.Write(" " + word.Name);
@@ -865,10 +861,26 @@ program HopperFORTH
         }
     }
     
+    initializeBuiltIns()
+    {
+        <string> definition;
+        definition.Append(" "); // special token to imply 'built-in'
+        Word word;
+        word.Definition = definition;
+        
+        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out").Split(' ');
+        foreach (var name in builtIns)
+        {
+            word.Name = name;
+            wordList.Append(word);
+        }
+    }
     // Initialization method to define common FORTH words
     initialize()
     {
         <string> definition;
+        
+        initializeBuiltIns();
         
         // Define `nip` ( n1 n2 -- n2 )
         definition.Clear();
