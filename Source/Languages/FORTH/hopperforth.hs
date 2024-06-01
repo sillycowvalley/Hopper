@@ -1092,12 +1092,13 @@ program HopperFORTH
     // Main entry point ( -- )
     Hopper()
     {     
+        IO.WriteLn();
         IO.WriteLn("Welcome to HopperFORTH v1.0");
     
         //Initialize common FORTH words
         initialize();
         
-        IO.WriteLn("Type 'WORDS' to see a list of available commands.");
+        IO.WriteLn("Type 'WORDS' to see a list of available words.");
         
         string inputLine;
         while (running) // Continue running while the flag is true
