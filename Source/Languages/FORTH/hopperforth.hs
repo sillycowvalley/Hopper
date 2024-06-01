@@ -12,35 +12,28 @@ program HopperFORTH
     int sp = 0; // Initialize stack pointer
     bool running = true; // Control the main loop
     
-    <uint> ifStack;
-    <uint> elseStack;
-    <uint> beginStack;   // Stack to track BEGIN positions
-    <uint> doStack;      // Stack to track DO positions
-    <int>  doParameters; // Stack to hold DO loop parameters (start, end, current)
+    <int> ifStack;
+    <int> elseStack;
+    <int> beginStack;   // Stack to track BEGIN positions
+    <int> doStack;      // Stack to track DO positions
+    <int> doParameters; // Stack to hold DO loop parameters (start, end, current)
     
     // Define a record to represent a FORTH word
     record Word
     {
         string   Name;           // Word name
-        <string> Definition;     // Word definition
+        <variant> Definition;     // Word definition
     }
     
     <Word>   wordList;              // List to store user-defined words
     bool     definingWord;          // Flag to indicate if a word is being defined
     string   currentWordName;       // Current word being defined
-    <string> currentWordDefinition; // Current word definition being built
+    <variant> currentWordDefinition; // Current word definition being built
     
     int intListPop(<int> stackList)
     {
         uint index = stackList.Count-1;
         int result = stackList[index];
-        stackList.Remove(index);
-        return result;   
-    }
-    uint uintListPop(<uint> stackList)
-    {
-        uint index = stackList.Count-1;
-        uint result = stackList[index];
         stackList.Remove(index);
         return result;   
     }
@@ -73,155 +66,753 @@ program HopperFORTH
             return 0; // Default error value
         }
     }
-    
-    // Execute a single token
-    executeToken(<string> currentDefinition, ref uint currentTokenIndex)
+    defineWord(<variant> currentDefinition, ref int currentTokenIndex)
     {
-        string token = currentDefinition[currentTokenIndex];
-        string lowerToken = token.ToLower(); // Convert token to lowercase for case-insensitive comparison    
-        
-        int address;
-        int value;
-        bool currentTokenIndexModified;
-        
-        if (definingWord)
+        string token;
+        uint   index;
+        int    value;
+        switch (typeof(currentDefinition[uint(currentTokenIndex)]))
         {
-            if (token == ";")
+            case uint:   
+            { 
+                index = uint(currentDefinition[uint(currentTokenIndex)]);
+                Word word = wordList[index];
+                token = word.Name;
+            }
+            case byte:   
+            { 
+                index = uint(currentDefinition[uint(currentTokenIndex)]);
+                Word word = wordList[index];
+                token = word.Name;
+            }
+            case int:    
+            { 
+                value = int(currentDefinition[uint(currentTokenIndex)]);
+                token = value.ToString();
+            }
+            case string: 
             {
-                definingWord = false;
-                Word newWord;
-                newWord.Name = currentWordName;
-                newWord.Definition = currentWordDefinition;
-                wordList.Append(newWord);
-                
-                /*
-                IO.Write("Defined word: " + currentWordName + " '");
-                bool first = true;
-                foreach (var token in currentWordDefinition)
+                 token = currentDefinition[uint(currentTokenIndex)];
+            }
+        }
+        
+        if (token == ";")
+        {
+            definingWord = false;
+            Word newWord;
+            newWord.Name = currentWordName;
+            newWord.Definition = currentWordDefinition;
+            wordList.Append(newWord);
+            
+            IO.Write("Defined word: " + currentWordName + " '");
+            bool first = true;
+            
+            foreach (var vtoken in currentWordDefinition)
+            {
+                if (!first)
                 {
-                    if (!first)
-                    {
-                        IO.Write(" ");
-                    }
-                    IO.Write(token);
-                    first = false;
+                    IO.Write(" ");
                 }
-                IO.WriteLn("'");
-                */
-            }
-            else if (currentWordName.Length == 0)
-            {
-                currentWordName = token; // Set the word name
-            }
-            else
-            {
-                switch (lowerToken)
+                switch (typeof(vtoken))
                 {
-                    case "if":
+                    case string:
                     {
-                        currentWordDefinition.Append(token);           // ELSE
-                        currentWordDefinition.Append("0");             // Placeholder
-                        ifStack.Append(currentWordDefinition.Count-1); // Placeholder index
+                        string t = vtoken;
+                        IO.Write("S:" + t);
                     }
-                    case "else":
+                    case uint:
                     {
-                        if (ifStack.Count > 0)
-                        {
-                            uint ifPos = uintListPop(ifStack);
-                            currentWordDefinition[ifPos] = (currentWordDefinition.Count + 2).ToString(); // Address of ELSE
-                        }
-                        currentWordDefinition.Append(token);             // ELSE
-                        currentWordDefinition.Append("0");               // Placeholder
-                        elseStack.Append(currentWordDefinition.Count-1); // Placeholder index
+                        Word word = wordList[uint(vtoken)];
+                        string name = word.Name;
+                        IO.Write("U:" + name);
                     }
-                    case "then":
+                    case byte:
                     {
-                        if (elseStack.Count > 0)
+                        Word word = wordList[uint(vtoken)];
+                        string name = word.Name;
+                        IO.Write("B:" + name);
+                    }
+                    case int:
+                    {
+                        IO.Write("I:" + (int(vtoken)).ToString());
+                    }
+                }
+                first = false;
+            }
+            IO.WriteLn("'");
+        }
+        else if (currentWordName.Length == 0)
+        {
+            currentWordName = token; // Set the word name
+        }
+        else
+        {
+            string lowerToken = token.ToLower(); // Convert token to lowercase for case-insensitive comparison    
+            switch (lowerToken)
+            {
+                case "if":
+                {
+                    currentWordDefinition.Append(byte(33)/*token*/);           // IF
+                    currentWordDefinition.Append(0);               // Placeholder
+                    ifStack.Append(int(currentWordDefinition.Count-1)); // Placeholder index
+                }
+                case "else":
+                {
+                    if (ifStack.Count > 0)
+                    {
+                        int ifPos = intListPop(ifStack);
+                        currentWordDefinition[uint(ifPos)] = int(currentWordDefinition.Count + 2); // Address of ELSE
+                    }
+                    currentWordDefinition.Append(byte(34)/*token*/);             // ELSE
+                    currentWordDefinition.Append(0);                 // Placeholder
+                    elseStack.Append(int(currentWordDefinition.Count-1)); // Placeholder index
+                }
+                case "then":
+                {
+                    if (elseStack.Count > 0)
+                    {
+                        int elsePos = intListPop(elseStack);
+                        currentWordDefinition[uint(elsePos)] = int(currentWordDefinition.Count); // Address of ELSE
+                    }
+                    else if (ifStack.Count > 0)
+                    {
+                        int ifPos = intListPop(ifStack);
+                        currentWordDefinition[uint(ifPos)] = int(currentWordDefinition.Count); // Address of THEN
+                    }
+                    else
+                    {
+                        WriteLn("Error: unmatched THEN");
+                    }
+                    currentWordDefinition.Append(byte(35)/*token*/); // THEN
+                }
+                case "begin":
+                {
+                    beginStack.Append(int(currentWordDefinition.Count)); // Record the position of BEGIN
+                    currentWordDefinition.Append(byte(36)/*token*/);                 // Append BEGIN token
+                }
+                case "until":
+                {
+                    if (beginStack.Count > 0)
+                    {
+                        int beginPos = intListPop(beginStack);
+                        currentWordDefinition.Append(byte(39)/*"0branch"*/);        // Append conditional branch
+                        currentWordDefinition.Append(beginPos);         // Append position to jump to (BEGIN)
+                    }
+                    else
+                    {
+                        WriteLn("Error: unmatched UNTIL");
+                    }
+                }
+                case "again":
+                {
+                    if (beginStack.Count > 0)
+                    {
+                        int beginPos = intListPop(beginStack);
+                        currentWordDefinition.Append(byte(40)/*"branch"*/);       // Append unconditional branch
+                        currentWordDefinition.Append(beginPos);       // Append position to jump to (BEGIN)
+                    }
+                    else
+                    {
+                        WriteLn("Error: unmatched AGAIN");
+                    }
+                }
+                case "do":
+                {
+                    currentWordDefinition.Append(byte(41)/*token*/);              // Append DO token
+                    doStack.Append(int(currentWordDefinition.Count)); // Record the position after DO
+                }
+                case "loop":
+                {
+                    if (doStack.Count > 0)
+                    {
+                        int doPos  = intListPop(doStack);
+                        currentWordDefinition.Append(byte(42)/*token*/);            // Append LOOP token
+                        currentWordDefinition.Append(doPos.ToString()); // Append position to jump to (DO)
+                    }
+                    else
+                    {
+                        WriteLn("Error: unmatched LOOP");
+                    }
+                }
+                case "i":
+                {
+                    currentWordDefinition.Append(byte(43)/*token*/); // Append I token
+                }
+                default:
+                {
+                    bool builtIn;
+                    if (Int.TryParse(token, ref value))
+                    {
+                        currentWordDefinition.Append(value);
+                    }
+                    else if (wordToUInt(token, ref index, ref builtIn))
+                    {
+                        if (builtIn)
                         {
-                            uint elsePos = uintListPop(elseStack);
-                            currentWordDefinition[elsePos] = (currentWordDefinition.Count).ToString(); // Address of ELSE
-                        }
-                        else if (ifStack.Count > 0)
-                        {
-                            uint ifPos = uintListPop(ifStack);
-                            currentWordDefinition[ifPos] = (currentWordDefinition.Count).ToString(); // Address of THEN
+                            currentWordDefinition.Append(byte(index));
                         }
                         else
                         {
-                            WriteLn("Error: unmatched THEN");
-                        }
-                        currentWordDefinition.Append(token); // THEN
-                    }
-                    case "begin":
-                    {
-                        beginStack.Append(currentWordDefinition.Count); // Record the position of BEGIN
-                        currentWordDefinition.Append(token);           // Append BEGIN token
-                    }
-                    case "until":
-                    {
-                        if (beginStack.Count > 0)
-                        {
-                            uint beginPos = uintListPop(beginStack);
-                            currentWordDefinition.Append("0branch");           // Append conditional branch
-                            currentWordDefinition.Append(beginPos.ToString()); // Append position to jump to (BEGIN)
-                        }
-                        else
-                        {
-                            WriteLn("Error: unmatched UNTIL");
+                            currentWordDefinition.Append(uint(index));
                         }
                     }
-                    case "again":
-                    {
-                        if (beginStack.Count > 0)
-                        {
-                            uint beginPos = uintListPop(beginStack);
-                            currentWordDefinition.Append("branch");            // Append unconditional branch
-                            currentWordDefinition.Append(beginPos.ToString()); // Append position to jump to (BEGIN)
-                        }
-                        else
-                        {
-                            WriteLn("Error: unmatched AGAIN");
-                        }
-                    }
-                    case "do":
-                    {
-                        currentWordDefinition.Append(token);         // Append DO token
-                        doStack.Append(currentWordDefinition.Count); // Record the position after DO
-                    }
-                    case "loop":
-                    {
-                        if (doStack.Count > 0)
-                        {
-                            uint doPos  = uintListPop(doStack);
-                            currentWordDefinition.Append(token);            // Append LOOP token
-                            currentWordDefinition.Append(doPos.ToString()); // Append position to jump to (DO)
-                        }
-                        else
-                        {
-                            WriteLn("Error: unmatched LOOP");
-                        }
-                    }
-                    case "i":
-                    {
-                        currentWordDefinition.Append(token); // Append I token
-                    }
-                    default:
+                    else
                     {
                         currentWordDefinition.Append(token);
                     }
                 }
             }
-            currentTokenIndex++;
         }
-        else if (Int.TryParse(token, ref value))
+        currentTokenIndex++;
+    }
+    bool wordToUInt(string token, ref uint index, ref bool builtIn)
+    {
+        builtIn = false;
+        index = wordList.Count;
+        string lowerToken = token.ToLower();
+        loop
+        {
+            if (index == 0) { break; }
+            index--;
+            Word word = wordList[index];
+            string name = word.Name;
+            if (lowerToken == name.ToLower())
+            {
+                <variant> definition = word.Definition;
+                if (definition.Count == 1) // special token to imply 'built-in'
+                {
+                    if (typeof(definition[0]) == string)
+                    {
+                        string first = definition[0];
+                        if (first == " ")
+                        {
+                            
+                            if (   (name == ".") || (name == ".\"") || (name == ".s") || (name == "words") 
+                                || (name == "+") || (name == "-") || (name == "*") || (name == "/") || (name == "mod")
+                                || (name == "abs") || (name == "and") || (name == "or") || (name == "xor") || (name == "invert") || (name == "=") || (name == "<")
+                                || (name == "dup") || (name == "drop") || (name == "swap") || (name == "over") || (name == "rot") || (name == "-rot") || (name == "pick")
+                                || (name == "!") || (name == "@") || (name == "c!") || (name == "c@") 
+                                || (name == "emit") || (name == "cr") || (name == "key") || (name == "key?") || (name == "bye") 
+                                || (name == "if") || (name == "then") || (name == "else") || (name == "begin") || (name == "0branch") || (name == "branch")
+                                || (name == "do") || (name == "loop") || (name == "i") || (name == "exit")
+                                || (name == "seconds") || (name == "delay") || (name == "pin") || (name == "in") || (name == "out")
+                               )
+                            {
+                                builtIn = true;
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    executeWord(<variant> currentDefinition, ref int currentTokenIndex)
+    {
+        bool currentTokenIndexModified;
+        int value;
+        string token;
+        
+        switch (typeof(currentDefinition[uint(currentTokenIndex)]))
+        {
+            case uint:   
+            { 
+                uint index = uint(currentDefinition[uint(currentTokenIndex)]);
+                Word word = wordList[index];
+                <variant> wordDefinition = word.Definition;
+                
+                executeDefinition(wordDefinition);
+                currentTokenIndex++;
+                return;
+            }
+            case byte:
+            {
+                byte builtIn = byte(currentDefinition[uint(currentTokenIndex)]);
+                switch (builtIn)
+                {
+                    // Print the top value on the stack ( n -- )
+                    case 1: // "."
+                    {
+                        int top = pop();
+                        IO.Write(top.ToString() + " ");
+                    }
+                    // Print string ( ." <string> " -- )
+                    case 2: // ".\""
+                    {
+                        currentTokenIndex++;
+                        string str = currentDefinition[uint(currentTokenIndex)];
+                        IO.Write(str);
+                    }
+                    case 3: // ".s"
+                    {
+                        IO.Write("Stack: ");
+                        for (int i = 0; i < sp; i++)
+                        {
+                            IO.Write((stack[i]).ToString() + " ");
+                        }
+                        IO.WriteLn("");
+                    }
+                    // List all defined words ( -- )
+                    case 4: // "words"
+                    {
+                        foreach (var word in wordList)
+                        {
+                            IO.Write(" " + word.Name);
+                        }
+                        IO.WriteLn(""); // Newline after listing words
+                    }
+                    
+                    // Addition ( n1 n2 -- n1+n2 )
+                    case 5: // "+"
+                    {
+                        int top = pop();
+                        int next = pop();
+                        push(next + top);
+                    }
+                    // Subtraction ( n1 n2 -- n1-n2 )
+                    case 6: // "-"
+                    {
+                        int top = pop();
+                        int next = pop();
+                        push(next - top);
+                    }
+                    // Multiplication ( n1 n2 -- n1*n2 )
+                    case 7: // "*"
+                    {
+                        int top = pop();
+                        int next = pop();
+                        push(next * top);
+                    }
+                    // Division ( n1 n2 -- n1/n2 )
+                    case 8: // "/"
+                    {
+                        int top = pop();
+                        int next = pop();
+                        if (top == 0)
+                        {
+                            WriteLn("Division by zero");
+                            push(0); // Default error value
+                        }
+                        else
+                        {
+                            push(next / top);
+                        }
+                    }
+                    // Modulo ( n1 n2 -- n1%n2 )
+                    case 9: // "mod"
+                    {
+                        int top = pop();
+                        int next = pop();
+                        if (top == 0)
+                        {
+                            WriteLn("Division by zero");
+                            push(0); // Default error value
+                        }
+                        else
+                        {
+                            push(next % top);
+                        }
+                    }
+                    // Absolute value of the top value on the stack ( n -- |n| )
+                    case 10: // "abs"
+                    {
+                        int top = pop();
+                        push(top < 0 ? -top : top);
+                    }
+                    // Logical AND ( n1 n2 -- n1&n2 )
+                    case 11: // "and"
+                    {
+                        int top = pop();
+                        int next = pop();
+                        
+                        byte b0 = top.GetByte(0) & next.GetByte(0);
+                        byte b1 = top.GetByte(1) & next.GetByte(1);
+                        push(Int.FromBytes(b0, b1));
+                    }
+                    // Logical OR ( n1 n2 -- n1|n2 )
+                    case 12: // "or"
+                    {
+                        int top = pop();
+                        int next = pop();
+                        
+                        byte b0 = top.GetByte(0) | next.GetByte(0);
+                        byte b1 = top.GetByte(1) | next.GetByte(1);
+                        push(Int.FromBytes(b0, b1));
+                    }
+                    // Logical XOR ( n1 n2 -- n1^n2 )
+                    case 13: // "xor"
+                    {
+                        int top = pop();
+                        int next = pop();
+                        
+                        byte b0 = top.GetByte(0) ^ next.GetByte(0);
+                        byte b1 = top.GetByte(1) ^ next.GetByte(1);
+                        push(Int.FromBytes(b0, b1));
+                    }
+                    // Bitwise NOT ( n -- ~n )
+                    case 14: // "invert"
+                    {
+                        int top = pop();
+                        
+                        byte b0 = ~top.GetByte(0);
+                        byte b1 = ~top.GetByte(1);
+                        push(Int.FromBytes(b0, b1));
+                    }
+                    // Comparison operations ( n1 n2 -- flag )
+                    case 15: // "="
+                    {
+                        int top = pop();
+                        int next = pop();
+                        push(next == top ? -1 : int(0));
+                    }
+                    case 16: // "<"
+                    {
+                        int top = pop();
+                        int next = pop();
+                        push(next < top ? -1 : int(0));
+                    }
+                    
+                    // Duplicate the top value on the stack ( n -- n n )
+                    case 17: // "dup"
+                    {
+                        if (sp > 0)
+                        {
+                            int top = stack[sp - 1];
+                            push(top);
+                        }
+                        else
+                        {
+                            WriteLn("Stack Underflow");
+                        }
+                    }
+                    // Drop the top value on the stack ( n -- )
+                    case 18: // "drop"
+                    {
+                        if (sp > 0)
+                        {
+                            _ = pop(); // Just pop the top value
+                        }
+                        else
+                        {
+                            WriteLn("Stack Underflow");
+                        }
+                    }
+                    // Swap the top two values on the stack ( n1 n2 -- n2 n1 )
+                    case 19: // "swap"
+                    {
+                        if (sp > 1)
+                        {
+                            int top = pop();
+                            int next = pop();
+                            push(top);
+                            push(next);
+                        }
+                        else
+                        {
+                            WriteLn("Stack Underflow");
+                        }
+                    }
+                    // Copy the second value on the stack to the top ( n1 n2 -- n1 n2 n1 )
+                    case 20: // "over"
+                    {
+                        if (sp > 1)
+                        {
+                            int second = stack[sp - 2];
+                            push(second);
+                        }
+                        else
+                        {
+                            WriteLn("Stack Underflow");
+                        }
+                    }
+                    // Rotate the top three values on the stack ( n1 n2 n3 -- n2 n3 n1 )
+                    case 21: // "rot"
+                    {
+                        if (sp > 2)
+                        {
+                            int third = stack[sp - 3];
+                            int second = stack[sp - 2];
+                            int first = stack[sp - 1];
+                            stack[sp - 3] = second;
+                            stack[sp - 2] = first;
+                            stack[sp - 1] = third;
+                        }
+                        else
+                        {
+                            WriteLn("Stack Underflow");
+                        }
+                    }
+                    // Rotate the top three values on the stack in the opposite direction ( n1 n2 n3 -- n3 n1 n2 )
+                    case 22: // "-rot"
+                    {
+                        if (sp > 2)
+                        {
+                            int third = stack[sp - 3];
+                            int second = stack[sp - 2];
+                            int first = stack[sp - 1];
+                            stack[sp - 3] = first;
+                            stack[sp - 2] = third;
+                            stack[sp - 1] = second;
+                        }
+                        else
+                        {
+                            WriteLn("Stack Underflow");
+                        }
+                    }
+                    // Fetch the nth item from the stack ( n -- n' )
+                    case 23: // "pick"
+                    {
+                        int n = pop();
+                        if (sp > n)
+                        {
+                            value = stack[sp - n - 1];
+                            push(value);
+                        }
+                        else
+                        {
+                            WriteLn("Stack Underflow");
+                        }
+                    }
+                    // Store a value in memory ( n addr -- )
+                    case 24://"!"
+                    {
+                        int address = pop();
+                        value = pop();
+                        if ((address >= 0) && (address < memorySize))
+                        {
+                            memory[address] = value;
+                        }
+                        else
+                        {
+                            WriteLn("Invalid memory address");
+                        }
+                    }
+                    // Fetch a value from memory ( addr -- n )
+                    case 25: // "@"
+                    {
+                        int address = pop();
+                        if ((address >= 0) && (address < memorySize))
+                        {
+                            push(memory[address]);
+                        }
+                        else
+                        {
+                            WriteLn("Invalid memory address");
+                            push(0); // Default error value
+                        }
+                    }
+                    // Store a byte in memory ( byte addr -- )
+                    case 26: // "c!"
+                    {
+                        int address = pop();
+                        value = pop() & 0xFF;
+                        if ((address >= 0) && (address < memorySize))
+                        {
+                            memory[address] = value;
+                        }
+                        else
+                        {
+                            WriteLn("Invalid memory address");
+                        }
+                    }
+                    // Fetch a byte from memory ( addr -- byte )
+                    case 27: // "c@"
+                    {
+                        int address = pop();
+                        if ((address >= 0) && (address < memorySize))
+                        {
+                            push(memory[address] & 0xFF);
+                        }
+                        else
+                        {
+                            WriteLn("Invalid memory address");
+                            push(0); // Default error value
+                        }
+                    }
+                                        
+                    // Output a character ( n -- )
+                    case 28: // "emit"
+                    {
+                        value = pop();
+                        char ch = char(value.GetByte(0) & 0xFF);
+                        IO.Write(ch);
+                    }
+                    // Output a carriage return and line feed ( -- )
+                    case 29: // "cr"
+                    {
+                        IO.WriteLn("");
+                    }
+                    // Read a single character ( -- n )
+                    case 30: // "key"
+                    {
+                        char ch = Serial.ReadChar();
+                        push(int(ch));
+                    }
+                    // Has a key been pressed? ( -- n )
+                    case 31: // "key?"
+                    {
+                        push(Serial.IsAvailable ? -1 : int(0));
+                    }
+                    // Exit the interpreter ( -- )
+                    case 32: // "bye"
+                    {
+                        running = false; // Set the flag to false to exit the loop
+                    }
+                    
+                    case 33: // "if"
+                    {
+                        int condition = pop();
+                        currentTokenIndex++; // consume the address token
+                        if (condition == 0)
+                        {
+                            // Jump to the address after `if`
+                            currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
+                            currentTokenIndexModified = true;
+                        }
+                    }
+                    case 34: // "else"
+                    {
+                        // Jump to the address after `else`
+                        currentTokenIndex++; // consume the address token
+                        currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
+                        currentTokenIndexModified = true;
+                    }
+                    case 35: // "then"
+                    {
+                        // `THEN` is a no-op during execution
+                    }
+                    case 36: // "begin"
+                    {
+                        // `BEGIN` is a no-op during execution
+                    }
+                    
+                    case 39: // "0branch"
+                    {
+                        int condition = pop();
+                        currentTokenIndex++; // consume the address token
+                        if (condition == 0)
+                        {
+                            // Jump to the branch address
+                            currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
+                            currentTokenIndexModified = true;
+                        }
+                    }
+                    
+                    case 40: // "branch"
+                    {
+                        currentTokenIndex++; // consume the address token
+                        
+                        // Jump to the branch address
+                        currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
+                        currentTokenIndexModified = true;
+                    }
+                    case 41://"do"
+                    {
+                        int start = pop();
+                        int end   = pop();
+                        doParameters.Append(end);
+                        doParameters.Append(start);
+                        doParameters.Append(start); // Initialize the current index
+                    }
+                    case 42: // "loop"
+                    {
+                        int currentIndex = intListPop(doParameters);
+                        int start        = intListPop(doParameters);
+                        int end          = intListPop(doParameters);
+                        currentIndex++;
+                        currentTokenIndex++; // consume the address token
+                        if (currentIndex < end)
+                        {
+                            doParameters.Append(end);
+                            doParameters.Append(start);
+                            doParameters.Append(currentIndex);
+                            
+                            // Jump back to the start of the loop
+                            currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
+                            currentTokenIndexModified = true;
+                        }
+                    }
+                    case 43: // "i"
+                    {
+                        int currentIndex = doParameters[doParameters.Count-1];
+                        push(currentIndex);
+                    }
+                    case 44: // "exit"
+                    {
+                        currentTokenIndex = int(currentDefinition.Count); // Set the token index to the end to exit the current word
+                        currentTokenIndexModified = true;
+                    }
+                    
+                    case 45: // "seconds"
+                    {
+                        uint s = Time.Seconds;
+                        int seconds = Int.FromBytes(s.GetByte(0), s.GetByte(1));
+                        push(seconds);
+                    }
+                    case 46: // "delay"
+                    {
+                        int duration = pop();
+                        Time.Delay(uint(duration));
+                    }
+                    case 47: // "pin"
+                    {
+                        int mode = pop();
+                        int pin = pop();
+                        MCU.PinMode(byte(pin), PinModeOption(mode));
+                    }
+                    case 48: // "in"
+                    {
+                        int pin = pop();
+                        push(MCU.DigitalRead(byte(pin)) ? -1 : int(0));
+                    }
+                    case 49: // "out"
+                    {
+                        value = pop();
+                        int pin = pop();
+                        MCU.DigitalWrite(byte(pin), value == -1);
+                    }
+                    
+                    default:
+                    {
+                        Die(0x0A);
+                    }
+                }
+                if (!currentTokenIndexModified)
+                {
+                    currentTokenIndex++;
+                }
+                return;
+            }
+            case int:
+            { 
+                value = int(currentDefinition[uint(currentTokenIndex)]);
+                push(value);
+                currentTokenIndex++;
+                return;
+            }
+            case string: 
+            {
+                 token = currentDefinition[uint(currentTokenIndex)];
+            }
+        }
+        
+        if (Int.TryParse(token, ref value))
         {
             push(value);
-            currentTokenIndex++;
         }
         else
         {
-            bool found = false;
-            bool builtIn = false;
+            bool found;
+            bool builtIn;
+            
+            string lowerToken = token.ToLower(); // Convert token to lowercase for case-insensitive comparison    
 
             // most recently defined word first (so we can redefine existing words)            
             uint wordIndex = wordList.Count;
@@ -235,15 +826,19 @@ program HopperFORTH
                 if (lowerName == lowerToken)
                 {
                     found = true;
-                    <string> wordDefinition = word.Definition;
-                    if ((wordDefinition.Count == 1) && (wordDefinition[0] == " ")) // special token to imply 'built-in'
+                    <variant> wordDefinition = word.Definition;
+                    
+                    if (wordDefinition.Count == 1) // special token to imply 'built-in'
                     {
-                        builtIn = true;    
+                        string first = wordDefinition[0];
+                        if (first == " ")
+                        {
+                            builtIn = true;    
+                            break;
+                        }
                     }
-                    else
-                    {
-                        executeDefinition(wordDefinition);
-                    }
+                    
+                    executeDefinition(wordDefinition);
                     break;
                 }
             }
@@ -254,6 +849,7 @@ program HopperFORTH
             }
             if (builtIn)
             {
+                int address;
                 switch (lowerToken)
                 {
                     // Start defining a new word ( -- )
@@ -266,18 +862,21 @@ program HopperFORTH
                     // Print the top value on the stack ( n -- )
                     case ".":
                     {
+                        Die(0x0B);
                         int top = pop();
                         IO.Write(top.ToString() + " ");
                     }
                     // Print string ( ." <string> " -- )
                     case ".\"":
                     {
+                        Die(0x0B);
                         currentTokenIndex++;
-                        string str = currentDefinition[currentTokenIndex];
+                        string str = currentDefinition[uint(currentTokenIndex)];
                         IO.Write(str);
                     }
                     case ".s":
                     {
+                        Die(0x0B);
                         IO.Write("Stack: ");
                         for (int i = 0; i < sp; i++)
                         {
@@ -288,6 +887,7 @@ program HopperFORTH
                     // List all defined words ( -- )
                     case "words":
                     {
+                        Die(0x0B);
                         foreach (var word in wordList)
                         {
                             IO.Write(" " + word.Name);
@@ -298,6 +898,7 @@ program HopperFORTH
                     // Addition ( n1 n2 -- n1+n2 )
                     case "+":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         push(next + top);
@@ -305,6 +906,7 @@ program HopperFORTH
                     // Subtraction ( n1 n2 -- n1-n2 )
                     case "-":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         push(next - top);
@@ -312,6 +914,7 @@ program HopperFORTH
                     // Multiplication ( n1 n2 -- n1*n2 )
                     case "*":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         push(next * top);
@@ -319,6 +922,7 @@ program HopperFORTH
                     // Division ( n1 n2 -- n1/n2 )
                     case "/":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         if (top == 0)
@@ -334,6 +938,7 @@ program HopperFORTH
                     // Modulo ( n1 n2 -- n1%n2 )
                     case "mod":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         if (top == 0)
@@ -349,12 +954,14 @@ program HopperFORTH
                     // Absolute value of the top value on the stack ( n -- |n| )
                     case "abs":
                     {
+                        Die(0x0B);
                         int top = pop();
                         push(top < 0 ? -top : top);
                     }
                     // Logical AND ( n1 n2 -- n1&n2 )
                     case "and":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         
@@ -365,6 +972,7 @@ program HopperFORTH
                     // Logical OR ( n1 n2 -- n1|n2 )
                     case "or":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         
@@ -375,6 +983,7 @@ program HopperFORTH
                     // Logical XOR ( n1 n2 -- n1^n2 )
                     case "xor":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         
@@ -385,6 +994,7 @@ program HopperFORTH
                     // Bitwise NOT ( n -- ~n )
                     case "invert":
                     {
+                        Die(0x0B);
                         int top = pop();
                         
                         byte b0 = ~top.GetByte(0);
@@ -394,25 +1004,22 @@ program HopperFORTH
                     // Comparison operations ( n1 n2 -- flag )
                     case "=":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         push(next == top ? -1 : int(0));
                     }
                     case "<":
                     {
+                        Die(0x0B);
                         int top = pop();
                         int next = pop();
                         push(next < top ? -1 : int(0));
                     }
-                    case ">":
-                    {
-                        int top = pop();
-                        int next = pop();
-                        push(next > top ? -1 : int(0));
-                    }
                     // Duplicate the top value on the stack ( n -- n n )
                     case "dup":
                     {
+                        Die(0x0B);
                         if (sp > 0)
                         {
                             int top = stack[sp - 1];
@@ -426,6 +1033,7 @@ program HopperFORTH
                     // Drop the top value on the stack ( n -- )
                     case "drop":
                     {
+                        Die(0x0B);
                         if (sp > 0)
                         {
                             _ = pop(); // Just pop the top value
@@ -438,6 +1046,7 @@ program HopperFORTH
                     // Swap the top two values on the stack ( n1 n2 -- n2 n1 )
                     case "swap":
                     {
+                        Die(0x0B);
                         if (sp > 1)
                         {
                             int top = pop();
@@ -453,6 +1062,7 @@ program HopperFORTH
                     // Copy the second value on the stack to the top ( n1 n2 -- n1 n2 n1 )
                     case "over":
                     {
+                        Die(0x0B);
                         if (sp > 1)
                         {
                             int second = stack[sp - 2];
@@ -466,6 +1076,7 @@ program HopperFORTH
                     // Rotate the top three values on the stack ( n1 n2 n3 -- n2 n3 n1 )
                     case "rot":
                     {
+                        Die(0x0B);
                         if (sp > 2)
                         {
                             int third = stack[sp - 3];
@@ -483,6 +1094,7 @@ program HopperFORTH
                     // Rotate the top three values on the stack in the opposite direction ( n1 n2 n3 -- n3 n1 n2 )
                     case "-rot":
                     {
+                        Die(0x0B);
                         if (sp > 2)
                         {
                             int third = stack[sp - 3];
@@ -500,6 +1112,7 @@ program HopperFORTH
                     // Fetch the nth item from the stack ( n -- n' )
                     case "pick":
                     {
+                        Die(0x0B);
                         int n = pop();
                         if (sp > n)
                         {
@@ -514,6 +1127,7 @@ program HopperFORTH
                     // Store a value in memory ( n addr -- )
                     case "!":
                     {
+                        Die(0x0B);
                         address = pop();
                         value = pop();
                         if ((address >= 0) && (address < memorySize))
@@ -528,6 +1142,7 @@ program HopperFORTH
                     // Fetch a value from memory ( addr -- n )
                     case "@":
                     {
+                        Die(0x0B);
                         address = pop();
                         if ((address >= 0) && (address < memorySize))
                         {
@@ -542,6 +1157,7 @@ program HopperFORTH
                     // Store a byte in memory ( byte addr -- )
                     case "c!":
                     {
+                        Die(0x0B);
                         address = pop();
                         value = pop() & 0xFF;
                         if ((address >= 0) && (address < memorySize))
@@ -556,6 +1172,7 @@ program HopperFORTH
                     // Fetch a byte from memory ( addr -- byte )
                     case "c@":
                     {
+                        Die(0x0B);
                         address = pop();
                         if ((address >= 0) && (address < memorySize))
                         {
@@ -570,6 +1187,7 @@ program HopperFORTH
                     // Output a character ( n -- )
                     case "emit":
                     {
+                        Die(0x0B);
                         value = pop();
                         char ch = char(value.GetByte(0) & 0xFF);
                         IO.Write(ch);
@@ -577,76 +1195,83 @@ program HopperFORTH
                     // Output a carriage return and line feed ( -- )
                     case "cr":
                     {
+                        Die(0x0B);
                         IO.WriteLn("");
                     }
                     // Read a single character ( -- n )
                     case "key":
                     {
+                        Die(0x0B);
                         char ch = Serial.ReadChar();
                         push(int(ch));
                     }
                     // Has a key been pressed? ( -- n )
                     case "key?":
                     {
+                        Die(0x0B);
                         push(Serial.IsAvailable ? -1 : int(0));
                     }
                     // Exit the interpreter ( -- )
                     case "bye":
                     {
+                        Die(0x0B);
                         running = false; // Set the flag to false to exit the loop
                     }
                     
                     case "if":
                     {
+                        Die(0x0B);
                         int condition = pop();
                         currentTokenIndex++; // consume the address token
                         if (condition == 0)
                         {
                             // Jump to the address after `if`
-                            string addressString = currentDefinition[currentTokenIndex];
-                            _ = UInt.TryParse(addressString, ref currentTokenIndex);
+                            currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
                             currentTokenIndexModified = true;
                         }
                     }
                     case "else":
                     {
+                        Die(0x0B);
                         // Jump to the address after `else`
                         currentTokenIndex++; // consume the address token
-                        string addressString = currentDefinition[currentTokenIndex];
-                        _ = UInt.TryParse(addressString, ref currentTokenIndex);
+                        currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
                         currentTokenIndexModified = true;
                     }
                     case "then":
                     {
+                        Die(0x0B);
                         // `THEN` is a no-op during execution
                     }
                     case "begin":
                     {
+                        Die(0x0B);
                         // `BEGIN` is a no-op during execution
                     }
                     case "0branch":
                     {
+                        Die(0x0B);
                         int condition = pop();
                         currentTokenIndex++; // consume the address token
                         if (condition == 0)
                         {
                             // Jump to the branch address
-                            string addressString = currentDefinition[currentTokenIndex];
-                            _ = UInt.TryParse(addressString, ref currentTokenIndex);
+                            currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
                             currentTokenIndexModified = true;
                         }
                     }
                     case "branch":
                     {
+                        Die(0x0B);
                         currentTokenIndex++; // consume the address token
                         
                         // Jump to the branch address
-                        string addressString = currentDefinition[currentTokenIndex];
-                        _ = UInt.TryParse(addressString, ref currentTokenIndex);
+                        currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
                         currentTokenIndexModified = true;
                     }
                     case "do":
                     {
+                        Die(0x0B);
                         int start = pop();
                         int end   = pop();
                         doParameters.Append(end);
@@ -655,6 +1280,7 @@ program HopperFORTH
                     }
                     case "loop":
                     {
+                        Die(0x0B);
                         int currentIndex = intListPop(doParameters);
                         int start        = intListPop(doParameters);
                         int end          = intListPop(doParameters);
@@ -667,46 +1293,52 @@ program HopperFORTH
                             doParameters.Append(currentIndex);
                             
                             // Jump back to the start of the loop
-                            string addressString = currentDefinition[currentTokenIndex];
-                            _ = UInt.TryParse(addressString, ref currentTokenIndex);
+                            currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
                             currentTokenIndexModified = true;
                         }
                     }
                     case "i":
                     {
+                        Die(0x0B);
                         int currentIndex = doParameters[doParameters.Count-1];
                         push(currentIndex);
                     }
                     case "exit":
                     {
-                        currentTokenIndex = currentDefinition.Count; // Set the token index to the end to exit the current word
+                        Die(0x0B);
+                        currentTokenIndex = int(currentDefinition.Count); // Set the token index to the end to exit the current word
                         currentTokenIndexModified = true;
                     }
                     
                     case "seconds":
                     {
+                        Die(0x0B);
                         uint s = Time.Seconds;
                         int seconds = Int.FromBytes(s.GetByte(0), s.GetByte(1));
                         push(seconds);
                     }
                     case "delay":
                     {
+                        Die(0x0B);
                         int duration = pop();
                         Time.Delay(uint(duration));
                     }
                     case "pin":
                     {
+                        Die(0x0B);
                         int mode = pop();
                         int pin = pop();
                         MCU.PinMode(byte(pin), PinModeOption(mode));
                     }
                     case "in":
                     {
+                        Die(0x0B);
                         int pin = pop();
                         push(MCU.DigitalRead(byte(pin)) ? -1 : int(0));
                     }
                     case "out":
                     {
+                        Die(0x0B);
                         value = pop();
                         int pin = pop();
                         MCU.DigitalWrite(byte(pin), value == -1);
@@ -719,10 +1351,22 @@ program HopperFORTH
                     }
                 } // built-in switch
             }            
-            if (!currentTokenIndexModified)
-            {
-                currentTokenIndex++;
-            }
+        }
+        if (!currentTokenIndexModified)
+        {
+            currentTokenIndex++;
+        }
+    }
+    
+    executeToken(<variant> currentDefinition, ref int currentTokenIndex)
+    {
+        if (definingWord)
+        {
+            defineWord(currentDefinition, ref currentTokenIndex);
+        }
+        else
+        {
+            executeWord(currentDefinition, ref currentTokenIndex);
         }
     }
     
@@ -733,7 +1377,7 @@ program HopperFORTH
         bool isToken = false;
         bool inComment = false;
         bool inEOLComment = false;
-        <string> tokenBuffer;
+        <variant> tokenBuffer;
         
         for (uint i = 0; i <= input.Length; i++)
         {
@@ -790,7 +1434,31 @@ program HopperFORTH
                     if (isToken) // End of a token
                     {
                         string token = input.Substring(start, i - start);
-                        tokenBuffer.Append(token);
+                        int value;
+                        if (Int.TryParse(token, ref value))
+                        {
+                            tokenBuffer.Append(value);
+                        }
+                        else
+                        {
+                            uint index;
+                            bool builtIn;
+                            if (wordToUInt(token, ref index, ref builtIn))
+                            {
+                                if (builtIn)
+                                {
+                                    tokenBuffer.Append(byte(index));
+                                }
+                                else
+                                {
+                                    tokenBuffer.Append(uint(index));
+                                }
+                            }
+                            else
+                            {
+                                tokenBuffer.Append(token);
+                            }
+                        }
                         isToken = false; // Reset token flag
                     }
                 }
@@ -809,25 +1477,46 @@ program HopperFORTH
                 // we're not within a multiline definition:
                 
                 bool inDefinition;
-                foreach (var word in tokenBuffer)
+                foreach (var vword in tokenBuffer)
                 {
-                    switch (word)
+                    if (typeof(vword) == string)
                     {
-                        case ":":
+                        string word = vword;
+                        switch (word)
                         {
-                            inDefinition = true;
+                            case ":":
+                            {
+                                inDefinition = true;
+                            }
+                            case ";":
+                            {
+                                inDefinition = false;
+                            }
+                            case "if":
+                            case "begin":
+                            {
+                                Die(0x0B);
+                                if (!inDefinition)
+                                {        
+                                    useREPLWord = true;
+                                    break;
+                                }
+                            }
                         }
-                        case ";":
+                    }
+                    else if (typeof(vword) == byte)
+                    {
+                        byte builtIn = byte(vword);
+                        switch (builtIn)
                         {
-                            inDefinition = false;
-                        }
-                        case "if":
-                        case "begin":
-                        {
-                            if (!inDefinition)
-                            {        
-                                useREPLWord = true;
-                                break;
+                            case 33: // "if"
+                            case 36: // "begin"
+                            {
+                                if (!inDefinition)
+                                {        
+                                    useREPLWord = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -853,256 +1542,70 @@ program HopperFORTH
         }
     }
     
-    executeDefinition(<string> definition)
+    executeDefinition(<variant> exDefinition)
     {
-        for (uint currentTokenIndex=0; currentTokenIndex < definition.Count; )
+        int count = int(exDefinition.Count);
+        for (int currentTokenIndex=0; currentTokenIndex < count; )
         {
-            executeToken(definition, ref currentTokenIndex);
+            executeToken(exDefinition, ref currentTokenIndex);
         }
     }
     
     initializeBuiltIns()
     {
-        <string> definition;
+        <variant> definition;
         definition.Append(" "); // special token to imply 'built-in'
         Word word;
         word.Definition = definition;
         
-        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < > dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out").Split(' ');
+        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out").Split(' ');
         foreach (var name in builtIns)
         {
             word.Name = name;
             wordList.Append(word);
         }
     }
+    defineWord(string wordDefinition)
+    {
+        <variant> definition;
+        <string> words = wordDefinition.Split(' ');
+        foreach (var word in words)
+        {
+            definition.Append(word);
+        }
+        executeDefinition(definition);
+    }
     // Initialization method to define common FORTH words
     initialize()
     {
-        <string> definition;
+        <variant> definition;
         
         initializeBuiltIns();
         
-        // Define `nip` ( n1 n2 -- n2 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("nip");
-        definition.Append("swap");
-        definition.Append("drop");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `tuck` ( n1 n2 -- n2 n1 n2 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("tuck");
-        definition.Append("dup");
-        definition.Append("-rot");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `2dup` ( n1 n2 -- n1 n2 n1 n2 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("2dup");
-        definition.Append("over");
-        definition.Append("over");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `2drop` ( n1 n2 -- )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("2drop");
-        definition.Append("drop");
-        definition.Append("drop");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `2swap` ( n1 n2 n3 n4 -- n3 n4 n1 n2 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("2swap");
-        definition.Append("2");
-        definition.Append("pick");
-        definition.Append("2");
-        definition.Append("pick");
-        definition.Append("rot");
-        definition.Append("rot");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `2over` ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("2over");
-        definition.Append("3");
-        definition.Append("pick");
-        definition.Append("3");
-        definition.Append("pick");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `0=` ( n -- flag )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("0=");
-        definition.Append("0");
-        definition.Append("=");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `0<` ( n -- flag )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("0<");
-        definition.Append("0");
-        definition.Append("<");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `0>` ( n -- flag )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("0>");
-        definition.Append("0");
-        definition.Append(">");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `max` ( n1 n2 -- max )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("max");
-        definition.Append("2dup");
-        definition.Append(">");
-        definition.Append("if");
-        definition.Append("drop");
-        definition.Append("else");
-        definition.Append("nip");
-        definition.Append("then");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `min` ( n1 n2 -- min )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("min");
-        definition.Append("2dup");
-        definition.Append("<");
-        definition.Append("if");
-        definition.Append("drop");
-        definition.Append("else");
-        definition.Append("nip");
-        definition.Append("then");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `depth` ( -- n )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("depth");
-        definition.Append("sp");
-        definition.Append(";");
-        executeDefinition(definition);
-    
-        // Define `negate` ( n -- -n )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("negate");
-        definition.Append("0");
-        definition.Append("swap");
-        definition.Append("-");
-        definition.Append(";");
-        executeDefinition(definition);
-        
-        // Define `1+` ( n -- n+1 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("1+");
-        definition.Append("1");
-        definition.Append("+");
-        definition.Append(";");
-        executeDefinition(definition);
-                
-        // Define `1-` ( n -- n-1 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("1-");
-        definition.Append("1");
-        definition.Append("-");
-        definition.Append(";");
-        executeDefinition(definition);
-        
-        // Define `2+` ( n -- n+2 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("2+");
-        definition.Append("2");
-        definition.Append("+");
-        definition.Append(";");
-        executeDefinition(definition);
-        
-        // Define `2-` ( n -- n-2 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("2-");
-        definition.Append("2");
-        definition.Append("-");
-        definition.Append(";");
-        executeDefinition(definition);
-        
-        // Define `2*` ( n -- n*2 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("2*");
-        definition.Append("2");
-        definition.Append("*");
-        definition.Append(";");
-        executeDefinition(definition);
-        
-        // Define `2/` ( n -- n/2 )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("2/");
-        definition.Append("2");
-        definition.Append("/");
-        definition.Append(";");
-        executeDefinition(definition);
-                
-        // Define `<>` ( n1 n2 -- flag )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("<>");
-        definition.Append("=");    // Compare n1 and n2
-        definition.Append("0=");   // If they are equal, return false (0), otherwise true (-1)
-        definition.Append(";");
-        executeDefinition(definition);
-        
-        // Define `led` ( n -- )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("led");
-        definition.Append((Board.BuiltInLED).ToString());
-        definition.Append(";");
-        executeDefinition(definition);
-        
-        // Define `output` ( pin -- )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("output");
-        definition.Append("1");
-        definition.Append("pin");
-        definition.Append(";");
-        executeDefinition(definition);
-        
-        // Define `input` ( pin -- )
-        definition.Clear();
-        definition.Append(":");
-        definition.Append("input");
-        definition.Append("0");
-        definition.Append("pin");
-        definition.Append(";");
-        executeDefinition(definition);
+        defineWord(": > swap < ;");                         // `>`   ( n1 n2 -- flag )
+        defineWord(": nip swap drop ;");                    // `nip` ( n1 n2 -- n2 )
+        defineWord(": tuck dup -rot ;");                    // `tuck` ( n1 n2 -- n2 n1 n2 )
+        defineWord(": 2dup over over ;");                   // `2dup` ( n1 n2 -- n1 n2 n1 n2 )
+        defineWord(": 2drop drop drop ;");                  // `2drop` ( n1 n2 -- )
+        defineWord(": 2swap 2 pick 2 pick rot rot ;");      // `2swap` ( n1 n2 n3 n4 -- n3 n4 n1 n2 )
+        defineWord(": 2over 3 pick 3 pick ;");              // `2over` ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 )
+        defineWord(": 0= 0 = ;");                           // `0=` ( n -- flag )
+        defineWord(": 0< 0 < ;");                           // `0<` ( n -- flag )
+        defineWord(": 0> 0 > ;");                           // `0>` ( n -- flag )
+        defineWord(": <> = 0= ;");                          //  `<>` ( n1 n2 -- flag )
+        defineWord(": max 2dup > if drop else nip then ;"); // `max` ( n1 n2 -- max )
+        defineWord(": min 2dup < if drop else nip then ;"); // `min` ( n1 n2 -- min )
+        defineWord(": depth sp ; ");                        // `depth` ( -- n )
+        defineWord(": negate 0 swap - ;");                  // `negate` ( n -- -n )
+        defineWord(": 1+ 1 + ;");                           // `1+` ( n -- n+1 )
+        defineWord(": 1- 1 - ;");                           // `1-` ( n -- n-1 )
+        defineWord(": 2+ 2 + ;");                           // `2+` ( n -- n+2 )
+        defineWord(": 2- 2 - ;");                           // `2-` ( n -- n-2 )
+        defineWord(": 2* 2 * ;");                           // `2*` ( n -- n*2 )
+        defineWord(": 2/ 2 / ;");                           // `2/` ( n -- n/2 )
+        defineWord(": led " + (Board.BuiltInLED).ToString() + " ;"); // `led` ( n -- )
+        defineWord(": output 1 pin ;");                     // `output` ( pin -- )
+        defineWord(": input 0 pin ;");                      // `input` ( pin -- )
     }
         
     // Main entry point ( -- )

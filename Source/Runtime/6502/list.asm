@@ -994,10 +994,8 @@ unit List
         GC.Release();
     }
     
-    GetItem()
+    getItem()
     {
-        // V GetItem(<V> this, uint index) system;
-        
         Stacks.PopIDY(); // pop uint argument -> IDY
         Stacks.PopIDX(); // this -> IDX
         
@@ -1076,9 +1074,46 @@ unit List
         STA IDXL
         
         GC.Release(); // we popped 'this', decrease reference count
+    }
+    GetItem()
+    {
+        // V GetItem(<V> this, uint index) system;
         
+        //  returns item in TOP, type in LTYPE
+        getItem();
         LDA LTYPE
         Stacks.PushTop();
+    }
+    GetItemAsVariant()
+    {
+        //  returns item in TOP, type in LTYPE
+        getItem();
+        
+        LDA LTYPE
+        IsReferenceType();
+        if (NC)
+        {
+            //value type
+            
+            // type in A, value in FVALUE
+            //     return tVariant in IDX
+            // uses FSIZE
+            
+            LDA TOPL
+            STA FVALUEL
+            LDA TOPH
+            STA FVALUEH
+        
+            Variant.createValueVariant();
+            
+            LDA # Types.Variant
+            Stacks.PushIDX();
+        }
+        else
+        {
+            // type is in A
+            Stacks.PushTop();
+        }
     }
     
     Clear()
@@ -1543,12 +1578,6 @@ unit List
         GC.Release(); // we popped 'this'
     }
     
-    GetItemAsVariant()
-    {
-        LDA # 0x0A // LibCall not Implemented!
-        Diagnostics.die();
-    }
-    
     Contains()
     {
         // Pop the value to search for (V) and list reference (this)
@@ -1655,5 +1684,7 @@ unit List
         // bool result in X
         Stacks.PushX();
     }
+    
+        
     
 }
