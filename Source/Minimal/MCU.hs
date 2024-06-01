@@ -11,24 +11,6 @@ unit MCU
     uses "/Source/Minimal/Wire"
     uses "/Source/Minimal/IO"
     
-    const byte GP0 = 0;
-    const byte GP1 = 1;
-    const byte GP2 = 2;
-    const byte GP3 = 3;
-    const byte GP4 = 4;
-    const byte GP5 = 5;
-    const byte GP6 = 6;
-    const byte GP7 = 7;
-    
-    const byte GP8 = 8;
-    const byte GP9 = 9;
-    const byte GP10 = 10;
-    const byte GP11 = 11;
-    const byte GP12 = 12;
-    const byte GP13 = 13;
-    const byte GP14 = 14;
-    const byte GP15 = 15;
-    
     flags PinModeOption
     {
         Input         = 0x00,

@@ -287,9 +287,10 @@ program HopperFORTH
                     // List all defined words ( -- )
                     case "words":
                     {
+                        IO.Write(builtInWords.Trim());
                         foreach (var word in wordList)
                         {
-                            IO.Write(word.Name + " ");
+                            IO.Write(" " + word.Name);
                         }
                         IO.WriteLn(""); // Newline after listing words
                     }
@@ -1060,13 +1061,43 @@ program HopperFORTH
         definition.Append("0=");   // If they are equal, return false (0), otherwise true (-1)
         definition.Append(";");
         executeDefinition(definition);
+        
+        // Define `led` ( n -- )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("led");
+        definition.Append((Board.BuiltInLED).ToString());
+        definition.Append(";");
+        executeDefinition(definition);
+        
+        // Define `output` ( pin -- )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("output");
+        definition.Append("1");
+        definition.Append("pin");
+        definition.Append(";");
+        executeDefinition(definition);
+        
+        // Define `input` ( pin -- )
+        definition.Clear();
+        definition.Append(":");
+        definition.Append("input");
+        definition.Append("0");
+        definition.Append("pin");
+        definition.Append(";");
+        executeDefinition(definition);
     }
         
     // Main entry point ( -- )
     Hopper()
-    {
-        // Initialize common FORTH words
+    {     
+        IO.WriteLn("Welcome to HopperFORTH v1.0");
+    
+        //Initialize common FORTH words
         initialize();
+        
+        IO.WriteLn("Type 'WORDS' to see a list of available commands.");
         
         string inputLine;
         while (running) // Continue running while the flag is true
@@ -1077,6 +1108,6 @@ program HopperFORTH
                 processInput(inputLine);
             }
         }
-        IO.WriteLn("Exiting HopperFORTH interpreter."); // Message on exit
+        IO.WriteLn("Exited.");
     }    
 }

@@ -5,8 +5,8 @@ unit Wire
 
     const byte DefaultI2CController = 0;
     
-    const byte DefaultI2CSDAPin     = 17;
-    const byte DefaultI2CSCLPin     = 16;
+    const byte DefaultI2CSDAPin     = Board.I2CSDA0;
+    const byte DefaultI2CSCLPin     = Board.I2CSCL0;
     
     byte scl;
     byte sda;
