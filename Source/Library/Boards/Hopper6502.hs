@@ -1,5 +1,7 @@
 unit Board
 {
+    #define MCU_BOARD_DEFINED
+    
     const byte GP0 = 0;
     const byte GP1 = 1;
     const byte GP2 = 2;
@@ -25,4 +27,6 @@ unit Board
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/MCU"
+    
+    string BoardName { get { return "Hopper 6502 SBC"; } }
 }
