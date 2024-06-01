@@ -3,15 +3,14 @@ program HopperFORTH
     //uses "/Source/Library/Boards/PiPico"
     uses "/Source/Library/Boards/Hopper6502"
     
-    // https://github.com/CCurl/c4
-    
     const uint stackLimit = 1024; // Define the maximum stack size
+    const uint memorySize = 1024; // Define the memory size
+    
     int[stackLimit] stack; // Stack array
+    int[memorySize] memory; // Memory array
+    
     int sp = 0; // Initialize stack pointer
     bool running = true; // Control the main loop
-    
-    const uint memorySize = 1024; // Define the memory size
-    int[memorySize] memory; // Memory array
     
     <uint> ifStack;
     <uint> elseStack;
