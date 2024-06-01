@@ -222,33 +222,38 @@ program HopperFORTH
         {
             bool found = false;
             bool builtIn = false;
-            if (builtInWords.Contains(" " + lowerToken + " "))
+            
+
+            // most recently defined word first (so we can redefine existing words)            
+            uint wordIndex = wordList.Count;
+            loop
             {
-                found = true;
-                builtIn = true;
-            }
-            else
-            {
-                uint wordIndex = wordList.Count-1;
-                loop
+                if (wordIndex == 0) { break; }
+                wordIndex--;
+                
+                Word word = wordList[wordIndex];
+                string lowerName = (word.Name).ToLower();
+                if (lowerName == lowerToken)
                 {
-                    // most recently defined word first (so we can redefine existing words)
-                    Word word = wordList[wordIndex];
-                    string lowerName = (word.Name).ToLower();
-                    if (lowerName == lowerToken)
-                    {
-                        found = true;
-                        <string> wordDefinition = word.Definition;
-                        executeDefinition(wordDefinition);
-                        break;
-                    }
-                    if (wordIndex == 0) { break; }
-                    wordIndex--;
+                    found = true;
+                    <string> wordDefinition = word.Definition;
+                    executeDefinition(wordDefinition);
+                    break;
                 }
             }
+        
             if (!found)
             {
-                WriteLn("Unknown token: '" + token + "'");
+                // check for built-ins after user defined words so they can be redefined
+                if (builtInWords.Contains(" " + lowerToken + " "))
+                {
+                    found = true;
+                    builtIn = true;
+                }
+                else
+                {
+                    WriteLn("Unknown token: '" + token + "'");
+                }
             }
             if (builtIn)
             {
