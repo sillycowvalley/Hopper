@@ -171,6 +171,15 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 - **`out`** ( n pin -- )
   - Write the digital value to the given pin.
 
+- **`led`** ( -- n )
+  - Push the built-in LED pin number onto the stack.
+
+- **`output`** ( pin -- )
+  - Set the given pin to OUTPUT mode.
+
+- **`input`** ( pin -- )
+  - Set the given pin to INPUT mode.
+
 ### Additional Words
 
 - **`nip`** ( n1 n2 -- n2 )
@@ -289,8 +298,6 @@ Compare stack values.
 >>> 5 3 > .
 -1
 >>> 3 5 > .
-
-
 0
 >>> 5 3 <> .
 -1
@@ -380,17 +387,18 @@ Use `begin ... until` and `begin ... again` for loops.
 
 #### Example: Arduino Specific Operations
 
-Use `seconds`, `delay`, `pin`, `in`, and `out` for Arduino-specific tasks.
+Use `seconds`, `delay`, `pin`, `in`, `out`, `led`, `output`, and `input` for Arduino-specific tasks.
 
 ```forth
 >>> : blink
-    25 1 pin            # Set pin 25 as OUTPUT
+    led output         # Set the built-in LED pin as OUTPUT
     begin
-        25 -1 out       # Set pin 25 to HIGH
-        1000 delay      # Wait for 1 second
-        25 0 out        # Set pin 25 to LOW
-        1000 delay      # Wait for 1 second
-    again ;
+        led -1 out     # Turn the built-in LED on
+        250 delay      # Wait for 0.25 second
+        led 0 out      # Turn the built-in LED off
+        250 delay      # Wait for 0.25 second
+    again 
+;
 >>> blink
 ```
 
@@ -407,4 +415,5 @@ Exiting HopperFORTH interpreter.
 
 ## Conclusion
 
-This document provides a comprehensive reference and user guide for the HopperFORTH interpreter. With this guide, you should be able to effectively use HopperFORTH for various stack operations, arithmetic operations, logical operations, memory operations, and input/output operations. Happy coding!
+This document provides a comprehensive reference and user guide for the HopperFORTH interpreter.
+With this guide, you should be able to effectively use HopperFORTH for various stack operations, arithmetic operations, logical operations, memory operations, and input/output operations. Happy coding!
