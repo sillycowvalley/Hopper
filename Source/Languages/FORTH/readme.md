@@ -147,10 +147,13 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
   - Begin-Again loop.
 
 - **`do ... loop`** ( limit index -- )
-  - Define a finite loop, where `limit` is the loop limit and `index` is the starting index. Increments the index by 1 each iteration.
+  - Set up a finite loop with the given index and limit.
 
-- **`do ... +loop`** ( limit index -- )
-  - Define a finite loop, where `limit` is the loop limit and `index` is the starting index. Increments the index by a specified value each iteration.
+- **`+loop`** ( n -- )
+  - Add n to the loop index. Continue or exit the loop based on the condition.
+
+- **`i`** ( -- index )
+  - Push the current loop index onto the stack.
 
 - **`exit`** ( -- )
   - Exit the current word prematurely.
@@ -188,6 +191,12 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 
 ### Additional Words
 
+- **`.s`** ( -- )
+  - Display the current contents of the stack.
+
+- **`words`** ( -- )
+  - List all defined words.
+
 - **`nip`** ( n1 n2 -- n2 )
   - Drop the second item on the stack.
 
@@ -223,6 +232,9 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 
 - **`depth`** ( -- n )
   - Push the current stack depth.
+
+- **`sp`** ( -- n )
+  - Push the current stack pointer value.
 
 ## User Guide
 
@@ -378,7 +390,7 @@ Greater
 
 #### Example: Loops
 
-Use `begin ... until`, `begin ... again`, `do ... loop`, and `do ... +loop` for loops.
+Use `begin ... until` and `begin ... again` for loops.
 
 ```forth
 >>> : countdown 10 begin dup . 1- dup 0= until drop ;
@@ -387,12 +399,33 @@ Use `begin ... until`, `begin ... again`, `do ... loop`, and `do ... +loop` for 
 >>> : infinite 10 begin dup . 1- dup 0= if exit then again ;
 >>> infinite
 10 9 8 7 6 5 4 3 2 1 0
->>> : test-loop 10 0 do i . loop ;
->>> test-loop
+```
+
+Use `do ... loop` and `i` for counted loops.
+
+```forth
+>>> : countup 0 10 do i . loop ;
+>>> countup
 0 1 2 3 4 5 6 7 8 9
->>> : test-+loop 10 0 do i . 2 +loop ;
->>> test-+loop
-0 2 4 6 8
+```
+
+### Arduino Specific Operations
+
+#### Example: Arduino Specific Operations
+
+Use `seconds`, `delay`, `pin`, `in`, `out`, `led`, `output`, and `input` for Arduino-specific tasks.
+
+```forth
+>>> : blink
+    led output         # Set the built-in LED pin as OUTPUT
+    begin
+        led -1 out     # Turn the built-in LED on
+        250 delay      # Wait for 0.25 second
+        led 0 out      # Turn the built-in LED off
+        250 delay      # Wait for 0.25 second
+    again 
+;
+>>> blink
 ```
 
 #### Example: Benchmark
@@ -413,25 +446,6 @@ Use `seconds` to measure elapsed time for a simple loop.
     ." seconds"
 ;
 >>> benchmark
-```
-
-### Arduino Specific Operations
-
-#### Example: Arduino Specific Operations
-
-Use `seconds`, `delay`, `pin`, `in`, `out`, `led`, `output`, and `input` for Arduino-specific tasks.
-
-```forth
->>> : blink
-    led output         # Set the built-in LED pin as OUTPUT
-    begin
-        led -1 out     # Turn the built-in LED on
-        250 delay      # Wait for 0.25 second
-        led 0 out      # Turn the built-in LED off
-        250 delay      # Wait for 0.25 second
-    again 
-;
->>> blink
 ```
 
 ### Exiting the Interpreter
