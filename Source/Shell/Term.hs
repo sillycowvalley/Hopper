@@ -52,6 +52,7 @@ program Term
     }
     string keyboardBuffer;
     
+    Hopper()
     {
         if (!DoConnect())
         {
@@ -75,6 +76,12 @@ program Term
                 else if (Keyboard.IsAvailable)
                 {
                     Key key = Keyboard.ReadKey();
+                    
+                    // convert <right><click> in console area to <ctrl><V>
+                    if ((key == Key.ClickRight) && Keyboard.ClickUp)
+                    {
+                        key = Key.ControlV;
+                    }
                     
                     if (key == Key.ControlV)
                     {

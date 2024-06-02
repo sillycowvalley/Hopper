@@ -21,7 +21,7 @@ program HopperFORTH
     // Define a record to represent a FORTH word
     record Word
     {
-        string   Name;           // Word name
+        string    Name;           // Word name
         <variant> Definition;     // Word definition
     }
     
@@ -29,10 +29,6 @@ program HopperFORTH
     bool      definingWord;          // Flag to indicate if a word is being defined
     string    currentWordName;       // Current word being defined
     <variant> currentWordDefinition; // Current word definition being built
-    
-    // optimization of string comparisons:
-    string semiColonWord = ";";
-    string spaceToken = " ";
     
     int intListPop(<int> stackList)
     {
@@ -73,27 +69,26 @@ program HopperFORTH
     defineWord(<variant> currentDefinition, ref int currentTokenIndex)
     {
         string token;
-        uint   index;
         int    value;
         bool   builtIn;
+        uint   index = 0xFFFF; // not set
         switch (typeof(currentDefinition[uint(currentTokenIndex)]))
         {
             case uint:   
             { 
                 index = uint(currentDefinition[uint(currentTokenIndex)]);
-                Word word = wordList[index];
-                token = word.Name;
             }
             case byte:   
             { 
                 index = uint(currentDefinition[uint(currentTokenIndex)]);
-                Word word = wordList[index];
-                token = word.Name;
+                builtIn = true;
             }
             case int:    
             { 
                 value = int(currentDefinition[uint(currentTokenIndex)]);
-                token = value.ToString();
+                currentWordDefinition.Append(value);
+                currentTokenIndex++;
+                return;
             }
             case string: 
             {
@@ -101,7 +96,7 @@ program HopperFORTH
             }
         }
         
-        if (token.Equals(semiColonWord))
+        if ((index == 0) || ((token.Length == 1) && (token[0] == ';')))
         {
             definingWord = false;
             Word newWord;
@@ -109,6 +104,7 @@ program HopperFORTH
             newWord.Definition = currentWordDefinition;
             wordList.Append(newWord);
             
+            /*
             IO.Write("Defined word: " + currentWordName + " '");
             bool first = true;
             
@@ -150,20 +146,20 @@ program HopperFORTH
                 first = false;
             }
             IO.WriteLn("'");
-            
+            */
         }
         else if (currentWordName.Length == 0)
         {
             currentWordName = token.ToLower(); // Set the word name (always lowercase)
         }
-        else if (Int.TryParse(token, ref value))
+        else if ((index == 0xFFFF) && Int.TryParse(token, ref value))
         {
             currentWordDefinition.Append(value);
         }
         else
         {
             string lowerToken = token.ToLower(); // Convert token to lowercase for case-insensitive comparison  
-            if (!wordToUInt(lowerToken, ref index, ref builtIn))
+            if ((index == 0xFFFF) && !wordToUInt(lowerToken, ref index, ref builtIn))
             {
                 currentWordDefinition.Append(token); // case sensitive (could be ." argument)
             }
@@ -285,34 +281,48 @@ program HopperFORTH
     }
     bool wordToUInt(string lowerToken, ref uint index, ref bool builtIn)
     {
+        uint i;
+        bool match;
+        uint length = lowerToken.Length;
+        string name;
         builtIn = false;
+        if ((length == 1) && (lowerToken[0] == ':'))
+        {
+            // ignore ':'
+            return false;
+        }
+        Word word;
         index = wordList.Count;
         loop
         {
             if (index == 0) { break; }
             index--;
-            Word word = wordList[index];
-            if ((lowerToken.Length == 1) && (lowerToken[0] == ':'))
+            
+            word = wordList[index];
+            name = word.Name;
+            if (name.Length == length)
             {
-                // ignore ':'
-                return false;
-            }
-            else if (lowerToken.Equals(word.Name))
-            {
-                <variant> definition = word.Definition;
-                if (definition.Count == 1) // special token to imply 'built-in'
+                i = 0;
+                match = true;
+                loop
                 {
-                    if (typeof(definition[0]) == string)
+                    if (i == length) { break; }
+                    if (name[i] != lowerToken[i])
                     {
-                        string first = definition[0];
-                        if (first.Equals(spaceToken))
-                        {
-                            builtIn = true;
-                            return true;
-                        }
+                        match = false;
+                        break;
                     }
+                    i++;
                 }
-                return true;
+                if (match)
+                {
+                    <variant> definition = word.Definition;
+                    if (definition.Count == 0)
+                    {
+                        builtIn = true;
+                    }
+                    return true;
+                }
             }
         }
         return false;
@@ -1012,9 +1022,7 @@ program HopperFORTH
     initializeBuiltIns()
     {
         <variant> definition;
-        definition.Append(spaceToken); // special token to imply 'built-in'
         Word word;
-        word.Definition = definition;
         
         <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp ").Split(' ');
         foreach (var name in builtIns)

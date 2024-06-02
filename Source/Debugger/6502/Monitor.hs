@@ -304,6 +304,14 @@ unit Monitor
                             }
                         }
                     }
+                    else
+                    {
+                        // HM
+                        if ((key == Key.ClickRight) && Keyboard.ClickUp)
+                        {
+                            key = Key.ControlV;
+                        }
+                    }
                     if ((key == Key.ControlV) && Clipboard.HasText)
                     {
                         string clipboardText = Clipboard.GetText();
