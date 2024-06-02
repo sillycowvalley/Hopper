@@ -1,7 +1,7 @@
 program HopperFORTH
 {
-    //uses "/Source/Library/Boards/PiPico"
-    uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/Library/Boards/PiPico"
+    //uses "/Source/Library/Boards/Hopper6502"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     const uint memorySize = 1024; // Define the memory size
@@ -104,7 +104,6 @@ program HopperFORTH
             newWord.Definition = currentWordDefinition;
             wordList.Append(newWord);
             
-            /*
             IO.Write("Defined word: " + currentWordName + " '");
             bool first = true;
             
@@ -146,10 +145,14 @@ program HopperFORTH
                 first = false;
             }
             IO.WriteLn("'");
-            */
         }
         else if (currentWordName.Length == 0)
         {
+            if (index != 0xFFFF) // redefining an existing word
+            {
+                Word word = wordList[index];
+                token = word.Name;
+            }
             currentWordName = token.ToLower(); // Set the word name (always lowercase)
         }
         else if ((index == 0xFFFF) && Int.TryParse(token, ref value))
@@ -194,8 +197,8 @@ program HopperFORTH
                             int ifPos = intListPop(ifStack);
                             currentWordDefinition[uint(ifPos)] = int(currentWordDefinition.Count + 2); // Address of ELSE
                         }
-                        currentWordDefinition.Append(byte(34));             // ELSE
-                        currentWordDefinition.Append(0);                 // Placeholder
+                        currentWordDefinition.Append(byte(34));               // ELSE
+                        currentWordDefinition.Append(0);                      // Placeholder
                         elseStack.Append(int(currentWordDefinition.Count-1)); // Placeholder index
                     }
                     case 35: // "then"
@@ -219,7 +222,7 @@ program HopperFORTH
                     case 36: // "begin"
                     {
                         beginStack.Append(int(currentWordDefinition.Count));     // Record the position of BEGIN
-                        currentWordDefinition.Append(byte(36));         // Append BEGIN token
+                        currentWordDefinition.Append(byte(36));                  // Append BEGIN token
                     }
                     case 37: // "until":
                     {
@@ -249,16 +252,17 @@ program HopperFORTH
                     }
                     case 41: // "do"
                     {
-                        currentWordDefinition.Append(byte(41));     // Append DO token
-                        doStack.Append(int(currentWordDefinition.Count));    // Record the position after DO
+                        currentWordDefinition.Append(byte(41));            // Append DO token
+                        doStack.Append(int(currentWordDefinition.Count));  // Record the position after DO
                     }
                     case 42: // "loop"
+                    case 51: // "+loop"
                     {
                         if (doStack.Count > 0)
                         {
                             int doPos  = intListPop(doStack);
-                            currentWordDefinition.Append(byte(42));            // Append LOOP token
-                            currentWordDefinition.Append(doPos.ToString());             // Append position to jump to (DO)
+                            currentWordDefinition.Append(byte(index));  // Append LOOP / +LOOP token
+                            currentWordDefinition.Append(doPos);        // Append position to jump to (DO)
                         }
                         else
                         {
@@ -697,12 +701,9 @@ program HopperFORTH
                         currentTokenIndexModified = true;
                     }
                     case 35: // "then"
-                    {
-                        // `THEN` is a no-op during execution
-                    }
                     case 36: // "begin"
                     {
-                        // `BEGIN` is a no-op during execution
+                        // NOP during execution
                     }
                     
                     case 39: // "0branch"
@@ -734,23 +735,26 @@ program HopperFORTH
                         doParameters.Append(start); // Initialize the current index
                     }
                     case 42: // "loop"
+                    case 51: // "+loop"
                     {
-                        int currentIndex = intListPop(doParameters);
-                        int start        = intListPop(doParameters);
-                        int end          = intListPop(doParameters);
-                        currentIndex++;
+                        int loopIndex = intListPop(doParameters);
+                        int start     = intListPop(doParameters);
+                        int end       = intListPop(doParameters);
+                        int increment = (builtIn == 42) ? 1 : pop(); // Ensured increment is popped from the stack for +LOOP
+                        loopIndex     += increment;
                         currentTokenIndex++; // consume the address token
-                        if (currentIndex < end)
+                        if (((increment > 0) && (loopIndex < end)) || ((increment < 0) && (loopIndex > end))) // Checked both positive and negative increments
                         {
                             doParameters.Append(end);
                             doParameters.Append(start);
-                            doParameters.Append(currentIndex);
-                            
+                            doParameters.Append(loopIndex);
+                    
                             // Jump back to the start of the loop
                             currentTokenIndex = int(currentDefinition[uint(currentTokenIndex)]);
                             currentTokenIndexModified = true;
-                        }
+                        }                    
                     }
+                    
                     case 43: // "i"
                     {
                         int currentIndex = doParameters[doParameters.Count-1];
@@ -1024,7 +1028,7 @@ program HopperFORTH
         <variant> definition;
         Word word;
         
-        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp ").Split(' ');
+        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop").Split(' ');
         foreach (var name in builtIns)
         {
             word.Name = name;
