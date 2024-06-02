@@ -1104,6 +1104,7 @@ unit List
             LDA TOPH
             STA FVALUEH
         
+            LDA LTYPE // type in A, value in FVALUE
             Variant.createValueVariant();
             
             LDA # Types.Variant

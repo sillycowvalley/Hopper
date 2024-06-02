@@ -470,6 +470,25 @@ unit String
         }
         return this.Substring(start, end - start);
     }    
+    bool Equals(string this, string other)
+    {
+        uint i = 0;
+        uint length = this.Length;
+        if (length != other.Length)
+        {
+            return false;
+        }
+        loop
+        {
+            if (i == length) { break; }
+            if (this[i] != other[i])
+            {
+                return false;
+            }
+            i++;
+        }
+        return true;
+    }
     
     int Compare(string left, string right) 
     {

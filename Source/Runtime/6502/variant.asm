@@ -51,6 +51,27 @@ unit Variant
         PushTop();
     }
     
+    UnBox()
+    {
+        Stacks.PopIDX();
+        
+        LDY # ivType
+        LDA [IDX], Y
+        STA FTYPE
+        
+        LDY # ivValue
+        LDA [IDX], Y
+        STA TOPL
+        INY
+        LDA [IDX], Y
+        STA TOPH
+        
+        GC.Release();
+        
+        LDA FTYPE
+        Stacks.PushTop();
+    }
+    
     createValueVariant()
     {
         // type in A, value in FVALUE

@@ -5,7 +5,7 @@ unit Diagnostics
     uses "6502/String"
     uses "6502/List"
     
-    friend GC, Free, Allocate, Variant, String, Array, List;
+    friend GC, Free, Allocate, Variant, String, Array, List, Instruction, SysCall, IntMath, Type;
     
     die()
     {

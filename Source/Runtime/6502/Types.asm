@@ -42,4 +42,55 @@ unit Type
         CLC
     }
     
+    TypeOf()
+    {
+        Stacks.PopTop();
+        LDA TOPT
+        IsReferenceType();
+        if (C)
+        {
+            LDA TOPL
+            STA IDXL
+            LDA TOPH
+            STA IDXH
+            GC.Release(); 
+        }
+        LDA TOPT
+        STA TOPL
+        LDA # 0
+        STA TOPH
+        LDA # Types.Type
+        Stacks.PushTop();
+    }
+    BoxTypeOf()
+    {
+        Stacks.PopTop();
+        LDA TOPT
+        IsReferenceType();
+        if (C)
+        {
+            LDY # 0
+            LDA [TOP], Y
+            STA TOPT
+            CMP # Types.Variant
+            if (Z)
+            {
+                LDY # 2
+                LDA [TOP], Y
+                STA TOPT
+            }
+            LDA TOPL
+            STA IDXL
+            LDA TOPH
+            STA IDXH
+            GC.Release();
+        }
+        LDA TOPT
+        STA TOPL
+        LDA # 0
+        STA TOPH
+        LDA # Types.Type
+        Stacks.PushTop();
+    }
+    
 }

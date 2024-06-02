@@ -63,6 +63,19 @@ unit SysCall
         
         VariantBox            = 0x27,
         
+        VariantUnBox          = 0x28, // TODO
+        
+        // ....
+        
+        UIntToInt             = 0x37, // TODO
+        
+        // ....
+        
+        TypesTypeOf           = 0x7E, // TODO
+        TypesBoxTypeOf        = 0x81, // TODO
+        
+        // ....
+                
         ListNew               = 0xF4,
         ListCountGet          = 0xF5,
         ListAppend            = 0xF6,
@@ -79,7 +92,7 @@ unit SysCall
     {
 #ifdef CHECKED
         TXA // SysCall not Implemented!
-        Diagnostics.Die();
+        Diagnostics.die();
 #endif
     }
     serialConnect()
@@ -370,6 +383,40 @@ unit SysCall
             {
 #ifdef LISTS                
                 Variant.Box();
+#else
+                missing();
+#endif                
+            }
+            
+            case SysCalls.VariantUnBox:
+            {
+#ifdef LISTS                
+                Variant.UnBox();
+#else
+                missing();
+#endif                
+            }
+            
+            case SysCalls.UIntToInt:  
+            {
+#ifdef LISTS                
+                UIntToInt();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.TypesTypeOf:  
+            {
+#ifdef LISTS                
+                Type.TypeOf();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.TypesBoxTypeOf:  
+            {
+#ifdef LISTS                
+                Type.BoxTypeOf();
 #else
                 missing();
 #endif                

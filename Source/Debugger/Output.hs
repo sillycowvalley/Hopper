@@ -1708,12 +1708,11 @@ unit Output
             {
                 uint v = stackValues[i];
                 uint t = stackTypes[i];
-                uint i2 = i * 2;
                 
-                content = "0x" + i2.ToHexString(2) + " 0x";
+                content = "0x" + i.ToHexString(2) + " 0x";
                 content += v.ToHexString(4);
                 content += " 0x" + t.ToHexString(2);
-                if (i2 == bp)
+                if (i == bp)
                 {
                     content = "BP  " + content;
                 }
@@ -1725,7 +1724,7 @@ unit Output
                 {
                     content += " " + ValueTypeToString(byte(t), v);
                 }
-                string key = i2.ToString();
+                string key = i.ToString();
                 if (globalLists.Contains(key))
                 {
                     <string> globalList = globalLists[key];

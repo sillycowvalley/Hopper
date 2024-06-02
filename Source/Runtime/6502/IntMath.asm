@@ -470,4 +470,19 @@ unit IntMath
         STA ZP.ACCT
         Stacks.PushACC();  // munts Y, A
     }
+    
+    UIntToInt()
+    {
+        Stacks.PopTop();
+#ifdef CHECKED
+        BIT TOPH
+        if (MI) // value > 32767
+        {
+            LDA # 0x0D // Numeric type out of range/overflow.
+            Diagnostics.die();
+        }
+#endif   
+        LDA # Types.Int     
+        Stacks.PushTop();
+    }
 }

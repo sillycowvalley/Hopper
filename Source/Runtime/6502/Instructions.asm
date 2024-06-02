@@ -192,7 +192,7 @@ unit Instruction
     lengthMissing()
     {
         TXA  // operand length not implemented!
-        Diagnostics.Die();
+        Diagnostics.die();
     }
 #endif
         
@@ -2619,7 +2619,7 @@ unit Instruction
     {
 #ifdef CHECKED        
         TXA // OpCode not Implemented!
-        Diagnostics.Die();
+        Diagnostics.die();
 #endif
     }
       
