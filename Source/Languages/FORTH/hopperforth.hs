@@ -773,6 +773,10 @@ program HopperFORTH
                         int pin = pop();
                         MCU.DigitalWrite(byte(pin), value == -1);
                     }
+                    case 50: // "sp"
+                    {
+                        push(sp);    
+                    }
                     
                     default:
                     {
@@ -1005,7 +1009,7 @@ program HopperFORTH
         Word word;
         word.Definition = definition;
         
-        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out").Split(' ');
+        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp ").Split(' ');
         foreach (var name in builtIns)
         {
             word.Name = name;
