@@ -145,7 +145,7 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 
 - **`begin ... again`** ( -- )
   - Begin-Again loop.
-  
+
 - **`exit`** ( -- )
   - Exit the current word prematurely.
 
@@ -402,6 +402,26 @@ Use `seconds`, `delay`, `pin`, `in`, `out`, `led`, `output`, and `input` for Ard
 >>> blink
 ```
 
+#### Example: Benchmark
+
+Use `seconds` to measure elapsed time for a simple loop.
+
+```forth
+>>> : benchmark
+    seconds           # Record start time
+    1000              # Initialize loop counter
+    begin
+        1-              # Decrement counter
+        dup 0=          # Check if counter is zero
+    until               # Repeat until counter is zero
+    drop                # Drop the loop counter
+    seconds
+    swap - .            # Calculate and print elapsed time
+    ." seconds"
+;
+>>> benchmark
+```
+
 ### Exiting the Interpreter
 
 #### Example: Exit
@@ -415,5 +435,4 @@ Exiting HopperFORTH interpreter.
 
 ## Conclusion
 
-This document provides a comprehensive reference and user guide for the HopperFORTH interpreter.
-With this guide, you should be able to effectively use HopperFORTH for various stack operations, arithmetic operations, logical operations, memory operations, and input/output operations. Happy coding!
+This document provides a comprehensive reference and user guide for the HopperFORTH interpreter. With this guide, you should be able to effectively use HopperFORTH for various stack operations, arithmetic operations, logical operations, memory operations, and input/output operations. Happy coding!

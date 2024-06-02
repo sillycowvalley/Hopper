@@ -454,7 +454,7 @@ unit String
 
     string Trim(string this) 
     {
-        uint start = 0;
+        uint start;
         uint end = this.Length;
 
         // Trim leading spaces
@@ -472,7 +472,7 @@ unit String
     }    
     bool Equals(string this, string other)
     {
-        uint i = 0;
+        uint i;
         uint length = this.Length;
         if (length != other.Length)
         {

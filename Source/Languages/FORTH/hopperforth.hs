@@ -31,7 +31,6 @@ program HopperFORTH
     <variant> currentWordDefinition; // Current word definition being built
     
     // optimization of string comparisons:
-    string colonWord = ":";
     string semiColonWord = ";";
     string spaceToken = " ";
     
@@ -110,7 +109,6 @@ program HopperFORTH
             newWord.Definition = currentWordDefinition;
             wordList.Append(newWord);
             
-            /*
             IO.Write("Defined word: " + currentWordName + " '");
             bool first = true;
             
@@ -152,7 +150,6 @@ program HopperFORTH
                 first = false;
             }
             IO.WriteLn("'");
-            */
             
         }
         else if (currentWordName.Length == 0)
@@ -178,9 +175,19 @@ program HopperFORTH
             {
                 switch (index)
                 {
+                    case 2: // ".\""
+                    {
+                        currentWordDefinition.Append(byte(2));           // ."
+                        currentTokenIndex++;
+                        if (currentTokenIndex < int(currentDefinition.Count))
+                        {
+                            string argument = currentDefinition[uint(currentTokenIndex)];
+                            currentWordDefinition.Append(argument);
+                        }
+                    }
                     case 33: // "if"
                     {
-                        currentWordDefinition.Append(byte(33)/*token*/);           // IF
+                        currentWordDefinition.Append(byte(33));           // IF
                         currentWordDefinition.Append(0);               // Placeholder
                         ifStack.Append(int(currentWordDefinition.Count-1)); // Placeholder index
                     }
@@ -191,7 +198,7 @@ program HopperFORTH
                             int ifPos = intListPop(ifStack);
                             currentWordDefinition[uint(ifPos)] = int(currentWordDefinition.Count + 2); // Address of ELSE
                         }
-                        currentWordDefinition.Append(byte(34)/*token*/);             // ELSE
+                        currentWordDefinition.Append(byte(34));             // ELSE
                         currentWordDefinition.Append(0);                 // Placeholder
                         elseStack.Append(int(currentWordDefinition.Count-1)); // Placeholder index
                     }
@@ -211,12 +218,12 @@ program HopperFORTH
                         {
                             WriteLn("Error: unmatched THEN");
                         }
-                        currentWordDefinition.Append(byte(35)/*token*/); // THEN
+                        currentWordDefinition.Append(byte(35)); // THEN
                     }
                     case 36: // "begin"
                     {
                         beginStack.Append(int(currentWordDefinition.Count));     // Record the position of BEGIN
-                        currentWordDefinition.Append(byte(36)/*token*/);         // Append BEGIN token
+                        currentWordDefinition.Append(byte(36));         // Append BEGIN token
                     }
                     case 37: // "until":
                     {
@@ -246,7 +253,7 @@ program HopperFORTH
                     }
                     case 41: // "do"
                     {
-                        currentWordDefinition.Append(byte(41)/*token*/);     // Append DO token
+                        currentWordDefinition.Append(byte(41));     // Append DO token
                         doStack.Append(int(currentWordDefinition.Count));    // Record the position after DO
                     }
                     case 42: // "loop"
@@ -254,7 +261,7 @@ program HopperFORTH
                         if (doStack.Count > 0)
                         {
                             int doPos  = intListPop(doStack);
-                            currentWordDefinition.Append(byte(42)/*token*/);            // Append LOOP token
+                            currentWordDefinition.Append(byte(42));            // Append LOOP token
                             currentWordDefinition.Append(doPos.ToString());             // Append position to jump to (DO)
                         }
                         else
@@ -264,7 +271,7 @@ program HopperFORTH
                     }
                     case 43: // "i"
                     {
-                        currentWordDefinition.Append(byte(43)/*token*/); // Append I token
+                        currentWordDefinition.Append(byte(43)); // Append I token
                     }
                     
                     default:
@@ -285,7 +292,7 @@ program HopperFORTH
             if (index == 0) { break; }
             index--;
             Word word = wordList[index];
-            if (lowerToken.Equals(colonWord))
+            if ((lowerToken.Length == 1) && (lowerToken[0] == ':'))
             {
                 // ignore ':'
                 return false;

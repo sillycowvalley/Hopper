@@ -433,4 +433,9 @@ unit String
     // returns -1, 0, +1
     int Compare(string left, string right) system; 
     
+    bool Equals(string this, string other)
+    {
+        return this == other;
+    }
+    
 }

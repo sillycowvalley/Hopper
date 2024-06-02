@@ -50,8 +50,12 @@ unit UInt
                 {
                     break;
                 }
-                if (length < 5) // 0..+9999
-                {
+                // 0..+59999 : limited range supported without 'long'
+                if ((length < 5) ||
+                    ((length == 5) && ((content[0] == '0') || (content[0] == '1') || (content[0] == '2') || (content[0] == '3') || (content[0] == '4') || (content[0] == '5')))
+                   )
+                { 
+            
                     returnValue = 0;
                     success = true;
                     for ( ; i < length; i++)

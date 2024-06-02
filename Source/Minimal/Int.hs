@@ -32,7 +32,10 @@ unit Int
             {
                 break;
             }
-            if (content.Length < 5) // -9999..+9999 : limited range supported without 'long'
+            // -29999..+29999 : limited range supported without 'long'
+            if ((length < 5) ||
+                ((length == 5) && ((content[0] == '0') || (content[0] == '1') || (content[0] == '2')))
+               ) 
             {
                 returnValue = 0;
                 success = true;
@@ -60,7 +63,6 @@ unit Int
             }
             else
             {
-#ifndef MINIMAL_RUNTIME                
                 long rv;
                 if (Long.TryParse(content, ref rv))
                 {
@@ -70,7 +72,6 @@ unit Int
                         success = true;
                     }
                 }
-#endif
             }
             break;
         }
