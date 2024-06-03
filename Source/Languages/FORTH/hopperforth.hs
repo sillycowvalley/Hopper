@@ -1,7 +1,7 @@
 program HopperFORTH
 {
-    //uses "/Source/Library/Boards/PiPico"
-    uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/Library/Boards/PiPico"
+    //uses "/Source/Library/Boards/Hopper6502"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     const uint memorySize = 1024; // Define the memory size
@@ -43,11 +43,11 @@ program HopperFORTH
     
     stackOverflow()
     {
-        WriteLn("Stack Overflow");
+        IO.WriteLn("Stack Overflow: sp=" + sp.ToString());
     }
     stackUnderflow()
     {
-        WriteLn("Stack Underflow");
+        IO.WriteLn("Stack Underflow");
     }
     
     // Push a value onto the stack ( n -- )
