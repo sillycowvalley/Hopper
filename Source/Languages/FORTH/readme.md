@@ -173,6 +173,9 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 - **`recurse`** ( -- )
   - Call the current word recursively.
 
+- **`[']`** ( -- addr )
+  - Push the address of the following word onto the stack.
+
 ### System Control
 
 - **`bye`** ( -- )
@@ -390,7 +393,7 @@ A
 65
 ```
 
-### Example: Checking for Key Press
+#### Example: Checking for Key Press
 
 Use `key?` to check if a key has been pressed without waiting.
 

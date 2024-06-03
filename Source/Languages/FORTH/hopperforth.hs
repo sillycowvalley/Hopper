@@ -1,7 +1,7 @@
 program HopperFORTH
 {
-    uses "/Source/Library/Boards/PiPico"
-    //uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/Hopper6502"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     const uint memorySize = 1024; // Define the memory size
@@ -124,7 +124,7 @@ program HopperFORTH
             wordList.Append(newWord);
             
             /*
-            IO.Write("Defined word: " + currentWordName + " '");
+            IO.Write("Defined word: " + currentWordName + "[" + (wordList.Count-1).ToString() + "] '");
             bool first = true;
             
             int i = 0;
@@ -387,6 +387,33 @@ program HopperFORTH
                         currentWordDefinition.Append(byte(56));           // Append RECURSE token
                     }
                     
+                    case 58: // "[']"
+                    {
+                        currentTokenIndex++; // Move to the next token
+                        if (typeof(currentDefinition[uint(currentTokenIndex)]) == uint)
+                        {
+                            uint ui = currentDefinition[uint(currentTokenIndex)];
+                            currentWordDefinition.Append(int(ui)); // Append the index of the word
+                        }
+                        else if (typeof(currentDefinition[uint(currentTokenIndex)]) == byte)
+                        {
+                            byte b = currentDefinition[uint(currentTokenIndex)];
+                            currentWordDefinition.Append(int(b)); // Append the index of the word
+                        }
+                        else if (typeof(currentDefinition[uint(currentTokenIndex)]) == int)
+                        {
+                            int i = currentDefinition[uint(currentTokenIndex)];
+                            WriteLn("Error: unknown word " + i.ToString());
+                        }
+                        else
+                        {
+                            string uw = currentDefinition[uint(currentTokenIndex)];
+                            WriteLn("Error: unknown word " + uw);
+                        }
+                    }
+                    
+                    
+                                       
                                         
                     default:
                     {
@@ -929,6 +956,14 @@ program HopperFORTH
                         push(outerLoopIndex);
                     }
                     
+                    case 57: // "execute"
+                    {
+                        int xt = pop(); // Get the execution token from the stack
+                        Word word = wordList[uint(xt)];
+                        <variant> wordDefinition = word.Definition;
+                        executeDefinition(wordDefinition); // Execute the definition of the word
+                    }
+                    
                     default:
                     {
                         Die(0x0A);
@@ -1158,7 +1193,7 @@ program HopperFORTH
         <variant> definition;
         Word word;
         
-        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop leave j while repeat recurse").Split(' ');
+        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop leave j while repeat recurse execute [']").Split(' ');
         foreach (var name in builtIns)
         {
             word.Name = name;
