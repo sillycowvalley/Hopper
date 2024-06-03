@@ -164,6 +164,9 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 - **`exit`** ( -- )
   - Exit the current word prematurely.
 
+- **`begin ... while ... repeat`** ( -- )
+  - Begin-While-Repeat loop.
+
 ### System Control
 
 - **`bye`** ( -- )
@@ -249,6 +252,8 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 To start the HopperFORTH interpreter, run the `HopperFORTH` program. You will see the prompt `>>>`.
 
 ### Defining and Using Words
+
+
 
 #### Example: Defining a Word
 
@@ -431,6 +436,34 @@ Use `leave` to exit a loop conditionally.
 0 1 2 3
 ```
 
+#### Example: Begin-While-Repeat Loop
+
+Use `begin ... while ... repeat` for loops with conditions.
+
+```forth
+>>> : test-sum
+  0 1                     ( Initialize the sum and the starting number )
+  begin
+    over .                ( Print the current sum )
+    over over +           ( Add the top two values and leave the result on the stack )
+    -rot                  ( Move the sum to the third position )
+    swap
+    drop                  ( Drop the duplicated sum )
+    dup 10 <.             ( Check if the current number is less than 10 )
+  while
+    1+                    ( Increment the current number )
+  repeat
+  drop                    ( Remove the extra value )
+  ." Sum: " .             ( Print the final sum )
+;
+>>> test-sum
+```
+
+Expected output:
+```
+0 1 3 6 10 15 21 28 36 45 55 Sum: 66
+```
+
 ### Arduino Specific Operations
 
 #### Example: Arduino Specific Operations
@@ -439,12 +472,12 @@ Use `seconds`, `delay`, `pin`, `in`, `out`, `led`, `output`, and `input` for Ard
 
 ```forth
 >>> : blink
-    led output         # Set the built-in LED pin as OUTPUT
+    led output         ( Set the built-in LED pin as OUTPUT )
     begin
-        led -1 out     # Turn the built-in LED on
-        250 delay      # Wait for 0.25 second
-        led 0 out      # Turn the built-in LED off
-        250 delay      # Wait for 0.25 second
+        led -1 out     ( Turn the built-in LED on )
+        250 delay      ( Wait for 0.25 second )
+        led 0 out      ( Turn the built-in LED off )
+        250 delay      ( Wait for 0.25 second )
     again 
 ;
 >>> blink
@@ -456,15 +489,15 @@ Use `seconds` to measure elapsed time for a simple loop.
 
 ```forth
 >>> : benchmark
-    seconds           # Record start time
-    1000              # Initialize loop counter
+    seconds           ( Record start time )
+    1000              ( Initialize loop counter )
     begin
-        1-              # Decrement counter
-        dup 0=          # Check if counter is zero
-    until               # Repeat until counter is zero
-    drop                # Drop the loop counter
+        1-              ( Decrement counter )
+        dup 0=          ( Check if counter is zero )
+    until               ( Repeat until counter is zero )
+    drop                ( Drop the loop counter )
     seconds
-    swap - .            # Calculate and print elapsed time
+    swap - .            ( Calculate and print elapsed time )
     ." seconds"
 ;
 >>> benchmark

@@ -15,6 +15,7 @@ program HopperFORTH
     <int> ifStack;
     <int> elseStack;
     <int> beginStack;     // Stack to track BEGIN positions
+    <int> whileStack;     // Stack to track WHILE positions
     <int> doStack;        // Stack to track DO positions
     <int> doParameters;   // Stack to hold DO loop parameters (start, end, current)
     < <int> > leaveStack; // Stack to track LEAVE positions
@@ -39,6 +40,15 @@ program HopperFORTH
         return result;   
     }
     
+    stackOverflow()
+    {
+        WriteLn("Stack Overflow");
+    }
+    stackUnderflow()
+    {
+        WriteLn("Stack Underflow");
+    }
+    
     // Push a value onto the stack ( n -- )
     push(int value)
     {
@@ -49,7 +59,7 @@ program HopperFORTH
         }
         else
         {
-            WriteLn("Stack Overflow");
+            stackOverflow();
         }
     }
     
@@ -63,7 +73,7 @@ program HopperFORTH
         }
         else
         {
-            WriteLn("Stack Underflow");
+            stackUnderflow();
             return 0; // Default error value
         }
     }
@@ -191,8 +201,9 @@ program HopperFORTH
                     case 33: // "if"
                     {
                         currentWordDefinition.Append(byte(33));           // IF
-                        currentWordDefinition.Append(0);               // Placeholder
-                        ifStack.Append(int(currentWordDefinition.Count-1)); // Placeholder index
+                        ifStack.Append(int(currentWordDefinition.Count)); // Placeholder index
+                        currentWordDefinition.Append(0);                  // Placeholder
+                        
                     }
                     case 34: // "else"
                     {
@@ -202,8 +213,8 @@ program HopperFORTH
                             currentWordDefinition[uint(ifPos)] = int(currentWordDefinition.Count + 2); // Address of ELSE
                         }
                         currentWordDefinition.Append(byte(34));               // ELSE
+                        elseStack.Append(int(currentWordDefinition.Count));   // Placeholder index
                         currentWordDefinition.Append(0);                      // Placeholder
-                        elseStack.Append(int(currentWordDefinition.Count-1)); // Placeholder index
                     }
                     case 35: // "then"
                     {
@@ -223,6 +234,8 @@ program HopperFORTH
                         }
                         currentWordDefinition.Append(byte(35)); // THEN
                     }
+                    
+                    // BEGIN loops:
                     case 36: // "begin"
                     {
                         beginStack.Append(int(currentWordDefinition.Count));     // Record the position of BEGIN
@@ -254,6 +267,39 @@ program HopperFORTH
                             WriteLn("Error: unmatched AGAIN");
                         }
                     }
+                    case 54: // "while"
+                    {
+                        if (beginStack.Count == 0)
+                        {
+                            WriteLn("Error: 'WHILE' used outside of BEGIN ... REPEAT loop");
+                        }
+                        else
+                        {
+                            currentWordDefinition.Append(byte(39)/*"0branch"*/); // Append 0branch for condition
+                            whileStack.Append(int(currentWordDefinition.Count)); // Placeholder index
+                            currentWordDefinition.Append(0);                     // Placeholder for the branch address
+                        }
+                    }
+                    case 55: // "repeat"
+                    {
+                        if ((beginStack.Count > 0) && (whileStack.Count > 0))
+                        {
+                            int whilePos = intListPop(whileStack);
+                            int beginPos = intListPop(beginStack);
+                            currentWordDefinition[uint(whilePos)] = int(currentWordDefinition.Count + 2); // Address after REPEAT
+            
+                            currentWordDefinition.Append(byte(40)); // Append unconditional branch (branch)
+                            currentWordDefinition.Append(beginPos); // Jump back to BEGIN
+                        }
+                        else
+                        {
+                            WriteLn("Error: unmatched REPEAT or WHILE");
+                        }
+                    }
+                    
+                    
+                    
+                    // DO loops:
                     case 41: // "do"
                     {
                         currentWordDefinition.Append(byte(41));            // Append DO token
@@ -556,7 +602,7 @@ program HopperFORTH
                         }
                         else
                         {
-                            WriteLn("Stack Underflow");
+                            stackUnderflow();
                         }
                     }
                     // Drop the top value on the stack ( n -- )
@@ -568,7 +614,7 @@ program HopperFORTH
                         }
                         else
                         {
-                            WriteLn("Stack Underflow");
+                            stackUnderflow();
                         }
                     }
                     // Swap the top two values on the stack ( n1 n2 -- n2 n1 )
@@ -583,7 +629,7 @@ program HopperFORTH
                         }
                         else
                         {
-                            WriteLn("Stack Underflow");
+                            stackUnderflow();
                         }
                     }
                     // Copy the second value on the stack to the top ( n1 n2 -- n1 n2 n1 )
@@ -596,7 +642,7 @@ program HopperFORTH
                         }
                         else
                         {
-                            WriteLn("Stack Underflow");
+                            stackUnderflow();
                         }
                     }
                     // Rotate the top three values on the stack ( n1 n2 n3 -- n2 n3 n1 )
@@ -613,7 +659,7 @@ program HopperFORTH
                         }
                         else
                         {
-                            WriteLn("Stack Underflow");
+                            stackUnderflow();
                         }
                     }
                     // Rotate the top three values on the stack in the opposite direction ( n1 n2 n3 -- n3 n1 n2 )
@@ -630,21 +676,21 @@ program HopperFORTH
                         }
                         else
                         {
-                            WriteLn("Stack Underflow");
+                            stackUnderflow();
                         }
                     }
                     // Fetch the nth item from the stack ( n -- n' )
                     case 23: // "pick"
                     {
                         int n = pop();
-                        if (sp > n)
+                        if (sp >= n)
                         {
-                            value = stack[sp - n - 1];
+                            value = stack[sp - n];
                             push(value);
                         }
                         else
                         {
-                            WriteLn("Stack Underflow");
+                            stackUnderflow();
                         }
                     }
                     // Store a value in memory ( n addr -- )
@@ -1095,7 +1141,7 @@ program HopperFORTH
         <variant> definition;
         Word word;
         
-        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop leave j").Split(' ');
+        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop leave j while repeat").Split(' ');
         foreach (var name in builtIns)
         {
             word.Name = name;
@@ -1125,8 +1171,8 @@ program HopperFORTH
         initializeWord(": tuck dup -rot ;");                    // `tuck` ( n1 n2 -- n2 n1 n2 )
         initializeWord(": 2dup over over ;");                   // `2dup` ( n1 n2 -- n1 n2 n1 n2 )
         initializeWord(": 2drop drop drop ;");                  // `2drop` ( n1 n2 -- )
-        initializeWord(": 2swap 2 pick 2 pick rot rot ;");      // `2swap` ( n1 n2 n3 n4 -- n3 n4 n1 n2 )
-        initializeWord(": 2over 3 pick 3 pick ;");              // `2over` ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 )
+        //initializeWord(": 2swap ROT >R ROT R> ;");            // `2swap` ( n1 n2 n3 n4 -- n3 n4 n1 n2 )
+        initializeWord(": 2over 4 pick 4 pick ;");              // `2over` ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 )
         initializeWord(": 0= 0 = ;");                           // `0=` ( n -- flag )
         initializeWord(": 0< 0 < ;");                           // `0<` ( n -- flag )
         initializeWord(": 0> 0 > ;");                           // `0>` ( n -- flag )
@@ -1137,6 +1183,7 @@ program HopperFORTH
         initializeWord(": min 2dup < if drop else nip then ;"); // `min` ( n1 n2 -- min )
         initializeWord(": depth sp ; ");                        // `depth` ( -- n )
         initializeWord(": negate 0 swap - ;");                  // `negate` ( n -- -n )
+        initializeWord(": not 0= ;");                           // `not` ( flag -- flag )
         initializeWord(": 1+ 1 + ;");                           // `1+` ( n -- n+1 )
         initializeWord(": 1- 1 - ;");                           // `1-` ( n -- n-1 )
         initializeWord(": 2+ 2 + ;");                           // `2+` ( n -- n+2 )
