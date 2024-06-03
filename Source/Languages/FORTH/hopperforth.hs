@@ -19,6 +19,7 @@ program HopperFORTH
     <int> doStack;        // Stack to track DO positions
     <int> doParameters;   // Stack to hold DO loop parameters (start, end, current)
     < <int> > leaveStack; // Stack to track LEAVE positions
+    <uint> recurseList;   // List  to track RECURSE placeholders
     
     // Define a record to represent a FORTH word
     record Word
@@ -109,12 +110,20 @@ program HopperFORTH
         
         if ((index == 0) || ((token.Length == 1) && (token[0] == ';')))
         {
+            // Patch RECURSE placeholders
+            foreach (var recursePos in recurseList)
+            {
+                currentWordDefinition[recursePos] = uint(wordList.Count); // Set the current word index
+            }
+            recurseList.Clear();
+            
             definingWord = false;
             Word newWord;
             newWord.Name = currentWordName;
             newWord.Definition = currentWordDefinition;
             wordList.Append(newWord);
             
+            /*
             IO.Write("Defined word: " + currentWordName + " '");
             bool first = true;
             
@@ -159,6 +168,7 @@ program HopperFORTH
                 i++;
             }
             IO.WriteLn("'");
+            */
         }
         else if (currentWordName.Length == 0)
         {
@@ -370,6 +380,13 @@ program HopperFORTH
                             currentWordDefinition.Append(int(0));                     // Placeholder for address
                         }
                     }
+                    
+                    case 56: // "recurse"
+                    {
+                        recurseList.Append(currentWordDefinition.Count); // Placeholder location
+                        currentWordDefinition.Append(byte(56));           // Append RECURSE token
+                    }
+                    
                                         
                     default:
                     {
@@ -1141,7 +1158,7 @@ program HopperFORTH
         <variant> definition;
         Word word;
         
-        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop leave j while repeat").Split(' ');
+        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop leave j while repeat recurse").Split(' ');
         foreach (var name in builtIns)
         {
             word.Name = name;
@@ -1193,6 +1210,8 @@ program HopperFORTH
         initializeWord(": led " + (Board.BuiltInLED).ToString() + " ;"); // `led` ( n -- )
         initializeWord(": output 1 pin ;");                     // `output` ( pin -- )
         initializeWord(": input 0 pin ;");                      // `input` ( pin -- )
+        initializeWord(": space 32 emit ;");                    // `space` ( -- )
+        initializeWord(": spaces 0 do space loop ;");            // `spaces` ( n -- )
         
         IO.WriteLn();
     }

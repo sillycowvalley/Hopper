@@ -122,6 +122,9 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 
 - **`key`** ( -- n )
   - Read a single character from the input and push its ASCII value onto the stack.
+  
+- **`key?`** ( -- flag )
+  - Check if a key has been pressed. Push -1 if a key is available, 0 otherwise.
 
 - **`.`** ( n -- )
   - Print the top value on the stack.
@@ -166,6 +169,9 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 
 - **`begin ... while ... repeat`** ( -- )
   - Begin-While-Repeat loop.
+
+- **`recurse`** ( -- )
+  - Call the current word recursively.
 
 ### System Control
 
@@ -252,8 +258,6 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 To start the HopperFORTH interpreter, run the `HopperFORTH` program. You will see the prompt `>>>`.
 
 ### Defining and Using Words
-
-
 
 #### Example: Defining a Word
 
@@ -386,6 +390,16 @@ A
 65
 ```
 
+### Example: Checking for Key Press
+
+Use `key?` to check if a key has been pressed without waiting.
+
+```forth
+>>> : check-key key? if ." Key pressed" else ." No key" then ;
+>>> check-key
+No key
+```
+
 ### Control Structures
 
 #### Example: Conditional Branches
@@ -449,7 +463,7 @@ Use `begin ... while ... repeat` for loops with conditions.
     -rot                  ( Move the sum to the third position )
     swap
     drop                  ( Drop the duplicated sum )
-    dup 10 <.             ( Check if the current number is less than 10 )
+    dup 10 <              ( Check if the current number is less than 10 )
   while
     1+                    ( Increment the current number )
   repeat
@@ -462,6 +476,28 @@ Use `begin ... while ... repeat` for loops with conditions.
 Expected output:
 ```
 0 1 3 6 10 15 21 28 36 45 55 Sum: 66
+```
+
+### Using RECURSE
+
+#### Example: Fibonacci Sequence
+
+Define a word `fibo` that computes the nth Fibonacci number using recursion.
+
+```forth
+>>> : fibo ( n -- n )
+  dup 1 <= if exit then
+  dup 1- recurse
+  swap 2- recurse
+  + ;
+Defined word: fibo
+```
+
+Use `fibo` to compute the 10th Fibonacci number.
+
+```forth
+>>> 10 fibo .
+55
 ```
 
 ### Arduino Specific Operations
