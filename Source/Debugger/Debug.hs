@@ -46,6 +46,7 @@ program Debug
     
     bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
     
+    Hopper()
     {
         string filePath;
         bool showHelp;

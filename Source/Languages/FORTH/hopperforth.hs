@@ -14,9 +14,10 @@ program HopperFORTH
     
     <int> ifStack;
     <int> elseStack;
-    <int> beginStack;   // Stack to track BEGIN positions
-    <int> doStack;      // Stack to track DO positions
-    <int> doParameters; // Stack to hold DO loop parameters (start, end, current)
+    <int> beginStack;     // Stack to track BEGIN positions
+    <int> doStack;        // Stack to track DO positions
+    <int> doParameters;   // Stack to hold DO loop parameters (start, end, current)
+    < <int> > leaveStack; // Stack to track LEAVE positions
     
     // Define a record to represent a FORTH word
     record Word
@@ -107,42 +108,45 @@ program HopperFORTH
             IO.Write("Defined word: " + currentWordName + " '");
             bool first = true;
             
+            int i = 0;
             foreach (var vtoken in currentWordDefinition)
             {
                 if (!first)
                 {
                     IO.Write(" ");
                 }
+                IO.Write(i.ToString() + ":");
                 switch (typeof(vtoken))
                 {
                     case string:
                     {
                         string t = vtoken;
-                        IO.Write("S:" + t);
+                        IO.Write("S(" + t +")");
                     }
                     case uint:
                     {
                         Word word = wordList[uint(vtoken)];
                         string name = word.Name;
-                        IO.Write("U:" + name);
+                        IO.Write("U(" + name + ")");
                     }
                     case byte:
                     {
                         Word word = wordList[uint(vtoken)];
                         string name = word.Name;
-                        IO.Write("B:" + name);
+                        IO.Write("B(" + name + ")");
                     }
                     case int:
                     {
-                        IO.Write("I:" + (int(vtoken)).ToString());
+                        IO.Write("I(" + (int(vtoken) ).ToString()+")");
                     }
                     default:
                     {
                         byte t = byte(typeof(vtoken));
-                        IO.Write("?:" + t.ToString());
+                        IO.Write("?(" + t.ToString() + ")");
                     }
                 }
                 first = false;
+                i++;
             }
             IO.WriteLn("'");
         }
@@ -254,6 +258,9 @@ program HopperFORTH
                     {
                         currentWordDefinition.Append(byte(41));            // Append DO token
                         doStack.Append(int(currentWordDefinition.Count));  // Record the position after DO
+                        
+                        <int> leavePositions;
+                        leaveStack.Append(leavePositions);
                     }
                     case 42: // "loop"
                     case 51: // "+loop"
@@ -263,6 +270,15 @@ program HopperFORTH
                             int doPos  = intListPop(doStack);
                             currentWordDefinition.Append(byte(index));  // Append LOOP / +LOOP token
                             currentWordDefinition.Append(doPos);        // Append position to jump to (DO)
+                            if (leaveStack.Count > 0)
+                            {
+                                <int> leavePositions = leaveStack[leaveStack.Count - 1];
+                                foreach (var leavePos in leavePositions)
+                                {
+                                    currentWordDefinition[uint(leavePos)] = int(currentWordDefinition.Count); // Patch LEAVE positions
+                                }
+                                leaveStack.Remove(leaveStack.Count - 1);
+                            }
                         }
                         else
                         {
@@ -271,9 +287,44 @@ program HopperFORTH
                     }
                     case 43: // "i"
                     {
-                        currentWordDefinition.Append(byte(43)); // Append I token
+                        if (doStack.Count == 0)
+                        {
+                            WriteLn("Error: 'I' used outside of DO loop");
+                        }
+                        else
+                        {
+                            currentWordDefinition.Append(byte(43)); // Append I token
+                        }
+                    }
+                    case 53: // "j"
+                    {
+                        if (doStack.Count < 2)
+                        {
+                            WriteLn("Error: 'J' used outside of nested DO loops");
+                        }
+                        else
+                        {
+                            currentWordDefinition.Append(byte(53)); // Append J token
+                        }
                     }
                     
+                    case 52: // "leave"
+                    {
+                        if (doStack.Count == 0)
+                        {
+                            WriteLn("Error: 'LEAVE' used outside of DO loop");
+                        }
+                        else
+                        {
+                            <int> leavePositions = leaveStack[leaveStack.Count - 1];
+                            leavePositions.Append(int(currentWordDefinition.Count+1)); // Add position for patching
+                            leaveStack[leaveStack.Count - 1] = leavePositions;
+                            
+                            currentWordDefinition.Append(byte(52)/*"leave"*/);        // Append LEAVE
+                            currentWordDefinition.Append(int(0));                     // Placeholder for address
+                        }
+                    }
+                                        
                     default:
                     {
                         currentWordDefinition.Append(byte(index));
@@ -755,11 +806,6 @@ program HopperFORTH
                         }                    
                     }
                     
-                    case 43: // "i"
-                    {
-                        int currentIndex = doParameters[doParameters.Count-1];
-                        push(currentIndex);
-                    }
                     case 44: // "exit"
                     {
                         currentTokenIndex = int(currentDefinition.Count); // Set the token index to the end to exit the current word
@@ -797,6 +843,27 @@ program HopperFORTH
                     case 50: // "sp"
                     {
                         push(sp);    
+                    }
+                    
+                    case 52: // "leave"
+                    {
+                        int loopEndPos = int(currentDefinition[uint(currentTokenIndex + 1)]); // Get the position after LOOP / +LOOP
+                        _ = intListPop(doParameters);                                         // Clear DO loop parameters
+                        _ = intListPop(doParameters);
+                        _ = intListPop(doParameters);
+                        currentTokenIndex = loopEndPos;                                       // Jump to the position after LOOP / +LOOP
+                        currentTokenIndexModified = true;
+                    }
+                    
+                    case 43: // "i"
+                    {
+                        int currentIndex = doParameters[doParameters.Count-1];
+                        push(currentIndex);
+                    }
+                    case 53: // "j"
+                    {
+                        int outerLoopIndex = doParameters[doParameters.Count-4]; // Fetch the outer loop index
+                        push(outerLoopIndex);
                     }
                     
                     default:
@@ -1028,7 +1095,7 @@ program HopperFORTH
         <variant> definition;
         Word word;
         
-        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop").Split(' ');
+        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop leave j").Split(' ');
         foreach (var name in builtIns)
         {
             word.Name = name;

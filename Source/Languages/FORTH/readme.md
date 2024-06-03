@@ -155,6 +155,12 @@ HopperFORTH is a FORTH interpreter implemented in Hopper. It supports various st
 - **`i`** ( -- index )
   - Push the current loop index onto the stack.
 
+- **`j`** ( -- index )
+  - Push the outer loop index onto the stack in a nested loop.
+
+- **`leave`** ( -- )
+  - Exit the current DO loop immediately, continuing execution after the loop.
+
 - **`exit`** ( -- )
   - Exit the current word prematurely.
 
@@ -407,6 +413,22 @@ Use `do ... loop` and `i` for counted loops.
 >>> : countup 0 10 do i . loop ;
 >>> countup
 0 1 2 3 4 5 6 7 8 9
+```
+
+Use `j` to access the outer loop index in nested loops.
+
+```forth
+>>> : nested-countup 3 0 do 3 0 do j . i . loop loop ;
+>>> nested-countup
+0 0 0 1 0 2 1 0 1 1 1 2 2 0 2 1 2 2
+```
+
+Use `leave` to exit a loop conditionally.
+
+```forth
+>>> : leave-example 5 0 do i 3 > if leave then i . loop ;
+>>> leave-example
+0 1 2 3
 ```
 
 ### Arduino Specific Operations

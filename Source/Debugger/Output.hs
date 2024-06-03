@@ -172,7 +172,7 @@ unit Output
             {
                 currentX = outputLeft;
             }
-            if (currentX > outputLeft + outputWidth)
+            if (currentX >= outputLeft + outputWidth)
             {
                 currentX = outputLeft;
                 currentY++;
