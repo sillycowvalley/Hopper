@@ -3042,6 +3042,10 @@ unit HopperVM
                     {
                         Push(uint(HRArray.GetValueType(this)), Type.Type);
                     }
+                    case Type.Variant:
+                    {
+                        Push(uint(HRVariant.GetValueType(this)), Type.Type);
+                    }
                     default:
                     {
                         if (!IsReferenceType(vtype))

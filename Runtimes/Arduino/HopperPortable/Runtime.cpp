@@ -6396,6 +6396,11 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             HopperVM_Push(UInt(HRArray_GetValueType(_this)), Type::eType);
             break;
         }
+        case Type::eVariant:
+        {
+            HopperVM_Push(UInt(HRVariant_GetValueType(_this)), Type::eType);
+            break;
+        }
         default:
         {
             if (!Types_IsReferenceType(vtype))

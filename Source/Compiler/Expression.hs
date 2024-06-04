@@ -316,6 +316,7 @@ unit Expression
             {
                 if (Types.IsSimpleType(castToType))
                 {
+                    // "|bool|byte|char|uint|int|long|float|string|type|file|directory|delegate|"
                     RuntimeValueCast(castToType);
                 }
                 else
@@ -1040,7 +1041,7 @@ unit Expression
                     
                     if (!doTypeOf)
                     {
-                        if ((typeName == "long") || (typeName == "float"))
+                        if ((typeName == "long") || (typeName == "float") || (typeName == "string"))
                         {
                             // CompileDynamicCast(..) deals with these
                         }

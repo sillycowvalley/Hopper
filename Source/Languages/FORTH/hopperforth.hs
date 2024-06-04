@@ -92,7 +92,7 @@ program HopperFORTH
             }
             case byte:   
             { 
-                index = uint(currentDefinition[uint(currentTokenIndex)]);
+                index = byte(currentDefinition[uint(currentTokenIndex)]);
                 builtIn = true;
             }
             case int:    
@@ -208,9 +208,7 @@ program HopperFORTH
                         currentTokenIndex++;
                         if (currentTokenIndex < int(currentDefinition.Count))
                         {
-                            string argument = currentDefinition[uint(currentTokenIndex)];
-                            currentWordDefinition.Append(argument);
-                            //currentWordDefinition.Append(string(currentDefinition[uint(currentTokenIndex)])); // TODO
+                            currentWordDefinition.Append(string(currentDefinition[uint(currentTokenIndex)]));
                         }
                     }
                     case 33: // "if"
@@ -503,8 +501,7 @@ program HopperFORTH
                     case 2: // ".\""
                     {
                         currentTokenIndex++;
-                        string str = currentDefinition[uint(currentTokenIndex)];
-                        IO.Write(str);
+                        IO.Write(string(currentDefinition[uint(currentTokenIndex)]));
                     }
                     case 3: // ".s"
                     {

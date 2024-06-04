@@ -1335,24 +1335,31 @@ unit Types
     
     RuntimeValueCast(string castToType)
     {
+        // "|bool|byte|char|uint|int|long|float|string|type|file|directory|delegate|"
         byte vt = Types.ToByte(castToType);
-                        
+        
         CodeStream.AddInstruction(Instruction.DUP0); // copy of expression result
-#ifndef JSON_EXPRESS
-        CodeStream.AddInstruction(Instruction.DUP0); // 2nd copy
-#endif
+        
+        if (CodeStream.CheckedBuild)
+        {
+            CodeStream.AddInstruction(Instruction.DUP0); // 2nd copy
+        }
+
         CodeStream.AddInstructionSysCall0("Types", "TypeOf");
         CodeStream.AddInstructionPUSHI(byte(variant));
         CodeStream.AddInstruction(Instruction.EQ);           // is it a variant?
         uint jumpValue = CodeStream.NextAddress;
         CodeStream.AddInstructionJump(Instruction.JZB); // if not, jump past to valuetype
-#ifndef JSON_EXPRESS
-        CodeStream.AddInstructionSysCall0("Types", "ValueTypeOf");// get the type of the variant value
-        CodeStream.AddInstructionPUSHI(vt);
-        CodeStream.AddInstruction(Instruction.EQ);
-        CodeStream.AddInstructionJumpOffset(Instruction.JNZB, byte(4)); 
-        CodeStream.AddInstruction(Instruction.DIE, byte(0x09)); // invalid variant type (incorrect boxed type)
-#endif
+        
+        if (CodeStream.CheckedBuild)
+        {
+            CodeStream.AddInstructionSysCall0("Types", "ValueTypeOf");// get the type of the variant value
+            CodeStream.AddInstructionPUSHI(vt);
+            CodeStream.AddInstruction(Instruction.EQ);
+            CodeStream.AddInstructionJumpOffset(Instruction.JNZB, byte(4)); 
+            CodeStream.AddInstruction(Instruction.DIE, byte(0x09)); // invalid variant type (incorrect boxed type)
+        }
+
         CodeStream.AddInstructionSysCall0("Variant", "UnBox");
         uint jumpEnd = CodeStream.NextAddress;
         CodeStream.AddInstructionJump(Instruction.JB);
@@ -1360,13 +1367,16 @@ unit Types
 // valuetype: 
         uint valueAddress = CodeStream.NextAddress;
         CodeStream.PatchJump(jumpValue, valueAddress);
-#ifndef JSON_EXPRESS
-        CodeStream.AddInstructionSysCall0("Types", "TypeOf");
-        CodeStream.AddInstructionPUSHI(vt);
-        CodeStream.AddInstruction(Instruction.EQ);
-        CodeStream.AddInstructionJumpOffset(Instruction.JNZB, byte(4)); 
-        CodeStream.AddInstruction(Instruction.DIE, byte(0x08)); // failed dynamic cast       
-#endif
+        
+        if (CodeStream.CheckedBuild)
+        {
+            CodeStream.AddInstructionSysCall0("Types", "TypeOf");
+            CodeStream.AddInstructionPUSHI(vt);
+            CodeStream.AddInstruction(Instruction.EQ);
+            CodeStream.AddInstructionJumpOffset(Instruction.JNZB, byte(4)); 
+            CodeStream.AddInstruction(Instruction.DIE, byte(0x08)); // failed dynamic cast       
+        }
+
 // end        
         uint endAddress = CodeStream.NextAddress;
         CodeStream.PatchJump(jumpEnd, endAddress);
@@ -1396,14 +1406,14 @@ unit Types
 // valuetype: 
             uint valueAddress = CodeStream.NextAddress;
             CodeStream.PatchJump(jumpValue, valueAddress);       
-            CodeStream.AddInstructionSysCall0("Types", "ValueTypeOf");            
+            CodeStream.AddInstructionSysCall0("Types", "ValueTypeOf");
             CodeStream.AddInstructionPUSHI(vt);
             CodeStream.AddInstruction(Instruction.EQ);
             CodeStream.AddInstructionJumpOffset(Instruction.JNZB, byte(4)); 
             CodeStream.AddInstruction(Instruction.DIE, byte(0x09)); // invalid variant type
 // end        
             uint endAddress = CodeStream.NextAddress;
-            CodeStream.PatchJump(jumpEnd, endAddress);            
+            CodeStream.PatchJump(jumpEnd, endAddress);
         }
     }
     
