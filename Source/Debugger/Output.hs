@@ -1743,6 +1743,7 @@ unit Output
             DebugFlush(memoryFile);
             
             Parser.ProgressTick(".");
+            memoryFile.Append("Free list:" + Char.EOL);
             WalkFreeList();
             Parser.ProgressTick(".");
             uint heapExtras = WalkHeap(memoryFile, 4);
@@ -1754,6 +1755,7 @@ unit Output
                 content += " (" + size.ToString() + " bytes)";
                 memoryFile.Append(content + Char.EOL);
                 memoryFile.Append("" + Char.EOL);
+                memoryFile.Append("Heap extras:" + Char.EOL);
                 DebugFlush(memoryFile);
             }
             Parser.ProgressTick(".");

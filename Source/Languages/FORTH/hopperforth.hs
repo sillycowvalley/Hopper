@@ -1,7 +1,7 @@
 program HopperFORTH
 {
-    uses "/Source/Library/Boards/PiPico"
-    //uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/Hopper6502"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     const uint memorySize = 1024; // Define the memory size
@@ -123,6 +123,7 @@ program HopperFORTH
             newWord.Definition = currentWordDefinition;
             wordList.Append(newWord);
             
+            /*
             IO.Write("Defined word: " + currentWordName + "[" + (wordList.Count-1).ToString() + "] '");
             bool first = true;
             
@@ -162,6 +163,7 @@ program HopperFORTH
                 i++;
             }
             IO.WriteLn("'");
+            */
         }
         else if (currentWordName.Length == 0)
         {
