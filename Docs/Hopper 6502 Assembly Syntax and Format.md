@@ -40,12 +40,28 @@ This document provides a comprehensive guide to the Hopper 6502 Assembly flavor.
    - Use structured control flow constructs (`if`, `loop`, `break`, `continue`) instead of jump instructions (`JMP`, `JZ`, etc.).
 
    - **If Statements:**
-     - The supported flags for `if` include C, Z, V, NC, NZ, NV, PL, and MI.
+     - The supported flags for `if` include:
+       - **C**: Carry flag is set.
+       - **Z**: Zero flag is set.
+       - **V**: Overflow flag is set.
+       - **NC**: Carry flag is clear.
+       - **NZ**: Zero flag is clear.
+       - **NV**: Overflow flag is clear.
+       - **PL**: Positive (negative flag is clear).
+       - **MI**: Negative flag is set.
      - Example:
        ```assembly
        if (Z)
        {
            // code to execute if zero flag is set
+       }
+       else
+       {
+           // code to execute if zero flag is not set
+       }
+       if (NC)
+       {
+           // code to execute if carry flag is clear
        }
        ```
 
@@ -62,24 +78,31 @@ This document provides a comprehensive guide to the Hopper 6502 Assembly flavor.
 #### Switch Statements
 - Switch statements require curly braces for each case, even for single statements.
 - Cases never fall through, meaning there is no need for a `break` statement within cases.
-- Switch can operate on registers A, X, and Y. If X or Y is chosen, it can be optimized into a jump table (not so for A).
+- Switch can operate on registers A, X, and Y. If X or Y is chosen, it can be optimized into a jump table under the following conditions:
+  - **X or Y must be used** (not A).
+  - Each switch case may only have a single subroutine call in it (no more, no less).
+  - There must be a default case.
+  - Number of cases, including default, must be greater than 8.
+  - The switch must be followed immediately by `return` or the end of the method.
+- **Note:** These strict conditions are required because the optimization effectively replaces subroutine calls with `JMP <subroutine>`, meaning all possible paths must resolve to a simple `JMP <subroutine>`.
 
 ```assembly
-switch (A)
+switch (X)
 {
-    case value1:
+    case 0x00:
     {
-        // code
+        Subroutine1();
     }
-    case value2:
+    case 0x01:
     {
-        // code
+        Subroutine2();
     }
     default:
     {
-        // code
+        DefaultSubroutine();
     }
 }
+return;
 ```
 
 #### Zero Page Variables
@@ -227,6 +250,12 @@ unit MyUnit
             LDA VAR1
             STA VAR2
         }
+        else
+        {
+            // Code block
+            LDA VAR2
+            STA VAR1
+        }
 
         // Loop example
         loop
@@ -245,25 +274,19 @@ unit MyUnit
     MySwitchFunction()
     {
         // Switch example
-        switch (A)
+        switch (X)
         {
             case 0x00:
             {
-                // Code for case 0x00
-                LDA #0x01
-                STA VAR1
+                Subroutine1();
             }
             case 0x01:
             {
-                // Code for case 0x01
-                LDA #0x02
-                STA VAR1
+                Subroutine2();
             }
             default:
             {
-                // Default case
-                LDA #0xFF
-                STA VAR1
+                DefaultSubroutine();
             }
         }
     }
@@ -277,7 +300,9 @@ unit MyUnit
 - **Encapsulation**: Use the `friend` keyword to manage access to private methods across units.
 - **Optimization**: Utilize zero page variables and stack operations for efficient memory management.
 - **Method Calls**: Use method calls rather than direct `JSR` instructions for better readability and maintainability.
-- **Switch Statements**: Require curly braces for each case, do not fall through, and can switch on A, X, and Y.
-- **Predefined Symbols**: Understand and use predefined symbols for ROM sizes and CPU types to control the start vector address and the layout of the generated Intel IHex file.
+- **Switch Statements**: Require curly braces for each case, do not fall through, and can switch on A, X, and Y. Optimize into a jump table under specific conditions.
+- **Predefined Symbols**: Understand and use predefined symbols for ROM sizes and CPU types to control the start vector address and the layout of the generated
+
+ Intel IHex file.
 
 This updated guide ensures that future iterations of GPT can generate and understand Hopper 6502 Assembly code that is clean, efficient, and maintainable.
