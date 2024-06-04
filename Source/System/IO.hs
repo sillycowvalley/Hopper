@@ -287,7 +287,7 @@ unit IO
                             }
                             else
                             {
-                                PushKey(cch);
+                                pushKey(cch);
                             }
                         }
                         continue; // get the first ch from the keyboardBuffer above
