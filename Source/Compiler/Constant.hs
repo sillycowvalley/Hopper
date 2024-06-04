@@ -194,7 +194,7 @@ unit Constant
         bool success;
         loop
         {
-            string integralTypes = "|uint|int|byte|";
+            string integralTypes = "|uint|int|byte|char|";
             string keyString = "|" + identifierType + "|";
             if (!integralTypes.Contains(keyString))
             {
@@ -204,6 +204,15 @@ unit Constant
         
             switch (typeExpected)
             {
+                case "char":
+                {
+                    if (value.Length != 1)   
+                    {
+                        Parser.ErrorAt(token, "char constant out of range");
+                        break;
+                    }
+                    actualType = "char";
+                }
                 case "byte":
                 {
                     uint ui;

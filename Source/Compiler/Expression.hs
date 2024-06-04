@@ -1500,6 +1500,7 @@ unit Expression
             Parser.Advance(); // consume '.'
             <string,string> currentToken = Parser.CurrentToken;
             string identifier = currentToken["lexeme"];
+            
             HopperToken tokenType = Token.GetType(currentToken);
             if (tokenType != HopperToken.Identifier)
             {
@@ -1521,6 +1522,24 @@ unit Expression
             {
                 thisTypeString = "Array";
             }
+            else if (Types.IsRecord(thisForDotCallType))
+            {
+                byte iMember;
+                // FindMember(string thisTypeString, string memberName, ref byte iMember, ref string actualType)
+                if (!Record.FindMember(thisForDotCallType, identifier, ref iMember, ref actualType))
+                {
+                    Parser.ErrorAtCurrent("record member identifier expected");
+                    break;
+                }
+                CodeStream.AddInstructionPUSHI(iMember);
+                CodeStream.AddInstructionSysCall0("List", "GetItem");
+                if (Types.IsRecord(actualType))
+                {
+                    // if the member is also a record type, make sure its members exist
+                    Record.LazyInitializeMembers(actualType);
+                }
+                break;
+            }
             else
             {
                 <string> nameSpaces = Symbols.GetNameSpaces();
@@ -1534,7 +1553,17 @@ unit Expression
                 }
             }
             string qualifiedFunctionName = thisTypeString + "." + identifier;
-            //PrintLn(); Print("D:" + qualifiedFunctionName); // Method Call
+            
+            //PrintLn(" " + qualifiedFunctionName + " " + thisForDotCallType + " " + actualType);
+            uint fIndex;
+            if (!Symbols.GetFunctionIndex(qualifiedFunctionName, ref fIndex))
+            {
+                if (Symbols.GetFunctionIndex(qualifiedFunctionName + "_Get", ref fIndex))
+                {
+                    qualifiedFunctionName += "_Get";       
+                }
+            }
+            
             actualType = CompileMethodCall(qualifiedFunctionName, "", thisForDotCallType);
             
             if (Parser.HadError)
@@ -1667,7 +1696,7 @@ unit Expression
                     break;
                 }
                 byte iMember;
-                if (Record.FindMember(thisTypeString, qualifiedThis, functionName, ref iMember, ref actualType))
+                if (Record.FindMember(thisTypeString, functionName, ref iMember, ref actualType))
                 {
                     CodeStream.AddInstructionPushVariable(qualifiedThis);
                     CodeStream.AddInstructionPUSHI(iMember);

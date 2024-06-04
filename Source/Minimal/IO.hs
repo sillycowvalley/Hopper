@@ -43,6 +43,47 @@ unit IO
         Write(s);
         WriteLn();
     }
+    
+    bool IsAvailable
+    {
+        get
+        {
+            return Serial.IsAvailable;
+        }
+    }
+    
+    char Read()
+    {
+        char ch;
+        loop
+        {
+            ch = Serial.ReadChar();
+            if ((ch == Char.Backspace) || (ch == Char.EOL) || (ch == Char.Escape))
+            {
+                // from above : ok
+            }
+            else if (ch == Char.Break)
+            {
+                // <ctrl><C> from Read() ?
+            }
+            else if ((ch >= ' ') && (ch <= '~')) 
+            {
+                // ASCII 32 to 126 : ok
+            }
+            else if (ch == char(0xE0))
+            {
+                // Maker
+            }
+            else
+            {
+                continue;
+            }
+            break;
+        }
+        return ch;    
+    }
+    
+    
     bool ReadLn(ref string str)
     {
         char ch;

@@ -3,6 +3,7 @@ unit IO
     // #### globals at the top of the file so we can keep track of them:
     
     bool echoToLCD;
+    
     // #### end of globals
     
 #if !defined(SERIAL_CONSOLE) && defined(MCU)
@@ -258,9 +259,9 @@ unit IO
         char ch;
         loop
         {
-            if (HaveKey())
+            if (haveKey())
             {
-                ch = PopKey();
+                ch = popKey();
             }
             else
             {
@@ -329,36 +330,43 @@ unit IO
         loop
         {
             ch = Serial.ReadChar();
-            if (ch == Char.EOL) 
-            { 
-                WriteLn();
-                result = true; // good
-                break; 
-            }
-            else if (ch == Char.Escape) 
+            switch (ch)
             {
-                while (str.Length > 0)
-                {
-                    Write(Char.Backspace);
-                    Write(' ');
-                    Write(Char.Backspace);
-                    str = str.Substring(0, str.Length-1);   
+                case Char.EOL:
+                { 
+                    WriteLn();
+                    result = true; // good
+                    break; 
                 }
-                continue;
-            }
-            else if (ch == Char.Backspace)
-            {
-                if (str.Length > 0)
+                case Char.Escape:
                 {
-                    Write(Char.Backspace);
-                    Write(' ');
-                    Write(Char.Backspace);
-                    str = str.Substring(0, str.Length-1);   
+                    while (str.Length > 0)
+                    {
+                        Write(Char.Backspace);
+                        Write(' ');
+                        Write(Char.Backspace);
+                        str = str.Substring(0, str.Length-1);   
+                    }
                 }
-                continue;
-            }
-            String.Build(ref str, ch);
-            Write(ch);    
+                case Char.Backspace:
+                {
+                    if (str.Length > 0)
+                    {
+                        Write(Char.Backspace);
+                        Write(' ');
+                        Write(Char.Backspace);
+                        str = str.Substring(0, str.Length-1);   
+                    }
+                }
+                case Char.Break:
+                {
+                }
+                default:
+                {
+                    String.Build(ref str, ch);
+                    Write(ch);    
+                }
+            } // switch
         }
         return result;
     }
@@ -368,7 +376,7 @@ unit IO
         get
         {
 #if defined(SERIAL_CONSOLE)
-            return (HaveKey()) || Serial.IsAvailable;
+            return (haveKey()) || Serial.IsAvailable;
 #else
             return Keyboard.IsAvailable;
 #endif
@@ -385,7 +393,7 @@ unit IO
                 return true;
             }
             // buffer all the non <ctrl><C> characters seen here
-            PushKey(ch);
+            pushKey(ch);
         }
 #else        
         while (Keyboard.IsAvailable)
@@ -397,7 +405,7 @@ unit IO
             } 
             // buffer all the non <ctrl><C> characters seen here
             char ch = IO.TransformKey(key);
-            PushKey(ch);
+            pushKey(ch);
         }
 #endif
         return false;
@@ -414,7 +422,7 @@ unit IO
         keyboardBufferBase = buffer;
     }
     
-    PushKey(char c)
+    pushKey(char c)
     {
         byte k = byte(c);
         Memory.WriteByte(keyboardBufferBase + keyboardInPointer, k);
@@ -427,7 +435,7 @@ unit IO
             keyboardInPointer++;
         }
     }
-    char PopKey()
+    char popKey()
     {
         char c = char(Memory.ReadByte(keyboardBufferBase + keyboardOutPointer));
         if (keyboardOutPointer == 0xFF)
@@ -440,7 +448,7 @@ unit IO
         }   
         return c;  
     }
-    bool HaveKey()
+    bool haveKey()
     {
         return keyboardInPointer != keyboardOutPointer;
     }
@@ -449,17 +457,17 @@ unit IO
     
 #else        
     string keyboardBuffer;
-    PushKey(char c)
+    pushKey(char c)
     {
         keyboardBuffer = keyboardBuffer + c;
     }
-    char PopKey()
+    char popKey()
     {
         char c = keyboardBuffer[0];
-        keyboardBuffer = keyboardBuffer.Substring(1);  
+        String.Substring(ref keyboardBuffer, 1);  
         return c;  
     }
-    bool HaveKey()
+    bool haveKey()
     {
         return keyboardBuffer.Length != 0;
     }    

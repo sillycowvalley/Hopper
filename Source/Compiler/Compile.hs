@@ -1404,7 +1404,7 @@ program Compile
                     {
                         break;
                     }
-                    if (Record.FindMember(thisTypeString, thisVariable, memberName, ref iMember, ref variableType))
+                    if (Record.FindMember(thisTypeString, memberName, ref iMember, ref variableType))
                     {
                         isMember = true;
                     }
@@ -1799,7 +1799,7 @@ program Compile
                     string qualifiedThis;
                     string thisTypeString = Types.GetTypeString(recordThis, false, ref qualifiedThis);
                     byte iMember;
-                    if (Record.FindMember(thisTypeString, qualifiedThis, memberName, ref iMember, ref variableType))
+                    if (Record.FindMember(thisTypeString, memberName, ref iMember, ref variableType))
                     {
                         CodeStream.AddInstructionPushVariable(qualifiedThis);
                         CodeStream.AddInstructionPUSHI(iMember);

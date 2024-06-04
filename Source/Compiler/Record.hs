@@ -9,8 +9,8 @@ unit Record
     
     // record ShellObject {
     //     string Path;
-    // }                  'ShellObject'          'fileObject'     'Path'                0                   'string'
-    bool FindMember(string thisTypeString, string thisName, string memberName, ref byte iMember, ref string actualType) 
+    // }                  'ShellObject'          'Path'                0                   'string'
+    bool FindMember(string thisTypeString, string memberName, ref byte iMember, ref string actualType) 
     {
         bool success;
         loop

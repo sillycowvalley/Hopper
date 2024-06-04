@@ -1,7 +1,7 @@
 program HopperFORTH
 {
-    //uses "/Source/Library/Boards/PiPico"
-    uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/Library/Boards/PiPico"
+    //uses "/Source/Library/Boards/Hopper6502"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     const uint memorySize = 1024; // Define the memory size
@@ -172,13 +172,16 @@ program HopperFORTH
         }
         else if (currentWordName.Length == 0)
         {
+            // Set the word name (always lowercase):
+            
             if (index != 0xFFFF) // redefining an existing word
             {
-                Word word = wordList[index];
-                token = word.Name;
-                //token = (wordList[index]).Name; // TODO
+                currentWordName = (wordList[index].Name).ToLower();
             }
-            currentWordName = token.ToLower(); // Set the word name (always lowercase)
+            else
+            {
+                currentWordName = token.ToLower(); 
+            }
         }
         else if ((index == 0xFFFF) && Int.TryParse(token, ref value))
         {
@@ -207,6 +210,7 @@ program HopperFORTH
                         {
                             string argument = currentDefinition[uint(currentTokenIndex)];
                             currentWordDefinition.Append(argument);
+                            //currentWordDefinition.Append(string(currentDefinition[uint(currentTokenIndex)])); // TODO
                         }
                     }
                     case 33: // "if"
@@ -329,8 +333,7 @@ program HopperFORTH
                             currentWordDefinition.Append(doPos);        // Append position to jump to (DO)
                             if (leaveStack.Count > 0)
                             {
-                                <int> leavePositions = leaveStack[leaveStack.Count - 1];
-                                foreach (var leavePos in leavePositions)
+                                foreach (var leavePos in leaveStack[leaveStack.Count - 1])
                                 {
                                     currentWordDefinition[uint(leavePos)] = int(currentWordDefinition.Count); // Patch LEAVE positions
                                 }
@@ -437,16 +440,14 @@ program HopperFORTH
             // ignore ':'
             return false;
         }
-        Word word;
+        
         index = wordList.Count;
         loop
         {
             if (index == 0) { break; }
             index--;
             
-            word = wordList[index];
-            name = word.Name;
-            //name = ((wordList[index]).Name); // TODO
+            name = wordList[index].Name;
             if (name.Length == length)
             {
                 i = 0;
@@ -463,9 +464,7 @@ program HopperFORTH
                 }
                 if (match)
                 {
-                    <variant> definition = word.Definition;
-                    if (definition.Count == 0)
-                    //if (((wordList[index]).Definition).Count == 0) // TODO
+                    if ((wordList[index].Definition).Count == 0)
                     {
                         builtIn = true;
                     }
@@ -486,17 +485,12 @@ program HopperFORTH
         {
             case uint:   
             { 
-                uint index = uint(currentDefinition[uint(currentTokenIndex)]);
-                Word word = wordList[index];
-                <variant> wordDefinition = word.Definition;
-                executeDefinition(wordDefinition);
-                
-                //executeDefinition((wordList[index]).Definition); // avoid 2x copy-on-write
-                
+                uint index = currentDefinition[uint(currentTokenIndex)];
+                executeDefinition((wordList[index]).Definition);
             }
             case byte:
             {
-                byte builtIn = byte(currentDefinition[uint(currentTokenIndex)]);
+                byte builtIn = currentDefinition[uint(currentTokenIndex)];
                 switch (builtIn)
                 {
                     // Print the top value on the stack ( n -- )
@@ -519,7 +513,7 @@ program HopperFORTH
                         {
                             IO.Write((stack[i]).ToString() + " ");
                         }
-                        IO.WriteLn("");
+                        IO.WriteLn();
                     }
                     // List all defined words ( -- )
                     case 4: // "words"
@@ -814,13 +808,13 @@ program HopperFORTH
                     // Read a single character ( -- n )
                     case 30: // "key"
                     {
-                        char ch = Serial.ReadChar();
+                        char ch = IO.Read();
                         push(int(ch));
                     }
                     // Has a key been pressed? ( -- n )
                     case 31: // "key?"
                     {
-                        push(Serial.IsAvailable ? -1 : int(0));
+                        push(IO.IsAvailable ? -1 : int(0));
                     }
                     // Exit the interpreter ( -- )
                     case 32: // "bye"
@@ -989,12 +983,11 @@ program HopperFORTH
                      {
                          definingWord = true;
                          currentWordDefinition.Clear();
-                         currentWordName = ""; // Reset the word name
+                         String.Build(ref currentWordName); // Reset the word name
                      }
                      case "<repl>":
                      {
-                         Word word = wordList[wordList.Count-1];
-                         executeDefinition(word.Definition);
+                         executeDefinition(wordList[wordList.Count-1].Definition);
                      }
                      default:
                      {
@@ -1071,7 +1064,7 @@ program HopperFORTH
                         string output = input.Substring(startString, i - startString);
                         if (output.StartsWith(' '))
                         {
-                            output = output.Substring(1); // trim the ' ' delimiter
+                            String.Substring(ref output, 1); // trim the ' ' delimiter
                         }
                         
                         tokenBuffer.Append(".\"");
@@ -1094,8 +1087,7 @@ program HopperFORTH
                         {
                             uint index;
                             bool builtIn;
-                            string lowerToken = token.ToLower();
-                            if (wordToUInt(lowerToken, ref index, ref builtIn))
+                            if (wordToUInt(token.ToLower(), ref index, ref builtIn))
                             {
                                 if (builtIn)
                                 {
@@ -1135,6 +1127,7 @@ program HopperFORTH
                     {
                         string word = vword;
                         switch (word)
+                        //switch (string(vword)) // TODO
                         {
                             case ":":
                             {
