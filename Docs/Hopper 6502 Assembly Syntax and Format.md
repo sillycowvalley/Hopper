@@ -40,12 +40,14 @@ This document provides a comprehensive guide to the Hopper 6502 Assembly flavor.
    - Use structured control flow constructs (`if`, `loop`, `break`, `continue`) instead of jump instructions (`JMP`, `JZ`, etc.).
 
    - **If Statements:**
-     ```assembly
-     if (Z)
-     {
-         // code to execute if zero flag is set
-     }
-     ```
+     - The supported flags for `if` include C, Z, V, NC, NZ, NV, PL, and MI.
+     - Example:
+       ```assembly
+       if (Z)
+       {
+           // code to execute if zero flag is set
+       }
+       ```
 
    - **Loop Statements:**
      ```assembly
@@ -127,6 +129,11 @@ switch (A)
 
 2. **Function Returns:**
    - Use `RTS` to return from a subroutine. This is usually implied and not explicitly written in structured methods.
+   - A synonym for `RTS` in Hopper 6502 Assembly is `return;`.
+   - Example:
+     ```assembly
+     return;
+     ```
 
 #### Encapsulation and Friend Classes
 
@@ -142,17 +149,26 @@ switch (A)
 
 #### Preprocessor Directives
 
-1. **Define Constants**:
+1. **Define Symbols**:
    ```assembly
-   #define CONSTANT_NAME value
+   #define SYMBOL_NAME
    ```
 
 2. **Conditional Compilation**:
    ```assembly
-   #ifdef CONSTANT_NAME
+   #ifdef SYMBOL_NAME
    // Code here
    #endif
    ```
+
+3. **Boolean Expressions in Preprocessor Directives**:
+   - Supports `#if defined(symbol)`, `||`, `&&`, `!`, and parentheses for boolean expressions.
+   - Example:
+     ```assembly
+     #if defined(SYMBOL1) && (defined(SYMBOL2) || !defined(SYMBOL3))
+     // Code here
+     #endif
+     ```
 
 #### Program Definition
 
@@ -171,20 +187,21 @@ switch (A)
    uses "moduleName"
    ```
 
-#### Examples of Predefined Macros
+#### Predefined Macros and Symbols
 
-1. **Predefined Macros**:
-   ```assembly
-   #define ROM_8K
-   #define ROM_16K
-   ```
+1. **ROM_xxx Symbols**:
+   - These symbols affect the 6502 start vector address and the layout of the generated Intel IHex file.
+   - `ROM_16K`: Sets the origin to 0xC000.
+   - `ROM_8K`: Sets the origin to 0xE000.
+   - `ROM_4K`: Sets the origin to 0xF000.
+   - `ROM_1K`: Sets the origin to 0xFC00.
+   - If none of these are defined, it defaults to a 32K ROM with an origin of 0x8000.
 
-#### Function Call Encapsulation
-
-1. **Function Call Encapsulation**:
-   ```assembly
-   Append();
-   ```
+2. **CPU_xxx Symbols**:
+   - These symbols target different 6502 flavors.
+   - `CPU_6502`: Original MOS 6502 instruction set.
+   - `CPU_65C02S`: Expanded instruction set of the 65C02S.
+   - `CPU_65UINO`: Similar to ROM_4K and CPU_6502.
 
 ### Sample Code Structure
 
@@ -261,5 +278,6 @@ unit MyUnit
 - **Optimization**: Utilize zero page variables and stack operations for efficient memory management.
 - **Method Calls**: Use method calls rather than direct `JSR` instructions for better readability and maintainability.
 - **Switch Statements**: Require curly braces for each case, do not fall through, and can switch on A, X, and Y.
+- **Predefined Symbols**: Understand and use predefined symbols for ROM sizes and CPU types to control the start vector address and the layout of the generated Intel IHex file.
 
 This updated guide ensures that future iterations of GPT can generate and understand Hopper 6502 Assembly code that is clean, efficient, and maintainable.
