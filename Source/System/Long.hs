@@ -80,48 +80,12 @@ unit Long
         return success;
     }
     
-#ifndef HOPPER_6502  
     string ToString(long this) system;
-#else    
-    string ToString(long this)
-    {
-        bool negative;
-        uint udigit;
-        char c;
-        long digit;
-        string result;
-        long value = this;
-        if (value < 0)
-        {
-            negative = true;
-            value = 0 - value;
-        }
-        else if (value == 0)
-        {
-            String.Build(ref result, '0');
-        }
-        while (value != 0)
-        {
-            digit = value % 10;
-            udigit = uint(digit);
-            c = Byte.ToDigit(byte(udigit));
-            String.BuildFront(ref result, c);
-            value = value / 10;
-        }
-        if (negative)
-        {
-            String.BuildFront(ref result, '-');
-        }
-        return result;
-    }
-#endif    
 
     byte GetByte(long this, byte index) system;
     long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     
-#ifndef HOPPER_6502    
     float ToFloat(long this) system;
-#endif    
 
     string ToHexString(long this, byte digits)
     {

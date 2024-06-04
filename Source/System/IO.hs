@@ -34,7 +34,7 @@ unit IO
     // Other content is buffered for Read(..)
     //   bool IsBreak() 
     //
-    // Wait for and read the next character from Serial for HOPPER_6502 and from keyboard for Windows.
+    // Wait for and read the next character from Serial for MCU and from keyboard for Windows.
     // Non-printable keys are rejected except for <ctrl><C>, Enter, Backspace and Escape which
     // are transformed to their ASCII values. <ctrl><V> pastes the clipboard into the keyboard buffer
     // on the client (Windows) side:
@@ -45,7 +45,7 @@ unit IO
     //
     // Output methods similar to Print(..) and PrintLn(..).
     // On Windows, they only output to Screen.
-    // On HOPPER_6502 generic Write outputs to Serial and
+    // On MCU generic Write outputs to Serial and
     // both=true sends output to both Serial and Screen (LCD):
     //
     //   Write(char c)      | WriteBoth(char c, bool both)
@@ -59,7 +59,7 @@ unit IO
     {
         get 
         { 
-#if defined(SERIAL_CONSOLE) || defined(HOPPER_6502)
+#if defined(SERIAL_CONSOLE)
             return 120;
 #else            
             return Screen.Columns-1;
@@ -79,15 +79,7 @@ unit IO
 #endif
         }
 #else        
-    #ifdef HOPPER_6502
-        if (echoToLCD)
-        {
-            Screen.Clear();
-        }
-        Serial.WriteChar(Char.Formfeed);
-    #else
         Screen.Clear();
-    #endif
 #endif
     }
     writeDigit(uint uthis)
@@ -212,28 +204,6 @@ unit IO
         WriteBoth(Char.EOL, both);
     }
     
-#ifdef HOPPER_6502    
-    WriteBoth(char c, bool both)
-    {
-
-        Serial.WriteChar(c);
-        if (both)
-        {
-            if (c == Char.EOL)
-            {
-                Screen.PrintLn(); // PLATFORM
-            }
-            else if (c == Char.Formfeed)
-            {
-                Screen.Clear();
-            }
-            else
-            {
-                Screen.Print(c); // PLATFORM
-            }
-        }
-    }
-#else
     WriteBoth(char c, bool both)
     {
         if (c == Char.EOL)
@@ -249,7 +219,6 @@ unit IO
             Screen.Print(c); // PLATFORM
         }
     }
-#endif        
     
     
 #endif
@@ -295,7 +264,7 @@ unit IO
             }
             else
             {
-#if defined(SERIAL_CONSOLE) || defined(HOPPER_6502)
+#if defined(SERIAL_CONSOLE)
                 ch = Serial.ReadChar();
 #else                
                 Key key = Keyboard.ReadKey();
@@ -351,7 +320,8 @@ unit IO
         }
         return ch;    
     }
-     bool ReadLn(ref string str)
+    
+    bool ReadLn(ref string str)
     {
         char ch;
         bool result;
@@ -397,7 +367,7 @@ unit IO
     {
         get
         {
-#if defined(SERIAL_CONSOLE) || defined(HOPPER_6502)
+#if defined(SERIAL_CONSOLE)
             return (HaveKey()) || Serial.IsAvailable;
 #else
             return Keyboard.IsAvailable;
@@ -406,7 +376,7 @@ unit IO
     }
     bool IsBreak()
     {
-#if defined(SERIAL_CONSOLE) || defined(HOPPER_6502)
+#if defined(SERIAL_CONSOLE)
         while (Serial.IsAvailable)
         {
             char ch = Serial.ReadChar();

@@ -260,12 +260,12 @@ unit SysCalls
         
         addEntry("_Time.Delay2");
         
-        addEntry("Long.Inc");
-        addEntry("Long.AddRef");
-        addEntry("Long.MulRef");
+        addEntry("_Long.Inc");
+        addEntry("_Long.AddRef");
+        addEntry("_Long.MulRef");
         
-        addEntry("Array.GetItemUInt");
-        addEntry("Array.SetItemUInt");
+        addEntry("_Array.GetItemUInt");
+        addEntry("_Array.SetItemUInt");
         
         addEntry("File.GetTimeStamp");
         addEntry("_Int.ToBytes");

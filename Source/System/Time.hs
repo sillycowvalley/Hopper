@@ -3,7 +3,7 @@ unit Time
     long Millis  { get system; }
     uint Seconds { get system; }
 
-#if defined(MCU) || defined(HOPPER_6502)
+#if defined(MCU)
     Delay(uint ms) system;
 #else
     Delay(uint ms)

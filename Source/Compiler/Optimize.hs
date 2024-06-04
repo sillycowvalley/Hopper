@@ -451,7 +451,7 @@ program Optimize
                     methodModified = true;
                 }
                 
-                if ((CodeStream.Target6502 || CodeStream.TargetMinimal))
+                if (CodeStream.TargetMinimal)
                 {
                     // Only works on 6502 because 'long' is not currently a reference type on Windows:
                     //    Windows would fail if we remove the POPCOPY at the end.

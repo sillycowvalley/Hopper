@@ -17,16 +17,7 @@ unit Char
     bool IsUpper(char this) system;
     char ToLower(char this) system;
     
-  #ifdef HOPPER_6502
-    string ToString(char this)
-    {
-        string result;
-        String.Build(ref result, this);
-        return result;
-    }
-  #else
     string ToString(char this) system;
-  #endif
 
     bool IsLetter(char this)
     {

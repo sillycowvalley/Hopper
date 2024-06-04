@@ -265,7 +265,7 @@ program TestStrings
     }
     TestStringSystem()
     {
-        WriteLn("system 'string'"); // string methods written in Hopper (some specific to HOPPER_6502)
+        WriteLn("system 'string'");
         
         if (String.Compare("bbb", "aaa") != 1)
         {

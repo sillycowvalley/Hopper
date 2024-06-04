@@ -831,9 +831,6 @@ Bool HopperVM_InlinedExecuteWarp(bool logging)
     UInt watchDog = 100; // check for <ctrl><C> every 2500 instructions
     for (;;) // loop
     {
-#ifdef CHECKED
-        HopperVM_messagePC = HopperVM_pc;
-#endif
 #ifdef HWM
         uint instructionPC = HopperVM_pc;
 #endif

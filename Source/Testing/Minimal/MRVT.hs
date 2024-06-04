@@ -266,7 +266,7 @@ program MRVT
     TestStringSystem()
     {
         string prompt = "system 'string'";
-        WriteLn(prompt); // string methods written in Hopper (some specific to HOPPER_6502)
+        WriteLn(prompt);
         string build;
         
         int result;

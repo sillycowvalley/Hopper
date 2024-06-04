@@ -292,7 +292,7 @@ unit DebugCommand
     }
     Reload()
     {
-        // load the ihex to the HOPPER_6502
+        // load the ihex to the MCU
         Monitor.UploadHex(Monitor.CurrentHexPath);
         Output.Clear();
         ConsoleCapture.ClearLog();

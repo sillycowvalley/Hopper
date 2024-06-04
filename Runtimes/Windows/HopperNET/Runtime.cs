@@ -451,12 +451,12 @@ namespace HopperNET
         SystemWarp_Set = 0xC4,
         SystemWarp_Get = 0xC5,
 
-        LongInc = 0xC7,
-        LongAddRef = 0xC8,
-        LongMulRef = 0xC9,
+        //LongInc = 0xC7,
+        //LongAddRef = 0xC8,
+        //LongMulRef = 0xC9,
 
-        ArrayGetItemUInt = 0xCA,
-        ArraySetItemUInt = 0xCB,
+        // ArrayGetItemUInt = 0xCA,
+        // ArraySetItemUInt = 0xCB,
 
         FileGetTimeStamp = 0xCC,
         //IntToBytes = 0xCD,
@@ -6474,6 +6474,7 @@ namespace HopperNET
                         hasResult = true;
                     }
                     break;
+                /*
                 case SysCall.LongInc:
                     {
 #if DEBUG
@@ -6521,7 +6522,7 @@ namespace HopperNET
                         stack[sp2].value = BitConverter.ToUInt32(BitConverter.GetBytes(lvalue), 0);
                     }
                     break;
-
+                */
 
                 case SysCall.LongDiv:
                     {

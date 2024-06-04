@@ -5,10 +5,6 @@ unit Dictionary
     bool Contains(<K,V> this, K key) system;
     V Get(<K,V> this, K key) system;
     Clear(<K,V> this) system;
-    
-#ifdef HOPPER_6502    
-    long HashKey(string str) system;
-#endif    
 
     string ToString(<variant,variant> this)
     {

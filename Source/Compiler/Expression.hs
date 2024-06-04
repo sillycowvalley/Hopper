@@ -1191,14 +1191,8 @@ unit Expression
                 {
                     break;
                 }
-                if (CodeStream.Target6502 && IsWordValueType(typeString))
-                {
-                    CodeStream.AddInstructionSysCall0("Array", "GetItemUInt");
-                }
-                else
-                {
-                    CodeStream.AddInstructionSysCall0("Array", "GetItem");
-                }
+                CodeStream.AddInstructionSysCall0("Array", "GetItem");
+                
                 actualType = typeString;
             }
             else if (typeString == "string")
@@ -1484,19 +1478,7 @@ unit Expression
             Symbols.OverloadToCompile(wiOverload); 
             
             // push function index to stack
-            if (CodeStream.Target6502)
-            {
-                if (wiOverload <= 0x3FFF)
-                {
-                    uint beOverload = 0xC000 | wiOverload;
-                    CodeStream.AddInstruction(Instruction.PUSHD, beOverload);
-                }
-                else
-                {
-                    Parser.Error("HOPPER_6502 has a limit of 16383 for function indices, (was '" + wiOverload.ToString() + "')");
-                }
-            }
-            else if (CodeStream.IsShortCalls && (wiOverload < 256) && !NoPackedInstructions)
+            if (CodeStream.IsShortCalls && (wiOverload < 256) && !NoPackedInstructions)
             {
                 CodeStream.AddInstruction(Instruction.PUSHDB, byte(wiOverload));
             }

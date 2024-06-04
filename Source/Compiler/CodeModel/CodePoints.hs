@@ -18,9 +18,9 @@ unit CodePoints
     byte iFloatAdd;
     byte iUIntToLong;
     byte iIntToLong;
-    byte iLongMulRef;
-    byte iLongAddRef;
-    byte iLongInc;
+    //byte iLongMulRef;
+    //byte iLongAddRef;
+    //byte iLongInc;
     byte iLongAddB;
     byte iLongSubB;
     
@@ -43,9 +43,9 @@ unit CodePoints
         if (!SysCalls.TryParseSysCall("Float.Add", ref iFloatAdd)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("UInt.ToLong", ref iUIntToLong)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("Int.ToLong", ref iIntToLong)) { Die(0x0B); }
-        if (!SysCalls.TryParseSysCall("Long.MulRef", ref iLongMulRef)) { Die(0x0B); }
-        if (!SysCalls.TryParseSysCall("Long.AddRef", ref iLongAddRef)) { Die(0x0B); }
-        if (!SysCalls.TryParseSysCall("Long.Inc", ref iLongInc)) { Die(0x0B); }
+        //if (!SysCalls.TryParseSysCall("Long.MulRef", ref iLongMulRef)) { Die(0x0B); }
+        //if (!SysCalls.TryParseSysCall("Long.AddRef", ref iLongAddRef)) { Die(0x0B); }
+        //if (!SysCalls.TryParseSysCall("Long.Inc", ref iLongInc)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("Long.AddB", ref iLongAddB)) { Die(0x0B); }
         if (!SysCalls.TryParseSysCall("Long.SubB", ref iLongSubB)) { Die(0x0B); }
         
@@ -955,10 +955,6 @@ unit CodePoints
                     }
                     else
                     {
-                        if (Target6502) // delegates still use this
-                        {
-                            callMethodIndex = callMethodIndex & 0x3FFF;
-                        }
                         methodsCalled[callMethodIndex] = true; // reachable from currentMethod
                     }
                 }
@@ -1380,10 +1376,6 @@ unit CodePoints
             if ((opCode == Instruction.CALL) || (opCode == Instruction.CALLB))
             {
                 uint callMethodIndex = iOperands[iIndex];
-                if (Target6502)
-                {
-                    callMethodIndex = callMethodIndex & 0x3FFF;
-                }
                 foreach (var kv in inlineMethodCandidates)
                 {
                     uint methodIndex = kv.key;

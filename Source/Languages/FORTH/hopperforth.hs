@@ -1,7 +1,7 @@
 program HopperFORTH
 {
-    uses "/Source/Library/Boards/PiPico"
-    //uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/Hopper6502"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     const uint memorySize = 1024; // Define the memory size
@@ -176,6 +176,7 @@ program HopperFORTH
             {
                 Word word = wordList[index];
                 token = word.Name;
+                //token = (wordList[index]).Name; // TODO
             }
             currentWordName = token.ToLower(); // Set the word name (always lowercase)
         }
@@ -185,8 +186,8 @@ program HopperFORTH
         }
         else
         {
-            string lowerToken = token.ToLower(); // Convert token to lowercase for case-insensitive comparison  
-            if ((index == 0xFFFF) && !wordToUInt(lowerToken, ref index, ref builtIn))
+            //string lowerToken = token.ToLower(); // Convert token to lowercase for case-insensitive comparison  
+            if ((index == 0xFFFF) && !wordToUInt(token.ToLower(), ref index, ref builtIn))
             {
                 currentWordDefinition.Append(token); // case sensitive (could be ." argument)
             }
@@ -445,6 +446,7 @@ program HopperFORTH
             
             word = wordList[index];
             name = word.Name;
+            //name = ((wordList[index]).Name); // TODO
             if (name.Length == length)
             {
                 i = 0;
@@ -463,6 +465,7 @@ program HopperFORTH
                 {
                     <variant> definition = word.Definition;
                     if (definition.Count == 0)
+                    //if (((wordList[index]).Definition).Count == 0) // TODO
                     {
                         builtIn = true;
                     }
@@ -486,8 +489,10 @@ program HopperFORTH
                 uint index = uint(currentDefinition[uint(currentTokenIndex)]);
                 Word word = wordList[index];
                 <variant> wordDefinition = word.Definition;
-                
                 executeDefinition(wordDefinition);
+                
+                //executeDefinition((wordList[index]).Definition); // avoid 2x copy-on-write
+                
             }
             case byte:
             {
@@ -1193,8 +1198,7 @@ program HopperFORTH
         <variant> definition;
         Word word;
         
-        <string> builtIns = (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop leave j while repeat recurse execute [']").Split(' ');
-        foreach (var name in builtIns)
+        foreach (var name in (": . .\" .s words + - * / mod abs and or xor invert = < dup drop swap over rot -rot pick ! @ c! c@ emit cr key key? bye if else then begin until again 0branch branch do loop i exit seconds delay pin in out sp +loop leave j while repeat recurse execute [']").Split(' '))
         {
             word.Name = name;
             wordList.Append(word);
@@ -1203,14 +1207,14 @@ program HopperFORTH
     initializeWord(string wordDefinition)
     {
         <variant> definition;
-        <string> words = wordDefinition.Split(' ');
-        foreach (var word in words)
+        foreach (var word in wordDefinition.Split(' '))
         {
             definition.Append(word);
         }
         executeDefinition(definition);
         IO.Write(".");
     }
+    
     // Initialization method to define common FORTH words
     initialize()
     {
@@ -1231,22 +1235,28 @@ program HopperFORTH
         initializeWord(": <> = 0= ;");                          //  `<>` ( n1 n2 -- flag )
         initializeWord(": <= > 0= ;");                          // `<=` ( n1 n2 -- flag )
         initializeWord(": >= < 0= ;");                          // `>=` ( n1 n2 -- flag )
+        initializeWord(": not 0= ;");                           // `not` ( flag -- flag )
+        initializeWord(": 1+ 1 + ;");                           // `1+` ( n -- n+1 )
+        initializeWord(": 1- 1 - ;");                           // `1-` ( n -- n-1 )
+        initializeWord(": led " + (Board.BuiltInLED).ToString() + " ;"); // `led` ( n -- )
+        initializeWord(": output 1 pin ;");                     // `output` ( pin -- )
+        initializeWord(": input 0 pin ;");                      // `input` ( pin -- )
+        
+#ifdef MCU    
+        // words not automatically defined on the 6502 (space and speed)    
         initializeWord(": max 2dup > if drop else nip then ;"); // `max` ( n1 n2 -- max )
         initializeWord(": min 2dup < if drop else nip then ;"); // `min` ( n1 n2 -- min )
         initializeWord(": depth sp ; ");                        // `depth` ( -- n )
         initializeWord(": negate 0 swap - ;");                  // `negate` ( n -- -n )
-        initializeWord(": not 0= ;");                           // `not` ( flag -- flag )
-        initializeWord(": 1+ 1 + ;");                           // `1+` ( n -- n+1 )
-        initializeWord(": 1- 1 - ;");                           // `1-` ( n -- n-1 )
+        
         initializeWord(": 2+ 2 + ;");                           // `2+` ( n -- n+2 )
         initializeWord(": 2- 2 - ;");                           // `2-` ( n -- n-2 )
         initializeWord(": 2* 2 * ;");                           // `2*` ( n -- n*2 )
         initializeWord(": 2/ 2 / ;");                           // `2/` ( n -- n/2 )
-        initializeWord(": led " + (Board.BuiltInLED).ToString() + " ;"); // `led` ( n -- )
-        initializeWord(": output 1 pin ;");                     // `output` ( pin -- )
-        initializeWord(": input 0 pin ;");                      // `input` ( pin -- )
+        
         initializeWord(": space 32 emit ;");                    // `space` ( -- )
         initializeWord(": spaces 0 do space loop ;");            // `spaces` ( n -- )
+#endif
         
         IO.WriteLn();
     }

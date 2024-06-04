@@ -12,7 +12,6 @@ unit Screen
     uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}
     uint BackColour { get { return defaultBackColour; } set { defaultBackColour = value; }}
     
-#ifndef HOPPER_6502
     Suspend() system;
     
     // if !isInteractive then Resume will pump messages (not needed if we are processing keystrokes)
@@ -20,7 +19,6 @@ unit Screen
     
     // only needed if we are not sitting on Keyboard.ReadKey (like if we are using Keyboard.IsAvailable which takes < 500ms)
     bool ShowCursor { set system; }
-#endif
 
     Clear() system;
     

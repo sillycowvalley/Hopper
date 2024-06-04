@@ -702,14 +702,7 @@ program Compile
             // load identifier using identifier_i
             CodeStream.AddInstructionPushLocal(collectionOffset); // array collection object
             CodeStream.AddInstructionPushLocal(iteratorOffset);
-            if (CodeStream.Target6502 && IsWordValueType(iteratorType))
-            {
-                CodeStream.AddInstructionSysCall0("Array", "GetItemUInt");
-            }
-            else
-            {
-                CodeStream.AddInstructionSysCall0("Array", "GetItem");
-            }
+            CodeStream.AddInstructionSysCall0("Array", "GetItem");
             
             // identifier <- collection[iterator]
             CodeStream.AddInstructionPopLocal(identifierOffset);
@@ -2517,14 +2510,7 @@ program Compile
                                 }                          
                                 if (isArray)
                                 {           
-                                    if (CodeStream.Target6502 && IsWordValueType(valueType))
-                                    {
-                                        CodeStream.AddInstructionSysCall0("Array", "SetItemUInt");
-                                    }
-                                    else
-                                    {
-                                        CodeStream.AddInstructionSysCall0("Array", "SetItem");
-                                    }
+                                    CodeStream.AddInstructionSysCall0("Array", "SetItem");
                                 }
                                 else if (isDictionary)
                                 {

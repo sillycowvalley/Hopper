@@ -11,7 +11,7 @@ unit BuildCommand
     uses "/Source/Compiler/Tokens/Dependencies"
     
     // reset during compile : 
-    //   -  checks for 'HOPPER_6502' or 'MCU' in compilation target symbols using CheckTarget(..) after preprocess step
+    //   -  checks for  'MCU' in compilation target symbols using CheckTarget(..) after preprocess step
     // or, failing that, in GetBinaryPath()
     //   - checks if a ".ihex" exists when a ".hexe" is not found
     
@@ -101,7 +101,6 @@ unit BuildCommand
                             || pdValues.Contains("IHEX")             // generate .ihex for local debugger
                             || pdValues.Contains("SERIAL_CONSOLE")
                             || pdValues.Contains("MINIMAL_RUNTIME")
-                            || pdValues.Contains("HOPPER_6502")
                            )
                         {
                             if (!pdValues.Contains("LOCALDEBUGGER")) // special case for debugging portable runtime locally
@@ -298,9 +297,9 @@ unit BuildCommand
                 }
                 
                 CheckTarget(jsonPath);
-                if (Target6502)
+                if (TargetMinimal)
                 {
-                    target = " for 6502";
+                    target = " for Minimal Runtime";
                 }
                 if (TargetMCU)
                 {
@@ -474,7 +473,7 @@ unit BuildCommand
         Screen.Clear();
         if (!LaunchIHex)
         {
-            Die(0x0B); // assume we only arrive here for HOPPER_6502 and MCU
+            Die(0x0B); // assume we only arrive here for MCU
         }
         <string> arguments;
         string sourcePath = Editor.ProjectPath; 

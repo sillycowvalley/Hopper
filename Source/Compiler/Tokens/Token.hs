@@ -170,7 +170,6 @@ unit Token
         return tokenType;
     }
 
-#ifndef HOPPER_6502        
     <string,bool> typeKeywords;           // blue
     <string,bool> statementKeywords;      // purple
     <string,bool> directiveKeywords;      // dark gray
@@ -499,7 +498,6 @@ unit Token
     {
         return typeKeywords.Contains(candidate) || statementKeywords.Contains(candidate);
     }
-#endif    
     
     // ["type"]    - HopperToken
     // ["lexeme"]  - string

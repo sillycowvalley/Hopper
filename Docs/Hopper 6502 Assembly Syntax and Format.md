@@ -1,6 +1,6 @@
 ### Hopper 6502 Assembly Syntax and Format
 
-This document provides a comprehensive guide to the Hopper 6502 Assembly flavour. It is tailored to help future iterations of GPT understand and generate code that adheres to the Hopper 6502 Assembly conventions. The primary focus is on ensuring clarity, maintainability, and consistency in code generation.
+This document provides a comprehensive guide to the Hopper 6502 Assembly flavor. It is tailored to help future iterations of GPT understand and generate code that adheres to the Hopper 6502 Assembly conventions. The primary focus is on ensuring clarity, maintainability, and consistency in code generation.
 
 #### General Formatting Rules
 
@@ -30,7 +30,7 @@ This document provides a comprehensive guide to the Hopper 6502 Assembly flavour
 #### Instruction Format
 
 1. **Labels and Functions:**
-   - Define labels or function names followed by a colon `:`. However, labels within functions should be avoided in favour of structured control flow constructs like loops and conditionals.
+   - Define labels or function names followed by a colon `:`. However, labels within functions should be avoided in favor of structured control flow constructs like loops and conditionals.
    - Example:
      ```assembly
      MyFunction:
@@ -56,6 +56,29 @@ This document provides a comprehensive guide to the Hopper 6502 Assembly flavour
          if (condition) { continue; }
      }
      ```
+
+#### Switch Statements
+- Switch statements require curly braces for each case, even for single statements.
+- Cases never fall through, meaning there is no need for a `break` statement within cases.
+- Switch can operate on registers A, X, and Y. If X or Y is chosen, it can be optimized into a jump table (not so for A).
+
+```assembly
+switch (A)
+{
+    case value1:
+    {
+        // code
+    }
+    case value2:
+    {
+        // code
+    }
+    default:
+    {
+        // code
+    }
+}
+```
 
 #### Zero Page Variables
 
@@ -117,7 +140,53 @@ This document provides a comprehensive guide to the Hopper 6502 Assembly flavour
      }
      ```
 
-#### Sample Code Structure
+#### Preprocessor Directives
+
+1. **Define Constants**:
+   ```assembly
+   #define CONSTANT_NAME value
+   ```
+
+2. **Conditional Compilation**:
+   ```assembly
+   #ifdef CONSTANT_NAME
+   // Code here
+   #endif
+   ```
+
+#### Program Definition
+
+1. **Program Structure**:
+   ```assembly
+   program ProgramName
+   {
+       // Code here
+   }
+   ```
+
+#### Module Imports
+
+1. **Module Imports**:
+   ```assembly
+   uses "moduleName"
+   ```
+
+#### Examples of Predefined Macros
+
+1. **Predefined Macros**:
+   ```assembly
+   #define ROM_8K
+   #define ROM_16K
+   ```
+
+#### Function Call Encapsulation
+
+1. **Function Call Encapsulation**:
+   ```assembly
+   Append();
+   ```
+
+### Sample Code Structure
 
 Here is an example of a properly formatted Hopper 6502 Assembly code block:
 
@@ -155,6 +224,32 @@ unit MyUnit
             STA VAR2
         }
     }
+
+    MySwitchFunction()
+    {
+        // Switch example
+        switch (A)
+        {
+            case 0x00:
+            {
+                // Code for case 0x00
+                LDA #0x01
+                STA VAR1
+            }
+            case 0x01:
+            {
+                // Code for case 0x01
+                LDA #0x02
+                STA VAR1
+            }
+            default:
+            {
+                // Default case
+                LDA #0xFF
+                STA VAR1
+            }
+        }
+    }
 }
 ```
 
@@ -165,5 +260,6 @@ unit MyUnit
 - **Encapsulation**: Use the `friend` keyword to manage access to private methods across units.
 - **Optimization**: Utilize zero page variables and stack operations for efficient memory management.
 - **Method Calls**: Use method calls rather than direct `JSR` instructions for better readability and maintainability.
+- **Switch Statements**: Require curly braces for each case, do not fall through, and can switch on A, X, and Y.
 
-This guide ensures that future iterations of GPT can generate and understand Hopper 6502 Assembly code that is clean, efficient, and maintainable.
+This updated guide ensures that future iterations of GPT can generate and understand Hopper 6502 Assembly code that is clean, efficient, and maintainable.
