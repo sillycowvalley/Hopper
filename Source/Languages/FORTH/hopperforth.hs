@@ -123,7 +123,6 @@ program HopperFORTH
             newWord.Definition = currentWordDefinition;
             wordList.Append(newWord);
             
-            /*
             IO.Write("Defined word: " + currentWordName + "[" + (wordList.Count-1).ToString() + "] '");
             bool first = true;
             
@@ -139,20 +138,15 @@ program HopperFORTH
                 {
                     case string:
                     {
-                        string t = vtoken;
-                        IO.Write("S(" + t +")");
+                        IO.Write("S(" + string(vtoken) +")");
                     }
                     case uint:
                     {
-                        Word word = wordList[uint(vtoken)];
-                        string name = word.Name;
-                        IO.Write("U(" + name + ")");
+                        IO.Write("U(" + wordList[uint(vtoken)].Name + ")");
                     }
                     case byte:
                     {
-                        Word word = wordList[uint(vtoken)];
-                        string name = word.Name;
-                        IO.Write("B(" + name + ")");
+                        IO.Write("B(" + wordList[byte(vtoken)].Name + ")");
                     }
                     case int:
                     {
@@ -168,7 +162,6 @@ program HopperFORTH
                 i++;
             }
             IO.WriteLn("'");
-            */
         }
         else if (currentWordName.Length == 0)
         {
@@ -413,9 +406,6 @@ program HopperFORTH
                             WriteLn("Error: unknown word " + uw);
                         }
                     }
-                    
-                    
-                                       
                                         
                     default:
                     {
@@ -954,14 +944,40 @@ program HopperFORTH
                     
                     case 57: // "execute"
                     {
+                        // TODO : this doesn't work for built-ins (empty Definition)
                         int xt = pop(); // Get the execution token from the stack
                         Word word = wordList[uint(xt)];
                         <variant> wordDefinition = word.Definition;
                         executeDefinition(wordDefinition); // Execute the definition of the word
                     }
                     
+                    case 58: // "[']"
+                    {
+                        currentTokenIndex++; // Move to the next token
+                        if (typeof(currentDefinition[uint(currentTokenIndex)]) == uint)
+                        {
+                            uint ui = currentDefinition[uint(currentTokenIndex)];
+                            push(int(ui)); // push the index of the word
+                        }
+                        else if (typeof(currentDefinition[uint(currentTokenIndex)]) == byte)
+                        {
+                            byte b = currentDefinition[uint(currentTokenIndex)];
+                            push(int(b)); // push the index of the word
+                        }
+                        else if (typeof(currentDefinition[uint(currentTokenIndex)]) == int)
+                        {
+                            int i = currentDefinition[uint(currentTokenIndex)];
+                            WriteLn("Error: unknown word " + i.ToString());
+                        }
+                        else
+                        {
+                            WriteLn("Error: unknown word " + string(currentDefinition[uint(currentTokenIndex)]));
+                        }
+                    }
+                    
                     default:
                     {
+                        WriteLn("Undefined built-in: " + builtIn.ToString() + " at " + currentTokenIndex.ToString());
                         Die(0x0A);
                     }
                 }
@@ -1122,9 +1138,7 @@ program HopperFORTH
                 {
                     if (typeof(vword) == string)
                     {
-                        string word = vword;
-                        switch (word)
-                        //switch (string(vword)) // TODO
+                        switch (string(vword))
                         {
                             case ":":
                             {

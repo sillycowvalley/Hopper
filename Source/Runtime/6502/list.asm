@@ -1073,7 +1073,13 @@ unit List
         PLA
         STA IDXL
         
+        LDA LTYPE
+        PHA
+        
         GC.Release(); // we popped 'this', decrease reference count
+        
+        PLA
+        STA LTYPE
     }
     GetItem()
     {

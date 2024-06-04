@@ -257,7 +257,7 @@ unit String
                 if (accumulator.Length != 0)
                 {
                     stringList.Append(accumulator);
-                    accumulator = "";
+                    Build(ref accumulator); // = ""
                 }
             }
             else
