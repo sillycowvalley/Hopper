@@ -220,9 +220,16 @@ unit Lexer
                 if (c == Char.EOL) { lexer.line++; }
                 _ = advance(ref lexer); // consume the peeked whitespace character
             } // loop
+    
+            lexer.start = lexer.current; // Correctly update the start position after whitespace
             
+            if (isAtEnd(lexer)) 
+            {
+                return addToken(lexer, TokenType.EOF);
+            }
+    
             char c = advance(ref lexer);
-
+    
             switch (c)
             {
                 case '(': { return addToken(lexer, TokenType.SYM_LPAREN); }
@@ -243,12 +250,12 @@ unit Lexer
                     if (match(ref lexer, '/'))
                     {
                         skipLineComment(ref lexer);
-                        break;
+                        continue;
                     }
                     else if (match(ref lexer, '*'))
                     {
                         skipBlockComment(ref lexer);
-                        break;
+                        continue;
                     }
                     else
                     {
@@ -266,13 +273,6 @@ unit Lexer
                 case '>': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_GTE : TokenType.SYM_GT); }
                 case '"': { return stringToken(ref lexer); }
                 case '#': { return preprocessorDirective(ref lexer); }
-                case ' ':
-                case Char.Tab:
-                case char(0x0D):
-                case Char.EOL:
-                {
-                    if (c == Char.EOL) { lexer.line++; }
-                }
                 default:
                 {
                     if (Char.IsDigit(c))
@@ -291,5 +291,6 @@ unit Lexer
         Token unreachable;
         return unreachable;
     }
+    
 }
 

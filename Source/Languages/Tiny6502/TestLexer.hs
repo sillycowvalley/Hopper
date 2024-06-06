@@ -25,7 +25,7 @@ program TestLexer
         loop
         {
             Token token = Lexer.ScanToken(ref lexer);
-            IO.WriteLn(TinyToken.ToString(token.Type) + " " + token.Lexeme);
+            IO.WriteLn(">> " + TinyToken.ToString(token.Type) + " '" + token.Lexeme + "'");
 
             if (token.Type == TokenType.EOF)
             {
