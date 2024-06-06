@@ -125,7 +125,32 @@ bool flag = value as bool; // Cast byte to boolean
 value = flag as byte; // Cast boolean to byte
 ```
 
-## Built-in Functions and Constants
+### Fixed-Size Array Declarations
+
+**Global and Local Variable Example:**
+
+```c
+const word SIZEPL = 8191;
+bool[SIZEPL] flagsGlobal;  // Fixed-size array, compiler-managed
+char[5] digits;            // Fixed-size array, compiler-managed
+```
+
+### Dynamic Allocation with `malloc`
+
+**Syntax:**
+
+```c
+bool[] dynamicFlags = malloc(SIZEPL);  // Dynamic array, manually managed
+char[] dynamicDigits = malloc(5);      // Dynamic array, manually managed
+```
+
+### Rules for Fixed-Size Arrays
+
+1. **Memory Management**: The compiler is responsible for allocating and deallocating memory for these arrays.
+2. **Range Checking**: The compiler can enforce range checking since it knows the size of the array.
+3. **Assignment Restrictions**: These arrays cannot be reassigned or freed manually to prevent memory management issues.
+
+### Built-in Functions and Constants
 
 ### Serial Communication
 
@@ -147,7 +172,7 @@ func writeWord(word num) {
     }
 
     byte i = 0;
-    char digits[5]; // Maximum 5 digits for a word
+    char[5] digits; // Maximum 5 digits for a word
 
     while (num > 0) {
         digits[i++] = (num % 10) + '0';
@@ -158,6 +183,7 @@ func writeWord(word num) {
     while (i > 0) {
         writeChar(digits[--i]);
     }
+
 }
 ```
 
@@ -239,7 +265,7 @@ func writeWord(word num) {
     }
 
     byte i = 0;
-    char digits[5]; // Maximum 5 digits for a word
+    char[] digits = malloc(5); // Maximum 5 digits for a word
 
     while (num > 0) {
         digits[i++] = (num % 10) + '0';
@@ -250,6 +276,8 @@ func writeWord(word num) {
     while (i > 0) {
         writeChar(digits[--i]);
     }
+
+    free(digits); // Free allocated memory
 }
 
 // EEPROM
@@ -293,23 +321,23 @@ func main() {
 ```c
 func main() {
     word eeprom_address = 0x100;
-    byte[] data_to_write = malloc(16);
-    byte[] read_buffer = malloc(16);
-    
+    byte[16] write;
+    byte[16] read
+
     // Initialize data to write
     for (byte i = 0; i < 16; i++) {
-        data_to_write[i] = i;
+        write[i] = i;
     }
     
     // Write a page to EEPROM
-    writePage(eeprom_address, data_to_write);
+    writePage(eeprom_address, write);
     
     // Read a page from EEPROM
     readPage(eeprom_address, read_buffer);
     
     // Verify the read data
     for (byte i = 0; i < 16; i++) {
-        if (read_buffer[i] != i) {
+        if (read[i] != write[i]) {
             writeString("Read verification failed.");
             return;
         }
