@@ -1,0 +1,24 @@
+import "system.tc"
+
+// Blink an LED on GPIO pin 0 every second and send a message over serial
+func main() {
+    byte pin = 0;
+    const char[] welcome_message = "Hello, 6502!";
+    bool led_on = false;
+    
+    pinMode(pin, OUTPUT); // Set pin mode to output
+    pinSet(pin, false); // Ensure LED is off
+    writeString(welcome_message); // Send welcome message
+
+    // Main loop
+    while (true) {
+        if (led_on) {
+            pinSet(pin, false); // Turn LED off
+            led_on = false;
+        } else {
+            pinSet(pin, true); // Turn LED on
+            led_on = true;
+        }
+        delay(1000); // Delay for 1 second
+    }
+}

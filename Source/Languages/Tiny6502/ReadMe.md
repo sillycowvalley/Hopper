@@ -18,6 +18,7 @@ Tiny6502 is a minimal programming language designed for a specific 6502 system c
 
 3. **Control Structures:**
    - Simple, C-like control structures: `if`, `while`, `for`, and `switch`, with strict type expectations for boolean expressions.
+   - Distinct keywords for breaking out of loops and preventing fall-through in switch cases (`break` and `done` respectively).
    - Minimal syntactic sugar to keep parsing simple.
 
 4. **Function Calls:**
@@ -93,6 +94,18 @@ while (a != 0) {
 
 for (byte i = 0; i < 10; i++) {
     [0x2000 + i] = i;
+}
+
+switch (value) {
+    case 1:
+        // Code for case 1
+        done; // Prevents fall-through
+    case 2:
+        // Code for case 2
+        done; // Prevents fall-through
+    default:
+        // Code for default case
+        done; // Prevents fall-through
 }
 ```
 
@@ -275,7 +288,7 @@ func main() {
 }
 ```
 
-## Example EEPROM Page Read/Write Program
+### Example EEPROM Page Read/Write Program
 
 ```c
 func main() {
@@ -300,8 +313,6 @@ func main() {
             writeString("Read verification failed.");
             return;
         }
-
-
     }
     
     writeString("Read verification successful.");
