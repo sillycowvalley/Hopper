@@ -1,0 +1,52 @@
+import "system.tc"
+
+func word subtractMillis(word[] start, word[] end) {
+    word low_res;
+    if (end[1] >= start[1]) {
+        low_res = end[1] - start[1];
+    } else {
+        low_res = (0xFFFF - start[1] + 1) + end[1];
+        end[0] -= 1;
+    }
+    word high_res = end[0] - start[0];
+
+    // Calculate total seconds without overflow
+    word totalSecondsHigh = high_res * 66;  // High part in seconds (65536 / 1000 = 65.536)
+    word totalSecondsLow = low_res / 1000;  // Low part in seconds
+
+    // Add the high and low parts to get the total seconds
+    word totalSeconds = totalSecondsHigh + totalSecondsLow;
+    return totalSeconds;
+}
+
+uint Fibo(uint n) {
+    if (n <= 1) {
+        return n;
+    } else {
+        return Fibo(n - 1) + Fibo(n - 2);
+    }
+}
+
+func Benchmark(const char[] name, func funcPtr, uint arg, uint loops) {
+    word[] start = millis(); // Start timing
+    uint result = 0;
+    for (uint count = 0; count < loops; count++) {
+        result = funcPtr(arg);
+    }
+    word[] end = millis(); // Stop timing
+    
+    word elapsedSeconds = subtractMillis(start, end);
+    writeString(name);
+    writeString("(");
+    writeWord(arg);
+    writeString(") = ");
+    writeWord(result);
+    writeString(" in ");
+    writeWord(elapsedSeconds);
+    writeString(" seconds\n");
+}
+
+func main() {
+    func testFunction = Fibo;
+    Benchmark("Fibo", testFunction, 24, 1); // Fibo(24) = 46368
+}
