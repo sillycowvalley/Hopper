@@ -13,6 +13,7 @@ Tiny6502 is a minimal programming language designed for a specific 6502 system c
 2. **Basic Data Types:**
    - `byte` (8-bit unsigned integer)
    - `word` (16-bit unsigned integer)
+   - `int` (16-bit signed integer)
    - `char` (8-bit unsigned character)
    - `bool` (boolean type, stored as a single bit)
 
@@ -41,6 +42,8 @@ Tiny6502 is a minimal programming language designed for a specific 6502 system c
 
 9. **Type Casting:**
    - No explicit casting required between types of the same size (e.g., `char` and `byte`).
+   - Automatic zero extension when casting from a narrower unsigned type to a wider type.
+   - Warnings are issued for potentially unsafe casts (e.g., `int` to `uint` and `uint` to `int`) unless an explicit cast is provided.
 
 10. **Function Pointers:**
    - Use the `func` keyword to define function pointers, assign functions to them, and invoke them.
@@ -52,6 +55,7 @@ Tiny6502 is a minimal programming language designed for a specific 6502 system c
 ```c
 byte a = 0x10;       // 8-bit unsigned integer
 word b = 0x1234;     // 16-bit unsigned integer
+int d = -1234;       // 16-bit signed integer
 char c = 'A';        // 8-bit unsigned character
 bool flag = true;    // Boolean value
 ```
@@ -121,11 +125,15 @@ word wide_value = 0x1234;
 byte narrow_value = wide_value as byte; // Cast word to byte, keeping the least significant 8 bits
 
 byte narrow_value2 = 0x34;
-word wide_value2 = narrow_value2 as word; // Cast byte to word, zero-extends the 8-bit value
+word wide_value2 = narrow_value2; // Automatically cast byte to word, zero-extends the 8-bit value
 
-byte value = 1;
-bool flag = value as bool; // Cast byte to boolean
+int signed_value = -1234;
+word unsigned_value = signed_value as word; // Cast int to word without warning
+
+byte value;
+bool flag = false;
 value = flag as byte; // Cast boolean to byte
+flag = value as bool; // Cast byte to bool without warning
 ```
 
 ### Fixed-Size Array Declarations

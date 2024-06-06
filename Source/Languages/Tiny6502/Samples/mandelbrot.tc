@@ -1,0 +1,60 @@
+import "system.tc"
+
+func word subtractMillis(word[] start, word[] end) {
+    // Function to subtract two 32-bit time values (end - start)
+    word low_res;
+    // word high_res; // High part of the result, currently unused
+
+    if (end[0] >= start[0]) {
+        low_res = end[0] - start[0];
+        // high_res = end[1] - start[1];
+    } else {
+        low_res = (0xFFFF - start[0] + 1) + end[0];
+        // high_res = end[1] - start[1] - 1;
+    }
+    
+    return low_res; // We only return low_res as required
+}
+
+func main() {
+    writeString("\n Mandelbrot - ported from Gordon's TinyBasic - Integers\n");
+    writeString("    Ported to Tiny6502.\n\n");
+    writeChar(' ');
+
+    word[] start = millis();
+    const char[] palette = ".,'~=+:;*%&$OXB#@ ";
+    int a; int b; int c; int d;
+    int q; int p; int t; int s; byte i;
+    int y; int x;
+    int f = 50;
+
+    for (y = -12; y <= 12; y++) {
+        for (x = -49; x <= 29; x++) {
+            c = x * 229 / 100;
+            d = y * 416 / 100;
+            a = c; b = d; i = 0;
+            while (true) {
+                q = b / f; s = b - (q * f);
+                t = ((a * a) - (b * b)) / f + c;
+                b = 2 * ((a * q) + (a * s / f)) + d;
+                a = t; p = a / f; q = b / f;
+                if (((p * p) + (q * q)) >= 5) {
+                    writeChar(palette[i]);
+                    break;
+                } else {
+                    i++;
+                    if (i < 16) {
+                        continue;
+                    }
+                    writeChar(' ');
+                    break;
+                }
+            }
+        } // next x
+        writeString("\n "); 
+    } // next y
+    word[] end = millis();
+    word elapsed = subtractMillis(start, end); 
+    writeWord(elapsed);
+    writeString(" ms\n");
+}
