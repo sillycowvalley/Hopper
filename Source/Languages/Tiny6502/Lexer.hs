@@ -4,61 +4,49 @@ unit Lexer
     uses "/Source/System/IO"
     uses "/Source/System/Char"
 
-    <string> keywords;
-    <string> preprocessorDirectives;
-
-    const TokenType[] keywordTokens = {
-        TokenType.KW_FUNC, TokenType.KW_IF, TokenType.KW_ELSE, TokenType.KW_WHILE, TokenType.KW_FOR,
-        TokenType.KW_BREAK, TokenType.KW_CONTINUE, TokenType.KW_SWITCH, TokenType.KW_CASE, TokenType.KW_DEFAULT,
-        TokenType.KW_CONST, TokenType.KW_TRUE, TokenType.KW_FALSE, TokenType.KW_NULL, TokenType.KW_IMPORT,
-        TokenType.KW_BYTE, TokenType.KW_WORD, TokenType.KW_CHAR, TokenType.KW_BOOL, TokenType.KW_INT, TokenType.KW_UINT
-    };
-
-    const TokenType[] preprocessorTokens = {
-        TokenType.PRE_INCLUDE, TokenType.PRE_DEFINE, TokenType.PRE_UNDEF, TokenType.PRE_IFDEF,
-        TokenType.PRE_IFNDEF, TokenType.PRE_IF, TokenType.PRE_ELIF, TokenType.PRE_ELSE, TokenType.PRE_ENDIF, TokenType.PRE_PRAGMA
-    };
-
+    <string,TokenType> keywords;
+    <string,TokenType> preprocessorDirectives;
+    
     Initialize()
     {
         // in case Initialize is called more than once
         keywords.Clear(); 
         preprocessorDirectives.Clear(); 
-        
-        keywords.Append("func");
-        keywords.Append("if");
-        keywords.Append("else");
-        keywords.Append("while");
-        keywords.Append("for");
-        keywords.Append("break");
-        keywords.Append("continue");
-        keywords.Append("switch");
-        keywords.Append("case");
-        keywords.Append("default");
-        keywords.Append("const");
-        keywords.Append("true");
-        keywords.Append("false");
-        keywords.Append("null");
-        keywords.Append("import");
-        keywords.Append("byte");
-        keywords.Append("word");
-        keywords.Append("char");
-        keywords.Append("bool");
-        keywords.Append("int");
-        keywords.Append("uint");
-        
-        preprocessorDirectives.Append("include");
-        preprocessorDirectives.Append("define");
-        preprocessorDirectives.Append("undef");
-        preprocessorDirectives.Append("ifdef");
-        preprocessorDirectives.Append("ifndef");
-        preprocessorDirectives.Append("if");
-        preprocessorDirectives.Append("elif");
-        preprocessorDirectives.Append("else");
-        preprocessorDirectives.Append("endif");
-        preprocessorDirectives.Append("pragma");
-    }
 
+        keywords["func"] = TokenType.KW_FUNC;
+        keywords["if"] = TokenType.KW_IF;
+        keywords["else"] = TokenType.KW_ELSE;
+        keywords["while"] = TokenType.KW_WHILE;
+        keywords["for"] = TokenType.KW_FOR;
+        keywords["break"] = TokenType.KW_BREAK;
+        keywords["continue"] = TokenType.KW_CONTINUE;
+        keywords["switch"] = TokenType.KW_SWITCH;
+        keywords["case"] = TokenType.KW_CASE;
+        keywords["default"] = TokenType.KW_DEFAULT;
+        keywords["const"] = TokenType.KW_CONST;
+        keywords["true"] = TokenType.KW_TRUE;
+        keywords["false"] = TokenType.KW_FALSE;
+        keywords["null"] = TokenType.KW_NULL;
+        keywords["import"] = TokenType.KW_IMPORT;
+        keywords["byte"] = TokenType.KW_BYTE;
+        keywords["word"] = TokenType.KW_WORD;
+        keywords["char"] = TokenType.KW_CHAR;
+        keywords["bool"] = TokenType.KW_BOOL;
+        keywords["int"] = TokenType.KW_INT;
+        keywords["uint"] = TokenType.KW_UINT;
+
+        preprocessorDirectives["include"] = TokenType.PRE_INCLUDE;
+        preprocessorDirectives["define"] = TokenType.PRE_DEFINE;
+        preprocessorDirectives["undef"] = TokenType.PRE_UNDEF;
+        preprocessorDirectives["ifdef"] = TokenType.PRE_IFDEF;
+        preprocessorDirectives["ifndef"] = TokenType.PRE_IFNDEF;
+        preprocessorDirectives["if"] = TokenType.PRE_IF;
+        preprocessorDirectives["elif"] = TokenType.PRE_ELIF;
+        preprocessorDirectives["else"] = TokenType.PRE_ELSE;
+        preprocessorDirectives["endif"] = TokenType.PRE_ENDIF;
+        preprocessorDirectives["pragma"] = TokenType.PRE_PRAGMA;
+    }           
+           
     record Lexer
     {
         string Source;
@@ -157,18 +145,10 @@ unit Lexer
         while (Char.IsLetterOrDigit(peek(lexer))) { _ = advance(ref lexer); }
 
         string text = (lexer.Source).Substring(lexer.start, lexer.current - lexer.start);
-
-        TokenType[] kt = keywordTokens;
-
-        for (uint i = 0; i < keywords.Count; i++)
+        if (keywords.Contains(text))
         {
-            if (text == keywords[i])
-            {
-                WriteLn(i.ToString() + " " + (kt.Count).ToString());
-                return addToken(lexer, kt[i]);
-            }
+            return addToken(lexer, keywords[text]);
         }
-
         return addToken(lexer, TokenType.IDENTIFIER);
     }
 
@@ -179,15 +159,9 @@ unit Lexer
         while (Char.IsLetter(peek(lexer))) { _ = advance(ref lexer); }
 
         string text = (lexer.Source).Substring(lexer.start + 1, lexer.current - lexer.start - 1); // exclude '#'
-
-        TokenType[] ppt = preprocessorTokens;
-
-        for (uint i = 0; i < preprocessorDirectives.Count; i++)
+        if (preprocessorDirectives.Contains(text))
         {
-            if (text == preprocessorDirectives[i])
-            {
-                return addToken(lexer, ppt[i]);
-            }
+            return addToken(lexer, preprocessorDirectives[text]);
         }
 
         IO.WriteLn("Unknown preprocessor directive: " + text);
@@ -227,65 +201,93 @@ unit Lexer
 
     Token ScanToken(ref Lexer lexer)
     {
-        char c = advance(ref lexer);
-
-        switch (c)
+        loop
         {
-            case '(': { return addToken(lexer, TokenType.SYM_LPAREN); }
-            case ')': { return addToken(lexer, TokenType.SYM_RPAREN); }
-            case '{': { return addToken(lexer, TokenType.SYM_LBRACE); }
-            case '}': { return addToken(lexer, TokenType.SYM_RBRACE); }
-            case '[': { return addToken(lexer, TokenType.SYM_LBRACKET); }
-            case ']': { return addToken(lexer, TokenType.SYM_RBRACKET); }
-            case ';': { return addToken(lexer, TokenType.SYM_SEMICOLON); }
-            case ':': { return addToken(lexer, TokenType.SYM_COLON); }
-            case ',': { return addToken(lexer, TokenType.SYM_COMMA); }
-            case '.': { return addToken(lexer, TokenType.SYM_DOT); }
-            case '+': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_PLUSEQ : (match(ref lexer, '+') ? TokenType.SYM_PLUSPLUS : TokenType.SYM_PLUS)); }
-            case '-': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_MINUSEQ : (match(ref lexer, '-') ? TokenType.SYM_MINUSMINUS : TokenType.SYM_MINUS)); }
-            case '*': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_STAREQ : TokenType.SYM_STAR); }
-            case '/':
+            lexer.start = lexer.current;  // Reset start position for the new token
+            
+            // Skip whitespace and handle EOF
+            loop
             {
-                if (match(ref lexer, '/'))
+                if (isAtEnd(lexer)) 
                 {
-                    skipLineComment(ref lexer);
-                    return ScanToken(ref lexer);
+                    return addToken(lexer, TokenType.EOF);
                 }
-                else if (match(ref lexer, '*'))
+                char c = peek(lexer);
+                if (!c.IsWhitespace()) 
                 {
-                    skipBlockComment(ref lexer);
-                    return ScanToken(ref lexer);
+                    break; // non-whitespace character
                 }
-                else
-                {
-                    return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_SLASHEQ : TokenType.SYM_SLASH);
-                }
-            }
-            case '%': { return addToken(lexer, TokenType.SYM_PERCENT); }
-            case '&': { return addToken(lexer, match(ref lexer, '&') ? TokenType.SYM_AMPAMP : TokenType.SYM_AMP); }
-            case '|': { return addToken(lexer, match(ref lexer, '|') ? TokenType.SYM_PIPEPIPE : TokenType.SYM_PIPE); }
-            case '^': { return addToken(lexer, TokenType.SYM_CARET); }
-            case '~': { return addToken(lexer, TokenType.SYM_TILDE); }
-            case '!': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_NEQ : TokenType.SYM_BANG); }
-            case '=': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_EQEQ : TokenType.SYM_EQ); }
-            case '<': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_LTE : TokenType.SYM_LT); }
-            case '>': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_GTE : TokenType.SYM_GT); }
-            case '"': { return stringToken(ref lexer); }
-            case '#': { return preprocessorDirective(ref lexer); }
-            default:
+                if (c == Char.EOL) { lexer.line++; }
+                _ = advance(ref lexer); // consume the peeked whitespace character
+            } // loop
+            
+            char c = advance(ref lexer);
+
+            switch (c)
             {
-                if (Char.IsDigit(c))
+                case '(': { return addToken(lexer, TokenType.SYM_LPAREN); }
+                case ')': { return addToken(lexer, TokenType.SYM_RPAREN); }
+                case '{': { return addToken(lexer, TokenType.SYM_LBRACE); }
+                case '}': { return addToken(lexer, TokenType.SYM_RBRACE); }
+                case '[': { return addToken(lexer, TokenType.SYM_LBRACKET); }
+                case ']': { return addToken(lexer, TokenType.SYM_RBRACKET); }
+                case ';': { return addToken(lexer, TokenType.SYM_SEMICOLON); }
+                case ':': { return addToken(lexer, TokenType.SYM_COLON); }
+                case ',': { return addToken(lexer, TokenType.SYM_COMMA); }
+                case '.': { return addToken(lexer, TokenType.SYM_DOT); }
+                case '+': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_PLUSEQ : (match(ref lexer, '+') ? TokenType.SYM_PLUSPLUS : TokenType.SYM_PLUS)); }
+                case '-': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_MINUSEQ : (match(ref lexer, '-') ? TokenType.SYM_MINUSMINUS : TokenType.SYM_MINUS)); }
+                case '*': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_STAREQ : TokenType.SYM_STAR); }
+                case '/':
                 {
-                    return number(ref lexer);
+                    if (match(ref lexer, '/'))
+                    {
+                        skipLineComment(ref lexer);
+                        break;
+                    }
+                    else if (match(ref lexer, '*'))
+                    {
+                        skipBlockComment(ref lexer);
+                        break;
+                    }
+                    else
+                    {
+                        return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_SLASHEQ : TokenType.SYM_SLASH);
+                    }
                 }
-                if (Char.IsLetter(c))
+                case '%': { return addToken(lexer, TokenType.SYM_PERCENT); }
+                case '&': { return addToken(lexer, match(ref lexer, '&') ? TokenType.SYM_AMPAMP : TokenType.SYM_AMP); }
+                case '|': { return addToken(lexer, match(ref lexer, '|') ? TokenType.SYM_PIPEPIPE : TokenType.SYM_PIPE); }
+                case '^': { return addToken(lexer, TokenType.SYM_CARET); }
+                case '~': { return addToken(lexer, TokenType.SYM_TILDE); }
+                case '!': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_NEQ : TokenType.SYM_BANG); }
+                case '=': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_EQEQ : TokenType.SYM_EQ); }
+                case '<': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_LTE : TokenType.SYM_LT); }
+                case '>': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_GTE : TokenType.SYM_GT); }
+                case '"': { return stringToken(ref lexer); }
+                case '#': { return preprocessorDirective(ref lexer); }
+                case ' ':
+                case Char.Tab:
+                case char(0x0D):
+                case Char.EOL:
                 {
-                    return identifier(ref lexer);
+                    if (c == Char.EOL) { lexer.line++; }
                 }
-                IO.WriteLn("Unexpected character: 0x" + (byte(c)).ToHexString(2));
-                Diagnostics.Die(1);
-            }
-        }
+                default:
+                {
+                    if (Char.IsDigit(c))
+                    {
+                        return number(ref lexer);
+                    }
+                    if (Char.IsLetter(c))
+                    {
+                        return identifier(ref lexer);
+                    }
+                    IO.WriteLn("Unexpected character: 0x" + (byte(c)).ToHexString(2));
+                    Diagnostics.Die(1);
+                }
+            } // switch
+        } // loop
         Token unreachable;
         return unreachable;
     }
