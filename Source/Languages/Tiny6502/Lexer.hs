@@ -125,6 +125,26 @@ unit Lexer
 
         return addToken(lexer, TokenType.LIT_STRING);
     }
+    
+    Token charToken(ref Lexer lexer)
+    {
+        if (isAtEnd(lexer)) 
+        {
+            IO.WriteLn("Unterminated character literal.");
+            Diagnostics.Die(1);
+        }
+    
+        char value = advance(ref lexer);
+    
+        if (isAtEnd(lexer) || (advance(ref lexer) != '\'')) 
+        {
+            IO.WriteLn("Unterminated character literal.");
+            Diagnostics.Die(1);
+        }
+    
+        return addToken(lexer, TokenType.LIT_CHAR);
+    }
+    
 
     Token number(ref Lexer lexer)
     {
@@ -139,10 +159,14 @@ unit Lexer
 
         return addToken(lexer, TokenType.LIT_NUMBER);
     }
+    bool isValidIdentifierChar(char ch)
+    {
+        return Char.IsLetterOrDigit(ch) || (ch == '_');
+    }
 
     Token identifier(ref Lexer lexer)
     {
-        while (Char.IsLetterOrDigit(peek(lexer))) { _ = advance(ref lexer); }
+        while (isValidIdentifierChar(peek(lexer))) { _ = advance(ref lexer); }
 
         string text = (lexer.Source).Substring(lexer.start, lexer.current - lexer.start);
         if (keywords.Contains(text))
@@ -272,6 +296,7 @@ unit Lexer
                 case '<': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_LTE : TokenType.SYM_LT); }
                 case '>': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_GTE : TokenType.SYM_GT); }
                 case '"': { return stringToken(ref lexer); }
+                case '\'': { return charToken(ref lexer); }
                 case '#': { return preprocessorDirective(ref lexer); }
                 default:
                 {

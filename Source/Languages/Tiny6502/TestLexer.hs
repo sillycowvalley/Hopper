@@ -7,12 +7,20 @@ program TestLexer
     uses "Lexer"
     uses "/Source/System/System"
     uses "/Source/System/IO"
+    
+    string Clean(string value)
+    {
+        string clean;
+        clean = value.Replace("\\", "/");
+        return clean;
+    }
 
     Hopper()
     {
         Initialize();
         //<string> arguments = Arguments;
-        string sourcePath = "/data/test.tc"; // Path.GetFullPath(arguments[0]);
+        //string sourcePath = "/data/test.tc"; // Path.GetFullPath(arguments[0]);
+        string sourcePath = "/data/testsuite.tc"; // Path.GetFullPath(arguments[0]);
         WriteLn(sourcePath);
         string source;
         if (!File.TryReadAllText(sourcePath, ref source))
@@ -25,7 +33,7 @@ program TestLexer
         loop
         {
             Token token = Lexer.ScanToken(ref lexer);
-            IO.WriteLn(">> " + TinyToken.ToString(token.Type) + " '" + token.Lexeme + "'");
+            IO.WriteLn(">> " + TinyToken.ToString(token.Type) + " '" + Clean(token.Lexeme) + "'");
 
             if (token.Type == TokenType.EOF)
             {

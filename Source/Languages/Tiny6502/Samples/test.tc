@@ -1,7 +1,9 @@
+("test\n")
 func main() 
 {
     const byte x = 10;
     if (x > 10)
     {
+        writeString(" (Expected: 30)\n");
     }
 }
