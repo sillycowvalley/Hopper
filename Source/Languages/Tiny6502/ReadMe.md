@@ -33,10 +33,13 @@ Tiny6502 is a minimal programming language designed for a specific 6502 system c
    - Access to timers for millisecond system tick and delay operations.
 
 7. **Const Strings:**
-   - Use `const char[]` for defining string literals for use with writeString.
+   - Use `const char[]` for defining string literals for use with `writeString`.
 
 8. **Boolean Arrays:**
    - `bool[]` for efficient bit arrays (8 `bool` values per byte).
+
+9. **Type Casting:**
+   - No explicit casting required between types of the same size (e.g., `char` and `byte`).
 
 ## Syntax and Semantics
 
@@ -114,9 +117,35 @@ value = flag as byte; // Cast boolean to byte
 ### Serial Communication
 
 ```c
-func write(byte data);
-func byte read();
-func writeString(const char[] str);
+func writeChar(char c);       // System function to write a single character
+func writeString(const char[] str) {
+    // Function to write a null-terminated string to the serial output using writeChar
+    byte i = 0;
+    while (str[i] != 0) {
+        writeChar(str[i]);
+        i++;
+    }
+}
+func writeWord(word num) {
+    // Function to write a word as a string to the serial output buffer using writeChar
+    if (num == 0) {
+        writeChar('0');
+        return;
+    }
+
+    byte i = 0;
+    char digits[5]; // Maximum 5 digits for a word
+
+    while (num > 0) {
+        digits[i++] = (num % 10) + '0';
+        num /= 10;
+    }
+
+    // Write the digits in reverse order
+    while (i > 0) {
+        writeChar(digits[--i]);
+    }
+}
 ```
 
 ### EEPROM
@@ -144,7 +173,7 @@ func byte I2CRead(byte address);
 ### Timing
 
 ```c
-func word millis();
+func word[] millis(); // System function to return the address of the zero-page location where the 4-byte millis count is stored as an array of two words
 func delay(word milliseconds);
 ```
 
@@ -178,9 +207,37 @@ const byte OUTPUT = 1;
 const byte INPUT_PULLUP = 2;
 
 // Serial Communication
-func write(byte data);
-func byte read();
-func writeString(const char[] str);
+func writeChar(char c); // System function to write a single character
+
+func writeString(const char[] str) {
+    // Function to write a null-terminated string to the serial output using writeChar
+    byte i = 0;
+    while (str[i] != 0) {
+        writeChar(str[i]);
+        i++;
+    }
+}
+
+func writeWord(word num) {
+    // Function to write a word as a string to the serial output buffer using writeChar
+    if (num == 0) {
+        writeChar('0');
+        return;
+    }
+
+    byte i = 0;
+    char digits[5]; // Maximum 5 digits for a word
+
+    while (num > 0) {
+        digits[i++] = (num % 10) + '0';
+        num /= 10;
+    }
+
+    // Write the digits in reverse order
+    while (i > 0) {
+        writeChar(digits[--i]);
+    }
+}
 
 // EEPROM
 func writePage(word address, const byte[] data);
@@ -196,7 +253,7 @@ func I2CWrite(byte address, byte data);
 func byte I2CRead(byte address);
 
 // Timing
-func word millis();
+func word[] millis(); // System function to return the address of the zero-page location where the 4-byte millis count is stored as an array of two words
 func delay(word milliseconds);
 
 // Memory Management
@@ -211,33 +268,10 @@ func free(byte[] ptr);
 ```c
 import "system.tc"
 
-// Blink an LED on GPIO pin 0 every second and send a message over serial
 func main() {
-    byte pin = 0;
     const char[] welcome_message = "Hello, 6502!";
-    bool led_on = false;
     
-    pinMode(pin, OUTPUT); // Set pin mode to output
-    pinSet(pin, false); // Ensure LED is off
-    writeString(welcome_message); // Send welcome message
-
-    // Allocate memory for a boolean array
-    bool[] flags = malloc(1); // 8 boolean flags
-
-    // Set the first flag to true
-    flags[0] = true;
-
-    // Main loop
-    while (true) {
-        if (led_on) {
-            pinSet(pin, false); // Turn LED off
-            led_on = false;
-        } else {
-            pinSet(pin, true); // Turn LED on
-            led_on = true;
-        }
-        delay(1000); // Delay for 1 second
-    }
+    writeString(welcome_message);
 }
 ```
 
@@ -266,6 +300,8 @@ func main() {
             writeString("Read verification failed.");
             return;
         }
+
+
     }
     
     writeString("Read verification successful.");
